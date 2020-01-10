@@ -6,6 +6,7 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE GADTs                 #-}
 
 module Data.Morpheus.Execution.Internal.Declare
   ( declareType
@@ -24,7 +25,7 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 , nameSpaceWith
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , DataTypeKind(..)
                                                 , DataTypeKind(..)
                                                 , TypeRef(..)
@@ -35,6 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , Key
                                                 , isOutputObject
+                                                , ArgumentsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( UnSubResolver )
@@ -79,23 +81,23 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
   cons ConsD { cName, cFields } = RecC (genName cName)
                                        (map declareField cFields)
    where
-    declareField DataField { fieldName, fieldArgsType, fieldType } =
+    declareField FieldDefinition { fieldName, fieldArgs, fieldType } =
       (fName, defBang, fiType)
      where
       fName | namespace = mkName $ unpack (nameSpaceWith tName fieldName)
             | otherwise = mkName (unpack fieldName)
-      fiType = genFieldT fieldArgsType
+      fiType = genFieldT fieldArgs
        where
         monadVar = VarT $ mkName $ unpack m_
         ---------------------------
-        genFieldT Nothing
-          | (isOutputObject <$> kindD) == Just True = AppT monadVar result
-          | otherwise                             = result
-        genFieldT (Just argsTypeName) = AppT
+        genFieldT ArgumentsDefinition {  argumentsTypename = Just argsTypename } = AppT
           (AppT arrowType argType)
           (AppT monadVar result)
          where
-          argType   = ConT $ mkName (unpack argsTypeName)
+          argType   = ConT $ mkName (unpack argsTypename)
           arrowType = ConT ''Arrow
+        genFieldT _
+          | (isOutputObject <$> kindD) == Just True = AppT monadVar result
+          | otherwise                             = result
         ------------------------------------------------
         result = declareTypeRef (maybe False isSubscription kindD) fieldType

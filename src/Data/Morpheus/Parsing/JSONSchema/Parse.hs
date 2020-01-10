@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Data.Morpheus.Parsing.JSONSchema.Parse
   ( decodeIntrospection
@@ -24,7 +25,7 @@ import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import qualified Data.Morpheus.Types.Internal.AST as AST
                                                 ( Schema)
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField
+                                                ( FieldDefinition
                                                 , DataType(..)
                                                 , DataTypeContent(..)
                                                 , DataTypeWrapper(..)
@@ -38,6 +39,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createType
                                                 , createUnionType
                                                 , toHSWrappers
+                                                , ArgumentsDefinition(..)
+                                                , fromList
+                                                , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
@@ -60,7 +64,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
 class ParseJSONSchema a b where
   parse :: a -> Validation b
 
-instance ParseJSONSchema Type [(Key,DataType)] where
+instance ParseJSONSchema Type [DataType] where
   parse Type { name = Just typeName, kind = SCALAR } =
     pure [createScalarType typeName]
   parse Type { name = Just typeName, kind = ENUM, enumValues = Just enums } =
@@ -71,27 +75,27 @@ instance ParseJSONSchema Type [(Key,DataType)] where
       Just uni -> pure [createUnionType typeName uni]
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
-      fields <- traverse parse iFields
-      pure [(typeName, createType typeName $ DataInputObject fields)]
+      (fields :: [(Name,FieldDefinition)]) <- traverse parse iFields
+      pure [createType typeName $ DataInputObject $ fromList fields]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
-      fields <- traverse parse oFields
-      pure [(typeName, createType typeName $ DataObject [] fields)]
+      (fields :: [(Name,FieldDefinition)]) <- traverse parse oFields
+      pure [createType typeName $ DataObject [] $ fromList fields]
   parse _ = pure []
 
-instance ParseJSONSchema Field (Key,DataField) where
+instance ParseJSONSchema Field (Key,FieldDefinition) where
   parse Field { fieldName, fieldArgs, fieldType } = do
     fType <- fieldTypeFromJSON fieldType
     args  <- traverse genArg fieldArgs
-    pure (fieldName, createField args fieldName fType)
+    pure (fieldName, createField (ArgumentsDefinition Nothing args) fieldName fType)
    where
     genArg InputValue { inputName = argName, inputType = argType } =
       createArgument argName <$> fieldTypeFromJSON argType
 
-instance ParseJSONSchema InputValue (Key,DataField) where
+instance ParseJSONSchema InputValue (Key,FieldDefinition) where
   parse InputValue { inputName, inputType } = do
     fieldType <- fieldTypeFromJSON inputType
-    pure (inputName, createField [] inputName fieldType)
+    pure (inputName, createField NoArguments inputName fieldType)
 
 fieldTypeFromJSON :: Type -> Validation ([TypeWrapper], Text)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []

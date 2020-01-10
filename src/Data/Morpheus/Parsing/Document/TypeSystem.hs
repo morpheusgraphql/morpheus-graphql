@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parsing.Document.TypeSystem
-  ( parseDataType
+  ( parseSchema
   )
 where
 
@@ -10,17 +10,22 @@ import           Data.Text                      ( Text )
 import           Text.Megaparsec                ( label
                                                 , sepBy1
                                                 , (<|>)
+                                                , eof
+                                                , manyTill
+                                                , runParser
                                                 )
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal
-                                                ( Parser )
+                                                ( Parser
+                                                , processErrorBundle
+                                                )
 import           Data.Morpheus.Parsing.Internal.Pattern
                                                 ( fieldsDefinition
-                                                , inputValueDefinition
                                                 , optionalDirectives
                                                 , typDeclaration
                                                 , enumValueDefinition
+                                                , inputFieldsDefinition
                                                 )
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( keyword
@@ -30,35 +35,37 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , pipeLiteral
                                                 , sepByAnd
                                                 , setOf
+                                                , spaceAndComments
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField
-                                                , DataFingerprint(..)
+                                                ( DataFingerprint(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
-                                                , DataValidator(..)
-                                                , Key
+                                                , Name
+                                                , Description
                                                 , Meta(..)
+                                                , ScalarDefinition(..)
                                                 )
-
+import           Data.Morpheus.Types.Internal.Resolving
+                                                 ( Validation
+                                                 , Failure(..)
+                                                 )
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
 --
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+scalarTypeDefinition :: Maybe Description -> Parser DataType
 scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
   typeName       <- typDeclaration "scalar"
   metaDirectives <- optionalDirectives
-  pure
-    ( typeName
-    , DataType { typeName
-               , typeMeta        = Just Meta { metaDescription, metaDirectives }
-               , typeFingerprint = DataFingerprint typeName []
-               , typeContent     = DataScalar $ DataValidator pure
-               }
-    )
+  pure DataType 
+    { typeName
+    , typeMeta        = Just Meta { metaDescription, metaDirectives }
+    , typeFingerprint = DataFingerprint typeName []
+    , typeContent     = DataScalar $ ScalarDefinition pure
+    }
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 --
@@ -75,24 +82,21 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-objectTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+objectTypeDefinition :: Maybe Description -> Parser DataType
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
   typeName         <- typDeclaration "type"
   objectImplements <- optionalImplementsInterfaces
   metaDirectives   <- optionalDirectives
   objectFields     <- fieldsDefinition
-  --------------------------
-  pure
-    ( typeName
-    , DataType
-      { typeName
-      , typeMeta          = Just Meta { metaDescription, metaDirectives }
-      , typeFingerprint   = DataFingerprint typeName []
-      , typeContent       = DataObject { objectImplements, objectFields }
-      }
-    )
+  -- build object
+  pure DataType
+    { typeName
+    , typeMeta          = Just Meta { metaDescription, metaDirectives }
+    , typeFingerprint   = DataFingerprint typeName []
+    , typeContent       = DataObject { objectImplements, objectFields }
+    }
 
-optionalImplementsInterfaces :: Parser [Text]
+optionalImplementsInterfaces :: Parser [Name]
 optionalImplementsInterfaces = implements <|> pure []
  where
   implements =
@@ -103,20 +107,18 @@ optionalImplementsInterfaces = implements <|> pure []
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
-interfaceTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+interfaceTypeDefinition :: Maybe Description -> Parser DataType
 interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
   typeName  <- typDeclaration "interface"
   metaDirectives <- optionalDirectives
   fields         <- fieldsDefinition
-  pure
-    ( typeName
-    , DataType { typeName
-               , typeMeta        = Just Meta { metaDescription, metaDirectives }
-               , typeFingerprint = DataFingerprint typeName []
-               , typeContent     = DataInterface fields
-               }
-    )
-
+  -- build interface
+  pure DataType 
+    { typeName
+    , typeMeta        = Just Meta { metaDescription, metaDirectives }
+    , typeFingerprint = DataFingerprint typeName []
+    , typeContent     = DataInterface fields
+    }
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
 --
@@ -127,19 +129,18 @@ interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+unionTypeDefinition :: Maybe Description -> Parser DataType
 unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
   typeName       <- typDeclaration "union"
   metaDirectives <- optionalDirectives
   memberTypes    <- unionMemberTypes
-  pure
-    ( typeName
-    , DataType { typeName
-               , typeMeta        = Just Meta { metaDescription, metaDirectives }
-               , typeFingerprint = DataFingerprint typeName []
-               , typeContent     = DataUnion memberTypes
-               }
-    )
+  -- build union
+  pure DataType 
+    { typeName
+    , typeMeta        = Just Meta { metaDescription, metaDirectives }
+    , typeFingerprint = DataFingerprint typeName []
+    , typeContent     = DataUnion memberTypes
+    }
   where unionMemberTypes = operator '=' *> parseName `sepBy1` pipeLiteral
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
@@ -153,20 +154,18 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+enumTypeDefinition :: Maybe Description -> Parser DataType
 enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
   typeName              <- typDeclaration "enum"
   metaDirectives        <- optionalDirectives
   enumValuesDefinitions <- setOf enumValueDefinition
-  pure
-    ( typeName
-    , DataType { typeName
-               , typeMeta        = Just Meta { metaDescription, metaDirectives }
-               , typeFingerprint = DataFingerprint typeName []
-               , typeContent     = DataEnum enumValuesDefinitions
-               }
-    )
-
+  -- build enum
+  pure DataType 
+    { typeName
+    , typeContent     = DataEnum enumValuesDefinitions
+    , typeFingerprint = DataFingerprint typeName []
+    , typeMeta        = Just Meta { metaDescription, metaDirectives }
+    }
 
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
 --
@@ -176,37 +175,37 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputObjectTypeDefinition :: Maybe Text -> Parser (Text, DataType)
+inputObjectTypeDefinition :: Maybe Description -> Parser DataType
 inputObjectTypeDefinition metaDescription =
   label "InputObjectTypeDefinition" $ do
     typeName       <- typDeclaration "input"
     metaDirectives <- optionalDirectives
     fields         <- inputFieldsDefinition
-    pure
-      ( typeName
-      , DataType { typeName
-                 , typeMeta = Just Meta { metaDescription, metaDirectives }
-                 , typeFingerprint = DataFingerprint typeName []
-                 , typeContent     = DataInputObject fields
-                 }
-      )
- where
-  inputFieldsDefinition :: Parser [(Key, DataField)]
-  inputFieldsDefinition =
-    label "InputFieldsDefinition" $ setOf inputValueDefinition
+    -- build input
+    pure DataType 
+      { typeName
+      , typeContent     = DataInputObject fields
+      , typeFingerprint = DataFingerprint typeName []
+      , typeMeta = Just Meta { metaDescription, metaDirectives }
+      }
 
-
-parseFinalDataType :: Maybe Text -> Parser (Text, DataType)
-parseFinalDataType description =
-  label "TypeDefinition"
-     $  inputObjectTypeDefinition description
-    <|> unionTypeDefinition description
-    <|> enumTypeDefinition description
-    <|> scalarTypeDefinition description
-    <|> objectTypeDefinition description
-    <|> interfaceTypeDefinition description
-
-parseDataType :: Parser (Text, DataType)
-parseDataType = label "TypeDefinition" $ do
+parseDataType :: Parser DataType
+parseDataType = label "TypeDefinition" $ do  
   description <- optDescription
-  parseFinalDataType description
+  -- scalar | enum |  input | object | union | interface
+  inputObjectTypeDefinition description
+      <|> unionTypeDefinition description
+      <|> enumTypeDefinition description
+      <|> scalarTypeDefinition description
+      <|> objectTypeDefinition description
+      <|> interfaceTypeDefinition description
+
+parseSchema :: Text -> Validation [DataType]
+parseSchema doc = case parseDoc of
+  Right root       -> pure root
+  Left  parseError -> failure (processErrorBundle parseError)
+ where
+  parseDoc = runParser request "<input>" doc
+  request  = label "DocumentTypes" $ do
+    spaceAndComments
+    manyTill parseDataType eof

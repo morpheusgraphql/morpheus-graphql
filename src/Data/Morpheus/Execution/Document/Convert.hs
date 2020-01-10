@@ -19,7 +19,7 @@ import           Data.Morpheus.Types.Internal.TH (infoTyVars)
 import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
@@ -31,20 +31,23 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 , Key
-                                                , DataObject
+                                                , FieldsDefinition(..)
+                                                , ArgumentsDefinition(..)
+                                                , hasArguments
+                                                , Listable(..)
+                                                , lookupWith
                                                 )
-
 
 m_ :: Key
 m_ = "m"
 
-getTypeArgs :: Key -> [(Key, DataType)] -> Q (Maybe Key)
+getTypeArgs :: Key -> [DataType] -> Q (Maybe Key)
 getTypeArgs "__TypeKind" _ = pure Nothing
 getTypeArgs "Boolean" _ = pure Nothing
 getTypeArgs "String" _ = pure Nothing
 getTypeArgs "Int" _ = pure Nothing
 getTypeArgs "Float" _ = pure Nothing
-getTypeArgs key lib = case typeContent <$> lookup key lib of
+getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
   Just x  -> pure (kindToTyArgs x)
   Nothing -> getTyArgs <$> reify (mkName $ unpack key)
 
@@ -59,29 +62,29 @@ kindToTyArgs DataObject{} = Just m_
 kindToTyArgs DataUnion{}  = Just m_
 kindToTyArgs _             = Nothing
 
-toTHDefinitions :: Bool -> [(Key, DataType)] -> Q [GQLTypeD]
+toTHDefinitions :: Bool -> [DataType] -> Q [GQLTypeD]
 toTHDefinitions namespace lib = traverse renderTHType lib
  where
-  renderTHType :: (Key, DataType) -> Q GQLTypeD
-  renderTHType (tyConName, x) = generateType x
+  renderTHType :: DataType -> Q GQLTypeD
+  renderTHType x = generateType x
    where
     genArgsTypeName :: Key -> Key
-    genArgsTypeName fieldName | namespace = hsTypeName tyConName <> argTName
+    genArgsTypeName fieldName | namespace = hsTypeName (typeName x) <> argTName
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: (Key, DataField) -> Q DataField
-    genResField (_, field@DataField { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
+    genResField :: (Key, FieldDefinition) -> Q (FieldDefinition)
+    genResField (_, field@FieldDefinition { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = do 
         typeArgs <- getTypeArgs typeConName lib 
-        pure $ field { 
-                fieldType = typeRef { typeConName = hsTypeName typeConName, typeArgs }
-                , fieldArgsType
-              }
+        pure $ field 
+          { fieldType = typeRef { typeConName = hsTypeName typeConName, typeArgs }
+          , fieldArgs = fieldArguments
+          }
      where
-      fieldArgsType
-        | null fieldArgs = Nothing
-        | otherwise = Just (genArgsTypeName fieldName)
+      fieldArguments
+        | hasArguments fieldArgs = fieldArgs { argumentsTypename = Just $ genArgsTypeName fieldName }
+        | otherwise = fieldArgs
     --------------------------------------------
     generateType :: DataType -> Q GQLTypeD
     generateType dt@DataType { typeName, typeContent, typeMeta } = genType
@@ -96,7 +99,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                }
         , typeKindD    = KindEnum
         , typeArgD     = []
-        , typeOriginal = (typeName, dt)
+        , typeOriginal = dt
         }
        where
         enumOption DataEnumValue { enumName } =
@@ -117,11 +120,11 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             }
         , typeKindD    = KindInputObject
         , typeArgD     = []
-        , typeOriginal = (typeName, dt)
+        , typeOriginal = dt
         }
       genType DataObject {objectFields} = do
-        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) objectFields
-        cFields  <- traverse genResField objectFields
+        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList objectFields)
+        cFields  <- traverse genResField (toList objectFields)
         pure GQLTypeD
           { typeD        = TypeD
                              { tName      = hsTypeName typeName
@@ -136,7 +139,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                              then KindObject (Just Subscription)
                              else KindObject Nothing
           , typeArgD
-          , typeOriginal = (typeName, dt)
+          , typeOriginal = dt
           }
       genType (DataUnion members) = do
         let tCons = map unionCon members
@@ -148,20 +151,19 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                  }
           , typeKindD    = KindUnion
           , typeArgD     = []
-          , typeOriginal = (typeName, dt)
+          , typeOriginal = dt
           }
        where
         unionCon memberName = ConsD
           { cName
-          , cFields = [ DataField
+          , cFields = [ FieldDefinition
                           { fieldName     = "un" <> cName
                           , fieldType     = TypeRef { typeConName  = utName
                                                     , typeArgs     = Just m_
                                                     , typeWrappers = []
                                                     }
                           , fieldMeta     = Nothing
-                          , fieldArgs     = []
-                          , fieldArgsType = Nothing
+                          , fieldArgs     = NoArguments
                           }
                       ]
           }
@@ -177,14 +179,14 @@ hsTypeName "Boolean"                   = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name                        = name
 
-genArgumentType :: (Key -> Key) -> (Key, DataField) -> Q [TypeD]
-genArgumentType _ (_, DataField { fieldArgs = [] }) = pure []
-genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
+genArgumentType :: (Key -> Key) -> (Key, FieldDefinition) -> Q [TypeD]
+genArgumentType _ (_, FieldDefinition { fieldArgs = NoArguments }) = pure []
+genArgumentType namespaceWith (fieldName, FieldDefinition { fieldArgs }) = pure
   [ TypeD
       { tName
       , tNamespace = []
       , tCons      = [ ConsD { cName   = hsTypeName tName
-                             , cFields = genInputFields fieldArgs
+                             , cFields = genArguments fieldArgs
                              }
                      ]
       , tMeta      = Nothing
@@ -192,10 +194,12 @@ genArgumentType namespaceWith (fieldName, DataField { fieldArgs }) = pure
   ]
   where tName = namespaceWith (hsTypeName fieldName)
 
+genArguments :: ArgumentsDefinition -> [FieldDefinition]
+genArguments x = genInputFields $ fromList (arguments x)
 
-genInputFields :: DataObject -> [DataField]
-genInputFields = map (genField . snd)
- where
-  genField :: DataField -> DataField
-  genField field@DataField { fieldType = tyRef@TypeRef { typeConName } } =
-    field { fieldType = tyRef { typeConName = hsTypeName typeConName } }
+genInputFields :: FieldsDefinition -> [FieldDefinition]
+genInputFields = map (genField . snd) . toList
+
+genField :: FieldDefinition -> FieldDefinition
+genField field@FieldDefinition { fieldType = tyRef@TypeRef { typeConName } } = field 
+  { fieldType = tyRef { typeConName = hsTypeName typeConName } }

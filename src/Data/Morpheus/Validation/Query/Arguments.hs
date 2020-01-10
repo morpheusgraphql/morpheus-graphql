@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , Position
                                                 , DataArgument
-                                                , DataField(..)
+                                                , FieldDefinition(..)
                                                 , Schema
                                                 , TypeRef(..)
                                                 , isFieldNullable
@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , checkForUnknownKeys
                                                 , checkNameCollision
+                                                , ArgumentsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -76,23 +77,27 @@ variableByRef operationName variables Ref { refName, refPosition } = maybe
  where
   variableError = failure $ undefinedVariable operationName refPosition refName
 
-
-
 resolveArgumentVariables
   :: Name
   -> ValidVariables
-  -> DataField
+  -> FieldDefinition
   -> RawArguments
   -> Validation (Arguments RESOLVED)
-resolveArgumentVariables operationName variables DataField { fieldName, fieldArgs }
+resolveArgumentVariables operationName variables FieldDefinition { fieldName, fieldArgs }
   = mapM resolveVariable
  where
   resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument RESOLVED)
-  resolveVariable (key, Argument val position) = case lookup key fieldArgs of
+  resolveVariable (key, Argument val position) = case lookup key (getArguments fieldArgs) of
     Nothing -> failure $ unknownArguments fieldName [Ref key position]
     Just _  -> do
       constValue <- resolveObject operationName variables val
       pure (key, Argument constValue position)
+
+
+-- TODO: move in Data
+getArguments :: ArgumentsDefinition -> [(Name,FieldDefinition)]
+getArguments NoArguments            = []
+getArguments (ArgumentsDefinition _ args) = args
 
 validateArgument
   :: Schema
@@ -100,7 +105,7 @@ validateArgument
   -> Arguments RESOLVED
   -> (Text, DataArgument)
   -> Validation (Text, ValidArgument)
-validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldType = TypeRef { typeConName, typeWrappers } })
+validateArgument lib fieldPosition requestArgs (key, argType@FieldDefinition { fieldType = TypeRef { typeConName, typeWrappers } })
   = case lookup key requestArgs of
     Nothing -> handleNullable
     -- TODO: move it in value validation
@@ -137,25 +142,23 @@ validateArguments
   :: Schema
   -> Text
   -> ValidVariables
-  -> (Text, DataField)
+  -> (Text, FieldDefinition)
   -> Position
   -> RawArguments
   -> Validation ValidArguments
-validateArguments typeLib operatorName variables (key, field@DataField { fieldArgs }) pos rawArgs
+validateArguments typeLib operatorName variables (key, field@FieldDefinition { fieldArgs }) pos rawArgs
   = do
     args     <- resolveArgumentVariables operatorName variables field rawArgs
-    dataArgs <- checkForUnknownArguments args
-    mapM (validateArgument typeLib pos args) dataArgs
+    checkForUnknownArguments args
+    mapM (validateArgument typeLib pos args) (getArguments fieldArgs)
  where
   checkForUnknownArguments
-    :: Arguments RESOLVED -> Validation [(Text, DataField)]
+    :: Arguments RESOLVED -> Validation ()
   checkForUnknownArguments args =
-    checkForUnknownKeys enhancedKeys fieldKeys argError
-      >> checkNameCollision enhancedKeys argumentNameCollision
-      >> pure fieldArgs
+    checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >> pure ()
    where
     argError     = unknownArguments key
     enhancedKeys = map argToKey args
     argToKey :: (Name, Argument RESOLVED) -> Ref
     argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
-    fieldKeys = map fst fieldArgs
+    fieldKeys = map fst (getArguments fieldArgs)

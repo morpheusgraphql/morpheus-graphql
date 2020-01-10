@@ -18,6 +18,7 @@ module Data.Morpheus.Execution.Server.Resolve
   )
 where
 
+import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
@@ -67,10 +68,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , initTypeLib
                                                 , ValidValue
                                                 , Name
-                                                , DataField
                                                 , VALIDATION_MODE(..)
                                                 , Selection(..)
                                                 , SelectionContent(..)
+                                                , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -203,7 +204,7 @@ fullSchema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
   querySchema = resolveUpdates
-    (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query"))
+    (initTypeLib (operatorType (hiddenRootFields <> fields) "Query"))
     (defaultTypes : types)
    where
     (fields, types) = introspectObjectFields
@@ -231,16 +232,14 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
       , OutputType
       , Proxy @(subscription (Resolver SUBSCRIPTION event m))
       )
-  maybeOperator :: [(Name, DataField)] -> Name -> Maybe (Name, DataType)
-  maybeOperator []     = const Nothing
+  maybeOperator :: FieldsDefinition -> Name -> Maybe DataType
+  maybeOperator (FieldsDefinition x) | null x     = const Nothing
   maybeOperator fields = Just . operatorType fields
   -------------------------------------------------
-  operatorType :: [(Name, DataField)] -> Name -> (Name, DataType)
-  operatorType fields typeName =
-    ( typeName
-    , DataType { typeContent     = DataObject [] fields
-               , typeName
-               , typeFingerprint = DataFingerprint typeName []
-               , typeMeta        = Nothing
-               }
-    )
+  operatorType :: FieldsDefinition -> Name -> DataType
+  operatorType fields typeName = DataType 
+      { typeContent     = DataObject [] fields
+        , typeName
+        , typeFingerprint = DataFingerprint typeName []
+        , typeMeta        = Nothing
+      }

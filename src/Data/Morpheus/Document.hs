@@ -31,11 +31,12 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , fullSchema
                                                 )
-import           Data.Morpheus.Parsing.Document.Parser
-                                                ( parseTypes )
-
+import           Data.Morpheus.Parsing.Document.TypeSystem
+                                                ( parseSchema 
+                                                )
 import           Data.Morpheus.Rendering.RenderGQL
-                                                ( renderGraphQLDocument )
+                                                ( renderGraphQLDocument 
+                                                )
 import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes )
 import           Data.Morpheus.Types            ( GQLRootResolver )
 import           Data.Morpheus.Types.Internal.AST
@@ -58,7 +59,7 @@ parseDSL doc = case parseGraphQLDocument doc of
 
 parseDocument :: Text -> Validation Schema
 parseDocument doc =
-  parseTypes doc >>= validatePartialDocument >>= createDataTypeLib
+  parseSchema doc >>= validatePartialDocument >>= createDataTypeLib
 
 parseGraphQLDocument :: ByteString -> Validation Schema
 parseGraphQLDocument x = parseDocument (LT.toStrict $ decodeUtf8 x)

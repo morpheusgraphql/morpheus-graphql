@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleContexts  , FlexibleInstances    #-}
 
 module Data.Morpheus.Rendering.RenderIntrospection
   ( render
@@ -20,7 +20,7 @@ import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataInputUnion
-                                                , DataField(..)
+                                                , FieldDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
@@ -39,6 +39,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataInputUnion
                                                 , lookupDeprecatedReason
                                                 , convertToJSONName
+                                                , ArgumentsDefinition(..)
+                                                , Listable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
@@ -49,27 +51,27 @@ constRes = const . pure
 type Result m a = Schema -> m a
 
 class RenderSchema a b where
-  render :: (Monad m, Failure Text m) => (Text, a) -> Schema -> m (b m)
+  render :: (Monad m, Failure Text m) => a -> Schema -> m (b m)
 
 instance RenderSchema DataType S__Type where
-  render (name, DataType { typeMeta, typeContent }) = __render typeContent
+  render DataType { typeName , typeMeta, typeContent } = __render typeContent
    where
     __render
       :: (Monad m, Failure Text m) => DataTypeContent -> Schema -> m (S__Type m)
     __render DataScalar{} =
-      constRes $ createLeafType SCALAR name typeMeta Nothing
+      constRes $ createLeafType SCALAR typeName typeMeta Nothing
     __render (DataEnum enums) = constRes
-      $ createLeafType ENUM name typeMeta (Just $ map createEnumValue enums)
+      $ createLeafType ENUM typeName typeMeta (Just $ map createEnumValue enums)
     __render (DataInputObject fields) = \lib ->
-      createInputObject name typeMeta
-        <$> traverse (`renderinputValue` lib) fields
+      createInputObject typeName typeMeta
+        <$> traverse (`renderinputValue` lib) (toList fields)
     __render (DataObject {objectFields}) = \lib ->
-      createObjectType name (typeMeta >>= metaDescription)
-        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility objectFields))
+      createObjectType typeName (typeMeta >>= metaDescription)
+        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ toList objectFields))
     __render (DataUnion union) =
-      constRes $ typeFromUnion (name, typeMeta, union)
+      constRes $ typeFromUnion (typeName, typeMeta, union)
     __render (DataInputUnion members) =
-      renderInputUnion (name, typeMeta, members)
+      renderInputUnion (typeName, typeMeta, members)
 
 createEnumValue :: Monad m => DataEnumValue -> S__EnumValue m
 createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
@@ -80,17 +82,20 @@ createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
   }
   where deprecated = enumMeta >>= lookupDeprecated
 
-instance RenderSchema DataField S__Field where
-  render (name, field@DataField { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
+renderArguments :: (Monad m, Failure Text m) => ArgumentsDefinition -> Schema -> m [S__InputValue m] 
+renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) arguments
+renderArguments NoArguments _ = pure []
+
+instance RenderSchema (Text ,FieldDefinition) S__Field where
+  render (name, field@FieldDefinition { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
     = do
       kind <- renderTypeKind <$> lookupKind typeConName lib
-      args <- traverse (`renderinputValue` lib) fieldArgs
       pure S__Field
         { s__FieldName              = pure (convertToJSONName name)
         , s__FieldDescription       = pure (fieldMeta >>= metaDescription)
-        , s__FieldArgs              = pure args
+        , s__FieldArgs              = renderArguments fieldArgs lib 
         , s__FieldType'             =
-          pure (wrap field $ createType kind typeConName Nothing $ Just [])
+          pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just [])
         , s__FieldIsDeprecated      = pure (isJust deprecated)
         , s__FieldDeprecationReason = pure
                                         (deprecated >>= lookupDeprecatedReason)
@@ -107,8 +112,8 @@ renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
 
-wrap :: Monad m => DataField -> S__Type m -> S__Type m
-wrap DataField { fieldType = TypeRef { typeWrappers } } typ =
+applyTypeWrapper :: Monad m => FieldDefinition -> S__Type m -> S__Type m
+applyTypeWrapper FieldDefinition { fieldType = TypeRef { typeWrappers } } typ =
   foldr wrapByTypeWrapper typ (toGQLWrapper typeWrappers)
 
 wrapByTypeWrapper :: Monad m => DataTypeWrapper -> S__Type m -> S__Type m
@@ -122,18 +127,18 @@ lookupKind name lib = case lookupDataType name lib of
 
 renderinputValue
   :: (Monad m, Failure Text m)
-  => (Text, DataField)
+  => (Text, FieldDefinition)
   -> Result m (S__InputValue m)
 renderinputValue (key, input) =
   fmap (createInputValueWith key (fieldMeta input))
     . createInputObjectType input
 
 createInputObjectType
-  :: (Monad m, Failure Text m) => DataField -> Result m (S__Type m)
-createInputObjectType field@DataField { fieldType = TypeRef { typeConName } } lib
+  :: (Monad m, Failure Text m) => FieldDefinition -> Result m (S__Type m)
+createInputObjectType field@FieldDefinition { fieldType = TypeRef { typeConName } } lib
   = do
     kind <- renderTypeKind <$> lookupKind typeConName lib
-    pure $ wrap field $ createType kind typeConName Nothing $ Just []
+    pure $ applyTypeWrapper field $ createType kind typeConName Nothing $ Just []
 
 
 renderInputUnion

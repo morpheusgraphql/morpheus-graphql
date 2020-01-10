@@ -21,7 +21,7 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 )
 import           Data.Morpheus.Types.GQLType    ( TRUE )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , isSubscription

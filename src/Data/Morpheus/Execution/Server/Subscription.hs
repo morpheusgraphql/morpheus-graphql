@@ -94,12 +94,11 @@ publishEvent gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMessa
       ) . toList
 
 endSubscription :: MonadIO m => ClientID -> SesionID -> GQLState m e -> m ()
-endSubscription cid sid = updateClientByID cid stopSubscription
+endSubscription cid sid = updateClientByID cid endSub
  where
-  stopSubscription client = client { clientSessions = delete sid (clientSessions client) }
+  endSub client = client { clientSessions = delete sid (clientSessions client) }
 
 startSubscription :: MonadIO m => ClientID -> SubEvent m e -> SesionID -> GQLState m e -> m ()
-startSubscription cid subscriptions sid = updateClientByID cid startSubscription
+startSubscription cid subscriptions sid = updateClientByID cid startSub
  where
-  startSubscription client = client
-    { clientSessions = insert sid subscriptions (clientSessions client) }
+  startSub client = client { clientSessions = insert sid subscriptions (clientSessions client) }

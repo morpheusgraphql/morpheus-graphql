@@ -8,25 +8,32 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE StandaloneDeriving  , TemplateHaskell   #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
-  ( DataScalar
+  ( ScalarDefinition(..)
   , DataEnum
-  , DataObject
+  , FieldsDefinition(..)
   , DataArgument
   , DataUnion
-  , DataArguments
-  , DataField(..)
+  , ArgumentsDefinition(..)
+  , FieldDefinition(..)
   , DataTypeContent(..)
   , DataType(..)
   , Schema(..)
-  , DataTypeWrapper(..)
-  , DataValidator(..)
-  , DataTypeKind(..)
-  , DataFingerprint(..)
-  , TypeWrapper(..)
-  , TypeRef(..)
   , DataEnumValue(..)
+  , TypeLib
+  , Meta(..)
+  , Directive(..)
+  , TypeUpdater
+  , TypeD(..)
+  , ConsD(..)
+  , ClientQuery(..)
+  , GQLTypeD(..)
+  , ClientType(..)
+  , DataInputUnion
+  , Selectable(..)
+  , Listable(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -36,22 +43,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , kindOf
   , toNullableField
   , toListField
-  , isObject
-  , isInput
-  , toHSWrappers
-  , isNullable
-  , toGQLWrapper
-  , isWeaker
-  , isSubscription
-  , isOutputObject
-  , sysTypes
-  , isDefaultTypeName
-  , isSchemaTypeName
-  , isPrimitiveTypeName
-  , OperationType(..)
-  , QUERY
-  , MUTATION
-  , SUBSCRIPTION
   , isEntNode
   , lookupInputType
   , coerceDataObject
@@ -70,38 +61,26 @@ module Data.Morpheus.Types.Internal.AST.Data
   , createAlias
   , createInputUnionFields
   , fieldVisibility
-  , Meta(..)
-  , Directive(..)
   , createEnumValue
   , insertType
-  , TypeUpdater
   , lookupDeprecated
   , lookupDeprecatedReason
-  , TypeD(..)
-  , ConsD(..)
-  , ClientQuery(..)
-  , GQLTypeD(..)
-  , ClientType(..)
-  , DataInputUnion
-  , isNullableWrapper
-  , isOutputType
   , checkForUnknownKeys
   , checkNameCollision
-  , DataLookup(..)
+  , hasArguments
+  , lookupWith
   )
 where
 
 import           Data.HashMap.Lazy              ( HashMap
                                                 , empty
-                                                , fromList
                                                 , insert
-                                                , toList
                                                 , union
+                                                , elems
                                                 )
 import qualified Data.HashMap.Lazy             as HM
-                                                ( lookup )
-import           Data.Semigroup                 ( (<>) )
-import           Language.Haskell.TH.Syntax     ( Lift )
+import           Data.Semigroup                 ( Semigroup(..), (<>) )
+import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
 import           Data.List                      ( find , (\\))
 
@@ -120,6 +99,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Ref(..)
                                                 , elementOfKeys
                                                 , removeDuplicates
+                                                , DataTypeKind(..)
+                                                , DataFingerprint(..)
+                                                , isNullable
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -135,148 +117,35 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
-type QUERY = 'Query
-type MUTATION = 'Mutation
-type SUBSCRIPTION = 'Subscription
 
-isDefaultTypeName :: Key -> Bool
-isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
+class Listable c a where 
+  fromList     :: [(Name, a)] ->  c
+  toList   ::  c  -> [(Name, a)]
 
-isSchemaTypeName :: Key -> Bool
-isSchemaTypeName = (`elem` sysTypes)
+class Selectable c a where 
+  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
 
-isPrimitiveTypeName :: Key -> Bool
-isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
+type DataEnum = [DataEnumValue]
+type DataArgument = FieldDefinition 
+type DataUnion = [Key]
+type DataInputUnion = [(Key, Bool)]
 
-
-checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
-checkNameCollision enhancedKeys errorGenerator =
-  case enhancedKeys \\ removeDuplicates enhancedKeys of
-    []         -> pure enhancedKeys
-    duplicates -> failure $ errorGenerator duplicates
-
-checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
-checkForUnknownKeys enhancedKeys' keys' errorGenerator' =
-  case filter (not . elementOfKeys keys') enhancedKeys' of
-    []           -> pure enhancedKeys'
-    unknownKeys' -> failure $ errorGenerator' unknownKeys'  
-
-
-sysTypes :: [Key]
-sysTypes =
-  [ "__Schema"
-  , "__Type"
-  , "__Directive"
-  , "__TypeKind"
-  , "__Field"
-  , "__DirectiveLocation"
-  , "__InputValue"
-  , "__EnumValue"
-  ]
-
-data OperationType
-  = Query
-  | Subscription
-  | Mutation
-  deriving (Show, Eq, Lift)
-
-isSubscription :: DataTypeKind -> Bool
-isSubscription (KindObject (Just Subscription)) = True
-isSubscription _ = False
-
-isOutputType :: DataTypeKind -> Bool
-isOutputType (KindObject _) = True
-isOutputType KindUnion      = True
-isOutputType _              = False
-
-isOutputObject :: DataTypeKind -> Bool
-isOutputObject (KindObject _) = True
-isOutputObject _              = False
-
-isObject :: DataTypeKind -> Bool
-isObject (KindObject _)  = True
-isObject KindInputObject = True
-isObject _               = False
-
-isInput :: DataTypeKind -> Bool
-isInput KindInputObject = True
-isInput _               = False
-
-data DataTypeKind
-  = KindScalar
-  | KindObject (Maybe OperationType)
-  | KindUnion
-  | KindEnum
-  | KindInputObject
-  | KindList
-  | KindNonNull
-  | KindInputUnion
-  deriving (Eq, Show, Lift)
-
-isFieldNullable :: DataField -> Bool
-isFieldNullable = isNullable . fieldType
-
-isNullable :: TypeRef -> Bool
-isNullable TypeRef { typeWrappers = typeWrappers } = isNullableWrapper typeWrappers
-
-isNullableWrapper :: [TypeWrapper] -> Bool
-isNullableWrapper (TypeMaybe : _ ) = True
-isNullableWrapper _               = False
-
-
-isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
-isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
-isWeaker (TypeMaybe : _  ) _                 = True
-isWeaker (_         : xs1) (_ : xs2)         = isWeaker xs1 xs2
-isWeaker _                 _                 = False
-
-toGQLWrapper :: [TypeWrapper] -> [DataTypeWrapper]
-toGQLWrapper (TypeMaybe : (TypeMaybe : tw)) = toGQLWrapper (TypeMaybe : tw)
-toGQLWrapper (TypeMaybe : (TypeList  : tw)) = ListType : toGQLWrapper tw
-toGQLWrapper (TypeList : tw) = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [TypeMaybe                   ] = []
-toGQLWrapper []                             = [NonNullType]
-
-toHSWrappers :: [DataTypeWrapper] -> [TypeWrapper]
-toHSWrappers (NonNullType : (NonNullType : xs)) =
-  toHSWrappers (NonNullType : xs)
-toHSWrappers (NonNullType : (ListType : xs)) = TypeList : toHSWrappers xs
-toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
-toHSWrappers []                              = [TypeMaybe]
-toHSWrappers [NonNullType]                   = []
-
-data DataFingerprint = DataFingerprint Name [String] deriving (Show, Eq, Ord, Lift)
-
-newtype DataValidator = DataValidator
+-- scalar
+------------------------------------------------------------------
+newtype ScalarDefinition = ScalarDefinition
   { validateValue :: ValidValue -> Either Key ValidValue
   }
 
-instance Show DataValidator where
-  show _ = "DataValidator"
+instance Show ScalarDefinition where
+  show _ = "ScalarDefinition"
 
-type DataScalar = DataValidator
-type DataEnum = [DataEnumValue]
-type DataObject = [(Key, DataField)]
-type DataArgument = DataField
-type DataUnion = [Key]
-type DataInputUnion = [(Key, Bool)]
-type DataArguments = [(Key, DataArgument)]
-
-data DataTypeWrapper
-  = ListType
-  | NonNullType
-  deriving (Show, Lift)
-
+-- directive
+------------------------------------------------------------------
 data Directive = Directive {
   directiveName :: Name,
   directiveArgs :: [(Name, ValidValue)]
 } deriving (Show,Lift)
 
--- META
-data Meta = Meta {
-    metaDescription:: Maybe Description,
-    metaDirectives  :: [Directive]
-} deriving (Show,Lift)
 
 lookupDeprecated :: Meta -> Maybe Directive
 lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
@@ -294,91 +163,97 @@ lookupDeprecatedReason Directive { directiveArgs } =
   isReason ("reason", _) = True
   isReason _             = False
 
+-- META
+data Meta = Meta {
+    metaDescription:: Maybe Description,
+    metaDirectives  :: [Directive]
+} deriving (Show,Lift)
+
+
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue{
     enumName :: Name,
     enumMeta :: Maybe Meta
 } deriving (Show, Lift)
 
---------------------------------------------------------------------------------------------------
-data DataField = DataField
-  { fieldName     :: Key
-  , fieldArgs     :: [(Key, DataArgument)]
-  , fieldArgsType :: Maybe Name
-  , fieldType     :: TypeRef
-  , fieldMeta     :: Maybe Meta
-  } deriving (Show,Lift)
+-- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
+---------------------------------------------------------------------------
+-- SchemaDefinition :
+--    schema Directives[Const](opt) { RootOperationTypeDefinition(list)}
+--
+-- RootOperationTypeDefinition :
+--    OperationType: NamedType
 
-fieldVisibility :: (Key, DataField) -> Bool
-fieldVisibility ("__typename", _) = False
-fieldVisibility ("__schema"  , _) = False
-fieldVisibility ("__type"    , _) = False
-fieldVisibility _                 = True
+data Schema = Schema
+  { types        :: TypeLib
+  , query        :: DataType
+  , mutation     :: Maybe DataType
+  , subscription :: Maybe DataType
+  } deriving (Show)
 
-createField :: DataArguments -> Key -> ([TypeWrapper], Key) -> DataField
-createField fieldArgs fieldName (typeWrappers, typeConName) = DataField
-  { fieldArgs
-  , fieldArgsType = Nothing
-  , fieldName
-  , fieldType     = TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
-  , fieldMeta     = Nothing
-  }
+type TypeLib = HashMap Key DataType
 
-createArgument :: Key -> ([TypeWrapper], Key) -> (Key, DataField)
-createArgument fieldName x = (fieldName, createField [] fieldName x)
+instance Selectable Schema DataType where 
+  selectBy err name lib = case lookupDataType name lib of
+      Nothing -> failure err
+      Just x  -> pure x
 
-
-toNullableField :: DataField -> DataField
-toNullableField dataField
-  | isNullable (fieldType dataField) = dataField
-  | otherwise = dataField { fieldType = nullable (fieldType dataField) }
- where
-  nullable alias@TypeRef { typeWrappers } =
-    alias { typeWrappers = TypeMaybe : typeWrappers }
-
-toListField :: DataField -> DataField
-toListField dataField = dataField { fieldType = listW (fieldType dataField) }
- where
-  listW alias@TypeRef { typeWrappers } =
-    alias { typeWrappers = TypeList : typeWrappers }
-
-lookupField :: Failure error m => Key -> [(Key, field)] -> error -> m field
-lookupField key fields gqlError = case lookup key fields of
-  Nothing    -> failure gqlError
-  Just field -> pure field
-
-lookupSelectionField
-  :: Failure GQLErrors Validation
-  => Position
-  -> Name
-  -> Name
-  -> DataObject
-  -> Validation DataField
-lookupSelectionField position fieldName typeName fields = lookupField
-  fieldName
-  fields
-  gqlError
-  where gqlError = cannotQueryField fieldName typeName position
+instance Selectable Schema (Name, FieldsDefinition ) where 
+  selectBy validationError name lib =
+     selectBy validationError name lib >>= coerceDataObject validationError
 
 
--- DATA TYPE
---------------------------------------------------------------------------------------------------
+initTypeLib :: DataType -> Schema
+initTypeLib query = Schema { types        = empty
+                             , query        = query
+                             , mutation     = Nothing
+                             , subscription = Nothing
+                            }
+
+
+allDataTypes :: Schema -> [DataType]
+allDataTypes  = elems . typeRegister
+
+typeRegister :: Schema -> TypeLib
+typeRegister Schema { types, query, mutation, subscription } =
+  types `union` HM.fromList
+    (concatMap fromOperation [Just query, mutation, subscription])
+
+createDataTypeLib :: [DataType] -> Validation Schema
+createDataTypeLib types = case popByKey "Query" types of
+  (Nothing   ,_    ) -> internalError "Query Not Defined"
+  (Just query, lib1) -> do
+    let (mutation, lib2) = popByKey "Mutation" lib1
+    let (subscription, lib3) = popByKey "Subscription" lib2
+    pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
+
+
+-- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
+-------------------------------------------------------------------------
+-- TypeDefinition :
+--   ScalarTypeDefinition
+--   ObjectTypeDefinition
+--   InterfaceTypeDefinition
+--   UnionTypeDefinition
+--   EnumTypeDefinition
+--   InputObjectTypeDefinition
+
 data DataType = DataType
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
-  , typeMeta :: Maybe Meta
-  , typeContent       :: DataTypeContent
+  , typeMeta        :: Maybe Meta
+  , typeContent     :: DataTypeContent
   } deriving (Show)
 
 data DataTypeContent
-  = DataScalar      { dataScalar        :: DataScalar   }
+  = DataScalar      { dataScalar        :: ScalarDefinition   }
   | DataEnum        { enumMembers       :: DataEnum     }
-  | DataInputObject { inputObjectFields :: DataObject   }
+  | DataInputObject { inputObjectFields :: FieldsDefinition   }
   | DataObject      { objectImplements  :: [Name],
-                      objectFields      :: DataObject   }
+                      objectFields      :: FieldsDefinition   }
   | DataUnion       { unionMembers      :: DataUnion    }
   | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] }
-  | DataInterface   { interfaceFields   :: DataObject   }
+  | DataInterface   { interfaceFields   :: FieldsDefinition    }
   deriving (Show)
 
 createType :: Key -> DataTypeContent -> DataType
@@ -389,21 +264,18 @@ createType typeName typeContent = DataType
   , typeContent
   }
 
-createScalarType :: Key -> (Key, DataType)
-createScalarType typeName =
-  (typeName, createType typeName $ DataScalar (DataValidator pure))
+createScalarType :: Name -> DataType
+createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
 
-createEnumType :: Key -> [Key] -> (Key, DataType)
-createEnumType typeName typeData =
-  (typeName, createType typeName $ DataEnum enumValues)
+createEnumType :: Name -> [Key] -> DataType
+createEnumType typeName typeData = createType typeName (DataEnum enumValues)
   where enumValues = map createEnumValue typeData
 
-createEnumValue :: Key -> DataEnumValue
+createEnumValue :: Name -> DataEnumValue
 createEnumValue enumName = DataEnumValue { enumName, enumMeta = Nothing }
 
-createUnionType :: Key -> [Key] -> (Key, DataType)
-createUnionType typeName typeData =
-  (typeName, createType typeName $ DataUnion typeData)
+createUnionType :: Key -> [Key] -> DataType
+createUnionType typeName typeData = createType typeName (DataUnion typeData)
 
 isEntNode :: DataTypeContent -> Bool
 isEntNode DataScalar{}  = True
@@ -419,7 +291,7 @@ isInputDataType DataType { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-coerceDataObject :: Failure error m => error -> DataType -> m (Name,DataObject)
+coerceDataObject :: Failure error m => error -> DataType -> m (Name, FieldsDefinition)
 coerceDataObject _ DataType { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
 coerceDataObject gqlError _ = failure gqlError
 
@@ -437,80 +309,29 @@ kindOf DataType { typeContent } = __kind typeContent
   __kind DataUnion       {} = KindUnion
   __kind DataInputUnion  {} = KindInputUnion
 
---
--- Type Register
---------------------------------------------------------------------------------------------------
-data Schema = Schema
-  { types        :: HashMap Name DataType
-  , query        :: (Name,DataType)
-  , mutation     :: Maybe (Name,DataType)
-  , subscription :: Maybe (Name,DataType)
-  } deriving (Show)
-
-type TypeRegister = HashMap Key DataType
-
-initTypeLib :: (Key, DataType) -> Schema
-initTypeLib query = Schema { types        = empty
-                             , query        = query
-                             , mutation     = Nothing
-                             , subscription = Nothing
-                            }
-
-allDataTypes :: Schema -> [(Key, DataType)]
-allDataTypes  = toList . typeRegister
-
-typeRegister :: Schema -> TypeRegister
-typeRegister Schema { types, query, mutation, subscription } =
-  types `union` fromList
-    (concatMap fromOperation [Just query, mutation, subscription])
-
-fromOperation :: Maybe (Key, DataType) -> [(Key, DataType)]
-fromOperation (Just (key, datatype)) = [(key, datatype)]
+fromOperation :: Maybe DataType -> [(Name, DataType)]
+fromOperation (Just datatype) = [(typeName datatype,datatype)]
 fromOperation Nothing = []
-
-
-class DataLookup l a where 
-  lookupResult :: (Failure e m, Monad m) => e -> Name -> l -> m a 
-
-instance DataLookup Schema DataType where 
-  lookupResult err name lib = case lookupDataType name lib of
-      Nothing -> failure err
-      Just x  -> pure x
-
-instance DataLookup Schema (Name,DataObject) where 
-  lookupResult validationError name lib =
-     lookupResult validationError name lib >>= coerceDataObject validationError
-
-lookupDataUnion
-  :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
-lookupDataUnion validationError name lib =
-  lookupResult validationError name lib >>= coerceDataUnion validationError
-
-lookupDataType :: Key -> Schema -> Maybe DataType
-lookupDataType name  = HM.lookup name . typeRegister
 
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)
   => Position
   -> Key
   -> Schema
-  -> DataField
-  -> m [(Name,DataObject)]
-lookupUnionTypes position key lib DataField { fieldType = TypeRef { typeConName = typeName } }
+  -> FieldDefinition 
+  -> m [(Name, FieldsDefinition)]
+lookupUnionTypes position key lib FieldDefinition { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
-    >>= mapM (flip (lookupResult gqlError) lib)
+    >>= mapM (flip (selectBy gqlError) lib)
   where gqlError = hasNoSubfields key typeName position
 
-lookupFieldAsSelectionSet
-  :: (Monad m, Failure GQLErrors m)
-  => Position
-  -> Key
-  -> Schema
-  -> DataField
-  -> m (Name,DataObject)
-lookupFieldAsSelectionSet position key lib DataField { fieldType = TypeRef { typeConName } }
-  = lookupResult gqlError typeConName lib
-  where gqlError = hasNoSubfields key typeConName position
+lookupDataUnion
+  :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
+lookupDataUnion validationError name lib =
+  selectBy validationError name lib >>= coerceDataUnion validationError
+
+lookupDataType :: Key -> Schema -> Maybe DataType
+lookupDataType name  = HM.lookup name . typeRegister
 
 lookupInputType :: Failure e m => Key -> Schema -> e -> m DataType
 lookupInputType name lib errors = case lookupDataType name lib of
@@ -520,9 +341,9 @@ lookupInputType name lib errors = case lookupDataType name lib of
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
-defineType :: (Key, DataType) -> Schema -> Schema
-defineType (key, datatype@DataType { typeName, typeContent = DataInputUnion enumKeys, typeFingerprint }) lib
-  = lib { types = insert name unionTags (insert key datatype (types lib)) }
+defineType :: DataType -> Schema -> Schema
+defineType dt@DataType { typeName, typeContent = DataInputUnion enumKeys, typeFingerprint } lib
+  = lib { types = insert name unionTags (insert typeName dt (types lib)) }
  where
   name      = typeName <> "Tags"
   unionTags = DataType
@@ -531,44 +352,166 @@ defineType (key, datatype@DataType { typeName, typeContent = DataInputUnion enum
     , typeMeta        = Nothing
     , typeContent     = DataEnum $ map (createEnumValue . fst) enumKeys
     }
-defineType (key, datatype) lib =
-  lib { types = insert key datatype (types lib) }
+defineType datatype lib =
+  lib { types = insert (typeName datatype) datatype (types lib) }
 
+insertType :: DataType -> TypeUpdater
+insertType  datatype@DataType { typeName } lib = case isTypeDefined typeName lib of
+  Nothing -> resolveUpdates (defineType datatype lib) []
+  Just fingerprint | fingerprint == typeFingerprint datatype -> return lib
+                   |
+      -- throw error if 2 different types has same name
+                     otherwise -> failure $ nameCollisionError typeName
+
+lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a  
+lookupWith f key = find ((== key) . f)  
 
 -- lookups and removes DataType from hashmap 
-popByKey :: Name -> [(Key, DataType)] -> (Maybe (Name,DataType), [(Key, DataType)])
-popByKey key lib = case lookup key lib of
+popByKey :: Name -> [DataType] -> (Maybe DataType,[DataType])
+popByKey name lib = case lookupWith typeName name lib of
     Just dt@DataType { typeContent = DataObject {} } ->
-      (Just (key, dt), filter ((/= key) . fst) lib)
-    _ -> (Nothing, lib)  
+      (Just dt, filter ((/= name) . typeName) lib)
+    _ -> (Nothing, lib) 
 
+-- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
+------------------------------------------------------------------------------
+--  ObjectTypeDefinition:
+--    Description(opt) type Name ImplementsInterfaces(opt) Directives(Const)(opt) FieldsDefinition(opt)
+--
+--  ImplementsInterfaces
+--    implements &(opt) NamedType
+--    ImplementsInterfaces & NamedType
+--
+--  FieldsDefinition
+--    { FieldDefinition(list) }
+--
 
-createDataTypeLib :: [(Key, DataType)] -> Validation Schema
-createDataTypeLib types = case popByKey "Query" types of
-  (Nothing   ,_    ) -> internalError "Query Not Defined"
-  (Just query, lib1) -> do
-    let (mutation, lib2) = popByKey "Mutation" lib1
-    let (subscription, lib3) = popByKey "Subscription" lib2
-    pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
+-- TODO: find better solution with OrderedMap to stote Fields
+newtype FieldsDefinition = FieldsDefinition 
+-- { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
+ { unFieldsDefinition :: [(Name, FieldDefinition)] } deriving (Show, Lift)
 
+-- instance Lift FieldsDefinition where 
+--   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
+--     where ls = HM.toList hm
 
-createInputUnionFields :: Key -> [Key] -> [(Key, DataField)]
+instance Semigroup FieldsDefinition where 
+  FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
+
+instance Listable FieldsDefinition FieldDefinition where
+  fromList = FieldsDefinition -- . HM.fromList 
+  toList = {- HM.toList . -} unFieldsDefinition
+
+instance Selectable FieldsDefinition FieldDefinition where
+  selectBy err name (FieldsDefinition lib) = case {- HM. -}lookup name lib of
+       Nothing -> failure err
+       Just x  -> pure x
+
+--  FieldDefinition
+--    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
+-- 
+data FieldDefinition = FieldDefinition
+  { fieldName     :: Key
+  , fieldArgs     :: ArgumentsDefinition
+  , fieldType     :: TypeRef
+  , fieldMeta     :: Maybe Meta
+  } deriving (Show,Lift)
+
+fieldVisibility :: (Key, FieldDefinition) -> Bool
+fieldVisibility ("__typename", _) = False
+fieldVisibility ("__schema"  , _) = False
+fieldVisibility ("__type"    , _) = False
+fieldVisibility _                 = True
+
+isFieldNullable :: FieldDefinition -> Bool
+isFieldNullable = isNullable . fieldType
+
+createField :: ArgumentsDefinition -> Key -> ([TypeWrapper], Key) -> FieldDefinition
+createField dataArguments fieldName (typeWrappers, typeConName) = FieldDefinition
+  { fieldArgs = dataArguments
+  , fieldName
+  , fieldType     = TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
+  , fieldMeta     = Nothing
+  }
+
+toNullableField :: FieldDefinition -> FieldDefinition
+toNullableField dataField
+  | isNullable (fieldType dataField) = dataField
+  | otherwise = dataField { fieldType = nullable (fieldType dataField) }
+ where
+  nullable alias@TypeRef { typeWrappers } =
+    alias { typeWrappers = TypeMaybe : typeWrappers }
+
+toListField :: FieldDefinition -> FieldDefinition
+toListField dataField = dataField { fieldType = listW (fieldType dataField) }
+ where
+  listW alias@TypeRef { typeWrappers } =
+    alias { typeWrappers = TypeList : typeWrappers }
+
+lookupField :: Failure error m => Key -> [(Key, field)] -> error -> m field
+lookupField key fields gqlError = case lookup key fields of
+  Nothing    -> failure gqlError
+  Just field -> pure field
+
+lookupSelectionField
+  :: Failure GQLErrors Validation
+  => Position
+  -> Name
+  -> Name
+  -> FieldsDefinition
+  -> Validation (FieldDefinition)
+lookupSelectionField position fieldName typeName fields = selectBy gqlError fieldName fields 
+  where gqlError = cannotQueryField fieldName typeName position
+
+lookupFieldAsSelectionSet
+  :: (Monad m, Failure GQLErrors m)
+  => Position
+  -> Key
+  -> Schema
+  -> FieldDefinition  
+  -> m (Name, FieldsDefinition )
+lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef { typeConName } }
+  = selectBy gqlError typeConName lib
+  where gqlError = hasNoSubfields key typeConName position
+
+-- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
+-----------------------------------------------------------------------------------------------
+-- ArgumentsDefinition:
+--   (InputValueDefinition(list))
+
+data ArgumentsDefinition 
+  = ArgumentsDefinition  
+    { argumentsTypename ::  Maybe Name
+    , arguments         :: [(Key, DataArgument)] 
+    }
+  | NoArguments
+  deriving (Show, Lift)
+
+createArgument :: Key -> ([TypeWrapper], Key) -> (Key, FieldDefinition)
+createArgument fieldName x = (fieldName, createField NoArguments fieldName x)
+
+hasArguments :: ArgumentsDefinition -> Bool
+hasArguments NoArguments = False
+hasArguments _ = True
+
+-- InputValueDefinition
+--   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
+
+createInputUnionFields :: Key -> [Key] -> [(Key, FieldDefinition)]
 createInputUnionFields name members = fieldTag : map unionField members
  where
   fieldTag =
     ( "__typename"
-    , DataField { fieldName     = "__typename"
-                , fieldArgs     = []
-                , fieldArgsType = Nothing
+    , FieldDefinition { fieldName     = "__typename"
+                , fieldArgs     = NoArguments
                 , fieldType     = createAlias (name <> "Tags")
                 , fieldMeta     = Nothing
                 }
     )
   unionField memberName =
     ( memberName
-    , DataField
-      { fieldArgs     = []
-      , fieldArgsType = Nothing
+    , FieldDefinition
+      { fieldArgs     = NoArguments
       , fieldName     = memberName
       , fieldType     = TypeRef { typeConName    = memberName
                                   , typeWrappers = [TypeMaybe]
@@ -578,25 +521,17 @@ createInputUnionFields name members = fieldTag : map unionField members
       }
     )
 
+--
+-- OTHER
+--------------------------------------------------------------------------------------------------
+
 createAlias :: Key -> TypeRef
 createAlias typeConName =
   TypeRef { typeConName, typeWrappers = [], typeArgs = Nothing }
 
-
 type TypeUpdater = LibUpdater Schema
 
-insertType :: (Key, DataType) -> TypeUpdater
-insertType nextType@(name, datatype) lib = case isTypeDefined name lib of
-  Nothing -> resolveUpdates (defineType nextType lib) []
-  Just fingerprint | fingerprint == typeFingerprint datatype -> return lib
-                   |
-      -- throw error if 2 different types has same name
-                     otherwise -> failure $ nameCollisionError name
-
-
 -- TEMPLATE HASKELL DATA TYPES
-
--- CLIENT                                                
 data ClientQuery = ClientQuery
   { queryText     :: String
   , queryTypes    :: [ClientType]
@@ -613,7 +548,7 @@ data GQLTypeD = GQLTypeD
   { typeD     :: TypeD
   , typeKindD :: DataTypeKind
   , typeArgD  :: [TypeD]
-  , typeOriginal:: (Name,DataType)
+  , typeOriginal:: DataType
   } deriving (Show)
 
 data TypeD = TypeD
@@ -625,5 +560,20 @@ data TypeD = TypeD
 
 data ConsD = ConsD
   { cName   :: Name
-  , cFields :: [DataField]
+  , cFields :: [FieldDefinition]
   } deriving (Show)
+
+
+-- Helpers
+-------------------------------------------------------------------------
+checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
+checkNameCollision enhancedKeys errorGenerator =
+  case enhancedKeys \\ removeDuplicates enhancedKeys of
+    []         -> pure enhancedKeys
+    duplicates -> failure $ errorGenerator duplicates
+
+checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
+checkForUnknownKeys enhancedKeys keys' errorGenerator' =
+  case filter (not . elementOfKeys keys') enhancedKeys of
+    []           -> pure enhancedKeys
+    unknownKeys -> failure $ errorGenerator' unknownKeys

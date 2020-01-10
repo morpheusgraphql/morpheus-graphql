@@ -24,32 +24,35 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 ( nameSpaceType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
+                                                , Key
+                                                , Name
+                                                , RAW
                                                 , ValidOperation
                                                 , Variable(..)
                                                 , VariableDefinitions
-                                                , getOperationName
-                                                , getOperationDataType
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , ValidSelectionSet
                                                 , ValidSelection
                                                 , Ref(..)
-                                                , DataField(..)
+                                                , FieldDefinition(..)
                                                 , DataTypeContent(..)
                                                 , DataType(..)
                                                 , DataTypeKind(..)
                                                 , Schema(..)
-                                                , Key
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , DataLookup(..)
+                                                , Listable(..)
+                                                , Selectable(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
+                                                , ArgumentsDefinition(..)
+                                                , getOperationName
+                                                , getOperationDataType
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
-                                                , RAW
-                                                , Name
+                                                , removeDuplicates
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -60,12 +63,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , LibUpdater
                                                 , resolveUpdates
                                                 )
-import           Data.Set                       ( fromList
-                                                , toList
-                                                )
 
-removeDuplicates :: [Text] -> [Text]
-removeDuplicates = toList . fromList
 
 compileError :: Text -> GQLErrors
 compileError x =
@@ -109,11 +107,10 @@ operationTypes lib variables = genOperation
       , tMeta      = Nothing
       }
      where
-      fieldD :: (Text, Variable RAW) -> DataField
-      fieldD (key, Variable { variableType }) = DataField
+      fieldD :: (Text, Variable RAW) -> FieldDefinition
+      fieldD (key, Variable { variableType }) = FieldDefinition
         { fieldName     = key
-        , fieldArgs     = []
-        , fieldArgsType = Nothing
+        , fieldArgs     = NoArguments
         , fieldType     = variableType
         , fieldMeta     = Nothing
         }
@@ -151,7 +148,7 @@ operationTypes lib variables = genOperation
      where
       genField
         :: (Text, ValidSelection)
-        -> Validation (DataField, [ClientType], [Text])
+        -> Validation (FieldDefinition, [ClientType], [Text])
       genField (fName, sel@Selection { selectionAlias, selectionPosition }) =
         do
           (fieldDataType, fieldType) <- lookupFieldType lib
@@ -161,9 +158,8 @@ operationTypes lib variables = genOperation
                                                         fName
           (subTypes, requests) <- subTypesBySelection fieldDataType sel
           pure
-            ( DataField { fieldName
-                        , fieldArgs     = []
-                        , fieldArgsType = Nothing
+            ( FieldDefinition { fieldName
+                        , fieldArgs     = NoArguments
                         , fieldType
                         , fieldMeta     = Nothing
                         }
@@ -211,11 +207,10 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
   scanInpType DataType { typeContent, typeName } = scanType typeContent
    where
     scanType (DataInputObject fields) = resolveUpdates
-      (name : collected)
-      (map toInputTypeD fields)
+      (name : collected) (map toInputTypeD $ toList fields)
      where
-      toInputTypeD :: (Text, DataField) -> LibUpdater [Key]
-      toInputTypeD (_, DataField { fieldType = TypeRef { typeConName } }) =
+      toInputTypeD :: (Text, FieldDefinition) -> LibUpdater [Key]
+      toInputTypeD (_, FieldDefinition { fieldType = TypeRef { typeConName } }) =
         scanInputTypes lib typeConName
     scanType (DataEnum _) = pure (collected <> [typeName])
     scanType _            = pure collected
@@ -226,7 +221,7 @@ buildInputType lib name = getType lib name >>= generateTypes
   generateTypes DataType { typeName, typeContent } = subTypes typeContent
    where
     subTypes (DataInputObject inputFields) = do
-      fields <- traverse toFieldD inputFields
+      fields <- traverse toFieldD (toList inputFields)
       pure
         [ ClientType
             { clientType = TypeD
@@ -242,10 +237,10 @@ buildInputType lib name = getType lib name >>= generateTypes
             }
         ]
      where
-      toFieldD :: (Text, DataField) -> Validation DataField
-      toFieldD (_, field@DataField { fieldType }) = do
+      toFieldD :: (Text, FieldDefinition) -> Validation (FieldDefinition)
+      toFieldD (_, field@FieldDefinition { fieldType }) = do
         typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
-        pure $ field { fieldType = fieldType { typeConName } }
+        pure $ field { fieldType = fieldType { typeConName  }  }
     subTypes (DataEnum enumTags) = pure
       [ ClientType
           { clientType = TypeD { tName      = typeName
@@ -261,7 +256,6 @@ buildInputType lib name = getType lib name >>= generateTypes
         ConsD { cName = enumName, cFields = [] }
     subTypes _ = pure []
 
-
 lookupFieldType
   :: Schema
   -> [Key]
@@ -270,8 +264,10 @@ lookupFieldType
   -> Text
   -> Validation (DataType, TypeRef)
 lookupFieldType lib path DataType { typeContent = DataObject { objectFields }, typeName } refPosition key
-  = case lookup key objectFields of
-    Just DataField { fieldType = alias@TypeRef { typeConName }, fieldMeta } ->
+  = selectBy selError key objectFields >>= processDeprecation
+  where
+    selError = compileError $ "cant find field \"" <> pack (show objectFields) <> "\""
+    processDeprecation FieldDefinition { fieldType = alias@TypeRef { typeConName }, fieldMeta } = 
       checkDeprecated >> (trans <$> getType lib typeConName)
      where
       trans x =
@@ -285,10 +281,6 @@ lookupFieldType lib path DataType { typeContent = DataObject { objectFields }, t
                                      Ref { refName = key, refPosition }
                                      (lookupDeprecatedReason deprecation)
         Nothing -> pure ()
-    ------------------
-    Nothing ->
-      failure
-        (compileError $ "cant find field \"" <> pack (show objectFields) <> "\"")
 lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
@@ -302,7 +294,7 @@ leafType DataType { typeName, typeContent } = fromKind typeContent
   fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: Schema -> Text -> Validation DataType
-getType lib typename = lookupResult (compileError typename) typename lib 
+getType lib typename = selectBy (compileError typename) typename lib 
 
 typeFromScalar :: Name -> Name
 typeFromScalar "Boolean" = "Bool"
