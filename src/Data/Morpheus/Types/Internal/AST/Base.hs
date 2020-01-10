@@ -11,7 +11,6 @@ module Data.Morpheus.Types.Internal.AST.Base
   , Ref(..)
   , Position(..)
   , Message
-  , anonymousRef
   , Name
   , Description
   , VALID
@@ -20,8 +19,6 @@ module Data.Morpheus.Types.Internal.AST.Base
   , Stage(..)
   , RESOLVED
   , TypeRef(..)
-  , removeDuplicates
-  , elementOfKeys
   , VALIDATION_MODE(..)
   , OperationType(..)
   , QUERY
@@ -29,9 +26,10 @@ module Data.Morpheus.Types.Internal.AST.Base
   , SUBSCRIPTION
   , DataTypeKind(..)
   , DataFingerprint(..)
-  , TypeWrapper(..)
-  , TypeRef(..)
   , DataTypeWrapper(..)
+  , anonymousRef
+  , removeDuplicates
+  , elementOfKeys
   , toHSWrappers
   , toGQLWrapper
   , sysTypes
