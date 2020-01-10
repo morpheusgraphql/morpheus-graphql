@@ -24,11 +24,12 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 ( nameSpaceType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
+                                                , Key
+                                                , Name
+                                                , RAW
                                                 , ValidOperation
                                                 , Variable(..)
                                                 , VariableDefinitions
-                                                , getOperationName
-                                                , getOperationDataType
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , ValidSelectionSet
@@ -39,18 +40,17 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataType(..)
                                                 , DataTypeKind(..)
                                                 , Schema(..)
-                                                , Key
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
                                                 , Collectible(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
+                                                , ArgumentsDefinition(..)
+                                                , getOperationName
+                                                , getOperationDataType
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
-                                                , RAW
-                                                , Name
-                                                , ArgumentsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors

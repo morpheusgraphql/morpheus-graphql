@@ -83,6 +83,23 @@ module Data.Morpheus.Types.Internal.AST
   , TypeWrapper(..)
   , TypeRef(..)
   , DataEnumValue(..)
+  , OperationType(..)
+  , QUERY
+  , MUTATION
+  , SUBSCRIPTION
+  , Meta(..)
+  , Directive(..)
+  , TypeUpdater
+  , TypeD(..)
+  , ConsD(..)
+  , ClientQuery(..)
+  , GQLTypeD(..)
+  , ClientType(..)
+  , DataInputUnion
+  , VariableContent(..)
+  , Selectable(..)
+  , Listable(..)
+  , TypeLib
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -104,10 +121,6 @@ module Data.Morpheus.Types.Internal.AST
   , isDefaultTypeName
   , isSchemaTypeName
   , isPrimitiveTypeName
-  , OperationType(..)
-  , QUERY
-  , MUTATION
-  , SUBSCRIPTION
   , isEntNode
   , lookupInputType
   , coerceDataObject
@@ -126,25 +139,13 @@ module Data.Morpheus.Types.Internal.AST
   , createAlias
   , createInputUnionFields
   , fieldVisibility
-  , Meta(..)
-  , Directive(..)
   , createEnumValue
   , insertType
-  , TypeUpdater
   , lookupDeprecated
   , lookupDeprecatedReason
-  , TypeD(..)
-  , ConsD(..)
-  , ClientQuery(..)
-  , GQLTypeD(..)
-  , ClientType(..)
-  , DataInputUnion
-  , VariableContent(..)
   , checkForUnknownKeys
   , checkNameCollision
-  , Collectible(..)
   , hasArguments
-  , TypeLib
   , lookupWith
   -- LOCAL
   , GQLQuery(..)

@@ -40,7 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ArgumentsDefinition(..)
                                                 , Name
                                                 , FieldsDefinition(..)
-                                                , Collectible(..)
+                                                , Listable(..)
                                                 )
 
 renderGraphQLDocument :: Schema -> ByteString

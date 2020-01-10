@@ -40,10 +40,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , TypeRef(..)
                                                 , Name
+                                                , Listable(..)
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField
-                                                , Collectible(..)
                                                 , lookupUnionTypes
                                                 , checkNameCollision
                                                 )

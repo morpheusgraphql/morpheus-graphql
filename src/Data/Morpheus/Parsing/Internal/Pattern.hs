@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
-                                                , Collectible(..)
+                                                , Listable(..)
                                                 )
 
 

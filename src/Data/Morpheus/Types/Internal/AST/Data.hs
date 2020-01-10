@@ -23,6 +23,17 @@ module Data.Morpheus.Types.Internal.AST.Data
   , Schema(..)
   , DataEnumValue(..)
   , TypeLib
+  , Meta(..)
+  , Directive(..)
+  , TypeUpdater
+  , TypeD(..)
+  , ConsD(..)
+  , ClientQuery(..)
+  , GQLTypeD(..)
+  , ClientType(..)
+  , DataInputUnion
+  , Selectable(..)
+  , Listable(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -50,22 +61,12 @@ module Data.Morpheus.Types.Internal.AST.Data
   , createAlias
   , createInputUnionFields
   , fieldVisibility
-  , Meta(..)
-  , Directive(..)
   , createEnumValue
   , insertType
-  , TypeUpdater
   , lookupDeprecated
   , lookupDeprecatedReason
-  , TypeD(..)
-  , ConsD(..)
-  , ClientQuery(..)
-  , GQLTypeD(..)
-  , ClientType(..)
-  , DataInputUnion
   , checkForUnknownKeys
   , checkNameCollision
-  , Collectible(..)
   , hasArguments
   , lookupWith
   )
@@ -118,9 +119,11 @@ import           Data.Morpheus.Types.Internal.AST.Value
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 
-class Collectible c a where 
+class Listable c a where 
   wrap     :: [(Name, a)] ->  c
   unwrap   ::  c  -> [(Name, a)]
+
+class Selectable c a where 
   selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
 
 type DataEnum = [DataEnumValue]
@@ -191,12 +194,12 @@ data Schema = Schema
 
 type TypeLib = HashMap Key DataType
 
-instance Collectible Schema DataType where 
+instance Selectable Schema DataType where 
   selectBy err name lib = case lookupDataType name lib of
       Nothing -> failure err
       Just x  -> pure x
 
-instance Collectible Schema (Name, FieldsDefinition ) where 
+instance Selectable Schema (Name, FieldsDefinition ) where 
   selectBy validationError name lib =
      selectBy validationError name lib >>= coerceDataObject validationError
 
@@ -396,9 +399,11 @@ newtype FieldsDefinition = FieldsDefinition
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
-instance Collectible FieldsDefinition FieldDefinition where
+instance Listable FieldsDefinition FieldDefinition where
   wrap = FieldsDefinition -- . HM.fromList 
   unwrap = {- HM.toList . -} unFieldsDefinition
+
+instance Selectable FieldsDefinition FieldDefinition where
   selectBy err name (FieldsDefinition lib) = case {- HM. -}lookup name lib of
        Nothing -> failure err
        Just x  -> pure x

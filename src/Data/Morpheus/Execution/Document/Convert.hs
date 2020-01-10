@@ -34,10 +34,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , ArgumentsDefinition(..)
                                                 , hasArguments
-                                                , Collectible(..)
+                                                , Listable(..)
                                                 , lookupWith
                                                 )
-
 
 m_ :: Key
 m_ = "m"
