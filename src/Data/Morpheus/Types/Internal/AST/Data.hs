@@ -125,6 +125,12 @@ class Listable c a where
 class Selectable c a where 
   selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
 
+instance Selectable [(Name, a)] a where 
+  selectBy err key lib = maybe (failure err) pure (lookup key lib)
+
+instance Selectable (HashMap Name a) a where 
+  selectBy err key lib = maybe (failure err) pure (HM.lookup key lib)
+
 type DataEnum = [DataEnumValue]
 type DataArgument = FieldDefinition 
 type DataUnion = [Key]
@@ -403,9 +409,7 @@ instance Listable FieldsDefinition FieldDefinition where
   toList = {- HM.toList . -} unFieldsDefinition
 
 instance Selectable FieldsDefinition FieldDefinition where
-  selectBy err name (FieldsDefinition lib) = case {- HM. -}lookup name lib of
-       Nothing -> failure err
-       Just x  -> pure x
+  selectBy err name (FieldsDefinition lib) = selectBy err name  lib
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -493,6 +497,16 @@ createArgument fieldName x = (fieldName, createField NoArguments fieldName x)
 hasArguments :: ArgumentsDefinition -> Bool
 hasArguments NoArguments = False
 hasArguments _ = True
+
+instance Selectable ArgumentsDefinition DataArgument where
+  selectBy err key NoArguments                  = failure err
+  selectBy err key (ArgumentsDefinition _ args) = selectBy err key args 
+
+instance Listable ArgumentsDefinition DataArgument where
+  toList NoArguments                  = []
+  toList (ArgumentsDefinition _ args) = args
+  fromList []                         = NoArguments
+  fromList args                       = ArgumentsDefinition Nothing args
 
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)

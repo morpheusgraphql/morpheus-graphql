@@ -33,17 +33,18 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldDefinition(..)
                                                 , Schema
                                                 , TypeRef(..)
-                                                , isFieldNullable
-                                                , lookupInputType
                                                 , Value(..)
                                                 , Name
                                                 , RawValue
                                                 , ResolvedValue
                                                 , RESOLVED
                                                 , VALID
+                                                , Listable(..)
+                                                , Selectable(..)
+                                                , isFieldNullable
+                                                , lookupInputType
                                                 , checkForUnknownKeys
                                                 , checkNameCollision
-                                                , ArgumentsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -87,17 +88,13 @@ resolveArgumentVariables operationName variables FieldDefinition { fieldName, fi
   = mapM resolveVariable
  where
   resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument RESOLVED)
-  resolveVariable (key, Argument val position) = case lookup key (getArguments fieldArgs) of
-    Nothing -> failure $ unknownArguments fieldName [Ref key position]
-    Just _  -> do
-      constValue <- resolveObject operationName variables val
-      pure (key, Argument constValue position)
-
-
--- TODO: move in Data
-getArguments :: ArgumentsDefinition -> [(Name,FieldDefinition)]
-getArguments NoArguments            = []
-getArguments (ArgumentsDefinition _ args) = args
+  resolveVariable (key, Argument val position) = do 
+    _ <- checkUnknown
+    constValue <- resolveObject operationName variables val
+    pure (key, Argument constValue position)
+    where 
+      checkUnknown :: Validation FieldDefinition
+      checkUnknown = selectBy (unknownArguments fieldName [Ref key position]) key fieldArgs
 
 validateArgument
   :: Schema
@@ -150,7 +147,7 @@ validateArguments typeLib operatorName variables (key, field@FieldDefinition { f
   = do
     args     <- resolveArgumentVariables operatorName variables field rawArgs
     checkForUnknownArguments args
-    mapM (validateArgument typeLib pos args) (getArguments fieldArgs)
+    mapM (validateArgument typeLib pos args) (toList fieldArgs)
  where
   checkForUnknownArguments
     :: Arguments RESOLVED -> Validation ()
@@ -161,4 +158,4 @@ validateArguments typeLib operatorName variables (key, field@FieldDefinition { f
     enhancedKeys = map argToKey args
     argToKey :: (Name, Argument RESOLVED) -> Ref
     argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
-    fieldKeys = map fst (getArguments fieldArgs)
+    fieldKeys = map fst (toList fieldArgs :: [(Name, FieldDefinition)])

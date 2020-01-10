@@ -33,7 +33,6 @@ import           Data.Morpheus.Types.Internal.AST
 --
 -- Argument[Const]
 --  Name : Value[Const]
--- TODO: move variable to Value
 valueArgument :: Parser RawArgument
 valueArgument = label "Argument" $ do
   argumentPosition <- getLocation
