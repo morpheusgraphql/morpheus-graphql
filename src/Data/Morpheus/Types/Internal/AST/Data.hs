@@ -128,7 +128,8 @@ type DataArgument = FieldDefinition
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
 
--- SCALAR
+-- scalar
+------------------------------------------------------------------
 newtype ScalarDefinition = ScalarDefinition
   { validateValue :: ValidValue -> Either Key ValidValue
   }
@@ -136,16 +137,13 @@ newtype ScalarDefinition = ScalarDefinition
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
 
+-- directive
+------------------------------------------------------------------
 data Directive = Directive {
   directiveName :: Name,
   directiveArgs :: [(Name, ValidValue)]
 } deriving (Show,Lift)
 
--- META
-data Meta = Meta {
-    metaDescription:: Maybe Description,
-    metaDirectives  :: [Directive]
-} deriving (Show,Lift)
 
 lookupDeprecated :: Meta -> Maybe Directive
 lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
@@ -162,6 +160,13 @@ lookupDeprecatedReason Directive { directiveArgs } =
   maybeString _                   = "can't read deprecated Reason Value"
   isReason ("reason", _) = True
   isReason _             = False
+
+-- META
+data Meta = Meta {
+    metaDescription:: Maybe Description,
+    metaDirectives  :: [Directive]
+} deriving (Show,Lift)
+
 
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue{
@@ -192,6 +197,7 @@ initTypeLib query = Schema { types        = empty
                              , mutation     = Nothing
                              , subscription = Nothing
                             }
+
 
 allDataTypes :: Schema -> [DataType]
 allDataTypes  = elems . typeRegister
