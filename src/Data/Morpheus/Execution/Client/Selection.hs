@@ -237,7 +237,7 @@ buildInputType lib name = getType lib name >>= generateTypes
             }
         ]
      where
-      toFieldD :: FieldDefinition -> Validation (FieldDefinition)
+      toFieldD :: FieldDefinition -> Validation FieldDefinition
       toFieldD field@FieldDefinition { fieldType } = do
         typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
         pure $ field { fieldType = fieldType { typeConName  }  }

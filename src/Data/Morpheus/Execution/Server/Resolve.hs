@@ -169,7 +169,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
         "Root"
         , Selection {
           selectionArguments = []
-          , selectionPosition = (operationPosition operation)
+          , selectionPosition = operationPosition operation
           , selectionAlias = Nothing
           , selectionContent = SelectionSet (operationSelection operation)
         } 

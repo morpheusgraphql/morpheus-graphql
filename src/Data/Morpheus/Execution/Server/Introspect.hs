@@ -1,19 +1,20 @@
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE TupleSections          #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DefaultSignatures      #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE PolyKinds              #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 module Data.Morpheus.Execution.Server.Introspect
   ( TypeUpdater
@@ -218,10 +219,9 @@ instance (TypeRep (Rep a) , Generic a) => IntrospectRep 'False a where
 
 buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> Text -> FieldDefinition
 buildField proxy fieldArgs fieldName = FieldDefinition
-  { fieldName
-  , fieldArgs
-  , fieldType     = createAlias $ __typeName proxy
+  { fieldType     = createAlias $ __typeName proxy
   , fieldMeta     = Nothing
+  , ..
   }
 
 buildType :: GQLType a => TypeContent -> Proxy a -> TypeDefinition
@@ -275,9 +275,6 @@ isEmpty :: ConsRep -> Bool
 isEmpty ConsRep { consFields = [] } = True
 isEmpty _                           = False
 
-isUnionRecord :: ConsRep -> Bool
-isUnionRecord ConsRep { consIsRecord } = consIsRecord
-
 isUnionRef :: Name -> ConsRep  -> Bool
 isUnionRef baseName ConsRep { consName, consFields = [FieldRep { fieldIsObject = True, fieldTypeName }] }
   = consName == baseName <> fieldTypeName
@@ -300,7 +297,7 @@ analyseRep baseName cons = ResRep
  where
   (enumRep       , left1             ) = partition isEmpty cons
   (unionRefRep   , left2             ) = partition (isUnionRef baseName) left1
-  (unionRecordRep, anyonimousUnionRep) = partition isUnionRecord left2
+  (unionRecordRep, anyonimousUnionRep) = partition consIsRecord left2
 
 derivingDataContent
   :: forall a
@@ -388,11 +385,8 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = T
     { typeName        = consName
     , typeFingerprint
     , typeMeta        = Nothing
-    , typeContent     = wrapObject $ fromList $ genFields consFields
+    , typeContent     = wrapObject $ fromList $ map fieldData consFields
     }
- where
-  genFields fields = map uRecField fields
-  uRecField FieldRep { fieldData = fData } = fData
 
 buildUnionEnum
   :: (FieldsDefinition -> TypeContent)
@@ -421,11 +415,11 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
 
 buildEnum :: Name -> DataFingerprint -> [Name] -> TypeUpdater
 buildEnum typeName typeFingerprint tags = pure . defineType
-  TypeDefinition { typeName
-             , typeFingerprint
-             , typeMeta        = Nothing
-             , typeContent     = DataEnum $ map createEnumValue tags
-           }
+  TypeDefinition 
+    { typeMeta        = Nothing
+    , typeContent     = DataEnum $ map createEnumValue tags
+    , ..
+    }
 
 buildEnumObject
   :: (FieldsDefinition -> TypeContent)

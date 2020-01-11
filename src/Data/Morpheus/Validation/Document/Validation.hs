@@ -1,6 +1,4 @@
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TupleSections  #-}
-
 
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument
