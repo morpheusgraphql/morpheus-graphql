@@ -28,6 +28,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeKind(..)
   , DataFingerprint(..)
   , DataTypeWrapper(..)
+  , Fields(..)
   , anonymousRef
   , removeDuplicates
   , elementOfKeys
