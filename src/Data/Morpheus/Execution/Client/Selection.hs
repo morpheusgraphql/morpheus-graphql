@@ -210,7 +210,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
       (name : collected) (map toInputTypeD $ toList fields)
      where
       toInputTypeD :: FieldDefinition -> LibUpdater [Key]
-      toInputTypeD (_, FieldDefinition { fieldType = TypeRef { typeConName } }) =
+      toInputTypeD FieldDefinition { fieldType = TypeRef { typeConName } } =
         scanInputTypes lib typeConName
     scanType (DataEnum _) = pure (collected <> [typeName])
     scanType _            = pure collected
@@ -238,7 +238,7 @@ buildInputType lib name = getType lib name >>= generateTypes
         ]
      where
       toFieldD :: FieldDefinition -> Validation (FieldDefinition)
-      toFieldD (_, field@FieldDefinition { fieldType }) = do
+      toFieldD field@FieldDefinition { fieldType } = do
         typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
         pure $ field { fieldType = fieldType { typeConName  }  }
     subTypes (DataEnum enumTags) = pure
