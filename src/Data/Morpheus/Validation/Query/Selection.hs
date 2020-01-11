@@ -146,7 +146,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
       arguments <- validateArguments lib
                                      operatorName
                                      variables
-                                     (key, selectionField)
+                                     selectionField
                                      selectionPosition
                                      selectionArguments
       -- check field Type existence  -----
