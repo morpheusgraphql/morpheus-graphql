@@ -100,7 +100,7 @@ categorizeTypes
   :: [(Name, FieldsDefinition)] -> [Fragment] -> [((Name, FieldsDefinition), [Fragment])]
 categorizeTypes types fragments = filter notEmpty $ map categorizeType types
  where
-  notEmpty = (0 /=) . length . snd
+  notEmpty = not . null . snd
   categorizeType :: (Name, FieldsDefinition) -> ((Name, FieldsDefinition), [Fragment])
   categorizeType datatype = (datatype, filter matches fragments)
     where matches fragment = fragmentType fragment == fst datatype

@@ -388,10 +388,9 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = T
     { typeName        = consName
     , typeFingerprint
     , typeMeta        = Nothing
-    , typeContent     = wrapObject $ fromList $ genFields consFields
+    , typeContent     = wrapObject $ fromList $ map uRecField consFields
     }
  where
-  genFields fields = map uRecField fields
   uRecField FieldRep { fieldData = fData } = fData
 
 buildUnionEnum

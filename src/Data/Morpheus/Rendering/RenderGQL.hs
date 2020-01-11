@@ -1,4 +1,3 @@
-{-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
@@ -66,7 +65,7 @@ instance RenderGQL TypeDefinition where
     __render (DataInputObject fields ) = "input " <> typeName <> render fields
     __render (DataInputUnion  members) = "input " <> typeName <> render (fromList fields :: FieldsDefinition )
       where fields = createInputUnionFields typeName (map fst members)
-    __render (DataObject {objectFields}) = "type " <> typeName <> render objectFields
+    __render DataObject {objectFields} = "type " <> typeName <> render objectFields
 
 -- OBJECT
 instance RenderGQL FieldsDefinition where
@@ -79,7 +78,7 @@ instance RenderGQL FieldDefinition where
   render FieldDefinition { fieldName, fieldType, fieldArgs } =
     convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
 
-instance RenderGQL (ArgumentsDefinition) where 
+instance RenderGQL ArgumentsDefinition where 
   render NoArguments   = ""
   render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
 
