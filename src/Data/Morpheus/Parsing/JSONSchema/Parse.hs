@@ -29,7 +29,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataType(..)
                                                 , DataTypeContent(..)
                                                 , DataTypeWrapper(..)
-                                                , Key
                                                 , TypeWrapper
                                                 , createArgument
                                                 , createDataTypeLib
@@ -41,7 +40,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toHSWrappers
                                                 , ArgumentsDefinition(..)
                                                 , fromList
-                                                , Name
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
@@ -87,15 +85,13 @@ instance ParseJSONSchema Field FieldDefinition where
   parse Field { fieldName, fieldArgs, fieldType } = do
     fType <- fieldTypeFromJSON fieldType
     args  <- traverse genArg fieldArgs
-    pure (fieldName, createField (ArgumentsDefinition Nothing args) fieldName fType)
+    pure $ createField (ArgumentsDefinition Nothing args) fieldName fType
    where
     genArg InputValue { inputName = argName, inputType = argType } =
       createArgument argName <$> fieldTypeFromJSON argType
 
 instance ParseJSONSchema InputValue FieldDefinition where
-  parse InputValue { inputName, inputType } = do
-    fieldType <- fieldTypeFromJSON inputType
-    pure (inputName, createField NoArguments inputName fieldType)
+  parse InputValue { inputName, inputType } = createField NoArguments inputName <$> fieldTypeFromJSON inputType
 
 fieldTypeFromJSON :: Type -> Validation ([TypeWrapper], Text)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []
