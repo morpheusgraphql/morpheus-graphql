@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns     #-}
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE TemplateHaskell    #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
@@ -54,8 +55,9 @@ import           Data.Aeson                     ( FromJSON
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
-import           Language.Haskell.TH.Syntax     ( Lift )
+import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
+import qualified Data.HashMap.Lazy             as HM 
 import qualified Data.Set                      as S
 
 type Key = Text
@@ -92,6 +94,15 @@ data OperationType
 type QUERY = 'Query
 type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
+
+data Fields value = Fields {
+  fieldNames :: [Name],
+  fieldValues :: HM.HashMap Name value
+} deriving (Show)
+
+instance Lift a => Lift (Fields a) where 
+  lift (Fields x y) = [| Fields x (HM.fromList ys) |] 
+    where ys = HM.toList y
 
 -- Refference with Position information  
 --
