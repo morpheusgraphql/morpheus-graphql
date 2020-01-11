@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , FieldDefinition(..)
                                                 , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , DataTypeKind(..)
                                                 , Schema(..)
                                                 , TypeRef(..)
@@ -119,7 +119,7 @@ operationTypes lib variables = genOperation
   genRecordType
     :: [Name]
     -> Name
-    -> DataType
+    -> TypeDefinition
     -> ValidSelectionSet
     -> Validation ([ClientType], [Name])
   genRecordType path tName dataType recordSelSet = do
@@ -139,7 +139,7 @@ operationTypes lib variables = genOperation
    where
     genConsD
       :: Name
-      -> DataType
+      -> TypeDefinition
       -> ValidSelectionSet
       -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
@@ -172,7 +172,7 @@ operationTypes lib variables = genOperation
         fieldName = fromMaybe fName selectionAlias
         ------------------------------------------
         subTypesBySelection
-          :: DataType -> ValidSelection -> Validation ([ClientType], [Text])
+          :: TypeDefinition -> ValidSelection -> Validation ([ClientType], [Text])
         subTypesBySelection dType Selection { selectionContent = SelectionField }
           = leafType dType
           --withLeaf buildLeaf dType
@@ -204,7 +204,7 @@ scanInputTypes :: Schema -> Key -> LibUpdater [Key]
 scanInputTypes lib name collected | name `elem` collected = pure collected
                                   | otherwise = getType lib name >>= scanInpType
  where
-  scanInpType DataType { typeContent, typeName } = scanType typeContent
+  scanInpType TypeDefinition { typeContent, typeName } = scanType typeContent
    where
     scanType (DataInputObject fields) = resolveUpdates
       (name : collected) (map toInputTypeD $ toList fields)
@@ -218,7 +218,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
 buildInputType :: Schema -> Text -> Validation [ClientType]
 buildInputType lib name = getType lib name >>= generateTypes
  where
-  generateTypes DataType { typeName, typeContent } = subTypes typeContent
+  generateTypes TypeDefinition { typeName, typeContent } = subTypes typeContent
    where
     subTypes (DataInputObject inputFields) = do
       fields <- traverse toFieldD (toList inputFields)
@@ -259,11 +259,11 @@ buildInputType lib name = getType lib name >>= generateTypes
 lookupFieldType
   :: Schema
   -> [Key]
-  -> DataType
+  -> TypeDefinition
   -> Position
   -> Text
-  -> Validation (DataType, TypeRef)
-lookupFieldType lib path DataType { typeContent = DataObject { objectFields }, typeName } refPosition key
+  -> Validation (TypeDefinition, TypeRef)
+lookupFieldType lib path TypeDefinition { typeContent = DataObject { objectFields }, typeName } refPosition key
   = selectBy selError key objectFields >>= processDeprecation
   where
     selError = compileError $ "cant find field \"" <> pack (show objectFields) <> "\""
@@ -285,15 +285,15 @@ lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 
-leafType :: DataType -> Validation ([ClientType], [Text])
-leafType DataType { typeName, typeContent } = fromKind typeContent
+leafType :: TypeDefinition -> Validation ([ClientType], [Text])
+leafType TypeDefinition { typeName, typeContent } = fromKind typeContent
  where
   fromKind :: DataTypeContent -> Validation ([ClientType], [Text])
   fromKind DataEnum{} = pure ([], [typeName])
   fromKind DataScalar{} = pure ([], [])
   fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
-getType :: Schema -> Text -> Validation DataType
+getType :: Schema -> Text -> Validation TypeDefinition
 getType lib typename = selectBy (compileError typename) typename lib 
 
 typeFromScalar :: Name -> Name
@@ -304,8 +304,8 @@ typeFromScalar "String"  = "Text"
 typeFromScalar "ID"      = "ID"
 typeFromScalar _         = "ScalarValue"
 
-typeFrom :: [Name] -> DataType -> Name
-typeFrom path DataType { typeName, typeContent } = __typeFrom typeContent
+typeFrom :: [Name] -> TypeDefinition -> Name
+typeFrom path TypeDefinition { typeName, typeContent } = __typeFrom typeContent
  where
   __typeFrom DataScalar{} = typeFromScalar typeName
   __typeFrom DataObject{} = nameSpaceType path typeName

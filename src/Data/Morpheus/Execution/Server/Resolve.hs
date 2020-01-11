@@ -60,7 +60,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataFingerprint(..)
                                                 , DataTypeContent(..)
                                                 , Schema(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , MUTATION
                                                 , OperationType(..)
                                                 , QUERY
@@ -232,12 +232,12 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
       , OutputType
       , Proxy @(subscription (Resolver SUBSCRIPTION event m))
       )
-  maybeOperator :: FieldsDefinition -> Name -> Maybe DataType
+  maybeOperator :: FieldsDefinition -> Name -> Maybe TypeDefinition
   maybeOperator (FieldsDefinition x) | null x     = const Nothing
   maybeOperator fields = Just . operatorType fields
   -------------------------------------------------
-  operatorType :: FieldsDefinition -> Name -> DataType
-  operatorType fields typeName = DataType 
+  operatorType :: FieldsDefinition -> Name -> TypeDefinition
+  operatorType fields typeName = TypeDefinition 
       { typeContent     = DataObject [] fields
         , typeName
         , typeFingerprint = DataFingerprint typeName []

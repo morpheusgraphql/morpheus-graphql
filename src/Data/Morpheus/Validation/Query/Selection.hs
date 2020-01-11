@@ -36,7 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , FieldsDefinition(..)
                                                 , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , Schema(..)
                                                 , TypeRef(..)
                                                 , Name

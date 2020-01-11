@@ -76,7 +76,7 @@ module Data.Morpheus.Types.Internal.AST
   , ArgumentsDefinition(..)
   , FieldDefinition(..)
   , DataTypeContent(..)
-  , DataType(..)
+  , TypeDefinition(..)
   , Schema(..)
   , DataTypeWrapper(..)
   , DataTypeKind(..)

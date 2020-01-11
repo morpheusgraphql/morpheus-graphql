@@ -24,7 +24,7 @@ import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , Schema
                                                 , DataTypeWrapper(..)
                                                 , Key
@@ -52,8 +52,8 @@ renderGraphQLDocument lib =
 class RenderGQL a where
   render :: a -> Key
 
-instance RenderGQL DataType where
-  render DataType { typeName, typeContent } = __render typeContent
+instance RenderGQL TypeDefinition where
+  render TypeDefinition { typeName, typeContent } = __render typeContent
    where
     __render DataInterface { interfaceFields } = "interface " <> typeName <> render interfaceFields
     __render DataScalar{}    = "scalar " <> typeName

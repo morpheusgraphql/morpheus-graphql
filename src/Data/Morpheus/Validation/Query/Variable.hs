@@ -39,7 +39,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawSelectionSet
                                                 , Ref(..)
                                                 , Position
-                                                , DataType
+                                                , TypeDefinition
                                                 , Schema
                                                 , lookupInputType
                                                 , Variables
@@ -64,7 +64,7 @@ import           Data.Morpheus.Validation.Internal.Value
 import           Data.Morpheus.Validation.Query.Fragment
                                                 ( getFragment )
 
-getVariableType :: Text -> Position -> Schema -> Validation DataType
+getVariableType :: Text -> Position -> Schema -> Validation TypeDefinition
 getVariableType type' position' lib' = lookupInputType type' lib' error'
   where error' = unknownType type' position'
 
@@ -147,7 +147,7 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
   checkType
     :: Maybe ResolvedValue
     -> DefaultValue
-    -> DataType
+    -> TypeDefinition
     -> Validation (Name, ValidValue)
   checkType (Just variable) Nothing varType = validator varType variable
   checkType (Just variable) (Just defValue) varType =
@@ -163,7 +163,7 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
     returnNull =
       maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
   -----------------------------------------------------------------------------------------------
-  validator :: DataType -> ResolvedValue -> Validation (Name, ValidValue)
+  validator :: TypeDefinition -> ResolvedValue -> Validation (Name, ValidValue)
   validator varType varValue =
     case
         validateInputValue typeLib

@@ -65,7 +65,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Meta(..)
                                                 , FieldDefinition(..)
                                                 , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , Key
                                                 , createAlias
                                                 , defineType
@@ -224,8 +224,8 @@ buildField proxy fieldArgs fieldName = FieldDefinition
   , fieldMeta     = Nothing
   }
 
-buildType :: GQLType a => DataTypeContent -> Proxy a -> DataType
-buildType typeContent proxy = DataType
+buildType :: GQLType a => DataTypeContent -> Proxy a -> TypeDefinition
+buildType typeContent proxy = TypeDefinition
   { typeName        = __typeName proxy
   , typeFingerprint = __typeFingerprint proxy
   , typeMeta        = Just Meta { metaDescription = description proxy
@@ -236,7 +236,7 @@ buildType typeContent proxy = DataType
 
 updateLib
   :: GQLType a
-  => (Proxy a -> DataType)
+  => (Proxy a -> TypeDefinition)
   -> [TypeUpdater]
   -> Proxy a
   -> TypeUpdater
@@ -383,8 +383,8 @@ buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
   members = map consName cons
 
 buildUnionRecord
-  :: (FieldsDefinition -> DataTypeContent) -> DataFingerprint -> ConsRep -> DataType
-buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = DataType 
+  :: (FieldsDefinition -> DataTypeContent) -> DataFingerprint -> ConsRep -> TypeDefinition
+buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = TypeDefinition 
     { typeName        = consName
     , typeFingerprint
     , typeMeta        = Nothing
@@ -421,7 +421,7 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
 
 buildEnum :: Name -> DataFingerprint -> [Name] -> TypeUpdater
 buildEnum typeName typeFingerprint tags = pure . defineType
-  DataType { typeName
+  TypeDefinition { typeName
              , typeFingerprint
              , typeMeta        = Nothing
              , typeContent     = DataEnum $ map createEnumValue tags
@@ -435,7 +435,7 @@ buildEnumObject
   -> TypeUpdater
 buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
   pure . defineType
-    DataType
+    TypeDefinition
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing

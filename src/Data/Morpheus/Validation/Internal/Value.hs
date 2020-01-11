@@ -19,7 +19,7 @@ import           Data.Morpheus.Error.Input      ( InputError(..)
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , Schema(..)
                                                 , ScalarDefinition(..)
                                                 , Key
@@ -78,10 +78,10 @@ validateInputValue
   :: Schema
   -> [Prop]
   -> [TypeWrapper]
-  -> DataType
+  -> TypeDefinition
   -> (Key, ResolvedValue)
   -> InputValidation ValidValue
-validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
+validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName } =
   validateWrapped rw typeContent
  where
   throwError :: [TypeWrapper] -> ResolvedValue -> InputValidation ValidValue
@@ -133,7 +133,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
                                                     (_name, value)
         return (_name, value'')
        where
-        validationData :: ResolvedValue -> InputValidation (DataType, [Prop])
+        validationData :: ResolvedValue -> InputValidation (TypeDefinition, [Prop])
         validationData x = do
           fieldTypeName' <- typeConName . fieldType <$> getField
           let currentProp = props ++ [Prop _name fieldTypeName']

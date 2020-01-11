@@ -22,7 +22,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( DataInputUnion
                                                 , FieldDefinition(..)
                                                 , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , DataTypeKind(..)
                                                 , Schema
                                                 , DataTypeWrapper(..)
@@ -53,8 +53,8 @@ type Result m a = Schema -> m a
 class RenderSchema a b where
   render :: (Monad m, Failure Text m) => a -> Schema -> m (b m)
 
-instance RenderSchema DataType S__Type where
-  render DataType { typeName , typeMeta, typeContent } = __render typeContent
+instance RenderSchema TypeDefinition S__Type where
+  render TypeDefinition { typeName , typeMeta, typeContent } = __render typeContent
    where
     __render
       :: (Monad m, Failure Text m) => DataTypeContent -> Schema -> m (S__Type m)

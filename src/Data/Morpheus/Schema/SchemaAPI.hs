@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.ID         ( ID )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Schema(..)
                                                 , QUERY
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , allDataTypes
                                                 , lookupDataType
                                                 , FieldsDefinition
@@ -51,8 +51,8 @@ convertTypes
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
 
 buildSchemaLinkType
-  :: Monad m => DataType -> S__Type (Resolver QUERY e m)
-buildSchemaLinkType DataType { typeName } = createObjectType typeName Nothing $ Just []
+  :: Monad m => TypeDefinition -> S__Type (Resolver QUERY e m)
+buildSchemaLinkType TypeDefinition { typeName } = createObjectType typeName Nothing $ Just []
 
 findType
   :: Monad m

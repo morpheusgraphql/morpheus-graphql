@@ -65,7 +65,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , DataTypeContent(..)
                                                 , FieldsDefinition
                                                 )
@@ -158,14 +158,14 @@ getOperationObject
 getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
-    DataType { typeContent = DataObject { objectFields }, typeName } -> pure (typeName, objectFields)
-    DataType { typeName } ->
+    TypeDefinition { typeContent = DataObject { objectFields }, typeName } -> pure (typeName, objectFields)
+    TypeDefinition { typeName } ->
       failure
         $  "Type Mismatch: operation \""
         <> typeName
         <> "\" must be an Object"
 
-getOperationDataType :: Operation a -> Schema -> Validation DataType
+getOperationDataType :: Operation a -> Schema -> Validation TypeDefinition
 getOperationDataType Operation { operationType = Query } lib = pure (query lib)
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
   = case mutation lib of

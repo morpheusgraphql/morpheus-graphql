@@ -40,7 +40,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataFingerprint(..)
                                                 , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , Name
                                                 , Description
                                                 , Meta(..)
@@ -56,11 +56,11 @@ import           Data.Morpheus.Types.Internal.Resolving
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Description -> Parser DataType
+scalarTypeDefinition :: Maybe Description -> Parser TypeDefinition
 scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
   typeName       <- typDeclaration "scalar"
   metaDirectives <- optionalDirectives
-  pure DataType 
+  pure TypeDefinition 
     { typeName
     , typeMeta        = Just Meta { metaDescription, metaDirectives }
     , typeFingerprint = DataFingerprint typeName []
@@ -82,14 +82,14 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-objectTypeDefinition :: Maybe Description -> Parser DataType
+objectTypeDefinition :: Maybe Description -> Parser TypeDefinition
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
   typeName         <- typDeclaration "type"
   objectImplements <- optionalImplementsInterfaces
   metaDirectives   <- optionalDirectives
   objectFields     <- fieldsDefinition
   -- build object
-  pure DataType
+  pure TypeDefinition
     { typeName
     , typeMeta          = Just Meta { metaDescription, metaDirectives }
     , typeFingerprint   = DataFingerprint typeName []
@@ -107,13 +107,13 @@ optionalImplementsInterfaces = implements <|> pure []
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
-interfaceTypeDefinition :: Maybe Description -> Parser DataType
+interfaceTypeDefinition :: Maybe Description -> Parser TypeDefinition
 interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
   typeName  <- typDeclaration "interface"
   metaDirectives <- optionalDirectives
   fields         <- fieldsDefinition
   -- build interface
-  pure DataType 
+  pure TypeDefinition 
     { typeName
     , typeMeta        = Just Meta { metaDescription, metaDirectives }
     , typeFingerprint = DataFingerprint typeName []
@@ -129,13 +129,13 @@ interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Maybe Description -> Parser DataType
+unionTypeDefinition :: Maybe Description -> Parser TypeDefinition
 unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
   typeName       <- typDeclaration "union"
   metaDirectives <- optionalDirectives
   memberTypes    <- unionMemberTypes
   -- build union
-  pure DataType 
+  pure TypeDefinition 
     { typeName
     , typeMeta        = Just Meta { metaDescription, metaDirectives }
     , typeFingerprint = DataFingerprint typeName []
@@ -154,13 +154,13 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Maybe Description -> Parser DataType
+enumTypeDefinition :: Maybe Description -> Parser TypeDefinition
 enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
   typeName              <- typDeclaration "enum"
   metaDirectives        <- optionalDirectives
   enumValuesDefinitions <- setOf enumValueDefinition
   -- build enum
-  pure DataType 
+  pure TypeDefinition 
     { typeName
     , typeContent     = DataEnum enumValuesDefinitions
     , typeFingerprint = DataFingerprint typeName []
@@ -175,21 +175,21 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputObjectTypeDefinition :: Maybe Description -> Parser DataType
+inputObjectTypeDefinition :: Maybe Description -> Parser TypeDefinition
 inputObjectTypeDefinition metaDescription =
   label "InputObjectTypeDefinition" $ do
     typeName       <- typDeclaration "input"
     metaDirectives <- optionalDirectives
     fields         <- inputFieldsDefinition
     -- build input
-    pure DataType 
+    pure TypeDefinition 
       { typeName
       , typeContent     = DataInputObject fields
       , typeFingerprint = DataFingerprint typeName []
       , typeMeta = Just Meta { metaDescription, metaDirectives }
       }
 
-parseDataType :: Parser DataType
+parseDataType :: Parser TypeDefinition
 parseDataType = label "TypeDefinition" $ do  
   description <- optDescription
   -- scalar | enum |  input | object | union | interface
@@ -200,7 +200,7 @@ parseDataType = label "TypeDefinition" $ do
       <|> objectTypeDefinition description
       <|> interfaceTypeDefinition description
 
-parseSchema :: Text -> Validation [DataType]
+parseSchema :: Text -> Validation [TypeDefinition]
 parseSchema doc = case parseDoc of
   Right root       -> pure root
   Left  parseError -> failure (processErrorBundle parseError)
