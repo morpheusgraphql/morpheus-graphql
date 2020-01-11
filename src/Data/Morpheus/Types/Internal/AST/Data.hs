@@ -73,7 +73,6 @@ where
 
 import           Data.HashMap.Lazy              ( HashMap
                                                 , empty
-                                                , insert
                                                 , union
                                                 , elems
                                                 )
@@ -102,6 +101,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , DataFingerprint(..)
                                                 , isNullable
                                                 , sysFields
+                                                , Fields(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -117,10 +117,24 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
+class UniqueKey a where
+  uniqKey :: a -> Name 
 
-class Listable c a where 
+class Listable c a where
   fromList     :: [a] ->  c
   toList   ::  c  -> [a]
+
+instance UniqueKey a => Listable (Fields a) a where
+  fromList = collect Fields { fieldNames = [] , fieldValues = empty }
+    where
+      collect :: UniqueKey a => Fields a -> [a] -> Fields a
+      collect fields [] = fields
+      collect fields (value:values)
+              | key `elem` fieldNames fields = error "TODO:error"
+              | otherwise = collect (insert key value fields) values
+            where key = uniqKey value
+      insert key value (Fields keys values) = Fields (keys<> [key]) (HM.insert key value values) 
+  toList Fields { fieldNames , fieldValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` fieldValues) fieldNames
 
 class Selectable c a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
@@ -346,7 +360,7 @@ isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
 defineType :: TypeDefinition -> Schema -> Schema
 defineType dt@TypeDefinition { typeName, typeContent = DataInputUnion enumKeys, typeFingerprint } lib
-  = lib { types = insert name unionTags (insert typeName dt (types lib)) }
+  = lib { types = HM.insert name unionTags (HM.insert typeName dt (types lib)) }
  where
   name      = typeName <> "Tags"
   unionTags = TypeDefinition
@@ -356,7 +370,7 @@ defineType dt@TypeDefinition { typeName, typeContent = DataInputUnion enumKeys, 
     , typeContent     = DataEnum $ map (createEnumValue . fst) enumKeys
     }
 defineType datatype lib =
-  lib { types = insert (typeName datatype) datatype (types lib) }
+  lib { types = HM.insert (typeName datatype) datatype (types lib) }
 
 insertType :: TypeDefinition -> TypeUpdater
 insertType  datatype@TypeDefinition { typeName } lib = case isTypeDefined typeName lib of
@@ -391,8 +405,7 @@ popByKey name lib = case lookupWith typeName name lib of
 
 -- TODO: find better solution with OrderedMap to stote Fields
 newtype FieldsDefinition = FieldsDefinition 
--- { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
- { unFieldsDefinition :: [FieldDefinition] } deriving (Show, Lift)
+ { unFieldsDefinition :: Fields FieldDefinition } deriving (Show)
 
 -- instance Lift FieldsDefinition where 
 --   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
@@ -402,8 +415,8 @@ instance Semigroup FieldsDefinition where
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
 instance Listable FieldsDefinition FieldDefinition where
-  fromList = FieldsDefinition -- . HM.fromList 
-  toList = {- HM.toList . -} unFieldsDefinition
+  fromList = FieldsDefinition . fromList 
+  toList = toList . unFieldsDefinition
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib

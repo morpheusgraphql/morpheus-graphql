@@ -59,7 +59,6 @@ import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
 import qualified Data.HashMap.Lazy             as HM 
-import qualified Data.Set                      as S
 
 type Key = Text
 type Message = Text
@@ -210,9 +209,13 @@ toHSWrappers []                              = [TypeMaybe]
 toHSWrappers [NonNullType]                   = []
 
 -- Helpers
-
-removeDuplicates :: Ord a => [a] -> [a]
-removeDuplicates = S.toList . S.fromList
+removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates = collectElems []
+    where collectElems collected [] = collected
+          collectElems collected (x:xs)
+              -- TODO: throw error
+              | x `elem` collected = collectElems collected xs
+              | otherwise = collectElems (collected ++ [x]) xs
 
 elementOfKeys :: [Name] -> Ref -> Bool
 elementOfKeys keys Ref { refName } = refName `elem` keys
