@@ -124,7 +124,8 @@ class Listable c a where
   toList   ::  c  -> [a]
 
 class Selectable c a where 
-  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
+  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a
+  selectOr :: d -> (a -> d) -> Name -> c -> d
 
 instance Selectable [(Name, a)] a where 
   selectBy err key lib = maybe (failure err) pure (lookup key lib)
