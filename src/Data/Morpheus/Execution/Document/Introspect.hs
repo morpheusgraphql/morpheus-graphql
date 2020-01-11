@@ -22,7 +22,7 @@ import           Data.Morpheus.Types.GQLType               (GQLType (__typeName)
 import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , TypeD (..)
                                                             , TypeDefinition(..)
-                                                            , DataTypeContent(..)
+                                                            , TypeContent(..)
                                                             , ArgumentsDefinition(..)
                                                             , FieldDefinition (..)
                                                             , insertType

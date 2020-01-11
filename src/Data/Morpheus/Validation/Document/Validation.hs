@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldDefinition(..)
                                                 , TypeDefinition(..)
                                                 , FieldsDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , TypeRef(..)
                                                 , Listable(..)
                                                 , Selectable(..)

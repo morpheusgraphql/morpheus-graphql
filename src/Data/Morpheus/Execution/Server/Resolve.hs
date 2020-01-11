@@ -58,7 +58,7 @@ import           Data.Morpheus.Types.GQLType    ( GQLType(CUSTOM) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , DataFingerprint(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , Schema(..)
                                                 , TypeDefinition(..)
                                                 , MUTATION

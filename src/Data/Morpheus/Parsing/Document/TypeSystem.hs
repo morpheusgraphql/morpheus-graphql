@@ -39,7 +39,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataFingerprint(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , Name
                                                 , Description

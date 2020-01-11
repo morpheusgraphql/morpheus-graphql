@@ -66,7 +66,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema(..)
                                                 , TypeDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , FieldsDefinition
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value

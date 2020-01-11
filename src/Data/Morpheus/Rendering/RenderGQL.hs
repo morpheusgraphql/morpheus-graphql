@@ -23,7 +23,7 @@ import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , Schema
                                                 , DataTypeWrapper(..)

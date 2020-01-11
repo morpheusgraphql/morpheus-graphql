@@ -36,7 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidSelection
                                                 , Ref(..)
                                                 , FieldDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , DataTypeKind(..)
                                                 , Schema(..)
@@ -288,7 +288,7 @@ lookupFieldType _ _ dt _ _ =
 leafType :: TypeDefinition -> Validation ([ClientType], [Text])
 leafType TypeDefinition { typeName, typeContent } = fromKind typeContent
  where
-  fromKind :: DataTypeContent -> Validation ([ClientType], [Text])
+  fromKind :: TypeContent -> Validation ([ClientType], [Text])
   fromKind DataEnum{} = pure ([], [typeName])
   fromKind DataScalar{} = pure ([], [])
   fromKind _ = failure $ compileError "Invalid schema Expected scalar"

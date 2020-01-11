@@ -27,7 +27,7 @@ import qualified Data.Morpheus.Types.Internal.AST as AST
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition
                                                 , TypeDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , DataTypeWrapper(..)
                                                 , TypeWrapper
                                                 , createArgument

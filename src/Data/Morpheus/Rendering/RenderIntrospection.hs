@@ -21,7 +21,7 @@ import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DataInputUnion
                                                 , FieldDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , DataTypeKind(..)
                                                 , Schema
@@ -57,7 +57,7 @@ instance RenderSchema TypeDefinition S__Type where
   render TypeDefinition { typeName , typeMeta, typeContent } = __render typeContent
    where
     __render
-      :: (Monad m, Failure Text m) => DataTypeContent -> Schema -> m (S__Type m)
+      :: (Monad m, Failure Text m) => TypeContent -> Schema -> m (S__Type m)
     __render DataScalar{} =
       constRes $ createLeafType SCALAR typeName typeMeta Nothing
     __render (DataEnum enums) = constRes

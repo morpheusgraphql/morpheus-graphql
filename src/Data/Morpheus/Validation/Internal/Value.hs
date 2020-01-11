@@ -18,7 +18,7 @@ import           Data.Morpheus.Error.Input      ( InputError(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , Schema(..)
                                                 , ScalarDefinition(..)
@@ -90,7 +90,7 @@ validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName 
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
-    -> DataTypeContent
+    -> TypeContent
     -> (Key, ResolvedValue)
     -> InputValidation ValidValue
   -- Validate Null. value = null ?
@@ -112,7 +112,7 @@ validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName 
   validateWrapped [] dt v = validate dt v
    where
     validate
-      :: DataTypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
+      :: TypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) =
       traverse requiredFieldsDefined (toList parentFields)
         >>  Object

@@ -17,7 +17,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataUnion
   , ArgumentsDefinition(..)
   , FieldDefinition(..)
-  , DataTypeContent(..)
+  , TypeContent(..)
   , TypeDefinition(..)
   , Schema(..)
   , DataEnumValue(..)
@@ -243,10 +243,10 @@ data TypeDefinition = TypeDefinition
   { typeName        :: Key
   , typeFingerprint :: DataFingerprint
   , typeMeta        :: Maybe Meta
-  , typeContent     :: DataTypeContent
+  , typeContent     :: TypeContent
   } deriving (Show)
 
-data DataTypeContent
+data TypeContent
   = DataScalar      { dataScalar        :: ScalarDefinition   }
   | DataEnum        { enumMembers       :: DataEnum     }
   | DataInputObject { inputObjectFields :: FieldsDefinition   }
@@ -257,7 +257,7 @@ data DataTypeContent
   | DataInterface   { interfaceFields   :: FieldsDefinition    }
   deriving (Show)
 
-createType :: Key -> DataTypeContent -> TypeDefinition
+createType :: Key -> TypeContent -> TypeDefinition
 createType typeName typeContent = TypeDefinition
   { typeName
   , typeMeta        = Nothing
@@ -278,7 +278,7 @@ createEnumValue enumName = DataEnumValue { enumName, enumMeta = Nothing }
 createUnionType :: Key -> [Key] -> TypeDefinition
 createUnionType typeName typeData = createType typeName (DataUnion typeData)
 
-isEntNode :: DataTypeContent -> Bool
+isEntNode :: TypeContent -> Bool
 isEntNode DataScalar{}  = True
 isEntNode DataEnum{} = True
 isEntNode _ = False

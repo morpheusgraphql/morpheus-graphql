@@ -20,7 +20,7 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , DataTypeKind(..)
                                                 , OperationType(..)
@@ -57,7 +57,7 @@ getTyArgs x
           | otherwise = Nothing
 
 
-kindToTyArgs :: DataTypeContent -> Maybe Key
+kindToTyArgs :: TypeContent -> Maybe Key
 kindToTyArgs DataObject{} = Just m_
 kindToTyArgs DataUnion{}  = Just m_
 kindToTyArgs _             = Nothing
@@ -90,7 +90,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
     generateType dt@TypeDefinition { typeName, typeContent, typeMeta } = genType
       typeContent
      where
-      genType :: DataTypeContent -> Q GQLTypeD
+      genType :: TypeContent -> Q GQLTypeD
       genType (DataEnum tags) = pure GQLTypeD
         { typeD        = TypeD { tName      = hsTypeName typeName
                                , tNamespace = []
