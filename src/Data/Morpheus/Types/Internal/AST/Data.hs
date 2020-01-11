@@ -69,6 +69,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , checkNameCollision
   , hasArguments
   , lookupWith
+  , selectTypeObject
   )
 where
 
@@ -205,11 +206,6 @@ type TypeLib = HashMap Key DataType
 instance Selectable Schema DataType where 
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-instance Selectable Schema (Name, FieldsDefinition ) where 
-  selectBy validationError name lib =
-     selectBy validationError name lib >>= coerceDataObject validationError
-
-
 initTypeLib :: DataType -> Schema
 initTypeLib query = Schema { types        = empty
                              , query        = query
@@ -329,7 +325,7 @@ lookupUnionTypes
   -> m [(Name, FieldsDefinition)]
 lookupUnionTypes position key lib FieldDefinition { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
-    >>= mapM (flip (selectBy gqlError) lib)
+    >>= mapM (flip (selectTypeObject gqlError) lib)
   where gqlError = hasNoSubfields key typeName position
 
 lookupDataUnion
@@ -458,13 +454,16 @@ lookupField key fields gqlError = case lookup key fields of
   Nothing    -> failure gqlError
   Just field -> pure field
 
+selectTypeObject :: (Monad m, Failure err m) => err -> Name -> Schema -> m (Name, FieldsDefinition )
+selectTypeObject  err name lib = selectBy err name lib >>= coerceDataObject err
+
 lookupSelectionField
   :: Failure GQLErrors Validation
   => Position
   -> Name
   -> Name
   -> FieldsDefinition
-  -> Validation (FieldDefinition)
+  -> Validation FieldDefinition
 lookupSelectionField position fieldName typeName fields = selectBy gqlError fieldName fields 
   where gqlError = cannotQueryField fieldName typeName position
 
@@ -476,7 +475,7 @@ lookupFieldAsSelectionSet
   -> FieldDefinition  
   -> m (Name, FieldsDefinition )
 lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef { typeConName } }
-  = selectBy gqlError typeConName lib
+  = selectTypeObject gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
