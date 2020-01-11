@@ -47,7 +47,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , lookupInputType
   , coerceDataObject
   , lookupDataUnion
-  , lookupField
   , lookupUnionTypes
   , lookupSelectionField
   , lookupFieldAsSelectionSet
@@ -448,11 +447,6 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
  where
   listW alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeList : typeWrappers }
-
-lookupField :: Failure error m => Key -> [(Key, field)] -> error -> m field
-lookupField key fields gqlError = case lookup key fields of
-  Nothing    -> failure gqlError
-  Just field -> pure field
 
 selectTypeObject :: (Monad m, Failure err m) => err -> Name -> Schema -> m (Name, FieldsDefinition )
 selectTypeObject  err name lib = selectBy err name lib >>= coerceDataObject err

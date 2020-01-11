@@ -126,7 +126,6 @@ module Data.Morpheus.Types.Internal.AST
   , lookupInputType
   , coerceDataObject
   , lookupDataUnion
-  , lookupField
   , lookupUnionTypes
   , lookupSelectionField
   , lookupFieldAsSelectionSet
