@@ -29,7 +29,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Arguments
                                                 , Ref(..)
                                                 , Position
-                                                , DataArgument
+                                                , ArgumentDefinition
                                                 , FieldDefinition(..)
                                                 , Schema
                                                 , TypeRef(..)
@@ -100,7 +100,7 @@ validateArgument
   :: Schema
   -> Position
   -> Arguments RESOLVED
-  -> DataArgument
+  -> ArgumentDefinition
   -> Validation (Name, ValidArgument)
 validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
   = case lookup fieldName requestArgs of

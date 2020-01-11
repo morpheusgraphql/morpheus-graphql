@@ -8,13 +8,12 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE StandaloneDeriving  , TemplateHaskell   #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( ScalarDefinition(..)
   , DataEnum
   , FieldsDefinition(..)
-  , DataArgument
+  , ArgumentDefinition
   , DataUnion
   , ArgumentsDefinition(..)
   , FieldDefinition(..)
@@ -421,7 +420,7 @@ data FieldDefinition = FieldDefinition
   } deriving (Show,Lift)
 
 fieldVisibility :: FieldDefinition -> Bool
-fieldVisibility FieldDefinition { fieldName } = not (fieldName `elem` sysFields)
+fieldVisibility FieldDefinition { fieldName } = fieldName `notElem` sysFields
 
 isFieldNullable :: FieldDefinition -> Bool
 isFieldNullable = isNullable . fieldType
@@ -458,7 +457,7 @@ lookupSelectionField
   -> Name
   -> FieldsDefinition
   -> Validation FieldDefinition
-lookupSelectionField position fieldName typeName fields = selectBy gqlError fieldName fields 
+lookupSelectionField position fieldName typeName = selectBy gqlError fieldName 
   where gqlError = cannotQueryField fieldName typeName position
 
 lookupFieldAsSelectionSet
@@ -480,12 +479,12 @@ lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef
 data ArgumentsDefinition 
   = ArgumentsDefinition  
     { argumentsTypename ::  Maybe Name
-    , arguments         :: [DataArgument]
+    , arguments         :: [ArgumentDefinition]
     }
   | NoArguments
   deriving (Show, Lift)
 
-type DataArgument = FieldDefinition 
+type ArgumentDefinition = FieldDefinition 
 
 createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
 createArgument = createField NoArguments
@@ -494,11 +493,11 @@ hasArguments :: ArgumentsDefinition -> Bool
 hasArguments NoArguments = False
 hasArguments _ = True
 
-instance Selectable ArgumentsDefinition DataArgument where
+instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb _ _    NoArguments                  = fb
   selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
-instance Listable ArgumentsDefinition DataArgument where
+instance Listable ArgumentsDefinition ArgumentDefinition where
   toList NoArguments                  = []
   toList (ArgumentsDefinition _ args) = args
   fromList []                         = NoArguments
