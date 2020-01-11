@@ -53,9 +53,8 @@ getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
 
 getTyArgs :: Info -> Maybe Key
 getTyArgs x 
-          | length (infoTyVars x) > 0 = Just m_ 
-          | otherwise = Nothing
-
+  | null (infoTyVars x) = Nothing
+  | otherwise = Just m_ 
 
 kindToTyArgs :: TypeContent -> Maybe Key
 kindToTyArgs DataObject{} = Just m_
