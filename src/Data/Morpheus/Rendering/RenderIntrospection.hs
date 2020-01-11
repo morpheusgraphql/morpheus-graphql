@@ -87,11 +87,11 @@ renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputVal
 renderArguments NoArguments _ = pure []
 
 instance RenderSchema FieldDefinition S__Field where
-  render (name, field@FieldDefinition { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
+  render field@FieldDefinition { fieldName ,fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta } lib
     = do
       kind <- renderTypeKind <$> lookupKind typeConName lib
       pure S__Field
-        { s__FieldName              = pure (convertToJSONName name)
+        { s__FieldName              = pure (convertToJSONName fieldName)
         , s__FieldDescription       = pure (fieldMeta >>= metaDescription)
         , s__FieldArgs              = renderArguments fieldArgs lib 
         , s__FieldType'             =
@@ -129,9 +129,7 @@ renderinputValue
   :: (Monad m, Failure Text m)
   => FieldDefinition
   -> Result m (S__InputValue m)
-renderinputValue (key, input) =
-  fmap (createInputValueWith key (fieldMeta input))
-    . createInputObjectType input
+renderinputValue input = fmap (createInputValueWith (fieldName input) (fieldMeta input)) . createInputObjectType input
 
 createInputObjectType
   :: (Monad m, Failure Text m) => FieldDefinition -> Result m (S__Type m)
@@ -150,8 +148,8 @@ renderInputUnion (key, meta, fields) lib =
     createField
     (createInputUnionFields key $ map fst $ filter snd fields)
  where
-  createField (name, field) =
-    createInputValueWith name Nothing <$> createInputObjectType field lib
+  createField field =
+    createInputValueWith (fieldName field) Nothing <$> createInputObjectType field lib
 
 createLeafType
   :: Monad m
