@@ -37,7 +37,6 @@ import           Data.Morpheus.Parsing.Internal.Value
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , Directive(..)
-                                                , Key
                                                 , Meta(..)
                                                 , DataEnumValue(..)
                                                 , Name
