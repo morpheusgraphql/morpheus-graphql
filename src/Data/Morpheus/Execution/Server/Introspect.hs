@@ -203,7 +203,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
   withObject _ =
-    ( fromList ([] :: [(Name, FieldDefinition)]) , [introspectFailure (name <> " should have only one nonempty constructor")])
+    ( fromList ([] :: [FieldDefinition]) , [introspectFailure (name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
@@ -260,7 +260,7 @@ data ConsRep = ConsRep {
 
 data FieldRep = FieldRep {
   fieldTypeName :: Name,
-  fieldData :: (Name, FieldDefinition),
+  fieldData :: FieldDefinition,
   fieldTypeUpdater :: TypeUpdater,
   fieldIsObject :: Bool
 }
@@ -288,9 +288,7 @@ setFieldNames cons@ConsRep { consFields } = cons
   { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
   }
  where
-  setFieldName i fieldR@FieldRep { fieldData = (_, fieldD) } = fieldR
-    { fieldData = (fieldName, fieldD { fieldName })
-    }
+  setFieldName i fieldR@FieldRep { fieldData = fieldD } = fieldR { fieldData = fieldD { fieldName } }
     where fieldName = "_" <> pack (show i)
 
 analyseRep :: Name -> [ConsRep] -> ResRep
@@ -386,18 +384,15 @@ buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
 
 buildUnionRecord
   :: (FieldsDefinition -> DataTypeContent) -> DataFingerprint -> ConsRep -> DataType
-buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
-  DataType { typeName        = consName
-           , typeFingerprint
-           , typeMeta        = Nothing
-           , typeContent     = wrapObject $ fromList $ genFields consFields
-           }
-
+buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = DataType 
+    { typeName        = consName
+    , typeFingerprint
+    , typeMeta        = Nothing
+    , typeContent     = wrapObject $ fromList $ genFields consFields
+    }
  where
-  genFields [FieldRep { fieldData = ("", fData) }] =
-    [("value", fData { fieldName = "value" })]
   genFields fields = map uRecField fields
-  uRecField FieldRep { fieldData = (fName, fData) } = (fName, fData)
+  uRecField FieldRep { fieldData = fData } = fData
 
 buildUnionEnum
   :: (FieldsDefinition -> DataTypeContent)
@@ -444,15 +439,14 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject $ fromList [ 
-                              ( "enum"
-                              , FieldDefinition { fieldName  = "enum"
-                                          , fieldArgs  = NoArguments
-                                          , fieldType  = createAlias enumTypeName
-                                          , fieldMeta  = Nothing
-                                          }
-                              )
-                            ]
+      , typeContent     = wrapObject $ fromList 
+          [ FieldDefinition 
+            { fieldName  = "enum"
+            , fieldArgs  = NoArguments
+            , fieldType  = createAlias enumTypeName
+            , fieldMeta  = Nothing
+            }
+          ]
       }
 
 data TypeScope = InputType | OutputType deriving (Show,Eq,Ord)
@@ -486,7 +480,7 @@ instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
 instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
   conRep _ =
     [ FieldRep { fieldTypeName    = typeConName $ fieldType fieldData
-               , fieldData        = (name, fieldData)
+               , fieldData        = fieldData
                , fieldTypeUpdater = introspect (Proxy @a)
                , fieldIsObject    = isObject (Proxy @a)
                }

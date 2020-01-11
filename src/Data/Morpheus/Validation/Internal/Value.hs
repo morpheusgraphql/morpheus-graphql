@@ -26,7 +26,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , DataEnumValue(..)
-                                                , lookupField
                                                 , lookupInputType
                                                 , Value(..)
                                                 , ValidValue
@@ -43,6 +42,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , isNullableWrapper
                                                 , Listable(..)
+                                                , Selectable(..)
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -118,9 +118,9 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
         >>  Object
         <$> traverse validateField fields
      where
-      requiredFieldsDefined (fName, datafield)
-        | fName `elem` map fst fields || isFieldNullable datafield = pure ()
-        | otherwise = failure (UndefinedField props fName)
+      requiredFieldsDefined datafield@FieldDefinition { fieldName }
+        | fieldName `elem` map fst fields || isFieldNullable datafield = pure ()
+        | otherwise = failure (UndefinedField props fieldName)
       validateField
         :: (Name, ResolvedValue) -> InputValidation (Name, ValidValue)
       validateField (_name, value) = do
@@ -141,7 +141,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
                                    lib
                                    (typeMismatch x fieldTypeName' currentProp)
           return (type', currentProp)
-        getField = lookupField _name (toList parentFields) (UnknownField props _name)
+        getField = selectBy (UnknownField props _name) _name parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of

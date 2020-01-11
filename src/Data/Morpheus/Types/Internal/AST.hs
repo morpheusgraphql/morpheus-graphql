@@ -126,7 +126,6 @@ module Data.Morpheus.Types.Internal.AST
   , lookupInputType
   , coerceDataObject
   , lookupDataUnion
-  , lookupField
   , lookupUnionTypes
   , lookupSelectionField
   , lookupFieldAsSelectionSet
@@ -148,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
   , checkNameCollision
   , hasArguments
   , lookupWith
+  , selectTypeObject
   -- LOCAL
   , GQLQuery(..)
   , Variables

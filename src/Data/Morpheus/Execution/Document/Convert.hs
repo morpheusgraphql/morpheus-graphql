@@ -73,8 +73,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: (Key, FieldDefinition) -> Q (FieldDefinition)
-    genResField (_, field@FieldDefinition { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
+    genResField :: FieldDefinition -> Q (FieldDefinition)
+    genResField field@FieldDefinition { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } }
       = do 
         typeArgs <- getTypeArgs typeConName lib 
         pure $ field 
@@ -179,9 +179,9 @@ hsTypeName "Boolean"                   = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name                        = name
 
-genArgumentType :: (Key -> Key) -> (Key, FieldDefinition) -> Q [TypeD]
-genArgumentType _ (_, FieldDefinition { fieldArgs = NoArguments }) = pure []
-genArgumentType namespaceWith (fieldName, FieldDefinition { fieldArgs }) = pure
+genArgumentType :: (Key -> Key) -> FieldDefinition -> Q [TypeD]
+genArgumentType _ FieldDefinition { fieldArgs = NoArguments } = pure []
+genArgumentType namespaceWith FieldDefinition { fieldName, fieldArgs  } = pure
   [ TypeD
       { tName
       , tNamespace = []
@@ -198,7 +198,7 @@ genArguments :: ArgumentsDefinition -> [FieldDefinition]
 genArguments x = genInputFields $ fromList (arguments x)
 
 genInputFields :: FieldsDefinition -> [FieldDefinition]
-genInputFields = map (genField . snd) . toList
+genInputFields = map genField . toList
 
 genField :: FieldDefinition -> FieldDefinition
 genField field@FieldDefinition { fieldType = tyRef@TypeRef { typeConName } } = field 

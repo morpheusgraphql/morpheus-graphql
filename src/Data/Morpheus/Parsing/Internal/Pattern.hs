@@ -37,7 +37,6 @@ import           Data.Morpheus.Parsing.Internal.Value
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , Directive(..)
-                                                , Key
                                                 , Meta(..)
                                                 , DataEnumValue(..)
                                                 , Name
@@ -67,7 +66,7 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 -- InputValueDefinition
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
-inputValueDefinition :: Parser (Key, FieldDefinition)
+inputValueDefinition :: Parser FieldDefinition
 inputValueDefinition = label "InputValueDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -75,14 +74,12 @@ inputValueDefinition = label "InputValueDefinition" $ do
     fieldType      <- parseType
     _              <- parseDefaultValue
     metaDirectives <- optionalDirectives
-    pure
-        ( fieldName
-        , FieldDefinition { fieldArgs     = NoArguments
-                    , fieldName
-                    , fieldType
-                    , fieldMeta = Just Meta { metaDescription, metaDirectives }
-                    }
-        )
+    pure FieldDefinition 
+        { fieldArgs     = NoArguments
+        , fieldName
+        , fieldType
+        , fieldMeta = Just Meta { metaDescription, metaDirectives }
+        }
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 --
@@ -98,13 +95,13 @@ argumentsDefinition =
 --  FieldsDefinition :
 --    { FieldDefinition(list) }
 --
-fieldsDefinition :: Parser (FieldsDefinition)
+fieldsDefinition :: Parser FieldsDefinition
 fieldsDefinition = label "FieldsDefinition" $ fromList <$> setOf fieldDefinition
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parser (Key, FieldDefinition)
+fieldDefinition :: Parser FieldDefinition
 fieldDefinition = label "FieldDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -112,16 +109,13 @@ fieldDefinition = label "FieldDefinition" $ do
     litAssignment -- ':'
     fieldType      <- parseType
     metaDirectives <- optionalDirectives
-    pure
-        ( fieldName
-        , FieldDefinition { fieldName
-                    , fieldArgs
-                    , fieldType
-                    , fieldMeta = Just Meta { metaDescription, metaDirectives }
-                    }
-        )
-
-
+    pure FieldDefinition 
+        { fieldName
+        , fieldArgs
+        , fieldType
+        , fieldMeta = Just Meta { metaDescription, metaDirectives }
+        }
+        
 -- InputFieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }

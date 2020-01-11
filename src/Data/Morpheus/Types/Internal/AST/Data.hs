@@ -47,7 +47,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , lookupInputType
   , coerceDataObject
   , lookupDataUnion
-  , lookupField
   , lookupUnionTypes
   , lookupSelectionField
   , lookupFieldAsSelectionSet
@@ -69,6 +68,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , checkNameCollision
   , hasArguments
   , lookupWith
+  , selectTypeObject
   )
 where
 
@@ -102,6 +102,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , DataTypeKind(..)
                                                 , DataFingerprint(..)
                                                 , isNullable
+                                                , sysFields
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -119,14 +120,22 @@ import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 
 class Listable c a where 
-  fromList     :: [(Name, a)] ->  c
-  toList   ::  c  -> [(Name, a)]
+  fromList     :: [a] ->  c
+  toList   ::  c  -> [a]
 
 class Selectable c a where 
-  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
+  selectOr :: d -> (a -> d) -> Name -> c -> d
+  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a
+  selectBy err = selectOr (failure err) pure
+
+instance Selectable [(Name, a)] a where 
+  selectOr fb f key lib = maybe fb f (lookup key lib)
+
+instance Selectable (HashMap Name a) a where 
+  selectOr fb f key lib = maybe fb f (HM.lookup key lib)
+
 
 type DataEnum = [DataEnumValue]
-type DataArgument = FieldDefinition 
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
 
@@ -194,14 +203,7 @@ data Schema = Schema
 type TypeLib = HashMap Key DataType
 
 instance Selectable Schema DataType where 
-  selectBy err name lib = case lookupDataType name lib of
-      Nothing -> failure err
-      Just x  -> pure x
-
-instance Selectable Schema (Name, FieldsDefinition ) where 
-  selectBy validationError name lib =
-     selectBy validationError name lib >>= coerceDataObject validationError
-
+  selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 initTypeLib :: DataType -> Schema
 initTypeLib query = Schema { types        = empty
@@ -322,7 +324,7 @@ lookupUnionTypes
   -> m [(Name, FieldsDefinition)]
 lookupUnionTypes position key lib FieldDefinition { fieldType = TypeRef { typeConName = typeName } }
   = lookupDataUnion gqlError typeName lib
-    >>= mapM (flip (selectBy gqlError) lib)
+    >>= mapM (flip (selectTypeObject gqlError) lib)
   where gqlError = hasNoSubfields key typeName position
 
 lookupDataUnion
@@ -389,7 +391,7 @@ popByKey name lib = case lookupWith typeName name lib of
 -- TODO: find better solution with OrderedMap to stote Fields
 newtype FieldsDefinition = FieldsDefinition 
 -- { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
- { unFieldsDefinition :: [(Name, FieldDefinition)] } deriving (Show, Lift)
+ { unFieldsDefinition :: [FieldDefinition] } deriving (Show, Lift)
 
 -- instance Lift FieldsDefinition where 
 --   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
@@ -403,9 +405,10 @@ instance Listable FieldsDefinition FieldDefinition where
   toList = {- HM.toList . -} unFieldsDefinition
 
 instance Selectable FieldsDefinition FieldDefinition where
-  selectBy err name (FieldsDefinition lib) = case {- HM. -}lookup name lib of
-       Nothing -> failure err
-       Just x  -> pure x
+  selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
+
+instance Selectable [FieldDefinition] FieldDefinition where
+  selectOr fb f name ls = maybe fb f (lookupWith fieldName name ls)
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -417,11 +420,8 @@ data FieldDefinition = FieldDefinition
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
 
-fieldVisibility :: (Key, FieldDefinition) -> Bool
-fieldVisibility ("__typename", _) = False
-fieldVisibility ("__schema"  , _) = False
-fieldVisibility ("__type"    , _) = False
-fieldVisibility _                 = True
+fieldVisibility :: FieldDefinition -> Bool
+fieldVisibility FieldDefinition { fieldName } = not (fieldName `elem` sysFields)
 
 isFieldNullable :: FieldDefinition -> Bool
 isFieldNullable = isNullable . fieldType
@@ -448,10 +448,8 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
   listW alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeList : typeWrappers }
 
-lookupField :: Failure error m => Key -> [(Key, field)] -> error -> m field
-lookupField key fields gqlError = case lookup key fields of
-  Nothing    -> failure gqlError
-  Just field -> pure field
+selectTypeObject :: (Monad m, Failure err m) => err -> Name -> Schema -> m (Name, FieldsDefinition )
+selectTypeObject  err name lib = selectBy err name lib >>= coerceDataObject err
 
 lookupSelectionField
   :: Failure GQLErrors Validation
@@ -459,7 +457,7 @@ lookupSelectionField
   -> Name
   -> Name
   -> FieldsDefinition
-  -> Validation (FieldDefinition)
+  -> Validation FieldDefinition
 lookupSelectionField position fieldName typeName fields = selectBy gqlError fieldName fields 
   where gqlError = cannotQueryField fieldName typeName position
 
@@ -471,7 +469,7 @@ lookupFieldAsSelectionSet
   -> FieldDefinition  
   -> m (Name, FieldsDefinition )
 lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef { typeConName } }
-  = selectBy gqlError typeConName lib
+  = selectTypeObject gqlError typeConName lib
   where gqlError = hasNoSubfields key typeConName position
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
@@ -482,35 +480,43 @@ lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef
 data ArgumentsDefinition 
   = ArgumentsDefinition  
     { argumentsTypename ::  Maybe Name
-    , arguments         :: [(Key, DataArgument)] 
+    , arguments         :: [DataArgument]
     }
   | NoArguments
   deriving (Show, Lift)
 
-createArgument :: Key -> ([TypeWrapper], Key) -> (Key, FieldDefinition)
-createArgument fieldName x = (fieldName, createField NoArguments fieldName x)
+type DataArgument = FieldDefinition 
+
+createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
+createArgument = createField NoArguments
 
 hasArguments :: ArgumentsDefinition -> Bool
 hasArguments NoArguments = False
 hasArguments _ = True
 
+instance Selectable ArgumentsDefinition DataArgument where
+  selectOr fb _ _    NoArguments                  = fb
+  selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
+
+instance Listable ArgumentsDefinition DataArgument where
+  toList NoArguments                  = []
+  toList (ArgumentsDefinition _ args) = args
+  fromList []                         = NoArguments
+  fromList args                       = ArgumentsDefinition Nothing args
+
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
 
-createInputUnionFields :: Key -> [Key] -> [(Key, FieldDefinition)]
+createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members
  where
-  fieldTag =
-    ( "__typename"
-    , FieldDefinition { fieldName     = "__typename"
-                , fieldArgs     = NoArguments
-                , fieldType     = createAlias (name <> "Tags")
-                , fieldMeta     = Nothing
-                }
-    )
-  unionField memberName =
-    ( memberName
-    , FieldDefinition
+  fieldTag = FieldDefinition 
+    { fieldName = "__typename"
+    , fieldArgs     = NoArguments
+    , fieldType     = createAlias (name <> "Tags")
+    , fieldMeta     = Nothing
+    }
+  unionField memberName = FieldDefinition
       { fieldArgs     = NoArguments
       , fieldName     = memberName
       , fieldType     = TypeRef { typeConName    = memberName
@@ -519,8 +525,6 @@ createInputUnionFields name members = fieldTag : map unionField members
                                   }
       , fieldMeta     = Nothing
       }
-    )
-
 --
 -- OTHER
 --------------------------------------------------------------------------------------------------
