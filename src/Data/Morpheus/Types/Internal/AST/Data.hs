@@ -486,16 +486,12 @@ lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef
 data ArgumentsDefinition 
   = ArgumentsDefinition  
     { argumentsTypename ::  Maybe Name
-    , arguments         :: [(Key, DataArgument)] 
+    , arguments         :: [DataArgument]
     }
   | NoArguments
   deriving (Show, Lift)
 
 type DataArgument = FieldDefinition 
-
-instance Listable [(Key, DataArgument)] DataArgument where 
-  fromList = map (\x -> (fieldName x, x))
-  toList = map snd 
 
 createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
 createArgument = createField NoArguments
@@ -510,9 +506,9 @@ instance Selectable ArgumentsDefinition DataArgument where
 
 instance Listable ArgumentsDefinition DataArgument where
   toList NoArguments                  = []
-  toList (ArgumentsDefinition _ args) = toList args
+  toList (ArgumentsDefinition _ args) = args
   fromList []                         = NoArguments
-  fromList args                       = ArgumentsDefinition Nothing (fromList args)
+  fromList args                       = ArgumentsDefinition Nothing args
 
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)

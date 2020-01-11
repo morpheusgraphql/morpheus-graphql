@@ -75,14 +75,12 @@ inputValueDefinition = label "InputValueDefinition" $ do
     fieldType      <- parseType
     _              <- parseDefaultValue
     metaDirectives <- optionalDirectives
-    pure
-        ( fieldName
-        , FieldDefinition { fieldArgs     = NoArguments
-                    , fieldName
-                    , fieldType
-                    , fieldMeta = Just Meta { metaDescription, metaDirectives }
-                    }
-        )
+    pure FieldDefinition 
+        { fieldArgs     = NoArguments
+        , fieldName
+        , fieldType
+        , fieldMeta = Just Meta { metaDescription, metaDirectives }
+        }
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 --
@@ -98,7 +96,7 @@ argumentsDefinition =
 --  FieldsDefinition :
 --    { FieldDefinition(list) }
 --
-fieldsDefinition :: Parser (FieldsDefinition)
+fieldsDefinition :: Parser FieldsDefinition
 fieldsDefinition = label "FieldsDefinition" $ fromList <$> setOf fieldDefinition
 
 --  FieldDefinition
@@ -112,16 +110,13 @@ fieldDefinition = label "FieldDefinition" $ do
     litAssignment -- ':'
     fieldType      <- parseType
     metaDirectives <- optionalDirectives
-    pure
-        ( fieldName
-        , FieldDefinition { fieldName
-                    , fieldArgs
-                    , fieldType
-                    , fieldMeta = Just Meta { metaDescription, metaDirectives }
-                    }
-        )
-
-
+    pure FieldDefinition 
+        { fieldName
+        , fieldArgs
+        , fieldType
+        , fieldMeta = Just Meta { metaDescription, metaDirectives }
+        }
+        
 -- InputFieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }

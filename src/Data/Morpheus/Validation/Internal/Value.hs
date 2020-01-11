@@ -141,7 +141,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
                                    lib
                                    (typeMismatch x fieldTypeName' currentProp)
           return (type', currentProp)
-        getField = lookupField _name (toList parentFields) (UnknownField props _name)
+        getField = selectBy (UnknownField props _name) _name parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of
