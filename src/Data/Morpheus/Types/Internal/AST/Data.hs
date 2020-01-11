@@ -124,14 +124,16 @@ class Listable c a where
   toList   ::  c  -> [a]
 
 class Selectable c a where 
-  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a
   selectOr :: d -> (a -> d) -> Name -> c -> d
+  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a
+  selectBy err = selectOr (failure err) pure
 
 instance Selectable [(Name, a)] a where 
-  selectBy err key lib = maybe (failure err) pure (lookup key lib)
+  selectOr fb f key lib = maybe fb f (lookup key lib)
 
 instance Selectable (HashMap Name a) a where 
-  selectBy err key lib = maybe (failure err) pure (HM.lookup key lib)
+  selectOr fb f key lib = maybe fb f (HM.lookup key lib)
+
 
 type DataEnum = [DataEnumValue]
 type DataUnion = [Key]
@@ -201,9 +203,7 @@ data Schema = Schema
 type TypeLib = HashMap Key DataType
 
 instance Selectable Schema DataType where 
-  selectBy err name lib = case lookupDataType name lib of
-      Nothing -> failure err
-      Just x  -> pure x
+  selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 instance Selectable Schema (Name, FieldsDefinition ) where 
   selectBy validationError name lib =
@@ -410,10 +410,10 @@ instance Listable FieldsDefinition FieldDefinition where
   toList = {- HM.toList . -} unFieldsDefinition
 
 instance Selectable FieldsDefinition FieldDefinition where
-  selectBy err name (FieldsDefinition lib) = selectBy err name  lib
+  selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
 instance Selectable [FieldDefinition] FieldDefinition where
-  selectBy err name ls = maybe (failure err) pure (lookupWith fieldName name ls)
+  selectOr fb f name ls = maybe fb f (lookupWith fieldName name ls)
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -502,8 +502,8 @@ hasArguments NoArguments = False
 hasArguments _ = True
 
 instance Selectable ArgumentsDefinition DataArgument where
-  selectBy err key NoArguments                  = failure err
-  selectBy err key (ArgumentsDefinition _ args) = selectBy err key args 
+  selectOr fb _ _    NoArguments                  = fb
+  selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
 instance Listable ArgumentsDefinition DataArgument where
   toList NoArguments                  = []
