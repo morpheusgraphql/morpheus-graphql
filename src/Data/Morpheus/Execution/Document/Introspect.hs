@@ -21,8 +21,8 @@ import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), int
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
 import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , TypeD (..)
-                                                            , DataType(..)
-                                                            , DataTypeContent(..)
+                                                            , TypeDefinition(..)
+                                                            , TypeContent(..)
                                                             , ArgumentsDefinition(..)
                                                             , FieldDefinition (..)
                                                             , insertType
@@ -32,8 +32,8 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             )
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
-instanceIntrospect :: DataType -> Q [Dec]
-instanceIntrospect DataType { typeName, typeContent = DataEnum enumType , .. } 
+instanceIntrospect :: TypeDefinition -> Q [Dec]
+instanceIntrospect TypeDefinition { typeName, typeContent = DataEnum enumType , .. } 
     -- FIXME: dirty fix for introspection
     | typeName `elem`  ["__DirectiveLocation","__TypeKind"] = pure []
     | otherwise = pure <$> instanceD (cxt []) iHead [defineIntrospect]
@@ -42,7 +42,7 @@ instanceIntrospect DataType { typeName, typeContent = DataEnum enumType , .. }
     iHead = instanceHeadT ''Introspect typeName []
     defineIntrospect = instanceProxyFunD ('introspect,body)
       where
-        body =[| insertType DataType { typeContent = DataEnum enumType, .. } |]
+        body =[| insertType TypeDefinition { typeContent = DataEnum enumType, .. } |]
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]

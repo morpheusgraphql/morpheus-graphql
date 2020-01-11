@@ -20,8 +20,8 @@ import           Data.Morpheus.Execution.Internal.Utils
                                                 ( capital )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
-                                                , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeContent(..)
+                                                , TypeDefinition(..)
                                                 , DataTypeKind(..)
                                                 , OperationType(..)
                                                 , TypeRef(..)
@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
 m_ :: Key
 m_ = "m"
 
-getTypeArgs :: Key -> [DataType] -> Q (Maybe Key)
+getTypeArgs :: Key -> [TypeDefinition] -> Q (Maybe Key)
 getTypeArgs "__TypeKind" _ = pure Nothing
 getTypeArgs "Boolean" _ = pure Nothing
 getTypeArgs "String" _ = pure Nothing
@@ -53,19 +53,18 @@ getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
 
 getTyArgs :: Info -> Maybe Key
 getTyArgs x 
-          | length (infoTyVars x) > 0 = Just m_ 
-          | otherwise = Nothing
+  | null (infoTyVars x) = Nothing
+  | otherwise = Just m_ 
 
-
-kindToTyArgs :: DataTypeContent -> Maybe Key
+kindToTyArgs :: TypeContent -> Maybe Key
 kindToTyArgs DataObject{} = Just m_
 kindToTyArgs DataUnion{}  = Just m_
 kindToTyArgs _             = Nothing
 
-toTHDefinitions :: Bool -> [DataType] -> Q [GQLTypeD]
+toTHDefinitions :: Bool -> [TypeDefinition] -> Q [GQLTypeD]
 toTHDefinitions namespace lib = traverse renderTHType lib
  where
-  renderTHType :: DataType -> Q GQLTypeD
+  renderTHType :: TypeDefinition -> Q GQLTypeD
   renderTHType x = generateType x
    where
     genArgsTypeName :: Key -> Key
@@ -86,11 +85,11 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         | hasArguments fieldArgs = fieldArgs { argumentsTypename = Just $ genArgsTypeName fieldName }
         | otherwise = fieldArgs
     --------------------------------------------
-    generateType :: DataType -> Q GQLTypeD
-    generateType dt@DataType { typeName, typeContent, typeMeta } = genType
+    generateType :: TypeDefinition -> Q GQLTypeD
+    generateType dt@TypeDefinition { typeName, typeContent, typeMeta } = genType
       typeContent
      where
-      genType :: DataTypeContent -> Q GQLTypeD
+      genType :: TypeContent -> Q GQLTypeD
       genType (DataEnum tags) = pure GQLTypeD
         { typeD        = TypeD { tName      = hsTypeName typeName
                                , tNamespace = []

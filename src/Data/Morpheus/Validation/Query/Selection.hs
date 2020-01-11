@@ -35,8 +35,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldDefinition(..)
                                                 , Ref(..)
                                                 , FieldsDefinition(..)
-                                                , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeContent(..)
+                                                , TypeDefinition(..)
                                                 , Schema(..)
                                                 , TypeRef(..)
                                                 , Name
@@ -136,7 +136,7 @@ validateSelectionSet lib fragments' operatorName variables = __validate
     <$> mapM validateSelection selectionSet
     >>= checkDuplicatesOn typeName
    where
-    -- getValidationData :: Name -> ValidSelection -> (FieldDefinition, DataTypeContent, ValidArguments)
+    -- getValidationData :: Name -> ValidSelection -> (FieldDefinition, TypeContent, ValidArguments)
     getValidationData key (selectionArguments, selectionPosition) = do
       selectionField <- lookupSelectionField selectionPosition
                                              key

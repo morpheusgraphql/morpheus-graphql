@@ -21,9 +21,9 @@ import           Data.Morpheus.Rendering.RenderGQL
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , FieldDefinition(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , FieldsDefinition(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , TypeRef(..)
                                                 , Listable(..)
                                                 , Selectable(..)
@@ -35,16 +35,16 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 )
 
-validatePartialDocument :: [DataType] -> Validation [DataType]
+validatePartialDocument :: [TypeDefinition] -> Validation [TypeDefinition]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
-  validateType :: DataType -> Validation (Maybe DataType)
-  validateType dt@DataType { typeName , typeContent = DataObject { objectImplements , objectFields}  } = do         
+  validateType :: TypeDefinition -> Validation (Maybe TypeDefinition)
+  validateType dt@TypeDefinition { typeName , typeContent = DataObject { objectImplements , objectFields}  } = do         
       interface <- traverse getInterfaceByKey objectImplements
       case concatMap (mustBeSubset objectFields) interface of
         [] -> pure (Just dt) 
         errors -> failure $ partialImplements typeName errors
-  validateType DataType { typeContent = DataInterface {}} = pure Nothing
+  validateType TypeDefinition { typeContent = DataInterface {}} = pure Nothing
   validateType x = pure (Just x)
   mustBeSubset
     :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
@@ -68,5 +68,5 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
   -------------------------------
   getInterfaceByKey :: Name -> Validation (Name, FieldsDefinition)
   getInterfaceByKey interfaceName = case lookupWith typeName interfaceName lib of
-    Just DataType { typeContent = DataInterface { interfaceFields } } -> pure (interfaceName,interfaceFields)
+    Just TypeDefinition { typeContent = DataInterface { interfaceFields } } -> pure (interfaceName,interfaceFields)
     _ -> failure $ unknownInterface interfaceName

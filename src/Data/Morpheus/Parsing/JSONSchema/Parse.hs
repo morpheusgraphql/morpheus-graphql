@@ -26,8 +26,8 @@ import qualified Data.Morpheus.Types.Internal.AST as AST
                                                 ( Schema)
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition
-                                                , DataType(..)
-                                                , DataTypeContent(..)
+                                                , TypeDefinition(..)
+                                                , TypeContent(..)
                                                 , DataTypeWrapper(..)
                                                 , TypeWrapper
                                                 , createArgument
@@ -62,7 +62,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
 class ParseJSONSchema a b where
   parse :: a -> Validation b
 
-instance ParseJSONSchema Type [DataType] where
+instance ParseJSONSchema Type [TypeDefinition] where
   parse Type { name = Just typeName, kind = SCALAR } =
     pure [createScalarType typeName]
   parse Type { name = Just typeName, kind = ENUM, enumValues = Just enums } =

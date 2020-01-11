@@ -18,8 +18,8 @@ import           Data.Morpheus.Error.Input      ( InputError(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
-                                                , DataTypeContent(..)
-                                                , DataType(..)
+                                                , TypeContent(..)
+                                                , TypeDefinition(..)
                                                 , Schema(..)
                                                 , ScalarDefinition(..)
                                                 , Key
@@ -78,10 +78,10 @@ validateInputValue
   :: Schema
   -> [Prop]
   -> [TypeWrapper]
-  -> DataType
+  -> TypeDefinition
   -> (Key, ResolvedValue)
   -> InputValidation ValidValue
-validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
+validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName } =
   validateWrapped rw typeContent
  where
   throwError :: [TypeWrapper] -> ResolvedValue -> InputValidation ValidValue
@@ -90,7 +90,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
-    -> DataTypeContent
+    -> TypeContent
     -> (Key, ResolvedValue)
     -> InputValidation ValidValue
   -- Validate Null. value = null ?
@@ -112,7 +112,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
   validateWrapped [] dt v = validate dt v
    where
     validate
-      :: DataTypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
+      :: TypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) =
       traverse requiredFieldsDefined (toList parentFields)
         >>  Object
@@ -133,7 +133,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
                                                     (_name, value)
         return (_name, value'')
        where
-        validationData :: ResolvedValue -> InputValidation (DataType, [Prop])
+        validationData :: ResolvedValue -> InputValidation (TypeDefinition, [Prop])
         validationData x = do
           fieldTypeName' <- typeConName . fieldType <$> getField
           let currentProp = props ++ [Prop _name fieldTypeName']
