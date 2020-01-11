@@ -49,24 +49,8 @@ renderGraphQLDocument lib =
  where
   visibleTypes = filter (not . isDefaultTypeName . typeName) (allDataTypes lib)
 
-renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Name
-renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
-    where
-      showGQLWrapper []               = render x
-      showGQLWrapper (ListType:xs)    = "[" <> showGQLWrapper xs <> "]"
-      showGQLWrapper (NonNullType:xs) = showGQLWrapper xs <> "!"
-
 class RenderGQL a where
   render :: a -> Key
-
-instance RenderGQL Key where
-  render = id
-
-instance RenderGQL TypeRef where
-  render TypeRef { typeConName, typeWrappers } = renderWrapped typeConName typeWrappers
-
-instance RenderGQL DataEnumValue where
-  render DataEnumValue { enumName } = enumName
 
 instance RenderGQL DataType where
   render DataType { typeName, typeContent } = __render typeContent
@@ -88,17 +72,35 @@ instance RenderGQL DataType where
 instance RenderGQL FieldsDefinition where
   render = renderObject render . ignoreHidden . toList
    where 
-    ignoreHidden :: [(Text, FieldDefinition )] -> [(Text, FieldDefinition )]
+    ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
     ignoreHidden = filter fieldVisibility
 
-
-instance RenderGQL (Name, FieldDefinition) where 
-  render (key, FieldDefinition { fieldType, fieldArgs }) =
-    convertToJSONName key <> render fieldArgs <> ": " <> render fieldType
+instance RenderGQL FieldDefinition where 
+  render FieldDefinition { fieldName, fieldType, fieldArgs } =
+    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
 
 instance RenderGQL (ArgumentsDefinition) where 
   render NoArguments   = ""
-  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
+  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map render args) <> ")"
+    where 
+      args :: [FieldDefinition]
+      args = toList arguments
+
+instance RenderGQL DataEnumValue where
+  render DataEnumValue { enumName } = enumName
+
+instance RenderGQL TypeRef where
+  render TypeRef { typeConName, typeWrappers } = renderWrapped typeConName typeWrappers
+
+instance RenderGQL Key where
+  render = id
+
+renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Name
+renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
+    where
+      showGQLWrapper []               = render x
+      showGQLWrapper (ListType:xs)    = "[" <> showGQLWrapper xs <> "]"
+      showGQLWrapper (NonNullType:xs) = showGQLWrapper xs <> "!"
 
 renderIndent :: Text
 renderIndent = "  "

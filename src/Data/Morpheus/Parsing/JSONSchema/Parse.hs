@@ -75,15 +75,15 @@ instance ParseJSONSchema Type [DataType] where
       Just uni -> pure [createUnionType typeName uni]
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
-      (fields :: [(Name,FieldDefinition)]) <- traverse parse iFields
+      (fields :: [FieldDefinition]) <- traverse parse iFields
       pure [createType typeName $ DataInputObject $ fromList fields]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
-      (fields :: [(Name,FieldDefinition)]) <- traverse parse oFields
+      (fields :: [FieldDefinition]) <- traverse parse oFields
       pure [createType typeName $ DataObject [] $ fromList fields]
   parse _ = pure []
 
-instance ParseJSONSchema Field (Key,FieldDefinition) where
+instance ParseJSONSchema Field FieldDefinition where
   parse Field { fieldName, fieldArgs, fieldType } = do
     fType <- fieldTypeFromJSON fieldType
     args  <- traverse genArg fieldArgs
@@ -92,7 +92,7 @@ instance ParseJSONSchema Field (Key,FieldDefinition) where
     genArg InputValue { inputName = argName, inputType = argType } =
       createArgument argName <$> fieldTypeFromJSON argType
 
-instance ParseJSONSchema InputValue (Key,FieldDefinition) where
+instance ParseJSONSchema InputValue FieldDefinition where
   parse InputValue { inputName, inputType } = do
     fieldType <- fieldTypeFromJSON inputType
     pure (inputName, createField NoArguments inputName fieldType)

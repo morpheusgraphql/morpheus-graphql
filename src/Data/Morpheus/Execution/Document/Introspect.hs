@@ -45,7 +45,7 @@ instanceIntrospect DataType { typeName, typeContent = DataEnum enumType , .. }
         body =[| insertType DataType { typeContent = DataEnum enumType, .. } |]
 instanceIntrospect _ = pure []
 
--- [((Text, FieldDefinition), TypeUpdater)]
+-- [(FieldDefinition, TypeUpdater)]
 deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods

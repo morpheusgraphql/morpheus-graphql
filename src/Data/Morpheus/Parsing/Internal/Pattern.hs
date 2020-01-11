@@ -67,7 +67,7 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 -- InputValueDefinition
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
-inputValueDefinition :: Parser (Key, FieldDefinition)
+inputValueDefinition :: Parser FieldDefinition
 inputValueDefinition = label "InputValueDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName
@@ -104,7 +104,7 @@ fieldsDefinition = label "FieldsDefinition" $ fromList <$> setOf fieldDefinition
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parser (Key, FieldDefinition)
+fieldDefinition :: Parser FieldDefinition
 fieldDefinition = label "FieldDefinition" $ do
     metaDescription <- optDescription
     fieldName       <- parseName

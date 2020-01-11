@@ -86,7 +86,7 @@ renderArguments :: (Monad m, Failure Text m) => ArgumentsDefinition -> Schema ->
 renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) arguments
 renderArguments NoArguments _ = pure []
 
-instance RenderSchema (Text ,FieldDefinition) S__Field where
+instance RenderSchema FieldDefinition S__Field where
   render (name, field@FieldDefinition { fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta }) lib
     = do
       kind <- renderTypeKind <$> lookupKind typeConName lib
@@ -127,7 +127,7 @@ lookupKind name lib = case lookupDataType name lib of
 
 renderinputValue
   :: (Monad m, Failure Text m)
-  => (Text, FieldDefinition)
+  => FieldDefinition
   -> Result m (S__InputValue m)
 renderinputValue (key, input) =
   fmap (createInputValueWith key (fieldMeta input))

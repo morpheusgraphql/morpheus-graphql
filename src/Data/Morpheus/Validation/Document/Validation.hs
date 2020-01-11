@@ -49,7 +49,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
     :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
   mustBeSubset objFields (typeName, fields) = concatMap checkField (toList fields)
    where
-    checkField :: (Name, FieldDefinition) -> [(Name, Name, ImplementsError)]
+    checkField :: FieldDefinition -> [(Name, Name, ImplementsError)]
     checkField (key, FieldDefinition { fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } })
       = case lookup key (toList objFields) of
         Just FieldDefinition { fieldType = objT@TypeRef { typeConName, typeWrappers } }

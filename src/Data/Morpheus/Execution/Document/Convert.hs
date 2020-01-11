@@ -73,7 +73,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: (Key, FieldDefinition) -> Q (FieldDefinition)
+    genResField :: FieldDefinition -> Q (FieldDefinition)
     genResField (_, field@FieldDefinition { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } })
       = do 
         typeArgs <- getTypeArgs typeConName lib 
@@ -179,7 +179,7 @@ hsTypeName "Boolean"                   = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name                        = name
 
-genArgumentType :: (Key -> Key) -> (Key, FieldDefinition) -> Q [TypeD]
+genArgumentType :: (Key -> Key) -> FieldDefinition -> Q [TypeD]
 genArgumentType _ (_, FieldDefinition { fieldArgs = NoArguments }) = pure []
 genArgumentType namespaceWith (fieldName, FieldDefinition { fieldArgs }) = pure
   [ TypeD

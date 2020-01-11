@@ -203,7 +203,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
   withObject _ =
-    ( fromList ([] :: [(Name, FieldDefinition)]) , [introspectFailure (name <> " should have only one nonempty constructor")])
+    ( fromList ([] :: [FieldDefinition]) , [introspectFailure (name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
@@ -260,7 +260,7 @@ data ConsRep = ConsRep {
 
 data FieldRep = FieldRep {
   fieldTypeName :: Name,
-  fieldData :: (Name, FieldDefinition),
+  fieldData :: FieldDefinition,
   fieldTypeUpdater :: TypeUpdater,
   fieldIsObject :: Bool
 }

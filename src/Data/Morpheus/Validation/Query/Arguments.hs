@@ -139,7 +139,7 @@ validateArguments
   :: Schema
   -> Text
   -> ValidVariables
-  -> (Text, FieldDefinition)
+  -> FieldDefinition
   -> Position
   -> RawArguments
   -> Validation ValidArguments
@@ -158,4 +158,4 @@ validateArguments typeLib operatorName variables (key, field@FieldDefinition { f
     enhancedKeys = map argToKey args
     argToKey :: (Name, Argument RESOLVED) -> Ref
     argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
-    fieldKeys = map fst (toList fieldArgs :: [(Name, FieldDefinition)])
+    fieldKeys = map fst (toList fieldArgs :: [FieldDefinition])

@@ -44,6 +44,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , isInput
   , isNullableWrapper
   , isOutputType
+  , sysFields
   )
 where
 
@@ -224,3 +225,6 @@ sysTypes =
   , "__InputValue"
   , "__EnumValue"
   ]
+
+sysFields :: [Key]
+sysFields = ["__typename","__schema","__type"]

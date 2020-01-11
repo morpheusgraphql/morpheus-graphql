@@ -102,6 +102,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , DataTypeKind(..)
                                                 , DataFingerprint(..)
                                                 , isNullable
+                                                , sysFields
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -119,8 +120,8 @@ import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 
 class Listable c a where 
-  fromList     :: [(Name, a)] ->  c
-  toList   ::  c  -> [(Name, a)]
+  fromList     :: [a] ->  c
+  toList   ::  c  -> [a]
 
 class Selectable c a where 
   selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a 
@@ -132,7 +133,6 @@ instance Selectable (HashMap Name a) a where
   selectBy err key lib = maybe (failure err) pure (HM.lookup key lib)
 
 type DataEnum = [DataEnumValue]
-type DataArgument = FieldDefinition 
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
 
@@ -395,7 +395,7 @@ popByKey name lib = case lookupWith typeName name lib of
 -- TODO: find better solution with OrderedMap to stote Fields
 newtype FieldsDefinition = FieldsDefinition 
 -- { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
- { unFieldsDefinition :: [(Name, FieldDefinition)] } deriving (Show, Lift)
+ { unFieldsDefinition :: [FieldDefinition] } deriving (Show, Lift)
 
 -- instance Lift FieldsDefinition where 
 --   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
@@ -411,6 +411,9 @@ instance Listable FieldsDefinition FieldDefinition where
 instance Selectable FieldsDefinition FieldDefinition where
   selectBy err name (FieldsDefinition lib) = selectBy err name  lib
 
+instance Selectable [FieldDefinition] FieldDefinition where
+  selectBy err name ls = maybe (failure err) pure (lookupWith fieldName name ls)
+
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 -- 
@@ -421,11 +424,8 @@ data FieldDefinition = FieldDefinition
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
 
-fieldVisibility :: (Key, FieldDefinition) -> Bool
-fieldVisibility ("__typename", _) = False
-fieldVisibility ("__schema"  , _) = False
-fieldVisibility ("__type"    , _) = False
-fieldVisibility _                 = True
+fieldVisibility :: FieldDefinition -> Bool
+fieldVisibility FieldDefinition { fieldName } = not (fieldName `elem` sysFields)
 
 isFieldNullable :: FieldDefinition -> Bool
 isFieldNullable = isNullable . fieldType
@@ -491,8 +491,14 @@ data ArgumentsDefinition
   | NoArguments
   deriving (Show, Lift)
 
-createArgument :: Key -> ([TypeWrapper], Key) -> (Key, FieldDefinition)
-createArgument fieldName x = (fieldName, createField NoArguments fieldName x)
+type DataArgument = FieldDefinition 
+
+instance Listable [(Key, DataArgument)] DataArgument where 
+  fromList = map (\x -> (fieldName x, x))
+  toList = map snd 
+
+createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
+createArgument = createField NoArguments
 
 hasArguments :: ArgumentsDefinition -> Bool
 hasArguments NoArguments = False
@@ -504,27 +510,23 @@ instance Selectable ArgumentsDefinition DataArgument where
 
 instance Listable ArgumentsDefinition DataArgument where
   toList NoArguments                  = []
-  toList (ArgumentsDefinition _ args) = args
+  toList (ArgumentsDefinition _ args) = toList args
   fromList []                         = NoArguments
-  fromList args                       = ArgumentsDefinition Nothing args
+  fromList args                       = ArgumentsDefinition Nothing (fromList args)
 
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
 
-createInputUnionFields :: Key -> [Key] -> [(Key, FieldDefinition)]
+createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members
  where
-  fieldTag =
-    ( "__typename"
-    , FieldDefinition { fieldName     = "__typename"
-                , fieldArgs     = NoArguments
-                , fieldType     = createAlias (name <> "Tags")
-                , fieldMeta     = Nothing
-                }
-    )
-  unionField memberName =
-    ( memberName
-    , FieldDefinition
+  fieldTag = FieldDefinition 
+    { fieldName = "__typename"
+    , fieldArgs     = NoArguments
+    , fieldType     = createAlias (name <> "Tags")
+    , fieldMeta     = Nothing
+    }
+  unionField memberName = FieldDefinition
       { fieldArgs     = NoArguments
       , fieldName     = memberName
       , fieldType     = TypeRef { typeConName    = memberName
@@ -533,8 +535,6 @@ createInputUnionFields name members = fieldTag : map unionField members
                                   }
       , fieldMeta     = Nothing
       }
-    )
-
 --
 -- OTHER
 --------------------------------------------------------------------------------------------------
