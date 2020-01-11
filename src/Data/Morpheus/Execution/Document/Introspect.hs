@@ -71,7 +71,7 @@ buildTypes = listE . concatMap introspectField
       [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgs
       where
         inputTypes ArgumentsDefinition { argumentsTypename = Just argsTypeName }
-          | argsTypeName /= "()" = [[|snd $ introspectObjectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
+          | argsTypeName /= "()" = [[| snd $ introspectObjectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
           where
             tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
         inputTypes _ = []
@@ -91,8 +91,4 @@ proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
 buildFields :: [FieldDefinition] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField f@FieldDefinition {fieldName, fieldType } =
-      [|( fieldName
-        , f { fieldType = fieldType {typeConName = __typeName $(proxyT fieldType) } }
-        )
-      |]
+    buildField f@FieldDefinition {fieldType } = [| f { fieldType = fieldType {typeConName = __typeName $(proxyT fieldType) } } |]
