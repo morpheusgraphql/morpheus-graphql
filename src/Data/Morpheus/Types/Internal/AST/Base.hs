@@ -5,6 +5,7 @@
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE DeriveFoldable     #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
@@ -98,10 +99,14 @@ type QUERY = 'Query
 type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
 
+
+-- Fields 
+
+
 data Fields value = Fields {
   fieldNames :: [Name],
   fieldValues :: HM.HashMap Name value
-} deriving (Show)
+} deriving (Show, Foldable)
 
 instance Lift a => Lift (Fields a) where 
   lift (Fields x y) = [| Fields x (HM.fromList ys) |] 

@@ -121,11 +121,16 @@ import           Data.Morpheus.Types.Internal.AST.Value
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 class UniqueKey a where
-  uniqKey :: a -> Name 
+  uniqueKey :: a -> Name 
 
 class Listable c a where
   fromList     :: [a] ->  c
   toList   ::  c  -> [a]
+
+
+instance Semigroup (Fields a) where 
+  -- TODO: throw error on dupplicate fields
+  Fields names1 values1 <> Fields names2 values2 = Fields (names1 <> names1) (values1 <> values2)
 
 instance UniqueKey a => Listable (Fields a) a where
   fromList = collect Fields { fieldNames = [] , fieldValues = empty }
@@ -135,7 +140,7 @@ instance UniqueKey a => Listable (Fields a) a where
       collect fields (value:values)
               | key `elem` fieldNames fields = error "TODO:error"
               | otherwise = collect (insert key value fields) values
-            where key = uniqKey value
+            where key = uniqueKey value
       insert key value (Fields keys values) = Fields (keys<> [key]) (HM.insert key value values) 
   toList Fields { fieldNames , fieldValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` fieldValues) fieldNames
 
@@ -143,6 +148,9 @@ class Selectable c a where
   selectOr :: d -> (a -> d) -> Name -> c -> d
   selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a
   selectBy err = selectOr (failure err) pure
+
+instance Selectable (Fields a) a where 
+  selectOr fb f key Fields { fieldValues } = maybe fb f (HM.lookup key fieldValues)
 
 instance Selectable [(Name, a)] a where 
   selectOr fb f key lib = maybe fb f (lookup key lib)
@@ -406,6 +414,8 @@ popByKey name lib = case lookupWith typeName name lib of
 --    { FieldDefinition(list) }
 --
 
+
+
 -- TODO: find better solution with OrderedMap to stote Fields
 newtype FieldsDefinition = FieldsDefinition 
  { unFieldsDefinition :: Fields FieldDefinition } deriving (Show)
@@ -416,6 +426,9 @@ newtype FieldsDefinition = FieldsDefinition
 
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
+
+instance UniqueKey FieldDefinition where
+  uniqueKey = fieldName
 
 instance Listable FieldsDefinition FieldDefinition where
   fromList = FieldsDefinition . fromList 
