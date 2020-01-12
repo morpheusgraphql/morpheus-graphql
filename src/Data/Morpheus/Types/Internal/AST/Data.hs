@@ -104,6 +104,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , sysFields
                                                 , Fields(..)
                                                 , toOperationType
+                                                , hsTypeName
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
