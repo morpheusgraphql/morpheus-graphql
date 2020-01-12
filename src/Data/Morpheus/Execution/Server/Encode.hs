@@ -38,8 +38,6 @@ import           Data.Morpheus.Execution.Server.Decode
                                                 ( DecodeType
                                                 , decodeArguments
                                                 )
-import           Data.Morpheus.Execution.Server.Generics.EnumRep
-                                                ( EnumRep(..) )
 import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
                                                 , ResContext(..)

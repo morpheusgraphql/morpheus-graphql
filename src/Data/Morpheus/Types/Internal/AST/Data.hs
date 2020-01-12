@@ -130,7 +130,7 @@ class Listable c a where
 
 instance Semigroup (Fields a) where 
   -- TODO: throw error on dupplicate fields
-  Fields names1 values1 <> Fields names2 values2 = Fields (names1 <> names1) (values1 <> values2)
+  Fields names1 values1 <> Fields names2 values2 = Fields (names1 <> names2) (values1 <> values2)
 
 instance UniqueKey a => Listable (Fields a) a where
   fromList = collect Fields { fieldNames = [] , fieldValues = empty }
