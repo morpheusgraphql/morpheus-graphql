@@ -3,7 +3,8 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE TemplateHaskell     #-}
+-- {-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE RecordWildCards     #-}
 
 module Data.Morpheus.Execution.Document.Convert
   ( toTHDefinitions
@@ -26,7 +27,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , OperationType(..)
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , sysTypes
                                                 , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
@@ -36,6 +36,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , hasArguments
                                                 , Listable(..)
                                                 , lookupWith
+                                                , toHSFieldDefinition
+                                                , hsTypeName
                                                 )
 
 m_ :: Key
@@ -72,7 +74,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: FieldDefinition -> Q (FieldDefinition)
+    genResField :: FieldDefinition -> Q FieldDefinition
     genResField field@FieldDefinition { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } }
       = do 
         typeArgs <- getTypeArgs typeConName lib 
@@ -86,7 +88,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         | otherwise = fieldArgs
     --------------------------------------------
     generateType :: TypeDefinition -> Q GQLTypeD
-    generateType dt@TypeDefinition { typeName, typeContent, typeMeta } = genType
+    generateType typeOriginal@TypeDefinition { typeName, typeContent, typeMeta } = genType
       typeContent
      where
       genType :: TypeContent -> Q GQLTypeD
@@ -98,7 +100,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                }
         , typeKindD    = KindEnum
         , typeArgD     = []
-        , typeOriginal = dt
+        , ..
         }
        where
         enumOption DataEnumValue { enumName } =
@@ -119,7 +121,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             }
         , typeKindD    = KindInputObject
         , typeArgD     = []
-        , typeOriginal = dt
+        , ..
         }
       genType DataObject {objectFields} = do
         typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList objectFields)
@@ -138,7 +140,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                              then KindObject (Just Subscription)
                              else KindObject Nothing
           , typeArgD
-          , typeOriginal = dt
+          , ..
           }
       genType (DataUnion members) = do
         let tCons = map unionCon members
@@ -150,7 +152,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                  }
           , typeKindD    = KindUnion
           , typeArgD     = []
-          , typeOriginal = dt
+          , ..
           }
        where
         unionCon memberName = ConsD
@@ -171,13 +173,6 @@ toTHDefinitions namespace lib = traverse renderTHType lib
           utName = hsTypeName memberName
 
 
-
-hsTypeName :: Key -> Key
-hsTypeName "String"                    = "Text"
-hsTypeName "Boolean"                   = "Bool"
-hsTypeName name | name `elem` sysTypes = "S" <> name
-hsTypeName name                        = name
-
 genArgumentType :: (Key -> Key) -> FieldDefinition -> Q [TypeD]
 genArgumentType _ FieldDefinition { fieldArgs = NoArguments } = pure []
 genArgumentType namespaceWith FieldDefinition { fieldName, fieldArgs  } = pure
@@ -194,11 +189,7 @@ genArgumentType namespaceWith FieldDefinition { fieldName, fieldArgs  } = pure
   where tName = namespaceWith (hsTypeName fieldName)
 
 genArguments :: ArgumentsDefinition -> [FieldDefinition]
-genArguments x = genInputFields $ fromList (arguments x)
+genArguments = genInputFields . fromList . arguments
 
 genInputFields :: FieldsDefinition -> [FieldDefinition]
-genInputFields = map genField . toList
-
-genField :: FieldDefinition -> FieldDefinition
-genField field@FieldDefinition { fieldType = tyRef@TypeRef { typeConName } } = field 
-  { fieldType = tyRef { typeConName = hsTypeName typeConName } }
+genInputFields = map toHSFieldDefinition . toList

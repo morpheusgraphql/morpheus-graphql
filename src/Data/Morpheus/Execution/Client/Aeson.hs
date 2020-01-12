@@ -110,8 +110,7 @@ defineFromJSON tName parseJ cFields = instanceD (cxt []) iHead [method]
   method = instanceFunD 'parseJSON [] (parseJ cFields)
 
 isEnum :: [ConsD] -> Bool
-isEnum = not . isEmpty . filter (isEmpty . cFields)
-  where isEmpty = (0 ==) . length
+isEnum = all (not . null . cFields)
 
 aesonEnum :: [ConsD] -> ExpQ
 aesonEnum cons = lamCaseE handlers

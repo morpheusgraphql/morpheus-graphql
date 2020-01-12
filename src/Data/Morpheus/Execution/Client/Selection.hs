@@ -53,6 +53,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
                                                 , removeDuplicates
+                                                , typeFromScalar
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -295,14 +296,6 @@ leafType TypeDefinition { typeName, typeContent } = fromKind typeContent
 
 getType :: Schema -> Text -> Validation TypeDefinition
 getType lib typename = selectBy (compileError typename) typename lib 
-
-typeFromScalar :: Name -> Name
-typeFromScalar "Boolean" = "Bool"
-typeFromScalar "Int"     = "Int"
-typeFromScalar "Float"   = "Float"
-typeFromScalar "String"  = "Text"
-typeFromScalar "ID"      = "ID"
-typeFromScalar _         = "ScalarValue"
 
 typeFrom :: [Name] -> TypeDefinition -> Name
 typeFrom path TypeDefinition { typeName, typeContent } = __typeFrom typeContent

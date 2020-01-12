@@ -68,6 +68,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , hasArguments
   , lookupWith
   , selectTypeObject
+  , toHSFieldDefinition
   )
 where
 
@@ -447,6 +448,10 @@ createField dataArguments fieldName (typeWrappers, typeConName) = FieldDefinitio
   , fieldType     = TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
   , fieldMeta     = Nothing
   }
+
+toHSFieldDefinition :: FieldDefinition -> FieldDefinition
+toHSFieldDefinition field@FieldDefinition { fieldType = tyRef@TypeRef { typeConName } } = field 
+  { fieldType = tyRef { typeConName = hsTypeName typeConName } }
 
 toNullableField :: FieldDefinition -> FieldDefinition
 toNullableField dataField

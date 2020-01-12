@@ -47,6 +47,8 @@ module Data.Morpheus.Types.Internal.AST.Base
   , isNullableWrapper
   , isOutputType
   , sysFields
+  , typeFromScalar
+  , hsTypeName
   )
 where
 
@@ -243,3 +245,17 @@ sysTypes =
 
 sysFields :: [Key]
 sysFields = ["__typename","__schema","__type"]
+
+typeFromScalar :: Name -> Name
+typeFromScalar "Boolean" = "Bool"
+typeFromScalar "Int"     = "Int"
+typeFromScalar "Float"   = "Float"
+typeFromScalar "String"  = "Text"
+typeFromScalar "ID"      = "ID"
+typeFromScalar _         = "ScalarValue"
+
+hsTypeName :: Key -> Key
+hsTypeName "String"                    = "Text"
+hsTypeName "Boolean"                   = "Bool"
+hsTypeName name | name `elem` sysTypes = "S" <> name
+hsTypeName name                        = name

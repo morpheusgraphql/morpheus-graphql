@@ -148,6 +148,10 @@ module Data.Morpheus.Types.Internal.AST
   , hasArguments
   , lookupWith
   , selectTypeObject
+  , typeFromScalar
+  -- Temaplate Haskell
+  , toHSFieldDefinition
+  , hsTypeName
   -- LOCAL
   , GQLQuery(..)
   , Variables
