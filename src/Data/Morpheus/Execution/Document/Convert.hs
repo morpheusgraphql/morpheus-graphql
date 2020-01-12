@@ -90,6 +90,20 @@ toTHDefinitions namespace lib = traverse renderTHType lib
     generateType typeOriginal@TypeDefinition { typeName, typeContent, typeMeta } = genType
       typeContent
      where
+      buildType :: [ConsD] -> TypeD
+      buildType tCons = TypeD
+            { tName      = hsTypeName typeName
+            , tMeta      = typeMeta
+            , tNamespace = []
+            , tCons 
+            }
+      buildObjectCons :: [FieldDefinition] -> [ConsD]
+      buildObjectCons cFields = 
+          [ ConsD 
+            { cName   = hsTypeName typeName 
+            , cFields
+            } 
+          ]
       typeKindD = kindOf typeOriginal
       genType :: TypeContent -> Q GQLTypeD
       genType (DataEnum tags) = pure GQLTypeD
@@ -108,41 +122,21 @@ toTHDefinitions namespace lib = traverse renderTHType lib
       genType DataInputUnion {} = fail "Input Unions not Supported"
       genType DataInterface {} = fail "interfaces must be eliminated in Validation"
       genType (DataInputObject fields) = pure GQLTypeD
-        { typeD = TypeD
-            { tName      = hsTypeName typeName
-            , tNamespace = []
-            , tCons      = [ ConsD { cName   = hsTypeName typeName
-                                   , cFields = genInputFields fields
-                                   }
-                           ]
-            , tMeta      = typeMeta
-            }
-        , typeArgD     = []
+        { typeD       = buildType $ buildObjectCons $ genInputFields fields
+        , typeArgD    = []
         , ..
         }
       genType DataObject {objectFields} = do
         typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList objectFields)
-        cFields  <- traverse genResField (toList objectFields)
+        objCons  <- buildObjectCons <$> traverse genResField (toList objectFields)
         pure GQLTypeD
-          { typeD        = TypeD
-                             { tName      = hsTypeName typeName
-                             , tNamespace = []
-                             , tCons = [ ConsD { cName = hsTypeName typeName
-                                               , cFields 
-                                               }
-                                       ]
-                             , tMeta      = typeMeta
-                             }
+          { typeD    = buildType objCons
           , typeArgD
           , ..
           }
       genType (DataUnion members) = 
         pure GQLTypeD
-          { typeD        = TypeD { tName      = typeName
-                                 , tNamespace = []
-                                 , tCons = map unionCon members
-                                 , tMeta      = typeMeta
-                                 }
+          { typeD        = buildType (map unionCon members)
           , typeArgD     = []
           , ..
           }
