@@ -49,6 +49,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , sysFields
   , typeFromScalar
   , hsTypeName
+  , toOperationType
   )
 where
 
@@ -259,3 +260,9 @@ hsTypeName "String"                    = "Text"
 hsTypeName "Boolean"                   = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name                        = name
+
+toOperationType :: Name -> Maybe OperationType
+toOperationType "Subscription" = Just Subscription
+toOperationType "Mutation" = Just Mutation
+toOperationType "Query" = Just Query
+toOperationType _ = Nothing

@@ -103,6 +103,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , isNullable
                                                 , sysFields
                                                 , Fields(..)
+                                                , toOperationType
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -316,12 +317,12 @@ coerceDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure memb
 coerceDataUnion gqlError _ = failure gqlError
 
 kindOf :: TypeDefinition -> DataTypeKind
-kindOf TypeDefinition { typeContent } = __kind typeContent
+kindOf TypeDefinition { typeName, typeContent } = __kind typeContent
  where
   __kind DataScalar      {} = KindScalar
   __kind DataEnum        {} = KindEnum
   __kind DataInputObject {} = KindInputObject
-  __kind DataObject      {} = KindObject Nothing
+  __kind DataObject      {} = KindObject (toOperationType typeName)
   __kind DataUnion       {} = KindUnion
   __kind DataInputUnion  {} = KindInputUnion
   -- TODO:

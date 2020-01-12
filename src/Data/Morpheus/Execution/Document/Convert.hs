@@ -23,8 +23,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeDefinition(..)
-                                                , DataTypeKind(..)
-                                                , OperationType(..)
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
                                                 , ConsD(..)
@@ -38,6 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupWith
                                                 , toHSFieldDefinition
                                                 , hsTypeName
+                                                , kindOf
                                                 )
 
 m_ :: Key
@@ -91,6 +90,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
     generateType typeOriginal@TypeDefinition { typeName, typeContent, typeMeta } = genType
       typeContent
      where
+      typeKindD = kindOf typeOriginal
       genType :: TypeContent -> Q GQLTypeD
       genType (DataEnum tags) = pure GQLTypeD
         { typeD        = TypeD { tName      = hsTypeName typeName
@@ -98,7 +98,6 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                , tCons      = map enumOption tags
                                , tMeta      = typeMeta
                                }
-        , typeKindD    = KindEnum
         , typeArgD     = []
         , ..
         }
@@ -109,8 +108,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
       genType DataInputUnion {} = fail "Input Unions not Supported"
       genType DataInterface {} = fail "interfaces must be eliminated in Validation"
       genType (DataInputObject fields) = pure GQLTypeD
-        { typeD        =
-          TypeD
+        { typeD = TypeD
             { tName      = hsTypeName typeName
             , tNamespace = []
             , tCons      = [ ConsD { cName   = hsTypeName typeName
@@ -119,7 +117,6 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                            ]
             , tMeta      = typeMeta
             }
-        , typeKindD    = KindInputObject
         , typeArgD     = []
         , ..
         }
@@ -136,21 +133,16 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                        ]
                              , tMeta      = typeMeta
                              }
-          , typeKindD    = if typeName == "Subscription"
-                             then KindObject (Just Subscription)
-                             else KindObject Nothing
           , typeArgD
           , ..
           }
-      genType (DataUnion members) = do
-        let tCons = map unionCon members
+      genType (DataUnion members) = 
         pure GQLTypeD
           { typeD        = TypeD { tName      = typeName
                                  , tNamespace = []
-                                 , tCons
+                                 , tCons = map unionCon members
                                  , tMeta      = typeMeta
                                  }
-          , typeKindD    = KindUnion
           , typeArgD     = []
           , ..
           }
