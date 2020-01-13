@@ -159,11 +159,12 @@ operationTypes lib variables = genOperation
                                                         fName
           (subTypes, requests) <- subTypesBySelection fieldDataType sel
           pure
-            ( FieldDefinition { fieldName
-                        , fieldArgs     = NoArguments
-                        , fieldType
-                        , fieldMeta     = Nothing
-                        }
+            ( FieldDefinition 
+                { fieldName
+                , fieldType
+                , fieldArgs  = NoArguments
+                , fieldMeta  = Nothing
+                }
             , subTypes
             , requests
             )
