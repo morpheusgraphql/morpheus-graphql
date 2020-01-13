@@ -97,7 +97,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , TypeRef(..)
                                                 , Ref(..)
                                                 , elementOfKeys
-                                                , removeDuplicates
+                                                , uniqueElemOr
                                                 , DataTypeKind(..)
                                                 , DataFingerprint(..)
                                                 , isNullable
@@ -598,10 +598,7 @@ data ConsD = ConsD
 -- Helpers
 -------------------------------------------------------------------------
 checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
-checkNameCollision enhancedKeys errorGenerator =
-  case enhancedKeys \\ removeDuplicates enhancedKeys of
-    []         -> pure enhancedKeys
-    duplicates -> failure $ errorGenerator duplicates
+checkNameCollision names toError = uniqueElemOr (failure . toError) names 
 
 checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
 checkForUnknownKeys enhancedKeys keys' errorGenerator' =

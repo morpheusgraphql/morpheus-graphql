@@ -52,7 +52,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationDataType
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
-                                                , removeDuplicates
+                                                , uniqueElemOr
                                                 , typeFromScalar
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

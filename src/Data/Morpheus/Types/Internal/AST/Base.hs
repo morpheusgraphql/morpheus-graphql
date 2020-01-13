@@ -31,7 +31,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeWrapper(..)
   , Fields(..)
   , anonymousRef
-  , removeDuplicates
+  , uniqueElemOr
   , elementOfKeys
   , toHSWrappers
   , toGQLWrapper
@@ -51,6 +51,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , typeFromScalar
   , hsTypeName
   , toOperationType
+  , splitDuplicates
   )
 where
 
@@ -216,15 +217,6 @@ toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers []                              = [TypeMaybe]
 toHSWrappers [NonNullType]                   = []
 
--- Helpers
-removeDuplicates :: Eq a => [a] -> [a]
-removeDuplicates = collectElems []
-    where collectElems collected [] = collected
-          collectElems collected (x:xs)
-              -- TODO: throw error
-              | x `elem` collected = collectElems collected xs
-              | otherwise = collectElems (collected ++ [x]) xs
-
 elementOfKeys :: [Name] -> Ref -> Bool
 elementOfKeys keys Ref { refName } = refName `elem` keys
 
@@ -271,3 +263,23 @@ toOperationType "Subscription" = Just Subscription
 toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query
 toOperationType _ = Nothing
+
+
+-- validation combinators
+uniqueElemOr :: (Applicative validation, Eq a) 
+  => ([a]-> validation [a])
+  ->  [a] -> validation [a]
+uniqueElemOr fallback ls = case splitDuplicates ls of
+      (collected,[]) -> pure collected
+      (_,errors) -> fallback errors
+
+-- [elems] -> ([unique elements], [duplicate elems])
+splitDuplicates :: Eq a => [a] -> ([a],[a])
+splitDuplicates = collectElems ([],[])
+  where
+    collectElems :: Eq a => ([a],[a]) -> [a] -> ([a],[a])
+    collectElems collected [] = collected
+    collectElems (collected,errors) (x:xs)
+        | x `elem` collected = collectElems (collected,x:errors) xs
+        | otherwise = collectElems (collected ++ [x],errors) xs
+
