@@ -44,19 +44,13 @@ import           Data.Morpheus.Types.Internal.TH
                                                 )
 import           Data.Typeable                  ( Typeable )
 
-genTypeName :: Key -> Key
-genTypeName = pack . __genTypeName . unpack
- where
-  __genTypeName ('S' : name) | isSchemaTypeName (pack name) = name
-  __genTypeName name = name
-
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
  where
   functions = map
     instanceProxyFunD
-    [('__typeName, [|genTypeName tName|]), ('description, descriptionValue)]
+    [('__typeName, [|toHSTypename tName|]), ('description, descriptionValue)]
    where
     descriptionValue = case tMeta >>= metaDescription of
       Nothing   -> [| Nothing   |]
@@ -91,3 +85,9 @@ kindName KindInputObject = ''INPUT
 kindName KindList        = ''WRAPPER
 kindName KindNonNull     = ''WRAPPER
 kindName KindInputUnion  = ''INPUT
+
+toHSTypename :: Key -> Key
+toHSTypename = pack . hsTypename . unpack
+ where
+  hsTypename ('S' : name) | isSchemaTypeName (pack name) = name
+  hsTypename name = name
