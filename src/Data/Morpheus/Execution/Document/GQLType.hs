@@ -64,17 +64,16 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
   constrains = map conTypeable typeArgs
    where conTypeable name = typeT ''Typeable [name]
   -------------------------------------------------
-  typeFamilies | isObject typeKindD = [deriveCUSTOM, deriveKind]
-               | otherwise          = [deriveKind]
+  typeFamilies | isObject typeKindD = [deriveCUSTOM, deriveKIND]
+               | otherwise          = [deriveKIND]
    where
-    deriveCUSTOM = do
-      typeN <- headSig
-      pure $ typeInstanceDec ''CUSTOM typeN (ConT ''TRUE)
+    deriveCUSTOM = deriveInstance ''CUSTOM ''TRUE
+    deriveKIND = deriveInstance ''KIND (kindName typeKindD)
     -----------------------------------------------------
-    deriveKind = do
+    deriveInstance :: Name -> Name -> Q Dec
+    deriveInstance insName tyName = do
       typeN <- headSig
-      pure $ typeInstanceDec ''KIND typeN (ConT $ kindName typeKindD)
-
+      pure $ typeInstanceDec insName typeN (ConT tyName)
 
 kindName :: DataTypeKind -> Name
 kindName KindObject {}  = ''OUTPUT
