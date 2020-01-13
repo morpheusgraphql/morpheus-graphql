@@ -52,6 +52,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , hsTypeName
   , toOperationType
   , splitDuplicates
+  , removeDuplicates
   )
 where
 
@@ -273,7 +274,12 @@ uniqueElemOr fallback ls = case splitDuplicates ls of
       (collected,[]) -> pure collected
       (_,errors) -> fallback errors
 
--- [elems] -> ([unique elements], [duplicate elems])
+
+
+removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates = fst . splitDuplicates
+
+-- elems -> (unique elements, duplicate elems)
 splitDuplicates :: Eq a => [a] -> ([a],[a])
 splitDuplicates = collectElems ([],[])
   where
@@ -282,4 +288,3 @@ splitDuplicates = collectElems ([],[])
     collectElems (collected,errors) (x:xs)
         | x `elem` collected = collectElems (collected,x:errors) xs
         | otherwise = collectElems (collected ++ [x],errors) xs
-

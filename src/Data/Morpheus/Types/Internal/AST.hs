@@ -37,6 +37,7 @@ module Data.Morpheus.Types.Internal.AST
   , unpackInputUnion
   , uniqueElemOr
   , splitDuplicates
+  , removeDuplicates
 
   -- Selection
   , Argument(..)

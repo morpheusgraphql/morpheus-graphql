@@ -52,8 +52,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationDataType
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
-                                                , uniqueElemOr
                                                 , typeFromScalar
+                                                , removeDuplicates
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
