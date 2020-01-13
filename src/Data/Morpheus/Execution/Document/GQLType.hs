@@ -79,15 +79,15 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
     ---------------------------------------------------------------
     deriveKind = do
       typeN <- headSig
-      pure $ typeInstanceDec ''KIND typeN (ConT $ toKIND typeKindD)
+      pure $ typeInstanceDec ''KIND typeN (ConT $ kindName typeKindD)
 
 
-toKIND :: DataTypeKind -> Name
-toKIND KindScalar      = ''SCALAR
-toKIND KindEnum        = ''ENUM
-toKIND (KindObject _)  = ''OUTPUT
-toKIND KindUnion       = ''OUTPUT
-toKIND KindInputObject = ''INPUT
-toKIND KindList        = ''WRAPPER
-toKIND KindNonNull     = ''WRAPPER
-toKIND KindInputUnion  = ''INPUT
+kindName :: DataTypeKind -> Name
+kindName KindObject {}  = ''OUTPUT
+kindName KindScalar      = ''SCALAR
+kindName KindEnum        = ''ENUM
+kindName KindUnion       = ''OUTPUT
+kindName KindInputObject = ''INPUT
+kindName KindList        = ''WRAPPER
+kindName KindNonNull     = ''WRAPPER
+kindName KindInputUnion  = ''INPUT
