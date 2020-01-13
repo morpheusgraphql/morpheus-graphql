@@ -286,5 +286,5 @@ splitDuplicates = collectElems ([],[])
     collectElems :: Eq a => ([a],[a]) -> [a] -> ([a],[a])
     collectElems collected [] = collected
     collectElems (collected,errors) (x:xs)
-        | x `elem` collected = collectElems (collected,x:errors) xs
-        | otherwise = collectElems (collected ++ [x],errors) xs
+        | x `elem` collected = collectElems (collected,errors <> [x]) xs
+        | otherwise = collectElems (collected <> [x],errors) xs
