@@ -62,7 +62,7 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
   headSig    = typeT (mkName $ unpack tName) typeArgs
   -----------------------------------------------
   constrains = map conTypeable typeArgs
-    where conTypeable name = typeT ''Typeable [name]
+   where conTypeable name = typeT ''Typeable [name]
   -----------------------------------------------
   typeFamilies | isObject typeKindD = [deriveCUSTOM, deriveKind]
                | otherwise          = [deriveKind]
