@@ -55,22 +55,22 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
     descriptionValue = case tMeta >>= metaDescription of
       Nothing   -> [| Nothing   |]
       Just desc -> [| Just desc |]
-  -------------------------------------------------
+  --------------------------------
   typeArgs   = tyConArgs typeKindD
-  ----------------------------------------------
+  --------------------------------
   iHead      = instanceHeadT ''GQLType tName typeArgs
   headSig    = typeT (mkName $ unpack tName) typeArgs
-  -----------------------------------------------
+  ---------------------------------------------------
   constrains = map conTypeable typeArgs
    where conTypeable name = typeT ''Typeable [name]
-  -----------------------------------------------
+  -------------------------------------------------
   typeFamilies | isObject typeKindD = [deriveCUSTOM, deriveKind]
                | otherwise          = [deriveKind]
    where
     deriveCUSTOM = do
       typeN <- headSig
       pure $ typeInstanceDec ''CUSTOM typeN (ConT ''TRUE)
-    ---------------------------------------------------------------
+    -----------------------------------------------------
     deriveKind = do
       typeN <- headSig
       pure $ typeInstanceDec ''KIND typeN (ConT $ kindName typeKindD)

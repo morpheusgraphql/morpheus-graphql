@@ -265,7 +265,6 @@ toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query
 toOperationType _ = Nothing
 
-
 -- validation combinators
 uniqueElemOr :: (Applicative validation, Eq a) 
   => ([a]-> validation [a])
@@ -273,8 +272,6 @@ uniqueElemOr :: (Applicative validation, Eq a)
 uniqueElemOr fallback ls = case splitDuplicates ls of
       (collected,[]) -> pure collected
       (_,errors) -> fallback errors
-
-
 
 removeDuplicates :: Eq a => [a] -> [a]
 removeDuplicates = fst . splitDuplicates

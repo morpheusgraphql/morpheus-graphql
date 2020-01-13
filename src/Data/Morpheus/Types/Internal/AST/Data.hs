@@ -127,7 +127,6 @@ class Listable c a where
   fromList     :: [a] ->  c
   toList   ::  c  -> [a]
 
-
 instance Semigroup (Fields a) where 
   -- TODO: throw error on dupplicate fields
   Fields names1 values1 <> Fields names2 values2 = Fields (names1 <> names2) (values1 <> values2)
@@ -157,7 +156,6 @@ instance Selectable [(Name, a)] a where
 
 instance Selectable (HashMap Name a) a where 
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
-
 
 type DataEnum = [DataEnumValue]
 type DataUnion = [Key]
