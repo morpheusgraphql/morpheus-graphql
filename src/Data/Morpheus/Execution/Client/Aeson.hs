@@ -43,8 +43,8 @@ import           Data.Morpheus.Types.Internal.TH
 
 -- FromJSON
 deriveFromJSON :: TypeD -> Q Dec
-deriveFromJSON TypeD { tCons = [] } =
-  fail "Type Should Have at least one Constructor"
+deriveFromJSON TypeD { tCons = [] , tName } =
+  fail $ "Type " <> unpack tName <> " Should Have at least one Constructor"
 deriveFromJSON TypeD { tName, tNamespace, tCons = [cons] } = defineFromJSON
   name
   (aesonObject tNamespace)
