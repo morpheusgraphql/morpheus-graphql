@@ -414,15 +414,8 @@ popByKey name lib = case lookupWith typeName name lib of
 --    { FieldDefinition(list) }
 --
 
-
-
--- TODO: find better solution with OrderedMap to stote Fields
 newtype FieldsDefinition = FieldsDefinition 
  { unFieldsDefinition :: Fields FieldDefinition } deriving (Show)
-
--- instance Lift FieldsDefinition where 
---   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
---     where ls = HM.toList hm
 
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)

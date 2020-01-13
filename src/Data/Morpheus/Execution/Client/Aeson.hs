@@ -65,16 +65,16 @@ aesonObjectBody :: [Key] -> ConsD -> ExpQ
 aesonObjectBody namespace ConsD { cName, cFields } = handleFields cFields
  where
   consName = mkName $ unpack $ nameSpaceType namespace cName
-  ------------------------------------------
-  handleFields []     = fail "No Empty Object"
+  ----------------------------------------------------------
+  handleFields []     = fail $ "Type \""<>unpack cName <>"\" is Empty Object"
   handleFields fields = startExp fields
-  ----------------------------------------------------------------------------------
+  ----------------------------------------------------------
    where
     defField field@FieldDefinition { fieldName }
       | isFieldNullable field = [|o .:? fName|]
       | otherwise             = [|o .: fName|]
       where fName = unpack fieldName
-        -------------------------------------------------------------------
+    --------------------------------------------------------
     startExp fNames = uInfixE (conE consName)
                               (varE '(<$>))
                               (applyFields fNames)
@@ -110,7 +110,7 @@ defineFromJSON tName parseJ cFields = instanceD (cxt []) iHead [method]
   method = instanceFunD 'parseJSON [] (parseJ cFields)
 
 isEnum :: [ConsD] -> Bool
-isEnum = all (not . null . cFields)
+isEnum = all (null . cFields)
 
 aesonEnum :: [ConsD] -> ExpQ
 aesonEnum cons = lamCaseE handlers
