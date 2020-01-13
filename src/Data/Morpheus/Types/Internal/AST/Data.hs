@@ -81,7 +81,7 @@ import qualified Data.HashMap.Lazy             as HM
 import           Data.Semigroup                 ( Semigroup(..), (<>) )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
-import           Data.List                      ( find , (\\))
+import           Data.List                      ( find)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalError )
