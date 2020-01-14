@@ -31,7 +31,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
-  , Selectable(..)
   , Listable(..)
   , isTypeDefined
   , initTypeLib
@@ -107,6 +106,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , hsTypeName
                                                 , Empty(..)
                                                 , UniqueKey(..)
+                                                , Selectable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -143,18 +143,6 @@ instance UniqueKey a => Listable (GQLMap a) a where
       insert key value (GQLMap keys values) = GQLMap (keys<> [key]) (HM.insert key value values) 
   toList GQLMap { fieldNames , fieldValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` fieldValues) fieldNames
 
-class Selectable c a where 
-  selectOr :: d -> (a -> d) -> Name -> c -> d
-
-
-instance Selectable (GQLMap a) a where 
-  selectOr fb f key GQLMap { fieldValues } = maybe fb f (HM.lookup key fieldValues)
-
-instance Selectable [(Name, a)] a where 
-  selectOr fb f key lib = maybe fb f (lookup key lib)
-
-instance Selectable (HashMap Name a) a where 
-  selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
 type DataEnum = [DataEnumValue]
 type DataUnion = [Key]

@@ -1,11 +1,13 @@
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DeriveLift         #-}
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE DataKinds          #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE DeriveFoldable     #-}
+{-# LANGUAGE DeriveAnyClass         #-}
+{-# LANGUAGE DeriveGeneric          #-}
+{-# LANGUAGE DeriveLift             #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE DeriveFoldable         #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
@@ -32,6 +34,8 @@ module Data.Morpheus.Types.Internal.AST.Base
   , GQLMap(..)
   , Empty(..)
   , UniqueKey(..)
+  , GQLMap(..)
+  , Selectable(..)
   , anonymousRef
   , uniqueElemOr
   , elementOfKeys
@@ -118,6 +122,18 @@ instance Empty (HashMap k v) where
 
 instance Empty (GQLMap a) where 
   empty = GQLMap [] empty
+
+class Selectable c a where 
+  selectOr :: d -> (a -> d) -> Name -> c -> d
+
+instance Selectable (GQLMap a) a where 
+  selectOr fb f key GQLMap { fieldValues } = maybe fb f (HM.lookup key fieldValues)
+
+instance Selectable [(Name, a)] a where 
+  selectOr fb f key lib = maybe fb f (lookup key lib)
+
+instance Selectable (HashMap Text a) a where 
+  selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
 -- GQLMap 
 data GQLMap value = GQLMap {
