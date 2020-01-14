@@ -114,7 +114,7 @@ type SUBSCRIPTION = 'Subscription
 data Named a 
   = Named 
   {
-    uniqName :: Name,
+    name :: Name,
     unName :: a
   } deriving 
     ( Show
@@ -124,7 +124,7 @@ data Named a
     )
 
 instance Traversable Named where
-  traverse f Named { uniqName, unName } = Named uniqName <$> f unName
+  traverse f Named { name, unName } = Named name <$> f unName
 
 class Empty a where 
   empty :: a
@@ -155,27 +155,25 @@ data GQLMap value
   | GQLMapError { dupFields :: [Name]        }
   deriving (Show, Foldable)
 
-
-validateValues :: [Named value] -> GQLMap value
-validateValues values 
+uniqNames :: [Named value] -> GQLMap value
+uniqNames values 
   | null dupNames = GQLMap noDups
   | otherwise = GQLMapError dupNames
  where (noDups,dupNames,_) = splitDupElem values
 
 instance Functor GQLMap where
-  -- and we hope no one changed keys 
-  fmap f GQLMap { mapValues } = validateValues (fmap f <$> mapValues) 
+  fmap f GQLMap { mapValues } = uniqNames (fmap f <$> mapValues) 
   fmap _ GQLMapError { .. } = GQLMapError { .. } 
 
 instance Semigroup (GQLMap a) where
   GQLMapError err1 <> GQLMapError err2 = GQLMapError (err1 <> err2)
   GQLMap _ <> GQLMapError name = GQLMapError name
   GQLMapError err1 <> GQLMap _ = GQLMapError err1
-  GQLMap v1 <> GQLMap v2 = validateValues (v1 <> v2)
+  GQLMap v1 <> GQLMap v2 = uniqNames (v1 <> v2)
 
 instance Traversable GQLMap where
   traverse _ (GQLMapError err1) = pure $ GQLMapError err1
-  traverse f (GQLMap values) = GQLMap <$> traverse (traverse f) values
+  traverse f (GQLMap values) = uniqNames <$> traverse (traverse f) values
 
 --instance Lift a => Lift (GQLMap a) where 
 --  lift (GQLMap x y z) = [| GQLMap x (HM.fromList ys) z |] 
@@ -377,5 +375,5 @@ splitDupElem = collectElems ([],[],[])
     collectElems :: ([Named a],[Name],[Named a]) -> [Named a] -> ([Named a],[Name],[Named a])
     collectElems collected [] = collected
     collectElems (values,names,errors) (x:xs)
-        | uniqName x `elem` names = collectElems (values,names <> [uniqName x],errors <> [x]) xs
+        | name x `elem` names = collectElems (values,names <> [name x],errors <> [x]) xs
         | otherwise = collectElems (values <> [x],names,errors) xs
