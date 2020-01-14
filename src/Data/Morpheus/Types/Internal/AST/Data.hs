@@ -69,11 +69,11 @@ module Data.Morpheus.Types.Internal.AST.Data
   , lookupWith
   , selectTypeObject
   , toHSFieldDefinition
+  , Empty(..)
   )
 where
 
 import           Data.HashMap.Lazy              ( HashMap
-                                                , empty
                                                 , union
                                                 , elems
                                                 )
@@ -119,6 +119,16 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 , ScalarValue(..)
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
+
+
+class Empty a where 
+  empty :: a
+
+instance Empty (HashMap k v) where
+  empty = HM.empty
+
+instance Empty (Fields a) where 
+  empty = Fields [] empty
 
 class UniqueKey a where
   uniqueKey :: a -> Name 
@@ -414,6 +424,10 @@ popByKey name lib = case lookupWith typeName name lib of
 
 newtype FieldsDefinition = FieldsDefinition 
  { unFieldsDefinition :: Fields FieldDefinition } deriving (Show)
+
+
+instance Empty FieldsDefinition where 
+  empty = FieldsDefinition empty
 
 instance Semigroup FieldsDefinition where 
   FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)

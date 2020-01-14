@@ -81,6 +81,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , Message
                                                 , Listable(..)
+                                                , Empty(..)
                                                 )
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
@@ -203,8 +204,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
  where
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
-  withObject _ =
-    ( fromList ([] :: [FieldDefinition]) , [introspectFailure (name <> " should have only one nonempty constructor")])
+  withObject _ = (empty, [introspectFailure (name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
