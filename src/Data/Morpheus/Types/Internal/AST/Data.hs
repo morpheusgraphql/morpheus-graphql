@@ -383,11 +383,10 @@ popByKey name lib = case lookupWith typeName name lib of
 
 newtype FieldsDefinition = FieldsDefinition 
  { unFieldsDefinition :: GQLMap FieldDefinition } 
-  deriving (Show, Semigroup)
+  deriving (Show, Semigroup, Empty)
 
-
-instance Empty FieldsDefinition where 
-  empty = FieldsDefinition empty
+instance Selectable FieldsDefinition FieldDefinition where
+  selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
 instance UniqueKey FieldDefinition where
   uniqueKey = fieldName
@@ -397,8 +396,6 @@ instance Listable FieldsDefinition FieldDefinition where
   fromList = FieldsDefinition . fromList 
   toList = toList . unFieldsDefinition
 
-instance Selectable FieldsDefinition FieldDefinition where
-  selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
