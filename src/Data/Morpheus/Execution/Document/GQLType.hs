@@ -76,7 +76,7 @@ deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
       pure $ typeInstanceDec insName typeN (ConT tyName)
 
 kindName :: DataTypeKind -> Name
-kindName KindObject {}  = ''OUTPUT
+kindName KindObject {}   = ''OUTPUT
 kindName KindScalar      = ''SCALAR
 kindName KindEnum        = ''ENUM
 kindName KindUnion       = ''OUTPUT
