@@ -350,3 +350,13 @@ splitDuplicates = collectElems ([],[])
     collectElems (collected,errors) (x:xs)
         | x `elem` collected = collectElems (collected,errors <> [x]) xs
         | otherwise = collectElems (collected <> [x],errors) xs
+
+
+splitDupElem :: UniqueKey a => [a] -> ([a],[Name],[a])
+splitDupElem = collectElems ([],[],[])
+  where
+    collectElems :: UniqueKey a => ([a],[Name],[a]) -> [a] -> ([a],[Name],[a])
+    collectElems collected [] = collected
+    collectElems (values,names,errors) (x:xs)
+        | uniqueKey x `elem` names = collectElems (values,names <> [uniqueKey x],errors <> [x]) xs
+        | otherwise = collectElems (values <> [x],names,errors) xs
