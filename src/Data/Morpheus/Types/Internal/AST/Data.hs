@@ -1,13 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveLift            #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveLift                 #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( ScalarDefinition(..)
@@ -381,14 +382,12 @@ popByKey name lib = case lookupWith typeName name lib of
 --
 
 newtype FieldsDefinition = FieldsDefinition 
- { unFieldsDefinition :: GQLMap FieldDefinition } deriving (Show)
+ { unFieldsDefinition :: GQLMap FieldDefinition } 
+  deriving (Show, Semigroup)
 
 
 instance Empty FieldsDefinition where 
   empty = FieldsDefinition empty
-
-instance Semigroup FieldsDefinition where 
-  FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
 
 instance UniqueKey FieldDefinition where
   uniqueKey = fieldName
@@ -400,9 +399,6 @@ instance Listable FieldsDefinition FieldDefinition where
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
-
-instance Selectable [FieldDefinition] FieldDefinition where
-  selectOr fb f name ls = maybe fb f (lookupWith fieldName name ls)
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
