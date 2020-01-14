@@ -29,7 +29,9 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeKind(..)
   , DataFingerprint(..)
   , DataTypeWrapper(..)
-  , Fields(..)
+  , GQLMap(..)
+  , Empty(..)
+  , UniqueKey(..)
   , anonymousRef
   , uniqueElemOr
   , elementOfKeys
@@ -64,6 +66,7 @@ import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
+import           Data.HashMap.Lazy              ( HashMap )
 import qualified Data.HashMap.Lazy             as HM 
 
 type Key = Text
@@ -101,21 +104,40 @@ type QUERY = 'Query
 type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
 
+class UniqueKey a where
+  uniqueKey :: a -> Name 
 
--- Fields 
-data Fields value = Fields {
+instance UniqueKey Text where 
+  uniqueKey = id
+
+class Empty a where 
+  empty :: a
+
+instance Empty (HashMap k v) where
+  empty = HM.empty
+
+instance Empty (GQLMap a) where 
+  empty = GQLMap [] empty
+
+-- GQLMap 
+data GQLMap value = GQLMap {
   fieldNames :: [Name],
   fieldValues :: HM.HashMap Name value
 } deriving (Show, Foldable)
 
-instance Traversable Fields where
-  traverse f (Fields names values) = Fields names <$> traverse f values
+instance Semigroup (GQLMap a) where 
+  -- TODO: throw error on dupplicate fields
+  GQLMap names1 values1 <> GQLMap names2 values2 = GQLMap (names1 <> names2) (values1 <> values2)
 
-instance Functor Fields where 
-  fmap f (Fields x y) = Fields x (f <$> y)
 
-instance Lift a => Lift (Fields a) where 
-  lift (Fields x y) = [| Fields x (HM.fromList ys) |] 
+instance Traversable GQLMap where
+  traverse f (GQLMap names values) = GQLMap names <$> traverse f values
+
+instance Functor GQLMap where 
+  fmap f (GQLMap x y) = GQLMap x (f <$> y)
+
+instance Lift a => Lift (GQLMap a) where 
+  lift (GQLMap x y) = [| GQLMap x (HM.fromList ys) |] 
     where ys = HM.toList y
 
 -- Refference with Position information  

@@ -69,7 +69,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , lookupWith
   , selectTypeObject
   , toHSFieldDefinition
-  , Empty(..)
   )
 where
 
@@ -102,9 +101,11 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , DataFingerprint(..)
                                                 , isNullable
                                                 , sysFields
-                                                , Fields(..)
+                                                , GQLMap(..)
                                                 , toOperationType
                                                 , hsTypeName
+                                                , Empty(..)
+                                                , UniqueKey(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -121,50 +122,32 @@ import           Data.Morpheus.Types.Internal.AST.Value
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 
-class Empty a where 
-  empty :: a
-
-instance Empty (HashMap k v) where
-  empty = HM.empty
-
-instance Empty (Fields a) where 
-  empty = Fields [] empty
-
-class UniqueKey a where
-  uniqueKey :: a -> Name 
-
-instance UniqueKey Name where 
-  uniqueKey = id
 
 class Listable c a where
   fromList   :: [a] ->  c
   toList     ::  c  -> [a]
   singleton  :: a -> c
 
-instance Semigroup (Fields a) where 
-  -- TODO: throw error on dupplicate fields
-  Fields names1 values1 <> Fields names2 values2 = Fields (names1 <> names2) (values1 <> values2)
-
-instance UniqueKey a => Listable (Fields a) a where
-  singleton x = Fields [uniqueKey x] (HM.singleton (uniqueKey x) x)
-  fromList = collect Fields { fieldNames = [] , fieldValues = empty }
+instance UniqueKey a => Listable (GQLMap a) a where
+  singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x)
+  fromList = collect GQLMap { fieldNames = [] , fieldValues = empty }
     where
-      collect :: UniqueKey a => Fields a -> [a] -> Fields a
+      collect :: UniqueKey a => GQLMap a -> [a] -> GQLMap a
       collect fields [] = fields
       collect fields (value:values)
               | key `elem` fieldNames fields = error "TODO:error"
               | otherwise = collect (insert key value fields) values
             where key = uniqueKey value
-      insert key value (Fields keys values) = Fields (keys<> [key]) (HM.insert key value values) 
-  toList Fields { fieldNames , fieldValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` fieldValues) fieldNames
+      insert key value (GQLMap keys values) = GQLMap (keys<> [key]) (HM.insert key value values) 
+  toList GQLMap { fieldNames , fieldValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` fieldValues) fieldNames
 
 class Selectable c a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
   selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a
   selectBy err = selectOr (failure err) pure
 
-instance Selectable (Fields a) a where 
-  selectOr fb f key Fields { fieldValues } = maybe fb f (HM.lookup key fieldValues)
+instance Selectable (GQLMap a) a where 
+  selectOr fb f key GQLMap { fieldValues } = maybe fb f (HM.lookup key fieldValues)
 
 instance Selectable [(Name, a)] a where 
   selectOr fb f key lib = maybe fb f (lookup key lib)
@@ -428,7 +411,7 @@ popByKey name lib = case lookupWith typeName name lib of
 --
 
 newtype FieldsDefinition = FieldsDefinition 
- { unFieldsDefinition :: Fields FieldDefinition } deriving (Show)
+ { unFieldsDefinition :: GQLMap FieldDefinition } deriving (Show)
 
 
 instance Empty FieldsDefinition where 
@@ -525,7 +508,7 @@ lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef
 data ArgumentsDefinition 
   = ArgumentsDefinition  
     { argumentsTypename ::  Maybe Name
-    , arguments         :: Fields ArgumentDefinition
+    , arguments         :: GQLMap ArgumentDefinition
     }
   | NoArguments
   deriving (Show, Lift)
