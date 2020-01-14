@@ -36,6 +36,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataFingerprint(..)
   , DataTypeWrapper(..)
   , GQLMap(..)
+  --, Named(..)
   , Empty(..)
   , Selectable(..)
   , Listable(..)
@@ -153,7 +154,7 @@ class Listable c a where
 data GQLMap value   
   = GQLMap      { mapValues :: [Named value] }
   | GQLMapError { dupFields :: [Name]        }
-  deriving (Show, Foldable)
+  deriving (Show, Foldable, Lift)
 
 uniqNames :: [Named value] -> GQLMap value
 uniqNames values 

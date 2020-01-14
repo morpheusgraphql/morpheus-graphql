@@ -108,7 +108,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , toOperationType
                                                 , hsTypeName
                                                 , Empty(..)
-                                                , UniqueKey(..)
                                                 , Selectable(..)
                                                 , Listable(..)
                                                 )
@@ -390,9 +389,6 @@ newtype FieldsDefinition = FieldsDefinition
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
-
-instance UniqueKey FieldDefinition where
-  uniqueKey = fieldName
 
 instance Listable FieldsDefinition FieldDefinition where
   singleton = FieldsDefinition . singleton
