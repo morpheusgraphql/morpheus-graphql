@@ -108,6 +108,9 @@ data Fields value = Fields {
   fieldValues :: HM.HashMap Name value
 } deriving (Show, Foldable)
 
+instance Traversable Fields where
+  traverse f (Fields names values) = Fields names <$> traverse f values
+
 instance Functor Fields where 
   fmap f (Fields x y) = Fields x (f <$> y)
 

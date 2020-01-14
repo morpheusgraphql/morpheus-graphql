@@ -85,7 +85,7 @@ instance ParseJSONSchema Field FieldDefinition where
   parse Field { fieldName, fieldArgs, fieldType } = do
     fType <- fieldTypeFromJSON fieldType
     args  <- traverse genArg fieldArgs
-    pure $ createField (ArgumentsDefinition Nothing args) fieldName fType
+    pure $ createField (ArgumentsDefinition Nothing $fromList args) fieldName fType
    where
     genArg InputValue { inputName = argName, inputType = argType } =
       createArgument argName <$> fieldTypeFromJSON argType

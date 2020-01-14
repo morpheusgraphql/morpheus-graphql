@@ -64,7 +64,7 @@ instance RenderGQL TypeDefinition where
         <> intercalate ("\n" <> renderIndent <> "| ") members
     __render (DataInputObject fields ) = "input " <> typeName <> render fields
     __render (DataInputUnion  members) = "input " <> typeName <> render (fromList fields :: FieldsDefinition )
-      where fields = createInputUnionFields typeName (map fst members)
+      where fields = createInputUnionFields typeName (fmap fst members)
     __render DataObject {objectFields} = "type " <> typeName <> render objectFields
 
 -- OBJECT
@@ -80,7 +80,7 @@ instance RenderGQL FieldDefinition where
 
 instance RenderGQL ArgumentsDefinition where 
   render NoArguments   = ""
-  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
+  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (toList $ fmap render arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName
@@ -103,4 +103,4 @@ renderIndent = "  "
 
 renderObject :: (a -> Text) -> [a] -> Text
 renderObject f list =
-  " { \n  " <> intercalate ("\n" <> renderIndent) (map f list) <> "\n}"
+  " { \n  " <> intercalate ("\n" <> renderIndent) (fmap f list) <> "\n}"

@@ -133,6 +133,9 @@ instance Empty (Fields a) where
 class UniqueKey a where
   uniqueKey :: a -> Name 
 
+instance UniqueKey Name where 
+  uniqueKey = id
+
 class Listable c a where
   fromList   :: [a] ->  c
   toList     ::  c  -> [a]
@@ -522,7 +525,7 @@ lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef
 data ArgumentsDefinition 
   = ArgumentsDefinition  
     { argumentsTypename ::  Maybe Name
-    , arguments         :: [ArgumentDefinition]
+    , arguments         :: Fields ArgumentDefinition
     }
   | NoArguments
   deriving (Show, Lift)
@@ -541,11 +544,11 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
 instance Listable ArgumentsDefinition ArgumentDefinition where
-  singleton x = ArgumentsDefinition Nothing [x]
+  singleton = ArgumentsDefinition Nothing . singleton
   toList NoArguments                  = []
-  toList (ArgumentsDefinition _ args) = args
+  toList (ArgumentsDefinition _ args) = toList args
   fromList []                         = NoArguments
-  fromList args                       = ArgumentsDefinition Nothing args
+  fromList args                       = ArgumentsDefinition Nothing (fromList args)
 
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)

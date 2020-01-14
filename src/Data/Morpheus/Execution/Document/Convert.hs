@@ -175,7 +175,7 @@ genArgumentType namespaceWith FieldDefinition { fieldName, fieldArgs  } = pure
   where tName = namespaceWith (hsTypeName fieldName)
 
 genArguments :: ArgumentsDefinition -> [FieldDefinition]
-genArguments = genInputFields . fromList . arguments
+genArguments = genInputFields . FieldsDefinition . arguments
 
 genInputFields :: FieldsDefinition -> [FieldDefinition]
 genInputFields = map toHSFieldDefinition . toList

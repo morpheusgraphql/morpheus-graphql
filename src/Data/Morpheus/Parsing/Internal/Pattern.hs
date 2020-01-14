@@ -88,7 +88,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
 --
 argumentsDefinition :: Parser ArgumentsDefinition
 argumentsDefinition =
-    label "ArgumentsDefinition" $ (ArgumentsDefinition Nothing <$> parseTuple inputValueDefinition) <|> pure NoArguments
+    label "ArgumentsDefinition" $ (fromList <$> parseTuple inputValueDefinition) <|> pure NoArguments
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --
