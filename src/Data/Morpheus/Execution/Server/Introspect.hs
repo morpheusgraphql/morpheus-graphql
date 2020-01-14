@@ -433,14 +433,13 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject $ fromList 
-          [ FieldDefinition 
+      , typeContent     = wrapObject $ singleton 
+          FieldDefinition 
             { fieldName  = "enum"
             , fieldArgs  = NoArguments
             , fieldType  = createAlias enumTypeName
             , fieldMeta  = Nothing
             }
-          ]
       }
 
 data TypeScope = InputType | OutputType deriving (Show,Eq,Ord)

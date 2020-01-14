@@ -134,14 +134,16 @@ class UniqueKey a where
   uniqueKey :: a -> Name 
 
 class Listable c a where
-  fromList     :: [a] ->  c
-  toList   ::  c  -> [a]
+  fromList   :: [a] ->  c
+  toList     ::  c  -> [a]
+  singleton  :: a -> c
 
 instance Semigroup (Fields a) where 
   -- TODO: throw error on dupplicate fields
   Fields names1 values1 <> Fields names2 values2 = Fields (names1 <> names2) (values1 <> values2)
 
 instance UniqueKey a => Listable (Fields a) a where
+  singleton x = Fields [uniqueKey x] (HM.singleton (uniqueKey x) x)
   fromList = collect Fields { fieldNames = [] , fieldValues = empty }
     where
       collect :: UniqueKey a => Fields a -> [a] -> Fields a
@@ -436,6 +438,7 @@ instance UniqueKey FieldDefinition where
   uniqueKey = fieldName
 
 instance Listable FieldsDefinition FieldDefinition where
+  singleton = FieldsDefinition . singleton
   fromList = FieldsDefinition . fromList 
   toList = toList . unFieldsDefinition
 
@@ -538,6 +541,7 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
 instance Listable ArgumentsDefinition ArgumentDefinition where
+  singleton x = ArgumentsDefinition Nothing [x]
   toList NoArguments                  = []
   toList (ArgumentsDefinition _ args) = args
   fromList []                         = NoArguments

@@ -86,7 +86,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
 -- ArgumentsDefinition:
 --   ( InputValueDefinition(list) )
 --
-argumentsDefinition :: Parser (ArgumentsDefinition)
+argumentsDefinition :: Parser ArgumentsDefinition
 argumentsDefinition =
     label "ArgumentsDefinition" $ (ArgumentsDefinition Nothing <$> parseTuple inputValueDefinition) <|> pure NoArguments
 
@@ -120,7 +120,7 @@ fieldDefinition = label "FieldDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputFieldsDefinition :: Parser (FieldsDefinition)
+inputFieldsDefinition :: Parser FieldsDefinition
 inputFieldsDefinition = label "InputFieldsDefinition" $ fromList <$> setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
