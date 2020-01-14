@@ -103,12 +103,13 @@ type SUBSCRIPTION = 'Subscription
 
 
 -- Fields 
-
-
 data Fields value = Fields {
   fieldNames :: [Name],
   fieldValues :: HM.HashMap Name value
 } deriving (Show, Foldable)
+
+instance Functor Fields where 
+  fmap f (Fields x y) = Fields x (f <$> y)
 
 instance Lift a => Lift (Fields a) where 
   lift (Fields x y) = [| Fields x (HM.fromList ys) |] 
