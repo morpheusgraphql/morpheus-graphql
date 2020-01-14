@@ -31,7 +31,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
-  , Listable(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -107,6 +106,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Empty(..)
                                                 , UniqueKey(..)
                                                 , Selectable(..)
+                                                , Listable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -124,25 +124,6 @@ import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
 selectBy :: (Failure e m, Selectable c a, Monad m) => e -> Name -> c -> m a
 selectBy err = selectOr (failure err) pure
-
-class Listable c a where
-  fromList   :: [a] ->  c
-  toList     ::  c  -> [a]
-  singleton  :: a -> c
-
-instance UniqueKey a => Listable (GQLMap a) a where
-  singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x)
-  fromList = collect GQLMap { fieldNames = [] , fieldValues = empty }
-    where
-      collect :: UniqueKey a => GQLMap a -> [a] -> GQLMap a
-      collect fields [] = fields
-      collect fields (value:values)
-              | key `elem` fieldNames fields = error "TODO:error"
-              | otherwise = collect (insert key value fields) values
-            where key = uniqueKey value
-      insert key value (GQLMap keys values) = GQLMap (keys<> [key]) (HM.insert key value values) 
-  toList GQLMap { fieldNames , fieldValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` fieldValues) fieldNames
-
 
 type DataEnum = [DataEnumValue]
 type DataUnion = [Key]

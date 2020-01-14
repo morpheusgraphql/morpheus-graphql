@@ -36,6 +36,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , UniqueKey(..)
   , GQLMap(..)
   , Selectable(..)
+  , Listable(..)
   , anonymousRef
   , uniqueElemOr
   , elementOfKeys
@@ -135,6 +136,13 @@ instance Selectable [(Name, a)] a where
 instance Selectable (HashMap Text a) a where 
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
+
+class Listable c a where
+  fromList   :: [a] ->  c
+  toList     ::  c  -> [a]
+  singleton  :: a -> c
+
+
 -- GQLMap 
 data GQLMap value = GQLMap {
   fieldNames :: [Name],
@@ -155,6 +163,21 @@ instance Functor GQLMap where
 instance Lift a => Lift (GQLMap a) where 
   lift (GQLMap x y) = [| GQLMap x (HM.fromList ys) |] 
     where ys = HM.toList y
+
+
+instance UniqueKey a => Listable (GQLMap a) a where
+  singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x)
+  fromList = collect GQLMap { fieldNames = [] , fieldValues = empty }
+    where
+      collect :: UniqueKey a => GQLMap a -> [a] -> GQLMap a
+      collect fields [] = fields
+      collect fields (value:values)
+              | key `elem` fieldNames fields = error "TODO:error"
+              | otherwise = collect (insert key value fields) values
+            where key = uniqueKey value
+      insert key value (GQLMap keys values) = GQLMap (keys<> [key]) (HM.insert key value values) 
+  toList GQLMap { fieldNames , fieldValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` fieldValues) fieldNames
+
 
 -- Refference with Position information  
 --
