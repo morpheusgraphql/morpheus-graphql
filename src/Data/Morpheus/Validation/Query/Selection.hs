@@ -46,6 +46,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupSelectionField
                                                 , lookupUnionTypes
                                                 , checkNameCollision
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation

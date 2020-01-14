@@ -31,18 +31,19 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidValue
                                                 , Variable(..)
                                                 , Ref(..)
-                                                , isWeaker
                                                 , Message
                                                 , Name
                                                 , ResolvedValue
                                                 , VALID
                                                 , VariableContent(..)
-                                                , unpackInputUnion
-                                                , isFieldNullable
                                                 , TypeRef(..)
-                                                , isNullableWrapper
                                                 , Listable(..)
                                                 , Selectable(..)
+                                                , isWeaker
+                                                , unpackInputUnion
+                                                , isFieldNullable
+                                                , isNullableWrapper
+                                                , selectBy
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving

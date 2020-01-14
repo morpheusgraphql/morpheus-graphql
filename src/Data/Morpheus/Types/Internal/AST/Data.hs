@@ -69,6 +69,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , lookupWith
   , selectTypeObject
   , toHSFieldDefinition
+  , selectBy
   )
 where
 
@@ -121,7 +122,8 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
-
+selectBy :: (Failure e m, Selectable c a, Monad m) => e -> Name -> c -> m a
+selectBy err = selectOr (failure err) pure
 
 class Listable c a where
   fromList   :: [a] ->  c
@@ -143,8 +145,7 @@ instance UniqueKey a => Listable (GQLMap a) a where
 
 class Selectable c a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
-  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a
-  selectBy err = selectOr (failure err) pure
+
 
 instance Selectable (GQLMap a) a where 
   selectOr fb f key GQLMap { fieldValues } = maybe fb f (HM.lookup key fieldValues)
