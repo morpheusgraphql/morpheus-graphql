@@ -1,13 +1,17 @@
-{-# LANGUAGE DeriveAnyClass         #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE DeriveLift             #-}
-{-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE DeriveFoldable         #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveLift                 #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
@@ -33,8 +37,6 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeWrapper(..)
   , GQLMap(..)
   , Empty(..)
-  , UniqueKey(..)
-  , GQLMap(..)
   , Selectable(..)
   , Listable(..)
   , anonymousRef
@@ -109,11 +111,20 @@ type QUERY = 'Query
 type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
 
-class UniqueKey a where
-  uniqueKey :: a -> Name 
+data Named a 
+  = Named 
+  {
+    uniqName :: Name,
+    unName :: a
+  } deriving 
+    ( Show
+    , Lift
+    , Functor
+    , Foldable
+    )
 
-instance UniqueKey Text where 
-  uniqueKey = id
+instance Traversable Named where
+  traverse f Named { uniqName, unName } = Named uniqName <$> f unName
 
 class Empty a where 
   empty :: a
@@ -121,14 +132,11 @@ class Empty a where
 instance Empty (HashMap k v) where
   empty = HM.empty
 
-instance Empty (GQLMap a) where 
-  empty = GQLMap [] empty
-
 class Selectable c a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
 
 instance Selectable (GQLMap a) a where 
-  selectOr fb f key GQLMap { mapValues } = maybe fb f (HM.lookup key mapValues)
+  -- selectOr fb f key GQLMap { mapValues } = maybe fb f (HM.lookup key mapValues)
 
 instance Selectable [(Name, a)] a where 
   selectOr fb f key lib = maybe fb f (lookup key lib)
@@ -136,45 +144,58 @@ instance Selectable [(Name, a)] a where
 instance Selectable (HashMap Text a) a where 
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
-
 class Listable c a where
   fromList   :: [a] ->  c
   toList     ::  c  -> [a]
   singleton  :: a -> c
 
-
 -- GQLMap 
 data GQLMap value   
-  = GQLMap 
-  { mapNames :: [Name]
-  , mapValues :: HM.HashMap Name value
-  } 
-  | DuplicateKeys [value]
+  = GQLMap      { mapValues :: [Named value] }
+  | GQLMapError { dupFields :: [Name]        }
   deriving (Show, Foldable)
 
+
+validateValues :: [Named value] -> GQLMap value
+validateValues values 
+  | null dupNames = GQLMap noDups
+  | otherwise = GQLMapError dupNames
+ where (noDups,dupNames,_) = splitDupElem values
+
+instance Functor GQLMap where
+  -- and we hope no one changed keys 
+  fmap f GQLMap { mapValues } = validateValues (fmap f <$> mapValues) 
+  fmap _ GQLMapError { .. } = GQLMapError { .. } 
+
 instance Semigroup (GQLMap a) where
---  GQLMap names1 values1 <> GQLMap names2 values2 = GQLMap (names1 <> names2) (values1 <> values2)
+  GQLMapError err1 <> GQLMapError err2 = GQLMapError (err1 <> err2)
+  GQLMap _ <> GQLMapError name = GQLMapError name
+  GQLMapError err1 <> GQLMap _ = GQLMapError err1
+  GQLMap v1 <> GQLMap v2 = validateValues (v1 <> v2)
 
 instance Traversable GQLMap where
-  traverse f (GQLMap names values) = GQLMap names <$> traverse f values
+  traverse _ (GQLMapError err1) = pure $ GQLMapError err1
+  traverse f (GQLMap values) = GQLMap <$> traverse (traverse f) values
 
-instance Functor GQLMap where 
-  fmap f (GQLMap x y) = GQLMap x (f <$> y)
+--instance Lift a => Lift (GQLMap a) where 
+--  lift (GQLMap x y z) = [| GQLMap x (HM.fromList ys) z |] 
+--    where ys = HM.toList y
 
-instance Lift a => Lift (GQLMap a) where 
-  lift (GQLMap x y) = [| GQLMap x (HM.fromList ys) |] 
-    where ys = HM.toList y
+instance Empty (GQLMap a) where 
+  empty = GQLMap  []
 
-instance UniqueKey a => Listable (GQLMap a) a where
-  singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x)
-  fromList xs = let (uniqueXs,_,_) = splitDupElem xs in 
-    GQLMap 
-    { mapNames = map uniqueKey xs
-    , mapValues =HM.fromList (map 
-        (\x -> (uniqueKey x,x)) 
-        uniqueXs) 
-    }
-  toList GQLMap { mapNames , mapValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` mapValues) mapNames
+instance Listable (GQLMap a) a where
+  -- singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x) []
+  -- fromList xs = 
+  --   GQLMap 
+  --   { mapNames = map uniqueKey xs
+  --   , mapValues = HM.fromList (map 
+  --       (\x -> (uniqueKey x,x)) 
+  --       uniqueXs) 
+  --   , mapDups
+  --   }
+  --   where (uniqueXs,_,mapDups) = splitDupElem xs
+  -- toList GQLMap { mapNames , mapValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` mapValues) mapNames
 
 
 -- Refference with Position information  
@@ -350,11 +371,11 @@ splitDuplicates = collectElems ([],[])
         | otherwise = collectElems (collected <> [x],errors) xs
 
 
-splitDupElem :: UniqueKey a => [a] -> ([a],[Name],[a])
+splitDupElem :: [Named a] -> ([Named a],[Name],[Named a])
 splitDupElem = collectElems ([],[],[])
   where
-    collectElems :: UniqueKey a => ([a],[Name],[a]) -> [a] -> ([a],[Name],[a])
+    collectElems :: ([Named a],[Name],[Named a]) -> [Named a] -> ([Named a],[Name],[Named a])
     collectElems collected [] = collected
     collectElems (values,names,errors) (x:xs)
-        | uniqueKey x `elem` names = collectElems (values,names <> [uniqueKey x],errors <> [x]) xs
+        | uniqName x `elem` names = collectElems (values,names <> [uniqName x],errors <> [x]) xs
         | otherwise = collectElems (values <> [x],names,errors) xs
