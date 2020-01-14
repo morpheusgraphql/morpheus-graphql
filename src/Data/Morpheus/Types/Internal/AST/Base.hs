@@ -128,7 +128,7 @@ class Selectable c a where
   selectOr :: d -> (a -> d) -> Name -> c -> d
 
 instance Selectable (GQLMap a) a where 
-  selectOr fb f key GQLMap { fieldValues } = maybe fb f (HM.lookup key fieldValues)
+  selectOr fb f key GQLMap { mapValues } = maybe fb f (HM.lookup key mapValues)
 
 instance Selectable [(Name, a)] a where 
   selectOr fb f key lib = maybe fb f (lookup key lib)
@@ -144,15 +144,16 @@ class Listable c a where
 
 
 -- GQLMap 
-data GQLMap value = GQLMap {
-  fieldNames :: [Name],
-  fieldValues :: HM.HashMap Name value
-} deriving (Show, Foldable)
+data GQLMap value   
+  = GQLMap 
+  { mapNames :: [Name]
+  , mapValues :: HM.HashMap Name value
+  } 
+  | DuplicateKeys [value]
+  deriving (Show, Foldable)
 
-instance Semigroup (GQLMap a) where 
-  -- TODO: throw error on dupplicate fields
-  GQLMap names1 values1 <> GQLMap names2 values2 = GQLMap (names1 <> names2) (values1 <> values2)
-
+instance Semigroup (GQLMap a) where
+--  GQLMap names1 values1 <> GQLMap names2 values2 = GQLMap (names1 <> names2) (values1 <> values2)
 
 instance Traversable GQLMap where
   traverse f (GQLMap names values) = GQLMap names <$> traverse f values
@@ -164,19 +165,16 @@ instance Lift a => Lift (GQLMap a) where
   lift (GQLMap x y) = [| GQLMap x (HM.fromList ys) |] 
     where ys = HM.toList y
 
-
 instance UniqueKey a => Listable (GQLMap a) a where
   singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x)
-  fromList = collect GQLMap { fieldNames = [] , fieldValues = empty }
-    where
-      collect :: UniqueKey a => GQLMap a -> [a] -> GQLMap a
-      collect fields [] = fields
-      collect fields (value:values)
-              | key `elem` fieldNames fields = error "TODO:error"
-              | otherwise = collect (insert key value fields) values
-            where key = uniqueKey value
-      insert key value (GQLMap keys values) = GQLMap (keys<> [key]) (HM.insert key value values) 
-  toList GQLMap { fieldNames , fieldValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` fieldValues) fieldNames
+  fromList xs = let (uniqueXs,_,_) = splitDupElem xs in 
+    GQLMap 
+    { mapNames = map uniqueKey xs
+    , mapValues =HM.fromList (map 
+        (\x -> (uniqueKey x,x)) 
+        uniqueXs) 
+    }
+  toList GQLMap { mapNames , mapValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` mapValues) mapNames
 
 
 -- Refference with Position information  

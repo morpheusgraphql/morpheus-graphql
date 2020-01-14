@@ -9,6 +9,9 @@
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+
+
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( ScalarDefinition(..)
