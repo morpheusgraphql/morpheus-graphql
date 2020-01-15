@@ -20,6 +20,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , Position(..)
   , Message
   , Name
+  , Named(..)
   , Description
   , VALID
   , RAW
@@ -146,9 +147,9 @@ instance Selectable (HashMap Text a) a where
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
 class Listable c a where
-  fromList   :: [a] ->  c
-  toList     ::  c  -> [a]
-  singleton  :: a -> c
+  fromList   :: [Named a] ->  c
+  toList     ::  c  -> [Named a]
+  singleton  :: Named a -> c
 
 -- GQLMap 
 data GQLMap value   
@@ -184,6 +185,9 @@ instance Empty (GQLMap a) where
   empty = GQLMap  []
 
 instance Listable (GQLMap a) a where
+  singleton  x = GQLMap [x]
+
+--instance Listable (GQLMap a) a where
   -- singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x) []
   -- fromList xs = 
   --   GQLMap 
