@@ -67,6 +67,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   )
 where
 
+import           Data.Maybe                     (isJust)
 import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
@@ -168,8 +169,7 @@ uniqNames values
   | otherwise = GQLMapError dupNames
  where (noDups,dupNames,_) = splitDupElem values
 
-joinHashmaps :: HashMap Name value -> HashMap Name value -> GQLMap value
-joinHashmaps _ _ = undefined
+
 
 instance Functor GQLMap where
   fmap f GQLMap { mapValues } = GQLMap (fmap f mapValues) 
@@ -179,24 +179,17 @@ instance Semigroup (GQLMap a) where
   GQLMapError err1 <> GQLMapError err2 = GQLMapError (err1 <> err2)
   GQLMap _ <> GQLMapError name = GQLMapError name
   GQLMapError err1 <> GQLMap _ = GQLMapError err1
-  GQLMap v1 <> GQLMap v2 = joinHashmaps v1 v2
+  GQLMap v1 <> GQLMap v2 = fromHashMaps v1 v2
 
 instance Traversable GQLMap where
   traverse _ (GQLMapError err1) = pure $ GQLMapError err1
   traverse f (GQLMap values) = GQLMap <$> traverse f values
-
---instance Lift a => Lift (GQLMap a) where 
---  lift (GQLMap x y z) = [| GQLMap x (HM.fromList ys) z |] 
---    where ys = HM.toList y
 
 instance Empty (GQLMap a) where 
   empty = GQLMap HM.empty
 
 instance Listable (GQLMap a) a where
   singleton Named { name, unName} = GQLMap $ HM.singleton name unName
-
---instance Listable (GQLMap a) a where
-  -- singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x) []
   -- fromList xs = 
   --   GQLMap 
   --   { mapNames = map uniqueKey xs
@@ -394,3 +387,18 @@ splitDupElem = collectElems ([],[],[])
     collectElems (values,names,errors) (x:xs)
         | name x `elem` names = collectElems (values,names <> [name x],errors <> [x]) xs
         | otherwise = collectElems (values <> [x],names,errors) xs
+
+
+fromHashMaps :: HashMap Name a -> HashMap Name a -> GQLMap a
+fromHashMaps x y = case joinHashmaps x y of 
+  (hm,[]) -> GQLMap hm
+  (_,errors) -> GQLMapError errors
+
+joinHashmaps :: HashMap Name a -> HashMap Name a -> (HashMap Name a,[Name])
+joinHashmaps lib newls = collectElems (lib,[]) (HM.toList newls)
+ where  
+  collectElems :: (HashMap Name a,[Name]) -> [(Name, a)] -> (HashMap Name a,[Name])
+  collectElems collected [] = collected
+  collectElems (coll,errors) ((name,value):xs)
+        | isJust (name `HM.lookup` coll) = collectElems (coll, errors <> [name]) xs
+        | otherwise = collectElems (HM.insert name value coll,errors) xs
