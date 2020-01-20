@@ -261,7 +261,7 @@ unsafeBind (ResolverM x) m2 = ResolverM (x >>= runResolverM . m2)
 unsafeBind (ResolverS res) m2 = ResolverS $ do 
     (readResA :: ReaderT e (Resolver QUERY e m) a ) <- res 
     pure $ ReaderT $ \e -> ResolverQ $ do 
-         let (resA :: Resolver QUERY e m a) = (runReaderT $ readResA) e
+         let (resA :: Resolver QUERY e m a) = runReaderT readResA e
          (valA :: a) <- runResolverQ resA
          (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearStateResolverEvents $ runResolverS (m2 valA) 
          runResolverQ $ runReaderT readResB e
@@ -378,7 +378,7 @@ resolveObject selectionSet (ObjectRes resolvers) =
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
-toEventResolver :: Monad m => (ReaderT event (Resolver QUERY event m) ValidValue) -> Context -> event -> m GQLResponse
+toEventResolver :: Monad m => ReaderT event (Resolver QUERY event m) ValidValue -> Context -> event -> m GQLResponse
 toEventResolver (ReaderT subRes) sel event = do 
   value <- runResultT $ runReaderT (runResolverState $ runResolverQ (subRes event)) sel
   pure $ renderResponse value

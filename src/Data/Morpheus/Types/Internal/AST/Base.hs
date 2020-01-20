@@ -138,7 +138,7 @@ class Selectable c a where
   selectOr :: d -> (a -> d) -> Name -> c -> d
 
 instance Selectable (GQLMap a) a where 
-  -- selectOr fb f key GQLMap { mapValues } = maybe fb f (HM.lookup key mapValues)
+  selectOr fb f key GQLMap { mapValues } = maybe fb f (HM.lookup key mapValues)
 
 instance Selectable [(Name, a)] a where 
   selectOr fb f key lib = maybe fb f (lookup key lib)
@@ -153,39 +153,47 @@ class Listable c a where
 
 -- GQLMap 
 data GQLMap value   
-  = GQLMap      { mapValues :: [Named value] }
+  = GQLMap      { mapValues :: HashMap Name value }
   | GQLMapError { dupFields :: [Name]        }
-  deriving (Show, Foldable, Lift)
+  deriving (Show, Foldable)
+
+instance Lift a => Lift (GQLMap a) where
+  lift (GQLMapError err) = [| GQLMapError err |]
+  lift (GQLMap x) = [| GQLMap (HM.fromList ls) |]
+    where ls = HM.toList x
 
 uniqNames :: [Named value] -> GQLMap value
 uniqNames values 
-  | null dupNames = GQLMap noDups
+  | null dupNames = GQLMap $ HM.fromList $ map fromNamed noDups
   | otherwise = GQLMapError dupNames
  where (noDups,dupNames,_) = splitDupElem values
 
+joinHashmaps :: HashMap Name value -> HashMap Name value -> GQLMap value
+joinHashmaps _ _ = undefined
+
 instance Functor GQLMap where
-  fmap f GQLMap { mapValues } = uniqNames (fmap f <$> mapValues) 
+  fmap f GQLMap { mapValues } = GQLMap (fmap f mapValues) 
   fmap _ GQLMapError { .. } = GQLMapError { .. } 
 
 instance Semigroup (GQLMap a) where
   GQLMapError err1 <> GQLMapError err2 = GQLMapError (err1 <> err2)
   GQLMap _ <> GQLMapError name = GQLMapError name
   GQLMapError err1 <> GQLMap _ = GQLMapError err1
-  GQLMap v1 <> GQLMap v2 = uniqNames (v1 <> v2)
+  GQLMap v1 <> GQLMap v2 = joinHashmaps v1 v2
 
 instance Traversable GQLMap where
   traverse _ (GQLMapError err1) = pure $ GQLMapError err1
-  traverse f (GQLMap values) = uniqNames <$> traverse (traverse f) values
+  traverse f (GQLMap values) = GQLMap <$> traverse f values
 
 --instance Lift a => Lift (GQLMap a) where 
 --  lift (GQLMap x y z) = [| GQLMap x (HM.fromList ys) z |] 
 --    where ys = HM.toList y
 
 instance Empty (GQLMap a) where 
-  empty = GQLMap  []
+  empty = GQLMap HM.empty
 
 instance Listable (GQLMap a) a where
-  singleton  x = GQLMap [x]
+  singleton Named { name, unName} = GQLMap $ HM.singleton name unName
 
 --instance Listable (GQLMap a) a where
   -- singleton x = GQLMap [uniqueKey x] (HM.singleton (uniqueKey x) x) []
@@ -372,6 +380,10 @@ splitDuplicates = collectElems ([],[])
     collectElems (collected,errors) (x:xs)
         | x `elem` collected = collectElems (collected,errors <> [x]) xs
         | otherwise = collectElems (collected <> [x],errors) xs
+
+
+fromNamed :: Named a -> (Name,a)
+fromNamed Named { name , unName} = (name,unName)
 
 
 splitDupElem :: [Named a] -> ([Named a],[Name],[Named a])
