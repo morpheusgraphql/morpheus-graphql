@@ -140,6 +140,8 @@ class Selectable c a where
 
 instance Selectable (GQLMap a) a where 
   selectOr fb f key GQLMap { mapValues } = maybe fb f (HM.lookup key mapValues)
+  -- TODO: ability to risplay errors
+  selectOr fb _ _ (GQLMapError errors) = fb 
 
 instance Selectable [(Name, a)] a where 
   selectOr fb f key lib = maybe fb f (lookup key lib)
@@ -163,14 +165,6 @@ instance Lift a => Lift (GQLMap a) where
   lift (GQLMap x) = [| GQLMap (HM.fromList ls) |]
     where ls = HM.toList x
 
-uniqNames :: [Named value] -> GQLMap value
-uniqNames values 
-  | null dupNames = GQLMap $ HM.fromList $ map fromNamed noDups
-  | otherwise = GQLMapError dupNames
- where (noDups,dupNames,_) = splitDupElem values
-
-
-
 instance Functor GQLMap where
   fmap f GQLMap { mapValues } = GQLMap (fmap f mapValues) 
   fmap _ GQLMapError { .. } = GQLMapError { .. } 
@@ -190,17 +184,8 @@ instance Empty (GQLMap a) where
 
 instance Listable (GQLMap a) a where
   singleton Named { name, unName} = GQLMap $ HM.singleton name unName
-  -- fromList xs = 
-  --   GQLMap 
-  --   { mapNames = map uniqueKey xs
-  --   , mapValues = HM.fromList (map 
-  --       (\x -> (uniqueKey x,x)) 
-  --       uniqueXs) 
-  --   , mapDups
-  --   }
-  --   where (uniqueXs,_,mapDups) = splitDupElem xs
-  -- toList GQLMap { mapNames , mapValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` mapValues) mapNames
-
+  fromList = uniqNames
+  -- toList GQLMap { names , mapValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` mapValues) mapNames
 
 -- Refference with Position information  
 --
@@ -402,3 +387,9 @@ joinHashmaps lib newls = collectElems (lib,[]) (HM.toList newls)
   collectElems (coll,errors) ((name,value):xs)
         | isJust (name `HM.lookup` coll) = collectElems (coll, errors <> [name]) xs
         | otherwise = collectElems (HM.insert name value coll,errors) xs
+
+uniqNames :: [Named value] -> GQLMap value
+uniqNames values 
+  | null dupNames = GQLMap $ HM.fromList $ map fromNamed noDups
+  | otherwise = GQLMapError dupNames
+ where (noDups,dupNames,_) = splitDupElem values
