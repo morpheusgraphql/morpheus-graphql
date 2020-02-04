@@ -18,6 +18,7 @@ module Data.Morpheus.Execution.Server.Resolve
   )
 where
 
+import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
@@ -42,9 +43,9 @@ import           Data.Morpheus.Execution.Server.Introspect
                                                 , introspectObjectFields
                                                 , TypeScope(..)
                                                 )
-import           Data.Morpheus.Execution.Subscription.ClientRegister
+import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
-                                                , publishUpdates
+                                                , publishEvent
                                                 )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
@@ -56,11 +57,10 @@ import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes
 import           Data.Morpheus.Types.GQLType    ( GQLType(CUSTOM) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
-                                                , ValidOperation
                                                 , DataFingerprint(..)
-                                                , DataTypeContent(..)
+                                                , TypeContent(..)
                                                 , Schema(..)
-                                                , DataType(..)
+                                                , TypeDefinition(..)
                                                 , MUTATION
                                                 , OperationType(..)
                                                 , QUERY
@@ -68,13 +68,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , initTypeLib
                                                 , ValidValue
                                                 , Name
-                                                , DataField
                                                 , VALIDATION_MODE(..)
+                                                , Selection(..)
+                                                , SelectionContent(..)
+                                                , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
-                                                , Resolver(..)
-                                                , toResponseRes
+                                                , Resolver
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
@@ -84,6 +85,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , unpackEvents
                                                 , Failure(..)
                                                 , resolveUpdates
+                                                , Context(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -145,6 +147,7 @@ streamResolver
 streamResolver root req =
   ResultT $ pure . renderResponse <$> runResultT (coreResolver root req)
 
+
 coreResolver
   :: forall event m query mut sub
    . (Monad m, RootResCon m event query mut sub)
@@ -155,22 +158,30 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
   = validRequest >>= execOperator
  where
   validRequest
-    :: Monad m => ResponseStream event m (Schema, ValidOperation)
+    :: Monad m => ResponseStream event m Context
   validRequest = cleanEvents $ ResultT $ pure $ do
-    schema <- fullSchema $ Identity root
-    query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
-    pure (schema, query)
+    schema     <- fullSchema $ Identity root
+    operation  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
+    pure $ Context {
+        schema
+      , operation
+      , currentSelection = (
+        "Root"
+        , Selection {
+          selectionArguments = []
+          , selectionPosition = operationPosition operation
+          , selectionAlias = Nothing
+          , selectionContent = SelectionSet (operationSelection operation)
+        } 
+    )
+  }
   ----------------------------------------------------------
-  execOperator (schema, operation@Operation { operationType = Query }) =
-    toResponseRes (encodeQuery (schemaAPI schema) queryResolver operation)
-  execOperator (_, operation@Operation { operationType = Mutation }) =
-    toResponseRes (encodeMutation mutationResolver operation)
-  execOperator (_, operation@Operation { operationType = Subscription }) =
-    response
-   where
-    response =
-      toResponseRes (encodeSubscription subscriptionResolver operation)
-
+  execOperator ctx@Context {schema ,operation = Operation{ operationType} } = execOperationBy operationType ctx
+    where
+      execOperationBy Query = encodeQuery (schemaAPI schema) queryResolver
+      execOperationBy Mutation = encodeMutation mutationResolver
+      execOperationBy Subscription = encodeSubscription subscriptionResolver
+    
 statefulResolver
   :: (EventCon event, MonadIO m)
   => GQLState m event
@@ -182,7 +193,7 @@ statefulResolver state streamApi requestText = do
   mapM_ execute (unpackEvents res)
   pure $ encode $ renderResponse res
  where
-  execute (Publish updates) = publishUpdates state updates
+  execute (Publish events) = publishEvent state events
   execute Subscribe{}       = pure ()
 
 fullSchema
@@ -193,7 +204,7 @@ fullSchema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
   querySchema = resolveUpdates
-    (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query"))
+    (initTypeLib (operatorType (hiddenRootFields <> fields) "Query"))
     (defaultTypes : types)
    where
     (fields, types) = introspectObjectFields
@@ -221,16 +232,14 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
       , OutputType
       , Proxy @(subscription (Resolver SUBSCRIPTION event m))
       )
-  maybeOperator :: [(Name, DataField)] -> Name -> Maybe (Name, DataType)
-  maybeOperator []     = const Nothing
+  maybeOperator :: FieldsDefinition -> Name -> Maybe TypeDefinition
+  maybeOperator (FieldsDefinition x) | null x     = const Nothing
   maybeOperator fields = Just . operatorType fields
   -------------------------------------------------
-  operatorType :: [(Name, DataField)] -> Name -> (Name, DataType)
-  operatorType fields typeName =
-    ( typeName
-    , DataType { typeContent     = DataObject [] fields
-               , typeName
-               , typeFingerprint = DataFingerprint typeName []
-               , typeMeta        = Nothing
-               }
-    )
+  operatorType :: FieldsDefinition -> Name -> TypeDefinition
+  operatorType fields typeName = TypeDefinition 
+      { typeContent     = DataObject [] fields
+        , typeName
+        , typeFingerprint = DataFingerprint typeName []
+        , typeMeta        = Nothing
+      }

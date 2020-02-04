@@ -35,7 +35,7 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 , streamResolver
                                                 , coreResolver
                                                 )
-import           Data.Morpheus.Execution.Subscription.ClientRegister
+import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)

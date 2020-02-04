@@ -1,11 +1,12 @@
-{-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE GADTs                #-}
 
 module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL(..)
   , renderGraphQLDocument
+  , renderWrapped
   )
 where
 
@@ -20,9 +21,9 @@ import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
-                                                , DataTypeContent(..)
-                                                , DataType(..)
+                                                ( FieldDefinition(..)
+                                                , TypeContent(..)
+                                                , TypeDefinition(..)
                                                 , Schema
                                                 , DataTypeWrapper(..)
                                                 , Key
@@ -35,68 +36,67 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
                                                 , convertToJSONName
+                                                , ArgumentsDefinition(..)
+                                                , Name
+                                                , FieldsDefinition(..)
+                                                , Listable(..)
                                                 )
-
 
 renderGraphQLDocument :: Schema -> ByteString
 renderGraphQLDocument lib =
   encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map render visibleTypes
  where
-  visibleTypes = filter (not . isDefaultTypeName . fst) (allDataTypes lib)
+  visibleTypes = filter (not . isDefaultTypeName . typeName) (allDataTypes lib)
 
 class RenderGQL a where
   render :: a -> Key
-  renderWrapped :: a -> [TypeWrapper] -> Key
-  default renderWrapped :: a -> [TypeWrapper] -> Key
-  renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
-    where
-      showGQLWrapper []               = render x
-      showGQLWrapper (ListType:xs)    = "[" <> showGQLWrapper xs <> "]"
-      showGQLWrapper (NonNullType:xs) = showGQLWrapper xs <> "!"
 
+instance RenderGQL TypeDefinition where
+  render TypeDefinition { typeName, typeContent } = __render typeContent
+   where
+    __render DataInterface { interfaceFields } = "interface " <> typeName <> render interfaceFields
+    __render DataScalar{}    = "scalar " <> typeName
+    __render (DataEnum tags) = "enum " <> typeName <> renderObject render tags
+    __render (DataUnion members) =
+      "union "
+        <> typeName
+        <> " =\n    "
+        <> intercalate ("\n" <> renderIndent <> "| ") members
+    __render (DataInputObject fields ) = "input " <> typeName <> render fields
+    __render (DataInputUnion  members) = "input " <> typeName <> render (fromList fields :: FieldsDefinition )
+      where fields = createInputUnionFields typeName (map fst members)
+    __render DataObject {objectFields} = "type " <> typeName <> render objectFields
 
-instance RenderGQL Key where
-  render = id
+-- OBJECT
+instance RenderGQL FieldsDefinition where
+  render = renderObject render . ignoreHidden . toList
+   where 
+    ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
+    ignoreHidden = filter fieldVisibility
 
-instance RenderGQL TypeRef where
-  render TypeRef { typeConName, typeWrappers } =
-    renderWrapped typeConName typeWrappers
+instance RenderGQL FieldDefinition where 
+  render FieldDefinition { fieldName, fieldType, fieldArgs } =
+    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
 
-instance RenderGQL DataType where
-  render = typeName
+instance RenderGQL ArgumentsDefinition where 
+  render NoArguments   = ""
+  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName
 
-instance RenderGQL (Key, DataType) where
-  render (name, DataType { typeContent }) = __render typeContent
-   where
-    __render DataInterface { interfaceFields } = "interface " <> name <> render interfaceFields
-    __render DataScalar{}    = "scalar " <> name
-    __render (DataEnum tags) = "enum " <> name <> renderObject render tags
-    __render (DataUnion members) =
-      "union "
-        <> name
-        <> " =\n    "
-        <> intercalate ("\n" <> renderIndent <> "| ") members
-    __render (DataInputObject fields ) = "input " <> name <> render fields
-    __render (DataInputUnion  members) = "input " <> name <> render fields
-      where fields = createInputUnionFields name (map fst members)
-    __render (DataObject {objectFields}) = "type " <> name <> render objectFields
+instance RenderGQL TypeRef where
+  render TypeRef { typeConName, typeWrappers } = renderWrapped typeConName typeWrappers
 
--- OBJECT
-instance RenderGQL [(Text, DataField)] where
-  render = renderObject renderField . ignoreHidden
-   where
-    renderField :: (Text, DataField) -> Text
-    renderField (key, DataField { fieldType, fieldArgs }) =
-      convertToJSONName key <> renderArgs fieldArgs <> ": " <> render fieldType
-     where
-      renderArgs []   = ""
-      renderArgs list = "(" <> intercalate ", " (map renderField list) <> ")"
-    -----------------------------------------------------------
-    ignoreHidden :: [(Text, DataField)] -> [(Text, DataField)]
-    ignoreHidden = filter fieldVisibility
+instance RenderGQL Key where
+  render = id
+
+renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Name
+renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
+    where
+      showGQLWrapper []               = render x
+      showGQLWrapper (ListType:xs)    = "[" <> showGQLWrapper xs <> "]"
+      showGQLWrapper (NonNullType:xs) = showGQLWrapper xs <> "!"
 
 renderIndent :: Text
 renderIndent = "  "

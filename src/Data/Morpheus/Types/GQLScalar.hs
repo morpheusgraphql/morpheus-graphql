@@ -10,7 +10,7 @@ module Data.Morpheus.Types.GQLScalar
 where
 
 import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( DataValidator(..) )
+                                                ( ScalarDefinition(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
                                                 , ValidValue
@@ -42,8 +42,8 @@ class GQLScalar a where
   parseValue :: ScalarValue -> Either Text a
   -- | serialization of haskell type into scalar value
   serialize :: a -> ScalarValue
-  scalarValidator :: Proxy a -> DataValidator
-  scalarValidator _ = DataValidator {validateValue = validator}
+  scalarValidator :: Proxy a -> ScalarDefinition
+  scalarValidator _ = ScalarDefinition {validateValue = validator}
     where
       validator value = do
         scalarValue' <- toScalar value

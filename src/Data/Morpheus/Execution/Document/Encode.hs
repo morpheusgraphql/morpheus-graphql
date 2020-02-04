@@ -21,7 +21,7 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 )
 import           Data.Morpheus.Types.GQLType    ( TRUE )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , isSubscription
@@ -34,7 +34,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver
                                                 , MapStrategy(..)
                                                 , LiftOperation
-                                                , ResolvingStrategy
                                                 , DataResolver(..)
                                                 )
 import           Data.Morpheus.Types.Internal.TH
@@ -80,15 +79,13 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
     | isSubscription typeKindD
     = [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
     | otherwise
-    = [ iLiftOp fo_ ''ResolvingStrategy
-      , iLiftOp fo_ ''Resolver
+    = [ iLiftOp fo_
       , typeT ''MapStrategy [fo_, po_]
       , iTypeable fo_
       , iTypeable po_
       ]
   -------------------------
-  iLiftOp op name =
-    applyT ''LiftOperation [varT $ mkName $ unpack op, conT name]
+  iLiftOp op = applyT ''LiftOperation [varT $ mkName $ unpack op]
   -------------------------
   iTypeable name = typeT ''Typeable [name]
   -------------------------------------------

@@ -1,19 +1,20 @@
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE TupleSections          #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DefaultSignatures      #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE PolyKinds              #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeApplications       #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE RecordWildCards        #-}
 
 module Data.Morpheus.Execution.Server.Introspect
   ( TypeUpdater
@@ -61,11 +62,11 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
-                                                , DataArguments
+                                                , ArgumentsDefinition(..)
                                                 , Meta(..)
-                                                , DataField(..)
-                                                , DataTypeContent(..)
-                                                , DataType(..)
+                                                , FieldDefinition(..)
+                                                , TypeContent(..)
+                                                , TypeDefinition(..)
                                                 , Key
                                                 , createAlias
                                                 , defineType
@@ -76,10 +77,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeUpdater
                                                 , DataFingerprint(..)
                                                 , DataUnion
-                                                , DataObject
+                                                , FieldsDefinition(..)
                                                 , TypeRef(..)
+                                                , Message
+                                                , Listable(..)
                                                 )
-
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
 
@@ -89,12 +91,12 @@ class Introspect a where
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> Text -> DataField
+  field :: proxy a -> Text -> FieldDefinition
   introspect :: proxy a -> TypeUpdater
   -----------------------------------------------
   default field :: GQLType a =>
-    proxy a -> Text -> DataField
-  field _ = buildField (Proxy @a) []
+    proxy a -> Text -> FieldDefinition
+  field _ = buildField (Proxy @a) NoArguments
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
   introspect _ = introspectKind (Context :: Context (KIND a) a)
@@ -135,7 +137,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = fst $ introspectObjectFields
+    fieldArgs = ArgumentsDefinition Nothing $ toList $ fst  $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -195,42 +197,35 @@ introspectObjectFields
   :: IntrospectRep custom a
   => proxy1 (custom :: Bool)
   -> (Name, TypeScope, proxy2 a)
-  -> ([(Name, DataField)], [TypeUpdater])
+  -> (FieldsDefinition, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) = withObject
   (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
  where
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
   withObject _ =
-    ( []
-    , [ const
-          $  failure
-          $  globalErrorMessage
-          $  "invalid schema: "
-          <> name
-          <> " should have only one nonempty constructor"
-      ]
-    )
+    ( fromList ([] :: [FieldDefinition]) , [introspectFailure (name <> " should have only one nonempty constructor")])
+
+introspectFailure :: Message -> TypeUpdater
+introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
-  introspectRep :: proxy1 custom -> ( proxy2 a,TypeScope,Name,DataFingerprint) -> (DataTypeContent, [TypeUpdater])
+  introspectRep :: proxy1 custom -> ( proxy2 a,TypeScope,Name,DataFingerprint) -> (TypeContent, [TypeUpdater])
 
 instance (TypeRep (Rep a) , Generic a) => IntrospectRep 'False a where
   introspectRep _ (_, scope, name, fing) =
     derivingDataContent (Proxy @a) (name, fing) scope
 
-buildField :: GQLType a => Proxy a -> DataArguments -> Text -> DataField
-buildField proxy fieldArgs fieldName = DataField
-  { fieldName
-  , fieldArgs
-  , fieldArgsType = Nothing
-  , fieldType     = createAlias $ __typeName proxy
+buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> Text -> FieldDefinition
+buildField proxy fieldArgs fieldName = FieldDefinition
+  { fieldType     = createAlias $ __typeName proxy
   , fieldMeta     = Nothing
+  , ..
   }
 
-buildType :: GQLType a => DataTypeContent -> Proxy a -> DataType
-buildType typeContent proxy = DataType
+buildType :: GQLType a => TypeContent -> Proxy a -> TypeDefinition
+buildType typeContent proxy = TypeDefinition
   { typeName        = __typeName proxy
   , typeFingerprint = __typeFingerprint proxy
   , typeMeta        = Just Meta { metaDescription = description proxy
@@ -241,23 +236,23 @@ buildType typeContent proxy = DataType
 
 updateLib
   :: GQLType a
-  => (Proxy a -> DataType)
+  => (Proxy a -> TypeDefinition)
   -> [TypeUpdater]
   -> Proxy a
   -> TypeUpdater
-updateLib typeBuilder stack proxy lib' =
-  case isTypeDefined (__typeName proxy) lib' of
+updateLib typeBuilder stack proxy lib =
+  case isTypeDefined (__typeName proxy) lib of
     Nothing -> resolveUpdates
-      (defineType (__typeName proxy, typeBuilder proxy) lib')
+      (defineType (typeBuilder proxy) lib)
       stack
-    Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib'
+    Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib
     -- throw error if 2 different types has same name
     Just _ -> failure $ nameCollisionError (__typeName proxy)
 
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
-data ConsRep =  ConsRep {
+data ConsRep = ConsRep {
   consName :: Key,
   consIsRecord :: Bool,
   consFields :: [FieldRep]
@@ -265,7 +260,7 @@ data ConsRep =  ConsRep {
 
 data FieldRep = FieldRep {
   fieldTypeName :: Name,
-  fieldData :: (Name, DataField),
+  fieldData :: FieldDefinition,
   fieldTypeUpdater :: TypeUpdater,
   fieldIsObject :: Bool
 }
@@ -273,17 +268,14 @@ data FieldRep = FieldRep {
 data ResRep = ResRep {
   enumCons :: [Name],
   unionRef :: [Name],
-  unionRecordRep :: [ConsRep]
+  unionRecordRep :: [ConsRep ]
 }
 
 isEmpty :: ConsRep -> Bool
 isEmpty ConsRep { consFields = [] } = True
 isEmpty _                           = False
 
-isUnionRecord :: ConsRep -> Bool
-isUnionRecord ConsRep { consIsRecord } = consIsRecord
-
-isUnionRef :: Name -> ConsRep -> Bool
+isUnionRef :: Name -> ConsRep  -> Bool
 isUnionRef baseName ConsRep { consName, consFields = [FieldRep { fieldIsObject = True, fieldTypeName }] }
   = consName == baseName <> fieldTypeName
 isUnionRef _ _ = False
@@ -293,9 +285,7 @@ setFieldNames cons@ConsRep { consFields } = cons
   { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
   }
  where
-  setFieldName i fieldR@FieldRep { fieldData = (_, fieldD) } = fieldR
-    { fieldData = (fieldName, fieldD { fieldName })
-    }
+  setFieldName i fieldR@FieldRep { fieldData = fieldD } = fieldR { fieldData = fieldD { fieldName } }
     where fieldName = "_" <> pack (show i)
 
 analyseRep :: Name -> [ConsRep] -> ResRep
@@ -307,7 +297,7 @@ analyseRep baseName cons = ResRep
  where
   (enumRep       , left1             ) = partition isEmpty cons
   (unionRefRep   , left2             ) = partition (isUnionRef baseName) left1
-  (unionRecordRep, anyonimousUnionRep) = partition isUnionRecord left2
+  (unionRecordRep, anyonimousUnionRep) = partition consIsRecord left2
 
 derivingDataContent
   :: forall a
@@ -315,7 +305,7 @@ derivingDataContent
   => Proxy a
   -> (Name, DataFingerprint)
   -> TypeScope
-  -> (DataTypeContent, [TypeUpdater])
+  -> (TypeContent, [TypeUpdater])
 derivingDataContent _ (baseName, baseFingerprint) scope =
   builder $ typeRep $ Proxy @(Rep a)
  where
@@ -328,7 +318,7 @@ derivingDataContent _ (baseName, baseFingerprint) scope =
 
 
 buildInputUnion
-  :: (Name, DataFingerprint) -> [ConsRep] -> (DataTypeContent, [TypeUpdater])
+  :: (Name, DataFingerprint) -> [ConsRep ] -> (TypeContent, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons = datatype
   (analyseRep baseName cons)
  where
@@ -345,10 +335,10 @@ buildInputUnion (baseName, baseFingerprint) cons = datatype
 
 buildUnionType
   :: (Name, DataFingerprint)
-  -> (DataUnion -> DataTypeContent)
-  -> (DataObject -> DataTypeContent)
+  -> (DataUnion -> TypeContent)
+  -> (FieldsDefinition -> TypeContent)
   -> [ConsRep]
-  -> (DataTypeContent, [TypeUpdater])
+  -> (TypeContent, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons = datatype
   (analyseRep baseName cons)
  where
@@ -365,48 +355,41 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons = datatype
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 
-buildObject :: TypeScope -> [FieldRep] -> (DataTypeContent, [TypeUpdater])
-buildObject isOutput consFields = (wrap fields, types)
+buildObject :: TypeScope -> [FieldRep] -> (TypeContent, [TypeUpdater])
+buildObject isOutput consFields = (wrapWith fields, types)
  where
   (fields, types) = buildDataObject consFields
-  wrap | isOutput == OutputType = DataObject []
-       | otherwise              = DataInputObject
+  wrapWith | isOutput == OutputType = DataObject [] 
+           | otherwise              = DataInputObject 
 
-buildDataObject :: [FieldRep] -> (DataObject, [TypeUpdater])
+buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  fields = map fieldData consFields
+  fields = fromList $ map fieldData consFields
   types  = map fieldTypeUpdater consFields
 
 buildUnions
-  :: (DataObject -> DataTypeContent)
+  :: (FieldsDefinition -> TypeContent)
   -> DataFingerprint
   -> [ConsRep]
   -> ([Name], [TypeUpdater])
 buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
  where
   buildURecType consRep = pure . defineType
-    (consName consRep, buildUnionRecord wrapObject baseFingerprint consRep)
+      (buildUnionRecord wrapObject baseFingerprint consRep)
   members = map consName cons
 
 buildUnionRecord
-  :: (DataObject -> DataTypeContent) -> DataFingerprint -> ConsRep -> DataType
-buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } =
-  DataType { typeName        = consName
-           , typeFingerprint
-           , typeMeta        = Nothing
-           , typeContent     = wrapObject $ genFields consFields
-           }
-
- where
-  genFields [FieldRep { fieldData = ("", fData) }] =
-    [("value", fData { fieldName = "value" })]
-  genFields fields = map uRecField fields
-  uRecField FieldRep { fieldData = (fName, fData) } = (fName, fData)
-
+  :: (FieldsDefinition -> TypeContent) -> DataFingerprint -> ConsRep -> TypeDefinition
+buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = TypeDefinition 
+    { typeName        = consName
+    , typeFingerprint
+    , typeMeta        = Nothing
+    , typeContent     = wrapObject $ fromList $ map fieldData consFields
+    }
 
 buildUnionEnum
-  :: (DataObject -> DataTypeContent)
+  :: (FieldsDefinition -> TypeContent)
   -> Name
   -> DataFingerprint
   -> [Name]
@@ -432,39 +415,33 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
 
 buildEnum :: Name -> DataFingerprint -> [Name] -> TypeUpdater
 buildEnum typeName typeFingerprint tags = pure . defineType
-  ( typeName
-  , DataType { typeName
-             , typeFingerprint
-             , typeMeta        = Nothing
-             , typeContent     = DataEnum $ map createEnumValue tags
-             }
-  )
+  TypeDefinition 
+    { typeMeta        = Nothing
+    , typeContent     = DataEnum $ map createEnumValue tags
+    , ..
+    }
 
 buildEnumObject
-  :: (DataObject -> DataTypeContent)
+  :: (FieldsDefinition -> TypeContent)
   -> Name
   -> DataFingerprint
   -> Name
   -> TypeUpdater
 buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
   pure . defineType
-    ( typeName
-    , DataType
+    TypeDefinition
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject
-                            [ ( "enum"
-                              , DataField { fieldName     = "enum"
-                                          , fieldArgs     = []
-                                          , fieldArgsType = Nothing
-                                          , fieldType = createAlias enumTypeName
-                                          , fieldMeta     = Nothing
-                                          }
-                              )
-                            ]
+      , typeContent     = wrapObject $ fromList 
+          [ FieldDefinition 
+            { fieldName  = "enum"
+            , fieldArgs  = NoArguments
+            , fieldType  = createAlias enumTypeName
+            , fieldMeta  = Nothing
+            }
+          ]
       }
-    )
 
 data TypeScope = InputType | OutputType deriving (Show,Eq,Ord)
 
@@ -497,7 +474,7 @@ instance (ConRep  a, ConRep  b) => ConRep  (a :*: b) where
 instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
   conRep _ =
     [ FieldRep { fieldTypeName    = typeConName $ fieldType fieldData
-               , fieldData        = (name, fieldData)
+               , fieldData        = fieldData
                , fieldTypeUpdater = introspect (Proxy @a)
                , fieldIsObject    = isObject (Proxy @a)
                }

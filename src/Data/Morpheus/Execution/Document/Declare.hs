@@ -36,11 +36,11 @@ declareTypes namespace = fmap concat . traverse (declareGQLType namespace)
 declareGQLType :: Bool -> GQLTypeD -> Q [Dec]
 declareGQLType namespace gqlType@GQLTypeD { typeD, typeKindD, typeArgD, typeOriginal }
   = do
-    mainType       <- declareMainType
-    argTypes       <- declareArgTypes
-    gqlInstances   <- deriveGQLInstances
-    typeClasses    <- deriveGQLType gqlType
-    introspectEnum <- instanceIntrospect typeOriginal
+    mainType        <- declareMainType
+    argTypes        <- declareArgTypes
+    gqlInstances    <- deriveGQLInstances
+    typeClasses     <- deriveGQLType gqlType
+    introspectEnum  <- instanceIntrospect typeOriginal
     pure $ mainType <> typeClasses <> argTypes <> gqlInstances <> introspectEnum
  where
   deriveGQLInstances = concat <$> sequence gqlInstances

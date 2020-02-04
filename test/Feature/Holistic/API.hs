@@ -26,9 +26,9 @@ import           Data.Morpheus.Types            ( Event
                                                 , GQLType(..)
                                                 , ID(..)
                                                 , ScalarValue(..)
-                                                , Resolver(..)
                                                 , failRes
                                                 , liftEither
+                                                , subscribe
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
@@ -68,13 +68,7 @@ rootResolver = GQLRootResolver
                                  , fail2 =  failRes "fail with failRes"
                                  }
   , mutationResolver     = Mutation { createUser = const user }
-  , subscriptionResolver = Subscription
-
-                             { newUser = SubResolver
-                                           { subChannels = [Channel]
-                                           , subResolver = const user
-                                           }
-                             }
+  , subscriptionResolver = Subscription { newUser = subscribe [Channel] (pure $ const user)}
   }
  where
   user :: Applicative m => m (User m)

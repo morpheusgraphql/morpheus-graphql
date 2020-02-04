@@ -57,17 +57,17 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , VALID
                                                 , RAW
                                                 , Stage
+                                                , OperationType(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( OperationType(..)
-                                                , Schema(..)
-                                                , DataType(..)
-                                                , DataTypeContent(..)
-                                                , DataObject
+                                                ( Schema(..)
+                                                , TypeDefinition(..)
+                                                , TypeContent(..)
+                                                , FieldsDefinition
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value
@@ -154,26 +154,25 @@ getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
 
 getOperationObject
-  :: Operation a -> Schema -> Validation (Name, DataObject)
+  :: Operation a -> Schema -> Validation (Name, FieldsDefinition)
 getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
-    DataType { typeContent = DataObject { objectFields }, typeName } -> pure (typeName, objectFields)
-    DataType { typeName } ->
+    TypeDefinition { typeContent = DataObject { objectFields }, typeName } -> pure (typeName, objectFields)
+    TypeDefinition { typeName } ->
       failure
         $  "Type Mismatch: operation \""
         <> typeName
         <> "\" must be an Object"
 
-getOperationDataType :: Operation a -> Schema -> Validation DataType
-getOperationDataType Operation { operationType = Query } lib =
-  pure $ snd $ query lib
+getOperationDataType :: Operation a -> Schema -> Validation TypeDefinition
+getOperationDataType Operation { operationType = Query } lib = pure (query lib)
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
   = case mutation lib of
-    Just (_, mutation') -> pure mutation'
-    Nothing             -> failure $ mutationIsNotDefined operationPosition
+    Just x -> pure x
+    Nothing       -> failure $ mutationIsNotDefined operationPosition
 getOperationDataType Operation { operationType = Subscription, operationPosition } lib
   = case subscription lib of
-    Just (_, subscription') -> pure subscription'
+    Just x -> pure x
     Nothing -> failure $ subscriptionIsNotDefined operationPosition
 

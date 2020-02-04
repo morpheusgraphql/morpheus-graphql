@@ -1,12 +1,15 @@
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
   ( GQLError(..)
@@ -16,15 +19,16 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Result(..)
   , Failure(..)
   , ResultT(..)
-  , fromEither
-  , fromEitherSingle
   , unpackEvents
   , LibUpdater
   , resolveUpdates
   , mapEvent
-  , mapFailure
   , cleanEvents
   , StatelessResT
+  , Event(..)
+  , Channel(..)
+  , GQLChannel(..)
+  , PushEvents(..)
   )
 where
 
@@ -64,6 +68,39 @@ type GQLErrors = [GQLError]
 type StatelessResT = ResultT () GQLError 'True
 type Validation = Result () GQLError 'True
 
+
+-- EVENTS
+class PushEvents e m where 
+  pushEvents :: [e] -> m () 
+
+-- Channel
+newtype Channel event = Channel {
+  _unChannel :: StreamChannel event
+}
+
+instance (Eq (StreamChannel event)) => Eq (Channel event) where
+  Channel x == Channel y = x == y
+
+class GQLChannel a where
+  type StreamChannel a :: *
+  streamChannels :: a -> [Channel a]
+
+instance GQLChannel () where
+  type StreamChannel () = ()
+  streamChannels _ = []
+
+instance GQLChannel (Event channel content)  where
+  type StreamChannel (Event channel content) = channel
+  streamChannels Event { channels } = map Channel channels
+
+data Event e c = Event
+  { channels :: [e], content  :: c}
+
+
+unpackEvents :: Result event c e a -> [event]
+unpackEvents Success { events } = events
+unpackEvents _                  = []
+
 --
 -- Result
 --
@@ -93,17 +130,9 @@ instance Failure Text Validation where
   failure text =
     Failure [GQLError { message = "INTERNAL ERROR: " <> text, locations = [] }]
 
-unpackEvents :: Result event c e a -> [event]
-unpackEvents Success { events } = events
-unpackEvents _                  = []
+instance PushEvents events (Result events err con) where
+  pushEvents events = Success { result = (), warnings = [], events } 
 
-fromEither :: Either [er] a -> Result ev er co a
-fromEither (Left  e) = Failure e
-fromEither (Right a) = Success a [] []
-
-fromEitherSingle :: Either er a -> Result ev er co a
-fromEitherSingle (Left  e) = Failure [e]
-fromEitherSingle (Right a) = Success a [] []
 
 -- ResultT
 newtype ResultT event error (concurency :: Bool)  (m :: * -> * ) a = ResultT { runResultT :: m (Result event error concurency a )  }
@@ -135,6 +164,13 @@ instance Applicative m => Failure String (ResultT ev GQLError con m) where
   failure x =
     ResultT $ pure $ Failure [GQLError { message = pack x, locations = [] }]
 
+instance Monad m => Failure GQLErrors (ResultT event GQLError concurency m) where
+  failure = ResultT . pure . failure
+
+instance Applicative m => PushEvents events (ResultT events err con m) where
+  pushEvents = ResultT . pure . pushEvents
+
+
 cleanEvents
   :: Functor m
   => ResultT e1 error concurency m a
@@ -154,17 +190,6 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
   mapEv Success { result, warnings, events } =
     Success { result, warnings, events = map func events }
   mapEv (Failure err) = Failure err
-
-mapFailure
-  :: Monad m
-  => (er1 -> er2)
-  -> ResultT ev er1 con m value
-  -> ResultT ev er2 con m value
-mapFailure f (ResultT ma) = ResultT $ mapF <$> ma
- where
-  mapF (Failure x    ) = Failure (map f x)
-  mapF (Success x w e) = Success x (map f w) e
-
 
 -- Helper Functions
 type LibUpdater lib = lib -> Validation lib

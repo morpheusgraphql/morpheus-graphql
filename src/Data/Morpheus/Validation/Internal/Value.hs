@@ -17,23 +17,21 @@ import           Data.Morpheus.Error.Input      ( InputError(..)
                                                 , Prop(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
-                                                , DataTypeContent(..)
-                                                , DataType(..)
+                                                ( FieldDefinition(..)
+                                                , TypeContent(..)
+                                                , TypeDefinition(..)
                                                 , Schema(..)
-                                                , DataValidator(..)
+                                                , ScalarDefinition(..)
                                                 , Key
                                                 , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , DataEnumValue(..)
-                                                , lookupField
                                                 , lookupInputType
                                                 , Value(..)
                                                 , ValidValue
                                                 , Variable(..)
                                                 , Ref(..)
                                                 , isWeaker
-                                                , DataScalar
                                                 , Message
                                                 , Name
                                                 , ResolvedValue
@@ -43,12 +41,16 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isFieldNullable
                                                 , TypeRef(..)
                                                 , isNullableWrapper
+                                                , Listable(..)
+                                                , Selectable(..)
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 import           Data.Morpheus.Rendering.RenderGQL
-                                                ( RenderGQL(..) )
+                                                ( RenderGQL(..) 
+                                                , renderWrapped
+                                                )
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
@@ -71,26 +73,24 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
                                   , typeArgs     = Nothing
                                   }
 
-
-
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
   :: Schema
   -> [Prop]
   -> [TypeWrapper]
-  -> DataType
+  -> TypeDefinition
   -> (Key, ResolvedValue)
   -> InputValidation ValidValue
-validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
+validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName } =
   validateWrapped rw typeContent
  where
   throwError :: [TypeWrapper] -> ResolvedValue -> InputValidation ValidValue
   throwError wrappers value =
-    Left $ UnexpectedType props (renderWrapped datatype wrappers) value Nothing
+    Left $ UnexpectedType props (renderWrapped typeName wrappers) value Nothing
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
-    -> DataTypeContent
+    -> TypeContent
     -> (Key, ResolvedValue)
     -> InputValidation ValidValue
   -- Validate Null. value = null ?
@@ -112,15 +112,14 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
   validateWrapped [] dt v = validate dt v
    where
     validate
-      :: DataTypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
-    validate (DataInputObject parentFields) (_, Object fields) =
-      traverse requiredFieldsDefined parentFields
-        >>  Object
-        <$> traverse validateField fields
+      :: TypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
+    validate (DataInputObject parentFields) (_, Object fields) = do 
+      traverse requiredFieldsDefined (toList parentFields)
+      Object <$> traverse validateField fields
      where
-      requiredFieldsDefined (fName, datafield)
-        | fName `elem` map fst fields || isFieldNullable datafield = pure ()
-        | otherwise = failure (UndefinedField props fName)
+      requiredFieldsDefined datafield@FieldDefinition { fieldName }
+        | fieldName `elem` map fst fields || isFieldNullable datafield = pure ()
+        | otherwise = failure (UndefinedField props fieldName)
       validateField
         :: (Name, ResolvedValue) -> InputValidation (Name, ValidValue)
       validateField (_name, value) = do
@@ -133,7 +132,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
                                                     (_name, value)
         return (_name, value'')
        where
-        validationData :: ResolvedValue -> InputValidation (DataType, [Prop])
+        validationData :: ResolvedValue -> InputValidation (TypeDefinition, [Prop])
         validationData x = do
           fieldTypeName' <- typeConName . fieldType <$> getField
           let currentProp = props ++ [Prop _name fieldTypeName']
@@ -141,7 +140,7 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
                                    lib
                                    (typeMismatch x fieldTypeName' currentProp)
           return (type', currentProp)
-        getField = lookupField _name parentFields (UnknownField props _name)
+        getField = selectBy (UnknownField props _name) _name parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of
@@ -172,11 +171,11 @@ validateInputValue lib props rw datatype@DataType { typeContent, typeName } =
 
 
 validateScalar
-  :: DataScalar
+  :: ScalarDefinition
   -> ResolvedValue
   -> (ResolvedValue -> Maybe Message -> InputError)
   -> InputValidation ValidValue
-validateScalar DataValidator { validateValue } value err = do
+validateScalar ScalarDefinition { validateValue } value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
     Right _            -> return scalarValue

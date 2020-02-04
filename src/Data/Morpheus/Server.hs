@@ -30,20 +30,20 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , coreResolver
                                                 )
-import           Data.Morpheus.Execution.Subscription.Apollo
+import           Data.Morpheus.Types.Internal.Apollo
                                                 ( SubAction(..)
                                                 , acceptApolloSubProtocol
                                                 , apolloFormat
                                                 , toApolloResponse
                                                 )
-import           Data.Morpheus.Execution.Subscription.ClientRegister
+import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
-                                                , addClientSubscription
                                                 , connectClient
                                                 , disconnectClient
                                                 , initGQLState
-                                                , publishUpdates
-                                                , removeClientSubscription
+                                                , publishEvent
+                                                , startSubscription
+                                                , endSubscription
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -75,8 +75,8 @@ handleSubscription GQLClient { clientConnection, clientID } state sessionId stre
         clientConnection
         (toApolloResponse sessionId $ Errors errors)
  where
-  execute (Publish   pub) = publishUpdates state pub
-  execute (Subscribe sub) = addClientSubscription clientID sub sessionId state
+  execute (Publish   pub) = publishEvent state pub
+  execute (Subscribe sub) = startSubscription clientID sub sessionId state
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
@@ -102,7 +102,7 @@ gqlSocketMonadIOApp gqlRoot state f pending = do
       resolveMessage (AddSub sessionId request) =
         handleSubscription client state sessionId (coreResolver gqlRoot request)
       resolveMessage (RemoveSub sessionId) =
-        removeClientSubscription (clientID client) sessionId state
+        endSubscription (clientID client) sessionId state
 
 -- | Same as above but specific to IO
 gqlSocketApp

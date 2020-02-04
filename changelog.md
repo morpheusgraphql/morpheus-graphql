@@ -1,5 +1,79 @@
 # Changelog
 
+## 0.10.0 - 07.01.2020
+
+### Breaking Changes
+
+- all constructors of `Resolver`: `QueryResolver`,`MutResolver`,`SubResolver` are unexposed. use `lift` , `publish` or `subscribe`.
+  e.g
+
+  ```hs
+  -- Query Resolver
+  resolveUser :: ResolveQ EVENT IO User
+  resolveUser = lift getDBUser
+
+  -- Mutation Resolver
+  resolveCreateUser :: ResolveM EVENT IO User
+  resolveCreateUser = do
+    publish [userUpdate] -- publishes event inside mutation
+    lift setDBUser
+
+  -- Subscription Resolver
+  resolveNewUser :: ResolveS EVENT IO User
+  resolveNewUser = subscribe [USER] $ do
+    pure $ \(Event _ content) -> lift (getDBUserByContent content)
+  ```
+  
+### New features
+
+- exposed `publish` for mutation resolvers, now you can write
+
+  ```hs
+  resolveCreateUser :: ResolveM EVENT IO User
+  resolveCreateUser = do
+      requireAuthorized
+      publish [userUpdate]
+      liftEither setDBUser
+  ```
+
+- exposed `subscribe` for subscription resolvers, now you can write
+
+  ```hs
+  resolveNewUser :: ResolveS EVENT IO User
+  resolveNewUser = subscribe [USER] $ do
+      requireAuthorized
+      pure userByEvent
+    where userByEvent (Event _ content) = liftEither (getDBUser content)
+  ```
+
+- `type SubField` will convert your subscription monad to query monad.
+  `SubField (Resolver Subscription Event IO) User` will generate same as
+  `Resolver Subscription Event IO (User ((Resolver QUERY Event IO)))`
+  
+  now if you want define subscription as follows
+  
+  ```hs
+  data Subscription m = Subscription {
+    newUser :: SubField m User
+  }
+  ```
+
+- `unsafeInternalContext` to get resolver context, use only if it really necessary.
+  the code depending on it may break even on minor version changes.
+  
+  ```hs
+  resolveUser :: ResolveQ EVENT IO User
+  resolveUser = do
+    Context { currentSelection, schema, operation } <- unsafeInternalContext
+    lift (getDBUser currentSelection)
+  ```
+
+### Minor
+
+- MonadIO instance for resolvers. Thanks @dandoh
+- Example using STM, authentication, monad transformers. Thanks @dandoh
+- added dependency `mtl`
+
 ## [0.9.1] - 02.01.2020
 
 - removed dependency `mtl`

@@ -33,15 +33,15 @@ import           Data.Morpheus.Schema.Schema    ( Root(..)
 import           Data.Morpheus.Types.GQLType    ( CUSTOM )
 import           Data.Morpheus.Types.ID         ( ID )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
-                                                , Schema(..)
+                                                ( Schema(..)
                                                 , QUERY
-                                                , DataType
+                                                , TypeDefinition(..)
                                                 , allDataTypes
                                                 , lookupDataType
+                                                , FieldsDefinition
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Resolver(..)
+                                                ( Resolver
                                                 , resolveUpdates
                                                 )
 
@@ -51,8 +51,8 @@ convertTypes
 convertTypes lib = traverse (`render` lib) (allDataTypes lib)
 
 buildSchemaLinkType
-  :: Monad m => (Text, DataType) -> S__Type (Resolver QUERY e m)
-buildSchemaLinkType (key', _) = createObjectType key' Nothing $ Just []
+  :: Monad m => TypeDefinition -> S__Type (Resolver QUERY e m)
+buildSchemaLinkType TypeDefinition { typeName } = createObjectType typeName Nothing $ Just []
 
 findType
   :: Monad m
@@ -61,7 +61,7 @@ findType
   -> Resolver QUERY e m (Maybe (S__Type (Resolver QUERY e m)))
 findType name lib = renderT (lookupDataType name lib)
  where
-  renderT (Just datatype) = Just <$> render (name, datatype) lib
+  renderT (Just datatype) = Just <$> render datatype lib
   renderT Nothing         = pure Nothing
 
 initSchema
@@ -76,7 +76,7 @@ initSchema lib = pure S__Schema
   , s__SchemaDirectives       = pure []
   }
 
-hiddenRootFields :: [(Text, DataField)]
+hiddenRootFields :: FieldsDefinition
 hiddenRootFields = fst $ introspectObjectFields
   (Proxy :: Proxy (CUSTOM (Root Maybe)))
   ("Root", OutputType, Proxy @(Root Maybe))

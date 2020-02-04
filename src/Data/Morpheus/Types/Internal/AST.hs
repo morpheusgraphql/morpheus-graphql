@@ -35,6 +35,7 @@ module Data.Morpheus.Types.Internal.AST
   , ResolvedObject
   , ResolvedValue
   , unpackInputUnion
+  , removeDuplicates
 
   -- Selection
   , Argument(..)
@@ -66,26 +67,40 @@ module Data.Morpheus.Types.Internal.AST
   , getOperationName
   , getOperationDataType
   , getOperationObject
-
-
   -- DSL
-  , DataScalar
+  , ScalarDefinition(..)
   , DataEnum
-  , DataObject
-  , DataArgument
+  , FieldsDefinition(..)
+  , ArgumentDefinition
   , DataUnion
-  , DataArguments
-  , DataField(..)
-  , DataTypeContent(..)
-  , DataType(..)
+  , ArgumentsDefinition(..)
+  , FieldDefinition(..)
+  , TypeContent(..)
+  , TypeDefinition(..)
   , Schema(..)
   , DataTypeWrapper(..)
-  , DataValidator(..)
   , DataTypeKind(..)
   , DataFingerprint(..)
   , TypeWrapper(..)
   , TypeRef(..)
   , DataEnumValue(..)
+  , OperationType(..)
+  , QUERY
+  , MUTATION
+  , SUBSCRIPTION
+  , Meta(..)
+  , Directive(..)
+  , TypeUpdater
+  , TypeD(..)
+  , ConsD(..)
+  , ClientQuery(..)
+  , GQLTypeD(..)
+  , ClientType(..)
+  , DataInputUnion
+  , VariableContent(..)
+  , Selectable(..)
+  , Listable(..)
+  , TypeLib
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -107,15 +122,10 @@ module Data.Morpheus.Types.Internal.AST
   , isDefaultTypeName
   , isSchemaTypeName
   , isPrimitiveTypeName
-  , OperationType(..)
-  , QUERY
-  , MUTATION
-  , SUBSCRIPTION
   , isEntNode
   , lookupInputType
   , coerceDataObject
   , lookupDataUnion
-  , lookupField
   , lookupUnionTypes
   , lookupSelectionField
   , lookupFieldAsSelectionSet
@@ -129,23 +139,15 @@ module Data.Morpheus.Types.Internal.AST
   , createAlias
   , createInputUnionFields
   , fieldVisibility
-  , Meta(..)
-  , Directive(..)
   , createEnumValue
   , insertType
-  , TypeUpdater
   , lookupDeprecated
   , lookupDeprecatedReason
-  , TypeD(..)
-  , ConsD(..)
-  , ClientQuery(..)
-  , GQLTypeD(..)
-  , ClientType(..)
-  , DataInputUnion
-  , VariableContent(..)
   , checkForUnknownKeys
   , checkNameCollision
-  , DataLookup(..)
+  , hasArguments
+  , lookupWith
+  , selectTypeObject
   -- LOCAL
   , GQLQuery(..)
   , Variables
