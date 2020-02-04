@@ -53,7 +53,7 @@ type Deity {
   Description for name
   """
   name: String!
-  power: String String! @deprecated(reason: "some reason for")
+  power: String @deprecated(reason: "some reason for")
 }
 ```
 
@@ -76,7 +76,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, Undefined(..))
 import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "schema.gql"
