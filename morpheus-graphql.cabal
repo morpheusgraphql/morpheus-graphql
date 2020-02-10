@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5b4673ffbd9cc56b224f493f879bf7c5f3fb1e819afb425c51461c4e371b6a90
+-- hash: dbfa497db2fe7287e56f5f87359c2d4c885f4d02fb40d6a1937aa9a6b44e370a
 
 name:           morpheus-graphql
 version:        0.10.0
@@ -69,6 +69,7 @@ data-files:
     test/Feature/Holistic/parsing/duplicatedFields/query.gql
     test/Feature/Holistic/parsing/extraCommas/query.gql
     test/Feature/Holistic/parsing/generousSpaces/query.gql
+    test/Feature/Holistic/parsing/inputListValues/query.gql
     test/Feature/Holistic/parsing/invalidFields/query.gql
     test/Feature/Holistic/parsing/invalidNotNullOperator/query.gql
     test/Feature/Holistic/parsing/missingCloseBrace/query.gql
@@ -194,6 +195,8 @@ data-files:
     test/Feature/Holistic/parsing/duplicatedFields/response.json
     test/Feature/Holistic/parsing/extraCommas/response.json
     test/Feature/Holistic/parsing/generousSpaces/response.json
+    test/Feature/Holistic/parsing/inputListValues/response.json
+    test/Feature/Holistic/parsing/inputListValues/variables.json
     test/Feature/Holistic/parsing/invalidFields/response.json
     test/Feature/Holistic/parsing/invalidNotNullOperator/response.json
     test/Feature/Holistic/parsing/missingCloseBrace/response.json

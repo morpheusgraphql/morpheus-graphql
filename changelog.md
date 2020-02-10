@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.1 - 10.02.2020
+
+### Added
+
+- support for input lists separated by newlines
+
 ## 0.10.0 - 07.01.2020
 
 ### Breaking Changes
@@ -23,7 +29,7 @@
   resolveNewUser = subscribe [USER] $ do
     pure $ \(Event _ content) -> lift (getDBUserByContent content)
   ```
-  
+
 ### New features
 
 - exposed `publish` for mutation resolvers, now you can write
@@ -49,9 +55,9 @@
 - `type SubField` will convert your subscription monad to query monad.
   `SubField (Resolver Subscription Event IO) User` will generate same as
   `Resolver Subscription Event IO (User ((Resolver QUERY Event IO)))`
-  
+
   now if you want define subscription as follows
-  
+
   ```hs
   data Subscription m = Subscription {
     newUser :: SubField m User
@@ -60,7 +66,7 @@
 
 - `unsafeInternalContext` to get resolver context, use only if it really necessary.
   the code depending on it may break even on minor version changes.
-  
+
   ```hs
   resolveUser :: ResolveQ EVENT IO User
   resolveUser = do
@@ -68,10 +74,10 @@
     lift (getDBUser currentSelection)
   ```
 
-### Minor
+### minor
 
-- MonadIO instance for resolvers. Thanks @dandoh
-- Example using STM, authentication, monad transformers. Thanks @dandoh
+- monadio instance for resolvers. thanks @dandoh
+- example using stm, authentication, monad transformers. thanks @dandoh
 - added dependency `mtl`
 
 ## [0.9.1] - 02.01.2020
@@ -91,9 +97,9 @@
 - auto inferece of external types in gql document (#343)
 
   th will generate field `m (Type m)` if type has an argument
-  
+
   e.g for this types and DSL
-  
+
   ```hs
   data Type1 = Type1 { ... }
   type Type2 m = SomeType m
@@ -102,11 +108,11 @@
 
   ```gql
   type Query {
-    field1 : Type1!
-    field2 : Type2!
-    field3 : Type3!
+    field1: Type1!
+    field2: Type2!
+    field3: Type3!
   }
-  ```  
+  ```
 
   morpheus generates
 
@@ -119,7 +125,7 @@
   ```
 
   now you can combine multiple gql documents:
-  
+
   ```hs
   importDocumentWithNamespace `coreTypes.gql`
   importDocumentWithNamespace `operations.gql`
@@ -139,7 +145,7 @@
   }
   ```
 
-- template haskell generates `m type`  insead of `() -> m type` for fields without argument (#334)
+- template haskell generates `m type` insead of `() -> m type` for fields without argument (#334)
 
   ```hs
   data Diety m = Deity {
@@ -162,10 +168,10 @@
   - use `INPUT` instead of `INPUT_OBJECT`
   - use `deriving(GQLType)` insead of `OBJECT` or `UNION`
 
-- only namespaced Unions  generate regular graphql Union, other attempts will be wrapped inside an object with constructor name :
+- only namespaced Unions generate regular graphql Union, other attempts will be wrapped inside an object with constructor name :
 
   e.g:
-  
+
   ```hs
   data Character =
     CharacterDeity Deity
@@ -177,11 +183,11 @@
   will generate
 
   ```gql
-    union CHaracter = Deity | SomeDeity
+  union CHaracter = Deity | SomeDeity
 
-    type SomeDeity {
-      _0: Deity
-    }
+  type SomeDeity {
+    _0: Deity
+  }
   ```
 
 ### Added
@@ -322,7 +328,7 @@ rules:
 
 - on filed resolver was displayed. unexhausted case exception of graphql error
 - support of signed numbers (e.g `-4`)
-- support of round floats (e.g `1.000`) 
+- support of round floats (e.g `1.000`)
 - validation checks undefined fields on inputObject
 - variables are supported inside input values
 
@@ -502,7 +508,7 @@ resolver _args = lift setDBAddress
 
   ```gql
   mutation {
-     name
+    name
   }
   ```
 
