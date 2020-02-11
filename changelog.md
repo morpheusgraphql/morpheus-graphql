@@ -4,7 +4,7 @@
 
 ### Added
 
-- support for input lists separated by newlines
+- Support for input lists separated by newlines. thanks @charlescrain
 
 ## 0.10.0 - 07.01.2020
 
