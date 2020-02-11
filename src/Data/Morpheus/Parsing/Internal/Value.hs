@@ -92,7 +92,7 @@ listValue :: Parser a -> Parser [a]
 listValue parser = label "listValue" $ between
   (char '[' *> spaceAndComments)
   (char ']' *> spaceAndComments)
-  (parser `sepBy` (char ',' *> spaceAndComments))
+  (parser `sepBy` (many (char ',') *> spaceAndComments))
 
 objectValue :: Show a => Parser a -> Parser [(Name, a)]
 objectValue parser = label "objectValue" $ setOf entry
