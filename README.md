@@ -290,8 +290,8 @@ enum CharacterEnum {
 ```
 
 - namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` referenced object (not scalar) type: will be generate regular graphql Union
-  
-- for all other unions will be generated new object type. for types without record syntaxt, fields will be automatally indexed.
+
+- for all other unions will be generated new object type. for types without record syntax, fields will be automatally indexed.
 
 - all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and added to union members.
 
@@ -361,7 +361,7 @@ resolveDeity DeityArgs { } = failRes "db error"
 
 ### Mutations
 
-In addition to queries, Morpheus also supports mutations. The behave just like regular queries and are defined similarly:
+In addition to queries, Morpheus also supports mutations. They behave just like regular queries and are defined similarly:
 
 ```haskell
 newtype Mutation m = Mutation
@@ -386,7 +386,7 @@ gqlApi = interpreter rootResolver
 
 ### Subscriptions
 
-im morpheus subscription and mutation communicating with Events,
+In morpheus subscription and mutation communicate with Events,
 `Event` consists with user defined `Channel` and `Content`.
 
 Every subscription has its own Channel by which it will be triggered
@@ -513,7 +513,7 @@ with `fetch` you can fetch well typed response `GetHero`.
         jsonRes = <GraphQL APi>
 ```
 
-in this case, `jsonRes` is resolves a request into a response in some monad `m`.
+in this case, `jsonRes` resolves a request into a response in some monad `m`.
 
 A `fetch` resolver implementation against [a real API](https://swapi.graph.cool) may look like the following:
 
