@@ -28,8 +28,8 @@ import           Server.Mythology.Character     ( Deity
 import           Server.Mythology.Place         ( City )
 
 
-data Character  =
-    CharacterHuman Human -- Only <tyconName><conName> should generate direct link
+data Character m =
+    CharacterHuman (Human m) -- Only <tyconName><conName> should generate direct link
   | CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
   -- RECORDS
   | Creature { name :: Text, age :: Int }
@@ -45,7 +45,7 @@ data Character  =
 
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
-    character :: [Character]
+    character :: [Character m]
   } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs
@@ -57,7 +57,7 @@ resolveDeity :: DeityArgs -> IORes e Deity
 resolveDeity DeityArgs { name, bornPlace } =
   liftEither $ dbDeity name bornPlace
 
-resolveCharacter :: [Character]
+resolveCharacter :: Applicative m => [Character m]
 resolveCharacter =
   [ CharacterHuman someHuman
   , CharacterDeity someDeity

@@ -27,12 +27,12 @@ import           GHC.Generics                   ( Generic )
 data Power = Thunderbolts | Shapeshift | Hurricanes
   deriving (Generic,GQLType)
 
-data Deity = Deity {
+data Deity (m :: * -> *) = Deity {
   name :: Text ,
   power :: Power
 } deriving(Generic,GQLType)
 
-deityRes :: Deity
+deityRes :: Deity m
 deityRes = Deity { name = "Morpheus", power = Shapeshift }
 
 data Hydra = Hydra {
@@ -52,21 +52,20 @@ data Monster =
 instance GQLType Monster where
   type KIND Monster = INPUT
 
-data Character  =
-  CharacterDeity Deity -- Only <tycon name><type ref name> should generate direct link
+data Character (m :: * -> *) =
+  CharacterDeity (Deity m) -- Only <tycon name><type ref name> should generate direct link
   -- RECORDS
   | Creature { creatureName :: Text, creatureAge :: Int }
-  | BoxedDeity { boxedDeity :: Deity}
+  | BoxedDeity { boxedDeity :: Deity m}
   | ScalarRecord { scalarText :: Text }
   --- Types 
   | CharacterInt Int -- all scalars mus be boxed
   -- Types
-  | SomeDeity Deity
+  | SomeDeity (Deity m)
   | SomeMutli Int Text
   --- ENUMS
   | Zeus
   | Cronus deriving (Generic, GQLType)
-
 
 
 newtype MonsterArgs = MonsterArgs {
@@ -74,8 +73,8 @@ newtype MonsterArgs = MonsterArgs {
 } deriving (Generic)
 
 data Query (m :: * -> *) = Query
-  { deity :: Deity,
-    character :: [Character],
+  { deity :: Deity m,
+    character :: [Character m],
     showMonster :: MonsterArgs -> m Text
   } deriving (Generic, GQLType)
 
@@ -87,7 +86,7 @@ rootResolver = GQLRootResolver
   }
  where
   showMonster MonsterArgs { monster } = pure (pack $ show monster)
-  character :: [Character]
+  character :: [Character m]
   character =
     [ CharacterDeity deityRes
     , Creature { creatureName = "Lamia", creatureAge = 205 }
