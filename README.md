@@ -253,12 +253,12 @@ This type will be represented as
 
 ```gql
 union Character =
-    Deity # unwrapped union: becouse Character + Deity = CharacterDeity
+    Deity # unwrapped union: because "Character" <> "Deity" == "CharacterDeity"
   | Creature
-  | SomeDeity # wrapped union: becouse Character + Deity != SomeDeity
+  | SomeDeity # wrapped union: because "Character" <> "Deity" /= SomeDeity
   | CharacterInt
   | SomeMutli
-  | CharacterEnumObject # object wrapped for enums
+  | CharacterEnumObject # no-argument constructors all wrapped into an enum
 
 type Creature {
   creatureName: String!
@@ -289,9 +289,59 @@ enum CharacterEnum {
 }
 ```
 
-- namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` referenced object (not scalar) type: will be generate regular graphql Union
-  
-- for all other unions will be generated new object type. for types without record syntaxt, fields will be automatally indexed.
+By default, union members will be generated with wrapper objects.
+There is one exception to this: if a constructor of a type is the type name concatinated with the name of the contained type, it will be referenced directly.
+That is, given:
+
+```haskell
+data Song = { songName :: Text, songDuration :: Float } deriving (Generic, GQLType)
+
+data Skit = { skitName :: Text, skitDuration :: Float } deriving (Generic, GQLType)
+
+data WrappedNode
+  = WrappedSong Song
+  | WrappedSkit Skit
+  deriving (Generic, GQLType)
+
+data NonWrapped
+  = NonWrappedSong Song
+  | NonWrappedSkit Skit
+  deriving (Generic, GQLType)
+
+```
+
+You will get the following schema:
+
+
+```gql
+
+# has wrapper types
+union WrappedNode = WrappedSong | WrappedSkit
+
+# is a direct union
+union NonWrapped = Song | Skit
+
+type WrappedSong {
+  _0: Song!
+}
+
+type WrappedSKit {
+  _0: Skit!
+}
+
+type Song {
+  songDuration: Float!
+  songName: String!
+}
+
+type Skit {
+  skitDuration: Float!
+  skitName: String!
+}
+
+```
+
+- for all other unions will be generated new object type. for types without record syntax, fields will be automatally indexed.
 
 - all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and added to union members.
 
@@ -361,7 +411,7 @@ resolveDeity DeityArgs { } = failRes "db error"
 
 ### Mutations
 
-In addition to queries, Morpheus also supports mutations. The behave just like regular queries and are defined similarly:
+In addition to queries, Morpheus also supports mutations. They behave just like regular queries and are defined similarly:
 
 ```haskell
 newtype Mutation m = Mutation
@@ -386,7 +436,7 @@ gqlApi = interpreter rootResolver
 
 ### Subscriptions
 
-im morpheus subscription and mutation communicating with Events,
+In morpheus subscription and mutation communicate with Events,
 `Event` consists with user defined `Channel` and `Content`.
 
 Every subscription has its own Channel by which it will be triggered
@@ -513,7 +563,7 @@ with `fetch` you can fetch well typed response `GetHero`.
         jsonRes = <GraphQL APi>
 ```
 
-in this case, `jsonRes` is resolves a request into a response in some monad `m`.
+in this case, `jsonRes` resolves a request into a response in some monad `m`.
 
 A `fetch` resolver implementation against [a real API](https://swapi.graph.cool) may look like the following:
 
