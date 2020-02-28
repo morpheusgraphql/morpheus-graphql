@@ -30,14 +30,14 @@ data Deity = Deity
   } deriving (Generic,GQLType)
 
 
-data Human = Human
-  { name :: Text
-  , bornAt :: City
+data Human m = Human 
+  { name :: m Text
+  , bornAt :: m City
   } deriving (Generic,GQLType)
 
 
-someHuman :: Human
-someHuman = Human { name = "Odysseus", bornAt = Ithaca }
+someHuman :: Applicative m => Human m 
+someHuman = Human { name = pure "Odysseus", bornAt = pure Ithaca }
 
 someDeity :: Deity
 someDeity = Deity { name   = "Morpheus"
