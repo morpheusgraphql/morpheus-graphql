@@ -116,7 +116,7 @@ jobs:
   ## GHC Nightly
   ghc_nightly:
     docker:
-      - image: fpco/stack-build:nightly-2020-02-28
+      - image: fpco/stack-build:lts-15.1
     steps:
       - checkout
       - restore_cache:
