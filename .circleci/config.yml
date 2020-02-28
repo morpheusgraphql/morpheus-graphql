@@ -78,7 +78,7 @@ jobs:
   ## GHC 8.6.5
   ghc_8_6_5:
     docker:
-      - image: fpco/stack-build:lts:lts-14.14
+      - image: fpco/stack-build:lts-14.14
     steps:
       - checkout
       - restore_cache:
@@ -159,4 +159,3 @@ workflows:
       - ghc_8_4_4
       - ghc_8_6_5
       - ghc_nightly
-   #   - check-release
