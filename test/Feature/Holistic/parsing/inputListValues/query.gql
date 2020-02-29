@@ -1,0 +1,19 @@
+query GetUsers($v1: Int!, $v2: Int!, $v3: Int!) {
+  newlines: user {
+    office(
+      zipCode: [
+        $v1 # Comment to prevent formatting
+        $v2 # Comment to prevent formatting
+        $v3 # Comment to prevent formatting
+      ]
+      cityID: EnumA
+    ) {
+      houseNumber
+    }
+  }
+  commas: user {
+    office(zipCode: [$v1, $v2, $v3], cityID: EnumA) {
+      houseNumber
+    }
+  }
+}
