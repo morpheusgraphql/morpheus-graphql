@@ -17,4 +17,4 @@ jobs:
         stack upgrade
     - name: upload release
       run: | 
-        stacl upload .
+        stack upload .
