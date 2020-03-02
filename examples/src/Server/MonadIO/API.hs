@@ -24,7 +24,6 @@ import Control.Monad.Except (ExceptT, MonadError)
 import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.Trans (MonadIO, MonadTrans, liftIO)
 import Control.Monad.Trans.Reader (ReaderT)
-import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List (find)
 import Data.Maybe (fromJust)
 import Data.Morpheus (interpreter)
@@ -263,6 +262,3 @@ dogResolver (DogRow dogId dogName ownerId) =
       let userRow = fromJust . find ((== ownerId) . userId) $ users
       userResolver userRow
 
--------------------------------------------------------------------------------
-api :: B.ByteString -> Web B.ByteString
-api = interpreter rootResolver
