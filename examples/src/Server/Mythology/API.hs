@@ -5,7 +5,8 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module Server.Mythology.API
-  ( mythologyApi
+  ( mythologyApi,
+    mythologyRoot
   )
 where
 
@@ -72,12 +73,12 @@ resolveCharacter =
   , Cronus
   ]
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
-rootResolver = GQLRootResolver
+mythologyRoot :: GQLRootResolver IO () Query Undefined Undefined
+mythologyRoot = GQLRootResolver
   { queryResolver = Query { deity = resolveDeity, character = resolveCharacter }
   , mutationResolver = Undefined
   , subscriptionResolver = Undefined
   }
 
 mythologyApi :: B.ByteString -> IO B.ByteString
-mythologyApi = interpreter rootResolver
+mythologyApi = interpreter mythologyRoot
