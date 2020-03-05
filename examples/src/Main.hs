@@ -39,24 +39,29 @@ import           Server.TH.Simple               ( thSimpleApi )
 import           Server.Sophisticated.API       ( EVENT
                                                 , gqlRoot
                                                 )
+import           MyServantAPI                   (servantAPI)
+
 
 main :: IO ()
-main = do
-  state   <- initGQLState
-  httpApp <- httpServer state
-  fetchHero >>= print
-  fetUser (interpreter gqlRoot state) >>= print
-  Warp.runSettings settings
-    $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
- where
-  settings = Warp.setPort 3000 Warp.defaultSettings
-  wsApp    = gqlSocketApp gqlRoot
-  httpServer :: GQLState IO EVENT -> IO Wai.Application
-  httpServer state = scottyApp $ do
-    post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
-    get "/" $ file "./examples/index.html"
-    get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
-    post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
-    get "/mythology" $ file "./examples/index.html"
-    post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
-    get "/th" $ file "./examples/index.html"
+main = servantAPI
+
+-- main :: IO ()
+-- main = do
+--   state   <- initGQLState
+--   httpApp <- httpServer state
+--   fetchHero >>= print
+--   fetUser (interpreter gqlRoot state) >>= print
+--   Warp.runSettings settings
+--     $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
+--  where
+--   settings = Warp.setPort 3000 Warp.defaultSettings
+--   wsApp    = gqlSocketApp gqlRoot
+--   httpServer :: GQLState IO EVENT -> IO Wai.Application
+--   httpServer state = scottyApp $ do
+--     post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
+--     get "/" $ file "./examples/index.html"
+--     get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
+--     post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
+--     get "/mythology" $ file "./examples/index.html"
+--     post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
+--     get "/th" $ file "./examples/index.html"
