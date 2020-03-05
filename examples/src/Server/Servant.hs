@@ -4,8 +4,8 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DeriveAnyClass #-}
 
-module MyServantAPI  
-    (servantAPI)
+module Server.Servant  
+    (servantServer)
 where
 
 import Data.Aeson
@@ -41,5 +41,7 @@ gqlServer = liftIO . mythologyApi
 api :: Proxy API
 api = Proxy
 
-servantAPI :: IO ()
-servantAPI = run 8080 . serve api $ userServer :<|> gqlServer
+servantServer :: IO ()
+servantServer = run 8080 . serve api 
+    $   userServer 
+  :<|>  gqlServer
