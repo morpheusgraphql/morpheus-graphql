@@ -8,4 +8,6 @@ import           Server.Scotty                  (scottyServer)
 
 
 main :: IO ()
-main = servantServer
+main = scottyServer 
+-- or
+-- main = servantServer
