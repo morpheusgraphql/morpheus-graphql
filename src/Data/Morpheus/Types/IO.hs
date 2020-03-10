@@ -17,6 +17,7 @@ import           Data.Aeson                     ( FromJSON(..)
                                                 , withObject
                                                 , (.:?)
                                                 , (.=)
+                                                , object
                                                 )
 import qualified Data.Aeson                    as Aeson
                                                 ( Value(..) )
@@ -69,5 +70,8 @@ instance FromJSON GQLResponse where
   parseJSON _ = fail "Invalid GraphQL Response"
 
 instance ToJSON GQLResponse where
+  toJSON (Data gqlData) = object ["data" .= toJSON gqlData]
+  toJSON (Errors errors) = object ["error" .= toJSON errors]
+  ----------------------------------------------------------
   toEncoding (Data   _data  ) = pairs $ "data" .= _data
   toEncoding (Errors _errors) = pairs $ "errors" .= _errors
