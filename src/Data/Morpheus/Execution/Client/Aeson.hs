@@ -17,29 +17,18 @@ where
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Lazy             as H
-                                                ( lookup )
-import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( unpack , Text)
+import qualified Data.HashMap.Lazy                      as H (lookup)
+import           Data.Semigroup                         ((<>))
+import           Data.Text                              (Text, unpack, stripPrefix)
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Execution.Internal.Utils
-                                                ( nameSpaceType )
+import           Data.Morpheus.Execution.Internal.Utils (nameSpaceType)
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST
-                                                ( FieldDefinition(..)
-                                                , isFieldNullable
-                                                , ConsD(..)
-                                                , TypeD(..)
-                                                , Key
-                                                )
-import           Data.Morpheus.Types.Internal.TH
-                                                ( destructRecord
-                                                , instanceFunD
-                                                , instanceHeadT
-                                                )
+import           Data.Morpheus.Types.Internal.AST       (ConsD (..), FieldDefinition (..), Key, TypeD (..),
+                                                         isFieldNullable)
+import           Data.Morpheus.Types.Internal.TH        (destructRecord, instanceFunD, instanceHeadT)
 
 -- FromJSON
 deriveFromJSON :: TypeD -> Q Dec
@@ -141,9 +130,14 @@ aesonToJSONEnumBody tName cons = lamCaseE handlers
    where
     buildMatch ConsD { cName } = match enumPat body []
      where
-      enumPat = varP $ mkName $ unpack (tName <> cName)
-      body    = normalB $ litE (stringL $ unpack cName)
+      enumPat = varP $ mkName (unpack cName)
+      body    = normalB $ litE (stringL $ unpack $ removeExpectedPrefix tName cName)
 
+removeExpectedPrefix :: Text -> Text -> Text
+removeExpectedPrefix toStrip from =
+  case stripPrefix toStrip from of
+    Just stripped -> stripped
+    Nothing       -> error (unpack $ "Unexpected missing prefix:" <> toStrip <> " from: " <> from)
 
 -- ToJSON
 deriveToJSON :: TypeD -> Q [Dec]
