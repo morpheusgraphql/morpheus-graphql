@@ -109,8 +109,8 @@ aesonFromJSONEnumBody tName cons = lamCaseE handlers
    where
     buildMatch ConsD { cName } = match enumPat body []
      where
-      enumPat = litP $ stringL $ unpack cName
-      body    = normalB $ appE (varE 'pure) (conE $ mkName $ unpack $ tName <> cName)
+      enumPat = litP $ stringL $ unpack (removeExpectedPrefix tName cName)
+      body    = normalB $ appE (varE 'pure) (conE $ mkName $ unpack cName)
 
 elseCaseEXP :: MatchQ
 elseCaseEXP = match (varP varName) body []
@@ -130,7 +130,7 @@ aesonToJSONEnumBody tName cons = lamCaseE handlers
    where
     buildMatch ConsD { cName } = match enumPat body []
      where
-      enumPat = varP $ mkName (unpack cName)
+      enumPat = conP (mkName (unpack cName)) []
       body    = normalB $ litE (stringL $ unpack $ removeExpectedPrefix tName cName)
 
 removeExpectedPrefix :: Text -> Text -> Text
