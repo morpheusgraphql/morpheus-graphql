@@ -17,18 +17,32 @@ where
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Lazy                      as H (lookup)
-import           Data.Semigroup                         ((<>))
-import           Data.Text                              (Text, unpack, stripPrefix)
+import qualified Data.HashMap.Lazy             as H
+                                                ( lookup )
+import           Data.Semigroup                 ( (<>) )
+import           Data.Text                      ( stripPrefix
+                                                , Text
+                                                , unpack
+                                                )
 import           Language.Haskell.TH
 
-import           Data.Morpheus.Execution.Internal.Utils (nameSpaceType)
+import           Data.Morpheus.Execution.Internal.Utils
+                                                ( nameSpaceType )
 
 --
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST       (ConsD (..), FieldDefinition (..), Key, TypeD (..),
-                                                         isFieldNullable)
-import           Data.Morpheus.Types.Internal.TH        (destructRecord, instanceFunD, instanceHeadT)
+import           Data.Morpheus.Types.Internal.AST
+                                                ( FieldDefinition(..)
+                                                , isFieldNullable
+                                                , ConsD(..)
+                                                , TypeD(..)
+                                                , Key
+                                                )
+import           Data.Morpheus.Types.Internal.TH
+                                                ( destructRecord
+                                                , instanceFunD
+                                                , instanceHeadT
+                                                )
 
 -- FromJSON
 deriveFromJSON :: TypeD -> Q Dec
