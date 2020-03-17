@@ -151,7 +151,7 @@ removeExpectedPrefix :: Text -> Text -> Text
 removeExpectedPrefix toStrip from =
   case stripPrefix toStrip from of
     Just stripped -> stripped
-    Nothing       -> error (unpack $ "Unexpected missing prefix:" <> toStrip <> " from: " <> from)
+    Nothing       -> error (unpack $ "Unexpected missing prefix: " <> toStrip <> " from: " <> from)
 
 -- ToJSON
 deriveToJSON :: TypeD -> Q [Dec]
