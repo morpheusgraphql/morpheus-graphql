@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , Listable(..)
+                                                , FieldMap(..)
                                                 )
 
 
@@ -88,7 +89,11 @@ inputValueDefinition = label "InputValueDefinition" $ do
 --
 argumentsDefinition :: Parser ArgumentsDefinition
 argumentsDefinition =
-    label "ArgumentsDefinition" $ (fromList <$> parseTuple inputValueDefinition) <|> pure NoArguments
+    label "ArgumentsDefinition" $ do 
+        value <- (Just <$> parseTuple inputValueDefinition) <|> pure Nothing
+        case value of
+            Nothing -> pure NoArguments
+            Just x -> fromFields x
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --
@@ -96,7 +101,7 @@ argumentsDefinition =
 --    { FieldDefinition(list) }
 --
 fieldsDefinition :: Parser FieldsDefinition
-fieldsDefinition = label "FieldsDefinition" $ fromList <$> setOf fieldDefinition
+fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition >>= fromFields
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -121,7 +126,7 @@ fieldDefinition = label "FieldDefinition" $ do
 --     { InputValueDefinition(list) }
 --
 inputFieldsDefinition :: Parser FieldsDefinition
-inputFieldsDefinition = label "InputFieldsDefinition" $ fromList <$> setOf inputValueDefinition
+inputFieldsDefinition = label "InputFieldsDefinition" $  setOf inputValueDefinition >>= fromFields
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --

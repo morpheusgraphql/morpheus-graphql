@@ -27,6 +27,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selectable(..)
                                                 , isWeaker
                                                 , lookupWith
+                                                , FieldMap(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -46,7 +47,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
   validateType x = pure (Just x)
   mustBeSubset
     :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
-  mustBeSubset objFields (typeName, fields) = concatMap checkField (toList fields)
+  mustBeSubset objFields (typeName, fields) = concatMap checkField (toFields fields)
    where
     checkField :: FieldDefinition -> [(Name, Name, ImplementsError)]
     checkField FieldDefinition { fieldName, fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } }

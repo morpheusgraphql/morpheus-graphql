@@ -72,6 +72,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , FieldsDefinition(..)
+                                                , Join(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -203,9 +204,9 @@ fullSchema
   -> Validation Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
-  querySchema = resolveUpdates
-    (initTypeLib (operatorType (hiddenRootFields <> fields) "Query"))
-    (defaultTypes : types)
+  querySchema = do
+    fs <- hiddenRootFields `join` fields
+    resolveUpdates (initTypeLib (operatorType fs "Query")) (defaultTypes : types)
    where
     (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (query (Resolver QUERY event m))))

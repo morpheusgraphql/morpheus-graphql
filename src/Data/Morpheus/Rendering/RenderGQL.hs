@@ -64,13 +64,13 @@ instance RenderGQL TypeDefinition where
         <> " =\n    "
         <> intercalate ("\n" <> renderIndent <> "| ") members
     __render (DataInputObject fields ) = "input " <> typeName <> render fields
-    __render (DataInputUnion  members) = "input " <> typeName <> render (fromList fields :: FieldsDefinition )
-      where fields = createInputUnionFields typeName (fmap fst members)
+ --   __render (DataInputUnion  members) = "input " <> typeName <> render (fromList fields :: FieldsDefinition )
+ --     where fields = createInputUnionFields typeName (fmap fst members)
     __render DataObject {objectFields} = "type " <> typeName <> render objectFields
 
 -- OBJECT
 instance RenderGQL FieldsDefinition where
-  render = renderObject render . ignoreHidden . toList
+  render = renderObject render . ignoreHidden . fmap unName . toList
    where 
     ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
     ignoreHidden = filter fieldVisibility

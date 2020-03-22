@@ -64,6 +64,9 @@ module Data.Morpheus.Types.Internal.AST.Base
   , toOperationType
   , splitDuplicates
   , removeDuplicates
+  , Singleton(..)
+  , FieldMap(..)
+  , Join(..)
   )
 where
 
@@ -78,6 +81,7 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
 import           Data.HashMap.Lazy              ( HashMap )
 import qualified Data.HashMap.Lazy             as HM 
+
 
 type Key = Text
 type Message = Text
@@ -140,8 +144,6 @@ class Selectable c a where
 
 instance Selectable (GQLMap a) a where 
   selectOr fb f key GQLMap { mapValues } = maybe fb f (HM.lookup key mapValues)
-  -- TODO: ability to risplay errors
-  selectOr fb _ _ (GQLMapError errors) = fb 
 
 instance Selectable [(Name, a)] a where 
   selectOr fb f key lib = maybe fb f (lookup key lib)
@@ -149,43 +151,49 @@ instance Selectable [(Name, a)] a where
 instance Selectable (HashMap Text a) a where 
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
+class Singleton c a where
+  singleton  :: Name -> a -> c
+
 class Listable c a where
-  fromList   :: [Named a] ->  c
+  fromList   :: Monad m => [Named a] ->  m c
   toList     ::  c  -> [Named a]
-  singleton  :: Named a -> c
+
+class FieldMap fields field where
+  toFields :: fields -> [field] 
+  fromFields :: Monad m => [field] ->  m fields
 
 -- GQLMap 
-data GQLMap value   
-  = GQLMap      { mapValues :: HashMap Name value }
-  | GQLMapError { dupFields :: [Name]        }
-  deriving (Show, Foldable)
+newtype GQLMap a = GQLMap { mapValues :: HashMap Name a}
+  -- = GQLMap { mapValues :: [(Name,a)]}
+  deriving (Show, Functor, Foldable)
 
 instance Lift a => Lift (GQLMap a) where
-  lift (GQLMapError err) = [| GQLMapError err |]
+  --lift (GQLMapError err) = [| GQLMapError err |]
   lift (GQLMap x) = [| GQLMap (HM.fromList ls) |]
     where ls = HM.toList x
 
-instance Functor GQLMap where
-  fmap f GQLMap { mapValues } = GQLMap (fmap f mapValues) 
-  fmap _ GQLMapError { .. } = GQLMapError { .. } 
-
-instance Semigroup (GQLMap a) where
-  GQLMapError err1 <> GQLMapError err2 = GQLMapError (err1 <> err2)
-  GQLMap _ <> GQLMapError name = GQLMapError name
-  GQLMapError err1 <> GQLMap _ = GQLMapError err1
-  GQLMap v1 <> GQLMap v2 = fromHashMaps v1 v2
-
 instance Traversable GQLMap where
-  traverse _ (GQLMapError err1) = pure $ GQLMapError err1
   traverse f (GQLMap values) = GQLMap <$> traverse f values
+
+class Join a where 
+  join :: Monad m => a -> a -> m a
+
+instance Join (GQLMap a) where 
+  join (GQLMap x) (GQLMap y) = fromHashMaps x y
 
 instance Empty (GQLMap a) where 
   empty = GQLMap HM.empty
 
+instance Singleton (GQLMap a) a where
+  singleton name = GQLMap . HM.singleton name 
+
+
 instance Listable (GQLMap a) a where
-  singleton Named { name, unName} = GQLMap $ HM.singleton name unName
   fromList = uniqNames
-  -- toList GQLMap { names , mapValues } = maybe (error "TODO:error") id $ traverse (`HM.lookup` mapValues) mapNames
+  toList GQLMap {  mapValues } = map bla $ HM.toList mapValues
+    where 
+      bla (x,y) = Named x y
+    --maybe (error "TODO:error") id $ traverse (`HM.lookup` mapValues) mapNames
 
 -- Refference with Position information  
 --
@@ -204,7 +212,6 @@ instance Ord Ref where
 
 anonymousRef :: Key -> Ref
 anonymousRef refName = Ref { refName, refPosition = Position 0 0 }
-
 
 -- TypeRef
 -------------------------------------------------------------------
@@ -374,10 +381,10 @@ splitDupElem = collectElems ([],[],[])
         | otherwise = collectElems (values <> [x],names,errors) xs
 
 
-fromHashMaps :: HashMap Name a -> HashMap Name a -> GQLMap a
+fromHashMaps :: Applicative m => HashMap Name a -> HashMap Name a -> m (GQLMap a)
 fromHashMaps x y = case joinHashmaps x y of 
-  (hm,[]) -> GQLMap hm
-  (_,errors) -> GQLMapError errors
+  (hm,[]) -> pure (GQLMap hm)
+  -- (_,errors) -> GQLMapError errors
 
 joinHashmaps :: HashMap Name a -> HashMap Name a -> (HashMap Name a,[Name])
 joinHashmaps lib newls = collectElems (lib,[]) (HM.toList newls)
@@ -388,8 +395,8 @@ joinHashmaps lib newls = collectElems (lib,[]) (HM.toList newls)
         | isJust (name `HM.lookup` coll) = collectElems (coll, errors <> [name]) xs
         | otherwise = collectElems (HM.insert name value coll,errors) xs
 
-uniqNames :: [Named value] -> GQLMap value
+uniqNames :: Applicative m => [Named value] -> m (GQLMap value)
 uniqNames values 
-  | null dupNames = GQLMap $ HM.fromList $ map fromNamed noDups
-  | otherwise = GQLMapError dupNames
+  | null dupNames = pure $ GQLMap $ HM.fromList $ map fromNamed noDups
+  -- | otherwise = GQLMapError dupNames
  where (noDups,dupNames,_) = splitDupElem values

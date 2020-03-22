@@ -72,6 +72,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , selectTypeObject
   , toHSFieldDefinition
   , selectBy
+  , fromValidFields
   )
 where
 
@@ -110,6 +111,10 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Empty(..)
                                                 , Selectable(..)
                                                 , Listable(..)
+                                                , Singleton(..)
+                                                , FieldMap(..)
+                                                , Named(..)
+                                                , Join(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -385,16 +390,34 @@ popByKey name lib = case lookupWith typeName name lib of
 
 newtype FieldsDefinition = FieldsDefinition 
  { unFieldsDefinition :: GQLMap FieldDefinition } 
-  deriving (Show, Semigroup, Empty)
+  deriving (Show, Empty)
+
+
+fromValidFields :: [FieldDefinition] -> FieldsDefinition 
+fromValidFields = FieldsDefinition . GQLMap . HM.fromList . map fieldDefinitiontoEntry
+
+instance Join FieldsDefinition where
+  join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
+instance Singleton  FieldsDefinition FieldDefinition  where 
+  singleton name = FieldsDefinition . singleton name
+
 instance Listable FieldsDefinition FieldDefinition where
-  singleton = FieldsDefinition . singleton
-  fromList = FieldsDefinition . fromList 
+  fromList ls = FieldsDefinition <$> fromList ls 
   toList = toList . unFieldsDefinition
 
+instance FieldMap FieldsDefinition FieldDefinition where
+  fromFields ls = FieldsDefinition <$> fromFields ls 
+  toFields = toFields . unFieldsDefinition
+
+instance FieldMap (GQLMap FieldDefinition) FieldDefinition where 
+  toFields = map unName . toList
+  fromFields = fromList . map named
+    where
+      named fd = Named (fieldName fd) fd
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -405,6 +428,9 @@ data FieldDefinition = FieldDefinition
   , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
+
+fieldDefinitiontoEntry :: FieldDefinition -> (Name, FieldDefinition)
+fieldDefinitiontoEntry x = (fieldName x, x)
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition { fieldName } = fieldName `notElem` sysFields
@@ -488,12 +514,14 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb _ _    NoArguments                  = fb
   selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
-instance Listable ArgumentsDefinition ArgumentDefinition where
-  singleton = ArgumentsDefinition Nothing . singleton
-  toList NoArguments                  = []
-  toList (ArgumentsDefinition _ args) = toList args
-  fromList []                         = NoArguments
-  fromList args                       = ArgumentsDefinition Nothing (fromList args)
+instance Singleton ArgumentsDefinition ArgumentDefinition where
+  singleton name = ArgumentsDefinition Nothing . singleton name
+
+instance FieldMap ArgumentsDefinition ArgumentDefinition where
+  toFields NoArguments                  = []
+  toFields (ArgumentsDefinition _ args) = toFields args
+  fromFields []                         = pure NoArguments
+  fromFields args                       = ArgumentsDefinition Nothing <$> fromFields args
 
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)

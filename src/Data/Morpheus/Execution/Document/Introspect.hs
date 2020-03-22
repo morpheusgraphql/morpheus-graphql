@@ -29,6 +29,8 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , DataTypeKind(..)
                                                             , TypeRef (..)
                                                             , Listable(..)
+                                                            , FieldMap(..)
+                                                            , fromValidFields
                                                             )
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
@@ -60,8 +62,8 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
         body 
-          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject $ fromList $(buildFields cFields), concat $(buildTypes cFields))|]
-          | otherwise  =  [| (DataObject [] $ fromList $(buildFields cFields), concat $(buildTypes cFields))|]
+          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject $ fromValidFields $(buildFields cFields), concat $(buildTypes cFields))|]
+          | otherwise  =  [| (DataObject [] $ fromValidFields $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
     
 buildTypes :: [FieldDefinition] -> ExpQ

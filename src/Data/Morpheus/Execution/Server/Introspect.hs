@@ -82,6 +82,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Message
                                                 , Listable(..)
                                                 , Empty(..)
+                                                , Singleton(..)
+                                                , fromValidFields
                                                 )
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
@@ -365,7 +367,7 @@ buildObject isOutput consFields = (wrapWith fields, types)
 buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  fields = fromList $ map fieldData consFields
+  fields = fromValidFields $ map fieldData consFields
   types  = map fieldTypeUpdater consFields
 
 buildUnions
@@ -385,7 +387,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = T
     { typeName        = consName
     , typeFingerprint
     , typeMeta        = Nothing
-    , typeContent     = wrapObject $ fromList $ map fieldData consFields
+    , typeContent     = wrapObject $ fromValidFields $ map fieldData consFields
     }
 
 buildUnionEnum
@@ -433,7 +435,7 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject $ singleton 
+      , typeContent     = wrapObject $ singleton "enum"
           FieldDefinition 
             { fieldName  = "enum"
             , fieldArgs  = NoArguments

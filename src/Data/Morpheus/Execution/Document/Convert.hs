@@ -37,6 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toHSFieldDefinition
                                                 , hsTypeName
                                                 , kindOf
+                                                , FieldMap(..)
                                                 )
 
 m_ :: Key
@@ -127,8 +128,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         , ..
         }
       genType DataObject {objectFields} = do
-        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList objectFields)
-        objCons  <- buildObjectCons <$> traverse genResField (toList objectFields)
+        typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toFields objectFields)
+        objCons  <- buildObjectCons <$> traverse genResField (toFields objectFields)
         pure GQLTypeD
           { typeD    = buildType objCons
           , typeArgD
@@ -178,4 +179,4 @@ genArguments :: ArgumentsDefinition -> [FieldDefinition]
 genArguments = genInputFields . FieldsDefinition . arguments
 
 genInputFields :: FieldsDefinition -> [FieldDefinition]
-genInputFields = map toHSFieldDefinition . toList
+genInputFields = map toHSFieldDefinition . toFields

@@ -161,6 +161,10 @@ module Data.Morpheus.Types.Internal.AST
   , GQLQuery(..)
   , Variables
   , isNullableWrapper
+  , FieldMap(..)
+  , Singleton(..)
+  , fromValidFields
+  , Join(..)
   )
 where
 

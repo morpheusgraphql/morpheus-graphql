@@ -44,6 +44,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isFieldNullable
                                                 , isNullableWrapper
                                                 , selectBy
+                                                , FieldMap(..)
                                                 )
 
 import           Data.Morpheus.Types.Internal.Resolving
@@ -115,7 +116,7 @@ validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName 
     validate
       :: TypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) = do 
-      traverse requiredFieldsDefined (toList parentFields)
+      traverse requiredFieldsDefined (toFields parentFields)
       Object <$> traverse validateField fields
      where
       requiredFieldsDefined datafield@FieldDefinition { fieldName }
