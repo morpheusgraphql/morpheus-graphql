@@ -93,6 +93,7 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap(..)
+                                                , unsafeFromList
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
@@ -396,7 +397,7 @@ newtype FieldsDefinition = FieldsDefinition
 
 
 fromValidFields :: [FieldDefinition] -> FieldsDefinition 
-fromValidFields = FieldsDefinition . OrderedMap . HM.fromList . map fieldDefinitiontoEntry
+fromValidFields = FieldsDefinition . unsafeFromList . map fieldDefinitiontoEntry
 
 instance Join FieldsDefinition where
   join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
