@@ -70,7 +70,7 @@ instance RenderGQL TypeDefinition where
 
 -- OBJECT
 instance RenderGQL FieldsDefinition where
-  render = renderObject render . ignoreHidden . fmap unName . toList
+  render = renderObject render . ignoreHidden . fmap snd . toList
    where 
     ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
     ignoreHidden = filter fieldVisibility
@@ -81,7 +81,7 @@ instance RenderGQL FieldDefinition where
 
 instance RenderGQL ArgumentsDefinition where 
   render NoArguments   = ""
-  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map unName $ toList $ fmap render arguments) <> ")"
+  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map snd $ toList $ fmap render arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName

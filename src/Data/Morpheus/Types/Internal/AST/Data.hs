@@ -417,10 +417,10 @@ instance FieldMap FieldsDefinition FieldDefinition where
   toFields = toFields . unFieldsDefinition
 
 instance FieldMap (OrderedMap FieldDefinition) FieldDefinition where 
-  toFields = map unName . toList
+  toFields = map snd . toList
   fromFields = fromList . map named
     where
-      named fd = Named (fieldName fd) fd
+      named fd = (fieldName fd, fd)
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)

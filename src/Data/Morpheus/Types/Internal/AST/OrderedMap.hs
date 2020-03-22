@@ -19,7 +19,7 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Join(..)
                                                         , Selectable(..)
                                                         , Listable(..)
                                                         , Name
-                                                        , Named(..)
+                                                        , Named
                                                         )
 import           Data.HashMap.Lazy                      ( HashMap )
 import qualified Data.HashMap.Lazy                      as HM 
@@ -56,8 +56,7 @@ instance Listable (OrderedMap a) a where
   fromList = uniqNames
   toList OrderedMap {  mapKeys, mapEntries } = map takeValue mapKeys
     where 
-      takeValue key = Named key $ fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries )
-
+      takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries ))
 
 fromHashMaps :: Applicative m => HashMap Name a -> HashMap Name a -> m (HashMap Name a)
 fromHashMaps x y = case joinHashmaps x y of 
@@ -67,8 +66,8 @@ fromHashMaps x y = case joinHashmaps x y of
 uniqNames :: Applicative m => [Named value] -> m (OrderedMap value)
 uniqNames values 
   | null dupNames = pure $ OrderedMap {
-        mapKeys = map name noDups,
-        mapEntries = HM.fromList $ map fromNamed noDups
+        mapKeys = map fst noDups,
+        mapEntries = HM.fromList noDups
       }
  where 
     (noDups,dupNames,_) = splitDupElem values
@@ -88,14 +87,11 @@ joinHashmaps lib newls = collectElems (lib,[]) (HM.toList newls)
         | isJust (name `HM.lookup` coll) = collectElems (coll, errors <> [name]) xs
         | otherwise = collectElems (HM.insert name value coll,errors) xs
 
-fromNamed :: Named a -> (Name,a)
-fromNamed Named { name , unName} = (name,unName)
-
 splitDupElem :: [Named a] -> ([Named a],[Name],[Named a])
 splitDupElem = collectElems ([],[],[])
   where
     collectElems :: ([Named a],[Name],[Named a]) -> [Named a] -> ([Named a],[Name],[Named a])
     collectElems collected [] = collected
     collectElems (values,names,errors) (x:xs)
-        | name x `elem` names = collectElems (values,names <> [name x],errors <> [x]) xs
+        | fst x `elem` names = collectElems (values,names <> [fst x],errors <> [x]) xs
         | otherwise = collectElems (values <> [x],names,errors) xs

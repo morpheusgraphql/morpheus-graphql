@@ -116,20 +116,7 @@ type QUERY = 'Query
 type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
 
-data Named a 
-  = Named 
-  {
-    name :: Name,
-    unName :: a
-  } deriving 
-    ( Show
-    , Lift
-    , Functor
-    , Foldable
-    )
-
-instance Traversable Named where
-  traverse f Named { name, unName } = Named name <$> f unName
+type Named a = (Name, a) 
 
 class Empty a where 
   empty :: a
