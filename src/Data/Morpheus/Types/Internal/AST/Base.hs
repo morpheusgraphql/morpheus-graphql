@@ -4,14 +4,8 @@
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE StandaloneDeriving         #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
@@ -20,7 +14,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , Position(..)
   , Message
   , Name
-  , Named(..)
+  , Named
   , Description
   , VALID
   , RAW

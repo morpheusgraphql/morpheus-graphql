@@ -39,8 +39,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ResolvedValue
                                                 , RESOLVED
                                                 , VALID
-                                                , Listable(..)
-                                                , Selectable(..)
                                                 , isFieldNullable
                                                 , lookupInputType
                                                 , checkForUnknownKeys

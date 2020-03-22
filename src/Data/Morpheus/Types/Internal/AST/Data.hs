@@ -116,7 +116,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Listable(..)
                                                 , Singleton(..)
                                                 , FieldMap(..)
-                                                , Named(..)
                                                 , Join(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
