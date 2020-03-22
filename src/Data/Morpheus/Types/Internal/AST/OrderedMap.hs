@@ -11,6 +11,7 @@ module Data.Morpheus.Types.Internal.AST.OrderedMap
     )
 where 
 
+import           Data.Semigroup                         ((<>))
 import           Data.Maybe                             (isJust,fromMaybe)
 import           Language.Haskell.TH.Syntax             ( Lift(..) )
 import           Data.Morpheus.Types.Internal.AST.Base  ( Join(..)
