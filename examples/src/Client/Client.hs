@@ -106,7 +106,7 @@ fetchHero = fetch
         { getHeroArgsGod    = Just Realm { realmOwner      = "Zeus"
                                          , realmAge        = Just 10
                                          , realmRealm      = Nothing
-                                         , realmProfession = Just ProfessionArtist
+                                         , realmProfession = Just Artist
                                          }
         , getHeroArgsSomeID = "Hercules"
         }

@@ -517,13 +517,6 @@ input Character {
 type Deity {
   name: String!
   worships: Deity
-  power: Power!
-}
-
-enum Power {
-  Lightning
-  Teleportation
-  Omniscience
 }
 ```
 
@@ -541,18 +534,12 @@ data GetHero = GetHero {
 data DeityDeity = DeityDeity {
   name: Text,
   worships: Maybe DeityWorshipsDeity
-  power: Power
 }
 
 -- from: {deity{worships
 data DeityWorshipsDeity = DeityWorshipsDeity {
   name: Text,
 }
-
-data Power =
-    PowerLightning
-  | PowerTeleportation
-  | PowerOmniscience
 
 data GetHeroArgs = GetHeroArgs {
   getHeroArgsCharacter: Character
