@@ -91,6 +91,9 @@ import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
+import           Data.Morpheus.Types.Internal.AST.OrderedMap
+                                                ( OrderedMap(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
                                                 , Position
@@ -105,7 +108,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , DataFingerprint(..)
                                                 , isNullable
                                                 , sysFields
-                                                , GQLMap(..)
                                                 , toOperationType
                                                 , hsTypeName
                                                 , Empty(..)
@@ -389,12 +391,12 @@ popByKey name lib = case lookupWith typeName name lib of
 --
 
 newtype FieldsDefinition = FieldsDefinition 
- { unFieldsDefinition :: GQLMap FieldDefinition } 
+ { unFieldsDefinition :: OrderedMap FieldDefinition } 
   deriving (Show, Empty)
 
 
 fromValidFields :: [FieldDefinition] -> FieldsDefinition 
-fromValidFields = FieldsDefinition . GQLMap . HM.fromList . map fieldDefinitiontoEntry
+fromValidFields = FieldsDefinition . OrderedMap . HM.fromList . map fieldDefinitiontoEntry
 
 instance Join FieldsDefinition where
   join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
@@ -413,7 +415,7 @@ instance FieldMap FieldsDefinition FieldDefinition where
   fromFields ls = FieldsDefinition <$> fromFields ls 
   toFields = toFields . unFieldsDefinition
 
-instance FieldMap (GQLMap FieldDefinition) FieldDefinition where 
+instance FieldMap (OrderedMap FieldDefinition) FieldDefinition where 
   toFields = map unName . toList
   fromFields = fromList . map named
     where
@@ -496,7 +498,7 @@ lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef
 data ArgumentsDefinition 
   = ArgumentsDefinition  
     { argumentsTypename ::  Maybe Name
-    , arguments         :: GQLMap ArgumentDefinition
+    , arguments         :: OrderedMap ArgumentDefinition
     }
   | NoArguments
   deriving (Show, Lift)
