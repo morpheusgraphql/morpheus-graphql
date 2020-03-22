@@ -39,7 +39,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createUnionType
                                                 , toHSWrappers
                                                 , ArgumentsDefinition(..)
-                                                , fromList
                                                 , FieldMap(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

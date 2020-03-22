@@ -41,6 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , Listable(..)
                                                 , Named(..)
+                                                , FieldMap(..)
                                                 )
 
 renderGraphQLDocument :: Schema -> ByteString
@@ -70,7 +71,7 @@ instance RenderGQL TypeDefinition where
 
 -- OBJECT
 instance RenderGQL FieldsDefinition where
-  render = renderObject render . ignoreHidden . fmap snd . toList
+  render = renderObject render . ignoreHidden . toFields
    where 
     ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
     ignoreHidden = filter fieldVisibility
