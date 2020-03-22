@@ -28,8 +28,6 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , insertType
                                                             , DataTypeKind(..)
                                                             , TypeRef (..)
-                                                            , Listable(..)
-                                                            , FieldMap(..)
                                                             , fromValidFields
                                                             )
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)

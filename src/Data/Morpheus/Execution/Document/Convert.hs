@@ -32,7 +32,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , ArgumentsDefinition(..)
                                                 , hasArguments
-                                                , Listable(..)
                                                 , lookupWith
                                                 , toHSFieldDefinition
                                                 , hsTypeName

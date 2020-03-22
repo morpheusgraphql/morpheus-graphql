@@ -80,7 +80,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeRef(..)
                                                 , Message
-                                                , Listable(..)
                                                 , Empty(..)
                                                 , Singleton(..)
                                                 , fromValidFields

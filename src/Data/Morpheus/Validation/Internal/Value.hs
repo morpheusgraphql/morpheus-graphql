@@ -37,8 +37,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , VariableContent(..)
                                                 , TypeRef(..)
-                                                , Listable(..)
-                                                , Selectable(..)
                                                 , isWeaker
                                                 , unpackInputUnion
                                                 , isFieldNullable

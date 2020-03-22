@@ -23,7 +23,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeRef(..)
-                                                , Listable(..)
                                                 , Selectable(..)
                                                 , isWeaker
                                                 , lookupWith
