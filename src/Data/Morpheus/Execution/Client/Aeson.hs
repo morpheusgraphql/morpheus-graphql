@@ -20,7 +20,7 @@ import           Data.Aeson.Types
 import qualified Data.HashMap.Lazy             as H
                                                 ( lookup )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( stripPrefix
+import           Data.Text                      ( append
                                                 , Text
                                                 , unpack
                                                 )
@@ -123,8 +123,8 @@ aesonFromJSONEnumBody tName cons = lamCaseE handlers
    where
     buildMatch ConsD { cName } = match enumPat body []
      where
-      enumPat = litP $ stringL $ unpack (removeExpectedPrefix tName cName)
-      body    = normalB $ appE (varE 'pure) (conE $ mkName $ unpack cName)
+      enumPat = litP $ stringL $ unpack cName
+      body    = normalB $ appE (varE 'pure) (conE $ mkName $ unpack $ append tName cName)
 
 elseCaseEXP :: MatchQ
 elseCaseEXP = match (varP varName) body []
@@ -144,14 +144,8 @@ aesonToJSONEnumBody tName cons = lamCaseE handlers
    where
     buildMatch ConsD { cName } = match enumPat body []
      where
-      enumPat = conP (mkName (unpack cName)) []
-      body    = normalB $ litE (stringL $ unpack $ removeExpectedPrefix tName cName)
-
-removeExpectedPrefix :: Text -> Text -> Text
-removeExpectedPrefix toStrip from =
-  case stripPrefix toStrip from of
-    Just stripped -> stripped
-    Nothing       -> error (unpack $ "Unexpected missing prefix: " <> toStrip <> " from: " <> from)
+      enumPat = conP (mkName $ unpack $ append tName cName) []
+      body    = normalB $ litE (stringL $ unpack cName)
 
 -- ToJSON
 deriveToJSON :: TypeD -> Q [Dec]
