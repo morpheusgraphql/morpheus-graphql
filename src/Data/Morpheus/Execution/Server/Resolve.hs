@@ -71,6 +71,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , FieldsDefinition(..)
+                                                )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Join(..))
 import           Data.Morpheus.Types.Internal.Resolving
