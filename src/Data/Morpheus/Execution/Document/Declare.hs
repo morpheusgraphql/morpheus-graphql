@@ -23,7 +23,9 @@ import           Data.Morpheus.Execution.Document.Introspect
                                                 , instanceIntrospect
                                                 )
 import           Data.Morpheus.Execution.Internal.Declare
-                                                ( declareType )
+                                                ( declareType
+                                                , Scope(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( isInput
                                                 , isObject
@@ -60,11 +62,11 @@ declareGQLType namespace gqlType@GQLTypeD { typeD, typeKindD, typeArgD, typeOrig
    where
     deriveArgsRep args = deriveObjectRep (args, Nothing)
     ----------------------------------------------------
-    argsTypeDecs = map (declareType namespace Nothing []) typeArgD
+    argsTypeDecs = map (declareType SERVER namespace Nothing []) typeArgD
       --------------------------------------------------
   declareMainType = declareT
    where
     declareT =
-      pure [declareType namespace (Just typeKindD) derivingClasses typeD]
+      pure [declareType SERVER namespace (Just typeKindD) derivingClasses typeD]
     derivingClasses | isInput typeKindD = [''Show]
                     | otherwise         = []
