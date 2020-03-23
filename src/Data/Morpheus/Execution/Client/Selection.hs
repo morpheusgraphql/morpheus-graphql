@@ -53,8 +53,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDeprecatedReason
                                                 , typeFromScalar
                                                 , removeDuplicates
-                                                , FieldMap(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( FieldMap(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
                                                 , Validation

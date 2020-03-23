@@ -4,9 +4,10 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts           #-}
 
 module Data.Morpheus.Types.Internal.AST.OrderedMap
-    ( OrderedMap(..)
+    ( OrderedMap
     , unsafeFromList
     )
 where 
@@ -14,13 +15,16 @@ where
 import           Data.Semigroup                         ((<>))
 import           Data.Maybe                             (isJust,fromMaybe)
 import           Language.Haskell.TH.Syntax             ( Lift(..) )
-import           Data.Morpheus.Types.Internal.AST.Base  ( Join(..)
+import           Data.Morpheus.Types.Internal.Operation ( Join(..)
                                                         , Empty(..)
                                                         , Singleton(..)
                                                         , Selectable(..)
                                                         , Listable(..)
-                                                        , Name
+                                                        , Failure(..)
+                                                        )
+import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
+                                                        , GQLErrors
                                                         )
 import           Data.HashMap.Lazy                      ( HashMap )
 import qualified Data.HashMap.Lazy                      as HM 
@@ -62,9 +66,9 @@ instance Listable (OrderedMap a) a where
 fromHashMaps :: Applicative m => HashMap Name a -> HashMap Name a -> m (HashMap Name a)
 fromHashMaps x y = case joinHashmaps x y of 
   (hm,[]) -> pure hm
-  -- (_,errors) -> OrderedMapError errors
+  -- (_,errors) -> failure errors
 
-uniqNames :: Applicative m => [Named value] -> m (OrderedMap value)
+uniqNames :: (Failure GQLErrors m, Applicative m) => [Named value] -> m (OrderedMap value)
 uniqNames values 
   | null dupNames = pure $ OrderedMap {
         mapKeys = map fst noDups,
@@ -73,8 +77,6 @@ uniqNames values
  where 
     (noDups,dupNames,_) = splitDupElem values
 
---unsafeFromHashmap :: HashMap Name a -> OrderedMap a
---unsafeFromHashmap x = OrderedMap (HM.keys x) x
 
 unsafeFromList :: [(Name, a)] -> OrderedMap a
 unsafeFromList x = OrderedMap (map fst x) $ HM.fromList x

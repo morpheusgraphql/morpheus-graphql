@@ -42,7 +42,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ArgumentsDefinition(..)
                                                 , Name
                                                 , FieldsDefinition(..)
-                                                , Listable(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Operation                                     
+                                                ( Listable(..)
                                                 , FieldMap(..)
                                                 )
 

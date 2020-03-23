@@ -31,9 +31,6 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataFingerprint(..)
   , DataTypeWrapper(..)
   --, Named(..)
-  , Empty(..)
-  , Selectable(..)
-  , Listable(..)
   , anonymousRef
   , uniqueElemOr
   , elementOfKeys
@@ -57,9 +54,8 @@ module Data.Morpheus.Types.Internal.AST.Base
   , toOperationType
   , splitDuplicates
   , removeDuplicates
-  , Singleton(..)
-  , FieldMap(..)
-  , Join(..)
+  , GQLError(..)
+  , GQLErrors
   )
 where
 
@@ -70,10 +66,14 @@ import           Data.Aeson                     ( FromJSON
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
-import           Instances.TH.Lift              ( )
-import           Data.HashMap.Lazy              ( HashMap )
-import qualified Data.HashMap.Lazy             as HM 
+import           Instances.TH.Lift              ()
 
+data GQLError = GQLError
+  { message      :: Text
+  , locations :: [Position]
+  } deriving (Show, Generic, FromJSON, ToJSON)
+
+type GQLErrors = [GQLError]
 
 type Key = Text
 type Message = Text
@@ -111,35 +111,6 @@ type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
 
 type Named a = (Name, a) 
-
-class Empty a where 
-  empty :: a
-
-instance Empty (HashMap k v) where
-  empty = HM.empty
-
-class Selectable c a where 
-  selectOr :: d -> (a -> d) -> Name -> c -> d
-
-instance Selectable [(Name, a)] a where 
-  selectOr fb f key lib = maybe fb f (lookup key lib)
-
-instance Selectable (HashMap Text a) a where 
-  selectOr fb f key lib = maybe fb f (HM.lookup key lib)
-
-class Singleton c a where
-  singleton  :: Name -> a -> c
-
-class Listable c a where
-  fromList   :: Monad m => [Named a] ->  m c
-  toList     ::  c  -> [Named a]
-
-class FieldMap fields field where
-  toFields :: fields -> [field] 
-  fromFields :: Monad m => [field] ->  m fields
-
-class Join a where 
-  join :: Monad m => a -> a -> m a
 
 -- Refference with Position information  
 --

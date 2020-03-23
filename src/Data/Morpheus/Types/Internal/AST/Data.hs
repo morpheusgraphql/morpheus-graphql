@@ -9,9 +9,6 @@
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneDeriving         #-}
-
-
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( ScalarDefinition(..)
@@ -92,7 +89,7 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
-                                                ( OrderedMap(..)
+                                                ( OrderedMap
                                                 , unsafeFromList
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
@@ -111,7 +108,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , sysFields
                                                 , toOperationType
                                                 , hsTypeName
-                                                , Empty(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Operation                                              
+                                                ( Empty(..)
                                                 , Selectable(..)
                                                 , Listable(..)
                                                 , Singleton(..)

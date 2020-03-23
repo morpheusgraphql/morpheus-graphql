@@ -101,8 +101,6 @@ module Data.Morpheus.Types.Internal.AST
   , ClientType(..)
   , DataInputUnion
   , VariableContent(..)
-  , Selectable(..)
-  , Listable(..)
   , TypeLib
   , isTypeDefined
   , initTypeLib
@@ -152,7 +150,6 @@ module Data.Morpheus.Types.Internal.AST
   , lookupWith
   , selectTypeObject
   , typeFromScalar
-  , Empty(..)
   , selectBy
   -- Temaplate Haskell
   , toHSFieldDefinition
@@ -161,10 +158,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLQuery(..)
   , Variables
   , isNullableWrapper
-  , FieldMap(..)
-  , Singleton(..)
   , fromValidFields
-  , Join(..)
   )
 where
 

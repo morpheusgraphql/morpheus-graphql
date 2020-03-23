@@ -80,9 +80,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeRef(..)
                                                 , Message
-                                                , Empty(..)
-                                                , Singleton(..)
                                                 , fromValidFields
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Empty(..)
+                                                , Singleton(..)
                                                 )
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)

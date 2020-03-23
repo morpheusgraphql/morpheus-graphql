@@ -39,8 +39,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createUnionType
                                                 , toHSWrappers
                                                 , ArgumentsDefinition(..)
-                                                , FieldMap(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( FieldMap(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.IO         ( JSONResponse(..) )

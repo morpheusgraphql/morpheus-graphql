@@ -36,8 +36,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toHSFieldDefinition
                                                 , hsTypeName
                                                 , kindOf
-                                                , FieldMap(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation 
+                                                (FieldMap(..))
 
 m_ :: Key
 m_ = "m"
