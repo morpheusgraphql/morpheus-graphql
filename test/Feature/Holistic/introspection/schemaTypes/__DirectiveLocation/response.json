@@ -8,92 +8,92 @@
       "interfaces": null,
       "enumValues": [
         {
-          "name": "QUERY",
+          "name": "S__DirectiveLocationQUERY",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "MUTATION",
+          "name": "S__DirectiveLocationMUTATION",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "SUBSCRIPTION",
+          "name": "S__DirectiveLocationSUBSCRIPTION",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "FIELD",
+          "name": "S__DirectiveLocationFIELD",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "FRAGMENT_DEFINITION",
+          "name": "S__DirectiveLocationFRAGMENT_DEFINITION",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "FRAGMENT_SPREAD",
+          "name": "S__DirectiveLocationFRAGMENT_SPREAD",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "INLINE_FRAGMENT",
+          "name": "S__DirectiveLocationINLINE_FRAGMENT",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "SCHEMA",
+          "name": "S__DirectiveLocationSCHEMA",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "SCALAR",
+          "name": "S__DirectiveLocationSCALAR",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "OBJECT",
+          "name": "S__DirectiveLocationOBJECT",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "FIELD_DEFINITION",
+          "name": "S__DirectiveLocationFIELD_DEFINITION",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "ARGUMENT_DEFINITION",
+          "name": "S__DirectiveLocationARGUMENT_DEFINITION",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "INTERFACE",
+          "name": "S__DirectiveLocationINTERFACE",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "UNION",
+          "name": "S__DirectiveLocationUNION",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "ENUM",
+          "name": "S__DirectiveLocationENUM",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "ENUM_VALUE",
+          "name": "S__DirectiveLocationENUM_VALUE",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "INPUT_OBJECT",
+          "name": "S__DirectiveLocationINPUT_OBJECT",
           "isDeprecated": false,
           "deprecationReason": null
         },
         {
-          "name": "INPUT_FIELD_DEFINITION",
+          "name": "S__DirectiveLocationINPUT_FIELD_DEFINITION",
           "isDeprecated": false,
           "deprecationReason": null
         }
