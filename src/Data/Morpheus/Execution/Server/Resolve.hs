@@ -71,8 +71,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , FieldsDefinition(..)
-                                                , Join(..)
-                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Join(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver

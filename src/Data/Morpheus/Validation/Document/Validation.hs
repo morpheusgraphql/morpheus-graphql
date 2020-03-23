@@ -23,9 +23,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeRef(..)
-                                                , Selectable(..)
                                                 , isWeaker
                                                 , lookupWith
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Selectable(..)
                                                 , FieldMap(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

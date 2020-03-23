@@ -44,7 +44,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , checkForUnknownKeys
                                                 , checkNameCollision
                                                 , selectBy
-                                                , FieldMap(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( FieldMap(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation

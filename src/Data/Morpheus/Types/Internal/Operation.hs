@@ -23,6 +23,22 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
                                                         )
+import           Text.Megaparsec                ( ParseError
+                                                , ParseErrorBundle
+                                                  ( ParseErrorBundle
+                                                  )
+                                                , Parsec
+                                                , SourcePos
+                                                , attachSourcePos
+                                                , bundleErrors
+                                                , bundlePosState
+                                                , errorOffset
+                                                , getSourcePos
+                                                , parseErrorPretty
+                                                )
+
+import        Text.Megaparsec.Internal  (ParsecT)
+import        Text.Megaparsec.Stream    (Stream)
 
 class Empty a where 
   empty :: a
@@ -58,3 +74,5 @@ class Applicative f => Failure error (f :: * -> *) where
 
 instance Failure error (Either error) where
   failure = Left
+
+instance (Stream b) => Failure GQLErrors (ParsecT a b c) where

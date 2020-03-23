@@ -42,9 +42,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isFieldNullable
                                                 , isNullableWrapper
                                                 , selectBy
-                                                , FieldMap(..)
                                                 )
-
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( FieldMap(..)
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 import           Data.Morpheus.Rendering.RenderGQL
