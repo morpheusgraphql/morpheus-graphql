@@ -14,7 +14,6 @@ module Data.Morpheus.Types.Internal.Operation
     )
     where 
 
-import           Control.Monad.Fail                     (MonadFail)
 import           Data.Text                              ( Text )
 import           Instances.TH.Lift                      ( )
 import           Data.HashMap.Lazy                      ( HashMap )
@@ -23,22 +22,8 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
                                                         )
-import           Text.Megaparsec                ( ParseError
-                                                , ParseErrorBundle
-                                                  ( ParseErrorBundle
-                                                  )
-                                                , Parsec
-                                                , SourcePos
-                                                , attachSourcePos
-                                                , bundleErrors
-                                                , bundlePosState
-                                                , errorOffset
-                                                , getSourcePos
-                                                , parseErrorPretty
-                                                )
-
-import        Text.Megaparsec.Internal  (ParsecT)
-import        Text.Megaparsec.Stream    (Stream)
+import           Text.Megaparsec.Internal  (ParsecT)
+import           Text.Megaparsec.Stream    (Stream)
 
 class Empty a where 
   empty :: a
