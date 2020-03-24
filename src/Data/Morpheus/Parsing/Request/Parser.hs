@@ -11,12 +11,9 @@ import qualified Data.Aeson                    as Aeson
                                                 ( Value(..) )
 import           Data.HashMap.Lazy              ( toList )
 import           Data.Text                      ( Text )
-import           Data.Void                      ( Void )
-import           Text.Megaparsec                ( ParseErrorBundle
-                                                , eof
+import           Text.Megaparsec                ( eof
                                                 , label
                                                 , manyTill
-                                                , runParser
                                                 )
 
 --
@@ -32,10 +29,7 @@ import           Data.Morpheus.Parsing.Request.Operation
 import           Data.Morpheus.Parsing.Request.Selection
                                                 ( parseFragmentDefinition )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
-                                                , Failure(..)
-                                                , GQLErrors
-                                                )
+                                                ( Validation )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( replaceValue
                                                 , GQLQuery(..)
