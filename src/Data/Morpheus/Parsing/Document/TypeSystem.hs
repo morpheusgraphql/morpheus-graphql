@@ -12,7 +12,6 @@ import           Text.Megaparsec                ( label
                                                 , (<|>)
                                                 , eof
                                                 , manyTill
-                                                , runParser
                                                 )
 
 -- MORPHEUS
@@ -47,9 +46,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ScalarDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                 ( Validation
-                                                 , Failure(..)
-                                                 )
+                                                 ( Validation )
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
 --
