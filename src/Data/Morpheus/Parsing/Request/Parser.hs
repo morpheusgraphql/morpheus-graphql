@@ -37,18 +37,16 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 
-parseGQLSyntax :: Text -> Validation GQLQuery
-parseGQLSyntax = processParser request
- where
-  request :: Parser GQLQuery
-  request = label "GQLQuery" $ do
+
+request :: Parser GQLQuery
+request = label "GQLQuery" $ do
     spaceAndComments
     operation <- parseOperation
     fragments <- manyTill parseFragmentDefinition eof
     pure GQLQuery { operation, fragments, inputVariables = [] }
 
 parseGQL :: GQLRequest -> Validation GQLQuery
-parseGQL GQLRequest { query, variables } = setVariables <$> parseGQLSyntax query 
+parseGQL GQLRequest { query, variables } = setVariables <$> processParser request query 
  where
   setVariables root = root { inputVariables = toVariableMap variables }
   toVariableMap :: Maybe Aeson.Value -> [(Text, ResolvedValue)]
