@@ -3,6 +3,7 @@
 
 module Data.Morpheus.Parsing.Request.Parser
   ( parseGQL
+  , processParser
   )
 where
 
@@ -22,7 +23,7 @@ import           Text.Megaparsec                ( ParseErrorBundle
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal
                                                 ( Parser
-                                                , processErrorBundle
+                                                , processParser
                                                 )
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( spaceAndComments )
@@ -33,6 +34,7 @@ import           Data.Morpheus.Parsing.Request.Selection
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
+                                                , GQLErrors
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( replaceValue
@@ -41,9 +43,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 
-
-parseGQLSyntax :: Text -> Either (ParseErrorBundle Text Void) GQLQuery
-parseGQLSyntax = runParser request "<input>"
+parseGQLSyntax :: Text -> Validation GQLQuery
+parseGQLSyntax = processParser request
  where
   request :: Parser GQLQuery
   request = label "GQLQuery" $ do
@@ -53,10 +54,9 @@ parseGQLSyntax = runParser request "<input>"
     pure GQLQuery { operation, fragments, inputVariables = [] }
 
 parseGQL :: GQLRequest -> Validation GQLQuery
-parseGQL GQLRequest { query, variables } = case parseGQLSyntax query of
-  Right root       -> pure $ root { inputVariables = toVariableMap variables }
-  Left  parseError -> failure $ processErrorBundle parseError
+parseGQL GQLRequest { query, variables } = setVariables <$> parseGQLSyntax query 
  where
+  setVariables root = root { inputVariables = toVariableMap variables }
   toVariableMap :: Maybe Aeson.Value -> [(Text, ResolvedValue)]
   toVariableMap (Just (Aeson.Object x)) = map toMorpheusValue (toList x)
     where toMorpheusValue (key, value) = (key, replaceValue value)
