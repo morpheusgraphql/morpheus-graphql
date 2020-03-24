@@ -3,7 +3,6 @@
 module Data.Morpheus.Parsing.Internal.Internal
   ( Parser
   , Position
-  , processErrorBundle
   , getLocation
   , processParser
   )

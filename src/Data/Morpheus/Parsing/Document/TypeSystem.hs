@@ -18,7 +18,7 @@ import           Text.Megaparsec                ( label
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal
                                                 ( Parser
-                                                , processErrorBundle
+                                                , processParser
                                                 )
 import           Data.Morpheus.Parsing.Internal.Pattern
                                                 ( fieldsDefinition
@@ -201,11 +201,8 @@ parseDataType = label "TypeDefinition" $ do
       <|> interfaceTypeDefinition description
 
 parseSchema :: Text -> Validation [TypeDefinition]
-parseSchema doc = case parseDoc of
-  Right root       -> pure root
-  Left  parseError -> failure (processErrorBundle parseError)
+parseSchema = processParser request
  where
-  parseDoc = runParser request "<input>" doc
   request  = label "DocumentTypes" $ do
     spaceAndComments
     manyTill parseDataType eof
