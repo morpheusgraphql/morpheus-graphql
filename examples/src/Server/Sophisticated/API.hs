@@ -202,7 +202,7 @@ getDBUser _ = do
                     , userEmail   = pure email
                     , userAddress = const $ lift (getDBAddress (Content 12))
                     , userOffice  = constRes Nothing
-                    , userHome    = pure CityIDHH
+                    , userHome    = pure HH
                     , userEntity  = pure [
                           MyUnionAddress Address{
                             addressCity        = pure "city"
@@ -214,7 +214,7 @@ getDBUser _ = do
                             , userEmail   = pure email
                             , userAddress = const $ lift (getDBAddress (Content 12))
                             , userOffice  = constRes Nothing
-                            , userHome    = pure CityIDHH
+                            , userHome    = pure HH
                             , userEntity = pure []
                           }
                         ]
@@ -239,7 +239,7 @@ setDBUser = do
             , userEmail   = pure email
             , userAddress = const $ lift setDBAddress
             , userOffice  = constRes Nothing
-            , userHome    = pure CityIDHH
+            , userHome    = pure HH
             , userEntity  = pure []
             }
 

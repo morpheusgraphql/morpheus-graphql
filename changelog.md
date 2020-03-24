@@ -5,7 +5,6 @@
 ### Breaking Changes
 
 - Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
-- `importGQLDocumentWithNamespace` generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
 
 ## 0.10.1 - 10.02.2020
 

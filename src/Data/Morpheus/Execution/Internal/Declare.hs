@@ -84,10 +84,9 @@ declareType scope namespace kindD derivingList TypeD { tName, tCons, tNamespace 
     where declareTyVar = map (PlainTV . mkName . unpack)
   defBang = Bang NoSourceUnpackedness NoSourceStrictness
   derive className = DerivClause Nothing [ConT className]
-  prefixEnum = isEnum tCons && (scope == CLIENT || namespace)
   cons
-    | prefixEnum = map consE tCons
-    | otherwise  = map consR tCons
+    | scope == CLIENT && isEnum tCons = map consE tCons
+    | otherwise                       = map consR tCons
   consE ConsD { cName }          = NormalC (genName $ tName <> cName) []
   consR ConsD { cName, cFields } = RecC (genName cName)
                                         (map declareField cFields)
