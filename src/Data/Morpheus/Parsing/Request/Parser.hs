@@ -37,7 +37,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 
-
 request :: Parser GQLQuery
 request = label "GQLQuery" $ do
     spaceAndComments
