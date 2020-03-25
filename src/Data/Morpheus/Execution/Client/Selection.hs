@@ -245,15 +245,15 @@ buildInputType lib name = getType lib name >>= generateTypes
       [ ClientType
           { clientType = TypeD { tName      = typeName
                                , tNamespace = []
-                               , tCons      = map (enumOption typeName) enumTags
+                               , tCons      = map enumOption enumTags
                                , tMeta      = Nothing
                                }
           , clientKind = KindEnum
           }
       ]
      where
-      enumOption typeName' DataEnumValue { enumName } =
-        ConsD { cName = typeName' <> enumName, cFields = [] }
+      enumOption DataEnumValue { enumName } =
+        ConsD { cName = enumName, cFields = [] }
     subTypes _ = pure []
 
 lookupFieldType
