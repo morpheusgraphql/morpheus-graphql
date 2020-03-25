@@ -68,7 +68,7 @@ instance Listable (OrderedMap a) a where
 
 -- TODO: move into errors, better formating
 duplicateKeyError :: (Name,a) -> GQLError
-duplicateKeyError (name,_) = GQLError { message = "duplicate key " <> name , locations = []}
+duplicateKeyError (name,_) = GQLError { message = "duplicate key \"" <> name <> "\"", locations = []}
 
 fromHashMaps :: (Failure GQLErrors m, Applicative m)=> HashMap Name a -> HashMap Name a -> m (HashMap Name a)
 fromHashMaps x y = case joinHashmaps x y of 
