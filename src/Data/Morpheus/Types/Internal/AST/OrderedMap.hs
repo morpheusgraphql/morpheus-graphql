@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 module Data.Morpheus.Types.Internal.AST.OrderedMap
     ( OrderedMap
@@ -21,10 +22,12 @@ import           Data.Morpheus.Types.Internal.Operation ( Join(..)
                                                         , Selectable(..)
                                                         , Listable(..)
                                                         , Failure(..)
+                                                        , FieldMap(..)
                                                         )
 import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
+                                                        , GQLError(..)
                                                         )
 import           Data.HashMap.Lazy                      ( HashMap )
 import qualified Data.HashMap.Lazy                      as HM 
@@ -63,20 +66,24 @@ instance Listable (OrderedMap a) a where
     where 
       takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries ))
 
-fromHashMaps :: Applicative m => HashMap Name a -> HashMap Name a -> m (HashMap Name a)
+-- TODO: move into errors, better formating
+duplicateKeyError :: (Name,a) -> GQLError
+duplicateKeyError (name,_) = GQLError { message = "duplicate key " <> name , locations = []}
+
+fromHashMaps :: (Failure GQLErrors m, Applicative m)=> HashMap Name a -> HashMap Name a -> m (HashMap Name a)
 fromHashMaps x y = case joinHashmaps x y of 
   (hm,[]) -> pure hm
-  -- (_,errors) -> failure errors
+  -- (_,errors) -> failure $ [] -- TODO:
 
 uniqNames :: (Failure GQLErrors m, Applicative m) => [Named value] -> m (OrderedMap value)
 uniqNames values 
-  | null dupNames = pure $ OrderedMap {
+  | null dups = pure $ OrderedMap {
         mapKeys = map fst noDups,
         mapEntries = HM.fromList noDups
       }
+  | otherwise = failure $ map duplicateKeyError dups
  where 
-    (noDups,dupNames,_) = splitDupElem values
-
+    (noDups,dups) = splitDupElem values
 
 unsafeFromList :: [(Name, a)] -> OrderedMap a
 unsafeFromList x = OrderedMap (map fst x) $ HM.fromList x
@@ -90,11 +97,12 @@ joinHashmaps lib newls = collectElems (lib,[]) (HM.toList newls)
         | isJust (name `HM.lookup` coll) = collectElems (coll, errors <> [name]) xs
         | otherwise = collectElems (HM.insert name value coll,errors) xs
 
-splitDupElem :: [Named a] -> ([Named a],[Name],[Named a])
-splitDupElem = collectElems ([],[],[])
+splitDupElem :: [Named a] -> ([Named a],[Named a])
+splitDupElem x = (noDups,dups)
   where
+    (noDups,_,dups) = collectElems ([],[],[]) x
     collectElems :: ([Named a],[Name],[Named a]) -> [Named a] -> ([Named a],[Name],[Named a])
     collectElems collected [] = collected
     collectElems (values,names,errors) (x:xs)
-        | fst x `elem` names = collectElems (values,names <> [fst x],errors <> [x]) xs
-        | otherwise = collectElems (values <> [x],names,errors) xs
+        | fst x `elem` names = collectElems (values,names,errors <> [x]) xs
+        | otherwise = collectElems (values <> [x],names <> [fst x],errors) xs
