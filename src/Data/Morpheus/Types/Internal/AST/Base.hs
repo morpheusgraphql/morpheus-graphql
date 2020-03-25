@@ -67,11 +67,15 @@ import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ()
+import           Text.Megaparsec                (ShowErrorComponent(..))
+
+instance ShowErrorComponent GQLError where 
+  showErrorComponent = show
 
 data GQLError = GQLError
   { message      :: Text
   , locations :: [Position]
-  } deriving (Show, Generic, FromJSON, ToJSON)
+  } deriving ( Eq, Ord, Show, Generic, FromJSON, ToJSON)
 
 type GQLErrors = [GQLError]
 
@@ -91,7 +95,7 @@ type VALID = 'VALID
 data Position = Position
   { line   :: Int
   , column :: Int
-  } deriving (Show, Generic, FromJSON, ToJSON, Lift)
+  } deriving (Eq, Ord, Show, Generic, FromJSON, ToJSON, Lift)
 
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
