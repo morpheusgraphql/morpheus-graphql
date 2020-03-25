@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns             #-}
 
 module Data.Morpheus.Parsing.Internal.Internal
   ( Parser
@@ -8,7 +8,6 @@ module Data.Morpheus.Parsing.Internal.Internal
   )
 where
 
-import            Data.Set  (toList)
 import qualified Data.List.NonEmpty            as NonEmpty
 import           Data.Morpheus.Error.Utils      ( toLocation )
 import           Data.Morpheus.Types.Internal.AST
@@ -18,6 +17,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , GQLErrors
                                                 , Validation
                                                 , failure
+                                                , Result(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , pack
@@ -26,7 +26,7 @@ import           Text.Megaparsec                ( ParseError
                                                 , ParseErrorBundle
                                                   ( ParseErrorBundle
                                                   )
-                                                , Parsec
+                                                , ParsecT
                                                 , SourcePos
                                                 , attachSourcePos
                                                 , bundleErrors
@@ -34,31 +34,28 @@ import           Text.Megaparsec                ( ParseError
                                                 , errorOffset
                                                 , getSourcePos
                                                 , parseErrorPretty
-                                                , runParser
+                                                , runParserT
                                                 )
-import          Text.Megaparsec.Error (ParseError(..) , ErrorFancy(..))
-import           Data.Void                      ( Void )
+import           Data.Void                      (Void)
 
 getLocation :: Parser Position
 getLocation = fmap toLocation getSourcePos
 
-type MyError = GQLError
-type Parser = Parsec MyError Text
+type MyError = Void
+type Parser = ParsecT MyError Text Validation
 type ErrorBundle = ParseErrorBundle Text MyError
 
 processParser :: Parser a -> Text -> Validation a
-processParser parser txt = case runParser parser [] txt of
+processParser parser txt = case runParserT parser [] txt of
+  Success { result } -> case result of
     Right root       -> pure root
-    Left  parseError -> failure (processErrorBundle parseError)
+    Left  parseError -> failure (processErrorBundle parseError) 
+  Failure { errors } -> failure errors
 
 processErrorBundle :: ErrorBundle -> GQLErrors
 processErrorBundle = concatMap parseErrorToGQLError . bundleToErrors
  where
-  parseErrorToGQLError :: (ParseError Text GQLError, SourcePos) -> GQLErrors
-  parseErrorToGQLError (FancyError _ ls,position) = map mapError (toList ls)
-    where 
-        mapError (ErrorCustom e) = e
-        mapError (ErrorFail x) = GQLError { message   = pack x, locations = [toLocation position]}
+  parseErrorToGQLError :: (ParseError Text MyError, SourcePos) -> GQLErrors
   parseErrorToGQLError (err, position) = 
     [ GQLError
       { message   = pack (parseErrorPretty err)
