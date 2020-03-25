@@ -94,7 +94,7 @@ unpackEvents _                  = []
 --
 data Result events error (concurency :: Bool) a 
   = Success { result :: a , warnings :: [error] , events:: [events] }
-  | Failure [error] deriving (Functor)
+  | Failure { errors :: [error] } deriving (Functor)
 
 instance Applicative (Result e cocnurency  error) where
   pure x = Success x [] []
