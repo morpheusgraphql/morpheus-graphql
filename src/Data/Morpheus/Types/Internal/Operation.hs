@@ -14,6 +14,8 @@ module Data.Morpheus.Types.Internal.Operation
     )
     where 
 
+import qualified Data.Set                            as S
+                                                        (fromList)
 import           Data.Text                              ( Text )
 import           Instances.TH.Lift                      ( )
 import           Data.HashMap.Lazy                      ( HashMap )
@@ -24,6 +26,8 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         )
 import           Text.Megaparsec.Internal  (ParsecT)
 import           Text.Megaparsec.Stream    (Stream)
+import           Text.Megaparsec                        (fancyFailure)
+import           Text.Megaparsec.Error                  (ErrorFancy(..))
 
 class Empty a where 
   empty :: a
@@ -52,7 +56,7 @@ class FieldMap fields field where
   fromFields :: (Monad m, Failure GQLErrors m) => [field] ->  m fields
 
 class Join a where 
-  join :: Monad m => a -> a -> m a
+  join :: (Monad m, Failure GQLErrors m) => a -> a -> m a
 
 class Applicative f => Failure error (f :: * -> *) where
   failure :: error -> f v
@@ -60,4 +64,5 @@ class Applicative f => Failure error (f :: * -> *) where
 instance Failure error (Either error) where
   failure = Left
 
-instance (Stream b) => Failure GQLErrors (ParsecT a b c) where
+instance (Stream b, Ord a) => Failure [a] (ParsecT a b c) where
+  failure = fancyFailure . S.fromList . map ErrorCustom
