@@ -57,9 +57,9 @@ processErrorBundle = map parseErrorToGQLError . bundleToErrors
  where
   parseErrorToGQLError :: (ParseError Text MyError, SourcePos) -> GQLError
   parseErrorToGQLError (err, position) = GQLError
-      { message   = pack (parseErrorPretty err)
-        , locations = [toLocation position]
-      }
+    { message   = pack (parseErrorPretty err)
+      , locations = [toLocation position]
+    }
   bundleToErrors
     :: ErrorBundle -> [(ParseError Text MyError, SourcePos)]
   bundleToErrors ParseErrorBundle { bundleErrors, bundlePosState } =
