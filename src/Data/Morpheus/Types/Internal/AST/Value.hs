@@ -65,8 +65,14 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Stage
                                                 , RESOLVED
                                                 , TypeRef
+                                                , Named
                                                 )
-
+import          Data.Morpheus.Types.Internal.AST.OrderedMap
+                                                (OrderedMap(..))
+import          Data.Morpheus.Types.Internal.Operation
+                                                (Empty(..)
+                                                , Listable(..)
+                                                )
 
 isReserved :: Name -> Bool
 isReserved "case"     = True
@@ -157,7 +163,7 @@ data Value (valid :: Stage) where
   Null ::Value a
 
 
-type Object a = Collection (Value a)
+type Object a = OrderedMap (Value a)
 type ValidObject = Object VALID
 type RawObject = Object RAW
 type ResolvedObject = Object RESOLVED
@@ -174,7 +180,7 @@ instance Show (Value a) where
   show (ResolvedVariable Ref { refName } Variable { variableValue }) =
     "($" <> unpack refName <> ": " <> show variableValue <> ") "
   show (VariableValue Ref { refName }) = "$" <> unpack refName <> " "
-  show (Object        keys           ) = "{" <> foldl toEntry "" keys <> "}"
+--  show (Object        keys           ) = "{" <> foldl toEntry "" keys <> "}"
    where
     toEntry :: String -> (Name, Value a) -> String
     toEntry ""  (key, value) = unpack key <> ":" <> show value
@@ -194,7 +200,7 @@ instance A.ToJSON (Value a) where
   toJSON (Enum   x     ) = A.String x
   toJSON (Scalar x     ) = A.toJSON x
   toJSON (List   x     ) = A.toJSON x
-  toJSON (Object fields) = A.object $ map toEntry fields
+  toJSON (Object fields) = A.object $ map toEntry (toAssoc fields :: [Named (Value a)])
     where toEntry (name, value) = name A..= A.toJSON value
   -------------------------------------------
   toEncoding (ResolvedVariable _ Variable { variableValue = ValidVariableValue x })
@@ -205,8 +211,9 @@ instance A.ToJSON (Value a) where
   toEncoding (Enum   x ) = A.toEncoding x
   toEncoding (Scalar x ) = A.toEncoding x
   toEncoding (List   x ) = A.toEncoding x
-  toEncoding (Object []) = A.toEncoding $ A.object []
-  toEncoding (Object x ) = A.pairs $ foldl1 (<>) $ map encodeField x
+  toEncoding (Object ordmap) 
+      | null ordmap = A.toEncoding $ A.object []
+      | otherwise   = A.pairs $ foldl1 (<>) $ map encodeField (toAssoc ordmap :: [Named (Value a)])
     where encodeField (key, value) = convertToJSONName key A..= value
 
 decodeScientific :: Scientific -> ScalarValue
@@ -244,4 +251,4 @@ instance GQLValue (Value a) where
   gqlBoolean = Scalar . Boolean
   gqlString  = Scalar . String
   gqlList    = List
-  gqlObject  = Object
+  --gqlObject  = Object

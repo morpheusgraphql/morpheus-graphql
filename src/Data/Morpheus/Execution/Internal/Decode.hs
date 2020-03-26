@@ -71,12 +71,13 @@ withEnum decode (Enum value) = decode value
 withEnum _      isType       = internalTypeMismatch "Enum" isType
 
 withUnion :: (Key -> ValidObject -> ValidObject -> Validation a) -> ValidObject -> Validation a
-withUnion decoder unions = case lookup "__typename" unions of
-  Just (Enum key) -> case lookup key unions of
-    Nothing -> withObject (decoder key unions) (Object [])
-    Just value -> withObject (decoder key unions) value
-  Just _  -> failure ("__typename must be Enum" :: Message)
-  Nothing -> failure ("__typename not found on Input Union" :: Message)
+withUnion decoder unions = do 
+  enum <- selectcBy ("__typename not found on Input Union" :: Message) "__typename" unions
+  case enum of 
+    Just (Enum key) -> case lookup key unions of
+      Nothing -> withObject (decoder key unions) (Object [])
+      Just value -> withObject (decoder key unions) value
+    Just _  -> failure ("__typename must be Enum" :: Message)
 
 decodeFieldWith :: (ValidValue -> Validation a) -> Key -> ValidObject -> Validation a
 decodeFieldWith decoder name object = case lookup name object of

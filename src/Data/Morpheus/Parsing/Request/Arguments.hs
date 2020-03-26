@@ -34,11 +34,13 @@ import           Data.Morpheus.Types.Internal.AST
 -- Argument[Const]
 --  Name : Value[Const]
 valueArgument :: Parser RawArgument
-valueArgument = label "Argument" $ do
-  argumentPosition <- getLocation
-  argumentValue    <- parseRawValue
-  pure $ Argument { argumentValue, argumentPosition }
+valueArgument = 
+  label "Argument" $ do
+    argumentPosition <- getLocation
+    (argumentName, argumentValue )<- parseAssignment token parseRawValue
+    pure $ Argument { argumentName, argumentValue, argumentPosition }
 
 maybeArguments :: Parser RawArguments
-maybeArguments =
-  label "Arguments" $ parseMaybeTuple (parseAssignment token valueArgument)
+maybeArguments = 
+  label "Arguments" 
+    $ parseMaybeTuple valueArgument

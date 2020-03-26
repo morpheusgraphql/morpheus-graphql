@@ -12,6 +12,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   -------------
   , collection
   , setOf
+  , setOfAssoc
   , uniqTuple
   , parseTypeCondition
   , spreadLiteral
@@ -29,6 +30,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , keyword
   , operator
   , optDescription
+  , optionalList
   , parseNegativeSign
   )
 where
@@ -200,14 +202,20 @@ collection entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
 setOf :: (Listable c a , KeyOf a) => Parser a -> Parser c
 setOf = collection >=> fromList
 
+setOfAssoc :: (Listable c a ) => Parser (Name, a) -> Parser c
+setOfAssoc = collection >=> fromAssoc
+
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []
   spaceAndComments
   return wrapper
 
-parseMaybeTuple :: Parser a -> Parser [a]
-parseMaybeTuple parser = parseTuple parser <|> pure []
+optionalList :: Parser [a] -> Parser [a] 
+optionalList x = x <|> pure []
+
+parseMaybeTuple :: (Listable c a , KeyOf a) => Parser a -> Parser c
+parseMaybeTuple = optionalList . parseTuple >=> fromList
 
 parseTuple :: Parser a -> Parser [a]
 parseTuple parser = label "Tuple" $ between

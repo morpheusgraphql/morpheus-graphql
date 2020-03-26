@@ -62,7 +62,7 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 -- GENERIC
 decodeArguments :: DecodeType a => ValidArguments -> Validation a
-decodeArguments = decodeType . Object . map toObject
+decodeArguments = decodeType . Object . fmap toObject
  where
   toObject :: (Name, ValidArgument) -> (Name, ValidValue)
   toObject (x, Argument { argumentValue }) = (x, argumentValue)

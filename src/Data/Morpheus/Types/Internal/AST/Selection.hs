@@ -74,30 +74,38 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 , Variable(..)
                                                 , ResolvedValue
                                                 )
+import          Data.Morpheus.Types.Internal.AST.OrderedMap
+                                                ( OrderedMap )
+import          Data.Morpheus.Types.Internal.Operation 
+                                                ( KeyOf(..) )
 
 
 data Fragment = Fragment
   { fragmentType      :: Key
   , fragmentPosition  :: Position
   , fragmentSelection :: RawSelectionSet
-  } deriving (Show,Lift)
+  } deriving ( Show, Lift )
 
-type FragmentLib = [(Key, Fragment)]
+type FragmentLib = Collection Fragment
 
-data Argument (valid :: Stage) = Argument {
-    argumentValue    :: Value valid
+data Argument (valid :: Stage) = Argument 
+  { argumentName     :: Name
+  , argumentValue    :: Value valid
   , argumentPosition :: Position
-  } deriving (Show,Lift)
+  } deriving ( Show, Lift )
+
+instance KeyOf (Argument stage) where
+  keyOf = argumentName 
 
 type RawArgument = Argument RAW
 
 type ValidArgument = Argument VALID
 
-type Arguments a = Collection (Argument a)
+type Arguments a = OrderedMap (Argument a)
 
 type RawArguments = Arguments RAW
 
-type ValidArguments = Collection ValidArgument
+type ValidArguments = Arguments VALID
 
 data SelectionContent (valid :: Stage) where
   SelectionField ::SelectionContent valid

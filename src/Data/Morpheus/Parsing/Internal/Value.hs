@@ -32,7 +32,7 @@ import           Data.Morpheus.Parsing.Internal.Internal
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( litEquals
                                                 , parseAssignment
-                                                , collection
+                                                , setOfAssoc
                                                 , spaceAndComments
                                                 , token
                                                 , parseNegativeSign
@@ -44,9 +44,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawValue
                                                 , ValidValue
                                                 , decodeScientific
-                                                , Name
                                                 , Value(..)
                                                 , ResolvedValue
+                                                , OrderedMap
                                                 )
 
 valueNull :: Parser (Value a)
@@ -94,9 +94,8 @@ listValue parser = label "listValue" $ between
   (char ']' *> spaceAndComments)
   (parser `sepBy` (many (char ',') *> spaceAndComments))
 
-objectValue :: Show a => Parser a -> Parser [(Name, a)]
-objectValue parser = label "objectValue" $ collection entry
-  where entry = parseAssignment token parser
+objectValue :: Show a => Parser a -> Parser (OrderedMap a)
+objectValue parser = label "objectValue" $ setOfAssoc (parseAssignment token parser)
 
 structValue :: Parser (Value a) -> Parser (Value a)
 structValue parser =

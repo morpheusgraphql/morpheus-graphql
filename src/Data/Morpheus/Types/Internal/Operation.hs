@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FunctionalDependencies     #-}
 
 module Data.Morpheus.Types.Internal.Operation
     ( Empty(..)        
@@ -58,7 +59,9 @@ instance KeyOf (Name,a) where
 toPair :: KeyOf a => a -> (Name,a)
 toPair x = (keyOf x, x)
 
-class Listable c a where
+class Listable c a | c -> a where
+  size :: c -> Int
+  size = length . toList 
   fromAssoc   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
   toAssoc     ::  c  -> [Named a]
   fromList :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] ->  m c
