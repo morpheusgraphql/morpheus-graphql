@@ -411,12 +411,6 @@ instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
   toAssoc = toAssoc . unFieldsDefinition
 
--- instance Listable (OrderedMap FieldDefinition) FieldDefinition where 
---   toFields = map snd . toAssoc
---   fromFields = fromAssoc . map named
---     where
---       named fd = (fieldName fd, fd)
-
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 -- 
