@@ -53,15 +53,13 @@ processParser parser txt = case runParserT parser [] txt of
   Failure { errors } -> failure errors
 
 processErrorBundle :: ErrorBundle -> GQLErrors
-processErrorBundle = concatMap parseErrorToGQLError . bundleToErrors
+processErrorBundle = map parseErrorToGQLError . bundleToErrors
  where
-  parseErrorToGQLError :: (ParseError Text MyError, SourcePos) -> GQLErrors
-  parseErrorToGQLError (err, position) = 
-    [ GQLError
+  parseErrorToGQLError :: (ParseError Text MyError, SourcePos) -> GQLError
+  parseErrorToGQLError (err, position) = GQLError
       { message   = pack (parseErrorPretty err)
         , locations = [toLocation position]
       }
-    ]
   bundleToErrors
     :: ErrorBundle -> [(ParseError Text MyError, SourcePos)]
   bundleToErrors ParseErrorBundle { bundleErrors, bundlePosState } =
