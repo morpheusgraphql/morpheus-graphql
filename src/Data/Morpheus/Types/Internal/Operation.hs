@@ -48,15 +48,19 @@ class Singleton c a where
 class KeyOf a where 
   keyOf :: a -> Name
 
+instance KeyOf (Name,a) where
+  keyOf = fst
+
+toTuple :: KeyOf a => a -> (Name,a)
+toTuple x = (keyOf x, x)
+
 class Listable c a where
   fromAssoc   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
   toAssoc     ::  c  -> [Named a]
   fromFields :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] ->  m c
-  fromFields = fromAssoc . map toTuple
-    where
-      toTuple x = (keyOf x, x)
-  toFields :: c -> [a] 
   toFields = map snd . toAssoc 
+  fromFields = fromAssoc . map toTuple      
+  toFields :: c -> [a] 
 
 class Join a where 
   join :: (Monad m, Failure GQLErrors m) => a -> a -> m a
