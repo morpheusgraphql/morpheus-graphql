@@ -1,6 +1,7 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE NamedFieldPuns       #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 
 module Data.Morpheus.Execution.Internal.Decode
   ( withObject
@@ -35,8 +36,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Message
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation, Failure(..) )
-
+                                                ( Validation 
+                                                , Failure(..) 
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( selectBy
+                                                , selectOr
+                                                , empty
+                                                )
 
 decodeObjectExpQ :: ExpQ -> ConsD -> ExpQ
 decodeObjectExpQ fieldDecoder ConsD { cName, cFields } = handleFields cFields
@@ -72,14 +79,13 @@ withEnum _      isType       = internalTypeMismatch "Enum" isType
 
 withUnion :: (Key -> ValidObject -> ValidObject -> Validation a) -> ValidObject -> Validation a
 withUnion decoder unions = do 
-  enum <- selectcBy ("__typename not found on Input Union" :: Message) "__typename" unions
+  (enum :: ValidValue) <- selectBy ("__typename not found on Input Union" :: Message) "__typename" unions
   case enum of 
-    Just (Enum key) -> case lookup key unions of
-      Nothing -> withObject (decoder key unions) (Object [])
-      Just value -> withObject (decoder key unions) value
-    Just _  -> failure ("__typename must be Enum" :: Message)
+    (Enum key) -> selectOr notfound onFound key unions
+      where 
+        notfound = withObject (decoder key unions) (Object empty)
+        onFound = withObject (decoder key unions)
+    _  -> failure ("__typename must be Enum" :: Message)
 
 decodeFieldWith :: (ValidValue -> Validation a) -> Key -> ValidObject -> Validation a
-decodeFieldWith decoder name object = case lookup name object of
-  Nothing    -> decoder Null
-  Just value -> decoder value
+decodeFieldWith decoder = selectOr (decoder Null) decoder

@@ -68,6 +68,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , TypeDefinition(..)
                                                 , TypeContent(..)
                                                 , FieldsDefinition
+                                                , Argument(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value
@@ -87,12 +88,6 @@ data Fragment = Fragment
   } deriving ( Show, Lift )
 
 type FragmentLib = Collection Fragment
-
-data Argument (valid :: Stage) = Argument 
-  { argumentName     :: Name
-  , argumentValue    :: Value valid
-  , argumentPosition :: Position
-  } deriving ( Show, Lift )
 
 instance KeyOf (Argument stage) where
   keyOf = argumentName 

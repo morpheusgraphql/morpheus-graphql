@@ -1,7 +1,8 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Data.Morpheus.Parsing.Request.Arguments
-  ( maybeArguments
+module Data.Morpheus.Parsing.Internal.Arguments
+  ( maybeArguments, 
+    parseArgumentsOpt
   )
 where
 
@@ -14,15 +15,19 @@ import           Data.Morpheus.Parsing.Internal.Internal
                                                 )
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( parseAssignment
-                                                , parseMaybeTuple
+                                                , uniqTupleOpt
                                                 , token
                                                 )
 import           Data.Morpheus.Parsing.Internal.Value
-                                                ( parseRawValue )
+                                                ( parseRawValue 
+                                                , parseValue
+                                                )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Argument(..)
                                                 , RawArgument
                                                 , RawArguments
+                                                , ValidArgument
+                                                , OrderedMap
                                                 )
 
 
@@ -40,7 +45,19 @@ valueArgument =
     (argumentName, argumentValue )<- parseAssignment token parseRawValue
     pure $ Argument { argumentName, argumentValue, argumentPosition }
 
+parseArgument :: Parser ValidArgument
+parseArgument = 
+  label "Argument" $ do
+    argumentPosition <- getLocation
+    (argumentName, argumentValue )<- parseAssignment token parseValue
+    pure $ Argument { argumentName, argumentValue, argumentPosition }
+
+parseArgumentsOpt :: Parser (OrderedMap ValidArgument)
+parseArgumentsOpt = 
+  label "Arguments" 
+    $ uniqTupleOpt parseArgument
+
 maybeArguments :: Parser RawArguments
 maybeArguments = 
   label "Arguments" 
-    $ parseMaybeTuple valueArgument
+    $ uniqTupleOpt valueArgument

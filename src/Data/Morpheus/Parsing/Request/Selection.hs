@@ -30,7 +30,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , spreadLiteral
                                                 , token
                                                 )
-import           Data.Morpheus.Parsing.Request.Arguments
+import           Data.Morpheus.Parsing.Internal.Arguments
                                                 ( maybeArguments )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)

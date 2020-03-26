@@ -32,6 +32,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
+  , Argument(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -99,6 +100,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , TypeWrapper(..)
                                                 , TypeRef(..)
                                                 , Ref(..)
+                                                , Stage
+                                                , VALID
                                                 , elementOfKeys
                                                 , uniqueElemOr
                                                 , DataTypeKind(..)
@@ -145,13 +148,18 @@ newtype ScalarDefinition = ScalarDefinition
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
 
+data Argument (valid :: Stage) = Argument 
+  { argumentName     :: Name
+  , argumentValue    :: Value valid
+  , argumentPosition :: Position
+  } deriving ( Show, Lift )
+
 -- directive
 ------------------------------------------------------------------
 data Directive = Directive {
   directiveName :: Name,
-  directiveArgs :: [(Name, ValidValue)]
+  directiveArgs :: OrderedMap (Argument VALID)
 } deriving (Show,Lift)
-
 
 lookupDeprecated :: Meta -> Maybe Directive
 lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
@@ -161,13 +169,11 @@ lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
 
 lookupDeprecatedReason :: Directive -> Maybe Key
 lookupDeprecatedReason Directive { directiveArgs } =
-  maybeString . snd <$> find isReason directiveArgs
+  selectOr Nothing (Just . maybeString) "reason" directiveArgs 
  where
-  maybeString :: ValidValue -> Name
-  maybeString (Scalar (String x)) = x
+  maybeString :: Argument VALID -> Name
+  maybeString Argument { argumentValue = (Scalar (String x)) } = x
   maybeString _                   = "can't read deprecated Reason Value"
-  isReason ("reason", _) = True
-  isReason _             = False
 
 -- META
 data Meta = Meta {
