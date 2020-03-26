@@ -32,7 +32,7 @@ import           Data.Morpheus.Parsing.Internal.Internal
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( litEquals
                                                 , parseAssignment
-                                                , setOf
+                                                , collection
                                                 , spaceAndComments
                                                 , token
                                                 , parseNegativeSign
@@ -95,7 +95,7 @@ listValue parser = label "listValue" $ between
   (parser `sepBy` (many (char ',') *> spaceAndComments))
 
 objectValue :: Show a => Parser a -> Parser [(Name, a)]
-objectValue parser = label "objectValue" $ setOf entry
+objectValue parser = label "objectValue" $ collection entry
   where entry = parseAssignment token parser
 
 structValue :: Parser (Value a) -> Parser (Value a)

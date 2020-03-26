@@ -38,8 +38,6 @@ import           Data.Morpheus.Execution.Server.Decode
                                                 ( DecodeType
                                                 , decodeArguments
                                                 )
-import           Data.Morpheus.Execution.Server.Generics.EnumRep
-                                                ( EnumRep(..) )
 import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
                                                 , ResContext(..)
@@ -91,7 +89,7 @@ instance (Monad m , LiftOperation o,Encode a o e m) => Encode (Maybe a) o e m wh
 
 -- LIST []
 instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
-  encode = fmap gqlList . (traverse encode)
+  encode = fmap gqlList . traverse encode
 
 --  Tuple  (a,b)
 instance Encode (Pair k v) o e m => Encode (k, v) o e m where
@@ -108,7 +106,7 @@ instance (Eq k, Monad m,LiftOperation o, Encode (MapKind k v (Resolver o e m)) o
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (DecodeType a,Generic a, Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
- encode resolver = mapStrategy $ (toResolver decodeArguments resolver) `unsafeBind` encode 
+ encode resolver = mapStrategy $ toResolver decodeArguments resolver `unsafeBind` encode 
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (Resolver fo e m b) o e m where
@@ -123,10 +121,10 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
   encodeKind = pure . gqlScalar . serialize . unVContext
 
 -- ENUM
-instance (Generic a, EnumRep (Rep a), Monad m) => EncodeKind ENUM a o e m where
-  encodeKind = pure . gqlString . encodeRep . from . unVContext
+instance (Generic a,GQLType a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
+  encodeKind (VContext value) = runDataResolver (__typeName (Proxy @a)) (exploreResolvers (Proxy @(CUSTOM a)) value)
 
-instance (Monad m,Generic a, GQLType a,ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
+instance (Monad m,Generic a, GQLType a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
   encodeKind (VContext value) = runDataResolver (__typeName (Proxy @a)) (exploreResolvers (Proxy @(CUSTOM a)) value)
 
 convertNode

@@ -44,48 +44,49 @@ import           Data.Morpheus.Types.Internal.TH
                                                 )
 import           Data.Typeable                  ( Typeable )
 
-genTypeName :: Key -> Key
-genTypeName = pack . __genTypeName . unpack
- where
-  __genTypeName ('S' : name) | isSchemaTypeName (pack name) = name
-  __genTypeName name = name
-
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
  where
   functions = map
     instanceProxyFunD
-    [('__typeName, [|genTypeName tName|]), ('description, descriptionValue)]
+    [('__typeName, [|toHSTypename tName|]), ('description, descriptionValue)]
    where
     descriptionValue = case tMeta >>= metaDescription of
       Nothing   -> [| Nothing   |]
       Just desc -> [| Just desc |]
-  -------------------------------------------------
+  --------------------------------
   typeArgs   = tyConArgs typeKindD
-  ----------------------------------------------
+  --------------------------------
   iHead      = instanceHeadT ''GQLType tName typeArgs
   headSig    = typeT (mkName $ unpack tName) typeArgs
-  -----------------------------------------------
+  ---------------------------------------------------
   constrains = map conTypeable typeArgs
-    where conTypeable name = typeT ''Typeable [name]
-  -----------------------------------------------
-  typeFamilies | isObject typeKindD = [deriveCUSTOM, deriveKind]
-               | otherwise          = [deriveKind]
+   where conTypeable name = typeT ''Typeable [name]
+  -------------------------------------------------
+  typeFamilies | isObject typeKindD = [deriveKIND, deriveCUSTOM]
+               | otherwise          = [deriveKIND]
    where
-    deriveCUSTOM = do
+    deriveCUSTOM = deriveInstance ''CUSTOM ''TRUE
+    deriveKIND = deriveInstance ''KIND (kindName typeKindD)
+    -------------------------------------------------------
+    deriveInstance :: Name -> Name -> Q Dec
+    deriveInstance insName tyName = do
       typeN <- headSig
-      pure $ typeInstanceDec ''CUSTOM typeN (ConT ''TRUE)
-    ---------------------------------------------------------------
-    deriveKind = do
-      typeN <- headSig
-      pure $ typeInstanceDec ''KIND typeN (ConT $ toKIND typeKindD)
-    ---------------------------------
-    toKIND KindScalar      = ''SCALAR
-    toKIND KindEnum        = ''ENUM
-    toKIND (KindObject _)  = ''OUTPUT
-    toKIND KindUnion       = ''OUTPUT
-    toKIND KindInputObject = ''INPUT
-    toKIND KindList        = ''WRAPPER
-    toKIND KindNonNull     = ''WRAPPER
-    toKIND KindInputUnion  = ''INPUT
+      pure $ typeInstanceDec insName typeN (ConT tyName)
+
+kindName :: DataTypeKind -> Name
+kindName KindObject {}   = ''OUTPUT
+kindName KindScalar      = ''SCALAR
+kindName KindEnum        = ''ENUM
+kindName KindUnion       = ''OUTPUT
+kindName KindInputObject = ''INPUT
+kindName KindList        = ''WRAPPER
+kindName KindNonNull     = ''WRAPPER
+kindName KindInputUnion  = ''INPUT
+
+toHSTypename :: Key -> Key
+toHSTypename = pack . hsTypename . unpack
+ where
+  hsTypename ('S' : name) | isSchemaTypeName (pack name) = name
+  hsTypename name = name

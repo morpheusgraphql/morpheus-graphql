@@ -42,8 +42,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , Listable(..)
-                                                , Selectable(..)
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
@@ -52,7 +50,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , getOperationDataType
                                                 , lookupDeprecated
                                                 , lookupDeprecatedReason
+                                                , typeFromScalar
                                                 , removeDuplicates
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
@@ -158,11 +161,12 @@ operationTypes lib variables = genOperation
                                                         fName
           (subTypes, requests) <- subTypesBySelection fieldDataType sel
           pure
-            ( FieldDefinition { fieldName
-                        , fieldArgs     = NoArguments
-                        , fieldType
-                        , fieldMeta     = Nothing
-                        }
+            ( FieldDefinition 
+                { fieldName
+                , fieldType
+                , fieldArgs  = NoArguments
+                , fieldMeta  = Nothing
+                }
             , subTypes
             , requests
             )
@@ -295,14 +299,6 @@ leafType TypeDefinition { typeName, typeContent } = fromKind typeContent
 
 getType :: Schema -> Text -> Validation TypeDefinition
 getType lib typename = selectBy (compileError typename) typename lib 
-
-typeFromScalar :: Name -> Name
-typeFromScalar "Boolean" = "Bool"
-typeFromScalar "Int"     = "Int"
-typeFromScalar "Float"   = "Float"
-typeFromScalar "String"  = "Text"
-typeFromScalar "ID"      = "ID"
-typeFromScalar _         = "ScalarValue"
 
 typeFrom :: [Name] -> TypeDefinition -> Name
 typeFrom path TypeDefinition { typeName, typeContent } = __typeFrom typeContent

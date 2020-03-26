@@ -80,7 +80,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeRef(..)
                                                 , Message
-                                                , Listable(..)
+                                                , unsafeFromFieldList
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Empty(..)
+                                                , Singleton(..)
                                                 )
 
 type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
@@ -137,7 +141,7 @@ instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m
   field _ name = fieldObj { fieldArgs }
    where
     fieldObj  = field (Proxy @b) name
-    fieldArgs = ArgumentsDefinition Nothing $ toList $ fst  $ introspectObjectFields
+    fieldArgs = ArgumentsDefinition Nothing $ unFieldsDefinition $ fst  $ introspectObjectFields
       (Proxy :: Proxy 'False)
       (__typeName (Proxy @b), OutputType, Proxy @a)
   introspect _ typeLib = resolveUpdates typeLib
@@ -203,8 +207,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
  where
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
   withObject (DataInputObject x, ts) = (x, ts)
-  withObject _ =
-    ( fromList ([] :: [FieldDefinition]) , [introspectFailure (name <> " should have only one nonempty constructor")])
+  withObject _ = (empty, [introspectFailure (name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
@@ -365,7 +368,7 @@ buildObject isOutput consFields = (wrapWith fields, types)
 buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  fields = fromList $ map fieldData consFields
+  fields = unsafeFromFieldList $ map fieldData consFields
   types  = map fieldTypeUpdater consFields
 
 buildUnions
@@ -385,7 +388,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = T
     { typeName        = consName
     , typeFingerprint
     , typeMeta        = Nothing
-    , typeContent     = wrapObject $ fromList $ map fieldData consFields
+    , typeContent     = wrapObject $ unsafeFromFieldList $ map fieldData consFields
     }
 
 buildUnionEnum
@@ -433,14 +436,13 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject $ fromList 
-          [ FieldDefinition 
+      , typeContent     = wrapObject $ singleton "enum"
+          FieldDefinition 
             { fieldName  = "enum"
             , fieldArgs  = NoArguments
             , fieldType  = createAlias enumTypeName
             , fieldMeta  = Nothing
             }
-          ]
       }
 
 data TypeScope = InputType | OutputType deriving (Show,Eq,Ord)

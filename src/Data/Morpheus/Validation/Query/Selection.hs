@@ -40,13 +40,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , TypeRef(..)
                                                 , Name
-                                                , Selectable(..)
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField
                                                 , lookupUnionTypes
                                                 , checkNameCollision
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( selectBy )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)

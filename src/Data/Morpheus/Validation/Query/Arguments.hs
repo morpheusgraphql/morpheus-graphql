@@ -39,12 +39,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ResolvedValue
                                                 , RESOLVED
                                                 , VALID
-                                                , Listable(..)
-                                                , Selectable(..)
                                                 , isFieldNullable
                                                 , lookupInputType
                                                 , checkForUnknownKeys
                                                 , checkNameCollision
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation

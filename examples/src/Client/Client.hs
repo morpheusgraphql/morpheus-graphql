@@ -23,7 +23,6 @@ import           Data.Morpheus.Client           ( Fetch(..)
 import           Data.Morpheus.Types            ( ScalarValue(..) )
 import           Data.Text                      ( Text )
 
-
 defineByDocumentFile
   "src/Server/Sophisticated/api.gql"
   [gql|
@@ -106,7 +105,7 @@ fetchHero = fetch
         { getHeroArgsGod    = Just Realm { realmOwner      = "Zeus"
                                          , realmAge        = Just 10
                                          , realmRealm      = Nothing
-                                         , realmProfession = Just Artist
+                                         , realmProfession = Just ProfessionArtist
                                          }
         , getHeroArgsSomeID = "Hercules"
         }

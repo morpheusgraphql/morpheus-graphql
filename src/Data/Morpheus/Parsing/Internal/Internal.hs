@@ -1,10 +1,10 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns             #-}
 
 module Data.Morpheus.Parsing.Internal.Internal
   ( Parser
   , Position
-  , processErrorBundle
   , getLocation
+  , processParser
   )
 where
 
@@ -15,16 +15,18 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLError(..)
                                                 , GQLErrors
+                                                , Validation
+                                                , failure
+                                                , Result(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
-import           Data.Void                      ( Void )
 import           Text.Megaparsec                ( ParseError
                                                 , ParseErrorBundle
                                                   ( ParseErrorBundle
                                                   )
-                                                , Parsec
+                                                , ParsecT
                                                 , SourcePos
                                                 , attachSourcePos
                                                 , bundleErrors
@@ -32,24 +34,34 @@ import           Text.Megaparsec                ( ParseError
                                                 , errorOffset
                                                 , getSourcePos
                                                 , parseErrorPretty
+                                                , runParserT
                                                 )
-
+import           Data.Void                      (Void)
 
 getLocation :: Parser Position
 getLocation = fmap toLocation getSourcePos
 
-type Parser = Parsec Void Text
+type MyError = Void
+type Parser = ParsecT MyError Text Validation
+type ErrorBundle = ParseErrorBundle Text MyError
 
-processErrorBundle :: ParseErrorBundle Text Void -> GQLErrors
-processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
+processParser :: Parser a -> Text -> Validation a
+processParser parser txt = case runParserT parser [] txt of
+  Success { result } -> case result of
+    Right root       -> pure root
+    Left  parseError -> failure (processErrorBundle parseError) 
+  Failure { errors } -> failure errors
+
+processErrorBundle :: ErrorBundle -> GQLErrors
+processErrorBundle = map parseErrorToGQLError . bundleToErrors
  where
-  parseErrorToGQLError :: (ParseError Text Void, SourcePos) -> GQLError
+  parseErrorToGQLError :: (ParseError Text MyError, SourcePos) -> GQLError
   parseErrorToGQLError (err, position) = GQLError
     { message   = pack (parseErrorPretty err)
-    , locations = [toLocation position]
+      , locations = [toLocation position]
     }
   bundleToErrors
-    :: ParseErrorBundle Text Void -> [(ParseError Text Void, SourcePos)]
+    :: ErrorBundle -> [(ParseError Text MyError, SourcePos)]
   bundleToErrors ParseErrorBundle { bundleErrors, bundlePosState } =
     NonEmpty.toList $ fst $ attachSourcePos errorOffset
                                             bundleErrors

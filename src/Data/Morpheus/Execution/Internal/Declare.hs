@@ -10,11 +10,14 @@
 
 module Data.Morpheus.Execution.Internal.Declare
   ( declareType
+  , isEnum
   , tyConArgs
+  , Scope(..)
   )
 where
 
 import           Data.Maybe                     ( maybe )
+import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( unpack )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH
@@ -67,10 +70,13 @@ tyConArgs :: DataTypeKind -> [Key]
 tyConArgs kindD | isOutputObject kindD || kindD == KindUnion = [m_]
                 | otherwise = []
 
+data Scope = CLIENT | SERVER
+  deriving Eq
+
 -- declareType
-declareType :: Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
-declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
-  DataD [] (genName tName) tVars Nothing (map cons tCons)
+declareType :: Scope -> Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
+declareType scope namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
+  DataD [] (genName tName) tVars Nothing cons
     $ map derive (''Generic : derivingList)
  where
   genName = mkName . unpack . nameSpaceType tNamespace
@@ -78,8 +84,13 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
     where declareTyVar = map (PlainTV . mkName . unpack)
   defBang = Bang NoSourceUnpackedness NoSourceStrictness
   derive className = DerivClause Nothing [ConT className]
-  cons ConsD { cName, cFields } = RecC (genName cName)
-                                       (map declareField cFields)
+  cons
+    | scope == CLIENT && isEnum tCons = map consE tCons
+    | otherwise                       = map consR tCons
+  consE ConsD { cName }          = NormalC (genName $ tName <> cName) []
+  consR ConsD { cName, cFields } = RecC (genName cName)
+                                        (map declareField cFields)
+
    where
     declareField FieldDefinition { fieldName, fieldArgs, fieldType } =
       (fName, defBang, fiType)
@@ -101,3 +112,6 @@ declareType namespace kindD derivingList TypeD { tName, tCons, tNamespace } =
           | otherwise                             = result
         ------------------------------------------------
         result = declareTypeRef (maybe False isSubscription kindD) fieldType
+
+isEnum :: [ConsD] -> Bool
+isEnum = all (null . cFields)

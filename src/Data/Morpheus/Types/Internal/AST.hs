@@ -34,7 +34,10 @@ module Data.Morpheus.Types.Internal.AST
   , ValidObject
   , ResolvedObject
   , ResolvedValue
+  , Named
   , unpackInputUnion
+  , uniqueElemOr
+  , splitDuplicates
   , removeDuplicates
 
   -- Selection
@@ -98,8 +101,6 @@ module Data.Morpheus.Types.Internal.AST
   , ClientType(..)
   , DataInputUnion
   , VariableContent(..)
-  , Selectable(..)
-  , Listable(..)
   , TypeLib
   , isTypeDefined
   , initTypeLib
@@ -148,10 +149,15 @@ module Data.Morpheus.Types.Internal.AST
   , hasArguments
   , lookupWith
   , selectTypeObject
+  , typeFromScalar
+  -- Temaplate Haskell
+  , toHSFieldDefinition
+  , hsTypeName
   -- LOCAL
   , GQLQuery(..)
   , Variables
   , isNullableWrapper
+  , unsafeFromFieldList
   )
 where
 
