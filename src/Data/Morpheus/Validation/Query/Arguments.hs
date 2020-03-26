@@ -1,6 +1,7 @@
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections    #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE RecordWildCards  #-}
 
 module Data.Morpheus.Validation.Query.Arguments
   ( validateArguments
@@ -22,6 +23,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Variable(..)
                                                 , Argument(..)
+                                                , ArgumentsDefinition(..)
                                                 , RawArgument
                                                 , RawArguments
                                                 , ValidArgument
@@ -47,6 +49,8 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , selectBy
+                                                , selectOr
+                                                , keys
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -65,8 +69,7 @@ resolveObject operationName variables = resolve
   resolve (Scalar x  ) = pure $ Scalar x
   resolve (Enum   x  ) = pure $ Enum x
   resolve (List   x  ) = List <$> traverse resolve x
-  resolve (Object obj) = Object <$> traverse mapSecond obj
-    where mapSecond (fName, y) = (fName, ) <$> resolve y
+  resolve (Object obj) = Object <$> traverse resolve obj
   resolve (VariableValue ref) =
     ResolvedVariable ref <$> variableByRef operationName variables ref
     --  >>= checkTypeEquality ref fieldType
@@ -89,11 +92,11 @@ resolveArgumentVariables
 resolveArgumentVariables operationName variables FieldDefinition { fieldName, fieldArgs }
   = mapM resolveVariable
  where
-  resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument RESOLVED)
-  resolveVariable (key, Argument val position) = do 
+  resolveVariable :: RawArgument -> Validation (Argument RESOLVED)
+  resolveVariable (Argument key val position) = do 
     _ <- checkUnknown
     constValue <- resolveObject operationName variables val
-    pure (key, Argument constValue position)
+    pure $ Argument key constValue position
     where 
       checkUnknown :: Validation FieldDefinition
       checkUnknown = selectBy (unknownArguments fieldName [Ref key position]) key fieldArgs
@@ -103,32 +106,34 @@ validateArgument
   -> Position
   -> Arguments RESOLVED
   -> ArgumentDefinition
-  -> Validation (Name, ValidArgument)
+  -> Validation ValidArgument
 validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
-  = case lookup fieldName requestArgs of
-    Nothing -> handleNullable
+  = selectOr 
+    handleNullable 
+    handleArgument 
+    fieldName 
+    requestArgs 
+ where
     -- TODO: move it in value validation
    -- Just argument@Argument { argumentOrigin = VARIABLE } ->
    --   pure (key, argument) -- Variables are already checked in Variable Validation
-    Just Argument { argumentValue = Null } -> handleNullable
-    Just argument -> validateArgumentValue argument
- where
+  handleArgument Argument { argumentValue = Null } = handleNullable
+  handleArgument argument = validateArgumentValue argument
   handleNullable
     | isFieldNullable argType
-    = pure
-      (fieldName, Argument { argumentValue = Null, argumentPosition = fieldPosition })
+    = pure Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition }
     | otherwise
     = failure $ undefinedArgument (Ref fieldName fieldPosition)
   -------------------------------------------------------------------------
-  validateArgumentValue :: Argument RESOLVED -> Validation (Text, ValidArgument)
-  validateArgumentValue Argument { argumentValue = value, argumentPosition } =
+  validateArgumentValue :: Argument RESOLVED -> Validation ValidArgument
+  validateArgumentValue Argument { argumentValue = value, .. } =
     do
       datatype <- lookupInputType typeConName
                                   lib
                                   (internalUnknownTypeMessage typeConName)
       argumentValue <- handleInputError
         $ validateInputValue lib [] typeWrappers datatype (fieldName, value)
-      pure (fieldName, Argument { argumentValue, argumentPosition })
+      pure Argument { argumentValue , .. }
    where
     ---------
     handleInputError :: InputValidation a -> Validation a
@@ -145,20 +150,23 @@ validateArguments
   -> Position
   -> RawArguments
   -> Validation ValidArguments
-validateArguments typeLib operatorName variables field@FieldDefinition { fieldArgs } pos rawArgs
+validateArguments 
+    typeLib 
+    operatorName 
+    variables 
+    field@FieldDefinition { fieldArgs = ArgumentsDefinition _ fArgs } 
+    pos 
+    rawArgs
   = do
     args     <- resolveArgumentVariables operatorName variables field rawArgs
     checkForUnknownArguments args
-    mapM (validateArgument typeLib pos args) (toList fieldArgs)
+    traverse (validateArgument typeLib pos args) fArgs
  where
   checkForUnknownArguments
     :: Arguments RESOLVED -> Validation ()
-  checkForUnknownArguments args =
-    checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >> pure ()
+  checkForUnknownArguments args = checkForUnknownKeys enhancedKeys (keys fArgs) argError >> pure ()
    where
     argError     = unknownArguments (fieldName field)
-    enhancedKeys = map argToKey args
-    argToKey :: (Name, Argument RESOLVED) -> Ref
-    argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
-    fieldKeys :: [Name]
-    fieldKeys = map fieldName (toList fieldArgs)
+    enhancedKeys = toList $ fmap argToKey args
+    argToKey :: Argument RESOLVED -> Ref
+    argToKey Argument { argumentName, argumentPosition } = Ref argumentName argumentPosition
