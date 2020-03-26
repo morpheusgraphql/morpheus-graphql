@@ -46,12 +46,12 @@ class Singleton c a where
   singleton  :: Name -> a -> c
 
 class Listable c a where
-  fromList   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
-  toList     ::  c  -> [Named a]
+  fromAssoc   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
+  toAssoc     ::  c  -> [Named a]
 
 class FieldMap fields field where
-  toFields :: fields -> [field] 
   fromFields :: (Monad m, Failure GQLErrors m) => [field] ->  m fields
+  toFields :: fields -> [field] 
 
 class Join a where 
   join :: (Monad m, Failure GQLErrors m) => a -> a -> m a

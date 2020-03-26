@@ -407,16 +407,16 @@ instance Singleton  FieldsDefinition FieldDefinition  where
   singleton name = FieldsDefinition . singleton name
 
 instance Listable FieldsDefinition FieldDefinition where
-  fromList ls = FieldsDefinition <$> fromList ls 
-  toList = toList . unFieldsDefinition
+  fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
+  toAssoc = toAssoc . unFieldsDefinition
 
 instance FieldMap FieldsDefinition FieldDefinition where
   fromFields ls = FieldsDefinition <$> fromFields ls 
   toFields = toFields . unFieldsDefinition
 
 instance FieldMap (OrderedMap FieldDefinition) FieldDefinition where 
-  toFields = map snd . toList
-  fromFields = fromList . map named
+  toFields = map snd . toAssoc
+  fromFields = fromAssoc . map named
     where
       named fd = (fieldName fd, fd)
 

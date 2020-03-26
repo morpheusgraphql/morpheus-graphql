@@ -61,8 +61,8 @@ instance Selectable (OrderedMap a) a where
   selectOr fb f key OrderedMap { mapEntries } = maybe fb f (HM.lookup key mapEntries)
 
 instance Listable (OrderedMap a) a where
-  fromList = safeFromList
-  toList OrderedMap {  mapKeys, mapEntries } = map takeValue mapKeys
+  fromAssoc = safeFromList
+  toAssoc OrderedMap {  mapKeys, mapEntries } = map takeValue mapKeys
     where 
       takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries ))
 
