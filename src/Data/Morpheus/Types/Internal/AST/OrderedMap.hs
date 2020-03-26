@@ -14,9 +14,14 @@ module Data.Morpheus.Types.Internal.AST.OrderedMap
     )
 where 
 
+import           Data.HashMap.Lazy                      ( HashMap )
+import qualified Data.HashMap.Lazy                      as HM 
 import           Data.Semigroup                         ((<>))
 import           Data.Maybe                             (isJust,fromMaybe)
 import           Language.Haskell.TH.Syntax             ( Lift(..) )
+
+-- MORPHEUS
+import           Data.Morpheus.Error.Utils              (duplicateKeyError)
 import           Data.Morpheus.Types.Internal.Operation ( Join(..)
                                                         , Empty(..)
                                                         , Singleton(..)
@@ -27,10 +32,8 @@ import           Data.Morpheus.Types.Internal.Operation ( Join(..)
 import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
-                                                        , GQLError(..)
                                                         )
-import           Data.HashMap.Lazy                      ( HashMap )
-import qualified Data.HashMap.Lazy                      as HM 
+
 
 -- OrderedMap 
 data OrderedMap a = OrderedMap { 
@@ -65,10 +68,6 @@ instance Listable (OrderedMap a) a where
   toAssoc OrderedMap {  mapKeys, mapEntries } = map takeValue mapKeys
     where 
       takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries ))
-
--- TODO: move into errors, better formating
-duplicateKeyError :: (Name,a) -> GQLError
-duplicateKeyError (name,_) = GQLError { message = "duplicate key \"" <> name <> "\"", locations = []}
 
 safeFromList :: (Failure GQLErrors m, Applicative m) => [Named a] -> m (OrderedMap a)
 safeFromList values = OrderedMap (map fst values) <$> safeUnionWith HM.empty values 
