@@ -10,6 +10,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   , spaceAndComments1
   , pipeLiteral
   -------------
+  , collection
   , setOf
   , parseTypeCondition
   , spreadLiteral
@@ -31,6 +32,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   )
 where
 
+import           Control.Monad                  ((>=>))
 import           Data.Functor                   ( ($>) )
 import           Data.Text                      ( Text
                                                 , pack
@@ -61,6 +63,10 @@ import           Text.Megaparsec.Char           ( char
                                                 )
 
 -- MORPHEUS
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                , KeyOf
+                                                )
 import           Data.Morpheus.Parsing.Internal.Internal
                                                 ( Parser
                                                 , Position
@@ -187,8 +193,11 @@ sepByAnd :: Parser a -> Parser [a]
 sepByAnd entry = entry `sepBy` (char '&' *> spaceAndComments)
 
 -----------------------------
-setOf :: Parser a -> Parser [a]
-setOf entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
+collection :: Parser a -> Parser [a]
+collection entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
+
+setOf :: (Listable c a , KeyOf a) => Parser a -> Parser c
+setOf = collection >=> fromList
 
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do

@@ -33,7 +33,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , parseName
                                                 , pipeLiteral
                                                 , sepByAnd
-                                                , setOf
+                                                , collection
                                                 , spaceAndComments
                                                 )
 import           Data.Morpheus.Types.Internal.AST
@@ -155,7 +155,7 @@ enumTypeDefinition :: Maybe Description -> Parser TypeDefinition
 enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
   typeName              <- typDeclaration "enum"
   metaDirectives        <- optionalDirectives
-  enumValuesDefinitions <- setOf enumValueDefinition
+  enumValuesDefinitions <- collection enumValueDefinition
   -- build enum
   pure TypeDefinition 
     { typeName
