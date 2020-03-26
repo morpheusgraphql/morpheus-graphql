@@ -96,9 +96,11 @@ operator :: Char -> Parser ()
 operator x = char x *> spaceAndComments
 
 -- LITERALS
-setLiteral :: Parser [a] -> Parser [a]
-setLiteral =
-  between (char '{' *> spaceAndComments) (char '}' *> spaceAndComments)
+braces :: Parser [a] -> Parser [a]
+braces =
+  between 
+    (char '{' *> spaceAndComments) 
+    (char '}' *> spaceAndComments)
 
 pipeLiteral :: Parser ()
 pipeLiteral = char '|' *> spaceAndComments
@@ -186,7 +188,7 @@ sepByAnd entry = entry `sepBy` (char '&' *> spaceAndComments)
 
 -----------------------------
 setOf :: Parser a -> Parser [a]
-setOf entry = setLiteral (entry `sepEndBy` many (char ',' *> spaceAndComments))
+setOf entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
 
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do

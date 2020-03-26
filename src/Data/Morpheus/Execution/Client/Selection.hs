@@ -42,7 +42,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , selectBy
                                                 , ConsD(..)
                                                 , ClientType(..)
                                                 , TypeD(..)
@@ -55,7 +54,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , removeDuplicates
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( Listable(..))
+                                                ( Listable(..)
+                                                , selectBy
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
                                                 , Validation

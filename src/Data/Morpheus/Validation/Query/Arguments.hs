@@ -43,10 +43,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupInputType
                                                 , checkForUnknownKeys
                                                 , checkNameCollision
-                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation

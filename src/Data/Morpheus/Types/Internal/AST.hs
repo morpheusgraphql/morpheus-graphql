@@ -150,7 +150,6 @@ module Data.Morpheus.Types.Internal.AST
   , lookupWith
   , selectTypeObject
   , typeFromScalar
-  , selectBy
   -- Temaplate Haskell
   , toHSFieldDefinition
   , hsTypeName

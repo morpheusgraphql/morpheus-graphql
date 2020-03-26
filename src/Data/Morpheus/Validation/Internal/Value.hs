@@ -41,10 +41,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , unpackInputUnion
                                                 , isFieldNullable
                                                 , isNullableWrapper
-                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
