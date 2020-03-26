@@ -28,7 +28,6 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , parseName
                                                 , parseType
                                                 , setOf
-                                                , parseTuple
                                                 , uniqTuple
                                                 )
 import           Data.Morpheus.Parsing.Internal.Value
@@ -44,8 +43,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Operation
-                                                ( Listable(..))
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
 --
