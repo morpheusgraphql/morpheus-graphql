@@ -40,7 +40,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDeprecatedReason
                                                 , convertToJSONName
                                                 , ArgumentsDefinition(..)
-                                                , Listable(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
@@ -83,7 +85,7 @@ createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
   where deprecated = enumMeta >>= lookupDeprecated
 
 renderArguments :: (Monad m, Failure Text m) => ArgumentsDefinition -> Schema -> m [S__InputValue m] 
-renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) arguments
+renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) $ toList arguments
 renderArguments NoArguments _ = pure []
 
 instance RenderSchema FieldDefinition S__Field where

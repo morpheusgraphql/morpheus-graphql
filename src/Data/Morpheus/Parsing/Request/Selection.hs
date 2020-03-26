@@ -26,7 +26,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , parseAlias
                                                 , parseName
                                                 , parseTypeCondition
-                                                , setOf
+                                                , collection
                                                 , spreadLiteral
                                                 , token
                                                 )
@@ -54,7 +54,7 @@ import           Data.Morpheus.Types.Internal.AST
 --   InlineFragment
 --
 parseSelectionSet :: Parser RawSelectionSet
-parseSelectionSet = label "SelectionSet" $ setOf parseSelection
+parseSelectionSet = label "SelectionSet" $ collection parseSelection
  where
   parseSelection =
     label "Selection"

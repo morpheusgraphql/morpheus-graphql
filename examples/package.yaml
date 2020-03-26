@@ -26,6 +26,8 @@ dependencies:
   - extra
   - http-types
   - stm
+  - servant
+  - servant-server
 
 executables:
   api:

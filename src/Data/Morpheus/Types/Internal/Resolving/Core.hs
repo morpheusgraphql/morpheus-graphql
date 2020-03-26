@@ -1,8 +1,6 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE DeriveAnyClass             #-}
-{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE NamedFieldPuns             #-}
@@ -36,34 +34,23 @@ import           Control.Monad                  ( foldM )
 import           Data.Function                  ( (&) )
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Control.Applicative            ( liftA2 )
-import           Data.Aeson                     ( FromJSON
-                                                , ToJSON
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( 
+                                                  Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( 
                                                   Position(..)
                                                   , Message 
+                                                  , GQLErrors
+                                                  , GQLError(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , pack
                                                 , unpack
                                                 )
-import           GHC.Generics                   ( Generic )
 import           Data.Semigroup                 ( (<>) )
 
-
-class Applicative f => Failure error (f :: * -> *) where
-  failure :: error -> f v
-
-instance Failure error (Either error) where
-  failure = Left
-
-data GQLError = GQLError
-  { message      :: Text
-  , locations :: [Position]
-  } deriving (Show, Generic, FromJSON, ToJSON)
-
-type GQLErrors = [GQLError]
 
 type StatelessResT = ResultT () GQLError 'True
 type Validation = Result () GQLError 'True
@@ -107,7 +94,7 @@ unpackEvents _                  = []
 --
 data Result events error (concurency :: Bool) a 
   = Success { result :: a , warnings :: [error] , events:: [events] }
-  | Failure [error] deriving (Functor)
+  | Failure { errors :: [error] } deriving (Functor)
 
 instance Applicative (Result e cocnurency  error) where
   pure x = Success x [] []

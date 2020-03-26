@@ -1,6 +1,8 @@
 # ghc 8.2.2
 resolver: lts-11.10
 
+allow-newer: true 
+
 extra-deps:
   - bifunctors-5.5.2
   - base-orphans-0.8.1

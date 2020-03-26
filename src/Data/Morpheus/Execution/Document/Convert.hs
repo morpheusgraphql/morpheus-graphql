@@ -3,7 +3,8 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE TemplateHaskell     #-}
+-- {-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE RecordWildCards     #-}
 
 module Data.Morpheus.Execution.Document.Convert
   ( toTHDefinitions
@@ -22,11 +23,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeDefinition(..)
-                                                , DataTypeKind(..)
-                                                , OperationType(..)
                                                 , TypeRef(..)
                                                 , DataEnumValue(..)
-                                                , sysTypes
                                                 , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
@@ -34,9 +32,13 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , ArgumentsDefinition(..)
                                                 , hasArguments
-                                                , Listable(..)
                                                 , lookupWith
+                                                , toHSFieldDefinition
+                                                , hsTypeName
+                                                , kindOf
                                                 )
+import           Data.Morpheus.Types.Internal.Operation 
+                                                (Listable(..))
 
 m_ :: Key
 m_ = "m"
@@ -72,7 +74,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                               | otherwise = argTName
       where argTName = capital fieldName <> "Args"
     ---------------------------------------------------------------------------------------------
-    genResField :: FieldDefinition -> Q (FieldDefinition)
+    genResField :: FieldDefinition -> Q FieldDefinition
     genResField field@FieldDefinition { fieldName, fieldArgs, fieldType = typeRef@TypeRef { typeConName } }
       = do 
         typeArgs <- getTypeArgs typeConName lib 
@@ -86,9 +88,24 @@ toTHDefinitions namespace lib = traverse renderTHType lib
         | otherwise = fieldArgs
     --------------------------------------------
     generateType :: TypeDefinition -> Q GQLTypeD
-    generateType dt@TypeDefinition { typeName, typeContent, typeMeta } = genType
+    generateType typeOriginal@TypeDefinition { typeName, typeContent, typeMeta } = genType
       typeContent
      where
+      buildType :: [ConsD] -> TypeD
+      buildType tCons = TypeD
+            { tName      = hsTypeName typeName
+            , tMeta      = typeMeta
+            , tNamespace = []
+            , tCons 
+            }
+      buildObjectCons :: [FieldDefinition] -> [ConsD]
+      buildObjectCons cFields = 
+          [ ConsD 
+            { cName   = hsTypeName typeName 
+            , cFields
+            } 
+          ]
+      typeKindD = kindOf typeOriginal
       genType :: TypeContent -> Q GQLTypeD
       genType (DataEnum tags) = pure GQLTypeD
         { typeD        = TypeD { tName      = hsTypeName typeName
@@ -96,9 +113,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                                , tCons      = map enumOption tags
                                , tMeta      = typeMeta
                                }
-        , typeKindD    = KindEnum
         , typeArgD     = []
-        , typeOriginal = dt
+        , ..
         }
        where
         enumOption DataEnumValue { enumName } =
@@ -107,50 +123,23 @@ toTHDefinitions namespace lib = traverse renderTHType lib
       genType DataInputUnion {} = fail "Input Unions not Supported"
       genType DataInterface {} = fail "interfaces must be eliminated in Validation"
       genType (DataInputObject fields) = pure GQLTypeD
-        { typeD        =
-          TypeD
-            { tName      = hsTypeName typeName
-            , tNamespace = []
-            , tCons      = [ ConsD { cName   = hsTypeName typeName
-                                   , cFields = genInputFields fields
-                                   }
-                           ]
-            , tMeta      = typeMeta
-            }
-        , typeKindD    = KindInputObject
-        , typeArgD     = []
-        , typeOriginal = dt
+        { typeD       = buildType $ buildObjectCons $ genInputFields fields
+        , typeArgD    = []
+        , ..
         }
       genType DataObject {objectFields} = do
         typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList objectFields)
-        cFields  <- traverse genResField (toList objectFields)
+        objCons  <- buildObjectCons <$> traverse genResField (toList objectFields)
         pure GQLTypeD
-          { typeD        = TypeD
-                             { tName      = hsTypeName typeName
-                             , tNamespace = []
-                             , tCons = [ ConsD { cName = hsTypeName typeName
-                                               , cFields 
-                                               }
-                                       ]
-                             , tMeta      = typeMeta
-                             }
-          , typeKindD    = if typeName == "Subscription"
-                             then KindObject (Just Subscription)
-                             else KindObject Nothing
+          { typeD    = buildType objCons
           , typeArgD
-          , typeOriginal = dt
+          , ..
           }
-      genType (DataUnion members) = do
-        let tCons = map unionCon members
+      genType (DataUnion members) = 
         pure GQLTypeD
-          { typeD        = TypeD { tName      = typeName
-                                 , tNamespace = []
-                                 , tCons
-                                 , tMeta      = typeMeta
-                                 }
-          , typeKindD    = KindUnion
+          { typeD        = buildType (map unionCon members)
           , typeArgD     = []
-          , typeOriginal = dt
+          , ..
           }
        where
         unionCon memberName = ConsD
@@ -171,13 +160,6 @@ toTHDefinitions namespace lib = traverse renderTHType lib
           utName = hsTypeName memberName
 
 
-
-hsTypeName :: Key -> Key
-hsTypeName "String"                    = "Text"
-hsTypeName "Boolean"                   = "Bool"
-hsTypeName name | name `elem` sysTypes = "S" <> name
-hsTypeName name                        = name
-
 genArgumentType :: (Key -> Key) -> FieldDefinition -> Q [TypeD]
 genArgumentType _ FieldDefinition { fieldArgs = NoArguments } = pure []
 genArgumentType namespaceWith FieldDefinition { fieldName, fieldArgs  } = pure
@@ -194,11 +176,7 @@ genArgumentType namespaceWith FieldDefinition { fieldName, fieldArgs  } = pure
   where tName = namespaceWith (hsTypeName fieldName)
 
 genArguments :: ArgumentsDefinition -> [FieldDefinition]
-genArguments x = genInputFields $ fromList (arguments x)
+genArguments = genInputFields . FieldsDefinition . arguments
 
 genInputFields :: FieldsDefinition -> [FieldDefinition]
-genInputFields = map genField . toList
-
-genField :: FieldDefinition -> FieldDefinition
-genField field@FieldDefinition { fieldType = tyRef@TypeRef { typeConName } } = field 
-  { fieldType = tyRef { typeConName = hsTypeName typeConName } }
+genInputFields = map toHSFieldDefinition . toList

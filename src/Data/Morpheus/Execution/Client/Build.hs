@@ -28,7 +28,9 @@ import           Data.Morpheus.Execution.Client.Compile
 import           Data.Morpheus.Execution.Client.Fetch
                                                 ( deriveFetch )
 import           Data.Morpheus.Execution.Internal.Declare
-                                                ( declareType )
+                                                ( declareType 
+                                                , Scope(..)
+                                                )
 
 import           Data.Morpheus.Types.Internal.AST
                                                 ( GQLQuery(..)
@@ -44,15 +46,12 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Result(..)
                                                 )
 
-
-
 defineQuery :: IO (Validation Schema) -> (GQLQuery, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` queryRoot) of
     Failure errors               -> fail (renderGQLErrors errors)
     Success { result, warnings } -> gqlWarnings warnings >> defineQueryD result
-
 
 defineQueryD :: ClientQuery -> Q [Dec]
 defineQueryD ClientQuery { queryTypes = rootType : subTypes, queryText, queryArgsType }
@@ -72,12 +71,12 @@ defineQueryD ClientQuery { queryTypes = rootType : subTypes, queryText, queryArg
 defineQueryD ClientQuery { queryTypes = [] } = return []
 
 declareOutputType :: TypeD -> Q [Dec]
-declareOutputType typeD = pure [declareType False Nothing [''Show] typeD]
+declareOutputType typeD = pure [declareType CLIENT False Nothing [''Show] typeD]
 
 declareInputType :: TypeD -> Q [Dec]
 declareInputType typeD = do
   toJSONDec <- deriveToJSON typeD
-  pure $ declareType True Nothing [''Show] typeD : toJSONDec
+  pure $ declareType CLIENT True Nothing [''Show] typeD : toJSONDec
 
 withToJSON :: (TypeD -> Q [Dec]) -> TypeD -> Q [Dec]
 withToJSON f datatype = do

@@ -38,6 +38,7 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , JSONResponse(..)
                                                 )
 
+
 fixVars :: A.Value -> Maybe A.Value
 fixVars x | x == A.emptyArray = Nothing
           | otherwise         = Just x

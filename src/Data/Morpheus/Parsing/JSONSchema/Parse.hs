@@ -39,8 +39,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createUnionType
                                                 , toHSWrappers
                                                 , ArgumentsDefinition(..)
-                                                , fromList
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.IO         ( JSONResponse(..) )
@@ -74,17 +75,19 @@ instance ParseJSONSchema Type [TypeDefinition] where
   parse Type { name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields }
     = do
       (fields :: [FieldDefinition]) <- traverse parse iFields
-      pure [createType typeName $ DataInputObject $ fromList fields]
+      fs <- fromList fields
+      pure [createType typeName $ DataInputObject fs]
   parse Type { name = Just typeName, kind = OBJECT, fields = Just oFields } =
     do
       (fields :: [FieldDefinition]) <- traverse parse oFields
-      pure [createType typeName $ DataObject [] $ fromList fields]
+      fs <- fromList fields
+      pure [createType typeName $ DataObject [] fs] 
   parse _ = pure []
 
 instance ParseJSONSchema Field FieldDefinition where
   parse Field { fieldName, fieldArgs, fieldType } = do
     fType <- fieldTypeFromJSON fieldType
-    args  <- traverse genArg fieldArgs
+    args  <- traverse genArg fieldArgs  >>= fromList 
     pure $ createField (ArgumentsDefinition Nothing args) fieldName fType
    where
     genArg InputValue { inputName = argName, inputType = argType } =

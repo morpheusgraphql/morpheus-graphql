@@ -1,13 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DeriveLift            #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveLift                 #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( ScalarDefinition(..)
@@ -31,8 +32,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
-  , Selectable(..)
-  , Listable(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -68,12 +67,12 @@ module Data.Morpheus.Types.Internal.AST.Data
   , hasArguments
   , lookupWith
   , selectTypeObject
+  , toHSFieldDefinition
+  , unsafeFromFieldList
   )
 where
 
 import           Data.HashMap.Lazy              ( HashMap
-                                                , empty
-                                                , insert
                                                 , union
                                                 , elems
                                                 )
@@ -81,12 +80,16 @@ import qualified Data.HashMap.Lazy             as HM
 import           Data.Semigroup                 ( Semigroup(..), (<>) )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ( )
-import           Data.List                      ( find , (\\))
+import           Data.List                      ( find)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
+                                                )
+import           Data.Morpheus.Types.Internal.AST.OrderedMap
+                                                ( OrderedMap
+                                                , unsafeFromList
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
@@ -97,11 +100,24 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , TypeRef(..)
                                                 , Ref(..)
                                                 , elementOfKeys
-                                                , removeDuplicates
+                                                , uniqueElemOr
                                                 , DataTypeKind(..)
                                                 , DataFingerprint(..)
                                                 , isNullable
                                                 , sysFields
+                                                , toOperationType
+                                                , hsTypeName
+                                                )
+import           Data.Morpheus.Types.Internal.Operation                                              
+                                                ( Empty(..)
+                                                , Selectable(..)
+                                                , Listable(..)
+                                                , Singleton(..)
+                                                , Listable(..)
+                                                , Join(..)
+                                                , KeyOf(..)
+                                                , toPair
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -117,23 +133,6 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
-
-class Listable c a where 
-  fromList     :: [a] ->  c
-  toList   ::  c  -> [a]
-
-class Selectable c a where 
-  selectOr :: d -> (a -> d) -> Name -> c -> d
-  selectBy :: (Failure e m, Monad m) => e -> Name -> c -> m a
-  selectBy err = selectOr (failure err) pure
-
-instance Selectable [(Name, a)] a where 
-  selectOr fb f key lib = maybe fb f (lookup key lib)
-
-instance Selectable (HashMap Name a) a where 
-  selectOr fb f key lib = maybe fb f (HM.lookup key lib)
-
-
 type DataEnum = [DataEnumValue]
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
@@ -141,8 +140,7 @@ type DataInputUnion = [(Key, Bool)]
 -- scalar
 ------------------------------------------------------------------
 newtype ScalarDefinition = ScalarDefinition
-  { validateValue :: ValidValue -> Either Key ValidValue
-  }
+  { validateValue :: ValidValue -> Either Key ValidValue }
 
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
@@ -301,12 +299,12 @@ coerceDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure memb
 coerceDataUnion gqlError _ = failure gqlError
 
 kindOf :: TypeDefinition -> DataTypeKind
-kindOf TypeDefinition { typeContent } = __kind typeContent
+kindOf TypeDefinition { typeName, typeContent } = __kind typeContent
  where
   __kind DataScalar      {} = KindScalar
   __kind DataEnum        {} = KindEnum
   __kind DataInputObject {} = KindInputObject
-  __kind DataObject      {} = KindObject Nothing
+  __kind DataObject      {} = KindObject (toOperationType typeName)
   __kind DataUnion       {} = KindUnion
   __kind DataInputUnion  {} = KindInputUnion
   -- TODO:
@@ -346,7 +344,7 @@ isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
 defineType :: TypeDefinition -> Schema -> Schema
 defineType dt@TypeDefinition { typeName, typeContent = DataInputUnion enumKeys, typeFingerprint } lib
-  = lib { types = insert name unionTags (insert typeName dt (types lib)) }
+  = lib { types = HM.insert name unionTags (HM.insert typeName dt (types lib)) }
  where
   name      = typeName <> "Tags"
   unionTags = TypeDefinition
@@ -356,7 +354,7 @@ defineType dt@TypeDefinition { typeName, typeContent = DataInputUnion enumKeys, 
     , typeContent     = DataEnum $ map (createEnumValue . fst) enumKeys
     }
 defineType datatype lib =
-  lib { types = insert (typeName datatype) datatype (types lib) }
+  lib { types = HM.insert (typeName datatype) datatype (types lib) }
 
 insertType :: TypeDefinition -> TypeUpdater
 insertType  datatype@TypeDefinition { typeName } lib = case isTypeDefined typeName lib of
@@ -389,27 +387,25 @@ popByKey name lib = case lookupWith typeName name lib of
 --    { FieldDefinition(list) }
 --
 
--- TODO: find better solution with OrderedMap to stote Fields
 newtype FieldsDefinition = FieldsDefinition 
--- { unFieldsDefinition :: HashMap Name FieldDefinition } deriving (Show)
- { unFieldsDefinition :: [FieldDefinition] } deriving (Show, Lift)
+ { unFieldsDefinition :: OrderedMap FieldDefinition } 
+  deriving (Show, Empty)
 
--- instance Lift FieldsDefinition where 
---   lift (FieldsDefinition  hm) = [| FieldsDefinition $ HM.fromList ls |]
---     where ls = HM.toList hm
+unsafeFromFieldList :: [FieldDefinition] -> FieldsDefinition 
+unsafeFromFieldList = FieldsDefinition . unsafeFromList . map toPair
 
-instance Semigroup FieldsDefinition where 
-  FieldsDefinition x <> FieldsDefinition y = FieldsDefinition (x <> y)
-
-instance Listable FieldsDefinition FieldDefinition where
-  fromList = FieldsDefinition -- . HM.fromList 
-  toList = {- HM.toList . -} unFieldsDefinition
+instance Join FieldsDefinition where
+  join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
-instance Selectable [FieldDefinition] FieldDefinition where
-  selectOr fb f name ls = maybe fb f (lookupWith fieldName name ls)
+instance Singleton  FieldsDefinition FieldDefinition  where 
+  singleton name = FieldsDefinition . singleton name
+
+instance Listable FieldsDefinition FieldDefinition where
+  fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
+  toAssoc = toAssoc . unFieldsDefinition
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -420,6 +416,9 @@ data FieldDefinition = FieldDefinition
   , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
+
+instance KeyOf FieldDefinition where 
+  keyOf = fieldName
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition { fieldName } = fieldName `notElem` sysFields
@@ -434,6 +433,10 @@ createField dataArguments fieldName (typeWrappers, typeConName) = FieldDefinitio
   , fieldType     = TypeRef { typeConName, typeWrappers, typeArgs = Nothing }
   , fieldMeta     = Nothing
   }
+
+toHSFieldDefinition :: FieldDefinition -> FieldDefinition
+toHSFieldDefinition field@FieldDefinition { fieldType = tyRef@TypeRef { typeConName } } = field 
+  { fieldType = tyRef { typeConName = hsTypeName typeConName } }
 
 toNullableField :: FieldDefinition -> FieldDefinition
 toNullableField dataField
@@ -481,7 +484,7 @@ lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef
 data ArgumentsDefinition 
   = ArgumentsDefinition  
     { argumentsTypename ::  Maybe Name
-    , arguments         :: [ArgumentDefinition]
+    , arguments         :: OrderedMap ArgumentDefinition
     }
   | NoArguments
   deriving (Show, Lift)
@@ -499,11 +502,14 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb _ _    NoArguments                  = fb
   selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
+instance Singleton ArgumentsDefinition ArgumentDefinition where
+  singleton name = ArgumentsDefinition Nothing . singleton name
+
 instance Listable ArgumentsDefinition ArgumentDefinition where
-  toList NoArguments                  = []
-  toList (ArgumentsDefinition _ args) = args
-  fromList []                         = NoArguments
-  fromList args                       = ArgumentsDefinition Nothing args
+  toAssoc NoArguments                  = []
+  toAssoc (ArgumentsDefinition _ args) = toAssoc args
+  fromAssoc []                         = pure NoArguments
+  fromAssoc args                       = ArgumentsDefinition Nothing <$> fromAssoc args
 
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
@@ -572,10 +578,7 @@ data ConsD = ConsD
 -- Helpers
 -------------------------------------------------------------------------
 checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
-checkNameCollision enhancedKeys errorGenerator =
-  case enhancedKeys \\ removeDuplicates enhancedKeys of
-    []         -> pure enhancedKeys
-    duplicates -> failure $ errorGenerator duplicates
+checkNameCollision names toError = uniqueElemOr (failure . toError) names 
 
 checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
 checkForUnknownKeys enhancedKeys keys' errorGenerator' =
