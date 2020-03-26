@@ -8,9 +8,9 @@ module Data.Morpheus.Types.Internal.Operation
     , Selectable(..)
     , Singleton(..)
     , Listable(..)
-    , FieldMap(..)
     , Join(..)
     , Failure(..)
+    , KeyOf(..)
     )
     where 
 
@@ -45,13 +45,18 @@ instance Selectable (HashMap Text a) a where
 class Singleton c a where
   singleton  :: Name -> a -> c
 
+class KeyOf a where 
+  keyOf :: a -> Name
+
 class Listable c a where
   fromAssoc   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
   toAssoc     ::  c  -> [Named a]
-
-class FieldMap fields field where
-  fromFields :: (Monad m, Failure GQLErrors m) => [field] ->  m fields
-  toFields :: fields -> [field] 
+  fromFields :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] ->  m c
+  fromFields = fromAssoc . map toTuple
+    where
+      toTuple x = (keyOf x, x)
+  toFields :: c -> [a] 
+  toFields = map snd . toAssoc 
 
 class Join a where 
   join :: (Monad m, Failure GQLErrors m) => a -> a -> m a

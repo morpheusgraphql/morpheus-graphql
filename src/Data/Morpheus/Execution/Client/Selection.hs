@@ -55,7 +55,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , removeDuplicates
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( FieldMap(..))
+                                                ( Listable(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLErrors
                                                 , Validation

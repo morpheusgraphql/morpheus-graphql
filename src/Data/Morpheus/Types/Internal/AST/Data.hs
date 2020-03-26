@@ -114,8 +114,9 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Selectable(..)
                                                 , Listable(..)
                                                 , Singleton(..)
-                                                , FieldMap(..)
+                                                , Listable(..)
                                                 , Join(..)
+                                                , KeyOf(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -409,16 +410,14 @@ instance Singleton  FieldsDefinition FieldDefinition  where
 instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
   toAssoc = toAssoc . unFieldsDefinition
-
-instance FieldMap FieldsDefinition FieldDefinition where
   fromFields ls = FieldsDefinition <$> fromFields ls 
   toFields = toFields . unFieldsDefinition
 
-instance FieldMap (OrderedMap FieldDefinition) FieldDefinition where 
-  toFields = map snd . toAssoc
-  fromFields = fromAssoc . map named
-    where
-      named fd = (fieldName fd, fd)
+-- instance Listable (OrderedMap FieldDefinition) FieldDefinition where 
+--   toFields = map snd . toAssoc
+--   fromFields = fromAssoc . map named
+--     where
+--       named fd = (fieldName fd, fd)
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -429,6 +428,9 @@ data FieldDefinition = FieldDefinition
   , fieldType     :: TypeRef
   , fieldMeta     :: Maybe Meta
   } deriving (Show,Lift)
+
+instance KeyOf FieldDefinition where 
+  keyOf = fieldName
 
 fieldDefinitiontoEntry :: FieldDefinition -> (Name, FieldDefinition)
 fieldDefinitiontoEntry x = (fieldName x, x)
@@ -518,7 +520,7 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
 instance Singleton ArgumentsDefinition ArgumentDefinition where
   singleton name = ArgumentsDefinition Nothing . singleton name
 
-instance FieldMap ArgumentsDefinition ArgumentDefinition where
+instance Listable ArgumentsDefinition ArgumentDefinition where
   toFields NoArguments                  = []
   toFields (ArgumentsDefinition _ args) = toFields args
   fromFields []                         = pure NoArguments

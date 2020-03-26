@@ -45,7 +45,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                     
                                                 ( Listable(..)
-                                                , FieldMap(..)
+                                                , Listable(..)
                                                 )
 
 renderGraphQLDocument :: Schema -> ByteString

@@ -28,7 +28,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Selectable(..)
-                                                , FieldMap(..)
+                                                , Listable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation

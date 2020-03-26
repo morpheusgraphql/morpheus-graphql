@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ArgumentsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( FieldMap(..))
+                                                ( Listable(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Types.IO         ( JSONResponse(..) )

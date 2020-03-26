@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( FieldMap(..))
+                                                ( Listable(..))
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
 --

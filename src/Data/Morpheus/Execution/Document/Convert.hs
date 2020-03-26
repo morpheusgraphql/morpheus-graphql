@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , kindOf
                                                 )
 import           Data.Morpheus.Types.Internal.Operation 
-                                                (FieldMap(..))
+                                                (Listable(..))
 
 m_ :: Key
 m_ = "m"
