@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleContexts  , FlexibleInstances    #-}
 
 module Data.Morpheus.Rendering.RenderIntrospection
   ( render
@@ -19,15 +19,16 @@ import           Data.Maybe                     ( isJust )
 import           Data.Morpheus.Schema.Schema
 import           Data.Morpheus.Schema.TypeKind  ( TypeKind(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
-                                                , DataTyCon(..)
-                                                , DataType(..)
+                                                ( DataInputUnion
+                                                , FieldDefinition(..)
+                                                , TypeContent(..)
+                                                , TypeDefinition(..)
                                                 , DataTypeKind(..)
-                                                , DataTypeLib
+                                                , Schema
                                                 , DataTypeWrapper(..)
                                                 , DataUnion
                                                 , Meta(..)
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , createInputUnionFields
                                                 , fieldVisibility
                                                 , kindOf
@@ -35,62 +36,70 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , toGQLWrapper
                                                 , DataEnumValue(..)
                                                 , lookupDeprecated
+                                                , DataInputUnion
                                                 , lookupDeprecatedReason
-                                                , convertToJSONName )
+                                                , convertToJSONName
+                                                , ArgumentsDefinition(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 
 constRes :: Applicative m => a -> b -> m a
 constRes = const . pure
 
-type Result m a = DataTypeLib -> m a
+type Result m a = Schema -> m a
 
 class RenderSchema a b where
-  render :: (Monad m, Failure Text m) => (Text, a) -> DataTypeLib -> m (b m)
+  render :: (Monad m, Failure Text m) => a -> Schema -> m (b m)
 
-instance RenderSchema DataType S__Type where
-  render (key, DataScalar DataTyCon { typeMeta }) =
-    constRes $ createLeafType SCALAR key typeMeta Nothing
-  render (key, DataEnum DataTyCon { typeMeta, typeData }) =
-    constRes
-      $ createLeafType ENUM key typeMeta (Just $ map createEnumValue typeData)
-  render (name, DataInputObject DataTyCon { typeData, typeMeta }) =
-    renderInputObject
+instance RenderSchema TypeDefinition S__Type where
+  render TypeDefinition { typeName , typeMeta, typeContent } = __render typeContent
    where
-    renderInputObject lib = do
-      fields <- traverse (`renderinputValue` lib) typeData
-      pure $ createInputObject name typeMeta fields
-  render (name, DataObject object') = typeFromObject (name, object')
-   where
-    typeFromObject (key, DataTyCon { typeData, typeMeta }) lib =
-      createObjectType key (typeMeta >>= metaDescription)
-        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility typeData))
-  render (name, DataUnion union) = constRes $ typeFromUnion (name, union)
-  render (name, DataInputUnion inpUnion') = renderInputUnion (name, inpUnion')
+    __render
+      :: (Monad m, Failure Text m) => TypeContent -> Schema -> m (S__Type m)
+    __render DataScalar{} =
+      constRes $ createLeafType SCALAR typeName typeMeta Nothing
+    __render (DataEnum enums) = constRes
+      $ createLeafType ENUM typeName typeMeta (Just $ map createEnumValue enums)
+    __render (DataInputObject fields) = \lib ->
+      createInputObject typeName typeMeta
+        <$> traverse (`renderinputValue` lib) (toList fields)
+    __render DataObject {objectFields} = \lib ->
+      createObjectType typeName (typeMeta >>= metaDescription)
+        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ toList objectFields))
+    __render (DataUnion union) =
+      constRes $ typeFromUnion (typeName, typeMeta, union)
+    __render (DataInputUnion members) =
+      renderInputUnion (typeName, typeMeta, members)
 
 createEnumValue :: Monad m => DataEnumValue -> S__EnumValue m
 createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
-  { s__EnumValueName              = constRes enumName
-  , s__EnumValueDescription       = constRes (enumMeta >>= metaDescription)
-  , s__EnumValueIsDeprecated      = constRes (isJust deprecated)
-  , s__EnumValueDeprecationReason = constRes
-                                      (deprecated >>= lookupDeprecatedReason)
+  { s__EnumValueName              = pure enumName
+  , s__EnumValueDescription       = pure (enumMeta >>= metaDescription)
+  , s__EnumValueIsDeprecated      = pure (isJust deprecated)
+  , s__EnumValueDeprecationReason = pure (deprecated >>= lookupDeprecatedReason)
   }
   where deprecated = enumMeta >>= lookupDeprecated
 
-instance RenderSchema DataField S__Field where
-  render (name, field@DataField { fieldType = TypeAlias { aliasTyCon }, fieldArgs, fieldMeta }) lib
+renderArguments :: (Monad m, Failure Text m) => ArgumentsDefinition -> Schema -> m [S__InputValue m] 
+renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) $ toList arguments
+renderArguments NoArguments _ = pure []
+
+instance RenderSchema FieldDefinition S__Field where
+  render field@FieldDefinition { fieldName ,fieldType = TypeRef { typeConName }, fieldArgs, fieldMeta } lib
     = do
-      kind <- renderTypeKind <$> lookupKind aliasTyCon lib
-      args <- traverse (`renderinputValue` lib) fieldArgs
+      kind <- renderTypeKind <$> lookupKind typeConName lib
       pure S__Field
-        { s__FieldName              = constRes (convertToJSONName name)
-        , s__FieldDescription       = constRes (fieldMeta >>= metaDescription)
-        , s__FieldArgs              = constRes args
+        { s__FieldName              = pure (convertToJSONName fieldName)
+        , s__FieldDescription       = pure (fieldMeta >>= metaDescription)
+        , s__FieldArgs              = renderArguments fieldArgs lib 
         , s__FieldType'             =
-          constRes (wrap field $ createType kind aliasTyCon Nothing $ Just [])
-        , s__FieldIsDeprecated      = constRes (isJust deprecated)
-        , s__FieldDeprecationReason = constRes
+          pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just [])
+        , s__FieldIsDeprecated      = pure (isJust deprecated)
+        , s__FieldDeprecationReason = pure
                                         (deprecated >>= lookupDeprecatedReason)
         }
     where deprecated = fieldMeta >>= lookupDeprecated
@@ -105,9 +114,9 @@ renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList        = LIST
 renderTypeKind KindNonNull     = NON_NULL
 
-wrap :: Monad m => DataField -> S__Type m -> S__Type m
-wrap DataField { fieldType = TypeAlias { aliasWrappers } } typ =
-  foldr wrapByTypeWrapper typ (toGQLWrapper aliasWrappers)
+applyTypeWrapper :: Monad m => FieldDefinition -> S__Type m -> S__Type m
+applyTypeWrapper FieldDefinition { fieldType = TypeRef { typeWrappers } } typ =
+  foldr wrapByTypeWrapper typ (toGQLWrapper typeWrappers)
 
 wrapByTypeWrapper :: Monad m => DataTypeWrapper -> S__Type m -> S__Type m
 wrapByTypeWrapper ListType    = wrapAs LIST
@@ -120,28 +129,29 @@ lookupKind name lib = case lookupDataType name lib of
 
 renderinputValue
   :: (Monad m, Failure Text m)
-  => (Text, DataField)
+  => FieldDefinition
   -> Result m (S__InputValue m)
-renderinputValue (key, input) =
-  fmap (createInputValueWith key (fieldMeta input))
-    . createInputObjectType input
+renderinputValue input = fmap (createInputValueWith (fieldName input) (fieldMeta input)) . createInputObjectType input
 
 createInputObjectType
-  :: (Monad m, Failure Text m) => DataField -> Result m (S__Type m)
-createInputObjectType field@DataField { fieldType = TypeAlias { aliasTyCon } } lib
+  :: (Monad m, Failure Text m) => FieldDefinition -> Result m (S__Type m)
+createInputObjectType field@FieldDefinition { fieldType = TypeRef { typeConName } } lib
   = do
-    kind <- renderTypeKind <$> lookupKind aliasTyCon lib
-    pure $ wrap field $ createType kind aliasTyCon Nothing $ Just []
+    kind <- renderTypeKind <$> lookupKind typeConName lib
+    pure $ applyTypeWrapper field $ createType kind typeConName Nothing $ Just []
 
 
 renderInputUnion
-  :: (Monad m, Failure Text m) => (Text, DataUnion) -> Result m (S__Type m)
-renderInputUnion (key, DataTyCon { typeData, typeMeta }) lib =
-  createInputObject key typeMeta
-    <$> traverse createField (createInputUnionFields key typeData)
+  :: (Monad m, Failure Text m)
+  => (Text, Maybe Meta, DataInputUnion)
+  -> Result m (S__Type m)
+renderInputUnion (key, meta, fields) lib =
+  createInputObject key meta <$> traverse
+    createField
+    (createInputUnionFields key $ map fst $ filter snd fields)
  where
-  createField (name, field) =
-    createInputValueWith name Nothing <$> createInputObjectType field lib
+  createField field =
+    createInputValueWith (fieldName field) Nothing <$> createInputObjectType field lib
 
 createLeafType
   :: Monad m
@@ -151,57 +161,57 @@ createLeafType
   -> Maybe [S__EnumValue m]
   -> S__Type m
 createLeafType kind name meta enums = S__Type
-  { s__TypeKind          = constRes kind
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes (meta >>= metaDescription)
+  { s__TypeKind          = pure kind
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure (meta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes Nothing
-  , s__TypePossibleTypes = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure Nothing
+  , s__TypePossibleTypes = pure Nothing
   , s__TypeEnumValues    = constRes enums
-  , s__TypeInputFields   = constRes Nothing
+  , s__TypeInputFields   = pure Nothing
   }
 
-typeFromUnion :: Monad m => (Text, DataUnion) -> S__Type m
-typeFromUnion (name, DataTyCon { typeData, typeMeta }) = S__Type
-  { s__TypeKind          = constRes UNION
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes (typeMeta >>= metaDescription)
+typeFromUnion :: Monad m => (Text, Maybe Meta, DataUnion) -> S__Type m
+typeFromUnion (name, typeMeta, typeContent) = S__Type
+  { s__TypeKind          = pure UNION
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure (typeMeta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure Nothing
   , s__TypePossibleTypes =
-    constRes $ Just (map (\x -> createObjectType x Nothing $ Just []) typeData)
+    pure $ Just (map (\x -> createObjectType x Nothing $ Just []) typeContent)
   , s__TypeEnumValues    = constRes Nothing
-  , s__TypeInputFields   = constRes Nothing
+  , s__TypeInputFields   = pure Nothing
   }
 
 createObjectType
   :: Monad m => Text -> Maybe Text -> Maybe [S__Field m] -> S__Type m
 createObjectType name description fields = S__Type
-  { s__TypeKind          = constRes OBJECT
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes description
+  { s__TypeKind          = pure OBJECT
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure description
   , s__TypeFields        = constRes fields
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes $ Just []
-  , s__TypePossibleTypes = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure $ Just []
+  , s__TypePossibleTypes = pure Nothing
   , s__TypeEnumValues    = constRes Nothing
-  , s__TypeInputFields   = constRes Nothing
+  , s__TypeInputFields   = pure Nothing
   }
 
 createInputObject
   :: Monad m => Text -> Maybe Meta -> [S__InputValue m] -> S__Type m
 createInputObject name meta fields = S__Type
-  { s__TypeKind          = constRes INPUT_OBJECT
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes (meta >>= metaDescription)
+  { s__TypeKind          = pure INPUT_OBJECT
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure (meta >>= metaDescription)
   , s__TypeFields        = constRes Nothing
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes Nothing
-  , s__TypePossibleTypes = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure Nothing
+  , s__TypePossibleTypes = pure Nothing
   , s__TypeEnumValues    = constRes Nothing
-  , s__TypeInputFields   = constRes $ Just fields
+  , s__TypeInputFields   = pure $ Just fields
   }
 
 createType
@@ -212,34 +222,34 @@ createType
   -> Maybe [S__Field m]
   -> S__Type m
 createType kind name description fields = S__Type
-  { s__TypeKind          = constRes kind
-  , s__TypeName          = constRes $ Just name
-  , s__TypeDescription   = constRes description
+  { s__TypeKind          = pure kind
+  , s__TypeName          = pure $ Just name
+  , s__TypeDescription   = pure description
   , s__TypeFields        = constRes fields
-  , s__TypeOfType        = constRes Nothing
-  , s__TypeInterfaces    = constRes Nothing
-  , s__TypePossibleTypes = constRes Nothing
+  , s__TypeOfType        = pure Nothing
+  , s__TypeInterfaces    = pure Nothing
+  , s__TypePossibleTypes = pure Nothing
   , s__TypeEnumValues    = constRes $ Just []
-  , s__TypeInputFields   = constRes Nothing
+  , s__TypeInputFields   = pure Nothing
   }
 
 wrapAs :: Monad m => TypeKind -> S__Type m -> S__Type m
-wrapAs kind contentType = S__Type { s__TypeKind          = constRes kind
-                                  , s__TypeName          = constRes Nothing
-                                  , s__TypeDescription   = constRes Nothing
+wrapAs kind contentType = S__Type { s__TypeKind          = pure kind
+                                  , s__TypeName          = pure Nothing
+                                  , s__TypeDescription   = pure Nothing
                                   , s__TypeFields        = constRes Nothing
-                                  , s__TypeOfType = constRes $ Just contentType
-                                  , s__TypeInterfaces    = constRes Nothing
-                                  , s__TypePossibleTypes = constRes Nothing
+                                  , s__TypeOfType = pure $ Just contentType
+                                  , s__TypeInterfaces    = pure Nothing
+                                  , s__TypePossibleTypes = pure Nothing
                                   , s__TypeEnumValues    = constRes Nothing
-                                  , s__TypeInputFields   = constRes Nothing
+                                  , s__TypeInputFields   = pure Nothing
                                   }
 
 createInputValueWith
   :: Monad m => Text -> Maybe Meta -> S__Type m -> S__InputValue m
 createInputValueWith name meta ivType = S__InputValue
-  { s__InputValueName         = constRes (convertToJSONName name)
-  , s__InputValueDescription  = constRes (meta >>= metaDescription)
-  , s__InputValueType'        = constRes ivType
-  , s__InputValueDefaultValue = constRes Nothing
+  { s__InputValueName         = pure (convertToJSONName name)
+  , s__InputValueDescription  = pure (meta >>= metaDescription)
+  , s__InputValueType'        = pure ivType
+  , s__InputValueDefaultValue = pure Nothing
   }

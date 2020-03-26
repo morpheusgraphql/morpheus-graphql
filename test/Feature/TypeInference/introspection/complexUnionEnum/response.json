@@ -1,0 +1,41 @@
+{
+  "data": {
+    "enumObject": {
+      "kind": "OBJECT",
+      "name": "CharacterEnumObject",
+      "fields": [
+        {
+          "name": "enum",
+          "args": [],
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "ENUM",
+              "name": "CharacterEnum",
+              "ofType": null
+            }
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "enumValues": null,
+      "possibleTypes": null
+    },
+    "enum": {
+      "kind": "ENUM",
+      "name": "CharacterEnum",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": [
+        { "name": "Zeus", "isDeprecated": false, "deprecationReason": null },
+        { "name": "Cronus", "isDeprecated": false, "deprecationReason": null }
+      ],
+      "possibleTypes": null
+    }
+  }
+}

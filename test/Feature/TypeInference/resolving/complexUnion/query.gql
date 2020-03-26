@@ -1,0 +1,45 @@
+{
+  character {
+    ## regular union
+    __typename
+    ... on Deity {
+      name
+    }
+
+    ## union Enums
+    ... on CharacterEnumObject {
+      enum
+    }
+
+    ... on Creature {
+      creatureName
+      creatureAge
+    }
+
+    ... on BoxedDeity {
+      boxedDeity {
+        power
+      }
+    }
+
+    ... on ScalarRecord {
+      scalarText
+    }
+
+    ... on CharacterInt {
+      _0
+    }
+
+    ... on SomeDeity {
+      _0 {
+        name
+        power
+      }
+    }
+
+    ... on SomeMutli {
+      _0
+      _1
+    }
+  }
+}

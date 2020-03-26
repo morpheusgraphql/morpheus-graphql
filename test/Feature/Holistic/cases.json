@@ -92,6 +92,10 @@
     "description": "fails on a query with too many commas"
   },
   {
+    "path": "parsing/inputListValues",
+    "description": "returns query when input list values are separated by newlines or commas"
+  },
+  {
     "path": "parsing/notNullSpacing",
     "description": "returns on a query that pads all '!' chars with whitespace"
   },
@@ -200,6 +204,10 @@
     "description": "fail when: directive is used in Variable Definition"
   },
   {
+    "path": "parsing/numbers",
+    "description": "parse signed numbers and numbers with expotential"
+  },
+  {
     "path": "introspection/description/object",
     "description": "check object descriptions, type, field, args"
   },
@@ -222,5 +230,13 @@
   {
     "path": "introspection/deprecated/field",
     "description": "check if deprecated works with object fields"
+  },
+  {
+    "path": "failure/resolveFailure",
+    "description": "test failed resolvers"
+  },
+  {
+    "path": "selection/__typename",
+    "description": "test __typename on object types"
   }
 ]

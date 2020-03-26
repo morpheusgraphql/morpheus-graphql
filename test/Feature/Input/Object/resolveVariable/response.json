@@ -1,0 +1,6 @@
+{
+  "data": {
+    "i1": "InputObject {field = \"string from variable\", nullableField = Just 123011}",
+    "i2": "InputObject {field = \"\", nullableField = Nothing}"
+  }
+}

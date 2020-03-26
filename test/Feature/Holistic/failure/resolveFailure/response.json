@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "message": "Failure on Resolving Field \"fail1\": fail with Either",
+      "locations": [{ "line": 2, "column": 3 }]
+    },
+    {
+      "message": "Failure on Resolving Field \"fail2\": fail with failRes",
+      "locations": [{ "line": 3, "column": 3 }]
+    }
+  ]
+}

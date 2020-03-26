@@ -36,12 +36,13 @@ import           Data.Morpheus.Parsing.Internal.Value
 import           Data.Morpheus.Parsing.Request.Selection
                                                 ( parseSelectionSet )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DefaultValue
-                                                , Operation(..)
+                                                ( Operation(..)
                                                 , RawOperation
                                                 , Variable(..)
                                                 , OperationType(..)
-                                                , isNullable
+                                                , Ref(..)
+                                                , VariableContent(..)
+                                                , RAW
                                                 )
 
 
@@ -50,19 +51,17 @@ import           Data.Morpheus.Types.Internal.AST
 --  VariableDefinition
 --    Variable : Type DefaultValue(opt)
 --
-variableDefinition :: Parser (Text, Variable DefaultValue)
+variableDefinition :: Parser (Text, Variable RAW)
 variableDefinition = label "VariableDefinition" $ do
-  (name, variablePosition) <- variable
+  (Ref name variablePosition) <- variable
   operator ':'
-  (variableTypeWrappers, variableType) <- parseType
-  defaultValue                         <- parseDefaultValue
+  variableType <- parseType
+  defaultValue <- parseDefaultValue
   pure
     ( name
     , Variable { variableType
-               , isVariableRequired   = not (isNullable variableTypeWrappers)
-               , variableTypeWrappers
                , variablePosition
-               , variableValue        = defaultValue
+               , variableValue    = DefaultValue defaultValue
                }
     )
 
@@ -78,14 +77,14 @@ parseOperationDefinition = label "OperationDefinition" $ do
   operationPosition  <- getLocation
   operationType      <- parseOperationType
   operationName      <- optional parseName
-  operationArgs      <- parseMaybeTuple variableDefinition
+  operationArguments <- parseMaybeTuple variableDefinition
   -- TODO: handle directives
   _directives        <- optionalDirectives
   operationSelection <- parseSelectionSet
   pure
     (Operation { operationName
                , operationType
-               , operationArgs
+               , operationArguments
                , operationSelection
                , operationPosition
                }
@@ -107,7 +106,7 @@ parseAnonymousQuery = label "AnonymousQuery" $ do
   pure
       (Operation { operationName      = Nothing
                  , operationType      = Query
-                 , operationArgs      = []
+                 , operationArguments = []
                  , operationSelection
                  , operationPosition
                  }

@@ -5,9 +5,7 @@ module Data.Morpheus.Parsing.Request.Arguments
   )
 where
 
-import           Text.Megaparsec                ( label
-                                                , (<|>)
-                                                )
+import           Text.Megaparsec                ( label)
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal
@@ -18,18 +16,13 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( parseAssignment
                                                 , parseMaybeTuple
                                                 , token
-                                                , variable
                                                 )
 import           Data.Morpheus.Parsing.Internal.Value
-                                                ( enumValue
-                                                , parseValue
-                                                )
+                                                ( parseRawValue )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ValueOrigin(..)
-                                                , Argument(..)
-                                                , RawArgument(..)
+                                                ( Argument(..)
+                                                , RawArgument
                                                 , RawArguments
-                                                , Ref(..)
                                                 )
 
 
@@ -40,21 +33,12 @@ import           Data.Morpheus.Types.Internal.AST
 --
 -- Argument[Const]
 --  Name : Value[Const]
--- TODO: move variable to Value
 valueArgument :: Parser RawArgument
-valueArgument = label "valueArgument" $ do
+valueArgument = label "Argument" $ do
   argumentPosition <- getLocation
-  argumentValue    <- parseValue <|> enumValue
-  pure $ RawArgument $ Argument { argumentValue
-                                , argumentOrigin   = INLINE
-                                , argumentPosition
-                                }
-
-variableArgument :: Parser RawArgument
-variableArgument = label "variableArgument" $ do
-  (refName, refPosition) <- variable
-  pure $ VariableRef $ Ref { refName, refPosition }
+  argumentValue    <- parseRawValue
+  pure $ Argument { argumentValue, argumentPosition }
 
 maybeArguments :: Parser RawArguments
-maybeArguments = label "maybeArguments" $ parseMaybeTuple argument
-  where argument = parseAssignment token (valueArgument <|> variableArgument)
+maybeArguments =
+  label "Arguments" $ parseMaybeTuple (parseAssignment token valueArgument)

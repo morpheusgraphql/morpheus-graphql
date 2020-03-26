@@ -24,6 +24,7 @@ import qualified Data.Text.Lazy                as LT
 import           Data.Text.Lazy.Encoding        ( decodeUtf8
                                                 , encodeUtf8
                                                 )
+import           Control.Monad.IO.Class         ( MonadIO() )
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Resolve
@@ -34,7 +35,7 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 , streamResolver
                                                 , coreResolver
                                                 )
-import           Data.Morpheus.Execution.Subscription.ClientRegister
+import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -96,18 +97,18 @@ instance Interpreter (StateLess m Text) m e  where
 -}
 type WSPub m e a = GQLState m e -> a -> m a
 
-instance Interpreter (WSPub IO e LB.ByteString) IO e where
+instance MonadIO m => Interpreter (WSPub m e LB.ByteString) m e where
   interpreter root state = statefulResolver state (coreResolver root)
 
-instance Interpreter (WSPub IO e  LT.Text) IO e where
+instance MonadIO m => Interpreter (WSPub m e  LT.Text) m e where
   interpreter root state request =
     decodeUtf8 <$> interpreter root state (encodeUtf8 request)
 
-instance Interpreter (WSPub IO e  ByteString) IO e where
+instance MonadIO m => Interpreter (WSPub m e  ByteString) m e where
   interpreter root state request =
     LB.toStrict <$> interpreter root state (LB.fromStrict request)
 
-instance Interpreter (WSPub IO e  Text) IO e  where
+instance MonadIO m => Interpreter (WSPub m e  Text) m e  where
   interpreter root state request =
     LT.toStrict <$> interpreter root state (LT.fromStrict request)
 

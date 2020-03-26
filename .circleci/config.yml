@@ -78,7 +78,7 @@ jobs:
   ## GHC 8.6.5
   ghc_8_6_5:
     docker:
-      - image: fpco/stack-build:lts
+      - image: fpco/stack-build:lts-14.14
     steps:
       - checkout
       - restore_cache:
@@ -112,11 +112,11 @@ jobs:
       - run:
           name: Install executables
           command: stack install
-
-  ## GHC 8.8.1
-  ghc_8_8_1:
+  
+  ## GHC Nightly
+  ghc_nightly:
     docker:
-      - image: fpco/stack-build:lts
+      - image: fpco/stack-build:lts-15.0
     steps:
       - checkout
       - restore_cache:
@@ -146,7 +146,7 @@ jobs:
             - "/root/.stack"
       - run:
           name: Run tests
-          command: STACK_YAML=stack-nightly.yaml stack test --haddock --no-haddock-deps
+          command: STACK_YAML=stack-nightly.yaml stack test --haddock --no-haddock-deps --fast
       - run:
           name: Install executables
           command: STACK_YAML=stack-nightly.yaml stack install
@@ -158,4 +158,4 @@ workflows:
       - ghc_8_2_2
       - ghc_8_4_4
       - ghc_8_6_5
-      - ghc_8_8_1
+      - ghc_nightly

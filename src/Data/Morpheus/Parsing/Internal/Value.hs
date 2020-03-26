@@ -5,6 +5,7 @@ module Data.Morpheus.Parsing.Internal.Value
   ( parseValue
   , enumValue
   , parseDefaultValue
+  , parseRawValue
   )
 where
 
@@ -31,47 +32,41 @@ import           Data.Morpheus.Parsing.Internal.Internal
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( litEquals
                                                 , parseAssignment
-                                                , setOf
+                                                , collection
                                                 , spaceAndComments
                                                 , token
+                                                , parseNegativeSign
+                                                , variable
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
                                                 , Value(..)
+                                                , RawValue
+                                                , ValidValue
                                                 , decodeScientific
+                                                , Name
+                                                , Value(..)
+                                                , ResolvedValue
                                                 )
 
-parseDefaultValue :: Parser (Maybe Value)
-parseDefaultValue = optional $ do
-  litEquals
-  parseValue
-
-parseValue :: Parser Value
-parseValue = label "value" $ do
-  value <-
-    valueNull
-    <|> booleanValue
-    <|> valueNumber
-    <|> enumValue
-    <|> stringValue
-    <|> objectValue
-    <|> listValue
-  spaceAndComments
-  return value
-
-valueNull :: Parser Value
+valueNull :: Parser (Value a)
 valueNull = string "null" $> Null
 
-booleanValue :: Parser Value
+booleanValue :: Parser (Value a)
 booleanValue = boolTrue <|> boolFalse
  where
   boolTrue  = string "true" $> Scalar (Boolean True)
   boolFalse = string "false" $> Scalar (Boolean False)
 
-valueNumber :: Parser Value
-valueNumber = Scalar . decodeScientific <$> scientific
+valueNumber :: Parser (Value a)
+valueNumber = do
+  isNegative <- parseNegativeSign
+  Scalar . decodeScientific . signedNumber isNegative <$> scientific
+ where
+  signedNumber isNegative number | isNegative = -number
+                                 | otherwise  = number
 
-enumValue :: Parser Value
+enumValue :: Parser (Value a)
 enumValue = do
   enum <- Enum <$> token
   spaceAndComments
@@ -86,18 +81,47 @@ escaped = label "escaped" $ do
   codes        = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
   escapeChar code replacement = char code >> return replacement
 
-stringValue :: Parser Value
+stringValue :: Parser (Value a)
 stringValue = label "stringValue" $ Scalar . String . pack <$> between
   (char '"')
   (char '"')
   (many escaped)
 
-listValue :: Parser Value
-listValue = label "listValue" $ List <$> between
+
+listValue :: Parser a -> Parser [a]
+listValue parser = label "listValue" $ between
   (char '[' *> spaceAndComments)
   (char ']' *> spaceAndComments)
-  (parseValue `sepBy` (char ',' *> spaceAndComments))
+  (parser `sepBy` (many (char ',') *> spaceAndComments))
 
-objectValue :: Parser Value
-objectValue = label "objectValue" $ Object <$> setOf entry
-  where entry = parseAssignment token parseValue
+objectValue :: Show a => Parser a -> Parser [(Name, a)]
+objectValue parser = label "objectValue" $ collection entry
+  where entry = parseAssignment token parser
+
+structValue :: Parser (Value a) -> Parser (Value a)
+structValue parser =
+  label "Value"
+    $  (   parsePrimitives
+       <|> (Object <$> objectValue parser)
+       <|> (List <$> listValue parser)
+       )
+    <* spaceAndComments
+
+parsePrimitives :: Parser (Value a)
+parsePrimitives =
+  valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
+
+parseDefaultValue :: Parser (Maybe ResolvedValue)
+parseDefaultValue = optional $ do
+  litEquals
+  parseV
+ where
+  parseV :: Parser ResolvedValue
+  parseV = structValue parseV
+
+
+parseValue :: Parser ValidValue
+parseValue = structValue parseValue
+
+parseRawValue :: Parser RawValue
+parseRawValue = (VariableValue <$> variable) <|> structValue parseRawValue

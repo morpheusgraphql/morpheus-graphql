@@ -1,0 +1,22 @@
+{
+  "data": {
+    "__type": {
+      "kind": "UNION",
+      "name": "Character",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": null,
+      "possibleTypes": [
+        { "kind": "OBJECT", "name": "Deity", "ofType": null },
+        { "kind": "OBJECT", "name": "CharacterEnumObject", "ofType": null },
+        { "kind": "OBJECT", "name": "Creature", "ofType": null },
+        { "kind": "OBJECT", "name": "BoxedDeity", "ofType": null },
+        { "kind": "OBJECT", "name": "ScalarRecord", "ofType": null },
+        { "kind": "OBJECT", "name": "CharacterInt", "ofType": null },
+        { "kind": "OBJECT", "name": "SomeDeity", "ofType": null },
+        { "kind": "OBJECT", "name": "SomeMutli", "ofType": null }
+      ]
+    }
+  }
+}

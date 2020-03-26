@@ -1,0 +1,30 @@
+[
+  {
+    "path": "undefinedField",
+    "description": "fail when field was not provided"
+  },
+  {
+    "path": "nullableUndefinedField",
+    "description": "dont fail when nullable field was not provided"
+  },
+  {
+    "path": "unknownField",
+    "description": "fail on unknown field"
+  },
+  {
+    "path": "unexpectedValue",
+    "description": "fail on value with unexpected type"
+  },
+  {
+    "path": "unexpectedVariable",
+    "description": "fail on use of variable with unexpected type"
+  },
+  {
+    "path": "resolveVariable",
+    "description": "resolve by variable"
+  },
+  {
+    "path": "resolveObject",
+    "description": "resolve object"
+  }
+]

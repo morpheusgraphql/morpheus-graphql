@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DerivingStrategies    #-}
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -27,14 +28,12 @@ import qualified Data.Set                      as S
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
-import           Data.Typeable                  ( Typeable )
 import           GHC.Generics                   ( Generic )
 
 -- MORPHEUS
 import           Data.Morpheus.Document         ( importGQLDocumentWithNamespace
                                                 )
-import           Data.Morpheus.Kind             ( INPUT_UNION
-                                                , OBJECT
+import           Data.Morpheus.Kind             ( INPUT
                                                 , SCALAR
                                                 )
 import           Data.Morpheus.Types            ( Event(..)
@@ -42,7 +41,7 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , GQLScalar(..)
                                                 , GQLType(..)
                                                 , ID
-                                                , Resolver(..)
+                                                , Resolver
                                                 , ScalarValue(..)
                                                 , constRes
                                                 , IORes
@@ -51,11 +50,14 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , ResolveQ
                                                 , ResolveM
                                                 , ResolveS
+                                                , failRes
+                                                , publish
+                                                , subscribe
+                                                , WithOperation
                                                 )
 
-
-
-$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
+newtype A a = A { wrappedA :: a } 
+  deriving (Generic, GQLType)
 
 type AIntText = A (Int, Text)
 
@@ -65,14 +67,23 @@ type SetInt = Set Int
 
 type MapTextInt = Map Text Int
 
+
+$(importGQLDocumentWithNamespace "src/Server/Sophisticated/shared.gql")
+
+
+$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
+
+
 data Animal
-  = CAT Cat
-  | DOG Dog
-  | BIRD Bird
+  = AnimalCat Cat
+  | AnimalDog Dog
+  | AnimalBird Bird
+  | Giraffe  { giraffeName :: Text }
+  | UnidentifiedSpecie
   deriving (Show, Generic)
 
 instance GQLType Animal where
-  type KIND Animal = INPUT_UNION
+  type KIND Animal = INPUT
 
 data Euro =
   Euro Int
@@ -85,13 +96,6 @@ instance GQLType Euro where
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
   serialize (Euro x y) = Int (x * 100 + y)
-
-instance Typeable a => GQLType (A a) where
-  type KIND (A a) = OBJECT
-
-newtype A a = A
-  { wrappedA :: a
-  } deriving (Generic)
 
 data Channel = USER | ADDRESS
   deriving (Show, Eq, Ord)
@@ -109,10 +113,13 @@ gqlRoot = GQLRootResolver { queryResolver
   queryResolver = Query
     { queryUser     = resolveUser
     , queryAnimal   = resolveAnimal
-    , querySet      = constRes $ S.fromList [1, 2]
-    , querySomeMap  = constRes $ M.fromList [("robin", 1), ("carl", 2)]
+    , querySet      = pure $ S.fromList [1, 2]
+    , querySomeMap  = pure $ M.fromList [("robin", 1), ("carl", 2)]
     , queryWrapped1 = constRes $ A (0, "some value")
-    , queryWrapped2 = constRes $ A ""
+    , queryWrapped2 = pure $ A ""
+    , queryFail1    = failRes "fail example"
+    , queryFail2    = liftEither alwaysFail
+    , queryShared = pure SharedType { sharedTypeName = pure "some name" }
     }
   -------------------------------------------------------------
   mutationResolver = Mutation { mutationCreateUser    = resolveCreateUser
@@ -125,8 +132,12 @@ gqlRoot = GQLRootResolver { queryResolver
     }
 
 -- Resolve QUERY
-resolveUser :: () -> ResolveQ EVENT IO User
-resolveUser _args = liftEither (getDBUser (Content 2))
+
+alwaysFail :: IO (Either String a)
+alwaysFail = pure $ Left "fail example"
+
+resolveUser :: ResolveQ EVENT IO User
+resolveUser = liftEither (getDBUser (Content 2))
 
 resolveAnimal :: QueryAnimalArgs -> IORes EVENT Text
 resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
@@ -134,29 +145,36 @@ resolveAnimal QueryAnimalArgs { queryAnimalArgsAnimal } =
 
 -- Resolve MUTATIONS
 -- 
--- Mutation Wit Event Triggering : sends events to subscription  
-resolveCreateUser :: () -> ResolveM EVENT IO User
-resolveCreateUser _args = MutResolver $ do
-  value <- lift setDBUser
-  pure ([userUpdate], value)
+-- Mutation With Event Triggering : sends events to subscription  
+resolveCreateUser :: ResolveM EVENT IO User
+resolveCreateUser = do
+  requireAuthorized
+  publish [userUpdate]
+  liftEither setDBUser
 
--- Mutation Wit Event Triggering : sends events to subscription  
-resolveCreateAdress :: () -> ResolveM EVENT IO Address
-resolveCreateAdress _args = MutResolver $ do
-  value <- lift setDBAddress
-  pure ([addressUpdate], value)
+-- Mutation With Event Triggering : sends events to subscription  
+resolveCreateAdress :: ResolveM EVENT IO Address
+resolveCreateAdress = do
+  requireAuthorized
+  publish [addressUpdate]
+  lift setDBAddress
 
 -- Mutation Without Event Triggering  
-resolveSetAdress :: () -> ResolveM EVENT IO Address
-resolveSetAdress _args = lift setDBAddress
+resolveSetAdress :: ResolveM EVENT IO Address
+resolveSetAdress = lift setDBAddress
+
 
 -- Resolve SUBSCRIPTION
-resolveNewUser :: () -> ResolveS EVENT IO User
-resolveNewUser _args = SubResolver { subChannels = [USER], subResolver }
+resolveNewUser :: ResolveS EVENT IO User
+resolveNewUser = subscribe [USER] $ do 
+    requireAuthorized 
+    pure subResolver 
   where subResolver (Event _ content) = liftEither (getDBUser content)
 
-resolveNewAdress :: () -> ResolveS EVENT IO Address
-resolveNewAdress _args = SubResolver { subChannels = [ADDRESS], subResolver }
+resolveNewAdress :: ResolveS EVENT IO Address
+resolveNewAdress = subscribe [ADDRESS] $ do
+    requireAuthorized
+    pure subResolver
   where subResolver (Event _ content) = lift (getDBAddress content)
 
 -- Events ----------------------------------------------------------------
@@ -172,20 +190,34 @@ getDBAddress _id = do
   city   <- dbText
   street <- dbText
   number <- dbInt
-  pure Address { addressCity        = constRes city
-               , addressStreet      = constRes street
-               , addressHouseNumber = constRes number
+  pure Address { addressCity        = pure city
+               , addressStreet      = pure street
+               , addressHouseNumber = pure number
                }
 
 getDBUser :: Content -> IO (Either String (User (IORes EVENT)))
 getDBUser _ = do
   Person { name, email } <- dbPerson
-  pure $ Right User { userName    = constRes name
-                    , userEmail   = constRes email
+  pure $ Right User { userName    = pure name
+                    , userEmail   = pure email
                     , userAddress = const $ lift (getDBAddress (Content 12))
                     , userOffice  = constRes Nothing
-                    , userHome    = constRes HH
-                    , userEntity  = constRes Nothing
+                    , userHome    = pure HH
+                    , userEntity  = pure [
+                          MyUnionAddress Address{
+                            addressCity        = pure "city"
+                            , addressStreet      = pure "street"
+                            , addressHouseNumber = pure 1
+                          },
+                          MyUnionUser User {
+                              userName    = pure name
+                            , userEmail   = pure email
+                            , userAddress = const $ lift (getDBAddress (Content 12))
+                            , userOffice  = constRes Nothing
+                            , userHome    = pure HH
+                            , userEntity = pure []
+                          }
+                        ]
                     }
 
 -- DB::Setter --------------------------------------------------------------------
@@ -194,20 +226,21 @@ setDBAddress = do
   city        <- dbText
   street      <- dbText
   houseNumber <- dbInt
-  pure Address { addressCity        = constRes city
-               , addressStreet      = constRes street
-               , addressHouseNumber = constRes houseNumber
+  pure Address { addressCity        = pure city
+               , addressStreet      = pure street
+               , addressHouseNumber = pure houseNumber
                }
 
-setDBUser :: IO (User (IOMutRes EVENT))
+setDBUser :: IO (Either String (User (IOMutRes EVENT)))
 setDBUser = do
   Person { name, email } <- dbPerson
-  pure User { userName    = constRes name
-            , userEmail   = constRes email
+  pure $ Right $ 
+       User { userName    = pure name
+            , userEmail   = pure email
             , userAddress = const $ lift setDBAddress
             , userOffice  = constRes Nothing
-            , userHome    = constRes HH
-            , userEntity  = constRes Nothing
+            , userHome    = pure HH
+            , userEntity  = pure []
             }
 
 -- DB ----------------------
@@ -224,3 +257,7 @@ dbInt = pure 11
 
 dbPerson :: IO Person
 dbPerson = pure Person { name = "George", email = "George@email.com" }
+
+
+requireAuthorized :: WithOperation o => Resolver o e IO ()
+requireAuthorized = pure ()

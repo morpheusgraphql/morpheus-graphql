@@ -9,7 +9,6 @@ module Feature.Schema.API
   ) where
 
 import           Data.Morpheus       (interpreter)
-import           Data.Morpheus.Kind  (OBJECT)
 import           Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), Undefined (..))
 import           Data.Text           (Text)
 import qualified Feature.Schema.A2   as A2 (A (..))
@@ -18,10 +17,7 @@ import           GHC.Generics        (Generic)
 data A = A
   { aText :: Text
   , aInt  :: Int
-  } deriving (Generic)
-
-instance GQLType A where
-  type KIND A = OBJECT
+  } deriving (Generic, GQLType)
 
 data Query (m :: * -> * ) = Query
   { a1 :: A

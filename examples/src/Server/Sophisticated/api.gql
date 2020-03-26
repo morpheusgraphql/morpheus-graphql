@@ -9,7 +9,7 @@ input Dog {
 }
 
 input Bird {
-  name: String!
+  name: String
 }
 
 # Main APi
@@ -73,7 +73,7 @@ type User {
   ): Address!
   home: CityID!
   office(zipCode: [[[ID!]]!], id: CityID!): Address
-  entity: MyUnion
+  entity: [MyUnion!]!
 }
 
 union MyUnion = User | Address
@@ -85,6 +85,9 @@ type Query {
   wrapped2: AText!
   set: SetInt!
   someMap: MapTextInt!
+  fail1: Int!
+  fail2: Int!
+  shared: SharedType!
 }
 
 type Mutation {

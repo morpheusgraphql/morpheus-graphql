@@ -1,0 +1,4 @@
+query UndefinedField {
+  i1: input(value: { nullableField: 1 })
+  i2: input(value: {})
+}

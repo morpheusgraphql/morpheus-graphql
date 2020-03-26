@@ -18,30 +18,30 @@ import           Language.Haskell.TH
 import           Data.Morpheus.Execution.Internal.Decode
                                                 ( decodeFieldWith
                                                 , decodeObjectExpQ
+                                                , withObject
                                                 )
 import           Data.Morpheus.Execution.Server.Decode
                                                 ( Decode(..)
-                                                , DecodeObject(..)
+                                                , DecodeType(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( TypeD(..)
-                                                , Object
+                                                , ValidValue
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 
-
-(.:) :: Decode a => Object -> Text -> Validation a
-object .: selectorName = decodeFieldWith decode selectorName object
+(.:) :: Decode a => ValidValue -> Text -> Validation a
+value .: selectorName = withObject (decodeFieldWith decode selectorName) value
 
 deriveDecode :: TypeD -> Q [Dec]
 deriveDecode TypeD { tName, tCons = [cons] } =
   pure <$> instanceD (cxt []) appHead methods
  where
-  appHead = instanceHeadT ''DecodeObject tName []
-  methods = [funD 'decodeObject [clause argsE (normalB body) []]]
+  appHead = instanceHeadT ''DecodeType tName []
+  methods = [funD 'decodeType [clause argsE (normalB body) []]]
    where
     argsE = map (varP . mkName) ["o"]
     body  = decodeObjectExpQ [|(.:)|] cons

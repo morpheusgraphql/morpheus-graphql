@@ -3,7 +3,6 @@ module Data.Morpheus.Execution.Internal.Utils
   , nonCapital
   , nameSpaceWith
   , nameSpaceType
-  , nameSpaceTypeString
   )
 where
 
@@ -13,22 +12,26 @@ import           Data.Char                      ( toLower
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , unpack
+                                                , pack
                                                 )
+import qualified Data.Text                     as T
+                                                ( concat )
 
 
-nameSpaceTypeString :: [String] -> String -> String
-nameSpaceTypeString list name = concatMap capital (list <> [name])
+nameSpaceType :: [Text] -> Text -> Text
+nameSpaceType list name = T.concat $ map capital (list <> [name])
 
-nameSpaceType :: [Text] -> Text -> String
-nameSpaceType list name = concatMap (capital . unpack) (list <> [name])
-
-nameSpaceWith :: String -> String -> String
+nameSpaceWith :: Text -> Text -> Text
 nameSpaceWith nSpace name = nonCapital nSpace <> capital name
 
-nonCapital :: String -> String
-nonCapital []       = []
-nonCapital (x : xs) = toLower x : xs
+nonCapital :: Text -> Text
+nonCapital = pack . __nonCapital . unpack
+ where
+  __nonCapital []       = []
+  __nonCapital (x : xs) = toLower x : xs
 
-capital :: String -> String
-capital []       = []
-capital (x : xs) = toUpper x : xs
+capital :: Text -> Text
+capital = pack . __capital . unpack
+ where
+  __capital []       = []
+  __capital (x : xs) = toUpper x : xs

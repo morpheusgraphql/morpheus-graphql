@@ -19,12 +19,10 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Morpheus.Execution.Internal.Declare
                                                 ( tyConArgs )
 import           Data.Morpheus.Kind             ( ENUM
-                                                , INPUT_OBJECT
-                                                , INPUT_UNION
-                                                , OBJECT
                                                 , SCALAR
-                                                , UNION
                                                 , WRAPPER
+                                                , INPUT
+                                                , OUTPUT
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..)
                                                 , TRUE
@@ -36,6 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isSchemaTypeName
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
+                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT
@@ -45,48 +44,49 @@ import           Data.Morpheus.Types.Internal.TH
                                                 )
 import           Data.Typeable                  ( Typeable )
 
-genTypeName :: String -> String
-genTypeName ('S' : name) | isSchemaTypeName (pack name) = name
-genTypeName name = name
-
 deriveGQLType :: GQLTypeD -> Q [Dec]
 deriveGQLType GQLTypeD { typeD = TypeD { tName, tMeta }, typeKindD } =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
  where
   functions = map
     instanceProxyFunD
-    [ ('__typeName , [|pack (genTypeName tName)|])
-    , ('description, descriptionValue)
-    ]
+    [('__typeName, [|toHSTypename tName|]), ('description, descriptionValue)]
    where
     descriptionValue = case tMeta >>= metaDescription of
-      Nothing -> [| Nothing  |]
-      Just x  -> [| Just (pack desc)|] where desc = unpack x
-  -------------------------------------------------
+      Nothing   -> [| Nothing   |]
+      Just desc -> [| Just desc |]
+  --------------------------------
   typeArgs   = tyConArgs typeKindD
-  ----------------------------------------------
+  --------------------------------
   iHead      = instanceHeadT ''GQLType tName typeArgs
-  headSig    = typeT (mkName tName) typeArgs
-  -----------------------------------------------
+  headSig    = typeT (mkName $ unpack tName) typeArgs
+  ---------------------------------------------------
   constrains = map conTypeable typeArgs
-    where conTypeable name = typeT ''Typeable [name]
-  -----------------------------------------------
-  typeFamilies | isObject typeKindD = [deriveCUSTOM, deriveKind]
-               | otherwise          = [deriveKind]
+   where conTypeable name = typeT ''Typeable [name]
+  -------------------------------------------------
+  typeFamilies | isObject typeKindD = [deriveKIND, deriveCUSTOM]
+               | otherwise          = [deriveKIND]
    where
-    deriveCUSTOM = do
+    deriveCUSTOM = deriveInstance ''CUSTOM ''TRUE
+    deriveKIND = deriveInstance ''KIND (kindName typeKindD)
+    -------------------------------------------------------
+    deriveInstance :: Name -> Name -> Q Dec
+    deriveInstance insName tyName = do
       typeN <- headSig
-      pure $ typeInstanceDec ''CUSTOM typeN (ConT ''TRUE)
-    ---------------------------------------------------------------
-    deriveKind = do
-      typeN <- headSig
-      pure $ typeInstanceDec ''KIND typeN (ConT $ toKIND typeKindD)
-    ---------------------------------
-    toKIND KindScalar      = ''SCALAR
-    toKIND KindEnum        = ''ENUM
-    toKIND (KindObject _)  = ''OBJECT
-    toKIND KindUnion       = ''UNION
-    toKIND KindInputObject = ''INPUT_OBJECT
-    toKIND KindList        = ''WRAPPER
-    toKIND KindNonNull     = ''WRAPPER
-    toKIND KindInputUnion  = ''INPUT_UNION
+      pure $ typeInstanceDec insName typeN (ConT tyName)
+
+kindName :: DataTypeKind -> Name
+kindName KindObject {}   = ''OUTPUT
+kindName KindScalar      = ''SCALAR
+kindName KindEnum        = ''ENUM
+kindName KindUnion       = ''OUTPUT
+kindName KindInputObject = ''INPUT
+kindName KindList        = ''WRAPPER
+kindName KindNonNull     = ''WRAPPER
+kindName KindInputUnion  = ''INPUT
+
+toHSTypename :: Key -> Key
+toHSTypename = pack . hsTypename . unpack
+ where
+  hsTypename ('S' : name) | isSchemaTypeName (pack name) = name
+  hsTypename name = name

@@ -1,10 +1,354 @@
+# Changelog
+
+## 0.11.0 - Unreleased
+
+### Breaking Changes
+
+- Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
+
+## 0.10.1 - 10.02.2020
+
+### Added
+
+- Support for input lists separated by newlines. thanks @charlescrain
+
+## 0.10.0 - 07.01.2020
+
+### Breaking Changes
+
+- all constructors of `Resolver`: `QueryResolver`,`MutResolver`,`SubResolver` are unexposed. use `lift` , `publish` or `subscribe`.
+  e.g
+
+  ```hs
+  -- Query Resolver
+  resolveUser :: ResolveQ EVENT IO User
+  resolveUser = lift getDBUser
+
+  -- Mutation Resolver
+  resolveCreateUser :: ResolveM EVENT IO User
+  resolveCreateUser = do
+    publish [userUpdate] -- publishes event inside mutation
+    lift setDBUser
+
+  -- Subscription Resolver
+  resolveNewUser :: ResolveS EVENT IO User
+  resolveNewUser = subscribe [USER] $ do
+    pure $ \(Event _ content) -> lift (getDBUserByContent content)
+  ```
+
+### New features
+
+- exposed `publish` for mutation resolvers, now you can write
+
+  ```hs
+  resolveCreateUser :: ResolveM EVENT IO User
+  resolveCreateUser = do
+      requireAuthorized
+      publish [userUpdate]
+      liftEither setDBUser
+  ```
+
+- exposed `subscribe` for subscription resolvers, now you can write
+
+  ```hs
+  resolveNewUser :: ResolveS EVENT IO User
+  resolveNewUser = subscribe [USER] $ do
+      requireAuthorized
+      pure userByEvent
+    where userByEvent (Event _ content) = liftEither (getDBUser content)
+  ```
+
+- `type SubField` will convert your subscription monad to query monad.
+  `SubField (Resolver Subscription Event IO) User` will generate same as
+  `Resolver Subscription Event IO (User ((Resolver QUERY Event IO)))`
+
+  now if you want define subscription as follows
+
+  ```hs
+  data Subscription m = Subscription {
+    newUser :: SubField m User
+  }
+  ```
+
+- `unsafeInternalContext` to get resolver context, use only if it really necessary.
+  the code depending on it may break even on minor version changes.
+
+  ```hs
+  resolveUser :: ResolveQ EVENT IO User
+  resolveUser = do
+    Context { currentSelection, schema, operation } <- unsafeInternalContext
+    lift (getDBUser currentSelection)
+  ```
+
+### minor
+
+- monadio instance for resolvers. thanks @dandoh
+- example using stm, authentication, monad transformers. thanks @dandoh
+- added dependency `mtl`
+
+## [0.9.1] - 02.01.2020
+
+- removed dependency `mtl`
+
+## [0.9.0] - 02.01.2020
+
+### Added
+
+- `WithOperation` constraint for Generic Resolvers (#347) thanks @dandoh
+
+### Fixed
+
+- liftEither support in MutResolver (#351)
+- selection of `__typename` on object und union objects (#337)
+- auto inferece of external types in gql document (#343)
+
+  th will generate field `m (Type m)` if type has an argument
+
+  e.g for this types and DSL
+
+  ```hs
+  data Type1 = Type1 { ... }
+  type Type2 m = SomeType m
+  data Type3 m = Type2 { bla :: m Text } deriving ...
+  ```
+
+  ```gql
+  type Query {
+    field1: Type1!
+    field2: Type2!
+    field3: Type3!
+  }
+  ```
+
+  morpheus generates
+
+  ```hs
+  data Query m = Query {
+    field1 :: m Type1
+    field2 :: m (Type2 m)
+    field3 :: m (Type3 m)
+  } deriving ...
+  ```
+
+  now you can combine multiple gql documents:
+
+  ```hs
+  importDocumentWithNamespace `coreTypes.gql`
+  importDocumentWithNamespace `operations.gql`
+  ```
+
+### Changed
+
+- support of resolver fields `m type` for the fields without arguments
+
+  ```hs
+  data Diety m = Deity {
+      name :: m Text
+  }
+  -- is equal to
+  data Diety m = Deity {
+      name :: () -> m Text
+  }
+  ```
+
+- template haskell generates `m type` insead of `() -> m type` for fields without argument (#334)
+
+  ```hs
+  data Diety m = Deity {
+      name :: (Arrow () (m Text)),
+      power :: (Arrow () (m (Maybe Text)))
+  }
+  -- changed to
+  data Diety m = Deity {
+      name :: m Text,
+      power :: m (Maybe Text)
+  }
+  ```
+
+## [0.8.0] - 15.12.2019
+
+### Changed
+
+- deprecated: `INPUT_OBJECT`, `OBJECT`, `UNION`,
+
+  - use `INPUT` instead of `INPUT_OBJECT`
+  - use `deriving(GQLType)` insead of `OBJECT` or `UNION`
+
+- only namespaced Unions generate regular graphql Union, other attempts will be wrapped inside an object with constructor name :
+
+  e.g:
+
+  ```hs
+  data Character =
+    CharacterDeity Deity
+    SomeDeity Deity
+    deriving (GQLType)
+  ```
+
+  where `Deity` is Object.
+  will generate
+
+  ```gql
+  union CHaracter = Deity | SomeDeity
+
+  type SomeDeity {
+    _0: Deity
+  }
+  ```
+
+### Added
+
+- `failRes` for resolver failures
+- added kind: INPUT , OUTPUT
+- Automatic Type Inference (only for Object, Union and Enum)
+- More general stateful resolvers which accept instances of MonadIO (Authored by Sebastian Pulido [sebashack])
+- Utility to create web-socket applications with custom MonadIO instances (Authored by Sebastian Pulido [sebashack])
+
+```hs
+
+data Realm  =
+    Sky
+  | Sea
+  | Underworld
+    deriving (Generic, GQLType)
+
+data Deity  = Deity{
+    fullName:: Text,
+    realm:: Realm
+  } deriving (Generic, GQLType)
+
+data Character  =
+    CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
+  -- RECORDS
+  | Creature { creatureName :: Text, creatureAge :: Int }
+  --- Types
+  | SomeDeity Deity
+  | CharacterInt Int
+  | SomeMutli Int Text
+  --- ENUMS
+  | Zeus
+  | Cronus deriving (Generic, GQLType)
+
+
+```
+
+will generate schema:
+
+```gql
+enum Realm {
+  Sky
+  Sea
+  Underworld
+}
+
+type Deity {
+  fullName: String!
+  realm: Realm!
+}
+
+union Character =
+    Deity
+  | Creature
+  | SomeDeity
+  | CharacterInt
+  | SomeMutli
+  | CharacterEnumObject
+
+type Creature {
+  creatureName: String!
+  creatureAge: Int!
+}
+
+type SomeDeity {
+  _0: Deity!
+}
+
+type CharacterInt {
+  _0: Int!
+}
+
+type SomeMutli {
+  _0: Int!
+  _1: String!
+}
+
+# enum
+type CharacterEnumObject {
+  enum: CharacterEnum!
+}
+
+enum CharacterEnum {
+  Zeus
+  Cronus
+}
+```
+
+rules:
+
+- haskell union type with only empty constructors (e.g `Realm`), will generate graphql `enum`
+- haskell record without union (e.g `Deity`), will generate graphql `object`
+- namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` referenced object (not scalar) type: will be generate regular graphql Union
+
+  ```gql
+  union Character =
+        Deity
+      | ...
+  ```
+
+- for union recrods (`Creature { creatureName :: Text, creatureAge :: Int }`) will be referenced in union type, plus type `Creature`will be added in schema.
+
+  e.g
+
+  ```gql
+    union Character =
+      ...
+      | Creature
+      | ...
+
+    type Creature {
+      creatureName : String!
+      creatureAge: Int!
+    }
+
+  ```
+
+  - all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and this type will be added to union `Character`. as in example above
+
+  - there is only types left with form `TypeName Type1 2Type ..`(e.g `SomeDeity Deity` ,`CharacterInt Int`, `SomeMutli Int Text`),
+
+    morpheus will generate objet type from it:
+
+    ```gql
+    type TypeName {
+      _0: Type1!
+      _1: Type2!
+      ...
+    }
+    ```
+
+### Removed
+
+- removed kind: INPUT_UNION
+
+### Fixed
+
+- on filed resolver was displayed. unexhausted case exception of graphql error
+- support of signed numbers (e.g `-4`)
+- support of round floats (e.g `1.000`)
+- validation checks undefined fields on inputObject
+- variables are supported inside input values
+
+## [0.7.1] - 26.11.2019
+
+- max bound icludes: support-megaparsec-8.0
+
 ## [0.7.0] - 24.11.2019
 
-## Removed
+### Removed
 
 - `toMorpheusHaskellAPi` from `Data.Morpheus.Document` functionality will be migrated in `morpheus-graphql-cli`
 
-## Changed
+### Changed
 
 - `liftM` to `MonadTrans` instance method `lift`
 
@@ -106,7 +450,7 @@ resolver _args = lift setDBAddress
 
   compiler output:
 
-  ```
+  ```json
   warning:
     Morpheus Client Warning:
     {
@@ -133,7 +477,7 @@ resolver _args = lift setDBAddress
 
 ## [0.6.2] - 2.11.2019
 
-## Added
+### Added
 
 - support of ghc 8.8.1
 
@@ -146,7 +490,7 @@ resolver _args = lift setDBAddress
 
 - example `API` executable is removed from Production build
 
-## Added
+### Added
 
 - helper functions: `liftEitherM` , `liftM`
 
@@ -168,9 +512,9 @@ resolver _args = lift setDBAddress
 - Parser supports anonymous Operation: `query` , `mutation` , `subscription`
   for example:
 
-  ```
+  ```gql
   mutation {
-     name
+    name
   }
   ```
 

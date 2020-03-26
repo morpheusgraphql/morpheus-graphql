@@ -13,7 +13,6 @@ module Data.Morpheus.Execution.Internal.Decode
   )
 where
 
-import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( unpack )
 import           Language.Haskell.TH            ( ExpQ
                                                 , conE
@@ -23,23 +22,26 @@ import           Language.Haskell.TH            ( ExpQ
                                                 )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal   ( internalArgumentError
-                                                , internalTypeMismatch
+import           Data.Morpheus.Error.Internal   ( 
+                                                internalTypeMismatch
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , Key
                                                 , ConsD(..) 
-                                                , Object
-                                                , Value(..))
+                                                , ValidObject
+                                                , Value(..)
+                                                , ValidValue
+                                                , Message
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
+                                                ( Validation, Failure(..) )
 
 
 decodeObjectExpQ :: ExpQ -> ConsD -> ExpQ
 decodeObjectExpQ fieldDecoder ConsD { cName, cFields } = handleFields cFields
  where
-  consName = conE (mkName cName)
+  consName = conE (mkName $ unpack cName)
   ----------------------------------------------------------------------------------
   handleFields fNames = uInfixE consName (varE '(<$>)) (applyFields fNames)
    where
@@ -47,37 +49,36 @@ decodeObjectExpQ fieldDecoder ConsD { cName, cFields } = handleFields cFields
     applyFields [x     ] = defField x
     applyFields (x : xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
     ------------------------------------------------------------------------
-    defField DataField { fieldName } = uInfixE (varE (mkName "o"))
+    defField FieldDefinition { fieldName } = uInfixE (varE (mkName "o"))
                                                fieldDecoder
                                                [|fName|]
       where fName = unpack fieldName
 
-withObject :: (Object -> Validation a) -> Value -> Validation a
+withObject :: (ValidObject -> Validation a) -> ValidValue -> Validation a
 withObject f (Object object) = f object
 withObject _ isType          = internalTypeMismatch "Object" isType
 
-withMaybe :: Monad m => (Value -> m a) -> Value -> m (Maybe a)
+withMaybe :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Maybe a)
 withMaybe _      Null = pure Nothing
 withMaybe decode x    = Just <$> decode x
 
-withList :: (Value -> Validation a) -> Value -> Validation [a]
+withList :: (ValidValue -> Validation a) -> ValidValue -> Validation [a]
 withList decode (List li) = mapM decode li
 withList _      isType    = internalTypeMismatch "List" isType
 
-withEnum :: (Key -> Validation a) -> Value -> Validation a
+withEnum :: (Key -> Validation a) -> ValidValue -> Validation a
 withEnum decode (Enum value) = decode value
 withEnum _      isType       = internalTypeMismatch "Enum" isType
 
-withUnion :: (Key -> Object -> Object -> Validation a) -> Object -> Validation a
-withUnion decoder unions = case lookup "tag" unions of
+withUnion :: (Key -> ValidObject -> ValidObject -> Validation a) -> ValidObject -> Validation a
+withUnion decoder unions = case lookup "__typename" unions of
   Just (Enum key) -> case lookup key unions of
-    Nothing -> internalArgumentError
-      ("type \"" <> key <> "\" was not provided on object")
+    Nothing -> withObject (decoder key unions) (Object [])
     Just value -> withObject (decoder key unions) value
-  Just _  -> internalArgumentError "tag must be Enum"
-  Nothing -> internalArgumentError "tag not found on Input Union"
+  Just _  -> failure ("__typename must be Enum" :: Message)
+  Nothing -> failure ("__typename not found on Input Union" :: Message)
 
-decodeFieldWith :: (Value -> Validation a) -> Key -> Object -> Validation a
+decodeFieldWith :: (ValidValue -> Validation a) -> Key -> ValidObject -> Validation a
 decodeFieldWith decoder name object = case lookup name object of
-  Nothing    -> internalArgumentError ("Missing Field: \"" <> name <> "\"")
+  Nothing    -> decoder Null
   Just value -> decoder value

@@ -2,8 +2,8 @@
 
 Build GraphQL APIs with your favourite functional language!
 
-Morpheus GraphQL (Server & Client) helps you to build GraphQL APIs in Haskell with native haskell types.
-Morpheus will convert your haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Mopheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
+Morpheus GraphQL (Server & Client) helps you to build GraphQL APIs in Haskell with native Haskell types.
+Morpheus will convert your Haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Mopheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
 
 Morpheus is still in an early stage of development, so any feedback is more than welcome, and we appreciate any contribution!
 Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-graphql-slack-invite.herokuapp.com/) to get in touch.
@@ -29,7 +29,7 @@ _stack.yml_
 resolver: lts-14.8
 
 extra-deps:
-  - morpheus-graphql-0.7.0
+  - morpheus-graphql-0.10.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
@@ -53,7 +53,7 @@ type Deity {
   Description for name
   """
   name: String!
-  power: String String! @deprecated(reason: "some reason for")
+  power: String @deprecated(reason: "some reason for")
 }
 ```
 
@@ -76,7 +76,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), IORes)
+import           Data.Morpheus.Types        (GQLRootResolver (..), IORes, Undefined(..))
 import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "schema.gql"
@@ -90,10 +90,11 @@ rootResolver =
       subscriptionResolver = Undefined
     }
   where
-    queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity {deityName, deityPower}
-      where
-        deityName _ = pure "Morpheus"
-        deityPower _ = pure (Just "Shapeshifting")
+    queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity
+      {
+        deityName = pure "Morpheus"
+      , deityPower = pure (Just "Shapeshifting")
+      }
 
 api :: ByteString -> IO ByteString
 api = interpreter rootResolver
@@ -101,9 +102,9 @@ api = interpreter rootResolver
 
 Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be used by `rootResolver`
 
-`descriptions` and `deprecations` will be displayed in intropsection.
+`descriptions` and `deprecations` will be displayed in introspection.
 
-`importGQLDocumentWithNamespace` will generate Types with namespaced fields. if you don't need napespacing use `importGQLDocument`
+`importGQLDocumentWithNamespace` will generate Types with namespaced fields. If you don't need napespacing use `importGQLDocument`
 
 ### with Native Haskell Types
 
@@ -118,10 +119,7 @@ data Query m = Query
 data Deity = Deity
   { fullName :: Text         -- Non-Nullable Field
   , power    :: Maybe Text   -- Nullable Field
-  } deriving (Generic)
-
-instance GQLType Deity where
-  type  KIND Deity = OBJECT
+  } deriving (Generic,GQLType)
 
 data DeityArgs = DeityArgs
   { name      :: Text        -- Required Argument
@@ -151,8 +149,6 @@ resolveDeity DeityArgs { name, mythology } = liftEither $ dbDeity name mythology
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
 ```
-
-Note that the type `a -> IORes b` is just Synonym for `a -> ExceptT String IO b`
 
 To make this `Query` type available as an API, we define a `GQLRootResolver` and feed it to the Morpheus `interpreter`. A `GQLRootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
@@ -236,13 +232,118 @@ To use union type, all you have to do is derive the `GQLType` class. Using Graph
 
 ```haskell
 data Character
-  = DEITY Deity
-  | HUMAN Human
-  deriving (Generic)
-
-instance GQLType Character where
-  type KIND City = UNION
+  = CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
+  -- RECORDS
+  | Creature { creatureName :: Text, creatureAge :: Int }
+  --- Types
+  | SomeDeity Deity
+  | CharacterInt Int
+  | SomeMutli Int Text
+  --- ENUMS
+  | Zeus
+  | Cronus
+  deriving (Generic, GQLType)
 ```
+
+where `Deity` is an object.
+
+As you see there are different kinds of unions. `morpheus` handles them all.
+
+This type will be represented as
+
+```gql
+union Character =
+    Deity # unwrapped union: because "Character" <> "Deity" == "CharacterDeity"
+  | Creature
+  | SomeDeity # wrapped union: because "Character" <> "Deity" /= SomeDeity
+  | CharacterInt
+  | SomeMutli
+  | CharacterEnumObject # no-argument constructors all wrapped into an enum
+
+type Creature {
+  creatureName: String!
+  creatureAge: Int!
+}
+
+type SomeDeity {
+  _0: Deity!
+}
+
+type CharacterInt {
+  _0: Int!
+}
+
+type SomeMutli {
+  _0: Int!
+  _1: String!
+}
+
+# enum
+type CharacterEnumObject {
+  enum: CharacterEnum!
+}
+
+enum CharacterEnum {
+  Zeus
+  Cronus
+}
+```
+
+By default, union members will be generated with wrapper objects.
+There is one exception to this: if a constructor of a type is the type name concatinated with the name of the contained type, it will be referenced directly.
+That is, given:
+
+```haskell
+data Song = { songName :: Text, songDuration :: Float } deriving (Generic, GQLType)
+
+data Skit = { skitName :: Text, skitDuration :: Float } deriving (Generic, GQLType)
+
+data WrappedNode
+  = WrappedSong Song
+  | WrappedSkit Skit
+  deriving (Generic, GQLType)
+
+data NonWrapped
+  = NonWrappedSong Song
+  | NonWrappedSkit Skit
+  deriving (Generic, GQLType)
+
+```
+
+You will get the following schema:
+
+
+```gql
+
+# has wrapper types
+union WrappedNode = WrappedSong | WrappedSkit
+
+# is a direct union
+union NonWrapped = Song | Skit
+
+type WrappedSong {
+  _0: Song!
+}
+
+type WrappedSKit {
+  _0: Skit!
+}
+
+type Song {
+  songDuration: Float!
+  songName: String!
+}
+
+type Skit {
+  skitDuration: Float!
+  skitName: String!
+}
+
+```
+
+- for all other unions will be generated new object type. for types without record syntax, fields will be automatally indexed.
+
+- all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and added to union members.
 
 ### Scalar types
 
@@ -286,9 +387,31 @@ screenshots from `Insomnia`
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/autocomplete.png "autocomplete")
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/type.png "type")
 
+## Handling Errors
+
+for errors you can use use either `liftEither` or `failRes`:
+at the and they have same result.
+
+with `liftEither`
+
+```haskell
+resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity DeityArgs {} = liftEither $ dbDeity
+
+dbDeity ::  IO Either Deity
+dbDeity = pure $ Left "db error"
+```
+
+with `failRes`
+
+```haskell
+resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity DeityArgs { } = failRes "db error"
+```
+
 ### Mutations
 
-In addition to queries, Morpheus also supports mutations. The behave just like regular queries and are defined similarly:
+In addition to queries, Morpheus also supports mutations. They behave just like regular queries and are defined similarly:
 
 ```haskell
 newtype Mutation m = Mutation
@@ -313,10 +436,10 @@ gqlApi = interpreter rootResolver
 
 ### Subscriptions
 
-im morpheus subscription and mutation communicating with Events,
+In morpheus subscription and mutation communicate with Events,
 `Event` consists with user defined `Channel` and `Content`.
 
-every subscription has own Channel by which will be triggered
+Every subscription has its own Channel by which it will be triggered
 
 ```haskell
 data Channel
@@ -330,40 +453,39 @@ data Content
 type MyEvent = Event Channel Content
 
 newtype Query m = Query
-  { deity :: () -> m Deity
+  { deity :: m Deity
   } deriving (Generic)
 
 newtype Mutation m = Mutation
-  { createDeity :: () -> m Deity
+  { createDeity :: m Deity
   } deriving (Generic)
 
 newtype Subscription (m ::  * -> * ) = Subscription
-  { newDeity :: () -> m  Deity
+  { newDeity :: m  Deity
   } deriving (Generic)
 
 type APIEvent = Event Channel Content
 
 rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
 rootResolver = GQLRootResolver
-  { queryResolver        = Query { deity }
+  { queryResolver        = Query { deity = fetchDeity }
   , mutationResolver     = Mutation { createDeity }
   , subscriptionResolver = Subscription { newDeity }
   }
  where
-  deity _args = fetchDeity
   -- Mutation Without Event Triggering
-  createDeity :: () -> ResolveM EVENT IO Address
-  createDeity _args = MutResolver \$ do
-      value <- lift dbCreateDeity
-      pure (
-        [Event { channels = [ChannelA], content = ContentA 1 }],
-        value
-      )
-  newDeity _args = SubResolver [ChannelA] subResolver
+  createDeity :: ResolveM EVENT IO Address
+  createDeity = do
+      requireAuthorized
+      publish [Event { channels = [ChannelA], content = ContentA 1 }]
+      lift dbCreateDeity
+  newDeity = subscribe [ChannelA] $ do
+      requireAuthorized
+      lift deityByEvent
    where
-    subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
-    subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
-    subResolver _ = fetchDeity -- Resolve Old State
+    deityByEvent (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
+    deityByEvent (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
+    deityByEvent _ = fetchDeity -- Resolve Old State
 ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
@@ -395,6 +517,13 @@ input Character {
 type Deity {
   name: String!
   worships: Deity
+  power: Power!
+}
+
+enum Power {
+  Lightning
+  Teleportation
+  Omniscience
 }
 ```
 
@@ -412,12 +541,18 @@ data GetHero = GetHero {
 data DeityDeity = DeityDeity {
   name: Text,
   worships: Maybe DeityWorshipsDeity
+  power: Power
 }
 
 -- from: {deity{worships
 data DeityWorshipsDeity = DeityWorshipsDeity {
   name: Text,
 }
+
+data Power =
+    PowerLightning
+  | PowerTeleportation
+  | PowerOmniscience
 
 data GetHeroArgs = GetHeroArgs {
   getHeroArgsCharacter: Character
@@ -441,7 +576,26 @@ with `fetch` you can fetch well typed response `GetHero`.
         jsonRes = <GraphQL APi>
 ```
 
-types can be generatet from `introspection` too:
+in this case, `jsonRes` resolves a request into a response in some monad `m`.
+
+A `fetch` resolver implementation against [a real API](https://swapi.graph.cool) may look like the following:
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Char8 as C8
+import Network.HTTP.Req
+
+resolver :: String -> ByteString -> IO ByteString
+resolver tok b = runReq defaultHttpConfig $ do
+    let headers = header "Content-Type" "application/json"
+    responseBody <$> req POST (https "swapi.graph.cool") (ReqBodyLbs b) lbsResponse headers
+```
+
+this is demonstrated in examples/src/Client/StarWarsClient.hs
+
+types can be generated from `introspection` too:
 
 ```haskell
 defineByIntrospectionFile "./introspection.json"
@@ -450,6 +604,18 @@ defineByIntrospectionFile "./introspection.json"
 ## Morpheus CLI for Code Generating
 
 you should use [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli)
+
+## Showcase
+
+Below are the list of projects using Morpheus GraphQL. If you want to start using Morpheus GraphQL, they are
+good templates to begin with.
+
+- https://github.com/morpheusgraphql/mythology-api
+  - Serverless Mythology API
+- https://github.com/dandoh/web-haskell
+  - Modern webserver boilerplate in Haskell: Morpheus Graphql + Postgresql + Authentication + DB migration + Dotenv and more
+
+*Edit this section and send PR if you want to share your project*.
 
 # About
 

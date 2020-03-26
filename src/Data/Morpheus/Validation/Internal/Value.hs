@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -10,104 +11,190 @@ where
 import           Data.List                      ( elem )
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Variable   ( incompatibleVariableType )
 import           Data.Morpheus.Error.Input      ( InputError(..)
                                                 , InputValidation
                                                 , Prop(..)
                                                 )
-import           Data.Morpheus.Rendering.RenderGQL
-                                                ( renderWrapped )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
-                                                , DataTyCon(..)
-                                                , DataType(..)
-                                                , DataTypeLib(..)
-                                                , DataValidator(..)
+                                                ( FieldDefinition(..)
+                                                , TypeContent(..)
+                                                , TypeDefinition(..)
+                                                , Schema(..)
+                                                , ScalarDefinition(..)
                                                 , Key
-                                                , TypeAlias(..)
+                                                , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , DataEnumValue(..)
-                                                , isNullable
-                                                , lookupField
                                                 , lookupInputType
                                                 , Value(..)
+                                                , ValidValue
+                                                , Variable(..)
+                                                , Ref(..)
+                                                , Message
+                                                , Name
+                                                , ResolvedValue
+                                                , VALID
+                                                , VariableContent(..)
+                                                , TypeRef(..)
+                                                , isWeaker
+                                                , unpackInputUnion
+                                                , isFieldNullable
+                                                , isNullableWrapper
                                                 )
-
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                , selectBy
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
+import           Data.Morpheus.Rendering.RenderGQL
+                                                ( RenderGQL(..) 
+                                                , renderWrapped
+                                                )
+
+checkTypeEquality
+  :: (Name, [TypeWrapper])
+  -> Ref
+  -> Variable VALID
+  -> InputValidation ValidValue
+checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType }
+  | typeConName variableType == tyConName && not
+    (isWeaker (typeWrappers variableType) tyWrappers)
+  = pure value
+  | otherwise
+  = failure $ GlobalInputError $ incompatibleVariableType refName
+                                                          varSignature
+                                                          fieldSignature
+                                                          refPosition
+ where
+  varSignature   = render variableType
+  fieldSignature = render TypeRef { typeConName  = tyConName
+                                  , typeWrappers = tyWrappers
+                                  , typeArgs     = Nothing
+                                  }
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
-  :: DataTypeLib
+  :: Schema
   -> [Prop]
   -> [TypeWrapper]
-  -> DataType
-  -> (Key, Value)
-  -> InputValidation Value
-validateInputValue lib prop' = validate
+  -> TypeDefinition
+  -> (Key, ResolvedValue)
+  -> InputValidation ValidValue
+validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName } =
+  validateWrapped rw typeContent
  where
-  throwError :: [TypeWrapper] -> DataType -> Value -> InputValidation Value
-  throwError wrappers datatype value =
-    Left $ UnexpectedType prop' (renderWrapped datatype wrappers) value Nothing
+  throwError :: [TypeWrapper] -> ResolvedValue -> InputValidation ValidValue
+  throwError wrappers value =
+    Left $ UnexpectedType props (renderWrapped typeName wrappers) value Nothing
   -- VALIDATION
-  validate :: [TypeWrapper] -> DataType -> (Key, Value) -> InputValidation Value
+  validateWrapped
+    :: [TypeWrapper]
+    -> TypeContent
+    -> (Key, ResolvedValue)
+    -> InputValidation ValidValue
   -- Validate Null. value = null ?
-  validate wrappers tName (_, Null) | isNullable wrappers = return Null
-                                    | otherwise = throwError wrappers tName Null
+  validateWrapped wrappers _ (_, ResolvedVariable ref variable) =
+    checkTypeEquality (typeName, wrappers) ref variable
+  validateWrapped wrappers _ (_, Null)
+    | isNullableWrapper wrappers = return Null
+    | otherwise                  = throwError wrappers Null
   -- Validate LIST
-  validate (TypeMaybe : wrappers) type' value' =
-    validateInputValue lib prop' wrappers type' value'
-  validate (TypeList : wrappers) type' (key', List list') =
-    List <$> mapM validateElement list'
+  validateWrapped (TypeMaybe : wrappers) _ value =
+    validateInputValue lib props wrappers datatype value
+  validateWrapped (TypeList : wrappers) _ (key, List list) =
+    List <$> mapM validateElement list
    where
-    validateElement element' =
-      validateInputValue lib prop' wrappers type' (key', element')
+    validateElement element =
+      validateInputValue lib props wrappers datatype (key, element)
   {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
   {-- VALIDATE OBJECT--}
-  validate [] (DataInputObject DataTyCon { typeData = parentFields' }) (_, Object fields)
-    = Object <$> mapM validateField fields
+  validateWrapped [] dt v = validate dt v
    where
-    validateField (_name, value) = do
-      (type', currentProp') <- validationData value
-      wrappers'             <- aliasWrappers . fieldType <$> getField
-      value''               <- validateInputValue lib
-                                                  currentProp'
-                                                  wrappers'
-                                                  type'
-                                                  (_name, value)
-      return (_name, value'')
+    validate
+      :: TypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
+    validate (DataInputObject parentFields) (_, Object fields) = do 
+      _ <- traverse requiredFieldsDefined (toList parentFields)
+      Object <$> traverse validateField fields
      where
-      validationData x = do
-        fieldTypeName' <- aliasTyCon . fieldType <$> getField
-        let currentProp = prop' ++ [Prop _name fieldTypeName']
-        type' <- lookupInputType fieldTypeName'
-                                 lib
-                                 (typeMismatch x fieldTypeName' currentProp)
-        return (type', currentProp)
-      getField = lookupField _name parentFields' (UnknownField prop' _name)
-  -- VALIDATE INPUT UNION
-  -- TODO: Validate Union
-  validate [] (DataInputUnion DataTyCon { typeData }) (_, Object fields) =
-    return (Object fields)
-  {-- VALIDATE SCALAR --}
-  validate [] (DataEnum DataTyCon { typeData = tags, typeName = name' }) (_, value')
-    = validateEnum (UnexpectedType prop' name' value' Nothing) tags value'
-  {-- VALIDATE ENUM --}
-  validate [] (DataScalar DataTyCon { typeName = name', typeData = DataValidator { validateValue = validator' } }) (_, value')
-    = case validator' value' of
-      Right _  -> return value'
-      Left  "" -> failure (UnexpectedType prop' name' value' Nothing)
-      Left errorMessage ->
-        Left $ UnexpectedType prop' name' value' (Just errorMessage)
-  {-- 3. THROW ERROR: on invalid values --}
-  validate wrappers datatype (_, value) = throwError wrappers datatype value
+      requiredFieldsDefined datafield@FieldDefinition { fieldName }
+        | fieldName `elem` map fst fields || isFieldNullable datafield = pure ()
+        | otherwise = failure (UndefinedField props fieldName)
+      validateField
+        :: (Name, ResolvedValue) -> InputValidation (Name, ValidValue)
+      validateField (_name, value) = do
+        (type', currentProp') <- validationData value
+        wrappers'             <- typeWrappers . fieldType <$> getField
+        value''               <- validateInputValue lib
+                                                    currentProp'
+                                                    wrappers'
+                                                    type'
+                                                    (_name, value)
+        return (_name, value'')
+       where
+        validationData :: ResolvedValue -> InputValidation (TypeDefinition, [Prop])
+        validationData x = do
+          fieldTypeName' <- typeConName . fieldType <$> getField
+          let currentProp = props ++ [Prop _name fieldTypeName']
+          type' <- lookupInputType fieldTypeName'
+                                   lib
+                                   (typeMismatch x fieldTypeName' currentProp)
+          return (type', currentProp)
+        getField = selectBy (UnknownField props _name) _name parentFields
+    -- VALIDATE INPUT UNION
+    validate (DataInputUnion inputUnion) (_, Object rawFields) =
+      case unpackInputUnion inputUnion rawFields of
+        Left message -> failure
+          $ UnexpectedType props typeName (Object rawFields) (Just message)
+        Right (name, Nothing   ) -> return (Object [("__typename", Enum name)])
+        Right (name, Just value) -> do
+          currentUnionDatatype <- lookupInputType
+            name
+            lib
+            (typeMismatch value name props)
+          validValue <- validateInputValue lib
+                                           props
+                                           [TypeMaybe]
+                                           currentUnionDatatype
+                                           (name, value)
+          return (Object [("__typename", Enum name), (name, validValue)])
 
-validateEnum :: error -> [DataEnumValue] -> Value -> Either error Value
+    {-- VALIDATE ENUM --}
+    validate (DataEnum tags) (_, value) =
+      validateEnum (UnexpectedType props typeName value Nothing) tags value
+    {-- VALIDATE SCALAR --}
+    validate (DataScalar dataScalar) (_, value) =
+      validateScalar dataScalar value (UnexpectedType props typeName)
+    validate _ (_, value) = throwError [] value
+    {-- 3. THROW ERROR: on invalid values --}
+  validateWrapped wrappers _ (_, value) = throwError wrappers value
+
+
+validateScalar
+  :: ScalarDefinition
+  -> ResolvedValue
+  -> (ResolvedValue -> Maybe Message -> InputError)
+  -> InputValidation ValidValue
+validateScalar ScalarDefinition { validateValue } value err = do
+  scalarValue <- toScalar value
+  case validateValue scalarValue of
+    Right _            -> return scalarValue
+    Left  ""           -> failure (err value Nothing)
+    Left  errorMessage -> failure $ err value (Just errorMessage)
+ where
+  toScalar :: ResolvedValue -> InputValidation ValidValue
+  toScalar (Scalar x) = pure (Scalar x)
+  toScalar scValue    = Left (err scValue Nothing)
+
+validateEnum
+  :: error -> [DataEnumValue] -> ResolvedValue -> Either error ValidValue
 validateEnum gqlError enumValues (Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise             = Left gqlError
   where tags = map enumName enumValues
 validateEnum gqlError _ _ = Left gqlError
 
-typeMismatch :: Value -> Key -> [Prop] -> InputError
+typeMismatch :: ResolvedValue -> Key -> [Prop] -> InputError
 typeMismatch jsType expected' path' =
   UnexpectedType path' expected' jsType Nothing

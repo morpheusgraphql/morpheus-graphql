@@ -38,12 +38,12 @@ import           Data.Morpheus.Types.Types      ( MapKind
                                                 , Pair
                                                 , Undefined(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Data
+import           Data.Morpheus.Types.Internal.AST
                                                 ( DataFingerprint(..)
                                                 , QUERY
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Resolver(..) )
+                                                ( Resolver )
 
 type TRUE = 'True
 
@@ -80,13 +80,34 @@ ignoreResolver (con, args) =
 --     instance GQLType ... where
 --       description = const "your description ..."
 --  @
-class GQLType a where
+
+class IsObject (a :: GQL_KIND) where
+  isObject :: Proxy a -> Bool
+
+instance IsObject SCALAR where
+  isObject _ = False
+
+instance IsObject ENUM where
+  isObject _ = False
+
+instance IsObject WRAPPER where
+  isObject _ = False
+
+instance IsObject INPUT where
+  isObject _ = True
+
+instance IsObject OUTPUT where
+  isObject _ = True
+
+class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
-  type KIND a = OBJECT
+  type KIND a = OUTPUT
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
   description :: Proxy a -> Maybe Text
   description _ = Nothing
+  isObjectKind :: Proxy a -> Bool
+  isObjectKind _ = isObject (Proxy @(KIND a))
   __typeName :: Proxy a -> Text
   default __typeName :: (Typeable a) =>
     Proxy a -> Text
@@ -96,7 +117,7 @@ class GQLType a where
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint :: (Typeable a) =>
     Proxy a -> DataFingerprint
-  __typeFingerprint _ = TypeableFingerprint $ map show $ conFingerprints (Proxy @a)
+  __typeFingerprint _ = DataFingerprint "Typeable" $ map show $ conFingerprints (Proxy @a)
     where
       conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
@@ -143,10 +164,10 @@ instance GQLType a => GQLType (Set a) where
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
-  type KIND (Pair a b) = OBJECT
+  type KIND (Pair a b) = OUTPUT
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
-  type KIND (MapKind a b m) = OBJECT
+  type KIND (MapKind a b m) = OUTPUT
   __typeName _ = __typeName (Proxy @(Map a b))
   __typeFingerprint _ = __typeFingerprint (Proxy @(Map a b))
 

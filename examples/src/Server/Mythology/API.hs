@@ -1,9 +1,12 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE NamedFieldPuns        #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Server.Mythology.API
-  ( mythologyApi
+  ( mythologyApi,
+    mythologyRoot
   )
 where
 
@@ -17,29 +20,65 @@ import           Data.Morpheus.Types            ( GQLRootResolver(..)
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
-import           Server.Mythology.Character.Deity
-                                                ( Deity(..)
+import           Server.Mythology.Character     ( Deity
+                                                , Human
                                                 , dbDeity
+                                                , someHuman
+                                                , someDeity
                                                 )
+import           Server.Mythology.Place         ( City )
 
-newtype Query m = Query
-  { deity :: DeityArgs -> m Deity
+
+data Character m =
+    CharacterHuman (Human m) -- Only <tyconName><conName> should generate direct link
+  | CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
+  -- RECORDS
+  | Creature { name :: Text, age :: Int }
+  | BoxedDeity { boxedDeity :: Deity}
+  | SomeScalarRecord { scalar :: Text }
+  --- Types 
+  | SomeDeity Deity
+  | SomeScalar Int
+  | SomeMutli Int Text
+  --- ENUMS
+  | Zeus
+  | Cronus deriving (Generic, GQLType)
+
+data Query m = Query
+  { deity :: DeityArgs -> m Deity,
+    character :: [Character m]
   } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs
   { name      :: Text -- Required Argument
-  , mythology :: Maybe Text -- Optional Argument
+  , bornPlace :: Maybe City -- Optional Argument
   } deriving (Generic)
 
 resolveDeity :: DeityArgs -> IORes e Deity
-resolveDeity DeityArgs { name, mythology } =
-  liftEither $ dbDeity name mythology
+resolveDeity DeityArgs { name, bornPlace } =
+  liftEither $ dbDeity name bornPlace
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
-rootResolver = GQLRootResolver { queryResolver = Query { deity = resolveDeity }
-                               , mutationResolver = Undefined
-                               , subscriptionResolver = Undefined
-                               }
+resolveCharacter :: Applicative m => [Character m]
+resolveCharacter =
+  [ CharacterHuman someHuman
+  , CharacterDeity someDeity
+  , Creature { name = "Lamia", age = 205 }
+  , BoxedDeity { boxedDeity = someDeity }
+  , SomeScalarRecord { scalar = "Some Text" }
+  ---
+  , SomeDeity someDeity
+  , SomeScalar 12
+  , SomeMutli 21 "some text"
+  , Zeus
+  , Cronus
+  ]
+
+mythologyRoot :: GQLRootResolver IO () Query Undefined Undefined
+mythologyRoot = GQLRootResolver
+  { queryResolver = Query { deity = resolveDeity, character = resolveCharacter }
+  , mutationResolver = Undefined
+  , subscriptionResolver = Undefined
+  }
 
 mythologyApi :: B.ByteString -> IO B.ByteString
-mythologyApi = interpreter rootResolver
+mythologyApi = interpreter mythologyRoot

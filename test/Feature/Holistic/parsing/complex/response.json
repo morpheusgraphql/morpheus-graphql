@@ -13,6 +13,10 @@
       "locations": [{ "line": 15, "column": 21 }]
     },
     {
+      "message": "Argument cityID got invalid value ; Expected type \"TestEnum\" found \"HH\".",
+      "locations": [{ "line": 15, "column": 33 }]
+    },
+    {
       "message": "Cannot query field \"home\" on type \"User\".",
       "locations": [{ "line": 25, "column": 5 }]
     },

@@ -1,0 +1,4 @@
+query Unexpectedvariable($v1: String, $v2: String) {
+  i1: input(value: { field: $v1, nullableField: 1 })
+  i2: input(value: { field: "", nullableField: $v2 })
+}

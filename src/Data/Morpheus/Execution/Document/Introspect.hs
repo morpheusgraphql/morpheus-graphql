@@ -1,7 +1,9 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE QuasiQuotes        #-}
+{-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module Data.Morpheus.Execution.Document.Introspect
   ( deriveObjectRep , instanceIntrospect
@@ -9,79 +11,84 @@ module Data.Morpheus.Execution.Document.Introspect
 
 import Data.Maybe(maybeToList)
 import           Data.Proxy                                (Proxy (..))
-import           Data.Text                                 (unpack)
+import           Data.Text                                 (unpack,Text)
 import           Data.Typeable                             (Typeable)
 import           Language.Haskell.TH  
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Internal.Declare  (tyConArgs)
-import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), ObjectFields (..))
+import           Data.Morpheus.Execution.Server.Introspect (Introspect (..), introspectObjectFields, IntrospectRep (..),TypeScope(..))
 import           Data.Morpheus.Types.GQLType               (GQLType (__typeName), TRUE)
-import           Data.Morpheus.Types.Internal.AST          (ConsD (..), TypeD (..), ArgsType (..),Key, DataType(..), DataField (..),insertType,DataTypeKind(..), TypeAlias (..))
+import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
+                                                            , TypeD (..)
+                                                            , TypeDefinition(..)
+                                                            , TypeContent(..)
+                                                            , ArgumentsDefinition(..)
+                                                            , FieldDefinition (..)
+                                                            , insertType
+                                                            , DataTypeKind(..)
+                                                            , TypeRef (..)
+                                                            , unsafeFromFieldList
+                                                            )
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
-
-instanceIntrospect :: (Key,DataType) -> Q [Dec]
--- FIXME: dirty fix for introspection
-instanceIntrospect ("__DirectiveLocation",_) = pure []
-instanceIntrospect ("__TypeKind",_) = pure []
-instanceIntrospect (name, DataEnum enumType) =
-  pure <$> instanceD (cxt []) iHead [defineIntrospect]
+instanceIntrospect :: TypeDefinition -> Q [Dec]
+instanceIntrospect TypeDefinition { typeName, typeContent = DataEnum enumType , .. } 
+    -- FIXME: dirty fix for introspection
+    | typeName `elem`  ["__DirectiveLocation","__TypeKind"] = pure []
+    | otherwise = pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     -----------------------------------------------
-    iHead = instanceHeadT ''Introspect  (unpack name) []
+    iHead = instanceHeadT ''Introspect typeName []
     defineIntrospect = instanceProxyFunD ('introspect,body)
       where
-        body =[| insertType (name, DataEnum enumType) |]
+        body =[| insertType TypeDefinition { typeContent = DataEnum enumType, .. } |]
 instanceIntrospect _ = pure []
 
--- [((Text, DataField), TypeUpdater)]
+-- [(FieldDefinition, TypeUpdater)]
 deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
+    mainTypeName = typeT (mkName $ unpack tName) typeArgs
     typeArgs = concatMap tyConArgs (maybeToList tKind)
     constrains = map conTypeable typeArgs
       where
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
-    iHead = instanceHeadMultiT ''ObjectFields (conT ''TRUE) [typeT (mkName tName) typeArgs]
-    methods = [instanceFunD 'objectFields ["_proxy1", "_proxy2"] body]
+    iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [mainTypeName]
+    methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
-        body = [|($(buildFields cFields), concat $(buildTypes cFields))|]
+        body 
+          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject $ unsafeFromFieldList $(buildFields cFields), concat $(buildTypes cFields))|]
+          | otherwise  =  [| (DataObject [] $ unsafeFromFieldList $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
-
-buildTypes :: [DataField] -> ExpQ
+    
+buildTypes :: [FieldDefinition] -> ExpQ
 buildTypes = listE . concatMap introspectField
   where
-    introspectField DataField {fieldType, fieldArgsType} =
-      [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgsType
+    introspectField FieldDefinition {fieldType, fieldArgs } =
+      [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgs
       where
-        inputTypes (Just ArgsType {argsTypeName})
-          | argsTypeName /= "()" = [[|snd $ objectFields (Proxy :: Proxy TRUE) $(proxyT tAlias)|]]
+        inputTypes ArgumentsDefinition { argumentsTypename = Just argsTypeName }
+          | argsTypeName /= "()" = [[| snd $ introspectObjectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType,$(proxyT tAlias))|]]
           where
-            tAlias = TypeAlias {aliasTyCon = argsTypeName, aliasWrappers = [], aliasArgs = Nothing}
+            tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
         inputTypes _ = []
 
-proxyT :: TypeAlias -> Q Exp
-proxyT TypeAlias {aliasTyCon, aliasArgs} = [|(Proxy :: Proxy $(genSig aliasArgs))|]
-  where
-    genSig (Just m) = appT (conT $ mkName $ unpack aliasTyCon) (varT $ mkName $ unpack m)
-    genSig _        = conT $ mkName $ unpack aliasTyCon
+conTX :: Text -> Q Type    
+conTX =  conT . mkName . unpack
 
-buildFields :: [DataField] -> ExpQ
+varTX :: Text -> Q Type    
+varTX =  varT . mkName . unpack
+
+proxyT :: TypeRef -> Q Exp
+proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
+  where
+    genSig (Just m) = appT (conTX typeConName) (varTX m)
+    genSig _        = conTX typeConName
+
+buildFields :: [FieldDefinition] -> ExpQ
 buildFields = listE . map buildField
   where
-    buildField DataField {fieldName, fieldArgs, fieldType = alias@TypeAlias {aliasArgs, aliasWrappers}, fieldMeta} =
-      [|( fName
-        , DataField
-            { fieldName = fName
-            , fieldArgs = fArgs
-            , fieldArgsType = Nothing
-            , fieldType = TypeAlias {aliasTyCon = __typeName $(proxyT alias), aliasArgs = aArgs, aliasWrappers}
-            , fieldMeta
-            })|]
-      where
-        fName = unpack fieldName
-        fArgs = map (\(k, v) -> (unpack k, v)) fieldArgs
-        aArgs = unpack <$> aliasArgs
+    buildField f@FieldDefinition {fieldType } = [| f { fieldType = fieldType {typeConName = __typeName $(proxyT fieldType) } } |]

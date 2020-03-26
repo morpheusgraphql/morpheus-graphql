@@ -20,19 +20,25 @@ import           Data.Aeson.Types
 import qualified Data.HashMap.Lazy             as H
                                                 ( lookup )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( unpack )
+import           Data.Text                      ( append
+                                                , Text
+                                                , unpack
+                                                )
 import           Language.Haskell.TH
 
 import           Data.Morpheus.Execution.Internal.Utils
-                                                ( nameSpaceTypeString )
+                                                ( nameSpaceType )
 
 --
 -- MORPHEUS
+import           Data.Morpheus.Execution.Internal.Declare
+                                                ( isEnum )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , isFieldNullable
                                                 , ConsD(..)
                                                 , TypeD(..)
+                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( destructRecord
@@ -42,38 +48,38 @@ import           Data.Morpheus.Types.Internal.TH
 
 -- FromJSON
 deriveFromJSON :: TypeD -> Q Dec
-deriveFromJSON TypeD { tCons = [] } =
-  fail "Type Should Have at least one Constructor"
+deriveFromJSON TypeD { tCons = [] , tName } =
+  fail $ "Type " <> unpack tName <> " Should Have at least one Constructor"
 deriveFromJSON TypeD { tName, tNamespace, tCons = [cons] } = defineFromJSON
   name
   (aesonObject tNamespace)
   cons
-  where name = nameSpaceTypeString tNamespace tName
+  where name = nameSpaceType tNamespace tName
 deriveFromJSON typeD@TypeD { tName, tCons, tNamespace }
-  | isEnum tCons = defineFromJSON name aesonEnum tCons
+  | isEnum tCons = defineFromJSON name (aesonFromJSONEnumBody tName) tCons
   | otherwise    = defineFromJSON name (aesonUnionObject tNamespace) typeD
-  where name = nameSpaceTypeString tNamespace tName
+  where name = nameSpaceType tNamespace tName
 
-aesonObject :: [String] -> ConsD -> ExpQ
+aesonObject :: [Key] -> ConsD -> ExpQ
 aesonObject tNamespace con@ConsD { cName } = appE
   [|withObject name|]
   (lamE [varP (mkName "o")] (aesonObjectBody tNamespace con))
-  where name = nameSpaceTypeString tNamespace cName
+  where name = unpack $ nameSpaceType tNamespace cName
 
-aesonObjectBody :: [String] -> ConsD -> ExpQ
+aesonObjectBody :: [Key] -> ConsD -> ExpQ
 aesonObjectBody namespace ConsD { cName, cFields } = handleFields cFields
  where
-  consName = mkName $ nameSpaceTypeString namespace cName
-  ------------------------------------------
-  handleFields []     = fail "No Empty Object"
+  consName = mkName $ unpack $ nameSpaceType namespace cName
+  ----------------------------------------------------------
+  handleFields []     = fail $ "Type \""<>unpack cName <>"\" is Empty Object"
   handleFields fields = startExp fields
-  ----------------------------------------------------------------------------------
+  ----------------------------------------------------------
    where
-    defField field@DataField { fieldName }
+    defField field@FieldDefinition { fieldName }
       | isFieldNullable field = [|o .:? fName|]
       | otherwise             = [|o .: fName|]
       where fName = unpack fieldName
-        -------------------------------------------------------------------
+    --------------------------------------------------------
     startExp fNames = uInfixE (conE consName)
                               (varE '(<$>))
                               (applyFields fNames)
@@ -83,14 +89,14 @@ aesonObjectBody namespace ConsD { cName, cFields } = handleFields cFields
       applyFields (x : xs) =
         uInfixE (defField x) (varE '(<*>)) (applyFields xs)
 
-aesonUnionObject :: [String] -> TypeD -> ExpQ
+aesonUnionObject :: [Key] -> TypeD -> ExpQ
 aesonUnionObject namespace TypeD { tCons } = appE
   (varE 'takeValueType)
   (lamCaseE (map buildMatch tCons <> [elseCaseEXP]))
  where
   buildMatch cons@ConsD { cName } = match objectPattern body []
    where
-    objectPattern = tupP [litP (stringL cName), varP $ mkName "o"]
+    objectPattern = tupP [litP (stringL $ unpack cName), varP $ mkName "o"]
     body          = normalB $ aesonObjectBody namespace cons
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
@@ -101,26 +107,22 @@ takeValueType f (Object hMap) = case H.lookup "__typename" hMap of
     fail $ "key \"__typename\" should be string but found: " <> show val
 takeValueType _ _ = fail "expected Object"
 
-defineFromJSON :: String -> (t -> ExpQ) -> t -> DecQ
+defineFromJSON :: Key -> (t -> ExpQ) -> t -> DecQ
 defineFromJSON tName parseJ cFields = instanceD (cxt []) iHead [method]
  where
   iHead  = instanceHeadT ''FromJSON tName []
   -----------------------------------------
   method = instanceFunD 'parseJSON [] (parseJ cFields)
 
-isEnum :: [ConsD] -> Bool
-isEnum = not . isEmpty . filter (isEmpty . cFields)
-  where isEmpty = (0 ==) . length
-
-aesonEnum :: [ConsD] -> ExpQ
-aesonEnum cons = lamCaseE handlers
+aesonFromJSONEnumBody :: Text -> [ConsD] -> ExpQ
+aesonFromJSONEnumBody tName cons = lamCaseE handlers
  where
   handlers = map buildMatch cons <> [elseCaseEXP]
    where
     buildMatch ConsD { cName } = match enumPat body []
      where
-      enumPat = litP $ stringL cName
-      body    = normalB $ appE (varE 'pure) (conE $ mkName cName)
+      enumPat = litP $ stringL $ unpack cName
+      body    = normalB $ appE (varE 'pure) (conE $ mkName $ unpack $ append tName cName)
 
 elseCaseEXP :: MatchQ
 elseCaseEXP = match (varP varName) body []
@@ -132,6 +134,16 @@ elseCaseEXP = match (varP varName) body []
              (varE '(<>))
              (stringE " is Not Valid Union Constructor")
     )
+
+aesonToJSONEnumBody :: Text -> [ConsD] -> ExpQ
+aesonToJSONEnumBody tName cons = lamCaseE handlers
+ where
+  handlers = map buildMatch cons
+   where
+    buildMatch ConsD { cName } = match enumPat body []
+     where
+      enumPat = conP (mkName $ unpack $ append tName cName) []
+      body    = normalB $ litE (stringL $ unpack cName)
 
 -- ToJSON
 deriveToJSON :: TypeD -> Q [Dec]
@@ -146,13 +158,14 @@ deriveToJSON TypeD { tName, tCons = [ConsD { cFields }] } =
   methods = [funD 'toJSON [clause argsE (normalB body) []]]
    where
     argsE = [destructRecord tName varNames]
-    body  = appE (varE 'object) (listE $ map decodeVar varNames)
+    body  = appE (varE 'object) (listE $ map (decodeVar . unpack) varNames)
     decodeVar name = [|name .= $(varName)|] where varName = varE $ mkName name
-    varNames = map (unpack . fieldName) cFields
+    varNames = map fieldName cFields
 deriveToJSON TypeD { tName, tCons }
   | isEnum tCons
-  = pure <$> instanceD (cxt []) (instanceHeadT ''ToJSON tName []) []
+  = let methods = [funD 'toJSON clauses]
+        clauses = [clause [] (normalB $ aesonToJSONEnumBody tName tCons) []]
+     in pure <$> instanceD (cxt []) (instanceHeadT ''ToJSON tName []) methods
   |
-    -- enum: uses default aeson instance derivation methods
     otherwise
   = fail "Input Unions are not yet supported"

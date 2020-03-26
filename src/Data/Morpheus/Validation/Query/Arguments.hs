@@ -1,11 +1,13 @@
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TupleSections  #-}
 
 module Data.Morpheus.Validation.Query.Arguments
   ( validateArguments
   )
 where
 
+import           Data.Maybe                     ( maybe )
 import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
                                                 , argumentNameCollision
                                                 , undefinedArgument
@@ -15,132 +17,148 @@ import           Data.Morpheus.Error.Input      ( InputValidation
                                                 , inputErrorMessage
                                                 )
 import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
-import           Data.Morpheus.Error.Variable   ( incompatibleVariableType
-                                                , undefinedVariable
-                                                )
-import           Data.Morpheus.Rendering.RenderGQL
-                                                ( RenderGQL(..) )
+import           Data.Morpheus.Error.Variable   ( undefinedVariable )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Variable(..)
                                                 , Argument(..)
-                                                , ValueOrigin(..)
-                                                , Arguments
-                                                , RawArgument(..)
+                                                , RawArgument
                                                 , RawArguments
+                                                , ValidArgument
+                                                , ValidArguments
+                                                , Arguments
                                                 , Ref(..)
                                                 , Position
-                                                , DataArgument
-                                                , DataField(..)
-                                                , DataTypeLib
-                                                , TypeAlias(..)
+                                                , ArgumentDefinition
+                                                , FieldDefinition(..)
+                                                , Schema
+                                                , TypeRef(..)
+                                                , Value(..)
+                                                , Name
+                                                , RawValue
+                                                , ResolvedValue
+                                                , RESOLVED
+                                                , VALID
                                                 , isFieldNullable
-                                                , isWeaker
                                                 , lookupInputType
-                                                , Value(Null)
+                                                , checkForUnknownKeys
+                                                , checkNameCollision
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( checkForUnknownKeys
-                                                , checkNameCollision
-                                                )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
 import           Data.Text                      ( Text )
 
+-- only Resolves , doesnot checks the types
+resolveObject :: Name -> ValidVariables -> RawValue -> Validation ResolvedValue
+resolveObject operationName variables = resolve
+ where
+  resolve :: RawValue -> Validation ResolvedValue
+  resolve Null         = pure Null
+  resolve (Scalar x  ) = pure $ Scalar x
+  resolve (Enum   x  ) = pure $ Enum x
+  resolve (List   x  ) = List <$> traverse resolve x
+  resolve (Object obj) = Object <$> traverse mapSecond obj
+    where mapSecond (fName, y) = (fName, ) <$> resolve y
+  resolve (VariableValue ref) =
+    ResolvedVariable ref <$> variableByRef operationName variables ref
+    --  >>= checkTypeEquality ref fieldType
+  -- RAW | RESOLVED | Valid 
+
+variableByRef :: Name -> ValidVariables -> Ref -> Validation (Variable VALID)
+variableByRef operationName variables Ref { refName, refPosition } = maybe
+  variableError
+  pure
+  (lookup refName variables)
+ where
+  variableError = failure $ undefinedVariable operationName refPosition refName
+
 resolveArgumentVariables
-  :: Text -> ValidVariables -> DataField -> RawArguments -> Validation Arguments
-resolveArgumentVariables operatorName variables DataField { fieldName, fieldArgs }
+  :: Name
+  -> ValidVariables
+  -> FieldDefinition
+  -> RawArguments
+  -> Validation (Arguments RESOLVED)
+resolveArgumentVariables operationName variables FieldDefinition { fieldName, fieldArgs }
   = mapM resolveVariable
  where
-  resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument)
-  resolveVariable (key, RawArgument argument) = pure (key, argument)
-  resolveVariable (key, VariableRef Ref { refName, refPosition }) =
-    (key, ) . toArgument <$> lookupVar
-   where
-    toArgument argumentValue = Argument { argumentValue
-                                        , argumentOrigin   = VARIABLE
-                                        , argumentPosition = refPosition
-                                        }
-    lookupVar = case lookup refName variables of
-      Nothing -> failure $ undefinedVariable operatorName refPosition refName
-      Just Variable { variableValue, variableType, variableTypeWrappers } ->
-        case lookup key fieldArgs of
-          Nothing -> failure $ unknownArguments fieldName [Ref key refPosition]
-          Just DataField { fieldType = fieldT@TypeAlias { aliasTyCon, aliasWrappers } }
-            -> if variableType == aliasTyCon && not
-                 (isWeaker variableTypeWrappers aliasWrappers)
-              then return variableValue
-              else failure $ incompatibleVariableType refName
-                                                      varSignature
-                                                      fieldSignature
-                                                      refPosition
-           where
-            varSignature   = renderWrapped variableType variableTypeWrappers
-            fieldSignature = render fieldT
+  resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument RESOLVED)
+  resolveVariable (key, Argument val position) = do 
+    _ <- checkUnknown
+    constValue <- resolveObject operationName variables val
+    pure (key, Argument constValue position)
+    where 
+      checkUnknown :: Validation FieldDefinition
+      checkUnknown = selectBy (unknownArguments fieldName [Ref key position]) key fieldArgs
 
 validateArgument
-  :: DataTypeLib
+  :: Schema
   -> Position
-  -> Arguments
-  -> (Text, DataArgument)
-  -> Validation (Text, Argument)
-validateArgument lib fieldPosition requestArgs (key, argType@DataField { fieldType = TypeAlias { aliasTyCon, aliasWrappers } })
-  = case lookup key requestArgs of
+  -> Arguments RESOLVED
+  -> ArgumentDefinition
+  -> Validation (Name, ValidArgument)
+validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
+  = case lookup fieldName requestArgs of
     Nothing -> handleNullable
-    Just argument@Argument { argumentOrigin = VARIABLE } ->
-      pure (key, argument) -- Variables are already checked in Variable Validation
+    -- TODO: move it in value validation
+   -- Just argument@Argument { argumentOrigin = VARIABLE } ->
+   --   pure (key, argument) -- Variables are already checked in Variable Validation
     Just Argument { argumentValue = Null } -> handleNullable
-    Just argument                          -> validateArgumentValue argument
+    Just argument -> validateArgumentValue argument
  where
   handleNullable
-    | isFieldNullable argType = pure
-      ( key
-      , Argument { argumentValue    = Null
-                 , argumentOrigin   = INLINE
-                 , argumentPosition = fieldPosition
-                 }
-      )
-    | otherwise = failure $ undefinedArgument (Ref key fieldPosition)
+    | isFieldNullable argType
+    = pure
+      (fieldName, Argument { argumentValue = Null, argumentPosition = fieldPosition })
+    | otherwise
+    = failure $ undefinedArgument (Ref fieldName fieldPosition)
   -------------------------------------------------------------------------
-  validateArgumentValue :: Argument -> Validation (Text, Argument)
-  validateArgumentValue arg@Argument { argumentValue, argumentPosition } =
-    lookupInputType aliasTyCon lib (internalUnknownTypeMessage aliasTyCon)
-      >>= checkType
-      >>  pure (key, arg)
+  validateArgumentValue :: Argument RESOLVED -> Validation (Text, ValidArgument)
+  validateArgumentValue Argument { argumentValue = value, argumentPosition } =
+    do
+      datatype <- lookupInputType typeConName
+                                  lib
+                                  (internalUnknownTypeMessage typeConName)
+      argumentValue <- handleInputError
+        $ validateInputValue lib [] typeWrappers datatype (fieldName, value)
+      pure (fieldName, Argument { argumentValue, argumentPosition })
    where
-    checkType type' = handleInputError
-      (validateInputValue lib [] aliasWrappers type' (key, argumentValue))
     ---------
-    handleInputError :: InputValidation a -> Validation ()
-    handleInputError (Left err) = failure
-      $ argumentGotInvalidValue key (inputErrorMessage err) argumentPosition
-    handleInputError _ = pure ()
+    handleInputError :: InputValidation a -> Validation a
+    handleInputError (Left err) = failure $ case inputErrorMessage err of
+      Left  errors  -> errors
+      Right message -> argumentGotInvalidValue fieldName message argumentPosition
+    handleInputError (Right x) = pure x
 
 validateArguments
-  :: DataTypeLib
+  :: Schema
   -> Text
   -> ValidVariables
-  -> (Text, DataField)
+  -> FieldDefinition
   -> Position
   -> RawArguments
-  -> Validation Arguments
-validateArguments typeLib operatorName variables (key, field@DataField { fieldArgs }) pos rawArgs
+  -> Validation ValidArguments
+validateArguments typeLib operatorName variables field@FieldDefinition { fieldArgs } pos rawArgs
   = do
     args     <- resolveArgumentVariables operatorName variables field rawArgs
-    dataArgs <- checkForUnknownArguments args
-    mapM (validateArgument typeLib pos args) dataArgs
+    checkForUnknownArguments args
+    mapM (validateArgument typeLib pos args) (toList fieldArgs)
  where
-  checkForUnknownArguments :: Arguments -> Validation [(Text, DataField)]
+  checkForUnknownArguments
+    :: Arguments RESOLVED -> Validation ()
   checkForUnknownArguments args =
-    checkForUnknownKeys enhancedKeys fieldKeys argError
-      >> checkNameCollision enhancedKeys argumentNameCollision
-      >> pure fieldArgs
+    checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >> pure ()
    where
-    argError     = unknownArguments key
+    argError     = unknownArguments (fieldName field)
     enhancedKeys = map argToKey args
+    argToKey :: (Name, Argument RESOLVED) -> Ref
     argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
-    fieldKeys = map fst fieldArgs
+    fieldKeys :: [Name]
+    fieldKeys = map fieldName (toList fieldArgs)

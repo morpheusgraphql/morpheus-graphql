@@ -39,11 +39,12 @@ import           Data.Morpheus.Execution.Server.Encode
                                                 )
 import           Data.Morpheus.Execution.Server.Introspect
                                                 ( IntroCon
-                                                , ObjectFields(..)
+                                                , introspectObjectFields
+                                                , TypeScope(..)
                                                 )
-import           Data.Morpheus.Execution.Subscription.ClientRegister
+import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
-                                                , publishUpdates
+                                                , publishEvent
                                                 )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
@@ -55,21 +56,27 @@ import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes
 import           Data.Morpheus.Types.GQLType    ( GQLType(CUSTOM) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
-                                                , ValidOperation
                                                 , DataFingerprint(..)
-                                                , DataTyCon(..)
-                                                , DataTypeLib(..)
+                                                , TypeContent(..)
+                                                , Schema(..)
+                                                , TypeDefinition(..)
                                                 , MUTATION
                                                 , OperationType(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , initTypeLib
-                                                , Value
+                                                , ValidValue
+                                                , Name
+                                                , VALIDATION_MODE(..)
+                                                , Selection(..)
+                                                , SelectionContent(..)
+                                                , FieldsDefinition(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Join(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
-                                                , Resolver(..)
-                                                , toResponseRes
+                                                , Resolver
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
@@ -79,17 +86,16 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , unpackEvents
                                                 , Failure(..)
                                                 , resolveUpdates
+                                                , Context(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 , renderResponse
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( VALIDATION_MODE(..) )
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
-
+import           Control.Monad.IO.Class         ( MonadIO() )
 
 type EventCon event
   = (Eq (StreamChannel event), Typeable event, GQLChannel event)
@@ -142,86 +148,99 @@ streamResolver
 streamResolver root req =
   ResultT $ pure . renderResponse <$> runResultT (coreResolver root req)
 
+
 coreResolver
   :: forall event m query mut sub
    . (Monad m, RootResCon m event query mut sub)
   => GQLRootResolver m event query mut sub
   -> GQLRequest
-  -> ResponseStream event m Value
+  -> ResponseStream event m ValidValue
 coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
   = validRequest >>= execOperator
  where
   validRequest
-    :: Monad m => ResponseStream event m (DataTypeLib, ValidOperation)
+    :: Monad m => ResponseStream event m Context
   validRequest = cleanEvents $ ResultT $ pure $ do
-    schema <- fullSchema $ Identity root
-    query  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
-    pure (schema, query)
+    schema     <- fullSchema $ Identity root
+    operation  <- parseGQL request >>= validateRequest schema FULL_VALIDATION
+    pure $ Context {
+        schema
+      , operation
+      , currentSelection = (
+        "Root"
+        , Selection {
+          selectionArguments = []
+          , selectionPosition = operationPosition operation
+          , selectionAlias = Nothing
+          , selectionContent = SelectionSet (operationSelection operation)
+        } 
+    )
+  }
   ----------------------------------------------------------
-  execOperator (schema, operation@Operation { operationType = Query }) =
-    toResponseRes (encodeQuery (schemaAPI schema) queryResolver operation)
-  execOperator (_, operation@Operation { operationType = Mutation }) =
-    toResponseRes (encodeMutation mutationResolver operation)
-  execOperator (_, operation@Operation { operationType = Subscription }) =
-    response
-   where
-    response =
-      toResponseRes (encodeSubscription subscriptionResolver operation)
-
+  execOperator ctx@Context {schema ,operation = Operation{ operationType} } = execOperationBy operationType ctx
+    where
+      execOperationBy Query = encodeQuery (schemaAPI schema) queryResolver
+      execOperationBy Mutation = encodeMutation mutationResolver
+      execOperationBy Subscription = encodeSubscription subscriptionResolver
+    
 statefulResolver
-  :: EventCon event
-  => GQLState IO event
-  -> (GQLRequest -> ResponseStream event IO Value)
+  :: (EventCon event, MonadIO m)
+  => GQLState m event
+  -> (GQLRequest -> ResponseStream event m ValidValue)
   -> L.ByteString
-  -> IO L.ByteString
+  -> m L.ByteString
 statefulResolver state streamApi requestText = do
   res <- runResultT (decodeNoDup requestText >>= streamApi)
   mapM_ execute (unpackEvents res)
   pure $ encode $ renderResponse res
  where
-  execute (Publish updates) = publishUpdates state updates
+  execute (Publish events) = publishEvent state events
   execute Subscribe{}       = pure ()
-
 
 fullSchema
   :: forall proxy m event query mutation subscription
    . (IntrospectConstraint m event query mutation subscription)
   => proxy (GQLRootResolver m event query mutation subscription)
-  -> Validation DataTypeLib
+  -> Validation Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
-  querySchema = resolveUpdates
-    (initTypeLib (operatorType (hiddenRootFields ++ fields) "Query"))
-    (defaultTypes : types)
+  querySchema = do
+    fs <- hiddenRootFields `join` fields
+    resolveUpdates (initTypeLib (operatorType fs "Query")) (defaultTypes : types)
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (query (Resolver QUERY event m))))
-      (Proxy @(query (Resolver QUERY event m)))
+      ("type for query", OutputType, Proxy @(query (Resolver QUERY event m)))
   ------------------------------
   mutationSchema lib = resolveUpdates
     (lib { mutation = maybeOperator fields "Mutation" })
     types
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
-      (Proxy @(mutation (Resolver MUTATION event m)))
+      ( "type for mutation"
+      , OutputType
+      , Proxy @(mutation (Resolver MUTATION event m))
+      )
   ------------------------------
   subscriptionSchema lib = resolveUpdates
     (lib { subscription = maybeOperator fields "Subscription" })
     types
    where
-    (fields, types) = objectFields
+    (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
-      (Proxy @(subscription (Resolver SUBSCRIPTION event m)))
-   -- maybeOperator :: [a] -> Text -> Maybe (Text, DataTyCon[a])
-  maybeOperator []     = const Nothing
+      ( "type for subscription"
+      , OutputType
+      , Proxy @(subscription (Resolver SUBSCRIPTION event m))
+      )
+  maybeOperator :: FieldsDefinition -> Name -> Maybe TypeDefinition
+  maybeOperator (FieldsDefinition x) | null x     = const Nothing
   maybeOperator fields = Just . operatorType fields
-  -- operatorType :: [a] -> Text -> (Text, DataTyCon[a])
-  operatorType typeData typeName =
-    ( typeName
-    , DataTyCon { typeData
-                , typeName
-                , typeFingerprint = SystemFingerprint typeName
-                , typeMeta        = Nothing
-                }
-    )
+  -------------------------------------------------
+  operatorType :: FieldsDefinition -> Name -> TypeDefinition
+  operatorType fields typeName = TypeDefinition 
+      { typeContent     = DataObject [] fields
+        , typeName
+        , typeFingerprint = DataFingerprint typeName []
+        , typeMeta        = Nothing
+      }

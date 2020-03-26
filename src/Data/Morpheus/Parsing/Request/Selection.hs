@@ -26,7 +26,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , parseAlias
                                                 , parseName
                                                 , parseTypeCondition
-                                                , setOf
+                                                , collection
                                                 , spreadLiteral
                                                 , token
                                                 )
@@ -34,11 +34,12 @@ import           Data.Morpheus.Parsing.Request.Arguments
                                                 ( maybeArguments )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
+                                                , SelectionContent(..)
+                                                , Ref(..)
                                                 , Fragment(..)
                                                 , RawArguments
-                                                , RawSelection(..)
+                                                , RawSelection
                                                 , RawSelectionSet
-                                                , Ref(..)
                                                 )
 
 
@@ -53,7 +54,7 @@ import           Data.Morpheus.Types.Internal.AST
 --   InlineFragment
 --
 parseSelectionSet :: Parser RawSelectionSet
-parseSelectionSet = label "SelectionSet" $ setOf parseSelection
+parseSelectionSet = label "SelectionSet" $ collection parseSelection
  where
   parseSelection =
     label "Selection"
@@ -80,23 +81,23 @@ parseSelectionField = label "SelectionField" $ do
  where
     ----------------------------------------
   buildField selectionAlias selectionArguments selectionPosition = pure
-    (RawSelectionField $ Selection { selectionAlias
-                                   , selectionArguments
-                                   , selectionRec       = ()
-                                   , selectionPosition
-                                   }
+    (Selection { selectionAlias
+               , selectionArguments
+               , selectionContent   = SelectionField
+               , selectionPosition
+               }
     )
   -----------------------------------------
   selSet :: Maybe Text -> RawArguments -> Parser RawSelection
   selSet selectionAlias selectionArguments = label "body" $ do
     selectionPosition <- getLocation
-    selectionRec      <- parseSelectionSet
+    selectionSet      <- parseSelectionSet
     return
-      (RawSelectionSet $ Selection { selectionAlias
-                                   , selectionArguments
-                                   , selectionRec
-                                   , selectionPosition
-                                   }
+      (Selection { selectionAlias
+                 , selectionArguments
+                 , selectionContent   = SelectionSet selectionSet
+                 , selectionPosition
+                 }
       )
 
 

@@ -26,8 +26,9 @@ import           Data.Morpheus.Types            ( Event
                                                 , GQLType(..)
                                                 , ID(..)
                                                 , ScalarValue(..)
-                                                , Resolver(..)
-                                                , constRes
+                                                , failRes
+                                                , liftEither
+                                                , subscribe
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
@@ -53,28 +54,35 @@ type EVENT = Event Channel ()
 
 importGQLDocument "test/Feature/Holistic/schema.gql"
 
+
+
+alwaysFail :: IO (Either String a)
+alwaysFail = pure $ Left "fail with Either"
+
+
 rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver = GQLRootResolver
-  { queryResolver        = Query { user, testUnion = constRes Nothing }
-  , mutationResolver     = Mutation { createUser = user }
-  , subscriptionResolver = Subscription
-                             { newUser = const SubResolver
-                                           { subChannels = [Channel]
-                                           , subResolver = user
-                                           }
-                             }
+  { queryResolver        = Query { user
+                                 , testUnion = pure Nothing
+                                 , fail1     = liftEither alwaysFail
+                                 , fail2 =  failRes "fail with failRes"
+                                 }
+  , mutationResolver     = Mutation { createUser = const user }
+  , subscriptionResolver = Subscription { newUser = subscribe [Channel] (pure $ const user)}
   }
  where
-  user _ = pure User { name    = constRes "testName"
-                     , email   = constRes ""
+  user :: Applicative m => m (User m)
+  user = pure User {   name    = pure "testName"
+                     , email   = pure ""
                      , address = resolveAddress
                      , office  = resolveAddress
-                     , friend  = constRes Nothing
+                     , friend  = pure Nothing
                      }
    where
-    resolveAddress _ = pure Address { city        = constRes ""
-                                    , houseNumber = constRes 0
-                                    , street      = constRes Nothing
+    resolveAddress :: Applicative m => a -> m (Address m)
+    resolveAddress _ = pure Address { city        = pure ""
+                                    , houseNumber = pure 0
+                                    , street      = const $ pure Nothing
                                     }
 
 api :: GQLRequest -> IO GQLResponse

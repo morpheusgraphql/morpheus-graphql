@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -9,57 +10,67 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE TupleSections         #-}
 
 module Data.Morpheus.Execution.Server.Decode
   ( decodeArguments
   , Decode(..)
-  , DecodeObject(..)
+  , DecodeType(..)
   )
 where
 
 import           Data.Proxy                     ( Proxy(..) )
-import           Data.Semigroup                 ( (<>) )
+import           Data.Semigroup                 ( Semigroup(..) )
 import           Data.Text                      ( pack )
 import           GHC.Generics
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Internal   ( internalArgumentError
-                                                , internalTypeMismatch
+import           Data.Morpheus.Error.Internal   ( internalTypeMismatch
+                                                , internalError
                                                 )
 import           Data.Morpheus.Execution.Internal.Decode
                                                 ( decodeFieldWith
-                                                , withEnum
                                                 , withList
                                                 , withMaybe
                                                 , withObject
                                                 , withUnion
                                                 )
-import           Data.Morpheus.Execution.Server.Generics.EnumRep
-                                                ( EnumRep(..) )
 import           Data.Morpheus.Kind             ( ENUM
                                                 , GQL_KIND
-                                                , INPUT_OBJECT
-                                                , INPUT_UNION
                                                 , SCALAR
+                                                , OUTPUT
+                                                , INPUT
                                                 )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..)
                                                 , toScalar
                                                 )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, __typeName) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Key
+                                                ( Name
                                                 , Argument(..)
-                                                , Arguments
-                                                , Object
+                                                , ValidArguments
+                                                , ValidArgument
+                                                , ValidObject
                                                 , Value(..)
+                                                , ValidValue
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
+                                                ( Validation
+                                                , Failure(..)
+                                                )
+
+
+-- GENERIC
+decodeArguments :: DecodeType a => ValidArguments -> Validation a
+decodeArguments = decodeType . Object . map toObject
+ where
+  toObject :: (Name, ValidArgument) -> (Name, ValidValue)
+  toObject (x, Argument { argumentValue }) = (x, argumentValue)
 
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
-  decode :: Value -> Validation a
+  decode :: ValidValue -> Validation a
 
 instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
@@ -72,7 +83,7 @@ instance Decode a => Decode [a] where
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
-  decodeKind :: Proxy kind -> Value -> Validation a
+  decodeKind :: Proxy kind -> ValidValue -> Validation a
 
 -- SCALAR
 instance (GQLScalar a) => DecodeKind SCALAR a where
@@ -81,74 +92,140 @@ instance (GQLScalar a) => DecodeKind SCALAR a where
     Left  errorMessage -> internalTypeMismatch errorMessage value
 
 -- ENUM
-instance (Generic a, EnumRep (Rep a)) => DecodeKind ENUM a where
-  decodeKind _ = withEnum (fmap to . decodeEnum)
+instance DecodeType a => DecodeKind ENUM a where
+  decodeKind _ = decodeType
 
--- INPUT_OBJECT
-instance DecodeObject a => DecodeKind INPUT_OBJECT a where
-  decodeKind _ = withObject decodeObject
+-- TODO: remove  
+instance DecodeType a => DecodeKind OUTPUT a where
+  decodeKind _ = decodeType
 
--- INPUT_UNION
-instance (Generic a, GDecode (Rep a)) => DecodeKind INPUT_UNION a where
-  decodeKind _ = withObject (fmap to . decodeUnion)
+-- INPUT_OBJECT and  INPUT_UNION
+instance DecodeType a => DecodeKind INPUT a where
+  decodeKind _ = decodeType
 
--- GENERIC
-decodeArguments :: DecodeObject p => Arguments -> Validation p
-decodeArguments = decodeObject . fmap toObject
-  where toObject (x, y) = (x, argumentValue y)
 
-class DecodeObject a where
-  decodeObject :: Object -> Validation a
+class DecodeType a where
+  decodeType :: ValidValue -> Validation a
 
-instance {-# OVERLAPPABLE #-} (Generic a, GDecode (Rep a)) => DecodeObject a where
-  decodeObject = fmap to . __decodeObject . Object
+instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a))=> DecodeType a where
+  decodeType = fmap to . decodeRep . (, Cont D_CONS "")
+
+-- data Inpuz  =
+--    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }
+--   | InputRecord { name :: Text, age :: Int } -- { __typename: InputRecord, InputRecord: {field: ""} }
+--   | IndexedType Int Text  -- { __typename: InputRecord, _0:2 , _1:""  }
+--   | Zeus                 -- { __typename: Zeus }
+--     deriving (Generic, GQLType)
+
+decideUnion
+  :: ([Name], value -> Validation (f1 a))
+  -> ([Name], value -> Validation (f2 a))
+  -> Name
+  -> value
+  -> Validation ((:+:) f1 f2 a)
+decideUnion (left, f1) (right, f2) name value
+  | name `elem` left
+  = L1 <$> f1 value
+  | name `elem` right
+  = R1 <$> f2 value
+  | otherwise
+  = failure $ "Constructor \"" <> name <> "\" could not find in Union"
+
+data Tag = D_CONS | D_UNION deriving (Eq ,Ord)
+
+data Cont = Cont {
+  contKind:: Tag,
+  typeName :: Name
+}
+
+data Info = Info {
+  kind :: Tag,
+  tagName :: [Name]
+}
+
+instance Semigroup Info where
+  Info D_UNION t1 <> Info _       t2 = Info D_UNION (t1 <> t2)
+  Info _       t1 <> Info D_UNION t2 = Info D_UNION (t1 <> t2)
+  Info D_CONS  t1 <> Info D_CONS  t2 = Info D_CONS (t1 <> t2)
 
 --
 -- GENERICS
 --
-class GDecode f where
-  unionTags :: Proxy f -> [Key]
-  decodeUnion :: Object -> Validation (f a)
-  __decodeObject :: Value -> Validation (f a)
+class DecodeRep f where
+  tags :: Proxy f -> Name -> Info
+  decodeRep :: (ValidValue,Cont) -> Validation (f a)
 
-instance GDecode U1 where
-  unionTags _ = []
-  __decodeObject _ = pure U1
-  decodeUnion _ = pure U1
+instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
+  tags _ = tags (Proxy @f)
+  decodeRep (x, y) = M1 <$> decodeRep
+    (x, y { typeName = pack $ datatypeName (undefined :: (M1 D d f a)) })
 
--- Recursive Decoding: (Selector (Rec1 ))
-instance (Selector s, GQLType a, Decode a) => GDecode (M1 S s (K1 i a)) where
-  unionTags _ = [__typeName (Proxy @a)]
-  decodeUnion    = fmap (M1 . K1) . decode . Object
-  __decodeObject = fmap (M1 . K1) . decodeRec
+getEnumTag :: ValidObject -> Validation Name
+getEnumTag [("enum", Enum value)] = pure value
+getEnumTag _                      = internalError "bad union enum object"
+
+instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
+  tags _ = tags (Proxy @a) <> tags (Proxy @b)
+  decodeRep = __decode
    where
+
+    __decode (Object obj, cont) = withUnion handleUnion obj
+     where
+      handleUnion name unions object
+        | name == typeName cont <> "EnumObject"
+        = getEnumTag object >>= __decode . (, ctx) . Enum
+        | [name] == l1
+        = L1 <$> decodeRep (Object object, ctx)
+        | [name] == r1
+        = R1 <$> decodeRep (Object object, ctx)
+        | otherwise
+        = decideUnion (l1, decodeRep) (r1, decodeRep) name (Object unions, ctx)
+      l1  = tagName l1t
+      r1  = tagName r1t
+      l1t = tags (Proxy @a) (typeName cont)
+      r1t = tags (Proxy @b) (typeName cont)
+      ctx = cont { contKind = kind (l1t <> r1t) }
+    __decode (Enum name, cxt) = decideUnion
+      (tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
+      (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
+      name
+      (Enum name, cxt)
+    __decode _ = internalError "lists and scalars are not allowed in Union"
+
+instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
+  decodeRep = fmap M1 . decodeFields
+  tags _ baseName = getTag (refType (Proxy @a))
+   where
+    getTag (Just memberRef)
+      | isUnionRef memberRef = Info { kind = D_UNION, tagName = [memberRef] }
+      | otherwise            = Info { kind = D_CONS, tagName = [consName] }
+    getTag Nothing = Info { kind = D_CONS, tagName = [consName] }
+    --------
+    consName = pack $ conName unsafeType
+    ----------
+    isUnionRef x = baseName <> x == consName
+    --------------------------
+    unsafeType :: (M1 C c U1 x)
+    unsafeType = undefined
+
+class DecodeFields f where
+  refType :: Proxy f -> Maybe Name
+  decodeFields :: (ValidValue,Cont) -> Validation (f a)
+
+instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
+  refType _ = Nothing
+  decodeFields gql = (:*:) <$> decodeFields gql <*> decodeFields gql
+
+instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
+  refType _ = Just $ __typeName (Proxy @a)
+  decodeFields (value, Cont { contKind })
+    | contKind == D_UNION = M1 . K1 <$> decode value
+    | otherwise           = __decode value
+   where
+    __decode  = fmap (M1 . K1) . decodeRec
     fieldName = pack $ selName (undefined :: M1 S s f a)
     decodeRec = withObject (decodeFieldWith decode fieldName)
 
-instance (Datatype c, GDecode f) => GDecode (M1 D c f) where
-  decodeUnion = fmap M1 . decodeUnion
-  unionTags _ = unionTags (Proxy @f)
-  __decodeObject = fmap M1 . __decodeObject
-
-instance (Constructor c, GDecode f) => GDecode (M1 C c f) where
-  decodeUnion = fmap M1 . decodeUnion
-  unionTags _ = unionTags (Proxy @f)
-  __decodeObject = fmap M1 . __decodeObject
-
-instance (GDecode f, GDecode g) => GDecode (f :*: g) where
-  __decodeObject gql = (:*:) <$> __decodeObject gql <*> __decodeObject gql
-
-instance (GDecode a, GDecode b) => GDecode (a :+: b) where
-  decodeUnion = withUnion handleUnion
-   where
-    handleUnion name unions object
-      | [name] == l1Tags = L1 <$> decodeUnion object
-      | [name] == r1Tags = R1 <$> decodeUnion object
-      | name `elem` l1Tags = L1 <$> decodeUnion unions
-      | name `elem` r1Tags = R1 <$> decodeUnion unions
-      | otherwise = internalArgumentError
-        ("type \"" <> name <> "\" could not find in union")
-     where
-      l1Tags = unionTags $ Proxy @a
-      r1Tags = unionTags $ Proxy @b
-  unionTags _ = unionTags (Proxy @a) ++ unionTags (Proxy @b)
+instance DecodeFields U1 where
+  refType _ = Nothing
+  decodeFields _ = pure U1

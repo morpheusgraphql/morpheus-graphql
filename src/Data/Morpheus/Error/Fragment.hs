@@ -11,7 +11,9 @@ module Data.Morpheus.Error.Fragment
 where
 
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text )
+import           Data.Text                      ( Text
+                                                , intercalate
+                                                )
 import qualified Data.Text                     as T
 
 -- MORPHEUS
@@ -40,7 +42,7 @@ fragmentNameCollision :: [Ref] -> GQLErrors
 fragmentNameCollision = map toError
  where
   toError Ref { refName, refPosition } = GQLError
-    { message      = "There can be only one fragment named \"" <> refName <> "\"."
+    { message   = "There can be only one fragment named \"" <> refName <> "\"."
     , locations = [refPosition]
     }
 
@@ -48,7 +50,7 @@ unusedFragment :: [Ref] -> GQLErrors
 unusedFragment = map toError
  where
   toError Ref { refName, refPosition } = GQLError
-    { message      = "Fragment \"" <> refName <> "\" is never used."
+    { message   = "Fragment \"" <> refName <> "\" is never used."
     , locations = [refPosition]
     }
 
@@ -60,7 +62,7 @@ cannotSpreadWithinItself fragments =
     [ "Cannot spread fragment \""
     , refName $ head fragments
     , "\" within itself via "
-    , T.intercalate "," (map refName fragments)
+    , T.intercalate ", " (map refName fragments)
     , "."
     ]
 
@@ -70,19 +72,18 @@ unknownFragment key' position' = errorMessage position' text
   where text = T.concat ["Unknown Fragment \"", key', "\"."]
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> Text -> GQLErrors
-cannotBeSpreadOnType key' type' position' selectionType' = errorMessage
-  position'
-  text
+cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> [Text] -> GQLErrors
+cannotBeSpreadOnType key fragmentType position typeMembers = errorMessage
+  position
+  message
  where
-  text = T.concat
-    [ "Fragment"
-    , getName key'
-    , " cannot be spread here as objects of type \""
-    , selectionType'
-    , "\" can never be of type \""
-    , type'
-    , "\"."
-    ]
-  getName (Just x') = T.concat [" \"", x', "\""]
-  getName Nothing   = ""
+  message =
+    "Fragment "
+      <> getName key
+      <> "cannot be spread here as objects of type \""
+      <> intercalate ", " typeMembers
+      <> "\" can never be of type \""
+      <> fragmentType
+      <> "\"."
+  getName (Just x) = "\"" <> x <> "\" "
+  getName Nothing  = ""

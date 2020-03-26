@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -12,8 +13,6 @@ where
 import           Data.List                      ( (\\) )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
-import qualified Data.Text                     as T
-                                                ( concat )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
@@ -26,23 +25,23 @@ import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , FragmentLib
-                                                , RawSelection(..)
+                                                , RawSelection
+                                                , SelectionContent(..)
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position
-                                                , DataTypeLib
-                                                , lookupDataObject
+                                                , Schema
+                                                , checkNameCollision
+                                                , selectTypeObject
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Validation.Internal.Utils
-                                                ( checkNameCollision )
 
 
 validateFragments
-  :: DataTypeLib -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
+  :: Schema -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
 validateFragments lib fragments operatorSel =
   validateNameCollision >> checkLoop >> checkUnusedFragments
  where
@@ -69,11 +68,10 @@ getFragment Ref { refName, refPosition } lib = case lookup refName lib of
 
 castFragmentType
   :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
-castFragmentType key' position' targets' fragment@Fragment { fragmentType } =
-  if fragmentType `elem` targets'
+castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
+  = if fragmentType `elem` typeMembers
     then pure fragment
-    else failure
-      $ cannotBeSpreadOnType key' fragmentType position' (T.concat targets')
+    else failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
 
 resolveSpread :: FragmentLib -> [Text] -> Ref -> Validation Fragment
 resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
@@ -81,33 +79,34 @@ resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
 usedFragments :: FragmentLib -> [(Text, RawSelection)] -> [Node]
-usedFragments fragments = concatMap findAllUses
+usedFragments fragments = concatMap (findAllUses . snd)
  where
-  findAllUses :: (Text, RawSelection) -> [Node]
-  findAllUses (_, RawSelectionSet Selection { selectionRec }) =
-    concatMap findAllUses selectionRec
-  findAllUses (_, InlineFragment Fragment { fragmentSelection }) =
-    concatMap findAllUses fragmentSelection
-  findAllUses (_, RawSelectionField{}) = []
-  findAllUses (_, Spread Ref { refName, refPosition }) =
+  findAllUses :: RawSelection -> [Node]
+  findAllUses Selection { selectionContent = SelectionField } = []
+  findAllUses Selection { selectionContent = SelectionSet selectionSet } =
+    concatMap (findAllUses . snd) selectionSet
+  findAllUses (InlineFragment Fragment { fragmentSelection }) =
+    concatMap (findAllUses . snd) fragmentSelection
+  findAllUses (Spread Ref { refName, refPosition }) =
     [Ref refName refPosition] <> searchInFragment
    where
-    searchInFragment = maybe []
-                             (concatMap findAllUses . fragmentSelection)
-                             (lookup refName fragments)
+    searchInFragment = maybe
+      []
+      (concatMap (findAllUses . snd) . fragmentSelection)
+      (lookup refName fragments)
 
 scanForSpread :: (Text, RawSelection) -> [Node]
-scanForSpread (_, RawSelectionSet Selection { selectionRec }) =
-  concatMap scanForSpread selectionRec
+scanForSpread (_, Selection { selectionContent = SelectionField }) = []
+scanForSpread (_, Selection { selectionContent = SelectionSet selectionSet }) =
+  concatMap scanForSpread selectionSet
 scanForSpread (_, InlineFragment Fragment { fragmentSelection = selection' }) =
   concatMap scanForSpread selection'
-scanForSpread (_, RawSelectionField{}) = []
 scanForSpread (_, Spread Ref { refName = name', refPosition = position' }) =
   [Ref name' position']
 
-validateFragment :: DataTypeLib -> (Text, Fragment) -> Validation NodeEdges
+validateFragment :: Schema -> (Text, Fragment) -> Validation NodeEdges
 validateFragment lib (fName, Fragment { fragmentSelection, fragmentType, fragmentPosition })
-  = lookupDataObject validationError fragmentType lib >> pure
+  = selectTypeObject validationError fragmentType lib >> pure
     (Ref fName fragmentPosition, concatMap scanForSpread fragmentSelection)
   where validationError = unknownType fragmentType fragmentPosition
 

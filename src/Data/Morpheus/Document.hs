@@ -31,15 +31,16 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , fullSchema
                                                 )
-import           Data.Morpheus.Parsing.Document.Parser
-                                                ( parseTypes )
-
+import           Data.Morpheus.Parsing.Document.TypeSystem
+                                                ( parseSchema 
+                                                )
 import           Data.Morpheus.Rendering.RenderGQL
-                                                ( renderGraphQLDocument )
+                                                ( renderGraphQLDocument 
+                                                )
 import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes )
 import           Data.Morpheus.Types            ( GQLRootResolver )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataTypeLib
+                                                ( Schema
                                                 , createDataTypeLib
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -50,20 +51,20 @@ import           Data.Morpheus.Validation.Document.Validation
                                                 ( validatePartialDocument )
 
                                               
-parseDSL :: ByteString -> Either String DataTypeLib
+parseDSL :: ByteString -> Either String Schema
 parseDSL doc = case parseGraphQLDocument doc of
   Failure errors     -> Left (show errors)
   Success { result } -> Right result
 
 
-parseDocument :: Text -> Validation DataTypeLib
+parseDocument :: Text -> Validation Schema
 parseDocument doc =
-  parseTypes doc >>= validatePartialDocument >>= createDataTypeLib
+  parseSchema doc >>= validatePartialDocument >>= createDataTypeLib
 
-parseGraphQLDocument :: ByteString -> Validation DataTypeLib
+parseGraphQLDocument :: ByteString -> Validation Schema
 parseGraphQLDocument x = parseDocument (LT.toStrict $ decodeUtf8 x)
 
-parseFullGQLDocument :: ByteString -> Validation DataTypeLib
+parseFullGQLDocument :: ByteString -> Validation Schema
 parseFullGQLDocument = parseGraphQLDocument >=> defaultTypes
 
 -- | Generates schema.gql file from 'GQLRootResolver'

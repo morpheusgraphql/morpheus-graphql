@@ -19,11 +19,11 @@ import           Data.Morpheus.Error.Client.Client
                                                 , gqlWarnings
                                                 )
 import           Data.Morpheus.Execution.Document.Convert
-                                                ( renderTHTypes )
+                                                ( toTHDefinitions )
 import           Data.Morpheus.Execution.Document.Declare
                                                 ( declareTypes )
-import           Data.Morpheus.Parsing.Document.Parser
-                                                ( parseTypes )
+import           Data.Morpheus.Parsing.Document.TypeSystem
+                                                ( parseSchema )
 import           Data.Morpheus.Validation.Document.Validation
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Result(..) )
@@ -52,10 +52,9 @@ gqlDocument = QuasiQuoter { quoteExp  = notHandled "Expressions"
 compileDocument :: Bool -> String -> Q [Dec]
 compileDocument namespace documentTXT =
   case
-      parseTypes (T.pack documentTXT)
+      parseSchema (T.pack documentTXT)
       >>= validatePartialDocument
-      >>= renderTHTypes namespace
     of
       Failure errors -> fail (renderGQLErrors errors)
       Success { result = schema, warnings } ->
-        gqlWarnings warnings >> declareTypes namespace schema
+        gqlWarnings warnings >> toTHDefinitions namespace schema >>= declareTypes namespace

@@ -17,61 +17,56 @@ import           Data.Morpheus.Error.Document.Interface
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
-                                                , DataType(..)
-                                                , DataObject
-                                                , DataTyCon(..)
-                                                , Key
-                                                , RawDataType(..)
-                                                , TypeAlias(..)
+                                                ( Name
+                                                , FieldDefinition(..)
+                                                , TypeDefinition(..)
+                                                , FieldsDefinition(..)
+                                                , TypeContent(..)
+                                                , TypeRef(..)
                                                 , isWeaker
-                                                , isWeaker
+                                                , lookupWith
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Selectable(..)
+                                                , Listable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
 
-validatePartialDocument :: [(Key, RawDataType)] -> Validation [(Key, DataType)]
+validatePartialDocument :: [TypeDefinition] -> Validation [TypeDefinition]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
-  validateType :: (Key, RawDataType) -> Validation (Maybe (Key, DataType))
-  validateType (name, FinalDataType x) = pure $ Just (name, x)
-  validateType (name, Implements interfaces object) =
-    asTuple name <$> object `mustImplement` interfaces
-  validateType _ = pure Nothing
-  -----------------------------------
-  asTuple name x = Just (name, x)
-  -----------------------------------
-  mustImplement :: DataObject -> [Key] -> Validation DataType
-  mustImplement object interfaceKey = do
-    interface <- traverse getInterfaceByKey interfaceKey
-    case concatMap (mustBeSubset object) interface of
-      []     -> pure $ DataObject object
-      errors -> failure $ partialImplements (typeName object) errors
-  -------------------------------
-  mustBeSubset :: DataObject -> DataObject -> [(Key, Key, ImplementsError)]
-  mustBeSubset DataTyCon { typeData = objFields } DataTyCon { typeName, typeData = interfaceFields }
-    = concatMap checkField interfaceFields
+  validateType :: TypeDefinition -> Validation (Maybe TypeDefinition)
+  validateType dt@TypeDefinition { typeName , typeContent = DataObject { objectImplements , objectFields}  } = do         
+      interface <- traverse getInterfaceByKey objectImplements
+      case concatMap (mustBeSubset objectFields) interface of
+        [] -> pure (Just dt) 
+        errors -> failure $ partialImplements typeName errors
+  validateType TypeDefinition { typeContent = DataInterface {}} = pure Nothing
+  validateType x = pure (Just x)
+  mustBeSubset
+    :: FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
+  mustBeSubset objFields (typeName, fields) = concatMap checkField (toList fields)
    where
-    checkField :: (Key, DataField) -> [(Key, Key, ImplementsError)]
-    checkField (key, DataField { fieldType = interfaceT@TypeAlias { aliasTyCon = interfaceTypeName, aliasWrappers = interfaceWrappers } })
-      = case lookup key objFields of
-        Just DataField { fieldType = objT@TypeAlias { aliasTyCon, aliasWrappers } }
-          | aliasTyCon == interfaceTypeName && not
-            (isWeaker aliasWrappers interfaceWrappers)
-          -> []
+    checkField :: FieldDefinition -> [(Name, Name, ImplementsError)]
+    checkField FieldDefinition { fieldName, fieldType = interfaceT@TypeRef { typeConName = interfaceTypeName, typeWrappers = interfaceWrappers } }
+        = selectOr err checkTypeEq fieldName objFields
+      where
+        err = [(typeName, fieldName, UndefinedField)]
+        checkTypeEq FieldDefinition { fieldType = objT@TypeRef { typeConName, typeWrappers } }
+          | typeConName == interfaceTypeName && not (isWeaker typeWrappers interfaceWrappers)
+            = []
           | otherwise
-          -> [ ( typeName
-               , key
+            = [ ( typeName , fieldName
                , UnexpectedType { expectedType = render interfaceT
                                 , foundType    = render objT
                                 }
                )
              ]
-        Nothing -> [(typeName, key, UndefinedField)]
   -------------------------------
-  getInterfaceByKey :: Key -> Validation DataObject
-  getInterfaceByKey key = case lookup key lib of
-    Just (Interface x) -> pure x
-    _                  -> failure $ unknownInterface key
+  getInterfaceByKey :: Name -> Validation (Name, FieldsDefinition)
+  getInterfaceByKey interfaceName = case lookupWith typeName interfaceName lib of
+    Just TypeDefinition { typeContent = DataInterface { interfaceFields } } -> pure (interfaceName,interfaceFields)
+    _ -> failure $ unknownInterface interfaceName

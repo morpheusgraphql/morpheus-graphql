@@ -17,23 +17,24 @@ import           Data.Semigroup                 ( (<>) )
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( Encode(..)
-                                                , ObjectResolvers(..)
+                                                , ExploreResolvers(..)
                                                 )
 import           Data.Morpheus.Types.GQLType    ( TRUE )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( DataField(..)
+                                                ( FieldDefinition(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , isSubscription
                                                 , ConsD(..)
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
+                                                , Key
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Resolver
                                                 , MapStrategy(..)
-                                                , LiftEither
-                                                , ResolvingStrategy
+                                                , LiftOperation
+                                                , DataResolver(..)
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( applyT
@@ -42,11 +43,25 @@ import           Data.Morpheus.Types.Internal.TH
                                                 , typeT
                                                 )
 
-encodeVars :: [String]
-encodeVars = ["e", "m"]
+
+
+m_ :: Key
+m_ = "m"
+
+fo_ :: Key
+fo_ = "fieldOperationKind"
+
+po_ :: Key
+po_ = "parentOparation"
+
+e_ :: Key
+e_ = "encodeEvent"
+
+encodeVars :: [Key]
+encodeVars = [e_, m_]
 
 encodeVarsT :: [TypeQ]
-encodeVarsT = map (varT . mkName) encodeVars
+encodeVarsT = map (varT . mkName . unpack) encodeVars
 
 deriveEncode :: GQLTypeD -> Q [Dec]
 deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFields }] } }
@@ -54,49 +69,46 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
  where
   subARgs = conT ''SUBSCRIPTION : encodeVarsT
   instanceArgs | isSubscription typeKindD = subARgs
-               | otherwise = map (varT . mkName) ("o" : encodeVars)
-  mainType = applyT (mkName tName) [mainTypeArg]
+               | otherwise = map (varT . mkName . unpack) (po_ : encodeVars)
+  mainType = applyT (mkName $ unpack tName) [mainTypeArg]
    where
     mainTypeArg | isSubscription typeKindD = applyT ''Resolver subARgs
                 | otherwise                = typeT ''Resolver (fo_ : encodeVars)
   -----------------------------------------------------------------------------------------
-  fo_ = "fieldOperationKind"
-  po_ = "o"
-  ---------------------
   typeables
     | isSubscription typeKindD
     = [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
     | otherwise
-    = [ iLiftEither ''ResolvingStrategy
-      , iLiftEither ''Resolver
+    = [ iLiftOp fo_
       , typeT ''MapStrategy [fo_, po_]
       , iTypeable fo_
       , iTypeable po_
       ]
   -------------------------
-  iLiftEither name = applyT ''LiftEither [varT $ mkName fo_, conT name]
+  iLiftOp op = applyT ''LiftOperation [varT $ mkName $ unpack op]
   -------------------------
   iTypeable name = typeT ''Typeable [name]
   -------------------------------------------
   -- defines Constraint: (Typeable m, Monad m)
   constrains =
     typeables
-      <> [ typeT ''Monad ["m"]
+      <> [ typeT ''Monad [m_]
          , applyT ''Encode (mainType : instanceArgs)
-         , iTypeable "e"
-         , iTypeable "m"
+         , iTypeable e_
+         , iTypeable m_
          ]
   -------------------------------------------------------------------
   -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
-  appHead =
-    instanceHeadMultiT ''ObjectResolvers (conT ''TRUE) (mainType : instanceArgs)
+  appHead = instanceHeadMultiT ''ExploreResolvers
+                               (conT ''TRUE)
+                               (mainType : instanceArgs)
   ------------------------------------------------------------------
   -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
-  methods = [funD 'objectResolvers [clause argsE (normalB body) []]]
+  methods = [funD 'exploreResolvers [clause argsE (normalB body) []]]
    where
     argsE = [varP (mkName "_"), destructRecord tName varNames]
-    body  = listE $ map decodeVar varNames
-    decodeVar name = [|(name, encode $(varName))|]
+    body  = appE (conE 'ObjectRes) (listE $ map (decodeVar . unpack) varNames)
+    decodeVar name = [| (name, encode $(varName))|]
       where varName = varE $ mkName name
-    varNames = map (unpack . fieldName) cFields
+    varNames = map fieldName cFields
 deriveEncode _ = pure []

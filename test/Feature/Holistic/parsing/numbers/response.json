@@ -1,0 +1,24 @@
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"negative1\" on type \"Query\".",
+      "locations": [{ "line": 2, "column": 3 }]
+    },
+    {
+      "message": "Cannot query field \"negative2\" on type \"Query\".",
+      "locations": [{ "line": 3, "column": 3 }]
+    },
+    {
+      "message": "Cannot query field \"negative3\" on type \"Query\".",
+      "locations": [{ "line": 4, "column": 3 }]
+    },
+    {
+      "message": "Cannot query field \"exp1\" on type \"Query\".",
+      "locations": [{ "line": 5, "column": 3 }]
+    },
+    {
+      "message": "Cannot query field \"exp2\" on type \"Query\".",
+      "locations": [{ "line": 6, "column": 3 }]
+    }
+  ]
+}

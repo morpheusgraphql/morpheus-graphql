@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveLift       #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveLift           #-}
+{-# LANGUAGE OverloadedStrings    #-}
 
 module Data.Morpheus.Types.Internal.AST
   (
@@ -11,6 +13,11 @@ module Data.Morpheus.Types.Internal.AST
   , anonymousRef
   , Name
   , Description
+  , Stage
+  , RESOLVED
+  , VALID
+  , RAW
+  , VALIDATION_MODE(..)
 
   -- VALUE
   , Value(..)
@@ -21,23 +28,37 @@ module Data.Morpheus.Types.Internal.AST
   , decodeScientific
   , convertToJSONName
   , convertToHaskellName
+  , RawValue
+  , ValidValue
+  , RawObject
+  , ValidObject
+  , ResolvedObject
+  , ResolvedValue
+  , Named
+  , unpackInputUnion
+  , uniqueElemOr
+  , splitDuplicates
+  , removeDuplicates
 
   -- Selection
   , Argument(..)
   , Arguments
   , SelectionSet
-  , SelectionRec(..)
-  , ValueOrigin(..)
+  , SelectionContent(..)
   , ValidSelection
   , Selection(..)
-  , RawSelection'
+  , RawSelection
   , FragmentLib
   , RawArguments
   , RawSelectionSet
   , Fragment(..)
-  , RawArgument(..)
-  , RawSelection(..)
-
+  , RawArgument
+  , ValidSelectionSet
+  , ValidArgument
+  , ValidArguments
+  , RawSelectionRec
+  , ValidSelectionRec
+  , isOutputType
   -- OPERATION
   , Operation(..)
   , Variable(..)
@@ -48,29 +69,39 @@ module Data.Morpheus.Types.Internal.AST
   , DefaultValue
   , getOperationName
   , getOperationDataType
-
-
+  , getOperationObject
   -- DSL
-  , DataScalar
+  , ScalarDefinition(..)
   , DataEnum
-  , DataObject
-  , DataArgument
+  , FieldsDefinition(..)
+  , ArgumentDefinition
   , DataUnion
-  , DataArguments
-  , DataField(..)
-  , DataTyCon(..)
-  , DataType(..)
-  , DataTypeLib(..)
+  , ArgumentsDefinition(..)
+  , FieldDefinition(..)
+  , TypeContent(..)
+  , TypeDefinition(..)
+  , Schema(..)
   , DataTypeWrapper(..)
-  , DataValidator(..)
   , DataTypeKind(..)
   , DataFingerprint(..)
-  , RawDataType(..)
-  , ResolverKind(..)
   , TypeWrapper(..)
-  , TypeAlias(..)
-  , ArgsType(..)
+  , TypeRef(..)
   , DataEnumValue(..)
+  , OperationType(..)
+  , QUERY
+  , MUTATION
+  , SUBSCRIPTION
+  , Meta(..)
+  , Directive(..)
+  , TypeUpdater
+  , TypeD(..)
+  , ConsD(..)
+  , ClientQuery(..)
+  , GQLTypeD(..)
+  , ClientType(..)
+  , DataInputUnion
+  , VariableContent(..)
+  , TypeLib
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -92,18 +123,10 @@ module Data.Morpheus.Types.Internal.AST
   , isDefaultTypeName
   , isSchemaTypeName
   , isPrimitiveTypeName
-  , OperationType(..)
-  , QUERY
-  , MUTATION
-  , SUBSCRIPTION
   , isEntNode
   , lookupInputType
   , coerceDataObject
-  , getDataType
-  , lookupDataObject
   , lookupDataUnion
-  , lookupType
-  , lookupField
   , lookupUnionTypes
   , lookupSelectionField
   , lookupFieldAsSelectionSet
@@ -117,34 +140,33 @@ module Data.Morpheus.Types.Internal.AST
   , createAlias
   , createInputUnionFields
   , fieldVisibility
-  , Meta(..)
-  , Directive(..)
   , createEnumValue
-  , fromDataType
   , insertType
-  , TypeUpdater
   , lookupDeprecated
   , lookupDeprecatedReason
-  , TypeD(..)
-  , ConsD(..)
-  , ClientQuery(..)
-  , GQLTypeD(..)
-  , ClientType(..)
+  , checkForUnknownKeys
+  , checkNameCollision
+  , hasArguments
+  , lookupWith
+  , selectTypeObject
+  , typeFromScalar
+  -- Temaplate Haskell
+  , toHSFieldDefinition
+  , hsTypeName
   -- LOCAL
   , GQLQuery(..)
   , Variables
+  , isNullableWrapper
+  , unsafeFromFieldList
   )
 where
 
 import           Data.Map                       ( Map )
 import           Language.Haskell.TH.Syntax     ( Lift )
-import           Instances.TH.Lift              ( )
+import           Data.Semigroup                 ( (<>) )
 
 -- Morpheus
 import           Data.Morpheus.Types.Internal.AST.Data
-
-
-import           Data.Morpheus.Types.Internal.AST.Operation
 
 import           Data.Morpheus.Types.Internal.AST.Selection
 
@@ -152,11 +174,42 @@ import           Data.Morpheus.Types.Internal.AST.Base
 
 import           Data.Morpheus.Types.Internal.AST.Value
 
+import           Data.Morpheus.Types.Internal.Resolving.Core
+                                                ( Failure(..) )
 
-type Variables = Map Key Value
+type Variables = Map Key ResolvedValue
 
 data GQLQuery = GQLQuery
   { fragments      :: FragmentLib
   , operation      :: RawOperation
-  , inputVariables :: [(Key, Value)]
+  , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)
+
+unpackInputUnion
+  :: [(Name, Bool)]
+  -> Object stage
+  -> Either Message (Name, Maybe (Value stage))
+unpackInputUnion tags [("__typename", enum)] = do
+  tyName <- isPosibeUnion tags enum
+  pure (tyName, Nothing)
+unpackInputUnion tags [("__typename", enum), (name, value)] = do
+  tyName <- isPosibeUnion tags enum
+  inputtypeName tyName name value
+unpackInputUnion tags [(name, value), ("__typename", enum)] = do
+  tyName <- isPosibeUnion tags enum
+  inputtypeName tyName name value
+unpackInputUnion _ _ = failure
+  ("valid input union should contain __typename and actual value" :: Message)
+
+isPosibeUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
+isPosibeUnion tags (Enum name) = case lookup name tags of
+  Nothing -> failure (name <> " is not posible union type" :: Message)
+  _       -> pure name
+isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
+
+
+inputtypeName
+  :: Name -> Name -> Value stage -> Either Message (Name, Maybe (Value stage))
+inputtypeName name fName fieldValue
+  | fName == name = pure (name, Just fieldValue)
+  | otherwise = failure ("field \"" <> name <> "\" was not provided" :: Message)

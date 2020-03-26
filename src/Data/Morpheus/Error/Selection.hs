@@ -5,7 +5,6 @@ module Data.Morpheus.Error.Selection
   , subfieldsNotSelected
   , duplicateQuerySelections
   , hasNoSubfields
-  , resolvingFailedError
   )
 where
 
@@ -24,30 +23,16 @@ import qualified Data.Text                     as T
                                                 ( concat )
 
 
-resolvingFailedError :: Position -> Text -> Text -> GQLError
-resolvingFailedError position name reason = GQLError
-  { message   = "Failure on Resolving Field \"" <> name <> "\": " <> reason
-  , locations = [position]
-  }
-
-
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
 hasNoSubfields :: Text -> Text -> Position -> GQLErrors
 hasNoSubfields key typeName position = errorMessage position text
  where
-  text = T.concat
-    [ "Field \""
-    , key
-    , "\" must not have a selection since type \""
-    , typeName
-    , "\" has no subfields."
-    ]
+  text = "Field \"" <> key <> "\" must not have a selection since type \"" <> typeName <> "\" has no subfields."
 
 cannotQueryField :: Text -> Text -> Position -> GQLErrors
 cannotQueryField key typeName position = errorMessage position text
  where
-  text =
-    T.concat ["Cannot query field \"", key, "\" on type \"", typeName, "\"."]
+  text = "Cannot query field \"" <> key <> "\" on type \"" <> typeName <> "\"."
 
 duplicateQuerySelections :: Text -> [Ref] -> GQLErrors
 duplicateQuerySelections parentType = map keyToError

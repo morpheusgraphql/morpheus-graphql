@@ -2,14 +2,12 @@ module Data.Morpheus.Types.Internal.Resolving
     ( Event(..)
     , GQLRootResolver(..)
     , UnSubResolver
-    , Resolver(..)
-    , ResolvingStrategy(..)
+    , Resolver
     , MapStrategy(..)
-    , LiftEither(..)
+    , LiftOperation
     , resolveObject
-    , toResponseRes
-    , withObject
-    , resolving
+    , runResolver
+    , unsafeBind
     , toResolver
     , lift
     , SubEvent
@@ -27,6 +25,15 @@ module Data.Morpheus.Types.Internal.Resolving
     , GQLErrors
     , GQLError(..)
     , Position
+    , resolve__typename
+    , DataResolver(..)
+    , FieldRes
+    , WithOperation
+    , PushEvents(..)
+    , runDataResolver
+    , subscribe
+    , Context(..)
+    , unsafeInternalContext
     )
 where
 

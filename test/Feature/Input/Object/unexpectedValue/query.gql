@@ -1,0 +1,6 @@
+query UnexpectedValue {
+  i1: input(value: "some text")
+  i2: input(value: 1)
+  i3: input(value: { field: {} })
+  i4: input(value: { field: 3 })
+}
