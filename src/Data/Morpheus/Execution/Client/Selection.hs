@@ -210,7 +210,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
   scanInpType TypeDefinition { typeContent, typeName } = scanType typeContent
    where
     scanType (DataInputObject fields) = resolveUpdates
-      (name : collected) (map toInputTypeD $ toFields fields)
+      (name : collected) (map toInputTypeD $ toList fields)
      where
       toInputTypeD :: FieldDefinition -> LibUpdater [Key]
       toInputTypeD FieldDefinition { fieldType = TypeRef { typeConName } } =
@@ -224,7 +224,7 @@ buildInputType lib name = getType lib name >>= generateTypes
   generateTypes TypeDefinition { typeName, typeContent } = subTypes typeContent
    where
     subTypes (DataInputObject inputFields) = do
-      fields <- traverse toFieldD (toFields inputFields)
+      fields <- traverse toFieldD (toList inputFields)
       pure
         [ ClientType
             { clientType = TypeD

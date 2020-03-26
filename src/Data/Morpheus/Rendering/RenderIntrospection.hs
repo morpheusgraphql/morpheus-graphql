@@ -66,10 +66,10 @@ instance RenderSchema TypeDefinition S__Type where
       $ createLeafType ENUM typeName typeMeta (Just $ map createEnumValue enums)
     __render (DataInputObject fields) = \lib ->
       createInputObject typeName typeMeta
-        <$> traverse (`renderinputValue` lib) (toFields fields)
+        <$> traverse (`renderinputValue` lib) (toList fields)
     __render DataObject {objectFields} = \lib ->
       createObjectType typeName (typeMeta >>= metaDescription)
-        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ toFields objectFields))
+        <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ toList objectFields))
     __render (DataUnion union) =
       constRes $ typeFromUnion (typeName, typeMeta, union)
     __render (DataInputUnion members) =
@@ -85,7 +85,7 @@ createEnumValue DataEnumValue { enumName, enumMeta } = S__EnumValue
   where deprecated = enumMeta >>= lookupDeprecated
 
 renderArguments :: (Monad m, Failure Text m) => ArgumentsDefinition -> Schema -> m [S__InputValue m] 
-renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) $ toFields arguments
+renderArguments ArgumentsDefinition { arguments} lib = traverse (`renderinputValue` lib) $ toList arguments
 renderArguments NoArguments _ = pure []
 
 instance RenderSchema FieldDefinition S__Field where

@@ -78,7 +78,7 @@ instance RenderGQL TypeDefinition where
 
 -- OBJECT
 instance RenderGQL FieldsDefinition where
-  render = renderObject render . ignoreHidden . toFields
+  render = renderObject render . ignoreHidden . toList
    where 
     ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
     ignoreHidden = filter fieldVisibility

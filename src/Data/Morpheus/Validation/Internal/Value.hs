@@ -115,7 +115,7 @@ validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName 
     validate
       :: TypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) = do 
-      traverse requiredFieldsDefined (toFields parentFields)
+      traverse requiredFieldsDefined (toList parentFields)
       Object <$> traverse validateField fields
      where
       requiredFieldsDefined datafield@FieldDefinition { fieldName }

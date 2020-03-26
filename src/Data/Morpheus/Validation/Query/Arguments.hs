@@ -149,7 +149,7 @@ validateArguments typeLib operatorName variables field@FieldDefinition { fieldAr
   = do
     args     <- resolveArgumentVariables operatorName variables field rawArgs
     checkForUnknownArguments args
-    mapM (validateArgument typeLib pos args) (toFields fieldArgs)
+    mapM (validateArgument typeLib pos args) (toList fieldArgs)
  where
   checkForUnknownArguments
     :: Arguments RESOLVED -> Validation ()
@@ -161,4 +161,4 @@ validateArguments typeLib operatorName variables field@FieldDefinition { fieldAr
     argToKey :: (Name, Argument RESOLVED) -> Ref
     argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
     fieldKeys :: [Name]
-    fieldKeys = map fieldName (toFields fieldArgs)
+    fieldKeys = map fieldName (toList fieldArgs)
