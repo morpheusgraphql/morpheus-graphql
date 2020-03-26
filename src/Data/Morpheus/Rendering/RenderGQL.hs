@@ -45,7 +45,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                     
                                                 ( Listable(..)
-                                                , Listable(..)
                                                 )
 
 renderGraphQLDocument :: Schema -> ByteString
@@ -89,7 +88,7 @@ instance RenderGQL FieldDefinition where
 
 instance RenderGQL ArgumentsDefinition where 
   render NoArguments   = ""
-  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map snd $ toAssoc $ fmap render arguments) <> ")"
+  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (toList $ fmap render arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName
@@ -112,4 +111,4 @@ renderIndent = "  "
 
 renderObject :: (a -> Text) -> [a] -> Text
 renderObject f list =
-  " { \n  " <> intercalate ("\n" <> renderIndent) (fmap f list) <> "\n}"
+  " { \n  " <> intercalate ("\n" <> renderIndent) (map f list) <> "\n}"
