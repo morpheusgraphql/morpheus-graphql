@@ -92,7 +92,7 @@ argumentsDefinition =
         value <- (Just <$> parseTuple inputValueDefinition) <|> pure Nothing
         case value of
             Nothing -> pure NoArguments
-            Just x -> fromFields x
+            Just x -> fromList x
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --
@@ -100,7 +100,7 @@ argumentsDefinition =
 --    { FieldDefinition(list) }
 --
 fieldsDefinition :: Parser FieldsDefinition
-fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition >>= fromFields
+fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition >>= fromList
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -125,7 +125,7 @@ fieldDefinition = label "FieldDefinition" $ do
 --     { InputValueDefinition(list) }
 --
 inputFieldsDefinition :: Parser FieldsDefinition
-inputFieldsDefinition = label "InputFieldsDefinition" $  setOf inputValueDefinition >>= fromFields
+inputFieldsDefinition = label "InputFieldsDefinition" $  setOf inputValueDefinition >>= fromList
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --

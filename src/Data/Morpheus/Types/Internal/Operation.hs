@@ -57,9 +57,9 @@ toTuple x = (keyOf x, x)
 class Listable c a where
   fromAssoc   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
   toAssoc     ::  c  -> [Named a]
-  fromFields :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] ->  m c
+  fromList :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] ->  m c
   toList = map snd . toAssoc 
-  fromFields = fromAssoc . map toTuple      
+  fromList = fromAssoc . map toTuple      
   toList :: c -> [a] 
 
 class Join a where 
