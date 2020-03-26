@@ -48,8 +48,8 @@ import           Data.Morpheus.Types.Internal.TH
 
 -- FromJSON
 deriveFromJSON :: TypeD -> Q Dec
-deriveFromJSON TypeD { tCons = [] } =
-  fail "Type Should Have at least one Constructor"
+deriveFromJSON TypeD { tCons = [] , tName } =
+  fail $ "Type " <> unpack tName <> " Should Have at least one Constructor"
 deriveFromJSON TypeD { tName, tNamespace, tCons = [cons] } = defineFromJSON
   name
   (aesonObject tNamespace)
@@ -70,16 +70,16 @@ aesonObjectBody :: [Key] -> ConsD -> ExpQ
 aesonObjectBody namespace ConsD { cName, cFields } = handleFields cFields
  where
   consName = mkName $ unpack $ nameSpaceType namespace cName
-  ------------------------------------------
-  handleFields []     = fail "No Empty Object"
+  ----------------------------------------------------------
+  handleFields []     = fail $ "Type \""<>unpack cName <>"\" is Empty Object"
   handleFields fields = startExp fields
-  ----------------------------------------------------------------------------------
+  ----------------------------------------------------------
    where
     defField field@FieldDefinition { fieldName }
       | isFieldNullable field = [|o .:? fName|]
       | otherwise             = [|o .: fName|]
       where fName = unpack fieldName
-        -------------------------------------------------------------------
+    --------------------------------------------------------
     startExp fNames = uInfixE (conE consName)
                               (varE '(<$>))
                               (applyFields fNames)

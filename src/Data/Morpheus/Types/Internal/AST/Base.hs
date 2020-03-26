@@ -1,9 +1,11 @@
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DeriveLift         #-}
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE DataKinds          #-}
-{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveLift                 #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
@@ -12,6 +14,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , Position(..)
   , Message
   , Name
+  , Named
   , Description
   , VALID
   , RAW
@@ -27,8 +30,9 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeKind(..)
   , DataFingerprint(..)
   , DataTypeWrapper(..)
+  --, Named(..)
   , anonymousRef
-  , removeDuplicates
+  , uniqueElemOr
   , elementOfKeys
   , toHSWrappers
   , toGQLWrapper
@@ -45,6 +49,13 @@ module Data.Morpheus.Types.Internal.AST.Base
   , isNullableWrapper
   , isOutputType
   , sysFields
+  , typeFromScalar
+  , hsTypeName
+  , toOperationType
+  , splitDuplicates
+  , removeDuplicates
+  , GQLError(..)
+  , GQLErrors
   )
 where
 
@@ -54,9 +65,15 @@ import           Data.Aeson                     ( FromJSON
                                                 )
 import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
-import           Language.Haskell.TH.Syntax     ( Lift )
-import           Instances.TH.Lift              ( )
-import qualified Data.Set                      as S
+import           Language.Haskell.TH.Syntax     ( Lift(..) )
+import           Instances.TH.Lift              ()
+
+data GQLError = GQLError
+  { message      :: Text
+  , locations :: [Position]
+  } deriving ( Show, Generic, FromJSON, ToJSON)
+
+type GQLErrors = [GQLError]
 
 type Key = Text
 type Message = Text
@@ -74,7 +91,7 @@ type VALID = 'VALID
 data Position = Position
   { line   :: Int
   , column :: Int
-  } deriving (Show, Generic, FromJSON, ToJSON, Lift)
+  } deriving ( Show, Generic, FromJSON, ToJSON, Lift)
 
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
@@ -93,6 +110,8 @@ type QUERY = 'Query
 type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
 
+type Named a = (Name, a) 
+
 -- Refference with Position information  
 --
 -- includes position for debugging, where Ref "a" 1 === Ref "a" 3
@@ -110,7 +129,6 @@ instance Ord Ref where
 
 anonymousRef :: Key -> Ref
 anonymousRef refName = Ref { refName, refPosition = Position 0 0 }
-
 
 -- TypeRef
 -------------------------------------------------------------------
@@ -197,11 +215,6 @@ toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers []                              = [TypeMaybe]
 toHSWrappers [NonNullType]                   = []
 
--- Helpers
-
-removeDuplicates :: Ord a => [a] -> [a]
-removeDuplicates = S.toList . S.fromList
-
 elementOfKeys :: [Name] -> Ref -> Bool
 elementOfKeys keys Ref { refName } = refName `elem` keys
 
@@ -228,3 +241,44 @@ sysTypes =
 
 sysFields :: [Key]
 sysFields = ["__typename","__schema","__type"]
+
+typeFromScalar :: Name -> Name
+typeFromScalar "Boolean" = "Bool"
+typeFromScalar "Int"     = "Int"
+typeFromScalar "Float"   = "Float"
+typeFromScalar "String"  = "Text"
+typeFromScalar "ID"      = "ID"
+typeFromScalar _         = "ScalarValue"
+
+hsTypeName :: Key -> Key
+hsTypeName "String"                    = "Text"
+hsTypeName "Boolean"                   = "Bool"
+hsTypeName name | name `elem` sysTypes = "S" <> name
+hsTypeName name                        = name
+
+toOperationType :: Name -> Maybe OperationType
+toOperationType "Subscription" = Just Subscription
+toOperationType "Mutation" = Just Mutation
+toOperationType "Query" = Just Query
+toOperationType _ = Nothing
+
+-- validation combinators
+uniqueElemOr :: (Applicative validation, Eq a) 
+  => ([a]-> validation [a])
+  ->  [a] -> validation [a]
+uniqueElemOr fallback ls = case splitDuplicates ls of
+      (collected,[]) -> pure collected
+      (_,errors) -> fallback errors
+
+removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates = fst . splitDuplicates
+
+-- elems -> (unique elements, duplicate elems)
+splitDuplicates :: Eq a => [a] -> ([a],[a])
+splitDuplicates = collectElems ([],[])
+  where
+    collectElems :: Eq a => ([a],[a]) -> [a] -> ([a],[a])
+    collectElems collected [] = collected
+    collectElems (collected,errors) (x:xs)
+        | x `elem` collected = collectElems (collected,errors <> [x]) xs
+        | otherwise = collectElems (collected <> [x],errors) xs

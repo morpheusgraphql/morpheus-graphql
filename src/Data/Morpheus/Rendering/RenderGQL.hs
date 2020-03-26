@@ -20,6 +20,9 @@ import qualified Data.Text.Lazy                as LT
 import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 
 -- MORPHEUS
+import           Data.Morpheus.Types.Internal.AST.OrderedMap
+                                                ( unsafeFromList
+                                                )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , TypeContent(..)
@@ -39,7 +42,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ArgumentsDefinition(..)
                                                 , Name
                                                 , FieldsDefinition(..)
-                                                , Listable(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Operation                                     
+                                                ( Listable(..)
                                                 )
 
 renderGraphQLDocument :: Schema -> ByteString
@@ -63,8 +68,11 @@ instance RenderGQL TypeDefinition where
         <> " =\n    "
         <> intercalate ("\n" <> renderIndent <> "| ") members
     __render (DataInputObject fields ) = "input " <> typeName <> render fields
-    __render (DataInputUnion  members) = "input " <> typeName <> render (fromList fields :: FieldsDefinition )
-      where fields = createInputUnionFields typeName (map fst members)
+    __render (DataInputUnion  members) = "input " <> typeName <> render fieldsDef
+       where
+          fieldsDef = FieldsDefinition $ unsafeFromList $ map withKey fields
+          withKey x = (fieldName x,x) 
+          fields = createInputUnionFields typeName (fmap fst members)
     __render DataObject {objectFields} = "type " <> typeName <> render objectFields
 
 -- OBJECT
@@ -80,7 +88,7 @@ instance RenderGQL FieldDefinition where
 
 instance RenderGQL ArgumentsDefinition where 
   render NoArguments   = ""
-  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map render arguments) <> ")"
+  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (toList $ fmap render arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName

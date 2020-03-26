@@ -23,10 +23,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeRef(..)
-                                                , Listable(..)
-                                                , Selectable(..)
                                                 , isWeaker
                                                 , lookupWith
+                                                )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Selectable(..)
+                                                , Listable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation

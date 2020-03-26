@@ -18,7 +18,6 @@ module Data.Morpheus.Execution.Server.Resolve
   )
 where
 
-import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
@@ -73,6 +72,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionContent(..)
                                                 , FieldsDefinition(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Join(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver
@@ -203,9 +204,9 @@ fullSchema
   -> Validation Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
-  querySchema = resolveUpdates
-    (initTypeLib (operatorType (hiddenRootFields <> fields) "Query"))
-    (defaultTypes : types)
+  querySchema = do
+    fs <- hiddenRootFields `join` fields
+    resolveUpdates (initTypeLib (operatorType fs "Query")) (defaultTypes : types)
    where
     (fields, types) = introspectObjectFields
       (Proxy @(CUSTOM (query (Resolver QUERY event m))))

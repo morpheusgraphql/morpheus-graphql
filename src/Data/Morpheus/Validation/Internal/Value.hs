@@ -31,20 +31,21 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidValue
                                                 , Variable(..)
                                                 , Ref(..)
-                                                , isWeaker
                                                 , Message
                                                 , Name
                                                 , ResolvedValue
                                                 , VALID
                                                 , VariableContent(..)
+                                                , TypeRef(..)
+                                                , isWeaker
                                                 , unpackInputUnion
                                                 , isFieldNullable
-                                                , TypeRef(..)
                                                 , isNullableWrapper
-                                                , Listable(..)
-                                                , Selectable(..)
                                                 )
-
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                , selectBy
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) )
 import           Data.Morpheus.Rendering.RenderGQL
@@ -114,7 +115,7 @@ validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName 
     validate
       :: TypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) = do 
-      traverse requiredFieldsDefined (toList parentFields)
+      _ <- traverse requiredFieldsDefined (toList parentFields)
       Object <$> traverse validateField fields
      where
       requiredFieldsDefined datafield@FieldDefinition { fieldName }

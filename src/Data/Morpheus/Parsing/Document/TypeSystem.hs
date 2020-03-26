@@ -12,13 +12,12 @@ import           Text.Megaparsec                ( label
                                                 , (<|>)
                                                 , eof
                                                 , manyTill
-                                                , runParser
                                                 )
 
 -- MORPHEUS
 import           Data.Morpheus.Parsing.Internal.Internal
                                                 ( Parser
-                                                , processErrorBundle
+                                                , processParser
                                                 )
 import           Data.Morpheus.Parsing.Internal.Pattern
                                                 ( fieldsDefinition
@@ -34,7 +33,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , parseName
                                                 , pipeLiteral
                                                 , sepByAnd
-                                                , setOf
+                                                , collection
                                                 , spaceAndComments
                                                 )
 import           Data.Morpheus.Types.Internal.AST
@@ -47,9 +46,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ScalarDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                 ( Validation
-                                                 , Failure(..)
-                                                 )
+                                                 ( Validation )
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
 --
@@ -158,7 +155,7 @@ enumTypeDefinition :: Maybe Description -> Parser TypeDefinition
 enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
   typeName              <- typDeclaration "enum"
   metaDirectives        <- optionalDirectives
-  enumValuesDefinitions <- setOf enumValueDefinition
+  enumValuesDefinitions <- collection enumValueDefinition
   -- build enum
   pure TypeDefinition 
     { typeName
@@ -201,11 +198,8 @@ parseDataType = label "TypeDefinition" $ do
       <|> interfaceTypeDefinition description
 
 parseSchema :: Text -> Validation [TypeDefinition]
-parseSchema doc = case parseDoc of
-  Right root       -> pure root
-  Left  parseError -> failure (processErrorBundle parseError)
+parseSchema = processParser request
  where
-  parseDoc = runParser request "<input>" doc
   request  = label "DocumentTypes" $ do
     spaceAndComments
     manyTill parseDataType eof
