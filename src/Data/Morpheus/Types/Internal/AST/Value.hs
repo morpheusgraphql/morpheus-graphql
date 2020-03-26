@@ -162,7 +162,6 @@ data Value (valid :: Stage) where
   Scalar ::ScalarValue -> Value a
   Null ::Value a
 
-
 type Object a = OrderedMap (Value a)
 type ValidObject = Object VALID
 type RawObject = Object RAW

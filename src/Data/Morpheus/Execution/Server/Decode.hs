@@ -65,11 +65,7 @@ import           Data.Morpheus.Types.Internal.Operation
 
 -- GENERIC
 decodeArguments :: DecodeType a => ValidArguments -> Validation a
-decodeArguments = decodeType . Object . fmap toObject
- where
-  toObject :: (Name, ValidArgument) -> (Name, ValidValue)
-  toObject (x, Argument { argumentValue }) = (x, argumentValue)
-
+decodeArguments = decodeType . Object . fmap argumentValue
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where

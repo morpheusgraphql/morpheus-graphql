@@ -11,6 +11,7 @@
 module Data.Morpheus.Types.Internal.AST.OrderedMap
     ( OrderedMap
     , unsafeFromList
+    , traverseWithKey
     )
 where 
 
@@ -40,6 +41,9 @@ data OrderedMap a = OrderedMap {
     mapKeys :: [Name], 
     mapEntries :: HashMap Name a 
   } deriving (Show, Functor)
+
+traverseWithKey :: Applicative t => (Name -> a -> t b) -> OrderedMap a -> t (OrderedMap b)
+traverseWithKey f (OrderedMap names hmap) = OrderedMap names <$> HM.traverseWithKey f hmap
 
 instance Lift a => Lift (OrderedMap a) where
   lift (OrderedMap names x) = [| OrderedMap names (HM.fromList ls) |]

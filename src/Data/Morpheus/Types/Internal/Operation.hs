@@ -1,8 +1,10 @@
-{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FunctionalDependencies     #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+
 
 module Data.Morpheus.Types.Internal.Operation
     ( Empty(..)        
@@ -14,6 +16,7 @@ module Data.Morpheus.Types.Internal.Operation
     , KeyOf(..)
     , toPair
     , selectBy
+    , member
     )
     where 
 
@@ -35,7 +38,7 @@ class Empty a where
 instance Empty (HashMap k v) where
   empty = HM.empty
 
-class Selectable c a where 
+class Selectable c a | c -> a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
 
 instance Selectable [(Name, a)] a where 
@@ -46,6 +49,12 @@ instance Selectable (HashMap Text a) a where
 
 selectBy :: (Failure e m, Selectable c a, Monad m) => e -> Name -> c -> m a
 selectBy err = selectOr (failure err) pure
+
+member :: forall a c. Selectable c a => Name -> c -> Bool
+member = selectOr False toTrue
+  where 
+    toTrue :: a -> Bool
+    toTrue _ = True
 
 class Singleton c a where
   singleton  :: Name -> a -> c
