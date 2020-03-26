@@ -58,6 +58,9 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                )
 
 
 -- GENERIC
@@ -161,8 +164,9 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
     (x, y { typeName = pack $ datatypeName (undefined :: (M1 D d f a)) })
 
 getEnumTag :: ValidObject -> Validation Name
-getEnumTag [("enum", Enum value)] = pure value
-getEnumTag _                      = internalError "bad union enum object"
+getEnumTag x = case toAssoc x of 
+        [("enum", Enum value)] -> pure value
+        _                      -> internalError "bad union enum object"
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
