@@ -88,7 +88,7 @@ instance RenderGQL FieldDefinition where
 
 instance RenderGQL ArgumentsDefinition where 
   render NoArguments   = ""
-  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (toList $ fmap render arguments) <> ")"
+  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (map render $ toList arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName
