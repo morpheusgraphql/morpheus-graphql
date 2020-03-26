@@ -29,7 +29,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , parseType
                                                 , setOf
                                                 , parseTuple
-                                                , uniqTupple
+                                                , uniqTuple
                                                 )
 import           Data.Morpheus.Parsing.Internal.Value
                                                 ( parseDefaultValue
@@ -89,7 +89,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
 --
 argumentsDefinition :: Parser ArgumentsDefinition
 argumentsDefinition = label "ArgumentsDefinition" 
-     $  uniqTupple inputValueDefinition
+     $  uniqTuple inputValueDefinition
     <|> pure NoArguments
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
