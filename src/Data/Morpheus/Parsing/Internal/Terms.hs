@@ -12,6 +12,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   -------------
   , collection
   , setOf
+  , uniqTupple
   , parseTypeCondition
   , spreadLiteral
   , parseNonNull
@@ -214,6 +215,9 @@ parseTuple parser = label "Tuple" $ between
   (char ')' *> spaceAndComments)
   (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!"
   )
+
+uniqTupple :: (Listable c a , KeyOf a) => Parser a -> Parser c
+uniqTupple = parseTuple >=> fromList
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser = label "assignment" $ do
