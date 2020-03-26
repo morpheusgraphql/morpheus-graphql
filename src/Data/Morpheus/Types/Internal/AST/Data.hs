@@ -410,8 +410,6 @@ instance Singleton  FieldsDefinition FieldDefinition  where
 instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
   toAssoc = toAssoc . unFieldsDefinition
-  fromFields ls = FieldsDefinition <$> fromFields ls 
-  toFields = toFields . unFieldsDefinition
 
 -- instance Listable (OrderedMap FieldDefinition) FieldDefinition where 
 --   toFields = map snd . toAssoc
@@ -521,10 +519,10 @@ instance Singleton ArgumentsDefinition ArgumentDefinition where
   singleton name = ArgumentsDefinition Nothing . singleton name
 
 instance Listable ArgumentsDefinition ArgumentDefinition where
-  toFields NoArguments                  = []
-  toFields (ArgumentsDefinition _ args) = toFields args
-  fromFields []                         = pure NoArguments
-  fromFields args                       = ArgumentsDefinition Nothing <$> fromFields args
+  toAssoc NoArguments                  = []
+  toAssoc (ArgumentsDefinition _ args) = toAssoc args
+  fromAssoc []                         = pure NoArguments
+  fromAssoc args                       = ArgumentsDefinition Nothing <$> fromAssoc args
 
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
