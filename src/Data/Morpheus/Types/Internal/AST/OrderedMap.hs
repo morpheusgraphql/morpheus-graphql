@@ -22,7 +22,6 @@ import           Data.Morpheus.Types.Internal.Operation ( Join(..)
                                                         , Selectable(..)
                                                         , Listable(..)
                                                         , Failure(..)
-                                                        , FieldMap(..)
                                                         )
 import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
