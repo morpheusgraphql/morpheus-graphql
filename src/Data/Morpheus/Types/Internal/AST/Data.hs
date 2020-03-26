@@ -68,7 +68,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , lookupWith
   , selectTypeObject
   , toHSFieldDefinition
-  , selectBy
   , fromValidFields
   )
 where
@@ -117,6 +116,8 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Listable(..)
                                                 , Join(..)
                                                 , KeyOf(..)
+                                                , toPair
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -132,9 +133,6 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
-selectBy :: (Failure e m, Selectable c a, Monad m) => e -> Name -> c -> m a
-selectBy err = selectOr (failure err) pure
-
 type DataEnum = [DataEnumValue]
 type DataUnion = [Key]
 type DataInputUnion = [(Key, Bool)]
@@ -142,8 +140,7 @@ type DataInputUnion = [(Key, Bool)]
 -- scalar
 ------------------------------------------------------------------
 newtype ScalarDefinition = ScalarDefinition
-  { validateValue :: ValidValue -> Either Key ValidValue
-  }
+  { validateValue :: ValidValue -> Either Key ValidValue }
 
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
@@ -394,9 +391,8 @@ newtype FieldsDefinition = FieldsDefinition
  { unFieldsDefinition :: OrderedMap FieldDefinition } 
   deriving (Show, Empty)
 
-
 fromValidFields :: [FieldDefinition] -> FieldsDefinition 
-fromValidFields = FieldsDefinition . unsafeFromList . map fieldDefinitiontoEntry
+fromValidFields = FieldsDefinition . unsafeFromList . map toPair
 
 instance Join FieldsDefinition where
   join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
@@ -423,9 +419,6 @@ data FieldDefinition = FieldDefinition
 
 instance KeyOf FieldDefinition where 
   keyOf = fieldName
-
-fieldDefinitiontoEntry :: FieldDefinition -> (Name, FieldDefinition)
-fieldDefinitiontoEntry x = (fieldName x, x)
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition { fieldName } = fieldName `notElem` sysFields

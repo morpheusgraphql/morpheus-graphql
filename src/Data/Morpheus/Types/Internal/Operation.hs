@@ -11,9 +11,10 @@ module Data.Morpheus.Types.Internal.Operation
     , Join(..)
     , Failure(..)
     , KeyOf(..)
+    , toPair
+    , selectBy
     )
     where 
-
 
 import           Data.Text                              ( Text )
 import           Instances.TH.Lift                      ( )
@@ -42,6 +43,9 @@ instance Selectable [(Name, a)] a where
 instance Selectable (HashMap Text a) a where 
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
+selectBy :: (Failure e m, Selectable c a, Monad m) => e -> Name -> c -> m a
+selectBy err = selectOr (failure err) pure
+
 class Singleton c a where
   singleton  :: Name -> a -> c
 
@@ -51,20 +55,19 @@ class KeyOf a where
 instance KeyOf (Name,a) where
   keyOf = fst
 
-toTuple :: KeyOf a => a -> (Name,a)
-toTuple x = (keyOf x, x)
+toPair :: KeyOf a => a -> (Name,a)
+toPair x = (keyOf x, x)
 
 class Listable c a where
   fromAssoc   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
   toAssoc     ::  c  -> [Named a]
   fromList :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] ->  m c
   toList = map snd . toAssoc 
-  fromList = fromAssoc . map toTuple      
+  fromList = fromAssoc . map toPair      
   toList :: c -> [a] 
 
 class Join a where 
   join :: (Monad m, Failure GQLErrors m) => a -> a -> m a
-
 
 class Applicative f => Failure error (f :: * -> *) where
   failure :: error -> f v
