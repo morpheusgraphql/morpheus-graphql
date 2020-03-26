@@ -157,7 +157,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLQuery(..)
   , Variables
   , isNullableWrapper
-  , fromValidFields
+  , unsafeFromFieldList
   )
 where
 

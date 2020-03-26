@@ -68,7 +68,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , lookupWith
   , selectTypeObject
   , toHSFieldDefinition
-  , fromValidFields
+  , unsafeFromFieldList
   )
 where
 
@@ -391,8 +391,8 @@ newtype FieldsDefinition = FieldsDefinition
  { unFieldsDefinition :: OrderedMap FieldDefinition } 
   deriving (Show, Empty)
 
-fromValidFields :: [FieldDefinition] -> FieldsDefinition 
-fromValidFields = FieldsDefinition . unsafeFromList . map toPair
+unsafeFromFieldList :: [FieldDefinition] -> FieldsDefinition 
+unsafeFromFieldList = FieldsDefinition . unsafeFromList . map toPair
 
 instance Join FieldsDefinition where
   join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
