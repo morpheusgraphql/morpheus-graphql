@@ -98,10 +98,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Description
                                                 , TypeWrapper(..)
                                                 , TypeRef(..)
-                                                , Ref(..)
                                                 , Stage
                                                 , VALID
-                                                , elementOfKeys
                                                 , uniqueElemOr
                                                 , DataTypeKind(..)
                                                 , DataFingerprint(..)
