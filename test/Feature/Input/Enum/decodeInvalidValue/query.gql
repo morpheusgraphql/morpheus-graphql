@@ -1,3 +1,3 @@
 query ValidDecoding {
-  test2 (level:LK)
+  test2 ( level: LK )
 }
