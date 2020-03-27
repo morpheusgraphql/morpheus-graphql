@@ -2,7 +2,12 @@
   "errors": [
     {
       "message": "Argument value got invalid value ; Unknown Field \"moo\".",
-      "locations": [{ "line": 2, "column": 16 }]
+      "locations": [
+        {
+          "line": 2,
+          "column": 10
+        }
+      ]
     }
   ]
 }
