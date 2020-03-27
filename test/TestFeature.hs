@@ -23,8 +23,11 @@ import           Test.Tasty                 (TestTree, testGroup)
 import           Test.Tasty.HUnit           (assertFailure, testCase)
 
 packGQLRequest :: ByteString -> Maybe Value -> GQLRequest
-packGQLRequest queryBS variables =
-  GQLRequest {operationName = Nothing, query = LT.toStrict $ decodeUtf8 queryBS, variables}
+packGQLRequest queryBS variables = GQLRequest 
+  { operationName = Nothing
+  , query = LT.toStrict $ decodeUtf8 queryBS
+  , variables
+  }
 
 data Case = Case
   { path        :: Text
