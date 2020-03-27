@@ -63,7 +63,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , insertType
   , lookupDeprecated
   , lookupDeprecatedReason
-  , checkForUnknownKeys
   , checkNameCollision
   , hasArguments
   , lookupWith
@@ -580,14 +579,7 @@ data ConsD = ConsD
   , cFields :: [FieldDefinition]
   } deriving (Show)
 
-
 -- Helpers
 -------------------------------------------------------------------------
 checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
-checkNameCollision names toError = uniqueElemOr (failure . toError) names 
-
-checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
-checkForUnknownKeys enhancedKeys keys' errorGenerator' =
-  case filter (not . elementOfKeys keys') enhancedKeys of
-    []           -> pure enhancedKeys
-    unknownKeys -> failure $ errorGenerator' unknownKeys
+checkNameCollision names toError = uniqueElemOr (failure . toError) names

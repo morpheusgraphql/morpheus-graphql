@@ -145,7 +145,6 @@ module Data.Morpheus.Types.Internal.AST
   , insertType
   , lookupDeprecated
   , lookupDeprecatedReason
-  , checkForUnknownKeys
   , checkNameCollision
   , hasArguments
   , lookupWith

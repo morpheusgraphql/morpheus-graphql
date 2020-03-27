@@ -7,6 +7,7 @@ module Data.Morpheus.Validation.Query.Arguments
   )
 where
 
+import           Data.Foldable                  (traverse_)  
 import           Data.Maybe                     ( maybe )
 import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
                                                 -- , argumentNameCollision
@@ -42,13 +43,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , isFieldNullable
                                                 , lookupInputType
-                                                , checkForUnknownKeys
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , selectBy
                                                 , selectOr
-                                                , keys
                                                 , empty
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -85,20 +84,15 @@ variableByRef operationName variables Ref { refName, refPosition } = maybe
 resolveArgumentVariables
   :: Name
   -> ValidVariables
-  -> FieldDefinition
   -> RawArguments
   -> Validation (Arguments RESOLVED)
-resolveArgumentVariables operationName variables FieldDefinition { fieldName, fieldArgs }
-  = mapM resolveVariable
+resolveArgumentVariables operationName variables
+  = traverse resolveVariable
  where
   resolveVariable :: RawArgument -> Validation (Argument RESOLVED)
   resolveVariable (Argument key val position) = do 
-    _ <- checkUnknown
     constValue <- resolveObject operationName variables val
     pure $ Argument key constValue position
-    where 
-      checkUnknown :: Validation FieldDefinition
-      checkUnknown = selectBy (unknownArguments fieldName [Ref key position]) key fieldArgs
 
 validateArgument
   :: Schema
@@ -153,26 +147,20 @@ validateArguments
     typeLib 
     operatorName 
     variables 
-    field
+    FieldDefinition { fieldName, fieldArgs }
     pos 
     rawArgs
   = do
-    args     <- resolveArgumentVariables operatorName variables field rawArgs
-    checkForUnknownArguments args
+    args <- resolveArgumentVariables operatorName variables rawArgs
+    traverse_ checkUnknown (toList args)
     traverse (validateArgument typeLib pos args) fArgs
  where
-  fArgs = case fieldArgs field of 
+  fArgs = case fieldArgs of 
     (ArgumentsDefinition _ argsD) -> argsD
     NoArguments -> empty
   -------------------------------------------------
-  checkForUnknownArguments
-    :: Arguments RESOLVED -> Validation ()
-  checkForUnknownArguments args = checkForUnknownKeys enhancedKeys (keys fArgs) argError >> pure ()
-   where
-    argError     = unknownArguments (fieldName field)
-    -------------------------------------------------
-    enhancedKeys = toList $ fmap argToKey args
-    -------------------------------
-    argToKey :: Argument RESOLVED -> Ref
-    argToKey Argument { argumentName, argumentPosition } = Ref argumentName argumentPosition
-    
+  checkUnknown
+    :: Argument RESOLVED -> Validation ()
+  checkUnknown Argument { argumentName, argumentPosition } 
+    = selectBy (unknownArguments fieldName [Ref argumentName argumentPosition]) argumentName fieldArgs 
+      >> pure ()

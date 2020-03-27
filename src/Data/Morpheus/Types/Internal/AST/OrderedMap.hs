@@ -96,6 +96,5 @@ type NoDupHashMap a = (HashMap Name a,[Named a])
 insertNoDups :: NoDupHashMap a -> [Named a] -> NoDupHashMap a
 insertNoDups collected [] = collected
 insertNoDups (coll,errors) (pair@(name,value):xs)
-  | isJust (name `HM.lookup` coll) = insertNoDups (coll,pair:errors) xs
+  | isJust (name `HM.lookup` coll) = insertNoDups (coll,errors <> [pair]) xs
   | otherwise = insertNoDups (HM.insert name value coll,errors) xs
-
