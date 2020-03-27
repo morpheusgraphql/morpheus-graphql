@@ -170,7 +170,6 @@ import           Data.Semigroup                 ( (<>) )
 -- Morpheus
 import           Data.Morpheus.Types.Internal.Operation  
                                                 ( Listable(..)
-                                                , Selectable(..)
                                                 , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data

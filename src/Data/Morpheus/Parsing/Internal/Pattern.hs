@@ -23,21 +23,15 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , litAssignment
                                                 , operator
                                                 , optDescription
-                                                , parseAssignment
-                                                , parseMaybeTuple
                                                 , parseName
                                                 , parseType
                                                 , setOf
                                                 , uniqTuple
                                                 )
 import           Data.Morpheus.Parsing.Internal.Arguments
-                                                (maybeArguments
-                                                , parseArgumentsOpt
-                                                )
+                                                ( parseArgumentsOpt )
 import           Data.Morpheus.Parsing.Internal.Value
-                                                ( parseDefaultValue
-                                                , parseValue
-                                                )
+                                                ( parseDefaultValue )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , Directive(..)

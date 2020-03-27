@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections    #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE RecordWildCards  #-}
@@ -10,7 +9,7 @@ where
 
 import           Data.Maybe                     ( maybe )
 import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
-                                                , argumentNameCollision
+                                                -- , argumentNameCollision
                                                 , undefinedArgument
                                                 , unknownArguments
                                                 )
@@ -44,7 +43,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isFieldNullable
                                                 , lookupInputType
                                                 , checkForUnknownKeys
-                                                , checkNameCollision
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)

@@ -42,16 +42,13 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , unpackInputUnion
                                                 , isFieldNullable
                                                 , isNullableWrapper
-                                                , ValidObject
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 (traverseWithKey
                                                 , unsafeFromList
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( Listable(..)
-                                                , selectBy
-                                                , singleton
+                                                ( selectBy
                                                 , member
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

@@ -71,8 +71,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , Argument(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( Value
-                                                , Variable(..)
+                                                ( Variable(..)
                                                 , ResolvedValue
                                                 )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap

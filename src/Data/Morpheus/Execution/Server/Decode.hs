@@ -49,7 +49,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Argument(..)
                                                 , ValidArguments
-                                                , ValidArgument
                                                 , ValidObject
                                                 , Value(..)
                                                 , ValidValue
