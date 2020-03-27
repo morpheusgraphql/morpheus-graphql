@@ -73,7 +73,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( Join(..))
+                                                ( Join(..)
+                                                , empty
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver
@@ -169,7 +171,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
       , currentSelection = (
         "Root"
         , Selection {
-          selectionArguments = []
+          selectionArguments = empty
           , selectionPosition = operationPosition operation
           , selectionAlias = Nothing
           , selectionContent = SelectionSet (operationSelection operation)

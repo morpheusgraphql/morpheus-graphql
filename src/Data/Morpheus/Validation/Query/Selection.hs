@@ -47,7 +47,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , checkNameCollision
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( selectBy )
+                                                ( selectBy 
+                                                , empty
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
@@ -86,7 +88,7 @@ clusterUnionSelection fragments type' typeNames = splitFrag
     = pure
       ( []
       , [ ( "__typename"
-          , selection { selectionArguments = [], selectionContent = SelectionField }
+          , selection { selectionArguments = empty, selectionContent = SelectionField }
           )
         ]
       )
@@ -159,8 +161,8 @@ validateSelectionSet lib fragments' operatorName variables = __validate
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
     validateSelection :: (Text, RawSelection) -> Validation ValidSelectionSet
-    validateSelection ("__typename", sel@Selection { selectionArguments = [], selectionContent = SelectionField}) = 
-      pure [("__typename", sel { selectionArguments = [], selectionContent = SelectionField })]
+    validateSelection ("__typename", sel@Selection { selectionArguments , selectionContent = SelectionField}) | null selectionArguments = 
+      pure [("__typename", sel { selectionArguments = empty, selectionContent = SelectionField })]
     validateSelection (key', fullRawSelection@Selection { selectionArguments = selArgs, selectionContent = SelectionSet rawSelection, selectionPosition })
       = do
         (dataField, datatype, arguments) <- getValidationData
