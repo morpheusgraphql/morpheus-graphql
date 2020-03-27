@@ -51,6 +51,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectBy
                                                 , selectOr
                                                 , keys
+                                                , empty
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -154,7 +155,7 @@ validateArguments
     typeLib 
     operatorName 
     variables 
-    field@FieldDefinition { fieldArgs = ArgumentsDefinition _ fArgs } 
+    field
     pos 
     rawArgs
   = do
@@ -162,11 +163,18 @@ validateArguments
     checkForUnknownArguments args
     traverse (validateArgument typeLib pos args) fArgs
  where
+  fArgs = case fieldArgs field of 
+    (ArgumentsDefinition _ argsD) -> argsD
+    NoArguments -> empty
+  -------------------------------------------------
   checkForUnknownArguments
     :: Arguments RESOLVED -> Validation ()
   checkForUnknownArguments args = checkForUnknownKeys enhancedKeys (keys fArgs) argError >> pure ()
    where
     argError     = unknownArguments (fieldName field)
+    -------------------------------------------------
     enhancedKeys = toList $ fmap argToKey args
+    -------------------------------
     argToKey :: Argument RESOLVED -> Ref
     argToKey Argument { argumentName, argumentPosition } = Ref argumentName argumentPosition
+    

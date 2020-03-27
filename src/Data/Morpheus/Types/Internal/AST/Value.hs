@@ -56,8 +56,7 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Collection
-                                                , Ref(..)
+                                                ( Ref(..)
                                                 , Name
                                                 , RAW
                                                 , VALID
@@ -68,10 +67,12 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Named
                                                 )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
-                                                (OrderedMap(..))
+                                                ( OrderedMap
+                                                , unsafeFromList
+                                                , foldWithKey
+                                                )
 import          Data.Morpheus.Types.Internal.Operation
-                                                (Empty(..)
-                                                , Listable(..)
+                                                ( Listable(..)
                                                 )
 
 isReserved :: Name -> Bool
@@ -179,11 +180,11 @@ instance Show (Value a) where
   show (ResolvedVariable Ref { refName } Variable { variableValue }) =
     "($" <> unpack refName <> ": " <> show variableValue <> ") "
   show (VariableValue Ref { refName }) = "$" <> unpack refName <> " "
---  show (Object        keys           ) = "{" <> foldl toEntry "" keys <> "}"
+  show (Object  keys ) = "{" <> foldWithKey toEntry "" keys <> "}"
    where
-    toEntry :: String -> (Name, Value a) -> String
-    toEntry ""  (key, value) = unpack key <> ":" <> show value
-    toEntry txt (key, value) = txt <> ", " <> unpack key <> ":" <> show value
+    toEntry :: Name -> Value a -> String -> String
+    toEntry key value ""  = unpack key <> ":" <> show value
+    toEntry key value txt = txt <> ", " <> unpack key <> ":" <> show value
   show (List list) = "[" <> foldl toEntry "" list <> "]"
    where
     toEntry :: String -> Value a -> String
@@ -250,4 +251,4 @@ instance GQLValue (Value a) where
   gqlBoolean = Scalar . Boolean
   gqlString  = Scalar . String
   gqlList    = List
-  --gqlObject  = Object
+  gqlObject  = Object . unsafeFromList
