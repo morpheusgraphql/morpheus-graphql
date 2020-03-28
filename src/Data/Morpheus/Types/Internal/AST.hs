@@ -49,7 +49,7 @@ module Data.Morpheus.Types.Internal.AST
   , ValidSelection
   , Selection(..)
   , RawSelection
-  , FragmentLib
+  , Fragments
   , RawArguments
   , RawSelectionSet
   , Fragment(..)
@@ -190,7 +190,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
 type Variables = Map Key ResolvedValue
 
 data GQLQuery = GQLQuery
-  { fragments      :: FragmentLib
+  { fragments      :: Fragments
   , operation      :: RawOperation
   , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)

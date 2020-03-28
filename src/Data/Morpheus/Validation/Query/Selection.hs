@@ -29,7 +29,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidSelection
                                                 , ValidSelectionSet
                                                 , Fragment(..)
-                                                , FragmentLib
+                                                , Fragments
                                                 , RawSelection
                                                 , RawSelectionSet
                                                 , FieldDefinition(..)
@@ -72,7 +72,7 @@ checkDuplicatesOn typeName keys = checkNameCollision enhancedKeys selError
     Ref (fromMaybe key selectionAlias) position'
 
 clusterUnionSelection
-  :: FragmentLib
+  :: Fragments
   -> Text
   -> [Name]
   -> (Text, RawSelection)
@@ -124,7 +124,7 @@ flatTuple list' = (concatMap fst list', concatMap snd list')
 
 validateSelectionSet
   :: Schema
-  -> FragmentLib
+  -> Fragments
   -> Text
   -> ValidVariables
   -> (Name, FieldsDefinition)

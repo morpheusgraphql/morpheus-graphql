@@ -16,7 +16,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , ValidSelection
   , Selection(..)
   , RawSelection
-  , FragmentLib
+  , Fragments
   , RawArguments
   , RawSelectionSet
   , Fragment(..)
@@ -98,7 +98,7 @@ instance NameCollision Fragment where
 instance KeyOf Fragment where 
   keyOf = fragmentName
 
-type FragmentLib = OrderedMap Fragment
+type Fragments = OrderedMap Fragment
 
 type RawArgument = Argument RAW
 

@@ -23,7 +23,7 @@ import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
 import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
-                                                , FragmentLib
+                                                , Fragments
                                                 , RawSelection
                                                 , SelectionContent(..)
                                                 , Selection(..)
@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 
 validateFragments
-  :: Schema -> FragmentLib -> [(Text, RawSelection)] -> Validation ()
+  :: Schema -> Fragments -> [(Text, RawSelection)] -> Validation ()
 validateFragments lib fragments operatorSel =checkLoop >> checkUnusedFragments
  where
   checkUnusedFragments =
@@ -61,7 +61,7 @@ type NodeEdges = (Node, [Node])
 
 type Graph = [NodeEdges]
 
-getFragment :: Ref -> FragmentLib -> Validation Fragment
+getFragment :: Ref -> Fragments -> Validation Fragment
 getFragment Ref { refName, refPosition } 
   = selectBy (unknownFragment refName refPosition) refName 
 
@@ -72,12 +72,12 @@ castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
     then pure fragment
     else failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
 
-resolveSpread :: FragmentLib -> [Text] -> Ref -> Validation Fragment
+resolveSpread :: Fragments -> [Text] -> Ref -> Validation Fragment
 resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
   getFragment reference fragments
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
-usedFragments :: FragmentLib -> [(Text, RawSelection)] -> [Node]
+usedFragments :: Fragments -> [(Text, RawSelection)] -> [Node]
 usedFragments fragments = concatMap (findAllUses . snd)
  where
   findAllUses :: RawSelection -> [Node]
