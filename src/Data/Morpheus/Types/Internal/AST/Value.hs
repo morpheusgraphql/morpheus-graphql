@@ -153,10 +153,16 @@ instance Lift (VariableContent a) where
 deriving instance Show (VariableContent a)
 
 data Variable (stage :: Stage) = Variable
-  { variableType         :: TypeRef
+  { variableName         :: Name
+  , variableType         :: TypeRef
   , variablePosition     :: Position
   , variableValue        :: VariableContent (VAR stage)
   } deriving (Show,Lift)
+
+instance KeyOf (Variable s) where
+  keyOf = variableName
+
+instance NameCollision (Variable s) where 
 
 data Value (stage :: Stage) where
   ResolvedVariable::Ref -> Variable VALID -> Value RESOLVED

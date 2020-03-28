@@ -144,7 +144,7 @@ type ValidSelection = Selection VALID
 
 type DefaultValue = Maybe ResolvedValue
 
-type Variables s = Collection (Variable s)
+type Variables s = OrderedMap (Variable s)
 
 type VariableDefinitions = Variables RAW
 
