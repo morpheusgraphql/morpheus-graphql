@@ -131,16 +131,23 @@ type RawSelectionSet = SelectionSet RAW
 type ValidSelectionSet = SelectionSet VALID
 
 
-data Selection (valid:: Stage) where
+data Selection (s :: Stage) where
     Selection ::
       { selectionName       :: Name
-      , selectionArguments  :: Arguments valid
+      , selectionArguments  :: Arguments s
       , selectionPosition   :: Position
       , selectionAlias      :: Maybe Key
-      , selectionContent    :: SelectionContent valid
-      } -> Selection valid
-    InlineFragment ::Fragment -> Selection RAW
-    Spread ::Ref -> Selection RAW
+      , selectionContent    :: SelectionContent s
+      } -> Selection s
+    InlineFragment :: Fragment -> Selection RAW
+    Spread :: Ref -> Selection RAW
+
+instance KeyOf (Selection s) where
+  keyOf Selection { selectionName } = selectionName
+  keyOf (InlineFragment fr) = fragmentName fr
+
+instance NameCollision (Selection s) where
+
 
 deriving instance Show (Selection a)
 deriving instance Lift (Selection a)

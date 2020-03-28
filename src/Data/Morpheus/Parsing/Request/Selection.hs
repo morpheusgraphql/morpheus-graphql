@@ -27,7 +27,7 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , parseAlias
                                                 , parseName
                                                 , parseTypeCondition
-                                                , collection
+                                                , setOf
                                                 , spreadLiteral
                                                 , token
                                                 )
@@ -41,6 +41,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawArguments
                                                 , RawSelection
                                                 , RawSelectionSet
+                                                , Name
                                                 )
 
 
@@ -55,7 +56,7 @@ import           Data.Morpheus.Types.Internal.AST
 --   InlineFragment
 --
 parseSelectionSet :: Parser RawSelectionSet
-parseSelectionSet = label "SelectionSet" $ collection parseSelection
+parseSelectionSet = label "SelectionSet" $ setOf parseSelection
  where
   parseSelection =
     label "Selection"
@@ -68,39 +69,22 @@ parseSelectionSet = label "SelectionSet" $ collection parseSelection
 -- Field
 -- Alias(opt) Name Arguments(opt) Directives(opt) SelectionSet(opt)
 --
-parseSelectionField :: Parser (Text, RawSelection)
+parseSelectionField :: Parser RawSelection
 parseSelectionField = label "SelectionField" $ do
-  position    <- getLocation
-  aliasName   <- parseAlias
-  name        <- parseName
-  arguments   <- maybeArguments
+  selectionPosition   <- getLocation
+  selectionAlias      <- parseAlias
+  selectionName       <- parseName
+  selectionArguments  <- maybeArguments
   -- TODO: handle Directives
-  _directives <- optionalDirectives
-  value       <-
-    selSet aliasName arguments <|> buildField aliasName arguments position
-  return (name, value)
+  _directives   <- optionalDirectives
+  selSet selectionName selectionAlias selectionArguments <|> pure Selection { selectionContent   = SelectionField, ..}
  where
-    ----------------------------------------
-  buildField selectionAlias selectionArguments selectionPosition = pure
-    (Selection { selectionAlias
-               , selectionArguments
-               , selectionContent   = SelectionField
-               , selectionPosition
-               }
-    )
   -----------------------------------------
-  selSet :: Maybe Text -> RawArguments -> Parser RawSelection
-  selSet selectionAlias selectionArguments = label "body" $ do
+  selSet :: Name -> Maybe Name -> RawArguments -> Parser RawSelection
+  selSet selectionName selectionAlias selectionArguments = label "body" $ do
     selectionPosition <- getLocation
     selectionSet      <- parseSelectionSet
-    return
-      (Selection { selectionAlias
-                 , selectionArguments
-                 , selectionContent   = SelectionSet selectionSet
-                 , selectionPosition
-                 }
-      )
-
+    pure Selection { selectionContent   = SelectionSet selectionSet, ..}
 
 --
 -- Fragments: https://graphql.github.io/graphql-spec/June2018/#sec-Language.Fragments
@@ -111,13 +95,13 @@ parseSelectionField = label "SelectionField" $ do
 --  FragmentSpread
 --    ...FragmentName Directives(opt)
 --
-spread :: Parser (Text, RawSelection)
+spread :: Parser RawSelection
 spread = label "FragmentSpread" $ do
   refPosition <- spreadLiteral
   refName     <- token
   -- TODO: handle Directives
   _directives <- optionalDirectives
-  return (refName, Spread $ Ref { refName, refPosition })
+  pure $ Spread Ref { .. }
 
 -- FragmentDefinition : https://graphql.github.io/graphql-spec/June2018/#FragmentDefinition
 --
@@ -140,7 +124,7 @@ parseFragmentDefinition = label "FragmentDefinition" $ do
 --  InlineFragment:
 --  ... TypeCondition(opt) Directives(opt) SelectionSet
 --
-inlineFragment :: Parser (Text, RawSelection)
+inlineFragment :: Parser RawSelection
 inlineFragment = label "InlineFragment" $ do
   fragmentPosition  <- spreadLiteral
   -- TODO: optional
@@ -149,7 +133,5 @@ inlineFragment = label "InlineFragment" $ do
   _directives       <- optionalDirectives
   fragmentSelection <- parseSelectionSet
   pure
-    ( "INLINE_FRAGMENT"
-    , InlineFragment
-      $ Fragment { fragmentName = "INLINE_FRAGMENT", .. }
-    )
+    $ InlineFragment
+    $ Fragment { fragmentName = "INLINE_FRAGMENT", .. }
