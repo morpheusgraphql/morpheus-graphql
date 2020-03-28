@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveLift           #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 
 module Data.Morpheus.Types.Internal.AST
   (
@@ -144,7 +145,6 @@ module Data.Morpheus.Types.Internal.AST
   , insertType
   , lookupDeprecated
   , lookupDeprecatedReason
-  , checkForUnknownKeys
   , checkNameCollision
   , hasArguments
   , lookupWith
@@ -157,7 +157,11 @@ module Data.Morpheus.Types.Internal.AST
   , GQLQuery(..)
   , Variables
   , isNullableWrapper
-  , unsafeFromFieldList
+  , unsafeFromFields
+  , OrderedMap
+  , GQLError(..)
+  , GQLErrors
+  , ObjectEntry(..)
   )
 where
 
@@ -166,11 +170,17 @@ import           Language.Haskell.TH.Syntax     ( Lift )
 import           Data.Semigroup                 ( (<>) )
 
 -- Morpheus
+import           Data.Morpheus.Types.Internal.Operation  
+                                                ( Listable(..)
+                                                , selectBy
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Data
 
 import           Data.Morpheus.Types.Internal.AST.Selection
 
 import           Data.Morpheus.Types.Internal.AST.Base
+
+import           Data.Morpheus.Types.Internal.AST.OrderedMap
 
 import           Data.Morpheus.Types.Internal.AST.Value
 
@@ -186,30 +196,27 @@ data GQLQuery = GQLQuery
   } deriving (Show,Lift)
 
 unpackInputUnion
-  :: [(Name, Bool)]
+  :: forall stage. [(Name, Bool)]
   -> Object stage
   -> Either Message (Name, Maybe (Value stage))
-unpackInputUnion tags [("__typename", enum)] = do
+unpackInputUnion tags hm = do
+  (enum :: Value stage) <- entryValue <$> selectBy 
+      ("valid input union should contain __typename and actual value" :: Message) 
+      "__typename" 
+      hm
   tyName <- isPosibeUnion tags enum
-  pure (tyName, Nothing)
-unpackInputUnion tags [("__typename", enum), (name, value)] = do
-  tyName <- isPosibeUnion tags enum
-  inputtypeName tyName name value
-unpackInputUnion tags [(name, value), ("__typename", enum)] = do
-  tyName <- isPosibeUnion tags enum
-  inputtypeName tyName name value
-unpackInputUnion _ _ = failure
-  ("valid input union should contain __typename and actual value" :: Message)
+  case size hm of
+    1 -> pure (tyName, Nothing)
+    2 -> do
+      value <- entryValue <$> selectBy 
+          ("value for Union \""<> tyName <> "\" was not Provided.") 
+          tyName 
+          hm
+      pure (tyName , Just value)
+    _ -> failure ("more then 1 value for Union was not Provided." :: Message)
 
 isPosibeUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
 isPosibeUnion tags (Enum name) = case lookup name tags of
   Nothing -> failure (name <> " is not posible union type" :: Message)
   _       -> pure name
 isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
-
-
-inputtypeName
-  :: Name -> Name -> Value stage -> Either Message (Name, Maybe (Value stage))
-inputtypeName name fName fieldValue
-  | fName == name = pure (name, Just fieldValue)
-  | otherwise = failure ("field \"" <> name <> "\" was not provided" :: Message)

@@ -12,8 +12,6 @@ where
 
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ResolvedValue )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
                                                 ( concat
@@ -21,9 +19,12 @@ import qualified Data.Text                     as T
                                                 , pack
                                                 )
 
-
-import           Data.Morpheus.Types.Internal.Resolving.Core
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( GQLErrors )
+import           Data.Morpheus.Types.Internal.AST.Value
+                                                ( ResolvedValue )
+
 
 type InputValidation a = Either InputError a
 

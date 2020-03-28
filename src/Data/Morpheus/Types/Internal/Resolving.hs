@@ -22,9 +22,6 @@ module Data.Morpheus.Types.Internal.Resolving
     , unpackEvents
     , LibUpdater
     , resolveUpdates
-    , GQLErrors
-    , GQLError(..)
-    , Position
     , resolve__typename
     , DataResolver(..)
     , FieldRes

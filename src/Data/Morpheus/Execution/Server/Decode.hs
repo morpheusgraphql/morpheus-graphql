@@ -49,24 +49,25 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Argument(..)
                                                 , ValidArguments
-                                                , ValidArgument
                                                 , ValidObject
                                                 , Value(..)
                                                 , ValidValue
+                                                , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Listable(..)
+                                                )
 
 
 -- GENERIC
 decodeArguments :: DecodeType a => ValidArguments -> Validation a
-decodeArguments = decodeType . Object . map toObject
- where
-  toObject :: (Name, ValidArgument) -> (Name, ValidValue)
-  toObject (x, Argument { argumentValue }) = (x, argumentValue)
-
+decodeArguments = decodeType . Object . fmap toEntry
+  where 
+    toEntry (Argument name value _) = ObjectEntry name value
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
@@ -161,8 +162,9 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
     (x, y { typeName = pack $ datatypeName (undefined :: (M1 D d f a)) })
 
 getEnumTag :: ValidObject -> Validation Name
-getEnumTag [("enum", Enum value)] = pure value
-getEnumTag _                      = internalError "bad union enum object"
+getEnumTag x = case toList x of 
+        [ObjectEntry "enum" (Enum value)] -> pure value
+        _                      -> internalError "bad union enum object"
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)

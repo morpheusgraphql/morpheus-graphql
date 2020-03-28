@@ -33,7 +33,6 @@ module Data.Morpheus.Types.Internal.AST.Base
   --, Named(..)
   , anonymousRef
   , uniqueElemOr
-  , elementOfKeys
   , toHSWrappers
   , toGQLWrapper
   , sysTypes
@@ -214,9 +213,6 @@ toHSWrappers (NonNullType : (ListType : xs)) = TypeList : toHSWrappers xs
 toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers []                              = [TypeMaybe]
 toHSWrappers [NonNullType]                   = []
-
-elementOfKeys :: [Name] -> Ref -> Bool
-elementOfKeys keys Ref { refName } = refName `elem` keys
 
 isDefaultTypeName :: Key -> Bool
 isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x

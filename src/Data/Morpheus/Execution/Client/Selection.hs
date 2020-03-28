@@ -52,17 +52,17 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupDeprecatedReason
                                                 , typeFromScalar
                                                 , removeDuplicates
+                                                , Position
+                                                , GQLErrors
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( GQLErrors
-                                                , Validation
+                                                ( Validation
                                                 , Failure(..)
                                                 , Result(..)
-                                                , Position
                                                 , LibUpdater
                                                 , resolveUpdates
                                                 )

@@ -7,9 +7,9 @@ where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Position )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLErrors )
+                                                ( Position 
+                                                , GQLErrors 
+                                                )
 
 subscriptionIsNotDefined :: Position -> GQLErrors
 subscriptionIsNotDefined position' =

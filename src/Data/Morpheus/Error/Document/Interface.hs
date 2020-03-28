@@ -10,9 +10,8 @@ where
 
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Key )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLError(..)
+                                                ( Key
+                                                , GQLError(..)
                                                 , GQLErrors
                                                 )
 import           Data.Semigroup                 ( (<>) )

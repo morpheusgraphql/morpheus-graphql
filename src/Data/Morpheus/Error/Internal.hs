@@ -20,12 +20,12 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
-                                                , GQLErrors
                                                 , Failure(..)
                                                 )
+import           Data.Morpheus.Types.Internal.AST.Base
+                                                ( GQLErrors )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ValidValue )
-
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- all kind internal error in development

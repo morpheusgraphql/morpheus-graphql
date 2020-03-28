@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE NamedFieldPuns     #-}
 
 module Data.Morpheus.Parsing.Internal.Value
   ( parseValue
@@ -32,11 +33,11 @@ import           Data.Morpheus.Parsing.Internal.Internal
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( litEquals
                                                 , parseAssignment
-                                                , collection
                                                 , spaceAndComments
                                                 , token
                                                 , parseNegativeSign
                                                 , variable
+                                                , setOf
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ScalarValue(..)
@@ -44,9 +45,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawValue
                                                 , ValidValue
                                                 , decodeScientific
-                                                , Name
                                                 , Value(..)
                                                 , ResolvedValue
+                                                , OrderedMap
+                                                , ObjectEntry(..)
                                                 )
 
 valueNull :: Parser (Value a)
@@ -87,16 +89,19 @@ stringValue = label "stringValue" $ Scalar . String . pack <$> between
   (char '"')
   (many escaped)
 
-
 listValue :: Parser a -> Parser [a]
-listValue parser = label "listValue" $ between
+listValue parser = label "ListValue" $ between
   (char '[' *> spaceAndComments)
   (char ']' *> spaceAndComments)
   (parser `sepBy` (many (char ',') *> spaceAndComments))
 
-objectValue :: Show a => Parser a -> Parser [(Name, a)]
-objectValue parser = label "objectValue" $ collection entry
-  where entry = parseAssignment token parser
+objectEntry :: Parser (Value a)  -> Parser (ObjectEntry a)
+objectEntry parser = label "ObjectEntry" $ do 
+    (entryName,entryValue) <- parseAssignment token parser
+    pure ObjectEntry { entryName, entryValue }
+
+objectValue :: Parser (Value a) -> Parser (OrderedMap (ObjectEntry a))
+objectValue = label "ObjectValue" . setOf . objectEntry
 
 structValue :: Parser (Value a) -> Parser (Value a)
 structValue parser =

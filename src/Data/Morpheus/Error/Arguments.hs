@@ -4,7 +4,6 @@ module Data.Morpheus.Error.Arguments
   ( undefinedArgument
   , unknownArguments
   , argumentGotInvalidValue
-  , argumentNameCollision
   )
 where
 
@@ -12,9 +11,7 @@ import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLError(..)
+                                                , GQLError(..)
                                                 , GQLErrors
                                                 )
 import           Data.Text                      ( Text )
@@ -48,14 +45,6 @@ unknownArguments fieldName = map keyToError
     GQLError { message = toMessage argName, locations = [pos] }
   toMessage argName = T.concat
     ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
-
-argumentNameCollision :: [Ref] -> GQLErrors
-argumentNameCollision = map keyToError
- where
-  keyToError (Ref argName pos) =
-    GQLError { message = toMessage argName, locations = [pos] }
-  toMessage argName =
-    T.concat ["There can Be only One Argument Named \"", argName, "\""]
 
 undefinedArgument :: Ref -> GQLErrors
 undefinedArgument (Ref key' position') = errorMessage position' text

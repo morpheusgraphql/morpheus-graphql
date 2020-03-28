@@ -54,6 +54,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isNullable
                                                 , TypeRef(..)
                                                 , VALIDATION_MODE(..)
+                                                , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -69,7 +70,7 @@ getVariableType type' position' lib' = lookupInputType type' lib' error'
   where error' = unknownType type' position'
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
-concatMapM f = fmap concat . mapM f
+concatMapM f = fmap concat . traverse f
 
 
 class ExploreRefs a where
@@ -77,12 +78,12 @@ class ExploreRefs a where
 
 instance ExploreRefs RawValue where
   exploreRefs (VariableValue ref   ) = [ref]
-  exploreRefs (Object        fields) = concatMap (exploreRefs . snd) fields
+  exploreRefs (Object        fields) = concatMap (exploreRefs . entryValue) fields
   exploreRefs (List          ls    ) = concatMap exploreRefs ls
   exploreRefs _                      = []
 
-instance ExploreRefs (Text, RawArgument) where
-  exploreRefs (_, Argument { argumentValue }) = exploreRefs argumentValue
+instance ExploreRefs RawArgument where
+  exploreRefs = exploreRefs . argumentValue
 
 allVariableRefs :: FragmentLib -> [RawSelectionSet] -> Validation [Ref]
 allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
