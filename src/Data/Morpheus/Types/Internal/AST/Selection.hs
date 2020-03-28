@@ -13,6 +13,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , Arguments
   , SelectionSet
   , SelectionContent(..)
+  , UnionSelection
   , ValidSelection
   , Selection(..)
   , RawSelection
@@ -49,8 +50,7 @@ import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
 import           Data.Morpheus.Error.Subscription
                                                 ( subscriptionIsNotDefined )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Collection
-                                                , Key
+                                                ( Key
                                                 , Position
                                                 , Ref(..)
                                                 , Name
@@ -75,6 +75,8 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Variable(..)
                                                 , ResolvedValue
                                                 )
+import          Data.Morpheus.Types.Internal.AST.SelectionMap
+                                                ( SelectionMap )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap )
 import          Data.Morpheus.Types.Internal.Operation
@@ -111,28 +113,32 @@ type RawArguments = Arguments RAW
 type ValidArguments = Arguments VALID
 
 data SelectionContent (valid :: Stage) where
-  SelectionField ::SelectionContent valid
-  SelectionSet   ::SelectionSet valid -> SelectionContent valid
-  UnionSelection ::UnionSelection -> SelectionContent VALID
+  SelectionField :: SelectionContent valid
+  SelectionSet   :: SelectionSet valid -> SelectionContent valid
+  UnionSelection :: UnionSelection -> SelectionContent VALID
 
 deriving instance Show (SelectionContent a)
 deriving instance Lift (SelectionContent a)
 
 type RawSelectionRec = SelectionContent RAW
 type ValidSelectionRec = SelectionContent VALID
-type UnionSelection = Collection (SelectionSet VALID)
-type SelectionSet a = Collection (Selection a)
-type RawSelectionSet = Collection RawSelection
-type ValidSelectionSet = Collection ValidSelection
+
+type UnionSelection = SelectionMap (SelectionSet VALID)
+
+type SelectionSet s = SelectionMap  (Selection s)
+
+type RawSelectionSet = SelectionSet RAW
+type ValidSelectionSet = SelectionSet VALID
 
 
 data Selection (valid:: Stage) where
-    Selection ::{
-      selectionArguments :: Arguments valid
-    , selectionPosition  :: Position
-    , selectionAlias     :: Maybe Key
-    , selectionContent   :: SelectionContent valid
-    } -> Selection valid
+    Selection ::
+      { selectionName       :: Name
+      , selectionArguments  :: Arguments valid
+      , selectionPosition   :: Position
+      , selectionAlias      :: Maybe Key
+      , selectionContent    :: SelectionContent valid
+      } -> Selection valid
     InlineFragment ::Fragment -> Selection RAW
     Spread ::Ref -> Selection RAW
 

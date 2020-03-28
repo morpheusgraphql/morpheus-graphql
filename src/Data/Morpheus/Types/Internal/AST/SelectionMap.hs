@@ -8,11 +8,12 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
 
-module Data.Morpheus.Types.Internal.AST.OrderedMap
-    ( OrderedMap(..)
+module Data.Morpheus.Types.Internal.AST.SelectionMap
+    ( SelectionMap
     , unsafeFromValues
     , traverseWithKey
     , foldWithKey
+    , toOrderedMap
     )
 where 
 
@@ -37,53 +38,58 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
                                                         )
+import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM 
+                                                        ( OrderedMap(..))
 
 
--- OrderedMap 
-data OrderedMap a = OrderedMap { 
+-- SelectionMap 
+data SelectionMap a = SelectionMap { 
     mapKeys :: [Name], 
     mapEntries :: HashMap Name a 
   } deriving (Show, Functor)
 
-traverseWithKey :: Applicative t => (Name -> a -> t b) -> OrderedMap a -> t (OrderedMap b)
-traverseWithKey f (OrderedMap names hmap) = OrderedMap names <$> HM.traverseWithKey f hmap
+toOrderedMap :: SelectionMap a -> OM.OrderedMap a
+toOrderedMap (SelectionMap name entries) = OM.OrderedMap name entries
 
-foldWithKey :: NameCollision a => (Name -> a -> b -> b) -> b -> OrderedMap a -> b
+traverseWithKey :: Applicative t => (Name -> a -> t b) -> SelectionMap a -> t (SelectionMap b)
+traverseWithKey f (SelectionMap names hmap) = SelectionMap names <$> HM.traverseWithKey f hmap
+
+foldWithKey :: NameCollision a => (Name -> a -> b -> b) -> b -> SelectionMap a -> b
 foldWithKey f defValue om = foldr (uncurry f) defValue (toAssoc om)
 
-instance Lift a => Lift (OrderedMap a) where
-  lift (OrderedMap names x) = [| OrderedMap names (HM.fromList ls) |]
+instance Lift a => Lift (SelectionMap a) where
+  lift (SelectionMap names x) = [| SelectionMap names (HM.fromList ls) |]
     where ls = HM.toList x
 
-instance Foldable OrderedMap where
-  foldMap f OrderedMap { mapEntries } = foldMap f mapEntries
+instance Foldable SelectionMap where
+  foldMap f SelectionMap { mapEntries } = foldMap f mapEntries
 
-instance Traversable OrderedMap where
-  traverse f (OrderedMap names values) = OrderedMap names <$> traverse f values
+instance Traversable SelectionMap where
+  traverse f (SelectionMap names values) = SelectionMap names <$> traverse f values
 
-instance NameCollision a => Join (OrderedMap a) where 
-  join (OrderedMap k1 x) (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
+instance NameCollision a => Join (SelectionMap a) where 
+  join (SelectionMap k1 x) (SelectionMap k2 y) = SelectionMap (k1 <> k2) <$> safeJoin x y
 
-instance Empty (OrderedMap a) where 
-  empty = OrderedMap [] HM.empty
+instance Empty (SelectionMap a) where 
+  empty = SelectionMap [] HM.empty
 
-instance Singleton (OrderedMap a) a where
-  singleton name = OrderedMap [name] . HM.singleton name 
+instance Singleton (SelectionMap a) a where
+  singleton name = SelectionMap [name] . HM.singleton name 
 
-instance Selectable (OrderedMap a) a where 
-  selectOr fb f key OrderedMap { mapEntries } = maybe fb f (HM.lookup key mapEntries)
+instance Selectable (SelectionMap a) a where 
+  selectOr fb f key SelectionMap { mapEntries } = maybe fb f (HM.lookup key mapEntries)
 
-instance Listable (OrderedMap a) a where
+instance Listable (SelectionMap a) a where
   fromAssoc = safeFromList
-  toAssoc OrderedMap {  mapKeys, mapEntries } = map takeValue mapKeys
+  toAssoc SelectionMap {  mapKeys, mapEntries } = map takeValue mapKeys
     where 
       takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries ))
 
-safeFromList :: (Failure GQLErrors m, Applicative m, NameCollision a) => [Named a] -> m (OrderedMap a)
-safeFromList values = OrderedMap (map fst values) <$> safeUnionWith HM.empty values 
+safeFromList :: (Failure GQLErrors m, Applicative m, NameCollision a) => [Named a] -> m (SelectionMap a)
+safeFromList values = SelectionMap (map fst values) <$> safeUnionWith HM.empty values 
 
-unsafeFromValues :: KeyOf a => [a] -> OrderedMap a
-unsafeFromValues x = OrderedMap (map keyOf x) $ HM.fromList $ map toPair x
+unsafeFromValues :: KeyOf a => [a] -> SelectionMap a
+unsafeFromValues x = SelectionMap (map keyOf x) $ HM.fromList $ map toPair x
 
 safeJoin :: (Failure GQLErrors m, Applicative m, NameCollision a) => HashMap Name a -> HashMap Name a -> m (HashMap Name a)
 safeJoin hm newls = safeUnionWith hm (HM.toList newls)

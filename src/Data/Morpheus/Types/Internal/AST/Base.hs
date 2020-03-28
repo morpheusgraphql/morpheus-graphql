@@ -9,7 +9,6 @@
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
-  , Collection
   , Ref(..)
   , Position(..)
   , Message
@@ -78,7 +77,6 @@ type Key = Text
 type Message = Text
 type Name = Key
 type Description = Key
-type Collection a = [(Key, a)]
 data Stage = RAW | RESOLVED | VALID
 
 type RAW = 'RAW
