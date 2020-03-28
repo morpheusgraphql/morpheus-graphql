@@ -18,6 +18,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , GQLQuery(..)
                                                 , VALIDATION_MODE
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( empty )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Validation.Query.Fragment
@@ -47,7 +49,7 @@ validateRequest lib validationMode GQLQuery { fragments, inputVariables, operati
                                       operationSelection
     pure $ Operation { operationName
                      , operationType
-                     , operationArguments      = []
+                     , operationArguments      = empty
                      , operationSelection = selection
                      , operationPosition
                      }
