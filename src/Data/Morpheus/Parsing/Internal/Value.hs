@@ -94,7 +94,7 @@ listValue parser = label "listValue" $ between
   (char ']' *> spaceAndComments)
   (parser `sepBy` (many (char ',') *> spaceAndComments))
 
-objectValue :: Show a => Parser a -> Parser (OrderedMap a)
+objectValue :: Parser (Value a) -> Parser (OrderedMap (Value a))
 objectValue parser = label "objectValue" $ setOfAssoc (parseAssignment token parser)
 
 structValue :: Parser (Value a) -> Parser (Value a)

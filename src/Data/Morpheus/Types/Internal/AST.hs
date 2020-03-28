@@ -159,6 +159,8 @@ module Data.Morpheus.Types.Internal.AST
   , isNullableWrapper
   , unsafeFromFieldList
   , OrderedMap
+  , GQLError(..)
+  , GQLErrors
   )
 where
 

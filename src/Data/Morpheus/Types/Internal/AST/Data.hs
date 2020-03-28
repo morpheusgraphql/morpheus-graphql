@@ -83,6 +83,8 @@ import           Instances.TH.Lift              ( )
 import           Data.List                      ( find)
 
 -- MORPHEUS
+import          Data.Morpheus.Error.NameCollision
+                                                ( NameCollision(..))
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
@@ -107,6 +109,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , sysFields
                                                 , toOperationType
                                                 , hsTypeName
+                                                , GQLError(..)
+                                                , GQLErrors
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                              
                                                 ( Empty(..)
@@ -122,7 +126,6 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
                                                 , Failure(..)
-                                                , GQLErrors
                                                 , LibUpdater
                                                 , resolveUpdates
                                                 )
@@ -150,6 +153,13 @@ data Argument (valid :: Stage) = Argument
   , argumentValue    :: Value valid
   , argumentPosition :: Position
   } deriving ( Show, Lift )
+
+instance NameCollision (Argument s) where 
+  nameCollision _ Argument { argumentName, argumentPosition } 
+    = GQLError 
+      { message = "There can Be only One Argument Named \"" <> argumentName <> "\"",
+        locations = [argumentPosition] 
+      }
 
 -- directive
 ------------------------------------------------------------------
@@ -422,6 +432,12 @@ data FieldDefinition = FieldDefinition
 
 instance KeyOf FieldDefinition where 
   keyOf = fieldName
+
+instance NameCollision FieldDefinition where 
+  nameCollision name _ = GQLError { 
+    message = "There can Be only One field Named \"" <> name <> "\"",
+    locations = []
+  }
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition { fieldName } = fieldName `notElem` sysFields

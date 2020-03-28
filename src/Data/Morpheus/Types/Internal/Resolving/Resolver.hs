@@ -75,14 +75,14 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , QUERY
                                                 , MUTATION
                                                 , SUBSCRIPTION
+                                                , GQLErrors
+                                                , GQLError(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLErrors
-                                                , GQLError(..)
-                                                , Validation
+                                                ( Validation
                                                 , Result(..)
                                                 , Failure(..)
                                                 , ResultT(..)

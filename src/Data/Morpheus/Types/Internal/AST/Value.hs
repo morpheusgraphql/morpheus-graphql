@@ -55,6 +55,8 @@ import           Instances.TH.Lift              ( )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 
 -- MORPHEUS
+import          Data.Morpheus.Error.NameCollision
+                                                ( NameCollision(..))
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Name
@@ -65,6 +67,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , RESOLVED
                                                 , TypeRef
                                                 , Named
+                                                , GQLError(..)
                                                 )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap
@@ -154,14 +157,20 @@ data Variable (stage :: Stage) = Variable
   , variableValue        :: VariableContent (VAR stage)
   } deriving (Show,Lift)
 
-data Value (valid :: Stage) where
+data Value (stage :: Stage) where
   ResolvedVariable::Ref -> Variable VALID -> Value RESOLVED
   VariableValue ::Ref -> Value RAW
-  Object  ::Object a -> Value a
-  List ::[Value a] -> Value a
-  Enum ::Name -> Value a
-  Scalar ::ScalarValue -> Value a
-  Null ::Value a
+  Object  ::Object stage -> Value stage
+  List ::[Value stage] -> Value stage
+  Enum ::Name -> Value stage
+  Scalar ::ScalarValue -> Value stage
+  Null ::Value stage
+
+instance NameCollision (Value s) where 
+  nameCollision name _ = GQLError { 
+    message = "There can Be only One field Named \"" <> name <> "\"",
+    locations = []
+  }
 
 type Object a = OrderedMap (Value a)
 type ValidObject = Object VALID

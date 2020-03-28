@@ -23,7 +23,7 @@ import           Data.Maybe                             (isJust,fromMaybe)
 import           Language.Haskell.TH.Syntax             ( Lift(..) )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils              (duplicateKeyError)
+import           Data.Morpheus.Error.NameCollision      (NameCollision(..))
 import           Data.Morpheus.Types.Internal.Operation ( Join(..)
                                                         , Empty(..)
                                                         , Singleton(..)
@@ -46,7 +46,7 @@ data OrderedMap a = OrderedMap {
 traverseWithKey :: Applicative t => (Name -> a -> t b) -> OrderedMap a -> t (OrderedMap b)
 traverseWithKey f (OrderedMap names hmap) = OrderedMap names <$> HM.traverseWithKey f hmap
 
-foldWithKey :: (Name -> a -> b -> b) -> b -> OrderedMap a -> b
+foldWithKey :: NameCollision a => (Name -> a -> b -> b) -> b -> OrderedMap a -> b
 foldWithKey f defValue om = foldr (uncurry f) defValue (toAssoc om)
 
 instance Lift a => Lift (OrderedMap a) where
@@ -59,7 +59,7 @@ instance Foldable OrderedMap where
 instance Traversable OrderedMap where
   traverse f (OrderedMap names values) = OrderedMap names <$> traverse f values
 
-instance Join (OrderedMap a) where 
+instance NameCollision a => Join (OrderedMap a) where 
   join (OrderedMap k1 x) (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
 
 instance Empty (OrderedMap a) where 
@@ -77,19 +77,19 @@ instance Listable (OrderedMap a) a where
     where 
       takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries ))
 
-safeFromList :: (Failure GQLErrors m, Applicative m) => [Named a] -> m (OrderedMap a)
+safeFromList :: (Failure GQLErrors m, Applicative m, NameCollision a) => [Named a] -> m (OrderedMap a)
 safeFromList values = OrderedMap (map fst values) <$> safeUnionWith HM.empty values 
 
 unsafeFromList :: [(Name, a)] -> OrderedMap a
 unsafeFromList x = OrderedMap (map fst x) $ HM.fromList x
 
-safeJoin :: (Failure GQLErrors m, Applicative m) => HashMap Name a -> HashMap Name a -> m (HashMap Name a)
+safeJoin :: (Failure GQLErrors m, Applicative m, NameCollision a) => HashMap Name a -> HashMap Name a -> m (HashMap Name a)
 safeJoin hm newls = safeUnionWith hm (HM.toList newls)
 
-safeUnionWith :: (Failure GQLErrors m, Applicative m) => HashMap Name a -> [Named a] -> m (HashMap Name a)
+safeUnionWith :: (Failure GQLErrors m, Applicative m, NameCollision a) => HashMap Name a -> [Named a] -> m (HashMap Name a)
 safeUnionWith hm names = case insertNoDups (hm,[]) names of 
   (res,dupps) | null dupps -> pure res
-              | otherwise -> failure $ map duplicateKeyError dupps
+              | otherwise -> failure $ map (uncurry nameCollision) dupps
 
 type NoDupHashMap a = (HashMap Name a,[Named a])
 

@@ -67,6 +67,8 @@ import           Text.Megaparsec.Char           ( char
                                                 )
 
 -- MORPHEUS
+import           Data.Morpheus.Error.NameCollision
+                                                ( NameCollision(..) )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , KeyOf
@@ -200,13 +202,11 @@ sepByAnd entry = entry `sepBy` (char '&' *> spaceAndComments)
 collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
 
-setOf :: (Listable c a , KeyOf a) => Parser a -> Parser c
+setOf :: (Listable c a , KeyOf a, NameCollision a) => Parser a -> Parser c
 setOf = collection >=> fromList
 
-setOfAssoc :: (Listable c a ) => Parser (Name, a) -> Parser c
+setOfAssoc :: (Listable c a , NameCollision a) => Parser (Name, a) -> Parser c
 setOfAssoc = collection >=> fromAssoc
-
-
 
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
@@ -227,10 +227,10 @@ parseTuple parser = label "Tuple" $ between
   (parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!"
   )
 
-uniqTuple :: (Listable c a , KeyOf a) => Parser a -> Parser c
+uniqTuple :: (Listable c a , KeyOf a, NameCollision a) => Parser a -> Parser c
 uniqTuple = parseTuple >=> fromList
 
-uniqTupleOpt :: (Listable c a , KeyOf a) => Parser a -> Parser c
+uniqTupleOpt :: (Listable c a , KeyOf a, NameCollision a) => Parser a -> Parser c
 uniqTupleOpt = parseMaybeTuple >=> fromList
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)

@@ -25,6 +25,7 @@ import           Data.Text                              ( Text )
 import           Instances.TH.Lift                      ( )
 import           Data.HashMap.Lazy                      ( HashMap )
 import qualified Data.HashMap.Lazy                   as HM 
+import           Data.Morpheus.Error.NameCollision      (NameCollision(..))
 import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
@@ -73,9 +74,9 @@ toPair x = (keyOf x, x)
 class Listable c a | c -> a where
   size :: c -> Int
   size = length . toList 
-  fromAssoc   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
+  fromAssoc   :: (Monad m, Failure GQLErrors m, NameCollision a) => [Named a] ->  m c
   toAssoc     ::  c  -> [Named a]
-  fromList :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] ->  m c
+  fromList :: (KeyOf a, Monad m, Failure GQLErrors m, NameCollision a) => [a] ->  m c
   -- TODO: fromValues
   toList = map snd . toAssoc 
   fromList = fromAssoc . map toPair  
