@@ -36,13 +36,16 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ResolvedValue
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
+import           Data.Morpheus.Types.Internal.Operation
+                                                (fromList)
 
 request :: Parser GQLQuery
 request = label "GQLQuery" $ do
     spaceAndComments
     operation <- parseOperation
-    fragments <- manyTill parseFragmentDefinition eof
+    fragments <- manyTill parseFragmentDefinition eof >>= fromList
     pure GQLQuery { operation, fragments, inputVariables = [] }
+
 
 parseGQL :: GQLRequest -> Validation GQLQuery
 parseGQL GQLRequest { query, variables } = setVariables <$> processParser request query 

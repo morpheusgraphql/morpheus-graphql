@@ -58,6 +58,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , RAW
                                                 , Stage
                                                 , OperationType(..)
+                                                , GQLError(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -76,14 +77,28 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap )
+import          Data.Morpheus.Types.Internal.Operation
+                                                ( KeyOf(..) )
+import          Data.Morpheus.Error.NameCollision
+                                                ( NameCollision(..) )
 
 data Fragment = Fragment
-  { fragmentType      :: Key
+  { fragmentName      :: Name
+  , fragmentType      :: Name
   , fragmentPosition  :: Position
   , fragmentSelection :: RawSelectionSet
   } deriving ( Show, Lift )
 
-type FragmentLib = Collection Fragment
+instance NameCollision Fragment where
+  nameCollision _ Fragment { fragmentName , fragmentPosition } = GQLError
+    { message   = "There can be only one fragment named \"" <> fragmentName <> "\"."
+    , locations = [fragmentPosition]
+    }
+
+instance KeyOf Fragment where 
+  keyOf = fragmentName
+
+type FragmentLib = OrderedMap Fragment
 
 type RawArgument = Argument RAW
 
