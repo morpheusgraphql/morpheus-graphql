@@ -76,9 +76,6 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap )
-import          Data.Morpheus.Types.Internal.Operation 
-                                                ( KeyOf(..) )
-
 
 data Fragment = Fragment
   { fragmentType      :: Key
@@ -87,9 +84,6 @@ data Fragment = Fragment
   } deriving ( Show, Lift )
 
 type FragmentLib = Collection Fragment
-
-instance KeyOf (Argument stage) where
-  keyOf = argumentName 
 
 type RawArgument = Argument RAW
 

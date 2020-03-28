@@ -153,6 +153,9 @@ data Argument (valid :: Stage) = Argument
   , argumentPosition :: Position
   } deriving ( Show, Lift )
 
+instance KeyOf (Argument stage) where
+  keyOf = argumentName 
+
 instance NameCollision (Argument s) where 
   nameCollision _ Argument { argumentName, argumentPosition } 
     = GQLError 
