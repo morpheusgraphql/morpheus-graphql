@@ -42,11 +42,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , unpackInputUnion
                                                 , isFieldNullable
                                                 , isNullableWrapper
+                                                , ObjectEntry(..)
+                                                , RESOLVED
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
-                                                (traverseWithKey
-                                                , unsafeFromList
-                                                )
+                                                ( unsafeFromValues )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectBy
                                                 , member
@@ -121,38 +121,39 @@ validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName 
       :: TypeContent -> (Key, ResolvedValue) -> InputValidation ValidValue
     validate (DataInputObject parentFields) (_, Object fields) = do 
       _ <- traverse requiredFieldsDefined (unFieldsDefinition parentFields)
-      Object <$> traverseWithKey validateField fields
+      Object <$> traverse validateField fields
      where
       requiredFieldsDefined datafield@FieldDefinition { fieldName }
         | fieldName `member` fields || isFieldNullable datafield = pure ()
         | otherwise = failure (UndefinedField props fieldName)
       validateField
-        :: Name -> ResolvedValue -> InputValidation ValidValue
-      validateField _name value = do
-        (type', currentProp') <- validationData value
+        :: ObjectEntry RESOLVED -> InputValidation (ObjectEntry VALID)
+      validateField ObjectEntry { entryName,  entryValue } = do
+        (type', currentProp') <- validationData entryValue
         wrappers'             <- typeWrappers . fieldType <$> getField
-        validateInputValue 
-          lib 
-          currentProp'
-          wrappers'
-          type'
-          (_name, value)
+        ObjectEntry entryName 
+          <$> validateInputValue 
+                lib 
+                currentProp'
+                wrappers'
+                type'
+                (entryName, entryValue)
        where
         validationData :: ResolvedValue -> InputValidation (TypeDefinition, [Prop])
         validationData x = do
           fieldTypeName' <- typeConName . fieldType <$> getField
-          let currentProp = props ++ [Prop _name fieldTypeName']
+          let currentProp = props ++ [Prop entryName fieldTypeName']
           type' <- lookupInputType fieldTypeName'
                                    lib
                                    (typeMismatch x fieldTypeName' currentProp)
           return (type', currentProp)
-        getField = selectBy (UnknownField props _name) _name parentFields
+        getField = selectBy (UnknownField props entryName) entryName parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of
         Left message -> failure
           $ UnexpectedType props typeName (Object rawFields) (Just message)
-        Right (name, Nothing   ) -> return (Object $ unsafeFromList [("__typename", Enum name)])
+        Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
           currentUnionDatatype <- lookupInputType
             name
@@ -163,7 +164,7 @@ validateInputValue lib props rw datatype@TypeDefinition { typeContent, typeName 
                                            [TypeMaybe]
                                            currentUnionDatatype
                                            (name, value)
-          return (Object $ unsafeFromList [("__typename", Enum name), (name, validValue)])
+          return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
 
     {-- VALIDATE ENUM --}
     validate (DataEnum tags) (_, value) =

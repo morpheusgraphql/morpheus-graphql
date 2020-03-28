@@ -54,6 +54,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isNullable
                                                 , TypeRef(..)
                                                 , VALIDATION_MODE(..)
+                                                , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -77,7 +78,7 @@ class ExploreRefs a where
 
 instance ExploreRefs RawValue where
   exploreRefs (VariableValue ref   ) = [ref]
-  exploreRefs (Object        fields) = concatMap exploreRefs fields
+  exploreRefs (Object        fields) = concatMap (exploreRefs . entryValue) fields
   exploreRefs (List          ls    ) = concatMap exploreRefs ls
   exploreRefs _                      = []
 

@@ -34,6 +34,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Value(..)
                                                 , ValidValue
                                                 , Message
+                                                , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation 
@@ -79,13 +80,13 @@ withEnum _      isType       = internalTypeMismatch "Enum" isType
 
 withUnion :: (Key -> ValidObject -> ValidObject -> Validation a) -> ValidObject -> Validation a
 withUnion decoder unions = do 
-  (enum :: ValidValue) <- selectBy ("__typename not found on Input Union" :: Message) "__typename" unions
+  (enum :: ValidValue) <- entryValue <$> selectBy ("__typename not found on Input Union" :: Message) "__typename" unions
   case enum of 
     (Enum key) -> selectOr notfound onFound key unions
       where 
         notfound = withObject (decoder key unions) (Object empty)
-        onFound = withObject (decoder key unions)
+        onFound = withObject (decoder key unions) . entryValue
     _  -> failure ("__typename must be Enum" :: Message)
 
 decodeFieldWith :: (ValidValue -> Validation a) -> Key -> ValidObject -> Validation a
-decodeFieldWith decoder = selectOr (decoder Null) decoder
+decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)

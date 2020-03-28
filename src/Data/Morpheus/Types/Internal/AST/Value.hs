@@ -27,6 +27,7 @@ module Data.Morpheus.Types.Internal.AST.Value
   , ResolvedValue
   , ResolvedObject
   , VariableContent(..)
+  , ObjectEntry(..)
   )
 where
 
@@ -66,16 +67,16 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Stage
                                                 , RESOLVED
                                                 , TypeRef
-                                                , Named
                                                 , GQLError(..)
                                                 )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap
-                                                , unsafeFromList
+                                                , unsafeFromValues
                                                 , foldWithKey
                                                 )
 import          Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
+                                                , KeyOf(..)
                                                 )
 
 isReserved :: Name -> Bool
@@ -166,13 +167,25 @@ data Value (stage :: Stage) where
   Scalar ::ScalarValue -> Value stage
   Null ::Value stage
 
-instance NameCollision (Value s) where 
-  nameCollision name _ = GQLError { 
-    message = "There can Be only One field Named \"" <> name <> "\"",
+data ObjectEntry (s :: Stage) = ObjectEntry {
+  entryName :: Name,
+  entryValue :: Value s
+  -- ObjectEntryposition :: Position
+} 
+
+instance Show (ObjectEntry s) where 
+  show (ObjectEntry name value) = unpack name <> ":" <> show value
+
+instance NameCollision (ObjectEntry s) where 
+  nameCollision _ ObjectEntry { entryName } = GQLError { 
+    message = "There can Be only One field Named \"" <> entryName <> "\"",
     locations = []
   }
 
-type Object a = OrderedMap (Value a)
+instance KeyOf (ObjectEntry s) where
+  keyOf = entryName
+
+type Object a = OrderedMap (ObjectEntry a)
 type ValidObject = Object VALID
 type RawObject = Object RAW
 type ResolvedObject = Object RESOLVED
@@ -181,6 +194,8 @@ type ValidValue = Value VALID
 type ResolvedValue = Value RESOLVED
 
 deriving instance Lift (Value a)
+deriving instance Lift (ObjectEntry a)
+
 
 instance Show (Value a) where
   show Null       = "null"
@@ -191,9 +206,9 @@ instance Show (Value a) where
   show (VariableValue Ref { refName }) = "$" <> unpack refName <> " "
   show (Object  keys ) = "{" <> foldWithKey toEntry "" keys <> "}"
    where
-    toEntry :: Name -> Value a -> String -> String
-    toEntry key value ""  = unpack key <> ":" <> show value
-    toEntry key value txt = txt <> ", " <> unpack key <> ":" <> show value
+    toEntry :: Name -> ObjectEntry a -> String -> String
+    toEntry _ value ""  = show value
+    toEntry _ value txt = txt <> ", " <> show value
   show (List list) = "[" <> foldl toEntry "" list <> "]"
    where
     toEntry :: String -> Value a -> String
@@ -209,8 +224,8 @@ instance A.ToJSON (Value a) where
   toJSON (Enum   x     ) = A.String x
   toJSON (Scalar x     ) = A.toJSON x
   toJSON (List   x     ) = A.toJSON x
-  toJSON (Object fields) = A.object $ map toEntry (toAssoc fields :: [Named (Value a)])
-    where toEntry (name, value) = name A..= A.toJSON value
+  toJSON (Object fields) = A.object $ map toEntry (toList fields)
+    where toEntry (ObjectEntry key value) = key A..= A.toJSON value
   -------------------------------------------
   toEncoding (ResolvedVariable _ Variable { variableValue = ValidVariableValue x })
     = A.toEncoding x
@@ -222,8 +237,8 @@ instance A.ToJSON (Value a) where
   toEncoding (List   x ) = A.toEncoding x
   toEncoding (Object ordmap) 
       | null ordmap = A.toEncoding $ A.object []
-      | otherwise   = A.pairs $ foldl1 (<>) $ map encodeField (toAssoc ordmap :: [Named (Value a)])
-    where encodeField (key, value) = convertToJSONName key A..= value
+      | otherwise   = A.pairs $ foldl1 (<>) $ map encodeField (toList ordmap)
+    where encodeField (ObjectEntry key value) = convertToJSONName key A..= value
 
 decodeScientific :: Scientific -> ScalarValue
 decodeScientific v = case floatingOrInteger v of
@@ -260,4 +275,6 @@ instance GQLValue (Value a) where
   gqlBoolean = Scalar . Boolean
   gqlString  = Scalar . String
   gqlList    = List
-  gqlObject  = Object . unsafeFromList
+  gqlObject  = Object . unsafeFromValues . map toEntry
+    where 
+      toEntry (key,value) = ObjectEntry key value

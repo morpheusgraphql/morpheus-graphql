@@ -10,7 +10,7 @@
 
 module Data.Morpheus.Types.Internal.AST.OrderedMap
     ( OrderedMap
-    , unsafeFromList
+    , unsafeFromValues
     , traverseWithKey
     , foldWithKey
     )
@@ -30,6 +30,8 @@ import           Data.Morpheus.Types.Internal.Operation ( Join(..)
                                                         , Selectable(..)
                                                         , Listable(..)
                                                         , Failure(..)
+                                                        , KeyOf(..)
+                                                        , toPair
                                                         )
 import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
@@ -80,8 +82,8 @@ instance Listable (OrderedMap a) a where
 safeFromList :: (Failure GQLErrors m, Applicative m, NameCollision a) => [Named a] -> m (OrderedMap a)
 safeFromList values = OrderedMap (map fst values) <$> safeUnionWith HM.empty values 
 
-unsafeFromList :: [(Name, a)] -> OrderedMap a
-unsafeFromList x = OrderedMap (map fst x) $ HM.fromList x
+unsafeFromValues :: KeyOf a => [a] -> OrderedMap a
+unsafeFromValues x = OrderedMap (map keyOf x) $ HM.fromList $ map toPair x
 
 safeJoin :: (Failure GQLErrors m, Applicative m, NameCollision a) => HashMap Name a -> HashMap Name a -> m (HashMap Name a)
 safeJoin hm newls = safeUnionWith hm (HM.toList newls)

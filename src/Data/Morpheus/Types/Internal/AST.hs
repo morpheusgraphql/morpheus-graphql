@@ -157,10 +157,11 @@ module Data.Morpheus.Types.Internal.AST
   , GQLQuery(..)
   , Variables
   , isNullableWrapper
-  , unsafeFromFieldList
+  , unsafeFromFields
   , OrderedMap
   , GQLError(..)
   , GQLErrors
+  , ObjectEntry(..)
   )
 where
 
@@ -199,7 +200,7 @@ unpackInputUnion
   -> Object stage
   -> Either Message (Name, Maybe (Value stage))
 unpackInputUnion tags hm = do
-  (enum :: Value stage) <- selectBy 
+  (enum :: Value stage) <- entryValue <$> selectBy 
       ("valid input union should contain __typename and actual value" :: Message) 
       "__typename" 
       hm
@@ -207,7 +208,7 @@ unpackInputUnion tags hm = do
   case size hm of
     1 -> pure (tyName, Nothing)
     2 -> do
-      value <- selectBy 
+      value <- entryValue <$> selectBy 
           ("value for Union \""<> tyName <> "\" was not Provided.") 
           tyName 
           hm

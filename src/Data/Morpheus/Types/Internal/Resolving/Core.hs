@@ -36,11 +36,9 @@ import           Data.Morpheus.Types.Internal.Operation
                                                   Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( 
-                                                  Position(..)
-                                                  , Message 
-                                                  , GQLErrors
-                                                  , GQLError(..)
+                                                ( Message 
+                                                , GQLErrors
+                                                , GQLError(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , pack

@@ -12,7 +12,6 @@ module Data.Morpheus.Parsing.Internal.Terms
   -------------
   , collection
   , setOf
-  , setOfAssoc
   , uniqTuple
   , uniqTupleOpt
   , parseTypeCondition
@@ -204,9 +203,6 @@ collection entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
 
 setOf :: (Listable c a , KeyOf a, NameCollision a) => Parser a -> Parser c
 setOf = collection >=> fromList
-
-setOfAssoc :: (Listable c a , NameCollision a) => Parser (Name, a) -> Parser c
-setOfAssoc = collection >=> fromAssoc
 
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do

@@ -43,6 +43,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , isFieldNullable
                                                 , lookupInputType
+                                                , ObjectEntry(..)
+                                                , RAW
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -62,16 +64,17 @@ import           Data.Text                      ( Text )
 resolveObject :: Name -> ValidVariables -> RawValue -> Validation ResolvedValue
 resolveObject operationName variables = resolve
  where
+  resolveEntry :: ObjectEntry RAW -> Validation (ObjectEntry RESOLVED)
+  resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
+  ------------------------------------------------
   resolve :: RawValue -> Validation ResolvedValue
   resolve Null         = pure Null
   resolve (Scalar x  ) = pure $ Scalar x
   resolve (Enum   x  ) = pure $ Enum x
   resolve (List   x  ) = List <$> traverse resolve x
-  resolve (Object obj) = Object <$> traverse resolve obj
+  resolve (Object obj) = Object <$> traverse resolveEntry obj
   resolve (VariableValue ref) =
     ResolvedVariable ref <$> variableByRef operationName variables ref
-    --  >>= checkTypeEquality ref fieldType
-  -- RAW | RESOLVED | Valid 
 
 variableByRef :: Name -> ValidVariables -> Ref -> Validation (Variable VALID)
 variableByRef operationName variables Ref { refName, refPosition } = maybe

@@ -68,7 +68,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , lookupWith
   , selectTypeObject
   , toHSFieldDefinition
-  , unsafeFromFieldList
+  , unsafeFromFields
   )
 where
 
@@ -91,7 +91,7 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap
-                                                , unsafeFromList
+                                                , unsafeFromValues
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
@@ -120,7 +120,6 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Listable(..)
                                                 , Join(..)
                                                 , KeyOf(..)
-                                                , toPair
                                                 , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
@@ -404,8 +403,8 @@ newtype FieldsDefinition = FieldsDefinition
  { unFieldsDefinition :: OrderedMap FieldDefinition } 
   deriving (Show, Empty)
 
-unsafeFromFieldList :: [FieldDefinition] -> FieldsDefinition 
-unsafeFromFieldList = FieldsDefinition . unsafeFromList . map toPair
+unsafeFromFields :: [FieldDefinition] -> FieldsDefinition 
+unsafeFromFields = FieldsDefinition . unsafeFromValues
 
 instance Join FieldsDefinition where
   join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y

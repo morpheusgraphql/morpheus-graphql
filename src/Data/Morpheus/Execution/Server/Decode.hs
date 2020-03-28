@@ -52,6 +52,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidObject
                                                 , Value(..)
                                                 , ValidValue
+                                                , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -64,7 +65,9 @@ import           Data.Morpheus.Types.Internal.Operation
 
 -- GENERIC
 decodeArguments :: DecodeType a => ValidArguments -> Validation a
-decodeArguments = decodeType . Object . fmap argumentValue
+decodeArguments = decodeType . Object . fmap toEntry
+  where 
+    toEntry (Argument name value _) = ObjectEntry name value
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
@@ -159,8 +162,8 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
     (x, y { typeName = pack $ datatypeName (undefined :: (M1 D d f a)) })
 
 getEnumTag :: ValidObject -> Validation Name
-getEnumTag x = case toAssoc x of 
-        [("enum", Enum value)] -> pure value
+getEnumTag x = case toList x of 
+        [ObjectEntry "enum" (Enum value)] -> pure value
         _                      -> internalError "bad union enum object"
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
