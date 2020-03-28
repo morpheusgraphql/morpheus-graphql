@@ -47,7 +47,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidValue
                                                 , RawValue
                                                 , ResolvedValue
-                                                , Name
                                                 , VALID
                                                 , RAW
                                                 , VariableContent(..)
@@ -56,6 +55,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                (Listable(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
@@ -115,14 +116,13 @@ resolveOperationVariables
 resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArguments }
   = do
     allVariableRefs lib [operationSelection] >>= checkUnusedVariables
-    mapM (lookupAndValidateValueOnBody typeLib root validationMode)
-         operationArguments
+    traverse (lookupAndValidateValueOnBody typeLib root validationMode) operationArguments
  where
-  varToKey :: (Text, Variable a) -> Ref
-  varToKey (key', Variable { variablePosition }) = Ref key' variablePosition
+  varToKey :: Variable a -> Ref
+  varToKey Variable { variableName, variablePosition } = Ref variableName variablePosition
   --
   checkUnusedVariables :: [Ref] -> Validation ()
-  checkUnusedVariables refs = case map varToKey operationArguments \\ refs of
+  checkUnusedVariables refs = case map varToKey (toList operationArguments) \\ refs of
     [] -> pure ()
     unused' ->
       failure $ unusedVariables (getOperationName operationName) unused'
@@ -131,25 +131,31 @@ lookupAndValidateValueOnBody
   :: Schema
   -> Variables
   -> VALIDATION_MODE
-  -> (Text, Variable RAW)
-  -> Validation (Text, Variable VALID)
-lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Variable { variableType, variablePosition, variableValue = DefaultValue defaultValue })
+  -> Variable RAW
+  -> Validation (Variable VALID)
+lookupAndValidateValueOnBody 
+  typeLib bodyVariables validationMode 
+  var@Variable { 
+      variableName,
+      variableType, 
+      variablePosition, 
+      variableValue = DefaultValue defaultValue 
+    }
   = toVariable
     <$> (   getVariableType (typeConName variableType) variablePosition typeLib
         >>= checkType getVariable defaultValue
         )
  where
-  toVariable (varKey, x) =
-    (varKey, var { variableValue = ValidVariableValue x })
+  toVariable x = var { variableValue = ValidVariableValue x }
   getVariable :: Maybe ResolvedValue
-  getVariable = M.lookup key bodyVariables
+  getVariable = M.lookup variableName bodyVariables
   ------------------------------------------------------------------
   -- checkType :: 
   checkType
     :: Maybe ResolvedValue
     -> DefaultValue
     -> TypeDefinition
-    -> Validation (Name, ValidValue)
+    -> Validation ValidValue
   checkType (Just variable) Nothing varType = validator varType variable
   checkType (Just variable) (Just defValue) varType =
     validator varType defValue >> validator varType variable
@@ -157,24 +163,24 @@ lookupAndValidateValueOnBody typeLib bodyVariables validationMode (key, var@Vari
   checkType Nothing Nothing varType
     | validationMode /= WITHOUT_VARIABLES && not (isNullable variableType)
     = failure
-      $ uninitializedVariable variablePosition (typeConName variableType) key
+      $ uninitializedVariable variablePosition (typeConName variableType) variableName
     | otherwise
     = returnNull
    where
     returnNull =
-      maybe (pure (key, Null)) (validator varType) (M.lookup key bodyVariables)
+      maybe (pure Null) (validator varType) (M.lookup variableName bodyVariables)
   -----------------------------------------------------------------------------------------------
-  validator :: TypeDefinition -> ResolvedValue -> Validation (Name, ValidValue)
+  validator :: TypeDefinition -> ResolvedValue -> Validation ValidValue
   validator varType varValue =
     case
         validateInputValue typeLib
                            []
                            (typeWrappers variableType)
                            varType
-                           (key, varValue)
+                           (variableName, varValue)
       of
         Left message -> failure $ case inputErrorMessage message of
           Left errors -> errors
           Right errMessage ->
-            variableGotInvalidValue key errMessage variablePosition
-        Right value -> pure (key, value)
+            variableGotInvalidValue variableName errMessage variablePosition
+        Right value -> pure value

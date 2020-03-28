@@ -77,12 +77,10 @@ resolveObject operationName variables = resolve
     ResolvedVariable ref <$> variableByRef operationName variables ref
 
 variableByRef :: Name -> ValidVariables -> Ref -> Validation (Variable VALID)
-variableByRef operationName variables Ref { refName, refPosition } = maybe
-  variableError
-  pure
-  (lookup refName variables)
- where
-  variableError = failure $ undefinedVariable operationName refPosition refName
+variableByRef operationName variables Ref { refName, refPosition } 
+  = selectBy variableError refName variables
+  where
+    variableError = undefinedVariable operationName refPosition refName
 
 resolveArgumentVariables
   :: Name

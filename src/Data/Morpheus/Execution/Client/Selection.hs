@@ -86,7 +86,7 @@ operationTypes lib variables = genOperation
                                          datatype
                                          operationSelection
     inputTypeRequests <- resolveUpdates []
-      $ map (scanInputTypes lib . typeConName . variableType . snd) variables
+      $ map (scanInputTypes lib . typeConName . variableType) (toList variables)
     inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
     pure
       ( rootArguments (getOperationName operationName <> "Args")
@@ -106,13 +106,13 @@ operationTypes lib variables = genOperation
     rootArgumentsType = TypeD
       { tName      = argsName
       , tNamespace = []
-      , tCons = [ConsD { cName = argsName, cFields = map fieldD variables }]
+      , tCons = [ConsD { cName = argsName, cFields = map fieldD (toList variables) }]
       , tMeta      = Nothing
       }
      where
-      fieldD :: (Text, Variable RAW) -> FieldDefinition
-      fieldD (key, Variable { variableType }) = FieldDefinition
-        { fieldName     = key
+      fieldD :: Variable RAW -> FieldDefinition
+      fieldD Variable { variableName, variableType } = FieldDefinition
+        { fieldName     = variableName
         , fieldArgs     = NoArguments
         , fieldType     = variableType
         , fieldMeta     = Nothing

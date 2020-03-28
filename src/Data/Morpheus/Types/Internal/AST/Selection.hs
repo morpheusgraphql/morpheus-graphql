@@ -144,15 +144,17 @@ type ValidSelection = Selection VALID
 
 type DefaultValue = Maybe ResolvedValue
 
-type VariableDefinitions = Collection (Variable RAW)
+type Variables s = OrderedMap (Variable s)
 
-type ValidVariables = Collection (Variable VALID)
+type VariableDefinitions = Variables RAW
 
-data Operation (stage:: Stage) = Operation
+type ValidVariables = Variables VALID
+
+data Operation (s:: Stage) = Operation
   { operationName      :: Maybe Key
   , operationType      :: OperationType
-  , operationArguments :: Collection (Variable stage)
-  , operationSelection :: SelectionSet stage
+  , operationArguments :: Variables s
+  , operationSelection :: SelectionSet s
   , operationPosition  :: Position
   } deriving (Show,Lift)
 

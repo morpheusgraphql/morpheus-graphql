@@ -1,5 +1,5 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module Data.Morpheus.Parsing.Request.Operation
   ( parseOperation
@@ -7,7 +7,6 @@ module Data.Morpheus.Parsing.Request.Operation
 where
 
 import           Data.Functor                   ( ($>) )
-import           Data.Text                      ( Text )
 import           Text.Megaparsec                ( label
                                                 , optional
                                                 , (<?>)
@@ -25,7 +24,7 @@ import           Data.Morpheus.Parsing.Internal.Pattern
                                                 ( optionalDirectives )
 import           Data.Morpheus.Parsing.Internal.Terms
                                                 ( operator
-                                                , parseMaybeTuple
+                                                , uniqTupleOpt
                                                 , parseName
                                                 , parseType
                                                 , spaceAndComments1
@@ -35,6 +34,8 @@ import           Data.Morpheus.Parsing.Internal.Value
                                                 ( parseDefaultValue )
 import           Data.Morpheus.Parsing.Request.Selection
                                                 ( parseSelectionSet )
+import           Data.Morpheus.Types.Internal.Operation 
+                                                (empty)
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , RawOperation
@@ -51,19 +52,13 @@ import           Data.Morpheus.Types.Internal.AST
 --  VariableDefinition
 --    Variable : Type DefaultValue(opt)
 --
-variableDefinition :: Parser (Text, Variable RAW)
+variableDefinition :: Parser (Variable RAW)
 variableDefinition = label "VariableDefinition" $ do
-  (Ref name variablePosition) <- variable
+  (Ref variableName variablePosition) <- variable
   operator ':'
   variableType <- parseType
-  defaultValue <- parseDefaultValue
-  pure
-    ( name
-    , Variable { variableType
-               , variablePosition
-               , variableValue    = DefaultValue defaultValue
-               }
-    )
+  variableValue <- DefaultValue <$> parseDefaultValue
+  pure Variable{..}
 
 -- Operations : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Operations
 --
@@ -77,18 +72,11 @@ parseOperationDefinition = label "OperationDefinition" $ do
   operationPosition  <- getLocation
   operationType      <- parseOperationType
   operationName      <- optional parseName
-  operationArguments <- parseMaybeTuple variableDefinition
+  operationArguments <- uniqTupleOpt variableDefinition
   -- TODO: handle directives
   _directives        <- optionalDirectives
   operationSelection <- parseSelectionSet
-  pure
-    (Operation { operationName
-               , operationType
-               , operationArguments
-               , operationSelection
-               , operationPosition
-               }
-    )
+  pure Operation {..}
 
 parseOperationType :: Parser OperationType
 parseOperationType = label "OperationType" $ do
@@ -106,9 +94,8 @@ parseAnonymousQuery = label "AnonymousQuery" $ do
   pure
       (Operation { operationName      = Nothing
                  , operationType      = Query
-                 , operationArguments = []
-                 , operationSelection
-                 , operationPosition
+                 , operationArguments = empty
+                 , ..
                  }
       )
     <?> "can't parse AnonymousQuery"

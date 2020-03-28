@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "There can Be only One Variable Named \"v1\"",
+      "locations": [
+        {
+          "line": 1,
+          "column": 43
+        }
+      ]
+    }
+  ]
+}
