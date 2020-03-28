@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Data.Morpheus.Parsing.Request.Selection
   ( parseSelectionSet
@@ -123,16 +124,16 @@ spread = label "FragmentSpread" $ do
 --  FragmentDefinition:
 --   fragment FragmentName TypeCondition Directives(opt) SelectionSet
 --
-parseFragmentDefinition :: Parser (Text, Fragment)
+parseFragmentDefinition :: Parser Fragment
 parseFragmentDefinition = label "FragmentDefinition" $ do
   keyword "fragment"
   fragmentPosition  <- getLocation
-  name              <- parseName
+  fragmentName              <- parseName
   fragmentType      <- parseTypeCondition
   -- TODO: handle Directives
   _directives       <- optionalDirectives
   fragmentSelection <- parseSelectionSet
-  pure (name, Fragment { fragmentType, fragmentSelection, fragmentPosition })
+  pure Fragment { .. }
 
 -- Inline Fragments : https://graphql.github.io/graphql-spec/June2018/#sec-Inline-Fragments
 --
@@ -150,5 +151,5 @@ inlineFragment = label "InlineFragment" $ do
   pure
     ( "INLINE_FRAGMENT"
     , InlineFragment
-      $ Fragment { fragmentType, fragmentSelection, fragmentPosition }
+      $ Fragment { fragmentName = "INLINE_FRAGMENT", .. }
     )

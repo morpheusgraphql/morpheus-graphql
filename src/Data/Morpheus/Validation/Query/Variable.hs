@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Variable(..)
                                                 , getOperationName
                                                 , Fragment(..)
-                                                , FragmentLib
+                                                , Fragments
                                                 , Argument(..)
                                                 , RawArgument
                                                 , Selection(..)
@@ -85,7 +85,7 @@ instance ExploreRefs RawValue where
 instance ExploreRefs RawArgument where
   exploreRefs = exploreRefs . argumentValue
 
-allVariableRefs :: FragmentLib -> [RawSelectionSet] -> Validation [Ref]
+allVariableRefs :: Fragments -> [RawSelectionSet] -> Validation [Ref]
 allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
  where
 
@@ -107,7 +107,7 @@ allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
 
 resolveOperationVariables
   :: Schema
-  -> FragmentLib
+  -> Fragments
   -> Variables
   -> VALIDATION_MODE
   -> RawOperation
