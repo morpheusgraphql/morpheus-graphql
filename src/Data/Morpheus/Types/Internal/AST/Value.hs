@@ -163,6 +163,10 @@ instance KeyOf (Variable s) where
   keyOf = variableName
 
 instance NameCollision (Variable s) where 
+  nameCollision _ Variable { variableName , variablePosition } = GQLError { 
+    message = "There can Be only One Variable Named \"" <> variableName <> "\"",
+    locations = [variablePosition]
+  }
 
 data Value (stage :: Stage) where
   ResolvedVariable::Ref -> Variable VALID -> Value RESOLVED
