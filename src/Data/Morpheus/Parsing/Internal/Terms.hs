@@ -17,7 +17,6 @@ module Data.Morpheus.Parsing.Internal.Terms
   , parseTypeCondition
   , spreadLiteral
   , parseNonNull
-  , parseMaybeTuple
   , parseAssignment
   , parseWrappedType
   , litEquals
@@ -210,9 +209,6 @@ parseNonNull = do
   spaceAndComments
   return wrapper
 
-parseMaybeTuple :: Parser a -> Parser [a]
-parseMaybeTuple = optionalList . parseTuple 
-
 optionalList :: Parser [a] -> Parser [a] 
 optionalList x = x <|> pure []
 
@@ -227,7 +223,7 @@ uniqTuple :: (Listable c a , KeyOf a, NameCollision a) => Parser a -> Parser c
 uniqTuple = parseTuple >=> fromList
 
 uniqTupleOpt :: (Listable c a , KeyOf a, NameCollision a) => Parser a -> Parser c
-uniqTupleOpt = parseMaybeTuple >=> fromList
+uniqTupleOpt = optionalList . parseTuple  >=> fromList
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser = label "assignment" $ do
