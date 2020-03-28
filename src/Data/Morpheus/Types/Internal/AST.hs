@@ -7,7 +7,6 @@ module Data.Morpheus.Types.Internal.AST
   (
     -- BASE
     Key
-  , Collection
   , Ref(..)
   , Position(..)
   , Message
