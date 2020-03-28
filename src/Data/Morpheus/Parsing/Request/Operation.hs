@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns     #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE RecordWildCards    #-}
 
@@ -58,11 +57,8 @@ variableDefinition = label "VariableDefinition" $ do
   (Ref variableName variablePosition) <- variable
   operator ':'
   variableType <- parseType
-  defaultValue <- parseDefaultValue
-  pure Variable 
-    { variableValue    = DefaultValue defaultValue
-    , ..
-    }
+  variableValue <- DefaultValue <$> parseDefaultValue
+  pure Variable{..}
 
 -- Operations : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Operations
 --
@@ -80,14 +76,7 @@ parseOperationDefinition = label "OperationDefinition" $ do
   -- TODO: handle directives
   _directives        <- optionalDirectives
   operationSelection <- parseSelectionSet
-  pure
-    (Operation { operationName
-               , operationType
-               , operationArguments
-               , operationSelection
-               , operationPosition
-               }
-    )
+  pure Operation {..}
 
 parseOperationType :: Parser OperationType
 parseOperationType = label "OperationType" $ do
