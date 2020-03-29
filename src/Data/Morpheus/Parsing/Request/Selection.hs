@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
@@ -8,7 +7,6 @@ module Data.Morpheus.Parsing.Request.Selection
   )
 where
 
-import           Data.Text                      ( Text )
 import           Text.Megaparsec                ( label
                                                 , try
                                                 , (<|>)
@@ -42,6 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RawSelection
                                                 , RawSelectionSet
                                                 , Name
+                                                , Position
                                                 )
 
 
@@ -112,12 +111,8 @@ parseFragmentDefinition :: Parser Fragment
 parseFragmentDefinition = label "FragmentDefinition" $ do
   keyword "fragment"
   fragmentPosition  <- getLocation
-  fragmentName              <- parseName
-  fragmentType      <- parseTypeCondition
-  -- TODO: handle Directives
-  _directives       <- optionalDirectives
-  fragmentSelection <- parseSelectionSet
-  pure Fragment { .. }
+  fragmentName      <- parseName
+  fragmentBody fragmentName fragmentPosition
 
 -- Inline Fragments : https://graphql.github.io/graphql-spec/June2018/#sec-Inline-Fragments
 --
@@ -127,11 +122,12 @@ parseFragmentDefinition = label "FragmentDefinition" $ do
 inlineFragment :: Parser RawSelection
 inlineFragment = label "InlineFragment" $ do
   fragmentPosition  <- spreadLiteral
-  -- TODO: optional
+  InlineFragment <$> fragmentBody "INLINE_FRAGMENT" fragmentPosition
+
+fragmentBody :: Name -> Position -> Parser Fragment
+fragmentBody fragmentName fragmentPosition = label "FragmentBody" $ do
   fragmentType      <- parseTypeCondition
   -- TODO: handle Directives
   _directives       <- optionalDirectives
   fragmentSelection <- parseSelectionSet
-  pure
-    $ InlineFragment
-    $ Fragment { fragmentName = "INLINE_FRAGMENT", .. }
+  pure $ Fragment { .. }
