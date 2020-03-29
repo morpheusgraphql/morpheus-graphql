@@ -10,7 +10,6 @@
 
 module Data.Morpheus.Validation.Query.UnionSelection
   ( validateUnionSelection
-  , validate__typename
   )
 where
 
@@ -45,7 +44,6 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectOr
                                                 , empty
                                                 , singleton
-                                                , (<:>)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -127,19 +125,15 @@ clusterTypes schema fragments (selectionName,selectionPosition,_) selectionSet (
  -}
 validateCluster
       :: (TypeDef -> RawSelectionSet -> Validation (SelectionSet VALID))
-      -> SelectionSet VALID
+      -> SelectionSet RAW
       -> [(TypeDef, [Fragment])]
       -> Validation (SelectionContent VALID)
 validateCluster validator __typename = traverse _validateCluster >=> fmap UnionSelection . fromList
  where
   _validateCluster :: (TypeDef, [Fragment]) -> Validation UnionTag
   _validateCluster  (unionType, fragmets) = do
-        fragmentSelections <- SMap.join (map fragmentSelection fragmets)
-        selection <- validator unionType fragmentSelections
-        UnionTag (fst unionType) <$> (__typename <:> selection)
-
-validate__typename :: Selection RAW -> Selection VALID
-validate__typename Selection {selectionArguments, selectionContent , ..} = Selection {selectionArguments = empty, ..} 
+        fragmentSelections <- SMap.join (__typename:map fragmentSelection fragmets)
+        UnionTag (fst unionType) <$> validator unionType fragmentSelections
 
 validateUnionSelection 
     :: (TypeDef -> RawSelectionSet -> Validation (SelectionSet VALID)) 
@@ -150,7 +144,7 @@ validateUnionSelection
     -> TypeFieldDef 
     -> Validation (SelectionContent VALID)
 validateUnionSelection validate schema fragments selectionDef selectionSet typeField  = do
-    let (__typename :: SelectionSet VALID) = selectOr empty (singleton . validate__typename) "__typename" selectionSet
+    let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
     categories <- clusterTypes 
         schema 
         fragments
