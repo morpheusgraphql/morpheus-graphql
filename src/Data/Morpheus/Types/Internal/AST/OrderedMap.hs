@@ -13,6 +13,8 @@ module Data.Morpheus.Types.Internal.AST.OrderedMap
     , unsafeFromValues
     , traverseWithKey
     , foldWithKey
+    , insertNoDups
+    , NoDupHashMap
     )
 where 
 

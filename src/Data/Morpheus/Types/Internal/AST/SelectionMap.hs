@@ -41,14 +41,16 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
                                                         )
-import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM 
-                                                        ( OrderedMap(..)
-                                                        , traverseWithKey
+import           Data.Morpheus.Types.Internal.AST.OrderedMap 
+                                                        (insertNoDups
+                                                        , NoDupHashMap
+                                                        , OrderedMap(..)
                                                         )
+import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM 
 
 -- SelectionMap 
 newtype SelectionMap a = SelectionMap { 
-    unSelectionMap :: OM.OrderedMap a
+    unSelectionMap :: OrderedMap a
   } deriving (Show, Functor)
 
 concatTraverse :: (NameCollision b , Monad m, Failure GQLErrors m) => (a -> m (SelectionMap b)) -> SelectionMap a -> m (SelectionMap b)
@@ -61,7 +63,7 @@ join = __join empty
   __join acc [] = pure acc
   __join acc (x:xs) = acc <:> x >>= (`__join` xs)
 
-toOrderedMap :: SelectionMap a -> OM.OrderedMap a
+toOrderedMap :: SelectionMap a -> OrderedMap a
 toOrderedMap  = unSelectionMap
 
 traverseWithKey :: Applicative t => (Name -> a -> t b) -> SelectionMap a -> t (SelectionMap b)
@@ -108,11 +110,3 @@ instance Listable (SelectionMap a) a where
 -- safeUnionWith hm names = case insertNoDups (hm,[]) names of 
 --   (res,dupps) | null dupps -> pure res
 --               | otherwise -> failure $ map (uncurry nameCollision) dupps
-
-type NoDupHashMap a = (HashMap Name a,[Named a])
-
-insertNoDups :: NoDupHashMap a -> [Named a] -> NoDupHashMap a
-insertNoDups collected [] = collected
-insertNoDups (coll,errors) (pair@(name,value):xs)
-  | isJust (name `HM.lookup` coll) = insertNoDups (coll,errors <> [pair]) xs
-  | otherwise = insertNoDups (HM.insert name value coll,errors) xs
