@@ -81,10 +81,10 @@ validateSelectionSet lib fragments operatorName variables = __validate
     :: TypeDef -> RawSelectionSet -> Validation ValidSelectionSet
   __validate dataType@(typeName,_) = concatTraverse validateSelection 
    where
-    -- getValidationData :: Name -> Arguments RAW -> Position -> (FieldDefinition, TypeContent, Arguments VALID)
-    getValidationData key selectionArguments selectionPosition = do
+    commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeContent, Arguments VALID)
+    commonValidation key selectionArguments selectionPosition = do
       (fieldDef :: FieldDefinition) <- lookupSelectionField selectionPosition key dataType
-      let feildTypeName = typeConName $ fieldType fieldDef
+      let feildTypeName = typeConName (fieldType fieldDef)
       -- validate field Argument -----
       (arguments ::Arguments VALID) <- validateArguments lib
                                      operatorName
@@ -112,7 +112,7 @@ validateSelectionSet lib fragments operatorName variables = __validate
             | null selArgs && selectionName == "__typename" 
               = pure $ sel { selectionArguments = empty, selectionContent = SelectionField }
             | otherwise = do
-              (dataField, datatypeContent, selectionArguments) <- getValidationData selectionName selArgs selectionPosition
+              (dataField, datatypeContent, selectionArguments) <- commonValidation selectionName selArgs selectionPosition
               isLeaf datatypeContent dataField
               pure $ sel { selectionArguments, selectionContent = SelectionField }
           ------------------------------------------------------------
@@ -124,7 +124,7 @@ validateSelectionSet lib fragments operatorName variables = __validate
         ----- SelectionSet
         validateSelectionContent (SelectionSet rawSelection)
           = do
-            (dataField, datatype, selectionArguments) <- getValidationData selectionName selArgs selectionPosition
+            (dataField, datatype, selectionArguments) <- commonValidation selectionName selArgs selectionPosition
             selContent <- validateByTypeContent dataField datatype
             pure $ singleton $ sel { selectionArguments, selectionContent = selContent }
            where
