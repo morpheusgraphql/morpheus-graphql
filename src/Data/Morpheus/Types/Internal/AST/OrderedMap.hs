@@ -13,8 +13,7 @@ module Data.Morpheus.Types.Internal.AST.OrderedMap
     , unsafeFromValues
     , traverseWithKey
     , foldWithKey
-    , insertNoDups
-    , NoDupHashMap
+    , update
     )
 where 
 
@@ -52,6 +51,9 @@ traverseWithKey f (OrderedMap names hmap) = OrderedMap names <$> HM.traverseWith
 
 foldWithKey :: NameCollision a => (Name -> a -> b -> b) -> b -> OrderedMap a -> b
 foldWithKey f defValue om = foldr (uncurry f) defValue (toAssoc om)
+
+update :: KeyOf a => a -> OrderedMap a -> OrderedMap a 
+update x (OrderedMap names values) = OrderedMap (names <>[keyOf x]) $ HM.insert (keyOf x) x values
 
 instance Lift a => Lift (OrderedMap a) where
   lift (OrderedMap names x) = [| OrderedMap names (HM.fromList ls) |]

@@ -42,10 +42,7 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , GQLErrors
                                                         )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap 
-                                                        (insertNoDups
-                                                        , NoDupHashMap
-                                                        , OrderedMap(..)
-                                                        )
+                                                        ( OrderedMap(..) )
 import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM 
 
 -- SelectionMap 
@@ -53,13 +50,13 @@ newtype SelectionMap a = SelectionMap {
     unSelectionMap :: OrderedMap a
   } deriving (Show, Functor)
 
-concatTraverse :: (NameCollision b , Monad m, Failure GQLErrors m) => (a -> m (SelectionMap b)) -> SelectionMap a -> m (SelectionMap b)
+concatTraverse :: (NameCollision b , KeyOf a, KeyOf b, Monad m, Failure GQLErrors m) => (a -> m (SelectionMap b)) -> SelectionMap a -> m (SelectionMap b)
 concatTraverse f smap = traverse f (toList smap) >>= join 
 
-join :: (NameCollision a , Monad m, Failure GQLErrors m) => [SelectionMap a] -> m (SelectionMap a)
+join :: (NameCollision a, KeyOf a , Monad m, Failure GQLErrors m) => [SelectionMap a] -> m (SelectionMap a)
 join = __join empty
  where
-  __join :: (NameCollision a , Monad m, Failure GQLErrors m) => SelectionMap a ->[SelectionMap a] -> m (SelectionMap a)
+  __join :: (NameCollision a , KeyOf a, Monad m, Failure GQLErrors m) => SelectionMap a ->[SelectionMap a] -> m (SelectionMap a)
   __join acc [] = pure acc
   __join acc (x:xs) = acc <:> x >>= (`__join` xs)
 
@@ -69,7 +66,7 @@ toOrderedMap  = unSelectionMap
 traverseWithKey :: Applicative t => (Name -> a -> t b) -> SelectionMap a -> t (SelectionMap b)
 traverseWithKey f = fmap SelectionMap . OM.traverseWithKey f . unSelectionMap
 
-foldWithKey :: NameCollision a => (Name -> a -> b -> b) -> b -> SelectionMap a -> b
+foldWithKey :: (NameCollision a, KeyOf a) => (Name -> a -> b -> b) -> b -> SelectionMap a -> b
 foldWithKey f defValue om = foldr (uncurry f) defValue (toAssoc om)
 
 instance Lift a => Lift (SelectionMap a) where
@@ -81,9 +78,6 @@ instance Foldable SelectionMap where
 instance Traversable SelectionMap where
   traverse f SelectionMap { unSelectionMap } = SelectionMap  <$> traverse f unSelectionMap
 
-instance NameCollision a => Join (SelectionMap a) where 
-  (SelectionMap k1) <:> (SelectionMap k2) = SelectionMap <$> (k1 <:> k2)
-
 instance Empty (SelectionMap a) where 
   empty = SelectionMap empty
 
@@ -93,20 +87,29 @@ instance (KeyOf a) => Singleton (SelectionMap a) a where
 instance Selectable (SelectionMap a) a where 
   selectOr fb f key  = selectOr  fb f key . unSelectionMap
 
-instance Listable (SelectionMap a) a where
-  fromAssoc = fmap SelectionMap . fromAssoc
-  toAssoc SelectionMap {  unSelectionMap } = toAssoc unSelectionMap 
+-- must merge files on collision 
+instance (KeyOf a, NameCollision a) => Join (SelectionMap a) where 
+  (<:>) = safeJoin
 
--- safeFromList :: (Failure GQLErrors m, Applicative m, NameCollision a) => [Named a] -> m (SelectionMap a)
--- safeFromList values = SelectionMap (map fst values) <$> safeUnionWith HM.empty values 
+instance KeyOf a => Listable (SelectionMap a) a where
+  fromAssoc = safeFromList
+  toAssoc = toAssoc . unSelectionMap 
 
--- unsafeFromValues :: KeyOf a => [a] -> SelectionMap a
--- unsafeFromValues x = SelectionMap (map keyOf x) $ HM.fromList $ map toPair x
+safeFromList :: (Failure GQLErrors m, Monad m, KeyOf a, NameCollision a) => [Named a] -> m (SelectionMap a)
+safeFromList  = insertList empty . map snd
 
--- safeJoin :: (Failure GQLErrors m, Applicative m, NameCollision a) => HashMap Name a -> HashMap Name a -> m (HashMap Name a)
--- safeJoin hm newls = safeUnionWith hm (HM.toList newls)
+safeJoin :: (Monad m, KeyOf a) => SelectionMap a -> SelectionMap a -> m (SelectionMap a)
+safeJoin hm1 hm2 = insertList hm1 (toList hm2)
 
--- safeUnionWith :: (Failure GQLErrors m, Applicative m, NameCollision a) => HashMap Name a -> [Named a] -> m (HashMap Name a)
--- safeUnionWith hm names = case insertNoDups (hm,[]) names of 
---   (res,dupps) | null dupps -> pure res
---               | otherwise -> failure $ map (uncurry nameCollision) dupps
+insertList:: (Monad m, KeyOf a) =>  SelectionMap a -> [a] -> m (SelectionMap a)
+insertList smap [] = pure smap
+insertList smap (x:xs) = insert smap x >>= (`insertList` xs)
+
+insert :: (Monad m, KeyOf a) => SelectionMap a -> a -> m (SelectionMap a)
+insert (SelectionMap om) value = do 
+  newValue <- selectOr (pure value) (merge value) (keyOf value) om
+  pure $ SelectionMap (OM.update newValue om)
+
+-- TODO: real merge
+merge :: a -> a -> m a
+merge = undefined
