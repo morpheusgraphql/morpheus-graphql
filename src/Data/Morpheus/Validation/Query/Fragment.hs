@@ -30,12 +30,15 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , Position
                                                 , Schema
+                                                , SelectionSet
+                                                , RAW
                                                 , selectTypeObject
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectOr 
                                                 , selectBy
                                                 , toList
+                                                , toAssoc
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -44,11 +47,11 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 
 validateFragments
-  :: Schema -> Fragments -> [(Text, RawSelection)] -> Validation ()
+  :: Schema -> Fragments -> SelectionSet RAW -> Validation ()
 validateFragments lib fragments operatorSel =checkLoop >> checkUnusedFragments
  where
   checkUnusedFragments =
-    case fragmentsKeys \\ usedFragments fragments operatorSel of
+    case fragmentsKeys \\ usedFragments fragments (toAssoc operatorSel) of
       []     -> return ()
       unused -> failure (unusedFragment unused)
   checkLoop = traverse (validateFragment lib) (toList fragments) >>= detectLoopOnFragments

@@ -55,6 +55,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
                                                 )
+import           Data.Morpheus.Types.Internal.AST.SelectionMap
+                                                ( concatTraverse )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (Listable(..))
 import           Data.Morpheus.Types.Internal.Resolving
@@ -70,8 +72,6 @@ getVariableType :: Text -> Position -> Schema -> Validation TypeDefinition
 getVariableType type' position' lib' = lookupInputType type' lib' error'
   where error' = unknownType type' position'
 
-concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
-concatMapM f = fmap concat . traverse f
 
 
 class ExploreRefs a where
@@ -86,24 +86,26 @@ instance ExploreRefs RawValue where
 instance ExploreRefs RawArgument where
   exploreRefs = exploreRefs . argumentValue
 
-allVariableRefs :: Fragments -> [RawSelectionSet] -> Validation [Ref]
-allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
- where
+mapSelection :: (RawSelection -> Validation [b]) -> RawSelectionSet -> Validation [b]
+mapSelection f = fmap concat . traverse f
 
+allVariableRefs :: Fragments -> [RawSelectionSet] -> Validation [Ref]
+allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs) 
+ where
   -- | search used variables in every arguments
-  searchRefs :: (Text, RawSelection) -> Validation [Ref]
-  searchRefs (_, Selection { selectionArguments, selectionContent = SelectionField })
+  searchRefs :: RawSelection -> Validation [Ref]
+  searchRefs Selection { selectionArguments, selectionContent = SelectionField }
     = return $ concatMap exploreRefs selectionArguments
-  searchRefs (_, Selection { selectionArguments, selectionContent = SelectionSet selSet })
-    = getArgs <$> concatMapM searchRefs selSet
+  searchRefs Selection { selectionArguments, selectionContent = SelectionSet selSet }
+    = getArgs <$> mapSelection searchRefs selSet
    where
     getArgs :: [Ref] -> [Ref]
     getArgs x = concatMap exploreRefs selectionArguments <> x
-  searchRefs (_, InlineFragment Fragment { fragmentSelection }) =
-    concatMapM searchRefs fragmentSelection
-  searchRefs (_, Spread reference) =
-    getFragment reference fragmentLib
-      >>= concatMapM searchRefs
+  searchRefs (InlineFragment Fragment { fragmentSelection })
+    = mapSelection searchRefs fragmentSelection
+  searchRefs (Spread reference)
+    = getFragment reference fragmentLib
+      >>= mapSelection searchRefs
       .   fragmentSelection
 
 resolveOperationVariables
