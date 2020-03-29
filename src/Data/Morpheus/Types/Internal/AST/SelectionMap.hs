@@ -48,15 +48,15 @@ import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM
 -- SelectionMap 
 newtype SelectionMap a = SelectionMap { 
     unSelectionMap :: OrderedMap a
-  } deriving (Show, Functor)
+  } deriving (Show, Eq, Functor)
 
-concatTraverse :: (NameCollision b , KeyOf a, KeyOf b, Monad m, Failure GQLErrors m) => (a -> m (SelectionMap b)) -> SelectionMap a -> m (SelectionMap b)
+concatTraverse :: (NameCollision b , KeyOf a, Join a, Join b, KeyOf b, Monad m, Failure GQLErrors m) => (a -> m (SelectionMap b)) -> SelectionMap a -> m (SelectionMap b)
 concatTraverse f smap = traverse f (toList smap) >>= join 
 
-join :: (NameCollision a, KeyOf a , Monad m, Failure GQLErrors m) => [SelectionMap a] -> m (SelectionMap a)
+join :: (NameCollision a, KeyOf a , Join a, Monad m, Failure GQLErrors m) => [SelectionMap a] -> m (SelectionMap a)
 join = __join empty
  where
-  __join :: (NameCollision a , KeyOf a, Monad m, Failure GQLErrors m) => SelectionMap a ->[SelectionMap a] -> m (SelectionMap a)
+  __join :: (NameCollision a , KeyOf a, Join a, Monad m, Failure GQLErrors m) => SelectionMap a ->[SelectionMap a] -> m (SelectionMap a)
   __join acc [] = pure acc
   __join acc (x:xs) = acc <:> x >>= (`__join` xs)
 
@@ -66,7 +66,7 @@ toOrderedMap  = unSelectionMap
 traverseWithKey :: Applicative t => (Name -> a -> t b) -> SelectionMap a -> t (SelectionMap b)
 traverseWithKey f = fmap SelectionMap . OM.traverseWithKey f . unSelectionMap
 
-foldWithKey :: (NameCollision a, KeyOf a) => (Name -> a -> b -> b) -> b -> SelectionMap a -> b
+foldWithKey :: (NameCollision a, KeyOf a, Join a) => (Name -> a -> b -> b) -> b -> SelectionMap a -> b
 foldWithKey f defValue om = foldr (uncurry f) defValue (toAssoc om)
 
 instance Lift a => Lift (SelectionMap a) where
@@ -88,28 +88,24 @@ instance Selectable (SelectionMap a) a where
   selectOr fb f key  = selectOr  fb f key . unSelectionMap
 
 -- must merge files on collision 
-instance (KeyOf a, NameCollision a) => Join (SelectionMap a) where 
+instance (KeyOf a, Join a) => Join (SelectionMap a) where 
   (<:>) = safeJoin
 
-instance KeyOf a => Listable (SelectionMap a) a where
+instance (KeyOf a, Join a) => Listable (SelectionMap a) a where
   fromAssoc = safeFromList
   toAssoc = toAssoc . unSelectionMap 
 
-safeFromList :: (Failure GQLErrors m, Monad m, KeyOf a, NameCollision a) => [Named a] -> m (SelectionMap a)
+safeFromList :: (Monad m, KeyOf a, Join a ,Failure GQLErrors m) => [Named a] -> m (SelectionMap a)
 safeFromList  = insertList empty . map snd
 
-safeJoin :: (Monad m, KeyOf a) => SelectionMap a -> SelectionMap a -> m (SelectionMap a)
+safeJoin :: (Monad m, KeyOf a, Join a ,Failure GQLErrors m) => SelectionMap a -> SelectionMap a -> m (SelectionMap a)
 safeJoin hm1 hm2 = insertList hm1 (toList hm2)
 
-insertList:: (Monad m, KeyOf a) =>  SelectionMap a -> [a] -> m (SelectionMap a)
+insertList:: (Monad m, KeyOf a, Join a ,Failure GQLErrors m) =>  SelectionMap a -> [a] -> m (SelectionMap a)
 insertList smap [] = pure smap
 insertList smap (x:xs) = insert smap x >>= (`insertList` xs)
 
-insert :: (Monad m, KeyOf a) => SelectionMap a -> a -> m (SelectionMap a)
+insert :: (Monad m, KeyOf a , Join a ,Failure GQLErrors m) => SelectionMap a -> a -> m (SelectionMap a)
 insert (SelectionMap om) value = do 
-  newValue <- selectOr (pure value) (merge value) (keyOf value) om
+  newValue <- selectOr (pure value) (<:> value) (keyOf value) om
   pure $ SelectionMap (OM.update newValue om)
-
--- TODO: real merge
-merge :: a -> a -> m a
-merge = undefined

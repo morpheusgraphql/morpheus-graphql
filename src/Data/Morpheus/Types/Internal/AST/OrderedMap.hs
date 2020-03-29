@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
 data OrderedMap a = OrderedMap { 
     mapKeys :: [Name], 
     mapEntries :: HashMap Name a 
-  } deriving (Show, Functor)
+  } deriving (Show, Eq, Functor)
 
 traverseWithKey :: Applicative t => (Name -> a -> t b) -> OrderedMap a -> t (OrderedMap b)
 traverseWithKey f (OrderedMap names hmap) = OrderedMap names <$> HM.traverseWithKey f hmap
@@ -53,7 +53,12 @@ foldWithKey :: NameCollision a => (Name -> a -> b -> b) -> b -> OrderedMap a -> 
 foldWithKey f defValue om = foldr (uncurry f) defValue (toAssoc om)
 
 update :: KeyOf a => a -> OrderedMap a -> OrderedMap a 
-update x (OrderedMap names values) = OrderedMap (names <>[keyOf x]) $ HM.insert (keyOf x) x values
+update x (OrderedMap names values) = OrderedMap newNames $ HM.insert name x values
+  where
+    name = keyOf x
+    newNames 
+      | name `elem` names = names
+      | otherwise = names <> [name]
 
 instance Lift a => Lift (OrderedMap a) where
   lift (OrderedMap names x) = [| OrderedMap names (HM.fromList ls) |]

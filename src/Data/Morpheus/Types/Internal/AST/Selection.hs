@@ -81,16 +81,19 @@ import          Data.Morpheus.Types.Internal.AST.SelectionMap
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap )
 import          Data.Morpheus.Types.Internal.Operation
-                                                ( KeyOf(..) )
+                                                ( KeyOf(..)
+                                                , Join(..)
+                                                )
 import          Data.Morpheus.Error.NameCollision
                                                 ( NameCollision(..) )
+import          Debug.Trace                      
 
 data Fragment = Fragment
   { fragmentName      :: Name
   , fragmentType      :: Name
   , fragmentPosition  :: Position
   , fragmentSelection :: RawSelectionSet
-  } deriving ( Show, Lift )
+  } deriving ( Show, Eq, Lift)
 
 instance NameCollision Fragment where
   nameCollision _ Fragment { fragmentName , fragmentPosition } = GQLError
@@ -119,6 +122,7 @@ data SelectionContent (valid :: Stage) where
   UnionSelection :: UnionSelection -> SelectionContent VALID
 
 deriving instance Show (SelectionContent a)
+deriving instance Eq   (SelectionContent a)
 deriving instance Lift (SelectionContent a)
 
 type RawSelectionRec = SelectionContent RAW
@@ -127,7 +131,12 @@ type ValidSelectionRec = SelectionContent VALID
 data UnionTag = UnionTag {
   unionTagName :: Name,
   unionTagSelection :: SelectionSet VALID
-} deriving (Show, Lift)
+} deriving (Show, Eq, Lift)
+
+instance Join UnionTag where 
+  old <:> current 
+    | old == current = pure old
+    | otherwise = failure [nameCollision (keyOf current) current]
 
 instance KeyOf UnionTag where
   keyOf = unionTagName
@@ -163,6 +172,10 @@ instance KeyOf (Selection s) where
   keyOf (InlineFragment fr) = fragmentType fr
   keyOf (Spread ref) = refName ref
 
+instance Join (Selection a) where 
+  old <:> current 
+    | old == current = pure old
+    | otherwise = failure [nameCollision (keyOf current) current]
 
 instance NameCollision (Selection s) where
   -- TODO: real error
@@ -177,6 +190,8 @@ instance NameCollision (Selection s) where
 
 deriving instance Show (Selection a)
 deriving instance Lift (Selection a)
+deriving instance Eq (Selection a)
+
 
 type RawSelection = Selection RAW
 type ValidSelection = Selection VALID

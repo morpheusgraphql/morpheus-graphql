@@ -150,7 +150,7 @@ data Argument (valid :: Stage) = Argument
   { argumentName     :: Name
   , argumentValue    :: Value valid
   , argumentPosition :: Position
-  } deriving ( Show, Lift )
+  } deriving ( Show, Eq, Lift )
 
 instance KeyOf (Argument stage) where
   keyOf = argumentName 

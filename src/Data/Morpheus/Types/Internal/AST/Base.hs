@@ -90,6 +90,11 @@ data Position = Position
   , column :: Int
   } deriving ( Show, Generic, FromJSON, ToJSON, Lift)
 
+-- Positions 2 Value withs same structire
+-- but different Positions should be Equal
+instance Eq Position where
+  _ == _ = True
+
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
   | FULL_VALIDATION
@@ -133,7 +138,7 @@ data TypeRef = TypeRef
   { typeConName    :: Name
   , typeArgs     :: Maybe Name
   , typeWrappers :: [TypeWrapper]
-  } deriving (Show,Lift)
+  } deriving (Show, Eq, Lift)
 
 isNullable :: TypeRef -> Bool
 isNullable TypeRef { typeWrappers = typeWrappers } = isNullableWrapper typeWrappers
@@ -180,7 +185,7 @@ isInput _               = False
 data TypeWrapper
   = TypeList
   | TypeMaybe
-  deriving (Show, Lift)
+  deriving (Show, Eq, Lift)
 
 data DataTypeWrapper
   = ListType

@@ -123,7 +123,7 @@ data ScalarValue
   | Float Float
   | String Text
   | Boolean Bool
-  deriving (Show, Generic,Lift)
+  deriving (Show, Eq, Generic,Lift)
 
 instance A.ToJSON ScalarValue where
   toJSON (Float   x) = A.toJSON x
@@ -151,13 +151,14 @@ instance Lift (VariableContent a) where
   lift (ValidVariableValue x) = [| ValidVariableValue x |]
 
 deriving instance Show (VariableContent a)
+deriving instance Eq (VariableContent a)
 
 data Variable (stage :: Stage) = Variable
   { variableName         :: Name
   , variableType         :: TypeRef
   , variablePosition     :: Position
   , variableValue        :: VariableContent (VAR stage)
-  } deriving (Show,Lift)
+  } deriving (Show, Eq, Lift)
 
 instance KeyOf (Variable s) where
   keyOf = variableName
@@ -177,11 +178,13 @@ data Value (stage :: Stage) where
   Scalar ::ScalarValue -> Value stage
   Null ::Value stage
 
+deriving instance Eq (Value s)
+
 data ObjectEntry (s :: Stage) = ObjectEntry {
   entryName :: Name,
   entryValue :: Value s
   -- ObjectEntryposition :: Position
-} 
+} deriving (Eq)
 
 instance Show (ObjectEntry s) where 
   show (ObjectEntry name value) = unpack name <> ":" <> show value
