@@ -133,6 +133,11 @@ instance KeyOf UnionTag where
   keyOf = unionTagName
 
 instance NameCollision UnionTag where
+  -- TODO: real error
+  nameCollision _ UnionTag { unionTagName } = GQLError 
+    { message   = "There can be only one Union named \"" <> unionTagName <> "\"."
+    , locations = []
+    }
 
 type UnionSelection = SelectionMap UnionTag
 
@@ -158,7 +163,11 @@ instance KeyOf (Selection s) where
   keyOf (InlineFragment fr) = fragmentName fr
 
 instance NameCollision (Selection s) where
-
+  -- TODO: real error
+  nameCollision _ Selection { selectionName } = GQLError 
+    { message   = "There can be only one Selection named \"" <> selectionName <> "\"."
+    , locations = []
+    }
 
 deriving instance Show (Selection a)
 deriving instance Lift (Selection a)
