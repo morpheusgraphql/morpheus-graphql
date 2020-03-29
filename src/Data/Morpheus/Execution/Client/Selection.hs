@@ -146,19 +146,24 @@ operationTypes lib variables = genOperation
       -> ValidSelectionSet
       -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
-      (cFields, subTypes, requests) <- unzip3 <$> traverse genField selSet
+      (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
      where
       genField
-        :: (Text, ValidSelection)
+        :: ValidSelection
         -> Validation (FieldDefinition, [ClientType], [Text])
-      genField (fName, sel@Selection { selectionAlias, selectionPosition }) =
+      genField 
+          sel@Selection 
+          { selectionName
+          , selectionAlias
+          , selectionPosition
+          } =
         do
           (fieldDataType, fieldType) <- lookupFieldType lib
                                                         fieldPath
                                                         datatype
                                                         selectionPosition
-                                                        fName
+                                                        selectionName
           (subTypes, requests) <- subTypesBySelection fieldDataType sel
           pure
             ( FieldDefinition 
@@ -173,7 +178,7 @@ operationTypes lib variables = genOperation
        where
         fieldPath = path <> [fieldName]
         -------------------------------
-        fieldName = fromMaybe fName selectionAlias
+        fieldName = fromMaybe selectionName selectionAlias
         ------------------------------------------
         subTypesBySelection
           :: TypeDefinition -> ValidSelection -> Validation ([ClientType], [Text])
@@ -186,7 +191,7 @@ operationTypes lib variables = genOperation
         subTypesBySelection dType Selection { selectionContent = UnionSelection unionSelections }
           = do
             (tCons, subTypes, requests) <-
-              unzip3 <$> mapM getUnionType unionSelections
+              unzip3 <$> traverse getUnionType (toAssoc unionSelections)
             pure
               ( ClientType
                   { clientType = TypeD { tNamespace = fieldPath
