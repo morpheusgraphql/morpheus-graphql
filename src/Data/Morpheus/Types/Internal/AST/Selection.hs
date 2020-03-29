@@ -159,13 +159,18 @@ data Selection (s :: Stage) where
     Spread :: Ref -> Selection RAW
 
 instance KeyOf (Selection s) where
-  keyOf Selection { selectionName } = selectionName
-  keyOf (InlineFragment fr) = fragmentName fr
+  keyOf Selection { selectionName , selectionAlias } = fromMaybe selectionName selectionAlias
+  keyOf (InlineFragment fr) = fragmentType fr
+  keyOf (Spread ref) = refName ref
 
 instance NameCollision (Selection s) where
   -- TODO: real error
   nameCollision _ Selection { selectionName } = GQLError 
     { message   = "There can be only one Selection named \"" <> selectionName <> "\"."
+    , locations = []
+    }
+  nameCollision name _ = GQLError { 
+      message   = "There can be only one Selection named \"" <> name <> "\"."
     , locations = []
     }
 

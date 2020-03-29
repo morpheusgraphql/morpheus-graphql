@@ -40,9 +40,6 @@ class Empty a where
 instance Empty (HashMap k v) where
   empty = HM.empty
 
-class ConcatM (c :: * -> *) where
-  concatM :: c (c a) -> c a
-
 class Selectable c a | c -> a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
 
