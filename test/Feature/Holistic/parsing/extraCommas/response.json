@@ -1,56 +1,11 @@
 {
   "errors": [
     {
-      "message": "There can be only one Selection named \"user\".",
+      "message": "Required Argument: \"coordinates\" was not Defined",
       "locations": [
         {
-          "line": 4,
-          "column": 10
-        }
-      ]
-    },
-    {
-      "message": "There can be only one Selection named \"user\".",
-      "locations": [
-        {
-          "line": 6,
-          "column": 10
-        }
-      ]
-    },
-    {
-      "message": "There can be only one Selection named \"user\".",
-      "locations": [
-        {
-          "line": 8,
-          "column": 10
-        }
-      ]
-    },
-    {
-      "message": "There can be only one Selection named \"user\".",
-      "locations": [
-        {
-          "line": 13,
-          "column": 10
-        }
-      ]
-    },
-    {
-      "message": "There can be only one Selection named \"user\".",
-      "locations": [
-        {
-          "line": 17,
-          "column": 10
-        }
-      ]
-    },
-    {
-      "message": "There can be only one Selection named \"user\".",
-      "locations": [
-        {
-          "line": 21,
-          "column": 10
+          "line": 2,
+          "column": 18
         }
       ]
     }
