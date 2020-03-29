@@ -10,6 +10,7 @@
 
 module Data.Morpheus.Validation.Query.UnionSelection
   ( validateUnionSelection
+  , validate__typename
   )
 where
 
@@ -40,7 +41,12 @@ import           Data.Morpheus.Types.Internal.AST
 import qualified Data.Morpheus.Types.Internal.AST.SelectionMap as SMap
                                                 ( join )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( Listable(..) )
+                                                ( Listable(..) 
+                                                , selectOr
+                                                , empty
+                                                , singleton
+                                                , (<:>)
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
@@ -77,7 +83,9 @@ exploreUnionFragments fragments unionTypeName unionTags = splitFrag
 -- ]
 tagUnionFragments
   :: [TypeDef] -> [Fragment] -> [(TypeDef, [Fragment])]
-tagUnionFragments types fragments = filter notEmpty $ map categorizeType types
+tagUnionFragments types fragments 
+    = filter notEmpty 
+    $ map categorizeType types
  where
   notEmpty = not . null . snd
   categorizeType :: (Name, FieldsDefinition) -> (TypeDef, [Fragment])
@@ -119,15 +127,19 @@ clusterTypes schema fragments (selectionName,selectionPosition,_) selectionSet (
  -}
 validateCluster
       :: (TypeDef -> RawSelectionSet -> Validation (SelectionSet VALID))
+      -> SelectionSet VALID
       -> [(TypeDef, [Fragment])]
       -> Validation (SelectionContent VALID)
-validateCluster validator = traverse _validateCluster >=> fmap UnionSelection . fromList
+validateCluster validator __typename = traverse _validateCluster >=> fmap UnionSelection . fromList
  where
   _validateCluster :: (TypeDef, [Fragment]) -> Validation UnionTag
   _validateCluster  (unionType, fragmets) = do
-        fragmentSelections <- SMap.join $ map fragmentSelection fragmets
+        fragmentSelections <- SMap.join (map fragmentSelection fragmets)
         selection <- validator unionType fragmentSelections
-        pure $ UnionTag (fst unionType) selection
+        UnionTag (fst unionType) <$> (__typename <:> selection)
+
+validate__typename :: Selection RAW -> Selection VALID
+validate__typename Selection {selectionArguments, selectionContent , ..} = Selection {selectionArguments = empty, ..} 
 
 validateUnionSelection 
     :: (TypeDef -> RawSelectionSet -> Validation (SelectionSet VALID)) 
@@ -138,10 +150,11 @@ validateUnionSelection
     -> TypeFieldDef 
     -> Validation (SelectionContent VALID)
 validateUnionSelection validate schema fragments selectionDef selectionSet typeField  = do
+    let (__typename :: SelectionSet VALID) = selectOr empty (singleton . validate__typename) "__typename" selectionSet
     categories <- clusterTypes 
         schema 
         fragments
         selectionDef
         selectionSet 
         typeField
-    validateCluster validate categories
+    validateCluster validate __typename categories 
