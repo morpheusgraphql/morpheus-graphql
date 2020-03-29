@@ -8,7 +8,6 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE UndecidableInstances       #-}
@@ -67,6 +66,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , ValidArguments
                                                 , ValidOperation
                                                 , UnionSelection
+                                                , UnionTag(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Message
@@ -331,7 +331,7 @@ instance Semigroup (DataResolver o e m) where
   _           <> _           = InvalidRes "can't merge: incompatible resolvers"
 
 pickSelection :: Name -> UnionSelection -> ValidSelectionSet
-pickSelection = selectOr empty id
+pickSelection = selectOr empty unionTagSelection
 
 resolve__typename
   :: (Monad m, LiftOperation o)
@@ -351,7 +351,7 @@ resolveEnum typeName enum (UnionSelection selections) = resolveObject
   resolvers
  where
   enumObjectTypeName = typeName <> "EnumObject"
-  currentSelection   = selectOr empty id enumObjectTypeName selections
+  currentSelection   = pickSelection enumObjectTypeName selections
   resolvers          = ObjectRes
     [ ("enum", pure $ gqlString enum)
     , resolve__typename enumObjectTypeName

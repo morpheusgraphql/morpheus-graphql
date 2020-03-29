@@ -54,6 +54,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , removeDuplicates
                                                 , Position
                                                 , GQLErrors
+                                                , UnionTag(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -191,7 +192,7 @@ operationTypes lib variables = genOperation
         subTypesBySelection dType Selection { selectionContent = UnionSelection unionSelections }
           = do
             (tCons, subTypes, requests) <-
-              unzip3 <$> traverse getUnionType (toAssoc unionSelections)
+              unzip3 <$> traverse getUnionType (toList unionSelections)
             pure
               ( ClientType
                   { clientType = TypeD { tNamespace = fieldPath
@@ -205,7 +206,7 @@ operationTypes lib variables = genOperation
               , concat requests
               )
          where
-          getUnionType (selectedTyName, selectionVariant) = do
+          getUnionType (UnionTag selectedTyName selectionVariant) = do
             conDatatype <- getType lib selectedTyName
             genConsD selectedTyName conDatatype selectionVariant
 

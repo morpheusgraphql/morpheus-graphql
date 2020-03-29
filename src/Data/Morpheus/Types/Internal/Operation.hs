@@ -40,6 +40,9 @@ class Empty a where
 instance Empty (HashMap k v) where
   empty = HM.empty
 
+class ConcatM (c :: * -> *) where
+  concatM :: c (c a) -> c a
+
 class Selectable c a | c -> a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
 
@@ -87,7 +90,7 @@ keys :: Listable c a  => c -> [Name]
 keys = map fst . toAssoc
 
 class Join a where 
-  join :: (Monad m, Failure GQLErrors m) => a -> a -> m a
+  (<:>) :: (Monad m, Failure GQLErrors m) => a -> a -> m a
 
 class Applicative f => Failure error (f :: * -> *) where
   failure :: error -> f v

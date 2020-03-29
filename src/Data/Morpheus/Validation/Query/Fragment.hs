@@ -83,26 +83,26 @@ usedFragments fragments = concatMap (findAllUses . snd)
   findAllUses :: RawSelection -> [Node]
   findAllUses Selection { selectionContent = SelectionField } = []
   findAllUses Selection { selectionContent = SelectionSet selectionSet } =
-    concatMap (findAllUses . snd) selectionSet
+    concatMap findAllUses selectionSet
   findAllUses (InlineFragment Fragment { fragmentSelection }) =
-    concatMap (findAllUses . snd) fragmentSelection
+    concatMap findAllUses fragmentSelection
   findAllUses (Spread Ref { refName, refPosition }) =
     [Ref refName refPosition] <> searchInFragment
    where
     searchInFragment = selectOr 
       [] 
-      (concatMap (findAllUses . snd) . fragmentSelection) 
+      (concatMap findAllUses . fragmentSelection) 
       refName 
       fragments
 
-scanForSpread :: (Text, RawSelection) -> [Node]
-scanForSpread (_, Selection { selectionContent = SelectionField }) = []
-scanForSpread (_, Selection { selectionContent = SelectionSet selectionSet }) =
+scanForSpread :: RawSelection -> [Node]
+scanForSpread Selection { selectionContent = SelectionField } = []
+scanForSpread Selection { selectionContent = SelectionSet selectionSet } =
   concatMap scanForSpread selectionSet
-scanForSpread (_, InlineFragment Fragment { fragmentSelection = selection' }) =
-  concatMap scanForSpread selection'
-scanForSpread (_, Spread Ref { refName = name', refPosition = position' }) =
-  [Ref name' position']
+scanForSpread (InlineFragment Fragment { fragmentSelection }) =
+  concatMap scanForSpread fragmentSelection
+scanForSpread (Spread Ref { refName, refPosition }) =
+  [Ref refName refPosition]
 
 validateFragment :: Schema -> Fragment -> Validation NodeEdges
 validateFragment lib  Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }

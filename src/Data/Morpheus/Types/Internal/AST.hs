@@ -161,6 +161,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLError(..)
   , GQLErrors
   , ObjectEntry(..)
+  , UnionTag(..)
   )
 where
 

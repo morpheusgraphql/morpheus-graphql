@@ -329,6 +329,10 @@ fromOperation :: Maybe TypeDefinition -> [(Name, TypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype,datatype)]
 fromOperation Nothing = []
 
+
+-- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
+-- for example 
+-- User | Admin | Product
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)
   => Position
@@ -410,7 +414,7 @@ unsafeFromFields :: [FieldDefinition] -> FieldsDefinition
 unsafeFromFields = FieldsDefinition . unsafeFromValues
 
 instance Join FieldsDefinition where
-  join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
+  (FieldsDefinition x) <:> (FieldsDefinition y) = FieldsDefinition <$> x <:> y
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
@@ -480,10 +484,9 @@ lookupSelectionField
   :: Failure GQLErrors Validation
   => Position
   -> Name
-  -> Name
-  -> FieldsDefinition
+  -> (Name, FieldsDefinition)
   -> Validation FieldDefinition
-lookupSelectionField position fieldName typeName = selectBy gqlError fieldName 
+lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
   where gqlError = cannotQueryField fieldName typeName position
 
 lookupFieldAsSelectionSet

@@ -37,6 +37,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , getOperationName
   , getOperationDataType
   , getOperationObject
+  , UnionTag(..)
   )
 where
 
@@ -123,7 +124,17 @@ deriving instance Lift (SelectionContent a)
 type RawSelectionRec = SelectionContent RAW
 type ValidSelectionRec = SelectionContent VALID
 
-type UnionSelection = SelectionMap (SelectionSet VALID)
+data UnionTag = UnionTag {
+  unionTagName :: Name,
+  unionTagSelection :: SelectionSet VALID
+} deriving (Show, Lift)
+
+instance KeyOf UnionTag where
+  keyOf = unionTagName
+
+instance NameCollision UnionTag where
+
+type UnionSelection = SelectionMap UnionTag
 
 type SelectionSet s = SelectionMap  (Selection s)
 

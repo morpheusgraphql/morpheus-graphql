@@ -14,6 +14,8 @@ module Data.Morpheus.Types.Internal.AST.SelectionMap
     , traverseWithKey
     , foldWithKey
     , toOrderedMap
+    , concatTraverse
+    , join
     )
 where 
 
@@ -48,6 +50,16 @@ data SelectionMap a = SelectionMap {
     mapEntries :: HashMap Name a 
   } deriving (Show, Functor)
 
+concatTraverse :: (NameCollision b , Monad m, Failure GQLErrors m) => (a -> m (SelectionMap b)) -> SelectionMap a -> m (SelectionMap b)
+concatTraverse f smap = traverse f (toList smap) >>= join 
+
+join :: (NameCollision a , Monad m, Failure GQLErrors m) => [SelectionMap a] -> m (SelectionMap a)
+join = __join empty
+ where
+  __join :: (NameCollision a , Monad m, Failure GQLErrors m) => SelectionMap a ->[SelectionMap a] -> m (SelectionMap a)
+  __join acc [] = pure acc
+  __join acc (x:xs) = acc <:> x >>= (`__join` xs)
+
 toOrderedMap :: SelectionMap a -> OM.OrderedMap a
 toOrderedMap (SelectionMap name entries) = OM.OrderedMap name entries
 
@@ -68,7 +80,7 @@ instance Traversable SelectionMap where
   traverse f (SelectionMap names values) = SelectionMap names <$> traverse f values
 
 instance NameCollision a => Join (SelectionMap a) where 
-  join (SelectionMap k1 x) (SelectionMap k2 y) = SelectionMap (k1 <> k2) <$> safeJoin x y
+  (SelectionMap k1 x) <:> (SelectionMap k2 y) = SelectionMap (k1 <> k2) <$> safeJoin x y
 
 instance Empty (SelectionMap a) where 
   empty = SelectionMap [] HM.empty
