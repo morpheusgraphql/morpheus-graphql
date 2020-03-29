@@ -38,6 +38,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , RAW
                                                 , VALID
+                                                , Arguments
+                                                , Position
                                                 , isEntNode
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField
@@ -81,20 +83,21 @@ validateSelectionSet lib fragments operatorName variables = __validate
    where
     -- getValidationData :: Name -> Arguments RAW -> Position -> (FieldDefinition, TypeContent, Arguments VALID)
     getValidationData key selectionArguments selectionPosition = do
-      selectionField <- lookupSelectionField selectionPosition key dataType
+      (fieldDef :: FieldDefinition) <- lookupSelectionField selectionPosition key dataType
+      let feildTypeName = typeConName $ fieldType fieldDef
       -- validate field Argument -----
-      arguments <- validateArguments lib
+      (arguments ::Arguments VALID) <- validateArguments lib
                                      operatorName
                                      variables
-                                     selectionField
+                                     fieldDef
                                      selectionPosition
                                      selectionArguments
       -- check field Type existence  -----
-      fieldDataType <- selectBy
-        (unknownType (typeConName $fieldType selectionField) selectionPosition) 
-        (typeConName $ fieldType selectionField)
-        lib
-      pure (selectionField, typeContent fieldDataType, arguments)
+      (typeCont :: TypeContent) <- typeContent <$> selectBy
+            (unknownType feildTypeName selectionPosition) 
+            feildTypeName 
+            lib
+      pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
     validateSelection :: RawSelection -> Validation ValidSelectionSet
