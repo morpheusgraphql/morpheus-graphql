@@ -73,8 +73,8 @@ instance NameCollision a => Join (SelectionMap a) where
 instance Empty (SelectionMap a) where 
   empty = SelectionMap [] HM.empty
 
-instance Singleton (SelectionMap a) a where
-  singleton name = SelectionMap [name] . HM.singleton name 
+instance (KeyOf a) => Singleton (SelectionMap a) a where
+  singleton x = SelectionMap [keyOf x] $ HM.singleton (keyOf x) x
 
 instance Selectable (SelectionMap a) a where 
   selectOr fb f key SelectionMap { mapEntries } = maybe fb f (HM.lookup key mapEntries)

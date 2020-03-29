@@ -67,8 +67,8 @@ instance NameCollision a => Join (OrderedMap a) where
 instance Empty (OrderedMap a) where 
   empty = OrderedMap [] HM.empty
 
-instance Singleton (OrderedMap a) a where
-  singleton name = OrderedMap [name] . HM.singleton name 
+instance (KeyOf a) => Singleton (OrderedMap a) a where
+  singleton x = OrderedMap [keyOf x] $ HM.singleton (keyOf x) x 
 
 instance Selectable (OrderedMap a) a where 
   selectOr fb f key OrderedMap { mapEntries } = maybe fb f (HM.lookup key mapEntries)

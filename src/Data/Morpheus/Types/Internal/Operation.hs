@@ -59,8 +59,8 @@ member = selectOr False toTrue
     toTrue _ = True
 
 
-class Singleton c a where
-  singleton  :: Name -> a -> c
+class KeyOf a => Singleton c a | c -> a where
+  singleton  :: a -> c
 
 class KeyOf a where 
   keyOf :: a -> Name

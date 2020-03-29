@@ -416,7 +416,7 @@ instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
 instance Singleton  FieldsDefinition FieldDefinition  where 
-  singleton name = FieldsDefinition . singleton name
+  singleton  = FieldsDefinition . singleton 
 
 instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
@@ -524,7 +524,7 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
 instance Singleton ArgumentsDefinition ArgumentDefinition where
-  singleton name = ArgumentsDefinition Nothing . singleton name
+  singleton = ArgumentsDefinition Nothing . singleton 
 
 instance Listable ArgumentsDefinition ArgumentDefinition where
   toAssoc NoArguments                  = []
