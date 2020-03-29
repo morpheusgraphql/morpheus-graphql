@@ -238,5 +238,9 @@
   {
     "path": "selection/__typename",
     "description": "test __typename on object types"
+  },
+  {
+    "path": "selection/mergeSelection",
+    "description": "merge selection on same fields"
   }
 ]
