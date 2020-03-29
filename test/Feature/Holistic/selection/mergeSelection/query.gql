@@ -3,5 +3,12 @@
     name
     name
     name
+    name2 : name
+    name2 : name
+    name2 : name
+  }
+  user { 
+    name
+    name2 : name
   }
 }
