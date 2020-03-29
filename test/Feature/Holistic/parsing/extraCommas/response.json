@@ -1,32 +1,58 @@
 {
   "errors": [
     {
-      "message": "Required Argument: \"coordinates\" was not Defined",
-      "locations": [{ "line": 2, "column": 18 }]
+      "message": "There can be only one Selection named \"user\".",
+      "locations": [
+        {
+          "line": 4,
+          "column": 10
+        }
+      ]
     },
     {
-      "message": "Required Argument: \"coordinates\" was not Defined",
-      "locations": [{ "line": 4, "column": 18 }]
+      "message": "There can be only one Selection named \"user\".",
+      "locations": [
+        {
+          "line": 6,
+          "column": 10
+        }
+      ]
     },
     {
-      "message": "Required Argument: \"coordinates\" was not Defined",
-      "locations": [{ "line": 6, "column": 18 }]
+      "message": "There can be only one Selection named \"user\".",
+      "locations": [
+        {
+          "line": 8,
+          "column": 10
+        }
+      ]
     },
     {
-      "message": "Required Argument: \"coordinates\" was not Defined",
-      "locations": [{ "line": 10, "column": 9 }]
+      "message": "There can be only one Selection named \"user\".",
+      "locations": [
+        {
+          "line": 13,
+          "column": 10
+        }
+      ]
     },
     {
-      "message": "Required Argument: \"coordinates\" was not Defined",
-      "locations": [{ "line": 14, "column": 14 }]
+      "message": "There can be only one Selection named \"user\".",
+      "locations": [
+        {
+          "line": 17,
+          "column": 10
+        }
+      ]
     },
     {
-      "message": "Required Argument: \"coordinates\" was not Defined",
-      "locations": [{ "line": 18, "column": 15 }]
-    },
-    {
-      "message": "Required Argument: \"coordinates\" was not Defined",
-      "locations": [{ "line": 22, "column": 15 }]
+      "message": "There can be only one Selection named \"user\".",
+      "locations": [
+        {
+          "line": 21,
+          "column": 10
+        }
+      ]
     }
   ]
 }

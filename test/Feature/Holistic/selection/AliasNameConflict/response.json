@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "duplicate selection of key \"name2\" on type \"User\".",
+      "message": "There can be only one Selection named \"name\".",
       "locations": [
         {
           "line": 4,
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "message": "duplicate selection of key \"name2\" on type \"User\".",
+      "message": "There can be only one Selection named \"name\".",
       "locations": [
         {
           "line": 5,

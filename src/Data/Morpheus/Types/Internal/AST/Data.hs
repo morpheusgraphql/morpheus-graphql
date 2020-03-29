@@ -63,7 +63,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , insertType
   , lookupDeprecated
   , lookupDeprecatedReason
-  , checkNameCollision
   , hasArguments
   , lookupWith
   , selectTypeObject
@@ -597,8 +596,3 @@ data ConsD = ConsD
   { cName   :: Name
   , cFields :: [FieldDefinition]
   } deriving (Show)
-
--- Helpers
--------------------------------------------------------------------------
-checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
-checkNameCollision names toError = uniqueElemOr (failure . toError) names

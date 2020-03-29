@@ -1,7 +1,7 @@
 {
-	"errors": [
+  "errors": [
     {
-      "message": "duplicate selection of key \"email\" on type \"User\".",
+      "message": "There can be only one Selection named \"email\".",
       "locations": [
         {
           "line": 1,

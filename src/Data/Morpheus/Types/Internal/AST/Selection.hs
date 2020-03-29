@@ -163,11 +163,12 @@ instance KeyOf (Selection s) where
   keyOf (InlineFragment fr) = fragmentType fr
   keyOf (Spread ref) = refName ref
 
+
 instance NameCollision (Selection s) where
   -- TODO: real error
-  nameCollision _ Selection { selectionName } = GQLError 
+  nameCollision _ Selection { selectionName , selectionPosition } = GQLError 
     { message   = "There can be only one Selection named \"" <> selectionName <> "\"."
-    , locations = []
+    , locations = [selectionPosition]
     }
   nameCollision name _ = GQLError { 
       message   = "There can be only one Selection named \"" <> name <> "\"."
