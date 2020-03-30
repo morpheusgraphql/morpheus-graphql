@@ -101,7 +101,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , TypeRef(..)
                                                 , Stage
                                                 , VALID
-                                                , uniqueElemOr
                                                 , DataTypeKind(..)
                                                 , DataFingerprint(..)
                                                 , isNullable

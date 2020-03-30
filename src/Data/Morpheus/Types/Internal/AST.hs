@@ -36,7 +36,6 @@ module Data.Morpheus.Types.Internal.AST
   , ResolvedValue
   , Named
   , unpackInputUnion
-  , uniqueElemOr
   , splitDuplicates
   , removeDuplicates
 

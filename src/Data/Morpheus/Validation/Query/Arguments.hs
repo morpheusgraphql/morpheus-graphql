@@ -7,8 +7,7 @@ module Data.Morpheus.Validation.Query.Arguments
   )
 where
 
-import           Data.Foldable                  (traverse_)  
-import           Data.Maybe                     ( maybe )
+import           Data.Foldable                  (traverse_)
 import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
                                                 -- , argumentNameCollision
                                                 , undefinedArgument
