@@ -25,7 +25,6 @@ import           Data.Morpheus.Error.Variable   ( uninitializedVariable
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
-                                                , RawOperation
                                                 , ValidVariables
                                                 , Variable(..)
                                                 , getOperationName
@@ -109,7 +108,7 @@ resolveOperationVariables
   -> Fragments
   -> Variables
   -> VALIDATION_MODE
-  -> RawOperation
+  -> Operation RAW
   -> Validation ValidVariables
 resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArguments }
   = do

@@ -59,10 +59,11 @@ import           Data.Morpheus.Error.Selection  ( subfieldsNotSelected )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Selection(..)
                                                 , SelectionContent(..)
-                                                , UnionTag(..)
                                                 , SelectionSet
-                                                , Operation
+                                                , UnionTag(..)
                                                 , UnionSelection
+                                                , Operation
+                                                , Arguments
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Message

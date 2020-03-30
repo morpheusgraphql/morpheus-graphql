@@ -11,23 +11,21 @@
 module Data.Morpheus.Types.Internal.AST.Selection
   ( Argument(..)
   , Arguments
-  , SelectionSet
-  , SelectionContent(..)
-  , UnionSelection
   , Selection(..)
-  , Fragments
+  , SelectionContent(..)
+  , SelectionSet
+  , UnionTag(..)
+  , UnionSelection
   , Fragment(..)
-  , RawSelectionRec
+  , Fragments
   , Operation(..)
   , Variable(..)
-  , RawOperation
   , VariableDefinitions
   , ValidVariables
   , DefaultValue
   , getOperationName
   , getOperationDataType
   , getOperationObject
-  , UnionTag(..)
   )
 where
 
@@ -106,8 +104,6 @@ deriving instance Show (SelectionContent a)
 deriving instance Eq   (SelectionContent a)
 deriving instance Lift (SelectionContent a)
 
-type RawSelectionRec = SelectionContent RAW
-
 data UnionTag = UnionTag {
   unionTagName :: Name,
   unionTagSelection :: SelectionSet VALID
@@ -183,8 +179,6 @@ data Operation (s:: Stage) = Operation
   , operationSelection :: SelectionSet s
   , operationPosition  :: Position
   } deriving (Show,Lift)
-
-type RawOperation = Operation RAW
 
 getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"

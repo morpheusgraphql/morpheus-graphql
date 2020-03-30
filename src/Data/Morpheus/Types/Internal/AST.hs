@@ -47,12 +47,10 @@ module Data.Morpheus.Types.Internal.AST
   , Selection(..)
   , Fragments
   , Fragment(..)
-  , RawSelectionRec
   , isOutputType
   -- OPERATION
   , Operation(..)
   , Variable(..)
-  , RawOperation
   , VariableDefinitions
   , ValidVariables
   , DefaultValue
@@ -179,7 +177,7 @@ type Variables = Map Key ResolvedValue
 
 data GQLQuery = GQLQuery
   { fragments      :: Fragments
-  , operation      :: RawOperation
+  , operation      :: Operation RAW
   , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)
 
