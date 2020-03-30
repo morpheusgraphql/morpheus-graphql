@@ -27,7 +27,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidSelectionSet
                                                 , Fragment(..)
                                                 , Fragments
-                                                , RawSelection
                                                 , RawSelectionSet
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition(..)
@@ -100,7 +99,7 @@ validateSelectionSet lib fragments operatorName variables = __validate
       pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
-    validateSelection :: RawSelection -> Validation ValidSelectionSet
+    validateSelection :: Selection RAW -> Validation ValidSelectionSet
     validateSelection sel@Selection { selectionName, selectionArguments = selArgs , selectionContent, selectionPosition } 
       = validateSelectionContent selectionContent
       where

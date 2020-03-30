@@ -37,7 +37,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , Fragment(..)
                                                 , RawArguments
-                                                , RawSelection
                                                 , RawSelectionSet
                                                 , Name
                                                 , Position
@@ -68,7 +67,7 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
 -- Field
 -- Alias(opt) Name Arguments(opt) Directives(opt) SelectionSet(opt)
 --
-parseSelectionField :: Parser RawSelection
+parseSelectionField :: Parser (Selection RAW)
 parseSelectionField = label "SelectionField" $ do
   selectionPosition   <- getLocation
   selectionAlias      <- parseAlias
@@ -79,7 +78,7 @@ parseSelectionField = label "SelectionField" $ do
   selSet selectionName selectionAlias selectionArguments <|> pure Selection { selectionContent   = SelectionField, ..}
  where
   -----------------------------------------
-  selSet :: Name -> Maybe Name -> RawArguments -> Parser RawSelection
+  selSet :: Name -> Maybe Name -> RawArguments -> Parser (Selection RAW)
   selSet selectionName selectionAlias selectionArguments = label "body" $ do
     selectionPosition <- getLocation
     selectionSet      <- parseSelectionSet
@@ -94,7 +93,7 @@ parseSelectionField = label "SelectionField" $ do
 --  FragmentSpread
 --    ...FragmentName Directives(opt)
 --
-spread :: Parser RawSelection
+spread :: Parser (Selection RAW)
 spread = label "FragmentSpread" $ do
   refPosition <- spreadLiteral
   refName     <- token
@@ -119,7 +118,7 @@ parseFragmentDefinition = label "FragmentDefinition" $ do
 --  InlineFragment:
 --  ... TypeCondition(opt) Directives(opt) SelectionSet
 --
-inlineFragment :: Parser RawSelection
+inlineFragment :: Parser (Selection RAW)
 inlineFragment = label "InlineFragment" $ do
   fragmentPosition  <- spreadLiteral
   InlineFragment <$> fragmentBody "INLINE_FRAGMENT" fragmentPosition

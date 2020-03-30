@@ -24,7 +24,6 @@ import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , Fragments
-                                                , RawSelection
                                                 , SelectionContent(..)
                                                 , Selection(..)
                                                 , Ref(..)
@@ -80,10 +79,10 @@ resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
   getFragment reference fragments
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
-usedFragments :: Fragments -> [(Text, RawSelection)] -> [Node]
+usedFragments :: Fragments -> [(Text, Selection RAW)] -> [Node]
 usedFragments fragments = concatMap (findAllUses . snd)
  where
-  findAllUses :: RawSelection -> [Node]
+  findAllUses :: Selection RAW -> [Node]
   findAllUses Selection { selectionContent = SelectionField } = []
   findAllUses Selection { selectionContent = SelectionSet selectionSet } =
     concatMap findAllUses selectionSet
@@ -98,7 +97,7 @@ usedFragments fragments = concatMap (findAllUses . snd)
       refName 
       fragments
 
-scanForSpread :: RawSelection -> [Node]
+scanForSpread :: Selection RAW -> [Node]
 scanForSpread Selection { selectionContent = SelectionField } = []
 scanForSpread Selection { selectionContent = SelectionSet selectionSet } =
   concatMap scanForSpread selectionSet

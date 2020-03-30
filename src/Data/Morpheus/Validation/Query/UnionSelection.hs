@@ -23,7 +23,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionContent(..)
                                                 , Fragment(..)
                                                 , Fragments
-                                                , RawSelection
                                                 , RawSelectionSet
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition(..)
@@ -60,13 +59,13 @@ exploreUnionFragments
   :: Fragments
   -> Name
   -> [Name]
-  -> RawSelection
+  -> Selection RAW
   -> Validation [Fragment]
 exploreUnionFragments fragments unionTypeName unionTags = splitFrag
  where
   packFragment fragment = [fragment]
   splitFrag
-    :: RawSelection -> Validation [Fragment]
+    :: Selection RAW -> Validation [Fragment]
   splitFrag (Spread ref) = packFragment <$> resolveSpread fragments unionTags ref 
   splitFrag Selection { selectionName = "__typename",selectionContent = SelectionField } = pure []
   splitFrag Selection { selectionName, selectionPosition } =

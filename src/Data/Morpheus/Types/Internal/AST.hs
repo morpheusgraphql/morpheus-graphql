@@ -47,7 +47,6 @@ module Data.Morpheus.Types.Internal.AST
   , SelectionContent(..)
   , ValidSelection
   , Selection(..)
-  , RawSelection
   , Fragments
   , RawArguments
   , RawSelectionSet

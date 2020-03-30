@@ -16,7 +16,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , UnionSelection
   , ValidSelection
   , Selection(..)
-  , RawSelection
   , Fragments
   , RawArguments
   , RawSelectionSet
@@ -85,8 +84,7 @@ import          Data.Morpheus.Types.Internal.Operation
                                                 , Join(..)
                                                 )
 import          Data.Morpheus.Error.NameCollision
-                                                ( NameCollision(..) )
-import          Debug.Trace                      
+                                                ( NameCollision(..) )   
 
 data Fragment = Fragment
   { fragmentName      :: Name
@@ -192,8 +190,6 @@ deriving instance Show (Selection a)
 deriving instance Lift (Selection a)
 deriving instance Eq (Selection a)
 
-
-type RawSelection = Selection RAW
 type ValidSelection = Selection VALID
 
 type DefaultValue = Maybe ResolvedValue
@@ -215,7 +211,6 @@ data Operation (s:: Stage) = Operation
 type RawOperation = Operation RAW
 
 type ValidOperation = Operation VALID
-
 
 getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
@@ -242,4 +237,3 @@ getOperationDataType Operation { operationType = Subscription, operationPosition
   = case subscription lib of
     Just x -> pure x
     Nothing -> failure $ subscriptionIsNotDefined operationPosition
-
