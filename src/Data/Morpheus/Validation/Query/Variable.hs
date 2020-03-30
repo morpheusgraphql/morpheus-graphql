@@ -54,8 +54,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST.SelectionMap
-                                                ( concatTraverse )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (Listable(..))
 import           Data.Morpheus.Types.Internal.Resolving

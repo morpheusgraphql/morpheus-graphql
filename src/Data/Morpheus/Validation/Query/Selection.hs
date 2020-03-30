@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupFieldAsSelectionSet
                                                 , lookupSelectionField
                                                 )
-import           Data.Morpheus.Types.Internal.AST.SelectionMap
+import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 ( concatTraverse )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectBy 
