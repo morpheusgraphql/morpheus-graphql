@@ -59,13 +59,9 @@ import           Data.Morpheus.Error.Selection  ( subfieldsNotSelected )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Selection(..)
                                                 , SelectionContent(..)
-                                                , Arguments(..)
                                                 , UnionTag(..)
-                                                , ValidSelection
-                                                , ValidSelectionRec
                                                 , SelectionSet
-                                                , ValidSelection
-                                                , ValidOperation
+                                                , Operation
                                                 , UnionSelection
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
@@ -123,9 +119,9 @@ data ResponseEvent m event
 type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
 
 data Context = Context {
-  currentSelection :: ValidSelection,
+  currentSelection :: Selection VALID,
   schema :: Schema,
-  operation :: ValidOperation
+  operation :: Operation VALID
 } deriving (Show)
 
 -- Resolver Internal State
@@ -159,10 +155,10 @@ mapResolverState ::
 mapResolverState f (ResolverState x) = ResolverState (f x)
 
 
-getState :: (Monad m) => ResolverState e m ValidSelection
+getState :: (Monad m) => ResolverState e m (Selection VALID)
 getState = ResolverState $ currentSelection <$> ask 
 
-setState :: ValidSelection -> ResolverState e m a -> ResolverState e m a
+setState :: Selection VALID -> ResolverState e m a -> ResolverState e m a
 setState currentSelection = mapResolverState (withReaderT (\ctx -> ctx { currentSelection } ))
 
 -- clear evets and starts new resolver with diferenct type of events but with same value
@@ -170,7 +166,7 @@ setState currentSelection = mapResolverState (withReaderT (\ctx -> ctx { current
 clearStateResolverEvents :: (Functor m) => ResolverState e1 m a -> ResolverState e2 m a
 clearStateResolverEvents = mapResolverState (mapReaderT cleanEvents)
 
-resolverFailureMessage :: ValidSelection -> Message -> GQLError
+resolverFailureMessage :: Selection VALID -> Message -> GQLError
 resolverFailureMessage Selection { selectionName, selectionPosition } message = GQLError
   { message   = "Failure on Resolving Field \"" <> selectionName <> "\": " <> message
   , locations = [selectionPosition]
@@ -249,7 +245,7 @@ instance LiftOperation SUBSCRIPTION where
     value <- clearStateResolverEvents ctxRes
     runResolverS $ toRes value
 
-setSelection :: Monad m => ValidSelection -> Resolver o e m a -> Resolver o e m a 
+setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m a 
 setSelection sel (ResolverQ res)  = ResolverQ (setState sel res)
 setSelection sel (ResolverM res)  = ResolverM (setState sel res) 
 setSelection sel (ResolverS resM)  = ResolverS $ do
@@ -343,7 +339,7 @@ resolveEnum
   :: (Monad m, LiftOperation o)
   => Name
   -> Name
-  -> ValidSelectionRec
+  -> SelectionContent VALID
   -> Resolver o e m ValidValue
 resolveEnum _        enum SelectionField              = pure $ gqlString enum
 resolveEnum typeName enum (UnionSelection selections) = resolveObject
@@ -362,7 +358,7 @@ resolveEnum _ _ _ =
 withObject
   :: (LiftOperation o, Monad m)
   => (SelectionSet VALID -> Resolver o e m value)
-  -> (Key, ValidSelection)
+  -> (Key, Selection VALID)
   -> Resolver o e m value
 withObject f (key, Selection { selectionContent , selectionPosition }) = checkContent selectionContent
  where
@@ -372,7 +368,7 @@ withObject f (key, Selection { selectionContent , selectionPosition }) = checkCo
 lookupRes :: (LiftOperation o, Monad m) => Name -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
 lookupRes key = fromMaybe (pure gqlNull) . lookup key 
 
-outputSelectionName :: ValidSelection -> Name
+outputSelectionName :: Selection VALID -> Name
 outputSelectionName Selection { selectionName, selectionAlias } = fromMaybe selectionName selectionAlias
 
 resolveObject
@@ -383,7 +379,7 @@ resolveObject
 resolveObject selectionSet (ObjectRes resolvers) =
   Object . toOrderedMap <$> traverse resolver selectionSet
  where
-  resolver :: ValidSelection -> Resolver o e m (ObjectEntry VALID)
+  resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
   resolver sel = setSelection sel $ ObjectEntry (outputSelectionName sel) <$> lookupRes (selectionName sel) resolvers
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"

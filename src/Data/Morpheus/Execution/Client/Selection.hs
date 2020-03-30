@@ -28,13 +28,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , RAW
                                                 , VALID
-                                                , ValidOperation
                                                 , Variable(..)
                                                 , VariableDefinitions
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , SelectionSet
-                                                , ValidSelection
                                                 , Ref(..)
                                                 , FieldDefinition(..)
                                                 , TypeContent(..)
@@ -77,7 +75,7 @@ compileError x =
 operationTypes
   :: Schema
   -> VariableDefinitions
-  -> ValidOperation
+  -> Operation VALID
   -> Validation (Maybe TypeD, [ClientType])
 operationTypes lib variables = genOperation
  where
@@ -152,7 +150,7 @@ operationTypes lib variables = genOperation
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
      where
       genField
-        :: ValidSelection
+        :: Selection VALID
         -> Validation (FieldDefinition, [ClientType], [Text])
       genField 
           sel@Selection 
@@ -183,7 +181,7 @@ operationTypes lib variables = genOperation
         fieldName = fromMaybe selectionName selectionAlias
         ------------------------------------------
         subTypesBySelection
-          :: TypeDefinition -> ValidSelection -> Validation ([ClientType], [Text])
+          :: TypeDefinition -> Selection VALID -> Validation ([ClientType], [Text])
         subTypesBySelection dType Selection { selectionContent = SelectionField }
           = leafType dType
           --withLeaf buildLeaf dType

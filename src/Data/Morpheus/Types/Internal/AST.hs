@@ -44,17 +44,14 @@ module Data.Morpheus.Types.Internal.AST
   , Arguments
   , SelectionSet
   , SelectionContent(..)
-  , ValidSelection
   , Selection(..)
   , Fragments
   , Fragment(..)
   , RawSelectionRec
-  , ValidSelectionRec
   , isOutputType
   -- OPERATION
   , Operation(..)
   , Variable(..)
-  , ValidOperation
   , RawOperation
   , VariableDefinitions
   , ValidVariables

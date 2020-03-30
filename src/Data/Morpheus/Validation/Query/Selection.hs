@@ -23,7 +23,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Selection(..)
                                                 , SelectionContent(..)
-                                                , ValidSelection
                                                 , Fragment(..)
                                                 , Fragments
                                                 , SelectionSet
@@ -105,7 +104,7 @@ validateSelectionSet lib fragments operatorName variables = __validate
         validateSelectionContent :: SelectionContent RAW -> Validation (SelectionSet VALID)
         validateSelectionContent SelectionField = singleton <$> selectField
          where
-          selectField :: Validation ValidSelection
+          selectField :: Validation (Selection VALID)
           selectField 
             | null selArgs && selectionName == "__typename" 
               = pure $ sel { selectionArguments = empty, selectionContent = SelectionField }

@@ -11,7 +11,7 @@ where
 import           Data.Map                       ( fromList )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
-                                                , ValidOperation
+                                                , VALID
                                                 , getOperationName
                                                 , getOperationObject
                                                 , Schema(..)
@@ -31,7 +31,7 @@ import           Data.Morpheus.Validation.Query.Variable
 
 
 validateRequest
-  :: Schema -> VALIDATION_MODE -> GQLQuery -> Validation ValidOperation
+  :: Schema -> VALIDATION_MODE -> GQLQuery -> Validation (Operation VALID)
 validateRequest lib validationMode GQLQuery { fragments, inputVariables, operation = rawOperation@Operation { operationName, operationType, operationSelection, operationPosition } }
   = do
     operationDataType <-  getOperationObject rawOperation lib
