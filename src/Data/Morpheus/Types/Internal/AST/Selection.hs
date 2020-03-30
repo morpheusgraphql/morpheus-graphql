@@ -110,9 +110,7 @@ data UnionTag = UnionTag {
 } deriving (Show, Eq, Lift)
 
 instance Join UnionTag where 
-  old <:> current 
-    | old == current = pure old
-    | otherwise = failure [nameCollision (keyOf current) current]
+  _ <:> current = failure [nameCollision (keyOf current) current]
 
 instance KeyOf UnionTag where
   keyOf = unionTagName
@@ -145,9 +143,7 @@ instance KeyOf (Selection s) where
   keyOf (Spread ref) = refName ref
 
 instance Join (Selection a) where 
-  old <:> current 
-    | old == current = pure old
-    | otherwise = failure [nameCollision (keyOf current) current]
+  _ <:> current = failure [nameCollision (keyOf current) current]
 
 instance NameCollision (Selection s) where
   -- TODO: real error
