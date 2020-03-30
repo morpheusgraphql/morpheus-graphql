@@ -48,7 +48,6 @@ module Data.Morpheus.Types.Internal.AST
   , Selection(..)
   , Fragments
   , Fragment(..)
-  , ValidSelectionSet
   , RawSelectionRec
   , ValidSelectionRec
   , isOutputType

@@ -24,7 +24,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , ValidSelection
-                                                , ValidSelectionSet
                                                 , Fragment(..)
                                                 , Fragments
                                                 , SelectionSet
@@ -73,11 +72,11 @@ validateSelectionSet
   -> ValidVariables
   -> TypeDef
   -> SelectionSet RAW
-  -> Validation ValidSelectionSet
+  -> Validation (SelectionSet VALID)
 validateSelectionSet lib fragments operatorName variables = __validate
  where
   __validate
-    :: TypeDef -> SelectionSet RAW -> Validation ValidSelectionSet
+    :: TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)
   __validate dataType@(typeName,_) = concatTraverse validateSelection 
    where
     commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeContent, Arguments VALID)
@@ -99,11 +98,11 @@ validateSelectionSet lib fragments operatorName variables = __validate
       pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
-    validateSelection :: Selection RAW -> Validation ValidSelectionSet
+    validateSelection :: Selection RAW -> Validation (SelectionSet VALID)
     validateSelection sel@Selection { selectionName, selectionArguments = selArgs , selectionContent, selectionPosition } 
       = validateSelectionContent selectionContent
       where
-        validateSelectionContent :: SelectionContent RAW -> Validation ValidSelectionSet
+        validateSelectionContent :: SelectionContent RAW -> Validation (SelectionSet VALID)
         validateSelectionContent SelectionField = singleton <$> selectField
          where
           selectField :: Validation ValidSelection

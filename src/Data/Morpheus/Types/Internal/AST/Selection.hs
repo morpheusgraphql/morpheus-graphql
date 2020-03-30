@@ -18,7 +18,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , Selection(..)
   , Fragments
   , Fragment(..)
-  , ValidSelectionSet
+
   , RawSelectionRec
   , ValidSelectionRec
   , Operation(..)
@@ -136,9 +136,6 @@ instance NameCollision UnionTag where
 type UnionSelection = MergeSet UnionTag
 
 type SelectionSet s = MergeSet  (Selection s)
-
-type ValidSelectionSet = SelectionSet VALID
-
 
 data Selection (s :: Stage) where
     Selection ::

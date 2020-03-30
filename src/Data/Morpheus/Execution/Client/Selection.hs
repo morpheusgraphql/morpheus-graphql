@@ -27,12 +27,13 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , Name
                                                 , RAW
+                                                , VALID
                                                 , ValidOperation
                                                 , Variable(..)
                                                 , VariableDefinitions
                                                 , Selection(..)
                                                 , SelectionContent(..)
-                                                , ValidSelectionSet
+                                                , SelectionSet
                                                 , ValidSelection
                                                 , Ref(..)
                                                 , FieldDefinition(..)
@@ -124,7 +125,7 @@ operationTypes lib variables = genOperation
     :: [Name]
     -> Name
     -> TypeDefinition
-    -> ValidSelectionSet
+    -> SelectionSet VALID
     -> Validation ([ClientType], [Name])
   genRecordType path tName dataType recordSelSet = do
     (con, subTypes, requests) <- genConsD tName dataType recordSelSet
@@ -144,7 +145,7 @@ operationTypes lib variables = genOperation
     genConsD
       :: Name
       -> TypeDefinition
-      -> ValidSelectionSet
+      -> SelectionSet VALID
       -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
       (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)

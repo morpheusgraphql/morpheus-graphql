@@ -63,7 +63,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , UnionTag(..)
                                                 , ValidSelection
                                                 , ValidSelectionRec
-                                                , ValidSelectionSet
+                                                , SelectionSet
                                                 , ValidSelection
                                                 , ValidOperation
                                                 , UnionSelection
@@ -330,7 +330,7 @@ instance Semigroup (DataResolver o e m) where
   ObjectRes x <> ObjectRes y = ObjectRes (x <> y)
   _           <> _           = InvalidRes "can't merge: incompatible resolvers"
 
-pickSelection :: Name -> UnionSelection -> ValidSelectionSet
+pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
 
 resolve__typename
@@ -361,7 +361,7 @@ resolveEnum _ _ _ =
 
 withObject
   :: (LiftOperation o, Monad m)
-  => (ValidSelectionSet -> Resolver o e m value)
+  => (SelectionSet VALID -> Resolver o e m value)
   -> (Key, ValidSelection)
   -> Resolver o e m value
 withObject f (key, Selection { selectionContent , selectionPosition }) = checkContent selectionContent
@@ -377,7 +377,7 @@ outputSelectionName Selection { selectionName, selectionAlias } = fromMaybe sele
 
 resolveObject
   :: forall o e m. (LiftOperation o , Monad m)
-  => ValidSelectionSet
+  => SelectionSet VALID
   -> DataResolver o e m
   -> Resolver o e m ValidValue
 resolveObject selectionSet (ObjectRes resolvers) =
