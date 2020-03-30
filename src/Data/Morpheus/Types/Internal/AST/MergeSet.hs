@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE DeriveLift                 #-}
 
+
 module Data.Morpheus.Types.Internal.AST.MergeSet
     ( MergeSet
     , toOrderedMap
@@ -84,7 +85,20 @@ insertList smap [] = pure smap
 insertList smap (x:xs) = insert smap x >>= (`insertList` xs)
 
 insert :: (Monad m, Eq a, KeyOf a , Join a ,Failure GQLErrors m) => MergeSet a -> a -> m (MergeSet a)
-insert sm@(MergeSet ls) value = do 
-  let oldValue = selectOr value id (keyOf value) sm
-  newValue <- oldValue <:> value
-  pure $ MergeSet $ (ls \\ [oldValue]) <> [newValue]
+insert  mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
+  where
+    __insert = selectOr 
+      (pure $ ls <> [currentValue])
+      mergeWith
+      (keyOf currentValue) 
+      mSet
+    ------------------
+    mergeWith oldValue
+      | oldValue == currentValue = pure ls
+      | otherwise = do 
+          mergedValue <- oldValue <:> currentValue
+          pure $ ( ls \\ [oldValue]) <> [mergedValue]
+
+
+
+  
