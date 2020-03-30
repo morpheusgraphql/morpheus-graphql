@@ -23,10 +23,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Variable(..)
                                                 , Argument(..)
                                                 , ArgumentsDefinition(..)
-                                                , RawArgument
-                                                , RawArguments
-                                                , ValidArgument
-                                                , ValidArguments
                                                 , Arguments
                                                 , Ref(..)
                                                 , Position
@@ -84,12 +80,12 @@ variableByRef operationName variables Ref { refName, refPosition }
 resolveArgumentVariables
   :: Name
   -> ValidVariables
-  -> RawArguments
+  -> Arguments RAW
   -> Validation (Arguments RESOLVED)
 resolveArgumentVariables operationName variables
   = traverse resolveVariable
  where
-  resolveVariable :: RawArgument -> Validation (Argument RESOLVED)
+  resolveVariable :: Argument RAW -> Validation (Argument RESOLVED)
   resolveVariable (Argument key val position) = do 
     constValue <- resolveObject operationName variables val
     pure $ Argument key constValue position
@@ -99,7 +95,7 @@ validateArgument
   -> Position
   -> Arguments RESOLVED
   -> ArgumentDefinition
-  -> Validation ValidArgument
+  -> Validation (Argument VALID)
 validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
   = selectOr 
     handleNullable 
@@ -118,7 +114,7 @@ validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldNa
     | otherwise
     = failure $ undefinedArgument (Ref fieldName fieldPosition)
   -------------------------------------------------------------------------
-  validateArgumentValue :: Argument RESOLVED -> Validation ValidArgument
+  validateArgumentValue :: Argument RESOLVED -> Validation (Argument VALID)
   validateArgumentValue Argument { argumentValue = value, .. } =
     do
       datatype <- lookupInputType typeConName
@@ -141,8 +137,8 @@ validateArguments
   -> ValidVariables
   -> FieldDefinition
   -> Position
-  -> RawArguments
-  -> Validation ValidArguments
+  -> Arguments RAW
+  -> Validation (Arguments VALID)
 validateArguments 
     typeLib 
     operatorName 

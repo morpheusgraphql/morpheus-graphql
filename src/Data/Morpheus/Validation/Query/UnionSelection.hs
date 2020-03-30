@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionContent(..)
                                                 , Fragment(..)
                                                 , Fragments
-                                                , RawSelectionSet
+                                                , SelectionSet
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , Schema(..)
@@ -123,7 +123,7 @@ clusterTypes schema fragments (selectionName,selectionPosition,_) selectionSet (
       ]
  -}
 validateCluster
-      :: (TypeDef -> RawSelectionSet -> Validation (SelectionSet VALID))
+      :: (TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID))
       -> SelectionSet RAW
       -> [(TypeDef, [Fragment])]
       -> Validation (SelectionContent VALID)
@@ -135,7 +135,7 @@ validateCluster validator __typename = traverse _validateCluster >=> fmap UnionS
         UnionTag (fst unionType) <$> validator unionType fragmentSelections
 
 validateUnionSelection 
-    :: (TypeDef -> RawSelectionSet -> Validation (SelectionSet VALID)) 
+    :: (TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)) 
     -> Schema 
     -> Fragments 
     -> SelectionDef RAW 

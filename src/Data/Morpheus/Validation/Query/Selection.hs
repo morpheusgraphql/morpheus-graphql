@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidSelectionSet
                                                 , Fragment(..)
                                                 , Fragments
-                                                , RawSelectionSet
+                                                , SelectionSet
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , TypeContent(..)
@@ -72,12 +72,12 @@ validateSelectionSet
   -> Name
   -> ValidVariables
   -> TypeDef
-  -> RawSelectionSet
+  -> SelectionSet RAW
   -> Validation ValidSelectionSet
 validateSelectionSet lib fragments operatorName variables = __validate
  where
   __validate
-    :: TypeDef -> RawSelectionSet -> Validation ValidSelectionSet
+    :: TypeDef -> SelectionSet RAW -> Validation ValidSelectionSet
   __validate dataType@(typeName,_) = concatTraverse validateSelection 
    where
     commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeContent, Arguments VALID)

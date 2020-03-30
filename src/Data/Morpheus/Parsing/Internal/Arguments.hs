@@ -24,10 +24,9 @@ import           Data.Morpheus.Parsing.Internal.Value
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Argument(..)
-                                                , RawArgument
-                                                , RawArguments
-                                                , ValidArgument
-                                                , OrderedMap
+                                                , Arguments
+                                                , RAW
+                                                , VALID
                                                 )
 
 
@@ -38,26 +37,26 @@ import           Data.Morpheus.Types.Internal.AST
 --
 -- Argument[Const]
 --  Name : Value[Const]
-valueArgument :: Parser RawArgument
+valueArgument :: Parser (Argument RAW)
 valueArgument = 
   label "Argument" $ do
     argumentPosition <- getLocation
     (argumentName, argumentValue )<- parseAssignment token parseRawValue
     pure $ Argument { argumentName, argumentValue, argumentPosition }
 
-parseArgument :: Parser ValidArgument
+parseArgument :: Parser (Argument VALID)
 parseArgument = 
   label "Argument" $ do
     argumentPosition <- getLocation
     (argumentName, argumentValue )<- parseAssignment token parseValue
     pure $ Argument { argumentName, argumentValue, argumentPosition }
 
-parseArgumentsOpt :: Parser (OrderedMap ValidArgument)
+parseArgumentsOpt :: Parser (Arguments VALID)
 parseArgumentsOpt = 
   label "Arguments" 
     $ uniqTupleOpt parseArgument
 
-maybeArguments :: Parser RawArguments
+maybeArguments :: Parser (Arguments RAW)
 maybeArguments = 
   label "Arguments" 
     $ uniqTupleOpt valueArgument

@@ -32,10 +32,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Fragment(..)
                                                 , Fragments
                                                 , Argument(..)
-                                                , RawArgument
                                                 , Selection(..)
                                                 , SelectionContent(..)
-                                                , RawSelectionSet
+                                                , SelectionSet
                                                 , Ref(..)
                                                 , Position
                                                 , TypeDefinition
@@ -80,13 +79,13 @@ instance ExploreRefs RawValue where
   exploreRefs (List          ls    ) = concatMap exploreRefs ls
   exploreRefs _                      = []
 
-instance ExploreRefs RawArgument where
+instance ExploreRefs (Argument RAW) where
   exploreRefs = exploreRefs . argumentValue
 
-mapSelection :: (Selection RAW -> Validation [b]) -> RawSelectionSet -> Validation [b]
+mapSelection :: (Selection RAW -> Validation [b]) -> SelectionSet RAW -> Validation [b]
 mapSelection f = fmap concat . traverse f
 
-allVariableRefs :: Fragments -> [RawSelectionSet] -> Validation [Ref]
+allVariableRefs :: Fragments -> [SelectionSet RAW] -> Validation [Ref]
 allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs) 
  where
   -- | search used variables in every arguments

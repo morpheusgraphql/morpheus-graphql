@@ -47,13 +47,8 @@ module Data.Morpheus.Types.Internal.AST
   , ValidSelection
   , Selection(..)
   , Fragments
-  , RawArguments
-  , RawSelectionSet
   , Fragment(..)
-  , RawArgument
   , ValidSelectionSet
-  , ValidArgument
-  , ValidArguments
   , RawSelectionRec
   , ValidSelectionRec
   , isOutputType

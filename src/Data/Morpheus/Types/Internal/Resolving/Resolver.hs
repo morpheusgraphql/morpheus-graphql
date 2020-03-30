@@ -59,14 +59,14 @@ import           Data.Morpheus.Error.Selection  ( subfieldsNotSelected )
 import           Data.Morpheus.Types.Internal.AST.Selection
                                                 ( Selection(..)
                                                 , SelectionContent(..)
+                                                , Arguments(..)
+                                                , UnionTag(..)
                                                 , ValidSelection
                                                 , ValidSelectionRec
                                                 , ValidSelectionSet
                                                 , ValidSelection
-                                                , ValidArguments
                                                 , ValidOperation
                                                 , UnionSelection
-                                                , UnionTag(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Message
@@ -307,7 +307,7 @@ type FieldRes o e m
 
 toResolver
   :: forall o e m a b. (LiftOperation o, Monad m)
-  => (ValidArguments -> Validation a)
+  => (Arguments VALID -> Validation a)
   -> (a -> Resolver o e m b)
   -> Resolver o e m b
 toResolver toArgs  = withResolver args 

@@ -17,13 +17,8 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , ValidSelection
   , Selection(..)
   , Fragments
-  , RawArguments
-  , RawSelectionSet
   , Fragment(..)
-  , RawArgument
   , ValidSelectionSet
-  , ValidArgument
-  , ValidArguments
   , RawSelectionRec
   , ValidSelectionRec
   , Operation(..)
@@ -90,7 +85,7 @@ data Fragment = Fragment
   { fragmentName      :: Name
   , fragmentType      :: Name
   , fragmentPosition  :: Position
-  , fragmentSelection :: RawSelectionSet
+  , fragmentSelection :: SelectionSet RAW
   } deriving ( Show, Eq, Lift)
 
 instance NameCollision Fragment where
@@ -104,15 +99,7 @@ instance KeyOf Fragment where
 
 type Fragments = OrderedMap Fragment
 
-type RawArgument = Argument RAW
-
-type ValidArgument = Argument VALID
-
 type Arguments a = OrderedMap (Argument a)
-
-type RawArguments = Arguments RAW
-
-type ValidArguments = Arguments VALID
 
 data SelectionContent (valid :: Stage) where
   SelectionField :: SelectionContent valid
@@ -150,7 +137,6 @@ type UnionSelection = MergeSet UnionTag
 
 type SelectionSet s = MergeSet  (Selection s)
 
-type RawSelectionSet = SelectionSet RAW
 type ValidSelectionSet = SelectionSet VALID
 
 

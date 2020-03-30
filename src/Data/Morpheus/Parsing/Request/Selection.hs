@@ -36,9 +36,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionContent(..)
                                                 , Ref(..)
                                                 , Fragment(..)
-                                                , RawArguments
+                                                , Arguments
                                                 , RAW
-                                                , RawSelectionSet
+                                                , SelectionSet
                                                 , Name
                                                 , Position
                                                 )
@@ -54,7 +54,7 @@ import           Data.Morpheus.Types.Internal.AST
 --   FragmentSpread
 --   InlineFragment
 --
-parseSelectionSet :: Parser RawSelectionSet
+parseSelectionSet :: Parser (SelectionSet RAW)
 parseSelectionSet = label "SelectionSet" $ setOf parseSelection
  where
   parseSelection =
@@ -79,7 +79,7 @@ parseSelectionField = label "SelectionField" $ do
   selSet selectionName selectionAlias selectionArguments <|> pure Selection { selectionContent   = SelectionField, ..}
  where
   -----------------------------------------
-  selSet :: Name -> Maybe Name -> RawArguments -> Parser (Selection RAW)
+  selSet :: Name -> Maybe Name -> Arguments RAW -> Parser (Selection RAW)
   selSet selectionName selectionAlias selectionArguments = label "body" $ do
     selectionPosition <- getLocation
     selectionSet      <- parseSelectionSet
