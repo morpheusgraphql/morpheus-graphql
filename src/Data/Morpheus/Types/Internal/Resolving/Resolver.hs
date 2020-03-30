@@ -83,7 +83,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema
                                                 )
-import           Data.Morpheus.Types.Internal.AST.SelectionMap
+import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 (toOrderedMap)
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectOr

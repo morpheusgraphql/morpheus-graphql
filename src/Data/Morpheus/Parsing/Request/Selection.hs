@@ -37,6 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Ref(..)
                                                 , Fragment(..)
                                                 , RawArguments
+                                                , RAW
                                                 , RawSelectionSet
                                                 , Name
                                                 , Position

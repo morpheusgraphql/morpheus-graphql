@@ -75,8 +75,8 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Variable(..)
                                                 , ResolvedValue
                                                 )
-import          Data.Morpheus.Types.Internal.AST.SelectionMap
-                                                ( SelectionMap )
+import          Data.Morpheus.Types.Internal.AST.MergeSet
+                                                ( MergeSet )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap )
 import          Data.Morpheus.Types.Internal.Operation
@@ -146,9 +146,9 @@ instance NameCollision UnionTag where
     , locations = []
     }
 
-type UnionSelection = SelectionMap UnionTag
+type UnionSelection = MergeSet UnionTag
 
-type SelectionSet s = SelectionMap  (Selection s)
+type SelectionSet s = MergeSet  (Selection s)
 
 type RawSelectionSet = SelectionSet RAW
 type ValidSelectionSet = SelectionSet VALID
