@@ -36,7 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , lookupUnionTypes
                                                 , UnionTag(..)
                                                 )
-import qualified Data.Morpheus.Types.Internal.AST.SelectionMap as SMap
+import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
                                                 ( join )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..) 
@@ -131,7 +131,7 @@ validateCluster validator __typename = traverse _validateCluster >=> fmap UnionS
  where
   _validateCluster :: (TypeDef, [Fragment]) -> Validation UnionTag
   _validateCluster  (unionType, fragmets) = do
-        fragmentSelections <- SMap.join (__typename:map fragmentSelection fragmets)
+        fragmentSelections <- MS.join (__typename:map fragmentSelection fragmets)
         UnionTag (fst unionType) <$> validator unionType fragmentSelections
 
 validateUnionSelection 
