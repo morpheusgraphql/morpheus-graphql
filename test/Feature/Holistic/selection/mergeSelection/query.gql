@@ -12,4 +12,21 @@
     name
     name2 : name
   }
+  user {
+    bla: email
+    email
+    bla: email
+    address(coordinates: {latitude:"", longitude: 2}) {
+      city
+			houseNumber
+    }
+  }
+  user {
+    address(coordinates: {latitude:"", longitude: 2}) {
+      city
+      bla: houseNumber
+    }
+    name
+    bla: email
+  }
 }
