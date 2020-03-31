@@ -73,7 +73,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( Join(..)
+                                                ( Merge(..)
                                                 , empty
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving

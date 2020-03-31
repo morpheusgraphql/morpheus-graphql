@@ -116,7 +116,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Listable(..)
                                                 , Singleton(..)
                                                 , Listable(..)
-                                                , Join(..)
+                                                , Merge(..)
                                                 , KeyOf(..)
                                                 , selectBy
                                                 )
@@ -411,7 +411,7 @@ newtype FieldsDefinition = FieldsDefinition
 unsafeFromFields :: [FieldDefinition] -> FieldsDefinition 
 unsafeFromFields = FieldsDefinition . unsafeFromValues
 
-instance Join FieldsDefinition where
+instance Merge FieldsDefinition where
   merge path (FieldsDefinition x)  (FieldsDefinition y) = FieldsDefinition <$> merge path x y
 
 instance Selectable FieldsDefinition FieldDefinition where

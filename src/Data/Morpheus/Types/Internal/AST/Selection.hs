@@ -73,7 +73,7 @@ import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap )
 import          Data.Morpheus.Types.Internal.Operation
                                                 ( KeyOf(..)
-                                                , Join(..)
+                                                , Merge(..)
                                                 )
 import          Data.Morpheus.Error.NameCollision
                                                 ( NameCollision(..) )
@@ -103,7 +103,7 @@ data SelectionContent (s :: Stage) where
   SelectionSet   :: SelectionSet s -> SelectionContent s
   UnionSelection :: UnionSelection -> SelectionContent VALID
 
-instance Join (SelectionContent s) where
+instance Merge (SelectionContent s) where
   merge path (SelectionSet s1)  (SelectionSet s2) = SelectionSet <$> merge path s1 s2
   merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
   merge path  oldC currC
@@ -143,7 +143,7 @@ mergeConflict refs@(rootField:xs) err = [
           renderStart
           xs
 
-instance Join UnionTag where 
+instance Merge UnionTag where 
   merge path (UnionTag oldTag oldSel) (UnionTag _ currentSel) 
     = UnionTag oldTag <$> merge path oldSel currentSel
 
@@ -182,7 +182,7 @@ useDufferentAliases
   =   "Use different aliases on the "
   <>  "fields to fetch both if this was intentional."
 
-instance Join (Selection a) where 
+instance Merge (Selection a) where 
   merge path old@Selection{ selectionPosition = pos1 }  current@Selection{ selectionPosition = pos2 }
     = do
       selectionName <- mergeName

@@ -25,7 +25,7 @@ import           Language.Haskell.TH.Syntax             ( Lift(..) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.NameCollision      (NameCollision(..))
-import           Data.Morpheus.Types.Internal.Operation ( Join(..)
+import           Data.Morpheus.Types.Internal.Operation ( Merge(..)
                                                         , Empty(..)
                                                         , Singleton(..)
                                                         , Selectable(..)
@@ -70,7 +70,7 @@ instance Foldable OrderedMap where
 instance Traversable OrderedMap where
   traverse f (OrderedMap names values) = OrderedMap names <$> traverse f values
 
-instance NameCollision a => Join (OrderedMap a) where 
+instance NameCollision a => Merge (OrderedMap a) where 
   merge _ (OrderedMap k1 x)  (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
 
 instance Empty (OrderedMap a) where 

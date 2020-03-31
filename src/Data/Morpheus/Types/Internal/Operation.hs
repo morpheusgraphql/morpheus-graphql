@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.Operation
     , Selectable(..)
     , Singleton(..)
     , Listable(..)
-    , Join(..)
+    , Merge(..)
     , Failure(..)
     , KeyOf(..)
     , toPair
@@ -87,7 +87,7 @@ class Listable c a | c -> a where
 keys :: Listable c a  => c -> [Name]
 keys = map fst . toAssoc
 
-class Join a where 
+class Merge a where 
   (<:>) :: (Monad m, Failure GQLErrors m) => a -> a -> m a
   (<:>) = merge []
   merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
