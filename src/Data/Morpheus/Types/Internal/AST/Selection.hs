@@ -30,7 +30,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
 where
 
 
-import           Data.Maybe                     ( fromMaybe )
+import           Data.Maybe                     ( fromMaybe , isJust )
 import           Data.Semigroup                 ( (<>) )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 
@@ -129,9 +129,9 @@ type SelectionSet s = MergeSet  (Selection s)
 data Selection (s :: Stage) where
     Selection ::
       { selectionName       :: Name
-      , selectionArguments  :: Arguments s
+      , selectionAlias      :: Maybe Name
       , selectionPosition   :: Position
-      , selectionAlias      :: Maybe Key
+      , selectionArguments  :: Arguments s
       , selectionContent    :: SelectionContent s
       } -> Selection s
     InlineFragment :: Fragment -> Selection RAW
@@ -143,6 +143,48 @@ instance KeyOf (Selection s) where
   keyOf (Spread ref) = refName ref
 
 instance Join (Selection a) where 
+  old@Selection{ selectionPosition } <:> current@Selection{}
+    = do
+      selectionName <- mergeName
+      selectionArguments <- mergeArguments
+      selectionContent <- mergeContent (selectionContent old) (selectionContent current)
+      pure $ Selection {
+        selectionName,
+        selectionAlias = mergeAlias,
+        selectionPosition,
+        selectionArguments,
+        selectionContent
+      }
+    where 
+      -- passes if: 
+      -- * { user : user }
+      -- * { user1: user
+      --     user1: user
+      --   }
+      -- fails if:
+      -- * { user1: user
+      --     user1: product
+      --   }
+      mergeName 
+        | selectionName old == selectionName current = pure $ selectionName current
+        | otherwise = failure [nameCollision (keyOf current) current]
+      ---------------------
+      -- allias name is relevant only if they collide by allias like:
+      --   { user1: user
+      --     user1: user
+      --   }
+      mergeAlias 
+        | all (isJust . selectionAlias) [old,current] = selectionAlias old
+        | otherwise = Nothing
+      --- arguments must be equal
+      mergeArguments  
+        | selectionArguments old == selectionArguments current = pure $ selectionArguments current
+        | otherwise = failure [nameCollision (keyOf current) current]
+      --- merge content
+      mergeContent oldC currC
+        | oldC == currC = pure oldC
+      mergeContent (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> s1 <:> s2
+      mergeContent _ _= failure [nameCollision (keyOf current) current]
   _ <:> current = failure [nameCollision (keyOf current) current]
 
 instance NameCollision (Selection s) where

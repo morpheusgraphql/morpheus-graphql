@@ -6,6 +6,7 @@
     name2 : name
     name2 : name
     name2 : name
+    name: name
   }
   user { 
     name
