@@ -49,6 +49,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Stage
                                                 , OperationType(..)
                                                 , GQLError(..)
+                                                , GQLErrors
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -121,8 +122,27 @@ data UnionTag = UnionTag {
   unionTagSelection :: SelectionSet VALID
 } deriving (Show, Eq, Lift)
 
+
+mergeConflict :: [Ref] -> GQLError -> GQLErrors
+mergeConflict [] err = [err]
+mergeConflict refs@(rootField:xs) err = [
+    GQLError {
+      message =  renderSubfields <> message err,
+      locations = map refPosition refs <> locations err
+    }
+  ]
+  where 
+    fieldConflicts ref = "\"" <> refName ref  <> "\" conflict because "
+    renderSubfield ref txt = txt <> " subfields " <> fieldConflicts ref
+    renderStart = "Fields " <> fieldConflicts rootField
+    renderSubfields = 
+        foldr
+          renderSubfield
+          renderStart
+          xs
+
 instance Join UnionTag where 
-  merge _ _ current = failure [nameCollision (keyOf current) current]
+  merge path _ current = failure $ mergeConflict path $ nameCollision (keyOf current) current
 
 instance KeyOf UnionTag where
   keyOf = unionTagName
@@ -155,15 +175,15 @@ instance KeyOf (Selection s) where
   keyOf (Spread ref) = refName ref
 
 instance Join (Selection a) where 
-  merge path old@Selection{ selectionPosition }  current@Selection{}
+  merge path old@Selection{ selectionPosition = pos1 }  current@Selection{ selectionPosition = pos2 }
     = do
       selectionName <- mergeName
       selectionArguments <- mergeArguments
-      selectionContent <- merge (path <> [Ref selectionName selectionPosition]) (selectionContent old) (selectionContent current)
+      selectionContent <- merge (path <> [Ref selectionName pos1]) (selectionContent old) (selectionContent current)
       pure $ Selection {
         selectionName,
         selectionAlias = mergeAlias,
-        selectionPosition,
+        selectionPosition = pos1,
         selectionArguments,
         selectionContent
       }
@@ -179,7 +199,12 @@ instance Join (Selection a) where
       --   }
       mergeName 
         | selectionName old == selectionName current = pure $ selectionName current
-        | otherwise = failure [nameCollision (keyOf current) current]
+        | otherwise = failure $ mergeConflict path $ GQLError {
+          message = selectionName old <> " and " <> selectionName current 
+              <> " are different fields. Use different aliases on the " 
+              <> "fields to fetch both if this was intentional.",
+          locations = [pos1, pos2]
+        }
       ---------------------
       -- allias name is relevant only if they collide by allias like:
       --   { user1: user
@@ -191,9 +216,9 @@ instance Join (Selection a) where
       --- arguments must be equal
       mergeArguments  
         | selectionArguments old == selectionArguments current = pure $ selectionArguments current
-        | otherwise = failure [nameCollision (keyOf current) current]
+        | otherwise = failure $ mergeConflict path $ nameCollision (keyOf current) current
       --- merge content
-  merge _ _ current = failure [nameCollision (keyOf current) current]
+  merge path _ current = failure $ mergeConflict path $ nameCollision (keyOf current) current
 
 instance NameCollision (Selection s) where
   -- TODO: real error

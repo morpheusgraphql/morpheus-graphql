@@ -31,6 +31,7 @@ import           Data.Morpheus.Types.Internal.Operation ( Join(..)
                                                         )
 import           Data.Morpheus.Types.Internal.AST.Base  ( Named
                                                         , GQLErrors
+                                                        , Ref
                                                         )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap 
                                                         ( OrderedMap(..) )
@@ -68,24 +69,24 @@ instance KeyOf a => Selectable (MergeSet a) a where
 
 -- must merge files on collision 
 instance (KeyOf a, Join a, Eq a) => Join (MergeSet a) where 
-  merge x = safeJoin
+  merge = safeJoin
 
 instance (KeyOf a, Join a, Eq a) => Listable (MergeSet a) a where
   fromAssoc = safeFromList
   toAssoc = map toPair . unpack 
 
 safeFromList :: (Monad m, KeyOf a, Eq a, Join a ,Failure GQLErrors m) => [Named a] -> m (MergeSet a)
-safeFromList  = insertList empty . map snd
+safeFromList  = insertList [] empty . map snd
 
-safeJoin :: (Monad m, KeyOf a, Eq a, Join a ,Failure GQLErrors m) => MergeSet a -> MergeSet a -> m (MergeSet a)
-safeJoin hm1 hm2 = insertList hm1 (toList hm2)
+safeJoin :: (Monad m, KeyOf a, Eq a, Join a ,Failure GQLErrors m) => [Ref] -> MergeSet a -> MergeSet a -> m (MergeSet a)
+safeJoin path hm1 hm2 = insertList path hm1 (toList hm2)
 
-insertList:: (Monad m, Eq a, KeyOf a, Join a ,Failure GQLErrors m) =>  MergeSet a -> [a] -> m (MergeSet a)
-insertList smap [] = pure smap
-insertList smap (x:xs) = insert smap x >>= (`insertList` xs)
+insertList:: (Monad m, Eq a, KeyOf a, Join a ,Failure GQLErrors m) =>  [Ref] -> MergeSet a -> [a] -> m (MergeSet a)
+insertList _ smap [] = pure smap
+insertList path smap (x:xs) = insert path smap x >>= flip (insertList path) xs
 
-insert :: (Monad m, Eq a, KeyOf a , Join a ,Failure GQLErrors m) => MergeSet a -> a -> m (MergeSet a)
-insert  mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
+insert :: (Monad m, Eq a, KeyOf a , Join a ,Failure GQLErrors m) => [Ref] -> MergeSet a -> a -> m (MergeSet a)
+insert  path mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
   where
     __insert = selectOr 
       (pure $ ls <> [currentValue])
@@ -96,7 +97,7 @@ insert  mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
     mergeWith oldValue
       | oldValue == currentValue = pure ls
       | otherwise = do 
-          mergedValue <- oldValue <:> currentValue
+          mergedValue <- merge path oldValue currentValue
           pure $ ( ls \\ [oldValue]) <> [mergedValue]
 
 
