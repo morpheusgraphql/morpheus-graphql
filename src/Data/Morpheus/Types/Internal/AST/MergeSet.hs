@@ -68,7 +68,7 @@ instance KeyOf a => Selectable (MergeSet a) a where
 
 -- must merge files on collision 
 instance (KeyOf a, Join a, Eq a) => Join (MergeSet a) where 
-  (<:>) = safeJoin
+  merge x = safeJoin
 
 instance (KeyOf a, Join a, Eq a) => Listable (MergeSet a) a where
   fromAssoc = safeFromList

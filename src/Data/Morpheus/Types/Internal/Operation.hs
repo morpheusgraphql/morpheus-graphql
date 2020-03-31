@@ -29,6 +29,7 @@ import           Data.Morpheus.Error.NameCollision      (NameCollision(..))
 import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
+                                                        , Ref(..)
                                                         )
 import           Text.Megaparsec.Internal               ( ParsecT(..) )
 import           Text.Megaparsec.Stream                 ( Stream )
@@ -88,6 +89,8 @@ keys = map fst . toAssoc
 
 class Join a where 
   (<:>) :: (Monad m, Failure GQLErrors m) => a -> a -> m a
+  (<:>) = merge []
+  merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
 
 class Applicative f => Failure error (f :: * -> *) where
   failure :: error -> f v

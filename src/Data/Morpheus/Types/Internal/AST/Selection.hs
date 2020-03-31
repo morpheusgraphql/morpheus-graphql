@@ -33,6 +33,7 @@ where
 import           Data.Maybe                     ( fromMaybe , isJust )
 import           Data.Semigroup                 ( (<>) )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
+import qualified Data.Text                  as  T
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
@@ -95,10 +96,21 @@ type Fragments = OrderedMap Fragment
 
 type Arguments a = OrderedMap (Argument a)
 
-data SelectionContent (valid :: Stage) where
-  SelectionField :: SelectionContent valid
-  SelectionSet   :: SelectionSet valid -> SelectionContent valid
+data SelectionContent (s :: Stage) where
+  SelectionField :: SelectionContent s
+  SelectionSet   :: SelectionSet s -> SelectionContent s
   UnionSelection :: UnionSelection -> SelectionContent VALID
+
+instance Join (SelectionContent s) where
+  merge xs (SelectionSet s1)  (SelectionSet s2) = SelectionSet <$> merge xs s1 s2
+  merge path  oldC currC
+    | oldC == currC = pure oldC
+    | otherwise     = failure [
+      GQLError {
+        message = T.concat $ map refName path,
+        locations = map refPosition path
+      }
+    ]
 
 deriving instance Show (SelectionContent a)
 deriving instance Eq   (SelectionContent a)
@@ -110,7 +122,7 @@ data UnionTag = UnionTag {
 } deriving (Show, Eq, Lift)
 
 instance Join UnionTag where 
-  _ <:> current = failure [nameCollision (keyOf current) current]
+  merge _ _ current = failure [nameCollision (keyOf current) current]
 
 instance KeyOf UnionTag where
   keyOf = unionTagName
@@ -143,11 +155,11 @@ instance KeyOf (Selection s) where
   keyOf (Spread ref) = refName ref
 
 instance Join (Selection a) where 
-  old@Selection{ selectionPosition } <:> current@Selection{}
+  merge path old@Selection{ selectionPosition }  current@Selection{}
     = do
       selectionName <- mergeName
       selectionArguments <- mergeArguments
-      selectionContent <- mergeContent (selectionContent old) (selectionContent current)
+      selectionContent <- merge (path <> [Ref selectionName selectionPosition]) (selectionContent old) (selectionContent current)
       pure $ Selection {
         selectionName,
         selectionAlias = mergeAlias,
@@ -181,11 +193,7 @@ instance Join (Selection a) where
         | selectionArguments old == selectionArguments current = pure $ selectionArguments current
         | otherwise = failure [nameCollision (keyOf current) current]
       --- merge content
-      mergeContent (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> s1 <:> s2
-      mergeContent oldC currC
-        | oldC == currC = pure oldC
-        | otherwise     = failure [nameCollision (keyOf current) current]
-  _ <:> current = failure [nameCollision (keyOf current) current]
+  merge _ _ current = failure [nameCollision (keyOf current) current]
 
 instance NameCollision (Selection s) where
   -- TODO: real error
