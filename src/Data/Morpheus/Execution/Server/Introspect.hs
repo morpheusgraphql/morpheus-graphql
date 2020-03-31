@@ -436,7 +436,7 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject $ singleton "enum"
+      , typeContent     = wrapObject $ singleton 
           FieldDefinition 
             { fieldName  = "enum"
             , fieldArgs  = NoArguments

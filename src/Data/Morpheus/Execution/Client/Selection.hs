@@ -27,13 +27,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Key
                                                 , Name
                                                 , RAW
-                                                , ValidOperation
+                                                , VALID
                                                 , Variable(..)
                                                 , VariableDefinitions
                                                 , Selection(..)
                                                 , SelectionContent(..)
-                                                , ValidSelectionSet
-                                                , ValidSelection
+                                                , SelectionSet
                                                 , Ref(..)
                                                 , FieldDefinition(..)
                                                 , TypeContent(..)
@@ -54,6 +53,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , removeDuplicates
                                                 , Position
                                                 , GQLErrors
+                                                , UnionTag(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -75,7 +75,7 @@ compileError x =
 operationTypes
   :: Schema
   -> VariableDefinitions
-  -> ValidOperation
+  -> Operation VALID
   -> Validation (Maybe TypeD, [ClientType])
 operationTypes lib variables = genOperation
  where
@@ -123,7 +123,7 @@ operationTypes lib variables = genOperation
     :: [Name]
     -> Name
     -> TypeDefinition
-    -> ValidSelectionSet
+    -> SelectionSet VALID
     -> Validation ([ClientType], [Name])
   genRecordType path tName dataType recordSelSet = do
     (con, subTypes, requests) <- genConsD tName dataType recordSelSet
@@ -143,22 +143,27 @@ operationTypes lib variables = genOperation
     genConsD
       :: Name
       -> TypeDefinition
-      -> ValidSelectionSet
+      -> SelectionSet VALID
       -> Validation (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
-      (cFields, subTypes, requests) <- unzip3 <$> traverse genField selSet
+      (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
      where
       genField
-        :: (Text, ValidSelection)
+        :: Selection VALID
         -> Validation (FieldDefinition, [ClientType], [Text])
-      genField (fName, sel@Selection { selectionAlias, selectionPosition }) =
+      genField 
+          sel@Selection 
+          { selectionName
+          , selectionAlias
+          , selectionPosition
+          } =
         do
           (fieldDataType, fieldType) <- lookupFieldType lib
                                                         fieldPath
                                                         datatype
                                                         selectionPosition
-                                                        fName
+                                                        selectionName
           (subTypes, requests) <- subTypesBySelection fieldDataType sel
           pure
             ( FieldDefinition 
@@ -173,10 +178,10 @@ operationTypes lib variables = genOperation
        where
         fieldPath = path <> [fieldName]
         -------------------------------
-        fieldName = fromMaybe fName selectionAlias
+        fieldName = fromMaybe selectionName selectionAlias
         ------------------------------------------
         subTypesBySelection
-          :: TypeDefinition -> ValidSelection -> Validation ([ClientType], [Text])
+          :: TypeDefinition -> Selection VALID -> Validation ([ClientType], [Text])
         subTypesBySelection dType Selection { selectionContent = SelectionField }
           = leafType dType
           --withLeaf buildLeaf dType
@@ -186,7 +191,7 @@ operationTypes lib variables = genOperation
         subTypesBySelection dType Selection { selectionContent = UnionSelection unionSelections }
           = do
             (tCons, subTypes, requests) <-
-              unzip3 <$> mapM getUnionType unionSelections
+              unzip3 <$> traverse getUnionType (toList unionSelections)
             pure
               ( ClientType
                   { clientType = TypeD { tNamespace = fieldPath
@@ -200,7 +205,7 @@ operationTypes lib variables = genOperation
               , concat requests
               )
          where
-          getUnionType (selectedTyName, selectionVariant) = do
+          getUnionType (UnionTag selectedTyName selectionVariant) = do
             conDatatype <- getType lib selectedTyName
             genConsD selectedTyName conDatatype selectionVariant
 

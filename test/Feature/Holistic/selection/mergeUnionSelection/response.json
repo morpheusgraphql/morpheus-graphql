@@ -1,0 +1,12 @@
+{
+  "data": {
+    "testUnion": {
+      "name": "testName",
+      "email": "",
+      "email2": "",
+      "address": {
+        "city": ""
+      }
+    }
+  }
+}

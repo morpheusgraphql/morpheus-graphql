@@ -63,7 +63,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , insertType
   , lookupDeprecated
   , lookupDeprecatedReason
-  , checkNameCollision
   , hasArguments
   , lookupWith
   , selectTypeObject
@@ -102,7 +101,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , TypeRef(..)
                                                 , Stage
                                                 , VALID
-                                                , uniqueElemOr
                                                 , DataTypeKind(..)
                                                 , DataFingerprint(..)
                                                 , isNullable
@@ -118,7 +116,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Listable(..)
                                                 , Singleton(..)
                                                 , Listable(..)
-                                                , Join(..)
+                                                , Merge(..)
                                                 , KeyOf(..)
                                                 , selectBy
                                                 )
@@ -151,7 +149,7 @@ data Argument (valid :: Stage) = Argument
   { argumentName     :: Name
   , argumentValue    :: Value valid
   , argumentPosition :: Position
-  } deriving ( Show, Lift )
+  } deriving ( Show, Eq, Lift )
 
 instance KeyOf (Argument stage) where
   keyOf = argumentName 
@@ -329,6 +327,10 @@ fromOperation :: Maybe TypeDefinition -> [(Name, TypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype,datatype)]
 fromOperation Nothing = []
 
+
+-- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
+-- for example 
+-- User | Admin | Product
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)
   => Position
@@ -409,14 +411,14 @@ newtype FieldsDefinition = FieldsDefinition
 unsafeFromFields :: [FieldDefinition] -> FieldsDefinition 
 unsafeFromFields = FieldsDefinition . unsafeFromValues
 
-instance Join FieldsDefinition where
-  join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
+instance Merge FieldsDefinition where
+  merge path (FieldsDefinition x)  (FieldsDefinition y) = FieldsDefinition <$> merge path x y
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
 instance Singleton  FieldsDefinition FieldDefinition  where 
-  singleton name = FieldsDefinition . singleton name
+  singleton  = FieldsDefinition . singleton 
 
 instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
@@ -480,10 +482,9 @@ lookupSelectionField
   :: Failure GQLErrors Validation
   => Position
   -> Name
-  -> Name
-  -> FieldsDefinition
+  -> (Name, FieldsDefinition)
   -> Validation FieldDefinition
-lookupSelectionField position fieldName typeName = selectBy gqlError fieldName 
+lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
   where gqlError = cannotQueryField fieldName typeName position
 
 lookupFieldAsSelectionSet
@@ -524,7 +525,7 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
 instance Singleton ArgumentsDefinition ArgumentDefinition where
-  singleton name = ArgumentsDefinition Nothing . singleton name
+  singleton = ArgumentsDefinition Nothing . singleton 
 
 instance Listable ArgumentsDefinition ArgumentDefinition where
   toAssoc NoArguments                  = []
@@ -594,8 +595,3 @@ data ConsD = ConsD
   { cName   :: Name
   , cFields :: [FieldDefinition]
   } deriving (Show)
-
--- Helpers
--------------------------------------------------------------------------
-checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
-checkNameCollision names toError = uniqueElemOr (failure . toError) names

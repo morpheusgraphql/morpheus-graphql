@@ -7,7 +7,6 @@ module Data.Morpheus.Types.Internal.AST
   (
     -- BASE
     Key
-  , Collection
   , Ref(..)
   , Position(..)
   , Message
@@ -37,7 +36,6 @@ module Data.Morpheus.Types.Internal.AST
   , ResolvedValue
   , Named
   , unpackInputUnion
-  , uniqueElemOr
   , splitDuplicates
   , removeDuplicates
 
@@ -46,25 +44,13 @@ module Data.Morpheus.Types.Internal.AST
   , Arguments
   , SelectionSet
   , SelectionContent(..)
-  , ValidSelection
   , Selection(..)
-  , RawSelection
   , Fragments
-  , RawArguments
-  , RawSelectionSet
   , Fragment(..)
-  , RawArgument
-  , ValidSelectionSet
-  , ValidArgument
-  , ValidArguments
-  , RawSelectionRec
-  , ValidSelectionRec
   , isOutputType
   -- OPERATION
   , Operation(..)
   , Variable(..)
-  , ValidOperation
-  , RawOperation
   , VariableDefinitions
   , ValidVariables
   , DefaultValue
@@ -145,7 +131,6 @@ module Data.Morpheus.Types.Internal.AST
   , insertType
   , lookupDeprecated
   , lookupDeprecatedReason
-  , checkNameCollision
   , hasArguments
   , lookupWith
   , selectTypeObject
@@ -162,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLError(..)
   , GQLErrors
   , ObjectEntry(..)
+  , UnionTag(..)
   )
 where
 
@@ -191,7 +177,7 @@ type Variables = Map Key ResolvedValue
 
 data GQLQuery = GQLQuery
   { fragments      :: Fragments
-  , operation      :: RawOperation
+  , operation      :: Operation RAW
   , inputVariables :: [(Key, ResolvedValue)]
   } deriving (Show,Lift)
 

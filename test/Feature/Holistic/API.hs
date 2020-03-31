@@ -63,7 +63,7 @@ alwaysFail = pure $ Left "fail with Either"
 rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
 rootResolver = GQLRootResolver
   { queryResolver        = Query { user
-                                 , testUnion = pure Nothing
+                                 , testUnion = Just . TestUnionUser <$> user
                                  , fail1     = liftEither alwaysFail
                                  , fail2 =  failRes "fail with failRes"
                                  }

@@ -73,7 +73,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( Join(..)
+                                                ( Merge(..)
                                                 , empty
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -168,15 +168,13 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
     pure $ Context {
         schema
       , operation
-      , currentSelection = (
-        "Root"
-        , Selection {
-          selectionArguments = empty
+      , currentSelection = Selection
+          { selectionName = "Root"
+          , selectionArguments = empty
           , selectionPosition = operationPosition operation
           , selectionAlias = Nothing
           , selectionContent = SelectionSet (operationSelection operation)
-        } 
-    )
+        }
   }
   ----------------------------------------------------------
   execOperator ctx@Context {schema ,operation = Operation{ operationType} } = execOperationBy operationType ctx
@@ -207,7 +205,7 @@ fullSchema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
   querySchema = do
-    fs <- hiddenRootFields `join` fields
+    fs <- hiddenRootFields <:> fields
     resolveUpdates (initTypeLib (operatorType fs "Query")) (defaultTypes : types)
    where
     (fields, types) = introspectObjectFields

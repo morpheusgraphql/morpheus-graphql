@@ -38,7 +38,6 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
-                                                , RawOperation
                                                 , Variable(..)
                                                 , OperationType(..)
                                                 , Ref(..)
@@ -67,7 +66,7 @@ variableDefinition = label "VariableDefinition" $ do
 --
 --   OperationType: one of
 --     query, mutation,    subscription
-parseOperationDefinition :: Parser RawOperation
+parseOperationDefinition :: Parser (Operation RAW)
 parseOperationDefinition = label "OperationDefinition" $ do
   operationPosition  <- getLocation
   operationType      <- parseOperationType
@@ -87,7 +86,7 @@ parseOperationType = label "OperationType" $ do
   spaceAndComments1
   return kind
 
-parseAnonymousQuery :: Parser RawOperation
+parseAnonymousQuery :: Parser (Operation RAW)
 parseAnonymousQuery = label "AnonymousQuery" $ do
   operationPosition  <- getLocation
   operationSelection <- parseSelectionSet
@@ -100,5 +99,5 @@ parseAnonymousQuery = label "AnonymousQuery" $ do
       )
     <?> "can't parse AnonymousQuery"
 
-parseOperation :: Parser RawOperation
+parseOperation :: Parser (Operation RAW)
 parseOperation = parseAnonymousQuery <|> parseOperationDefinition

@@ -3,7 +3,6 @@
 module Data.Morpheus.Error.Selection
   ( cannotQueryField
   , subfieldsNotSelected
-  , duplicateQuerySelections
   , hasNoSubfields
   )
 where
@@ -11,9 +10,7 @@ where
 import           Data.Semigroup                 ( (<>) )
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Ref(..)
-                                                , Position
-                                                , GQLError(..)
+                                                ( Position
                                                 , GQLErrors
                                                 )
 import           Data.Text                      ( Text )
@@ -31,14 +28,6 @@ cannotQueryField :: Text -> Text -> Position -> GQLErrors
 cannotQueryField key typeName position = errorMessage position text
  where
   text = "Cannot query field \"" <> key <> "\" on type \"" <> typeName <> "\"."
-
-duplicateQuerySelections :: Text -> [Ref] -> GQLErrors
-duplicateQuerySelections parentType = map keyToError
- where
-  keyToError (Ref key' pos) =
-    GQLError { message = toMessage key', locations = [pos] }
-  toMessage key' = T.concat
-    ["duplicate selection of key \"", key', "\" on type \"", parentType, "\"."]
 
 -- GQL:: Field \"hobby\" of type \"Hobby!\" must have a selection of subfields. Did you mean \"hobby { ... }\"?
 subfieldsNotSelected :: Text -> Text -> Position -> GQLErrors

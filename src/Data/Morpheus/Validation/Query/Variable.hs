@@ -25,18 +25,15 @@ import           Data.Morpheus.Error.Variable   ( uninitializedVariable
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
-                                                , RawOperation
                                                 , ValidVariables
                                                 , Variable(..)
                                                 , getOperationName
                                                 , Fragment(..)
                                                 , Fragments
                                                 , Argument(..)
-                                                , RawArgument
                                                 , Selection(..)
                                                 , SelectionContent(..)
-                                                , RawSelection
-                                                , RawSelectionSet
+                                                , SelectionSet
                                                 , Ref(..)
                                                 , Position
                                                 , TypeDefinition
@@ -70,8 +67,6 @@ getVariableType :: Text -> Position -> Schema -> Validation TypeDefinition
 getVariableType type' position' lib' = lookupInputType type' lib' error'
   where error' = unknownType type' position'
 
-concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
-concatMapM f = fmap concat . traverse f
 
 
 class ExploreRefs a where
@@ -83,27 +78,29 @@ instance ExploreRefs RawValue where
   exploreRefs (List          ls    ) = concatMap exploreRefs ls
   exploreRefs _                      = []
 
-instance ExploreRefs RawArgument where
+instance ExploreRefs (Argument RAW) where
   exploreRefs = exploreRefs . argumentValue
 
-allVariableRefs :: Fragments -> [RawSelectionSet] -> Validation [Ref]
-allVariableRefs fragmentLib = concatMapM (concatMapM searchRefs)
- where
+mapSelection :: (Selection RAW -> Validation [b]) -> SelectionSet RAW -> Validation [b]
+mapSelection f = fmap concat . traverse f
 
+allVariableRefs :: Fragments -> [SelectionSet RAW] -> Validation [Ref]
+allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs) 
+ where
   -- | search used variables in every arguments
-  searchRefs :: (Text, RawSelection) -> Validation [Ref]
-  searchRefs (_, Selection { selectionArguments, selectionContent = SelectionField })
+  searchRefs :: Selection RAW -> Validation [Ref]
+  searchRefs Selection { selectionArguments, selectionContent = SelectionField }
     = return $ concatMap exploreRefs selectionArguments
-  searchRefs (_, Selection { selectionArguments, selectionContent = SelectionSet selSet })
-    = getArgs <$> concatMapM searchRefs selSet
+  searchRefs Selection { selectionArguments, selectionContent = SelectionSet selSet }
+    = getArgs <$> mapSelection searchRefs selSet
    where
     getArgs :: [Ref] -> [Ref]
     getArgs x = concatMap exploreRefs selectionArguments <> x
-  searchRefs (_, InlineFragment Fragment { fragmentSelection }) =
-    concatMapM searchRefs fragmentSelection
-  searchRefs (_, Spread reference) =
-    getFragment reference fragmentLib
-      >>= concatMapM searchRefs
+  searchRefs (InlineFragment Fragment { fragmentSelection })
+    = mapSelection searchRefs fragmentSelection
+  searchRefs (Spread reference)
+    = getFragment reference fragmentLib
+      >>= mapSelection searchRefs
       .   fragmentSelection
 
 resolveOperationVariables
@@ -111,7 +108,7 @@ resolveOperationVariables
   -> Fragments
   -> Variables
   -> VALIDATION_MODE
-  -> RawOperation
+  -> Operation RAW
   -> Validation ValidVariables
 resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArguments }
   = do

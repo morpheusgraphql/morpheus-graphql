@@ -6,10 +6,15 @@
 
 - Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
 
-### Added
+### New features
 
+- Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).
 - Support for input lists separated by newlines. thanks @charlescrain
-- variable nameCollision validation 
+- conflicting variable , fragment ... validation
+
+### minor
+
+- changes to internal types
 
 ## 0.10.0 - 07.01.2020
 

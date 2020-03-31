@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.Operation
     , Selectable(..)
     , Singleton(..)
     , Listable(..)
-    , Join(..)
+    , Merge(..)
     , Failure(..)
     , KeyOf(..)
     , toPair
@@ -24,11 +24,11 @@ module Data.Morpheus.Types.Internal.Operation
 import           Data.Text                              ( Text )
 import           Instances.TH.Lift                      ( )
 import           Data.HashMap.Lazy                      ( HashMap )
-import qualified Data.HashMap.Lazy                   as HM 
-import           Data.Morpheus.Error.NameCollision      (NameCollision(..))
+import qualified Data.HashMap.Lazy                   as HM
 import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         , Named
                                                         , GQLErrors
+                                                        , Ref(..)
                                                         )
 import           Text.Megaparsec.Internal               ( ParsecT(..) )
 import           Text.Megaparsec.Stream                 ( Stream )
@@ -43,9 +43,6 @@ instance Empty (HashMap k v) where
 class Selectable c a | c -> a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
 
-instance Selectable [(Name, a)] a where 
-  selectOr fb f key lib = maybe fb f (lookup key lib)
-
 instance Selectable (HashMap Text a) a where 
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
@@ -58,15 +55,11 @@ member = selectOr False toTrue
     toTrue :: a -> Bool
     toTrue _ = True
 
-
-class Singleton c a where
-  singleton  :: Name -> a -> c
+class KeyOf a => Singleton c a | c -> a where
+  singleton  :: a -> c
 
 class KeyOf a where 
   keyOf :: a -> Name
-
-instance KeyOf (Name,a) where
-  keyOf = fst
 
 toPair :: KeyOf a => a -> (Name,a)
 toPair x = (keyOf x, x)
@@ -74,9 +67,9 @@ toPair x = (keyOf x, x)
 class Listable c a | c -> a where
   size :: c -> Int
   size = length . toList 
-  fromAssoc   :: (Monad m, Failure GQLErrors m, NameCollision a) => [Named a] ->  m c
+  fromAssoc   :: (Monad m, Failure GQLErrors m) => [Named a] ->  m c
   toAssoc     ::  c  -> [Named a]
-  fromList :: (KeyOf a, Monad m, Failure GQLErrors m, NameCollision a) => [a] ->  m c
+  fromList :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] ->  m c
   -- TODO: fromValues
   toList = map snd . toAssoc 
   fromList = fromAssoc . map toPair  
@@ -86,8 +79,10 @@ class Listable c a | c -> a where
 keys :: Listable c a  => c -> [Name]
 keys = map fst . toAssoc
 
-class Join a where 
-  join :: (Monad m, Failure GQLErrors m) => a -> a -> m a
+class Merge a where 
+  (<:>) :: (Monad m, Failure GQLErrors m) => a -> a -> m a
+  (<:>) = merge []
+  merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
 
 class Applicative f => Failure error (f :: * -> *) where
   failure :: error -> f v

@@ -24,18 +24,20 @@ import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , Fragments
-                                                , RawSelection
                                                 , SelectionContent(..)
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position
                                                 , Schema
+                                                , SelectionSet
+                                                , RAW
                                                 , selectTypeObject
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectOr 
                                                 , selectBy
                                                 , toList
+                                                , toAssoc
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -44,11 +46,11 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 
 validateFragments
-  :: Schema -> Fragments -> [(Text, RawSelection)] -> Validation ()
+  :: Schema -> Fragments -> SelectionSet RAW -> Validation ()
 validateFragments lib fragments operatorSel =checkLoop >> checkUnusedFragments
  where
   checkUnusedFragments =
-    case fragmentsKeys \\ usedFragments fragments operatorSel of
+    case fragmentsKeys \\ usedFragments fragments (toAssoc operatorSel) of
       []     -> return ()
       unused -> failure (unusedFragment unused)
   checkLoop = traverse (validateFragment lib) (toList fragments) >>= detectLoopOnFragments
@@ -77,32 +79,32 @@ resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
   getFragment reference fragments
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
-usedFragments :: Fragments -> [(Text, RawSelection)] -> [Node]
+usedFragments :: Fragments -> [(Text, Selection RAW)] -> [Node]
 usedFragments fragments = concatMap (findAllUses . snd)
  where
-  findAllUses :: RawSelection -> [Node]
+  findAllUses :: Selection RAW -> [Node]
   findAllUses Selection { selectionContent = SelectionField } = []
   findAllUses Selection { selectionContent = SelectionSet selectionSet } =
-    concatMap (findAllUses . snd) selectionSet
+    concatMap findAllUses selectionSet
   findAllUses (InlineFragment Fragment { fragmentSelection }) =
-    concatMap (findAllUses . snd) fragmentSelection
+    concatMap findAllUses fragmentSelection
   findAllUses (Spread Ref { refName, refPosition }) =
     [Ref refName refPosition] <> searchInFragment
    where
     searchInFragment = selectOr 
       [] 
-      (concatMap (findAllUses . snd) . fragmentSelection) 
+      (concatMap findAllUses . fragmentSelection) 
       refName 
       fragments
 
-scanForSpread :: (Text, RawSelection) -> [Node]
-scanForSpread (_, Selection { selectionContent = SelectionField }) = []
-scanForSpread (_, Selection { selectionContent = SelectionSet selectionSet }) =
+scanForSpread :: Selection RAW -> [Node]
+scanForSpread Selection { selectionContent = SelectionField } = []
+scanForSpread Selection { selectionContent = SelectionSet selectionSet } =
   concatMap scanForSpread selectionSet
-scanForSpread (_, InlineFragment Fragment { fragmentSelection = selection' }) =
-  concatMap scanForSpread selection'
-scanForSpread (_, Spread Ref { refName = name', refPosition = position' }) =
-  [Ref name' position']
+scanForSpread (InlineFragment Fragment { fragmentSelection }) =
+  concatMap scanForSpread fragmentSelection
+scanForSpread (Spread Ref { refName, refPosition }) =
+  [Ref refName refPosition]
 
 validateFragment :: Schema -> Fragment -> Validation NodeEdges
 validateFragment lib  Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
