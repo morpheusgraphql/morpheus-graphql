@@ -412,7 +412,7 @@ unsafeFromFields :: [FieldDefinition] -> FieldsDefinition
 unsafeFromFields = FieldsDefinition . unsafeFromValues
 
 instance Join FieldsDefinition where
-  (FieldsDefinition x) <:> (FieldsDefinition y) = FieldsDefinition <$> x <:> y
+  merge path (FieldsDefinition x)  (FieldsDefinition y) = FieldsDefinition <$> merge path x y
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
