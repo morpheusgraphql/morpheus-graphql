@@ -14,6 +14,7 @@ module Data.Morpheus.Types.Internal.AST.MergeSet
     )
 where 
 
+import           Data.Semigroup                         ((<>))
 import           Data.List                              (find, (\\))
 import           Data.Maybe                             (maybe)
 import           Language.Haskell.TH.Syntax             ( Lift(..) )
