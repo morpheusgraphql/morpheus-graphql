@@ -150,13 +150,6 @@ instance Merge UnionTag where
 instance KeyOf UnionTag where
   keyOf = unionTagName
 
-instance NameCollision UnionTag where
-  -- TODO: real error
-  nameCollision _ UnionTag { unionTagName } = GQLError 
-    { message   = "There can be only one Union named \"" <> unionTagName <> "\"."
-    , locations = []
-    }
-
 type UnionSelection = MergeSet UnionTag
 
 type SelectionSet s = MergeSet  (Selection s)
@@ -224,24 +217,16 @@ instance Merge (Selection a) where
       --- arguments must be equal
       mergeArguments currentPath
         | selectionArguments old == selectionArguments current = pure $ selectionArguments current
-        | otherwise = failure $ mergeConflict currentPath $ GQLError {
-          message = "they have differing arguments. " <> useDufferentAliases,
-          locations = [pos1,pos2]
-        }
-      --- merge content
-  merge path _ current = failure $ mergeConflict path $ nameCollision (keyOf current) current
-
-instance NameCollision (Selection s) where
-  -- TODO: real error
-  nameCollision _ Selection { selectionName , selectionPosition } = GQLError 
-    { message   = "There can be only one Selection named \"" <> selectionName <> "\"."
-    , locations = [selectionPosition]
-    }
-  nameCollision name _ = GQLError { 
-      message   = "There can be only one Selection named \"" <> name <> "\"."
-    , locations = []
-    }
-
+        | otherwise = failure $ mergeConflict currentPath $ GQLError 
+          { message = "they have differing arguments. " <> useDufferentAliases
+          , locations = [pos1,pos2]
+          }
+      -- TODO:
+  merge path old current = failure $ mergeConflict path $ GQLError 
+          { message = "can't merge. " <> useDufferentAliases
+          , locations = map selectionPosition [old,current]
+          }
+  
 deriving instance Show (Selection a)
 deriving instance Lift (Selection a)
 deriving instance Eq (Selection a)

@@ -19,7 +19,6 @@ import           Data.Maybe                             (maybe)
 import           Language.Haskell.TH.Syntax             ( Lift(..) )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.NameCollision      (NameCollision(..))
 import           Data.Morpheus.Types.Internal.Operation ( Merge(..)
                                                         , Empty(..)
                                                         , Singleton(..)
@@ -42,13 +41,13 @@ newtype MergeSet a = MergeSet {
     unpack :: [a]
   } deriving ( Show, Eq, Functor, Foldable , Lift )
 
-concatTraverse :: (NameCollision b , KeyOf a,  Eq a, Eq b, Merge a, Merge b, KeyOf b, Monad m, Failure GQLErrors m) => (a -> m (MergeSet b)) -> MergeSet a -> m (MergeSet b)
+concatTraverse :: (KeyOf a,  Eq a, Eq b, Merge a, Merge b, KeyOf b, Monad m, Failure GQLErrors m) => (a -> m (MergeSet b)) -> MergeSet a -> m (MergeSet b)
 concatTraverse f smap = traverse f (toList smap) >>= join 
 
-join :: (NameCollision a, Eq a, KeyOf a , Merge a, Monad m, Failure GQLErrors m) => [MergeSet a] -> m (MergeSet a)
+join :: (Eq a, KeyOf a , Merge a, Monad m, Failure GQLErrors m) => [MergeSet a] -> m (MergeSet a)
 join = __join empty
  where
-  __join :: (NameCollision a,  Eq a,KeyOf a, Merge a, Monad m, Failure GQLErrors m) => MergeSet a ->[MergeSet a] -> m (MergeSet a)
+  __join :: (Eq a,KeyOf a, Merge a, Monad m, Failure GQLErrors m) => MergeSet a ->[MergeSet a] -> m (MergeSet a)
   __join acc [] = pure acc
   __join acc (x:xs) = acc <:> x >>= (`__join` xs)
 

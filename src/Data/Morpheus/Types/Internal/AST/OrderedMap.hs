@@ -70,9 +70,6 @@ instance Foldable OrderedMap where
 instance Traversable OrderedMap where
   traverse f (OrderedMap names values) = OrderedMap names <$> traverse f values
 
-instance NameCollision a => Merge (OrderedMap a) where 
-  merge _ (OrderedMap k1 x)  (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
-
 instance Empty (OrderedMap a) where 
   empty = OrderedMap [] HM.empty
 
@@ -82,7 +79,10 @@ instance (KeyOf a) => Singleton (OrderedMap a) a where
 instance Selectable (OrderedMap a) a where 
   selectOr fb f key OrderedMap { mapEntries } = maybe fb f (HM.lookup key mapEntries)
 
-instance Listable (OrderedMap a) a where
+instance NameCollision a => Merge (OrderedMap a) where 
+  merge _ (OrderedMap k1 x)  (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
+
+instance NameCollision a => Listable (OrderedMap a) a where
   fromAssoc = safeFromList
   toAssoc OrderedMap {  mapKeys, mapEntries } = map takeValue mapKeys
     where 
