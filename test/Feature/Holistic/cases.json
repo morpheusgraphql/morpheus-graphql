@@ -36,6 +36,10 @@
     "description": "fail when: conflicting union"
   },
   {
+    "path": "selection/mergeUnionSelection",
+    "description": "merge union selections"
+  },
+  {
     "path": "selection/mergeConflict/alias",
     "description": "fail when: selections on different fields have same alias"
   },

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e02daf638aa9ac32e1d3b97421674fe4a1cbc0923deb7f4c089ee27ff1db4bb7
+-- hash: b327695a84172e878c0221dddfe1ef534173ee8ee409a28facbe5c68c622abc6
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -85,6 +85,7 @@ data-files:
     test/Feature/Holistic/selection/mergeConflict/arguments/query.gql
     test/Feature/Holistic/selection/mergeConflict/union/query.gql
     test/Feature/Holistic/selection/mergeSelection/query.gql
+    test/Feature/Holistic/selection/mergeUnionSelection/query.gql
     test/Feature/Holistic/selection/mustHaveSubFields/query.gql
     test/Feature/Holistic/selection/unknownField/query.gql
     test/Feature/Input/Enum/decode2Con/query.gql
@@ -215,6 +216,7 @@ data-files:
     test/Feature/Holistic/selection/mergeConflict/arguments/response.json
     test/Feature/Holistic/selection/mergeConflict/union/response.json
     test/Feature/Holistic/selection/mergeSelection/response.json
+    test/Feature/Holistic/selection/mergeUnionSelection/response.json
     test/Feature/Holistic/selection/mustHaveSubFields/response.json
     test/Feature/Holistic/selection/unknownField/response.json
     test/Feature/Input/Enum/cases.json
