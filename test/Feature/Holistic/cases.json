@@ -32,6 +32,10 @@
     "description": "fail when: selections with on same fields have different arguments"
   },
   {
+    "path": "selection/mergeConflict/union",
+    "description": "fail when: conflicting union"
+  },
+  {
     "path": "selection/mergeConflict/alias",
     "description": "fail when: selections on different fields have same alias"
   },
