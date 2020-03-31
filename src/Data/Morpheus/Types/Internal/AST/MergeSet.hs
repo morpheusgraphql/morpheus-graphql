@@ -4,7 +4,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE DeriveLift                 #-}
-
+{-# LANGUAGE OverloadedStrings          #-}
 
 module Data.Morpheus.Types.Internal.AST.MergeSet
     ( MergeSet
@@ -65,6 +65,7 @@ instance (KeyOf a) => Singleton (MergeSet a) a where
   singleton x = MergeSet [x]
 
 instance KeyOf a => Selectable (MergeSet a) a where 
+  selectOr fb _ "" _  = fb
   selectOr fb f key (MergeSet ls)  = maybe fb f (find ((key ==) . keyOf) ls)
 
 -- must merge files on collision 

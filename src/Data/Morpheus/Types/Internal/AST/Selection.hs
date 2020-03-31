@@ -104,7 +104,8 @@ data SelectionContent (s :: Stage) where
   UnionSelection :: UnionSelection -> SelectionContent VALID
 
 instance Join (SelectionContent s) where
-  merge xs (SelectionSet s1)  (SelectionSet s2) = SelectionSet <$> merge xs s1 s2
+  merge path (SelectionSet s1)  (SelectionSet s2) = SelectionSet <$> merge path s1 s2
+  merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
   merge path  oldC currC
     | oldC == currC = pure oldC
     | otherwise     = failure [
@@ -143,7 +144,8 @@ mergeConflict refs@(rootField:xs) err = [
           xs
 
 instance Join UnionTag where 
-  merge path _ current = failure $ mergeConflict path $ nameCollision (keyOf current) current
+  merge path (UnionTag oldTag oldSel) (UnionTag _ currentSel) 
+    = UnionTag oldTag <$> merge path oldSel currentSel
 
 instance KeyOf UnionTag where
   keyOf = unionTagName
@@ -172,8 +174,8 @@ data Selection (s :: Stage) where
 
 instance KeyOf (Selection s) where
   keyOf Selection { selectionName , selectionAlias } = fromMaybe selectionName selectionAlias
-  keyOf (InlineFragment fr) = fragmentType fr
-  keyOf (Spread ref) = refName ref
+  keyOf InlineFragment {} = ""
+  keyOf Spread {} = ""
 
 useDufferentAliases :: Message
 useDufferentAliases 
