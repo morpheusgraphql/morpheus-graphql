@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dd550bb6491a58f90ef0e7d2b1a9da590ad4dee1e268a42ca86858bac0fe3227
+-- hash: 8e125d41c050340c281012155491002333a22bae2e52254c5a4756feaf317b94
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -78,13 +78,13 @@ data-files:
     test/Feature/Holistic/parsing/singleLineComments/query.gql
     test/Feature/Holistic/schema.gql
     test/Feature/Holistic/selection/__typename/query.gql
-    test/Feature/Holistic/selection/AliasNameConflict/query.gql
     test/Feature/Holistic/selection/AliasResolve/query.gql
     test/Feature/Holistic/selection/AliasUnknownField/query.gql
+    test/Feature/Holistic/selection/conflict/alias/query.gql
+    test/Feature/Holistic/selection/conflict/nameConflict/query.gql
     test/Feature/Holistic/selection/hasNoSubFields/query.gql
     test/Feature/Holistic/selection/mergeSelection/query.gql
     test/Feature/Holistic/selection/mustHaveSubFields/query.gql
-    test/Feature/Holistic/selection/nameConflict/query.gql
     test/Feature/Holistic/selection/unknownField/query.gql
     test/Feature/Input/Enum/decode2Con/query.gql
     test/Feature/Input/Enum/decode3Con/query.gql
@@ -207,13 +207,13 @@ data-files:
     test/Feature/Holistic/parsing/numbers/response.json
     test/Feature/Holistic/parsing/singleLineComments/response.json
     test/Feature/Holistic/selection/__typename/response.json
-    test/Feature/Holistic/selection/AliasNameConflict/response.json
     test/Feature/Holistic/selection/AliasResolve/response.json
     test/Feature/Holistic/selection/AliasUnknownField/response.json
+    test/Feature/Holistic/selection/conflict/alias/response.json
+    test/Feature/Holistic/selection/conflict/nameConflict/response.json
     test/Feature/Holistic/selection/hasNoSubFields/response.json
     test/Feature/Holistic/selection/mergeSelection/response.json
     test/Feature/Holistic/selection/mustHaveSubFields/response.json
-    test/Feature/Holistic/selection/nameConflict/response.json
     test/Feature/Holistic/selection/unknownField/response.json
     test/Feature/Input/Enum/cases.json
     test/Feature/Input/Enum/decode2Con/response.json
