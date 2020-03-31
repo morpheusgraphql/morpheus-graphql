@@ -71,7 +71,7 @@ instance Traversable OrderedMap where
   traverse f (OrderedMap names values) = OrderedMap names <$> traverse f values
 
 instance NameCollision a => Join (OrderedMap a) where 
-  (OrderedMap k1 x) <:> (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
+  merge _ (OrderedMap k1 x)  (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
 
 instance Empty (OrderedMap a) where 
   empty = OrderedMap [] HM.empty
