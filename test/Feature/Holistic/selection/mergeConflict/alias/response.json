@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Fields \"user\" conflict because  subfields \"address\" conflict because \"city\" and \"houseNumber\" are different fields. Use different aliases on the fields to fetch both if this was intentional.",
+      "message": "Fields \"user\" conflict because subfields \"address\" conflict because \"city\" and \"houseNumber\" are different fields. Use different aliases on the fields to fetch both if this was intentional.",
       "locations": [
         {
           "line": 2,

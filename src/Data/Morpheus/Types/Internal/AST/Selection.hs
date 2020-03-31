@@ -134,7 +134,7 @@ mergeConflict refs@(rootField:xs) err = [
   ]
   where 
     fieldConflicts ref = "\"" <> refName ref  <> "\" conflict because "
-    renderSubfield ref txt = txt <> " subfields " <> fieldConflicts ref
+    renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
     renderStart = "Fields " <> fieldConflicts rootField
     renderSubfields = 
         foldr
@@ -177,8 +177,8 @@ instance KeyOf (Selection s) where
 
 useDufferentAliases :: Message
 useDufferentAliases 
-  ="Use different aliases on the "
-  <> "fields to fetch both if this was intentional."
+  =   "Use different aliases on the "
+  <>  "fields to fetch both if this was intentional."
 
 instance Join (Selection a) where 
   merge path old@Selection{ selectionPosition = pos1 }  current@Selection{ selectionPosition = pos2 }
