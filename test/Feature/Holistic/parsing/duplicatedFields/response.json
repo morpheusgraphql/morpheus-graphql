@@ -1,13 +1,7 @@
 {
-  "errors": [
-    {
-      "message": "There can be only one Selection named \"email\".",
-      "locations": [
-        {
-          "line": 1,
-          "column": 17
-        }
-      ]
+  "data": {
+    "user": {
+      "email": ""
     }
-  ]
+  }
 }
