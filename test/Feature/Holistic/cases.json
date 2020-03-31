@@ -28,11 +28,11 @@
     "description": "fail when: is not selected subFields on object type"
   },
   {
-    "path": "selection/conflict/nameConflict",
-    "description": "fail when: selected fields has same name"
+    "path": "selection/mergeConflict/arguments",
+    "description": "fail when: selections with on same fields have different arguments"
   },
   {
-    "path": "selection/conflict/alias",
+    "path": "selection/mergeConflict/alias",
     "description": "fail when: selections on different fields have same alias"
   },
   {

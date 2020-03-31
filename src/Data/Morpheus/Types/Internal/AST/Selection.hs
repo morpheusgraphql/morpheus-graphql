@@ -50,6 +50,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , OperationType(..)
                                                 , GQLError(..)
                                                 , GQLErrors
+                                                , Message
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -174,12 +175,18 @@ instance KeyOf (Selection s) where
   keyOf (InlineFragment fr) = fragmentType fr
   keyOf (Spread ref) = refName ref
 
+useDufferentAliases :: Message
+useDufferentAliases 
+  ="Use different aliases on the "
+  <> "fields to fetch both if this was intentional."
+
 instance Join (Selection a) where 
   merge path old@Selection{ selectionPosition = pos1 }  current@Selection{ selectionPosition = pos2 }
     = do
       selectionName <- mergeName
-      selectionArguments <- mergeArguments
-      selectionContent <- merge (path <> [Ref selectionName pos1]) (selectionContent old) (selectionContent current)
+      let currentPath = path <> [Ref selectionName pos1]
+      selectionArguments <- mergeArguments currentPath
+      selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
       pure $ Selection {
         selectionName,
         selectionAlias = mergeAlias,
@@ -200,9 +207,8 @@ instance Join (Selection a) where
       mergeName 
         | selectionName old == selectionName current = pure $ selectionName current
         | otherwise = failure $ mergeConflict path $ GQLError {
-          message = selectionName old <> " and " <> selectionName current 
-              <> " are different fields. Use different aliases on the " 
-              <> "fields to fetch both if this was intentional.",
+          message = "\"" <> selectionName old <> "\" and \"" <> selectionName current 
+              <> "\" are different fields. " <> useDufferentAliases,
           locations = [pos1, pos2]
         }
       ---------------------
@@ -214,9 +220,12 @@ instance Join (Selection a) where
         | all (isJust . selectionAlias) [old,current] = selectionAlias old
         | otherwise = Nothing
       --- arguments must be equal
-      mergeArguments  
+      mergeArguments currentPath
         | selectionArguments old == selectionArguments current = pure $ selectionArguments current
-        | otherwise = failure $ mergeConflict path $ nameCollision (keyOf current) current
+        | otherwise = failure $ mergeConflict currentPath $ GQLError {
+          message = "they have differing arguments. " <> useDufferentAliases,
+          locations = [pos1,pos2]
+        }
       --- merge content
   merge path _ current = failure $ mergeConflict path $ nameCollision (keyOf current) current
 
