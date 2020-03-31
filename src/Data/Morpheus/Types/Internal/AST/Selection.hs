@@ -73,7 +73,7 @@ import          Data.Morpheus.Types.Internal.Operation
                                                 , Join(..)
                                                 )
 import          Data.Morpheus.Error.NameCollision
-                                                ( NameCollision(..) )   
+                                                ( NameCollision(..) )
 
 data Fragment = Fragment
   { fragmentName      :: Name
@@ -181,10 +181,10 @@ instance Join (Selection a) where
         | selectionArguments old == selectionArguments current = pure $ selectionArguments current
         | otherwise = failure [nameCollision (keyOf current) current]
       --- merge content
+      mergeContent (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> s1 <:> s2
       mergeContent oldC currC
         | oldC == currC = pure oldC
-      mergeContent (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> s1 <:> s2
-      mergeContent _ _= failure [nameCollision (keyOf current) current]
+        | otherwise     = failure [nameCollision (keyOf current) current]
   _ <:> current = failure [nameCollision (keyOf current) current]
 
 instance NameCollision (Selection s) where
