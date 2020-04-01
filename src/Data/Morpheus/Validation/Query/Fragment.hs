@@ -32,8 +32,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , selectTypeObject
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( selectOr 
-                                                , selectBy
+                                                ( selectOr
                                                 , toList
                                                 , toAssoc
                                                 , selectKnown
