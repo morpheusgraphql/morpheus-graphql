@@ -156,4 +156,4 @@ validateArguments
     NoArguments -> empty
   -------------------------------------------------
   checkUnknown :: Argument RESOLVED -> Validation ArgumentDefinition
-  checkUnknown argument = selectKnown argument fieldDef
+  checkUnknown = (`selectKnown` fieldDef)
