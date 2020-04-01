@@ -56,7 +56,6 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , selectKnown
-                                                , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
