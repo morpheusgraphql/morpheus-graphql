@@ -143,7 +143,7 @@ validateArguments
     typeLib 
     operatorName 
     variables 
-    FieldDefinition { fieldName, fieldArgs }
+    fieldDef@FieldDefinition {  fieldArgs }
     pos 
     rawArgs
   = do
@@ -155,7 +155,5 @@ validateArguments
     (ArgumentsDefinition _ argsD) -> argsD
     NoArguments -> empty
   -------------------------------------------------
-  checkUnknown
-    :: Argument RESOLVED -> Validation ()
-  checkUnknown Argument { argumentName, argumentPosition } 
-    = selectKnown (Ref argumentName argumentPosition) fieldArgs >> pure ()
+  checkUnknown :: Argument RESOLVED -> Validation ArgumentDefinition
+  checkUnknown argument = selectKnown argument fieldDef

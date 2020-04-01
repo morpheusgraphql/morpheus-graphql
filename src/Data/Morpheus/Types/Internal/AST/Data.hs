@@ -115,6 +115,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , hsTypeName
                                                 , GQLError(..)
                                                 , GQLErrors
+                                                , RESOLVED
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                              
                                                 ( Empty(..)
@@ -451,6 +452,16 @@ instance NameCollision FieldDefinition where
     locations = []
   }
 
+instance Selectable FieldDefinition ArgumentDefinition where
+  selectOr fb f key FieldDefinition { fieldArgs }  = selectOr fb f key fieldArgs 
+
+instance Unknown FieldDefinition where
+  type UnknownSelector FieldDefinition = Argument RESOLVED
+  unknown FieldDefinition{ fieldName } Argument { argumentName, argumentPosition }
+    = errorMessage argumentPosition 
+      ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
+
+
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition { fieldName } = fieldName `notElem` sysFields
 
@@ -534,13 +545,6 @@ instance Listable ArgumentsDefinition ArgumentDefinition where
   toAssoc (ArgumentsDefinition _ args) = toAssoc args
   fromAssoc []                         = pure NoArguments
   fromAssoc args                       = ArgumentsDefinition Nothing <$> fromAssoc args
-
-instance Unknown ArgumentsDefinition where
-  type UnknownSelector ArgumentsDefinition = Ref
-  unknown _ (Ref name pos) 
-    = errorMessage pos 
-      ("Unknown Argument \"" <> name <> "\" on Field \"" <> fieldName <> "\".")
-      where fieldName = "TODO: thinkout a way how to support it"
 
 createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
 createArgument = createField NoArguments
