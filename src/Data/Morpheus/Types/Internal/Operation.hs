@@ -18,6 +18,7 @@ module Data.Morpheus.Types.Internal.Operation
     , selectBy
     , member
     , keys
+    , selectKnown
     )
     where 
 
@@ -32,7 +33,7 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         )
 import           Text.Megaparsec.Internal               ( ParsecT(..) )
 import           Text.Megaparsec.Stream                 ( Stream )
-
+import           Data.Morpheus.Error.NameCollision      (Unknown(..))
 
 class Empty a where 
   empty :: a
@@ -49,6 +50,18 @@ instance Selectable (HashMap Text a) a where
 selectBy :: (Failure e m, Selectable c a, Monad m) => e -> Name -> c -> m a
 selectBy err = selectOr (failure err) pure
 
+selectKnown 
+  ::  ( Monad m
+      , Failure GQLErrors m
+      , Selectable c a
+      , Unknown c
+      , KeyOf (UnknownSelector c)
+      ) 
+  => UnknownSelector c 
+  -> c 
+  -> m a
+selectKnown selector lib  = selectBy (unknown lib selector) (keyOf selector)  lib
+
 member :: forall a c. Selectable c a => Name -> c -> Bool
 member = selectOr False toTrue
   where 
@@ -60,6 +73,9 @@ class KeyOf a => Singleton c a | c -> a where
 
 class KeyOf a where 
   keyOf :: a -> Name
+
+instance KeyOf Ref where
+  keyOf = refName
 
 toPair :: KeyOf a => a -> (Name,a)
 toPair x = (keyOf x, x)

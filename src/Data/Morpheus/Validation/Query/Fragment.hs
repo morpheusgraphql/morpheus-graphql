@@ -6,7 +6,6 @@ module Data.Morpheus.Validation.Query.Fragment
   ( validateFragments
   , castFragmentType
   , resolveSpread
-  , getFragment
   )
 where
 
@@ -17,7 +16,6 @@ import           Data.Text                      ( Text )
 -- MORPHEUS
 import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
                                                 , cannotSpreadWithinItself
-                                                , unknownFragment
                                                 , unusedFragment
                                                 )
 import           Data.Morpheus.Error.Variable   ( unknownType )
@@ -38,6 +36,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectBy
                                                 , toList
                                                 , toAssoc
+                                                , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -63,10 +62,6 @@ type NodeEdges = (Node, [Node])
 
 type Graph = [NodeEdges]
 
-getFragment :: Ref -> Fragments -> Validation Fragment
-getFragment Ref { refName, refPosition } 
-  = selectBy (unknownFragment refName refPosition) refName 
-
 castFragmentType
   :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
 castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
@@ -76,7 +71,7 @@ castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
 
 resolveSpread :: Fragments -> [Text] -> Ref -> Validation Fragment
 resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
-  getFragment reference fragments
+  selectKnown reference fragments
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
 usedFragments :: Fragments -> [(Text, Selection RAW)] -> [Node]

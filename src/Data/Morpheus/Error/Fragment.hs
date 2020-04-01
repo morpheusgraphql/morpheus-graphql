@@ -4,7 +4,6 @@
 module Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself
   , unusedFragment
-  , unknownFragment
   , cannotBeSpreadOnType
   )
 where
@@ -52,11 +51,6 @@ cannotSpreadWithinItself fragments = [GQLError { message = text, locations = map
     <> "\" within itself via "
     <> T.intercalate ", " (map refName fragments)
     <> "."
-
--- {...H} -> "Unknown fragment \"H\"."
-unknownFragment :: Text -> Position -> GQLErrors
-unknownFragment key' position' = errorMessage position' text
-  where text = "Unknown Fragment \"" <> key' <> "\"."
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
 cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> [Text] -> GQLErrors

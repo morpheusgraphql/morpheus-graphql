@@ -1,12 +1,11 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE NamedFieldPuns     #-}
 {-# LANGUAGE DeriveLift         #-}
-{-# LANGUAGE KindSignatures     #-}
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE FlexibleInstances  #-}
-
+{-# LANGUAGE TypeFamilies       #-}
 
 module Data.Morpheus.Types.Internal.AST.Selection
   ( Argument(..)
@@ -36,6 +35,7 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import qualified Data.Text                  as  T
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Utils      (errorMessage)
 import           Data.Morpheus.Error.Operation  ( mutationIsNotDefined 
                                                 , subscriptionIsNotDefined
                                                 )
@@ -76,7 +76,9 @@ import          Data.Morpheus.Types.Internal.Operation
                                                 , Merge(..)
                                                 )
 import          Data.Morpheus.Error.NameCollision
-                                                ( NameCollision(..) )
+                                                ( NameCollision(..) 
+                                                , Unknown(..)
+                                                )
 
 data Fragment = Fragment
   { fragmentName      :: Name
@@ -95,6 +97,13 @@ instance KeyOf Fragment where
   keyOf = fragmentName
 
 type Fragments = OrderedMap Fragment
+
+-- {...H} -> "Unknown fragment \"H\"."
+instance Unknown Fragments where
+  type UnknownSelector Fragments = Ref
+  unknown _ (Ref name pos) 
+    = errorMessage pos
+      ("Unknown Fragment \"" <> name <> "\".")
 
 type Arguments a = OrderedMap (Argument a)
 

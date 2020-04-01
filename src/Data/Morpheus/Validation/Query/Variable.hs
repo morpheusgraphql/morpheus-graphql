@@ -53,15 +53,15 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                (Listable(..))
+                                                ( Listable(..)
+                                                , selectKnown
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
-import           Data.Morpheus.Validation.Query.Fragment
-                                                ( getFragment )
 
 getVariableType :: Text -> Position -> Schema -> Validation TypeDefinition
 getVariableType type' position' lib' = lookupInputType type' lib' error'
@@ -99,7 +99,7 @@ allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs)
   searchRefs (InlineFragment Fragment { fragmentSelection })
     = mapSelection searchRefs fragmentSelection
   searchRefs (Spread reference)
-    = getFragment reference fragmentLib
+    = selectKnown reference fragmentLib
       >>= mapSelection searchRefs
       .   fragmentSelection
 
