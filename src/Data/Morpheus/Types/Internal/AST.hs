@@ -112,7 +112,7 @@ module Data.Morpheus.Types.Internal.AST
   , isPrimitiveTypeName
   , isEntNode
   , lookupInputType
-  , coerceDataObject
+  , coerceObject
   , lookupDataUnion
   , lookupUnionTypes
   , lookupSelectionField
@@ -133,7 +133,6 @@ module Data.Morpheus.Types.Internal.AST
   , lookupDeprecatedReason
   , hasArguments
   , lookupWith
-  , selectTypeObject
   , typeFromScalar
   -- Temaplate Haskell
   , toHSFieldDefinition
@@ -148,6 +147,8 @@ module Data.Morpheus.Types.Internal.AST
   , GQLErrors
   , ObjectEntry(..)
   , UnionTag(..)
+  , isInputOrFail
+  , coerceInputType
   )
 where
 

@@ -18,7 +18,6 @@ where
 import           Data.Morpheus.Error.Selection  ( hasNoSubfields
                                                 , subfieldsNotSelected
                                                 )
-import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Selection(..)
@@ -32,6 +31,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeDefinition(..)
                                                 , Schema(..)
                                                 , TypeRef(..)
+                                                , Ref(..)
                                                 , Name
                                                 , RAW
                                                 , VALID
@@ -47,6 +47,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectBy 
                                                 , empty
                                                 , singleton
+                                                , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -90,10 +91,8 @@ validateSelectionSet lib fragments operatorName variables = __validate
                                      selectionPosition
                                      selectionArguments
       -- check field Type existence  -----
-      (typeCont :: TypeContent) <- typeContent <$> selectBy
-            (unknownType feildTypeName selectionPosition) 
-            feildTypeName 
-            lib
+      (typeCont :: TypeContent) <- typeContent <$> selectKnown
+            (Ref feildTypeName selectionPosition) lib
       pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --

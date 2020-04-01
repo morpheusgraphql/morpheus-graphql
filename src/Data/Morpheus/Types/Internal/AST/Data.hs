@@ -45,7 +45,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , toListField
   , isEntNode
   , lookupInputType
-  , coerceDataObject
+  , coerceObject
   , lookupDataUnion
   , lookupUnionTypes
   , lookupSelectionField
@@ -69,10 +69,14 @@ module Data.Morpheus.Types.Internal.AST.Data
   , selectTypeObject
   , toHSFieldDefinition
   , unsafeFromFields
+  , orFail
+  , isInputOrFail
+  , coerceInputType
   , Arguments
   )
 where
 
+import           Control.Monad                  ((>=>))
 import           Data.HashMap.Lazy              ( HashMap
                                                 , union
                                                 , elems
@@ -126,6 +130,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Merge(..)
                                                 , KeyOf(..)
                                                 , selectBy
+                                                , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
@@ -224,6 +229,11 @@ type TypeLib = HashMap Key TypeDefinition
 instance Selectable Schema TypeDefinition where 
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
+instance Unknown Schema where
+  type UnknownSelector Schema = Ref
+  unknown _ Ref { refName , refPosition }
+    = errorMessage refPosition ("Unknown type \"" <> refName <> "\".")
+
 initTypeLib :: TypeDefinition -> Schema
 initTypeLib query = Schema { types        = empty
                              , query        = query
@@ -312,9 +322,9 @@ isInputDataType TypeDefinition { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-coerceDataObject :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
-coerceDataObject _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-coerceDataObject gqlError _ = failure gqlError
+coerceObject :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
+coerceObject _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
+coerceObject gqlError _ = failure gqlError
 
 coerceDataUnion :: Failure error m => error -> TypeDefinition -> m DataUnion
 coerceDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
@@ -360,10 +370,37 @@ lookupDataUnion validationError name lib =
 lookupDataType :: Key -> Schema -> Maybe TypeDefinition
 lookupDataType name  = HM.lookup name . typeRegister
 
+orFail 
+  :: (Monad m, Failure e m) 
+  => Bool
+  -> e
+  -> a
+  -> m a
+orFail cond err x
+      | cond = pure x
+      | otherwise = failure err
+
+isInputOrFail 
+  :: (Monad m, Failure e m) 
+  => e
+  -> TypeDefinition
+  -> m TypeDefinition
+isInputOrFail err x
+      | isInputDataType x = pure x
+      | otherwise = failure err
+
+coerceInputType 
+  :: (Monad m, Failure GQLErrors m) 
+  => TypeDefinition 
+  -> m TypeDefinition
+coerceInputType = isInputOrFail ([ {- TODO: real errors -} ] :: GQLErrors) 
+
+
 lookupInputType :: Failure e m => Key -> Schema -> e -> m TypeDefinition
 lookupInputType name lib errors = case lookupDataType name lib of
   Just x | isInputDataType x -> pure x
   _                          -> failure errors
+
 
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
@@ -495,7 +532,7 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
     alias { typeWrappers = TypeList : typeWrappers }
 
 selectTypeObject :: (Monad m, Failure err m) => err -> Name -> Schema -> m (Name, FieldsDefinition )
-selectTypeObject  err name lib = selectBy err name lib >>= coerceDataObject err
+selectTypeObject  err name lib = selectBy err name lib >>= coerceObject err
 
 lookupSelectionField
   :: Failure GQLErrors Validation

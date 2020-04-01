@@ -8,6 +8,7 @@ module Data.Morpheus.Validation.Query.Variable
   )
 where
 
+import           Control.Monad                  ((>=>))
 import           Data.List                      ( (\\) )
 import qualified Data.Map                      as M
                                                 ( lookup )
@@ -18,7 +19,6 @@ import           Data.Text                      ( Text )
 --- MORPHEUS
 import           Data.Morpheus.Error.Input      ( inputErrorMessage )
 import           Data.Morpheus.Error.Variable   ( uninitializedVariable
-                                                , unknownType
                                                 , unusedVariables
                                                 , variableGotInvalidValue
                                                 )
@@ -51,9 +51,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
+                                                , coerceInputType
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
+                                                , selectKnown
                                                 , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -64,10 +66,9 @@ import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
 
 getVariableType :: Text -> Position -> Schema -> Validation TypeDefinition
-getVariableType type' position' lib' = lookupInputType type' lib' error'
-  where error' = unknownType type' position'
-
-
+getVariableType tyName position 
+  = selectKnown (Ref tyName position)
+  >=> coerceInputType
 
 class ExploreRefs a where
   exploreRefs :: a -> [Ref]

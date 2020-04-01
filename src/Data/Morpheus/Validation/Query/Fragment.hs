@@ -1,6 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Validation.Query.Fragment
   ( validateFragments
@@ -12,13 +13,14 @@ where
 import           Data.List                      ( (\\) )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
+import            Data.Functor                  (($>))
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Utils      (errorMessage)
 import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
                                                 , cannotSpreadWithinItself
                                                 , unusedFragment
                                                 )
-import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Fragment(..)
                                                 , Fragments
@@ -29,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema
                                                 , SelectionSet
                                                 , RAW
-                                                , selectTypeObject
+                                                , coerceObject
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectOr
@@ -100,11 +102,22 @@ scanForSpread (InlineFragment Fragment { fragmentSelection }) =
 scanForSpread (Spread Ref { refName, refPosition }) =
   [Ref refName refPosition]
 
+exploreSpreads :: SelectionSet RAW -> [Node]
+exploreSpreads = concatMap scanForSpread 
+
 validateFragment :: Schema -> Fragment -> Validation NodeEdges
-validateFragment lib  Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
-  = selectTypeObject validationError fragmentType lib >> pure
-    (Ref fragmentName fragmentPosition, concatMap scanForSpread fragmentSelection)
-  where validationError = unknownType fragmentType fragmentPosition
+validateFragment schema  Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
+  = checkTypeExistence $> (ref, exploreSpreads fragmentSelection)
+  where 
+    ref = Ref fragmentName fragmentPosition
+    checkTypeExistence 
+      = selectKnown (Ref fragmentType fragmentPosition) schema
+        >>= coerceObject 
+              -- TODO: use generalited solutions
+              (errorMessage 
+                fragmentPosition
+                ("The kind of the type \"" <> fragmentType <> "\" must be an OBJECT")
+              )
 
 detectLoopOnFragments :: Graph -> Validation ()
 detectLoopOnFragments lib = mapM_ checkFragment lib

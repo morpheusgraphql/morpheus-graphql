@@ -2,7 +2,6 @@
 
 module Data.Morpheus.Error.Variable
   ( undefinedVariable
-  , unknownType
   , variableGotInvalidValue
   , uninitializedVariable
   , unusedVariables
@@ -54,11 +53,6 @@ variableGotInvalidValue name' inputMessage' position' = errorMessage
  where
     text = "Variable \"$" <> name' 
       <> "\" got invalid value; " <> inputMessage'
-
-unknownType :: Text -> Position -> GQLErrors
-unknownType type' position' = errorMessage position' text
-  where 
-    text = "Unknown type \"" <> type' <> "\"."
 
 undefinedVariable :: Text -> Position -> Text -> GQLErrors
 undefinedVariable operation' position' key' = errorMessage position' text
