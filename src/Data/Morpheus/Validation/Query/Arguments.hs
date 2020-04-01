@@ -11,7 +11,6 @@ import           Data.Foldable                  (traverse_)
 import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
                                                 -- , argumentNameCollision
                                                 , undefinedArgument
-                                                , unknownArguments
                                                 )
 import           Data.Morpheus.Error.Input      ( InputValidation
                                                 , inputErrorMessage
@@ -46,6 +45,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectBy
                                                 , selectOr
                                                 , empty
+                                                , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -158,5 +158,4 @@ validateArguments
   checkUnknown
     :: Argument RESOLVED -> Validation ()
   checkUnknown Argument { argumentName, argumentPosition } 
-    = selectBy (unknownArguments fieldName [Ref argumentName argumentPosition]) argumentName fieldArgs 
-      >> pure ()
+    = selectKnown (Ref argumentName argumentPosition) fieldArgs >> pure ()

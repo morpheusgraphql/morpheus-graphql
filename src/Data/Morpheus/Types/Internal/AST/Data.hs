@@ -9,6 +9,7 @@
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( ScalarDefinition(..)
@@ -83,8 +84,11 @@ import           Instances.TH.Lift              ( )
 import           Data.List                      ( find)
 
 -- MORPHEUS
+import           Data.Morpheus.Error.Utils      (errorMessage)
 import          Data.Morpheus.Error.NameCollision
-                                                ( NameCollision(..))
+                                                ( NameCollision(..)
+                                                , Unknown(..)
+                                                )
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
@@ -98,6 +102,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Position
                                                 , Name
                                                 , Description
+                                                , Ref(..)
                                                 , TypeWrapper(..)
                                                 , TypeRef(..)
                                                 , Stage
@@ -163,14 +168,6 @@ instance NameCollision (Argument s) where
       }
 
 type Arguments s = OrderedMap (Argument s)
-
--- unknownArguments :: Text -> [Ref] -> GQLErrors
--- unknownArguments fieldName = map keyToError
---  where
---   keyToError (Ref argName pos) =
---     GQLError { message = toMessage argName, locations = [pos] }
---   toMessage argName = "Unknown Argument \"" <> argName <> "\" on Field \"" <> fieldName <> "\"."
-
 
 -- directive
 ------------------------------------------------------------------
@@ -524,12 +521,6 @@ data ArgumentsDefinition
 
 type ArgumentDefinition = FieldDefinition 
 
-createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
-createArgument = createField NoArguments
-
-hasArguments :: ArgumentsDefinition -> Bool
-hasArguments NoArguments = False
-hasArguments _ = True
 
 instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb _ _    NoArguments                  = fb
@@ -544,8 +535,25 @@ instance Listable ArgumentsDefinition ArgumentDefinition where
   fromAssoc []                         = pure NoArguments
   fromAssoc args                       = ArgumentsDefinition Nothing <$> fromAssoc args
 
+instance Unknown ArgumentsDefinition where
+  type UnknownSelector ArgumentsDefinition = Ref
+  unknown _ (Ref name pos) 
+    = errorMessage pos 
+      ("Unknown Argument \"" <> name <> "\" on Field \"" <> fieldName <> "\".")
+      where fieldName = "TODO: thinkout a way how to support it"
+
+createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
+createArgument = createField NoArguments
+
+hasArguments :: ArgumentsDefinition -> Bool
+hasArguments NoArguments = False
+hasArguments _ = True
+
+
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
+
+
 
 createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members

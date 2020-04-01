@@ -63,7 +63,6 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , UnionTag(..)
                                                 , UnionSelection
                                                 , Operation
-                                                , Arguments
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Message
@@ -79,6 +78,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema
+                                                , Arguments
                                                 )
 import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 (toOrderedMap)
