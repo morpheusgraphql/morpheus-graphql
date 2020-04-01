@@ -36,15 +36,15 @@ argumentGotInvalidValue :: Text -> Text -> Position -> GQLErrors
 argumentGotInvalidValue key' inputMessage' position' = errorMessage position'
                                                                     text
  where
-  text = T.concat ["Argument ", key', " got invalid value ;", inputMessage']
+  text = "Argument " <> key' 
+    <> " got invalid value ;" <> inputMessage'
 
 unknownArguments :: Text -> [Ref] -> GQLErrors
 unknownArguments fieldName = map keyToError
  where
   keyToError (Ref argName pos) =
     GQLError { message = toMessage argName, locations = [pos] }
-  toMessage argName = T.concat
-    ["Unknown Argument \"", argName, "\" on Field \"", fieldName, "\"."]
+  toMessage argName = "Unknown Argument \"" <> argName <> "\" on Field \"" <> fieldName <> "\"."
 
 undefinedArgument :: Ref -> GQLErrors
 undefinedArgument (Ref key' position') = errorMessage position' text

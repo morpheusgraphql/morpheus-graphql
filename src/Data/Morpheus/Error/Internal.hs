@@ -40,7 +40,7 @@ internalResolvingError = globalErrorMessage . ("INTERNAL RESOLVING ERROR:" <>)
 -- if type did not not found, but was defined by Schema
 internalUnknownTypeMessage :: Text -> GQLErrors
 internalUnknownTypeMessage x = globalErrorMessage
-  $ T.concat ["type did not not found, but was defined by Schema", x]
+  $ T.concat ["type did not found, but was defined by Schema", x]
 
 -- if arguments is already validated but has not found required argument
 internalArgumentError :: Text -> Validation b

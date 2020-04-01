@@ -48,13 +48,11 @@ cannotSpreadWithinItself :: [Ref] -> GQLErrors
 cannotSpreadWithinItself fragments =
   [GQLError { message = text, locations = map refPosition fragments }]
  where
-  text = T.concat
-    [ "Cannot spread fragment \""
-    , refName $ head fragments
-    , "\" within itself via "
-    , T.intercalate ", " (map refName fragments)
-    , "."
-    ]
+  text = "Cannot spread fragment \""
+    <> refName (head fragments)
+    <> "\" within itself via "
+    <> T.intercalate ", " (map refName fragments)
+    <> "."
 
 -- {...H} -> "Unknown fragment \"H\"."
 unknownFragment :: Text -> Position -> GQLErrors

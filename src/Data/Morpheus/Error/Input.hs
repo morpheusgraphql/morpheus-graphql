@@ -14,8 +14,7 @@ import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
 import           Data.Text                      ( Text )
 import qualified Data.Text                     as T
-                                                ( concat
-                                                , intercalate
+                                                ( intercalate
                                                 , pack
                                                 )
 
@@ -51,32 +50,28 @@ inputErrorMessage (GlobalInputError err) = Left err
 
 pathToText :: [Prop] -> Text
 pathToText []    = ""
-pathToText path' = T.concat ["on ", T.intercalate "." $ fmap propKey path']
+pathToText path = "on " <> T.intercalate "." (fmap propKey path)
 
 expectedTypeAFoundB :: [Prop] -> Text -> ResolvedValue -> Maybe Text -> Text
-expectedTypeAFoundB path' expected found Nothing = T.concat
-  [ pathToText path'
-  , " Expected type \""
-  , expected
-  , "\" found "
-  , T.pack (unpack $ encode found)
-  , "."
-  ]
-expectedTypeAFoundB path' expected found (Just errorMessage) = T.concat
-  [ pathToText path'
-  , " Expected type \""
-  , expected
-  , "\" found "
-  , T.pack (unpack $ encode found)
-  , "; "
-  , errorMessage
-  , "."
-  ]
+expectedTypeAFoundB path expected found Nothing 
+  = pathToText path 
+  <> " Expected type \""
+  <> expected
+  <> "\" found "
+  <> T.pack (unpack $ encode found)
+  <> "."
+
+expectedTypeAFoundB path expected found (Just errorMessage) =
+  pathToText path
+  <> " Expected type \""
+  <> expected <> "\" found "
+  <> T.pack (unpack $ encode found)
+  <> "; " <> errorMessage <> "."
 
 undefinedField :: [Prop] -> Text -> Text
-undefinedField path' field' =
-  T.concat [pathToText path', " Undefined Field \"", field', "\"."]
+undefinedField path field =
+  pathToText path <> " Undefined Field \"" <> field <> "\"."
 
 unknownField :: [Prop] -> Text -> Text
-unknownField path' field' =
-  T.concat [pathToText path', " Unknown Field \"", field', "\"."]
+unknownField path field =
+  pathToText path <> " Unknown Field \"" <> field <> "\"."

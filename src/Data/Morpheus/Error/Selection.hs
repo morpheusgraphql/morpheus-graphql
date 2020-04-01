@@ -14,9 +14,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLErrors
                                                 )
 import           Data.Text                      ( Text )
-import qualified Data.Text                     as T
-                                                ( concat )
-
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
 hasNoSubfields :: Text -> Text -> Position -> GQLErrors
@@ -33,10 +30,5 @@ cannotQueryField key typeName position = errorMessage position text
 subfieldsNotSelected :: Text -> Text -> Position -> GQLErrors
 subfieldsNotSelected key typeName position = errorMessage position text
  where
-  text = T.concat
-    [ "Field \""
-    , key
-    , "\" of type \""
-    , typeName
-    , "\" must have a selection of subfields"
-    ]
+  text = "Field \"" <> key <> "\" of type \""
+    <> typeName <> "\" must have a selection of subfields"
