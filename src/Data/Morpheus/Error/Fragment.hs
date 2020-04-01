@@ -45,8 +45,7 @@ unusedFragment = map toError
     }
 
 cannotSpreadWithinItself :: [Ref] -> GQLErrors
-cannotSpreadWithinItself fragments =
-  [GQLError { message = text, locations = map refPosition fragments }]
+cannotSpreadWithinItself fragments = [GQLError { message = text, locations = map refPosition fragments }]
  where
   text = "Cannot spread fragment \""
     <> refName (head fragments)
@@ -57,7 +56,7 @@ cannotSpreadWithinItself fragments =
 -- {...H} -> "Unknown fragment \"H\"."
 unknownFragment :: Text -> Position -> GQLErrors
 unknownFragment key' position' = errorMessage position' text
-  where text = T.concat ["Unknown Fragment \"", key', "\"."]
+  where text = "Unknown Fragment \"" <> key' <> "\"."
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
 cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> [Text] -> GQLErrors

@@ -15,8 +15,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLErrors
                                                 )
 import           Data.Text                      ( Text )
-import qualified Data.Text                     as T
-                                                ( concat )
 
 {-
   ARGUMENTS:
@@ -48,4 +46,4 @@ unknownArguments fieldName = map keyToError
 
 undefinedArgument :: Ref -> GQLErrors
 undefinedArgument (Ref key' position') = errorMessage position' text
-  where text = T.concat ["Required Argument: \"", key', "\" was not Defined"]
+  where text = "Required Argument: \"" <> key' <> "\" was not Defined"

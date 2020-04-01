@@ -24,7 +24,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ResolvedValue )
 
-
 type InputValidation a = Either InputError a
 
 data InputError

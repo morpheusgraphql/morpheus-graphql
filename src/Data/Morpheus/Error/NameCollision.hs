@@ -10,6 +10,3 @@ import           Data.Morpheus.Types.Internal.AST.Base
 
 class NameCollision a where 
   nameCollision :: Name -> a -> GQLError
-
-class UndefinedValue c where
-  undefinedValue :: c -> GQLError
