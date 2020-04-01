@@ -36,9 +36,9 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import qualified Data.Text                  as  T
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
-import           Data.Morpheus.Error.Subscription
-                                                ( subscriptionIsNotDefined )
+import           Data.Morpheus.Error.Operation  ( mutationIsNotDefined 
+                                                , subscriptionIsNotDefined
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
                                                 , Position

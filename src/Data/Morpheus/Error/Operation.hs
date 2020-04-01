@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Error.Mutation
+module Data.Morpheus.Error.Operation
   ( mutationIsNotDefined
+  , subscriptionIsNotDefined
   )
 where
 
