@@ -8,9 +8,7 @@
 {-# LANGUAGE TypeFamilies       #-}
 
 module Data.Morpheus.Types.Internal.AST.Selection
-  ( Argument(..)
-  , Arguments
-  , Selection(..)
+  ( Selection(..)
   , SelectionContent(..)
   , SelectionSet
   , UnionTag(..)
@@ -62,6 +60,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , TypeContent(..)
                                                 , FieldsDefinition
                                                 , Argument(..)
+                                                , Arguments
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Variable(..)
@@ -104,8 +103,6 @@ instance Unknown Fragments where
   unknown _ (Ref name pos) 
     = errorMessage pos
       ("Unknown Fragment \"" <> name <> "\".")
-
-type Arguments a = OrderedMap (Argument a)
 
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s

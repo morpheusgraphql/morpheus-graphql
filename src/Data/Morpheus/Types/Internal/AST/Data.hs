@@ -68,6 +68,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , selectTypeObject
   , toHSFieldDefinition
   , unsafeFromFields
+  , Arguments
   )
 where
 
@@ -160,6 +161,16 @@ instance NameCollision (Argument s) where
       { message = "There can Be only One Argument Named \"" <> argumentName <> "\"",
         locations = [argumentPosition] 
       }
+
+type Arguments s = OrderedMap (Argument s)
+
+-- unknownArguments :: Text -> [Ref] -> GQLErrors
+-- unknownArguments fieldName = map keyToError
+--  where
+--   keyToError (Ref argName pos) =
+--     GQLError { message = toMessage argName, locations = [pos] }
+--   toMessage argName = "Unknown Argument \"" <> argName <> "\" on Field \"" <> fieldName <> "\"."
+
 
 -- directive
 ------------------------------------------------------------------

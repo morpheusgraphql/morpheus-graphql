@@ -2,7 +2,6 @@
 
 module Data.Morpheus.Error.Arguments
   ( undefinedArgument
-  , unknownArguments
   , argumentGotInvalidValue
   )
 where
@@ -36,13 +35,6 @@ argumentGotInvalidValue key' inputMessage' position' = errorMessage position'
  where
   text = "Argument " <> key' 
     <> " got invalid value ;" <> inputMessage'
-
-unknownArguments :: Text -> [Ref] -> GQLErrors
-unknownArguments fieldName = map keyToError
- where
-  keyToError (Ref argName pos) =
-    GQLError { message = toMessage argName, locations = [pos] }
-  toMessage argName = "Unknown Argument \"" <> argName <> "\" on Field \"" <> fieldName <> "\"."
 
 undefinedArgument :: Ref -> GQLErrors
 undefinedArgument (Ref key' position') = errorMessage position' text
