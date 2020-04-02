@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2784d1240b0cbe0264db742b02adfc66a8c29a4efe26d1f89332d2b9c9dc3201
+-- hash: b5e1ffad9e7f07ea8979bf9c2f405260eb5f82a44811c8c7c712f9dd4d69a152
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -33,6 +33,7 @@ data-files:
     test/Feature/Holistic/fragment/inlineFragmentTypeMismatch/query.gql
     test/Feature/Holistic/fragment/loopingFragment/query.gql
     test/Feature/Holistic/fragment/nameCollision/query.gql
+    test/Feature/Holistic/fragment/unknownConditionType/query.gql
     test/Feature/Holistic/fragment/unknownTargetType/query.gql
     test/Feature/Holistic/fragment/unusedFragment/query.gql
     test/Feature/Holistic/introspection/defaultTypes/Boolean/query.gql
@@ -164,6 +165,7 @@ data-files:
     test/Feature/Holistic/fragment/inlineFragmentTypeMismatch/response.json
     test/Feature/Holistic/fragment/loopingFragment/response.json
     test/Feature/Holistic/fragment/nameCollision/response.json
+    test/Feature/Holistic/fragment/unknownConditionType/response.json
     test/Feature/Holistic/fragment/unknownTargetType/response.json
     test/Feature/Holistic/fragment/unusedFragment/response.json
     test/Feature/Holistic/introspection/defaultTypes/Boolean/response.json

@@ -1,0 +1,8 @@
+{
+  user {
+    ...MyFragment
+  }
+}
+fragment MyFragment on BjsK {
+  name
+}

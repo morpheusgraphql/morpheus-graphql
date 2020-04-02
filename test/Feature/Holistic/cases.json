@@ -76,6 +76,10 @@
     "description": "fail when: condtion type is not an Object"
   },
   {
+    "path": "fragment/unknownConditionType",
+    "description": "fail when: condtion type is not defined by schema"
+  },
+  {
     "path": "parsing/duplicatedFields",
     "description": "fail when: user supplies duplicated fields"
   },
