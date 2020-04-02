@@ -12,9 +12,7 @@ import           Data.Foldable                  (traverse_)
 import           Data.List                      ( elem )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      ( errorMessage
-                                                , globalErrorMessage
-                                                )
+import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Error.Variable   ( incompatibleVariableType )
 import           Data.Morpheus.Error.Input      ( undefinedField
                                                 , typeViolation
@@ -221,6 +219,3 @@ validateEnum gqlError enumValues (Enum enumValue)
   | otherwise             = failure gqlError
   where tags = map enumName enumValues
 validateEnum gqlError _ _ = failure gqlError
-
-withPrefix :: (Message, Position) -> Message -> GQLErrors
-withPrefix (prefix,pos) message = errorMessage pos (prefix <> message)
