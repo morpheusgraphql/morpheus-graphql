@@ -95,11 +95,11 @@ type TypeDef = (Name, FieldsDefinition)
 type TypeFieldDef = (Name, FieldDefinition)
 
 clusterTypes :: Schema -> Fragments -> Ref -> SelectionSet RAW -> TypeFieldDef -> Validation [(TypeDef, [Fragment])]
-clusterTypes schema fragments selectionRef selectionSet (typeName,dataField) = do
+clusterTypes schema fragments selectionRef selectionSet (typeName,fieldDef) = do
   -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
   -- for example 
   -- User | Admin | Product
-  unionTypes <- lookupUnionTypes selectionRef schema dataField
+  unionTypes <- lookupUnionTypes selectionRef schema fieldDef
   let unionTags = map fst unionTypes
   -- find all Fragments used in Selection
   spreads <- concat <$> traverse (exploreUnionFragments fragments typeName unionTags) (toList selectionSet)

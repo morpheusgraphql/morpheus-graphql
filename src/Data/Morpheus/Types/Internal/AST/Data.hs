@@ -350,7 +350,6 @@ fromOperation :: Maybe TypeDefinition -> [(Name, TypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype,datatype)]
 fromOperation Nothing = []
 
-
 -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
 -- for example 
 -- User | Admin | Product
