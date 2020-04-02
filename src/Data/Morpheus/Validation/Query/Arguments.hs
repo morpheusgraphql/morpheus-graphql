@@ -12,9 +12,6 @@ import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
                                                 -- , argumentNameCollision
                                                 , undefinedArgument
                                                 )
-import           Data.Morpheus.Error.Input      ( InputValidation
-                                                , inputErrorMessage
-                                                )
 import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
 import           Data.Morpheus.Error.Variable   ( undefinedVariable )
 import           Data.Morpheus.Types.Internal.AST

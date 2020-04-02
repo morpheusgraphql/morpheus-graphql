@@ -17,7 +17,6 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
 
 --- MORPHEUS
-import           Data.Morpheus.Error.Input      ( inputErrorMessage )
 import           Data.Morpheus.Error.Variable   ( uninitializedVariable
                                                 , unusedVariables
                                                 , variableGotInvalidValue

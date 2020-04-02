@@ -3,13 +3,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Morpheus.Error.Input
-  ( inputErrorMessage
-  , InputError(..)
-  , Prop(..)
-  , InputValidation
-  , expectedTypeAFoundB
+  ( expectedTypeAFoundB
   , unknownField
   , undefinedField
+  , Prop(..)
   )
 where
 
@@ -21,34 +18,16 @@ import qualified Data.Text                     as T
                                                 , pack
                                                 )
 
+
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( GQLErrors )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ResolvedValue )
-
-type InputValidation a = Either InputError a
-
-data InputError
-  = UnexpectedType [Prop] Text ResolvedValue (Maybe Text)
-  | UndefinedField [Prop] Text
-  | UnknownField [Prop] Text
-  | GlobalInputError GQLErrors
 
 data Prop =
   Prop
     { propKey  :: Text
     , propType :: Text
     }
-
-inputErrorMessage :: InputError -> Either GQLErrors Text
-inputErrorMessage (UnexpectedType path type' value errorMessage) =
-  Right $ expectedTypeAFoundB path type' value errorMessage
-inputErrorMessage (UndefinedField path' field') =
-  Right $ undefinedField path' field'
-inputErrorMessage (UnknownField path' field') =
-  Right $ unknownField path' field'
-inputErrorMessage (GlobalInputError err) = Left err
 
 pathToText :: [Prop] -> Text
 pathToText []    = ""
