@@ -6,11 +6,10 @@ module Data.Morpheus.Error.Arguments
   )
 where
 
+import           Data.Semigroup                 ( (<>) )
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
-                                                , Position
-                                                , GQLError(..)
                                                 , GQLErrors
                                                 , Message
                                                 , Name
