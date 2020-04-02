@@ -106,6 +106,7 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
 validateInputValue
   :: Schema
   -> (Message, Position)
+  -- TODO: include Array indexes
   -> Path
   -> [TypeWrapper]
   -> TypeDefinition
