@@ -15,12 +15,13 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Position
                                                 , GQLError(..)
                                                 , GQLErrors
+                                                , Name
+                                                , Message
                                                 )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text )
 
 -- query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
-incompatibleVariableType :: Text -> Text -> Text -> Position -> GQLErrors
+incompatibleVariableType :: Name -> Name -> Name -> Position -> GQLErrors
 incompatibleVariableType variableName variableType argType argPosition =
   errorMessage argPosition text
  where
@@ -34,7 +35,7 @@ incompatibleVariableType variableName variableType argType argPosition =
       <> "\"."
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-unusedVariables :: Text -> [Ref] -> GQLErrors
+unusedVariables :: Name -> [Ref] -> GQLErrors
 unusedVariables operator' = map keyToError
  where
   keyToError (Ref key' position') =
@@ -46,22 +47,17 @@ unusedVariables operator' = map keyToError
 
 -- type mismatch
 -- { "v": 1  }        "Variable \"$v\" got invalid value 1; Expected type LANGUAGE."
-variableGotInvalidValue :: Text -> Text -> Position -> GQLErrors
-variableGotInvalidValue name' inputMessage' position' = errorMessage
-  position'
-  text
- where
-    text = "Variable \"$" <> name' 
-      <> "\" got invalid value; " <> inputMessage'
+variableGotInvalidValue :: Name -> Message
+variableGotInvalidValue name = "Variable \"$" <> name <> "\" got invalid value; "
 
-undefinedVariable :: Text -> Position -> Text -> GQLErrors
+undefinedVariable :: Name -> Position -> Name -> GQLErrors
 undefinedVariable operation' position' key' = errorMessage position' text
  where
   text = "Variable \"" <> key'
     <> "\" is not defined by operation \""
     <> operation' <> "\"."
 
-uninitializedVariable :: Position -> Text -> Text -> GQLErrors
+uninitializedVariable :: Position -> Name -> Name -> GQLErrors
 uninitializedVariable position' type' key' = errorMessage position' text
  where
   text = "Variable \"$" <> key' 

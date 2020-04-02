@@ -12,9 +12,10 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Position
                                                 , GQLError(..)
                                                 , GQLErrors
+                                                , Message
+                                                , Name
                                                 )
-import           Data.Text                      ( Text )
-
+                                              
 {-
   ARGUMENTS:
     type Experience {
@@ -29,12 +30,8 @@ import           Data.Text                      ( Text )
   - experience( a1 : 1 ) -> "Unknown argument \"a1\" on field \"experience\" of type \"Experience\".",
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
-argumentGotInvalidValue :: Text -> Text -> Position -> GQLErrors
-argumentGotInvalidValue key' inputMessage' position' = errorMessage position'
-                                                                    text
- where
-  text = "Argument " <> key' 
-    <> " got invalid value ;" <> inputMessage'
+argumentGotInvalidValue :: Name -> Message
+argumentGotInvalidValue argName = "Argument " <> argName <> " got invalid value ;"
 
 undefinedArgument :: Ref -> GQLErrors
 undefinedArgument (Ref key' position') = errorMessage position' text

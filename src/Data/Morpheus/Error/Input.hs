@@ -7,6 +7,9 @@ module Data.Morpheus.Error.Input
   , InputError(..)
   , Prop(..)
   , InputValidation
+  , expectedTypeAFoundB
+  , unknownField
+  , undefinedField
   )
 where
 

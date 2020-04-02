@@ -164,16 +164,10 @@ lookupAndValidateValueOnBody
       maybe (pure Null) (validator varType) (M.lookup variableName bodyVariables)
   -----------------------------------------------------------------------------------------------
   validator :: TypeDefinition -> ResolvedValue -> Validation ValidValue
-  validator varType varValue =
-    case
-        validateInputValue schema
-                           []
-                           (typeWrappers variableType)
-                           varType
-                           (variableName, varValue)
-      of
-        Left message -> failure $ case inputErrorMessage message of
-          Left errors -> errors
-          Right errMessage ->
-            variableGotInvalidValue variableName errMessage variablePosition
-        Right value -> pure value
+  validator varType varValue 
+    = validateInputValue schema
+        (variableGotInvalidValue variableName, variablePosition)
+        []
+        (typeWrappers variableType)
+        varType
+        (variableName, varValue)

@@ -462,6 +462,9 @@ instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
   toAssoc = toAssoc . unFieldsDefinition
 
+instance Unknown FieldsDefinition where
+ -- unknown = selectBy (UnknownField props entryName) entryName parentFields
+
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 -- 

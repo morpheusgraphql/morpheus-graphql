@@ -96,7 +96,7 @@ validateArgument
   -> Arguments RESOLVED
   -> ArgumentDefinition
   -> Validation (Argument VALID)
-validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
+validateArgument schema fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
   = selectOr 
     handleNullable 
     handleArgument 
@@ -118,18 +118,16 @@ validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldNa
   validateArgumentValue Argument { argumentValue = value, .. } =
     do
       datatype <- lookupInputType typeConName
-                                  lib
-                                  (internalUnknownTypeMessage typeConName)
-      argumentValue <- handleInputError
-        $ validateInputValue lib [] typeWrappers datatype (fieldName, value)
+                          schema
+                          (internalUnknownTypeMessage typeConName)
+      argumentValue <- validateInputValue 
+                          schema
+                          (argumentGotInvalidValue argumentName,argumentPosition) 
+                          [] 
+                          typeWrappers 
+                          datatype 
+                          (fieldName, value)
       pure Argument { argumentValue , .. }
-   where
-    ---------
-    handleInputError :: InputValidation a -> Validation a
-    handleInputError (Left err) = failure $ case inputErrorMessage err of
-      Left  errors  -> errors
-      Right message -> argumentGotInvalidValue fieldName message argumentPosition
-    handleInputError (Right x) = pure x
 
 validateArguments
   :: Schema
