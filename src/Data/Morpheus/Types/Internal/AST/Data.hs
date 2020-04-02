@@ -92,6 +92,7 @@ import           Data.Morpheus.Error.Utils      (errorMessage)
 import          Data.Morpheus.Error.NameCollision
                                                 ( NameCollision(..)
                                                 , Unknown(..)
+                                                , KindViolation(..)
                                                 )
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
@@ -322,9 +323,13 @@ isInputDataType TypeDefinition { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-coerceObject :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
+coerceObject :: (Failure GQLErrors m ,KindViolation a) => a -> TypeDefinition -> m (Name, FieldsDefinition)
 coerceObject _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-coerceObject gqlError _ = failure gqlError
+coerceObject arg _ = failure [kindViolation arg]
+
+coerceObject2 :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
+coerceObject2 _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
+coerceObject2 gqlError _ = failure gqlError
 
 coerceDataUnion :: Failure error m => error -> TypeDefinition -> m DataUnion
 coerceDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
@@ -532,7 +537,7 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
     alias { typeWrappers = TypeList : typeWrappers }
 
 selectTypeObject :: (Monad m, Failure err m) => err -> Name -> Schema -> m (Name, FieldsDefinition )
-selectTypeObject  err name lib = selectBy err name lib >>= coerceObject err
+selectTypeObject  err name lib = selectBy err name lib >>= coerceObject2 err
 
 lookupSelectionField
   :: Failure GQLErrors Validation

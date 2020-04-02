@@ -3,6 +3,7 @@
 module Data.Morpheus.Error.NameCollision
   ( NameCollision(..)
   , Unknown(..)
+  , KindViolation(..)
   )
 where
 
@@ -18,3 +19,6 @@ class NameCollision a where
 class Unknown c where
   type UnknownSelector c
   unknown :: c -> UnknownSelector c -> GQLErrors
+
+class KindViolation a where
+  kindViolation :: a -> GQLError

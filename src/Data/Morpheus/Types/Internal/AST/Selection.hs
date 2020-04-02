@@ -77,6 +77,7 @@ import          Data.Morpheus.Types.Internal.Operation
 import          Data.Morpheus.Error.NameCollision
                                                 ( NameCollision(..) 
                                                 , Unknown(..)
+                                                , KindViolation(..)
                                                 )
 
 data Fragment = Fragment
@@ -86,9 +87,20 @@ data Fragment = Fragment
   , fragmentSelection :: SelectionSet RAW
   } deriving ( Show, Eq, Lift)
 
+-- ERRORs
 instance NameCollision Fragment where
   nameCollision _ Fragment { fragmentName , fragmentPosition } = GQLError
     { message   = "There can be only one fragment named \"" <> fragmentName <> "\"."
+    , locations = [fragmentPosition]
+    }
+
+instance KindViolation Fragment where
+  kindViolation Fragment { fragmentName, fragmentType, fragmentPosition } 
+    = GQLError
+    { message   
+      = "Fragment \"" <> fragmentName 
+        <> "\" cannot condition on non composite type \"" 
+        <> fragmentType <>"\"."
     , locations = [fragmentPosition]
     }
 

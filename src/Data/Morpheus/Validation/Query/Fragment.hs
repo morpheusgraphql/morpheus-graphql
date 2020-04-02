@@ -106,18 +106,13 @@ exploreSpreads :: SelectionSet RAW -> [Node]
 exploreSpreads = concatMap scanForSpread 
 
 validateFragment :: Schema -> Fragment -> Validation NodeEdges
-validateFragment schema  Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
+validateFragment schema  fr@Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
   = checkTypeExistence $> (ref, exploreSpreads fragmentSelection)
   where 
     ref = Ref fragmentName fragmentPosition
     checkTypeExistence 
-      = selectKnown (Ref fragmentType fragmentPosition) schema
-        >>= coerceObject 
-              -- TODO: use generalited solutions
-              (errorMessage 
-                fragmentPosition
-                ("Fragment \"" <> fragmentName <> "\" cannot condition on non composite type \""<> fragmentType <>"\".")
-              )
+      = selectKnown (Ref fragmentType fragmentPosition) schema 
+        >>= coerceObject fr
 
 detectLoopOnFragments :: Graph -> Validation ()
 detectLoopOnFragments lib = mapM_ checkFragment lib
