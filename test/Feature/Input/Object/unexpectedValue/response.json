@@ -44,6 +44,15 @@
           "column": 13
         }
       ]
+    },
+    {
+      "message": "Argument value got invalid value. in field \"recursive.recursive.field\": Expected type \"String!\" found 5.",
+      "locations": [
+        {
+          "line": 8,
+          "column": 13
+        }
+      ]
     }
   ]
 }
