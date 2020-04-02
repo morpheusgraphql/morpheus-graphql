@@ -356,20 +356,15 @@ fromOperation Nothing = []
 -- User | Admin | Product
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)
-  => Position
-  -> Key
+  => Ref
   -> Schema
   -> FieldDefinition 
   -> m [(Name, FieldsDefinition)]
-lookupUnionTypes position key lib FieldDefinition { fieldType = TypeRef { typeConName = typeName } }
-  = lookupDataUnion gqlError typeName lib
-    >>= mapM (flip (selectTypeObject gqlError) lib)
-  where gqlError = hasNoSubfields key typeName position
-
-lookupDataUnion
-  :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
-lookupDataUnion validationError name lib =
-  selectBy validationError name lib >>= constraintDataUnion validationError
+lookupUnionTypes ref schema FieldDefinition { fieldType = TypeRef { typeConName  } }
+  = selectKnown (ref { refName = typeConName }) schema 
+    >>= constraintDataUnion gqlError
+    >>= traverse (flip (selectTypeObject gqlError) schema)
+  where gqlError = hasNoSubfields ref typeConName
 
 lookupDataType :: Key -> Schema -> Maybe TypeDefinition
 lookupDataType name  = HM.lookup name . typeRegister
@@ -543,14 +538,13 @@ lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fi
 
 lookupFieldAsSelectionSet
   :: (Monad m, Failure GQLErrors m)
-  => Position
-  -> Key
+  => Ref
   -> Schema
   -> FieldDefinition  
   -> m (Name, FieldsDefinition )
-lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef { typeConName } }
+lookupFieldAsSelectionSet ref lib FieldDefinition { fieldType = TypeRef { typeConName } }
   = selectTypeObject gqlError typeConName lib
-  where gqlError = hasNoSubfields key typeConName position
+  where gqlError = hasNoSubfields ref typeConName
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 -----------------------------------------------------------------------------------------------

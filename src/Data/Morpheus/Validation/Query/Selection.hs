@@ -73,7 +73,7 @@ validateSelectionSet
   -> TypeDef
   -> SelectionSet RAW
   -> Validation (SelectionSet VALID)
-validateSelectionSet lib fragments operatorName variables = __validate
+validateSelectionSet schema fragments operatorName variables = __validate
  where
   __validate
     :: TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)
@@ -83,16 +83,16 @@ validateSelectionSet lib fragments operatorName variables = __validate
     commonValidation key selectionArguments selectionPosition = do
       (fieldDef :: FieldDefinition) <- lookupSelectionField selectionPosition key dataType
       let feildTypeName = typeConName (fieldType fieldDef)
+      let fieldTypeRef = Ref feildTypeName selectionPosition
       -- validate field Argument -----
-      (arguments ::Arguments VALID) <- validateArguments lib
+      (arguments ::Arguments VALID) <- validateArguments schema
                                      operatorName
                                      variables
                                      fieldDef
                                      selectionPosition
                                      selectionArguments
       -- check field Type existence  -----
-      (typeCont :: TypeContent) <- typeContent <$> selectKnown
-            (Ref feildTypeName selectionPosition) lib
+      (typeCont :: TypeContent) <- typeContent <$> selectKnown fieldTypeRef schema
       pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     --
@@ -124,27 +124,26 @@ validateSelectionSet lib fragments operatorName variables = __validate
             selContent <- validateByTypeContent dataField datatype
             pure $ singleton $ sel { selectionArguments, selectionContent = selContent }
            where
+            selectionRef :: Ref
+            selectionRef = Ref selectionName selectionPosition
             validateByTypeContent :: FieldDefinition -> TypeContent -> Validation (SelectionContent VALID)
             -- Validate UnionSelection  
             validateByTypeContent dataField DataUnion {} 
               = validateUnionSelection  
                     __validate
-                    lib 
+                    schema 
                     fragments
-                    (selectionName,selectionPosition,selArgs) 
+                    selectionRef
                     rawSelection 
                     (typeName,dataField)
             -- Validate Regular selection set
             validateByTypeContent dataField DataObject {} = do
-                fieldType' <- lookupFieldAsSelectionSet selectionPosition
-                                                        selectionName
-                                                        lib
-                                                        dataField
+                fieldType' <- lookupFieldAsSelectionSet selectionRef schema dataField
                 SelectionSet <$> __validate fieldType' rawSelection
 
-            validateByTypeContent dataField _ = failure $ hasNoSubfields selectionName
-                                            (typeConName $fieldType dataField)
-                                            selectionPosition
+            validateByTypeContent dataField _ = failure $ hasNoSubfields 
+                selectionRef 
+                (typeConName $fieldType dataField)
     validateSelection (Spread ref) =
       resolveSpread fragments [typeName] ref >>= validateFragment
     validateSelection (InlineFragment fragment') =

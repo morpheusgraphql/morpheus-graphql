@@ -35,6 +35,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionSet
                                                 , lookupUnionTypes
                                                 , UnionTag(..)
+                                                , Ref(..)
                                                 )
 import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
                                                 ( join )
@@ -92,18 +93,13 @@ tagUnionFragments types fragments
 
 type TypeDef = (Name, FieldsDefinition)
 type TypeFieldDef = (Name, FieldDefinition)
-type SelectionDef s = (Name,Position,Arguments s)
 
-
-clusterTypes :: Schema -> Fragments -> SelectionDef RAW -> SelectionSet RAW -> TypeFieldDef -> Validation [(TypeDef, [Fragment])]
-clusterTypes schema fragments (selectionName,selectionPosition,_) selectionSet (typeName,dataField) = do
+clusterTypes :: Schema -> Fragments -> Ref -> SelectionSet RAW -> TypeFieldDef -> Validation [(TypeDef, [Fragment])]
+clusterTypes schema fragments selectionRef selectionSet (typeName,dataField) = do
   -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
   -- for example 
   -- User | Admin | Product
-  unionTypes <- lookupUnionTypes selectionPosition
-                                selectionName
-                                schema
-                                dataField
+  unionTypes <- lookupUnionTypes selectionRef schema dataField
   let unionTags = map fst unionTypes
   -- find all Fragments used in Selection
   spreads <- concat <$> traverse (exploreUnionFragments fragments typeName unionTags) (toList selectionSet)
@@ -138,16 +134,16 @@ validateUnionSelection
     :: (TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)) 
     -> Schema 
     -> Fragments 
-    -> SelectionDef RAW 
+    -> Ref
     -> SelectionSet RAW 
     -> TypeFieldDef 
     -> Validation (SelectionContent VALID)
-validateUnionSelection validate schema fragments selectionDef selectionSet typeField  = do
+validateUnionSelection validate schema fragments selectionRef selectionSet typeField  = do
     let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
     categories <- clusterTypes 
         schema 
         fragments
-        selectionDef
+        selectionRef
         selectionSet 
         typeField
     validateCluster validate __typename categories 
