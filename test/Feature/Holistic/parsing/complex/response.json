@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Argument coordinates got invalid value ;on longitude Expected type \"Int\" found [null,[[],[{\"uid\":\"1\"}]]].",
+      "message": "Argument coordinates got invalid value; on longitude Expected type \"Int!\" found [null,[[],[{\"uid\":\"1\"}]]].",
       "locations": [
         {
           "line": 8,
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "message": "Argument coordinates got invalid value ;on longitude Expected type \"Int\" found [].",
+      "message": "Argument coordinates got invalid value; on longitude Expected type \"Int!\" found [].",
       "locations": [
         {
           "line": 11,
@@ -19,7 +19,7 @@
       ]
     },
     {
-      "message": "Argument cityID got invalid value ; Expected type \"TestEnum\" found \"HH\".",
+      "message": "Argument cityID got invalid value;  Expected type \"TestEnum!\" found \"HH\".",
       "locations": [
         {
           "line": 15,
