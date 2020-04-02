@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a46d93c1e239dbe6d8d439004a58bf369db999bb5658f2dedc722156cbf70458
+-- hash: 2784d1240b0cbe0264db742b02adfc66a8c29a4efe26d1f89332d2b9c9dc3201
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -28,6 +28,7 @@ data-files:
     test/Feature/Holistic/arguments/unknownArguments/query.gql
     test/Feature/Holistic/failure/resolveFailure/query.gql
     test/Feature/Holistic/fragment/cannotBeSpreadOnType/query.gql
+    test/Feature/Holistic/fragment/conditionTypeViolation/query.gql
     test/Feature/Holistic/fragment/inlineFragment/query.gql
     test/Feature/Holistic/fragment/inlineFragmentTypeMismatch/query.gql
     test/Feature/Holistic/fragment/loopingFragment/query.gql
@@ -158,6 +159,7 @@ data-files:
     test/Feature/Holistic/cases.json
     test/Feature/Holistic/failure/resolveFailure/response.json
     test/Feature/Holistic/fragment/cannotBeSpreadOnType/response.json
+    test/Feature/Holistic/fragment/conditionTypeViolation/response.json
     test/Feature/Holistic/fragment/inlineFragment/response.json
     test/Feature/Holistic/fragment/inlineFragmentTypeMismatch/response.json
     test/Feature/Holistic/fragment/loopingFragment/response.json

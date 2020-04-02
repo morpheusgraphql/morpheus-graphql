@@ -72,6 +72,10 @@
     "description": "fail when: fragments are defined with same name"
   },
   {
+    "path": "fragment/conditionTypeViolation",
+    "description": "fail when: condtion type is not an Object"
+  },
+  {
     "path": "parsing/duplicatedFields",
     "description": "fail when: user supplies duplicated fields"
   },
