@@ -47,6 +47,7 @@ import           Data.Scientific                ( Scientific
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , unpack
+                                                , pack
                                                 )
 import qualified Data.Text                     as T
 import qualified Data.Vector                   as V
@@ -57,7 +58,9 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 
 -- MORPHEUS
 import          Data.Morpheus.Error.NameCollision
-                                                ( NameCollision(..))
+                                                ( NameCollision(..)
+                                                , KindViolation(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Name
@@ -68,6 +71,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , RESOLVED
                                                 , TypeRef
                                                 , GQLError(..)
+                                                , TypeRef(..)
                                                 )
 import          Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap
@@ -159,6 +163,20 @@ data Variable (stage :: Stage) = Variable
   , variablePosition     :: Position
   , variableValue        :: VariableContent (VAR stage)
   } deriving (Show, Eq, Lift)
+
+instance KindViolation (Variable s) where
+  kindViolation Variable 
+      { variableName 
+      , variablePosition
+      , variableType = TypeRef { typeConName }
+      } 
+    = GQLError 
+      { message 
+        =  "Variable \"$" <> variableName 
+        <> "\" cannot be non-input type \""
+        <> typeConName <>"\"." --TODO: render with typewrappers
+      , locations = [variablePosition]
+      }
 
 instance KeyOf (Variable s) where
   keyOf = variableName

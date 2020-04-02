@@ -166,7 +166,7 @@ lookupAndValidateValueOnBody
   validator :: TypeDefinition -> ResolvedValue -> Validation ValidValue
   validator varType varValue =
     case
-        validateInputValue typeLib
+        validateInputValue schema
                            []
                            (typeWrappers variableType)
                            varType
