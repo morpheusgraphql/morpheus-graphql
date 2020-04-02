@@ -54,6 +54,7 @@ import           Data.Morpheus.Types.Internal.AST.OrderedMap
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectBy
                                                 , member
+                                                , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) 
@@ -151,7 +152,7 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
                   currentTypeName
                   (entryName, entryValue)
        where
-        getField = selectBy (withPrefix ctx (unknownField props entryName)) entryName parentFields
+        getField = selectKnown (ctx,props,entryName) entryName parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of

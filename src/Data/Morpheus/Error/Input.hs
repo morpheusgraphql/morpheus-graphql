@@ -36,7 +36,7 @@ pathToText path = "on " <> T.intercalate "." (fmap propKey path)
 expectedTypeAFoundB :: [Prop] -> Text -> ResolvedValue -> Maybe Text -> Text
 expectedTypeAFoundB path expected found Nothing 
   = pathToText path 
-  <> " Expected type \""
+  <> "Expected type \""
   <> expected
   <> "\" found "
   <> T.pack (unpack $ encode found)
