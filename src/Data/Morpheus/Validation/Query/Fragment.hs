@@ -116,7 +116,7 @@ validateFragment schema  Fragment { fragmentName, fragmentSelection, fragmentTyp
               -- TODO: use generalited solutions
               (errorMessage 
                 fragmentPosition
-                ("The kind of the type \"" <> fragmentType <> "\" must be an OBJECT")
+                ("Fragment \"" <> fragmentName <> "\" cannot condition on non composite type \""<> fragmentType <>"\".")
               )
 
 detectLoopOnFragments :: Graph -> Validation ()
