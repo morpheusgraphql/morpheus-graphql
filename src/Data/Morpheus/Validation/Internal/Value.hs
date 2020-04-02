@@ -27,7 +27,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeDefinition(..)
                                                 , Schema(..)
                                                 , ScalarDefinition(..)
-                                                , Key
                                                 , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , DataEnumValue(..)
