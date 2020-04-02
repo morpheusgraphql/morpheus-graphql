@@ -112,7 +112,7 @@ module Data.Morpheus.Types.Internal.AST
   , isPrimitiveTypeName
   , isEntNode
   , lookupInputType
-  , coerceObject
+  , constraintObject
   , lookupDataUnion
   , lookupUnionTypes
   , lookupSelectionField
@@ -147,7 +147,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLErrors
   , ObjectEntry(..)
   , UnionTag(..)
-  , coerceInput
+  , constraintInput
   )
 where
 

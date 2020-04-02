@@ -51,7 +51,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
-                                                , coerceInput
+                                                , constraintInput
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -135,7 +135,7 @@ lookupAndValidateValueOnBody
     }
   = toVariable
     <$> ( selectKnown (Ref (typeConName variableType) variablePosition) schema
-          >>= coerceInput var 
+          >>= constraintInput var 
           >>= checkType getVariable defaultValue
         )
  where

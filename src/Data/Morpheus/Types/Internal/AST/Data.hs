@@ -45,7 +45,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , toListField
   , isEntNode
   , lookupInputType
-  , coerceObject
+  , constraintObject
   , lookupDataUnion
   , lookupUnionTypes
   , lookupSelectionField
@@ -70,7 +70,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , toHSFieldDefinition
   , unsafeFromFields
   , orFail
-  , coerceInput
+  , constraintInput
   , Arguments
   )
 where
@@ -323,17 +323,17 @@ isInputDataType TypeDefinition { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-coerceObject :: (Failure GQLErrors m ,KindViolation a) => a -> TypeDefinition -> m (Name, FieldsDefinition)
-coerceObject _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-coerceObject arg _ = failure [kindViolation arg]
+constraintObject :: (Failure GQLErrors m ,KindViolation a) => a -> TypeDefinition -> m (Name, FieldsDefinition)
+constraintObject _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
+constraintObject arg _ = failure [kindViolation arg]
 
-coerceObject2 :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
-coerceObject2 _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-coerceObject2 gqlError _ = failure gqlError
+constraintObject2 :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
+constraintObject2 _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
+constraintObject2 gqlError _ = failure gqlError
 
-coerceDataUnion :: Failure error m => error -> TypeDefinition -> m DataUnion
-coerceDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
-coerceDataUnion gqlError _ = failure gqlError
+constraintDataUnion :: Failure error m => error -> TypeDefinition -> m DataUnion
+constraintDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
+constraintDataUnion gqlError _ = failure gqlError
 
 kindOf :: TypeDefinition -> DataTypeKind
 kindOf TypeDefinition { typeName, typeContent } = __kind typeContent
@@ -370,7 +370,7 @@ lookupUnionTypes position key lib FieldDefinition { fieldType = TypeRef { typeCo
 lookupDataUnion
   :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
 lookupDataUnion validationError name lib =
-  selectBy validationError name lib >>= coerceDataUnion validationError
+  selectBy validationError name lib >>= constraintDataUnion validationError
 
 lookupDataType :: Key -> Schema -> Maybe TypeDefinition
 lookupDataType name  = HM.lookup name . typeRegister
@@ -385,12 +385,12 @@ orFail cond err x
       | cond = pure x
       | otherwise = failure err
 
-coerceInput
+constraintInput
   :: (Monad m, Failure GQLErrors m , KindViolation ctx) 
   => ctx 
   -> TypeDefinition 
   -> m TypeDefinition
-coerceInput ctx x = orFail 
+constraintInput ctx x = orFail 
     (isInputDataType x) 
     [kindViolation ctx]
     x
@@ -531,7 +531,7 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
     alias { typeWrappers = TypeList : typeWrappers }
 
 selectTypeObject :: (Monad m, Failure err m) => err -> Name -> Schema -> m (Name, FieldsDefinition )
-selectTypeObject  err name lib = selectBy err name lib >>= coerceObject2 err
+selectTypeObject  err name lib = selectBy err name lib >>= constraintObject2 err
 
 lookupSelectionField
   :: Failure GQLErrors Validation
