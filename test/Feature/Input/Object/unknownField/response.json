@@ -5,7 +5,16 @@
       "locations": [
         {
           "line": 2,
-          "column": 10
+          "column": 14
+        }
+      ]
+    },
+    {
+      "message": "Argument value got invalid value. in field \"recursive.recursive\": Unknown Field \"unkField\".",
+      "locations": [
+        {
+          "line": 3,
+          "column": 13
         }
       ]
     }
