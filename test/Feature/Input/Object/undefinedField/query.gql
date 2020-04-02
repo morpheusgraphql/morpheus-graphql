@@ -1,4 +1,5 @@
 query UndefinedField {
   i1: input(value: { nullableField: 1 })
-  i2: input(value: {})
+  i2: input(value: { })
+  i3: input(value: { field: "v2" , recursive: { field: "v3" , recursive: {}  } })
 }

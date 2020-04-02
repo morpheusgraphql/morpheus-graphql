@@ -148,7 +148,7 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
       requiredFieldsDefined :: FieldDefinition -> Validation ()
       requiredFieldsDefined datafield@FieldDefinition { fieldName }
         | fieldName `member` fields || isFieldNullable datafield = pure ()
-        | otherwise = failure (withPrefix ctx $ undefinedField fieldName)
+        | otherwise = withContext ctx props (failure $ globalErrorMessage $ undefinedField fieldName)
       validateField
         :: ObjectEntry RESOLVED -> Validation (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName,  entryValue } = do
