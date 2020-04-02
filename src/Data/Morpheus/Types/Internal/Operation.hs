@@ -19,6 +19,7 @@ module Data.Morpheus.Types.Internal.Operation
     , member
     , keys
     , selectKnown
+    , selectRequered
     )
     where 
 
@@ -33,7 +34,9 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
                                                         )
 import           Text.Megaparsec.Internal               ( ParsecT(..) )
 import           Text.Megaparsec.Stream                 ( Stream )
-import           Data.Morpheus.Error.NameCollision      (Unknown(..))
+import           Data.Morpheus.Error.NameCollision      ( Unknown(..)
+                                                        , MissingRequired(..)
+                                                        )
 
 class Empty a where 
   empty :: a
@@ -61,6 +64,18 @@ selectKnown
   -> c 
   -> m a
 selectKnown selector lib  = selectBy (unknown lib selector) (keyOf selector)  lib
+
+selectRequered 
+  ::  ( Monad m
+      , Failure GQLErrors m
+      , Selectable c value
+      , MissingRequired sel
+      , KeyOf sel
+      ) 
+  => sel 
+  -> c 
+  -> m value
+selectRequered selector = selectBy [missingRequired selector] (keyOf selector)
 
 member :: forall a c. Selectable c a => Name -> c -> Bool
 member = selectOr False toTrue

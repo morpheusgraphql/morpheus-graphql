@@ -488,18 +488,18 @@ data FieldDefinition = FieldDefinition
 instance KeyOf FieldDefinition where 
   keyOf = fieldName
 
+instance Selectable FieldDefinition ArgumentDefinition where
+  selectOr fb f key FieldDefinition { fieldArgs }  = selectOr fb f key fieldArgs 
+
 instance NameCollision FieldDefinition where 
   nameCollision name _ = GQLError { 
     message = "There can Be only One field Named \"" <> name <> "\"",
     locations = []
   }
 
-instance Selectable FieldDefinition ArgumentDefinition where
-  selectOr fb f key FieldDefinition { fieldArgs }  = selectOr fb f key fieldArgs 
-
 instance Unknown FieldDefinition where
   type UnknownSelector FieldDefinition = Argument RESOLVED
-  unknown FieldDefinition{ fieldName } Argument { argumentName, argumentPosition }
+  unknown FieldDefinition { fieldName } Argument { argumentName, argumentPosition }
     = errorMessage argumentPosition 
       ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
 
