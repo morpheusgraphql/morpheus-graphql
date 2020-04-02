@@ -31,7 +31,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
 argumentGotInvalidValue :: Name -> Message
-argumentGotInvalidValue argName = "Argument " <> argName <> " got invalid value ;"
+argumentGotInvalidValue argName = "Argument " <> argName <> " got invalid value; "
 
 undefinedArgument :: Ref -> GQLErrors
 undefinedArgument (Ref key' position') = errorMessage position' text

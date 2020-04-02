@@ -133,7 +133,7 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
       requiredFieldsDefined :: FieldDefinition -> Validation ()
       requiredFieldsDefined datafield@FieldDefinition { fieldName }
         | fieldName `member` fields || isFieldNullable datafield = pure ()
-        | otherwise = failure (undefinedField props fieldName)
+        | otherwise = failure (withPrefix ctx $ undefinedField props fieldName)
       validateField
         :: ObjectEntry RESOLVED -> Validation (ObjectEntry VALID)
       validateField ObjectEntry { entryName,  entryValue } = do
@@ -156,7 +156,7 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
                                    schema
                                    (mismatch ctx currentProp fieldTypeName' [] value Nothing)
           return (type', currentProp)
-        getField = selectBy (unknownField props entryName) entryName parentFields
+        getField = selectBy (withPrefix ctx (unknownField props entryName)) entryName parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of
@@ -202,6 +202,10 @@ validateScalar ScalarDefinition { validateValue } value err = do
   toScalar (Scalar x) = pure (Scalar x)
   toScalar scValue    = failure (err scValue Nothing)
 
+
+withPrefix :: (Message, Position) -> Message -> GQLErrors
+withPrefix (prefix,pos) message = errorMessage pos (prefix <> message)
+
 validateEnum :: GQLErrors -> [DataEnumValue] -> ResolvedValue -> Validation ValidValue
 validateEnum gqlError enumValues (Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
@@ -214,9 +218,8 @@ typeMismatch2 (prefix,pos) props typeName wrappers value postfix = failure $ err
   where
     message = expectedTypeAFoundB props (renderWrapped typeName wrappers) value postfix
 
-
 typeMismatch :: (Message, Position) -> [Prop] -> Name -> [TypeWrapper] -> ResolvedValue -> Validation ValidValue
-typeMismatch (prefix,pos) props typeName wrappers value = failure $ errorMessage pos (prefix <> message)
+typeMismatch ctx props typeName wrappers value = failure $ withPrefix ctx message
   where
     message = expectedTypeAFoundB props (renderWrapped typeName wrappers) value Nothing
 

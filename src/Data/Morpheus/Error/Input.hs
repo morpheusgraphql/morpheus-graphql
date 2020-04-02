@@ -65,15 +65,15 @@ expectedTypeAFoundB path expected found Nothing
 
 expectedTypeAFoundB path expected found (Just errorMessage) =
   pathToText path
-  <> " Expected type \""
+  <> "Expected type \""
   <> expected <> "\" found "
   <> T.pack (unpack $ encode found)
   <> "; " <> errorMessage <> "."
 
 undefinedField :: [Prop] -> Text -> Text
 undefinedField path field =
-  pathToText path <> " Undefined Field \"" <> field <> "\"."
+  pathToText path <> "Undefined Field \"" <> field <> "\"."
 
 unknownField :: [Prop] -> Text -> Text
 unknownField path field =
-  pathToText path <> " Unknown Field \"" <> field <> "\"."
+  pathToText path <> "Unknown Field \"" <> field <> "\"."
