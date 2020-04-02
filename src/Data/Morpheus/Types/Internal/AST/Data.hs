@@ -46,7 +46,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , isEntNode
   , lookupInputType
   , constraintObject
-  , lookupDataUnion
   , lookupUnionTypes
   , lookupSelectionField
   , lookupFieldAsSelectionSet
