@@ -29,7 +29,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeKind(..)
   , DataFingerprint(..)
   , DataTypeWrapper(..)
-  --, Named(..)
+  , Prop(..)
   , anonymousRef
   , toHSWrappers
   , toGQLWrapper
@@ -51,8 +51,10 @@ module Data.Morpheus.Types.Internal.AST.Base
   , toOperationType
   , splitDuplicates
   , removeDuplicates
+  , renderPath
   , GQLError(..)
   , GQLErrors
+  , Path
   )
 where
 
@@ -60,7 +62,7 @@ import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
-import           Data.Text                      ( Text )
+import           Data.Text                      ( Text , intercalate )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ()
@@ -112,6 +114,18 @@ type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
 
 type Named a = (Name, a) 
+
+data Prop =
+  Prop
+    { propName  :: Name
+    , propTypeName :: Name
+    } deriving (Show)
+
+type Path = [Prop]
+
+renderPath :: Path -> Message
+renderPath []    = ""
+renderPath path = "in field \"" <> intercalate "." (fmap propName path) <> "\": "
 
 -- Refference with Position information  
 --

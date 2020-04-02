@@ -146,6 +146,9 @@ module Data.Morpheus.Types.Internal.AST
   , GQLErrors
   , ObjectEntry(..)
   , UnionTag(..)
+  , Prop(..)
+  , Path
+  , renderPath
   , constraintInput
   )
 where

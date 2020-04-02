@@ -131,6 +131,7 @@ gqlRoot = GQLRootResolver { queryResolver
     , subscriptionNewAddress = resolveNewAdress
     }
 
+
 -- Resolve QUERY
 
 alwaysFail :: IO (Either String a)

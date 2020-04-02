@@ -48,7 +48,7 @@ unusedVariables operator' = map keyToError
 -- type mismatch
 -- { "v": 1  }        "Variable \"$v\" got invalid value 1; Expected type LANGUAGE."
 variableGotInvalidValue :: Name -> Message
-variableGotInvalidValue name = "Variable \"$" <> name <> "\" got invalid value; "
+variableGotInvalidValue name = "Variable \"$" <> name <> "\" got invalid value. "
 
 undefinedVariable :: Name -> Position -> Name -> GQLErrors
 undefinedVariable operation' position' key' = errorMessage position' text

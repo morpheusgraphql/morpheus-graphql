@@ -119,6 +119,8 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLError(..)
                                                 , GQLErrors
                                                 , RESOLVED
+                                                , Prop(..)
+                                                ,renderPath
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                              
                                                 ( Empty(..)
@@ -141,6 +143,7 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) 
                                                 , ValidValue
                                                 , ScalarValue(..)
+                                                , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
@@ -463,8 +466,15 @@ instance Listable FieldsDefinition FieldDefinition where
   toAssoc = toAssoc . unFieldsDefinition
 
 instance Unknown FieldsDefinition where
- -- unknown = selectBy (UnknownField props entryName) entryName parentFields
-
+  type UnknownSelector FieldsDefinition = ObjectEntry RESOLVED
+  unknown  _ ObjectEntry { entryName } = 
+    [
+      GQLError 
+        { message = "Unknown Field \"" <> entryName <> "\"."
+        , locations = []
+        }
+    ]
+  
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 -- 

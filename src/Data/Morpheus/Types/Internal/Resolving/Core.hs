@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE RecordWildCards            #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
   ( Validation
@@ -24,6 +25,7 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Channel(..)
   , GQLChannel(..)
   , PushEvents(..)
+  , mapError
   )
 where
 
@@ -50,6 +52,14 @@ import           Data.Semigroup                 ( (<>) )
 type StatelessResT = ResultT () GQLError 'True
 type Validation = Result () GQLError 'True
 
+
+mapError 
+  :: (er1 -> er2)
+  -> Result ev er1 con a
+  -> Result ev er2 con a
+mapError f Success { warnings = ws , .. } =
+    Success { warnings = fmap f ws , .. }
+mapError f (Failure es) = Failure $ fmap f es
 
 -- EVENTS
 class PushEvents e m where 
@@ -162,6 +172,7 @@ cleanEvents resT = ResultT $ replace <$> runResultT resT
   replace (Success v w _) = Success v w []
   replace (Failure e    ) = Failure e
 
+
 mapEvent
   :: Monad m
   => (ea -> eb)
@@ -172,6 +183,17 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
   mapEv Success { result, warnings, events } =
     Success { result, warnings, events = map func events }
   mapEv (Failure err) = Failure err
+
+-- mapError 
+--  :: Monad m
+--   => (er1 -> er2)
+--   -> ResultT ev er1 con m value
+--   -> ResultT ev er2 con m value
+-- mapError f (ResultT ma) = ResultT $ mapEv <$> ma
+--  where
+--   mapEv Success { warnings = ws , .. } =
+--     Success { warnings = fmap f ws , .. }
+--   mapEv (Failure es) = Failure $ fmap f es
 
 -- Helper Functions
 type LibUpdater lib = lib -> Validation lib

@@ -15,7 +15,6 @@ import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Error.Variable   ( incompatibleVariableType )
 import           Data.Morpheus.Error.Input      ( Prop(..)
                                                 , expectedTypeAFoundB
-                                                , unknownField
                                                 , undefinedField
                                                 )
 import           Data.Morpheus.Types.Internal.AST
@@ -47,7 +46,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ObjectEntry(..)
                                                 , RESOLVED
                                                 , Position
+                                                , GQLError(..)
                                                 , GQLErrors
+                                                , Path
+                                                , renderPath
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( unsafeFromValues )
@@ -59,11 +61,18 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Failure(..) 
                                                 , Validation
+                                                , mapError
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
                                                 , renderWrapped
                                                 )
+
+
+withContext :: (Message, Position) -> Path ->  Validation a -> Validation a
+withContext (prefix, position) path = mapError addContext
+  where 
+    addContext GQLError { message, locations} = GQLError (prefix <> renderPath path <>message) (position:locations)
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
@@ -137,7 +146,7 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
         | otherwise = failure (withPrefix ctx $ undefinedField props fieldName)
       validateField
         :: ObjectEntry RESOLVED -> Validation (ObjectEntry VALID)
-      validateField ObjectEntry { entryName,  entryValue } = do
+      validateField entry@ObjectEntry { entryName,  entryValue } = do
           TypeRef { typeConName , typeWrappers } <- fieldType <$> getField
           let currentProp = props <> [Prop entryName typeConName]
           currentTypeName <- lookupInputType typeConName
@@ -152,7 +161,7 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
                   currentTypeName
                   (entryName, entryValue)
        where
-        getField = selectKnown (ctx,props,entryName) entryName parentFields
+        getField = withContext ctx props (selectKnown entry parentFields)
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of
