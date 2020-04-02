@@ -12,6 +12,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Name 
                                                 , GQLError(..)
                                                 , GQLErrors
+                                                , Ref
                                                 )
 
 class NameCollision a where 
@@ -24,5 +25,5 @@ class Unknown c where
 class KindViolation a where
   kindViolation :: a -> GQLError
 
-class MissingRequired a where
-  missingRequired :: a -> GQLError
+class MissingRequired c where
+  missingRequired :: Ref -> c -> GQLError

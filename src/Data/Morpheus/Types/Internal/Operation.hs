@@ -19,7 +19,7 @@ module Data.Morpheus.Types.Internal.Operation
     , member
     , keys
     , selectKnown
-    , selectRequered
+    , selectRequired
     )
     where 
 
@@ -63,19 +63,27 @@ selectKnown
   => UnknownSelector c 
   -> c 
   -> m a
-selectKnown selector lib  = selectBy (unknown lib selector) (keyOf selector)  lib
+selectKnown selector lib  
+  = selectBy 
+    (unknown lib selector) 
+    (keyOf selector)  
+    lib
 
-selectRequered 
+selectRequired 
   ::  ( Monad m
       , Failure GQLErrors m
       , Selectable c value
-      , MissingRequired sel
-      , KeyOf sel
+      , MissingRequired c
+      --, KeyOf sel
       ) 
-  => sel 
+  => Ref 
   -> c 
   -> m value
-selectRequered selector = selectBy [missingRequired selector] (keyOf selector)
+selectRequired selector container 
+  = selectBy 
+    [missingRequired selector container] 
+    (keyOf selector) 
+    container
 
 member :: forall a c. Selectable c a => Name -> c -> Bool
 member = selectOr False toTrue
