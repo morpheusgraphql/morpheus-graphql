@@ -147,8 +147,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLErrors
   , ObjectEntry(..)
   , UnionTag(..)
-  , isInputOrFail
-  , coerceInputType
+  , coerceInput
   )
 where
 

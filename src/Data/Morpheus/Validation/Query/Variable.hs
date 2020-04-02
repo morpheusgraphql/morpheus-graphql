@@ -51,7 +51,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
-                                                , coerceInputType
+                                                , coerceInput
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -63,11 +63,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInputValue )
-
-getVariableType :: Text -> Position -> Schema -> Validation TypeDefinition
-getVariableType tyName position 
-  = selectKnown (Ref tyName position)
-  >=> coerceInputType
 
 class ExploreRefs a where
   exploreRefs :: a -> [Ref]
@@ -131,7 +126,7 @@ lookupAndValidateValueOnBody
   -> Variable RAW
   -> Validation (Variable VALID)
 lookupAndValidateValueOnBody 
-  typeLib bodyVariables validationMode 
+  schema bodyVariables validationMode 
   var@Variable { 
       variableName,
       variableType, 
@@ -139,8 +134,9 @@ lookupAndValidateValueOnBody
       variableValue = DefaultValue defaultValue 
     }
   = toVariable
-    <$> (   getVariableType (typeConName variableType) variablePosition typeLib
-        >>= checkType getVariable defaultValue
+    <$> ( selectKnown (Ref (typeConName variableType) variablePosition) schema
+          >>= coerceInput var 
+          >>= checkType getVariable defaultValue
         )
  where
   toVariable x = var { variableValue = ValidVariableValue x }

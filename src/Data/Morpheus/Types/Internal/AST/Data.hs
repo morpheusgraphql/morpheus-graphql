@@ -70,8 +70,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , toHSFieldDefinition
   , unsafeFromFields
   , orFail
-  , isInputOrFail
-  , coerceInputType
+  , coerceInput
   , Arguments
   )
 where
@@ -163,6 +162,7 @@ data Argument (valid :: Stage) = Argument
   , argumentValue    :: Value valid
   , argumentPosition :: Position
   } deriving ( Show, Eq, Lift )
+
 
 instance KeyOf (Argument stage) where
   keyOf = argumentName 
@@ -385,21 +385,15 @@ orFail cond err x
       | cond = pure x
       | otherwise = failure err
 
-isInputOrFail 
-  :: (Monad m, Failure e m) 
-  => e
-  -> TypeDefinition
+coerceInput
+  :: (Monad m, Failure GQLErrors m , KindViolation ctx) 
+  => ctx 
+  -> TypeDefinition 
   -> m TypeDefinition
-isInputOrFail err x
-      | isInputDataType x = pure x
-      | otherwise = failure err
-
-coerceInputType 
-  :: (Monad m, Failure GQLErrors m) 
-  => TypeDefinition 
-  -> m TypeDefinition
-coerceInputType = isInputOrFail ([ {- TODO: real errors -} ] :: GQLErrors) 
-
+coerceInput ctx x = orFail 
+    (isInputDataType x) 
+    [kindViolation ctx]
+    x
 
 lookupInputType :: Failure e m => Key -> Schema -> e -> m TypeDefinition
 lookupInputType name lib errors = case lookupDataType name lib of
