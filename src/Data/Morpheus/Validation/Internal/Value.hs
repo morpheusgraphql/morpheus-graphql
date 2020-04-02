@@ -147,7 +147,7 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
       validateField
         :: ObjectEntry RESOLVED -> Validation (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName,  entryValue } = do
-          TypeRef { typeConName , typeWrappers } <- fieldType <$> getField
+          TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
           let currentProp = props <> [Prop entryName typeConName]
           currentTypeName <- lookupInputType typeConName
                                   schema
@@ -161,7 +161,7 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
                   currentTypeName
                   (entryName, entryValue)
        where
-        getField = withContext ctx props (selectKnown entry parentFields)
+        getFieldType = fieldType <$> selectKnown entry parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =
       case unpackInputUnion inputUnion rawFields of
