@@ -111,10 +111,10 @@ validateInputValue
   -> [Prop]
   -> [TypeWrapper]
   -> TypeDefinition
-  -> (Key, ResolvedValue)
+  -> ObjectEntry RESOLVED
   -> Validation ValidValue
-validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeContent, typeName } =
-  validateWrapped tyWrappers typeContent
+validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
+  validateWrapped tyWrappers tyCont
  where
   mismatchError :: [TypeWrapper] -> ResolvedValue -> Validation ValidValue
   mismatchError  = typeMismatch ctx props typeName
@@ -122,29 +122,28 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
   validateWrapped
     :: [TypeWrapper]
     -> TypeContent
-    -> (Key, ResolvedValue)
+    -> ObjectEntry RESOLVED
     -> Validation ValidValue
   -- Validate Null. value = null ?
-  validateWrapped wrappers _ (_, ResolvedVariable ref variable) =
+  validateWrapped wrappers _  ObjectEntry { entryValue = ResolvedVariable ref variable} =
     checkTypeEquality (typeName, wrappers) ref variable
-  validateWrapped wrappers _ (_, Null)
+  validateWrapped wrappers _ ObjectEntry { entryValue = Null}
     | isNullableWrapper wrappers = return Null
     | otherwise                  = mismatchError wrappers Null
   -- Validate LIST
   validateWrapped (TypeMaybe : wrappers) _ value =
-    validateInputValue schema ctx props wrappers datatype value
-  validateWrapped (TypeList : wrappers) _ (key, List list) =
-    List <$> mapM validateElement list
+    validateWrapped wrappers tyCont value
+  validateWrapped (TypeList : wrappers) _ (ObjectEntry key (List list)) =
+    List <$> traverse validateElement list
    where
-    validateElement element =
-      validateInputValue schema ctx props wrappers datatype (key, element)
+    validateElement = validateWrapped wrappers tyCont . ObjectEntry key 
   {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
   {-- VALIDATE OBJECT--}
   validateWrapped [] dt v = validate dt v
    where
     validate
-      :: TypeContent -> (Key, ResolvedValue) -> Validation ValidValue
-    validate (DataInputObject parentFields) (_, Object fields) = do 
+      :: TypeContent -> ObjectEntry RESOLVED -> Validation ValidValue
+    validate (DataInputObject parentFields) ObjectEntry { entryValue = Object fields} = do 
       _ <- traverse requiredFieldsDefined (unFieldsDefinition parentFields)
       Object <$> traverse validateField fields
      where
@@ -157,7 +156,7 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
       validateField entry@ObjectEntry { entryName,  entryValue } = do
           TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
           let currentProp = props <> [Prop entryName typeConName]
-          fieldTypeDef <- withContext ctx props 
+          typeDef <- withContext ctx props 
               (lookupInputType 
                 typeConName 
                 schema                  
@@ -169,17 +168,17 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
                   ctx
                   currentProp
                   typeWrappers
-                  fieldTypeDef
-                  (entryName, entryValue)
+                  typeDef
+                  entry
        where
         getFieldType = fieldType <$> selectKnown entry parentFields
     -- VALIDATE INPUT UNION
-    validate (DataInputUnion inputUnion) (_, Object rawFields) =
+    validate (DataInputUnion inputUnion) ObjectEntry { entryValue = Object rawFields} =
       case unpackInputUnion inputUnion rawFields of
         Left message -> typeMismatch2 ctx props typeName [] (Object rawFields) (Just message)
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
-          currentUnionDatatype <- lookupInputType
+          typeDef <- lookupInputType
             name
             schema
             (mismatch ctx props name [] value Nothing)
@@ -187,20 +186,19 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
                                            ctx
                                            props
                                            [TypeMaybe]
-                                           currentUnionDatatype
-                                           (name, value)
+                                           typeDef
+                                           (ObjectEntry name value)
           return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
 
     {-- VALIDATE ENUM --}
-    validate (DataEnum tags) (_, value) =
-      validateEnum (mismatch ctx props typeName [] value Nothing) tags value
+    validate (DataEnum tags) ObjectEntry { entryValue } =
+      validateEnum (mismatch ctx props typeName [] entryValue Nothing) tags entryValue
     {-- VALIDATE SCALAR --}
-    validate (DataScalar dataScalar) (_, value) =
-      validateScalar dataScalar value (mismatch ctx props typeName [])
-    validate _ (_, value) = mismatchError [] value
+    validate (DataScalar dataScalar) ObjectEntry { entryValue }  =
+      validateScalar dataScalar entryValue (mismatch ctx props typeName [])
+    validate _ ObjectEntry { entryValue }  = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
-  validateWrapped wrappers _ (_, value) = mismatchError wrappers value
-
+  validateWrapped wrappers _ ObjectEntry { entryValue }  = mismatchError wrappers entryValue
 
 validateScalar
   :: ScalarDefinition

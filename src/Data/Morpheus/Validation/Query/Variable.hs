@@ -34,7 +34,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionContent(..)
                                                 , SelectionSet
                                                 , Ref(..)
-                                                , Position
                                                 , TypeDefinition
                                                 , Schema
                                                 , lookupInputType
@@ -169,4 +168,4 @@ lookupAndValidateValueOnBody
         []
         (typeWrappers variableType)
         varType
-        (variableName, varValue)
+        (ObjectEntry variableName varValue)

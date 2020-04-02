@@ -123,7 +123,7 @@ validateArgument schema fieldPosition requestArgs argType@FieldDefinition { fiel
                           [] 
                           typeWrappers 
                           datatype 
-                          (fieldName, value)
+                          (ObjectEntry fieldName value)
       pure Argument { argumentValue , .. }
 
 validateArguments
