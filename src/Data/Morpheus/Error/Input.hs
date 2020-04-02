@@ -3,10 +3,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Morpheus.Error.Input
-  ( expectedTypeAFoundB
-  , undefinedField
+  ( undefinedField
+  -- , expectedTypeAFoundB
   , typeViolation
-  , Prop(..)
   )
 where
 
@@ -20,8 +19,6 @@ import qualified Data.Text                     as T
 import           Data.Morpheus.Types.Internal.AST.Base 
                                                 ( Name
                                                 , Message
-                                                , Prop(..)
-                                                , renderPath
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ResolvedValue )
@@ -35,12 +32,11 @@ typeViolation expected found = "Expected type \""
   <> "."
 
 
-expectedTypeAFoundB :: [Prop] -> Name -> ResolvedValue -> Maybe Name -> Message
-expectedTypeAFoundB path expected found Nothing 
-  = renderPath path <> typeViolation expected found
-expectedTypeAFoundB path expected found (Just errorMessage) =
-  renderPath path<> typeViolation expected found <> " " <> errorMessage <> "."
+-- expectedTypeAFoundB :: [Prop] -> Name -> ResolvedValue -> Maybe Name -> Message
+-- expectedTypeAFoundB path expected found Nothing 
+--   = renderPath path <> typeViolation expected found
+-- expectedTypeAFoundB path expected found (Just errorMessage) =
+--   renderPath path<> typeViolation expected found <> " " <> errorMessage <> "."
 
-undefinedField :: [Prop] -> Name -> Message
-undefinedField path field =
-  renderPath path <> "Undefined Field \"" <> field <> "\"."
+undefinedField :: Name -> Message
+undefinedField fieldName = "Undefined Field \"" <> fieldName <> "\"."

@@ -8,6 +8,7 @@ module Data.Morpheus.Validation.Internal.Value
   )
 where
 
+import           Data.Foldable                  (traverse_)
 import           Data.List                      ( elem )
 
 -- MORPHEUS
@@ -15,9 +16,7 @@ import           Data.Morpheus.Error.Utils      ( errorMessage
                                                 , globalErrorMessage
                                                 )
 import           Data.Morpheus.Error.Variable   ( incompatibleVariableType )
-import           Data.Morpheus.Error.Input      ( Prop(..)
-                                                , expectedTypeAFoundB
-                                                , undefinedField
+import           Data.Morpheus.Error.Input      ( undefinedField
                                                 , typeViolation
                                                 )
 import           Data.Morpheus.Types.Internal.AST
@@ -51,6 +50,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , GQLError(..)
                                                 , GQLErrors
                                                 , Path
+                                                , Prop(..)
                                                 , renderPath
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
@@ -106,7 +106,7 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
 validateInputValue
   :: Schema
   -> (Message, Position)
-  -> [Prop]
+  -> Path
   -> [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
@@ -142,13 +142,13 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
     validate
       :: TypeContent -> ObjectEntry RESOLVED -> Validation ValidValue
     validate (DataInputObject parentFields) ObjectEntry { entryValue = Object fields} = do 
-      _ <- traverse requiredFieldsDefined (unFieldsDefinition parentFields)
+      traverse_ requiredFieldsDefined (unFieldsDefinition parentFields)
       Object <$> traverse validateField fields
      where
       requiredFieldsDefined :: FieldDefinition -> Validation ()
       requiredFieldsDefined datafield@FieldDefinition { fieldName }
         | fieldName `member` fields || isFieldNullable datafield = pure ()
-        | otherwise = failure (withPrefix ctx $ undefinedField props fieldName)
+        | otherwise = failure (withPrefix ctx $ undefinedField fieldName)
       validateField
         :: ObjectEntry RESOLVED -> Validation (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName,  entryValue } = do
@@ -176,10 +176,10 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
         Left message -> withContext ctx props (failure $ violation (TypeRef typeName Nothing []) (Object rawFields) (Just message))
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
-          typeDef <- lookupInputType
+          typeDef <- withContext ctx props $ lookupInputType
             name
             schema
-            (mismatch ctx props name [] value Nothing)
+            (violation (TypeRef name Nothing []) value Nothing)
           validValue <- validateInputValue schema
                                            ctx
                                            props
@@ -190,10 +190,10 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
 
     {-- VALIDATE ENUM --}
     validate (DataEnum tags) ObjectEntry { entryValue } =
-      validateEnum (mismatch ctx props typeName [] entryValue Nothing) tags entryValue
+      withContext ctx props $ validateEnum (violation (TypeRef typeName Nothing []) entryValue Nothing) tags entryValue
     {-- VALIDATE SCALAR --}
     validate (DataScalar dataScalar) ObjectEntry { entryValue }  =
-      validateScalar dataScalar entryValue (mismatch ctx props typeName [])
+      withContext ctx props $ validateScalar dataScalar entryValue (violation (TypeRef typeName Nothing []))
     validate _ ObjectEntry { entryValue }  = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
   validateWrapped wrappers _ ObjectEntry { entryValue }  = mismatchError wrappers entryValue
@@ -223,8 +223,3 @@ validateEnum gqlError _ _ = failure gqlError
 
 withPrefix :: (Message, Position) -> Message -> GQLErrors
 withPrefix (prefix,pos) message = errorMessage pos (prefix <> message)
-
-mismatch :: (Message, Position) -> [Prop] -> Name -> [TypeWrapper] -> ResolvedValue -> Maybe Message -> GQLErrors
-mismatch (prefix,pos) props typeName wrappers value mess = errorMessage pos (prefix <> message)
-  where
-    message = expectedTypeAFoundB props (renderWrapped typeName wrappers) value mess

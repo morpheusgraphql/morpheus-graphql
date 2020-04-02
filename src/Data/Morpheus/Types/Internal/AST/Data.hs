@@ -34,21 +34,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , ClientType(..)
   , DataInputUnion
   , Argument(..)
-  , isTypeDefined
-  , initTypeLib
-  , defineType
-  , isFieldNullable
   , allDataTypes
-  , lookupDataType
-  , kindOf
-  , toNullableField
-  , toListField
-  , isEntNode
-  , lookupInputType
-  , constraintObject
-  , lookupUnionTypes
-  , lookupSelectionField
-  , lookupFieldAsSelectionSet
   , createField
   , createArgument
   , createDataTypeLib
@@ -58,18 +44,30 @@ module Data.Morpheus.Types.Internal.AST.Data
   , createUnionType
   , createAlias
   , createInputUnionFields
-  , fieldVisibility
   , createEnumValue
+  , constraintObject
+  , constraintInput
+  , defineType
+  , isTypeDefined
+  , initTypeLib
+  , isFieldNullable
   , insertType
+  , fieldVisibility
+  , kindOf
+  , toNullableField
+  , toListField
+  , toHSFieldDefinition
+  , isEntNode
+  , lookupInputType
+  , lookupDataType
+  , lookupUnionTypes
+  , lookupSelectionField
+  , lookupFieldAsSelectionSet
   , lookupDeprecated
   , lookupDeprecatedReason
-  , hasArguments
   , lookupWith
-  , selectTypeObject
-  , toHSFieldDefinition
+  , hasArguments
   , unsafeFromFields
-  , orFail
-  , constraintInput
   , Arguments
   )
 where
@@ -119,8 +117,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLError(..)
                                                 , GQLErrors
                                                 , RESOLVED
-                                                , Prop(..)
-                                                ,renderPath
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                              
                                                 ( Empty(..)
@@ -364,9 +360,13 @@ lookupUnionTypes
   -> m [(Name, FieldsDefinition)]
 lookupUnionTypes ref schema FieldDefinition { fieldType = TypeRef { typeConName  } }
   = selectKnown (ref { refName = typeConName }) schema 
-    >>= constraintDataUnion gqlError
-    >>= traverse (flip (selectTypeObject gqlError) schema)
-  where gqlError = hasNoSubfields ref typeConName
+    >>= constraintDataUnion err
+    >>= traverse (
+          (\name -> selectKnown (ref { refName = name}) schema) 
+          >=> constraintObject2 err
+        )
+  where 
+    err = hasNoSubfields ref typeConName
 
 lookupDataType :: Key -> Schema -> Maybe TypeDefinition
 lookupDataType name  = HM.lookup name . typeRegister
@@ -536,9 +536,6 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
   listW alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeList : typeWrappers }
 
-selectTypeObject :: (Monad m, Failure err m) => err -> Name -> Schema -> m (Name, FieldsDefinition )
-selectTypeObject  err name lib = selectBy err name lib >>= constraintObject2 err
-
 lookupSelectionField
   :: Failure GQLErrors Validation
   => Position
@@ -555,8 +552,9 @@ lookupFieldAsSelectionSet
   -> FieldDefinition  
   -> m (Name, FieldsDefinition )
 lookupFieldAsSelectionSet ref lib FieldDefinition { fieldType = TypeRef { typeConName } }
-  = selectTypeObject gqlError typeConName lib
-  where gqlError = hasNoSubfields ref typeConName
+  = selectBy err typeConName lib >>= constraintObject2 err
+  where err = hasNoSubfields ref typeConName
+
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 -----------------------------------------------------------------------------------------------
