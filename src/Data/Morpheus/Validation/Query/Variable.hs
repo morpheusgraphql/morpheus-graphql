@@ -60,7 +60,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
-                                                ( validateInputValue )
+                                                ( validateInput )
 
 class ExploreRefs a where
   exploreRefs :: a -> [Ref]
@@ -163,9 +163,9 @@ lookupAndValidateValueOnBody
   -----------------------------------------------------------------------------------------------
   validator :: TypeDefinition -> ResolvedValue -> Validation ValidValue
   validator varType varValue 
-    = validateInputValue schema
+    = validateInput 
+        schema
         (variableGotInvalidValue variableName, variablePosition)
-        []
         (typeWrappers variableType)
         varType
         (ObjectEntry variableName varValue)

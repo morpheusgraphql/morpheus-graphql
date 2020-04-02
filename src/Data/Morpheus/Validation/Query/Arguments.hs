@@ -49,7 +49,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
-                                                ( validateInputValue )
+                                                ( validateInput )
 import           Data.Text                      ( Text )
 
 -- only Resolves , doesnot checks the types
@@ -117,10 +117,9 @@ validateArgument schema fieldPosition requestArgs argType@FieldDefinition { fiel
       datatype <- lookupInputType typeConName
                           schema
                           (internalUnknownTypeMessage typeConName)
-      argumentValue <- validateInputValue 
+      argumentValue <- validateInput 
                           schema
-                          (argumentGotInvalidValue argumentName,argumentPosition) 
-                          [] 
+                          (argumentGotInvalidValue argumentName,argumentPosition)
                           typeWrappers 
                           datatype 
                           (ObjectEntry fieldName value)

@@ -3,9 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Validation.Internal.Value
-  ( validateInputValue
-  , validateEnum
-  )
+  ( validateInput )
 where
 
 import           Data.Foldable                  (traverse_)
@@ -67,6 +65,15 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 , renderWrapped
                                                 )
 
+
+validateInput
+  :: Schema
+  -> (Message, Position)
+  -> [TypeWrapper]
+  -> TypeDefinition
+  -> ObjectEntry RESOLVED
+  -> Validation ValidValue
+validateInput schema ctx = validateInputValue schema ctx []
 
 violation  :: TypeRef -> ResolvedValue -> Maybe Message -> GQLErrors
 violation TypeRef { typeConName , typeWrappers } value _ 
