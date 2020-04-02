@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Argument level got invalid value;  Expected type \"TwoCon!\" found \"LK\".",
+      "message": "Argument level got invalid value. Expected type \"TwoCon!\" found \"LK\".",
       "locations": [
         {
           "line": 2,

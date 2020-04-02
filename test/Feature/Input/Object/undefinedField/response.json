@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Argument value got invalid value; Undefined Field \"field\".",
+      "message": "Argument value got invalid value. Undefined Field \"field\".",
       "locations": [
         {
           "line": 2,
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "message": "Argument value got invalid value; Undefined Field \"field\".",
+      "message": "Argument value got invalid value. Undefined Field \"field\".",
       "locations": [
         {
           "line": 3,

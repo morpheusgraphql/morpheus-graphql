@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Variable \"$v1\" got invalid value;  Expected type \"[[[Int!]!]]!\" found {\"id\":\"12\"}.",
+      "message": "Variable \"$v1\" got invalid value. Expected type \"[[[Int!]!]]!\" found {\"id\":\"12\"}.",
       "locations": [
         {
           "line": 1,
