@@ -137,25 +137,20 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
       validateField
         :: ObjectEntry RESOLVED -> Validation (ObjectEntry VALID)
       validateField ObjectEntry { entryName,  entryValue } = do
-        (type', currentProp') <- validationData entryValue
-        wrappers'             <- typeWrappers . fieldType <$> getField
-        ObjectEntry entryName 
-          <$> validateInputValue 
-                schema
-                ctx
-                currentProp'
-                wrappers'
-                type'
-                (entryName, entryValue)
+          TypeRef { typeConName , typeWrappers } <- fieldType <$> getField
+          let currentProp = props <> [Prop entryName typeConName]
+          currentTypeName <- lookupInputType typeConName
+                                  schema
+                                  (mismatch ctx currentProp typeConName typeWrappers entryValue Nothing)
+          ObjectEntry entryName 
+            <$> validateInputValue 
+                  schema
+                  ctx
+                  currentProp
+                  typeWrappers
+                  currentTypeName
+                  (entryName, entryValue)
        where
-        validationData :: ResolvedValue -> Validation (TypeDefinition, [Prop])
-        validationData value = do
-          fieldTypeName' <- typeConName . fieldType <$> getField
-          let currentProp = props ++ [Prop entryName fieldTypeName']
-          type' <- lookupInputType fieldTypeName'
-                                   schema
-                                   (mismatch ctx currentProp fieldTypeName' [] value Nothing)
-          return (type', currentProp)
         getField = selectBy (withPrefix ctx (unknownField props entryName)) entryName parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) (_, Object rawFields) =

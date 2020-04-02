@@ -44,8 +44,7 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 ( concatTraverse )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( selectBy 
-                                                , empty
+                                                ( empty
                                                 , singleton
                                                 , selectKnown
                                                 )
