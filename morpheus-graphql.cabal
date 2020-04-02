@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b5e1ffad9e7f07ea8979bf9c2f405260eb5f82a44811c8c7c712f9dd4d69a152
+-- hash: 1d9135f9123ece036ae734878ecaf50791d4cb6852aae119291f453531a65873
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -120,6 +120,7 @@ data-files:
     test/Feature/InputType/variables/invalidValue/nestedListNonNullListReceivedNull/query.gql
     test/Feature/InputType/variables/nameCollision/query.gql
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/query.gql
+    test/Feature/InputType/variables/nonInputTypeViolation/query.gql
     test/Feature/InputType/variables/undefinedVariable/query.gql
     test/Feature/InputType/variables/unknownType/query.gql
     test/Feature/InputType/variables/unusedVariable/unusedVariables/query.gql
@@ -268,6 +269,7 @@ data-files:
     test/Feature/InputType/variables/nameCollision/variables.json
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/response.json
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/variables.json
+    test/Feature/InputType/variables/nonInputTypeViolation/response.json
     test/Feature/InputType/variables/undefinedVariable/response.json
     test/Feature/InputType/variables/unknownType/response.json
     test/Feature/InputType/variables/unusedVariable/unusedVariables/response.json
