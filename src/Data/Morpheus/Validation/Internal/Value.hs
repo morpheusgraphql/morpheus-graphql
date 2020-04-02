@@ -70,11 +70,10 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 )
 
 
-violation  :: Name -> [TypeWrapper] -> ResolvedValue -> Maybe Message -> GQLErrors
-violation typeName wrappers value _ 
+violation  :: TypeRef -> ResolvedValue -> Maybe Message -> GQLErrors
+violation TypeRef { typeConName , typeWrappers } value _ 
     = globalErrorMessage 
-    $ typeViolation (renderWrapped typeName wrappers) value
-
+    $ typeViolation (renderWrapped typeConName typeWrappers) value
 
 withContext :: (Message, Position) -> Path ->  Validation a -> Validation a
 withContext (prefix, position) path = mapError addContext
@@ -116,7 +115,7 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
   validateWrapped tyWrappers tyCont
  where
   mismatchError :: [TypeWrapper] -> ResolvedValue -> Validation ValidValue
-  mismatchError  = typeMismatch ctx props typeName
+  mismatchError  wrappers x = withContext ctx props $ failure $ violation (TypeRef typeName Nothing wrappers) x Nothing 
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
@@ -153,13 +152,13 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
       validateField
         :: ObjectEntry RESOLVED -> Validation (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName,  entryValue } = do
-          TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
+          typeRef@TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
           let currentProp = props <> [Prop entryName typeConName]
           typeDef <- withContext ctx props 
               (lookupInputType 
                 typeConName 
                 schema                  
-                (violation typeConName typeWrappers entryValue Nothing)
+                (violation typeRef entryValue Nothing)
               )
           ObjectEntry entryName 
             <$> validateInputValue 
@@ -174,7 +173,7 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) ObjectEntry { entryValue = Object rawFields} =
       case unpackInputUnion inputUnion rawFields of
-        Left message -> typeMismatch2 ctx props typeName [] (Object rawFields) (Just message)
+        Left message -> withContext ctx props (failure $ violation (TypeRef typeName Nothing []) (Object rawFields) (Just message))
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
           typeDef <- lookupInputType
@@ -215,10 +214,6 @@ validateScalar ScalarDefinition { validateValue } value err = do
   toScalar (Scalar x) = pure (Scalar x)
   toScalar scValue    = failure (err scValue Nothing)
 
-
-withPrefix :: (Message, Position) -> Message -> GQLErrors
-withPrefix (prefix,pos) message = errorMessage pos (prefix <> message)
-
 validateEnum :: GQLErrors -> [DataEnumValue] -> ResolvedValue -> Validation ValidValue
 validateEnum gqlError enumValues (Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
@@ -226,15 +221,8 @@ validateEnum gqlError enumValues (Enum enumValue)
   where tags = map enumName enumValues
 validateEnum gqlError _ _ = failure gqlError
 
-typeMismatch2 :: (Message, Position) -> [Prop] -> Name -> [TypeWrapper] -> ResolvedValue -> Maybe Message ->Validation ValidValue
-typeMismatch2 (prefix,pos) props typeName wrappers value postfix = failure $ errorMessage pos (prefix <> message)
-  where
-    message = expectedTypeAFoundB props (renderWrapped typeName wrappers) value postfix
-
-typeMismatch :: (Message, Position) -> [Prop] -> Name -> [TypeWrapper] -> ResolvedValue -> Validation ValidValue
-typeMismatch ctx props typeName wrappers value = failure $ withPrefix ctx message
-  where
-    message = expectedTypeAFoundB props (renderWrapped typeName wrappers) value Nothing
+withPrefix :: (Message, Position) -> Message -> GQLErrors
+withPrefix (prefix,pos) message = errorMessage pos (prefix <> message)
 
 mismatch :: (Message, Position) -> [Prop] -> Name -> [TypeWrapper] -> ResolvedValue -> Maybe Message -> GQLErrors
 mismatch (prefix,pos) props typeName wrappers value mess = errorMessage pos (prefix <> message)
