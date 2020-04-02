@@ -5,6 +5,7 @@
 module Data.Morpheus.Error.Input
   ( expectedTypeAFoundB
   , undefinedField
+  , typeViolation
   , Prop(..)
   )
 where
@@ -25,21 +26,20 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ResolvedValue )
 
-expectedTypeAFoundB :: [Prop] -> Name -> ResolvedValue -> Maybe Name -> Message
-expectedTypeAFoundB path expected found Nothing 
-  = renderPath path 
-  <> "Expected type \""
+
+typeViolation :: Name -> ResolvedValue -> Message
+typeViolation expected found = "Expected type \""
   <> expected
   <> "\" found "
   <> T.pack (unpack $ encode found)
   <> "."
 
+
+expectedTypeAFoundB :: [Prop] -> Name -> ResolvedValue -> Maybe Name -> Message
+expectedTypeAFoundB path expected found Nothing 
+  = renderPath path <> typeViolation expected found
 expectedTypeAFoundB path expected found (Just errorMessage) =
-  renderPath path
-  <> "Expected type \""
-  <> expected <> "\" found "
-  <> T.pack (unpack $ encode found)
-  <> "; " <> errorMessage <> "."
+  renderPath path<> typeViolation expected found <> " " <> errorMessage <> "."
 
 undefinedField :: [Prop] -> Name -> Message
 undefinedField path field =

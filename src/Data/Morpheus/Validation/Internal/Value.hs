@@ -11,11 +11,14 @@ where
 import           Data.List                      ( elem )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      ( errorMessage )
+import           Data.Morpheus.Error.Utils      ( errorMessage
+                                                , globalErrorMessage
+                                                )
 import           Data.Morpheus.Error.Variable   ( incompatibleVariableType )
 import           Data.Morpheus.Error.Input      ( Prop(..)
                                                 , expectedTypeAFoundB
                                                 , undefinedField
+                                                , typeViolation
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
@@ -54,8 +57,7 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( unsafeFromValues )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( selectBy
-                                                , member
+                                                ( member
                                                 , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -67,6 +69,12 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
                                                 , renderWrapped
                                                 )
+
+
+violation  :: Name -> [TypeWrapper] -> ResolvedValue -> Maybe Message -> GQLErrors
+violation typeName wrappers value _ 
+    = globalErrorMessage 
+    $ typeViolation (renderWrapped typeName wrappers) value
 
 
 withContext :: (Message, Position) -> Path ->  Validation a -> Validation a
@@ -149,16 +157,19 @@ validateInputValue schema ctx props tyWrappers datatype@TypeDefinition { typeCon
       validateField entry@ObjectEntry { entryName,  entryValue } = do
           TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
           let currentProp = props <> [Prop entryName typeConName]
-          currentTypeName <- lookupInputType typeConName
-                                  schema
-                                  (mismatch ctx currentProp typeConName typeWrappers entryValue Nothing)
+          fieldTypeDef <- withContext ctx props 
+              (lookupInputType 
+                typeConName 
+                schema                  
+                (violation typeConName typeWrappers entryValue Nothing)
+              )
           ObjectEntry entryName 
             <$> validateInputValue 
                   schema
                   ctx
                   currentProp
                   typeWrappers
-                  currentTypeName
+                  fieldTypeDef
                   (entryName, entryValue)
        where
         getFieldType = fieldType <$> selectKnown entry parentFields
