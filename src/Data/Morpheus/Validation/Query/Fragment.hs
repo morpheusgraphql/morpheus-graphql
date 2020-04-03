@@ -38,12 +38,11 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , toList
                                                 , toAssoc
                                                 , selectKnown
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
                                                 , Failure(..)
                                                 )
-
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation
+                                                )
 
 validateFragments
   :: Schema -> Fragments -> SelectionSet RAW -> Validation ()

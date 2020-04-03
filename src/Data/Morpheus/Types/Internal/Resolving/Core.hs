@@ -47,6 +47,7 @@ import           Data.Text                      ( Text
                                                 )
 import           Data.Semigroup                 ( (<>) )
 
+
 type Stateless = Result () GQLError
 
 mapError 

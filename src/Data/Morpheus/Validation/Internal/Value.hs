@@ -54,10 +54,10 @@ import           Data.Morpheus.Types.Internal.AST.OrderedMap
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( member
                                                 , selectKnown
+                                                , Failure(..) 
                                                 )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Failure(..) 
-                                                , Validation
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation
                                                 , mapError
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL

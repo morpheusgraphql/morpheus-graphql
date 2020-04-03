@@ -44,10 +44,10 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectOr
                                                 , empty
                                                 , singleton
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
                                                 , Failure(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation
                                                 )
 import           Data.Morpheus.Validation.Query.Fragment
                                                 ( castFragmentType

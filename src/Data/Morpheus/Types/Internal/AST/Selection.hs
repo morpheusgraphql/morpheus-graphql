@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE FlexibleContexts   #-}
 
 module Data.Morpheus.Types.Internal.AST.Selection
   ( Selection(..)
@@ -58,7 +59,6 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 , TypeDefinition(..)
                                                 , TypeContent(..)
                                                 , FieldsDefinition
-                                                , Argument(..)
                                                 , Arguments
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
@@ -263,7 +263,10 @@ getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
 
 getOperationObject
-  :: Operation a -> Schema -> Stateless (Name, FieldsDefinition)
+  :: (Failure GQLErrors m, Failure Message m, Monad m) 
+  => Operation a 
+  -> Schema 
+  -> m (Name, FieldsDefinition)
 getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
@@ -274,7 +277,7 @@ getOperationObject op lib = do
         <> typeName
         <> "\" must be an Object"
 
-getOperationDataType :: Operation a -> Schema -> Stateless TypeDefinition
+getOperationDataType :: Failure GQLErrors m => Operation a -> Schema -> m TypeDefinition
 getOperationDataType Operation { operationType = Query } lib = pure (query lib)
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
   = case mutation lib of

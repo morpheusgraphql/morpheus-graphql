@@ -54,10 +54,10 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , selectKnown
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
                                                 , Failure(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )

@@ -31,7 +31,6 @@ module Data.Morpheus.Types.Internal.Resolving
     , subscribe
     , Context(..)
     , unsafeInternalContext
-    , mapError
     )
 where
 

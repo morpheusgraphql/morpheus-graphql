@@ -43,10 +43,10 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , empty
                                                 , selectKnown
                                                 , selectRequired
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
                                                 , Failure(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )

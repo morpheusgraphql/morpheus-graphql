@@ -47,10 +47,10 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty
                                                 , singleton
                                                 , selectKnown
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
                                                 , Failure(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Validation
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
                                                 (validateUnionSelection)

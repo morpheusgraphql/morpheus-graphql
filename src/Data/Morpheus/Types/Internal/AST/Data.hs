@@ -90,7 +90,6 @@ import          Data.Morpheus.Error.NameCollision
                                                 , Unknown(..)
                                                 , KindViolation(..)
                                                 )
-import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
@@ -102,6 +101,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
                                                 , Position
                                                 , Name
+                                                , Message
                                                 , Description
                                                 , Ref(..)
                                                 , TypeWrapper(..)
@@ -130,8 +130,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Stateless
-                                                , Failure(..)
+                                                ( Failure(..)
                                                 , LibUpdater
                                                 , resolveUpdates
                                                 )
@@ -142,6 +141,7 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
+
 
 type DataEnum = [DataEnumValue]
 type DataUnion = [Key]
@@ -249,9 +249,9 @@ typeRegister Schema { types, query, mutation, subscription } =
   types `union` HM.fromList
     (concatMap fromOperation [Just query, mutation, subscription])
 
-createDataTypeLib :: [TypeDefinition] -> Stateless Schema
+createDataTypeLib :: Failure Message m => [TypeDefinition] -> m Schema
 createDataTypeLib types = case popByKey "Query" types of
-  (Nothing   ,_    ) -> internalError "Query Not Defined"
+  (Nothing   ,_    ) -> failure ("INTERNAL: Query Not Defined" :: Message)
   (Just query, lib1) -> do
     let (mutation, lib2) = popByKey "Mutation" lib1
     let (subscription, lib3) = popByKey "Subscription" lib2
@@ -537,10 +537,11 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
     alias { typeWrappers = TypeList : typeWrappers }
 
 lookupSelectionField
-  :: Position
+  :: (Monad m , Failure GQLErrors m)
+  => Position
   -> Name
   -> (Name, FieldsDefinition)
-  -> Stateless FieldDefinition
+  -> m FieldDefinition
 lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
   where gqlError = cannotQueryField fieldName typeName position
 
