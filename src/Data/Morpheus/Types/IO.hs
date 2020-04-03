@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Result(..))
 
 
-renderResponse :: Result e GQLError con ValidValue -> GQLResponse
+renderResponse :: Result e GQLError ValidValue -> GQLResponse
 renderResponse (Failure errors)   = Errors errors
 renderResponse Success { result } = Data result
 
