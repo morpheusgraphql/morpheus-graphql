@@ -53,8 +53,7 @@ import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
 selectRequired 
   ::  ( Selectable c value
       , MissingRequired c
-      --, KeyOf sel
-      ) 
+      )
   => Ref 
   -> c 
   -> Validation value
