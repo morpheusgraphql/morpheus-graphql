@@ -64,12 +64,11 @@ import           Data.Morpheus.Validation.Query.Fragment
 type TypeDef = (Name, FieldsDefinition)
 
 validateSelectionSet
-  :: Name
-  -> VariableDefinitions VALID
+  :: VariableDefinitions VALID
   -> TypeDef
   -> SelectionSet RAW
   -> Validation (SelectionSet VALID)
-validateSelectionSet  operatorName variables = __validate
+validateSelectionSet variables = __validate
  where
   __validate
     :: TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)
@@ -83,7 +82,6 @@ validateSelectionSet  operatorName variables = __validate
       schema <- askSchema
       -- validate field Argument -----
       arguments <- validateArguments
-                    operatorName
                     variables
                     fieldDef
                     selectionPosition

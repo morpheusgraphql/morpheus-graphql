@@ -15,7 +15,6 @@ import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
 import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( VariableDefinitions
-                                                , Variable(..)
                                                 , Argument(..)
                                                 , ArgumentsDefinition(..)
                                                 , Arguments
@@ -25,7 +24,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldDefinition(..)
                                                 , TypeRef(..)
                                                 , Value(..)
-                                                , Name
                                                 , RawValue
                                                 , ResolvedValue
                                                 , RESOLVED
@@ -51,8 +49,8 @@ import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
 
 -- only Resolves , doesnot checks the types
-resolveObject :: Name -> VariableDefinitions VALID -> RawValue -> Validation ResolvedValue
-resolveObject operationName variables = resolve
+resolveObject :: VariableDefinitions VALID -> RawValue -> Validation ResolvedValue
+resolveObject variables = resolve
  where
   resolveEntry :: ObjectEntry RAW -> Validation (ObjectEntry RESOLVED)
   resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
@@ -64,24 +62,18 @@ resolveObject operationName variables = resolve
   resolve (List   x  ) = List <$> traverse resolve x
   resolve (Object obj) = Object <$> traverse resolveEntry obj
   resolve (VariableValue ref) =
-    ResolvedVariable ref <$> variableByRef operationName variables ref
-
-variableByRef :: Name -> VariableDefinitions VALID -> Ref -> Validation (Variable VALID)
-variableByRef operationName variables ref 
-  = selectRequired ref variables -- TODO: operationName
-
+    ResolvedVariable ref <$> selectRequired ref variables -- TODO: operationName
 
 resolveArgumentVariables
-  :: Name
-  -> VariableDefinitions VALID
+  :: VariableDefinitions VALID
   -> Arguments RAW
   -> Validation (Arguments RESOLVED)
-resolveArgumentVariables operationName variables
+resolveArgumentVariables variables
   = traverse resolveVariable
  where
   resolveVariable :: Argument RAW -> Validation (Argument RESOLVED)
   resolveVariable (Argument key val position) = do 
-    constValue <- resolveObject operationName variables val
+    constValue <- resolveObject variables val
     pure $ Argument key constValue position
 
 validateArgument
@@ -122,20 +114,18 @@ validateArgument fieldPosition requestArgs argType@FieldDefinition { fieldName, 
       pure Argument { argumentValue , .. }
 
 validateArguments
-  :: Name
-  -> VariableDefinitions VALID
+  :: VariableDefinitions VALID
   -> FieldDefinition
   -> Position
   -> Arguments RAW
   -> Validation (Arguments VALID)
-validateArguments 
-    operatorName 
+validateArguments
     variables 
     fieldDef@FieldDefinition {  fieldArgs }
     pos 
     rawArgs
   = do
-    args <- resolveArgumentVariables operatorName variables rawArgs
+    args <- resolveArgumentVariables variables rawArgs
     traverse_ checkUnknown (toList args)
     traverse (validateArgument pos args) fArgs
  where
