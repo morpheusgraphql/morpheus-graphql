@@ -13,9 +13,8 @@ import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
                                                 , undefinedArgument
                                                 )
 import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
-import           Data.Morpheus.Error.Variable   ( undefinedVariable )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ValidVariables
+                                                ( VariableDefinitions
                                                 , Variable(..)
                                                 , Argument(..)
                                                 , ArgumentsDefinition(..)
@@ -54,7 +53,7 @@ import           Data.Morpheus.Validation.Internal.Value
 import           Data.Text                      ( Text )
 
 -- only Resolves , doesnot checks the types
-resolveObject :: Name -> ValidVariables -> RawValue -> Validation ResolvedValue
+resolveObject :: Name -> VariableDefinitions VALID -> RawValue -> Validation ResolvedValue
 resolveObject operationName variables = resolve
  where
   resolveEntry :: ObjectEntry RAW -> Validation (ObjectEntry RESOLVED)
@@ -69,14 +68,14 @@ resolveObject operationName variables = resolve
   resolve (VariableValue ref) =
     ResolvedVariable ref <$> variableByRef operationName variables ref
 
-variableByRef :: Name -> ValidVariables -> Ref -> Validation (Variable VALID)
+variableByRef :: Name -> VariableDefinitions VALID -> Ref -> Validation (Variable VALID)
 variableByRef operationName variables ref 
   = selectRequired ref variables -- TODO: operationName
 
 
 resolveArgumentVariables
   :: Name
-  -> ValidVariables
+  -> VariableDefinitions VALID
   -> Arguments RAW
   -> Validation (Arguments RESOLVED)
 resolveArgumentVariables operationName variables
@@ -128,7 +127,7 @@ validateArgument schema fieldPosition requestArgs argType@FieldDefinition { fiel
 validateArguments
   :: Schema
   -> Text
-  -> ValidVariables
+  -> VariableDefinitions VALID
   -> FieldDefinition
   -> Position
   -> Arguments RAW

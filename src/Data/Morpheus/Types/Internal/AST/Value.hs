@@ -28,7 +28,7 @@ module Data.Morpheus.Types.Internal.AST.Value
   , ResolvedObject
   , VariableContent(..)
   , ObjectEntry(..)
-  , Variables
+  , VariableDefinitions
   )
 where
 
@@ -60,6 +60,7 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import          Data.Morpheus.Error.NameCollision
                                                 ( NameCollision(..)
                                                 , KindViolation(..)
+                                                , MissingRequired(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
@@ -187,7 +188,19 @@ instance NameCollision (Variable s) where
     locations = [variablePosition]
   }
 
-type Variables s = OrderedMap (Variable s)
+type VariableDefinitions s = OrderedMap (Variable s)
+
+instance MissingRequired (VariableDefinitions s) where
+  missingRequired Ref { refName , refPosition } _ 
+    = GQLError 
+      { message 
+        = "Variable \"" <> refName
+        <> "\" is not defined by operation \""
+        <> operationName <> "\"."
+      , locations = [refPosition]
+      }
+   where
+    operationName = "TODO:"
 
 data Value (stage :: Stage) where
   ResolvedVariable::Ref -> Variable VALID -> Value RESOLVED

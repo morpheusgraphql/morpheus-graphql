@@ -52,7 +52,6 @@ module Data.Morpheus.Types.Internal.AST
   , Operation(..)
   , Variable(..)
   , VariableDefinitions
-  , ValidVariables
   , DefaultValue
   , getOperationName
   , getOperationDataType

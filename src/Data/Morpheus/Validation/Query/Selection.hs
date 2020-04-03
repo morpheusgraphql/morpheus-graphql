@@ -19,7 +19,7 @@ import           Data.Morpheus.Error.Selection  ( hasNoSubfields
                                                 , subfieldsNotSelected
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ValidVariables
+                                                ( VariableDefinitions
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , Fragment(..)
@@ -68,7 +68,7 @@ validateSelectionSet
   :: Schema
   -> Fragments
   -> Name
-  -> ValidVariables
+  -> VariableDefinitions VALID
   -> TypeDef
   -> SelectionSet RAW
   -> Validation (SelectionSet VALID)

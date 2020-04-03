@@ -18,7 +18,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , Operation(..)
   , Variable(..)
   , VariableDefinitions
-  , ValidVariables
   , DefaultValue
   , getOperationName
   , getOperationDataType
@@ -64,7 +63,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Variable(..)
-                                                , Variables
+                                                , VariableDefinitions
                                                 , ResolvedValue
                                                 )
 import          Data.Morpheus.Types.Internal.AST.MergeSet
@@ -252,14 +251,10 @@ deriving instance Eq (Selection a)
 
 type DefaultValue = Maybe ResolvedValue
 
-type VariableDefinitions = Variables RAW
-
-type ValidVariables = Variables VALID
-
 data Operation (s:: Stage) = Operation
   { operationName      :: Maybe Key
   , operationType      :: OperationType
-  , operationArguments :: Variables s
+  , operationArguments :: VariableDefinitions s
   , operationSelection :: SelectionSet s
   , operationPosition  :: Position
   } deriving (Show,Lift)

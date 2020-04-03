@@ -24,8 +24,8 @@ import           Data.Morpheus.Error.Variable   ( uninitializedVariable
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
-                                                , ValidVariables
                                                 , Variable(..)
+                                                , VariableDefinitions
                                                 , getOperationName
                                                 , Fragment(..)
                                                 , Fragments
@@ -102,7 +102,7 @@ resolveOperationVariables
   -> Variables
   -> VALIDATION_MODE
   -> Operation RAW
-  -> Validation ValidVariables
+  -> Validation (VariableDefinitions VALID)
 resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArguments }
   = do
     allVariableRefs lib [operationSelection] >>= checkUnusedVariables

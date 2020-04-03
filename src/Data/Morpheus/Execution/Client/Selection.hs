@@ -74,7 +74,7 @@ compileError x =
 
 operationTypes
   :: Schema
-  -> VariableDefinitions
+  -> VariableDefinitions RAW
   -> Operation VALID
   -> Validation (Maybe TypeD, [ClientType])
 operationTypes lib variables = genOperation
