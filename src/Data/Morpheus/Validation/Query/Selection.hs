@@ -82,12 +82,12 @@ validateSelectionSet  operatorName variables = __validate
       let fieldTypeRef = Ref feildTypeName selectionPosition
       schema <- askSchema
       -- validate field Argument -----
-      (arguments ::Arguments VALID) <- validateArguments schema
-                                     operatorName
-                                     variables
-                                     fieldDef
-                                     selectionPosition
-                                     selectionArguments
+      arguments <- validateArguments
+                    operatorName
+                    variables
+                    fieldDef
+                    selectionPosition
+                    selectionArguments
       -- check field Type existence  -----
       (typeCont :: TypeContent) <- typeContent <$> selectKnown fieldTypeRef schema
       pure (fieldDef, typeCont, arguments)
