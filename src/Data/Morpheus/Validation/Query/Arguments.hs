@@ -23,7 +23,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Position
                                                 , ArgumentDefinition
                                                 , FieldDefinition(..)
-                                                , Schema
                                                 , TypeRef(..)
                                                 , Value(..)
                                                 , Name
@@ -47,10 +46,10 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
+                                                , askSchema
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
-import           Data.Text                      ( Text )
 
 -- only Resolves , doesnot checks the types
 resolveObject :: Name -> VariableDefinitions VALID -> RawValue -> Validation ResolvedValue
@@ -87,12 +86,11 @@ resolveArgumentVariables operationName variables
     pure $ Argument key constValue position
 
 validateArgument
-  :: Schema
-  -> Position
+  :: Position
   -> Arguments RESOLVED
   -> ArgumentDefinition
   -> Validation (Argument VALID)
-validateArgument schema fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
+validateArgument fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
   = selectOr 
     handleNullable 
     handleArgument 
@@ -113,6 +111,7 @@ validateArgument schema fieldPosition requestArgs argType@FieldDefinition { fiel
   validateArgumentValue :: Argument RESOLVED -> Validation (Argument VALID)
   validateArgumentValue Argument { argumentValue = value, .. } =
     do
+      schema <- askSchema
       datatype <- lookupInputType typeConName
                           schema
                           (internalUnknownTypeMessage typeConName)
@@ -124,15 +123,13 @@ validateArgument schema fieldPosition requestArgs argType@FieldDefinition { fiel
       pure Argument { argumentValue , .. }
 
 validateArguments
-  :: Schema
-  -> Text
+  :: Name
   -> VariableDefinitions VALID
   -> FieldDefinition
   -> Position
   -> Arguments RAW
   -> Validation (Arguments VALID)
 validateArguments 
-    typeLib 
     operatorName 
     variables 
     fieldDef@FieldDefinition {  fieldArgs }
@@ -141,7 +138,7 @@ validateArguments
   = do
     args <- resolveArgumentVariables operatorName variables rawArgs
     traverse_ checkUnknown (toList args)
-    traverse (validateArgument typeLib pos args) fArgs
+    traverse (validateArgument pos args) fArgs
  where
   fArgs = case fieldArgs of 
     (ArgumentsDefinition _ argsD) -> argsD

@@ -27,7 +27,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VariableDefinitions
                                                 , getOperationName
                                                 , Fragment(..)
-                                                , Fragments
                                                 , Argument(..)
                                                 , Selection(..)
                                                 , SelectionContent(..)
