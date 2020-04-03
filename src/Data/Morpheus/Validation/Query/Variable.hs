@@ -14,7 +14,6 @@ import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.Maybe                     ( maybe )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text )
 
 --- MORPHEUS
 import           Data.Morpheus.Error.Variable   ( uninitializedVariable
@@ -57,6 +56,7 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askSchema
+                                                , askFragments
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -76,8 +76,8 @@ instance ExploreRefs (Argument RAW) where
 mapSelection :: (Selection RAW -> Validation [b]) -> SelectionSet RAW -> Validation [b]
 mapSelection f = fmap concat . traverse f
 
-allVariableRefs :: Fragments -> [SelectionSet RAW] -> Validation [Ref]
-allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs) 
+allVariableRefs :: [SelectionSet RAW] -> Validation [Ref]
+allVariableRefs = fmap concat . traverse (mapSelection searchRefs) 
  where
   -- | search used variables in every arguments
   searchRefs :: Selection RAW -> Validation [Ref]
@@ -91,19 +91,19 @@ allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs)
   searchRefs (InlineFragment Fragment { fragmentSelection })
     = mapSelection searchRefs fragmentSelection
   searchRefs (Spread reference)
-    = selectKnown reference fragmentLib
+    = askFragments
+      >>= selectKnown reference
       >>= mapSelection searchRefs
       .   fragmentSelection
 
 resolveOperationVariables
-  :: Fragments
-  -> Variables
+  :: Variables
   -> VALIDATION_MODE
   -> Operation RAW
   -> Validation (VariableDefinitions VALID)
-resolveOperationVariables lib root validationMode Operation { operationName, operationSelection, operationArguments }
+resolveOperationVariables root validationMode Operation { operationName, operationSelection, operationArguments }
   = do
-    allVariableRefs lib [operationSelection] >>= checkUnusedVariables
+    allVariableRefs [operationSelection] >>= checkUnusedVariables
     traverse (lookupAndValidateValueOnBody root validationMode) operationArguments
  where
   varToKey :: Variable a -> Ref

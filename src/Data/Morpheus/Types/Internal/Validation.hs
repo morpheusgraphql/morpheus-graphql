@@ -10,12 +10,13 @@ module Data.Morpheus.Types.Internal.Validation
   , mapError
   , askSchema
   , askContext
+  , askFragments
   )
   where
 
-import           Control.Monad.Fail             (MonadFail(..))
-import           Control.Monad.Trans.Class      ( MonadTrans(..))
-import           Control.Monad.IO.Class         ( MonadIO(..) )
+import           Control.Monad.Fail             ( MonadFail(..) )
+import           Control.Monad.Trans.Class      ( MonadTrans(..) )
+-- import           Control.Monad.IO.Class         ( MonadIO(..) )
 import           Data.Text                      ( pack )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
@@ -42,9 +43,11 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLError(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
-                                                ( Schema(..)
+                                                ( Schema
                                                 )
-
+import           Data.Morpheus.Types.Internal.AST.Selection
+                                                ( Fragments
+                                                )
 
 runValidation :: Validation a -> ValidationContext -> Stateless a
 runValidation (Validation x) = runReaderT x 
@@ -61,11 +64,15 @@ askContext = Validation ask
 askSchema :: Validation Schema
 askSchema = schema <$> askContext
    
+askFragments :: Validation Fragments
+askFragments = fragments <$> askContext
+
 data ValidationContext 
   = ValidationContext 
-    { schema :: Schema
-    , operationName :: Maybe Name
-    , scopePosition :: Position
+    { schema          :: Schema
+    , fragments       :: Fragments
+    , operationName   :: Maybe Name
+    , scopePosition   :: Position
       --operation :: Operation RAW
     } 
     deriving (Show)
@@ -78,7 +85,11 @@ newtype Validation a
           Stateless
           a
     }
-    deriving (Functor, Applicative, Monad)
+    deriving 
+      ( Functor
+      , Applicative
+      , Monad
+      )
 
 instance MonadFail Validation where 
   fail = failure . pack

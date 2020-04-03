@@ -55,6 +55,7 @@ validateRequest
       validation
       ValidationContext 
         { schema 
+        , fragments
         , operationName
         , scopePosition = operationPosition
         }
@@ -63,21 +64,19 @@ validateRequest
     validation = do
       operationDataType <-  getOperationObject rawOperation schema
       variables         <- resolveOperationVariables
-                                  fragments
                                   (fromList inputVariables)
                                   validationMode
                                   rawOperation
-      validateFragments schema fragments operationSelection
-      selection <- validateSelectionSet 
-                                  schema
-                                  fragments
+      validateFragments operationSelection
+      selection <- validateSelectionSet
                                   (getOperationName operationName)
                                   variables
                                   operationDataType
                                   operationSelection
-      pure $ Operation { operationName
-                      , operationType
-                      , operationArguments      = empty
-                      , operationSelection = selection
-                      , operationPosition
-                      }
+      pure $ Operation 
+              { operationName
+              , operationType
+              , operationArguments = empty
+              , operationSelection = selection
+              , operationPosition
+              }

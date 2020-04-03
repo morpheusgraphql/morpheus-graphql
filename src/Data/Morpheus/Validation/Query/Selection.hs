@@ -23,13 +23,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , Fragment(..)
-                                                , Fragments
                                                 , SelectionSet
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeDefinition(..)
-                                                , Schema(..)
                                                 , TypeRef(..)
                                                 , Ref(..)
                                                 , Name
@@ -51,6 +49,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
+                                                , askSchema
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
                                                 (validateUnionSelection)
@@ -65,14 +64,12 @@ import           Data.Morpheus.Validation.Query.Fragment
 type TypeDef = (Name, FieldsDefinition)
 
 validateSelectionSet
-  :: Schema
-  -> Fragments
-  -> Name
+  :: Name
   -> VariableDefinitions VALID
   -> TypeDef
   -> SelectionSet RAW
   -> Validation (SelectionSet VALID)
-validateSelectionSet schema fragments operatorName variables = __validate
+validateSelectionSet  operatorName variables = __validate
  where
   __validate
     :: TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)
@@ -83,6 +80,7 @@ validateSelectionSet schema fragments operatorName variables = __validate
       (fieldDef :: FieldDefinition) <- lookupSelectionField selectionPosition key dataType
       let feildTypeName = typeConName (fieldType fieldDef)
       let fieldTypeRef = Ref feildTypeName selectionPosition
+      schema <- askSchema
       -- validate field Argument -----
       (arguments ::Arguments VALID) <- validateArguments schema
                                      operatorName
@@ -130,13 +128,12 @@ validateSelectionSet schema fragments operatorName variables = __validate
             validateByTypeContent dataField DataUnion {} 
               = validateUnionSelection  
                     __validate
-                    schema 
-                    fragments
                     selectionRef
                     rawSelection 
                     (typeName,dataField)
             -- Validate Regular selection set
             validateByTypeContent dataField DataObject {} = do
+                schema <- askSchema
                 fieldType' <- lookupFieldAsSelectionSet selectionRef schema dataField
                 SelectionSet <$> __validate fieldType' rawSelection
 
@@ -144,7 +141,7 @@ validateSelectionSet schema fragments operatorName variables = __validate
                 selectionRef 
                 (typeConName $fieldType dataField)
     validateSelection (Spread ref) =
-      resolveSpread fragments [typeName] ref >>= validateFragment
+      resolveSpread [typeName] ref >>= validateFragment
     validateSelection (InlineFragment fragment') =
       castFragmentType Nothing (fragmentPosition fragment') [typeName] fragment'
         >>= validateFragment

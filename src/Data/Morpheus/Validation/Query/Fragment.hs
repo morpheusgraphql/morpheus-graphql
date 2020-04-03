@@ -1,7 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Validation.Query.Fragment
   ( validateFragments
@@ -16,7 +15,6 @@ import           Data.Text                      ( Text )
 import            Data.Functor                  (($>))
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      (errorMessage)
 import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
                                                 , cannotSpreadWithinItself
                                                 , unusedFragment
@@ -28,7 +26,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position
-                                                , Schema
                                                 , SelectionSet
                                                 , RAW
                                                 , constraintObject
@@ -42,18 +39,23 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
+                                                , askSchema
+                                                , askFragments
                                                 )
 
-validateFragments
-  :: Schema -> Fragments -> SelectionSet RAW -> Validation ()
-validateFragments lib fragments operatorSel =checkLoop >> checkUnusedFragments
+validateFragments :: SelectionSet RAW -> Validation ()
+validateFragments operatorSel = do
+  fragments <- askFragments
+  checkLoop fragments
+  checkUnusedFragments fragments
  where
-  checkUnusedFragments =
-    case fragmentsKeys \\ usedFragments fragments (toAssoc operatorSel) of
+  checkUnusedFragments fragments =
+    case refs fragments \\ usedFragments fragments (toAssoc operatorSel) of
       []     -> return ()
       unused -> failure (unusedFragment unused)
-  checkLoop = traverse (validateFragment lib) (toList fragments) >>= detectLoopOnFragments
-  fragmentsKeys = map toRef (toList fragments)
+  checkLoop fragments = 
+    traverse validateFragment (toList fragments) >>= detectLoopOnFragments
+  refs fragments = map toRef (toList fragments)
     where toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
 
 type Node = Ref
@@ -69,9 +71,10 @@ castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
     then pure fragment
     else failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
 
-resolveSpread :: Fragments -> [Text] -> Ref -> Validation Fragment
-resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
-  selectKnown reference fragments
+resolveSpread :: [Text] -> Ref -> Validation Fragment
+resolveSpread allowedTargets ref@Ref { refName, refPosition } 
+  = askFragments
+    >>= selectKnown ref
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
 usedFragments :: Fragments -> [(Text, Selection RAW)] -> [Node]
@@ -104,13 +107,14 @@ scanForSpread (Spread Ref { refName, refPosition }) =
 exploreSpreads :: SelectionSet RAW -> [Node]
 exploreSpreads = concatMap scanForSpread 
 
-validateFragment :: Schema -> Fragment -> Validation NodeEdges
-validateFragment schema  fr@Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
+validateFragment :: Fragment -> Validation NodeEdges
+validateFragment fr@Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
   = checkTypeExistence $> (ref, exploreSpreads fragmentSelection)
   where 
     ref = Ref fragmentName fragmentPosition
     checkTypeExistence 
-      = selectKnown (Ref fragmentType fragmentPosition) schema 
+      = askSchema
+        >>= selectKnown (Ref fragmentType fragmentPosition) 
         >>= constraintObject fr
 
 detectLoopOnFragments :: Graph -> Validation ()
