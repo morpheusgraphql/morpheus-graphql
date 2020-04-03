@@ -28,6 +28,7 @@ module Data.Morpheus.Types.Internal.AST.Value
   , ResolvedObject
   , VariableContent(..)
   , ObjectEntry(..)
+  , Variables
   )
 where
 
@@ -47,7 +48,6 @@ import           Data.Scientific                ( Scientific
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , unpack
-                                                , pack
                                                 )
 import qualified Data.Text                     as T
 import qualified Data.Vector                   as V
@@ -186,6 +186,8 @@ instance NameCollision (Variable s) where
     message = "There can Be only One Variable Named \"" <> variableName <> "\"",
     locations = [variablePosition]
   }
+
+type Variables s = OrderedMap (Variable s)
 
 data Value (stage :: Stage) where
   ResolvedVariable::Ref -> Variable VALID -> Value RESOLVED

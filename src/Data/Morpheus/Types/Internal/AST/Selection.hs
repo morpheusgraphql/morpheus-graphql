@@ -64,6 +64,7 @@ import           Data.Morpheus.Types.Internal.AST.Data
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Variable(..)
+                                                , Variables
                                                 , ResolvedValue
                                                 )
 import          Data.Morpheus.Types.Internal.AST.MergeSet
@@ -250,8 +251,6 @@ deriving instance Lift (Selection a)
 deriving instance Eq (Selection a)
 
 type DefaultValue = Maybe ResolvedValue
-
-type Variables s = OrderedMap (Variable s)
 
 type VariableDefinitions = Variables RAW
 
