@@ -11,7 +11,7 @@
 {-# LANGUAGE RecordWildCards            #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
-  ( Validation
+  ( Stateless
   , Result(..)
   , Failure(..)
   , ResultT(..)
@@ -47,8 +47,7 @@ import           Data.Text                      ( Text
                                                 )
 import           Data.Semigroup                 ( (<>) )
 
-
-type Validation = Result () GQLError
+type Stateless = Result () GQLError
 
 mapError 
   :: (er1 -> er2)
@@ -115,7 +114,7 @@ instance Monad (Result e error)  where
 instance Failure [error] (Result ev error) where
   failure = Failure
 
-instance Failure Text Validation where
+instance Failure Text Stateless where
   failure text =
     Failure [GQLError { message = "INTERNAL ERROR: " <> text, locations = [] }]
 
@@ -195,7 +194,7 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
 --   mapEv (Failure es) = Failure $ fmap f es
 
 -- Helper Functions
-type LibUpdater lib = lib -> Validation lib
+type LibUpdater lib = lib -> Stateless lib
 
-resolveUpdates :: lib -> [LibUpdater lib] -> Validation lib
+resolveUpdates :: lib -> [LibUpdater lib] -> Stateless lib
 resolveUpdates = foldM (&)

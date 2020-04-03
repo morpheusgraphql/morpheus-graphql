@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , toResolver
     , lift
     , SubEvent
-    , Validation
+    , Stateless
     , Failure(..)
     , GQLChannel(..)
     , ResponseEvent(..)

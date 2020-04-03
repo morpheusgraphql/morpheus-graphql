@@ -82,7 +82,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                , Validation
+                                                , Stateless
                                                 , cleanEvents
                                                 , ResultT(..)
                                                 , unpackEvents
@@ -201,7 +201,7 @@ fullSchema
   :: forall proxy m event query mutation subscription
    . (IntrospectConstraint m event query mutation subscription)
   => proxy (GQLRootResolver m event query mutation subscription)
-  -> Validation Schema
+  -> Stateless Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
   querySchema = do

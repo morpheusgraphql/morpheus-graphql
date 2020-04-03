@@ -87,7 +87,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , empty
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation
+                                                ( Stateless
                                                 , Result(..)
                                                 , Failure(..)
                                                 , ResultT(..)
@@ -305,7 +305,7 @@ type FieldRes o e m
 
 toResolver
   :: forall o e m a b. (LiftOperation o, Monad m)
-  => (Arguments VALID -> Validation a)
+  => (Arguments VALID -> Stateless a)
   -> (a -> Resolver o e m b)
   -> Resolver o e m b
 toResolver toArgs  = withResolver args 

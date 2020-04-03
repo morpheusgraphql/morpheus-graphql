@@ -46,7 +46,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ScalarDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                 ( Validation )
+                                                 ( Stateless )
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
 --
@@ -197,7 +197,7 @@ parseDataType = label "TypeDefinition" $ do
       <|> objectTypeDefinition description
       <|> interfaceTypeDefinition description
 
-parseSchema :: Text -> Validation [TypeDefinition]
+parseSchema :: Text -> Stateless [TypeDefinition]
 parseSchema = processParser request
  where
   request  = label "DocumentTypes" $ do

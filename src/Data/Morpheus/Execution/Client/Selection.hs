@@ -60,7 +60,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
+                                                ( Stateless
                                                 , Failure(..)
                                                 , Result(..)
                                                 , LibUpdater
@@ -76,7 +76,7 @@ operationTypes
   :: Schema
   -> VariableDefinitions RAW
   -> Operation VALID
-  -> Validation (Maybe TypeD, [ClientType])
+  -> Stateless (Maybe TypeD, [ClientType])
 operationTypes lib variables = genOperation
  where
   genOperation operation@Operation { operationName, operationSelection } = do
@@ -124,7 +124,7 @@ operationTypes lib variables = genOperation
     -> Name
     -> TypeDefinition
     -> SelectionSet VALID
-    -> Validation ([ClientType], [Name])
+    -> Stateless ([ClientType], [Name])
   genRecordType path tName dataType recordSelSet = do
     (con, subTypes, requests) <- genConsD tName dataType recordSelSet
     pure
@@ -144,14 +144,14 @@ operationTypes lib variables = genOperation
       :: Name
       -> TypeDefinition
       -> SelectionSet VALID
-      -> Validation (ConsD, [ClientType], [Text])
+      -> Stateless (ConsD, [ClientType], [Text])
     genConsD cName datatype selSet = do
       (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
       pure (ConsD { cName, cFields }, concat subTypes, concat requests)
      where
       genField
         :: Selection VALID
-        -> Validation (FieldDefinition, [ClientType], [Text])
+        -> Stateless (FieldDefinition, [ClientType], [Text])
       genField 
           sel@Selection 
           { selectionName
@@ -181,7 +181,7 @@ operationTypes lib variables = genOperation
         fieldName = fromMaybe selectionName selectionAlias
         ------------------------------------------
         subTypesBySelection
-          :: TypeDefinition -> Selection VALID -> Validation ([ClientType], [Text])
+          :: TypeDefinition -> Selection VALID -> Stateless ([ClientType], [Text])
         subTypesBySelection dType Selection { selectionContent = SelectionField }
           = leafType dType
           --withLeaf buildLeaf dType
@@ -224,7 +224,7 @@ scanInputTypes lib name collected | name `elem` collected = pure collected
     scanType (DataEnum _) = pure (collected <> [typeName])
     scanType _            = pure collected
 
-buildInputType :: Schema -> Text -> Validation [ClientType]
+buildInputType :: Schema -> Text -> Stateless [ClientType]
 buildInputType lib name = getType lib name >>= generateTypes
  where
   generateTypes TypeDefinition { typeName, typeContent } = subTypes typeContent
@@ -246,7 +246,7 @@ buildInputType lib name = getType lib name >>= generateTypes
             }
         ]
      where
-      toFieldD :: FieldDefinition -> Validation FieldDefinition
+      toFieldD :: FieldDefinition -> Stateless FieldDefinition
       toFieldD field@FieldDefinition { fieldType } = do
         typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
         pure $ field { fieldType = fieldType { typeConName  }  }
@@ -271,7 +271,7 @@ lookupFieldType
   -> TypeDefinition
   -> Position
   -> Text
-  -> Validation (TypeDefinition, TypeRef)
+  -> Stateless (TypeDefinition, TypeRef)
 lookupFieldType lib path TypeDefinition { typeContent = DataObject { objectFields }, typeName } refPosition key
   = selectBy selError key objectFields >>= processDeprecation
   where
@@ -282,7 +282,7 @@ lookupFieldType lib path TypeDefinition { typeContent = DataObject { objectField
       trans x =
         (x, alias { typeConName = typeFrom path x, typeArgs = Nothing })
       ------------------------------------------------------------------
-      checkDeprecated :: Validation ()
+      checkDeprecated :: Stateless ()
       checkDeprecated = case fieldMeta >>= lookupDeprecated of
         Just deprecation -> Success { result = (), warnings, events = [] }
          where
@@ -294,15 +294,15 @@ lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 
-leafType :: TypeDefinition -> Validation ([ClientType], [Text])
+leafType :: TypeDefinition -> Stateless ([ClientType], [Text])
 leafType TypeDefinition { typeName, typeContent } = fromKind typeContent
  where
-  fromKind :: TypeContent -> Validation ([ClientType], [Text])
+  fromKind :: TypeContent -> Stateless ([ClientType], [Text])
   fromKind DataEnum{} = pure ([], [typeName])
   fromKind DataScalar{} = pure ([], [])
   fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
-getType :: Schema -> Text -> Validation TypeDefinition
+getType :: Schema -> Text -> Stateless TypeDefinition
 getType lib typename = selectBy (compileError typename) typename lib 
 
 typeFrom :: [Name] -> TypeDefinition -> Name

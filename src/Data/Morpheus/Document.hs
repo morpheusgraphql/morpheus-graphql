@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , createDataTypeLib
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
+                                                ( Stateless
                                                 , Result(..)
                                                 )
 import           Data.Morpheus.Validation.Document.Validation
@@ -57,14 +57,14 @@ parseDSL doc = case parseGraphQLDocument doc of
   Success { result } -> Right result
 
 
-parseDocument :: Text -> Validation Schema
+parseDocument :: Text -> Stateless Schema
 parseDocument doc =
   parseSchema doc >>= validatePartialDocument >>= createDataTypeLib
 
-parseGraphQLDocument :: ByteString -> Validation Schema
+parseGraphQLDocument :: ByteString -> Stateless Schema
 parseGraphQLDocument x = parseDocument (LT.toStrict $ decodeUtf8 x)
 
-parseFullGQLDocument :: ByteString -> Validation Schema
+parseFullGQLDocument :: ByteString -> Stateless Schema
 parseFullGQLDocument = parseGraphQLDocument >=> defaultTypes
 
 -- | Generates schema.gql file from 'GQLRootResolver'

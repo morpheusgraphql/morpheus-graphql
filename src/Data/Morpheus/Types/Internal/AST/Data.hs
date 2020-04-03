@@ -130,7 +130,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation
+                                                ( Stateless
                                                 , Failure(..)
                                                 , LibUpdater
                                                 , resolveUpdates
@@ -249,7 +249,7 @@ typeRegister Schema { types, query, mutation, subscription } =
   types `union` HM.fromList
     (concatMap fromOperation [Just query, mutation, subscription])
 
-createDataTypeLib :: [TypeDefinition] -> Validation Schema
+createDataTypeLib :: [TypeDefinition] -> Stateless Schema
 createDataTypeLib types = case popByKey "Query" types of
   (Nothing   ,_    ) -> internalError "Query Not Defined"
   (Just query, lib1) -> do
@@ -537,11 +537,10 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
     alias { typeWrappers = TypeList : typeWrappers }
 
 lookupSelectionField
-  :: Failure GQLErrors Validation
-  => Position
+  :: Position
   -> Name
   -> (Name, FieldsDefinition)
-  -> Validation FieldDefinition
+  -> Stateless FieldDefinition
 lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
   where gqlError = cannotQueryField fieldName typeName position
 

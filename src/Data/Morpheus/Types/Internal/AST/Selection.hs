@@ -50,7 +50,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Message
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation
+                                                ( Stateless
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
@@ -263,7 +263,7 @@ getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
 
 getOperationObject
-  :: Operation a -> Schema -> Validation (Name, FieldsDefinition)
+  :: Operation a -> Schema -> Stateless (Name, FieldsDefinition)
 getOperationObject op lib = do
   dt <- getOperationDataType op lib
   case dt of
@@ -274,7 +274,7 @@ getOperationObject op lib = do
         <> typeName
         <> "\" must be an Object"
 
-getOperationDataType :: Operation a -> Schema -> Validation TypeDefinition
+getOperationDataType :: Operation a -> Schema -> Stateless TypeDefinition
 getOperationDataType Operation { operationType = Query } lib = pure (query lib)
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
   = case mutation lib of
