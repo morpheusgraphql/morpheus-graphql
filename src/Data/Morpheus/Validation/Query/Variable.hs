@@ -35,8 +35,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionSet
                                                 , Ref(..)
                                                 , TypeDefinition
-                                                , Schema
-                                                , lookupInputType
                                                 , Variables
                                                 , Value(..)
                                                 , ValidValue
@@ -58,6 +56,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
+                                                , askSchema
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -97,16 +96,15 @@ allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs)
       .   fragmentSelection
 
 resolveOperationVariables
-  :: Schema
-  -> Fragments
+  :: Fragments
   -> Variables
   -> VALIDATION_MODE
   -> Operation RAW
   -> Validation (VariableDefinitions VALID)
-resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArguments }
+resolveOperationVariables lib root validationMode Operation { operationName, operationSelection, operationArguments }
   = do
     allVariableRefs lib [operationSelection] >>= checkUnusedVariables
-    traverse (lookupAndValidateValueOnBody typeLib root validationMode) operationArguments
+    traverse (lookupAndValidateValueOnBody root validationMode) operationArguments
  where
   varToKey :: Variable a -> Ref
   varToKey Variable { variableName, variablePosition } = Ref variableName variablePosition
@@ -118,13 +116,13 @@ resolveOperationVariables typeLib lib root validationMode Operation { operationN
       failure $ unusedVariables (getOperationName operationName) unused'
 
 lookupAndValidateValueOnBody
-  :: Schema
-  -> Variables
+  :: Variables
   -> VALIDATION_MODE
   -> Variable RAW
   -> Validation (Variable VALID)
 lookupAndValidateValueOnBody 
-  schema bodyVariables validationMode 
+  bodyVariables 
+  validationMode 
   var@Variable { 
       variableName,
       variableType, 
@@ -132,7 +130,8 @@ lookupAndValidateValueOnBody
       variableValue = DefaultValue defaultValue 
     }
   = toVariable
-    <$> ( selectKnown (Ref (typeConName variableType) variablePosition) schema
+    <$> ( askSchema
+          >>= selectKnown (Ref (typeConName variableType) variablePosition) 
           >>= constraintInput var 
           >>= checkType getVariable defaultValue
         )
@@ -163,8 +162,7 @@ lookupAndValidateValueOnBody
   -----------------------------------------------------------------------------------------------
   validator :: TypeDefinition -> ResolvedValue -> Validation ValidValue
   validator varType varValue 
-    = validateInput 
-        schema
+    = validateInput  
         (variableGotInvalidValue variableName, variablePosition)
         (typeWrappers variableType)
         varType

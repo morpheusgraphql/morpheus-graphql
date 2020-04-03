@@ -8,13 +8,14 @@ module Data.Morpheus.Types.Internal.Validation
   , ValidationContext(..)
   , runValidation
   , mapError
+  , askSchema
+  , askContext
   )
   where
 
 import           Control.Monad.Fail             (MonadFail(..))
 import           Control.Monad.Trans.Class      ( MonadTrans(..))
 import           Control.Monad.IO.Class         ( MonadIO(..) )
-import           Data.Maybe                     ( fromMaybe )
 import           Data.Text                      ( pack )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
@@ -54,6 +55,12 @@ mapError
   -> Validation a
 mapError f (Validation x) = Validation $ ReaderT $ C.mapError f . runReaderT x 
 
+askContext :: Validation ValidationContext
+askContext = Validation ask
+
+askSchema :: Validation Schema
+askSchema = schema <$> askContext
+   
 data ValidationContext 
   = ValidationContext 
     { schema :: Schema

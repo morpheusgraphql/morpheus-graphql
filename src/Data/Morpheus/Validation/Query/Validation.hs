@@ -62,18 +62,19 @@ validateRequest
     validation :: Validation (Operation VALID)
     validation = do
       operationDataType <-  getOperationObject rawOperation schema
-      variables         <- resolveOperationVariables schema
-                                                    fragments
-                                                    (fromList inputVariables)
-                                                    validationMode
-                                                    rawOperation
+      variables         <- resolveOperationVariables
+                                  fragments
+                                  (fromList inputVariables)
+                                  validationMode
+                                  rawOperation
       validateFragments schema fragments operationSelection
-      selection <- validateSelectionSet schema
-                                        fragments
-                                        (getOperationName operationName)
-                                        variables
-                                        operationDataType
-                                        operationSelection
+      selection <- validateSelectionSet 
+                                  schema
+                                  fragments
+                                  (getOperationName operationName)
+                                  variables
+                                  operationDataType
+                                  operationSelection
       pure $ Operation { operationName
                       , operationType
                       , operationArguments      = empty

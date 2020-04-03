@@ -116,8 +116,7 @@ validateArgument schema fieldPosition requestArgs argType@FieldDefinition { fiel
       datatype <- lookupInputType typeConName
                           schema
                           (internalUnknownTypeMessage typeConName)
-      argumentValue <- validateInput 
-                          schema
+      argumentValue <- validateInput
                           (argumentGotInvalidValue argumentName,argumentPosition)
                           typeWrappers 
                           datatype 

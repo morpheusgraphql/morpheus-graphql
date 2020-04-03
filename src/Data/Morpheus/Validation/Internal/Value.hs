@@ -20,7 +20,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeDefinition(..)
-                                                , Schema(..)
                                                 , ScalarDefinition(..)
                                                 , TypeRef(..)
                                                 , TypeWrapper(..)
@@ -59,21 +58,20 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , mapError
+                                                , askSchema
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
                                                 , renderWrapped
                                                 )
 
-
 validateInput
-  :: Schema
-  -> (Message, Position)
+  :: (Message, Position)
   -> [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
   -> Validation ValidValue
-validateInput schema ctx = validateInputValue schema ctx []
+validateInput ctx = validateInputValue ctx []
 
 violation  :: TypeRef -> ResolvedValue -> Maybe Message -> GQLErrors
 violation TypeRef { typeConName , typeWrappers } value _ 
@@ -109,15 +107,13 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
-  :: Schema
-  -> (Message, Position)
-  -- TODO: include Array indexes
-  -> Path
+  :: (Message, Position)
+  -> Path -- TODO: include Array indexes
   -> [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
   -> Validation ValidValue
-validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
+validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
   validateWrapped tyWrappers tyCont
  where
   mismatchError :: [TypeWrapper] -> ResolvedValue -> Validation ValidValue
@@ -160,15 +156,15 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
       validateField entry@ObjectEntry { entryName,  entryValue } = do
           typeRef@TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
           let currentProp = props <> [Prop entryName typeConName]
+          schema <- askSchema
           typeDef <- withContext ctx props 
-              (lookupInputType 
+              (lookupInputType
                 typeConName 
                 schema                  
                 (violation typeRef entryValue Nothing)
               )
           ObjectEntry entryName 
-            <$> validateInputValue 
-                  schema
+            <$> validateInputValue
                   ctx
                   currentProp
                   typeWrappers
@@ -182,16 +178,17 @@ validateInputValue schema ctx props tyWrappers TypeDefinition { typeContent = ty
         Left message -> withContext ctx props (failure $ violation (TypeRef typeName Nothing []) (Object rawFields) (Just message))
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
+          schema <- askSchema
           typeDef <- withContext ctx props $ lookupInputType
             name
             schema
             (violation (TypeRef name Nothing []) value Nothing)
-          validValue <- validateInputValue schema
-                                           ctx
-                                           props
-                                           [TypeMaybe]
-                                           typeDef
-                                           (ObjectEntry name value)
+          validValue <- validateInputValue 
+                              ctx
+                              props
+                              [TypeMaybe]
+                              typeDef
+                              (ObjectEntry name value)
           return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
 
     {-- VALIDATE ENUM --}
