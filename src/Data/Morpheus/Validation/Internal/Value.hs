@@ -24,7 +24,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , TypeWrapper(..)
                                                 , DataEnumValue(..)
-                                                , lookupInputType
                                                 , Value(..)
                                                 , ValidValue
                                                 , Variable(..)
@@ -56,6 +55,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
+                                                , lookupInputType
                                                 , mapError
                                                 , askSchema
                                                 , selectKnown

@@ -29,7 +29,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RESOLVED
                                                 , VALID
                                                 , isFieldNullable
-                                                , lookupInputType
                                                 , ObjectEntry(..)
                                                 , RAW
                                                 )
@@ -44,6 +43,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , selectKnown
                                                 , askSchema
                                                 , selectRequired
+                                                , lookupInputType
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )

@@ -56,9 +56,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , toListField
   , toHSFieldDefinition
   , isEntNode
-  , lookupInputType
   , lookupDataType
-  , lookupSelectionField
   , lookupDeprecated
   , lookupDeprecatedReason
   , lookupWith
@@ -83,9 +81,6 @@ import           Data.List                      ( find)
 import          Data.Morpheus.Error.NameCollision
                                                 ( NameCollision(..)
                                                 )
-import           Data.Morpheus.Error.Selection  ( cannotQueryField
-                                                , hasNoSubfields
-                                                )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap
                                                 , unsafeFromValues
@@ -96,7 +91,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Name
                                                 , Message
                                                 , Description
-                                                , Ref(..)
                                                 , TypeWrapper(..)
                                                 , TypeRef(..)
                                                 , Stage
@@ -108,8 +102,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , toOperationType
                                                 , hsTypeName
                                                 , GQLError(..)
-                                                , GQLErrors
-                                                , RESOLVED
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                              
                                                 ( Empty(..)
@@ -119,7 +111,6 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Listable(..)
                                                 , Merge(..)
                                                 , KeyOf(..)
-                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Failure(..)
@@ -326,12 +317,6 @@ fromOperation Nothing = []
 lookupDataType :: Key -> Schema -> Maybe TypeDefinition
 lookupDataType name  = HM.lookup name . typeRegister
 
-lookupInputType :: Failure e m => Key -> Schema -> e -> m TypeDefinition
-lookupInputType name lib errors = case lookupDataType name lib of
-  Just x | isInputDataType x -> pure x
-  _                          -> failure errors
-
-
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
@@ -454,14 +439,6 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
   listW alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeList : typeWrappers }
 
-lookupSelectionField
-  :: (Monad m , Failure GQLErrors m)
-  => Position
-  -> Name
-  -> (Name, FieldsDefinition)
-  -> m FieldDefinition
-lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
-  where gqlError = cannotQueryField fieldName typeName position
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 -----------------------------------------------------------------------------------------------

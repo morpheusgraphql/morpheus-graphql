@@ -19,6 +19,8 @@ module Data.Morpheus.Types.Internal.Validation
   , constraintInput
   , lookupUnionTypes
   , lookupFieldAsSelectionSet
+  , lookupInputType
+  , lookupSelectionField
   )
   where
 
@@ -32,6 +34,7 @@ import           Data.Semigroup                 ( (<>)
 import           Control.Monad.Trans.Reader     ( ReaderT(..)
                                                 , ask
                                                 )
+
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Operation
@@ -60,13 +63,15 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeContent(..)
                                                 , isInputDataType
                                                 , DataUnion(..)
+                                                , lookupDataType
                                                 )
 import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , KindViolation(..)
                                                 , Unknown(..)
                                                 )
 import           Data.Morpheus.Error.Utils      (errorMessage)
-import           Data.Morpheus.Error.Selection  ( hasNoSubfields
+import           Data.Morpheus.Error.Selection  ( cannotQueryField
+                                                , hasNoSubfields
                                                 )
 
 lookupFieldAsSelectionSet
@@ -82,6 +87,20 @@ lookupFieldAsSelectionSet ref lib FieldDefinition { fieldType = TypeRef { typeCo
 constraintObject2 :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
 constraintObject2 _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
 constraintObject2 gqlError _ = failure gqlError
+
+lookupInputType :: Failure e m => Name -> Schema -> e -> m TypeDefinition
+lookupInputType name lib errors = case lookupDataType name lib of
+  Just x | isInputDataType x -> pure x
+  _                          -> failure errors
+
+lookupSelectionField
+  :: (Monad m , Failure GQLErrors m)
+  => Position
+  -> Name
+  -> (Name, FieldsDefinition)
+  -> m FieldDefinition
+lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
+  where gqlError = cannotQueryField fieldName typeName position
 
 
 -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)

@@ -111,8 +111,6 @@ module Data.Morpheus.Types.Internal.AST
   , isSchemaTypeName
   , isPrimitiveTypeName
   , isEntNode
-  , lookupInputType
-  , lookupSelectionField
   , createField
   , createArgument
   , createDataTypeLib

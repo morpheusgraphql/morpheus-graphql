@@ -36,7 +36,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Arguments
                                                 , Position
                                                 , isEntNode
-                                                , lookupSelectionField
                                                 )
 import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 ( concatTraverse )
@@ -49,6 +48,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askSchema
                                                 , selectKnown
+                                                , lookupSelectionField
                                                 , lookupFieldAsSelectionSet
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
