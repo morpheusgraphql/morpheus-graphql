@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveLift           #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Data.Morpheus.Types.Internal.AST
   (
@@ -149,6 +150,7 @@ module Data.Morpheus.Types.Internal.AST
   , Path
   , renderPath
   , constraintInput
+  , ValidationContext(..)
   )
 where
 
@@ -207,3 +209,13 @@ isPosibeUnion tags (Enum name) = case lookup name tags of
   Nothing -> failure (name <> " is not posible union type" :: Message)
   _       -> pure name
 isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
+
+data ValidationContext 
+  = ValidationContext 
+    { schema          :: Schema
+    , fragments       :: Fragments
+    , operationName   :: Maybe Name
+    , scopePosition   :: Position
+      --operation :: Operation RAW
+    } 
+    deriving (Show)

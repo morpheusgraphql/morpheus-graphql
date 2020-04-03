@@ -38,12 +38,12 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectOr
                                                 , empty
                                                 , selectKnown
-                                                , selectRequired
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askSchema
+                                                , selectRequired
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )

@@ -12,7 +12,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLErrors 
                                                 )
 
-
 mutationIsNotDefined :: Position -> GQLErrors
 mutationIsNotDefined position' =
   errorMessage position' "Schema is not configured for mutations."
