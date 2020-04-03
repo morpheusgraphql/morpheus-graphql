@@ -52,13 +52,13 @@ import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( unsafeFromValues )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( member
-                                                , selectKnown
                                                 , Failure(..) 
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , mapError
                                                 , askSchema
+                                                , selectKnown
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 

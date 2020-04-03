@@ -33,7 +33,6 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import qualified Data.Text                  as  T
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      (errorMessage)
 import           Data.Morpheus.Error.Operation  ( mutationIsNotDefined 
                                                 , subscriptionIsNotDefined
                                                 )
@@ -49,10 +48,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLError(..)
                                                 , GQLErrors
                                                 , Message
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Stateless
-                                                , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema(..)
@@ -73,12 +68,10 @@ import          Data.Morpheus.Types.Internal.AST.OrderedMap
 import          Data.Morpheus.Types.Internal.Operation
                                                 ( KeyOf(..)
                                                 , Merge(..)
+                                                , Failure(..)
                                                 )
 import          Data.Morpheus.Error.NameCollision
-                                                ( NameCollision(..) 
-                                                , Unknown(..)
-                                                , KindViolation(..)
-                                                )
+                                                ( NameCollision(..) )
 
 data Fragment = Fragment
   { fragmentName      :: Name
@@ -94,27 +87,10 @@ instance NameCollision Fragment where
     , locations = [fragmentPosition]
     }
 
-instance KindViolation Fragment where
-  kindViolation Fragment { fragmentName, fragmentType, fragmentPosition } 
-    = GQLError
-    { message   
-      = "Fragment \"" <> fragmentName 
-        <> "\" cannot condition on non composite type \"" 
-        <> fragmentType <>"\"."
-    , locations = [fragmentPosition]
-    }
-
 instance KeyOf Fragment where 
   keyOf = fragmentName
 
 type Fragments = OrderedMap Fragment
-
--- {...H} -> "Unknown fragment \"H\"."
-instance Unknown Fragments where
-  type UnknownSelector Fragments = Ref
-  unknown _ (Ref name pos) 
-    = errorMessage pos
-      ("Unknown Fragment \"" <> name <> "\".")
 
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s

@@ -28,19 +28,19 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Position
                                                 , SelectionSet
                                                 , RAW
-                                                , constraintObject
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectOr
                                                 , toList
                                                 , toAssoc
-                                                , selectKnown
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askSchema
                                                 , askFragments
+                                                , selectKnown
+                                                , constraintObject
                                                 )
 
 validateFragments :: SelectionSet RAW -> Validation ()

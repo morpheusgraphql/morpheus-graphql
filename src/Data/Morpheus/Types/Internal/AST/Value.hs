@@ -58,9 +58,7 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 
 -- MORPHEUS
 import          Data.Morpheus.Error.NameCollision
-                                                ( NameCollision(..)
-                                                , KindViolation(..)
-                                                )
+                                                ( NameCollision(..) )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Name
@@ -163,20 +161,6 @@ data Variable (stage :: Stage) = Variable
   , variablePosition     :: Position
   , variableValue        :: VariableContent (VAR stage)
   } deriving (Show, Eq, Lift)
-
-instance KindViolation (Variable s) where
-  kindViolation Variable 
-      { variableName 
-      , variablePosition
-      , variableType = TypeRef { typeConName }
-      } 
-    = GQLError 
-      { message 
-        =  "Variable \"$" <> variableName 
-        <> "\" cannot be non-input type \""
-        <> typeConName <>"\"." --TODO: render with typewrappers
-      , locations = [variablePosition]
-      }
 
 instance KeyOf (Variable s) where
   keyOf = variableName

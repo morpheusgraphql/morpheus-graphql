@@ -37,11 +37,11 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , selectOr
                                                 , empty
-                                                , selectKnown
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
+                                                , selectKnown
                                                 , askSchema
                                                 , selectRequired
                                                 )

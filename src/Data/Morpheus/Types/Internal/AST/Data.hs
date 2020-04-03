@@ -45,8 +45,6 @@ module Data.Morpheus.Types.Internal.AST.Data
   , createAlias
   , createInputUnionFields
   , createEnumValue
-  , constraintObject
-  , constraintInput
   , defineType
   , isTypeDefined
   , initTypeLib
@@ -60,19 +58,17 @@ module Data.Morpheus.Types.Internal.AST.Data
   , isEntNode
   , lookupInputType
   , lookupDataType
-  , lookupUnionTypes
   , lookupSelectionField
-  , lookupFieldAsSelectionSet
   , lookupDeprecated
   , lookupDeprecatedReason
   , lookupWith
   , hasArguments
   , unsafeFromFields
+  , isInputDataType
   , Arguments
   )
 where
 
-import           Control.Monad                  ((>=>))
 import           Data.HashMap.Lazy              ( HashMap
                                                 , union
                                                 , elems
@@ -84,11 +80,8 @@ import           Instances.TH.Lift              ( )
 import           Data.List                      ( find)
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      (errorMessage)
 import          Data.Morpheus.Error.NameCollision
                                                 ( NameCollision(..)
-                                                , Unknown(..)
-                                                , KindViolation(..)
                                                 )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
@@ -127,7 +120,6 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Merge(..)
                                                 , KeyOf(..)
                                                 , selectBy
-                                                , selectKnown
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Failure(..)
@@ -138,7 +130,6 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Value(..) 
                                                 , ValidValue
                                                 , ScalarValue(..)
-                                                , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
 
@@ -228,11 +219,6 @@ type TypeLib = HashMap Key TypeDefinition
 instance Selectable Schema TypeDefinition where 
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-instance Unknown Schema where
-  type UnknownSelector Schema = Ref
-  unknown _ Ref { refName , refPosition }
-    = errorMessage refPosition ("Unknown type \"" <> refName <> "\".")
-
 initTypeLib :: TypeDefinition -> Schema
 initTypeLib query = Schema { types        = empty
                              , query        = query
@@ -321,18 +307,6 @@ isInputDataType TypeDefinition { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-constraintObject :: (Failure GQLErrors m ,KindViolation a) => a -> TypeDefinition -> m (Name, FieldsDefinition)
-constraintObject _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-constraintObject arg _ = failure [kindViolation arg]
-
-constraintObject2 :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
-constraintObject2 _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-constraintObject2 gqlError _ = failure gqlError
-
-constraintDataUnion :: Failure error m => error -> TypeDefinition -> m DataUnion
-constraintDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
-constraintDataUnion gqlError _ = failure gqlError
-
 kindOf :: TypeDefinition -> DataTypeKind
 kindOf TypeDefinition { typeName, typeContent } = __kind typeContent
  where
@@ -349,47 +323,8 @@ fromOperation :: Maybe TypeDefinition -> [(Name, TypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype,datatype)]
 fromOperation Nothing = []
 
--- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
--- for example 
--- User | Admin | Product
-lookupUnionTypes
-  :: (Monad m, Failure GQLErrors m)
-  => Ref
-  -> Schema
-  -> FieldDefinition 
-  -> m [(Name, FieldsDefinition)]
-lookupUnionTypes ref schema FieldDefinition { fieldType = TypeRef { typeConName  } }
-  = selectKnown (ref { refName = typeConName }) schema 
-    >>= constraintDataUnion err
-    >>= traverse (
-          (\name -> selectKnown (ref { refName = name}) schema) 
-          >=> constraintObject2 err
-        )
-  where 
-    err = hasNoSubfields ref typeConName
-
 lookupDataType :: Key -> Schema -> Maybe TypeDefinition
 lookupDataType name  = HM.lookup name . typeRegister
-
-orFail 
-  :: (Monad m, Failure e m) 
-  => Bool
-  -> e
-  -> a
-  -> m a
-orFail cond err x
-      | cond = pure x
-      | otherwise = failure err
-
-constraintInput
-  :: (Monad m, Failure GQLErrors m , KindViolation ctx) 
-  => ctx 
-  -> TypeDefinition 
-  -> m TypeDefinition
-constraintInput ctx x = orFail 
-    (isInputDataType x) 
-    [kindViolation ctx]
-    x
 
 lookupInputType :: Failure e m => Key -> Schema -> e -> m TypeDefinition
 lookupInputType name lib errors = case lookupDataType name lib of
@@ -464,16 +399,6 @@ instance Singleton  FieldsDefinition FieldDefinition  where
 instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
   toAssoc = toAssoc . unFieldsDefinition
-
-instance Unknown FieldsDefinition where
-  type UnknownSelector FieldsDefinition = ObjectEntry RESOLVED
-  unknown  _ ObjectEntry { entryName } = 
-    [
-      GQLError 
-        { message = "Unknown Field \"" <> entryName <> "\"."
-        , locations = []
-        }
-    ]
   
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -496,13 +421,6 @@ instance NameCollision FieldDefinition where
     message = "There can Be only One field Named \"" <> name <> "\"",
     locations = []
   }
-
-instance Unknown FieldDefinition where
-  type UnknownSelector FieldDefinition = Argument RESOLVED
-  unknown FieldDefinition { fieldName } Argument { argumentName, argumentPosition }
-    = errorMessage argumentPosition 
-      ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
-
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition { fieldName } = fieldName `notElem` sysFields
@@ -544,17 +462,6 @@ lookupSelectionField
   -> m FieldDefinition
 lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
   where gqlError = cannotQueryField fieldName typeName position
-
-lookupFieldAsSelectionSet
-  :: (Monad m, Failure GQLErrors m)
-  => Ref
-  -> Schema
-  -> FieldDefinition  
-  -> m (Name, FieldsDefinition )
-lookupFieldAsSelectionSet ref lib FieldDefinition { fieldType = TypeRef { typeConName } }
-  = selectBy err typeConName lib >>= constraintObject2 err
-  where err = hasNoSubfields ref typeConName
-
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 -----------------------------------------------------------------------------------------------

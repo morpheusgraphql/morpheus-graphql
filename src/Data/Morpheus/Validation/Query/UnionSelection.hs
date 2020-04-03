@@ -29,7 +29,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , RAW
                                                 , VALID
                                                 , SelectionSet
-                                                , lookupUnionTypes
                                                 , UnionTag(..)
                                                 , Ref(..)
                                                 )
@@ -45,6 +44,7 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askSchema
+                                                , lookupUnionTypes
                                                 )
 import           Data.Morpheus.Validation.Query.Fragment
                                                 ( castFragmentType

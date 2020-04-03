@@ -112,10 +112,7 @@ module Data.Morpheus.Types.Internal.AST
   , isPrimitiveTypeName
   , isEntNode
   , lookupInputType
-  , constraintObject
-  , lookupUnionTypes
   , lookupSelectionField
-  , lookupFieldAsSelectionSet
   , createField
   , createArgument
   , createDataTypeLib
@@ -149,8 +146,8 @@ module Data.Morpheus.Types.Internal.AST
   , Prop(..)
   , Path
   , renderPath
-  , constraintInput
   , ValidationContext(..)
+  , isInputDataType
   )
 where
 

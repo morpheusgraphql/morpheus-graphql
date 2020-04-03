@@ -1,17 +1,32 @@
 {-# LANGUAGE NamedFieldPuns     #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE TypeFamilies       #-}
 
 module Data.Morpheus.Error.ErrorClass
   ( MissingRequired(..)
+  , KindViolation(..)
+  , Unknown(..)
   )
   where
 
+import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( GQLError(..)
+                                                ( RESOLVED
                                                 , Ref(..)
-                                                , VariableDefinitions
+                                                , TypeRef(..)
+                                                , GQLError(..)
+                                                , GQLErrors
+                                                , Argument(..)
+                                                , ObjectEntry(..)
+                                                , Fragment(..)
+                                                , Fragments
                                                 , ValidationContext(..)
+                                                , Variable(..)
+                                                , VariableDefinitions
+                                                , FieldDefinition(..)
+                                                , FieldsDefinition
+                                                , Schema
                                                 , getOperationName
                                                 )
 
@@ -29,3 +44,62 @@ instance MissingRequired (VariableDefinitions s) where
         <> getOperationName operationName <> "\"."
       , locations = [refPosition]
       }
+
+class KindViolation a where
+  kindViolation :: a -> GQLError
+
+instance KindViolation Fragment where
+  kindViolation Fragment { fragmentName, fragmentType, fragmentPosition } 
+    = GQLError
+    { message   
+      = "Fragment \"" <> fragmentName 
+        <> "\" cannot condition on non composite type \"" 
+        <> fragmentType <>"\"."
+    , locations = [fragmentPosition]
+    }
+
+instance KindViolation (Variable s) where
+  kindViolation Variable 
+      { variableName 
+      , variablePosition
+      , variableType = TypeRef { typeConName }
+      } 
+    = GQLError 
+      { message 
+        =  "Variable \"$" <> variableName 
+        <> "\" cannot be non-input type \""
+        <> typeConName <>"\"." --TODO: render with typewrappers
+      , locations = [variablePosition]
+      }
+
+class Unknown c where
+  type UnknownSelector c
+  unknown :: c -> UnknownSelector c -> GQLErrors
+
+-- {...H} -> "Unknown fragment \"H\"."
+instance Unknown Fragments where
+  type UnknownSelector Fragments = Ref
+  unknown _ (Ref name pos) 
+    = errorMessage pos
+      ("Unknown Fragment \"" <> name <> "\".")
+
+instance Unknown Schema where
+  type UnknownSelector Schema = Ref
+  unknown _ Ref { refName , refPosition }
+    = errorMessage refPosition ("Unknown type \"" <> refName <> "\".")
+
+instance Unknown FieldDefinition where
+  type UnknownSelector FieldDefinition = Argument RESOLVED
+  unknown FieldDefinition { fieldName } Argument { argumentName, argumentPosition }
+    = errorMessage argumentPosition 
+      ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
+
+instance Unknown FieldsDefinition where
+  type UnknownSelector FieldsDefinition = ObjectEntry RESOLVED
+  unknown  _ ObjectEntry { entryName } = 
+    [
+      GQLError 
+        { message = "Unknown Field \"" <> entryName <> "\"."
+        , locations = []
+        }
+    ]
