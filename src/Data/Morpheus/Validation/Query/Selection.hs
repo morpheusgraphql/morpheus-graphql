@@ -131,10 +131,8 @@ validateSelectionSet variables = __validate
                     (typeName,dataField)
             -- Validate Regular selection set
             validateByTypeContent dataField DataObject {} = do
-                schema <- askSchema
-                fieldType' <- lookupFieldAsSelectionSet selectionRef schema dataField
+                fieldType' <- lookupFieldAsSelectionSet selectionRef dataField
                 SelectionSet <$> __validate fieldType' rawSelection
-
             validateByTypeContent dataField _ = failure $ hasNoSubfields 
                 selectionRef 
                 (typeConName $fieldType dataField)

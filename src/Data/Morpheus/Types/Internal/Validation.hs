@@ -7,7 +7,7 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE GADTs                      #-}
-
+{-# LANGUAGE RankNTypes                 #-}
 
 module Data.Morpheus.Types.Internal.Validation
   ( Validation
@@ -19,7 +19,6 @@ module Data.Morpheus.Types.Internal.Validation
   , askFragments
   , selectRequired
   , selectKnown
-  --, constraintInput
   , lookupUnionTypes
   , lookupFieldAsSelectionSet
   , lookupInputType
@@ -72,8 +71,8 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , KindViolation(..)
                                                 , Unknown(..)
+                                                , InternalError(..)
                                                 )
---import           Data.Morpheus.Error.Utils      (errorMessage)
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
@@ -81,14 +80,17 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
 data Target 
   = TARGET_OBJECT 
   | TARGET_INPUT
+  | TARGET_UNION
 
 data Constraint (a :: Target) where
   OBJECT :: Constraint 'TARGET_OBJECT
   INPUT  :: Constraint 'TARGET_INPUT
+  UNION  :: Constraint 'TARGET_UNION
 
 type family Resolution (a :: Target)
 type instance Resolution 'TARGET_OBJECT = (Name, FieldsDefinition)
 type instance Resolution 'TARGET_INPUT = TypeDefinition
+type instance Resolution 'TARGET_UNION = DataUnion
 
 -- -- or
 -- data Resolution (a :: Target) where
@@ -101,47 +103,27 @@ type instance Resolution 'TARGET_INPUT = TypeDefinition
   --   } -> Resolution 'INPUT_TARGET
 
 constraint 
-  :: KindViolation ctx 
-  => Constraint a 
+  :: forall (a :: Target) ctx. KindViolation ctx 
+  => Constraint ( a :: Target) 
   -> ctx 
   -> TypeDefinition 
   -> Validation (Resolution a)
 constraint OBJECT _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
-constraint OBJECT ctx _ = failure [kindViolation ctx]
 constraint INPUT ctx x = orFail (isInputDataType x) [kindViolation ctx] x
-
-constraintObject2 
-  :: Failure error m 
-  => error 
-  -> TypeDefinition 
-  -> m (Name, FieldsDefinition)
-constraintObject2 
-  _ 
-  TypeDefinition 
-    { typeContent = DataObject { objectFields } 
-    , typeName 
-    } 
-  = pure (typeName, objectFields)
-constraintObject2 err _ = failure err
-
-constraintUnion :: Failure error Validation => error -> TypeDefinition -> Validation DataUnion
-constraintUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
-constraintUnion err _ = failure err
+constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure members
+constraint UNION ctx _  = failure [kindViolation ctx]
+constraint OBJECT ctx _ = failure [kindViolation ctx]
 
 lookupFieldAsSelectionSet
-  :: (Monad m, Failure GQLErrors m)
-  => Ref
-  -> Schema
+  :: Ref
   -> FieldDefinition  
-  -> m (Name, FieldsDefinition )
+  -> Validation (Name, FieldsDefinition )
 lookupFieldAsSelectionSet 
-  ref 
-  schema 
-  FieldDefinition { fieldType = TypeRef { typeConName } }
-  = selectBy err typeConName schema 
-    >>= constraintObject2 err
-  where err = hasNoSubfields ref typeConName
+  ref  
+  field@FieldDefinition { fieldType = TypeRef { typeConName } }
+  = askFieldType field
+  >>= constraint OBJECT (ref,typeConName)
 
 lookupSelectionField
   :: (Monad m , Failure GQLErrors m)
@@ -174,17 +156,15 @@ lookupUnionTypes
   -> FieldDefinition 
   -> Validation [(Name, FieldsDefinition)]
 lookupUnionTypes 
-  ref 
+  ref
   schema 
   FieldDefinition { fieldType = TypeRef { typeConName  } }
   = selectKnown (ref { refName = typeConName }) schema 
-    >>= constraintUnion err
+    >>= constraint UNION (ref,typeConName)
     >>= traverse (
           (\name -> selectKnown (ref { refName = name}) schema) 
-          >=> constraintObject2 err
+          >=> constraint OBJECT (ref,typeConName)
         )
-  where 
-    err = hasNoSubfields ref typeConName
 
 orFail 
   :: (Monad m, Failure e m) 
@@ -226,6 +206,17 @@ selectKnown selector lib
     (unknown lib selector) 
     (keyOf selector)  
     lib
+
+askFieldType
+  :: FieldDefinition
+  -> Validation TypeDefinition
+askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
+  = do
+    schema <- askSchema
+    selectBy
+        [internalError field] 
+        typeConName 
+        schema
 
 runValidation :: Validation a -> ValidationContext -> Stateless a
 runValidation (Validation x) = runReaderT x 
