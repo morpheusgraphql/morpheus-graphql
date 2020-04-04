@@ -136,10 +136,12 @@ lookupSelectionField position fieldName (typeName, field)
 lookupInputType 
   :: Failure e Validation 
   => Name 
-  -> Schema 
   -> e 
   -> Validation TypeDefinition
-lookupInputType name lib errors = selectBy errors name lib >>= input
+lookupInputType name errors 
+  = askSchema
+    >>= selectBy errors name 
+    >>= input
   where
     input x | isInputDataType x = pure x
             | otherwise       = failure errors
@@ -160,7 +162,7 @@ lookupUnionTypes
   = askFieldType field
     >>= constraint UNION (ref,typeConName)
     >>= traverse (
-          (\name -> selectKnown (ref { refName = name}) schema) 
+          (\name -> selectKnown (ref { refName = name}) schema) -- TODO: internal UNIONerror 
           >=> constraint OBJECT (ref,typeConName)
         )
 

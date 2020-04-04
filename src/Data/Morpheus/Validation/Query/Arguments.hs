@@ -41,7 +41,6 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , selectKnown
-                                                , askSchema
                                                 , selectRequired
                                                 , lookupInputType
                                                 )
@@ -102,9 +101,7 @@ validateArgument fieldPosition requestArgs argType@FieldDefinition { fieldName, 
   validateArgumentValue :: Argument RESOLVED -> Validation (Argument VALID)
   validateArgumentValue Argument { argumentValue = value, .. } =
     do
-      schema <- askSchema
       datatype <- lookupInputType typeConName
-                          schema
                           (internalUnknownTypeMessage typeConName)
       argumentValue <- validateInput
                           (argumentGotInvalidValue argumentName,argumentPosition)

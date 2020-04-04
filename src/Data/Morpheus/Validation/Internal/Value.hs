@@ -57,7 +57,6 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , lookupInputType
                                                 , mapError
-                                                , askSchema
                                                 , selectKnown
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
@@ -156,11 +155,9 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
       validateField entry@ObjectEntry { entryName,  entryValue } = do
           typeRef@TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
           let currentProp = props <> [Prop entryName typeConName]
-          schema <- askSchema
           typeDef <- withContext ctx props 
               (lookupInputType
-                typeConName 
-                schema                  
+                typeConName                
                 (violation typeRef entryValue Nothing)
               )
           ObjectEntry entryName 
@@ -178,10 +175,8 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
         Left message -> withContext ctx props (failure $ violation (TypeRef typeName Nothing []) (Object rawFields) (Just message))
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
-          schema <- askSchema
           typeDef <- withContext ctx props $ lookupInputType
             name
-            schema
             (violation (TypeRef name Nothing []) value Nothing)
           validValue <- validateInputValue 
                               ctx
