@@ -110,6 +110,7 @@ constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure mem
 constraint UNION ctx _  = failure [kindViolation ctx]
 constraint OBJECT ctx _ = failure [kindViolation ctx]
 
+
 lookupInputType 
   :: Failure e Validation 
   => Name 
@@ -128,19 +129,22 @@ lookupInputType name errors
 -- User | Admin | Product
 lookupUnionTypes
   :: Ref
-  -> Schema
   -> FieldDefinition 
   -> Validation [(Name, FieldsDefinition)]
 lookupUnionTypes 
-  ref
-  schema 
+  ref 
   field@FieldDefinition { fieldType = TypeRef { typeConName  } }
   = askFieldType field
     >>= constraint UNION (ref,typeConName)
-    >>= traverse (
-          (\name -> selectKnown (ref { refName = name}) schema) -- TODO: internal UNIONerror 
-          >=> constraint OBJECT (ref,typeConName)
-        )
+    >>= traverse 
+          ( selectUnionType 
+            >=> constraint OBJECT (ref,typeConName)
+          )
+    where 
+      selectUnionType name 
+        = askSchema
+          >>= selectKnown (ref { refName = name}) 
+        -- TODO: internal UNIONerror 
 
 orFail 
   :: (Monad m, Failure e m) 
