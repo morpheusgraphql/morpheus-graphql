@@ -61,15 +61,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeDefinition(..)
                                                 , TypeContent(..)
+                                                , DataUnion
                                                 , isInputDataType
-                                                , DataUnion(..)
-                                                , lookupDataType
                                                 )
 import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , KindViolation(..)
                                                 , Unknown(..)
                                                 )
-import           Data.Morpheus.Error.Utils      (errorMessage)
+--import           Data.Morpheus.Error.Utils      (errorMessage)
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
@@ -80,18 +79,34 @@ lookupFieldAsSelectionSet
   -> Schema
   -> FieldDefinition  
   -> m (Name, FieldsDefinition )
-lookupFieldAsSelectionSet ref lib FieldDefinition { fieldType = TypeRef { typeConName } }
-  = selectBy err typeConName lib >>= constraintObject2 err
+lookupFieldAsSelectionSet 
+  ref 
+  schema 
+  FieldDefinition { fieldType = TypeRef { typeConName } }
+  = selectBy err typeConName schema 
+    >>= constraintObject2 err
   where err = hasNoSubfields ref typeConName
 
 constraintObject2 :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
-constraintObject2 _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-constraintObject2 gqlError _ = failure gqlError
+constraintObject2 
+  _ 
+  TypeDefinition 
+    { typeContent = DataObject { objectFields } 
+    , typeName 
+    } 
+  = pure (typeName, objectFields)
+constraintObject2 err _ = failure err
 
-lookupInputType :: Failure e m => Name -> Schema -> e -> m TypeDefinition
-lookupInputType name lib errors = case lookupDataType name lib of
-  Just x | isInputDataType x -> pure x
-  _                          -> failure errors
+lookupInputType 
+  :: Failure e Validation 
+  => Name 
+  -> Schema 
+  -> e 
+  -> Validation TypeDefinition
+lookupInputType name lib errors = selectBy errors name lib >>= input
+  where
+    input x | isInputDataType x = pure x
+            | otherwise       = failure errors
 
 lookupSelectionField
   :: (Monad m , Failure GQLErrors m)
@@ -99,9 +114,9 @@ lookupSelectionField
   -> Name
   -> (Name, FieldsDefinition)
   -> m FieldDefinition
-lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
-  where gqlError = cannotQueryField fieldName typeName position
-
+lookupSelectionField position fieldName (typeName, field) 
+  = selectBy err fieldName field
+    where err = cannotQueryField fieldName typeName position
 
 -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
 -- for example 
@@ -111,7 +126,10 @@ lookupUnionTypes
   -> Schema
   -> FieldDefinition 
   -> Validation [(Name, FieldsDefinition)]
-lookupUnionTypes ref schema FieldDefinition { fieldType = TypeRef { typeConName  } }
+lookupUnionTypes 
+  ref 
+  schema 
+  FieldDefinition { fieldType = TypeRef { typeConName  } }
   = selectKnown (ref { refName = typeConName }) schema 
     >>= constraintDataUnion err
     >>= traverse (
