@@ -87,29 +87,29 @@ type instance Resolution 'TARGET_OBJECT = (Name, FieldsDefinition)
 type instance Resolution 'TARGET_INPUT = TypeDefinition
 type instance Resolution 'TARGET_UNION = DataUnion
 
--- -- or
--- data Resolution (a :: Target) where
-  -- TypeObject :: 
-  --   { name :: Name
-  --   , fields :: FieldsDefinition 
-  --   } -> Resolution 'OBJECT_TARGET
-  -- TypeInput :: 
-  --   { unpackInput :: TypeDefinition 
-  --   } -> Resolution 'INPUT_TARGET
-
 constraint 
   :: forall (a :: Target) ctx. KindViolation ctx 
   => Constraint ( a :: Target) 
   -> ctx 
   -> TypeDefinition 
   -> Validation (Resolution a)
-constraint OBJECT _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
+constraint OBJECT _   TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
-constraint INPUT ctx x = orFail (isInputDataType x) [kindViolation ctx] x
-constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure members
-constraint UNION ctx _  = failure [kindViolation ctx]
-constraint OBJECT ctx _ = failure [kindViolation ctx]
+constraint UNION  _   TypeDefinition { typeContent = DataUnion members } = pure members
+constraint INPUT  _   x | isInputDataType x = pure x 
+constraint _     ctx _  = failure [kindViolation ctx]
 
+__constraint 
+  :: forall (a :: Target) ctx. InternalError (Constraint a,ctx) 
+  => Constraint ( a :: Target) 
+  -> ctx 
+  -> TypeDefinition 
+  -> Validation (Resolution a)
+__constraint OBJECT _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
+  = pure (typeName, objectFields)
+__constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure members
+__constraint INPUT _ x | isInputDataType x = pure x 
+__constraint con ctx _  = failure [internalError (con,ctx) ]
 
 lookupInputType 
   :: Failure e Validation 
@@ -138,23 +138,13 @@ lookupUnionTypes
     >>= constraint UNION (ref,typeConName)
     >>= traverse 
           ( selectUnionType 
-            >=> constraint OBJECT (ref,typeConName)
+            >=> __constraint OBJECT (ref,typeConName)
           )
     where 
       selectUnionType name 
         = askSchema
           >>= selectKnown (ref { refName = name}) 
         -- TODO: internal UNIONerror 
-
-orFail 
-  :: (Monad m, Failure e m) 
-  => Bool
-  -> e
-  -> a
-  -> m a
-orFail cond err x
-      | cond = pure x
-      | otherwise = failure err
 
 selectRequired 
   ::  ( Selectable c value
