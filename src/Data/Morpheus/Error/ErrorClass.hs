@@ -12,7 +12,7 @@ module Data.Morpheus.Error.ErrorClass
   where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Error.Selection  ( cannotQueryField
+import           Data.Morpheus.Error.Selection  ( unknownSelectionField
                                                 , hasNoSubfields
                                                 )
 import           Data.Morpheus.Types.Internal.AST

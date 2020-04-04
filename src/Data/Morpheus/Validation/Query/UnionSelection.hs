@@ -17,7 +17,7 @@ where
 import           Control.Monad                  ((>=>))
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Selection  ( cannotQueryField )
+import           Data.Morpheus.Error.Selection  ( unknownSelectionField )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
                                                 , SelectionContent(..)
@@ -66,7 +66,7 @@ exploreUnionFragments unionTypeName unionTags = splitFrag
   splitFrag (Spread ref) = packFragment <$> resolveSpread unionTags ref 
   splitFrag Selection { selectionName = "__typename",selectionContent = SelectionField } = pure []
   splitFrag Selection { selectionName, selectionPosition } =
-    failure $ cannotQueryField selectionName unionTypeName selectionPosition
+    failure $ unknownSelectionField selectionName unionTypeName selectionPosition
   splitFrag (InlineFragment fragment) = packFragment <$>
     castFragmentType Nothing (fragmentPosition fragment) unionTags fragment
 

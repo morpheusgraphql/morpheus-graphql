@@ -17,7 +17,7 @@ where
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection  ( hasNoSubfields
                                                 , subfieldsNotSelected
-                                                , cannotQueryField
+                                                , unknownSelectionField
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( VariableDefinitions
@@ -91,7 +91,7 @@ validateSelectionSet variables = __validate
       (typeCont :: TypeContent) <- typeContent <$> selectKnown fieldTypeRef schema
       pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
-        where err = cannotQueryField fieldName typeName selectionPosition -- TODO: use class Unknown to Generate Error
+        where err = unknownSelectionField fieldName typeName selectionPosition -- TODO: use class Unknown to Generate Error
     validateSelection :: Selection RAW -> Validation (SelectionSet VALID)
     validateSelection sel@Selection { selectionName, selectionArguments = selArgs , selectionContent, selectionPosition } 
       = validateSelectionContent selectionContent
