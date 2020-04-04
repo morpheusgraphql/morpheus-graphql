@@ -61,7 +61,7 @@ resolveObject variables = resolve
   resolve (List   x  ) = List <$> traverse resolve x
   resolve (Object obj) = Object <$> traverse resolveEntry obj
   resolve (VariableValue ref) =
-    ResolvedVariable ref <$> selectRequired ref variables -- TODO: operationName
+    ResolvedVariable ref <$> selectRequired ref variables 
 
 resolveArgumentVariables
   :: VariableDefinitions VALID
