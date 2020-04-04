@@ -44,13 +44,13 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty
                                                 , singleton
                                                 , Failure(..)
-                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askFieldType
                                                 , constraint
                                                 , Constraint(..)
+                                                , selectKnown
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
                                                 (validateUnionSelection)
@@ -76,7 +76,7 @@ validateSelectionSet variables = __validate
    where
     commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeContent, Arguments VALID)
     commonValidation fieldName selectionArguments selectionPosition = do
-      (fieldDef :: FieldDefinition) <- selectBy err fieldName fieldsDef
+      (fieldDef :: FieldDefinition) <- selectKnown (Ref fieldName selectionPosition) fieldsDef
       (typeCont :: TypeContent) <- typeContent <$> askFieldType fieldDef
       -- validate field Argument -----
       arguments <- validateArguments
@@ -87,7 +87,6 @@ validateSelectionSet variables = __validate
       -- check field Type existence  -----
       pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
-        where err = unknownSelectionField fieldName typeName selectionPosition -- TODO: use class Unknown to Generate Error
     validateSelection :: Selection RAW -> Validation (SelectionSet VALID)
     validateSelection sel@Selection { selectionName, selectionArguments = selArgs , selectionContent, selectionPosition } 
       = validateSelectionContent selectionContent

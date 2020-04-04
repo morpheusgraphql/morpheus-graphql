@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 
 module Data.Morpheus.Error.Selection
   ( unknownSelectionField
@@ -23,10 +24,10 @@ hasNoSubfields (Ref selectionName position) typeName  = errorMessage position te
  where
   text = "Field \"" <> selectionName <> "\" must not have a selection since type \"" <> typeName <> "\" has no subfields."
 
-unknownSelectionField :: Text -> Text -> Position -> GQLErrors
-unknownSelectionField key typeName position = errorMessage position text
+unknownSelectionField :: Name -> Ref -> GQLErrors
+unknownSelectionField typeName Ref { refName , refPosition } = errorMessage refPosition text
  where
-  text = "Cannot query field \"" <> key <> "\" on type \"" <> typeName <> "\"."
+  text = "Cannot query field \"" <> refName <> "\" on type \"" <> typeName <> "\"."
 
 -- GQL:: Field \"hobby\" of type \"Hobby!\" must have a selection of subfields. Did you mean \"hobby { ... }\"?
 subfieldsNotSelected :: Text -> Text -> Position -> GQLErrors

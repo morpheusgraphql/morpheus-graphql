@@ -33,6 +33,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Variable(..)
                                                 , VariableDefinitions
                                                 , FieldDefinition(..)
+                                                , FieldsDefinition
                                                 , InputFieldsDefinition
                                                 , Schema
                                                 , getOperationName
@@ -108,6 +109,10 @@ instance Unknown InputFieldsDefinition where
         , locations = []
         }
     ]
+
+instance Unknown FieldsDefinition where
+  type UnknownSelector FieldsDefinition = Ref
+  unknown  _ = unknownSelectionField "TODO: currentTypeName"
 
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> GQLError

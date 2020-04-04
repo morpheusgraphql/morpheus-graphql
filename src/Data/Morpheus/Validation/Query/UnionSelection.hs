@@ -66,7 +66,7 @@ exploreUnionFragments unionTypeName unionTags = splitFrag
   splitFrag (Spread ref) = packFragment <$> resolveSpread unionTags ref 
   splitFrag Selection { selectionName = "__typename",selectionContent = SelectionField } = pure []
   splitFrag Selection { selectionName, selectionPosition } =
-    failure $ unknownSelectionField selectionName unionTypeName selectionPosition
+    failure $ unknownSelectionField unionTypeName (Ref selectionName selectionPosition)
   splitFrag (InlineFragment fragment) = packFragment <$>
     castFragmentType Nothing (fragmentPosition fragment) unionTags fragment
 
