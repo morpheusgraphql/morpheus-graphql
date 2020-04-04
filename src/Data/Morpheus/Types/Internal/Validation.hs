@@ -35,9 +35,8 @@ import           Data.Text                      ( pack )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
                                                 )
-import         Control.Monad.Trans.State.Lazy   ( StateT(..)
-                                                , get
-                                                , put
+import         Control.Monad.Trans.Reader       ( ReaderT(..)
+                                                , ask
                                                 )
 
 -- MORPHEUS
@@ -188,16 +187,16 @@ askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
         schema
 
 runValidation :: Validation a -> ValidationContext -> Stateless a
-runValidation (Validation x) = fmap fst . runStateT x 
+runValidation (Validation x) = runReaderT x 
 
 mapError 
   :: (GQLError -> GQLError)
   -> Validation a
   -> Validation a
-mapError f (Validation x) = Validation $ StateT $ C.mapError f . runStateT x 
+mapError f (Validation x) = Validation $ ReaderT $ C.mapError f . runReaderT x 
 
 askContext :: Validation ValidationContext
-askContext = Validation get
+askContext = Validation ask
 
 askSchema :: Validation Schema
 askSchema = schema <$> askContext
@@ -213,7 +212,7 @@ updateScope name position = do
 newtype Validation a 
   = Validation 
     {
-      _runValidation :: StateT 
+      _runValidation :: ReaderT 
           ValidationContext 
           Stateless
           a
@@ -228,10 +227,9 @@ instance MonadFail Validation where
   fail = failure . pack
 
 instance Failure Message Validation where
-  failure inputMessage = Validation $ do 
-    position <- scopePosition <$> get 
-    lift
-      $ failure 
+  failure inputMessage = do 
+    position <- scopePosition <$> askContext 
+    failure 
       [
         GQLError 
           { message = "INTERNAL: " <> inputMessage
