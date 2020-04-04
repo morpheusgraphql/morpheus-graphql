@@ -22,7 +22,6 @@ module Data.Morpheus.Types.Internal.Validation
   , lookupUnionTypes
   , lookupFieldAsSelectionSet
   , lookupInputType
-  , lookupSelectionField
   , Constraint(..)
   , constraint
   )
@@ -53,7 +52,6 @@ import           Data.Morpheus.Types.Internal.Resolving
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Message
-                                                , Position
                                                 , Ref(..)
                                                 , TypeRef(..)
                                                 , GQLErrors
@@ -73,7 +71,6 @@ import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , Unknown(..)
                                                 , InternalError(..)
                                                 )
-import           Data.Morpheus.Error.Selection  ( cannotQueryField )
 
 data Target 
   = TARGET_OBJECT 
@@ -123,16 +120,6 @@ lookupFieldAsSelectionSet
   = askFieldType field
   >>= constraint OBJECT (ref,typeConName)
 
-lookupSelectionField
-  :: (Monad m , Failure GQLErrors m)
-  => Position
-  -> Name
-  -> (Name, FieldsDefinition)
-  -> m FieldDefinition
-lookupSelectionField position fieldName (typeName, field) 
-  = selectBy err fieldName field
-    where err = cannotQueryField fieldName typeName position
-
 lookupInputType 
   :: Failure e Validation 
   => Name 
@@ -145,7 +132,6 @@ lookupInputType name errors
   where
     input x | isInputDataType x = pure x
             | otherwise       = failure errors
-
 
 -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
 -- for example 

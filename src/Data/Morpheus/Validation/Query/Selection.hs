@@ -17,6 +17,7 @@ where
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection  ( hasNoSubfields
                                                 , subfieldsNotSelected
+                                                , cannotQueryField
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( VariableDefinitions
@@ -43,12 +44,12 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty
                                                 , singleton
                                                 , Failure(..)
+                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askSchema
                                                 , selectKnown
-                                                , lookupSelectionField
                                                 , lookupFieldAsSelectionSet
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
@@ -72,11 +73,11 @@ validateSelectionSet variables = __validate
  where
   __validate
     :: TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)
-  __validate dataType@(typeName,_) = concatTraverse validateSelection 
+  __validate dataType@(typeName,fieldsDef) = concatTraverse validateSelection 
    where
     commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeContent, Arguments VALID)
-    commonValidation key selectionArguments selectionPosition = do
-      (fieldDef :: FieldDefinition) <- lookupSelectionField selectionPosition key dataType
+    commonValidation fieldName selectionArguments selectionPosition = do
+      (fieldDef :: FieldDefinition) <- selectBy err fieldName fieldsDef
       let feildTypeName = typeConName (fieldType fieldDef)
       let fieldTypeRef = Ref feildTypeName selectionPosition
       schema <- askSchema
@@ -90,7 +91,7 @@ validateSelectionSet variables = __validate
       (typeCont :: TypeContent) <- typeContent <$> selectKnown fieldTypeRef schema
       pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
-    --
+        where err = cannotQueryField fieldName typeName selectionPosition -- TODO: use class Unknown to Generate Error
     validateSelection :: Selection RAW -> Validation (SelectionSet VALID)
     validateSelection sel@Selection { selectionName, selectionArguments = selArgs , selectionContent, selectionPosition } 
       = validateSelectionContent selectionContent
