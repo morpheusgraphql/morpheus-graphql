@@ -112,7 +112,8 @@ instance Unknown InputFieldsDefinition where
 
 instance Unknown FieldsDefinition where
   type UnknownSelector FieldsDefinition = Ref
-  unknown _ _ = unknownSelectionField "TODO: currentTypeName"
+  unknown ValidationContext { scopeTypeName } _ 
+    = unknownSelectionField scopeTypeName
 
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> GQLError

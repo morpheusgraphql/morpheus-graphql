@@ -212,7 +212,8 @@ data ValidationContext
     { schema          :: Schema
     , fragments       :: Fragments
     , operationName   :: Maybe Name
+    , scopeTypeName   :: Name
     , scopePosition   :: Position
-      --operation :: Operation RAW
-    } 
+    -- operation :: Operation RAW
+    }
     deriving (Show)

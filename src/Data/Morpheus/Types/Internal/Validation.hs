@@ -24,6 +24,7 @@ module Data.Morpheus.Types.Internal.Validation
   , lookupInputType
   , Constraint(..)
   , constraint
+  , updateScope
   )
   where
 
@@ -34,10 +35,10 @@ import           Data.Text                      ( pack )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
                                                 )
-import           Control.Monad.Trans.Reader     ( ReaderT(..)
-                                                , ask
+import         Control.Monad.Trans.State.Lazy   ( StateT(..)
+                                                , get
+                                                , put
                                                 )
-
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Operation
@@ -51,6 +52,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
+                                                , Position
                                                 , Message
                                                 , Ref(..)
                                                 , TypeRef(..)
@@ -186,16 +188,16 @@ askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
         schema
 
 runValidation :: Validation a -> ValidationContext -> Stateless a
-runValidation (Validation x) = runReaderT x 
+runValidation (Validation x) = fmap fst . runStateT x 
 
 mapError 
   :: (GQLError -> GQLError)
   -> Validation a
   -> Validation a
-mapError f (Validation x) = Validation $ ReaderT $ C.mapError f . runReaderT x 
+mapError f (Validation x) = Validation $ StateT $ C.mapError f . runStateT x 
 
 askContext :: Validation ValidationContext
-askContext = Validation ask
+askContext = Validation get
 
 askSchema :: Validation Schema
 askSchema = schema <$> askContext
@@ -203,10 +205,15 @@ askSchema = schema <$> askContext
 askFragments :: Validation Fragments
 askFragments = fragments <$> askContext
 
+updateScope :: Name -> Position -> Validation ()
+updateScope name position = do 
+  _ <-askContext
+  pure ()
+
 newtype Validation a 
   = Validation 
     {
-      _runValidation :: ReaderT 
+      _runValidation :: StateT 
           ValidationContext 
           Stateless
           a
@@ -222,7 +229,7 @@ instance MonadFail Validation where
 
 instance Failure Message Validation where
   failure inputMessage = Validation $ do 
-    position <- scopePosition <$> ask 
+    position <- scopePosition <$> get 
     lift
       $ failure 
       [

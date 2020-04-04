@@ -9,7 +9,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Morpheus.Validation.Query.Selection
-  ( validateSelectionSet
+  ( validateOperation
   )
 where
 
@@ -30,6 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , TypeRef(..)
+                                                , Operation(..)
                                                 , Ref(..)
                                                 , Name
                                                 , RAW
@@ -51,6 +52,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , constraint
                                                 , Constraint(..)
                                                 , selectKnown
+                                                , updateScope
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
                                                 (validateUnionSelection)
@@ -63,12 +65,14 @@ import           Data.Morpheus.Validation.Query.Fragment
 
 type TypeDef = (Name, FieldsDefinition)
 
-validateSelectionSet
+validateOperation
   :: VariableDefinitions VALID
   -> TypeDef
-  -> SelectionSet RAW
+  -> Operation RAW
   -> Validation (SelectionSet VALID)
-validateSelectionSet variables = __validate
+validateOperation variables tyDef Operation { operationPosition, operationSelection } = do
+  updateScope (fst tyDef) operationPosition
+  __validate tyDef operationSelection
  where
   __validate
     :: TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)
