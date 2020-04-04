@@ -159,20 +159,20 @@ selectRequired selector container
       container
 
 selectKnown 
-  ::  ( Monad m
-      , Failure GQLErrors m
-      , Selectable c a
+  ::  ( Selectable c a
       , Unknown c
       , KeyOf (UnknownSelector c)
       ) 
   => UnknownSelector c 
   -> c 
-  -> m a
+  -> Validation a
 selectKnown selector lib  
-  = selectBy 
-    (unknown lib selector) 
-    (keyOf selector)  
-    lib
+  = do 
+    ctx <- askContext
+    selectBy
+      (unknown ctx lib selector) 
+      (keyOf selector)  
+      lib
 
 askFieldType
   :: FieldDefinition

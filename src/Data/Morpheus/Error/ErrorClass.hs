@@ -80,29 +80,29 @@ instance MissingRequired (VariableDefinitions s) where
 
 class Unknown c where
   type UnknownSelector c
-  unknown :: c -> UnknownSelector c -> GQLErrors
+  unknown :: ValidationContext -> c -> UnknownSelector c -> GQLErrors
 
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown Fragments where
   type UnknownSelector Fragments = Ref
-  unknown _ (Ref name pos) 
+  unknown _ _ (Ref name pos) 
     = errorMessage pos
       ("Unknown Fragment \"" <> name <> "\".")
 
 instance Unknown Schema where
   type UnknownSelector Schema = Ref
-  unknown _ Ref { refName , refPosition }
+  unknown _ _ Ref { refName , refPosition }
     = errorMessage refPosition ("Unknown type \"" <> refName <> "\".")
 
 instance Unknown FieldDefinition where
   type UnknownSelector FieldDefinition = Argument RESOLVED
-  unknown FieldDefinition { fieldName } Argument { argumentName, argumentPosition }
+  unknown _ FieldDefinition { fieldName } Argument { argumentName, argumentPosition }
     = errorMessage argumentPosition 
       ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
 
 instance Unknown InputFieldsDefinition where
   type UnknownSelector InputFieldsDefinition = ObjectEntry RESOLVED
-  unknown  _ ObjectEntry { entryName } = 
+  unknown _ _ ObjectEntry { entryName } = 
     [
       GQLError 
         { message = "Unknown Field \"" <> entryName <> "\"."
@@ -112,7 +112,7 @@ instance Unknown InputFieldsDefinition where
 
 instance Unknown FieldsDefinition where
   type UnknownSelector FieldsDefinition = Ref
-  unknown  _ = unknownSelectionField "TODO: currentTypeName"
+  unknown _ _ = unknownSelectionField "TODO: currentTypeName"
 
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> GQLError
