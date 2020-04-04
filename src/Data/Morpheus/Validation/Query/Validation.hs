@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE OverloadedStrings      #-}
 
 module Data.Morpheus.Validation.Query.Validation
   ( validateRequest
@@ -30,7 +31,7 @@ import           Data.Morpheus.Types.Internal.Resolving
 import           Data.Morpheus.Validation.Query.Fragment
                                                 ( validateFragments )
 import           Data.Morpheus.Validation.Query.Selection
-                                                ( validateSelectionSet )
+                                                ( validateOperation )
 import           Data.Morpheus.Validation.Query.Variable
                                                 ( resolveOperationVariables )
 
@@ -56,6 +57,7 @@ validateRequest
         { schema 
         , fragments
         , operationName
+        , scopeTypeName = "Root"
         , scopePosition = operationPosition
         }
    where
@@ -67,10 +69,10 @@ validateRequest
                                   validationMode
                                   rawOperation
       validateFragments operationSelection
-      selection <- validateSelectionSet
+      selection <- validateOperation
                                   variables
                                   operationTypeDef
-                                  operationSelection
+                                  rawOperation
       pure $ Operation 
               { operationName
               , operationType
