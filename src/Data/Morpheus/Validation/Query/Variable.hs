@@ -54,8 +54,9 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askSchema
                                                 , askFragments
-                                                , constraintInput
                                                 , selectKnown
+                                                , constraint
+                                                , Constraint(..)
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -131,7 +132,7 @@ lookupAndValidateValueOnBody
   = toVariable
     <$> ( askSchema
           >>= selectKnown (Ref (typeConName variableType) variablePosition) 
-          >>= constraintInput var 
+          >>= constraint INPUT var 
           >>= checkType getVariable defaultValue
         )
  where

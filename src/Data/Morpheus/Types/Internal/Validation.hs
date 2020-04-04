@@ -4,6 +4,10 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE GADTs                      #-}
+
 
 module Data.Morpheus.Types.Internal.Validation
   ( Validation
@@ -15,12 +19,13 @@ module Data.Morpheus.Types.Internal.Validation
   , askFragments
   , selectRequired
   , selectKnown
-  , constraintObject
-  , constraintInput
+  --, constraintInput
   , lookupUnionTypes
   , lookupFieldAsSelectionSet
   , lookupInputType
   , lookupSelectionField
+  , Constraint(..)
+  , constraint
   )
   where
 
@@ -73,6 +78,57 @@ import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
 
+data Target 
+  = TARGET_OBJECT 
+  | TARGET_INPUT
+
+data Constraint (a :: Target) where
+  OBJECT :: Constraint 'TARGET_OBJECT
+  INPUT  :: Constraint 'TARGET_INPUT
+
+type family Resolution (a :: Target)
+type instance Resolution 'TARGET_OBJECT = (Name, FieldsDefinition)
+type instance Resolution 'TARGET_INPUT = TypeDefinition
+
+-- -- or
+-- data Resolution (a :: Target) where
+  -- TypeObject :: 
+  --   { name :: Name
+  --   , fields :: FieldsDefinition 
+  --   } -> Resolution 'OBJECT_TARGET
+  -- TypeInput :: 
+  --   { unpackInput :: TypeDefinition 
+  --   } -> Resolution 'INPUT_TARGET
+
+constraint 
+  :: KindViolation ctx 
+  => Constraint a 
+  -> ctx 
+  -> TypeDefinition 
+  -> Validation (Resolution a)
+constraint OBJECT _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
+  = pure (typeName, objectFields)
+constraint OBJECT ctx _ = failure [kindViolation ctx]
+constraint INPUT ctx x = orFail (isInputDataType x) [kindViolation ctx] x
+
+constraintObject2 
+  :: Failure error m 
+  => error 
+  -> TypeDefinition 
+  -> m (Name, FieldsDefinition)
+constraintObject2 
+  _ 
+  TypeDefinition 
+    { typeContent = DataObject { objectFields } 
+    , typeName 
+    } 
+  = pure (typeName, objectFields)
+constraintObject2 err _ = failure err
+
+constraintUnion :: Failure error Validation => error -> TypeDefinition -> Validation DataUnion
+constraintUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
+constraintUnion err _ = failure err
+
 lookupFieldAsSelectionSet
   :: (Monad m, Failure GQLErrors m)
   => Ref
@@ -96,18 +152,6 @@ lookupSelectionField
 lookupSelectionField position fieldName (typeName, field) 
   = selectBy err fieldName field
     where err = cannotQueryField fieldName typeName position
-
-
-
-constraintObject2 :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
-constraintObject2 
-  _ 
-  TypeDefinition 
-    { typeContent = DataObject { objectFields } 
-    , typeName 
-    } 
-  = pure (typeName, objectFields)
-constraintObject2 err _ = failure err
 
 lookupInputType 
   :: Failure e Validation 
@@ -142,10 +186,6 @@ lookupUnionTypes
   where 
     err = hasNoSubfields ref typeConName
 
-constraintUnion :: Failure error Validation => error -> TypeDefinition -> Validation DataUnion
-constraintUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
-constraintUnion gqlError _ = failure gqlError
-
 orFail 
   :: (Monad m, Failure e m) 
   => Bool
@@ -155,20 +195,6 @@ orFail
 orFail cond err x
       | cond = pure x
       | otherwise = failure err
-
-constraintInput
-  :: (Monad m, Failure GQLErrors m , KindViolation ctx) 
-  => ctx 
-  -> TypeDefinition 
-  -> m TypeDefinition
-constraintInput ctx x = orFail 
-    (isInputDataType x) 
-    [kindViolation ctx]
-    x
-
-constraintObject :: (Failure GQLErrors m ,KindViolation a) => a -> TypeDefinition -> m (Name, FieldsDefinition)
-constraintObject _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-constraintObject arg _ = failure [kindViolation arg]
 
 selectRequired 
   ::  ( Selectable c value

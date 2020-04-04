@@ -40,7 +40,8 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , askSchema
                                                 , askFragments
                                                 , selectKnown
-                                                , constraintObject
+                                                , constraint
+                                                , Constraint(..)
                                                 )
 
 validateFragments :: SelectionSet RAW -> Validation ()
@@ -115,7 +116,7 @@ validateFragment fr@Fragment { fragmentName, fragmentSelection, fragmentType, fr
     checkTypeExistence 
       = askSchema
         >>= selectKnown (Ref fragmentType fragmentPosition) 
-        >>= constraintObject fr
+        >>= constraint OBJECT fr
 
 detectLoopOnFragments :: Graph -> Validation ()
 detectLoopOnFragments lib = mapM_ checkFragment lib
