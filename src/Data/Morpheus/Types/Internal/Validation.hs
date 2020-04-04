@@ -87,6 +87,18 @@ lookupFieldAsSelectionSet
     >>= constraintObject2 err
   where err = hasNoSubfields ref typeConName
 
+lookupSelectionField
+  :: (Monad m , Failure GQLErrors m)
+  => Position
+  -> Name
+  -> (Name, FieldsDefinition)
+  -> m FieldDefinition
+lookupSelectionField position fieldName (typeName, field) 
+  = selectBy err fieldName field
+    where err = cannotQueryField fieldName typeName position
+
+
+
 constraintObject2 :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
 constraintObject2 
   _ 
@@ -108,15 +120,6 @@ lookupInputType name lib errors = selectBy errors name lib >>= input
     input x | isInputDataType x = pure x
             | otherwise       = failure errors
 
-lookupSelectionField
-  :: (Monad m , Failure GQLErrors m)
-  => Position
-  -> Name
-  -> (Name, FieldsDefinition)
-  -> m FieldDefinition
-lookupSelectionField position fieldName (typeName, field) 
-  = selectBy err fieldName field
-    where err = cannotQueryField fieldName typeName position
 
 -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
 -- for example 
@@ -131,7 +134,7 @@ lookupUnionTypes
   schema 
   FieldDefinition { fieldType = TypeRef { typeConName  } }
   = selectKnown (ref { refName = typeConName }) schema 
-    >>= constraintDataUnion err
+    >>= constraintUnion err
     >>= traverse (
           (\name -> selectKnown (ref { refName = name}) schema) 
           >=> constraintObject2 err
@@ -139,9 +142,9 @@ lookupUnionTypes
   where 
     err = hasNoSubfields ref typeConName
 
-constraintDataUnion :: Failure error Validation => error -> TypeDefinition -> Validation DataUnion
-constraintDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
-constraintDataUnion gqlError _ = failure gqlError
+constraintUnion :: Failure error Validation => error -> TypeDefinition -> Validation DataUnion
+constraintUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
+constraintUnion gqlError _ = failure gqlError
 
 orFail 
   :: (Monad m, Failure e m) 
