@@ -1,13 +1,16 @@
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE FlexibleInstances  #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 
 module Data.Morpheus.Error.ErrorClass
   ( MissingRequired(..)
   , KindViolation(..)
   , Unknown(..)
   , InternalError(..)
+  , Target(..)
   )
   where
 
@@ -36,6 +39,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 
 
+data Target 
+  = TARGET_OBJECT 
+  | TARGET_INPUT
+  | TARGET_UNION
+
 class InternalError a where
   internalError :: a -> GQLError
 
@@ -51,9 +59,8 @@ instance InternalError FieldDefinition where
       , locations = []
       }
 
-instance InternalError (a, (Ref, Name)) where
+instance InternalError (f 'TARGET_OBJECT, (Ref, Name)) where
   
-
 
 class MissingRequired c where 
   missingRequired :: ValidationContext -> Ref -> c -> GQLError
@@ -102,11 +109,11 @@ instance Unknown FieldsDefinition where
         }
     ]
 
-class KindViolation a where
-  kindViolation :: a -> GQLError
+class KindViolation (t :: Target) ctx where
+  kindViolation :: c t -> ctx -> GQLError
 
-instance KindViolation Fragment where
-  kindViolation Fragment { fragmentName, fragmentType, fragmentPosition } 
+instance KindViolation 'TARGET_OBJECT Fragment where
+  kindViolation _ Fragment { fragmentName, fragmentType, fragmentPosition } 
     = GQLError
     { message   
       = "Fragment \"" <> fragmentName 
@@ -115,8 +122,8 @@ instance KindViolation Fragment where
     , locations = [fragmentPosition]
     }
 
-instance KindViolation (Variable s) where
-  kindViolation Variable 
+instance KindViolation 'TARGET_INPUT (Variable s) where
+  kindViolation _ Variable 
       { variableName 
       , variablePosition
       , variableType = TypeRef { typeConName }
@@ -129,5 +136,7 @@ instance KindViolation (Variable s) where
       , locations = [variablePosition]
       }
 
-instance KindViolation (Ref, Name) where
+instance KindViolation 'TARGET_UNION  (Ref, Name) where
   -- kindViolation (ref,name) = head $ hasNoSubfields ref name
+
+instance KindViolation 'TARGET_OBJECT  (Ref, Name) where

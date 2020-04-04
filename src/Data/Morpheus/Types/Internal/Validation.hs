@@ -70,12 +70,9 @@ import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , KindViolation(..)
                                                 , Unknown(..)
                                                 , InternalError(..)
+                                                , Target(..)
                                                 )
 
-data Target 
-  = TARGET_OBJECT 
-  | TARGET_INPUT
-  | TARGET_UNION
 
 data Constraint (a :: Target) where
   OBJECT :: Constraint 'TARGET_OBJECT
@@ -88,16 +85,16 @@ type instance Resolution 'TARGET_INPUT = TypeDefinition
 type instance Resolution 'TARGET_UNION = DataUnion
 
 constraint 
-  :: forall (a :: Target) ctx. KindViolation ctx 
+  :: forall (a :: Target) ctx. KindViolation a ctx 
   => Constraint ( a :: Target) 
   -> ctx 
   -> TypeDefinition 
   -> Validation (Resolution a)
-constraint OBJECT _   TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
+constraint OBJECT  _   TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
-constraint UNION  _   TypeDefinition { typeContent = DataUnion members } = pure members
-constraint INPUT  _   x | isInputDataType x = pure x 
-constraint _     ctx _  = failure [kindViolation ctx]
+constraint UNION   _   TypeDefinition { typeContent = DataUnion members } = pure members
+constraint INPUT   _   x | isInputDataType x = pure x 
+constraint target  ctx _  = failure [kindViolation target ctx]
 
 __constraint 
   :: forall (a :: Target) ctx. InternalError (Constraint a,ctx) 
