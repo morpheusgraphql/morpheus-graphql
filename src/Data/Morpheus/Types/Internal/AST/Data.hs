@@ -19,6 +19,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataUnion
   , ArgumentsDefinition(..)
   , FieldDefinition(..)
+  , InputFieldsDefinition(..)
   , TypeContent(..)
   , TypeDefinition(..)
   , Schema(..)
@@ -63,6 +64,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , hasArguments
   , unsafeFromFields
   , isInputDataType
+  , unsafeFromInputFields
   , Arguments
   )
 where
@@ -253,14 +255,21 @@ data TypeDefinition = TypeDefinition
   } deriving (Show)
 
 data TypeContent
-  = DataScalar      { dataScalar        :: ScalarDefinition   }
-  | DataEnum        { enumMembers       :: DataEnum     }
-  | DataInputObject { inputObjectFields :: FieldsDefinition   }
+  = DataScalar      { dataScalar        :: ScalarDefinition      
+                    }
+  | DataEnum        { enumMembers       :: DataEnum              
+                    }
+  | DataInputObject { inputObjectFields :: InputFieldsDefinition 
+                    }
   | DataObject      { objectImplements  :: [Name],
-                      objectFields      :: FieldsDefinition   }
-  | DataUnion       { unionMembers      :: DataUnion    }
-  | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] }
-  | DataInterface   { interfaceFields   :: FieldsDefinition    }
+                      objectFields      :: FieldsDefinition      
+                    }
+  | DataUnion       { unionMembers      :: DataUnion    
+                    }
+  | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] 
+                    }
+  | DataInterface   { interfaceFields   :: FieldsDefinition    
+                    }
   deriving (Show)
 
 createType :: Key -> TypeContent -> TypeDefinition
@@ -439,6 +448,36 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
     alias { typeWrappers = TypeList : typeWrappers }
 
 
+
+-- 3.10 Input Objects: https://spec.graphql.org/June2018/#sec-Input-Objects
+---------------------------------------------------------------------------
+-- InputObjectTypeDefinition
+-- Description(opt) input Name Directives(const,opt) InputFieldsDefinition(opt)
+--
+--- InputFieldsDefinition
+-- { InputValueDefinition(list) }
+
+newtype InputFieldsDefinition = InputFieldsDefinition 
+ { unInputFieldsDefinition :: OrderedMap FieldDefinition } 
+  deriving (Show, Empty)
+
+unsafeFromInputFields :: [FieldDefinition] -> InputFieldsDefinition 
+unsafeFromInputFields = InputFieldsDefinition . unsafeFromValues
+
+instance Merge InputFieldsDefinition where
+  merge path (InputFieldsDefinition x)  (InputFieldsDefinition y) = InputFieldsDefinition <$> merge path x y
+
+instance Selectable InputFieldsDefinition FieldDefinition where
+  selectOr fb f name (InputFieldsDefinition lib) = selectOr fb f name lib
+
+instance Singleton  InputFieldsDefinition FieldDefinition  where 
+  singleton  = InputFieldsDefinition . singleton 
+
+instance Listable InputFieldsDefinition FieldDefinition where
+  fromAssoc ls = InputFieldsDefinition <$> fromAssoc ls 
+  toAssoc = toAssoc . unInputFieldsDefinition
+
+
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 -----------------------------------------------------------------------------------------------
 -- ArgumentsDefinition:
@@ -476,8 +515,18 @@ hasArguments NoArguments = False
 hasArguments _ = True
 
 
+
+-- https://spec.graphql.org/June2018/#InputValueDefinition
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
+-- TODO: implement inputValue
+
+-- data InputValueDefinition = InputValueDefinition
+--   { inputValueName  :: Key
+--   , inputValueType  :: TypeRef
+--   , inputValueMeta  :: Maybe Meta
+--   } deriving (Show,Lift)
+
 
 createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members

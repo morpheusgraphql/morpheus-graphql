@@ -78,6 +78,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , DataFingerprint(..)
                                                 , DataUnion
                                                 , FieldsDefinition(..)
+                                                , InputFieldsDefinition(..)
                                                 , TypeRef(..)
                                                 , Message
                                                 , unsafeFromFields
@@ -197,6 +198,12 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
+fromInput :: InputFieldsDefinition -> FieldsDefinition
+fromInput = FieldsDefinition . unInputFieldsDefinition
+
+toInput :: FieldsDefinition -> InputFieldsDefinition
+toInput = InputFieldsDefinition . unFieldsDefinition
+
 introspectObjectFields
   :: IntrospectRep custom a
   => proxy1 (custom :: Bool)
@@ -206,7 +213,7 @@ introspectObjectFields p1 (name, scope, proxy) = withObject
   (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
  where
   withObject (DataObject     {objectFields}, ts) = (objectFields, ts)
-  withObject (DataInputObject x, ts) = (x, ts)
+  withObject (DataInputObject x, ts) = (fromInput x, ts)
   withObject _ = (empty, [introspectFailure (name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
@@ -333,7 +340,7 @@ buildInputUnion (baseName, baseFingerprint) cons = datatype
     typeMembers =
       map (, True) (unionRef <> unionMembers) <> map (, False) enumCons
     (unionMembers, unionTypes) =
-      buildUnions DataInputObject baseFingerprint unionRecordRep
+      buildUnions (DataInputObject . toInput) baseFingerprint unionRecordRep
   types = map fieldTypeUpdater $ concatMap consFields cons
 
 buildUnionType
@@ -363,7 +370,7 @@ buildObject isOutput consFields = (wrapWith fields, types)
  where
   (fields, types) = buildDataObject consFields
   wrapWith | isOutput == OutputType = DataObject [] 
-           | otherwise              = DataInputObject 
+           | otherwise              = DataInputObject . toInput 
 
 buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)

@@ -33,7 +33,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Variable(..)
                                                 , VariableDefinitions
                                                 , FieldDefinition(..)
-                                                , FieldsDefinition
+                                                , InputFieldsDefinition
                                                 , Schema
                                                 , getOperationName
                                                 )
@@ -99,8 +99,8 @@ instance Unknown FieldDefinition where
     = errorMessage argumentPosition 
       ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
 
-instance Unknown FieldsDefinition where
-  type UnknownSelector FieldsDefinition = ObjectEntry RESOLVED
+instance Unknown InputFieldsDefinition where
+  type UnknownSelector InputFieldsDefinition = ObjectEntry RESOLVED
   unknown  _ ObjectEntry { entryName } = 
     [
       GQLError 

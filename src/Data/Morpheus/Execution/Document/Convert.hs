@@ -30,6 +30,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 , Key
                                                 , FieldsDefinition(..)
+                                                , InputFieldsDefinition(..)
                                                 , ArgumentsDefinition(..)
                                                 , hasArguments
                                                 , lookupWith
@@ -176,7 +177,7 @@ genArgumentType namespaceWith FieldDefinition { fieldName, fieldArgs  } = pure
   where tName = namespaceWith (hsTypeName fieldName)
 
 genArguments :: ArgumentsDefinition -> [FieldDefinition]
-genArguments = genInputFields . FieldsDefinition . arguments
+genArguments = genInputFields . InputFieldsDefinition . arguments
 
-genInputFields :: FieldsDefinition -> [FieldDefinition]
+genInputFields :: InputFieldsDefinition -> [FieldDefinition]
 genInputFields = map toHSFieldDefinition . toList

@@ -46,6 +46,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Path
                                                 , Prop(..)
                                                 , renderPath
+                                                , InputFieldsDefinition(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( unsafeFromValues )
@@ -143,7 +144,7 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
     validate
       :: TypeContent -> ObjectEntry RESOLVED -> Validation ValidValue
     validate (DataInputObject parentFields) ObjectEntry { entryValue = Object fields} = do 
-      traverse_ requiredFieldsDefined (unFieldsDefinition parentFields)
+      traverse_ requiredFieldsDefined (unInputFieldsDefinition parentFields)
       Object <$> traverse validateField fields
      where
       requiredFieldsDefined :: FieldDefinition -> Validation ()

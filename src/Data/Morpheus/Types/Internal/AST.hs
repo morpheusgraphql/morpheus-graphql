@@ -65,6 +65,7 @@ module Data.Morpheus.Types.Internal.AST
   , DataUnion
   , ArgumentsDefinition(..)
   , FieldDefinition(..)
+  , InputFieldsDefinition(..)
   , TypeContent(..)
   , TypeDefinition(..)
   , Schema(..)
@@ -136,6 +137,7 @@ module Data.Morpheus.Types.Internal.AST
   , Variables
   , isNullableWrapper
   , unsafeFromFields
+  , unsafeFromInputFields
   , OrderedMap
   , GQLError(..)
   , GQLErrors
