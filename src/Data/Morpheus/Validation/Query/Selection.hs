@@ -48,9 +48,9 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
-                                                , askSchema
-                                                , selectKnown
-                                                , lookupFieldAsSelectionSet
+                                                , askFieldType
+                                                , constraint
+                                                , Constraint(..)
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
                                                 (validateUnionSelection)
@@ -60,7 +60,6 @@ import           Data.Morpheus.Validation.Query.Fragment
                                                 ( castFragmentType
                                                 , resolveSpread
                                                 )
-
 
 type TypeDef = (Name, FieldsDefinition)
 
@@ -78,9 +77,7 @@ validateSelectionSet variables = __validate
     commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeContent, Arguments VALID)
     commonValidation fieldName selectionArguments selectionPosition = do
       (fieldDef :: FieldDefinition) <- selectBy err fieldName fieldsDef
-      let feildTypeName = typeConName (fieldType fieldDef)
-      let fieldTypeRef = Ref feildTypeName selectionPosition
-      schema <- askSchema
+      (typeCont :: TypeContent) <- typeContent <$> askFieldType fieldDef
       -- validate field Argument -----
       arguments <- validateArguments
                     variables
@@ -88,7 +85,6 @@ validateSelectionSet variables = __validate
                     selectionPosition
                     selectionArguments
       -- check field Type existence  -----
-      (typeCont :: TypeContent) <- typeContent <$> selectKnown fieldTypeRef schema
       pure (fieldDef, typeCont, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
         where err = unknownSelectionField fieldName typeName selectionPosition -- TODO: use class Unknown to Generate Error
@@ -132,8 +128,9 @@ validateSelectionSet variables = __validate
                     (typeName,dataField)
             -- Validate Regular selection set
             validateByTypeContent dataField DataObject {} = do
-                fieldType' <- lookupFieldAsSelectionSet selectionRef dataField
-                SelectionSet <$> __validate fieldType' rawSelection
+                fieldTypeDef <- askFieldType dataField 
+                              >>= constraint OBJECT (selectionRef, typeConName $ fieldType dataField)
+                SelectionSet <$> __validate fieldTypeDef rawSelection
             validateByTypeContent dataField _ = failure $ hasNoSubfields 
                 selectionRef 
                 (typeConName $fieldType dataField)

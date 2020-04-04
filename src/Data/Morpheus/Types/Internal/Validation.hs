@@ -17,10 +17,10 @@ module Data.Morpheus.Types.Internal.Validation
   , askSchema
   , askContext
   , askFragments
+  , askFieldType
   , selectRequired
   , selectKnown
   , lookupUnionTypes
-  , lookupFieldAsSelectionSet
   , lookupInputType
   , Constraint(..)
   , constraint
@@ -109,16 +109,6 @@ constraint INPUT ctx x = orFail (isInputDataType x) [kindViolation ctx] x
 constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure members
 constraint UNION ctx _  = failure [kindViolation ctx]
 constraint OBJECT ctx _ = failure [kindViolation ctx]
-
-lookupFieldAsSelectionSet
-  :: Ref
-  -> FieldDefinition  
-  -> Validation (Name, FieldsDefinition )
-lookupFieldAsSelectionSet 
-  ref  
-  field@FieldDefinition { fieldType = TypeRef { typeConName } }
-  = askFieldType field
-  >>= constraint OBJECT (ref,typeConName)
 
 lookupInputType 
   :: Failure e Validation 
