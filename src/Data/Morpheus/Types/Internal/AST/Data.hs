@@ -338,9 +338,8 @@ insertType :: TypeDefinition -> TypeUpdater
 insertType  datatype@TypeDefinition { typeName } lib = case isTypeDefined typeName lib of
   Nothing -> resolveUpdates (defineType datatype lib) []
   Just fingerprint | fingerprint == typeFingerprint datatype -> return lib
-                   |
-      -- throw error if 2 different types has same name
-                     otherwise -> failure $ nameCollisionError typeName
+                   -- throw error if 2 different types has same name
+                   | otherwise -> failure $ nameCollisionError typeName
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a  
 lookupWith f key = find ((== key) . f)  
@@ -479,8 +478,6 @@ hasArguments _ = True
 
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
-
-
 
 createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members
