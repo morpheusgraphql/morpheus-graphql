@@ -25,6 +25,7 @@ module Data.Morpheus.Types.Internal.Validation
   , Constraint(..)
   , constraint
   , setScopeType
+  , askScopeTypeName
   )
   where
 
@@ -204,6 +205,9 @@ askSchema = schema <$> askContext
    
 askFragments :: Validation Fragments
 askFragments = fragments <$> askContext
+
+askScopeTypeName :: Validation Name
+askScopeTypeName = scopeTypeName <$> askContext
 
 setScopeType :: Name -> Validation a -> Validation a
 setScopeType scopeTypeName = Validation . withReaderT update . _runValidation

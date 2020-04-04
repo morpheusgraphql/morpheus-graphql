@@ -129,7 +129,7 @@ validateOperation variables tyDef Operation { operationSelection } =
                     __validate
                     selectionRef
                     rawSelection 
-                    (typeName,dataField)
+                    dataField
             -- Validate Regular selection set
             validateByTypeContent dataField DataObject {} = do
                 fieldTypeDef <- askFieldType dataField 
