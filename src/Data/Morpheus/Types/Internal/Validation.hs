@@ -73,9 +73,7 @@ import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , Unknown(..)
                                                 , InternalError(..)
                                                 )
-import           Data.Morpheus.Error.Selection  ( cannotQueryField
-                                                , hasNoSubfields
-                                                )
+import           Data.Morpheus.Error.Selection  ( cannotQueryField )
 
 data Target 
   = TARGET_OBJECT 
@@ -158,8 +156,8 @@ lookupUnionTypes
 lookupUnionTypes 
   ref
   schema 
-  FieldDefinition { fieldType = TypeRef { typeConName  } }
-  = selectKnown (ref { refName = typeConName }) schema 
+  field@FieldDefinition { fieldType = TypeRef { typeConName  } }
+  = askFieldType field
     >>= constraint UNION (ref,typeConName)
     >>= traverse (
           (\name -> selectKnown (ref { refName = name}) schema) 
