@@ -17,7 +17,6 @@ where
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection  ( hasNoSubfields
                                                 , subfieldsNotSelected
-                                                , unknownSelectionField
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( VariableDefinitions
@@ -52,7 +51,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , constraint
                                                 , Constraint(..)
                                                 , selectKnown
-                                                , updateScope
+                                                , setScopeType
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
                                                 (validateUnionSelection)
@@ -70,13 +69,15 @@ validateOperation
   -> TypeDef
   -> Operation RAW
   -> Validation (SelectionSet VALID)
-validateOperation variables tyDef Operation { operationPosition, operationSelection } = do
-  updateScope (fst tyDef) operationPosition
-  __validate tyDef operationSelection
+validateOperation variables tyDef Operation { operationSelection } = 
+    __validate tyDef operationSelection
  where
   __validate
     :: TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)
-  __validate dataType@(typeName,fieldsDef) = concatTraverse validateSelection 
+  __validate dataType@(typeName,fieldsDef) = 
+      -- update scope TypeName
+      setScopeType typeName . 
+      concatTraverse validateSelection 
    where
     commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeContent, Arguments VALID)
     commonValidation fieldName selectionArguments selectionPosition = do

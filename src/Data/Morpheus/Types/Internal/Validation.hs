@@ -24,7 +24,7 @@ module Data.Morpheus.Types.Internal.Validation
   , lookupInputType
   , Constraint(..)
   , constraint
-  , updateScope
+  , setScopeType
   )
   where
 
@@ -37,6 +37,7 @@ import           Data.Semigroup                 ( (<>)
                                                 )
 import         Control.Monad.Trans.Reader       ( ReaderT(..)
                                                 , ask
+                                                , withReaderT
                                                 )
 
 -- MORPHEUS
@@ -204,10 +205,10 @@ askSchema = schema <$> askContext
 askFragments :: Validation Fragments
 askFragments = fragments <$> askContext
 
-updateScope :: Name -> Position -> Validation ()
-updateScope name position = do 
-  _ <-askContext
-  pure ()
+setScopeType :: Name -> Validation a -> Validation a
+setScopeType scopeTypeName = Validation . withReaderT update . _runValidation
+    where
+      update ctx = ctx { scopeTypeName  }
 
 newtype Validation a 
   = Validation 
