@@ -165,7 +165,7 @@ askUnionMemberType
     where
       constraintOBJECT TypeDefinition { typeName , typeContent } = con typeContent
         where
-          -- con DataObject { objectFields } = pure (typeName, objectFields)
+          con DataObject { objectFields } = pure (typeName, objectFields)
           con _ = do 
             scopeType <- askScopeTypeName
             failure 

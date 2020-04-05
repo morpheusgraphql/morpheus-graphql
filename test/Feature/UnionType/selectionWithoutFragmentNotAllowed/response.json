@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Cannot query field \"aText\" on type \"Query\".",
+      "message": "Cannot query field \"aText\" on type \"Sum\".",
       "locations": [
         {
           "line": 4,
