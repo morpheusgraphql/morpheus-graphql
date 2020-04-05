@@ -60,9 +60,6 @@ instance InternalError FieldDefinition where
       , locations = []
       }
 
-instance InternalError (f 'TARGET_OBJECT, Ref) where
-  
-
 class MissingRequired c where 
   missingRequired :: ValidationContext -> Ref -> c -> GQLError
 

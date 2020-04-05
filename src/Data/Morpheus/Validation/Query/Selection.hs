@@ -125,8 +125,9 @@ validateOperation variables tyDef Operation { operationSelection } =
             selectionRef = Ref selectionName selectionPosition
             validateByTypeContent :: Name -> TypeContent -> Validator (SelectionContent VALID)
             -- Validate UnionSelection  
-            validateByTypeContent _ DataUnion { unionMembers } 
-              = validateUnionSelection  
+            validateByTypeContent typename DataUnion { unionMembers } 
+              = setScopeType typename 
+                  $ validateUnionSelection  
                     __validate
                     selectionRef
                     rawSelectionSet 

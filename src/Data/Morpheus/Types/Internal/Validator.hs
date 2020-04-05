@@ -97,18 +97,6 @@ constraint OBJECT  _   TypeDefinition { typeContent = DataObject { objectFields 
 constraint INPUT   _   x | isInputDataType x = pure x 
 constraint target  ctx _  = failure [kindViolation target ctx]
 
-__constraint 
-  :: forall (a :: Target) ctx. InternalError (Constraint a,ctx) 
-  => Constraint ( a :: Target) 
-  -> ctx 
-  -> TypeDefinition 
-  -> Validator (Resolution a)
-__constraint OBJECT _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
-  = pure (typeName, objectFields)
--- __constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure members
-__constraint INPUT _ x | isInputDataType x = pure x 
-__constraint con ctx _  = failure [internalError (con,ctx) ]
-
 lookupInputType 
   :: Failure e Validator 
   => Name 
@@ -173,8 +161,23 @@ askUnionMemberType
   name
   = askSchema
       >>= selectKnown (ref { refName = name})  
-      >>= __constraint OBJECT ref
-
+      >>= constraintOBJECT 
+    where
+      constraintOBJECT TypeDefinition { typeName , typeContent } = con typeContent
+        where
+          -- con DataObject { objectFields } = pure (typeName, objectFields)
+          con _ = do 
+            scopeType <- askScopeTypeName
+            failure 
+              [ 
+                GQLError 
+                { message 
+                  = "INTERNAL: Type \"" <> typeName
+                  <> "\" referenced by union \"" <> scopeType 
+                  <> "\" must be an OBJECT "
+                , locations = []
+                }
+              ]
 
 runValidation :: Validator a -> ValidationContext -> Stateless a
 runValidation (Validator x) = runReaderT x 
