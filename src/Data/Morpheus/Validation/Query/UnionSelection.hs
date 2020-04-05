@@ -120,11 +120,9 @@ validateUnionSelection
 validateUnionSelection validate  selectionSet members = do
     let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
     -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
-    -- for example
-    -- User | Admin | Product
+    -- [("User", FieldsDefinition { ... }), ("Product", FieldsDefinition { ...
     unionTypes <- traverse askTypeMember members
-    let unionTags = map fst unionTypes
     -- find all Fragments used in Selection
-    spreads <- concat <$> traverse (exploreUnionFragments unionTags) (toList selectionSet)
+    spreads <- concat <$> traverse (exploreUnionFragments members) (toList selectionSet)
     let categories = tagUnionFragments unionTypes spreads
     validateCluster validate __typename categories
