@@ -28,14 +28,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeDefinition(..)
-                                                , TypeRef(..)
                                                 , Operation(..)
                                                 , Ref(..)
                                                 , Name
                                                 , RAW
                                                 , VALID
                                                 , Arguments
-                                                , Position
                                                 , isEntNode
                                                 )
 import           Data.Morpheus.Types.Internal.AST.MergeSet
@@ -77,47 +75,51 @@ validateOperation variables tyDef Operation { operationSelection } =
       setScopeType typeName . 
       concatTraverse validateSelection 
    where
-    commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeDefinition, Arguments VALID)
-    commonValidation fieldName selectionArguments selectionPosition = do
-      (fieldDef :: FieldDefinition) <- selectKnown (Ref fieldName selectionPosition) fieldsDef
-      (typeDef :: TypeDefinition) <- askFieldType fieldDef
-      -- validate field Argument -----
-      arguments <- validateArguments
-                    variables
-                    fieldDef
-                    selectionPosition
-                    selectionArguments
-      -- check field Type existence  -----
-      pure (fieldDef, typeDef, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     validateSelection :: Selection RAW -> Validation (SelectionSet VALID)
-    validateSelection sel@Selection { selectionName, selectionArguments = selArgs , selectionContent, selectionPosition } 
+    validateSelection 
+        sel@Selection 
+          { selectionName
+          , selectionArguments
+          , selectionContent
+          , selectionPosition 
+          } 
       = validateSelectionContent selectionContent
       where
+        commonValidation :: Validation (TypeDefinition, Arguments VALID)
+        commonValidation  = do
+          (fieldDef :: FieldDefinition) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
+          -- validate field Argument -----
+          arguments <- validateArguments
+                        variables
+                        fieldDef
+                        selectionPosition
+                        selectionArguments
+          -- check field Type existence  -----
+          (typeDef :: TypeDefinition) <- askFieldType fieldDef
+          pure (typeDef, arguments)
+        -----------------------------------------------------------------------------------
         validateSelectionContent :: SelectionContent RAW -> Validation (SelectionSet VALID)
-        validateSelectionContent SelectionField = singleton <$> selectField
-         where
-          selectField :: Validation (Selection VALID)
-          selectField 
-            | null selArgs && selectionName == "__typename" 
-              = pure $ sel { selectionArguments = empty, selectionContent = SelectionField }
+        validateSelectionContent SelectionField 
+            | null selectionArguments && selectionName == "__typename" 
+              = pure $ singleton $ sel { selectionArguments = empty, selectionContent = SelectionField }
             | otherwise = do
-              (dataField, TypeDefinition { typeContent }, selectionArguments) 
-                  <- commonValidation selectionName selArgs selectionPosition
-              isLeaf typeContent dataField
-              pure $ sel { selectionArguments, selectionContent = SelectionField }
+              (datatype, validArgs) <- commonValidation
+              isLeaf datatype
+              pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = SelectionField }
+         where
           ------------------------------------------------------------
-          isLeaf :: TypeContent -> FieldDefinition -> Validation ()
-          isLeaf datatype FieldDefinition { fieldType = TypeRef { typeConName } }
-              | isEntNode datatype = pure ()
+          isLeaf :: TypeDefinition -> Validation ()
+          isLeaf TypeDefinition { typeName = typename, typeContent }
+              | isEntNode typeContent = pure ()
               | otherwise = failure
-              $ subfieldsNotSelected selectionName typeConName selectionPosition
+              $ subfieldsNotSelected selectionName typename selectionPosition
         ----- SelectionSet
         validateSelectionContent (SelectionSet rawSelectionSet)
           = do
-            (_,TypeDefinition { typeName = name , typeContent}, selectionArguments) <- commonValidation selectionName selArgs selectionPosition
+            (TypeDefinition { typeName = name , typeContent}, validArgs) <- commonValidation
             selContent <- validateByTypeContent name typeContent
-            pure $ singleton $ sel { selectionArguments, selectionContent = selContent }
+            pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = selContent }
            where
             selectionRef :: Ref
             selectionRef = Ref selectionName selectionPosition
