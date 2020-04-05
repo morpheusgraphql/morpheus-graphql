@@ -37,7 +37,10 @@ import           Data.Morpheus.Validation.Query.Variable
 
 
 validateRequest
-  :: Schema -> VALIDATION_MODE -> GQLQuery -> Stateless (Operation VALID)
+  :: Schema 
+  -> VALIDATION_MODE 
+  -> GQLQuery 
+  -> Stateless (Operation VALID)
 validateRequest 
   schema 
   validationMode 

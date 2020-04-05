@@ -8,7 +8,6 @@ module Data.Morpheus.Validation.Query.Variable
   )
 where
 
-import           Control.Monad                  ((>=>))
 import           Data.List                      ( (\\) )
 import qualified Data.Map                      as M
                                                 ( lookup )
@@ -101,7 +100,14 @@ resolveOperationVariables
   -> VALIDATION_MODE
   -> Operation RAW
   -> Validator (VariableDefinitions VALID)
-resolveOperationVariables root validationMode Operation { operationName, operationSelection, operationArguments }
+resolveOperationVariables 
+    root 
+    validationMode 
+    Operation 
+      { operationName
+      , operationSelection
+      , operationArguments 
+      }
   = do
     allVariableRefs [operationSelection] >>= checkUnusedVariables
     traverse (lookupAndValidateValueOnBody root validationMode) operationArguments
