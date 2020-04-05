@@ -63,8 +63,8 @@ validateRequest
    where
     validation :: Validator (Operation VALID)
     validation = do
-      operationTypeDef <-  getOperationObject rawOperation schema
-      variables         <- resolveOperationVariables
+      operationTypeDef  <-  getOperationObject rawOperation schema
+      variables         <-  resolveOperationVariables
                                   (fromList inputVariables)
                                   validationMode
                                   rawOperation
