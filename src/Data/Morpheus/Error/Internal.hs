@@ -2,7 +2,6 @@
 
 module Data.Morpheus.Error.Internal
   ( internalTypeMismatch
-  , internalArgumentError
   , internalUnknownTypeMessage
   , internalError
   , internalResolvingError
@@ -36,15 +35,10 @@ internalError x = failure $ globalErrorMessage $ "INTERNAL ERROR: " <> x
 internalResolvingError :: Text -> GQLErrors
 internalResolvingError = globalErrorMessage . ("INTERNAL RESOLVING ERROR:" <>)
 
-
 -- if type did not not found, but was defined by Schema
 internalUnknownTypeMessage :: Text -> GQLErrors
 internalUnknownTypeMessage x = globalErrorMessage
   $ T.concat ["type did not found, but was defined by Schema", x]
-
--- if arguments is already validated but has not found required argument
-internalArgumentError :: Text -> Stateless a
-internalArgumentError x = internalError $ "Argument " <> x
 
 -- if value is already validated but value has different type
 internalTypeMismatch :: Text -> ValidValue -> Stateless a
