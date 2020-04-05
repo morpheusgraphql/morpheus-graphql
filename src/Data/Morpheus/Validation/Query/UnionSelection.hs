@@ -52,6 +52,8 @@ import           Data.Morpheus.Validation.Query.Fragment
                                                 )
 
 
+type TypeDef = (Name, FieldsDefinition)
+
 -- returns all Fragments used in Union
 exploreUnionFragments
   :: [Name]
@@ -86,20 +88,6 @@ tagUnionFragments types fragments
   categorizeType datatype = (datatype, filter matches fragments)
     where matches fragment = fragmentType fragment == fst datatype
 
-type TypeDef = (Name, FieldsDefinition)
-
-clusterTypes :: Ref -> SelectionSet RAW -> DataUnion ->Validation [(TypeDef, [Fragment])]
-clusterTypes selectionRef selectionSet members = do
-  -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
-  -- for example
-  -- User | Admin | Product
-  unionTypes <- traverse (askUnionMemberType selectionRef) members
-  let unionTags = map fst unionTypes
-  -- find all Fragments used in Selection
-  spreads <- concat <$> traverse (exploreUnionFragments unionTags) (toList selectionSet)
-  -- 
-  pure $ tagUnionFragments unionTypes spreads
-
 
 {-
     - all Variable and Fragment references will be: resolved and validated
@@ -132,8 +120,12 @@ validateUnionSelection
     -> Validation (SelectionContent VALID)
 validateUnionSelection validate selectionRef selectionSet members = do
     let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
-    categories <- clusterTypes
-        selectionRef
-        selectionSet 
-        members
+    -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
+    -- for example
+    -- User | Admin | Product
+    unionTypes <- traverse (askUnionMemberType selectionRef) members
+    let unionTags = map fst unionTypes
+    -- find all Fragments used in Selection
+    spreads <- concat <$> traverse (exploreUnionFragments unionTags) (toList selectionSet)
+    let categories = tagUnionFragments unionTypes spreads
     validateCluster validate __typename categories
