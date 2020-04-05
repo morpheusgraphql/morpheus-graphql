@@ -90,7 +90,7 @@ constraint
   => Constraint ( a :: Target) 
   -> ctx 
   -> TypeDefinition 
-  -> Validation (Resolution a)
+  -> Validator (Resolution a)
 constraint OBJECT  _   TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
 -- constraint UNION   _   TypeDefinition { typeContent = DataUnion members } = pure members
@@ -102,7 +102,7 @@ __constraint
   => Constraint ( a :: Target) 
   -> ctx 
   -> TypeDefinition 
-  -> Validation (Resolution a)
+  -> Validator (Resolution a)
 __constraint OBJECT _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
 -- __constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure members
@@ -110,10 +110,10 @@ __constraint INPUT _ x | isInputDataType x = pure x
 __constraint con ctx _  = failure [internalError (con,ctx) ]
 
 lookupInputType 
-  :: Failure e Validation 
+  :: Failure e Validator 
   => Name 
   -> e 
-  -> Validation TypeDefinition
+  -> Validator TypeDefinition
 lookupInputType name errors 
   = askSchema
     >>= selectBy errors name 
@@ -128,7 +128,7 @@ selectRequired
       ) 
   => Ref 
   -> c 
-  -> Validation value
+  -> Validator value
 selectRequired selector container 
   = do 
     ctx <- askContext
@@ -144,7 +144,7 @@ selectKnown
       ) 
   => UnknownSelector c 
   -> c 
-  -> Validation a
+  -> Validator a
 selectKnown selector lib  
   = do 
     ctx <- askContext
@@ -155,7 +155,7 @@ selectKnown selector lib
 
 askFieldType
   :: FieldDefinition
-  -> Validation TypeDefinition
+  -> Validator TypeDefinition
 askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
   = do
     schema <- askSchema
@@ -167,7 +167,7 @@ askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
 askUnionMemberType
   :: Ref
   -> Name
-  -> Validation (Name, FieldsDefinition)
+  -> Validator (Name, FieldsDefinition)
 askUnionMemberType 
   ref
   name
@@ -176,34 +176,34 @@ askUnionMemberType
       >>= __constraint OBJECT ref
 
 
-runValidation :: Validation a -> ValidationContext -> Stateless a
+runValidation :: Validator a -> ValidationContext -> Stateless a
 runValidation (Validation x) = runReaderT x 
 
 mapError 
   :: (GQLError -> GQLError)
-  -> Validation a
-  -> Validation a
-mapError f (Validation x) = Validation $ ReaderT $ C.mapError f . runReaderT x 
+  -> Validator a
+  -> Validator a
+mapError f (Validation x) = Validator $ ReaderT $ C.mapError f . runReaderT x 
 
-askContext :: Validation ValidationContext
-askContext = Validation ask
+askContext :: Validator ValidationContext
+askContext = Validator ask
 
-askSchema :: Validation Schema
+askSchema :: Validator Schema
 askSchema = schema <$> askContext
    
-askFragments :: Validation Fragments
+askFragments :: Validator Fragments
 askFragments = fragments <$> askContext
 
-askScopeTypeName :: Validation Name
+askScopeTypeName :: Validator Name
 askScopeTypeName = scopeTypeName <$> askContext
 
-setScopeType :: Name -> Validation a -> Validation a
-setScopeType scopeTypeName = Validation . withReaderT update . _runValidation
+setScopeType :: Name -> Validator a -> Validator a
+setScopeType scopeTypeName = Validator . withReaderT update . _runValidation
     where
       update ctx = ctx { scopeTypeName  }
 
-newtype Validation a 
-  = Validation 
+newtype Validator a 
+  = Validator 
     {
       _runValidation :: ReaderT 
           ValidationContext 
@@ -216,10 +216,10 @@ newtype Validation a
       , Monad
       )
 
-instance MonadFail Validation where 
+instance MonadFail Validator where 
   fail = failure . pack
 
-instance Failure Message Validation where
+instance Failure Message Validator where
   failure inputMessage = do 
     position <- scopePosition <$> askContext 
     failure 
@@ -230,5 +230,5 @@ instance Failure Message Validation where
           }
       ]
 
-instance Failure GQLErrors Validation where
-  failure = Validation . lift . failure
+instance Failure GQLErrors Validator where
+  failure = Validator . lift . failure

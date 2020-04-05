@@ -70,7 +70,7 @@ validateInput
   -> [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
-  -> Validation ValidValue
+  -> Validator ValidValue
 validateInput ctx = validateInputValue ctx []
 
 violation  :: TypeRef -> ResolvedValue -> Maybe Message -> GQLErrors
@@ -78,7 +78,7 @@ violation TypeRef { typeConName , typeWrappers } value _
     = globalErrorMessage 
     $ typeViolation (renderWrapped typeConName typeWrappers) value
 
-withContext :: (Message, Position) -> Path ->  Validation a -> Validation a
+withContext :: (Message, Position) -> Path ->  Validator a -> Validator a
 withContext (prefix, position) path = mapError addContext
   where 
     addContext GQLError { message, locations} = GQLError (prefix <> renderPath path <>message) (position:locations)
@@ -87,7 +87,7 @@ checkTypeEquality
   :: (Name, [TypeWrapper])
   -> Ref
   -> Variable VALID
-  -> Validation ValidValue
+  -> Validator ValidValue
 checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType }
   | typeConName variableType == tyConName && not
     (isWeaker (typeWrappers variableType) tyWrappers)
@@ -112,18 +112,18 @@ validateInputValue
   -> [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
-  -> Validation ValidValue
+  -> Validator ValidValue
 validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
   validateWrapped tyWrappers tyCont
  where
-  mismatchError :: [TypeWrapper] -> ResolvedValue -> Validation ValidValue
+  mismatchError :: [TypeWrapper] -> ResolvedValue -> Validator ValidValue
   mismatchError  wrappers x = withContext ctx props $ failure $ violation (TypeRef typeName Nothing wrappers) x Nothing 
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
     -> TypeContent
     -> ObjectEntry RESOLVED
-    -> Validation ValidValue
+    -> Validator ValidValue
   -- Validate Null. value = null ?
   validateWrapped wrappers _  ObjectEntry { entryValue = ResolvedVariable ref variable} =
     checkTypeEquality (typeName, wrappers) ref variable
@@ -142,17 +142,17 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
   validateWrapped [] dt v = validate dt v
    where
     validate
-      :: TypeContent -> ObjectEntry RESOLVED -> Validation ValidValue
+      :: TypeContent -> ObjectEntry RESOLVED -> Validator ValidValue
     validate (DataInputObject parentFields) ObjectEntry { entryValue = Object fields} = do 
       traverse_ requiredFieldsDefined (unInputFieldsDefinition parentFields)
       Object <$> traverse validateField fields
      where
-      requiredFieldsDefined :: FieldDefinition -> Validation ()
+      requiredFieldsDefined :: FieldDefinition -> Validator ()
       requiredFieldsDefined datafield@FieldDefinition { fieldName }
         | fieldName `member` fields || isFieldNullable datafield = pure ()
         | otherwise = withContext ctx props (failure $ globalErrorMessage $ undefinedField fieldName)
       validateField
-        :: ObjectEntry RESOLVED -> Validation (ObjectEntry VALID)
+        :: ObjectEntry RESOLVED -> Validator (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName,  entryValue } = do
           typeRef@TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
           let currentProp = props <> [Prop entryName typeConName]
@@ -201,7 +201,7 @@ validateScalar
   :: ScalarDefinition
   -> ResolvedValue
   -> (ResolvedValue -> Maybe Message -> GQLErrors)
-  -> Validation ValidValue
+  -> Validator ValidValue
 validateScalar ScalarDefinition { validateValue } value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
@@ -209,11 +209,11 @@ validateScalar ScalarDefinition { validateValue } value err = do
     Left  ""           -> failure (err value Nothing)
     Left  message -> failure $ err value (Just message)
  where
-  toScalar :: ResolvedValue -> Validation ValidValue
+  toScalar :: ResolvedValue -> Validator ValidValue
   toScalar (Scalar x) = pure (Scalar x)
   toScalar scValue    = failure (err scValue Nothing)
 
-validateEnum :: GQLErrors -> [DataEnumValue] -> ResolvedValue -> Validation ValidValue
+validateEnum :: GQLErrors -> [DataEnumValue] -> ResolvedValue -> Validator ValidValue
 validateEnum gqlError enumValues (Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise             = failure gqlError

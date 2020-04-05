@@ -61,7 +61,7 @@ validateRequest
         , scopePosition = operationPosition
         }
    where
-    validation :: Validation (Operation VALID)
+    validation :: Validator (Operation VALID)
     validation = do
       operationTypeDef <-  getOperationObject rawOperation schema
       variables         <- resolveOperationVariables

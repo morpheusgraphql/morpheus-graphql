@@ -48,13 +48,13 @@ import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
 
 -- only Resolves , doesnot checks the types
-resolveObject :: VariableDefinitions VALID -> RawValue -> Validation ResolvedValue
+resolveObject :: VariableDefinitions VALID -> RawValue -> Validator ResolvedValue
 resolveObject variables = resolve
  where
-  resolveEntry :: ObjectEntry RAW -> Validation (ObjectEntry RESOLVED)
+  resolveEntry :: ObjectEntry RAW -> Validator (ObjectEntry RESOLVED)
   resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
   ------------------------------------------------
-  resolve :: RawValue -> Validation ResolvedValue
+  resolve :: RawValue -> Validator ResolvedValue
   resolve Null         = pure Null
   resolve (Scalar x  ) = pure $ Scalar x
   resolve (Enum   x  ) = pure $ Enum x
@@ -66,11 +66,11 @@ resolveObject variables = resolve
 resolveArgumentVariables
   :: VariableDefinitions VALID
   -> Arguments RAW
-  -> Validation (Arguments RESOLVED)
+  -> Validator (Arguments RESOLVED)
 resolveArgumentVariables variables
   = traverse resolveVariable
  where
-  resolveVariable :: Argument RAW -> Validation (Argument RESOLVED)
+  resolveVariable :: Argument RAW -> Validator (Argument RESOLVED)
   resolveVariable (Argument key val position) = do 
     constValue <- resolveObject variables val
     pure $ Argument key constValue position
@@ -79,7 +79,7 @@ validateArgument
   :: Position
   -> Arguments RESOLVED
   -> ArgumentDefinition
-  -> Validation (Argument VALID)
+  -> Validator (Argument VALID)
 validateArgument fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
   = selectOr 
     handleNullable 
@@ -98,7 +98,7 @@ validateArgument fieldPosition requestArgs argType@FieldDefinition { fieldName, 
     | otherwise
     = failure $ undefinedArgument (Ref fieldName fieldPosition)
   -------------------------------------------------------------------------
-  validateArgumentValue :: Argument RESOLVED -> Validation (Argument VALID)
+  validateArgumentValue :: Argument RESOLVED -> Validator (Argument VALID)
   validateArgumentValue Argument { argumentValue = value, .. } =
     do
       datatype <- lookupInputType typeConName
@@ -115,7 +115,7 @@ validateArguments
   -> FieldDefinition
   -> Position
   -> Arguments RAW
-  -> Validation (Arguments VALID)
+  -> Validator (Arguments VALID)
 validateArguments
     variables 
     fieldDef@FieldDefinition {  fieldArgs }
@@ -130,5 +130,5 @@ validateArguments
     (ArgumentsDefinition _ argsD) -> argsD
     NoArguments -> empty
   -------------------------------------------------
-  checkUnknown :: Argument RESOLVED -> Validation ArgumentDefinition
+  checkUnknown :: Argument RESOLVED -> Validator ArgumentDefinition
   checkUnknown = (`selectKnown` fieldDef)

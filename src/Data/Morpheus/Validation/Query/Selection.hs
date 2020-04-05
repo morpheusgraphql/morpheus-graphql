@@ -64,19 +64,19 @@ validateOperation
   :: VariableDefinitions VALID
   -> TypeDef
   -> Operation RAW
-  -> Validation (SelectionSet VALID)
+  -> Validator (SelectionSet VALID)
 validateOperation variables tyDef Operation { operationSelection } = 
     __validate tyDef operationSelection
  where
   __validate
-    :: TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)
+    :: TypeDef -> SelectionSet RAW -> Validator (SelectionSet VALID)
   __validate dataType@(typeName,fieldsDef) = 
       -- update scope TypeName
       setScopeType typeName . 
       concatTraverse validateSelection 
    where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
-    validateSelection :: Selection RAW -> Validation (SelectionSet VALID)
+    validateSelection :: Selection RAW -> Validator (SelectionSet VALID)
     validateSelection 
         sel@Selection 
           { selectionName
@@ -86,7 +86,7 @@ validateOperation variables tyDef Operation { operationSelection } =
           } 
       = validateSelectionContent selectionContent
       where
-        commonValidation :: Validation (TypeDefinition, Arguments VALID)
+        commonValidation :: Validator (TypeDefinition, Arguments VALID)
         commonValidation  = do
           (fieldDef :: FieldDefinition) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
           -- validate field Argument -----
@@ -99,7 +99,7 @@ validateOperation variables tyDef Operation { operationSelection } =
           (typeDef :: TypeDefinition) <- askFieldType fieldDef
           pure (typeDef, arguments)
         -----------------------------------------------------------------------------------
-        validateSelectionContent :: SelectionContent RAW -> Validation (SelectionSet VALID)
+        validateSelectionContent :: SelectionContent RAW -> Validator (SelectionSet VALID)
         validateSelectionContent SelectionField 
             | null selectionArguments && selectionName == "__typename" 
               = pure $ singleton $ sel { selectionArguments = empty, selectionContent = SelectionField }
@@ -109,7 +109,7 @@ validateOperation variables tyDef Operation { operationSelection } =
               pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = SelectionField }
          where
           ------------------------------------------------------------
-          isLeaf :: TypeDefinition -> Validation ()
+          isLeaf :: TypeDefinition -> Validator ()
           isLeaf TypeDefinition { typeName = typename, typeContent }
               | isEntNode typeContent = pure ()
               | otherwise = failure
@@ -123,7 +123,7 @@ validateOperation variables tyDef Operation { operationSelection } =
            where
             selectionRef :: Ref
             selectionRef = Ref selectionName selectionPosition
-            validateByTypeContent :: Name -> TypeContent -> Validation (SelectionContent VALID)
+            validateByTypeContent :: Name -> TypeContent -> Validator (SelectionContent VALID)
             -- Validate UnionSelection  
             validateByTypeContent _ DataUnion { unionMembers } 
               = validateUnionSelection  

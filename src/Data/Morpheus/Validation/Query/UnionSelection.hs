@@ -58,12 +58,12 @@ type TypeDef = (Name, FieldsDefinition)
 exploreUnionFragments
   :: [Name]
   -> Selection RAW
-  -> Validation [Fragment]
+  -> Validator [Fragment]
 exploreUnionFragments unionTags = splitFrag
  where
   packFragment fragment = [fragment]
   splitFrag
-    :: Selection RAW -> Validation [Fragment]
+    :: Selection RAW -> Validator [Fragment]
   splitFrag (Spread ref) = packFragment <$> resolveSpread unionTags ref 
   splitFrag Selection { selectionName = "__typename",selectionContent = SelectionField } = pure []
   splitFrag Selection { selectionName, selectionPosition } = do
@@ -101,23 +101,23 @@ tagUnionFragments types fragments
       ]
  -}
 validateCluster
-      :: (TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID))
+      :: (TypeDef -> SelectionSet RAW -> Validator (SelectionSet VALID))
       -> SelectionSet RAW
       -> [(TypeDef, [Fragment])]
-      -> Validation (SelectionContent VALID)
+      -> Validator (SelectionContent VALID)
 validateCluster validator __typename = traverse _validateCluster >=> fmap UnionSelection . fromList
  where
-  _validateCluster :: (TypeDef, [Fragment]) -> Validation UnionTag
+  _validateCluster :: (TypeDef, [Fragment]) -> Validator UnionTag
   _validateCluster  (unionType, fragmets) = do
         fragmentSelections <- MS.join (__typename:map fragmentSelection fragmets)
         UnionTag (fst unionType) <$> validator unionType fragmentSelections
 
 validateUnionSelection 
-    :: (TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)) 
+    :: (TypeDef -> SelectionSet RAW -> Validator (SelectionSet VALID)) 
     -> Ref
     -> SelectionSet RAW 
     -> DataUnion
-    -> Validation (SelectionContent VALID)
+    -> Validator (SelectionContent VALID)
 validateUnionSelection validate selectionRef selectionSet members = do
     let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
     -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)

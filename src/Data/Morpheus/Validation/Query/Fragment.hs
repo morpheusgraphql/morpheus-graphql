@@ -44,7 +44,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , Constraint(..)
                                                 )
 
-validateFragments :: SelectionSet RAW -> Validation ()
+validateFragments :: SelectionSet RAW -> Validator ()
 validateFragments operatorSel = do
   fragments <- askFragments
   checkLoop fragments
@@ -66,13 +66,13 @@ type NodeEdges = (Node, [Node])
 type Graph = [NodeEdges]
 
 castFragmentType
-  :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
+  :: Maybe Text -> Position -> [Text] -> Fragment -> Validator Fragment
 castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
   = if fragmentType `elem` typeMembers
     then pure fragment
     else failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
 
-resolveSpread :: [Text] -> Ref -> Validation Fragment
+resolveSpread :: [Text] -> Ref -> Validator Fragment
 resolveSpread allowedTargets ref@Ref { refName, refPosition } 
   = askFragments
     >>= selectKnown ref
@@ -108,7 +108,7 @@ scanForSpread (Spread Ref { refName, refPosition }) =
 exploreSpreads :: SelectionSet RAW -> [Node]
 exploreSpreads = concatMap scanForSpread 
 
-validateFragment :: Fragment -> Validation NodeEdges
+validateFragment :: Fragment -> Validator NodeEdges
 validateFragment fr@Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
   = checkTypeExistence $> (ref, exploreSpreads fragmentSelection)
   where 
@@ -118,12 +118,12 @@ validateFragment fr@Fragment { fragmentName, fragmentSelection, fragmentType, fr
         >>= selectKnown (Ref fragmentType fragmentPosition) 
         >>= constraint OBJECT fr
 
-detectLoopOnFragments :: Graph -> Validation ()
+detectLoopOnFragments :: Graph -> Validator ()
 detectLoopOnFragments lib = mapM_ checkFragment lib
  where
   checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
-checkForCycle :: Graph -> Node -> [Node] -> Validation Graph
+checkForCycle :: Graph -> Node -> [Node] -> Validator Graph
 checkForCycle lib parentNode history = case lookup parentNode lib of
   Just node -> concat <$> mapM checkNode node
   Nothing   -> pure []

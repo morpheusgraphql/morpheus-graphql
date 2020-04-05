@@ -73,14 +73,14 @@ instance ExploreRefs RawValue where
 instance ExploreRefs (Argument RAW) where
   exploreRefs = exploreRefs . argumentValue
 
-mapSelection :: (Selection RAW -> Validation [b]) -> SelectionSet RAW -> Validation [b]
+mapSelection :: (Selection RAW -> Validator [b]) -> SelectionSet RAW -> Validator [b]
 mapSelection f = fmap concat . traverse f
 
-allVariableRefs :: [SelectionSet RAW] -> Validation [Ref]
+allVariableRefs :: [SelectionSet RAW] -> Validator [Ref]
 allVariableRefs = fmap concat . traverse (mapSelection searchRefs) 
  where
   -- | search used variables in every arguments
-  searchRefs :: Selection RAW -> Validation [Ref]
+  searchRefs :: Selection RAW -> Validator [Ref]
   searchRefs Selection { selectionArguments, selectionContent = SelectionField }
     = return $ concatMap exploreRefs selectionArguments
   searchRefs Selection { selectionArguments, selectionContent = SelectionSet selSet }
@@ -100,7 +100,7 @@ resolveOperationVariables
   :: Variables
   -> VALIDATION_MODE
   -> Operation RAW
-  -> Validation (VariableDefinitions VALID)
+  -> Validator (VariableDefinitions VALID)
 resolveOperationVariables root validationMode Operation { operationName, operationSelection, operationArguments }
   = do
     allVariableRefs [operationSelection] >>= checkUnusedVariables
@@ -109,7 +109,7 @@ resolveOperationVariables root validationMode Operation { operationName, operati
   varToKey :: Variable a -> Ref
   varToKey Variable { variableName, variablePosition } = Ref variableName variablePosition
   --
-  checkUnusedVariables :: [Ref] -> Validation ()
+  checkUnusedVariables :: [Ref] -> Validator ()
   checkUnusedVariables refs = case map varToKey (toList operationArguments) \\ refs of
     [] -> pure ()
     unused' ->
@@ -119,7 +119,7 @@ lookupAndValidateValueOnBody
   :: Variables
   -> VALIDATION_MODE
   -> Variable RAW
-  -> Validation (Variable VALID)
+  -> Validator (Variable VALID)
 lookupAndValidateValueOnBody 
   bodyVariables 
   validationMode 
@@ -145,7 +145,7 @@ lookupAndValidateValueOnBody
     :: Maybe ResolvedValue
     -> DefaultValue
     -> TypeDefinition
-    -> Validation ValidValue
+    -> Validator ValidValue
   checkType (Just variable) Nothing varType = validator varType variable
   checkType (Just variable) (Just defValue) varType =
     validator varType defValue >> validator varType variable
@@ -160,7 +160,7 @@ lookupAndValidateValueOnBody
     returnNull =
       maybe (pure Null) (validator varType) (M.lookup variableName bodyVariables)
   -----------------------------------------------------------------------------------------------
-  validator :: TypeDefinition -> ResolvedValue -> Validation ValidValue
+  validator :: TypeDefinition -> ResolvedValue -> Validator ValidValue
   validator varType varValue 
     = validateInput  
         (variableGotInvalidValue variableName, variablePosition)
