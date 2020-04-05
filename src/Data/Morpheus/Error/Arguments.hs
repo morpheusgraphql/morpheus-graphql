@@ -1,9 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Arguments
-  ( undefinedArgument
-  , argumentGotInvalidValue
-  )
+  ( argumentGotInvalidValue )
 where
 
 import           Data.Semigroup                 ( (<>) )
@@ -14,7 +12,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Message
                                                 , Name
                                                 )
-                                              
+
 {-
   ARGUMENTS:
     type Experience {
@@ -31,7 +29,3 @@ import           Data.Morpheus.Types.Internal.AST.Base
 -}
 argumentGotInvalidValue :: Name -> Message
 argumentGotInvalidValue argName = "Argument " <> argName <> " got invalid value. "
-
-undefinedArgument :: Ref -> GQLErrors
-undefinedArgument (Ref key' position') = errorMessage position' text
-  where text = "Required Argument: \"" <> key' <> "\" was not Defined"

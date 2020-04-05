@@ -12,9 +12,7 @@ import           Data.List                      ( elem )
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Error.Variable   ( incompatibleVariableType )
-import           Data.Morpheus.Error.Input      ( undefinedField
-                                                , typeViolation
-                                                )
+import           Data.Morpheus.Error.Input      ( typeViolation )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , TypeContent(..)
@@ -35,7 +33,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , isWeaker
                                                 , unpackInputUnion
-                                                , isFieldNullable
                                                 , isNullableWrapper
                                                 , ObjectEntry(..)
                                                 , RESOLVED
@@ -50,14 +47,13 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( unsafeFromValues )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( member
-                                                , Failure(..) 
-                                                )
+                                                ( Failure(..) )
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
                                                 , lookupInputType
                                                 , mapError
                                                 , selectKnown
+                                                , selectWithDefaultValue
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
@@ -146,10 +142,9 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
       traverse_ requiredFieldsDefined (unInputFieldsDefinition parentFields)
       Object <$> traverse validateField fields
      where
-      requiredFieldsDefined :: FieldDefinition -> Validator ()
-      requiredFieldsDefined datafield@FieldDefinition { fieldName }
-        | fieldName `member` fields || isFieldNullable datafield = pure ()
-        | otherwise = withContext ctx props (failure $ globalErrorMessage $ undefinedField fieldName)
+      requiredFieldsDefined :: FieldDefinition -> Validator (ObjectEntry RESOLVED)
+      requiredFieldsDefined fieldDef@FieldDefinition { fieldName}
+        = selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
       validateField
         :: ObjectEntry RESOLVED -> Validator (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName,  entryValue } = do

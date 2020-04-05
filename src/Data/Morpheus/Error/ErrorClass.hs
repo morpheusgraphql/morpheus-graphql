@@ -36,6 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition
                                                 , InputFieldsDefinition
                                                 , Schema
+                                                , Object
                                                 , Arguments
                                                 , getOperationName
                                                 )
@@ -72,6 +73,17 @@ instance MissingRequired (Arguments s) where
       { message 
         = "Field \"" <> scopeTypeName <> "\" argument \""
         <> refName <> "\" is required but not provided."
+      , locations = [scopePosition]
+      }
+
+instance MissingRequired (Object s) where
+  missingRequired 
+      ValidationContext { scopePosition } 
+      Ref { refName  } 
+      _  
+    = GQLError 
+      { message 
+        =  "Undefined Field \"" <> refName <> "\"."
       , locations = [scopePosition]
       }
 

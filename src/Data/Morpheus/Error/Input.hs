@@ -3,9 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Data.Morpheus.Error.Input
-  ( undefinedField
-  , typeViolation
-  )
+  ( typeViolation )
 where
 
 import           Data.Aeson                     ( encode )
@@ -22,13 +20,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ResolvedValue )
 
-
 typeViolation :: Name -> ResolvedValue -> Message
 typeViolation expected found = "Expected type \""
   <> expected
   <> "\" found "
   <> T.pack (unpack $ encode found)
   <> "."
-
-undefinedField :: Name -> Message
-undefinedField fieldName = "Undefined Field \"" <> fieldName <> "\"."
