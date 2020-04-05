@@ -18,9 +18,9 @@ module Data.Morpheus.Types.Internal.Validation
   , askContext
   , askFragments
   , askFieldType
+  , askUnionMemberType
   , selectRequired
   , selectKnown
-  , lookupUnionTypes
   , lookupInputType
   , Constraint(..)
   , constraint
@@ -53,7 +53,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
-                                                , Position
                                                 , Message
                                                 , Ref(..)
                                                 , TypeRef(..)
@@ -80,12 +79,12 @@ import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
 data Constraint (a :: Target) where
   OBJECT :: Constraint 'TARGET_OBJECT
   INPUT  :: Constraint 'TARGET_INPUT
-  UNION  :: Constraint 'TARGET_UNION
+--  UNION  :: Constraint 'TARGET_UNION
 
 type family Resolution (a :: Target)
 type instance Resolution 'TARGET_OBJECT = (Name, FieldsDefinition)
 type instance Resolution 'TARGET_INPUT = TypeDefinition
-type instance Resolution 'TARGET_UNION = DataUnion
+--type instance Resolution 'TARGET_UNION = DataUnion
 
 constraint 
   :: forall (a :: Target) ctx. KindViolation a ctx 
@@ -95,7 +94,7 @@ constraint
   -> Validation (Resolution a)
 constraint OBJECT  _   TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
-constraint UNION   _   TypeDefinition { typeContent = DataUnion members } = pure members
+-- constraint UNION   _   TypeDefinition { typeContent = DataUnion members } = pure members
 constraint INPUT   _   x | isInputDataType x = pure x 
 constraint target  ctx _  = failure [kindViolation target ctx]
 
@@ -107,7 +106,7 @@ __constraint
   -> Validation (Resolution a)
 __constraint OBJECT _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
-__constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure members
+-- __constraint UNION _ TypeDefinition { typeContent = DataUnion members } = pure members
 __constraint INPUT _ x | isInputDataType x = pure x 
 __constraint con ctx _  = failure [internalError (con,ctx) ]
 
@@ -123,25 +122,6 @@ lookupInputType name errors
   where
     input x | isInputDataType x = pure x
             | otherwise       = failure errors
-
--- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
--- for example 
--- User | Admin | Product
-lookupUnionTypes
-  :: Ref
-  -> DataUnion 
-  -> Validation [(Name, FieldsDefinition)]
-lookupUnionTypes 
-  ref
-  = traverse 
-          ( selectUnionType 
-            >=> __constraint OBJECT ref
-          )
-    where 
-      selectUnionType name 
-        = askSchema
-          >>= selectKnown (ref { refName = name}) 
-        -- TODO: internal UNIONerror 
 
 selectRequired 
   ::  ( Selectable c value
@@ -184,6 +164,18 @@ askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
         [internalError field] 
         typeConName 
         schema
+
+askUnionMemberType
+  :: Ref
+  -> Name
+  -> Validation (Name, FieldsDefinition)
+askUnionMemberType 
+  ref
+  name
+  = askSchema
+      >>= selectKnown (ref { refName = name})  
+      >>= __constraint OBJECT ref
+
 
 runValidation :: Validation a -> ValidationContext -> Stateless a
 runValidation (Validation x) = runReaderT x 

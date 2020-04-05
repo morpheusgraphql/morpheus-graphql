@@ -23,7 +23,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionContent(..)
                                                 , Fragment(..)
                                                 , SelectionSet
-                                                , FieldDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , Name
                                                 , RAW
@@ -44,7 +43,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
-                                                , lookupUnionTypes
+                                                , askUnionMemberType
                                                 , askScopeTypeName
                                                 )
 import           Data.Morpheus.Validation.Query.Fragment
@@ -94,7 +93,7 @@ clusterTypes selectionRef selectionSet members = do
   -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
   -- for example
   -- User | Admin | Product
-  unionTypes <- lookupUnionTypes selectionRef members
+  unionTypes <- traverse (askUnionMemberType selectionRef) members
   let unionTags = map fst unionTypes
   -- find all Fragments used in Selection
   spreads <- concat <$> traverse (exploreUnionFragments unionTags) (toList selectionSet)

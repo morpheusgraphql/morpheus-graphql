@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
 data Target 
   = TARGET_OBJECT 
   | TARGET_INPUT
-  | TARGET_UNION
+--  | TARGET_UNION
 
 class InternalError a where
   internalError :: a -> GQLError
