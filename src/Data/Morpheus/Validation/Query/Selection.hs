@@ -113,7 +113,7 @@ validateOperation variables tyDef Operation { operationSelection } =
               | otherwise = failure
               $ subfieldsNotSelected selectionName typeConName selectionPosition
         ----- SelectionSet
-        validateSelectionContent (SelectionSet rawSelection)
+        validateSelectionContent (SelectionSet rawSelectionSet)
           = do
             (_,TypeDefinition { typeName = name , typeContent}, selectionArguments) <- commonValidation selectionName selArgs selectionPosition
             selContent <- validateByTypeContent name typeContent
@@ -127,14 +127,14 @@ validateOperation variables tyDef Operation { operationSelection } =
               = validateUnionSelection  
                     __validate
                     selectionRef
-                    rawSelection 
+                    rawSelectionSet 
                     unionMembers
             -- Validate Regular selection set
             validateByTypeContent typename DataObject { objectFields } 
               = SelectionSet 
                   <$> __validate 
                         (typename, objectFields) 
-                        rawSelection
+                        rawSelectionSet
             validateByTypeContent typename _ 
               = failure 
                   $ hasNoSubfields 
