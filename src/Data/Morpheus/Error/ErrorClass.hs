@@ -60,7 +60,7 @@ instance InternalError FieldDefinition where
       , locations = []
       }
 
-instance InternalError (f 'TARGET_OBJECT, (Ref, Name)) where
+instance InternalError (f 'TARGET_OBJECT, Ref) where
   
 
 class MissingRequired c where 
@@ -141,8 +141,3 @@ instance KindViolation 'TARGET_INPUT (Variable s) where
         <> typeConName <>"\"." --TODO: render with typewrappers
       , locations = [variablePosition]
       }
-
-instance KindViolation 'TARGET_UNION  (Ref, Name) where
-  -- kindViolation (ref,name) = head $ hasNoSubfields ref name
-
-instance KindViolation 'TARGET_OBJECT  (Ref, Name) where

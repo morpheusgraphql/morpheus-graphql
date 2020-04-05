@@ -31,6 +31,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , SelectionSet
                                                 , UnionTag(..)
                                                 , Ref(..)
+                                                , DataUnion
                                                 )
 import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
                                                 ( join )
@@ -88,12 +89,12 @@ tagUnionFragments types fragments
 
 type TypeDef = (Name, FieldsDefinition)
 
-clusterTypes :: Ref -> SelectionSet RAW -> FieldDefinition -> Validation [(TypeDef, [Fragment])]
-clusterTypes selectionRef selectionSet fieldDef = do
+clusterTypes :: Ref -> SelectionSet RAW -> DataUnion ->Validation [(TypeDef, [Fragment])]
+clusterTypes selectionRef selectionSet members = do
   -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
   -- for example
   -- User | Admin | Product
-  unionTypes <- lookupUnionTypes selectionRef fieldDef
+  unionTypes <- lookupUnionTypes selectionRef members
   let unionTags = map fst unionTypes
   -- find all Fragments used in Selection
   spreads <- concat <$> traverse (exploreUnionFragments unionTags) (toList selectionSet)
@@ -128,12 +129,12 @@ validateUnionSelection
     :: (TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)) 
     -> Ref
     -> SelectionSet RAW 
-    -> FieldDefinition 
+    -> DataUnion
     -> Validation (SelectionContent VALID)
-validateUnionSelection validate selectionRef selectionSet typeField  = do
+validateUnionSelection validate selectionRef selectionSet members = do
     let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
     categories <- clusterTypes
         selectionRef
         selectionSet 
-        typeField
+        members
     validateCluster validate __typename categories

@@ -48,8 +48,6 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( Validation
                                                 , askFieldType
-                                                , constraint
-                                                , Constraint(..)
                                                 , selectKnown
                                                 , setScopeType
                                                 )
@@ -79,10 +77,10 @@ validateOperation variables tyDef Operation { operationSelection } =
       setScopeType typeName . 
       concatTraverse validateSelection 
    where
-    commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeContent, Arguments VALID)
+    commonValidation :: Name -> Arguments RAW -> Position -> Validation (FieldDefinition, TypeDefinition, Arguments VALID)
     commonValidation fieldName selectionArguments selectionPosition = do
       (fieldDef :: FieldDefinition) <- selectKnown (Ref fieldName selectionPosition) fieldsDef
-      (typeCont :: TypeContent) <- typeContent <$> askFieldType fieldDef
+      (typeDef :: TypeDefinition) <- askFieldType fieldDef
       -- validate field Argument -----
       arguments <- validateArguments
                     variables
@@ -90,7 +88,7 @@ validateOperation variables tyDef Operation { operationSelection } =
                     selectionPosition
                     selectionArguments
       -- check field Type existence  -----
-      pure (fieldDef, typeCont, arguments)
+      pure (fieldDef, typeDef, arguments)
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     validateSelection :: Selection RAW -> Validation (SelectionSet VALID)
     validateSelection sel@Selection { selectionName, selectionArguments = selArgs , selectionContent, selectionPosition } 
@@ -104,8 +102,9 @@ validateOperation variables tyDef Operation { operationSelection } =
             | null selArgs && selectionName == "__typename" 
               = pure $ sel { selectionArguments = empty, selectionContent = SelectionField }
             | otherwise = do
-              (dataField, datatypeContent, selectionArguments) <- commonValidation selectionName selArgs selectionPosition
-              isLeaf datatypeContent dataField
+              (dataField, TypeDefinition { typeContent }, selectionArguments) 
+                  <- commonValidation selectionName selArgs selectionPosition
+              isLeaf typeContent dataField
               pure $ sel { selectionArguments, selectionContent = SelectionField }
           ------------------------------------------------------------
           isLeaf :: TypeContent -> FieldDefinition -> Validation ()
@@ -116,28 +115,31 @@ validateOperation variables tyDef Operation { operationSelection } =
         ----- SelectionSet
         validateSelectionContent (SelectionSet rawSelection)
           = do
-            (dataField, datatype, selectionArguments) <- commonValidation selectionName selArgs selectionPosition
-            selContent <- validateByTypeContent dataField datatype
+            (_,TypeDefinition { typeName = name , typeContent}, selectionArguments) <- commonValidation selectionName selArgs selectionPosition
+            selContent <- validateByTypeContent name typeContent
             pure $ singleton $ sel { selectionArguments, selectionContent = selContent }
            where
             selectionRef :: Ref
             selectionRef = Ref selectionName selectionPosition
-            validateByTypeContent :: FieldDefinition -> TypeContent -> Validation (SelectionContent VALID)
+            validateByTypeContent :: Name -> TypeContent -> Validation (SelectionContent VALID)
             -- Validate UnionSelection  
-            validateByTypeContent dataField DataUnion {} 
+            validateByTypeContent _ DataUnion { unionMembers } 
               = validateUnionSelection  
                     __validate
                     selectionRef
                     rawSelection 
-                    dataField
+                    unionMembers
             -- Validate Regular selection set
-            validateByTypeContent dataField DataObject {} = do
-                fieldTypeDef <- askFieldType dataField 
-                              >>= constraint OBJECT (selectionRef, typeConName $ fieldType dataField)
-                SelectionSet <$> __validate fieldTypeDef rawSelection
-            validateByTypeContent dataField _ = failure $ hasNoSubfields 
-                selectionRef 
-                (typeConName $fieldType dataField)
+            validateByTypeContent typename DataObject { objectFields } 
+              = SelectionSet 
+                  <$> __validate 
+                        (typename, objectFields) 
+                        rawSelection
+            validateByTypeContent typename _ 
+              = failure 
+                  $ hasNoSubfields 
+                      selectionRef 
+                      typename
     validateSelection (Spread ref) =
       resolveSpread [typeName] ref >>= validateFragment
     validateSelection (InlineFragment fragment') =

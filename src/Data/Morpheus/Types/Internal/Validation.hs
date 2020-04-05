@@ -129,16 +129,13 @@ lookupInputType name errors
 -- User | Admin | Product
 lookupUnionTypes
   :: Ref
-  -> FieldDefinition 
+  -> DataUnion 
   -> Validation [(Name, FieldsDefinition)]
 lookupUnionTypes 
-  ref 
-  field@FieldDefinition { fieldType = TypeRef { typeConName  } }
-  = askFieldType field
-    >>= constraint UNION (ref,typeConName)
-    >>= traverse 
+  ref
+  = traverse 
           ( selectUnionType 
-            >=> __constraint OBJECT (ref,typeConName)
+            >=> __constraint OBJECT ref
           )
     where 
       selectUnionType name 
