@@ -214,6 +214,5 @@ data ValidationContext
     , operationName   :: Maybe Name
     , scopeTypeName   :: Name
     , scopePosition   :: Position
-    -- operation :: Operation RAW
     }
     deriving (Show)

@@ -26,6 +26,7 @@ module Data.Morpheus.Types.Internal.Validator
   , constraint
   , setScopeType
   , askScopeTypeName
+  , selectWithDefaultValue
   )
   where
 
@@ -67,6 +68,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeDefinition(..)
                                                 , TypeContent(..)
                                                 , isInputDataType
+                                                , isFieldNullable
                                                 )
 import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , KindViolation(..)
@@ -125,6 +127,36 @@ selectRequired selector container
       [missingRequired ctx selector container] 
       (keyOf selector) 
       container
+
+-- isNull :: a -> Bool
+-- isNull = const False
+
+selectWithDefaultValue 
+  ::  ( Selectable values value
+      , MissingRequired values
+      )
+  => value
+  -> FieldDefinition
+  -> values
+  -> Validator value
+selectWithDefaultValue 
+  fallbackValue 
+  field@FieldDefinition { fieldName }
+  values
+  = selectOr 
+    handleNullable 
+    pure
+    fieldName
+    values 
+  where
+    ------------------
+    handleNullable
+      | isFieldNullable field = pure fallbackValue
+      | otherwise             = failSelection
+    -----------------
+    failSelection = do
+        ctx <- askContext
+        failure [missingRequired ctx (Ref fieldName (scopePosition ctx)) values]
 
 selectKnown 
   ::  ( Selectable c a

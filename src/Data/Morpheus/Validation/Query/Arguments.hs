@@ -42,6 +42,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , selectKnown
                                                 , selectRequired
                                                 , lookupInputType
+                                                , selectWithDefaultValue
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -80,11 +81,17 @@ validateArgument
   -> ArgumentDefinition
   -> Validator (Argument VALID)
 validateArgument fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
-  = selectOr 
-    handleNullable 
-    handleArgument 
-    fieldName 
-    requestArgs 
+  = selectWithDefaultValue
+      (Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition })
+      argType
+      requestArgs 
+    >>= handleArgument 
+    -- >>= validateArgumentValue
+  -- = selectOr 
+  --   handleNullable 
+  --   handleArgument 
+  --   fieldName 
+  --   requestArgs 
  where
     -- TODO: move it in value validation
    -- Just argument@Argument { argumentOrigin = VARIABLE } ->

@@ -36,6 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition
                                                 , InputFieldsDefinition
                                                 , Schema
+                                                , Arguments
                                                 , getOperationName
                                                 )
 
@@ -62,6 +63,17 @@ instance InternalError FieldDefinition where
 
 class MissingRequired c where 
   missingRequired :: ValidationContext -> Ref -> c -> GQLError
+
+instance MissingRequired (Arguments s) where
+  missingRequired 
+    ValidationContext { scopePosition , scopeTypeName } 
+    Ref { refName  } _ 
+    = GQLError 
+      { message 
+        = "Field \"" <> scopeTypeName <> "\" argument \""
+        <> refName <> "\" is required but not provided."
+      , locations = [scopePosition]
+      }
 
 instance MissingRequired (VariableDefinitions s) where
   missingRequired 
