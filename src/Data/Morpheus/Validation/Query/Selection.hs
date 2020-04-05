@@ -142,10 +142,11 @@ validateOperation variables tyDef Operation { operationSelection } =
                   $ hasNoSubfields 
                       selectionRef 
                       typename
-    validateSelection (Spread ref) =
-      resolveSpread [typeName] ref >>= validateFragment
-    validateSelection (InlineFragment fragment') =
-      castFragmentType Nothing (fragmentPosition fragment') [typeName] fragment'
+    validateSelection (Spread ref) 
+      = resolveSpread [typeName] ref 
+        >>= validateFragment
+    validateSelection (InlineFragment fragment') 
+      = castFragmentType Nothing (fragmentPosition fragment') [typeName] fragment'
         >>= validateFragment
     --------------------------------------------------------------------------------
     validateFragment Fragment { fragmentSelection } = __validate dataType fragmentSelection
