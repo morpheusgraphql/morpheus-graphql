@@ -74,10 +74,16 @@ validateArgument
   -> Arguments RESOLVED
   -> ArgumentDefinition
   -> Validator (Argument VALID)
-validateArgument fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
+validateArgument 
+    fieldPosition 
+    requestArgs 
+    argumentDef@FieldDefinition 
+      { fieldName 
+      , fieldType = TypeRef { typeConName, typeWrappers } 
+      }
   = selectWithDefaultValue
-      (Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition })
-      argType
+      Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition }
+      argumentDef
       requestArgs 
     >>= validateArgumentValue
  where
