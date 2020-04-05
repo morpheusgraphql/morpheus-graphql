@@ -14,13 +14,16 @@ module Data.Morpheus.Error.ErrorClass
   )
   where
 
+
+import           Data.Semigroup                 ((<>))
+
+-- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Error.Selection  ( unknownSelectionField
                                                 , hasNoSubfields
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Name
-                                                , RESOLVED
+                                                ( RESOLVED
                                                 , Ref(..)
                                                 , TypeRef(..)
                                                 , GQLError(..)
