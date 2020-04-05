@@ -8,16 +8,13 @@ module Data.Morpheus.Validation.Query.Arguments
 where
 
 import           Data.Foldable                  (traverse_)
-import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
-                                                , undefinedArgument
-                                                )
+import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue )
 import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( VariableDefinitions
                                                 , Argument(..)
                                                 , ArgumentsDefinition(..)
                                                 , Arguments
-                                                , Ref(..)
                                                 , Position
                                                 , ArgumentDefinition
                                                 , FieldDefinition(..)
@@ -27,15 +24,12 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ResolvedValue
                                                 , RESOLVED
                                                 , VALID
-                                                , isFieldNullable
                                                 , ObjectEntry(..)
                                                 , RAW
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
-                                                , selectOr
                                                 , empty
-                                                , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
@@ -85,24 +79,8 @@ validateArgument fieldPosition requestArgs argType@FieldDefinition { fieldName, 
       (Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition })
       argType
       requestArgs 
-    >>= handleArgument 
-    -- >>= validateArgumentValue
-  -- = selectOr 
-  --   handleNullable 
-  --   handleArgument 
-  --   fieldName 
-  --   requestArgs 
+    >>= validateArgumentValue
  where
-    -- TODO: move it in value validation
-   -- Just argument@Argument { argumentOrigin = VARIABLE } ->
-   --   pure (key, argument) -- Variables are already checked in Variable Validation
-  handleArgument Argument { argumentValue = Null } = handleNullable
-  handleArgument argument = validateArgumentValue argument
-  handleNullable
-    | isFieldNullable argType
-    = pure Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition }
-    | otherwise
-    = failure $ undefinedArgument (Ref fieldName fieldPosition)
   -------------------------------------------------------------------------
   validateArgumentValue :: Argument RESOLVED -> Validator (Argument VALID)
   validateArgumentValue Argument { argumentValue = value, .. } =
