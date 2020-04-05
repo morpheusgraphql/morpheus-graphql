@@ -18,7 +18,7 @@ module Data.Morpheus.Types.Internal.Validator
   , askContext
   , askFragments
   , askFieldType
-  , askUnionMemberType
+  , askTypeMember
   , selectRequired
   , selectKnown
   , lookupInputType
@@ -46,6 +46,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( Failure(..) 
                                                 , Selectable
                                                 , selectBy
+                                                , selectOr
                                                 , KeyOf(..)
                                                 )
 import qualified Data.Morpheus.Types.Internal.Resolving.Core as C
@@ -152,32 +153,31 @@ askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
         typeConName 
         schema
 
-askUnionMemberType
-  :: Ref
-  -> Name
+askTypeMember
+  :: Name
   -> Validator (Name, FieldsDefinition)
-askUnionMemberType 
-  ref
+askTypeMember 
   name
   = askSchema
-      >>= selectKnown (ref { refName = name})  
+      >>= selectOr notFound pure name 
       >>= constraintOBJECT 
-    where
+    where 
+      notFound = do
+          scopeType <- askScopeTypeName
+          failure $
+              "Type \"" <> name
+              <> "\" referenced by union \"" <> scopeType 
+              <> "\" can't found in Schema."
+      --------------------------------------
       constraintOBJECT TypeDefinition { typeName , typeContent } = con typeContent
         where
           con DataObject { objectFields } = pure (typeName, objectFields)
           con _ = do 
             scopeType <- askScopeTypeName
-            failure 
-              [ 
-                GQLError 
-                { message 
-                  = "INTERNAL: Type \"" <> typeName
+            failure $
+                "Type \"" <> typeName
                   <> "\" referenced by union \"" <> scopeType 
-                  <> "\" must be an OBJECT "
-                , locations = []
-                }
-              ]
+                  <> "\" must be an OBJECT."
 
 runValidation :: Validator a -> ValidationContext -> Stateless a
 runValidation (Validator x) = runReaderT x 

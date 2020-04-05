@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
-                                                , askUnionMemberType
+                                                , askTypeMember
                                                 , askScopeTypeName
                                                 )
 import           Data.Morpheus.Validation.Query.Fragment
@@ -114,16 +114,15 @@ validateCluster validator __typename = traverse _validateCluster >=> fmap UnionS
 
 validateUnionSelection 
     :: (TypeDef -> SelectionSet RAW -> Validator (SelectionSet VALID)) 
-    -> Ref
     -> SelectionSet RAW 
     -> DataUnion
     -> Validator (SelectionContent VALID)
-validateUnionSelection validate selectionRef selectionSet members = do
+validateUnionSelection validate  selectionSet members = do
     let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
     -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
     -- for example
     -- User | Admin | Product
-    unionTypes <- traverse (askUnionMemberType selectionRef) members
+    unionTypes <- traverse askTypeMember members
     let unionTags = map fst unionTypes
     -- find all Fragments used in Selection
     spreads <- concat <$> traverse (exploreUnionFragments unionTags) (toList selectionSet)

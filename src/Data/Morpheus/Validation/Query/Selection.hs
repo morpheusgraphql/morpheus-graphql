@@ -121,15 +121,12 @@ validateOperation variables tyDef Operation { operationSelection } =
             selContent <- validateByTypeContent name typeContent
             pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = selContent }
            where
-            selectionRef :: Ref
-            selectionRef = Ref selectionName selectionPosition
             validateByTypeContent :: Name -> TypeContent -> Validator (SelectionContent VALID)
             -- Validate UnionSelection  
             validateByTypeContent typename DataUnion { unionMembers } 
               = setScopeType typename 
                   $ validateUnionSelection  
                     __validate
-                    selectionRef
                     rawSelectionSet 
                     unionMembers
             -- Validate Regular selection set
@@ -141,7 +138,7 @@ validateOperation variables tyDef Operation { operationSelection } =
             validateByTypeContent typename _ 
               = failure 
                   $ hasNoSubfields 
-                      selectionRef 
+                      (Ref selectionName selectionPosition) 
                       typename
     validateSelection (Spread ref) 
       = resolveSpread [typeName] ref 
