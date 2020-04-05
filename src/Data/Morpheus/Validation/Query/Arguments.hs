@@ -9,7 +9,6 @@ where
 
 import           Data.Foldable                  (traverse_)
 import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
-                                                -- , argumentNameCollision
                                                 , undefinedArgument
                                                 )
 import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )

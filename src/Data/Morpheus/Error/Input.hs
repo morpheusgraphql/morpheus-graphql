@@ -4,7 +4,6 @@
 
 module Data.Morpheus.Error.Input
   ( undefinedField
-  -- , expectedTypeAFoundB
   , typeViolation
   )
 where
@@ -30,13 +29,6 @@ typeViolation expected found = "Expected type \""
   <> "\" found "
   <> T.pack (unpack $ encode found)
   <> "."
-
-
--- expectedTypeAFoundB :: [Prop] -> Name -> ResolvedValue -> Maybe Name -> Message
--- expectedTypeAFoundB path expected found Nothing 
---   = renderPath path <> typeViolation expected found
--- expectedTypeAFoundB path expected found (Just errorMessage) =
---   renderPath path<> typeViolation expected found <> " " <> errorMessage <> "."
 
 undefinedField :: Name -> Message
 undefinedField fieldName = "Undefined Field \"" <> fieldName <> "\"."
