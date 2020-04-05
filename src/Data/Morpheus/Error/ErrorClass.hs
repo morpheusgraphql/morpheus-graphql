@@ -19,9 +19,7 @@ import           Data.Semigroup                 ((<>))
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Error.Selection  ( unknownSelectionField
-                                                , hasNoSubfields
-                                                )
+import           Data.Morpheus.Error.Selection  ( unknownSelectionField )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( RESOLVED
                                                 , Ref(..)
