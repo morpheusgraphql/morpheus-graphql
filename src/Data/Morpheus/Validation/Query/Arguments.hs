@@ -8,7 +8,7 @@ module Data.Morpheus.Validation.Query.Arguments
 where
 
 import           Data.Foldable                  (traverse_)
-import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue )
+import           Data.Morpheus.Error.Input      ( argumentGotInvalidValue )
 import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( VariableDefinitions
