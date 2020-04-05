@@ -10,7 +10,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 
 module Data.Morpheus.Types.Internal.Validator
-  ( Validation
+  ( Validator
   , ValidationContext(..)
   , runValidation
   , mapError
@@ -177,13 +177,13 @@ askUnionMemberType
 
 
 runValidation :: Validator a -> ValidationContext -> Stateless a
-runValidation (Validation x) = runReaderT x 
+runValidation (Validator x) = runReaderT x 
 
 mapError 
   :: (GQLError -> GQLError)
   -> Validator a
   -> Validator a
-mapError f (Validation x) = Validator $ ReaderT $ C.mapError f . runReaderT x 
+mapError f (Validator x) = Validator $ ReaderT $ C.mapError f . runReaderT x 
 
 askContext :: Validator ValidationContext
 askContext = Validator ask

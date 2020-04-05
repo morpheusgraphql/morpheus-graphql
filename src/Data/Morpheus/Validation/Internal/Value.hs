@@ -17,7 +17,6 @@ import           Data.Morpheus.Error.Input      ( undefinedField
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
-                                                , FieldsDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , ScalarDefinition(..)
@@ -55,7 +54,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Failure(..) 
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
-                                                ( Validation
+                                                ( Validator
                                                 , lookupInputType
                                                 , mapError
                                                 , selectKnown

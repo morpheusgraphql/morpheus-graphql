@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
-                                                ( Validation
+                                                ( Validator
                                                 , askUnionMemberType
                                                 , askScopeTypeName
                                                 )
