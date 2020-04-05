@@ -50,7 +50,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validation
                                                 , askSchema
                                                 , askFragments

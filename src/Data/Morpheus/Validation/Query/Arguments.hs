@@ -38,7 +38,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , empty
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validation
                                                 , selectKnown
                                                 , selectRequired

@@ -35,7 +35,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , toAssoc
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validation
                                                 , askSchema
                                                 , askFragments

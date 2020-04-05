@@ -21,7 +21,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validation
                                                 , ValidationContext(..)
                                                 , runValidation

@@ -9,7 +9,7 @@
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE RankNTypes                 #-}
 
-module Data.Morpheus.Types.Internal.Validation
+module Data.Morpheus.Types.Internal.Validator
   ( Validation
   , ValidationContext(..)
   , runValidation
@@ -65,7 +65,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeDefinition(..)
                                                 , TypeContent(..)
-                                                , DataUnion
                                                 , isInputDataType
                                                 )
 import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)

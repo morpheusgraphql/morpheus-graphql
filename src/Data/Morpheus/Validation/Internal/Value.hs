@@ -54,7 +54,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( member
                                                 , Failure(..) 
                                                 )
-import           Data.Morpheus.Types.Internal.Validation
+import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validation
                                                 , lookupInputType
                                                 , mapError

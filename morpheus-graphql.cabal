@@ -392,7 +392,7 @@ library
       Data.Morpheus.Types.Internal.Resolving.Core
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.TH
-      Data.Morpheus.Types.Internal.Validation
+      Data.Morpheus.Types.Internal.Validator
       Data.Morpheus.Types.Internal.WebSocket
       Data.Morpheus.Types.IO
       Data.Morpheus.Types.Types
