@@ -37,9 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isNullableWrapper
                                                 , ObjectEntry(..)
                                                 , RESOLVED
-                                                , Position
                                                 , GQLError(..)
-                                                , GQLErrors
                                                 , Path
                                                 , Prop(..)
                                                 , renderPath
