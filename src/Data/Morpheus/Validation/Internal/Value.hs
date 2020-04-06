@@ -42,6 +42,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Prop(..)
                                                 , renderPath
                                                 , InputFieldsDefinition(..)
+                                                , ValidationContext(..)
+                                                , InputSource(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( unsafeFromValues )
@@ -56,6 +58,8 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , selectWithDefaultValue
                                                 , askScopePosition
                                                 , withScopeType
+                                                , withInputScope
+                                                , askContext
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
@@ -68,19 +72,21 @@ validateInput
   -> TypeDefinition
   -> ObjectEntry RESOLVED
   -> Validator ValidValue
-validateInput ctx = validateInputValue ctx []
+validateInput = validateInputValue 
 
 castFailure :: TypeRef -> ResolvedValue -> Maybe Message -> Validator a
 castFailure TypeRef { typeConName , typeWrappers } value message = do
   pos <- askScopePosition
+  inputCtx <-  input <$> askContext
+  let prefix = renderPath $ maybe [] sourcePath inputCtx
   failure 
     $  errorMessage pos 
-    $ typeViolation (renderWrapped typeConName typeWrappers) value <> maybe "" (" " <>) message
+    $ prefix <> typeViolation (renderWrapped typeConName typeWrappers) value <> maybe "" (" " <>) message
 
-withContext :: Message -> Path ->  Validator a -> Validator a
-withContext prefix path = mapError addContext
+withContext :: Message -> Validator a -> Validator a
+withContext prefix = mapError addContext
   where 
-    addContext GQLError { message, locations} = GQLError (prefix <> renderPath path <> message) locations
+    addContext GQLError { message, locations} = GQLError (prefix <> message) locations
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
@@ -107,17 +113,16 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
   :: Message
-  -> Path -- TODO: include Array indexes
   -> [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
   -> Validator ValidValue
-validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
+validateInputValue ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
   withScopeType typeName 
   . validateWrapped tyWrappers tyCont
  where
   mismatchError :: [TypeWrapper] -> ResolvedValue -> Validator ValidValue
-  mismatchError  wrappers x = withContext ctx props $ castFailure (TypeRef typeName Nothing wrappers) x Nothing 
+  mismatchError  wrappers x = withContext ctx  $ castFailure (TypeRef typeName Nothing wrappers) x Nothing 
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
@@ -149,17 +154,15 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
      where
       requiredFieldsDefined :: FieldDefinition -> Validator (ObjectEntry RESOLVED)
       requiredFieldsDefined fieldDef@FieldDefinition { fieldName}
-        = withContext ctx props $ selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
+        = withContext ctx $ selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
       validateField
         :: ObjectEntry RESOLVED -> Validator (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName } = do
-          inputField@FieldDefinition{ fieldType = TypeRef { typeConName , typeWrappers }} <- withContext ctx props getField
-          inputTypeDef <- askInputFieldType inputField 
-          let currentProp = props <> [Prop entryName typeConName]
-          ObjectEntry entryName 
+          inputField@FieldDefinition{ fieldType = TypeRef { typeConName , typeWrappers }} <- withContext ctx getField
+          inputTypeDef <- askInputFieldType inputField
+          withInputScope (Prop entryName typeConName) $ ObjectEntry entryName 
             <$> validateInputValue
                   ctx
-                  currentProp
                   typeWrappers
                   inputTypeDef
                   entry
@@ -168,13 +171,12 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) ObjectEntry { entryValue = Object rawFields} =
       case unpackInputUnion inputUnion rawFields of
-        Left message -> withContext ctx props $ castFailure (TypeRef typeName Nothing []) (Object rawFields) (Just message)
+        Left message -> withContext ctx $ castFailure (TypeRef typeName Nothing []) (Object rawFields) (Just message)
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
           inputDef <- askInputMember name
           validValue <- validateInputValue 
                               ctx
-                              props
                               [TypeMaybe]
                               inputDef
                               (ObjectEntry name value)
@@ -182,10 +184,10 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
 
     {-- VALIDATE ENUM --}
     validate (DataEnum tags) ObjectEntry { entryValue } =
-      withContext ctx props $ validateEnum (castFailure (TypeRef typeName Nothing [])) tags entryValue
+      withContext ctx  $ validateEnum (castFailure (TypeRef typeName Nothing [])) tags entryValue
     {-- VALIDATE SCALAR --}
     validate (DataScalar dataScalar) ObjectEntry { entryValue }  = 
-      withContext ctx props $ validateScalar dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
+      withContext ctx $ validateScalar dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
     validate _ ObjectEntry { entryValue }  = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
   validateWrapped wrappers _ ObjectEntry { entryValue }  = mismatchError wrappers entryValue

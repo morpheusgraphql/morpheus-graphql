@@ -147,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
   , Path
   , renderPath
   , ValidationContext(..)
+  , InputSource(..)
   , isInputDataType
   )
 where
@@ -219,6 +220,6 @@ data ValidationContext
     , operationName    :: Maybe Name
     , scopeTypeName    :: Name
     , scopePosition    :: Position
-    , scopeInputSource :: Maybe InputSource
+    , input :: Maybe InputSource
     }
     deriving (Show)

@@ -31,6 +31,8 @@ module Data.Morpheus.Types.Internal.Validator
   , askScopePosition
   , askInputFieldType
   , askInputMember
+  , startInput
+  , withInputScope
   )
   where
 
@@ -74,6 +76,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeContent(..)
                                                 , isInputDataType
                                                 , isFieldNullable
+                                                , InputSource(..)
+                                                , Prop(..)
                                                 )
 import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , KindViolation(..)
@@ -241,6 +245,19 @@ askInputMember
                 "Type \"" <> typeName
                   <> "\" referenced by inputUnion \"" <> scopeType 
                   <> "\" must be an INPUT_OBJECT."
+
+
+startInput :: Name -> Validator a -> Validator a
+startInput sourceType = setContext update
+  where
+    update ctx = ctx { input = Just InputSource { sourceType , sourcePath = [] }}
+ 
+withInputScope :: Prop -> Validator a -> Validator a
+withInputScope prop = setContext update
+  where
+    update ctx@ValidationContext { input = Just source@InputSource {sourcePath = old} } 
+      = ctx { input = Just (source { sourcePath = old <> [prop] } )}
+    update ctx = ctx { input = Just InputSource { sourceType = "Unknown" , sourcePath = [prop] }}
 
 runValidator :: Validator a -> ValidationContext -> Stateless a
 runValidator (Validator x) = runReaderT x 

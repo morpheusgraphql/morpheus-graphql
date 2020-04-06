@@ -62,7 +62,7 @@ validateRequest
         , operationName
         , scopeTypeName = "Root"
         , scopePosition = operationPosition
-        , scopeInputSource = Nothing
+        , input = Nothing
         }
    where
     validation :: Validator (Operation VALID)
