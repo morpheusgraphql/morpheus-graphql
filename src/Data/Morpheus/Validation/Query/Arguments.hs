@@ -39,6 +39,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , selectWithDefaultValue
                                                 , askScopePosition
                                                 , withScopePosition
+                                                , askInputFieldType
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -79,7 +80,7 @@ validateArgument
     requestArgs 
     argumentDef@FieldDefinition 
       { fieldName 
-      , fieldType = TypeRef { typeConName, typeWrappers } 
+      , fieldType = TypeRef { typeWrappers } 
       }
   = do 
       argumentPosition <- askScopePosition
@@ -93,8 +94,7 @@ validateArgument
   validateArgumentValue :: Argument RESOLVED -> Validator (Argument VALID)
   validateArgumentValue Argument { argumentValue = value, .. } =
     withScopePosition argumentPosition $ do
-      datatype <- lookupInputType typeConName
-                          (internalUnknownTypeMessage typeConName)
+      datatype <- askInputFieldType argumentDef
       argumentValue <- validateInput
                           (argumentGotInvalidValue argumentName)
                           typeWrappers 

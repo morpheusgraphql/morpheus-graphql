@@ -30,6 +30,7 @@ module Data.Morpheus.Types.Internal.Validator
   , askScopeTypeName
   , selectWithDefaultValue
   , askScopePosition
+  , askInputFieldType
   )
   where
 
@@ -189,6 +190,20 @@ askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
         typeConName 
         schema
 
+
+askInputFieldType
+  :: FieldDefinition
+  -> Validator TypeDefinition
+askInputFieldType field@FieldDefinition{ fieldName }
+  = askFieldType field >>= constraintINPUT
+ where
+  constraintINPUT x 
+    | isInputDataType x = pure x
+    | otherwise         = failure $
+        "Type \"" <> typeName x
+        <> "\" referenced by field \"" <> fieldName
+        <> "\" must be an input type."
+
 askTypeMember
   :: Name
   -> Validator (Name, FieldsDefinition)
@@ -278,6 +293,7 @@ newtype Validator a
 instance MonadFail Validator where 
   fail = failure . pack
 
+-- can be only used for internal errors
 instance Failure Message Validator where
   failure inputMessage = do 
     position <- scopePosition <$> askContext 
