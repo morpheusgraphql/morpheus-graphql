@@ -24,7 +24,7 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
                                                 , ValidationContext(..)
-                                                , runValidation
+                                                , runValidator
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless )
@@ -54,7 +54,7 @@ validateRequest
       , operationPosition 
       } 
     }
-  = runValidation 
+  = runValidator 
       validation
       ValidationContext 
         { schema 

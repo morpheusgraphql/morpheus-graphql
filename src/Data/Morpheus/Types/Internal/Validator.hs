@@ -12,7 +12,7 @@
 module Data.Morpheus.Types.Internal.Validator
   ( Validator
   , ValidationContext(..)
-  , runValidation
+  , runValidator
   , mapError
   , askSchema
   , askContext
@@ -230,8 +230,8 @@ askTypeMember
                   <> "\" referenced by union \"" <> scopeType 
                   <> "\" must be an OBJECT."
 
-runValidation :: Validator a -> ValidationContext -> Stateless a
-runValidation (Validator x) = runReaderT x 
+runValidator :: Validator a -> ValidationContext -> Stateless a
+runValidator (Validator x) = runReaderT x 
 
 mapError 
   :: (GQLError -> GQLError)
@@ -258,7 +258,7 @@ setContext
   :: (ValidationContext -> ValidationContext) 
   -> Validator a 
   -> Validator a
-setContext update = Validator . withReaderT update . _runValidation
+setContext update = Validator . withReaderT update . _runValidator
 
 withScope :: Name -> Position -> Validator a -> Validator a
 withScope scopeTypeName scopePosition = setContext update
@@ -272,14 +272,14 @@ withScopePosition scopePosition = setContext update
       update ctx = ctx { scopePosition  }
 
 withScopeType :: Name -> Validator a -> Validator a
-withScopeType scopeTypeName = Validator . withReaderT update . _runValidation
+withScopeType scopeTypeName = Validator . withReaderT update . _runValidator
     where
       update ctx = ctx { scopeTypeName  }
 
 newtype Validator a 
   = Validator 
     {
-      _runValidation :: ReaderT 
+      _runValidator :: ReaderT 
           ValidationContext 
           Stateless
           a
