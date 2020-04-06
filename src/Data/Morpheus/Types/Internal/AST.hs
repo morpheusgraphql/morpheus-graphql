@@ -207,12 +207,18 @@ isPosibeUnion tags (Enum name) = case lookup name tags of
   _       -> pure name
 isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
 
+data InputSource = InputSource {
+  sourceType :: Name,
+  sourcePath :: [Prop]
+} deriving (Show)
+
 data ValidationContext 
   = ValidationContext 
-    { schema          :: Schema
-    , fragments       :: Fragments
-    , operationName   :: Maybe Name
-    , scopeTypeName   :: Name
-    , scopePosition   :: Position
+    { schema           :: Schema
+    , fragments        :: Fragments
+    , operationName    :: Maybe Name
+    , scopeTypeName    :: Name
+    , scopePosition    :: Position
+    , scopeInputSource :: Maybe InputSource
     }
     deriving (Show)
