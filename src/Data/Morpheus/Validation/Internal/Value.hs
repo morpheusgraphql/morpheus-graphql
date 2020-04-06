@@ -51,11 +51,12 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
                                                 , askInputFieldType
+                                                , askInputMember
                                                 , mapError
                                                 , selectKnown
                                                 , selectWithDefaultValue
                                                 , askScopePosition
-                                                , askInputMember
+                                                , withScopeType
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
@@ -116,7 +117,8 @@ validateInputValue
   -> ObjectEntry RESOLVED
   -> Validator ValidValue
 validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
-  validateWrapped tyWrappers tyCont
+  withScopeType typeName 
+  . validateWrapped tyWrappers tyCont
  where
   mismatchError :: [TypeWrapper] -> ResolvedValue -> Validator ValidValue
   mismatchError  wrappers x = withContext ctx props $ castFailure (TypeRef typeName Nothing wrappers) x Nothing 
@@ -173,7 +175,6 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
         Left message -> withContext ctx props $ castFailure (TypeRef typeName Nothing []) (Object rawFields) (Just message)
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
-          position <- askScopePosition
           inputDef <- askInputMember name
           validValue <- validateInputValue 
                               ctx

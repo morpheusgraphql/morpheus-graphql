@@ -239,7 +239,7 @@ askInputMember
             scopeType <- askScopeTypeName
             failure $
                 "Type \"" <> typeName
-                  <> "\" referenced by union \"" <> scopeType 
+                  <> "\" referenced by inputUnion \"" <> scopeType 
                   <> "\" must be an INPUT_OBJECT."
 
 runValidator :: Validator a -> ValidationContext -> Stateless a
