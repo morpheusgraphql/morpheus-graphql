@@ -37,6 +37,8 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , selectRequired
                                                 , lookupInputType
                                                 , selectWithDefaultValue
+                                                , askScopePosition
+                                                , withScopePosition
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -70,31 +72,31 @@ resolveArgumentVariables variables
     pure $ Argument key constValue position
 
 validateArgument
-  :: Position
-  -> Arguments RESOLVED
+  :: Arguments RESOLVED
   -> ArgumentDefinition
   -> Validator (Argument VALID)
 validateArgument 
-    fieldPosition 
     requestArgs 
     argumentDef@FieldDefinition 
       { fieldName 
       , fieldType = TypeRef { typeConName, typeWrappers } 
       }
-  = selectWithDefaultValue
-      Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition }
-      argumentDef
-      requestArgs 
-    >>= validateArgumentValue
+  = do 
+      argumentPosition <- askScopePosition
+      argument <- selectWithDefaultValue
+          Argument { argumentName = fieldName, argumentValue = Null, argumentPosition }
+          argumentDef
+          requestArgs 
+      validateArgumentValue argument
  where
   -------------------------------------------------------------------------
   validateArgumentValue :: Argument RESOLVED -> Validator (Argument VALID)
   validateArgumentValue Argument { argumentValue = value, .. } =
-    do
+    withScopePosition argumentPosition $ do
       datatype <- lookupInputType typeConName
                           (internalUnknownTypeMessage typeConName)
       argumentValue <- validateInput
-                          (argumentGotInvalidValue argumentName,argumentPosition)
+                          (argumentGotInvalidValue argumentName)
                           typeWrappers 
                           datatype 
                           (ObjectEntry fieldName value)
@@ -103,20 +105,18 @@ validateArgument
 validateArguments
   :: VariableDefinitions VALID
   -> FieldDefinition
-  -> Position
   -> Arguments RAW
   -> Validator (Arguments VALID)
 validateArguments
     variables 
     fieldDef@FieldDefinition {  fieldArgs }
-    pos 
     rawArgs
   = do
     args <- resolveArgumentVariables variables rawArgs
     traverse_ checkUnknown (toList args)
-    traverse (validateArgument pos args) fArgs
+    traverse (validateArgument args) argsDef
  where
-  fArgs = case fieldArgs of 
+  argsDef = case fieldArgs of 
     (ArgumentsDefinition _ argsD) -> argsD
     NoArguments -> empty
   -------------------------------------------------

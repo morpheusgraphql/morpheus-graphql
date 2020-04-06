@@ -169,7 +169,7 @@ lookupAndValidateValueOnBody
   validator :: TypeDefinition -> ResolvedValue -> Validator ValidValue
   validator varType varValue 
     = validateInput  
-        (variableGotInvalidValue variableName, variablePosition)
+        (variableGotInvalidValue variableName)
         (typeWrappers variableType)
         varType
         (ObjectEntry variableName varValue)

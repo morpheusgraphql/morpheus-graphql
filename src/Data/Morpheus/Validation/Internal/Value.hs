@@ -10,7 +10,7 @@ import           Data.Foldable                  (traverse_)
 import           Data.List                      ( elem )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
+import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Error.Variable   ( incompatibleVariableType )
 import           Data.Morpheus.Error.Input      ( typeViolation )
 import           Data.Morpheus.Types.Internal.AST
@@ -54,6 +54,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , mapError
                                                 , selectKnown
                                                 , selectWithDefaultValue
+                                                , askScopePosition
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
@@ -61,22 +62,27 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 )
 
 validateInput
-  :: (Message, Position)
+  :: Message
   -> [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
   -> Validator ValidValue
 validateInput ctx = validateInputValue ctx []
 
-violation  :: TypeRef -> ResolvedValue -> Maybe Message -> GQLErrors
-violation TypeRef { typeConName , typeWrappers } value _ 
-    = globalErrorMessage 
+violation  :: Position -> TypeRef -> ResolvedValue -> Maybe Message -> GQLErrors
+violation pos TypeRef { typeConName , typeWrappers } value _ 
+    = errorMessage pos 
     $ typeViolation (renderWrapped typeConName typeWrappers) value
 
-withContext :: (Message, Position) -> Path ->  Validator a -> Validator a
-withContext (prefix, position) path = mapError addContext
+castFailure :: TypeRef -> ResolvedValue -> Maybe Message -> Validator a
+castFailure ref value message = do
+  pos <- askScopePosition
+  failure $ violation pos ref value message
+
+withContext :: Message -> Path ->  Validator a -> Validator a
+withContext prefix path = mapError addContext
   where 
-    addContext GQLError { message, locations} = GQLError (prefix <> renderPath path <>message) (position:locations)
+    addContext GQLError { message, locations} = GQLError (prefix <> renderPath path <>message) locations
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
@@ -102,7 +108,7 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
 
 -- Validate Variable Argument or all Possible input Values
 validateInputValue
-  :: (Message, Position)
+  :: Message
   -> Path -- TODO: include Array indexes
   -> [TypeWrapper]
   -> TypeDefinition
@@ -112,7 +118,7 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
   validateWrapped tyWrappers tyCont
  where
   mismatchError :: [TypeWrapper] -> ResolvedValue -> Validator ValidValue
-  mismatchError  wrappers x = withContext ctx props $ failure $ violation (TypeRef typeName Nothing wrappers) x Nothing 
+  mismatchError  wrappers x = withContext ctx props $ castFailure (TypeRef typeName Nothing wrappers) x Nothing 
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
@@ -150,10 +156,11 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
       validateField entry@ObjectEntry { entryName,  entryValue } = do
           typeRef@TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
           let currentProp = props <> [Prop entryName typeConName]
+          pos <- askScopePosition 
           typeDef <- withContext ctx props 
               (lookupInputType
                 typeConName                
-                (violation typeRef entryValue Nothing)
+                (violation pos typeRef entryValue Nothing)
               )
           ObjectEntry entryName 
             <$> validateInputValue
@@ -167,12 +174,13 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) ObjectEntry { entryValue = Object rawFields} =
       case unpackInputUnion inputUnion rawFields of
-        Left message -> withContext ctx props (failure $ violation (TypeRef typeName Nothing []) (Object rawFields) (Just message))
+        Left message -> withContext ctx props $ castFailure (TypeRef typeName Nothing []) (Object rawFields) (Just message)
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
+          pos <- askScopePosition
           typeDef <- withContext ctx props $ lookupInputType
             name
-            (violation (TypeRef name Nothing []) value Nothing)
+            (violation pos (TypeRef name Nothing []) value Nothing)
           validValue <- validateInputValue 
                               ctx
                               props
@@ -182,11 +190,13 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
           return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
 
     {-- VALIDATE ENUM --}
-    validate (DataEnum tags) ObjectEntry { entryValue } =
-      withContext ctx props $ validateEnum (violation (TypeRef typeName Nothing []) entryValue Nothing) tags entryValue
+    validate (DataEnum tags) ObjectEntry { entryValue } = do
+      pos <- askScopePosition
+      withContext ctx props $ validateEnum (violation pos (TypeRef typeName Nothing []) entryValue Nothing) tags entryValue
     {-- VALIDATE SCALAR --}
-    validate (DataScalar dataScalar) ObjectEntry { entryValue }  =
-      withContext ctx props $ validateScalar dataScalar entryValue (violation (TypeRef typeName Nothing []))
+    validate (DataScalar dataScalar) ObjectEntry { entryValue }  = do
+      pos <- askScopePosition
+      withContext ctx props $ validateScalar dataScalar entryValue (violation pos (TypeRef typeName Nothing []))
     validate _ ObjectEntry { entryValue }  = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
   validateWrapped wrappers _ ObjectEntry { entryValue }  = mismatchError wrappers entryValue

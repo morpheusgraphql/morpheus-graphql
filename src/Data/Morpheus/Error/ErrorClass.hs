@@ -124,11 +124,11 @@ instance Unknown FieldDefinition where
 
 instance Unknown InputFieldsDefinition where
   type UnknownSelector InputFieldsDefinition = ObjectEntry RESOLVED
-  unknown _ _ ObjectEntry { entryName } = 
+  unknown ValidationContext { scopePosition } _ ObjectEntry { entryName } = 
     [
       GQLError 
         { message = "Unknown Field \"" <> entryName <> "\"."
-        , locations = []
+        , locations = [scopePosition]
         }
     ]
 

@@ -29,6 +29,7 @@ module Data.Morpheus.Types.Internal.Validator
   , withScopePosition
   , askScopeTypeName
   , selectWithDefaultValue
+  , askScopePosition
   )
   where
 
@@ -234,6 +235,9 @@ askFragments = fragments <$> askContext
 
 askScopeTypeName :: Validator Name
 askScopeTypeName = scopeTypeName <$> askContext
+
+askScopePosition :: Validator Position
+askScopePosition = scopePosition <$> askContext
 
 setContext 
   :: (ValidationContext -> ValidationContext) 

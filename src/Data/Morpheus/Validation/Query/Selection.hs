@@ -95,7 +95,6 @@ validateOperation variables tyDef Operation { operationSelection } =
           arguments <- validateArguments
                         variables
                         fieldDef
-                        selectionPosition
                         selectionArguments
           -- check field Type existence  -----
           (typeDef :: TypeDefinition) <- askFieldType fieldDef
