@@ -9,13 +9,11 @@ where
 
 import           Data.Foldable                  (traverse_)
 import           Data.Morpheus.Error.Input      ( argumentGotInvalidValue )
-import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( VariableDefinitions
                                                 , Argument(..)
                                                 , ArgumentsDefinition(..)
                                                 , Arguments
-                                                , Position
                                                 , ArgumentDefinition
                                                 , FieldDefinition(..)
                                                 , TypeRef(..)
