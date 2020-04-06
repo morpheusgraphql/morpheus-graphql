@@ -144,7 +144,7 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
      where
       requiredFieldsDefined :: FieldDefinition -> Validator (ObjectEntry RESOLVED)
       requiredFieldsDefined fieldDef@FieldDefinition { fieldName}
-        = selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
+        = withContext ctx props $ selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
       validateField
         :: ObjectEntry RESOLVED -> Validator (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName,  entryValue } = do

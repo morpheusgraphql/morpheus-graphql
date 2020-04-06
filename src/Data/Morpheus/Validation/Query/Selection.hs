@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
@@ -47,7 +46,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
                                                 , askFieldType
                                                 , selectKnown
-                                                , setScopeType
+                                                , withScope
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
                                                 (validateUnionSelection)
@@ -66,13 +65,13 @@ validateOperation
   -> Operation RAW
   -> Validator (SelectionSet VALID)
 validateOperation variables tyDef Operation { operationSelection } = 
-    __validate tyDef operationSelection
+    __validate 
+      tyDef 
+      operationSelection
  where
   __validate
     :: TypeDef -> SelectionSet RAW -> Validator (SelectionSet VALID)
-  __validate dataType@(typeName,fieldsDef) = 
-      -- update scope TypeName
-      setScopeType typeName . 
+  __validate dataType@(typeName,fieldsDef) =
       concatTraverse validateSelection 
    where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
@@ -84,7 +83,10 @@ validateOperation variables tyDef Operation { operationSelection } =
           , selectionContent
           , selectionPosition 
           } 
-      = validateSelectionContent selectionContent
+      = withScope 
+        typeName 
+        selectionPosition $ 
+        validateSelectionContent selectionContent
       where
         commonValidation :: Validator (TypeDefinition, Arguments VALID)
         commonValidation  = do
@@ -118,14 +120,13 @@ validateOperation variables tyDef Operation { operationSelection } =
         validateSelectionContent (SelectionSet rawSelectionSet)
           = do
             (TypeDefinition { typeName = name , typeContent}, validArgs) <- commonValidation
-            selContent <- validateByTypeContent name typeContent
+            selContent <- withScope name selectionPosition $ validateByTypeContent name typeContent
             pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = selContent }
            where
             validateByTypeContent :: Name -> TypeContent -> Validator (SelectionContent VALID)
             -- Validate UnionSelection  
-            validateByTypeContent typename DataUnion { unionMembers } 
-              = setScopeType typename 
-                  $ validateUnionSelection  
+            validateByTypeContent _ DataUnion { unionMembers } 
+              = validateUnionSelection  
                     __validate
                     rawSelectionSet 
                     unionMembers

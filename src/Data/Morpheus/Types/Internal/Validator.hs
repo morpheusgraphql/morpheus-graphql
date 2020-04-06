@@ -24,7 +24,9 @@ module Data.Morpheus.Types.Internal.Validator
   , lookupInputType
   , Constraint(..)
   , constraint
-  , setScopeType
+  , withScope
+  , withScopeType
+  , withScopePosition
   , askScopeTypeName
   , selectWithDefaultValue
   )
@@ -55,6 +57,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
+                                                , Position
                                                 , Message
                                                 , Ref(..)
                                                 , TypeRef(..)
@@ -232,8 +235,25 @@ askFragments = fragments <$> askContext
 askScopeTypeName :: Validator Name
 askScopeTypeName = scopeTypeName <$> askContext
 
-setScopeType :: Name -> Validator a -> Validator a
-setScopeType scopeTypeName = Validator . withReaderT update . _runValidation
+setContext 
+  :: (ValidationContext -> ValidationContext) 
+  -> Validator a 
+  -> Validator a
+setContext update = Validator . withReaderT update . _runValidation
+
+withScope :: Name -> Position -> Validator a -> Validator a
+withScope scopeTypeName scopePosition = setContext update
+     where
+       update ctx = ctx { scopeTypeName , scopePosition }
+
+
+withScopePosition :: Position -> Validator a -> Validator a
+withScopePosition scopePosition = setContext update
+    where
+      update ctx = ctx { scopePosition  }
+
+withScopeType :: Name -> Validator a -> Validator a
+withScopeType scopeTypeName = Validator . withReaderT update . _runValidation
     where
       update ctx = ctx { scopeTypeName  }
 
