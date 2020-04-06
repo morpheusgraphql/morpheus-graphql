@@ -82,7 +82,7 @@ castFailure ref value message = do
 withContext :: Message -> Path ->  Validator a -> Validator a
 withContext prefix path = mapError addContext
   where 
-    addContext GQLError { message, locations} = GQLError (prefix <> renderPath path <>message) locations
+    addContext GQLError { message, locations} = GQLError (prefix <> renderPath path <> message) locations
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
