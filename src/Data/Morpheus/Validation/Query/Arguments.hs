@@ -33,7 +33,6 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
                                                 , selectKnown
                                                 , selectRequired
-                                                , lookupInputType
                                                 , selectWithDefaultValue
                                                 , askScopePosition
                                                 , withScopePosition

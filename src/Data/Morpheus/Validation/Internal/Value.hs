@@ -50,11 +50,12 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( Failure(..) )
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
-                                                , lookupInputType
+                                                , askInputFieldType
                                                 , mapError
                                                 , selectKnown
                                                 , selectWithDefaultValue
                                                 , askScopePosition
+                                                , askInputMember
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
@@ -153,39 +154,32 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
         = withContext ctx props $ selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
       validateField
         :: ObjectEntry RESOLVED -> Validator (ObjectEntry VALID)
-      validateField entry@ObjectEntry { entryName,  entryValue } = do
-          typeRef@TypeRef { typeConName , typeWrappers } <- withContext ctx props getFieldType
+      validateField entry@ObjectEntry { entryName } = do
+          inputField@FieldDefinition{ fieldType = TypeRef { typeConName , typeWrappers }} <- withContext ctx props getField
+          inputTypeDef <- askInputFieldType inputField 
           let currentProp = props <> [Prop entryName typeConName]
-          pos <- askScopePosition 
-          typeDef <- withContext ctx props 
-              (lookupInputType
-                typeConName                
-                (violation pos typeRef entryValue Nothing)
-              )
           ObjectEntry entryName 
             <$> validateInputValue
                   ctx
                   currentProp
                   typeWrappers
-                  typeDef
+                  inputTypeDef
                   entry
        where
-        getFieldType = fieldType <$> selectKnown entry parentFields
+        getField = selectKnown entry parentFields
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) ObjectEntry { entryValue = Object rawFields} =
       case unpackInputUnion inputUnion rawFields of
         Left message -> withContext ctx props $ castFailure (TypeRef typeName Nothing []) (Object rawFields) (Just message)
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
-          pos <- askScopePosition
-          typeDef <- withContext ctx props $ lookupInputType
-            name
-            (violation pos (TypeRef name Nothing []) value Nothing)
+          position <- askScopePosition
+          inputDef <- askInputMember name
           validValue <- validateInputValue 
                               ctx
                               props
                               [TypeMaybe]
-                              typeDef
+                              inputDef
                               (ObjectEntry name value)
           return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
 

@@ -21,7 +21,6 @@ module Data.Morpheus.Types.Internal.Validator
   , askTypeMember
   , selectRequired
   , selectKnown
-  , lookupInputType
   , Constraint(..)
   , constraint
   , withScope
@@ -31,6 +30,7 @@ module Data.Morpheus.Types.Internal.Validator
   , selectWithDefaultValue
   , askScopePosition
   , askInputFieldType
+  , askInputMember
   )
   where
 
@@ -105,19 +105,6 @@ constraint OBJECT  _   TypeDefinition { typeContent = DataObject { objectFields 
 constraint INPUT   _   x | isInputDataType x = pure x 
 constraint target  ctx _  = failure [kindViolation target ctx]
 
-lookupInputType 
-  :: Failure e Validator 
-  => Name 
-  -> e 
-  -> Validator TypeDefinition
-lookupInputType name errors 
-  = askSchema
-    >>= selectBy errors name 
-    >>= input
-  where
-    input x | isInputDataType x = pure x
-            | otherwise       = failure errors
-
 selectRequired 
   ::  ( Selectable c value
       , MissingRequired c
@@ -190,7 +177,6 @@ askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
         typeConName 
         schema
 
-
 askInputFieldType
   :: FieldDefinition
   -> Validator TypeDefinition
@@ -229,6 +215,32 @@ askTypeMember
                 "Type \"" <> typeName
                   <> "\" referenced by union \"" <> scopeType 
                   <> "\" must be an OBJECT."
+
+askInputMember
+  :: Name
+  -> Validator TypeDefinition
+askInputMember 
+  name
+  = askSchema
+      >>= selectOr notFound pure name 
+      >>= constraintINPUT_OBJECT 
+    where 
+      notFound = do
+          scopeType <- askScopeTypeName
+          failure $
+              "Type \"" <> name
+              <> "\" referenced by inputUnion \"" <> scopeType 
+              <> "\" can't found in Schema."
+      --------------------------------------
+      constraintINPUT_OBJECT tyDef@TypeDefinition { typeName , typeContent } = con typeContent
+        where
+          con DataInputObject { } = pure tyDef
+          con _ = do 
+            scopeType <- askScopeTypeName
+            failure $
+                "Type \"" <> typeName
+                  <> "\" referenced by union \"" <> scopeType 
+                  <> "\" must be an INPUT_OBJECT."
 
 runValidator :: Validator a -> ValidationContext -> Stateless a
 runValidator (Validator x) = runReaderT x 
