@@ -6,6 +6,7 @@ module Data.Morpheus.Validation.Internal.Value
   ( validateInput )
 where
 
+import           Data.Maybe                     (maybe)
 import           Data.Foldable                  (traverse_)
 import           Data.List                      ( elem )
 
@@ -71,15 +72,12 @@ validateInput
   -> Validator ValidValue
 validateInput ctx = validateInputValue ctx []
 
-violation  :: Position -> TypeRef -> ResolvedValue -> Maybe Message -> GQLErrors
-violation pos TypeRef { typeConName , typeWrappers } value _ 
-    = errorMessage pos 
-    $ typeViolation (renderWrapped typeConName typeWrappers) value
-
 castFailure :: TypeRef -> ResolvedValue -> Maybe Message -> Validator a
-castFailure ref value message = do
+castFailure TypeRef { typeConName , typeWrappers } value message = do
   pos <- askScopePosition
-  failure $ violation pos ref value message
+  failure 
+    $  errorMessage pos 
+    $ typeViolation (renderWrapped typeConName typeWrappers) value <> maybe "" (" " <>) message
 
 withContext :: Message -> Path ->  Validator a -> Validator a
 withContext prefix path = mapError addContext
@@ -185,13 +183,11 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
           return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
 
     {-- VALIDATE ENUM --}
-    validate (DataEnum tags) ObjectEntry { entryValue } = do
-      pos <- askScopePosition
-      withContext ctx props $ validateEnum (violation pos (TypeRef typeName Nothing []) entryValue Nothing) tags entryValue
+    validate (DataEnum tags) ObjectEntry { entryValue } =
+      withContext ctx props $ validateEnum (castFailure (TypeRef typeName Nothing [])) tags entryValue
     {-- VALIDATE SCALAR --}
-    validate (DataScalar dataScalar) ObjectEntry { entryValue }  = do
-      pos <- askScopePosition
-      withContext ctx props $ validateScalar dataScalar entryValue (violation pos (TypeRef typeName Nothing []))
+    validate (DataScalar dataScalar) ObjectEntry { entryValue }  = 
+      withContext ctx props $ validateScalar dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
     validate _ ObjectEntry { entryValue }  = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
   validateWrapped wrappers _ ObjectEntry { entryValue }  = mismatchError wrappers entryValue
@@ -199,22 +195,26 @@ validateInputValue ctx props tyWrappers TypeDefinition { typeContent = tyCont, t
 validateScalar
   :: ScalarDefinition
   -> ResolvedValue
-  -> (ResolvedValue -> Maybe Message -> GQLErrors)
+  -> (ResolvedValue -> Maybe Message -> Validator ValidValue)
   -> Validator ValidValue
 validateScalar ScalarDefinition { validateValue } value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
     Right _            -> return scalarValue
-    Left  ""           -> failure (err value Nothing)
-    Left  message -> failure $ err value (Just message)
+    Left  ""           -> err value Nothing
+    Left  message -> err value (Just message)
  where
   toScalar :: ResolvedValue -> Validator ValidValue
   toScalar (Scalar x) = pure (Scalar x)
-  toScalar scValue    = failure (err scValue Nothing)
+  toScalar scValue    = err scValue Nothing
 
-validateEnum :: GQLErrors -> [DataEnumValue] -> ResolvedValue -> Validator ValidValue
-validateEnum gqlError enumValues (Enum enumValue)
+validateEnum 
+  :: (ResolvedValue -> Maybe Message -> Validator ValidValue) 
+  -> [DataEnumValue] 
+  -> ResolvedValue 
+  -> Validator ValidValue
+validateEnum err enumValues (Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
-  | otherwise             = failure gqlError
+  | otherwise             = err (Enum enumValue) Nothing
   where tags = map enumName enumValues
-validateEnum gqlError _ _ = failure gqlError
+validateEnum err _ value = err value Nothing
