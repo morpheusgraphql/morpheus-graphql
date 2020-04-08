@@ -77,6 +77,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isInputDataType
                                                 , isFieldNullable
                                                 , InputSource(..)
+                                                , InputSourceType(..)
                                                 , Prop(..)
                                                 )
 import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
@@ -229,35 +230,31 @@ askInputMember
       >>= selectOr notFound pure name 
       >>= constraintINPUT_OBJECT 
     where 
+      typeInfo tName
+        = "Type \"" <> tName <> "\" referenced by inputUnion " 
       notFound = do
           scopeType <- askScopeTypeName
-          failure $
-              "Type \"" <> name
-              <> "\" referenced by inputUnion \"" <> scopeType 
-              <> "\" can't found in Schema."
+          failure $ typeInfo name <> scopeType <> "\" can't found in Schema."
       --------------------------------------
       constraintINPUT_OBJECT tyDef@TypeDefinition { typeName , typeContent } = con typeContent
         where
           con DataInputObject { } = pure tyDef
           con _ = do 
             scopeType <- askScopeTypeName
-            failure $
-                "Type \"" <> typeName
-                  <> "\" referenced by inputUnion \"" <> scopeType 
-                  <> "\" must be an INPUT_OBJECT."
+            failure $ typeInfo typeName <> "\"" <> scopeType <> "\" must be an INPUT_OBJECT."
 
 
-startInput :: Name -> Validator a -> Validator a
-startInput sourceType = setContext update
+startInput :: InputSourceType -> Validator a -> Validator a
+startInput source = setContext update
   where
-    update ctx = ctx { input = Just InputSource { sourceType , sourcePath = [] }}
+    update ctx = ctx { input = InputSource { sourceType = Just source , sourcePath = [] }}
  
 withInputScope :: Prop -> Validator a -> Validator a
 withInputScope prop = setContext update
   where
-    update ctx@ValidationContext { input = Just source@InputSource {sourcePath = old} } 
-      = ctx { input = Just (source { sourcePath = old <> [prop] } )}
-    update ctx = ctx { input = Just InputSource { sourceType = "Unknown" , sourcePath = [prop] }}
+    update ctx@ValidationContext { input = source@InputSource {sourcePath = old} } 
+      = ctx { input = source { sourcePath = old <> [prop] } }
+
 
 runValidator :: Validator a -> ValidationContext -> Stateless a
 runValidator (Validator x) = runReaderT x 

@@ -18,6 +18,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , GQLQuery(..)
                                                 , VALIDATION_MODE
+                                                , InputSource(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty )
@@ -62,7 +63,10 @@ validateRequest
         , operationName
         , scopeTypeName = "Root"
         , scopePosition = operationPosition
-        , input = Nothing
+        , input = InputSource {
+            sourceType = Nothing,
+            sourcePath = []
+          }
         }
    where
     validation :: Validator (Operation VALID)

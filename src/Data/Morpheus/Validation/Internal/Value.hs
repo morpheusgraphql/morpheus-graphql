@@ -37,13 +37,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isNullableWrapper
                                                 , ObjectEntry(..)
                                                 , RESOLVED
-                                                , GQLError(..)
-                                                , Path
                                                 , Prop(..)
                                                 , renderPath
                                                 , InputFieldsDefinition(..)
                                                 , ValidationContext(..)
                                                 , InputSource(..)
+                                                , InputSourceType(..)
+                                                , Argument(..)
+                                                , Variable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( unsafeFromValues )
@@ -53,7 +54,6 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 ( Validator
                                                 , askInputFieldType
                                                 , askInputMember
-                                                , mapError
                                                 , selectKnown
                                                 , selectWithDefaultValue
                                                 , askScopePosition
@@ -66,27 +66,22 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 , renderWrapped
                                                 )
 
-validateInput
-  :: Message
-  -> [TypeWrapper]
-  -> TypeDefinition
-  -> ObjectEntry RESOLVED
-  -> Validator ValidValue
-validateInput = validateInputValue 
-
-castFailure :: TypeRef -> ResolvedValue -> Maybe Message -> Validator a
-castFailure TypeRef { typeConName , typeWrappers } value message = do
+castFailure :: TypeRef -> Maybe Message -> ResolvedValue ->  Validator a
+castFailure TypeRef { typeConName , typeWrappers } message value  = do
   pos <- askScopePosition
-  inputCtx <-  input <$> askContext
-  let prefix = renderPath $ maybe [] sourcePath inputCtx
-  failure 
+  InputSource { sourcePath , sourceType } <-  input <$> askContext
+  let pathMessage = renderPath sourcePath 
+  let prefix = maybe "" renderSource sourceType 
+  failure
     $  errorMessage pos 
-    $ prefix <> typeViolation (renderWrapped typeConName typeWrappers) value <> maybe "" (" " <>) message
+    $ prefix <> pathMessage <> typeViolation (renderWrapped typeConName typeWrappers) value <> maybe "" (" " <>) message
 
-withContext :: Message -> Validator a -> Validator a
-withContext prefix = mapError addContext
-  where 
-    addContext GQLError { message, locations} = GQLError (prefix <> message) locations
+
+renderSource :: InputSourceType -> Message
+renderSource (SourceArgument Argument { argumentName }) 
+  = "Argument \"" <> argumentName <>"\" got invalid value. "
+renderSource (SourceVariable Variable { variableName })
+  = "Variable \"$" <> variableName <>"\" got invalid value. "
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
@@ -111,18 +106,18 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
                                   }
 
 -- Validate Variable Argument or all Possible input Values
-validateInputValue
+validateInput
   :: Message
   -> [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
   -> Validator ValidValue
-validateInputValue ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
+validateInput ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
   withScopeType typeName 
   . validateWrapped tyWrappers tyCont
  where
   mismatchError :: [TypeWrapper] -> ResolvedValue -> Validator ValidValue
-  mismatchError  wrappers x = withContext ctx  $ castFailure (TypeRef typeName Nothing wrappers) x Nothing 
+  mismatchError  wrappers = castFailure (TypeRef typeName Nothing wrappers) Nothing  
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
@@ -154,14 +149,14 @@ validateInputValue ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeNa
      where
       requiredFieldsDefined :: FieldDefinition -> Validator (ObjectEntry RESOLVED)
       requiredFieldsDefined fieldDef@FieldDefinition { fieldName}
-        = withContext ctx $ selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
+        = selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
       validateField
         :: ObjectEntry RESOLVED -> Validator (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName } = do
-          inputField@FieldDefinition{ fieldType = TypeRef { typeConName , typeWrappers }} <- withContext ctx getField
+          inputField@FieldDefinition{ fieldType = TypeRef { typeConName , typeWrappers }} <- getField
           inputTypeDef <- askInputFieldType inputField
           withInputScope (Prop entryName typeConName) $ ObjectEntry entryName 
-            <$> validateInputValue
+            <$> validateInput
                   ctx
                   typeWrappers
                   inputTypeDef
@@ -171,11 +166,11 @@ validateInputValue ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeNa
     -- VALIDATE INPUT UNION
     validate (DataInputUnion inputUnion) ObjectEntry { entryValue = Object rawFields} =
       case unpackInputUnion inputUnion rawFields of
-        Left message -> withContext ctx $ castFailure (TypeRef typeName Nothing []) (Object rawFields) (Just message)
+        Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields) 
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
           inputDef <- askInputMember name
-          validValue <- validateInputValue 
+          validValue <- validateInput 
                               ctx
                               [TypeMaybe]
                               inputDef
@@ -184,10 +179,10 @@ validateInputValue ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeNa
 
     {-- VALIDATE ENUM --}
     validate (DataEnum tags) ObjectEntry { entryValue } =
-      withContext ctx  $ validateEnum (castFailure (TypeRef typeName Nothing [])) tags entryValue
+      validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
     {-- VALIDATE SCALAR --}
     validate (DataScalar dataScalar) ObjectEntry { entryValue }  = 
-      withContext ctx $ validateScalar dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
+      validateScalar dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
     validate _ ObjectEntry { entryValue }  = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
   validateWrapped wrappers _ ObjectEntry { entryValue }  = mismatchError wrappers entryValue
@@ -195,26 +190,26 @@ validateInputValue ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeNa
 validateScalar
   :: ScalarDefinition
   -> ResolvedValue
-  -> (ResolvedValue -> Maybe Message -> Validator ValidValue)
+  -> (Maybe Message -> ResolvedValue -> Validator ValidValue)
   -> Validator ValidValue
 validateScalar ScalarDefinition { validateValue } value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
     Right _            -> return scalarValue
-    Left  ""           -> err value Nothing
-    Left  message -> err value (Just message)
+    Left  ""           -> err Nothing value
+    Left  message -> err (Just message) value
  where
   toScalar :: ResolvedValue -> Validator ValidValue
   toScalar (Scalar x) = pure (Scalar x)
-  toScalar scValue    = err scValue Nothing
+  toScalar scValue    = err Nothing scValue 
 
 validateEnum 
-  :: (ResolvedValue -> Maybe Message -> Validator ValidValue) 
+  :: (ResolvedValue -> Validator ValidValue) 
   -> [DataEnumValue] 
   -> ResolvedValue 
   -> Validator ValidValue
-validateEnum err enumValues (Enum enumValue)
+validateEnum err enumValues value@(Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
-  | otherwise             = err (Enum enumValue) Nothing
+  | otherwise             = err value 
   where tags = map enumName enumValues
-validateEnum err _ value = err value Nothing
+validateEnum err _ value = err value 

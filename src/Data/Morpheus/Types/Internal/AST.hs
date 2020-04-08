@@ -147,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
   , Path
   , renderPath
   , ValidationContext(..)
+  , InputSourceType(..)
   , InputSource(..)
   , isInputDataType
   )
@@ -208,8 +209,13 @@ isPosibeUnion tags (Enum name) = case lookup name tags of
   _       -> pure name
 isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
 
+data InputSourceType
+  = SourceArgument (Argument RESOLVED)
+  | SourceVariable (Variable RAW)
+  deriving (Show)
+
 data InputSource = InputSource {
-  sourceType :: Name,
+  sourceType :: Maybe InputSourceType,
   sourcePath :: [Prop]
 } deriving (Show)
 
@@ -220,6 +226,6 @@ data ValidationContext
     , operationName    :: Maybe Name
     , scopeTypeName    :: Name
     , scopePosition    :: Position
-    , input :: Maybe InputSource
+    , input :: InputSource
     }
     deriving (Show)
