@@ -79,12 +79,12 @@ instance MissingRequired (Arguments s) where
 
 instance MissingRequired (Object s) where
   missingRequired 
-      ValidationContext { scopePosition } 
+      ValidationContext { scopePosition , input } 
       Ref { refName  } 
       _  
     = GQLError 
       { message 
-        =  "Undefined Field \"" <> refName <> "\"."
+        =  renderInputPrefix input <> "Undefined Field \"" <> refName <> "\"."
       , locations = [scopePosition]
       }
 

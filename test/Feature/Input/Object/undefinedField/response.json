@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Argument value got invalid value. Undefined Field \"field\".",
+      "message": "Argument \"value\" got invalid value. Undefined Field \"field\".",
       "locations": [
         {
           "line": 2,
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "message": "Argument value got invalid value. Undefined Field \"field\".",
+      "message": "Argument \"value\" got invalid value. Undefined Field \"field\".",
       "locations": [
         {
           "line": 3,
@@ -19,7 +19,7 @@
       ]
     },
     {
-      "message": "Argument value got invalid value. in field \"recursive.recursive\": Undefined Field \"field\".",
+      "message": "Argument \"value\" got invalid value. in field \"recursive.recursive\": Undefined Field \"field\".",
       "locations": [
         {
           "line": 4,
