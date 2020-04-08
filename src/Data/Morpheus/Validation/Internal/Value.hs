@@ -38,12 +38,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ObjectEntry(..)
                                                 , RESOLVED
                                                 , Prop(..)
-                                                , renderPath
                                                 , InputFieldsDefinition(..)
-                                                , ValidationContext(..)
-                                                , InputSource(..)
-                                                , InputSourceType(..)
-                                                , Argument(..)
                                                 , Variable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
@@ -59,7 +54,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , askScopePosition
                                                 , withScopeType
                                                 , withInputScope
-                                                , askContext
+                                                , inputMessagePrefix
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 
@@ -69,19 +64,10 @@ import           Data.Morpheus.Rendering.RenderGQL
 castFailure :: TypeRef -> Maybe Message -> ResolvedValue ->  Validator a
 castFailure TypeRef { typeConName , typeWrappers } message value  = do
   pos <- askScopePosition
-  InputSource { sourcePath , sourceType } <-  input <$> askContext
-  let pathMessage = renderPath sourcePath 
-  let prefix = maybe "" renderSource sourceType 
+  prefix <- inputMessagePrefix
   failure
     $  errorMessage pos 
-    $ prefix <> pathMessage <> typeViolation (renderWrapped typeConName typeWrappers) value <> maybe "" (" " <>) message
-
-
-renderSource :: InputSourceType -> Message
-renderSource (SourceArgument Argument { argumentName }) 
-  = "Argument \"" <> argumentName <>"\" got invalid value. "
-renderSource (SourceVariable Variable { variableName })
-  = "Variable \"$" <> variableName <>"\" got invalid value. "
+    $ prefix <> typeViolation (renderWrapped typeConName typeWrappers) value <> maybe "" (" " <>) message
 
 checkTypeEquality
   :: (Name, [TypeWrapper])

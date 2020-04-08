@@ -33,10 +33,10 @@ module Data.Morpheus.Types.Internal.Validator
   , askInputMember
   , startInput
   , withInputScope
+  , inputMessagePrefix
   )
   where
 
-import           Control.Monad                  ((>=>))
 import           Control.Monad.Fail             ( MonadFail(..) )
 import           Control.Monad.Trans.Class      ( MonadTrans(..) )
 import           Data.Text                      ( pack )
@@ -79,6 +79,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , InputSource(..)
                                                 , InputSourceType(..)
                                                 , Prop(..)
+                                                , Argument(..)
+                                                , Variable(..)
+                                                , renderPath
                                                 )
 import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , KindViolation(..)
@@ -301,6 +304,20 @@ withScopeType :: Name -> Validator a -> Validator a
 withScopeType scopeTypeName = Validator . withReaderT update . _runValidator
     where
       update ctx = ctx { scopeTypeName  }
+
+
+inputMessagePrefix :: Validator Message 
+inputMessagePrefix = do
+  InputSource { sourcePath , sourceType } <-  input <$> askContext
+  let pathMessage = renderPath sourcePath 
+  let prefix = maybe "" renderSource sourceType 
+  pure (prefix <> pathMessage)
+
+renderSource :: InputSourceType -> Message
+renderSource (SourceArgument Argument { argumentName }) 
+  = "Argument \"" <> argumentName <>"\" got invalid value. "
+renderSource (SourceVariable Variable { variableName })
+  = "Variable \"$" <> variableName <>"\" got invalid value. "
 
 newtype Validator a 
   = Validator 
