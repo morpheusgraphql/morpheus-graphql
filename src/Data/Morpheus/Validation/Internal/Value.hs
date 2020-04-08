@@ -6,11 +6,13 @@ module Data.Morpheus.Validation.Internal.Value
   ( validateInput )
 where
 
+import           Data.Semigroup                 ((<>))
 import           Data.Maybe                     (maybe)
 import           Data.Foldable                  (traverse_)
 import           Data.List                      ( elem )
 
 -- MORPHEUS
+
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Error.Variable   ( incompatibleVariableType )
 import           Data.Morpheus.Error.Input      ( typeViolation )
