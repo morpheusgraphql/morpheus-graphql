@@ -7,11 +7,7 @@ module Data.Morpheus.Error.Internal
   )
 where
 
-import           Data.Text                      ( Text )
-import qualified Data.Text                     as T
-                                                ( concat
-                                                , pack
-                                                )
+import           Data.Text                      ( pack )
 import           Data.Semigroup                 ( (<>) )
 
 -- MORPHEUS
@@ -21,20 +17,21 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( GQLErrors )
+                                                ( GQLErrors 
+                                                , Message
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ValidValue )
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- all kind internal error in development
-internalError :: Text -> Stateless a
+internalError :: Message -> Stateless a
 internalError x = failure $ globalErrorMessage $ "INTERNAL ERROR: " <> x
 
--- if type did not not found, but was defined by Schema
-internalResolvingError :: Text -> GQLErrors
-internalResolvingError = globalErrorMessage . ("INTERNAL RESOLVING ERROR:" <>)
+internalResolvingError :: Message -> GQLErrors
+internalResolvingError = globalErrorMessage . ("INTERNAL ERROR:" <>)
 
 -- if value is already validated but value has different type
-internalTypeMismatch :: Text -> ValidValue -> Stateless a
+internalTypeMismatch :: Message -> ValidValue -> Stateless a
 internalTypeMismatch text jsType =
-  internalError $ "Type mismatch " <> text <> T.pack (show jsType)
+  internalError $ "Type mismatch " <> text <> pack (show jsType)
