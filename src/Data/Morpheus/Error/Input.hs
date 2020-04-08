@@ -2,7 +2,6 @@
 
 module Data.Morpheus.Error.Input
   ( typeViolation 
-  , argumentGotInvalidValue
   )
 where
 
@@ -28,7 +27,6 @@ typeViolation expected found = "Expected type \""
   <> T.pack (unpack $ encode found)
   <> "."
 
-
 {-
   ARGUMENTS:
     type Experience {
@@ -43,5 +41,3 @@ typeViolation expected found = "Expected type \""
   - experience( a1 : 1 ) -> "Unknown argument \"a1\" on field \"experience\" of type \"Experience\".",
   - date(name: "name") -> "Unknown argument \"name\" on field \"date\" of type \"Experience\"."
 -}
-argumentGotInvalidValue :: Name -> Message
-argumentGotInvalidValue argName = "Argument " <> argName <> " got invalid value. "

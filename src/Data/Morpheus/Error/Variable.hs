@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Variable
-  ( variableGotInvalidValue
-  , uninitializedVariable
+  ( uninitializedVariable
   , unusedVariables
   , incompatibleVariableType
   )
@@ -15,7 +14,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLError(..)
                                                 , GQLErrors
                                                 , Name
-                                                , Message
                                                 )
 import           Data.Semigroup                 ( (<>) )
 
@@ -43,11 +41,6 @@ unusedVariables operator' = map keyToError
   text key' = "Variable \"$" <> key' 
     <> "\" is never used in operation \""
     <> operator' <> "\"."
-
--- type mismatch
--- { "v": 1  }        "Variable \"$v\" got invalid value 1; Expected type LANGUAGE."
-variableGotInvalidValue :: Name -> Message
-variableGotInvalidValue name = "Variable \"$" <> name <> "\" got invalid value. "
 
 uninitializedVariable :: Position -> Name -> Name -> GQLErrors
 uninitializedVariable position' type' key' = errorMessage position' text
