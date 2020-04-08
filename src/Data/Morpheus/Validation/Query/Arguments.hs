@@ -97,7 +97,6 @@ validateArgument
       argumentValue 
           <- startInput (SourceArgument arg)
             $ validateInput
-                (argumentGotInvalidValue argumentName)
                 typeWrappers 
                 datatype 
                 (ObjectEntry fieldName value)

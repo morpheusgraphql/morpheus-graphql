@@ -107,12 +107,11 @@ checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable 
 
 -- Validate Variable Argument or all Possible input Values
 validateInput
-  :: Message
-  -> [TypeWrapper]
+  :: [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
   -> Validator ValidValue
-validateInput ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
+validateInput tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
   withScopeType typeName 
   . validateWrapped tyWrappers tyCont
  where
@@ -157,7 +156,6 @@ validateInput ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeName } 
           inputTypeDef <- askInputFieldType inputField
           withInputScope (Prop entryName typeConName) $ ObjectEntry entryName 
             <$> validateInput
-                  ctx
                   typeWrappers
                   inputTypeDef
                   entry
@@ -170,13 +168,11 @@ validateInput ctx  tyWrappers TypeDefinition { typeContent = tyCont, typeName } 
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
           inputDef <- askInputMember name
-          validValue <- validateInput 
-                              ctx
+          validValue <- validateInput
                               [TypeMaybe]
                               inputDef
                               (ObjectEntry name value)
           return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
-
     {-- VALIDATE ENUM --}
     validate (DataEnum tags) ObjectEntry { entryValue } =
       validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue

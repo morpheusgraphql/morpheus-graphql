@@ -17,7 +17,6 @@ import           Data.Semigroup                 ( (<>) )
 --- MORPHEUS
 import           Data.Morpheus.Error.Variable   ( uninitializedVariable
                                                 , unusedVariables
-                                                , variableGotInvalidValue
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
@@ -44,6 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
+                                                , InputSourceType(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -57,6 +57,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , constraint
                                                 , Constraint(..)
                                                 , withScopePosition
+                                                , startInput
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -170,8 +171,8 @@ lookupAndValidateValueOnBody
   -----------------------------------------------------------------------------------------------
   validator :: TypeDefinition -> ResolvedValue -> Validator ValidValue
   validator varType varValue 
-    = validateInput  
-        (variableGotInvalidValue variableName)
-        (typeWrappers variableType)
-        varType
-        (ObjectEntry variableName varValue)
+    = startInput (SourceVariable var) 
+        $ validateInput
+          (typeWrappers variableType)
+          varType
+          (ObjectEntry variableName varValue)
