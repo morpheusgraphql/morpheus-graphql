@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DeriveLift           #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE DeriveLift             #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 
 module Data.Morpheus.Types.Internal.AST
   (
@@ -150,6 +151,7 @@ module Data.Morpheus.Types.Internal.AST
   , InputSourceType(..)
   , InputSource(..)
   , isInputDataType
+  , renderInputPrefix
   )
 where
 
@@ -218,6 +220,17 @@ data InputSource = InputSource {
   sourceType :: Maybe InputSourceType,
   sourcePath :: [Prop]
 } deriving (Show)
+
+renderInputPrefix :: InputSource -> Message
+renderInputPrefix InputSource { sourcePath , sourceType } = 
+  maybe "" renderSource sourceType <> renderPath sourcePath
+
+renderSource :: InputSourceType -> Message
+renderSource (SourceArgument Argument { argumentName }) 
+  = "Argument \"" <> argumentName <>"\" got invalid value. "
+renderSource (SourceVariable Variable { variableName })
+  = "Variable \"$" <> variableName <>"\" got invalid value. "
+
 
 data ValidationContext 
   = ValidationContext 

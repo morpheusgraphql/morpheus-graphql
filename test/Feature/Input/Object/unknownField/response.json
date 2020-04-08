@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Argument value got invalid value. Unknown Field \"moo\".",
+      "message": "Argument \"value\" got invalid value. Unknown Field \"moo\".",
       "locations": [
         {
           "line": 2,
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "message": "Argument value got invalid value. in field \"recursive.recursive\": Unknown Field \"unkField\".",
+      "message": "Argument \"value\" got invalid value. in field \"recursive.recursive\": Unknown Field \"unkField\".",
       "locations": [
         {
           "line": 3,

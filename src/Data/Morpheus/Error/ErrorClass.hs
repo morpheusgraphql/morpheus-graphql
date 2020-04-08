@@ -40,8 +40,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Object
                                                 , Arguments
                                                 , getOperationName
+                                                , renderInputPrefix
                                                 )
-
 
 data Target 
   = TARGET_OBJECT 
@@ -124,10 +124,10 @@ instance Unknown FieldDefinition where
 
 instance Unknown InputFieldsDefinition where
   type UnknownSelector InputFieldsDefinition = ObjectEntry RESOLVED
-  unknown ValidationContext { scopePosition } _ ObjectEntry { entryName } = 
+  unknown ValidationContext { scopePosition , input } _ ObjectEntry { entryName } = 
     [
       GQLError 
-        { message = "Unknown Field \"" <> entryName <> "\"."
+        { message = renderInputPrefix input <>"Unknown Field \"" <> entryName <> "\"."
         , locations = [scopePosition]
         }
     ]
