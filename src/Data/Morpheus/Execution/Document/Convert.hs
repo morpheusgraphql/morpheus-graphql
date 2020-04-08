@@ -29,7 +29,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , GQLTypeD(..)
                                                 , TypeD(..)
                                                 , Key
-                                                , FieldsDefinition(..)
                                                 , InputFieldsDefinition(..)
                                                 , ArgumentsDefinition(..)
                                                 , hasArguments
