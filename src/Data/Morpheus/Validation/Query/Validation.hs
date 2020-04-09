@@ -24,7 +24,7 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty )
 import           Data.Morpheus.Types.Internal.Validator
-                                                ( Validator
+                                                ( SelectionValidator
                                                 , ValidationContext(..)
                                                 , runValidator
                                                 )
@@ -76,7 +76,7 @@ validateRequest
           (fromList inputVariables)
           validationMode
           rawOperation
-    validation :: Validator (Operation VALID)
+    validation :: SelectionValidator (Operation VALID)
     validation = do
       variables <- validateHelpers 
       operationTypeDef  <-  getOperationObject rawOperation schema

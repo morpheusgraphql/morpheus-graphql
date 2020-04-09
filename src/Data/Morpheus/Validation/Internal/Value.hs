@@ -48,7 +48,7 @@ import           Data.Morpheus.Types.Internal.AST.OrderedMap
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Failure(..) )
 import           Data.Morpheus.Types.Internal.Validator
-                                                ( Validator
+                                                ( InputValidator
                                                 , askInputFieldType
                                                 , askInputMember
                                                 , selectKnown
@@ -63,7 +63,7 @@ import           Data.Morpheus.Rendering.RenderGQL
                                                 , renderWrapped
                                                 )
 
-castFailure :: TypeRef -> Maybe Message -> ResolvedValue ->  Validator a
+castFailure :: TypeRef -> Maybe Message -> ResolvedValue ->  InputValidator a
 castFailure TypeRef { typeConName , typeWrappers } message value  = do
   pos <- askScopePosition
   prefix <- inputMessagePrefix
@@ -75,7 +75,7 @@ checkTypeEquality
   :: (Name, [TypeWrapper])
   -> Ref
   -> Variable VALID
-  -> Validator ValidValue
+  -> InputValidator ValidValue
 checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType }
   | typeConName variableType == tyConName && not
     (isWeaker (typeWrappers variableType) tyWrappers)
@@ -98,19 +98,19 @@ validateInput
   :: [TypeWrapper]
   -> TypeDefinition
   -> ObjectEntry RESOLVED
-  -> Validator ValidValue
+  -> InputValidator ValidValue
 validateInput tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
   withScopeType typeName 
   . validateWrapped tyWrappers tyCont
  where
-  mismatchError :: [TypeWrapper] -> ResolvedValue -> Validator ValidValue
+  mismatchError :: [TypeWrapper] -> ResolvedValue -> InputValidator ValidValue
   mismatchError  wrappers = castFailure (TypeRef typeName Nothing wrappers) Nothing  
   -- VALIDATION
   validateWrapped
     :: [TypeWrapper]
     -> TypeContent
     -> ObjectEntry RESOLVED
-    -> Validator ValidValue
+    -> InputValidator ValidValue
   -- Validate Null. value = null ?
   validateWrapped wrappers _  ObjectEntry { entryValue = ResolvedVariable ref variable} =
     checkTypeEquality (typeName, wrappers) ref variable
@@ -129,16 +129,16 @@ validateInput tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
   validateWrapped [] dt v = validate dt v
    where
     validate
-      :: TypeContent -> ObjectEntry RESOLVED -> Validator ValidValue
+      :: TypeContent -> ObjectEntry RESOLVED -> InputValidator ValidValue
     validate (DataInputObject parentFields) ObjectEntry { entryValue = Object fields} = do 
       traverse_ requiredFieldsDefined (unInputFieldsDefinition parentFields)
       Object <$> traverse validateField fields
      where
-      requiredFieldsDefined :: FieldDefinition -> Validator (ObjectEntry RESOLVED)
+      requiredFieldsDefined :: FieldDefinition -> InputValidator (ObjectEntry RESOLVED)
       requiredFieldsDefined fieldDef@FieldDefinition { fieldName}
         = selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields 
       validateField
-        :: ObjectEntry RESOLVED -> Validator (ObjectEntry VALID)
+        :: ObjectEntry RESOLVED -> InputValidator (ObjectEntry VALID)
       validateField entry@ObjectEntry { entryName } = do
           inputField@FieldDefinition{ fieldType = TypeRef { typeConName , typeWrappers }} <- getField
           inputTypeDef <- askInputFieldType inputField
@@ -174,8 +174,8 @@ validateInput tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
 validateScalar
   :: ScalarDefinition
   -> ResolvedValue
-  -> (Maybe Message -> ResolvedValue -> Validator ValidValue)
-  -> Validator ValidValue
+  -> (Maybe Message -> ResolvedValue -> InputValidator ValidValue)
+  -> InputValidator ValidValue
 validateScalar ScalarDefinition { validateValue } value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
@@ -183,15 +183,15 @@ validateScalar ScalarDefinition { validateValue } value err = do
     Left  ""           -> err Nothing value
     Left  message -> err (Just message) value
  where
-  toScalar :: ResolvedValue -> Validator ValidValue
+  toScalar :: ResolvedValue -> InputValidator ValidValue
   toScalar (Scalar x) = pure (Scalar x)
   toScalar scValue    = err Nothing scValue 
 
 validateEnum 
-  :: (ResolvedValue -> Validator ValidValue) 
+  :: (ResolvedValue -> InputValidator ValidValue) 
   -> [DataEnumValue] 
   -> ResolvedValue 
-  -> Validator ValidValue
+  -> InputValidator ValidValue
 validateEnum err enumValues value@(Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise             = err value 

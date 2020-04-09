@@ -12,7 +12,6 @@ where
 
 import           Data.List                      ( (\\) )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Functor                   (($>))
 import           Data.Foldable                  (traverse_) 
 
 -- MORPHEUS
@@ -37,7 +36,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
-                                                ( Validator
+                                                ( BaseValidator
                                                 , askSchema
                                                 , askFragments
                                                 , selectKnown
@@ -46,13 +45,13 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 )
 
 
-validateFragments :: SelectionSet RAW -> Validator ()
+validateFragments :: SelectionSet RAW -> BaseValidator ()
 validateFragments selectionSet 
   = fragmentsCycleChecking 
     *> checkUnusedFragments selectionSet
     *> fragmentsConditionTypeChecking
 
-checkUnusedFragments :: SelectionSet RAW -> Validator ()
+checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do
     fragments <- askFragments
     case refs fragments \\ usedFragments fragments (toList selectionSet) of
@@ -63,12 +62,12 @@ checkUnusedFragments selectionSet = do
     toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
 
 castFragmentType
-  :: Maybe Name -> Position -> [Name] -> Fragment -> Validator Fragment
+  :: Maybe Name -> Position -> [Name] -> Fragment -> BaseValidator Fragment
 castFragmentType key position typeMembers fragment@Fragment { fragmentType }
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise =  failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [Name] -> Ref -> Validator Fragment
+resolveSpread :: [Name] -> Ref -> BaseValidator Fragment
 resolveSpread allowedTargets ref@Ref { refName, refPosition } 
   = askFragments
     >>= selectKnown ref
@@ -92,22 +91,22 @@ usedFragments fragments = concatMap findAllUses
       refName 
       fragments
 
-fragmentsConditionTypeChecking :: Validator ()
+fragmentsConditionTypeChecking :: BaseValidator ()
 fragmentsConditionTypeChecking 
     = toList <$> askFragments
       >>= traverse_ checkTypeExistence
 
-checkTypeExistence :: Fragment -> Validator ()
+checkTypeExistence :: Fragment -> BaseValidator ()
 checkTypeExistence fr@Fragment { fragmentType, fragmentPosition }
       = askSchema
         >>= selectKnown (Ref fragmentType fragmentPosition) 
         >>= constraint OBJECT fr 
         >> pure ()
 
-fragmentsCycleChecking :: Validator ()
+fragmentsCycleChecking :: BaseValidator ()
 fragmentsCycleChecking = exploreSpreads >>= fragmentCycleChecking 
 
-exploreSpreads :: Validator Graph
+exploreSpreads :: BaseValidator Graph
 exploreSpreads =  map exploreFragmentSpreads . toList <$> askFragments
 
 exploreFragmentSpreads :: Fragment -> NodeEdges 
@@ -129,12 +128,12 @@ type NodeEdges = (Node, [Node])
 
 type Graph = [NodeEdges]
 
-fragmentCycleChecking :: Graph -> Validator ()
+fragmentCycleChecking :: Graph -> BaseValidator ()
 fragmentCycleChecking lib = traverse_ checkFragment lib
  where
   checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
-checkForCycle :: Graph -> Node -> [Node] -> Validator Graph
+checkForCycle :: Graph -> Node -> [Node] -> BaseValidator Graph
 checkForCycle lib parentNode history = case lookup parentNode lib of
   Just node -> concat <$> traverse checkNode node
   Nothing   -> pure []

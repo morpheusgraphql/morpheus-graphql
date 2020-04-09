@@ -12,6 +12,8 @@
 module Data.Morpheus.Types.Internal.Validator
   ( Validator
   , SelectionValidator
+  , InputValidator
+  , BaseValidator
   , ValidationContext(..)
   , runValidator
   , mapError
@@ -321,7 +323,9 @@ newtype Validator a
       , Monad
       )
 
+type BaseValidator = Validator
 type SelectionValidator = Validator
+type InputValidator = Validator
 
 instance MonadFail Validator where 
   fail = failure . pack

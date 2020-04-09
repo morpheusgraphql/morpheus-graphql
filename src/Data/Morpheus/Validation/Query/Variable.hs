@@ -50,7 +50,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
-                                                ( Validator
+                                                ( BaseValidator
                                                 , askSchema
                                                 , askFragments
                                                 , selectKnown
@@ -74,14 +74,14 @@ instance ExploreRefs RawValue where
 instance ExploreRefs (Argument RAW) where
   exploreRefs = exploreRefs . argumentValue
 
-mapSelection :: (Selection RAW -> Validator [b]) -> SelectionSet RAW -> Validator [b]
+mapSelection :: (Selection RAW -> BaseValidator [b]) -> SelectionSet RAW -> BaseValidator [b]
 mapSelection f = fmap concat . traverse f
 
-allVariableRefs :: [SelectionSet RAW] -> Validator [Ref]
+allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref]
 allVariableRefs = fmap concat . traverse (mapSelection searchRefs) 
  where
   -- | search used variables in every arguments
-  searchRefs :: Selection RAW -> Validator [Ref]
+  searchRefs :: Selection RAW -> BaseValidator [Ref]
   searchRefs Selection { selectionArguments, selectionContent = SelectionField }
     = return $ concatMap exploreRefs selectionArguments
   searchRefs Selection { selectionArguments, selectionContent = SelectionSet selSet }
@@ -101,7 +101,7 @@ resolveOperationVariables
   :: Variables
   -> VALIDATION_MODE
   -> Operation RAW
-  -> Validator (VariableDefinitions VALID)
+  -> BaseValidator (VariableDefinitions VALID)
 resolveOperationVariables 
     root 
     validationMode 
@@ -117,7 +117,7 @@ resolveOperationVariables
   varToKey :: Variable a -> Ref
   varToKey Variable { variableName, variablePosition } = Ref variableName variablePosition
   --
-  checkUnusedVariables :: [Ref] -> Validator ()
+  checkUnusedVariables :: [Ref] -> BaseValidator ()
   checkUnusedVariables refs = case map varToKey (toList operationArguments) \\ refs of
     [] -> pure ()
     unused' ->
@@ -127,7 +127,7 @@ lookupAndValidateValueOnBody
   :: Variables
   -> VALIDATION_MODE
   -> Variable RAW
-  -> Validator (Variable VALID)
+  -> BaseValidator (Variable VALID)
 lookupAndValidateValueOnBody 
   bodyVariables 
   validationMode 
@@ -154,7 +154,7 @@ lookupAndValidateValueOnBody
     :: Maybe ResolvedValue
     -> DefaultValue
     -> TypeDefinition
-    -> Validator ValidValue
+    -> BaseValidator ValidValue
   checkType (Just variable) Nothing varType = validator varType variable
   checkType (Just variable) (Just defValue) varType =
     validator varType defValue >> validator varType variable
@@ -169,7 +169,7 @@ lookupAndValidateValueOnBody
     returnNull =
       maybe (pure Null) (validator varType) (M.lookup variableName bodyVariables)
   -----------------------------------------------------------------------------------------------
-  validator :: TypeDefinition -> ResolvedValue -> Validator ValidValue
+  validator :: TypeDefinition -> ResolvedValue -> BaseValidator ValidValue
   validator varType varValue 
     = startInput (SourceVariable var) 
         $ validateInput
