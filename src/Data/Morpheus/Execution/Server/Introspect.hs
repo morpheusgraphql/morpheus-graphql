@@ -80,7 +80,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , FieldsDefinition(..)
                                                 , TypeRef(..)
                                                 , Message
-                                                , unsafeFromFieldList
+                                                , unsafeFromFields
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Empty(..)
@@ -368,7 +368,7 @@ buildObject isOutput consFields = (wrapWith fields, types)
 buildDataObject :: [FieldRep] -> (FieldsDefinition , [TypeUpdater])
 buildDataObject consFields = (fields, types)
  where
-  fields = unsafeFromFieldList $ map fieldData consFields
+  fields = unsafeFromFields $ map fieldData consFields
   types  = map fieldTypeUpdater consFields
 
 buildUnions
@@ -388,7 +388,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep { consName, consFields } = T
     { typeName        = consName
     , typeFingerprint
     , typeMeta        = Nothing
-    , typeContent     = wrapObject $ unsafeFromFieldList $ map fieldData consFields
+    , typeContent     = wrapObject $ unsafeFromFields $ map fieldData consFields
     }
 
 buildUnionEnum
@@ -436,7 +436,7 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       { typeName
       , typeFingerprint
       , typeMeta        = Nothing
-      , typeContent     = wrapObject $ singleton "enum"
+      , typeContent     = wrapObject $ singleton 
           FieldDefinition 
             { fieldName  = "enum"
             , fieldArgs  = NoArguments

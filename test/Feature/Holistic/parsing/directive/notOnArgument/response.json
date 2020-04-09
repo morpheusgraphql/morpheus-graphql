@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "offset=51:\nunexpected '@'\nexpecting '#', ')', ',', IgnoredTokens, assignment, or white space\n",
+      "message": "offset=51:\nunexpected '@'\nexpecting '#', ')', ',', Argument, IgnoredTokens, or white space\n",
       "locations": [
         {
           "line": 2,

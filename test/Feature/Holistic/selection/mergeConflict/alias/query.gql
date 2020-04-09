@@ -1,0 +1,19 @@
+{
+  user {
+    bla: email
+    email
+    bla: email
+    address(coordinates: {latitude:"", longitude: []}) {
+      city
+			bla : city
+    }
+  }
+  user {
+    address(coordinates: {latitude:"", longitude: []}) {
+      street
+      bla: houseNumber
+    }
+    city
+    bla: email
+  }
+}

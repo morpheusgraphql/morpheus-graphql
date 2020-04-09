@@ -23,17 +23,15 @@ import           Data.Morpheus.Parsing.Internal.Terms
                                                 , litAssignment
                                                 , operator
                                                 , optDescription
-                                                , parseAssignment
-                                                , parseMaybeTuple
                                                 , parseName
                                                 , parseType
                                                 , setOf
                                                 , uniqTuple
                                                 )
+import           Data.Morpheus.Parsing.Internal.Arguments
+                                                ( parseArgumentsOpt )
 import           Data.Morpheus.Parsing.Internal.Value
-                                                ( parseDefaultValue
-                                                , parseValue
-                                                )
+                                                ( parseDefaultValue )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , Directive(..)
@@ -139,9 +137,8 @@ directive :: Parser Directive
 directive = label "Directive" $ do
     operator '@'
     directiveName <- parseName
-    directiveArgs <- parseMaybeTuple (parseAssignment parseName parseValue)
+    directiveArgs <- parseArgumentsOpt
     pure Directive { directiveName, directiveArgs }
-
 
 -- typDeclaration : Not in spec ,start part of type definitions
 --

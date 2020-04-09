@@ -9,7 +9,6 @@
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Key
-  , Collection
   , Ref(..)
   , Position(..)
   , Message
@@ -32,8 +31,6 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeWrapper(..)
   --, Named(..)
   , anonymousRef
-  , uniqueElemOr
-  , elementOfKeys
   , toHSWrappers
   , toGQLWrapper
   , sysTypes
@@ -79,7 +76,6 @@ type Key = Text
 type Message = Text
 type Name = Key
 type Description = Key
-type Collection a = [(Key, a)]
 data Stage = RAW | RESOLVED | VALID
 
 type RAW = 'RAW
@@ -92,6 +88,11 @@ data Position = Position
   { line   :: Int
   , column :: Int
   } deriving ( Show, Generic, FromJSON, ToJSON, Lift)
+
+-- Positions 2 Value withs same structire
+-- but different Positions should be Equal
+instance Eq Position where
+  _ == _ = True
 
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
@@ -136,7 +137,7 @@ data TypeRef = TypeRef
   { typeConName    :: Name
   , typeArgs     :: Maybe Name
   , typeWrappers :: [TypeWrapper]
-  } deriving (Show,Lift)
+  } deriving (Show, Eq, Lift)
 
 isNullable :: TypeRef -> Bool
 isNullable TypeRef { typeWrappers = typeWrappers } = isNullableWrapper typeWrappers
@@ -183,7 +184,7 @@ isInput _               = False
 data TypeWrapper
   = TypeList
   | TypeMaybe
-  deriving (Show, Lift)
+  deriving (Show, Eq, Lift)
 
 data DataTypeWrapper
   = ListType
@@ -214,9 +215,6 @@ toHSWrappers (NonNullType : (ListType : xs)) = TypeList : toHSWrappers xs
 toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers []                              = [TypeMaybe]
 toHSWrappers [NonNullType]                   = []
-
-elementOfKeys :: [Name] -> Ref -> Bool
-elementOfKeys keys Ref { refName } = refName `elem` keys
 
 isDefaultTypeName :: Key -> Bool
 isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
@@ -261,14 +259,6 @@ toOperationType "Subscription" = Just Subscription
 toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query
 toOperationType _ = Nothing
-
--- validation combinators
-uniqueElemOr :: (Applicative validation, Eq a) 
-  => ([a]-> validation [a])
-  ->  [a] -> validation [a]
-uniqueElemOr fallback ls = case splitDuplicates ls of
-      (collected,[]) -> pure collected
-      (_,errors) -> fallback errors
 
 removeDuplicates :: Eq a => [a] -> [a]
 removeDuplicates = fst . splitDuplicates

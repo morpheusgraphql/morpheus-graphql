@@ -6,7 +6,6 @@ module Data.Morpheus.Error.Fragment
   , unusedFragment
   , unknownFragment
   , cannotBeSpreadOnType
-  , fragmentNameCollision
   )
 where
 
@@ -21,9 +20,7 @@ import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Position
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLError(..)
+                                                , GQLError(..)
                                                 , GQLErrors
                                                 )
 
@@ -38,13 +35,6 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
     fragment H on D {...}  ->  "Unknown type \"D\"."
     {...H} -> "Unknown fragment \"H\"."
 -}
-fragmentNameCollision :: [Ref] -> GQLErrors
-fragmentNameCollision = map toError
- where
-  toError Ref { refName, refPosition } = GQLError
-    { message   = "There can be only one fragment named \"" <> refName <> "\"."
-    , locations = [refPosition]
-    }
 
 unusedFragment :: [Ref] -> GQLErrors
 unusedFragment = map toError

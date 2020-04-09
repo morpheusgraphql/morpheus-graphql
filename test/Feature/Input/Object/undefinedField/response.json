@@ -2,11 +2,21 @@
   "errors": [
     {
       "message": "Argument value got invalid value ; Undefined Field \"field\".",
-      "locations": [{ "line": 2, "column": 20 }]
+      "locations": [
+        {
+          "line": 2,
+          "column": 13
+        }
+      ]
     },
     {
       "message": "Argument value got invalid value ; Undefined Field \"field\".",
-      "locations": [{ "line": 3, "column": 20 }]
+      "locations": [
+        {
+          "line": 3,
+          "column": 13
+        }
+      ]
     }
   ]
 }

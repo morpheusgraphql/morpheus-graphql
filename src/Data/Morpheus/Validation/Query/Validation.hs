@@ -11,13 +11,15 @@ where
 import           Data.Map                       ( fromList )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
-                                                , ValidOperation
+                                                , VALID
                                                 , getOperationName
                                                 , getOperationObject
                                                 , Schema(..)
                                                 , GQLQuery(..)
                                                 , VALIDATION_MODE
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( empty )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation )
 import           Data.Morpheus.Validation.Query.Fragment
@@ -29,7 +31,7 @@ import           Data.Morpheus.Validation.Query.Variable
 
 
 validateRequest
-  :: Schema -> VALIDATION_MODE -> GQLQuery -> Validation ValidOperation
+  :: Schema -> VALIDATION_MODE -> GQLQuery -> Validation (Operation VALID)
 validateRequest lib validationMode GQLQuery { fragments, inputVariables, operation = rawOperation@Operation { operationName, operationType, operationSelection, operationPosition } }
   = do
     operationDataType <-  getOperationObject rawOperation lib
@@ -47,7 +49,7 @@ validateRequest lib validationMode GQLQuery { fragments, inputVariables, operati
                                       operationSelection
     pure $ Operation { operationName
                      , operationType
-                     , operationArguments      = []
+                     , operationArguments      = empty
                      , operationSelection = selection
                      , operationPosition
                      }

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c40f39637eb3cf7fd5d95aac3102686a9265f8e0ff7e42ecce8ec111e2ada367
+-- hash: b327695a84172e878c0221dddfe1ef534173ee8ee409a28facbe5c68c622abc6
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -78,12 +78,15 @@ data-files:
     test/Feature/Holistic/parsing/singleLineComments/query.gql
     test/Feature/Holistic/schema.gql
     test/Feature/Holistic/selection/__typename/query.gql
-    test/Feature/Holistic/selection/AliasNameConflict/query.gql
     test/Feature/Holistic/selection/AliasResolve/query.gql
     test/Feature/Holistic/selection/AliasUnknownField/query.gql
     test/Feature/Holistic/selection/hasNoSubFields/query.gql
+    test/Feature/Holistic/selection/mergeConflict/alias/query.gql
+    test/Feature/Holistic/selection/mergeConflict/arguments/query.gql
+    test/Feature/Holistic/selection/mergeConflict/union/query.gql
+    test/Feature/Holistic/selection/mergeSelection/query.gql
+    test/Feature/Holistic/selection/mergeUnionSelection/query.gql
     test/Feature/Holistic/selection/mustHaveSubFields/query.gql
-    test/Feature/Holistic/selection/nameConflict/query.gql
     test/Feature/Holistic/selection/unknownField/query.gql
     test/Feature/Input/Enum/decode2Con/query.gql
     test/Feature/Input/Enum/decode3Con/query.gql
@@ -113,6 +116,7 @@ data-files:
     test/Feature/InputType/variables/invalidValue/invalidDefaultValueButVariableProvided/query.gql
     test/Feature/InputType/variables/invalidValue/invalidListVariable/query.gql
     test/Feature/InputType/variables/invalidValue/nestedListNonNullListReceivedNull/query.gql
+    test/Feature/InputType/variables/nameCollision/query.gql
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/query.gql
     test/Feature/InputType/variables/undefinedVariable/query.gql
     test/Feature/InputType/variables/unknownType/query.gql
@@ -205,12 +209,15 @@ data-files:
     test/Feature/Holistic/parsing/numbers/response.json
     test/Feature/Holistic/parsing/singleLineComments/response.json
     test/Feature/Holistic/selection/__typename/response.json
-    test/Feature/Holistic/selection/AliasNameConflict/response.json
     test/Feature/Holistic/selection/AliasResolve/response.json
     test/Feature/Holistic/selection/AliasUnknownField/response.json
     test/Feature/Holistic/selection/hasNoSubFields/response.json
+    test/Feature/Holistic/selection/mergeConflict/alias/response.json
+    test/Feature/Holistic/selection/mergeConflict/arguments/response.json
+    test/Feature/Holistic/selection/mergeConflict/union/response.json
+    test/Feature/Holistic/selection/mergeSelection/response.json
+    test/Feature/Holistic/selection/mergeUnionSelection/response.json
     test/Feature/Holistic/selection/mustHaveSubFields/response.json
-    test/Feature/Holistic/selection/nameConflict/response.json
     test/Feature/Holistic/selection/unknownField/response.json
     test/Feature/Input/Enum/cases.json
     test/Feature/Input/Enum/decode2Con/response.json
@@ -253,6 +260,8 @@ data-files:
     test/Feature/InputType/variables/invalidValue/invalidListVariable/variables.json
     test/Feature/InputType/variables/invalidValue/nestedListNonNullListReceivedNull/response.json
     test/Feature/InputType/variables/invalidValue/nestedListNonNullListReceivedNull/variables.json
+    test/Feature/InputType/variables/nameCollision/response.json
+    test/Feature/InputType/variables/nameCollision/variables.json
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/response.json
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/variables.json
     test/Feature/InputType/variables/undefinedVariable/response.json
@@ -318,6 +327,7 @@ library
       Data.Morpheus.Error.Input
       Data.Morpheus.Error.Internal
       Data.Morpheus.Error.Mutation
+      Data.Morpheus.Error.NameCollision
       Data.Morpheus.Error.Schema
       Data.Morpheus.Error.Selection
       Data.Morpheus.Error.Subscription
@@ -346,13 +356,13 @@ library
       Data.Morpheus.Execution.Server.Resolve
       Data.Morpheus.Execution.Server.Subscription
       Data.Morpheus.Parsing.Document.TypeSystem
+      Data.Morpheus.Parsing.Internal.Arguments
       Data.Morpheus.Parsing.Internal.Internal
       Data.Morpheus.Parsing.Internal.Pattern
       Data.Morpheus.Parsing.Internal.Terms
       Data.Morpheus.Parsing.Internal.Value
       Data.Morpheus.Parsing.JSONSchema.Parse
       Data.Morpheus.Parsing.JSONSchema.Types
-      Data.Morpheus.Parsing.Request.Arguments
       Data.Morpheus.Parsing.Request.Operation
       Data.Morpheus.Parsing.Request.Parser
       Data.Morpheus.Parsing.Request.Selection
@@ -367,6 +377,7 @@ library
       Data.Morpheus.Types.Internal.Apollo
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.Data
+      Data.Morpheus.Types.Internal.AST.MergeSet
       Data.Morpheus.Types.Internal.AST.OrderedMap
       Data.Morpheus.Types.Internal.AST.Selection
       Data.Morpheus.Types.Internal.AST.Value
@@ -383,6 +394,7 @@ library
       Data.Morpheus.Validation.Query.Arguments
       Data.Morpheus.Validation.Query.Fragment
       Data.Morpheus.Validation.Query.Selection
+      Data.Morpheus.Validation.Query.UnionSelection
       Data.Morpheus.Validation.Query.Validation
       Data.Morpheus.Validation.Query.Variable
       Paths_morpheus_graphql

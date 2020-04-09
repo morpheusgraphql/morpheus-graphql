@@ -1,0 +1,19 @@
+{
+  testUnion {
+    ... on User {
+      name
+      email
+    }
+  }
+  
+  testUnion {
+    ... on User {
+      name
+      email2: email
+      address(coordinates: { latitude: "", longitude: 1 }) {
+        city
+      }
+    }
+  }
+}
+

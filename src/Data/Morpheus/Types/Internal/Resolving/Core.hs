@@ -10,10 +10,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
-  ( GQLError(..)
-  , Position(..)
-  , GQLErrors
-  , Validation
+  ( Validation
   , Result(..)
   , Failure(..)
   , ResultT(..)
@@ -39,11 +36,9 @@ import           Data.Morpheus.Types.Internal.Operation
                                                   Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( 
-                                                  Position(..)
-                                                  , Message 
-                                                  , GQLErrors
-                                                  , GQLError(..)
+                                                ( Message 
+                                                , GQLErrors
+                                                , GQLError(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , pack

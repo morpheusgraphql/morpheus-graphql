@@ -15,14 +15,10 @@ import           Data.ByteString.Lazy.Char8     ( ByteString
                                                 , pack
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Position
+                                                ( Position(..)
                                                 , Named
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLError(..)
-                                                , GQLErrors
                                                 , GQLError(..)
-                                                , Position(..)
+                                                , GQLErrors
                                                 )
 import           Data.Text                      ( Text )
 import           Text.Megaparsec                ( SourcePos(SourcePos)

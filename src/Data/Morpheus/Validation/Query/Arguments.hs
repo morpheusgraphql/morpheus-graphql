@@ -1,15 +1,15 @@
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE NamedFieldPuns   #-}
+{-# LANGUAGE RecordWildCards  #-}
 
 module Data.Morpheus.Validation.Query.Arguments
   ( validateArguments
   )
 where
 
-import           Data.Maybe                     ( maybe )
+import           Data.Foldable                  (traverse_)
 import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
-                                                , argumentNameCollision
+                                                -- , argumentNameCollision
                                                 , undefinedArgument
                                                 , unknownArguments
                                                 )
@@ -22,10 +22,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidVariables
                                                 , Variable(..)
                                                 , Argument(..)
-                                                , RawArgument
-                                                , RawArguments
-                                                , ValidArgument
-                                                , ValidArguments
+                                                , ArgumentsDefinition(..)
                                                 , Arguments
                                                 , Ref(..)
                                                 , Position
@@ -41,12 +38,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , isFieldNullable
                                                 , lookupInputType
-                                                , checkForUnknownKeys
-                                                , checkNameCollision
+                                                , ObjectEntry(..)
+                                                , RAW
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , selectBy
+                                                , selectOr
+                                                , empty
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Validation
@@ -60,75 +59,70 @@ import           Data.Text                      ( Text )
 resolveObject :: Name -> ValidVariables -> RawValue -> Validation ResolvedValue
 resolveObject operationName variables = resolve
  where
+  resolveEntry :: ObjectEntry RAW -> Validation (ObjectEntry RESOLVED)
+  resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
+  ------------------------------------------------
   resolve :: RawValue -> Validation ResolvedValue
   resolve Null         = pure Null
   resolve (Scalar x  ) = pure $ Scalar x
   resolve (Enum   x  ) = pure $ Enum x
   resolve (List   x  ) = List <$> traverse resolve x
-  resolve (Object obj) = Object <$> traverse mapSecond obj
-    where mapSecond (fName, y) = (fName, ) <$> resolve y
+  resolve (Object obj) = Object <$> traverse resolveEntry obj
   resolve (VariableValue ref) =
     ResolvedVariable ref <$> variableByRef operationName variables ref
-    --  >>= checkTypeEquality ref fieldType
-  -- RAW | RESOLVED | Valid 
 
 variableByRef :: Name -> ValidVariables -> Ref -> Validation (Variable VALID)
-variableByRef operationName variables Ref { refName, refPosition } = maybe
-  variableError
-  pure
-  (lookup refName variables)
- where
-  variableError = failure $ undefinedVariable operationName refPosition refName
+variableByRef operationName variables Ref { refName, refPosition } 
+  = selectBy variableError refName variables
+  where
+    variableError = undefinedVariable operationName refPosition refName
 
 resolveArgumentVariables
   :: Name
   -> ValidVariables
-  -> FieldDefinition
-  -> RawArguments
+  -> Arguments RAW
   -> Validation (Arguments RESOLVED)
-resolveArgumentVariables operationName variables FieldDefinition { fieldName, fieldArgs }
-  = mapM resolveVariable
+resolveArgumentVariables operationName variables
+  = traverse resolveVariable
  where
-  resolveVariable :: (Text, RawArgument) -> Validation (Text, Argument RESOLVED)
-  resolveVariable (key, Argument val position) = do 
-    _ <- checkUnknown
+  resolveVariable :: Argument RAW -> Validation (Argument RESOLVED)
+  resolveVariable (Argument key val position) = do 
     constValue <- resolveObject operationName variables val
-    pure (key, Argument constValue position)
-    where 
-      checkUnknown :: Validation FieldDefinition
-      checkUnknown = selectBy (unknownArguments fieldName [Ref key position]) key fieldArgs
+    pure $ Argument key constValue position
 
 validateArgument
   :: Schema
   -> Position
   -> Arguments RESOLVED
   -> ArgumentDefinition
-  -> Validation (Name, ValidArgument)
+  -> Validation (Argument VALID)
 validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
-  = case lookup fieldName requestArgs of
-    Nothing -> handleNullable
+  = selectOr 
+    handleNullable 
+    handleArgument 
+    fieldName 
+    requestArgs 
+ where
     -- TODO: move it in value validation
    -- Just argument@Argument { argumentOrigin = VARIABLE } ->
    --   pure (key, argument) -- Variables are already checked in Variable Validation
-    Just Argument { argumentValue = Null } -> handleNullable
-    Just argument -> validateArgumentValue argument
- where
+  handleArgument Argument { argumentValue = Null } = handleNullable
+  handleArgument argument = validateArgumentValue argument
   handleNullable
     | isFieldNullable argType
-    = pure
-      (fieldName, Argument { argumentValue = Null, argumentPosition = fieldPosition })
+    = pure Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition }
     | otherwise
     = failure $ undefinedArgument (Ref fieldName fieldPosition)
   -------------------------------------------------------------------------
-  validateArgumentValue :: Argument RESOLVED -> Validation (Text, ValidArgument)
-  validateArgumentValue Argument { argumentValue = value, argumentPosition } =
+  validateArgumentValue :: Argument RESOLVED -> Validation (Argument VALID)
+  validateArgumentValue Argument { argumentValue = value, .. } =
     do
       datatype <- lookupInputType typeConName
                                   lib
                                   (internalUnknownTypeMessage typeConName)
       argumentValue <- handleInputError
         $ validateInputValue lib [] typeWrappers datatype (fieldName, value)
-      pure (fieldName, Argument { argumentValue, argumentPosition })
+      pure Argument { argumentValue , .. }
    where
     ---------
     handleInputError :: InputValidation a -> Validation a
@@ -143,22 +137,26 @@ validateArguments
   -> ValidVariables
   -> FieldDefinition
   -> Position
-  -> RawArguments
-  -> Validation ValidArguments
-validateArguments typeLib operatorName variables field@FieldDefinition { fieldArgs } pos rawArgs
+  -> Arguments RAW
+  -> Validation (Arguments VALID)
+validateArguments 
+    typeLib 
+    operatorName 
+    variables 
+    FieldDefinition { fieldName, fieldArgs }
+    pos 
+    rawArgs
   = do
-    args     <- resolveArgumentVariables operatorName variables field rawArgs
-    checkForUnknownArguments args
-    mapM (validateArgument typeLib pos args) (toList fieldArgs)
+    args <- resolveArgumentVariables operatorName variables rawArgs
+    traverse_ checkUnknown (toList args)
+    traverse (validateArgument typeLib pos args) fArgs
  where
-  checkForUnknownArguments
-    :: Arguments RESOLVED -> Validation ()
-  checkForUnknownArguments args =
-    checkForUnknownKeys enhancedKeys fieldKeys argError >> checkNameCollision enhancedKeys argumentNameCollision >> pure ()
-   where
-    argError     = unknownArguments (fieldName field)
-    enhancedKeys = map argToKey args
-    argToKey :: (Name, Argument RESOLVED) -> Ref
-    argToKey (key', Argument { argumentPosition }) = Ref key' argumentPosition
-    fieldKeys :: [Name]
-    fieldKeys = map fieldName (toList fieldArgs)
+  fArgs = case fieldArgs of 
+    (ArgumentsDefinition _ argsD) -> argsD
+    NoArguments -> empty
+  -------------------------------------------------
+  checkUnknown
+    :: Argument RESOLVED -> Validation ()
+  checkUnknown Argument { argumentName, argumentPosition } 
+    = selectBy (unknownArguments fieldName [Ref argumentName argumentPosition]) argumentName fieldArgs 
+      >> pure ()

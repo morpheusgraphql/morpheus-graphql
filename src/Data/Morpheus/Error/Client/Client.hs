@@ -12,12 +12,11 @@ where
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
 import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( GQLErrors )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Ref(..)
                                                 , Description
                                                 , Name
+                                                , GQLErrors
                                                 )
 import           Language.Haskell.TH            ( Q
                                                 , reportWarning

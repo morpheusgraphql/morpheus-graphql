@@ -74,5 +74,9 @@
   {
     "path": "variables/incompatibleType/weakerType3",
     "description": "weaker types are invalid"
+  },
+  {
+    "path": "variables/nameCollision",
+    "description": "fail on: variable name collision"
   }
 ]

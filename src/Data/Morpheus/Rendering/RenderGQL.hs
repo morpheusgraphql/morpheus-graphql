@@ -20,9 +20,6 @@ import qualified Data.Text.Lazy                as LT
 import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST.OrderedMap
-                                                ( unsafeFromList
-                                                )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
                                                 , TypeContent(..)
@@ -42,6 +39,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ArgumentsDefinition(..)
                                                 , Name
                                                 , FieldsDefinition(..)
+                                                , unsafeFromFields
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                     
                                                 ( Listable(..)
@@ -70,8 +68,7 @@ instance RenderGQL TypeDefinition where
     __render (DataInputObject fields ) = "input " <> typeName <> render fields
     __render (DataInputUnion  members) = "input " <> typeName <> render fieldsDef
        where
-          fieldsDef = FieldsDefinition $ unsafeFromList $ map withKey fields
-          withKey x = (fieldName x,x) 
+          fieldsDef = unsafeFromFields fields
           fields = createInputUnionFields typeName (fmap fst members)
     __render DataObject {objectFields} = "type " <> typeName <> render objectFields
 
@@ -88,7 +85,7 @@ instance RenderGQL FieldDefinition where
 
 instance RenderGQL ArgumentsDefinition where 
   render NoArguments   = ""
-  render ArgumentsDefinition { arguments } = "(" <> intercalate ", " (toList $ fmap render arguments) <> ")"
+  render arguments = "(" <> intercalate ", " (map render $ toList arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue { enumName } = enumName

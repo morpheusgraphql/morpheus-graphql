@@ -32,6 +32,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , GQLTypeD(..)
   , ClientType(..)
   , DataInputUnion
+  , Argument(..)
   , isTypeDefined
   , initTypeLib
   , defineType
@@ -62,13 +63,11 @@ module Data.Morpheus.Types.Internal.AST.Data
   , insertType
   , lookupDeprecated
   , lookupDeprecatedReason
-  , checkForUnknownKeys
-  , checkNameCollision
   , hasArguments
   , lookupWith
   , selectTypeObject
   , toHSFieldDefinition
-  , unsafeFromFieldList
+  , unsafeFromFields
   )
 where
 
@@ -83,13 +82,15 @@ import           Instances.TH.Lift              ( )
 import           Data.List                      ( find)
 
 -- MORPHEUS
+import          Data.Morpheus.Error.NameCollision
+                                                ( NameCollision(..))
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Error.Selection  ( cannotQueryField
                                                 , hasNoSubfields
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap
-                                                , unsafeFromList
+                                                , unsafeFromValues
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
@@ -98,15 +99,16 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , Description
                                                 , TypeWrapper(..)
                                                 , TypeRef(..)
-                                                , Ref(..)
-                                                , elementOfKeys
-                                                , uniqueElemOr
+                                                , Stage
+                                                , VALID
                                                 , DataTypeKind(..)
                                                 , DataFingerprint(..)
                                                 , isNullable
                                                 , sysFields
                                                 , toOperationType
                                                 , hsTypeName
+                                                , GQLError(..)
+                                                , GQLErrors
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                              
                                                 ( Empty(..)
@@ -114,15 +116,13 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Listable(..)
                                                 , Singleton(..)
                                                 , Listable(..)
-                                                , Join(..)
+                                                , Merge(..)
                                                 , KeyOf(..)
-                                                , toPair
                                                 , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Validation
                                                 , Failure(..)
-                                                , GQLErrors
                                                 , LibUpdater
                                                 , resolveUpdates
                                                 )
@@ -145,13 +145,28 @@ newtype ScalarDefinition = ScalarDefinition
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
 
+data Argument (valid :: Stage) = Argument 
+  { argumentName     :: Name
+  , argumentValue    :: Value valid
+  , argumentPosition :: Position
+  } deriving ( Show, Eq, Lift )
+
+instance KeyOf (Argument stage) where
+  keyOf = argumentName 
+
+instance NameCollision (Argument s) where 
+  nameCollision _ Argument { argumentName, argumentPosition } 
+    = GQLError 
+      { message = "There can Be only One Argument Named \"" <> argumentName <> "\"",
+        locations = [argumentPosition] 
+      }
+
 -- directive
 ------------------------------------------------------------------
 data Directive = Directive {
   directiveName :: Name,
-  directiveArgs :: [(Name, ValidValue)]
+  directiveArgs :: OrderedMap (Argument VALID)
 } deriving (Show,Lift)
-
 
 lookupDeprecated :: Meta -> Maybe Directive
 lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
@@ -161,13 +176,11 @@ lookupDeprecated Meta { metaDirectives } = find isDeprecation metaDirectives
 
 lookupDeprecatedReason :: Directive -> Maybe Key
 lookupDeprecatedReason Directive { directiveArgs } =
-  maybeString . snd <$> find isReason directiveArgs
+  selectOr Nothing (Just . maybeString) "reason" directiveArgs 
  where
-  maybeString :: ValidValue -> Name
-  maybeString (Scalar (String x)) = x
+  maybeString :: Argument VALID -> Name
+  maybeString Argument { argumentValue = (Scalar (String x)) } = x
   maybeString _                   = "can't read deprecated Reason Value"
-  isReason ("reason", _) = True
-  isReason _             = False
 
 -- META
 data Meta = Meta {
@@ -314,6 +327,10 @@ fromOperation :: Maybe TypeDefinition -> [(Name, TypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype,datatype)]
 fromOperation Nothing = []
 
+
+-- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
+-- for example 
+-- User | Admin | Product
 lookupUnionTypes
   :: (Monad m, Failure GQLErrors m)
   => Position
@@ -391,17 +408,17 @@ newtype FieldsDefinition = FieldsDefinition
  { unFieldsDefinition :: OrderedMap FieldDefinition } 
   deriving (Show, Empty)
 
-unsafeFromFieldList :: [FieldDefinition] -> FieldsDefinition 
-unsafeFromFieldList = FieldsDefinition . unsafeFromList . map toPair
+unsafeFromFields :: [FieldDefinition] -> FieldsDefinition 
+unsafeFromFields = FieldsDefinition . unsafeFromValues
 
-instance Join FieldsDefinition where
-  join (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> join x y
+instance Merge FieldsDefinition where
+  merge path (FieldsDefinition x)  (FieldsDefinition y) = FieldsDefinition <$> merge path x y
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
 instance Singleton  FieldsDefinition FieldDefinition  where 
-  singleton name = FieldsDefinition . singleton name
+  singleton  = FieldsDefinition . singleton 
 
 instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
@@ -419,6 +436,12 @@ data FieldDefinition = FieldDefinition
 
 instance KeyOf FieldDefinition where 
   keyOf = fieldName
+
+instance NameCollision FieldDefinition where 
+  nameCollision name _ = GQLError { 
+    message = "There can Be only One field Named \"" <> name <> "\"",
+    locations = []
+  }
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition { fieldName } = fieldName `notElem` sysFields
@@ -459,10 +482,9 @@ lookupSelectionField
   :: Failure GQLErrors Validation
   => Position
   -> Name
-  -> Name
-  -> FieldsDefinition
+  -> (Name, FieldsDefinition)
   -> Validation FieldDefinition
-lookupSelectionField position fieldName typeName = selectBy gqlError fieldName 
+lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
   where gqlError = cannotQueryField fieldName typeName position
 
 lookupFieldAsSelectionSet
@@ -503,7 +525,7 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb f key (ArgumentsDefinition _ args)  = selectOr fb f key args 
 
 instance Singleton ArgumentsDefinition ArgumentDefinition where
-  singleton name = ArgumentsDefinition Nothing . singleton name
+  singleton = ArgumentsDefinition Nothing . singleton 
 
 instance Listable ArgumentsDefinition ArgumentDefinition where
   toAssoc NoArguments                  = []
@@ -573,15 +595,3 @@ data ConsD = ConsD
   { cName   :: Name
   , cFields :: [FieldDefinition]
   } deriving (Show)
-
-
--- Helpers
--------------------------------------------------------------------------
-checkNameCollision :: (Failure e m, Ord a) => [a] -> ([a] -> e) -> m [a]
-checkNameCollision names toError = uniqueElemOr (failure . toError) names 
-
-checkForUnknownKeys :: Failure e m => [Ref] -> [Name] -> ([Ref] -> e) -> m [Ref]
-checkForUnknownKeys enhancedKeys keys' errorGenerator' =
-  case filter (not . elementOfKeys keys') enhancedKeys of
-    []           -> pure enhancedKeys
-    unknownKeys -> failure $ errorGenerator' unknownKeys
