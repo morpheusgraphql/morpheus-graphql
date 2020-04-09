@@ -20,12 +20,13 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALIDATION_MODE
                                                 , InputSource(..)
                                                 , Variables
+                                                , Context(..)
+                                                , SelectionContext(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty )
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( SelectionValidator
-                                                , ValidationContext(..)
                                                 , runValidator
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -58,16 +59,15 @@ validateRequest
     }
   = runValidator 
       validation
-      ValidationContext 
+      Context 
         { schema 
         , fragments
-        , operationName
         , scopeTypeName = "Root"
         , scopePosition = operationPosition
-        , input = InputSource {
-            sourceType = Nothing,
-            sourcePath = []
-          }
+        }
+      SelectionContext 
+        { operationName
+          -- TODO: variables
         }
    where
     validateHelpers = 

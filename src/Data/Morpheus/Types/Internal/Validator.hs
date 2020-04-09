@@ -8,15 +8,14 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 
 module Data.Morpheus.Types.Internal.Validator
   ( Validator
   , SelectionValidator
   , InputValidator
   , BaseValidator
-  , ValidationContext(..)
   , runValidator
-  , mapError
   , askSchema
   , askContext
   , askFragments
@@ -59,7 +58,6 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectOr
                                                 , KeyOf(..)
                                                 )
-import qualified Data.Morpheus.Types.Internal.Resolving.Core as C
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless )
 import           Data.Morpheus.Types.Internal.AST
@@ -72,7 +70,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , GQLError(..)
                                                 , Fragments
                                                 , Schema
-                                                , ValidationContext(..)
+                                                , SelectionContext(..)
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , TypeDefinition(..)
@@ -80,7 +78,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isInputDataType
                                                 , isFieldNullable
                                                 , InputSource(..)
-                                                , InputSourceType(..)
+                                                , InputContext(..)
+                                                , Context(..)
                                                 , Prop(..)
                                                 , renderInputPrefix
                                                 )
@@ -89,8 +88,8 @@ import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
                                                 , Unknown(..)
                                                 , InternalError(..)
                                                 , Target(..)
+                                                , CTX
                                                 )
-
 
 data Constraint (a :: Target) where
   OBJECT :: Constraint 'TARGET_OBJECT
@@ -107,7 +106,7 @@ constraint
   => Constraint ( a :: Target) 
   -> ctx 
   -> TypeDefinition 
-  -> Validator (Resolution a)
+  -> SelectionValidator (Resolution a)
 constraint OBJECT  _   TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
 -- constraint UNION   _   TypeDefinition { typeContent = DataUnion members } = pure members
@@ -119,13 +118,13 @@ selectRequired
       , MissingRequired c
       ) 
   => Ref 
-  -> c 
-  -> Validator value
+  -> c
+  -> Validator (CTX c) value
 selectRequired selector container 
   = do 
-    ctx <- askContext
+    (gctx,ctx) <- Validator ask
     selectBy
-      [missingRequired ctx selector container] 
+      [missingRequired gctx ctx selector container] 
       (keyOf selector) 
       container
 
@@ -139,7 +138,7 @@ selectWithDefaultValue
   => value
   -> FieldDefinition
   -> values
-  -> Validator value
+  -> Validator (CTX values) value
 selectWithDefaultValue 
   fallbackValue 
   field@FieldDefinition { fieldName }
@@ -156,8 +155,8 @@ selectWithDefaultValue
       | otherwise             = failSelection
     -----------------
     failSelection = do
-        ctx <- askContext
-        failure [missingRequired ctx (Ref fieldName (scopePosition ctx)) values]
+        (gctx, ctx) <- Validator ask
+        failure [missingRequired gctx ctx (Ref fieldName (scopePosition gctx)) values]
 
 selectKnown 
   ::  ( Selectable c a
@@ -166,18 +165,18 @@ selectKnown
       ) 
   => UnknownSelector c 
   -> c 
-  -> Validator a
+  -> Validator (CTX c) a
 selectKnown selector lib  
   = do 
-    ctx <- askContext
+    (gctx, ctx) <- Validator ask
     selectBy
-      (unknown ctx lib selector) 
+      (unknown gctx ctx lib selector) 
       (keyOf selector)  
       lib
 
 askFieldType
   :: FieldDefinition
-  -> Validator TypeDefinition
+  -> SelectionValidator TypeDefinition
 askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
   = do
     schema <- askSchema
@@ -186,22 +185,9 @@ askFieldType field@FieldDefinition{ fieldType = TypeRef { typeConName }  }
         typeConName 
         schema
 
-askInputFieldType
-  :: FieldDefinition
-  -> Validator TypeDefinition
-askInputFieldType field@FieldDefinition{ fieldName }
-  = askFieldType field >>= constraintINPUT
- where
-  constraintINPUT x 
-    | isInputDataType x = pure x
-    | otherwise         = failure $
-        "Type \"" <> typeName x
-        <> "\" referenced by field \"" <> fieldName
-        <> "\" must be an input type."
-
 askTypeMember
   :: Name
-  -> Validator (Name, FieldsDefinition)
+  -> SelectionValidator (Name, FieldsDefinition)
 askTypeMember 
   name
   = askSchema
@@ -225,9 +211,26 @@ askTypeMember
                   <> "\" referenced by union \"" <> scopeType 
                   <> "\" must be an OBJECT."
 
+askInputFieldType
+  :: FieldDefinition
+  -> InputValidator TypeDefinition
+askInputFieldType field@FieldDefinition{ fieldName , fieldType = TypeRef { typeConName }  }
+  = askSchema
+    >>= selectBy
+        [internalError field] 
+        typeConName 
+    >>= constraintINPUT
+ where
+  constraintINPUT x 
+    | isInputDataType x = pure x
+    | otherwise         = failure $
+        "Type \"" <> typeName x
+        <> "\" referenced by field \"" <> fieldName
+        <> "\" must be an input type."
+
 askInputMember
   :: Name
-  -> Validator TypeDefinition
+  -> InputValidator TypeDefinition
 askInputMember 
   name
   = askSchema
@@ -247,73 +250,75 @@ askInputMember
             scopeType <- askScopeTypeName
             failure $ typeInfo typeName <> "\"" <> scopeType <> "\" must be an INPUT_OBJECT."
 
-
-startInput :: InputSourceType -> Validator a -> Validator a
-startInput source = setContext update
-  where
-    update ctx = ctx { input = InputSource { sourceType = Just source , sourcePath = [] }}
+startInput :: InputSource -> InputValidator a -> SelectionValidator a
+startInput inputSource 
+  = setContext 
+  $ const InputContext 
+    { inputSource 
+    , inputPath = [] 
+    }
  
-withInputScope :: Prop -> Validator a -> Validator a
+withInputScope :: Prop -> InputValidator a -> InputValidator a
 withInputScope prop = setContext update
   where
-    update ctx@ValidationContext { input = source@InputSource {sourcePath = old} } 
-      = ctx { input = source { sourcePath = old <> [prop] } }
+    update ctx@InputContext { inputPath = old } 
+      = ctx { inputPath = old <> [prop] }
 
+runValidator :: Validator ctx a -> Context -> ctx -> Stateless a
+runValidator (Validator x) globalCTX ctx = runReaderT x (globalCTX,ctx) 
 
-runValidator :: Validator a -> ValidationContext -> Stateless a
-runValidator (Validator x) = runReaderT x 
+askContext :: Validator ctx ctx
+askContext = snd <$> Validator ask
 
-mapError 
-  :: (GQLError -> GQLError)
-  -> Validator a
-  -> Validator a
-mapError f (Validator x) = Validator $ ReaderT $ C.mapError f . runReaderT x 
-
-askContext :: Validator ValidationContext
-askContext = Validator ask
-
-askSchema :: Validator Schema
-askSchema = schema <$> askContext
+askSchema :: Validator ctx Schema
+askSchema = schema . fst <$> Validator ask
    
-askFragments :: Validator Fragments
-askFragments = fragments <$> askContext
+askFragments :: Validator ctx Fragments
+askFragments = fragments . fst <$> Validator ask
 
-askScopeTypeName :: Validator Name
-askScopeTypeName = scopeTypeName <$> askContext
+askScopeTypeName :: Validator ctx  Name
+askScopeTypeName = scopeTypeName . fst <$> Validator ask
 
-askScopePosition :: Validator Position
-askScopePosition = scopePosition <$> askContext
+askScopePosition :: Validator ctx Position
+askScopePosition = scopePosition . fst <$> Validator ask
 
 setContext 
-  :: (ValidationContext -> ValidationContext) 
-  -> Validator a 
-  -> Validator a
-setContext update = Validator . withReaderT update . _runValidator
+  :: (c' -> c) 
+  -> Validator c a 
+  -> Validator c' a
+setContext f = Validator . withReaderT ( \(x,y) -> (x,f y)) . _runValidator
 
-withScope :: Name -> Position -> Validator a -> Validator a
-withScope scopeTypeName scopePosition = setContext update
+setGlobalContext 
+  :: (Context -> Context) 
+  -> Validator c a 
+  -> Validator c a
+setGlobalContext f = Validator . withReaderT ( \(x,y) -> (f x,y)) . _runValidator
+
+
+withScope :: Name -> Position -> Validator ctx a -> Validator ctx a
+withScope scopeTypeName scopePosition = setGlobalContext update
      where
        update ctx = ctx { scopeTypeName , scopePosition }
 
 
-withScopePosition :: Position -> Validator a -> Validator a
-withScopePosition scopePosition = setContext update
+withScopePosition :: Position -> Validator ctx a -> Validator ctx a
+withScopePosition scopePosition = setGlobalContext update
     where
       update ctx = ctx { scopePosition  }
 
-withScopeType :: Name -> Validator a -> Validator a
-withScopeType scopeTypeName = Validator . withReaderT update . _runValidator
+withScopeType :: Name -> Validator ctx a -> Validator ctx a
+withScopeType scopeTypeName = setGlobalContext update
     where
       update ctx = ctx { scopeTypeName  }
 
-inputMessagePrefix :: Validator Message 
-inputMessagePrefix = renderInputPrefix . input <$> askContext
+inputMessagePrefix :: InputValidator Message 
+inputMessagePrefix = renderInputPrefix <$> askContext
 
-newtype Validator a 
+newtype Validator ctx a 
   = Validator 
     {
       _runValidator :: ReaderT 
-          ValidationContext 
+          (Context, ctx) 
           Stateless
           a
     }
@@ -323,17 +328,17 @@ newtype Validator a
       , Monad
       )
 
-type BaseValidator = Validator
-type SelectionValidator = Validator
-type InputValidator = Validator
+type BaseValidator = Validator SelectionContext
+type SelectionValidator = Validator SelectionContext
+type InputValidator = Validator InputContext
 
-instance MonadFail Validator where 
-  fail = failure . pack
+-- instance MonadFail (SelectionValidator ctx) where 
+--  fail = failure . pack
 
 -- can be only used for internal errors
-instance Failure Message Validator where
+instance Failure Message (Validator ctx) where
   failure inputMessage = do 
-    position <- scopePosition <$> askContext 
+    position <- askScopePosition
     failure 
       [
         GQLError 
@@ -342,5 +347,5 @@ instance Failure Message Validator where
           }
       ]
 
-instance Failure GQLErrors Validator where
+instance Failure GQLErrors (Validator ctx) where
   failure = Validator . lift . failure

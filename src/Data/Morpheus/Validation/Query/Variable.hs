@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
-                                                , InputSourceType(..)
+                                                , InputSource(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)

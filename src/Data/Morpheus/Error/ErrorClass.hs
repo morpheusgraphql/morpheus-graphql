@@ -11,6 +11,7 @@ module Data.Morpheus.Error.ErrorClass
   , Unknown(..)
   , InternalError(..)
   , Target(..)
+  , CTX
   )
   where
 
@@ -30,8 +31,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ObjectEntry(..)
                                                 , Fragment(..)
                                                 , Fragments
-                                                , ValidationContext(..)
+                                                , Context(..)
                                                 , Variable(..)
+                                                , SelectionContext(..)
+                                                , InputContext(..)
                                                 , VariableDefinitions
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition
@@ -51,6 +54,16 @@ data Target
 class InternalError a where
   internalError :: a -> GQLError
 
+type family   CTX a :: *
+type instance CTX (Object s) = InputContext
+type instance CTX (Arguments s) = SelectionContext
+type instance CTX (VariableDefinitions s) = SelectionContext
+type instance CTX Fragments = SelectionContext
+type instance CTX Schema = SelectionContext
+type instance CTX FieldDefinition = SelectionContext
+type instance CTX InputFieldsDefinition = InputContext
+type instance CTX FieldsDefinition = SelectionContext
+
 instance InternalError FieldDefinition where
   internalError FieldDefinition 
     { fieldName
@@ -64,11 +77,12 @@ instance InternalError FieldDefinition where
       }
 
 class MissingRequired c where 
-  missingRequired :: ValidationContext -> Ref -> c -> GQLError
+  missingRequired :: Context -> CTX c -> Ref -> c -> GQLError
 
 instance MissingRequired (Arguments s) where
   missingRequired 
-    ValidationContext { scopePosition , scopeTypeName } 
+    Context { scopePosition , scopeTypeName } 
+    _
     Ref { refName  } _ 
     = GQLError 
       { message 
@@ -79,18 +93,20 @@ instance MissingRequired (Arguments s) where
 
 instance MissingRequired (Object s) where
   missingRequired 
-      ValidationContext { scopePosition , input } 
+      Context { scopePosition }
+      inputCTX
       Ref { refName  } 
       _  
     = GQLError 
-      { message 
-        =  renderInputPrefix input <> "Undefined Field \"" <> refName <> "\"."
+      { message
+        =  renderInputPrefix inputCTX <> "Undefined Field \"" <> refName <> "\"."
       , locations = [scopePosition]
       }
 
 instance MissingRequired (VariableDefinitions s) where
   missingRequired 
-    ValidationContext { operationName } 
+    _
+    SelectionContext { operationName } 
     Ref { refName , refPosition } _ 
     = GQLError 
       { message 
@@ -100,41 +116,44 @@ instance MissingRequired (VariableDefinitions s) where
       , locations = [refPosition]
       }
 
+
 class Unknown c where
   type UnknownSelector c
-  unknown :: ValidationContext -> c -> UnknownSelector c -> GQLErrors
+  unknown :: Context -> CTX c -> c -> UnknownSelector c -> GQLErrors
 
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown Fragments where
   type UnknownSelector Fragments = Ref
-  unknown _ _ (Ref name pos) 
+  unknown _ _ _ (Ref name pos) 
     = errorMessage pos
       ("Unknown Fragment \"" <> name <> "\".")
 
 instance Unknown Schema where
   type UnknownSelector Schema = Ref
-  unknown _ _ Ref { refName , refPosition }
+  unknown _ _ _ Ref { refName , refPosition }
     = errorMessage refPosition ("Unknown type \"" <> refName <> "\".")
 
 instance Unknown FieldDefinition where
+  
   type UnknownSelector FieldDefinition = Argument RESOLVED
-  unknown _ FieldDefinition { fieldName } Argument { argumentName, argumentPosition }
+  unknown _ _ FieldDefinition { fieldName } Argument { argumentName, argumentPosition }
     = errorMessage argumentPosition 
       ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
 
 instance Unknown InputFieldsDefinition where
+
   type UnknownSelector InputFieldsDefinition = ObjectEntry RESOLVED
-  unknown ValidationContext { scopePosition , input } _ ObjectEntry { entryName } = 
+  unknown Context { scopePosition } ctx _ ObjectEntry { entryName } = 
     [
       GQLError 
-        { message = renderInputPrefix input <>"Unknown Field \"" <> entryName <> "\"."
+        { message = renderInputPrefix ctx <>"Unknown Field \"" <> entryName <> "\"."
         , locations = [scopePosition]
         }
     ]
 
 instance Unknown FieldsDefinition where
   type UnknownSelector FieldsDefinition = Ref
-  unknown ValidationContext { scopeTypeName } _ 
+  unknown Context { scopeTypeName } _ _ 
     = unknownSelectionField scopeTypeName
 
 class KindViolation (t :: Target) ctx where

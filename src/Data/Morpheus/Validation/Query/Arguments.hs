@@ -23,7 +23,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , ObjectEntry(..)
                                                 , RAW
-                                                , InputSourceType(..)
+                                                , InputSource(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -91,11 +91,11 @@ validateArgument
   -------------------------------------------------------------------------
   validateArgumentValue :: Argument RESOLVED -> SelectionValidator (Argument VALID)
   validateArgumentValue arg@Argument { argumentValue = value, .. } =
-    withScopePosition argumentPosition $ do
+    withScopePosition argumentPosition 
+    $ startInput (SourceArgument arg) 
+    $ do
       datatype <- askInputFieldType argumentDef
-      argumentValue 
-          <- startInput (SourceArgument arg)
-            $ validateInput
+      argumentValue <- validateInput
                 typeWrappers 
                 datatype 
                 (ObjectEntry fieldName value)

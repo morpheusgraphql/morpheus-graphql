@@ -147,9 +147,10 @@ module Data.Morpheus.Types.Internal.AST
   , Prop(..)
   , Path
   , renderPath
-  , ValidationContext(..)
-  , InputSourceType(..)
+  , Context(..)
   , InputSource(..)
+  , SelectionContext(..)
+  , InputContext(..)
   , isInputDataType
   , renderInputPrefix
   )
@@ -211,34 +212,35 @@ isPosibeUnion tags (Enum name) = case lookup name tags of
   _       -> pure name
 isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
 
-data InputSourceType
-  = SourceArgument (Argument RESOLVED)
-  | SourceVariable (Variable RAW)
-  deriving (Show)
+renderInputPrefix :: InputContext -> Message
+renderInputPrefix InputContext { inputPath , inputSource } = 
+  renderSource inputSource <> renderPath inputPath
 
-data InputSource = InputSource {
-  sourceType :: Maybe InputSourceType,
-  sourcePath :: [Prop]
-} deriving (Show)
-
-renderInputPrefix :: InputSource -> Message
-renderInputPrefix InputSource { sourcePath , sourceType } = 
-  maybe "" renderSource sourceType <> renderPath sourcePath
-
-renderSource :: InputSourceType -> Message
+renderSource :: InputSource -> Message
 renderSource (SourceArgument Argument { argumentName }) 
   = "Argument \"" <> argumentName <>"\" got invalid value. "
 renderSource (SourceVariable Variable { variableName })
   = "Variable \"$" <> variableName <>"\" got invalid value. "
 
+data Context = Context 
+  { schema           :: Schema
+  , fragments        :: Fragments
+  , scopePosition    :: Position
+  , scopeTypeName    :: Name
+  } deriving (Show)
 
-data ValidationContext 
-  = ValidationContext 
-    { schema           :: Schema
-    , fragments        :: Fragments
+data InputContext = InputContext 
+  { inputSource :: InputSource
+  , inputPath  :: [Prop]
+  } deriving (Show)
+
+data InputSource
+  = SourceArgument (Argument RESOLVED)
+  | SourceVariable (Variable RAW)
+  deriving (Show)
+
+data SelectionContext 
+  = SelectionContext 
+    { variables        :: Variables
     , operationName    :: Maybe Name
-    , scopeTypeName    :: Name
-    , scopePosition    :: Position
-    , input :: InputSource
-    }
-    deriving (Show)
+    } deriving (Show)
