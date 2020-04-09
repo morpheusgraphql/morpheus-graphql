@@ -19,6 +19,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , GQLQuery(..)
                                                 , VALIDATION_MODE
                                                 , InputSource(..)
+                                                , Variables
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty )
@@ -69,14 +70,16 @@ validateRequest
           }
         }
    where
+    validateHelpers = 
+        validateFragments operationSelection *>
+        resolveOperationVariables
+          (fromList inputVariables)
+          validationMode
+          rawOperation
     validation :: Validator (Operation VALID)
     validation = do
+      variables <- validateHelpers 
       operationTypeDef  <-  getOperationObject rawOperation schema
-      variables         <-  resolveOperationVariables
-                                  (fromList inputVariables)
-                                  validationMode
-                                  rawOperation
-      validateFragments operationSelection
       selection <- validateOperation
                                   variables
                                   operationTypeDef

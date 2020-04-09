@@ -8,15 +8,6 @@
           "column": 10
         }
       ]
-    },
-    {
-      "message": "Fragment \"MyFragment\" cannot be spread here as objects of type \"User\" can never be of type \"BjsK\".",
-      "locations": [
-        {
-          "line": 3,
-          "column": 5
-        }
-      ]
     }
   ]
 }
