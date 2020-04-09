@@ -1,6 +1,7 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE FlexibleInstances  #-}
 
 module Data.Morpheus.Validation.Query.Fragment
   ( validateFragments
@@ -11,7 +12,6 @@ where
 
 import           Data.List                      ( (\\) )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text )
 import           Data.Functor                   (($>))
 import           Data.Foldable                  (traverse_) 
 
@@ -21,7 +21,8 @@ import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
                                                 , unusedFragment
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Fragment(..)
+                                                ( Name
+                                                , Fragment(..)
                                                 , Fragments
                                                 , SelectionContent(..)
                                                 , Selection(..)
@@ -33,7 +34,6 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectOr
                                                 , toList
-                                                , toAssoc
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
@@ -55,7 +55,7 @@ validateFragments selectionSet
 checkUnusedFragments :: SelectionSet RAW -> Validator ()
 checkUnusedFragments selectionSet = do
     fragments <- askFragments
-    case refs fragments \\ usedFragments fragments (toAssoc selectionSet) of
+    case refs fragments \\ usedFragments fragments (toList selectionSet) of
       []     -> return ()
       unused -> failure (unusedFragment unused)
   where
@@ -63,20 +63,19 @@ checkUnusedFragments selectionSet = do
     toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
 
 castFragmentType
-  :: Maybe Text -> Position -> [Text] -> Fragment -> Validator Fragment
+  :: Maybe Name -> Position -> [Name] -> Fragment -> Validator Fragment
 castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
-  = if fragmentType `elem` typeMembers
-    then pure fragment
-    else failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
+  | fragmentType `elem` typeMembers = pure fragment
+  | otherwise =  failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
 
-resolveSpread :: [Text] -> Ref -> Validator Fragment
+resolveSpread :: [Name] -> Ref -> Validator Fragment
 resolveSpread allowedTargets ref@Ref { refName, refPosition } 
   = askFragments
     >>= selectKnown ref
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
-usedFragments :: Fragments -> [(Text, Selection RAW)] -> [Node]
-usedFragments fragments = concatMap (findAllUses . snd)
+usedFragments :: Fragments -> [Selection RAW] -> [Node]
+usedFragments fragments = concatMap findAllUses
  where
   findAllUses :: Selection RAW -> [Node]
   findAllUses Selection { selectionContent = SelectionField } = []
@@ -93,11 +92,10 @@ usedFragments fragments = concatMap (findAllUses . snd)
       refName 
       fragments
 
-
 fragmentsConditionTypeChecking :: Validator ()
-fragmentsConditionTypeChecking = do
-    fragments <- askFragments
-    traverse_ checkTypeExistence (toList fragments)
+fragmentsConditionTypeChecking 
+    = toList <$> askFragments
+      >>= traverse_ checkTypeExistence
 
 checkTypeExistence :: Fragment -> Validator ()
 checkTypeExistence fr@Fragment { fragmentType, fragmentPosition }
