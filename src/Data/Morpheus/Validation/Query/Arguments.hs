@@ -30,7 +30,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , empty
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
-                                                ( Validator
+                                                ( SelectionValidator
                                                 , selectKnown
                                                 , selectRequired
                                                 , selectWithDefaultValue
@@ -43,13 +43,13 @@ import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
 
 -- only Resolves , doesnot checks the types
-resolveObject :: VariableDefinitions VALID -> RawValue -> Validator ResolvedValue
+resolveObject :: VariableDefinitions VALID -> RawValue -> SelectionValidator ResolvedValue
 resolveObject variables = resolve
  where
-  resolveEntry :: ObjectEntry RAW -> Validator (ObjectEntry RESOLVED)
+  resolveEntry :: ObjectEntry RAW -> SelectionValidator (ObjectEntry RESOLVED)
   resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
   ------------------------------------------------
-  resolve :: RawValue -> Validator ResolvedValue
+  resolve :: RawValue -> SelectionValidator ResolvedValue
   resolve Null         = pure Null
   resolve (Scalar x  ) = pure $ Scalar x
   resolve (Enum   x  ) = pure $ Enum x
@@ -61,11 +61,11 @@ resolveObject variables = resolve
 resolveArgumentVariables
   :: VariableDefinitions VALID
   -> Arguments RAW
-  -> Validator (Arguments RESOLVED)
+  -> SelectionValidator (Arguments RESOLVED)
 resolveArgumentVariables variables
   = traverse resolveVariable
  where
-  resolveVariable :: Argument RAW -> Validator (Argument RESOLVED)
+  resolveVariable :: Argument RAW -> SelectionValidator (Argument RESOLVED)
   resolveVariable (Argument key val position) = do 
     constValue <- resolveObject variables val
     pure $ Argument key constValue position
@@ -73,7 +73,7 @@ resolveArgumentVariables variables
 validateArgument
   :: Arguments RESOLVED
   -> ArgumentDefinition
-  -> Validator (Argument VALID)
+  -> SelectionValidator (Argument VALID)
 validateArgument 
     requestArgs 
     argumentDef@FieldDefinition 
@@ -89,7 +89,7 @@ validateArgument
       validateArgumentValue argument
  where
   -------------------------------------------------------------------------
-  validateArgumentValue :: Argument RESOLVED -> Validator (Argument VALID)
+  validateArgumentValue :: Argument RESOLVED -> SelectionValidator (Argument VALID)
   validateArgumentValue arg@Argument { argumentValue = value, .. } =
     withScopePosition argumentPosition $ do
       datatype <- askInputFieldType argumentDef
@@ -105,7 +105,7 @@ validateArguments
   :: VariableDefinitions VALID
   -> FieldDefinition
   -> Arguments RAW
-  -> Validator (Arguments VALID)
+  -> SelectionValidator (Arguments VALID)
 validateArguments
     variables 
     fieldDef@FieldDefinition {  fieldArgs }
@@ -119,5 +119,5 @@ validateArguments
     (ArgumentsDefinition _ argsD) -> argsD
     NoArguments -> empty
   -------------------------------------------------
-  checkUnknown :: Argument RESOLVED -> Validator ArgumentDefinition
+  checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
   checkUnknown = (`selectKnown` fieldDef)

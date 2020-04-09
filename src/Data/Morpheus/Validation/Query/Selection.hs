@@ -43,7 +43,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
-                                                ( Validator
+                                                ( SelectionValidator
                                                 , askFieldType
                                                 , selectKnown
                                                 , withScope
@@ -63,19 +63,19 @@ validateOperation
   :: VariableDefinitions VALID
   -> TypeDef
   -> Operation RAW
-  -> Validator (SelectionSet VALID)
+  -> SelectionValidator (SelectionSet VALID)
 validateOperation variables tyDef Operation { operationSelection } = 
     __validate 
       tyDef 
       operationSelection
  where
   __validate
-    :: TypeDef -> SelectionSet RAW -> Validator (SelectionSet VALID)
+    :: TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
   __validate dataType@(typeName,fieldsDef) =
       concatTraverse validateSelection 
    where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
-    validateSelection :: Selection RAW -> Validator (SelectionSet VALID)
+    validateSelection :: Selection RAW -> SelectionValidator (SelectionSet VALID)
     validateSelection 
         sel@Selection 
           { selectionName
@@ -88,7 +88,7 @@ validateOperation variables tyDef Operation { operationSelection } =
         selectionPosition $ 
         validateSelectionContent selectionContent
       where
-        commonValidation :: Validator (TypeDefinition, Arguments VALID)
+        commonValidation :: SelectionValidator (TypeDefinition, Arguments VALID)
         commonValidation  = do
           (fieldDef :: FieldDefinition) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
           -- validate field Argument -----
@@ -100,7 +100,7 @@ validateOperation variables tyDef Operation { operationSelection } =
           (typeDef :: TypeDefinition) <- askFieldType fieldDef
           pure (typeDef, arguments)
         -----------------------------------------------------------------------------------
-        validateSelectionContent :: SelectionContent RAW -> Validator (SelectionSet VALID)
+        validateSelectionContent :: SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
         validateSelectionContent SelectionField 
             | null selectionArguments && selectionName == "__typename" 
               = pure $ singleton $ sel { selectionArguments = empty, selectionContent = SelectionField }
@@ -110,7 +110,7 @@ validateOperation variables tyDef Operation { operationSelection } =
               pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = SelectionField }
          where
           ------------------------------------------------------------
-          isLeaf :: TypeDefinition -> Validator ()
+          isLeaf :: TypeDefinition -> SelectionValidator ()
           isLeaf TypeDefinition { typeName = typename, typeContent }
               | isEntNode typeContent = pure ()
               | otherwise = failure
@@ -122,7 +122,7 @@ validateOperation variables tyDef Operation { operationSelection } =
             selContent <- withScope name selectionPosition $ validateByTypeContent name typeContent
             pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = selContent }
            where
-            validateByTypeContent :: Name -> TypeContent -> Validator (SelectionContent VALID)
+            validateByTypeContent :: Name -> TypeContent -> SelectionValidator (SelectionContent VALID)
             -- Validate UnionSelection  
             validateByTypeContent _ DataUnion { unionMembers } 
               = validateUnionSelection  
