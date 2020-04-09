@@ -64,9 +64,9 @@ checkUnusedFragments selectionSet = do
 
 castFragmentType
   :: Maybe Name -> Position -> [Name] -> Fragment -> Validator Fragment
-castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
+castFragmentType key position typeMembers fragment@Fragment { fragmentType }
   | fragmentType `elem` typeMembers = pure fragment
-  | otherwise =  failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
+  | otherwise =  failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
 resolveSpread :: [Name] -> Ref -> Validator Fragment
 resolveSpread allowedTargets ref@Ref { refName, refPosition } 
@@ -112,8 +112,7 @@ exploreSpreads =  map exploreFragmentSpreads . toList <$> askFragments
 
 exploreFragmentSpreads :: Fragment -> NodeEdges 
 exploreFragmentSpreads Fragment { fragmentName, fragmentSelection, fragmentPosition }
-   = (ref, concatMap scanForSpread fragmentSelection) 
-  where     ref = Ref fragmentName fragmentPosition
+   = ( Ref fragmentName fragmentPosition, concatMap scanForSpread fragmentSelection)
 
 scanForSpread :: Selection RAW -> [Node]
 scanForSpread Selection { selectionContent = SelectionField } = []
