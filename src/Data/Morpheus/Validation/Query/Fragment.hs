@@ -12,7 +12,8 @@ where
 import           Data.List                      ( (\\) )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
-import            Data.Functor                  (($>))
+import           Data.Functor                   (($>))
+import           Data.Foldable                  (traverse_) 
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
@@ -119,13 +120,13 @@ validateFragment fr@Fragment { fragmentName, fragmentSelection, fragmentType, fr
         >>= constraint OBJECT fr
 
 detectLoopOnFragments :: Graph -> Validator ()
-detectLoopOnFragments lib = mapM_ checkFragment lib
+detectLoopOnFragments lib = traverse_ checkFragment lib
  where
   checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
 checkForCycle :: Graph -> Node -> [Node] -> Validator Graph
 checkForCycle lib parentNode history = case lookup parentNode lib of
-  Just node -> concat <$> mapM checkNode node
+  Just node -> concat <$> traverse checkNode node
   Nothing   -> pure []
  where
   checkNode x = if x `elem` history then cycleError x else recurse x

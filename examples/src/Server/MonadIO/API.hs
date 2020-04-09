@@ -216,7 +216,7 @@ dogsResolver :: ArrayObject QUERY Dog
 dogsResolver = do
     requireAuthorized
     dogs <- fmap dogTable getDB
-    mapM dogResolver dogs
+    traverse dogResolver dogs
 
 -------------------------------------------------------------------------------
 addDogResolver :: AddDogArgs -> Object MUTATION Dog
@@ -261,7 +261,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
         let userFolloweeIds =
                 map followeeId . filter ((== thisUserId) . followerId) $ follows
         let userFollowees = filter ((`elem` userFolloweeIds) . userId) users
-        mapM userResolver userFollowees
+        traverse userResolver userFollowees
 
 dogResolver :: GraphQL o => DogRow -> Object o Dog
 dogResolver (DogRow dogId dogName ownerId) =

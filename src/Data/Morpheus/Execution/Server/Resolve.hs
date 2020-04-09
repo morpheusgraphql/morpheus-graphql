@@ -28,6 +28,7 @@ import           Data.Aeson.Parser              ( eitherDecodeWith
 import qualified Data.ByteString.Lazy.Char8    as L
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Proxy                     ( Proxy(..) )
+import           Data.Foldable                   (traverse_)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( badRequestError )
@@ -191,7 +192,7 @@ statefulResolver
   -> m L.ByteString
 statefulResolver state streamApi requestText = do
   res <- runResultT (decodeNoDup requestText >>= streamApi)
-  mapM_ execute (unpackEvents res)
+  traverse_ execute (unpackEvents res)
   pure $ encode $ renderResponse res
  where
   execute (Publish events) = publishEvent state events

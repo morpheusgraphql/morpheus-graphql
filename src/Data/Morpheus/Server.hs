@@ -13,6 +13,7 @@ module Data.Morpheus.Server
   )
 where
 
+import           Data.Foldable                  ( traverse_ )
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
 import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
@@ -70,7 +71,7 @@ handleSubscription GQLClient { clientConnection, clientID } state sessionId stre
   = do
     response <- runResultT stream
     case response of
-      Success { events } -> mapM_ execute events
+      Success { events } -> traverse_ execute events
       Failure errors     -> liftIO $ sendTextData
         clientConnection
         (toApolloResponse sessionId $ Errors errors)

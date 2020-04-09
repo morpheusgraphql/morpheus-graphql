@@ -71,7 +71,7 @@ withMaybe _      Null = pure Nothing
 withMaybe decode x    = Just <$> decode x
 
 withList :: (ValidValue -> Stateless a) -> ValidValue -> Stateless [a]
-withList decode (List li) = mapM decode li
+withList decode (List li) = traverse decode li
 withList _      isType    = internalTypeMismatch "List" isType
 
 withEnum :: (Key -> Stateless a) -> ValidValue -> Stateless a
