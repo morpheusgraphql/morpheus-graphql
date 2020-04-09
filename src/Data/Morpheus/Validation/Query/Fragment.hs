@@ -45,26 +45,22 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , Constraint(..)
                                                 )
 
+
 validateFragments :: SelectionSet RAW -> Validator ()
-validateFragments operatorSel = do
-  fragments <- askFragments
-  checkLoop fragments
-  checkUnusedFragments fragments
- where
-  checkUnusedFragments fragments =
-    case refs fragments \\ usedFragments fragments (toAssoc operatorSel) of
+validateFragments selectionSet 
+  = fragmentsCycleChecking 
+    *> checkUnusedFragments selectionSet
+    *> fragmentsConditionTypeChecking
+
+checkUnusedFragments :: SelectionSet RAW -> Validator ()
+checkUnusedFragments selectionSet = do
+    fragments <- askFragments
+    case refs fragments \\ usedFragments fragments (toAssoc selectionSet) of
       []     -> return ()
       unused -> failure (unusedFragment unused)
-  checkLoop fragments = 
-    traverse validateFragment (toList fragments) >>= detectLoopOnFragments
-  refs fragments = map toRef (toList fragments)
-    where toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
-
-type Node = Ref
-
-type NodeEdges = (Node, [Node])
-
-type Graph = [NodeEdges]
+  where
+    refs fragments = map toRef (toList fragments)
+    toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
 
 castFragmentType
   :: Maybe Text -> Position -> [Text] -> Fragment -> Validator Fragment
@@ -97,6 +93,30 @@ usedFragments fragments = concatMap (findAllUses . snd)
       refName 
       fragments
 
+
+fragmentsConditionTypeChecking :: Validator ()
+fragmentsConditionTypeChecking = do
+    fragments <- askFragments
+    traverse_ checkTypeExistence (toList fragments)
+
+checkTypeExistence :: Fragment -> Validator ()
+checkTypeExistence fr@Fragment { fragmentType, fragmentPosition }
+      = askSchema
+        >>= selectKnown (Ref fragmentType fragmentPosition) 
+        >>= constraint OBJECT fr 
+        >> pure ()
+
+fragmentsCycleChecking :: Validator ()
+fragmentsCycleChecking = exploreSpreads >>= fragmentCycleChecking 
+
+exploreSpreads :: Validator Graph
+exploreSpreads =  map exploreFragmentSpreads . toList <$> askFragments
+
+exploreFragmentSpreads :: Fragment -> NodeEdges 
+exploreFragmentSpreads Fragment { fragmentName, fragmentSelection, fragmentPosition }
+   = (ref, concatMap scanForSpread fragmentSelection) 
+  where     ref = Ref fragmentName fragmentPosition
+
 scanForSpread :: Selection RAW -> [Node]
 scanForSpread Selection { selectionContent = SelectionField } = []
 scanForSpread Selection { selectionContent = SelectionSet selectionSet } =
@@ -106,21 +126,14 @@ scanForSpread (InlineFragment Fragment { fragmentSelection }) =
 scanForSpread (Spread Ref { refName, refPosition }) =
   [Ref refName refPosition]
 
-exploreSpreads :: SelectionSet RAW -> [Node]
-exploreSpreads = concatMap scanForSpread 
+type Node = Ref
 
-validateFragment :: Fragment -> Validator NodeEdges
-validateFragment fr@Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
-  = checkTypeExistence $> (ref, exploreSpreads fragmentSelection)
-  where 
-    ref = Ref fragmentName fragmentPosition
-    checkTypeExistence 
-      = askSchema
-        >>= selectKnown (Ref fragmentType fragmentPosition) 
-        >>= constraint OBJECT fr
+type NodeEdges = (Node, [Node])
 
-detectLoopOnFragments :: Graph -> Validator ()
-detectLoopOnFragments lib = traverse_ checkFragment lib
+type Graph = [NodeEdges]
+
+fragmentCycleChecking :: Graph -> Validator ()
+fragmentCycleChecking lib = traverse_ checkFragment lib
  where
   checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
