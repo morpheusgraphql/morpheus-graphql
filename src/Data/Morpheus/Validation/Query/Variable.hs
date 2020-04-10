@@ -8,7 +8,7 @@ module Data.Morpheus.Validation.Query.Variable
   )
 where
 
-import           Data.List                      ( (\\) )
+
 import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.Maybe                     ( maybe )
@@ -21,7 +21,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Operation(..)
                                                 , Variable(..)
                                                 , VariableDefinitions
-                                                , getOperationName
                                                 , Fragment(..)
                                                 , Argument(..)
                                                 , Selection(..)
