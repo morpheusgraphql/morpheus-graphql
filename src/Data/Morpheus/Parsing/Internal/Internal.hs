@@ -9,9 +9,8 @@ module Data.Morpheus.Parsing.Internal.Internal
 where
 
 import qualified Data.List.NonEmpty            as NonEmpty
-import           Data.Morpheus.Error.Utils      ( toLocation )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Position 
+                                                ( Position(..)
                                                 , GQLError(..)
                                                 , GQLErrors
                                                 )
@@ -36,11 +35,17 @@ import           Text.Megaparsec                ( ParseError
                                                 , getSourcePos
                                                 , parseErrorPretty
                                                 , runParserT
+                                                , SourcePos(..)
+                                                , unPos
                                                 )
 import           Data.Void                      (Void)
 
 getLocation :: Parser Position
 getLocation = fmap toLocation getSourcePos
+
+toLocation :: SourcePos -> Position
+toLocation SourcePos { sourceLine, sourceColumn } =
+  Position { line = unPos sourceLine, column = unPos sourceColumn }
 
 type MyError = Void
 type Parser = ParsecT MyError Text Stateless

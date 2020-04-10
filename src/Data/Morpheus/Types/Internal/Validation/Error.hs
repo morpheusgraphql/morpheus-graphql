@@ -11,6 +11,7 @@ module Data.Morpheus.Types.Internal.Validation.Error
   , Unknown(..)
   , InternalError(..)
   , Target(..)
+  , Unused(..)
   )
   where
 
@@ -22,7 +23,6 @@ import           Data.Morpheus.Error.Selection  ( unknownSelectionField )
 import           Data.Morpheus.Types.Internal.Validation.Validator
                                                 ( Context(..)
                                                 , InputContext(..)
-                                                , SelectionContext(..)
                                                 , renderInputPrefix
                                                 , Target(..)
                                                 )
@@ -66,6 +66,35 @@ instance InternalError FieldDefinition where
       , locations = []
       }
 
+
+
+class Unused c where
+  unused :: Context -> c -> GQLError
+
+-- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
+instance Unused (Variable s) where
+  unused 
+    Context { operationName } 
+    Variable{ variableName , variablePosition}
+       = GQLError 
+        { message 
+            = "Variable \"$" <> variableName 
+            <> "\" is never used in operation \""
+            <> getOperationName operationName <> "\"."
+        , locations = [variablePosition] 
+        }
+
+instance Unused Fragment where
+  unused 
+    _
+    Fragment { fragmentName , fragmentPosition }
+      = GQLError
+        { message   
+            = "Fragment \"" <> fragmentName 
+            <> "\" is never used."
+        , locations = [fragmentPosition]
+        }
+
 class MissingRequired c ctx where 
   missingRequired :: Context -> ctx -> Ref -> c -> GQLError
 
@@ -93,10 +122,10 @@ instance MissingRequired (Object s) InputContext where
       , locations = [scopePosition]
       }
 
-instance MissingRequired (VariableDefinitions s) SelectionContext where
-  missingRequired 
-    _
-    SelectionContext { operationName } 
+instance MissingRequired (VariableDefinitions s) ctx where
+  missingRequired
+    Context { operationName }
+    _ 
     Ref { refName , refPosition } _ 
     = GQLError 
       { message 

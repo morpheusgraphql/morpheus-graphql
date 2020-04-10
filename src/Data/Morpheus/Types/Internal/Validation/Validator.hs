@@ -100,22 +100,23 @@ data Context = Context
   , fragments        :: Fragments
   , scopePosition    :: Position
   , scopeTypeName    :: Name
+  , operationName    :: Maybe Name
   } deriving (Show)
 
-data InputContext = InputContext 
-  { inputSource :: InputSource
-  , inputPath  :: [Prop]
-  } deriving (Show)
+data InputContext 
+  = InputContext 
+    { inputSource :: InputSource
+    , inputPath  :: [Prop]
+    } deriving (Show)
 
 data InputSource
   = SourceArgument (Argument RESOLVED)
   | SourceVariable (Variable RAW)
   deriving (Show)
 
-data SelectionContext 
+newtype SelectionContext 
   = SelectionContext 
-    { variables        :: VariableDefinitions VALID
-    , operationName    :: Maybe Name
+    { variables :: VariableDefinitions VALID
     } deriving (Show)
 
 data Target 

@@ -56,15 +56,14 @@ validateRequest
         (validateOperation operation) 
         ctx 
         SelectionContext 
-          { operationName
-          , variables
-          }
+          { variables }
    where 
     ctx = Context 
         { schema 
         , fragments
         , scopeTypeName = "Root"
         , scopePosition = operationPosition
+        , operationName
         }
     validateHelpers = 
         validateFragments operationSelection *>

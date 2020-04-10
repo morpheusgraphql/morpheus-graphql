@@ -8,22 +8,19 @@ module Data.Morpheus.Validation.Query.Variable
   )
 where
 
-import           Data.List                      ( (\\) )
+
 import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.Maybe                     ( maybe )
 import           Data.Semigroup                 ( (<>) )
 
 --- MORPHEUS
-import           Data.Morpheus.Error.Variable   ( uninitializedVariable
-                                                , unusedVariables
-                                                )
+import           Data.Morpheus.Error.Variable   ( uninitializedVariable)
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
                                                 , Variable(..)
                                                 , VariableDefinitions
-                                                , getOperationName
                                                 , Fragment(..)
                                                 , Argument(..)
                                                 , Selection(..)
@@ -58,6 +55,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , withScopePosition
                                                 , startInput
                                                 , InputSource(..)
+                                                , checkUnused
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -106,22 +104,16 @@ resolveOperationVariables
     root 
     validationMode 
     Operation 
-      { operationName
-      , operationSelection
+      { operationSelection
       , operationArguments 
       }
-  = do
-    allVariableRefs [operationSelection] >>= checkUnusedVariables
+  = checkUnusedVariables *>
     traverse (lookupAndValidateValueOnBody root validationMode) operationArguments
  where
-  varToKey :: Variable a -> Ref
-  varToKey Variable { variableName, variablePosition } = Ref variableName variablePosition
-  --
-  checkUnusedVariables :: [Ref] -> BaseValidator ()
-  checkUnusedVariables refs = case map varToKey (toList operationArguments) \\ refs of
-    [] -> pure ()
-    unused' ->
-      failure $ unusedVariables (getOperationName operationName) unused'
+  checkUnusedVariables :: BaseValidator ()
+  checkUnusedVariables = do
+    uses <- allVariableRefs [operationSelection]
+    checkUnused uses (toList operationArguments)
 
 lookupAndValidateValueOnBody
   :: Variables

@@ -1,9 +1,7 @@
-{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself
-  , unusedFragment
   , cannotBeSpreadOnType
   )
 where
@@ -35,14 +33,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
     {...H} -> "Unknown fragment \"H\"."
 -}
 
-unusedFragment :: [Ref] -> GQLErrors
-unusedFragment = map toError
- where
-  toError Ref { refName, refPosition } = GQLError
-    { message   = "Fragment \"" <> refName <> "\" is never used."
-    , locations = [refPosition]
-    }
-
 cannotSpreadWithinItself :: [Ref] -> GQLErrors
 cannotSpreadWithinItself fragments = [GQLError { message = text, locations = map refPosition fragments }]
  where
@@ -56,9 +46,9 @@ cannotSpreadWithinItself fragments = [GQLError { message = text, locations = map
 cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> [Text] -> GQLErrors
 cannotBeSpreadOnType key fragmentType position typeMembers = errorMessage
   position
-  message
+  msg
  where
-  message =
+  msg =
     "Fragment "
       <> getName key
       <> "cannot be spread here as objects of type \""
