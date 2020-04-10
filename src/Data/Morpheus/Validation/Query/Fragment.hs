@@ -17,7 +17,6 @@ import           Data.Foldable                  (traverse_)
 -- MORPHEUS
 import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
                                                 , cannotSpreadWithinItself
-                                                , unusedFragment
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
@@ -43,6 +42,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , constraint
                                                 , Constraint(..)
                                                 , Validator
+                                                , checkUnused
                                                 )
 
 validateFragments :: SelectionSet RAW -> BaseValidator ()
@@ -54,12 +54,9 @@ validateFragments selectionSet
 checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do
     fragments <- askFragments
-    case refs fragments \\ usedFragments fragments (toList selectionSet) of
-      []     -> return ()
-      unused -> failure (unusedFragment unused)
-  where
-    refs fragments = map toRef (toList fragments)
-    toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
+    checkUnused 
+      (usedFragments fragments (toList selectionSet)) 
+      (toList fragments)
 
 castFragmentType
   :: Maybe Name -> Position -> [Name] -> Fragment -> Validator ctx Fragment

@@ -1,9 +1,7 @@
-{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself
-  , unusedFragment
   , cannotBeSpreadOnType
   )
 where
@@ -34,14 +32,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
     fragment H on D {...}  ->  "Unknown type \"D\"."
     {...H} -> "Unknown fragment \"H\"."
 -}
-
-unusedFragment :: [Ref] -> GQLErrors
-unusedFragment = map toError
- where
-  toError Ref { refName, refPosition } = GQLError
-    { message   = "Fragment \"" <> refName <> "\" is never used."
-    , locations = [refPosition]
-    }
 
 cannotSpreadWithinItself :: [Ref] -> GQLErrors
 cannotSpreadWithinItself fragments = [GQLError { message = text, locations = map refPosition fragments }]

@@ -38,6 +38,7 @@ module Data.Morpheus.Types.Internal.Validation
   , startInput
   , withInputScope
   , inputMessagePrefix
+  , checkUnused
   , Prop(..)
   )
   where
@@ -57,6 +58,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectBy
                                                 , selectOr
                                                 , KeyOf(..)
+                                                , member
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless )
@@ -95,8 +97,21 @@ import           Data.Morpheus.Types.Internal.Validation.Error
                                                 , KindViolation(..)
                                                 , Unknown(..)
                                                 , InternalError(..)
+                                                , Unused(..)
                                                 )
 
+getUnused :: (KeyOf b ,Selectable ca a) => ca -> [b] -> [b]
+getUnused uses = filter (not . (`member` uses) . keyOf)
+
+failOnUnused :: Unused b => [b] -> Validator ctx () 
+failOnUnused x   
+  | null x = return ()
+  | otherwise = do
+    (gctx,_) <- Validator ask
+    failure $ map (unused gctx) x
+
+checkUnused :: (KeyOf b ,Selectable ca a, Unused b) =>  ca -> [b] -> Validator ctx () 
+checkUnused uses = failOnUnused . getUnused uses
 
 constraint 
   :: forall (a :: Target) inp ctx. KindViolation a inp 
@@ -106,7 +121,6 @@ constraint
   -> Validator ctx (Resolution a)
 constraint OBJECT  _   TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
--- constraint UNION   _   TypeDefinition { typeContent = DataUnion members } = pure members
 constraint INPUT   _   x | isInputDataType x = pure x 
 constraint target  ctx _  = failure [kindViolation target ctx]
 
@@ -124,9 +138,6 @@ selectRequired selector container
       [missingRequired gctx ctx selector container] 
       (keyOf selector) 
       container
-
--- isNull :: a -> Bool
--- isNull = const False
 
 selectWithDefaultValue 
   ::  ( Selectable values value
@@ -291,12 +302,10 @@ setGlobalContext
   -> Validator c a
 setGlobalContext f = Validator . withReaderT ( \(x,y) -> (f x,y)) . _runValidator
 
-
 withScope :: Name -> Position -> Validator ctx a -> Validator ctx a
 withScope scopeTypeName scopePosition = setGlobalContext update
      where
        update ctx = ctx { scopeTypeName , scopePosition }
-
 
 withScopePosition :: Position -> Validator ctx a -> Validator ctx a
 withScopePosition scopePosition = setGlobalContext update

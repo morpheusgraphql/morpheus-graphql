@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.Operation
     )
     where 
 
+import           Data.List                              (find)
 import           Data.Text                              ( Text )
 import           Instances.TH.Lift                      ( )
 import           Data.HashMap.Lazy                      ( HashMap )
@@ -41,6 +42,9 @@ instance Empty (HashMap k v) where
 
 class Selectable c a | c -> a where 
   selectOr :: d -> (a -> d) -> Name -> c -> d
+
+instance KeyOf a => Selectable [a] a where
+  selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
 
 instance Selectable (HashMap Text a) a where 
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)

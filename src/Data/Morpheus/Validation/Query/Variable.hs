@@ -15,9 +15,7 @@ import           Data.Maybe                     ( maybe )
 import           Data.Semigroup                 ( (<>) )
 
 --- MORPHEUS
-import           Data.Morpheus.Error.Variable   ( uninitializedVariable
-                                                , unusedVariables
-                                                )
+import           Data.Morpheus.Error.Variable   ( uninitializedVariable)
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
@@ -58,6 +56,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , withScopePosition
                                                 , startInput
                                                 , InputSource(..)
+                                                , checkUnused
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
@@ -106,22 +105,15 @@ resolveOperationVariables
     root 
     validationMode 
     Operation 
-      { operationName
-      , operationSelection
+      { operationSelection
       , operationArguments 
       }
   = do
     allVariableRefs [operationSelection] >>= checkUnusedVariables
     traverse (lookupAndValidateValueOnBody root validationMode) operationArguments
  where
-  varToKey :: Variable a -> Ref
-  varToKey Variable { variableName, variablePosition } = Ref variableName variablePosition
-  --
   checkUnusedVariables :: [Ref] -> BaseValidator ()
-  checkUnusedVariables refs = case map varToKey (toList operationArguments) \\ refs of
-    [] -> pure ()
-    unused' ->
-      failure $ unusedVariables (getOperationName operationName) unused'
+  checkUnusedVariables = flip checkUnused (toList operationArguments)
 
 lookupAndValidateValueOnBody
   :: Variables

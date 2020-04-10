@@ -2,7 +2,6 @@
 
 module Data.Morpheus.Error.Variable
   ( uninitializedVariable
-  , unusedVariables
   , incompatibleVariableType
   )
 where
@@ -30,17 +29,6 @@ incompatibleVariableType variableName variableType argType argPosition =
       <> "\" used in position expecting type \""
       <> argType
       <> "\"."
-
--- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-unusedVariables :: Name -> [Ref] -> GQLErrors
-unusedVariables operator' = map keyToError
- where
-  keyToError (Ref key' position') =
-    GQLError { message = text key', locations = [position'] }
-  ---------------------------------
-  text key' = "Variable \"$" <> key' 
-    <> "\" is never used in operation \""
-    <> operator' <> "\"."
 
 uninitializedVariable :: Position -> Name -> Name -> GQLErrors
 uninitializedVariable position' type' key' = errorMessage position' text
