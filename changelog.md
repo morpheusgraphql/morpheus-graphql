@@ -11,6 +11,7 @@
 - Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).
 - Support for input lists separated by newlines. thanks @charlescrain
 - conflicting variable , fragment ... validation
+- issue #411: Aeson `FromJSON` `ToJSON` instances for `ID` 
 
 ### minor
 
