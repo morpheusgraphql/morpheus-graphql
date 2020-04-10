@@ -41,7 +41,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , singleton
                                                 , Failure(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Validator
+import           Data.Morpheus.Types.Internal.Validation
                                                 ( SelectionValidator
                                                 , askTypeMember
                                                 , askScopeTypeName

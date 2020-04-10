@@ -9,7 +9,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 
-module Data.Morpheus.Types.Internal.Validator
+module Data.Morpheus.Types.Internal.Validation
   ( Validator
   , SelectionValidator
   , InputValidator

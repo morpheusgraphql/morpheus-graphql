@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , empty
                                                 )
-import           Data.Morpheus.Types.Internal.Validator
+import           Data.Morpheus.Types.Internal.Validation
                                                 ( SelectionValidator
                                                 , InputSource(..)
                                                 , SelectionContext(..)

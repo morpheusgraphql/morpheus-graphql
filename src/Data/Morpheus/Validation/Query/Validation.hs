@@ -22,7 +22,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty )
-import           Data.Morpheus.Types.Internal.Validator
+import           Data.Morpheus.Types.Internal.Validation
                                                 ( SelectionValidator
                                                 , InputSource(..)
                                                 , BaseValidator
