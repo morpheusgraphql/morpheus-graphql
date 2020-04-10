@@ -44,7 +44,7 @@ validateRequest
   GQLQuery 
     { fragments
     , inputVariables, 
-    operation = rawOperation@Operation 
+    operation = operation@Operation 
       { operationName
       , operationSelection
       , operationPosition 
@@ -53,7 +53,7 @@ validateRequest
   = do
       variables <- runValidator validateHelpers ctx ()
       runValidator 
-        (validateOperation rawOperation) 
+        (validateOperation operation) 
         ctx 
         SelectionContext 
           { operationName
@@ -71,4 +71,4 @@ validateRequest
         resolveOperationVariables
           (fromList inputVariables)
           validationMode
-          rawOperation
+          operation
