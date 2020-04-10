@@ -60,7 +60,7 @@ validateRequest
         ctx 
         SelectionContext 
           { operationName
-          ,  variables
+          , variables
           }
    where 
     ctx = Context 
