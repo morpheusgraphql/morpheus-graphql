@@ -107,12 +107,13 @@ resolveOperationVariables
       { operationSelection
       , operationArguments 
       }
-  = do
-    allVariableRefs [operationSelection] >>= checkUnusedVariables
+  = checkUnusedVariables *>
     traverse (lookupAndValidateValueOnBody root validationMode) operationArguments
  where
-  checkUnusedVariables :: [Ref] -> BaseValidator ()
-  checkUnusedVariables = flip checkUnused (toList operationArguments)
+  checkUnusedVariables :: BaseValidator ()
+  checkUnusedVariables = do
+    uses <- allVariableRefs [operationSelection]
+    checkUnused uses (toList operationArguments)
 
 lookupAndValidateValueOnBody
   :: Variables
