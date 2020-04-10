@@ -13,6 +13,8 @@ module Data.Morpheus.Validation.Query.Selection
 where
 
 
+import           Data.Semigroup                 ( (<>) )
+
 -- MORPHEUS
 import           Data.Morpheus.Error.Selection  ( hasNoSubfields
                                                 , subfieldsNotSelected
