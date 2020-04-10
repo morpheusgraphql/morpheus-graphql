@@ -59,7 +59,7 @@ import           Data.Semigroup                 ((<>))
 import           Data.Aeson                     ( FromJSON
                                                 , ToJSON
                                                 )
-import           Data.Text                      ( Text , intercalate )
+import           Data.Text                      ( Text )
 import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ()

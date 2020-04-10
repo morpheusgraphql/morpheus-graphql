@@ -51,8 +51,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema(..)
                                                 , TypeDefinition(..)
-                                                , TypeContent(..)
-                                                , FieldsDefinition
                                                 , Arguments
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
