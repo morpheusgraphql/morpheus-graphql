@@ -29,7 +29,6 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeKind(..)
   , DataFingerprint(..)
   , DataTypeWrapper(..)
-  , Prop(..)
   , anonymousRef
   , toHSWrappers
   , toGQLWrapper
@@ -51,10 +50,8 @@ module Data.Morpheus.Types.Internal.AST.Base
   , toOperationType
   , splitDuplicates
   , removeDuplicates
-  , renderPath
   , GQLError(..)
   , GQLErrors
-  , Path
   )
 where
 
@@ -114,18 +111,6 @@ type MUTATION = 'Mutation
 type SUBSCRIPTION = 'Subscription
 
 type Named a = (Name, a) 
-
-data Prop =
-  Prop
-    { propName  :: Name
-    , propTypeName :: Name
-    } deriving (Show)
-
-type Path = [Prop]
-
-renderPath :: Path -> Message
-renderPath []    = ""
-renderPath path = "in field \"" <> intercalate "." (fmap propName path) <> "\": "
 
 -- Refference with Position information  
 --

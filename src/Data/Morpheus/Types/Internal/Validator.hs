@@ -1,6 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE NamedFieldPuns             #-}
@@ -15,6 +14,9 @@ module Data.Morpheus.Types.Internal.Validator
   , SelectionValidator
   , InputValidator
   , BaseValidator
+  , InputSource(..)
+  , Context(..)
+  , SelectionContext(..)
   , runValidator
   , askSchema
   , askContext
@@ -36,12 +38,10 @@ module Data.Morpheus.Types.Internal.Validator
   , startInput
   , withInputScope
   , inputMessagePrefix
+  , Prop(..)
   )
   where
 
-import           Control.Monad.Fail             ( MonadFail(..) )
-import           Control.Monad.Trans.Class      ( MonadTrans(..) )
-import           Data.Text                      ( pack )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
                                                 )
@@ -66,47 +66,44 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Message
                                                 , Ref(..)
                                                 , TypeRef(..)
-                                                , GQLErrors
-                                                , GQLError(..)
                                                 , Fragments
                                                 , Schema
-                                                , SelectionContext(..)
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition(..)
                                                 , TypeDefinition(..)
                                                 , TypeContent(..)
                                                 , isInputDataType
                                                 , isFieldNullable
+                                                )
+import           Data.Morpheus.Types.Internal.Validation.Validator
+                                                ( Validator(..)
+                                                , Constraint(..)
+                                                , Target(..)
                                                 , InputSource(..)
                                                 , InputContext(..)
                                                 , Context(..)
                                                 , Prop(..)
                                                 , renderInputPrefix
+                                                , Resolution
+                                                , SelectionValidator
+                                                , InputValidator
+                                                , BaseValidator
+                                                , SelectionContext(..)
                                                 )
-import           Data.Morpheus.Error.ErrorClass ( MissingRequired(..)
+import           Data.Morpheus.Types.Internal.Validation.Error 
+                                                ( MissingRequired(..)
                                                 , KindViolation(..)
                                                 , Unknown(..)
                                                 , InternalError(..)
-                                                , Target(..)
-                                                , CTX
                                                 )
 
-data Constraint (a :: Target) where
-  OBJECT :: Constraint 'TARGET_OBJECT
-  INPUT  :: Constraint 'TARGET_INPUT
---  UNION  :: Constraint 'TARGET_UNION
-
-type family Resolution (a :: Target)
-type instance Resolution 'TARGET_OBJECT = (Name, FieldsDefinition)
-type instance Resolution 'TARGET_INPUT = TypeDefinition
---type instance Resolution 'TARGET_UNION = DataUnion
 
 constraint 
-  :: forall (a :: Target) ctx. KindViolation a ctx 
+  :: forall (a :: Target) inp ctx. KindViolation a inp 
   => Constraint ( a :: Target) 
-  -> ctx 
+  -> inp 
   -> TypeDefinition 
-  -> SelectionValidator (Resolution a)
+  -> Validator ctx (Resolution a)
 constraint OBJECT  _   TypeDefinition { typeContent = DataObject { objectFields } , typeName } 
   = pure (typeName, objectFields)
 -- constraint UNION   _   TypeDefinition { typeContent = DataUnion members } = pure members
@@ -115,11 +112,11 @@ constraint target  ctx _  = failure [kindViolation target ctx]
 
 selectRequired 
   ::  ( Selectable c value
-      , MissingRequired c
-      ) 
+      , MissingRequired c ctx
+      )
   => Ref 
   -> c
-  -> Validator (CTX c) value
+  -> Validator ctx value
 selectRequired selector container 
   = do 
     (gctx,ctx) <- Validator ask
@@ -133,12 +130,12 @@ selectRequired selector container
 
 selectWithDefaultValue 
   ::  ( Selectable values value
-      , MissingRequired values
+      , MissingRequired values ctx
       )
   => value
   -> FieldDefinition
   -> values
-  -> Validator (CTX values) value
+  -> Validator ctx value
 selectWithDefaultValue 
   fallbackValue 
   field@FieldDefinition { fieldName }
@@ -160,12 +157,12 @@ selectWithDefaultValue
 
 selectKnown 
   ::  ( Selectable c a
-      , Unknown c
+      , Unknown c ctx
       , KeyOf (UnknownSelector c)
       ) 
   => UnknownSelector c 
   -> c 
-  -> Validator (CTX c) a
+  -> Validator ctx a
 selectKnown selector lib  
   = do 
     (gctx, ctx) <- Validator ask
@@ -250,7 +247,7 @@ askInputMember
             scopeType <- askScopeTypeName
             failure $ typeInfo typeName <> "\"" <> scopeType <> "\" must be an INPUT_OBJECT."
 
-startInput :: InputSource -> InputValidator a -> SelectionValidator a
+startInput :: InputSource -> InputValidator a -> Validator ctx a
 startInput inputSource 
   = setContext 
   $ const InputContext 
@@ -313,39 +310,3 @@ withScopeType scopeTypeName = setGlobalContext update
 
 inputMessagePrefix :: InputValidator Message 
 inputMessagePrefix = renderInputPrefix <$> askContext
-
-newtype Validator ctx a 
-  = Validator 
-    {
-      _runValidator :: ReaderT 
-          (Context, ctx) 
-          Stateless
-          a
-    }
-    deriving 
-      ( Functor
-      , Applicative
-      , Monad
-      )
-
-type BaseValidator = Validator SelectionContext
-type SelectionValidator = Validator SelectionContext
-type InputValidator = Validator InputContext
-
--- instance MonadFail (SelectionValidator ctx) where 
---  fail = failure . pack
-
--- can be only used for internal errors
-instance Failure Message (Validator ctx) where
-  failure inputMessage = do 
-    position <- askScopePosition
-    failure 
-      [
-        GQLError 
-          { message = "INTERNAL: " <> inputMessage
-          , locations = [position]
-          }
-      ]
-
-instance Failure GQLErrors (Validator ctx) where
-  failure = Validator . lift . failure

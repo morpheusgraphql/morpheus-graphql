@@ -18,16 +18,17 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , GQLQuery(..)
                                                 , VALIDATION_MODE
-                                                , InputSource(..)
-                                                , Variables
-                                                , Context(..)
-                                                , SelectionContext(..)
+                                                , VariableDefinitions
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty )
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( SelectionValidator
+                                                , InputSource(..)
+                                                , BaseValidator
+                                                , Context(..)
                                                 , runValidator
+                                                , SelectionContext(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless )
@@ -57,33 +58,29 @@ validateRequest
       , operationPosition 
       } 
     }
-  = runValidator 
-      validation
-      Context 
+  = do
+      variables <- runValidator validateHelpers ctx ()
+      runValidator validateSelection ctx SelectionContext 
+        { operationName
+        ,  variables
+        }
+   where 
+    ctx = Context 
         { schema 
         , fragments
         , scopeTypeName = "Root"
         , scopePosition = operationPosition
         }
-      SelectionContext 
-        { operationName
-          -- TODO: variables
-        }
-   where
     validateHelpers = 
         validateFragments operationSelection *>
         resolveOperationVariables
           (fromList inputVariables)
           validationMode
           rawOperation
-    validation :: SelectionValidator (Operation VALID)
-    validation = do
-      variables <- validateHelpers 
+    validateSelection :: SelectionValidator (Operation VALID)
+    validateSelection = do
       operationTypeDef  <-  getOperationObject rawOperation schema
-      selection <- validateOperation
-                                  variables
-                                  operationTypeDef
-                                  rawOperation
+      selection <- validateOperation operationTypeDef rawOperation
       pure $ Operation 
               { operationName
               , operationType

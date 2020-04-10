@@ -5,22 +5,27 @@
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 
-module Data.Morpheus.Error.ErrorClass
+module Data.Morpheus.Types.Internal.Validation.Error
   ( MissingRequired(..)
   , KindViolation(..)
   , Unknown(..)
   , InternalError(..)
   , Target(..)
-  , CTX
   )
   where
-
 
 import           Data.Semigroup                 ((<>))
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Error.Selection  ( unknownSelectionField )
+import           Data.Morpheus.Types.Internal.Validation.Validator
+                                                ( Context(..)
+                                                , InputContext(..)
+                                                , SelectionContext(..)
+                                                , renderInputPrefix
+                                                , Target(..)
+                                                )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( RESOLVED
                                                 , Ref(..)
@@ -31,10 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ObjectEntry(..)
                                                 , Fragment(..)
                                                 , Fragments
-                                                , Context(..)
                                                 , Variable(..)
-                                                , SelectionContext(..)
-                                                , InputContext(..)
                                                 , VariableDefinitions
                                                 , FieldDefinition(..)
                                                 , FieldsDefinition
@@ -43,26 +45,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Object
                                                 , Arguments
                                                 , getOperationName
-                                                , renderInputPrefix
                                                 )
 
-data Target 
-  = TARGET_OBJECT 
-  | TARGET_INPUT
---  | TARGET_UNION
+
 
 class InternalError a where
   internalError :: a -> GQLError
 
-type family   CTX a :: *
-type instance CTX (Object s) = InputContext
-type instance CTX (Arguments s) = SelectionContext
-type instance CTX (VariableDefinitions s) = SelectionContext
-type instance CTX Fragments = SelectionContext
-type instance CTX Schema = SelectionContext
-type instance CTX FieldDefinition = SelectionContext
-type instance CTX InputFieldsDefinition = InputContext
-type instance CTX FieldsDefinition = SelectionContext
+
 
 instance InternalError FieldDefinition where
   internalError FieldDefinition 
@@ -76,10 +66,10 @@ instance InternalError FieldDefinition where
       , locations = []
       }
 
-class MissingRequired c where 
-  missingRequired :: Context -> CTX c -> Ref -> c -> GQLError
+class MissingRequired c ctx where 
+  missingRequired :: Context -> ctx -> Ref -> c -> GQLError
 
-instance MissingRequired (Arguments s) where
+instance MissingRequired (Arguments s) ctx where
   missingRequired 
     Context { scopePosition , scopeTypeName } 
     _
@@ -91,7 +81,7 @@ instance MissingRequired (Arguments s) where
       , locations = [scopePosition]
       }
 
-instance MissingRequired (Object s) where
+instance MissingRequired (Object s) InputContext where
   missingRequired 
       Context { scopePosition }
       inputCTX
@@ -103,7 +93,7 @@ instance MissingRequired (Object s) where
       , locations = [scopePosition]
       }
 
-instance MissingRequired (VariableDefinitions s) where
+instance MissingRequired (VariableDefinitions s) SelectionContext where
   missingRequired 
     _
     SelectionContext { operationName } 
@@ -117,31 +107,29 @@ instance MissingRequired (VariableDefinitions s) where
       }
 
 
-class Unknown c where
+class Unknown c ctx where
   type UnknownSelector c
-  unknown :: Context -> CTX c -> c -> UnknownSelector c -> GQLErrors
+  unknown :: Context -> ctx -> c -> UnknownSelector c -> GQLErrors
 
 -- {...H} -> "Unknown fragment \"H\"."
-instance Unknown Fragments where
+instance Unknown Fragments ctx where
   type UnknownSelector Fragments = Ref
   unknown _ _ _ (Ref name pos) 
     = errorMessage pos
       ("Unknown Fragment \"" <> name <> "\".")
 
-instance Unknown Schema where
+instance Unknown Schema ctx where
   type UnknownSelector Schema = Ref
   unknown _ _ _ Ref { refName , refPosition }
     = errorMessage refPosition ("Unknown type \"" <> refName <> "\".")
 
-instance Unknown FieldDefinition where
-  
+instance Unknown FieldDefinition ctx where
   type UnknownSelector FieldDefinition = Argument RESOLVED
   unknown _ _ FieldDefinition { fieldName } Argument { argumentName, argumentPosition }
     = errorMessage argumentPosition 
       ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
 
-instance Unknown InputFieldsDefinition where
-
+instance Unknown InputFieldsDefinition InputContext where
   type UnknownSelector InputFieldsDefinition = ObjectEntry RESOLVED
   unknown Context { scopePosition } ctx _ ObjectEntry { entryName } = 
     [
@@ -151,7 +139,7 @@ instance Unknown InputFieldsDefinition where
         }
     ]
 
-instance Unknown FieldsDefinition where
+instance Unknown FieldsDefinition ctx where
   type UnknownSelector FieldsDefinition = Ref
   unknown Context { scopeTypeName } _ _ 
     = unknownSelectionField scopeTypeName
@@ -179,6 +167,6 @@ instance KindViolation 'TARGET_INPUT (Variable s) where
       { message 
         =  "Variable \"$" <> variableName 
         <> "\" cannot be non-input type \""
-        <> typeConName <>"\"." --TODO: render with typewrappers
+        <> typeConName <>"\"."
       , locations = [variablePosition]
       }

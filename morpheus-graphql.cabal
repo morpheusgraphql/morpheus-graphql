@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9f62e69ef1ffb2ec7b5702df0331a33ebd3efe160a069d4110b7d51d57c42769
+-- hash: 5a675bc46ebf9f60670f2b400f2ffd044b3b9e8bf849db752104527c1f4b741d
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -328,7 +328,6 @@ library
   other-modules:
       Data.Morpheus.Error.Client.Client
       Data.Morpheus.Error.Document.Interface
-      Data.Morpheus.Error.ErrorClass
       Data.Morpheus.Error.Fragment
       Data.Morpheus.Error.Input
       Data.Morpheus.Error.Internal
@@ -391,6 +390,8 @@ library
       Data.Morpheus.Types.Internal.Resolving.Core
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.TH
+      Data.Morpheus.Types.Internal.Validation.Error
+      Data.Morpheus.Types.Internal.Validation.Validator
       Data.Morpheus.Types.Internal.Validator
       Data.Morpheus.Types.Internal.WebSocket
       Data.Morpheus.Types.IO

@@ -60,11 +60,10 @@ import           Data.Morpheus.Validation.Query.Fragment
 type TypeDef = (Name, FieldsDefinition)
 
 validateOperation
-  :: VariableDefinitions VALID
-  -> TypeDef
+  :: TypeDef
   -> Operation RAW
   -> SelectionValidator (SelectionSet VALID)
-validateOperation variables tyDef Operation { operationSelection } = 
+validateOperation tyDef Operation { operationSelection } = 
     __validate 
       tyDef 
       operationSelection
@@ -93,7 +92,6 @@ validateOperation variables tyDef Operation { operationSelection } =
           (fieldDef :: FieldDefinition) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
           -- validate field Argument -----
           arguments <- validateArguments
-                        variables
                         fieldDef
                         selectionArguments
           -- check field Type existence  -----

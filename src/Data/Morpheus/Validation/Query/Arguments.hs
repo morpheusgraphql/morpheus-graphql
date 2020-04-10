@@ -9,8 +9,7 @@ where
 
 import           Data.Foldable                  (traverse_)
 import           Data.Morpheus.Types.Internal.AST
-                                                ( VariableDefinitions
-                                                , Argument(..)
+                                                ( Argument(..)
                                                 , ArgumentsDefinition(..)
                                                 , Arguments
                                                 , ArgumentDefinition
@@ -23,7 +22,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , ObjectEntry(..)
                                                 , RAW
-                                                , InputSource(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -31,6 +29,8 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 )
 import           Data.Morpheus.Types.Internal.Validator
                                                 ( SelectionValidator
+                                                , InputSource(..)
+                                                , SelectionContext(..)
                                                 , selectKnown
                                                 , selectRequired
                                                 , selectWithDefaultValue
@@ -38,13 +38,14 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , withScopePosition
                                                 , askInputFieldType
                                                 , startInput
+                                                , askContext
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )
 
 -- only Resolves , doesnot checks the types
-resolveObject :: VariableDefinitions VALID -> RawValue -> SelectionValidator ResolvedValue
-resolveObject variables = resolve
+resolveObject :: RawValue -> SelectionValidator ResolvedValue
+resolveObject = resolve
  where
   resolveEntry :: ObjectEntry RAW -> SelectionValidator (ObjectEntry RESOLVED)
   resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
@@ -56,18 +57,19 @@ resolveObject variables = resolve
   resolve (List   x  ) = List <$> traverse resolve x
   resolve (Object obj) = Object <$> traverse resolveEntry obj
   resolve (VariableValue ref) =
-    ResolvedVariable ref <$> selectRequired ref variables 
+     variables <$> askContext
+    >>= fmap (ResolvedVariable ref) 
+        . selectRequired ref 
 
 resolveArgumentVariables
-  :: VariableDefinitions VALID
-  -> Arguments RAW
+  :: Arguments RAW
   -> SelectionValidator (Arguments RESOLVED)
-resolveArgumentVariables variables
+resolveArgumentVariables
   = traverse resolveVariable
  where
   resolveVariable :: Argument RAW -> SelectionValidator (Argument RESOLVED)
   resolveVariable (Argument key val position) = do 
-    constValue <- resolveObject variables val
+    constValue <- resolveObject val
     pure $ Argument key constValue position
 
 validateArgument
@@ -102,16 +104,14 @@ validateArgument
       pure Argument { argumentValue , .. }
 
 validateArguments
-  :: VariableDefinitions VALID
-  -> FieldDefinition
+  :: FieldDefinition
   -> Arguments RAW
   -> SelectionValidator (Arguments VALID)
 validateArguments
-    variables 
     fieldDef@FieldDefinition {  fieldArgs }
     rawArgs
   = do
-    args <- resolveArgumentVariables variables rawArgs
+    args <- resolveArgumentVariables rawArgs
     traverse_ checkUnknown (toList args)
     traverse (validateArgument args) argsDef
  where

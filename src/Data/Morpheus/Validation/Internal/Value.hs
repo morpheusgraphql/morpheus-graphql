@@ -39,7 +39,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isNullableWrapper
                                                 , ObjectEntry(..)
                                                 , RESOLVED
-                                                , Prop(..)
                                                 , InputFieldsDefinition(..)
                                                 , Variable(..)
                                                 )
@@ -57,6 +56,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , withScopeType
                                                 , withInputScope
                                                 , inputMessagePrefix
+                                                , Prop(..)
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
                                                 ( RenderGQL(..) 

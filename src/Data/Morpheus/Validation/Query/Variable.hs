@@ -43,7 +43,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeRef(..)
                                                 , VALIDATION_MODE(..)
                                                 , ObjectEntry(..)
-                                                , InputSource(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
@@ -58,6 +57,7 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , Constraint(..)
                                                 , withScopePosition
                                                 , startInput
+                                                , InputSource(..)
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
                                                 ( validateInput )

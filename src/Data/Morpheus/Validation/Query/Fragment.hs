@@ -42,8 +42,8 @@ import           Data.Morpheus.Types.Internal.Validator
                                                 , selectKnown
                                                 , constraint
                                                 , Constraint(..)
+                                                , Validator
                                                 )
-
 
 validateFragments :: SelectionSet RAW -> BaseValidator ()
 validateFragments selectionSet 
@@ -62,12 +62,12 @@ checkUnusedFragments selectionSet = do
     toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
 
 castFragmentType
-  :: Maybe Name -> Position -> [Name] -> Fragment -> BaseValidator Fragment
+  :: Maybe Name -> Position -> [Name] -> Fragment -> Validator ctx Fragment
 castFragmentType key position typeMembers fragment@Fragment { fragmentType }
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise =  failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [Name] -> Ref -> BaseValidator Fragment
+resolveSpread :: [Name] -> Ref -> Validator ctx Fragment
 resolveSpread allowedTargets ref@Ref { refName, refPosition } 
   = askFragments
     >>= selectKnown ref

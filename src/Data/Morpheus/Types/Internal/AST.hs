@@ -144,15 +144,7 @@ module Data.Morpheus.Types.Internal.AST
   , GQLErrors
   , ObjectEntry(..)
   , UnionTag(..)
-  , Prop(..)
-  , Path
-  , renderPath
-  , Context(..)
-  , InputSource(..)
-  , SelectionContext(..)
-  , InputContext(..)
   , isInputDataType
-  , renderInputPrefix
   )
 where
 
@@ -211,36 +203,3 @@ isPosibeUnion tags (Enum name) = case lookup name tags of
   Nothing -> failure (name <> " is not posible union type" :: Message)
   _       -> pure name
 isPosibeUnion _ _ = failure ("__typename must be Enum" :: Message)
-
-renderInputPrefix :: InputContext -> Message
-renderInputPrefix InputContext { inputPath , inputSource } = 
-  renderSource inputSource <> renderPath inputPath
-
-renderSource :: InputSource -> Message
-renderSource (SourceArgument Argument { argumentName }) 
-  = "Argument \"" <> argumentName <>"\" got invalid value. "
-renderSource (SourceVariable Variable { variableName })
-  = "Variable \"$" <> variableName <>"\" got invalid value. "
-
-data Context = Context 
-  { schema           :: Schema
-  , fragments        :: Fragments
-  , scopePosition    :: Position
-  , scopeTypeName    :: Name
-  } deriving (Show)
-
-data InputContext = InputContext 
-  { inputSource :: InputSource
-  , inputPath  :: [Prop]
-  } deriving (Show)
-
-data InputSource
-  = SourceArgument (Argument RESOLVED)
-  | SourceVariable (Variable RAW)
-  deriving (Show)
-
-data SelectionContext 
-  = SelectionContext 
-    { variables        :: Variables
-    , operationName    :: Maybe Name
-    } deriving (Show)
