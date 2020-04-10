@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
@@ -17,24 +16,20 @@ where
 import           Control.Monad                  ((>=>))
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Selection  ( cannotQueryField )
+import           Data.Morpheus.Error.Selection  ( unknownSelectionField )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Selection(..)
                                                 , SelectionContent(..)
                                                 , Fragment(..)
-                                                , Fragments
                                                 , SelectionSet
-                                                , FieldDefinition(..)
                                                 , FieldsDefinition(..)
-                                                , Schema(..)
                                                 , Name
                                                 , RAW
                                                 , VALID
-                                                , Arguments
-                                                , Position
                                                 , SelectionSet
-                                                , lookupUnionTypes
                                                 , UnionTag(..)
+                                                , Ref(..)
+                                                , DataUnion
                                                 )
 import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
                                                 ( join )
@@ -43,10 +38,12 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectOr
                                                 , empty
                                                 , singleton
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
                                                 , Failure(..)
+                                                )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( SelectionValidator
+                                                , askTypeMember
+                                                , askScopeTypeName
                                                 )
 import           Data.Morpheus.Validation.Query.Fragment
                                                 ( castFragmentType
@@ -54,22 +51,23 @@ import           Data.Morpheus.Validation.Query.Fragment
                                                 )
 
 
+type TypeDef = (Name, FieldsDefinition)
+
 -- returns all Fragments used in Union
 exploreUnionFragments
-  :: Fragments
-  -> Name
-  -> [Name]
+  :: [Name]
   -> Selection RAW
-  -> Validation [Fragment]
-exploreUnionFragments fragments unionTypeName unionTags = splitFrag
+  -> SelectionValidator [Fragment]
+exploreUnionFragments unionTags = splitFrag
  where
   packFragment fragment = [fragment]
   splitFrag
-    :: Selection RAW -> Validation [Fragment]
-  splitFrag (Spread ref) = packFragment <$> resolveSpread fragments unionTags ref 
+    :: Selection RAW -> SelectionValidator [Fragment]
+  splitFrag (Spread ref) = packFragment <$> resolveSpread unionTags ref 
   splitFrag Selection { selectionName = "__typename",selectionContent = SelectionField } = pure []
-  splitFrag Selection { selectionName, selectionPosition } =
-    failure $ cannotQueryField selectionName unionTypeName selectionPosition
+  splitFrag Selection { selectionName, selectionPosition } = do
+    typeName <- askScopeTypeName
+    failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
   splitFrag (InlineFragment fragment) = packFragment <$>
     castFragmentType Nothing (fragmentPosition fragment) unionTags fragment
 
@@ -90,27 +88,6 @@ tagUnionFragments types fragments
     where matches fragment = fragmentType fragment == fst datatype
 
 
-type TypeDef = (Name, FieldsDefinition)
-type TypeFieldDef = (Name, FieldDefinition)
-type SelectionDef s = (Name,Position,Arguments s)
-
-
-clusterTypes :: Schema -> Fragments -> SelectionDef RAW -> SelectionSet RAW -> TypeFieldDef -> Validation [(TypeDef, [Fragment])]
-clusterTypes schema fragments (selectionName,selectionPosition,_) selectionSet (typeName,dataField) = do
-  -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
-  -- for example 
-  -- User | Admin | Product
-  unionTypes <- lookupUnionTypes selectionPosition
-                                selectionName
-                                schema
-                                dataField
-  let unionTags = map fst unionTypes
-  -- find all Fragments used in Selection
-  spreads <- concat <$> traverse (exploreUnionFragments fragments typeName unionTags) (toList selectionSet)
-  -- 
-  pure $ tagUnionFragments unionTypes spreads
-
-
 {-
     - all Variable and Fragment references will be: resolved and validated
     - unionTypes: will be clustered under type names
@@ -123,31 +100,28 @@ clusterTypes schema fragments (selectionName,selectionPosition,_) selectionSet (
       ]
  -}
 validateCluster
-      :: (TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID))
+      :: (TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID))
       -> SelectionSet RAW
       -> [(TypeDef, [Fragment])]
-      -> Validation (SelectionContent VALID)
+      -> SelectionValidator (SelectionContent VALID)
 validateCluster validator __typename = traverse _validateCluster >=> fmap UnionSelection . fromList
  where
-  _validateCluster :: (TypeDef, [Fragment]) -> Validation UnionTag
+  _validateCluster :: (TypeDef, [Fragment]) -> SelectionValidator UnionTag
   _validateCluster  (unionType, fragmets) = do
         fragmentSelections <- MS.join (__typename:map fragmentSelection fragmets)
         UnionTag (fst unionType) <$> validator unionType fragmentSelections
 
 validateUnionSelection 
-    :: (TypeDef -> SelectionSet RAW -> Validation (SelectionSet VALID)) 
-    -> Schema 
-    -> Fragments 
-    -> SelectionDef RAW 
+    :: (TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) 
     -> SelectionSet RAW 
-    -> TypeFieldDef 
-    -> Validation (SelectionContent VALID)
-validateUnionSelection validate schema fragments selectionDef selectionSet typeField  = do
+    -> DataUnion
+    -> SelectionValidator (SelectionContent VALID)
+validateUnionSelection validate  selectionSet members = do
     let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
-    categories <- clusterTypes 
-        schema 
-        fragments
-        selectionDef
-        selectionSet 
-        typeField
-    validateCluster validate __typename categories 
+    -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
+    -- [("User", FieldsDefinition { ... }), ("Product", FieldsDefinition { ...
+    unionTypes <- traverse askTypeMember members
+    -- find all Fragments used in Selection
+    spreads <- concat <$> traverse (exploreUnionFragments members) (toList selectionSet)
+    let categories = tagUnionFragments unionTypes spreads
+    validateCluster validate __typename categories

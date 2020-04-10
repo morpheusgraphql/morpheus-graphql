@@ -1,7 +1,9 @@
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE OverloadedStrings      #-}
 
 module Data.Morpheus.Validation.Query.Validation
   ( validateRequest
@@ -12,44 +14,61 @@ import           Data.Map                       ( fromList )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , VALID
-                                                , getOperationName
-                                                , getOperationObject
                                                 , Schema(..)
                                                 , GQLQuery(..)
                                                 , VALIDATION_MODE
                                                 )
-import           Data.Morpheus.Types.Internal.Operation
-                                                ( empty )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( Context(..)
+                                                , runValidator
+                                                , SelectionContext(..)
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
+                                                ( Stateless )
 import           Data.Morpheus.Validation.Query.Fragment
                                                 ( validateFragments )
 import           Data.Morpheus.Validation.Query.Selection
-                                                ( validateSelectionSet )
+                                                ( validateOperation )
 import           Data.Morpheus.Validation.Query.Variable
                                                 ( resolveOperationVariables )
 
 
 validateRequest
-  :: Schema -> VALIDATION_MODE -> GQLQuery -> Validation (Operation VALID)
-validateRequest lib validationMode GQLQuery { fragments, inputVariables, operation = rawOperation@Operation { operationName, operationType, operationSelection, operationPosition } }
+  :: Schema 
+  -> VALIDATION_MODE 
+  -> GQLQuery 
+  -> Stateless (Operation VALID)
+validateRequest 
+  schema 
+  validationMode 
+  GQLQuery 
+    { fragments
+    , inputVariables, 
+    operation = operation@Operation 
+      { operationName
+      , operationSelection
+      , operationPosition 
+      } 
+    }
   = do
-    operationDataType <-  getOperationObject rawOperation lib
-    variables         <- resolveOperationVariables lib
-                                                   fragments
-                                                   (fromList inputVariables)
-                                                   validationMode
-                                                   rawOperation
-    validateFragments lib fragments operationSelection
-    selection <- validateSelectionSet lib
-                                      fragments
-                                      (getOperationName operationName)
-                                      variables
-                                      operationDataType
-                                      operationSelection
-    pure $ Operation { operationName
-                     , operationType
-                     , operationArguments      = empty
-                     , operationSelection = selection
-                     , operationPosition
-                     }
+      variables <- runValidator validateHelpers ctx ()
+      runValidator 
+        (validateOperation operation) 
+        ctx 
+        SelectionContext 
+          { operationName
+          , variables
+          }
+   where 
+    ctx = Context 
+        { schema 
+        , fragments
+        , scopeTypeName = "Root"
+        , scopePosition = operationPosition
+        }
+    validateHelpers = 
+        validateFragments operationSelection *>
+        resolveOperationVariables
+          (fromList inputVariables)
+          validationMode
+          operation

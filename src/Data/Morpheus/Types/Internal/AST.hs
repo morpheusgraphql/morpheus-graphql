@@ -1,7 +1,9 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DeriveLift           #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE DeriveLift             #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
 
 module Data.Morpheus.Types.Internal.AST
   (
@@ -52,11 +54,9 @@ module Data.Morpheus.Types.Internal.AST
   , Operation(..)
   , Variable(..)
   , VariableDefinitions
-  , ValidVariables
   , DefaultValue
   , getOperationName
   , getOperationDataType
-  , getOperationObject
   -- DSL
   , ScalarDefinition(..)
   , DataEnum
@@ -65,6 +65,7 @@ module Data.Morpheus.Types.Internal.AST
   , DataUnion
   , ArgumentsDefinition(..)
   , FieldDefinition(..)
+  , InputFieldsDefinition(..)
   , TypeContent(..)
   , TypeDefinition(..)
   , Schema(..)
@@ -111,12 +112,6 @@ module Data.Morpheus.Types.Internal.AST
   , isSchemaTypeName
   , isPrimitiveTypeName
   , isEntNode
-  , lookupInputType
-  , coerceDataObject
-  , lookupDataUnion
-  , lookupUnionTypes
-  , lookupSelectionField
-  , lookupFieldAsSelectionSet
   , createField
   , createArgument
   , createDataTypeLib
@@ -133,7 +128,6 @@ module Data.Morpheus.Types.Internal.AST
   , lookupDeprecatedReason
   , hasArguments
   , lookupWith
-  , selectTypeObject
   , typeFromScalar
   -- Temaplate Haskell
   , toHSFieldDefinition
@@ -143,11 +137,13 @@ module Data.Morpheus.Types.Internal.AST
   , Variables
   , isNullableWrapper
   , unsafeFromFields
+  , unsafeFromInputFields
   , OrderedMap
   , GQLError(..)
   , GQLErrors
   , ObjectEntry(..)
   , UnionTag(..)
+  , isInputDataType
   )
 where
 

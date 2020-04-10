@@ -29,7 +29,6 @@ module Data.Morpheus.Types.Internal.AST.Base
   , DataTypeKind(..)
   , DataFingerprint(..)
   , DataTypeWrapper(..)
-  --, Named(..)
   , anonymousRef
   , toHSWrappers
   , toGQLWrapper

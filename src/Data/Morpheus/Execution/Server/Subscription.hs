@@ -78,7 +78,7 @@ publishEvent gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMessa
  where
   sendMessage GQLClient { clientSessions, clientConnection } 
     | null clientSessions  = return ()
-    | otherwise = mapM_ send (filterByChannels clientSessions)
+    | otherwise = traverse_ send (filterByChannels clientSessions)
    where
     send (sid, Event { content = subscriptionRes }) = do
       res <- subscriptionRes event

@@ -1,6 +1,6 @@
 {
   "data": {
-    "i1": "InputObject {field = \"v1\", nullableField = Just 123}",
-    "i2": "InputObject {field = \"v2\", nullableField = Nothing}"
+    "i1": "InputObject {field = \"v1\", nullableField = Just 123, recursive = Nothing}",
+    "i2": "InputObject {field = \"v2\", nullableField = Nothing, recursive = Just (InputObject {field = \"v3\", nullableField = Nothing, recursive = Nothing})}"
   }
 }

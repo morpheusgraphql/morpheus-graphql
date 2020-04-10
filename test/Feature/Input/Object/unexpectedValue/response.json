@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Argument value got invalid value ; Expected type \"InputObject!\" found \"some text\".",
+      "message": "Argument \"value\" got invalid value. Expected type \"InputObject!\" found \"some text\".",
       "locations": [
         {
           "line": 2,
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "message": "Argument value got invalid value ; Expected type \"InputObject!\" found 1.",
+      "message": "Argument \"value\" got invalid value. Expected type \"InputObject!\" found 1.",
       "locations": [
         {
           "line": 3,
@@ -19,7 +19,7 @@
       ]
     },
     {
-      "message": "Argument value got invalid value ;on field Expected type \"String\" found {}.",
+      "message": "Argument \"value\" got invalid value. in field \"field\": Expected type \"String!\" found {}.",
       "locations": [
         {
           "line": 4,
@@ -28,10 +28,28 @@
       ]
     },
     {
-      "message": "Argument value got invalid value ;on field Expected type \"String\" found 3.",
+      "message": "Argument \"value\" got invalid value. in field \"field\": Expected type \"String!\" found 3.",
       "locations": [
         {
           "line": 5,
+          "column": 13
+        }
+      ]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. in field \"field\": Expected type \"String!\" found null.",
+      "locations": [
+        {
+          "line": 6,
+          "column": 13
+        }
+      ]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. in field \"recursive.recursive.field\": Expected type \"String!\" found 5.",
+      "locations": [
+        {
+          "line": 8,
           "column": 13
         }
       ]

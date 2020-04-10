@@ -39,6 +39,7 @@ input UniqueID {
   """
   type: String = "test default value"
   id: String!
+  rec: UniqueID
 }
 
 type Address @typeDirective(id: 1) {

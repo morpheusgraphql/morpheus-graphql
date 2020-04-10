@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b327695a84172e878c0221dddfe1ef534173ee8ee409a28facbe5c68c622abc6
+-- hash: 2aafaab0cc5041f28f0662103696d50567a8663d11f94ee167dcb0d732e73469
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -28,10 +28,12 @@ data-files:
     test/Feature/Holistic/arguments/unknownArguments/query.gql
     test/Feature/Holistic/failure/resolveFailure/query.gql
     test/Feature/Holistic/fragment/cannotBeSpreadOnType/query.gql
+    test/Feature/Holistic/fragment/conditionTypeViolation/query.gql
     test/Feature/Holistic/fragment/inlineFragment/query.gql
     test/Feature/Holistic/fragment/inlineFragmentTypeMismatch/query.gql
     test/Feature/Holistic/fragment/loopingFragment/query.gql
     test/Feature/Holistic/fragment/nameCollision/query.gql
+    test/Feature/Holistic/fragment/unknownConditionType/query.gql
     test/Feature/Holistic/fragment/unknownTargetType/query.gql
     test/Feature/Holistic/fragment/unusedFragment/query.gql
     test/Feature/Holistic/introspection/defaultTypes/Boolean/query.gql
@@ -118,6 +120,7 @@ data-files:
     test/Feature/InputType/variables/invalidValue/nestedListNonNullListReceivedNull/query.gql
     test/Feature/InputType/variables/nameCollision/query.gql
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/query.gql
+    test/Feature/InputType/variables/nonInputTypeViolation/query.gql
     test/Feature/InputType/variables/undefinedVariable/query.gql
     test/Feature/InputType/variables/unknownType/query.gql
     test/Feature/InputType/variables/unusedVariable/unusedVariables/query.gql
@@ -158,10 +161,12 @@ data-files:
     test/Feature/Holistic/cases.json
     test/Feature/Holistic/failure/resolveFailure/response.json
     test/Feature/Holistic/fragment/cannotBeSpreadOnType/response.json
+    test/Feature/Holistic/fragment/conditionTypeViolation/response.json
     test/Feature/Holistic/fragment/inlineFragment/response.json
     test/Feature/Holistic/fragment/inlineFragmentTypeMismatch/response.json
     test/Feature/Holistic/fragment/loopingFragment/response.json
     test/Feature/Holistic/fragment/nameCollision/response.json
+    test/Feature/Holistic/fragment/unknownConditionType/response.json
     test/Feature/Holistic/fragment/unknownTargetType/response.json
     test/Feature/Holistic/fragment/unusedFragment/response.json
     test/Feature/Holistic/introspection/defaultTypes/Boolean/response.json
@@ -264,6 +269,7 @@ data-files:
     test/Feature/InputType/variables/nameCollision/variables.json
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/response.json
     test/Feature/InputType/variables/nestedListNullableListReceivedNull/variables.json
+    test/Feature/InputType/variables/nonInputTypeViolation/response.json
     test/Feature/InputType/variables/undefinedVariable/response.json
     test/Feature/InputType/variables/unknownType/response.json
     test/Feature/InputType/variables/unusedVariable/unusedVariables/response.json
@@ -320,17 +326,15 @@ library
       Data.Morpheus.Client
       Data.Morpheus.Types.Internal.AST
   other-modules:
-      Data.Morpheus.Error.Arguments
       Data.Morpheus.Error.Client.Client
       Data.Morpheus.Error.Document.Interface
       Data.Morpheus.Error.Fragment
       Data.Morpheus.Error.Input
       Data.Morpheus.Error.Internal
-      Data.Morpheus.Error.Mutation
       Data.Morpheus.Error.NameCollision
+      Data.Morpheus.Error.Operation
       Data.Morpheus.Error.Schema
       Data.Morpheus.Error.Selection
-      Data.Morpheus.Error.Subscription
       Data.Morpheus.Error.Utils
       Data.Morpheus.Error.Variable
       Data.Morpheus.Execution.Client.Aeson
@@ -386,6 +390,9 @@ library
       Data.Morpheus.Types.Internal.Resolving.Core
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.TH
+      Data.Morpheus.Types.Internal.Validation
+      Data.Morpheus.Types.Internal.Validation.Error
+      Data.Morpheus.Types.Internal.Validation.Validator
       Data.Morpheus.Types.Internal.WebSocket
       Data.Morpheus.Types.IO
       Data.Morpheus.Types.Types

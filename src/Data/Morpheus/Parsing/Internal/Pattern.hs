@@ -40,6 +40,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Name
                                                 , ArgumentsDefinition(..)
                                                 , FieldsDefinition(..)
+                                                , InputFieldsDefinition(..)
                                                 )
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
@@ -117,7 +118,7 @@ fieldDefinition = label "FieldDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputFieldsDefinition :: Parser FieldsDefinition
+inputFieldsDefinition :: Parser InputFieldsDefinition
 inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives

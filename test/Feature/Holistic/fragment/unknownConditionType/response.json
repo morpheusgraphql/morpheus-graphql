@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Unknown type \"BjsK\".",
+      "locations": [
+        {
+          "line": 6,
+          "column": 10
+        }
+      ]
+    }
+  ]
+}

@@ -1,24 +1,24 @@
 {
-    user {name,,,address}
+    user {name,,,email}
 
-    user {name, ,address}
+    user {name, ,email}
 
-    user {name , address , }
+    user {name , email , }
 
     user {
         name,
-        address
+        email
     }
 
     user {
-        name,address
+        name,email
     }
 
     user {
-        name, address
+        name, email
     }
 
     user {
-        name ,address
+        name ,email
     }
 }

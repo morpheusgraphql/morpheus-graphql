@@ -1,17 +1,15 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE NamedFieldPuns     #-}
 {-# LANGUAGE DeriveLift         #-}
-{-# LANGUAGE KindSignatures     #-}
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE FlexibleInstances  #-}
-
+{-# LANGUAGE TypeFamilies       #-}
+{-# LANGUAGE FlexibleContexts   #-}
 
 module Data.Morpheus.Types.Internal.AST.Selection
-  ( Argument(..)
-  , Arguments
-  , Selection(..)
+  ( Selection(..)
   , SelectionContent(..)
   , SelectionSet
   , UnionTag(..)
@@ -21,11 +19,9 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , Operation(..)
   , Variable(..)
   , VariableDefinitions
-  , ValidVariables
   , DefaultValue
   , getOperationName
   , getOperationDataType
-  , getOperationObject
   )
 where
 
@@ -36,9 +32,9 @@ import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import qualified Data.Text                  as  T
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Mutation   ( mutationIsNotDefined )
-import           Data.Morpheus.Error.Subscription
-                                                ( subscriptionIsNotDefined )
+import           Data.Morpheus.Error.Operation  ( mutationIsNotDefined 
+                                                , subscriptionIsNotDefined
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
                                                 , Position
@@ -52,19 +48,14 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLErrors
                                                 , Message
                                                 )
-import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation
-                                                , Failure(..)
-                                                )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema(..)
                                                 , TypeDefinition(..)
-                                                , TypeContent(..)
-                                                , FieldsDefinition
-                                                , Argument(..)
+                                                , Arguments
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( Variable(..)
+                                                , VariableDefinitions
                                                 , ResolvedValue
                                                 )
 import          Data.Morpheus.Types.Internal.AST.MergeSet
@@ -74,6 +65,7 @@ import          Data.Morpheus.Types.Internal.AST.OrderedMap
 import          Data.Morpheus.Types.Internal.Operation
                                                 ( KeyOf(..)
                                                 , Merge(..)
+                                                , Failure(..)
                                                 )
 import          Data.Morpheus.Error.NameCollision
                                                 ( NameCollision(..) )
@@ -85,6 +77,7 @@ data Fragment = Fragment
   , fragmentSelection :: SelectionSet RAW
   } deriving ( Show, Eq, Lift)
 
+-- ERRORs
 instance NameCollision Fragment where
   nameCollision _ Fragment { fragmentName , fragmentPosition } = GQLError
     { message   = "There can be only one fragment named \"" <> fragmentName <> "\"."
@@ -95,8 +88,6 @@ instance KeyOf Fragment where
   keyOf = fragmentName
 
 type Fragments = OrderedMap Fragment
-
-type Arguments a = OrderedMap (Argument a)
 
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
@@ -233,16 +224,10 @@ deriving instance Eq (Selection a)
 
 type DefaultValue = Maybe ResolvedValue
 
-type Variables s = OrderedMap (Variable s)
-
-type VariableDefinitions = Variables RAW
-
-type ValidVariables = Variables VALID
-
 data Operation (s:: Stage) = Operation
   { operationName      :: Maybe Key
   , operationType      :: OperationType
-  , operationArguments :: Variables s
+  , operationArguments :: VariableDefinitions s
   , operationSelection :: SelectionSet s
   , operationPosition  :: Position
   } deriving (Show,Lift)
@@ -250,19 +235,7 @@ data Operation (s:: Stage) = Operation
 getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
 
-getOperationObject
-  :: Operation a -> Schema -> Validation (Name, FieldsDefinition)
-getOperationObject op lib = do
-  dt <- getOperationDataType op lib
-  case dt of
-    TypeDefinition { typeContent = DataObject { objectFields }, typeName } -> pure (typeName, objectFields)
-    TypeDefinition { typeName } ->
-      failure
-        $  "Type Mismatch: operation \""
-        <> typeName
-        <> "\" must be an Object"
-
-getOperationDataType :: Operation a -> Schema -> Validation TypeDefinition
+getOperationDataType :: Failure GQLErrors m => Operation a -> Schema -> m TypeDefinition
 getOperationDataType Operation { operationType = Query } lib = pure (query lib)
 getOperationDataType Operation { operationType = Mutation, operationPosition } lib
   = case mutation lib of

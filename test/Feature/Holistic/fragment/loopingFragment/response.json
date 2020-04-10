@@ -3,9 +3,92 @@
     {
       "message": "Cannot spread fragment \"A\" within itself via A, A, C.",
       "locations": [
-        { "line": 17, "column": 3 },
-        { "line": 7, "column": 10 },
-        { "line": 9, "column": 3 }
+        {
+          "line": 17,
+          "column": 3
+        },
+        {
+          "line": 7,
+          "column": 10
+        },
+        {
+          "line": 9,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "message": "Cannot spread fragment \"C\" within itself via C, B, C, A.",
+      "locations": [
+        {
+          "line": 9,
+          "column": 3
+        },
+        {
+          "line": 12,
+          "column": 10
+        },
+        {
+          "line": 13,
+          "column": 3
+        },
+        {
+          "line": 17,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "message": "Cannot spread fragment \"C\" within itself via C, C, A.",
+      "locations": [
+        {
+          "line": 9,
+          "column": 3
+        },
+        {
+          "line": 16,
+          "column": 10
+        },
+        {
+          "line": 17,
+          "column": 3
+        }
+      ]
+    },
+    {
+      "message": "Fragment \"A\" is never used.",
+      "locations": [
+        {
+          "line": 7,
+          "column": 10
+        }
+      ]
+    },
+    {
+      "message": "Fragment \"B\" is never used.",
+      "locations": [
+        {
+          "line": 12,
+          "column": 10
+        }
+      ]
+    },
+    {
+      "message": "Fragment \"C\" is never used.",
+      "locations": [
+        {
+          "line": 16,
+          "column": 10
+        }
+      ]
+    },
+    {
+      "message": "Fragment \"D\" is never used.",
+      "locations": [
+        {
+          "line": 20,
+          "column": 10
+        }
       ]
     }
   ]

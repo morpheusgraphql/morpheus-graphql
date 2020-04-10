@@ -9,6 +9,7 @@
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( ScalarDefinition(..)
@@ -18,6 +19,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , DataUnion
   , ArgumentsDefinition(..)
   , FieldDefinition(..)
+  , InputFieldsDefinition(..)
   , TypeContent(..)
   , TypeDefinition(..)
   , Schema(..)
@@ -33,22 +35,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , ClientType(..)
   , DataInputUnion
   , Argument(..)
-  , isTypeDefined
-  , initTypeLib
-  , defineType
-  , isFieldNullable
   , allDataTypes
-  , lookupDataType
-  , kindOf
-  , toNullableField
-  , toListField
-  , isEntNode
-  , lookupInputType
-  , coerceDataObject
-  , lookupDataUnion
-  , lookupUnionTypes
-  , lookupSelectionField
-  , lookupFieldAsSelectionSet
   , createField
   , createArgument
   , createDataTypeLib
@@ -58,16 +45,27 @@ module Data.Morpheus.Types.Internal.AST.Data
   , createUnionType
   , createAlias
   , createInputUnionFields
-  , fieldVisibility
   , createEnumValue
+  , defineType
+  , isTypeDefined
+  , initTypeLib
+  , isFieldNullable
   , insertType
+  , fieldVisibility
+  , kindOf
+  , toNullableField
+  , toListField
+  , toHSFieldDefinition
+  , isEntNode
+  , lookupDataType
   , lookupDeprecated
   , lookupDeprecatedReason
-  , hasArguments
   , lookupWith
-  , selectTypeObject
-  , toHSFieldDefinition
+  , hasArguments
   , unsafeFromFields
+  , isInputDataType
+  , unsafeFromInputFields
+  , Arguments
   )
 where
 
@@ -83,10 +81,7 @@ import           Data.List                      ( find)
 
 -- MORPHEUS
 import          Data.Morpheus.Error.NameCollision
-                                                ( NameCollision(..))
-import           Data.Morpheus.Error.Internal   ( internalError )
-import           Data.Morpheus.Error.Selection  ( cannotQueryField
-                                                , hasNoSubfields
+                                                ( NameCollision(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.OrderedMap
                                                 ( OrderedMap
@@ -96,6 +91,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Key
                                                 , Position
                                                 , Name
+                                                , Message
                                                 , Description
                                                 , TypeWrapper(..)
                                                 , TypeRef(..)
@@ -108,7 +104,6 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , toOperationType
                                                 , hsTypeName
                                                 , GQLError(..)
-                                                , GQLErrors
                                                 )
 import           Data.Morpheus.Types.Internal.Operation                                              
                                                 ( Empty(..)
@@ -118,11 +113,9 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Listable(..)
                                                 , Merge(..)
                                                 , KeyOf(..)
-                                                , selectBy
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation
-                                                , Failure(..)
+                                                ( Failure(..)
                                                 , LibUpdater
                                                 , resolveUpdates
                                                 )
@@ -132,6 +125,7 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 , ScalarValue(..)
                                                 )
 import           Data.Morpheus.Error.Schema     ( nameCollisionError )
+
 
 type DataEnum = [DataEnumValue]
 type DataUnion = [Key]
@@ -151,6 +145,7 @@ data Argument (valid :: Stage) = Argument
   , argumentPosition :: Position
   } deriving ( Show, Eq, Lift )
 
+
 instance KeyOf (Argument stage) where
   keyOf = argumentName 
 
@@ -160,6 +155,8 @@ instance NameCollision (Argument s) where
       { message = "There can Be only One Argument Named \"" <> argumentName <> "\"",
         locations = [argumentPosition] 
       }
+
+type Arguments s = OrderedMap (Argument s)
 
 -- directive
 ------------------------------------------------------------------
@@ -231,9 +228,9 @@ typeRegister Schema { types, query, mutation, subscription } =
   types `union` HM.fromList
     (concatMap fromOperation [Just query, mutation, subscription])
 
-createDataTypeLib :: [TypeDefinition] -> Validation Schema
+createDataTypeLib :: Failure Message m => [TypeDefinition] -> m Schema
 createDataTypeLib types = case popByKey "Query" types of
-  (Nothing   ,_    ) -> internalError "Query Not Defined"
+  (Nothing   ,_    ) -> failure ("INTERNAL: Query Not Defined" :: Message)
   (Just query, lib1) -> do
     let (mutation, lib2) = popByKey "Mutation" lib1
     let (subscription, lib3) = popByKey "Subscription" lib2
@@ -258,14 +255,21 @@ data TypeDefinition = TypeDefinition
   } deriving (Show)
 
 data TypeContent
-  = DataScalar      { dataScalar        :: ScalarDefinition   }
-  | DataEnum        { enumMembers       :: DataEnum     }
-  | DataInputObject { inputObjectFields :: FieldsDefinition   }
+  = DataScalar      { dataScalar        :: ScalarDefinition      
+                    }
+  | DataEnum        { enumMembers       :: DataEnum              
+                    }
+  | DataInputObject { inputObjectFields :: InputFieldsDefinition 
+                    }
   | DataObject      { objectImplements  :: [Name],
-                      objectFields      :: FieldsDefinition   }
-  | DataUnion       { unionMembers      :: DataUnion    }
-  | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] }
-  | DataInterface   { interfaceFields   :: FieldsDefinition    }
+                      objectFields      :: FieldsDefinition      
+                    }
+  | DataUnion       { unionMembers      :: DataUnion    
+                    }
+  | DataInputUnion  { inputUnionMembers :: [(Key,Bool)] 
+                    }
+  | DataInterface   { interfaceFields   :: FieldsDefinition    
+                    }
   deriving (Show)
 
 createType :: Key -> TypeContent -> TypeDefinition
@@ -303,14 +307,6 @@ isInputDataType TypeDefinition { typeContent } = __isInput typeContent
   __isInput DataInputUnion{}  = True
   __isInput _                 = False
 
-coerceDataObject :: Failure error m => error -> TypeDefinition -> m (Name, FieldsDefinition)
-coerceDataObject _ TypeDefinition { typeContent = DataObject { objectFields } , typeName } = pure (typeName, objectFields)
-coerceDataObject gqlError _ = failure gqlError
-
-coerceDataUnion :: Failure error m => error -> TypeDefinition -> m DataUnion
-coerceDataUnion _ TypeDefinition { typeContent = DataUnion members } = pure members
-coerceDataUnion gqlError _ = failure gqlError
-
 kindOf :: TypeDefinition -> DataTypeKind
 kindOf TypeDefinition { typeName, typeContent } = __kind typeContent
  where
@@ -327,34 +323,8 @@ fromOperation :: Maybe TypeDefinition -> [(Name, TypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype,datatype)]
 fromOperation Nothing = []
 
-
--- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
--- for example 
--- User | Admin | Product
-lookupUnionTypes
-  :: (Monad m, Failure GQLErrors m)
-  => Position
-  -> Key
-  -> Schema
-  -> FieldDefinition 
-  -> m [(Name, FieldsDefinition)]
-lookupUnionTypes position key lib FieldDefinition { fieldType = TypeRef { typeConName = typeName } }
-  = lookupDataUnion gqlError typeName lib
-    >>= mapM (flip (selectTypeObject gqlError) lib)
-  where gqlError = hasNoSubfields key typeName position
-
-lookupDataUnion
-  :: (Monad m, Failure e m) => e -> Key -> Schema -> m DataUnion
-lookupDataUnion validationError name lib =
-  selectBy validationError name lib >>= coerceDataUnion validationError
-
 lookupDataType :: Key -> Schema -> Maybe TypeDefinition
 lookupDataType name  = HM.lookup name . typeRegister
-
-lookupInputType :: Failure e m => Key -> Schema -> e -> m TypeDefinition
-lookupInputType name lib errors = case lookupDataType name lib of
-  Just x | isInputDataType x -> pure x
-  _                          -> failure errors
 
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
@@ -377,9 +347,8 @@ insertType :: TypeDefinition -> TypeUpdater
 insertType  datatype@TypeDefinition { typeName } lib = case isTypeDefined typeName lib of
   Nothing -> resolveUpdates (defineType datatype lib) []
   Just fingerprint | fingerprint == typeFingerprint datatype -> return lib
-                   |
-      -- throw error if 2 different types has same name
-                     otherwise -> failure $ nameCollisionError typeName
+                   -- throw error if 2 different types has same name
+                   | otherwise -> failure $ nameCollisionError typeName
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a  
 lookupWith f key = find ((== key) . f)  
@@ -423,7 +392,7 @@ instance Singleton  FieldsDefinition FieldDefinition  where
 instance Listable FieldsDefinition FieldDefinition where
   fromAssoc ls = FieldsDefinition <$> fromAssoc ls 
   toAssoc = toAssoc . unFieldsDefinition
-
+  
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 -- 
@@ -436,6 +405,9 @@ data FieldDefinition = FieldDefinition
 
 instance KeyOf FieldDefinition where 
   keyOf = fieldName
+
+instance Selectable FieldDefinition ArgumentDefinition where
+  selectOr fb f key FieldDefinition { fieldArgs }  = selectOr fb f key fieldArgs 
 
 instance NameCollision FieldDefinition where 
   nameCollision name _ = GQLError { 
@@ -475,28 +447,36 @@ toListField dataField = dataField { fieldType = listW (fieldType dataField) }
   listW alias@TypeRef { typeWrappers } =
     alias { typeWrappers = TypeList : typeWrappers }
 
-selectTypeObject :: (Monad m, Failure err m) => err -> Name -> Schema -> m (Name, FieldsDefinition )
-selectTypeObject  err name lib = selectBy err name lib >>= coerceDataObject err
 
-lookupSelectionField
-  :: Failure GQLErrors Validation
-  => Position
-  -> Name
-  -> (Name, FieldsDefinition)
-  -> Validation FieldDefinition
-lookupSelectionField position fieldName (typeName, field) = selectBy gqlError fieldName field
-  where gqlError = cannotQueryField fieldName typeName position
 
-lookupFieldAsSelectionSet
-  :: (Monad m, Failure GQLErrors m)
-  => Position
-  -> Key
-  -> Schema
-  -> FieldDefinition  
-  -> m (Name, FieldsDefinition )
-lookupFieldAsSelectionSet position key lib FieldDefinition { fieldType = TypeRef { typeConName } }
-  = selectTypeObject gqlError typeConName lib
-  where gqlError = hasNoSubfields key typeConName position
+-- 3.10 Input Objects: https://spec.graphql.org/June2018/#sec-Input-Objects
+---------------------------------------------------------------------------
+-- InputObjectTypeDefinition
+-- Description(opt) input Name Directives(const,opt) InputFieldsDefinition(opt)
+--
+--- InputFieldsDefinition
+-- { InputValueDefinition(list) }
+
+newtype InputFieldsDefinition = InputFieldsDefinition 
+ { unInputFieldsDefinition :: OrderedMap FieldDefinition } 
+  deriving (Show, Empty)
+
+unsafeFromInputFields :: [FieldDefinition] -> InputFieldsDefinition 
+unsafeFromInputFields = InputFieldsDefinition . unsafeFromValues
+
+instance Merge InputFieldsDefinition where
+  merge path (InputFieldsDefinition x)  (InputFieldsDefinition y) = InputFieldsDefinition <$> merge path x y
+
+instance Selectable InputFieldsDefinition FieldDefinition where
+  selectOr fb f name (InputFieldsDefinition lib) = selectOr fb f name lib
+
+instance Singleton  InputFieldsDefinition FieldDefinition  where 
+  singleton  = InputFieldsDefinition . singleton 
+
+instance Listable InputFieldsDefinition FieldDefinition where
+  fromAssoc ls = InputFieldsDefinition <$> fromAssoc ls 
+  toAssoc = toAssoc . unInputFieldsDefinition
+
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 -----------------------------------------------------------------------------------------------
@@ -513,12 +493,6 @@ data ArgumentsDefinition
 
 type ArgumentDefinition = FieldDefinition 
 
-createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
-createArgument = createField NoArguments
-
-hasArguments :: ArgumentsDefinition -> Bool
-hasArguments NoArguments = False
-hasArguments _ = True
 
 instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb _ _    NoArguments                  = fb
@@ -533,8 +507,26 @@ instance Listable ArgumentsDefinition ArgumentDefinition where
   fromAssoc []                         = pure NoArguments
   fromAssoc args                       = ArgumentsDefinition Nothing <$> fromAssoc args
 
+createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
+createArgument = createField NoArguments
+
+hasArguments :: ArgumentsDefinition -> Bool
+hasArguments NoArguments = False
+hasArguments _ = True
+
+
+
+-- https://spec.graphql.org/June2018/#InputValueDefinition
 -- InputValueDefinition
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
+-- TODO: implement inputValue
+
+-- data InputValueDefinition = InputValueDefinition
+--   { inputValueName  :: Key
+--   , inputValueType  :: TypeRef
+--   , inputValueMeta  :: Maybe Meta
+--   } deriving (Show,Lift)
+
 
 createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members

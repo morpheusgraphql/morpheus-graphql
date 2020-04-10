@@ -28,6 +28,7 @@ import           Data.Aeson.Parser              ( eitherDecodeWith
 import qualified Data.ByteString.Lazy.Char8    as L
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Proxy                     ( Proxy(..) )
+import           Data.Foldable                   (traverse_)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( badRequestError )
@@ -82,7 +83,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                , Validation
+                                                , Stateless
                                                 , cleanEvents
                                                 , ResultT(..)
                                                 , unpackEvents
@@ -191,7 +192,7 @@ statefulResolver
   -> m L.ByteString
 statefulResolver state streamApi requestText = do
   res <- runResultT (decodeNoDup requestText >>= streamApi)
-  mapM_ execute (unpackEvents res)
+  traverse_ execute (unpackEvents res)
   pure $ encode $ renderResponse res
  where
   execute (Publish events) = publishEvent state events
@@ -201,7 +202,7 @@ fullSchema
   :: forall proxy m event query mutation subscription
    . (IntrospectConstraint m event query mutation subscription)
   => proxy (GQLRootResolver m event query mutation subscription)
-  -> Validation Schema
+  -> Stateless Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
  where
   querySchema = do

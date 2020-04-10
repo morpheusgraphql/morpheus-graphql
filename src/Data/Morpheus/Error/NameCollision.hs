@@ -1,5 +1,5 @@
 module Data.Morpheus.Error.NameCollision
-  (NameCollision(..)
+  ( NameCollision(..)
   )
 where
 

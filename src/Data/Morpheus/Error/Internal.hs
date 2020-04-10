@@ -2,51 +2,36 @@
 
 module Data.Morpheus.Error.Internal
   ( internalTypeMismatch
-  , internalArgumentError
-  , internalUnknownTypeMessage
   , internalError
   , internalResolvingError
   )
 where
 
-import           Data.Text                      ( Text )
-import qualified Data.Text                     as T
-                                                ( concat
-                                                , pack
-                                                )
+import           Data.Text                      ( pack )
 import           Data.Semigroup                 ( (<>) )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage )
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Validation
+                                                ( Stateless
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( GQLErrors )
+                                                ( GQLErrors 
+                                                , Message
+                                                )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( ValidValue )
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- all kind internal error in development
-internalError :: Text -> Validation b
+internalError :: Message -> Stateless a
 internalError x = failure $ globalErrorMessage $ "INTERNAL ERROR: " <> x
 
--- if type did not not found, but was defined by Schema
-internalResolvingError :: Text -> GQLErrors
-internalResolvingError = globalErrorMessage . ("INTERNAL RESOLVING ERROR:" <>)
-
-
--- if type did not not found, but was defined by Schema
-internalUnknownTypeMessage :: Text -> GQLErrors
-internalUnknownTypeMessage x = globalErrorMessage
-  $ T.concat ["type did not not found, but was defined by Schema", x]
-
--- if arguments is already validated but has not found required argument
-internalArgumentError :: Text -> Validation b
-internalArgumentError x = internalError $ "Argument " <> x
+internalResolvingError :: Message -> GQLErrors
+internalResolvingError = globalErrorMessage . ("INTERNAL ERROR:" <>)
 
 -- if value is already validated but value has different type
-internalTypeMismatch :: Text -> ValidValue -> Validation b
+internalTypeMismatch :: Message -> ValidValue -> Stateless a
 internalTypeMismatch text jsType =
-  internalError $ "Type mismatch " <> text <> T.pack (show jsType)
+  internalError $ "Type mismatch " <> text <> pack (show jsType)

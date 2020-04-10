@@ -3,4 +3,7 @@ query UnexpectedValue {
   i2: input(value: 1)
   i3: input(value: { field: {} })
   i4: input(value: { field: 3 })
+  i5: input(value: { field: null } )
+  # deep recursive
+  i6: input(value: { field: "v2" , recursive: { field: "v3" , recursive: { field: 5 }  } })
 }

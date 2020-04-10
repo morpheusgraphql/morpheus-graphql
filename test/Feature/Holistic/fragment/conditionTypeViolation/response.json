@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Fragment \"MyFragment\" cannot condition on non composite type \"Coordinates\".",
+      "locations": [
+        {
+          "line": 6,
+          "column": 10
+        }
+      ]
+    }
+  ]
+}

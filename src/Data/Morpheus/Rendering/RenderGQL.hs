@@ -22,6 +22,7 @@ import           Data.Text.Lazy.Encoding        ( encodeUtf8 )
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
                                                 ( FieldDefinition(..)
+                                                , InputFieldsDefinition(..)
                                                 , TypeContent(..)
                                                 , TypeDefinition(..)
                                                 , Schema
@@ -72,12 +73,16 @@ instance RenderGQL TypeDefinition where
           fields = createInputUnionFields typeName (fmap fst members)
     __render DataObject {objectFields} = "type " <> typeName <> render objectFields
 
+
+ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
+ignoreHidden = filter fieldVisibility
+
 -- OBJECT
 instance RenderGQL FieldsDefinition where
   render = renderObject render . ignoreHidden . toList
-   where 
-    ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
-    ignoreHidden = filter fieldVisibility
+ 
+instance RenderGQL InputFieldsDefinition where
+  render = renderObject render . ignoreHidden . toList
 
 instance RenderGQL FieldDefinition where 
   render FieldDefinition { fieldName, fieldType, fieldArgs } =

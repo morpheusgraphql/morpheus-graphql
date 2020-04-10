@@ -8,155 +8,116 @@ module Data.Morpheus.Validation.Query.Arguments
 where
 
 import           Data.Foldable                  (traverse_)
-import           Data.Morpheus.Error.Arguments  ( argumentGotInvalidValue
-                                                -- , argumentNameCollision
-                                                , undefinedArgument
-                                                , unknownArguments
-                                                )
-import           Data.Morpheus.Error.Input      ( InputValidation
-                                                , inputErrorMessage
-                                                )
-import           Data.Morpheus.Error.Internal   ( internalUnknownTypeMessage )
-import           Data.Morpheus.Error.Variable   ( undefinedVariable )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( ValidVariables
-                                                , Variable(..)
-                                                , Argument(..)
+                                                ( Argument(..)
                                                 , ArgumentsDefinition(..)
                                                 , Arguments
-                                                , Ref(..)
-                                                , Position
                                                 , ArgumentDefinition
                                                 , FieldDefinition(..)
-                                                , Schema
                                                 , TypeRef(..)
                                                 , Value(..)
-                                                , Name
                                                 , RawValue
                                                 , ResolvedValue
                                                 , RESOLVED
                                                 , VALID
-                                                , isFieldNullable
-                                                , lookupInputType
                                                 , ObjectEntry(..)
                                                 , RAW
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
-                                                , selectBy
-                                                , selectOr
                                                 , empty
                                                 )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
-                                                , Failure(..)
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( SelectionValidator
+                                                , InputSource(..)
+                                                , SelectionContext(..)
+                                                , selectKnown
+                                                , selectRequired
+                                                , selectWithDefaultValue
+                                                , askScopePosition
+                                                , withScopePosition
+                                                , askInputFieldType
+                                                , startInput
+                                                , askContext
                                                 )
 import           Data.Morpheus.Validation.Internal.Value
-                                                ( validateInputValue )
-import           Data.Text                      ( Text )
+                                                ( validateInput )
 
 -- only Resolves , doesnot checks the types
-resolveObject :: Name -> ValidVariables -> RawValue -> Validation ResolvedValue
-resolveObject operationName variables = resolve
+resolveObject :: RawValue -> SelectionValidator ResolvedValue
+resolveObject = resolve
  where
-  resolveEntry :: ObjectEntry RAW -> Validation (ObjectEntry RESOLVED)
+  resolveEntry :: ObjectEntry RAW -> SelectionValidator (ObjectEntry RESOLVED)
   resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
   ------------------------------------------------
-  resolve :: RawValue -> Validation ResolvedValue
+  resolve :: RawValue -> SelectionValidator ResolvedValue
   resolve Null         = pure Null
   resolve (Scalar x  ) = pure $ Scalar x
   resolve (Enum   x  ) = pure $ Enum x
   resolve (List   x  ) = List <$> traverse resolve x
   resolve (Object obj) = Object <$> traverse resolveEntry obj
   resolve (VariableValue ref) =
-    ResolvedVariable ref <$> variableByRef operationName variables ref
-
-variableByRef :: Name -> ValidVariables -> Ref -> Validation (Variable VALID)
-variableByRef operationName variables Ref { refName, refPosition } 
-  = selectBy variableError refName variables
-  where
-    variableError = undefinedVariable operationName refPosition refName
+     variables <$> askContext
+    >>= fmap (ResolvedVariable ref) 
+        . selectRequired ref 
 
 resolveArgumentVariables
-  :: Name
-  -> ValidVariables
-  -> Arguments RAW
-  -> Validation (Arguments RESOLVED)
-resolveArgumentVariables operationName variables
+  :: Arguments RAW
+  -> SelectionValidator (Arguments RESOLVED)
+resolveArgumentVariables
   = traverse resolveVariable
  where
-  resolveVariable :: Argument RAW -> Validation (Argument RESOLVED)
+  resolveVariable :: Argument RAW -> SelectionValidator (Argument RESOLVED)
   resolveVariable (Argument key val position) = do 
-    constValue <- resolveObject operationName variables val
+    constValue <- resolveObject val
     pure $ Argument key constValue position
 
 validateArgument
-  :: Schema
-  -> Position
-  -> Arguments RESOLVED
+  :: Arguments RESOLVED
   -> ArgumentDefinition
-  -> Validation (Argument VALID)
-validateArgument lib fieldPosition requestArgs argType@FieldDefinition { fieldName, fieldType = TypeRef { typeConName, typeWrappers } }
-  = selectOr 
-    handleNullable 
-    handleArgument 
-    fieldName 
+  -> SelectionValidator (Argument VALID)
+validateArgument 
     requestArgs 
+    argumentDef@FieldDefinition 
+      { fieldName 
+      , fieldType = TypeRef { typeWrappers } 
+      }
+  = do 
+      argumentPosition <- askScopePosition
+      argument <- selectWithDefaultValue
+          Argument { argumentName = fieldName, argumentValue = Null, argumentPosition }
+          argumentDef
+          requestArgs 
+      validateArgumentValue argument
  where
-    -- TODO: move it in value validation
-   -- Just argument@Argument { argumentOrigin = VARIABLE } ->
-   --   pure (key, argument) -- Variables are already checked in Variable Validation
-  handleArgument Argument { argumentValue = Null } = handleNullable
-  handleArgument argument = validateArgumentValue argument
-  handleNullable
-    | isFieldNullable argType
-    = pure Argument { argumentName = fieldName, argumentValue = Null, argumentPosition = fieldPosition }
-    | otherwise
-    = failure $ undefinedArgument (Ref fieldName fieldPosition)
   -------------------------------------------------------------------------
-  validateArgumentValue :: Argument RESOLVED -> Validation (Argument VALID)
-  validateArgumentValue Argument { argumentValue = value, .. } =
-    do
-      datatype <- lookupInputType typeConName
-                                  lib
-                                  (internalUnknownTypeMessage typeConName)
-      argumentValue <- handleInputError
-        $ validateInputValue lib [] typeWrappers datatype (fieldName, value)
+  validateArgumentValue :: Argument RESOLVED -> SelectionValidator (Argument VALID)
+  validateArgumentValue arg@Argument { argumentValue = value, .. } =
+    withScopePosition argumentPosition 
+    $ startInput (SourceArgument arg) 
+    $ do
+      datatype <- askInputFieldType argumentDef
+      argumentValue <- validateInput
+                typeWrappers 
+                datatype 
+                (ObjectEntry fieldName value)
       pure Argument { argumentValue , .. }
-   where
-    ---------
-    handleInputError :: InputValidation a -> Validation a
-    handleInputError (Left err) = failure $ case inputErrorMessage err of
-      Left  errors  -> errors
-      Right message -> argumentGotInvalidValue fieldName message argumentPosition
-    handleInputError (Right x) = pure x
 
 validateArguments
-  :: Schema
-  -> Text
-  -> ValidVariables
-  -> FieldDefinition
-  -> Position
+  :: FieldDefinition
   -> Arguments RAW
-  -> Validation (Arguments VALID)
-validateArguments 
-    typeLib 
-    operatorName 
-    variables 
-    FieldDefinition { fieldName, fieldArgs }
-    pos 
+  -> SelectionValidator (Arguments VALID)
+validateArguments
+    fieldDef@FieldDefinition {  fieldArgs }
     rawArgs
   = do
-    args <- resolveArgumentVariables operatorName variables rawArgs
+    args <- resolveArgumentVariables rawArgs
     traverse_ checkUnknown (toList args)
-    traverse (validateArgument typeLib pos args) fArgs
+    traverse (validateArgument args) argsDef
  where
-  fArgs = case fieldArgs of 
+  argsDef = case fieldArgs of 
     (ArgumentsDefinition _ argsD) -> argsD
     NoArguments -> empty
   -------------------------------------------------
-  checkUnknown
-    :: Argument RESOLVED -> Validation ()
-  checkUnknown Argument { argumentName, argumentPosition } 
-    = selectBy (unknownArguments fieldName [Ref argumentName argumentPosition]) argumentName fieldArgs 
-      >> pure ()
+  checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
+  checkUnknown = (`selectKnown` fieldDef)

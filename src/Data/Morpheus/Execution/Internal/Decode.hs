@@ -37,7 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation 
+                                                ( Stateless 
                                                 , Failure(..) 
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
@@ -62,7 +62,7 @@ decodeObjectExpQ fieldDecoder ConsD { cName, cFields } = handleFields cFields
                                                [|fName|]
       where fName = unpack fieldName
 
-withObject :: (ValidObject -> Validation a) -> ValidValue -> Validation a
+withObject :: (ValidObject -> Stateless a) -> ValidValue -> Stateless a
 withObject f (Object object) = f object
 withObject _ isType          = internalTypeMismatch "Object" isType
 
@@ -70,15 +70,15 @@ withMaybe :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Maybe a)
 withMaybe _      Null = pure Nothing
 withMaybe decode x    = Just <$> decode x
 
-withList :: (ValidValue -> Validation a) -> ValidValue -> Validation [a]
-withList decode (List li) = mapM decode li
+withList :: (ValidValue -> Stateless a) -> ValidValue -> Stateless [a]
+withList decode (List li) = traverse decode li
 withList _      isType    = internalTypeMismatch "List" isType
 
-withEnum :: (Key -> Validation a) -> ValidValue -> Validation a
+withEnum :: (Key -> Stateless a) -> ValidValue -> Stateless a
 withEnum decode (Enum value) = decode value
 withEnum _      isType       = internalTypeMismatch "Enum" isType
 
-withUnion :: (Key -> ValidObject -> ValidObject -> Validation a) -> ValidObject -> Validation a
+withUnion :: (Key -> ValidObject -> ValidObject -> Stateless a) -> ValidObject -> Stateless a
 withUnion decoder unions = do 
   (enum :: ValidValue) <- entryValue <$> selectBy ("__typename not found on Input Union" :: Message) "__typename" unions
   case enum of 
@@ -88,5 +88,5 @@ withUnion decoder unions = do
         onFound = withObject (decoder key unions) . entryValue
     _  -> failure ("__typename must be Enum" :: Message)
 
-decodeFieldWith :: (ValidValue -> Validation a) -> Key -> ValidObject -> Validation a
+decodeFieldWith :: (ValidValue -> Stateless a) -> Key -> ValidObject -> Stateless a
 decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)

@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Variable \"$bo\" cannot be non-input type \"A\".",
+      "locations": [
+        {
+          "line": 1,
+          "column": 24
+        }
+      ]
+    }
+  ]
+}

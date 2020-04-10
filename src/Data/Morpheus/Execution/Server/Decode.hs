@@ -56,7 +56,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
+                                                ( Stateless
                                                 , Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
@@ -65,14 +65,14 @@ import           Data.Morpheus.Types.Internal.Operation
 
 
 -- GENERIC
-decodeArguments :: DecodeType a => Arguments VALID -> Validation a
+decodeArguments :: DecodeType a => Arguments VALID -> Stateless a
 decodeArguments = decodeType . Object . fmap toEntry
   where 
     toEntry (Argument name value _) = ObjectEntry name value
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
-  decode :: ValidValue -> Validation a
+  decode :: ValidValue -> Stateless a
 
 instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
@@ -85,7 +85,7 @@ instance Decode a => Decode [a] where
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
-  decodeKind :: Proxy kind -> ValidValue -> Validation a
+  decodeKind :: Proxy kind -> ValidValue -> Stateless a
 
 -- SCALAR
 instance (GQLScalar a) => DecodeKind SCALAR a where
@@ -107,7 +107,7 @@ instance DecodeType a => DecodeKind INPUT a where
 
 
 class DecodeType a where
-  decodeType :: ValidValue -> Validation a
+  decodeType :: ValidValue -> Stateless a
 
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a))=> DecodeType a where
   decodeType = fmap to . decodeRep . (, Cont D_CONS "")
@@ -120,11 +120,11 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a))=> DecodeType a wher
 --     deriving (Generic, GQLType)
 
 decideUnion
-  :: ([Name], value -> Validation (f1 a))
-  -> ([Name], value -> Validation (f2 a))
+  :: ([Name], value -> Stateless (f1 a))
+  -> ([Name], value -> Stateless (f2 a))
   -> Name
   -> value
-  -> Validation ((:+:) f1 f2 a)
+  -> Stateless ((:+:) f1 f2 a)
 decideUnion (left, f1) (right, f2) name value
   | name `elem` left
   = L1 <$> f1 value
@@ -155,14 +155,14 @@ instance Semigroup Info where
 --
 class DecodeRep f where
   tags :: Proxy f -> Name -> Info
-  decodeRep :: (ValidValue,Cont) -> Validation (f a)
+  decodeRep :: (ValidValue,Cont) -> Stateless (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
   decodeRep (x, y) = M1 <$> decodeRep
     (x, y { typeName = pack $ datatypeName (undefined :: (M1 D d f a)) })
 
-getEnumTag :: ValidObject -> Validation Name
+getEnumTag :: ValidObject -> Stateless Name
 getEnumTag x = case toList x of 
         [ObjectEntry "enum" (Enum value)] -> pure value
         _                      -> internalError "bad union enum object"
@@ -213,7 +213,7 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
 
 class DecodeFields f where
   refType :: Proxy f -> Maybe Name
-  decodeFields :: (ValidValue,Cont) -> Validation (f a)
+  decodeFields :: (ValidValue,Cont) -> Stateless (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing

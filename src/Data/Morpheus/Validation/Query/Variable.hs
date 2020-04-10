@@ -13,32 +13,24 @@ import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.Maybe                     ( maybe )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text )
 
 --- MORPHEUS
-import           Data.Morpheus.Error.Input      ( inputErrorMessage )
 import           Data.Morpheus.Error.Variable   ( uninitializedVariable
-                                                , unknownType
                                                 , unusedVariables
-                                                , variableGotInvalidValue
                                                 )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( DefaultValue
                                                 , Operation(..)
-                                                , ValidVariables
                                                 , Variable(..)
+                                                , VariableDefinitions
                                                 , getOperationName
                                                 , Fragment(..)
-                                                , Fragments
                                                 , Argument(..)
                                                 , Selection(..)
                                                 , SelectionContent(..)
                                                 , SelectionSet
                                                 , Ref(..)
-                                                , Position
                                                 , TypeDefinition
-                                                , Schema
-                                                , lookupInputType
                                                 , Variables
                                                 , Value(..)
                                                 , ValidValue
@@ -53,21 +45,22 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ObjectEntry(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                (Listable(..))
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
+                                                ( Listable(..)
                                                 , Failure(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( BaseValidator
+                                                , askSchema
+                                                , askFragments
+                                                , selectKnown
+                                                , constraint
+                                                , Constraint(..)
+                                                , withScopePosition
+                                                , startInput
+                                                , InputSource(..)
+                                                )
 import           Data.Morpheus.Validation.Internal.Value
-                                                ( validateInputValue )
-import           Data.Morpheus.Validation.Query.Fragment
-                                                ( getFragment )
-
-getVariableType :: Text -> Position -> Schema -> Validation TypeDefinition
-getVariableType type' position' lib' = lookupInputType type' lib' error'
-  where error' = unknownType type' position'
-
-
+                                                ( validateInput )
 
 class ExploreRefs a where
   exploreRefs :: a -> [Ref]
@@ -81,14 +74,14 @@ instance ExploreRefs RawValue where
 instance ExploreRefs (Argument RAW) where
   exploreRefs = exploreRefs . argumentValue
 
-mapSelection :: (Selection RAW -> Validation [b]) -> SelectionSet RAW -> Validation [b]
+mapSelection :: (Selection RAW -> BaseValidator [b]) -> SelectionSet RAW -> BaseValidator [b]
 mapSelection f = fmap concat . traverse f
 
-allVariableRefs :: Fragments -> [SelectionSet RAW] -> Validation [Ref]
-allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs) 
+allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref]
+allVariableRefs = fmap concat . traverse (mapSelection searchRefs) 
  where
   -- | search used variables in every arguments
-  searchRefs :: Selection RAW -> Validation [Ref]
+  searchRefs :: Selection RAW -> BaseValidator [Ref]
   searchRefs Selection { selectionArguments, selectionContent = SelectionField }
     = return $ concatMap exploreRefs selectionArguments
   searchRefs Selection { selectionArguments, selectionContent = SelectionSet selSet }
@@ -99,48 +92,57 @@ allVariableRefs fragmentLib = fmap concat . traverse (mapSelection searchRefs)
   searchRefs (InlineFragment Fragment { fragmentSelection })
     = mapSelection searchRefs fragmentSelection
   searchRefs (Spread reference)
-    = getFragment reference fragmentLib
+    = askFragments
+      >>= selectKnown reference
       >>= mapSelection searchRefs
       .   fragmentSelection
 
 resolveOperationVariables
-  :: Schema
-  -> Fragments
-  -> Variables
+  :: Variables
   -> VALIDATION_MODE
   -> Operation RAW
-  -> Validation ValidVariables
-resolveOperationVariables typeLib lib root validationMode Operation { operationName, operationSelection, operationArguments }
+  -> BaseValidator (VariableDefinitions VALID)
+resolveOperationVariables 
+    root 
+    validationMode 
+    Operation 
+      { operationName
+      , operationSelection
+      , operationArguments 
+      }
   = do
-    allVariableRefs lib [operationSelection] >>= checkUnusedVariables
-    traverse (lookupAndValidateValueOnBody typeLib root validationMode) operationArguments
+    allVariableRefs [operationSelection] >>= checkUnusedVariables
+    traverse (lookupAndValidateValueOnBody root validationMode) operationArguments
  where
   varToKey :: Variable a -> Ref
   varToKey Variable { variableName, variablePosition } = Ref variableName variablePosition
   --
-  checkUnusedVariables :: [Ref] -> Validation ()
+  checkUnusedVariables :: [Ref] -> BaseValidator ()
   checkUnusedVariables refs = case map varToKey (toList operationArguments) \\ refs of
     [] -> pure ()
     unused' ->
       failure $ unusedVariables (getOperationName operationName) unused'
 
 lookupAndValidateValueOnBody
-  :: Schema
-  -> Variables
+  :: Variables
   -> VALIDATION_MODE
   -> Variable RAW
-  -> Validation (Variable VALID)
+  -> BaseValidator (Variable VALID)
 lookupAndValidateValueOnBody 
-  typeLib bodyVariables validationMode 
+  bodyVariables 
+  validationMode 
   var@Variable { 
       variableName,
       variableType, 
       variablePosition, 
       variableValue = DefaultValue defaultValue 
     }
-  = toVariable
-    <$> (   getVariableType (typeConName variableType) variablePosition typeLib
-        >>= checkType getVariable defaultValue
+  = withScopePosition variablePosition 
+      $ toVariable
+      <$> ( askSchema
+          >>= selectKnown (Ref (typeConName variableType) variablePosition) 
+          >>= constraint INPUT var 
+          >>= checkType getVariable defaultValue
         )
  where
   toVariable x = var { variableValue = ValidVariableValue x }
@@ -152,7 +154,7 @@ lookupAndValidateValueOnBody
     :: Maybe ResolvedValue
     -> DefaultValue
     -> TypeDefinition
-    -> Validation ValidValue
+    -> BaseValidator ValidValue
   checkType (Just variable) Nothing varType = validator varType variable
   checkType (Just variable) (Just defValue) varType =
     validator varType defValue >> validator varType variable
@@ -167,17 +169,10 @@ lookupAndValidateValueOnBody
     returnNull =
       maybe (pure Null) (validator varType) (M.lookup variableName bodyVariables)
   -----------------------------------------------------------------------------------------------
-  validator :: TypeDefinition -> ResolvedValue -> Validation ValidValue
-  validator varType varValue =
-    case
-        validateInputValue typeLib
-                           []
-                           (typeWrappers variableType)
-                           varType
-                           (variableName, varValue)
-      of
-        Left message -> failure $ case inputErrorMessage message of
-          Left errors -> errors
-          Right errMessage ->
-            variableGotInvalidValue variableName errMessage variablePosition
-        Right value -> pure value
+  validator :: TypeDefinition -> ResolvedValue -> BaseValidator ValidValue
+  validator varType varValue 
+    = startInput (SourceVariable var) 
+        $ validateInput
+          (typeWrappers variableType)
+          varType
+          (ObjectEntry variableName varValue)

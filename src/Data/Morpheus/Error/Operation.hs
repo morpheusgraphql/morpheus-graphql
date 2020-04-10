@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Error.Subscription
-  ( subscriptionIsNotDefined
+module Data.Morpheus.Error.Operation
+  ( mutationIsNotDefined
+  , subscriptionIsNotDefined
   )
 where
 
@@ -10,6 +11,10 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Position 
                                                 , GQLErrors 
                                                 )
+
+mutationIsNotDefined :: Position -> GQLErrors
+mutationIsNotDefined position' =
+  errorMessage position' "Schema is not configured for mutations."
 
 subscriptionIsNotDefined :: Position -> GQLErrors
 subscriptionIsNotDefined position' =

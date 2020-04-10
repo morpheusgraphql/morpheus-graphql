@@ -43,14 +43,14 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..))
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation )
+                                                ( Stateless )
 import           Data.Morpheus.Types.IO         ( JSONResponse(..) )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , pack
                                                 )
 
-decodeIntrospection :: ByteString -> Validation AST.Schema
+decodeIntrospection :: ByteString -> Stateless AST.Schema
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ pack errors
   Right JSONResponse { responseData = Just Introspection { __schema = Schema { types } } }
@@ -61,7 +61,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
   jsonSchema = eitherDecode jsonDoc
 
 class ParseJSONSchema a b where
-  parse :: a -> Validation b
+  parse :: a -> Stateless b
 
 instance ParseJSONSchema Type [TypeDefinition] where
   parse Type { name = Just typeName, kind = SCALAR } =
@@ -96,12 +96,12 @@ instance ParseJSONSchema Field FieldDefinition where
 instance ParseJSONSchema InputValue FieldDefinition where
   parse InputValue { inputName, inputType } = createField NoArguments inputName <$> fieldTypeFromJSON inputType
 
-fieldTypeFromJSON :: Type -> Validation ([TypeWrapper], Text)
+fieldTypeFromJSON :: Type -> Stateless ([TypeWrapper], Text)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []
  where
   toHs (w, t) = (toHSWrappers w, t)
   fieldTypeRec
-    :: [DataTypeWrapper] -> Type -> Validation ([DataTypeWrapper], Text)
+    :: [DataTypeWrapper] -> Type -> Stateless ([DataTypeWrapper], Text)
   fieldTypeRec acc Type { kind = LIST, ofType = Just ofType } =
     fieldTypeRec (ListType : acc) ofType
   fieldTypeRec acc Type { kind = NON_NULL, ofType = Just ofType } =

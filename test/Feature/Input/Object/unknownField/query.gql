@@ -1,3 +1,4 @@
-query UndefinedField {
-  input( value: { moo: 1, field: "some field" })
+query UnknownField {
+  i1: input( value: { moo: 1, field: "some field" })
+  i2: input(value: { field: "v2" , recursive: { field: "v3" , recursive: { field: "bal" , unkField : "test Unkown" }  } })
 }

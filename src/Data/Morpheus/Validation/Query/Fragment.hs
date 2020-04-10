@@ -1,86 +1,80 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE FlexibleInstances  #-}
 
 module Data.Morpheus.Validation.Query.Fragment
   ( validateFragments
   , castFragmentType
   , resolveSpread
-  , getFragment
   )
 where
 
 import           Data.List                      ( (\\) )
 import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text )
+import           Data.Foldable                  (traverse_) 
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Fragment   ( cannotBeSpreadOnType
                                                 , cannotSpreadWithinItself
-                                                , unknownFragment
                                                 , unusedFragment
                                                 )
-import           Data.Morpheus.Error.Variable   ( unknownType )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Fragment(..)
+                                                ( Name
+                                                , Fragment(..)
                                                 , Fragments
                                                 , SelectionContent(..)
                                                 , Selection(..)
                                                 , Ref(..)
                                                 , Position
-                                                , Schema
                                                 , SelectionSet
                                                 , RAW
-                                                , selectTypeObject
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( selectOr 
-                                                , selectBy
+                                                ( selectOr
                                                 , toList
-                                                , toAssoc
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Validation
                                                 , Failure(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Validation
+                                                ( BaseValidator
+                                                , askSchema
+                                                , askFragments
+                                                , selectKnown
+                                                , constraint
+                                                , Constraint(..)
+                                                , Validator
+                                                )
 
+validateFragments :: SelectionSet RAW -> BaseValidator ()
+validateFragments selectionSet 
+  = fragmentsCycleChecking 
+    *> checkUnusedFragments selectionSet
+    *> fragmentsConditionTypeChecking
 
-validateFragments
-  :: Schema -> Fragments -> SelectionSet RAW -> Validation ()
-validateFragments lib fragments operatorSel =checkLoop >> checkUnusedFragments
- where
-  checkUnusedFragments =
-    case fragmentsKeys \\ usedFragments fragments (toAssoc operatorSel) of
+checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
+checkUnusedFragments selectionSet = do
+    fragments <- askFragments
+    case refs fragments \\ usedFragments fragments (toList selectionSet) of
       []     -> return ()
       unused -> failure (unusedFragment unused)
-  checkLoop = traverse (validateFragment lib) (toList fragments) >>= detectLoopOnFragments
-  fragmentsKeys = map toRef (toList fragments)
-    where toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
-
-type Node = Ref
-
-type NodeEdges = (Node, [Node])
-
-type Graph = [NodeEdges]
-
-getFragment :: Ref -> Fragments -> Validation Fragment
-getFragment Ref { refName, refPosition } 
-  = selectBy (unknownFragment refName refPosition) refName 
+  where
+    refs fragments = map toRef (toList fragments)
+    toRef Fragment { fragmentName , fragmentPosition } = Ref fragmentName fragmentPosition
 
 castFragmentType
-  :: Maybe Text -> Position -> [Text] -> Fragment -> Validation Fragment
-castFragmentType key' position' typeMembers fragment@Fragment { fragmentType }
-  = if fragmentType `elem` typeMembers
-    then pure fragment
-    else failure $ cannotBeSpreadOnType key' fragmentType position' typeMembers
+  :: Maybe Name -> Position -> [Name] -> Fragment -> Validator ctx Fragment
+castFragmentType key position typeMembers fragment@Fragment { fragmentType }
+  | fragmentType `elem` typeMembers = pure fragment
+  | otherwise =  failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: Fragments -> [Text] -> Ref -> Validation Fragment
-resolveSpread fragments allowedTargets reference@Ref { refName, refPosition } =
-  getFragment reference fragments
+resolveSpread :: [Name] -> Ref -> Validator ctx Fragment
+resolveSpread allowedTargets ref@Ref { refName, refPosition } 
+  = askFragments
+    >>= selectKnown ref
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
-usedFragments :: Fragments -> [(Text, Selection RAW)] -> [Node]
-usedFragments fragments = concatMap (findAllUses . snd)
+usedFragments :: Fragments -> [Selection RAW] -> [Node]
+usedFragments fragments = concatMap findAllUses
  where
   findAllUses :: Selection RAW -> [Node]
   findAllUses Selection { selectionContent = SelectionField } = []
@@ -97,6 +91,28 @@ usedFragments fragments = concatMap (findAllUses . snd)
       refName 
       fragments
 
+fragmentsConditionTypeChecking :: BaseValidator ()
+fragmentsConditionTypeChecking 
+    = toList <$> askFragments
+      >>= traverse_ checkTypeExistence
+
+checkTypeExistence :: Fragment -> BaseValidator ()
+checkTypeExistence fr@Fragment { fragmentType, fragmentPosition }
+      = askSchema
+        >>= selectKnown (Ref fragmentType fragmentPosition) 
+        >>= constraint OBJECT fr 
+        >> pure ()
+
+fragmentsCycleChecking :: BaseValidator ()
+fragmentsCycleChecking = exploreSpreads >>= fragmentCycleChecking 
+
+exploreSpreads :: BaseValidator Graph
+exploreSpreads =  map exploreFragmentSpreads . toList <$> askFragments
+
+exploreFragmentSpreads :: Fragment -> NodeEdges 
+exploreFragmentSpreads Fragment { fragmentName, fragmentSelection, fragmentPosition }
+   = ( Ref fragmentName fragmentPosition, concatMap scanForSpread fragmentSelection)
+
 scanForSpread :: Selection RAW -> [Node]
 scanForSpread Selection { selectionContent = SelectionField } = []
 scanForSpread Selection { selectionContent = SelectionSet selectionSet } =
@@ -106,20 +122,20 @@ scanForSpread (InlineFragment Fragment { fragmentSelection }) =
 scanForSpread (Spread Ref { refName, refPosition }) =
   [Ref refName refPosition]
 
-validateFragment :: Schema -> Fragment -> Validation NodeEdges
-validateFragment lib  Fragment { fragmentName, fragmentSelection, fragmentType, fragmentPosition }
-  = selectTypeObject validationError fragmentType lib >> pure
-    (Ref fragmentName fragmentPosition, concatMap scanForSpread fragmentSelection)
-  where validationError = unknownType fragmentType fragmentPosition
+type Node = Ref
 
-detectLoopOnFragments :: Graph -> Validation ()
-detectLoopOnFragments lib = mapM_ checkFragment lib
+type NodeEdges = (Node, [Node])
+
+type Graph = [NodeEdges]
+
+fragmentCycleChecking :: Graph -> BaseValidator ()
+fragmentCycleChecking lib = traverse_ checkFragment lib
  where
   checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
 
-checkForCycle :: Graph -> Node -> [Node] -> Validation Graph
+checkForCycle :: Graph -> Node -> [Node] -> BaseValidator Graph
 checkForCycle lib parentNode history = case lookup parentNode lib of
-  Just node -> concat <$> mapM checkNode node
+  Just node -> concat <$> traverse checkNode node
   Nothing   -> pure []
  where
   checkNode x = if x `elem` history then cycleError x else recurse x

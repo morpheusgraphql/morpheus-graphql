@@ -25,7 +25,8 @@ import           Data.Text                      ( Text
 
 data InputObject = InputObject {
   field :: Text,
-  nullableField :: Maybe Int
+  nullableField :: Maybe Int,
+  recursive :: Maybe InputObject
 } deriving (Generic, Show)
 
 instance GQLType InputObject where

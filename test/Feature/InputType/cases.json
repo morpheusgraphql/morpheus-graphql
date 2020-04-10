@@ -78,5 +78,9 @@
   {
     "path": "variables/nameCollision",
     "description": "fail on: variable name collision"
+  },
+  {
+    "path": "variables/nonInputTypeViolation",
+    "description": "fail on: non-input type in variable definition"
   }
 ]

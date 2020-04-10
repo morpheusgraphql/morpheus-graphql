@@ -29,6 +29,7 @@ import           Data.Morpheus.Types.Internal.AST           ( ConsD (..)
                                                             , DataTypeKind(..)
                                                             , TypeRef (..)
                                                             , unsafeFromFields
+                                                            , unsafeFromInputFields
                                                             )
 import           Data.Morpheus.Types.Internal.TH           (instanceFunD, instanceProxyFunD,instanceHeadT, instanceHeadMultiT, typeT)
 
@@ -60,7 +61,7 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
         body 
-          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject $ unsafeFromFields $(buildFields cFields), concat $(buildTypes cFields))|]
+          | tKind == Just KindInputObject || null tKind  = [| (DataInputObject $ unsafeFromInputFields $(buildFields cFields), concat $(buildTypes cFields))|]
           | otherwise  =  [| (DataObject [] $ unsafeFromFields $(buildFields cFields), concat $(buildTypes cFields))|]
 deriveObjectRep _ = pure []
     

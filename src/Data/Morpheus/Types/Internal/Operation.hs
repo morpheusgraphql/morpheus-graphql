@@ -33,7 +33,6 @@ import           Data.Morpheus.Types.Internal.AST.Base  ( Name
 import           Text.Megaparsec.Internal               ( ParsecT(..) )
 import           Text.Megaparsec.Stream                 ( Stream )
 
-
 class Empty a where 
   empty :: a
 
@@ -60,6 +59,9 @@ class KeyOf a => Singleton c a | c -> a where
 
 class KeyOf a where 
   keyOf :: a -> Name
+
+instance KeyOf Ref where
+  keyOf = refName
 
 toPair :: KeyOf a => a -> (Name,a)
 toPair x = (keyOf x, x)
