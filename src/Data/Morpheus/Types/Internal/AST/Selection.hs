@@ -22,7 +22,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
   , DefaultValue
   , getOperationName
   , getOperationDataType
-  , getOperationObject
   )
 where
 
@@ -237,21 +236,6 @@ data Operation (s:: Stage) = Operation
 
 getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
-
-getOperationObject
-  :: (Failure GQLErrors m, Failure Message m, Monad m) 
-  => Operation a 
-  -> Schema 
-  -> m (Name, FieldsDefinition)
-getOperationObject op lib = do
-  dt <- getOperationDataType op lib
-  case dt of
-    TypeDefinition { typeContent = DataObject { objectFields }, typeName } -> pure (typeName, objectFields)
-    TypeDefinition { typeName } ->
-      failure
-        $  "Type Mismatch: operation \""
-        <> typeName
-        <> "\" must be an Object"
 
 getOperationDataType :: Failure GQLErrors m => Operation a -> Schema -> m TypeDefinition
 getOperationDataType Operation { operationType = Query } lib = pure (query lib)

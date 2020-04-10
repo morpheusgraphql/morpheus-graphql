@@ -18,8 +18,7 @@ import           Data.Morpheus.Error.Selection  ( hasNoSubfields
                                                 , subfieldsNotSelected
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( VariableDefinitions
-                                                , Selection(..)
+                                                ( Selection(..)
                                                 , SelectionContent(..)
                                                 , Fragment(..)
                                                 , SelectionSet
@@ -34,6 +33,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , Arguments
                                                 , isEntNode
+                                                , getOperationDataType
                                                 )
 import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 ( concatTraverse )
@@ -47,6 +47,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , askFieldType
                                                 , selectKnown
                                                 , withScope
+                                                , askSchema
                                                 )
 import           Data.Morpheus.Validation.Query.UnionSelection
                                                 (validateUnionSelection)
@@ -59,18 +60,43 @@ import           Data.Morpheus.Validation.Query.Fragment
 
 type TypeDef = (Name, FieldsDefinition)
 
+
+getOperationObject
+  :: Operation a -> SelectionValidator (Name, FieldsDefinition)
+getOperationObject operation = do
+  dt <- askSchema >>= getOperationDataType operation 
+  case dt of
+    TypeDefinition { typeContent = DataObject { objectFields }, typeName } -> pure (typeName, objectFields)
+    TypeDefinition { typeName } ->
+      failure
+        $  "Type Mismatch: operation \""
+        <> typeName
+        <> "\" must be an Object"
+
 validateOperation
-  :: TypeDef
-  -> Operation RAW
-  -> SelectionValidator (SelectionSet VALID)
-validateOperation tyDef Operation { operationSelection } = 
-    __validate 
-      tyDef 
-      operationSelection
- where
-  __validate
+  :: Operation RAW
+  -> SelectionValidator (Operation VALID)
+validateOperation 
+    rawOperation@Operation 
+      { operationName
+      , operationType
+      , operationSelection
+      , operationPosition 
+      } 
+    = do
+      typeDef  <-  getOperationObject rawOperation
+      selection <- validateSelectionSet typeDef operationSelection
+      pure $ Operation 
+              { operationName
+              , operationType
+              , operationArguments = empty
+              , operationSelection = selection
+              , operationPosition
+              }
+
+validateSelectionSet
     :: TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
-  __validate dataType@(typeName,fieldsDef) =
+validateSelectionSet dataType@(typeName,fieldsDef) =
       concatTraverse validateSelection 
    where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
@@ -124,13 +150,13 @@ validateOperation tyDef Operation { operationSelection } =
             -- Validate UnionSelection  
             validateByTypeContent _ DataUnion { unionMembers } 
               = validateUnionSelection  
-                    __validate
+                    validateSelectionSet
                     rawSelectionSet 
                     unionMembers
             -- Validate Regular selection set
             validateByTypeContent typename DataObject { objectFields } 
               = SelectionSet 
-                  <$> __validate 
+                  <$> validateSelectionSet 
                         (typename, objectFields) 
                         rawSelectionSet
             validateByTypeContent typename _ 
@@ -145,4 +171,4 @@ validateOperation tyDef Operation { operationSelection } =
       = castFragmentType Nothing (fragmentPosition fragment') [typeName] fragment'
         >>= validateFragment
     --------------------------------------------------------------------------------
-    validateFragment Fragment { fragmentSelection } = __validate dataType fragmentSelection
+    validateFragment Fragment { fragmentSelection } = validateSelectionSet dataType fragmentSelection

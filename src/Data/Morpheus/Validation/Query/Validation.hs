@@ -14,14 +14,10 @@ import           Data.Map                       ( fromList )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Operation(..)
                                                 , VALID
-                                                , getOperationObject
                                                 , Schema(..)
                                                 , GQLQuery(..)
                                                 , VALIDATION_MODE
-                                                , VariableDefinitions
                                                 )
-import           Data.Morpheus.Types.Internal.Operation
-                                                ( empty )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( SelectionValidator
                                                 , InputSource(..)
@@ -53,17 +49,19 @@ validateRequest
     , inputVariables, 
     operation = rawOperation@Operation 
       { operationName
-      , operationType
       , operationSelection
       , operationPosition 
       } 
     }
   = do
       variables <- runValidator validateHelpers ctx ()
-      runValidator validateSelection ctx SelectionContext 
-        { operationName
-        ,  variables
-        }
+      runValidator 
+        (validateOperation rawOperation) 
+        ctx 
+        SelectionContext 
+          { operationName
+          ,  variables
+          }
    where 
     ctx = Context 
         { schema 
@@ -77,14 +75,3 @@ validateRequest
           (fromList inputVariables)
           validationMode
           rawOperation
-    validateSelection :: SelectionValidator (Operation VALID)
-    validateSelection = do
-      operationTypeDef  <-  getOperationObject rawOperation schema
-      selection <- validateOperation operationTypeDef rawOperation
-      pure $ Operation 
-              { operationName
-              , operationType
-              , operationArguments = empty
-              , operationSelection = selection
-              , operationPosition
-              }
