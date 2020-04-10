@@ -19,10 +19,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALIDATION_MODE
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
-                                                ( SelectionValidator
-                                                , InputSource(..)
-                                                , BaseValidator
-                                                , Context(..)
+                                                ( Context(..)
                                                 , runValidator
                                                 , SelectionContext(..)
                                                 )
