@@ -8,9 +8,7 @@ where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Ref(..)
-                                                , Position
-                                                , GQLError(..)
+                                                ( Position
                                                 , GQLErrors
                                                 , Name
                                                 )

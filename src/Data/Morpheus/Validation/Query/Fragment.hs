@@ -10,7 +10,6 @@ module Data.Morpheus.Validation.Query.Fragment
   )
 where
 
-import           Data.List                      ( (\\) )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Foldable                  (traverse_) 
 

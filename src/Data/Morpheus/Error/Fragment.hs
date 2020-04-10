@@ -46,9 +46,9 @@ cannotSpreadWithinItself fragments = [GQLError { message = text, locations = map
 cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> [Text] -> GQLErrors
 cannotBeSpreadOnType key fragmentType position typeMembers = errorMessage
   position
-  message
+  msg
  where
-  message =
+  msg =
     "Fragment "
       <> getName key
       <> "cannot be spread here as objects of type \""
