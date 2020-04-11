@@ -12,7 +12,8 @@
 {-# LANGUAGE TypeFamilies               #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
-  ( ScalarDefinition(..)
+  ( Arguments
+  , ScalarDefinition(..)
   , DataEnum
   , FieldsDefinition(..)
   , ArgumentDefinition
@@ -65,7 +66,7 @@ module Data.Morpheus.Types.Internal.AST.Data
   , unsafeFromFields
   , isInputDataType
   , unsafeFromInputFields
-  , Arguments
+  , __inputname
   )
 where
 
@@ -527,12 +528,14 @@ hasArguments _ = True
 --   , inputValueMeta  :: Maybe Meta
 --   } deriving (Show,Lift)
 
+__inputname :: Name
+__inputname = "inputname"
 
 createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members
  where
   fieldTag = FieldDefinition 
-    { fieldName = "__typename"
+    { fieldName = __inputname
     , fieldArgs     = NoArguments
     , fieldType     = createAlias (name <> "Tags")
     , fieldMeta     = Nothing

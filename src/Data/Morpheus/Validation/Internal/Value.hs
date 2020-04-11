@@ -35,7 +35,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VariableContent(..)
                                                 , TypeRef(..)
                                                 , isWeaker
-                                                , unpackInputUnion
                                                 , isNullableWrapper
                                                 , ObjectEntry(..)
                                                 , RESOLVED
@@ -49,6 +48,7 @@ import           Data.Morpheus.Types.Internal.Operation
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( InputValidator
                                                 , askInputFieldType
+                                                , constraintInputUnion
                                                 , askInputMember
                                                 , selectKnown
                                                 , selectWithDefaultValue
@@ -150,8 +150,9 @@ validateInput tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
        where
         getField = selectKnown entry parentFields
     -- VALIDATE INPUT UNION
+    -- TODO: enhance input union Validation
     validate (DataInputUnion inputUnion) ObjectEntry { entryValue = Object rawFields} =
-      case unpackInputUnion inputUnion rawFields of
+      case constraintInputUnion inputUnion rawFields of
         Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields) 
         Right (name, Nothing   ) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
         Right (name, Just value) -> do
