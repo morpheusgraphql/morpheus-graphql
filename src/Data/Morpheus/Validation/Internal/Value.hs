@@ -150,6 +150,7 @@ validateInput tyWrappers TypeDefinition { typeContent = tyCont, typeName } =
        where
         getField = selectKnown entry parentFields
     -- VALIDATE INPUT UNION
+    -- TODO: enhance input union Validation
     validate (DataInputUnion inputUnion) ObjectEntry { entryValue = Object rawFields} =
       case constraintInputUnion inputUnion rawFields of
         Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields) 

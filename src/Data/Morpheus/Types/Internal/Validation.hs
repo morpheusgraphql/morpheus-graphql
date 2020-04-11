@@ -345,7 +345,7 @@ constraintInputUnion tags hm = do
           tyName 
           hm
       pure (tyName , Just value)
-    _ -> failure ("more then 1 value for Union was not Provided." :: Message)
+    _ -> failure ("input union can have only one variant." :: Message)
 
 isPosibeInputUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
 isPosibeInputUnion tags (Enum name) = case lookup name tags of
