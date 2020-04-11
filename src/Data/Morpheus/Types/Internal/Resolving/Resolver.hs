@@ -85,6 +85,7 @@ import           Data.Morpheus.Types.Internal.AST.MergeSet
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectOr
                                                 , empty
+                                                , keyOf
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Stateless
@@ -360,18 +361,15 @@ resolveEnum _ _ _ =
 withObject
   :: (LiftOperation o, Monad m)
   => (SelectionSet VALID -> Resolver o e m value)
-  -> (Key, Selection VALID)
+  -> Selection VALID
   -> Resolver o e m value
-withObject f (key, Selection { selectionContent , selectionPosition }) = checkContent selectionContent
+withObject f Selection { selectionName, selectionContent , selectionPosition } = checkContent selectionContent
  where
   checkContent (SelectionSet selection) = f selection
-  checkContent _ = failure (subfieldsNotSelected key "" selectionPosition)
+  checkContent _ = failure (subfieldsNotSelected selectionName "" selectionPosition)
 
-lookupRes :: (LiftOperation o, Monad m) => Name -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
-lookupRes key = fromMaybe (pure gqlNull) . lookup key 
-
-outputSelectionName :: Selection VALID -> Name
-outputSelectionName Selection { selectionName, selectionAlias } = fromMaybe selectionName selectionAlias
+lookupRes :: (LiftOperation o, Monad m) => Selection VALID -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
+lookupRes Selection { selectionName} = fromMaybe (pure gqlNull) . lookup selectionName 
 
 resolveObject
   :: forall o e m. (LiftOperation o , Monad m)
@@ -382,7 +380,7 @@ resolveObject selectionSet (ObjectRes resolvers) =
   Object . toOrderedMap <$> traverse resolver selectionSet
  where
   resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
-  resolver sel = setSelection sel $ ObjectEntry (outputSelectionName sel) <$> lookupRes (selectionName sel) resolvers
+  resolver sel = setSelection sel $ ObjectEntry (keyOf sel) <$> lookupRes sel resolvers
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
@@ -394,10 +392,10 @@ toEventResolver (ReaderT subRes) sel event = do
 runDataResolver :: (Monad m, LiftOperation o) => Name -> DataResolver o e m -> Resolver o e m ValidValue
 runDataResolver typename  = withResolver getState . __encode
    where
-    __encode obj sel@Selection { selectionName, selectionContent }  = encodeNode obj selectionContent 
+    __encode obj sel@Selection { selectionContent }  = encodeNode obj selectionContent 
       where 
       -- Object -----------------
-      encodeNode (ObjectRes fields) _ = withObject encodeObject (selectionName, sel)
+      encodeNode (ObjectRes fields) _ = withObject encodeObject sel
         where
         encodeObject selection =
           resolveObject selection
