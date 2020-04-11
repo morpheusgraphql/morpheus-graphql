@@ -10,7 +10,6 @@ module Data.Morpheus.Execution.Client.Selection
   )
 where
 
-import           Data.Maybe                     ( fromMaybe )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text
                                                 , pack
@@ -58,6 +57,7 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Listable(..)
                                                 , selectBy
+                                                , keyOf
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless
@@ -155,7 +155,6 @@ operationTypes lib variables = genOperation
       genField 
           sel@Selection 
           { selectionName
-          , selectionAlias
           , selectionPosition
           } =
         do
@@ -178,7 +177,7 @@ operationTypes lib variables = genOperation
        where
         fieldPath = path <> [fieldName]
         -------------------------------
-        fieldName = fromMaybe selectionName selectionAlias
+        fieldName = keyOf sel
         ------------------------------------------
         subTypesBySelection
           :: TypeDefinition -> Selection VALID -> Stateless ([ClientType], [Text])

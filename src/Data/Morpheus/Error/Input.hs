@@ -8,23 +8,23 @@ where
 import           Data.Semigroup                 ( (<>) )
 import           Data.Aeson                     ( encode )
 import           Data.ByteString.Lazy.Char8     ( unpack )
-import qualified Data.Text                     as T
-                                                ( pack )
-
+import           Data.Text                      ( pack )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST.Base 
-                                                ( Name
-                                                , Message
+import           Data.Morpheus.Types.Internal.AST 
+                                                ( Message
+                                                , ResolvedValue
+                                                , TypeRef(..) 
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ResolvedValue )
+import           Data.Morpheus.Rendering.RenderGQL
+                                                ( RenderGQL(..) )
 
-typeViolation :: Name -> ResolvedValue -> Message
+
+typeViolation :: TypeRef -> ResolvedValue -> Message
 typeViolation expected found = "Expected type \""
-  <> expected
+  <> render expected
   <> "\" found "
-  <> T.pack (unpack $ encode found)
+  <> pack (unpack $ encode found)
   <> "."
 
 {-

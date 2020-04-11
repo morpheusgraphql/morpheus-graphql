@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 
 module Data.Morpheus.Error.Variable
   ( uninitializedVariable
@@ -7,30 +8,37 @@ module Data.Morpheus.Error.Variable
 where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Position
-                                                , GQLErrors
-                                                , Name
+import           Data.Morpheus.Types.Internal.AST
+                                                ( GQLErrors
+                                                , Ref(..)
+                                                , Variable(..)
+                                                , TypeRef
                                                 )
 import           Data.Semigroup                 ( (<>) )
+import           Data.Morpheus.Rendering.RenderGQL
+                                                ( RenderGQL(..) )
 
 -- query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
-incompatibleVariableType :: Name -> Name -> Name -> Position -> GQLErrors
-incompatibleVariableType variableName variableType argType argPosition =
+incompatibleVariableType :: Ref -> Variable s -> TypeRef -> GQLErrors
+incompatibleVariableType 
+  (Ref variableName argPosition) 
+  Variable { variableType } 
+  argumentType  =
   errorMessage argPosition text
  where
   text =
     "Variable \"$"
       <> variableName
       <> "\" of type \""
-      <> variableType
+      <> render variableType
       <> "\" used in position expecting type \""
-      <> argType
+      <> render argumentType
       <> "\"."
 
-uninitializedVariable :: Position -> Name -> Name -> GQLErrors
-uninitializedVariable position' type' key' = errorMessage position' text
- where
-  text = "Variable \"$" <> key' 
+uninitializedVariable :: Variable s -> GQLErrors
+uninitializedVariable Variable { variableName, variableType, variablePosition} = 
+  errorMessage 
+    variablePosition 
+    $ "Variable \"$" <> variableName 
     <> "\" of required type \""
-    <> type' <> "!\" was not provided."
+    <> render variableType <> "\" was not provided."

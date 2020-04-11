@@ -13,9 +13,9 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 )
 
 mutationIsNotDefined :: Position -> GQLErrors
-mutationIsNotDefined position' =
-  errorMessage position' "Schema is not configured for mutations."
+mutationIsNotDefined position =
+  errorMessage position "Schema is not configured for mutations."
 
 subscriptionIsNotDefined :: Position -> GQLErrors
-subscriptionIsNotDefined position' =
-  errorMessage position' "Schema is not configured for subscriptions."
+subscriptionIsNotDefined position =
+  errorMessage position "Schema is not configured for subscriptions."

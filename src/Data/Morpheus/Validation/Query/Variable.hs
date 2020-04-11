@@ -153,8 +153,7 @@ lookupAndValidateValueOnBody
   checkType Nothing (Just defValue) varType = validator varType defValue
   checkType Nothing Nothing varType
     | validationMode /= WITHOUT_VARIABLES && not (isNullable variableType)
-    = failure
-      $ uninitializedVariable variablePosition (typeConName variableType) variableName
+    = failure $ uninitializedVariable var
     | otherwise
     = returnNull
    where
