@@ -213,6 +213,7 @@ deriveModel
       , Con QUERY e m schema
       , Con MUTATION e m mut
       , Con SUBSCRIPTION e m sub
+      , Applicative m
       )
   => GQLRootResolver m e query mut sub
   -> schema (Resolver QUERY e m)
@@ -225,9 +226,9 @@ deriveModel
     }
   schema
   = ResolverModel 
-    { query = objectResolvers queryResolver <> objectResolvers schema
-    , mutation = objectResolvers mutationResolver
-    , subscription = objectResolvers subscriptionResolver
+    { query = pure $ objectResolvers queryResolver <> objectResolvers schema
+    , mutation = pure $ objectResolvers mutationResolver
+    , subscription = pure $ objectResolvers subscriptionResolver
     }
 
 toFieldRes :: FieldNode o e m -> FieldRes o e m

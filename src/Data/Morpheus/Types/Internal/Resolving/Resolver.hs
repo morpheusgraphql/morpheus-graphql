@@ -438,13 +438,6 @@ runResolver (ResolverS resT) sel = ResultT $ do
         } 
 
 
-runRootDataResolver 
-  :: (Monad m , LiftOperation o) 
-  => DataResolver o e m 
-  -> Context 
-  -> ResponseStream e m (Value VALID)
-runRootDataResolver res ctx@Context { operation = Operation { operationSelection } }  = 
-    runResolver (resolveObject operationSelection res) ctx
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
@@ -458,9 +451,9 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
 
 data ResolverModel e m
     = ResolverModel 
-      { query :: DataResolver QUERY e m
-      , mutation :: DataResolver MUTATION e m
-      , subscription :: DataResolver SUBSCRIPTION e m
+      { query :: ResponseStream e m (DataResolver QUERY e m)
+      , mutation :: ResponseStream e m (DataResolver MUTATION e m)
+      , subscription :: ResponseStream e m (DataResolver SUBSCRIPTION e m)
       }
 
 runResolverModel :: Monad m => ResolverModel e m -> Context -> ResponseStream e m (Value VALID)
@@ -471,9 +464,16 @@ runResolverModel
       , subscription 
       }
     ctx@Context { operation = Operation { operationType} } 
-  = selectByOperation operationType ctx
+  = selectByOperation operationType
   where
-    selectByOperation Query = runRootDataResolver query
-    selectByOperation Mutation = runRootDataResolver mutation
-    selectByOperation Subscription = runRootDataResolver subscription
-        
+    selectByOperation Query = query >>= runRootDataResolver ctx
+    selectByOperation Mutation = mutation >>= runRootDataResolver ctx
+    selectByOperation Subscription = subscription >>= runRootDataResolver ctx
+
+runRootDataResolver 
+  :: (Monad m , LiftOperation o) 
+  => Context 
+  -> DataResolver o e m 
+  -> ResponseStream e m (Value VALID)
+runRootDataResolver  ctx@Context { operation = Operation { operationSelection } } res = 
+    runResolver (resolveObject operationSelection res) ctx
