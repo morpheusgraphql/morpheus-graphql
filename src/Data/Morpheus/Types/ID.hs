@@ -7,6 +7,7 @@ module Data.Morpheus.Types.ID
   )
 where
 
+import qualified Data.Aeson                    as A
 import           Data.Morpheus.Kind             ( SCALAR )
 import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(KIND) )
@@ -26,6 +27,12 @@ newtype ID = ID
 
 instance GQLType ID where
   type KIND ID = SCALAR
+
+instance A.ToJSON ID where
+  toJSON = A.toJSON . unpackID
+
+instance A.FromJSON ID where
+  parseJSON = fmap ID . A.parseJSON 
 
 instance GQLScalar ID where
   parseValue (Int    x) = return (ID $ pack $ show x)
