@@ -59,39 +59,34 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , Prop(..)
                                                 )
 import           Data.Morpheus.Rendering.RenderGQL
-                                                ( RenderGQL(..) 
-                                                , renderWrapped
-                                                )
+                                                (  render )
 
 castFailure :: TypeRef -> Maybe Message -> ResolvedValue ->  InputValidator a
-castFailure TypeRef { typeConName , typeWrappers } message value  = do
+castFailure expected message value  = do
   pos <- askScopePosition
   prefix <- inputMessagePrefix
   failure
     $  errorMessage pos 
-    $ prefix <> typeViolation (renderWrapped typeConName typeWrappers) value <> maybe "" (" " <>) message
+    $ prefix <> typeViolation (render expected) value <> maybe "" (" " <>) message
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
   -> Ref
   -> Variable VALID
   -> InputValidator ValidValue
-checkTypeEquality (tyConName, tyWrappers) Ref { refName, refPosition } Variable { variableValue = ValidVariableValue value, variableType }
+checkTypeEquality (tyConName, tyWrappers) ref var@Variable { variableValue = ValidVariableValue value, variableType }
   | typeConName variableType == tyConName && not
     (isWeaker (typeWrappers variableType) tyWrappers)
   = pure value
   | otherwise
   = failure $ incompatibleVariableType 
-      refName
-      varSignature
-      fieldSignature
-      refPosition
- where
-  varSignature   = render variableType
-  fieldSignature = render TypeRef { typeConName  = tyConName
-                                  , typeWrappers = tyWrappers
-                                  , typeArgs     = Nothing
-                                  }
+      ref
+      var
+      TypeRef 
+        { typeConName = tyConName
+        , typeWrappers = tyWrappers
+        , typeArgs     = Nothing
+        }
 
 -- Validate Variable Argument or all Possible input Values
 validateInput
