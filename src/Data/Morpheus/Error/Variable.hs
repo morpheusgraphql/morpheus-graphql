@@ -9,9 +9,7 @@ where
 
 import           Data.Morpheus.Error.Utils      ( errorMessage )
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Position
-                                                , GQLErrors
-                                                , Name
+                                                ( GQLErrors
                                                 , Ref(..)
                                                 , Variable(..)
                                                 , TypeRef
@@ -37,9 +35,10 @@ incompatibleVariableType
       <> render argumentType
       <> "\"."
 
-uninitializedVariable :: Position -> Name -> Name -> GQLErrors
-uninitializedVariable position' type' key' = errorMessage position' text
- where
-  text = "Variable \"$" <> key' 
+uninitializedVariable :: Variable s -> GQLErrors
+uninitializedVariable Variable { variableName, variableType, variablePosition} = 
+  errorMessage 
+    variablePosition 
+    $ "Variable \"$" <> variableName 
     <> "\" of required type \""
-    <> type' <> "!\" was not provided."
+    <> render variableType <> "\" was not provided."
