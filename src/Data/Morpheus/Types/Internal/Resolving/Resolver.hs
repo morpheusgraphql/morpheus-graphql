@@ -23,9 +23,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , Resolver
   , MapStrategy(..)
   , LiftOperation
-  , resolveObject
   , runDataResolver
-  , runResolver
   , unsafeBind
   , toResolver
   , lift
@@ -40,6 +38,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , subscribe
   , Context(..)
   , unsafeInternalContext
+  , runRootDataResolver
   )
 where
 
@@ -62,7 +61,7 @@ import           Data.Morpheus.Types.Internal.AST.Selection
                                                 , SelectionSet
                                                 , UnionTag(..)
                                                 , UnionSelection
-                                                , Operation
+                                                , Operation(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
                                                 ( Message
@@ -435,6 +434,15 @@ runResolver (ResolverS resT) sel = ResultT $ do
           warnings,
           result = gqlNull
         } 
+
+
+runRootDataResolver 
+  :: (Monad m , LiftOperation o) 
+  => DataResolver o e m 
+  -> Context 
+  -> ResponseStream e m (Value VALID)
+runRootDataResolver res ctx@Context { operation = Operation { operationSelection } }  = 
+    runResolver (resolveObject operationSelection res) ctx
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.

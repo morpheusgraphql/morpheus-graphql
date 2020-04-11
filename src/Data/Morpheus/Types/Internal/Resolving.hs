@@ -5,8 +5,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , Resolver
     , MapStrategy(..)
     , LiftOperation
-    , resolveObject
-    , runResolver
+    , runRootDataResolver
     , unsafeBind
     , toResolver
     , lift

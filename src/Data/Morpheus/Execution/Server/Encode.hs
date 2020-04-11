@@ -59,6 +59,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , GQLValue(..)
+                                                , Value
+                                                , VALID
                                                 , ValidValue
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -68,11 +70,10 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , unsafeBind
                                                 , toResolver
                                                 , DataResolver(..)
-                                                , resolveObject
                                                 , resolve__typename
                                                 , FieldRes
                                                 , ResponseStream
-                                                , runResolver
+                                                , runRootDataResolver
                                                 , runDataResolver
                                                 , Context(..)
                                                 )
@@ -210,9 +211,10 @@ encodeOperationWith
   => Proxy o
   -> Maybe (DataResolver o e m)
   -> EncodeOperation e m a
-encodeOperationWith _ externalRes rootResolver ctx@Context { operation = Operation { operationSelection } } =
-  runResolver (resolveObject operationSelection (rootDataRes <> extDataRes)) ctx
+encodeOperationWith _ externalRes rootResolver 
+  = runRootDataResolver mergedResolver
  where
+  mergedResolver = rootDataRes <> extDataRes
   rootDataRes = objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
   extDataRes  = fromMaybe (ObjectRes []) externalRes
 
