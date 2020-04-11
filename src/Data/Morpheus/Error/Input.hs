@@ -11,16 +11,18 @@ import           Data.ByteString.Lazy.Char8     ( unpack )
 import           Data.Text                      ( pack )
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST.Base 
-                                                ( Name
-                                                , Message
+import           Data.Morpheus.Types.Internal.AST 
+                                                ( Message
+                                                , ResolvedValue
+                                                , TypeRef(..) 
                                                 )
-import           Data.Morpheus.Types.Internal.AST.Value
-                                                ( ResolvedValue )
+import           Data.Morpheus.Rendering.RenderGQL
+                                                ( RenderGQL(..) )
 
-typeViolation :: Name -> ResolvedValue -> Message
+
+typeViolation :: TypeRef -> ResolvedValue -> Message
 typeViolation expected found = "Expected type \""
-  <> expected
+  <> render expected
   <> "\" found "
   <> pack (unpack $ encode found)
   <> "."

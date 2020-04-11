@@ -58,8 +58,6 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , inputMessagePrefix
                                                 , Prop(..)
                                                 )
-import           Data.Morpheus.Rendering.RenderGQL
-                                                (  render )
 
 castFailure :: TypeRef -> Maybe Message -> ResolvedValue ->  InputValidator a
 castFailure expected message value  = do
@@ -67,7 +65,7 @@ castFailure expected message value  = do
   prefix <- inputMessagePrefix
   failure
     $  errorMessage pos 
-    $ prefix <> typeViolation (render expected) value <> maybe "" (" " <>) message
+    $ prefix <> typeViolation expected value <> maybe "" (" " <>) message
 
 checkTypeEquality
   :: (Name, [TypeWrapper])
