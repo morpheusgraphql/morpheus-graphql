@@ -6,17 +6,25 @@
       "fields": null,
       "inputFields": [
         {
-          "name": "__typename",
+          "name": "inputname",
           "type": {
             "kind": "NON_NULL",
             "name": null,
-            "ofType": { "kind": "ENUM", "name": "MonsterTags", "ofType": null }
+            "ofType": {
+              "kind": "ENUM",
+              "name": "MonsterTags",
+              "ofType": null
+            }
           },
           "defaultValue": null
         },
         {
           "name": "Hydra",
-          "type": { "kind": "INPUT_OBJECT", "name": "Hydra", "ofType": null },
+          "type": {
+            "kind": "INPUT_OBJECT",
+            "name": "Hydra",
+            "ofType": null
+          },
           "defaultValue": null
         },
         {
@@ -40,7 +48,11 @@
       "inputFields": null,
       "interfaces": null,
       "enumValues": [
-        { "name": "Hydra", "isDeprecated": false, "deprecationReason": null },
+        {
+          "name": "Hydra",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
         {
           "name": "Cerberus",
           "isDeprecated": false,

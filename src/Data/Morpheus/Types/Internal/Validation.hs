@@ -40,6 +40,7 @@ module Data.Morpheus.Types.Internal.Validation
   , inputMessagePrefix
   , checkUnused
   , Prop(..)
+  , constraintInputUnion
   )
   where
 
@@ -59,6 +60,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , selectOr
                                                 , KeyOf(..)
                                                 , member
+                                                , size
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Stateless )
@@ -76,6 +78,10 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeContent(..)
                                                 , isInputDataType
                                                 , isFieldNullable
+                                                , Value(..)
+                                                , Object
+                                                , entryValue
+                                                , __inputname
                                                 )
 import           Data.Morpheus.Types.Internal.Validation.Validator
                                                 ( Validator(..)
@@ -319,3 +325,30 @@ withScopeType scopeTypeName = setGlobalContext update
 
 inputMessagePrefix :: InputValidator Message 
 inputMessagePrefix = renderInputPrefix <$> askContext
+
+
+constraintInputUnion
+  :: forall stage. [(Name, Bool)]
+  -> Object stage
+  -> Either Message (Name, Maybe (Value stage))
+constraintInputUnion tags hm = do
+  (enum :: Value stage) <- entryValue <$> selectBy 
+      ("valid input union should contain \"" <> __inputname <> "\" and actual value")
+      __inputname
+      hm
+  tyName <- isPosibeInputUnion tags enum
+  case size hm of
+    1 -> pure (tyName, Nothing)
+    2 -> do
+      value <- entryValue <$> selectBy 
+          ("value for Union \""<> tyName <> "\" was not Provided.") 
+          tyName 
+          hm
+      pure (tyName , Just value)
+    _ -> failure ("input union can have only one variant." :: Message)
+
+isPosibeInputUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
+isPosibeInputUnion tags (Enum name) = case lookup name tags of
+  Nothing -> failure (name <> " is not posible union type" :: Message)
+  _       -> pure name
+isPosibeInputUnion _ _ = failure $ "\""<> __inputname <> "\" must be Enum" 
