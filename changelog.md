@@ -5,6 +5,7 @@
 ### Breaking Changes
 
 - Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
+- for Variant selection inputUnion uses `inputname` insead of `__typename`
 
 ### New features
 
