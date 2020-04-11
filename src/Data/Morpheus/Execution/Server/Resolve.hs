@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
+
 module Data.Morpheus.Execution.Server.Resolve
   ( statelessResolver
   , byteStringIO
@@ -34,9 +35,9 @@ import           Data.Foldable                   (traverse_)
 import           Data.Morpheus.Error.Utils      ( badRequestError )
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( EncodeCon
-                                                , encodeMutation
-                                                , encodeQuery
-                                                , encodeSubscription
+                                                , deriveRoot
+                                                , DeriveRoot(..)
+                                                , deriveModel
                                                 )
 import           Data.Morpheus.Execution.Server.Introspect
                                                 ( IntroCon
@@ -90,6 +91,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Failure(..)
                                                 , resolveUpdates
                                                 , Context(..)
+                                                , runResolverModel
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
@@ -158,8 +160,8 @@ coreResolver
   => GQLRootResolver m event query mut sub
   -> GQLRequest
   -> ResponseStream event m ValidValue
-coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptionResolver } request
-  = validRequest >>= execOperator
+coreResolver root request
+  = validRequest >>=  execOperator
  where
   validRequest
     :: Monad m => ResponseStream event m Context
@@ -178,11 +180,7 @@ coreResolver root@GQLRootResolver { queryResolver, mutationResolver, subscriptio
         }
   }
   ----------------------------------------------------------
-  execOperator ctx@Context {schema ,operation = Operation{ operationType} } = execOperationBy operationType ctx
-    where
-      execOperationBy Query = encodeQuery (schemaAPI schema) queryResolver
-      execOperationBy Mutation = encodeMutation mutationResolver
-      execOperationBy Subscription = encodeSubscription subscriptionResolver
+  execOperator ctx@Context {schema } = runResolverModel (deriveModel root (schemaAPI schema)) ctx
     
 statefulResolver
   :: (EventCon event, MonadIO m)

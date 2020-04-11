@@ -38,7 +38,8 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , subscribe
   , Context(..)
   , unsafeInternalContext
-  , runRootDataResolver
+  , runResolverModel
+  , ResolverModel(..)
   )
 where
 
@@ -74,6 +75,7 @@ import           Data.Morpheus.Types.Internal.AST.Base
                                                 , GQLErrors
                                                 , GQLError(..)
                                                 , VALID
+                                                , OperationType(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Data
                                                 ( Schema
@@ -453,3 +455,25 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
   , mutationResolver     :: mut (Resolver MUTATION event m)
   , subscriptionResolver :: sub (Resolver SUBSCRIPTION  event m)
   }
+
+data ResolverModel e m
+    = ResolverModel 
+      { query :: DataResolver QUERY e m
+      , mutation :: DataResolver MUTATION e m
+      , subscription :: DataResolver SUBSCRIPTION e m
+      }
+
+runResolverModel :: Monad m => ResolverModel e m -> Context -> ResponseStream e m (Value VALID)
+runResolverModel 
+    ResolverModel 
+      { query
+      , mutation 
+      , subscription 
+      }
+    ctx@Context { operation = Operation { operationType} } 
+  = selectByOperation operationType ctx
+  where
+    selectByOperation Query = runRootDataResolver query
+    selectByOperation Mutation = runRootDataResolver mutation
+    selectByOperation Subscription = runRootDataResolver subscription
+        

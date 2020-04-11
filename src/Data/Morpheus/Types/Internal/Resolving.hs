@@ -5,7 +5,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , Resolver
     , MapStrategy(..)
     , LiftOperation
-    , runRootDataResolver
+    , runResolverModel
     , unsafeBind
     , toResolver
     , lift
@@ -30,6 +30,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , subscribe
     , Context(..)
     , unsafeInternalContext
+    , ResolverModel(..)
     )
 where
 

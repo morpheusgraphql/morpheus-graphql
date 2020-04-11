@@ -10,21 +10,21 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE GADTs                 #-}
 
 module Data.Morpheus.Execution.Server.Encode
   ( EncodeCon
   , Encode(..)
-  , encodeQuery
-  , encodeSubscription
-  , encodeMutation
   , ExploreResolvers(..)
+  , deriveRoot
+  , DeriveRoot(..)
+  , deriveModel
   )
 where
 
 import           Data.Map                       ( Map )
 import qualified Data.Map                      as M
                                                 ( toList )
-import           Data.Maybe                     ( fromMaybe )
 import           Data.Proxy                     ( Proxy(..) )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Set                       ( Set )
@@ -53,15 +53,12 @@ import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
-                                                , Operation(..)
-                                                , MUTATION
-                                                , OperationType
+                                                , OperationType(..)
                                                 , QUERY
-                                                , SUBSCRIPTION
                                                 , GQLValue(..)
-                                                , Value
-                                                , VALID
                                                 , ValidValue
+                                                , SUBSCRIPTION
+                                                , MUTATION
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
@@ -72,10 +69,9 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , DataResolver(..)
                                                 , resolve__typename
                                                 , FieldRes
-                                                , ResponseStream
-                                                , runRootDataResolver
                                                 , runDataResolver
-                                                , Context(..)
+                                                , GQLRootResolver(..)
+                                                , ResolverModel(..)
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
@@ -153,21 +149,7 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeOperation e m a = a -> Context -> ResponseStream e m ValidValue
-
 type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
-
-
-objectResolvers
-  :: forall custom a o e m
-   . ExploreResolvers custom a o e m
-  => Proxy custom
-  -> a
-  -> DataResolver o e m
-objectResolvers isCustom value = case exploreResolvers isCustom value of
-  ObjectRes resFields -> ObjectRes resFields
-  _                   -> InvalidRes "resolver must be an object"
-
 
 --- GENERICS ------------------------------------------------
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
@@ -178,50 +160,79 @@ instance (Generic a,Monad m,LiftOperation o,TypeRep (Rep a) o e m ) => ExploreRe
     $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
 ----- HELPERS ----------------------------
-encodeQuery
-  :: forall m event query (schema :: (* -> *) -> *)
-   . ( Monad m
-     , EncodeCon QUERY event m (schema (Resolver QUERY event m))
-     , EncodeCon QUERY event m query
-     )
-  => schema (Resolver QUERY event m)
-  -> EncodeOperation event m query
-encodeQuery schema = encodeOperationWith
-  (Proxy @QUERY)
-  (Just $ objectResolvers
-    (Proxy :: Proxy (CUSTOM (schema (Resolver QUERY event m))))
-    schema
-  )
+objectResolvers
+  :: forall a o e m
+   . ExploreResolvers (CUSTOM a) a o e m
+  => a
+  -> DataResolver o e m
+objectResolvers value = case exploreResolvers (Proxy @(CUSTOM a)) value of
+  ObjectRes resFields -> ObjectRes resFields
+  _                   -> InvalidRes "resolver must be an object"
 
-encodeMutation
-  :: forall event m mut
-   . (Monad m, EncodeCon MUTATION event m mut)
-  => EncodeOperation event m mut
-encodeMutation = encodeOperationWith (Proxy @MUTATION) Nothing
+data DeriveRoot (o :: OperationType) e m where
+   DeriveQuery 
+      :: forall a e m schema. 
+        ( ExploreResolvers (CUSTOM a) a QUERY e m
+        , ExploreResolvers (CUSTOM schema) schema QUERY e m
+        ) 
+      => a 
+      -> schema
+      -> DeriveRoot QUERY e m
+   DeriveMutation 
+      :: forall a e m. 
+        ( ExploreResolvers (CUSTOM a) a MUTATION e m) 
+      => a 
+      -> DeriveRoot MUTATION e m 
+   DeriveSubscription 
+      :: forall a e m. 
+        ( ExploreResolvers (CUSTOM a) a SUBSCRIPTION e m) 
+      => a 
+      -> DeriveRoot SUBSCRIPTION e m 
+    
+deriveRoot 
+  :: DeriveRoot op ev m 
+  -> DataResolver op ev m
+deriveRoot (DeriveQuery res schema)        = objectResolvers res <> objectResolvers schema
+deriveRoot (DeriveMutation res)     = objectResolvers res
+deriveRoot (DeriveSubscription res) = objectResolvers res
 
-encodeSubscription
-  :: forall m event mut
-   . (Monad m, EncodeCon SUBSCRIPTION event m mut)
-  => EncodeOperation event m mut
-encodeSubscription = encodeOperationWith (Proxy @SUBSCRIPTION) Nothing
 
-encodeOperationWith
-  :: forall (o :: OperationType) e m a
-   . (Monad m, EncodeCon o e m a, LiftOperation o)
-  => Proxy o
-  -> Maybe (DataResolver o e m)
-  -> EncodeOperation e m a
-encodeOperationWith _ externalRes rootResolver 
-  = runRootDataResolver mergedResolver
- where
-  mergedResolver = rootDataRes <> extDataRes
-  rootDataRes = objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
-  extDataRes  = fromMaybe (ObjectRes []) externalRes
+type Con o e m a 
+  = ExploreResolvers 
+      (CUSTOM 
+        (a (Resolver o e m))
+      ) 
+      (a (Resolver o e m)) 
+      o 
+      e 
+      m
+
+deriveModel
+  :: forall e m query mut sub schema. 
+      ( Con QUERY e m query
+      , Con QUERY e m schema
+      , Con MUTATION e m mut
+      , Con SUBSCRIPTION e m sub
+      )
+  => GQLRootResolver m e query mut sub
+  -> schema (Resolver QUERY e m)
+  -> ResolverModel e m
+deriveModel 
+  GQLRootResolver 
+    { queryResolver
+    , mutationResolver
+    , subscriptionResolver 
+    }
+  schema
+  = ResolverModel 
+    { query = objectResolvers queryResolver <> objectResolvers schema
+    , mutation = objectResolvers mutationResolver
+    , subscription = objectResolvers subscriptionResolver
+    }
 
 toFieldRes :: FieldNode o e m -> FieldRes o e m
 toFieldRes FieldNode { fieldSelName, fieldResolver } =
   (fieldSelName, fieldResolver)
-
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 data REP_KIND = REP_UNION | REP_OBJECT
