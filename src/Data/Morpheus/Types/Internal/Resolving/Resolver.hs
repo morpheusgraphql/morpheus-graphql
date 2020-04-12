@@ -322,7 +322,7 @@ data Deriving (o :: OperationType) e (m ::  * -> * )
   | DerivingEnum      Name
   | DerivingList      [Deriving o e m]
   | DerivingObject    (ObjectDeriving o e m)
-  | DerivingUnion     (ObjectDeriving o e m)
+  | DerivingUnion     Name (Resolver o e m (Deriving o e m))
 
 data ObjectDeriving o e m 
   = ObjectDeriving {
@@ -348,7 +348,7 @@ mapDeriving (DerivingScalar x) = DerivingScalar x
 mapDeriving (DerivingEnum enum) = DerivingEnum enum
 mapDeriving (DerivingList x)  = DerivingList $  map mapDeriving x
 mapDeriving (DerivingObject x)  = DerivingObject (mapObjectDeriving x)
-mapDeriving (DerivingUnion x) = DerivingUnion (mapObjectDeriving x)
+mapDeriving (DerivingUnion name x) = DerivingUnion name (mapStrategy x)
 
 mapObjectDeriving 
   ::  ( MapStrategy o o'
@@ -475,11 +475,14 @@ runDataResolver = withResolver getState . __encode
         encodeObject selection = resolveObject selection osel
       encodeNode (DerivingEnum enum) _ =
         resolveEnum enum selectionContent
-      encodeNode (DerivingUnion objectDrv) (UnionSelection selections) =
-        resolveObject selection (DerivingObject objectDrv)
-        where
-          selection = pickSelection (__typename objectDrv) selections
-      encodeNode (DerivingUnion (ObjectDeriving name _) ) _ 
+      encodeNode (DerivingUnion typename unionRef) (UnionSelection selections)
+        = unionRef >>= resolveObject currentSelection 
+          where currentSelection = pickSelection typename selections
+      -- encodeNode (DerivingUnion objectDrv) (UnionSelection selections) =
+      --   resolveObject selection (DerivingObject objectDrv)
+      --   where
+      --     selection = pickSelection (__typename objectDrv) selections
+      encodeNode (DerivingUnion name _) _ 
         = failure ("union Resolver \""<> name <> "\" should only recieve UnionSelection" :: Message)
       encodeNode DerivingNull _ = pure Null
       encodeNode (DerivingScalar x) SelectionField = pure $ Scalar x
