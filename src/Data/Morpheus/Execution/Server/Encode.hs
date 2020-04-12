@@ -149,7 +149,7 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
   = encodeUnion resFields
  where
   -- ENUM
-  encodeUnion [] = DerivingEnum resTypeName
+  encodeUnion [] = DerivingEnum resDatatypeName resTypeName
   -- Type References --------------------------------------------------------------
   encodeUnion [FieldNode { fieldTypeName, fieldResolver, isFieldObject }]
     | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName

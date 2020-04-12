@@ -319,7 +319,7 @@ instance MapStrategy o o where
 data Deriving (o :: OperationType) e (m ::  * -> * ) 
   = DerivingNull
   | DerivingScalar    ScalarValue
-  | DerivingEnum      Name
+  | DerivingEnum      Name Name
   | DerivingList      [Deriving o e m]
   | DerivingObject    (ObjectDeriving o e m)
   | DerivingUnion     Name (Resolver o e m (Deriving o e m))
@@ -345,7 +345,7 @@ mapDeriving
   -> Deriving o' e m
 mapDeriving DerivingNull = DerivingNull
 mapDeriving (DerivingScalar x) = DerivingScalar x 
-mapDeriving (DerivingEnum enum) = DerivingEnum enum
+mapDeriving (DerivingEnum typeName enum) = DerivingEnum typeName enum
 mapDeriving (DerivingList x)  = DerivingList $  map mapDeriving x
 mapDeriving (DerivingObject x)  = DerivingObject (mapObjectDeriving x)
 mapDeriving (DerivingUnion name x) = DerivingUnion name (mapStrategy x)
@@ -396,25 +396,22 @@ instance Merge (ObjectDeriving o e m) where
 pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
 
-
 resolveEnum
   :: (Monad m, LiftOperation o)
   => Name
+  -> Name
   -> SelectionContent VALID
   -> Resolver o e m ValidValue
-resolveEnum enum SelectionField              = pure $ gqlString enum
-resolveEnum enum (UnionSelection selections) 
-  = updatType $ do 
-    typename <- currentTypeName <$> unsafeInternalContext
-    let currentSelection = pickSelection typename selections 
-    resolveObject
+resolveEnum _ enum SelectionField              = pure $ gqlString enum
+resolveEnum typename enum (UnionSelection selections) 
+  =  resolveObject
       currentSelection
       resolvers
  where
-  updatType = mapResolverContext (\ctx -> ctx { currentTypeName = currentTypeName ctx <> "EnumObject" })
-  resolvers 
-    = DerivingObject (ObjectDeriving "TODO: tyName" [("enum", pure $ DerivingScalar $ String enum)])
-resolveEnum _ _ =
+  currentSelection = pickSelection typename selections
+  resolvers
+    = DerivingObject (ObjectDeriving (typename <> "EnumObject") [("enum", pure $ DerivingScalar $ String enum)])
+resolveEnum _ _ _ =
   failure $ internalResolvingError "wrong selection on enum value"
 
 withObject
@@ -473,8 +470,8 @@ runDataResolver = withResolver getState . __encode
       encodeNode osel@DerivingObject{} _ = withObject encodeObject sel
         where
         encodeObject selection = resolveObject selection osel
-      encodeNode (DerivingEnum enum) _ =
-        resolveEnum enum selectionContent
+      encodeNode (DerivingEnum tyName enum) _ =
+        resolveEnum tyName enum selectionContent
       encodeNode (DerivingUnion typename unionRef) (UnionSelection selections)
         = unionRef >>= resolveObject currentSelection 
           where currentSelection = pickSelection typename selections
