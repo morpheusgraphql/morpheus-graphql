@@ -20,7 +20,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , unpackEvents
     , LibUpdater
     , resolveUpdates
-    , resolve__typename
+    , DerivingObject
     , Deriving(..)
     , FieldRes
     , WithOperation

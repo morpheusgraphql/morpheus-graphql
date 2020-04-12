@@ -65,7 +65,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Resolver
                                                 , toResolver
                                                 , Deriving(..)
-                                                , resolve__typename
                                                 , FieldRes
                                                 , GQLRootResolver(..)
                                                 , ResolverModel(..)
@@ -160,9 +159,7 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
         [(fieldTypeName,fieldResolver)]
   -- RECORDS ----------------------------------------------------------------------------
   encodeUnion fields = 
-      DerivingUnion 
-        resTypeName 
-        (resolve__typename resTypeName : map toFieldRes resolvers)
+      DerivingUnion resTypeName (map toFieldRes resolvers)
    where
     resolvers | isResRecord = fields
               | otherwise   = setFieldNames fields

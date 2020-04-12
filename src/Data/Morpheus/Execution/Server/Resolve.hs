@@ -168,6 +168,7 @@ coreResolver root request
     pure $ Context {
         schema
       , operation
+      , currentTypeName = "Root"
       , currentSelection = Selection
           { selectionName = "Root"
           , selectionArguments = empty
