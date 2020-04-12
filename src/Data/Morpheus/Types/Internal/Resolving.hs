@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , LibUpdater
     , resolveUpdates
     , setTypeName
-    , DerivingObject
+    , ObjectDeriving(..)
     , Deriving(..)
     , FieldRes
     , WithOperation

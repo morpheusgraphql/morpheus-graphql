@@ -35,6 +35,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , MapStrategy(..)
                                                 , LiftOperation
                                                 , Deriving(..)
+                                                , ObjectDeriving(..)
                                                 )
 import           Data.Morpheus.Types.Internal.TH
                                                 ( applyT
@@ -109,7 +110,13 @@ deriveEncode GQLTypeD { typeKindD, typeD = TypeD { tName, tCons = [ConsD { cFiel
    where
     argsE = [varP (mkName "_"), destructRecord tName varNames]
     body  = appE (varE 'pure) 
-      $ appE (appE (conE 'DerivingObject ) (stringE (unpack tName))) (listE $ map (decodeVar . unpack) varNames)
+      $ appE 
+        (conE 'DerivingObject ) 
+          $ appE 
+            (appE (conE 'ObjectDeriving)
+                   (stringE (unpack tName))
+            )
+            (listE $ map (decodeVar . unpack) varNames)
     decodeVar name = [| (name, encode $(varName))|]
       where varName = varE $ mkName name
     varNames = map fieldName cFields

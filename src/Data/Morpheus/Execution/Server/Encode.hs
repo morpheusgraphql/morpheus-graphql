@@ -71,6 +71,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , unsafeBind
                                                 , failure
                                                 , setTypeName
+                                                , ObjectDeriving(..)
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
@@ -148,7 +149,7 @@ convertNode
   => ResNode o e m
   -> Deriving o e m
 convertNode ResNode { resDatatypeName, resKind = REP_OBJECT, resFields } =
-  DerivingObject resDatatypeName $ map toFieldRes resFields
+  DerivingObject (ObjectDeriving resDatatypeName $ map toFieldRes resFields)
 convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord }
   = encodeUnion resFields
  where
@@ -158,11 +159,15 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
   encodeUnion [FieldNode { fieldTypeName, fieldResolver, isFieldObject }]
     | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName
     = DerivingUnion 
-        fieldTypeName 
-        [(fieldTypeName,fieldResolver)]
+        $ ObjectDeriving
+            fieldTypeName 
+            [(fieldTypeName,fieldResolver)]
   -- RECORDS ----------------------------------------------------------------------------
   encodeUnion fields = 
-      DerivingUnion resTypeName (map toFieldRes resolvers)
+      DerivingUnion 
+        $ ObjectDeriving 
+            resTypeName 
+            (map toFieldRes resolvers)
    where
     resolvers | isResRecord = fields
               | otherwise   = setFieldNames fields
