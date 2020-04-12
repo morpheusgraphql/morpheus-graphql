@@ -6,7 +6,6 @@ module Data.Morpheus.Types.Internal.Resolving
     , MapStrategy(..)
     , LiftOperation
     , runResolverModel
-    , unsafeBind
     , toResolver
     , lift
     , SubEvent
@@ -22,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , LibUpdater
     , resolveUpdates
     , resolve__typename
-    , DataResolver(..)
+    , Deriving(..)
     , FieldRes
     , WithOperation
     , PushEvents(..)

@@ -16,8 +16,6 @@ module Data.Morpheus.Execution.Server.Encode
   ( EncodeCon
   , Encode(..)
   , ExploreResolvers(..)
-  , deriveRoot
-  , DeriveRoot(..)
   , deriveModel
   )
 where
@@ -59,14 +57,14 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , ValidValue
                                                 , SUBSCRIPTION
                                                 , MUTATION
+                                                , Value(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
                                                 , LiftOperation
                                                 , Resolver
-                                                , unsafeBind
                                                 , toResolver
-                                                , DataResolver(..)
+                                                , Deriving(..)
                                                 , resolve__typename
                                                 , FieldRes
                                                 , runDataResolver
@@ -75,18 +73,18 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
-  encode :: resolver -> Resolver o e m ValidValue
+  encode :: resolver -> Deriving o e m
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftOperation o) => Encode a o e m where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
 instance (Monad m , LiftOperation o,Encode a o e m) => Encode (Maybe a) o e m where
-  encode = maybe (pure gqlNull) encode
+  encode = maybe DerivingNull encode
 
 -- LIST []
 instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
-  encode = fmap gqlList . traverse encode
+  encode = DerivingList . map encode
 
 --  Tuple  (a,b)
 instance Encode (Pair k v) o e m => Encode (k, v) o e m where
@@ -102,46 +100,60 @@ instance (Eq k, Monad m,LiftOperation o, Encode (MapKind k v (Resolver o e m)) o
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeType a,Generic a, Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
- encode resolver = mapStrategy $ toResolver decodeArguments resolver `unsafeBind` encode 
+instance 
+  ( DecodeType a
+  , Generic a
+  , Monad m
+  , LiftOperation fo
+  , MapStrategy fo o
+  , Encode b fo e m
+  ) => Encode (a -> Resolver fo e m b) o e m where
+  encode resolver 
+    = toResolver decodeArguments resolver `unsafeBind` encode 
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (Resolver fo e m b) o e m where
-  encode = mapStrategy . (`unsafeBind` encode)
+  -- encode = mapStrategy . (`unsafeBind` encode)
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
-  encodeKind :: LiftOperation o =>  VContext kind a -> Resolver o e m ValidValue
+  encodeKind :: LiftOperation o =>  VContext kind a -> Deriving o e m
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
-  encodeKind = pure . gqlScalar . serialize . unVContext
+  encodeKind = DerivingScalar . serialize . unVContext
 
 -- ENUM
 instance (Generic a,GQLType a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
-  encodeKind (VContext value) = runDataResolver (__typeName (Proxy @a)) (exploreResolvers (Proxy @(CUSTOM a)) value)
+  encodeKind (VContext value) =  exploreResolvers (Proxy @(CUSTOM a)) value
+    -- withTypeName (__typeName (Proxy @a)) 
 
 instance (Monad m,Generic a, GQLType a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = runDataResolver (__typeName (Proxy @a)) (exploreResolvers (Proxy @(CUSTOM a)) value)
+  encodeKind (VContext value) = exploreResolvers (Proxy @(CUSTOM a)) value
+    -- withTypeName (__typeName (Proxy @a)) 
 
 convertNode
   :: (Monad m, LiftOperation o)
   => ResNode o e m
-  -> DataResolver o e m
+  -> Deriving o e m
 convertNode ResNode { resKind = REP_OBJECT, resFields } =
-  ObjectRes $ map toFieldRes resFields
+  DerivingObject $ map toFieldRes resFields
 convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord }
   = encodeUnion resFields
  where
   -- ENUM
-  encodeUnion [] = EnumRes resTypeName
+  encodeUnion [] = DerivingEnum resTypeName
   -- Type References --------------------------------------------------------------
   encodeUnion [FieldNode { fieldTypeName, fieldResolver, isFieldObject }]
     | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName
-    = UnionRef (fieldTypeName, fieldResolver)
+    = DerivingUnion 
+        fieldTypeName 
+        [(fieldTypeName,fieldResolver)]
   -- RECORDS ----------------------------------------------------------------------------
-  encodeUnion fields = UnionRes
-    (resTypeName, resolve__typename resTypeName : map toFieldRes resolvers)
+  encodeUnion fields = 
+      DerivingUnion 
+        resTypeName 
+        (resolve__typename resTypeName : map toFieldRes resolvers)
    where
     resolvers | isResRecord = fields
               | otherwise   = setFieldNames fields
@@ -153,7 +165,7 @@ type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
 --- GENERICS ------------------------------------------------
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: Proxy custom -> a -> DataResolver o e m
+  exploreResolvers :: Proxy custom -> a -> Deriving o e m
 
 instance (Generic a,Monad m,LiftOperation o,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
   exploreResolvers _ value = convertNode
@@ -164,38 +176,10 @@ objectResolvers
   :: forall a o e m
    . ExploreResolvers (CUSTOM a) a o e m
   => a
-  -> DataResolver o e m
+  -> Deriving o e m
 objectResolvers value = case exploreResolvers (Proxy @(CUSTOM a)) value of
-  ObjectRes resFields -> ObjectRes resFields
-  _                   -> InvalidRes "resolver must be an object"
-
-data DeriveRoot (o :: OperationType) e m where
-   DeriveQuery 
-      :: forall a e m schema. 
-        ( ExploreResolvers (CUSTOM a) a QUERY e m
-        , ExploreResolvers (CUSTOM schema) schema QUERY e m
-        ) 
-      => a 
-      -> schema
-      -> DeriveRoot QUERY e m
-   DeriveMutation 
-      :: forall a e m. 
-        ( ExploreResolvers (CUSTOM a) a MUTATION e m) 
-      => a 
-      -> DeriveRoot MUTATION e m 
-   DeriveSubscription 
-      :: forall a e m. 
-        ( ExploreResolvers (CUSTOM a) a SUBSCRIPTION e m) 
-      => a 
-      -> DeriveRoot SUBSCRIPTION e m 
-    
-deriveRoot 
-  :: DeriveRoot op ev m 
-  -> DataResolver op ev m
-deriveRoot (DeriveQuery res schema)        = objectResolvers res <> objectResolvers schema
-deriveRoot (DeriveMutation res)     = objectResolvers res
-deriveRoot (DeriveSubscription res) = objectResolvers res
-
+  DerivingObject resFields -> DerivingObject resFields
+  _                   -> DerivingError "resolver must be an object"
 
 type Con o e m a 
   = ExploreResolvers 
@@ -247,9 +231,9 @@ data ResNode o e m = ResNode {
   }
 
 data FieldNode o e m = FieldNode {
-    fieldTypeName :: Name,
-    fieldSelName :: Name,
-    fieldResolver  :: Resolver o e m ValidValue,
+    fieldTypeName  :: Name,
+    fieldSelName   :: Name,
+    fieldResolver  :: Deriving o e m,
     isFieldObject  :: Bool
   }
 
@@ -263,11 +247,9 @@ class TypeRep f o e (m :: * -> *) where
 
 instance (Datatype d,TypeRep  f o e m) => TypeRep (M1 D d f) o e m where
   typeResolvers context (M1 src) = (typeResolvers context src)
-    { resDatatypeName = pack $ datatypeName (undefined :: M1 D d f a)
-    }
+    { resDatatypeName = pack $ datatypeName (undefined :: M1 D d f a) }
 
-
-      --- UNION OR OBJECT 
+--- UNION OR OBJECT 
 instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
   typeResolvers context (L1 x) =
     (typeResolvers context x) { resKind = REP_UNION }

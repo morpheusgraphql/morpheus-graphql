@@ -35,8 +35,6 @@ import           Data.Foldable                   (traverse_)
 import           Data.Morpheus.Error.Utils      ( badRequestError )
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( EncodeCon
-                                                , deriveRoot
-                                                , DeriveRoot(..)
                                                 , deriveModel
                                                 )
 import           Data.Morpheus.Execution.Server.Introspect
@@ -63,7 +61,6 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Schema(..)
                                                 , TypeDefinition(..)
                                                 , MUTATION
-                                                , OperationType(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
                                                 , initTypeLib

@@ -32,7 +32,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , ResponseEvent(..)
   , ResponseStream
   , resolve__typename
-  , DataResolver(..)
+  , Deriving(..)
   , FieldRes
   , WithOperation
   , subscribe
@@ -46,7 +46,7 @@ where
 import           Control.Monad.Fail             (MonadFail(..))
 import           Control.Monad.Trans.Class      ( MonadTrans(..))
 import           Control.Monad.IO.Class         ( MonadIO(..) )
-import           Data.Maybe                     ( fromMaybe )
+import           Data.Maybe                     ( maybe )
 import           Data.Semigroup                 ( (<>)
                                                 , Semigroup(..)
                                                 )
@@ -106,6 +106,7 @@ import           Data.Morpheus.Types.Internal.AST.Value
                                                 , ValidValue
                                                 , ObjectEntry(..)
                                                 , Value(..)
+                                                , ScalarValue(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( renderResponse
                                                 , GQLResponse
@@ -291,25 +292,42 @@ type instance UnSubResolver (Resolver SUBSCRIPTION e m) = Resolver QUERY e m
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
-   mapStrategy :: Monad m => Resolver from e m a -> Resolver to e m a
+   mapStrategy :: Monad m => Deriving from e m -> Deriving to e m 
 
 instance MapStrategy o o where
   mapStrategy = id
 
+data Deriving (o :: OperationType) e (m ::  * -> * ) 
+  = DerivingNull
+  | DerivingScalar    ScalarValue
+  | DerivingEnum      Name
+  | DerivingList      [Deriving o e m]
+  | DerivingObject    [(Name,Deriving o e m)]
+  | DerivingUnion     Name [(Name,Deriving o e m)]
+  | DerivingError     Message
+
 instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy  = ResolverS . pure . lift
+  mapStrategy DerivingNull        = DerivingNull
+  mapStrategy (DerivingScalar x)  = DerivingScalar x
+  mapStrategy (DerivingEnum x)    = DerivingEnum x
+  mapStrategy (DerivingList x)    = DerivingList $  map mapStrategy x
+  mapStrategy (DerivingObject x)  
+    = DerivingObject 
+      $ map (mapEntry mapStrategy) x
+  mapStrategy (DerivingUnion name entries) 
+    = DerivingUnion name $ map (mapEntry mapStrategy) entries 
+  mapStrategy (DerivingError msg) = DerivingError msg 
+
+mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
+mapEntry f (name,value) = (name, f value) 
 
 --
 -- Selection Processing
---
-type FieldRes o e m
-  = (Key, Resolver o e m ValidValue)
-
 toResolver
   :: forall o e m a b. (LiftOperation o, Monad m)
   => (Arguments VALID -> Stateless a)
   -> (a -> Resolver o e m b)
-  -> Resolver o e m b
+  -> Deriving o e m 
 toResolver toArgs  = withResolver args 
  where 
   args :: ResolverState e m a
@@ -318,17 +336,14 @@ toResolver toArgs  = withResolver args
     let resT = ResultT $ pure $ toArgs selectionArguments
     ResolverState $ lift $ cleanEvents resT
 
--- DataResolver
-data DataResolver o e m =
-    EnumRes  Name
-  | UnionRes  (Name,[FieldRes o e m])
-  | ObjectRes  [FieldRes o e m ]
-  | UnionRef (FieldRes o e m)
-  | InvalidRes Name
 
-instance Semigroup (DataResolver o e m) where
-  ObjectRes x <> ObjectRes y = ObjectRes (x <> y)
-  _           <> _           = InvalidRes "can't merge: incompatible resolvers"
+-- DataResolver
+type FieldRes o e m
+  = (Name, Deriving o e m)
+
+instance Semigroup (Deriving o e m) where
+  DerivingObject x <> DerivingObject y = DerivingObject (x <> y)
+  _           <> _           = DerivingError "can't merge: incompatible resolvers"
 
 pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
@@ -336,8 +351,8 @@ pickSelection = selectOr empty unionTagSelection
 resolve__typename
   :: (Monad m, LiftOperation o)
   => Name
-  -> (Key, Resolver o e m ValidValue)
-resolve__typename name = ("__typename", pure $ gqlString name)
+  -> (Key, Deriving o e m)
+resolve__typename name = ("__typename", DerivingScalar $ String name)
 
 resolveEnum
   :: (Monad m, LiftOperation o)
@@ -352,8 +367,8 @@ resolveEnum typeName enum (UnionSelection selections) = resolveObject
  where
   enumObjectTypeName = typeName <> "EnumObject"
   currentSelection   = pickSelection enumObjectTypeName selections
-  resolvers          = ObjectRes
-    [ ("enum", pure $ gqlString enum)
+  resolvers          = DerivingObject
+    [ ("enum", DerivingScalar $ String enum)
     , resolve__typename enumObjectTypeName
     ]
 resolveEnum _ _ _ =
@@ -369,15 +384,24 @@ withObject f Selection { selectionName, selectionContent , selectionPosition } =
   checkContent (SelectionSet selection) = f selection
   checkContent _ = failure (subfieldsNotSelected selectionName "" selectionPosition)
 
-lookupRes :: (LiftOperation o, Monad m) => Selection VALID -> [(Name,Resolver o e m ValidValue)] -> Resolver o e m ValidValue
-lookupRes Selection { selectionName} = fromMaybe (pure gqlNull) . lookup selectionName 
+lookupRes 
+  :: (LiftOperation o, Monad m) 
+  => Selection VALID
+  -> [(Name, Deriving o e m)] 
+  -> Resolver o e m ValidValue
+lookupRes 
+  Selection { selectionName } 
+  = maybe 
+      (pure gqlNull) 
+      (runDataResolver "TODO: typename")
+    . lookup selectionName 
 
 resolveObject
   :: forall o e m. (LiftOperation o , Monad m)
   => SelectionSet VALID
-  -> DataResolver o e m
+  -> Deriving o e m
   -> Resolver o e m ValidValue
-resolveObject selectionSet (ObjectRes resolvers) =
+resolveObject selectionSet (DerivingObject resolvers) =
   Object . toOrderedMap <$> traverse resolver selectionSet
  where
   resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
@@ -390,31 +414,29 @@ toEventResolver (ReaderT subRes) sel event = do
   value <- runResultT $ runReaderT (runResolverState $ runResolverQ (subRes event)) sel
   pure $ renderResponse value
 
-runDataResolver :: (Monad m, LiftOperation o) => Name -> DataResolver o e m -> Resolver o e m ValidValue
+runDataResolver :: (Monad m, LiftOperation o) => Name -> Deriving o e m -> Resolver o e m ValidValue
 runDataResolver typename  = withResolver getState . __encode
    where
     __encode obj sel@Selection { selectionContent }  = encodeNode obj selectionContent 
       where 
       -- Object -----------------
-      encodeNode (ObjectRes fields) _ = withObject encodeObject sel
+      encodeNode (DerivingObject fields) _ = withObject encodeObject sel
         where
-        encodeObject selection =
+        encodeObject selection = 
           resolveObject selection
-            $ ObjectRes
-            $ resolve__typename typename
-            : fields
-      encodeNode (EnumRes enum) _ =
+            $ DerivingObject $ resolve__typename typename:fields
+      encodeNode (DerivingEnum enum) _ =
         resolveEnum typename enum selectionContent
       -- Type Reference --------
-      encodeNode (UnionRef (fieldTypeName, fieldResolver)) (UnionSelection selections)
-        = setSelection sel { selectionContent = SelectionSet currentSelection } fieldResolver
-          where currentSelection = pickSelection fieldTypeName selections
-      -- Union Record ----------------
-      encodeNode (UnionRes (name, fields)) (UnionSelection selections) =
-        resolveObject selection resolver
-        where
-          selection = pickSelection name selections
-          resolver = ObjectRes (resolve__typename name : fields)
+      -- encodeNode (DerivingUnion fieldTypeName fieldResolver) (UnionSelection selections)
+      --   = setSelection sel { selectionContent = SelectionSet currentSelection } fieldResolver
+      --     where currentSelection = pickSelection fieldTypeName selections
+      -- -- Union Record ----------------
+      -- encodeNode (ResUnion (name, fields)) (UnionSelection selections) =
+      --   resolveObject selection resolver
+      --   where
+      --     selection = pickSelection name selections
+      --     resolver = ResObject (resolve__typename name : fields)
       encodeNode _ _ = failure $ internalResolvingError
         "union Resolver should only recieve UnionSelection"
 
@@ -451,9 +473,9 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
 
 data ResolverModel e m
     = ResolverModel 
-      { query :: ResponseStream e m (DataResolver QUERY e m)
-      , mutation :: ResponseStream e m (DataResolver MUTATION e m)
-      , subscription :: ResponseStream e m (DataResolver SUBSCRIPTION e m)
+      { query :: ResponseStream e m (Deriving QUERY e m)
+      , mutation :: ResponseStream e m (Deriving MUTATION e m)
+      , subscription :: ResponseStream e m (Deriving SUBSCRIPTION e m)
       }
 
 runResolverModel :: Monad m => ResolverModel e m -> Context -> ResponseStream e m (Value VALID)
@@ -473,7 +495,7 @@ runResolverModel
 runRootDataResolver 
   :: (Monad m , LiftOperation o) 
   => Context 
-  -> DataResolver o e m 
+  -> Deriving o e m 
   -> ResponseStream e m (Value VALID)
 runRootDataResolver  ctx@Context { operation = Operation { operationSelection } } res = 
     runResolver (resolveObject operationSelection res) ctx
