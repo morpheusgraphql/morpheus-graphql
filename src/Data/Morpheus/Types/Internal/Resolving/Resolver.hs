@@ -461,6 +461,24 @@ runResolver (ResolverS resT) sel = ResultT $ do
         } 
 
 
+runResolver2
+  :: Monad m
+  => Resolver o event m a
+  -> Context
+  -> ResponseStream event m a
+runResolver2 (ResolverQ resT) sel = cleanEvents $ (runReaderT $ runResolverState resT) sel
+runResolver2 (ResolverM resT) sel = mapEvent Publish $ (runReaderT $ runResolverState resT) sel 
+-- runResolver2 (ResolverS resT) sel = ResultT $ do 
+--     (readResValue :: Result (Channel event1) GQLError (ReaderT event (Resolver QUERY event m) ValidValue))  <- runResultT $ (runReaderT $ runResolverState resT) sel
+--     pure $ case readResValue of 
+--       Failure x -> Failure x
+--       Success { warnings ,result , events = channels } -> do
+--         let eventRes = toEventResolver result sel
+--         Success {
+--           events = [Subscribe $ Event channels eventRes],
+--           warnings,
+--           result = result
+--         } 
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
@@ -487,12 +505,17 @@ runResolverModel
       , subscription 
       }
     ctx@Context { operation = Operation { operationType} } 
-    = undefined
-  -- = selectByOperation operationType
-  -- where
-  --   selectByOperation Query = query >>= runRootDataResolver ctx
-  --   selectByOperation Mutation = mutation >>= runRootDataResolver ctx
-  --   selectByOperation Subscription = subscription >>= runRootDataResolver ctx
+  = selectByOperation operationType
+  where
+    selectByOperation Query 
+      = runResolver2 query ctx 
+        >>= runRootDataResolver ctx
+    selectByOperation Mutation 
+      = runResolver2 mutation ctx 
+        >>= runRootDataResolver ctx
+    selectByOperation Subscription 
+      = runResolver2 subscription ctx 
+        >>= runRootDataResolver ctx
 
 runRootDataResolver 
   :: (Monad m , LiftOperation o) 

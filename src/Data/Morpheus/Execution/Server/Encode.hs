@@ -128,7 +128,7 @@ class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
- -- encodeKind = fmap DerivingScalar . serialize . unVContext
+  encodeKind = pure . DerivingScalar . serialize . unVContext
 
 -- ENUM
 instance (Generic a,GQLType a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
