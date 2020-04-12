@@ -26,6 +26,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , unsafeBind
   , toResolver
   , lift
+  , subscribe
   , SubEvent
   , GQLChannel(..)
   , ResponseEvent(..)
@@ -34,7 +35,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , Deriving(..)
   , FieldRes
   , WithOperation
-  , subscribe
   , Context(..)
   , unsafeInternalContext
   , runResolverModel
