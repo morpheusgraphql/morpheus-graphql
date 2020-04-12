@@ -440,10 +440,7 @@ resolveObject selectionSet (DerivingObject tyName resolvers) =
       where
         res = 
             ( "__typename"
-            , DerivingScalar
-            . String
-            . currentTypeName 
-            <$> unsafeInternalContext
+            , pure $ DerivingScalar (String tyName)
             ) : resolvers
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
