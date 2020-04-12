@@ -232,9 +232,9 @@ deriveModel
   = ResolverModel 
     { query 
         = do 
-          x <- objectResolvers queryResolver 
-          y <- objectResolvers schema
-          x <:> y
+          schema' <- objectResolvers schema
+          root'   <- objectResolvers queryResolver 
+          root' <:> schema'
     , mutation = objectResolvers mutationResolver
     , subscription = objectResolvers subscriptionResolver
     }
