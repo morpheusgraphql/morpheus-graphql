@@ -292,7 +292,10 @@ type instance UnSubResolver (Resolver SUBSCRIPTION e m) = Resolver QUERY e m
 
 -- map Resolving strategies 
 class MapStrategy (from :: OperationType) (to :: OperationType) where
-   mapStrategy :: Monad m => Deriving from e m -> Deriving to e m 
+   mapStrategy
+    :: Monad m 
+    => Resolver from e m (Deriving from e m) 
+    -> Resolver to e m (Deriving to e m) 
 
 instance MapStrategy o o where
   mapStrategy = id
@@ -302,21 +305,20 @@ data Deriving (o :: OperationType) e (m ::  * -> * )
   | DerivingScalar    ScalarValue
   | DerivingEnum      Name
   | DerivingList      [Deriving o e m]
-  | DerivingObject    [(Name,Deriving o e m)]
-  | DerivingUnion     Name [(Name,Deriving o e m)]
-  | DerivingError     Message
+  | DerivingObject    [(Name, Resolver o e m (Deriving o e m) )]
+  | DerivingUnion     Name [(Name, Resolver o e m (Deriving o e m))]
 
 instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy DerivingNull        = DerivingNull
-  mapStrategy (DerivingScalar x)  = DerivingScalar x
-  mapStrategy (DerivingEnum x)    = DerivingEnum x
-  mapStrategy (DerivingList x)    = DerivingList $  map mapStrategy x
-  mapStrategy (DerivingObject x)  
-    = DerivingObject 
-      $ map (mapEntry mapStrategy) x
-  mapStrategy (DerivingUnion name entries) 
-    = DerivingUnion name $ map (mapEntry mapStrategy) entries 
-  mapStrategy (DerivingError msg) = DerivingError msg 
+  -- mapStrategy DerivingNull        = DerivingNull
+  -- mapStrategy (DerivingScalar x)  = DerivingScalar x
+  -- mapStrategy (DerivingEnum x)    = DerivingEnum x
+  -- mapStrategy (DerivingList x)    = DerivingList $  map mapStrategy x
+  -- mapStrategy (DerivingObject x)  
+  --   = DerivingObject 
+  --     $ map (mapEntry mapStrategy) x
+  -- mapStrategy (DerivingUnion name entries) 
+  --   = DerivingUnion name $ map (mapEntry mapStrategy) entries 
+  --mapStrategy (DerivingError msg) = DerivingError msg 
 
 mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
 mapEntry f (name,value) = (name, f value) 
@@ -324,11 +326,10 @@ mapEntry f (name,value) = (name, f value)
 --
 -- Selection Processing
 toResolver
-  :: forall fo o e m a b. (LiftOperation o, Monad m)
+  :: forall o e m a b. (LiftOperation o, Monad m)
   => (Arguments VALID -> Stateless a)
-  -> ( b -> Deriving o e m)
-  -> ( a -> Resolver fo e m b)
-  -> Deriving o e m 
+  -> ( a -> Resolver o e m b)
+  -> Resolver o e m b
 toResolver toArgs  = withResolver args 
  where 
   args :: ResolverState e m a
@@ -337,14 +338,13 @@ toResolver toArgs  = withResolver args
     let resT = ResultT $ pure $ toArgs selectionArguments
     ResolverState $ lift $ cleanEvents resT
 
-
 -- DataResolver
 type FieldRes o e m
-  = (Name, Deriving o e m)
+  = (Name, Resolver o e m (Deriving o e m))
 
 instance Semigroup (Deriving o e m) where
   DerivingObject x <> DerivingObject y = DerivingObject (x <> y)
-  _           <> _           = DerivingError "can't merge: incompatible resolvers"
+  -- _           <> _           = DerivingError "can't merge: incompatible resolvers"
 
 pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
@@ -352,8 +352,8 @@ pickSelection = selectOr empty unionTagSelection
 resolve__typename
   :: (Monad m, LiftOperation o)
   => Name
-  -> (Key, Deriving o e m)
-resolve__typename name = ("__typename", DerivingScalar $ String name)
+  -> (Key, Resolver o e m (Deriving o e m))
+resolve__typename name = ("__typename", pure $ DerivingScalar $ String name)
 
 resolveEnum
   :: (Monad m, LiftOperation o)
@@ -369,7 +369,7 @@ resolveEnum typeName enum (UnionSelection selections) = resolveObject
   enumObjectTypeName = typeName <> "EnumObject"
   currentSelection   = pickSelection enumObjectTypeName selections
   resolvers          = DerivingObject
-    [ ("enum", DerivingScalar $ String enum)
+    [ ("enum", pure $ DerivingScalar $ String enum)
     , resolve__typename enumObjectTypeName
     ]
 resolveEnum _ _ _ =
@@ -388,13 +388,13 @@ withObject f Selection { selectionName, selectionContent , selectionPosition } =
 lookupRes 
   :: (LiftOperation o, Monad m) 
   => Selection VALID
-  -> [(Name, Deriving o e m)] 
+  -> [(Name, Resolver o e m (Deriving o e m) )] 
   -> Resolver o e m ValidValue
 lookupRes 
   Selection { selectionName } 
   = maybe 
       (pure gqlNull) 
-      (runDataResolver "TODO: typename")
+      (\x -> x `unsafeBind` runDataResolver "TODO: typename")
     . lookup selectionName 
 
 resolveObject
@@ -474,9 +474,9 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
 
 data ResolverModel e m
     = ResolverModel 
-      { query :: ResponseStream e m (Deriving QUERY e m)
-      , mutation :: ResponseStream e m (Deriving MUTATION e m)
-      , subscription :: ResponseStream e m (Deriving SUBSCRIPTION e m)
+      { query :: Resolver QUERY e m (Deriving QUERY e m)
+      , mutation :: Resolver MUTATION e m (Deriving MUTATION e m)
+      , subscription :: Resolver SUBSCRIPTION e m (Deriving SUBSCRIPTION e m)
       }
 
 runResolverModel :: Monad m => ResolverModel e m -> Context -> ResponseStream e m (Value VALID)
@@ -487,11 +487,12 @@ runResolverModel
       , subscription 
       }
     ctx@Context { operation = Operation { operationType} } 
-  = selectByOperation operationType
-  where
-    selectByOperation Query = query >>= runRootDataResolver ctx
-    selectByOperation Mutation = mutation >>= runRootDataResolver ctx
-    selectByOperation Subscription = subscription >>= runRootDataResolver ctx
+    = undefined
+  -- = selectByOperation operationType
+  -- where
+  --   selectByOperation Query = query >>= runRootDataResolver ctx
+  --   selectByOperation Mutation = mutation >>= runRootDataResolver ctx
+  --   selectByOperation Subscription = subscription >>= runRootDataResolver ctx
 
 runRootDataResolver 
   :: (Monad m , LiftOperation o) 

@@ -53,11 +53,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , OperationType(..)
                                                 , QUERY
-                                                , GQLValue(..)
-                                                , ValidValue
                                                 , SUBSCRIPTION
                                                 , MUTATION
-                                                , Value(..)
+                                                , Message
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
@@ -67,24 +65,25 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Deriving(..)
                                                 , resolve__typename
                                                 , FieldRes
-                                                , runDataResolver
                                                 , GQLRootResolver(..)
                                                 , ResolverModel(..)
+                                                , unsafeBind
+                                                , failure
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
-  encode :: resolver -> Deriving o e m
+  encode :: resolver -> Resolver o e m (Deriving o e m)
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftOperation o) => Encode a o e m where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
 instance (Monad m , LiftOperation o,Encode a o e m) => Encode (Maybe a) o e m where
-  encode = maybe DerivingNull encode
+  encode = maybe (pure DerivingNull) encode
 
 -- LIST []
 instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
-  encode = DerivingList . map encode
+  encode = fmap DerivingList . traverse encode
 
 --  Tuple  (a,b)
 instance Encode (Pair k v) o e m => Encode (k, v) o e m where
@@ -104,30 +103,32 @@ instance
   ( DecodeType a
   , Generic a
   , Monad m
-  , LiftOperation o
-  , Encode b o e m
-  ) 
-  => Encode (a -> Resolver o e m b) o e m where
-  encode = toResolver decodeArguments encode
+  , LiftOperation fo
+  , Encode b fo e m
+  , MapStrategy fo o
+  )
+  => Encode (a -> Resolver fo e m b) o e m where
+  encode x 
+    = mapStrategy 
+      $ toResolver decodeArguments x `unsafeBind` encode
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance 
   ( Monad m
-  , LiftOperation fo
-  , MapStrategy fo o
+  , LiftOperation o
   , Encode b fo e m
+  , MapStrategy fo o
   )
   => Encode (Resolver fo e m b) o e m where
-    encode = mapStrategy . encode
-    -- (`unsafeBind` encode)
+    encode = mapStrategy . (`unsafeBind` encode)
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
-  encodeKind :: LiftOperation o =>  VContext kind a -> Deriving o e m
+  encodeKind :: LiftOperation o =>  VContext kind a -> Resolver o e m (Deriving o e m)
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
-  encodeKind = DerivingScalar . serialize . unVContext
+ -- encodeKind = fmap DerivingScalar . serialize . unVContext
 
 -- ENUM
 instance (Generic a,GQLType a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
@@ -171,21 +172,31 @@ type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
 --- GENERICS ------------------------------------------------
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: Proxy custom -> a -> Deriving o e m
+  exploreResolvers :: Proxy custom -> a -> Resolver o e m (Deriving o e m)
 
 instance (Generic a,Monad m,LiftOperation o,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
-  exploreResolvers _ value = convertNode
-    $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
+  exploreResolvers _ value = 
+    pure 
+      $ convertNode
+      $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
 ----- HELPERS ----------------------------
 objectResolvers
   :: forall a o e m
-   . ExploreResolvers (CUSTOM a) a o e m
+   . ( ExploreResolvers (CUSTOM a) a o e m
+     , Monad m
+     , LiftOperation o
+     )
   => a
-  -> Deriving o e m
-objectResolvers value = case exploreResolvers (Proxy @(CUSTOM a)) value of
-  DerivingObject resFields -> DerivingObject resFields
-  _                   -> DerivingError "resolver must be an object"
+  -> Resolver o e m (Deriving o e m)
+objectResolvers value 
+  = exploreResolvers (Proxy @(CUSTOM a)) value 
+  `unsafeBind` constraintOnject 
+    where
+      constraintOnject (DerivingObject fields) 
+        = pure $ DerivingObject fields
+      constraintOnject _  
+        = failure ("resolver must be an object" :: Message)
 
 type Con o e m a 
   = ExploreResolvers 
@@ -204,6 +215,7 @@ deriveModel
       , Con MUTATION e m mut
       , Con SUBSCRIPTION e m sub
       , Applicative m
+      , Monad m
       )
   => GQLRootResolver m e query mut sub
   -> schema (Resolver QUERY e m)
@@ -216,9 +228,10 @@ deriveModel
     }
   schema
   = ResolverModel 
-    { query = pure $ objectResolvers queryResolver <> objectResolvers schema
-    , mutation = pure $ objectResolvers mutationResolver
-    , subscription = pure $ objectResolvers subscriptionResolver
+    { query = objectResolvers queryResolver
+      -- objectResolvers queryResolver <> objectResolvers schema
+    , mutation = objectResolvers mutationResolver
+    , subscription = objectResolvers subscriptionResolver
     }
 
 toFieldRes :: FieldNode o e m -> FieldRes o e m
@@ -239,7 +252,7 @@ data ResNode o e m = ResNode {
 data FieldNode o e m = FieldNode {
     fieldTypeName  :: Name,
     fieldSelName   :: Name,
-    fieldResolver  :: Deriving o e m,
+    fieldResolver  :: Resolver o e m (Deriving o e m),
     isFieldObject  :: Bool
   }
 
