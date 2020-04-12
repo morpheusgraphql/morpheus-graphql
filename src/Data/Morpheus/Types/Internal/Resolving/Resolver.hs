@@ -414,34 +414,38 @@ withObject f Selection { selectionName, selectionContent , selectionPosition } =
 
 lookupRes 
   :: (LiftOperation o, Monad m) 
-  => Selection VALID
+  => Name
+  -> Selection VALID
   -> [(Name, Resolver o e m (Deriving o e m) )] 
   -> Resolver o e m ValidValue
-lookupRes 
+lookupRes
+  typename
   Selection { selectionName } 
-  = maybe 
-      (pure gqlNull) 
-      (`unsafeBind` runDataResolver)
-    . lookup selectionName 
+  | selectionName == "__typename" 
+      = const 
+        $ pure 
+        $ Scalar 
+        $ String 
+          typename
+  | otherwise 
+      = maybe 
+        (pure gqlNull) 
+        (`unsafeBind` runDataResolver)
+        . lookup selectionName 
 
 resolveObject
   :: forall o e m. (LiftOperation o , Monad m)
   => SelectionSet VALID
   -> Deriving o e m
   -> Resolver o e m ValidValue
-resolveObject selectionSet (DerivingObject tyName resolvers) =
+resolveObject selectionSet (DerivingObject typename resolvers) =
   Object . toOrderedMap <$> traverse resolver selectionSet
  where
   resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
   resolver sel 
     = setSelection sel 
-      $ setTypeName tyName 
-      $ ObjectEntry (keyOf sel) <$> lookupRes sel res
-      where
-        res = 
-            ( "__typename"
-            , pure $ DerivingScalar (String tyName)
-            ) : resolvers
+      $ setTypeName typename 
+      $ ObjectEntry (keyOf sel) <$> lookupRes typename sel resolvers
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
