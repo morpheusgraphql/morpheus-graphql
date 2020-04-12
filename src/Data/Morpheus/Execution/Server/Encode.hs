@@ -70,6 +70,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResolverModel(..)
                                                 , unsafeBind
                                                 , failure
+                                                , setTypeName
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
@@ -133,12 +134,14 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 
 -- ENUM
 instance (Generic a,GQLType a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
-  encodeKind (VContext value) =  exploreResolvers (Proxy @(CUSTOM a)) value
-    -- withTypeName (__typeName (Proxy @a)) 
+  encodeKind (VContext value) =  
+    setTypeName (__typeName (Proxy @a))  
+      $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 instance (Monad m,Generic a, GQLType a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = exploreResolvers (Proxy @(CUSTOM a)) value
-    -- withTypeName (__typeName (Proxy @a)) 
+  encodeKind (VContext value) = 
+    setTypeName (__typeName (Proxy @a)) 
+      $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 convertNode
   :: (Monad m, LiftOperation o)

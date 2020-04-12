@@ -39,6 +39,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , Context(..)
   , unsafeInternalContext
   , runResolverModel
+  , setTypeName
   , ResolverModel(..)
   )
 where
@@ -260,8 +261,8 @@ setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m
 setSelection currentSelection 
   = mapResolverContext (\ctx -> ctx { currentSelection })
 
-setCurrentTypename :: Monad m => Name -> Resolver o e m a -> Resolver o e m a 
-setCurrentTypename  currentTypeName 
+setTypeName :: Monad m => Name -> Resolver o e m a -> Resolver o e m a 
+setTypeName  currentTypeName 
   = mapResolverContext (\ctx -> ctx { currentTypeName } )
 
 -- unsafe variant of >>= , not for public api. user can be confused: 
