@@ -396,24 +396,6 @@ instance Merge (ObjectDeriving o e m) where
 pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
 
-resolveEnum
-  :: (Monad m, LiftOperation o)
-  => Name
-  -> Name
-  -> SelectionContent VALID
-  -> Resolver o e m ValidValue
-resolveEnum _ enum SelectionField              = pure $ gqlString enum
-resolveEnum typename enum (UnionSelection selections) 
-  =  resolveObject
-      currentSelection
-      resolvers
- where
-  currentSelection = pickSelection typename selections
-  resolvers
-    = DerivingObject (ObjectDeriving (typename <> "EnumObject") [("enum", pure $ DerivingScalar $ String enum)])
-resolveEnum _ _ _ =
-  failure $ internalResolvingError "wrong selection on enum value"
-
 withObject
   :: (LiftOperation o, Monad m)
   => (SelectionSet VALID -> Resolver o e m value)
@@ -461,27 +443,39 @@ toEventResolver (ReaderT subRes) sel event = do
   value <- runResultT $ runReaderT (runResolverState $ runResolverQ (subRes event)) sel
   pure $ renderResponse value
 
+
 runDataResolver :: (Monad m, LiftOperation o) => Deriving o e m -> Resolver o e m ValidValue
 runDataResolver = withResolver getState . __encode
    where
     __encode obj sel@Selection { selectionContent }  = encodeNode obj selectionContent 
       where 
+      -- LIST
+      encodeNode (DerivingList x) _ = List <$> traverse runDataResolver x
       -- Object -----------------
-      encodeNode osel@DerivingObject{} _ = withObject encodeObject sel
-        where
-        encodeObject selection = resolveObject selection osel
-      encodeNode (DerivingEnum tyName enum) _ =
-        resolveEnum tyName enum selectionContent
+      encodeNode objDrv@DerivingObject{} _ = withObject (`resolveObject` objDrv) sel
+      -- ENUM
+      encodeNode (DerivingEnum _ enum) SelectionField = pure $ gqlString enum
+      encodeNode (DerivingEnum typename enum) unionSel@UnionSelection{} 
+        = encodeNode (unionDrv (typename <> "EnumObject")) unionSel
+          where
+            unionDrv name 
+              = DerivingUnion name 
+                $ pure 
+                $ DerivingObject 
+                $ ObjectDeriving name [("enum", pure $ DerivingScalar $ String enum)]
+      encodeNode DerivingEnum {}  _ =
+          failure ( "wrong selection on enum value" :: Message)
+      -- UNION
       encodeNode (DerivingUnion typename unionRef) (UnionSelection selections)
         = unionRef >>= resolveObject currentSelection 
           where currentSelection = pickSelection typename selections
       encodeNode (DerivingUnion name _) _ 
         = failure ("union Resolver \""<> name <> "\" should only recieve UnionSelection" :: Message)
+      -- SCALARS
       encodeNode DerivingNull _ = pure Null
       encodeNode (DerivingScalar x) SelectionField = pure $ Scalar x
       encodeNode DerivingScalar {} _ 
         = failure ("scalar Resolver should only recieve SelectionField" :: Message)
-      encodeNode (DerivingList x) _ = List <$> traverse runDataResolver x
 
 runResolver
   :: Monad m
