@@ -219,14 +219,14 @@ instance MonadTrans (Resolver MUTATION e) where
 
 -- Failure
 instance (LiftOperation o, Monad m) => Failure Message (Resolver o e m) where
-   failure = packResolver .failure
+  failure = packResolver .failure
 
 instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
   failure = packResolver . failure 
 
 -- PushEvents
 instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
-    pushEvents = packResolver . pushEvents 
+  pushEvents = packResolver . pushEvents 
 
 class LiftOperation (o::OperationType) where
   packResolver :: Monad m => ResolverState e m a -> Resolver o e m a
@@ -285,7 +285,14 @@ unsafeBind (ResolverS res) m2 = ResolverS $ do
          (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearStateResolverEvents $ runResolverS (m2 valA) 
          runResolverQ $ runReaderT readResB e
 
-subscribe :: forall e m a . (PushEvents (Channel e) (ResolverState (Channel e) m), Monad m) => [StreamChannel e] -> Resolver QUERY e m (e -> Resolver QUERY e m a) -> Resolver SUBSCRIPTION e m a
+subscribe 
+  :: forall e m a 
+    . ( PushEvents (Channel e) (ResolverState (Channel e) m)
+      , Monad m
+      ) 
+    => [StreamChannel e] 
+    -> Resolver QUERY e m (e -> Resolver QUERY e m a) 
+    -> Resolver SUBSCRIPTION e m a
 subscribe ch res = ResolverS $ do 
   pushEvents (map Channel ch :: [Channel e])
   (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
@@ -356,12 +363,12 @@ derivingObject
 derivingObject 
   fields 
   = DerivingObject 
-    $ ("__typename",
-     DerivingScalar 
-     . String 
-     . currentTypeName 
-     <$> unsafeInternalContext
-    ) : fields
+    $ ( "__typename"
+        , DerivingScalar
+        . String
+        . currentTypeName 
+        <$> unsafeInternalContext
+      ) : fields
 
 --
 -- Selection Processing
