@@ -26,7 +26,6 @@ module Data.Morpheus.Types.Internal.Resolving
     , FieldRes
     , WithOperation
     , PushEvents(..)
-    , runDataResolver
     , subscribe
     , Context(..)
     , unsafeInternalContext

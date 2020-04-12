@@ -23,7 +23,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , Resolver
   , MapStrategy(..)
   , LiftOperation
-  , runDataResolver
   , unsafeBind
   , toResolver
   , lift
@@ -322,7 +321,7 @@ data Deriving (o :: OperationType) e (m ::  * -> * )
   | DerivingScalar    ScalarValue
   | DerivingEnum      Name
   | DerivingList      [Deriving o e m]
-  | DerivingObject    (DerivingObject o e m)
+  | DerivingObject    Name (DerivingObject o e m)
   | DerivingUnion     Name (DerivingObject o e m)
 
 type DerivingObject o e m 
@@ -345,30 +344,14 @@ mapDeriving DerivingNull = DerivingNull
 mapDeriving (DerivingScalar x) = DerivingScalar x 
 mapDeriving (DerivingEnum enum) = DerivingEnum enum
 mapDeriving (DerivingList x)  = DerivingList $  map mapDeriving x
-mapDeriving (DerivingObject x)  
-      = DerivingObject 
+mapDeriving (DerivingObject tyname x)  
+      = DerivingObject tyname
         $ map (mapEntry mapStrategy) x
 mapDeriving (DerivingUnion name entries) 
       = DerivingUnion name $ map (mapEntry mapStrategy) entries 
 
 mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
 mapEntry f (name,value) = (name, f value) 
-
-derivingObject
-  ::  ( Monad m
-      , LiftOperation o
-      )
-  => DerivingObject o e m
-  -> Deriving o e m
-derivingObject 
-  fields 
-  = DerivingObject 
-    $ ( "__typename"
-        , DerivingScalar
-        . String
-        . currentTypeName 
-        <$> unsafeInternalContext
-      ) : fields
 
 --
 -- Selection Processing
@@ -390,8 +373,8 @@ type FieldRes o e m
   = (Name, Resolver o e m (Deriving o e m))
 
 instance Merge (Deriving o e m) where
-  merge _ (DerivingObject x) (DerivingObject y) 
-    = pure $ DerivingObject (x <> y)
+  merge _ (DerivingObject tyname x) (DerivingObject _ y) 
+    = pure $ DerivingObject tyname (x <> y)
   merge _ _ _           
     = failure $ internalResolvingError "can't merge: incompatible resolvers" 
 
@@ -415,7 +398,7 @@ resolveEnum enum (UnionSelection selections)
  where
   updatType = mapResolverContext (\ctx -> ctx { currentTypeName = currentTypeName ctx <> "EnumObject" })
   resolvers 
-    = derivingObject [("enum", pure $ DerivingScalar $ String enum)]
+    = DerivingObject "TODO: tyName" [("enum", pure $ DerivingScalar $ String enum)]
 resolveEnum _ _ =
   failure $ internalResolvingError "wrong selection on enum value"
 
@@ -446,12 +429,22 @@ resolveObject
   => SelectionSet VALID
   -> Deriving o e m
   -> Resolver o e m ValidValue
-resolveObject selectionSet (DerivingObject resolvers) =
+resolveObject selectionSet (DerivingObject tyName resolvers) =
   Object . toOrderedMap <$> traverse resolver selectionSet
  where
   resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
   resolver sel 
-    = setSelection sel $ ObjectEntry (keyOf sel) <$> lookupRes sel resolvers
+    = setSelection sel 
+      $ setTypeName tyName 
+      $ ObjectEntry (keyOf sel) <$> lookupRes sel res
+      where
+        res = 
+            ( "__typename"
+            , DerivingScalar
+            . String
+            . currentTypeName 
+            <$> unsafeInternalContext
+            ) : resolvers
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
@@ -466,18 +459,16 @@ runDataResolver = withResolver getState . __encode
     __encode obj sel@Selection { selectionContent }  = encodeNode obj selectionContent 
       where 
       -- Object -----------------
-      encodeNode (DerivingObject fields) _ = withObject encodeObject sel
+      encodeNode osel@DerivingObject{} _ = withObject encodeObject sel
         where
-        encodeObject selection = 
-          resolveObject selection
-            $ derivingObject fields
+        encodeObject selection = resolveObject selection osel
       encodeNode (DerivingEnum enum) _ =
         resolveEnum enum selectionContent
       encodeNode (DerivingUnion name fields) (UnionSelection selections) =
         resolveObject selection resolver
         where
           selection = pickSelection name selections
-          resolver = derivingObject fields
+          resolver = DerivingObject name fields
       encodeNode (DerivingUnion name _) _ 
         = failure ("union Resolver \""<> name <> "\" should only recieve UnionSelection" :: Message)
       encodeNode DerivingNull _ = pure Null

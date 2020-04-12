@@ -147,8 +147,8 @@ convertNode
   :: (Monad m, LiftOperation o)
   => ResNode o e m
   -> Deriving o e m
-convertNode ResNode { resKind = REP_OBJECT, resFields } =
-  DerivingObject $ map toFieldRes resFields
+convertNode ResNode { resDatatypeName, resKind = REP_OBJECT, resFields } =
+  DerivingObject resDatatypeName $ map toFieldRes resFields
 convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord }
   = encodeUnion resFields
  where
@@ -195,8 +195,8 @@ objectResolvers value
   = exploreResolvers (Proxy @(CUSTOM a)) value 
   `unsafeBind` constraintOnject 
     where
-      constraintOnject (DerivingObject fields) 
-        = pure $ DerivingObject fields
+      constraintOnject obj@DerivingObject {} 
+        = pure obj
       constraintOnject _  
         = failure ("resolver must be an object" :: Message)
 
