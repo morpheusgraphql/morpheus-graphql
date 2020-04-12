@@ -154,7 +154,7 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
   encodeUnion [FieldNode { fieldTypeName, fieldResolver, isFieldObject }]
     | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName
     = DerivingUnion fieldTypeName fieldResolver
-  -- RECORDS ----------------------------------------------------------------------------
+  -- Inline Union Types ----------------------------------------------------------------------------
   encodeUnion fields 
       = DerivingUnion
         resTypeName
