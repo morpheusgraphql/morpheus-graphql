@@ -104,16 +104,22 @@ instance
   ( DecodeType a
   , Generic a
   , Monad m
+  , LiftOperation o
+  , Encode b o e m
+  ) 
+  => Encode (a -> Resolver o e m b) o e m where
+  encode = toResolver decodeArguments encode
+
+--  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
+instance 
+  ( Monad m
   , LiftOperation fo
   , MapStrategy fo o
   , Encode b fo e m
-  ) => Encode (a -> Resolver fo e m b) o e m where
-  encode resolver 
-    = toResolver decodeArguments resolver `unsafeBind` encode 
-
---  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (Resolver fo e m b) o e m where
-  -- encode = mapStrategy . (`unsafeBind` encode)
+  )
+  => Encode (Resolver fo e m b) o e m where
+    encode = mapStrategy . encode
+    -- (`unsafeBind` encode)
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where

@@ -324,9 +324,10 @@ mapEntry f (name,value) = (name, f value)
 --
 -- Selection Processing
 toResolver
-  :: forall o e m a b. (LiftOperation o, Monad m)
+  :: forall fo o e m a b. (LiftOperation o, Monad m)
   => (Arguments VALID -> Stateless a)
-  -> (a -> Resolver o e m b)
+  -> ( b -> Deriving o e m)
+  -> ( a -> Resolver fo e m b)
   -> Deriving o e m 
 toResolver toArgs  = withResolver args 
  where 
