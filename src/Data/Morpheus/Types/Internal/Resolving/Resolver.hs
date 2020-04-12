@@ -478,10 +478,6 @@ runDataResolver = withResolver getState . __encode
       encodeNode (DerivingUnion typename unionRef) (UnionSelection selections)
         = unionRef >>= resolveObject currentSelection 
           where currentSelection = pickSelection typename selections
-      -- encodeNode (DerivingUnion objectDrv) (UnionSelection selections) =
-      --   resolveObject selection (DerivingObject objectDrv)
-      --   where
-      --     selection = pickSelection (__typename objectDrv) selections
       encodeNode (DerivingUnion name _) _ 
         = failure ("union Resolver \""<> name <> "\" should only recieve UnionSelection" :: Message)
       encodeNode DerivingNull _ = pure Null
