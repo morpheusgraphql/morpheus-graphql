@@ -428,18 +428,18 @@ runDataResolver typename  = withResolver getState . __encode
             $ DerivingObject $ resolve__typename typename:fields
       encodeNode (DerivingEnum enum) _ =
         resolveEnum typename enum selectionContent
-      -- Type Reference --------
-      -- encodeNode (DerivingUnion fieldTypeName fieldResolver) (UnionSelection selections)
-      --   = setSelection sel { selectionContent = SelectionSet currentSelection } fieldResolver
-      --     where currentSelection = pickSelection fieldTypeName selections
-      -- -- Union Record ----------------
-      -- encodeNode (ResUnion (name, fields)) (UnionSelection selections) =
-      --   resolveObject selection resolver
-      --   where
-      --     selection = pickSelection name selections
-      --     resolver = ResObject (resolve__typename name : fields)
-      encodeNode _ _ = failure $ internalResolvingError
-        "union Resolver should only recieve UnionSelection"
+      encodeNode (DerivingUnion name fields) (UnionSelection selections) =
+        resolveObject selection resolver
+        where
+          selection = pickSelection name selections
+          resolver = DerivingObject (resolve__typename name : fields)
+      encodeNode (DerivingUnion name _) _ 
+        = failure ("union Resolver should only recieve UnionSelection" :: Message)
+      encodeNode DerivingNull _ = pure Null
+      encodeNode (DerivingScalar x) SelectionField = pure $ Scalar x
+      encodeNode (DerivingScalar x) _ 
+        = failure ("scalar Resolver should only recieve SelectionField" :: Message)
+      encodeNode (DerivingList x) _ = List <$> traverse (runDataResolver typename) x
 
 runResolver
   :: Monad m
