@@ -57,6 +57,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , MUTATION
                                                 , Message
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                (Merge(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
                                                 , LiftOperation
@@ -228,8 +230,11 @@ deriveModel
     }
   schema
   = ResolverModel 
-    { query = objectResolvers queryResolver
-      -- objectResolvers queryResolver <> objectResolvers schema
+    { query 
+        = do 
+          x <- objectResolvers queryResolver 
+          y <- objectResolvers schema
+          x <:> y
     , mutation = objectResolvers mutationResolver
     , subscription = objectResolvers subscriptionResolver
     }

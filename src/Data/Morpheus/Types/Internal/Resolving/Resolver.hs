@@ -87,6 +87,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( selectOr
                                                 , empty
                                                 , keyOf
+                                                , Merge(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 ( Stateless
@@ -342,9 +343,11 @@ toResolver toArgs  = withResolver args
 type FieldRes o e m
   = (Name, Resolver o e m (Deriving o e m))
 
-instance Semigroup (Deriving o e m) where
-  DerivingObject x <> DerivingObject y = DerivingObject (x <> y)
-  -- _           <> _           = DerivingError "can't merge: incompatible resolvers"
+instance Merge (Deriving o e m) where
+  merge _ (DerivingObject x) (DerivingObject y) 
+    = pure $ DerivingObject (x <> y)
+  merge _ _ _           
+    = failure $ internalResolvingError "can't merge: incompatible resolvers" 
 
 pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
