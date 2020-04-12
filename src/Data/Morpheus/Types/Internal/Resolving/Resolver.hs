@@ -292,7 +292,9 @@ type family UnSubResolver (a :: * -> * ) :: (* -> *)
 type instance UnSubResolver (Resolver SUBSCRIPTION e m) = Resolver QUERY e m
 
 -- map Resolving strategies 
-class MapStrategy (from :: OperationType) (to :: OperationType) where
+class MapStrategy 
+  (from :: OperationType) 
+  (to :: OperationType) where
    mapStrategy
     :: Monad m 
     => Resolver from e m (Deriving from e m) 
@@ -300,6 +302,11 @@ class MapStrategy (from :: OperationType) (to :: OperationType) where
 
 instance MapStrategy o o where
   mapStrategy = id
+
+-- data DerivingValue 
+--   = DerivingNull
+--   | DerivingScalar    ScalarValue
+--   | DerivingEnum      Name
 
 data Deriving (o :: OperationType) e (m ::  * -> * ) 
   = DerivingNull
@@ -310,16 +317,23 @@ data Deriving (o :: OperationType) e (m ::  * -> * )
   | DerivingUnion     Name [(Name, Resolver o e m (Deriving o e m))]
 
 instance MapStrategy QUERY SUBSCRIPTION where
-  -- mapStrategy DerivingNull        = DerivingNull
-  -- mapStrategy (DerivingScalar x)  = DerivingScalar x
-  -- mapStrategy (DerivingEnum x)    = DerivingEnum x
-  -- mapStrategy (DerivingList x)    = DerivingList $  map mapStrategy x
-  -- mapStrategy (DerivingObject x)  
-  --   = DerivingObject 
-  --     $ map (mapEntry mapStrategy) x
-  -- mapStrategy (DerivingUnion name entries) 
-  --   = DerivingUnion name $ map (mapEntry mapStrategy) entries 
-  --mapStrategy (DerivingError msg) = DerivingError msg 
+  mapStrategy  = ResolverS . pure . lift . fmap mapDeriving
+ 
+mapDeriving 
+  ::  ( MapStrategy o o'
+      , Monad m
+      )
+  => Deriving o e m 
+  -> Deriving o' e m
+mapDeriving DerivingNull = DerivingNull
+mapDeriving (DerivingScalar x) = DerivingScalar x 
+mapDeriving (DerivingEnum enum) = DerivingEnum enum
+mapDeriving (DerivingList x)  = DerivingList $  map mapDeriving x
+mapDeriving (DerivingObject x)  
+      = DerivingObject 
+        $ map (mapEntry mapStrategy) x
+mapDeriving (DerivingUnion name entries) 
+      = DerivingUnion name $ map (mapEntry mapStrategy) entries 
 
 mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
 mapEntry f (name,value) = (name, f value) 
@@ -437,10 +451,10 @@ runDataResolver typename  = withResolver getState . __encode
           selection = pickSelection name selections
           resolver = DerivingObject (resolve__typename name : fields)
       encodeNode (DerivingUnion name _) _ 
-        = failure ("union Resolver should only recieve UnionSelection" :: Message)
+        = failure ("union Resolver \""<> name <> "\" should only recieve UnionSelection" :: Message)
       encodeNode DerivingNull _ = pure Null
       encodeNode (DerivingScalar x) SelectionField = pure $ Scalar x
-      encodeNode (DerivingScalar x) _ 
+      encodeNode DerivingScalar {} _ 
         = failure ("scalar Resolver should only recieve SelectionField" :: Message)
       encodeNode (DerivingList x) _ = List <$> traverse (runDataResolver typename) x
 
