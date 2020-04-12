@@ -20,7 +20,6 @@ import           Control.Concurrent             ( MVar
                                                 , readMVar
                                                 )
 import           Data.Foldable                  ( traverse_ )
-import           Data.List                      ( intersect )
 import           Data.UUID.V4                   ( nextRandom )
 import           Network.WebSockets             ( Connection
                                                 , sendTextData
@@ -36,9 +35,8 @@ import           Data.HashMap.Lazy              ( empty
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( toApolloResponse )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Event(..)
-                                                , GQLChannel(..)
-                                                , SubEvent
+                                                ( GQLChannel(..)
+                                                , SubEvent(..)
                                                 )
 import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( ClientID
@@ -78,20 +76,14 @@ publishEvent gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMessa
  where
   sendMessage GQLClient { clientSessions, clientConnection } 
     | null clientSessions  = return ()
-    | otherwise = traverse_ send (filterByChannels clientSessions)
+    | otherwise = traverse_ send (toList clientSessions)
    where
-    send (sid, Event { content = subscriptionRes }) = do
-      res <- subscriptionRes event
-      let apolloRes = toApolloResponse sid res
-      liftIO $ sendTextData clientConnection apolloRes
-    ---------------------------
-    filterByChannels = filter
-      ( not
-      . null
-      . intersect (streamChannels event)
-      . channels
-      . snd
-      ) . toList
+    send (sid, SubEvent subscriptionRes) = 
+      case subscriptionRes event of 
+        Just res -> do
+          apolloRes <- toApolloResponse sid <$> res
+          liftIO $ sendTextData clientConnection apolloRes
+        Nothing -> pure ()
 
 endSubscription :: MonadIO m => ClientID -> SesionID -> GQLState m e -> m ()
 endSubscription cid sid = updateClientByID cid endSub

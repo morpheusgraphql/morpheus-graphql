@@ -27,7 +27,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , toResolver
   , lift
   , subscribe
-  , SubEvent
+  , SubEvent(..)
   , GQLChannel(..)
   , ResponseEvent(..)
   , ResponseStream
@@ -120,7 +120,7 @@ data ResponseEvent m event
   = Publish event
   | Subscribe (SubEvent m event)
 
-type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
+newtype SubEvent m event = SubEvent { runSubEvent :: event -> Maybe (m GQLResponse) }
 
 data Context 
   = Context 
@@ -488,10 +488,10 @@ runResolver (ResolverS resT) sel = ResultT $ do
     (readResValue :: Result (Channel event1) GQLError (ReaderT event (Resolver QUERY event m) ValidValue))  <- runResultT $ (runReaderT $ runResolverState resT) sel
     pure $ case readResValue of 
       Failure x -> Failure x
-      Success { warnings ,result , events = channels } -> do
+      Success { warnings ,result } -> do
         let eventRes = toEventResolver result sel
         Success {
-          events = [Subscribe $ Event channels eventRes],
+          events = [Subscribe $ SubEvent $ \x -> Just (eventRes x) ],
           warnings,
           result = gqlNull
         } 

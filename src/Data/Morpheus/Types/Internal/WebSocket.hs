@@ -39,9 +39,7 @@ data GQLClient m e  =
     }
 
 instance (Show e) => Show (GQLClient m e) where
-  show GQLClient { clientID, clientSessions } =
+  show GQLClient { clientID } =
     "GQLClient {id:"
       <> show clientID
-      <> ", sessions:"
-      <> show (keys clientSessions)
       <> "}"
