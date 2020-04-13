@@ -64,24 +64,12 @@ import           GHC.Generics                   ( Generic )
 import           Language.Haskell.TH.Syntax     ( Lift(..) )
 import           Instances.TH.Lift              ()
 
-data GQLError = GQLError
-  { message      :: Text
-  , locations :: [Position]
-  } deriving ( Show, Generic, FromJSON, ToJSON)
-
-type GQLErrors = [GQLError]
 
 type Key = Text
 type Message = Text
 type Name = Key
 type Description = Key
 data Stage = RAW | RESOLVED | VALID
-
-type RAW = 'RAW
-
-type RESOLVED = 'RESOLVED
-
-type VALID = 'VALID
 
 data Position = Position
   { line   :: Int
@@ -92,6 +80,18 @@ data Position = Position
 -- but different Positions should be Equal
 instance Eq Position where
   _ == _ = True
+
+data GQLError = GQLError
+  { message      :: Message
+  , locations :: [Position]
+  } deriving ( Show, Generic, FromJSON, ToJSON)
+
+type GQLErrors = [GQLError]
+
+
+type RAW = 'RAW
+type RESOLVED = 'RESOLVED
+type VALID = 'VALID
 
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
@@ -119,10 +119,7 @@ type Named a = (Name, a)
 data Ref = Ref
   { refName     :: Key
   , refPosition :: Position
-  } deriving (Show,Lift)
-
-instance Eq Ref where
-  (Ref id1 _) == (Ref id2 _) = id1 == id2
+  } deriving (Show,Lift, Eq)
 
 instance Ord Ref where
   compare (Ref x _) (Ref y _) = compare x y
@@ -175,8 +172,6 @@ isObject _               = False
 isInput :: DataTypeKind -> Bool
 isInput KindInputObject = True
 isInput _               = False
-
-
 
 -- TypeWrappers
 -----------------------------------------------------------------------------------
