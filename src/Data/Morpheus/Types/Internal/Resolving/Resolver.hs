@@ -254,7 +254,7 @@ mapResolverContext f (ResolverQ res)  = ResolverQ (mapState f res)
 mapResolverContext f (ResolverM res)  = ResolverM (mapState f res) 
 mapResolverContext f (ResolverS resM)  = ResolverS $ do
     res <- resM
-    pure $ ReaderT $ \e -> ResolverQ $ mapState f (runResolverQ (runReaderT res e)) 
+    pure $ ReaderT $ ResolverQ . mapState f . runResolverQ . runReaderT res 
 
 setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m a 
 setSelection currentSelection 
