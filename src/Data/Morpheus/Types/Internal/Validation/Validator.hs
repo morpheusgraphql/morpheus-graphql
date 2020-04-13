@@ -54,7 +54,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless )
+                                                ( Eventless )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Position
@@ -188,7 +188,7 @@ inputMessagePrefix :: InputValidator Message
 inputMessagePrefix = renderInputPrefix <$> askContext
 
 
-runValidator :: Validator ctx a -> Context -> ctx -> Stateless a
+runValidator :: Validator ctx a -> Context -> ctx -> Eventless a
 runValidator (Validator x) globalCTX ctx = runReaderT x (globalCTX,ctx) 
 
 newtype Validator ctx a 
@@ -196,7 +196,7 @@ newtype Validator ctx a
     {
       _runValidator :: ReaderT 
           (Context, ctx) 
-          Stateless
+          Eventless
           a
     }
     deriving 

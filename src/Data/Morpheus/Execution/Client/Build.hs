@@ -42,11 +42,11 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , TypeD(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless
+                                                ( Eventless
                                                 , Result(..)
                                                 )
 
-defineQuery :: IO (Stateless Schema) -> (GQLQuery, String) -> Q [Dec]
+defineQuery :: IO (Eventless Schema) -> (GQLQuery, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` queryRoot) of

@@ -90,7 +90,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Merge(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving.Core
-                                                ( Stateless
+                                                ( Eventless
                                                 , Result(..)
                                                 , Failure(..)
                                                 , ResultT(..)
@@ -242,7 +242,7 @@ liftStateless
   :: ( LiftOperation o 
      , Monad m
      )
-  => Stateless a 
+  => Eventless a 
   -> Resolver o e m a 
 liftStateless 
   = packResolver 
@@ -394,7 +394,7 @@ mapEntry f (name,value) = (name, f value)
 -- Selection Processing
 toResolver
   :: forall o e m a b. (LiftOperation o, Monad m)
-  => (Arguments VALID -> Stateless a)
+  => (Arguments VALID -> Eventless a)
   -> ( a -> Resolver o e m b)
   -> Resolver o e m b
 toResolver toArgs  = withResolver args 
@@ -525,7 +525,7 @@ runResolver (ResolverS resT) sel = ResultT $ do
 
 runRootDataResolver 
   :: (Monad m , LiftOperation o) 
-  => Stateless (Deriving o e m)
+  => Eventless (Deriving o e m)
   -> Context 
   -> ResponseStream e m (Value VALID)
 runRootDataResolver 
@@ -547,9 +547,9 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
 
 data ResolverModel e m
     = ResolverModel 
-      { query :: Stateless (Deriving QUERY e m)
-      , mutation :: Stateless (Deriving MUTATION e m)
-      , subscription :: Stateless (Deriving SUBSCRIPTION e m)
+      { query :: Eventless (Deriving QUERY e m)
+      , mutation :: Eventless (Deriving MUTATION e m)
+      , subscription :: Eventless (Deriving SUBSCRIPTION e m)
       }
 
 runResolverModel :: Monad m => ResolverModel e m -> Context -> ResponseStream e m (Value VALID)

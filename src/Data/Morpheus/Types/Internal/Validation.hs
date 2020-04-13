@@ -63,7 +63,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , size
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless )
+                                                ( Eventless )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
                                                 , Position
@@ -278,7 +278,7 @@ withInputScope prop = setContext update
     update ctx@InputContext { inputPath = old } 
       = ctx { inputPath = old <> [prop] }
 
-runValidator :: Validator ctx a -> Context -> ctx -> Stateless a
+runValidator :: Validator ctx a -> Context -> ctx -> Eventless a
 runValidator (Validator x) globalCTX ctx = runReaderT x (globalCTX,ctx) 
 
 askContext :: Validator ctx ctx

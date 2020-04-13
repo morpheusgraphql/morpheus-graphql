@@ -11,7 +11,7 @@
 {-# LANGUAGE RecordWildCards            #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
-  ( Stateless
+  ( Eventless
   , Result(..)
   , Failure(..)
   , ResultT(..)
@@ -46,7 +46,7 @@ import           Data.Text                      ( Text
 import           Data.Semigroup                 ( (<>) )
 
 
-type Stateless = Result ()
+type Eventless = Result ()
 
 -- EVENTS
 class PushEvents e m where 
@@ -105,7 +105,7 @@ instance Monad (Result e)  where
 instance Failure [GQLError] (Result ev) where
   failure = Failure
 
-instance Failure Text Stateless where
+instance Failure Text Eventless where
   failure text =
     Failure [GQLError { message = "INTERNAL: " <> text, locations = [] }]
 
@@ -122,7 +122,7 @@ newtype ResultT event (m :: * -> * ) a
 
 statelessToResultT 
   :: Applicative m 
-  => Stateless a 
+  => Eventless a 
   -> ResultT e m a
 statelessToResultT 
   = cleanEvents
@@ -179,7 +179,7 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
   mapEv (Failure err) = Failure err
 
 -- Helper Functions
-type LibUpdater lib = lib -> Stateless lib
+type LibUpdater lib = lib -> Eventless lib
 
-resolveUpdates :: lib -> [LibUpdater lib] -> Stateless lib
+resolveUpdates :: lib -> [LibUpdater lib] -> Eventless lib
 resolveUpdates = foldM (&)
