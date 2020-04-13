@@ -190,6 +190,13 @@ data Resolver (o::OperationType) event (m :: * -> * )  value where
     ResolverM :: { runResolverM :: ResolverState event m value } -> Resolver MUTATION event m  value
     ResolverS :: { runResolverS :: ResolverState (Channel event) m (ReaderT event (Resolver QUERY event m) value) } -> Resolver SUBSCRIPTION event m  value
 
+
+instance Show (Resolver o e m value) where
+  show ResolverQ {} = "(Resolver QUERY e m a)"
+  show ResolverM {} = "(Resolver SMUTATION e m a)"
+  show ResolverS {} = "(Resolver SUBSCRIPTION e m a)"
+
+
 deriving instance (Functor m) => Functor (Resolver o e m)
 
 -- Applicative
@@ -339,6 +346,8 @@ data Deriving (o :: OperationType) e (m ::  * -> * )
   | DerivingList      [Deriving o e m]
   | DerivingObject    (ObjectDeriving o e m)
   | DerivingUnion     Name (Resolver o e m (Deriving o e m))
+  deriving (Show)
+
 
 data ObjectDeriving o e m 
   = ObjectDeriving {
@@ -348,7 +357,7 @@ data ObjectDeriving o e m
         , Resolver o e m (Deriving o e m) 
         )
       ]
-    }
+    } deriving (Show)
   
 instance MapStrategy QUERY SUBSCRIPTION where
   mapStrategy  = ResolverS . pure . lift . fmap mapDeriving
