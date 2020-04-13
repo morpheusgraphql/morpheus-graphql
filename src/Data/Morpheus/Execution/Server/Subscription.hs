@@ -9,22 +9,19 @@ module Data.Morpheus.Execution.Server.Subscription
   , startSubscription
   , endSubscription
   , publishEvent
+  , Actions(..)
   )
 where
 
-import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
-import           Control.Concurrent             ( MVar
-                                                , modifyMVar
+import           Control.Monad.IO.Class         ( MonadIO )
+import           Data.ByteString.Lazy.Char8     (ByteString)
+import           Control.Concurrent             ( modifyMVar
                                                 , modifyMVar_
                                                 , newMVar
-                                                , readMVar
                                                 )
-import           Data.Foldable                  ( traverse_ )
 import           Data.List                      ( intersect )
 import           Data.UUID.V4                   ( nextRandom )
-import           Network.WebSockets             ( Connection
-                                                , sendTextData
-                                                )
+import           Network.WebSockets             ( Connection )
 import           Data.HashMap.Lazy              ( empty
                                                 , insert
                                                 , delete
@@ -65,25 +62,26 @@ disconnectClient GQLClient { clientID } state = modifyMVar state removeUser
   removeUser db = let s' = delete clientID db in return (s', s')
 
 updateClientByID
-  :: MonadIO m =>
-     ClientID
-  -> (GQLClient m e -> GQLClient m e)
-  -> MVar (ClientDB m e)
-  -> m ()
-updateClientByID key f state = liftIO $ modifyMVar_ state (return . adjust f key)
+  :: ClientID
+  -> (GQLClient m e -> GQLClient m e) 
+  -> Stream m e
+updateClientByID key f = [Update (adjust f key)]
 
 publishEvent
-  :: (Eq (StreamChannel e), GQLChannel e, MonadIO m) => GQLState m e -> e -> m ()
-publishEvent gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMessage 
+  :: ( Eq (StreamChannel e)
+     , Functor m 
+     , GQLChannel e
+     ) 
+  => e 
+  -> Stream m e
+publishEvent event = [Notify (concatMap sendMessage . toList) ]
  where
-  sendMessage GQLClient { clientSessions, clientConnection } 
-    | null clientSessions  = return ()
-    | otherwise = traverse_ send (filterByChannels clientSessions)
+  sendMessage (_,GQLClient { clientSessions, clientConnection })
+    | null clientSessions  = [] 
+    | otherwise = map send (filterByChannels clientSessions)
    where
-    send (sid, Event { content = subscriptionRes }) = do
-      res <- subscriptionRes event
-      let apolloRes = toApolloResponse sid res
-      liftIO $ sendTextData clientConnection apolloRes
+    send (sid, Event { content = subscriptionRes }) 
+      =  (clientConnection, toApolloResponse sid <$> subscriptionRes event) 
     ---------------------------
     filterByChannels = filter
       ( not
@@ -93,12 +91,20 @@ publishEvent gqlState event = liftIO (readMVar gqlState) >>= traverse_ sendMessa
       . snd
       ) . toList
 
-endSubscription :: MonadIO m => ClientID -> SesionID -> GQLState m e -> m ()
+endSubscription :: ClientID -> SesionID -> Stream m e
 endSubscription cid sid = updateClientByID cid endSub
  where
   endSub client = client { clientSessions = delete sid (clientSessions client) }
 
-startSubscription :: MonadIO m => ClientID -> SubEvent m e -> SesionID -> GQLState m e -> m ()
+startSubscription :: ClientID -> SubEvent m e -> SesionID -> Stream m e
 startSubscription cid subscriptions sid = updateClientByID cid startSub
  where
   startSub client = client { clientSessions = insert sid subscriptions (clientSessions client) }
+
+
+type Stream m e = [Actions m e]
+
+data Actions m e
+  = Update (ClientDB m e -> ClientDB m e)
+  | Notify (ClientDB m e -> [(Connection, m ByteString)])
+  | Register (m ())
