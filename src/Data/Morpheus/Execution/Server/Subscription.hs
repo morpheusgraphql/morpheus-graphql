@@ -15,10 +15,7 @@ where
 
 import           Control.Monad.IO.Class         ( MonadIO )
 import           Data.ByteString.Lazy.Char8     (ByteString)
-import           Control.Concurrent             ( modifyMVar
-                                                , modifyMVar_
-                                                , newMVar
-                                                )
+import           Control.Concurrent             ( newMVar )
 import           Data.List                      ( intersect )
 import           Data.UUID.V4                   ( nextRandom )
 import           Network.WebSockets             ( Connection )
@@ -49,17 +46,14 @@ import           Data.Morpheus.Types.Internal.WebSocket
 initGQLState :: IO (GQLState m e)
 initGQLState = newMVar empty
  
-connectClient :: MonadIO m => Connection -> GQLState m e -> IO (GQLClient m e)
-connectClient clientConnection gqlState = do
+connectClient :: MonadIO m => Connection -> IO (Stream m e)
+connectClient clientConnection = do
   clientID <- nextRandom
   let client = GQLClient { clientID , clientConnection, clientSessions = empty }
-  modifyMVar_ gqlState (pure . insert clientID client)
-  return client
+  return [Update (insert clientID client) , Connected client]
 
-disconnectClient :: GQLClient m e -> GQLState m e -> IO (ClientDB m e)
-disconnectClient GQLClient { clientID } state = modifyMVar state removeUser
- where
-  removeUser db = let s' = delete clientID db in return (s', s')
+disconnectClient :: GQLClient m e -> Stream m e
+disconnectClient GQLClient { clientID }  = [Update (delete clientID)]
 
 updateClientByID
   :: ClientID
@@ -101,10 +95,9 @@ startSubscription cid subscriptions sid = updateClientByID cid startSub
  where
   startSub client = client { clientSessions = insert sid subscriptions (clientSessions client) }
 
-
 type Stream m e = [Actions m e]
 
 data Actions m e
   = Update (ClientDB m e -> ClientDB m e)
   | Notify (ClientDB m e -> [(Connection, m ByteString)])
-  | Register (m ())
+  | Connected (GQLClient m e)
