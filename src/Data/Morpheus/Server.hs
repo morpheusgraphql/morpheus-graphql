@@ -20,10 +20,10 @@ import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
 import           Data.Text                      ( Text )
 import           Network.WebSockets             ( ServerApp
                                                 , acceptRequestWith
-                                                , forkPingThread
                                                 , pendingRequest
                                                 , receiveData
                                                 , sendTextData
+                                                , withPingThread
                                                 )
 
 -- MORPHEUS
@@ -89,9 +89,9 @@ gqlSocketMonadIOApp
 gqlSocketMonadIOApp gqlRoot state f pending = do
   connection <- acceptRequestWith pending
     $ acceptApolloSubProtocol (pendingRequest pending)
-  forkPingThread connection 30
-  client <- connectClient connection state
-  finally (f $ queryHandler client) (disconnectClient client state)
+  withPingThread connection 30 (return ()) $ do
+      client <- connectClient connection state
+      finally (f $ queryHandler client) (disconnectClient client state)
  where
   queryHandler client = forever handleRequest
    where
