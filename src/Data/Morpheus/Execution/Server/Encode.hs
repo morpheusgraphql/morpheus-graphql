@@ -10,21 +10,19 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE GADTs                 #-}
 
 module Data.Morpheus.Execution.Server.Encode
   ( EncodeCon
   , Encode(..)
-  , encodeQuery
-  , encodeSubscription
-  , encodeMutation
   , ExploreResolvers(..)
+  , deriveModel
   )
 where
 
 import           Data.Map                       ( Map )
 import qualified Data.Map                      as M
                                                 ( toList )
-import           Data.Maybe                     ( fromMaybe )
 import           Data.Proxy                     ( Proxy(..) )
 import           Data.Semigroup                 ( (<>) )
 import           Data.Set                       ( Set )
@@ -53,43 +51,43 @@ import           Data.Morpheus.Types.GQLScalar  ( GQLScalar(..) )
 import           Data.Morpheus.Types.GQLType    ( GQLType(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Name
-                                                , Operation(..)
-                                                , MUTATION
-                                                , OperationType
+                                                , OperationType(..)
                                                 , QUERY
                                                 , SUBSCRIPTION
-                                                , GQLValue(..)
-                                                , ValidValue
+                                                , MUTATION
+                                                , Message
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                (Merge(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( MapStrategy(..)
                                                 , LiftOperation
                                                 , Resolver
-                                                , unsafeBind
                                                 , toResolver
-                                                , DataResolver(..)
-                                                , resolveObject
-                                                , resolve__typename
+                                                , Deriving(..)
                                                 , FieldRes
-                                                , ResponseStream
-                                                , runResolver
-                                                , runDataResolver
-                                                , Context(..)
+                                                , GQLRootResolver(..)
+                                                , ResolverModel(..)
+                                                , unsafeBind
+                                                , failure
+                                                , ObjectDeriving(..)
+                                                , Stateless
+                                                , liftStateless
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
-  encode :: resolver -> Resolver o e m ValidValue
+  encode :: resolver -> Resolver o e m (Deriving o e m)
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m , LiftOperation o) => Encode a o e m where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
 instance (Monad m , LiftOperation o,Encode a o e m) => Encode (Maybe a) o e m where
-  encode = maybe (pure gqlNull) encode
+  encode = maybe (pure DerivingNull) encode
 
 -- LIST []
 instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
-  encode = fmap gqlList . traverse encode
+  encode = fmap DerivingList . traverse encode
 
 --  Tuple  (a,b)
 instance Encode (Pair k v) o e m => Encode (k, v) o e m where
@@ -105,46 +103,68 @@ instance (Eq k, Monad m,LiftOperation o, Encode (MapKind k v (Resolver o e m)) o
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DecodeType a,Generic a, Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (a -> Resolver fo e m b) o e m where
- encode resolver = mapStrategy $ toResolver decodeArguments resolver `unsafeBind` encode 
+instance 
+  ( DecodeType a
+  , Generic a
+  , Monad m
+  , LiftOperation fo
+  , Encode b fo e m
+  , MapStrategy fo o
+  )
+  => Encode (a -> Resolver fo e m b) o e m where
+  encode x 
+    = mapStrategy 
+      $ toResolver decodeArguments x `unsafeBind` encode
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (Monad m,LiftOperation fo, MapStrategy fo o, Encode b fo e m) => Encode (Resolver fo e m b) o e m where
-  encode = mapStrategy . (`unsafeBind` encode)
+instance 
+  ( Monad m
+  , LiftOperation o
+  , Encode b fo e m
+  , MapStrategy fo o
+  )
+  => Encode (Resolver fo e m b) o e m where
+    encode = mapStrategy . (`unsafeBind` encode)
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
-  encodeKind :: LiftOperation o =>  VContext kind a -> Resolver o e m ValidValue
+  encodeKind :: LiftOperation o =>  VContext kind a -> Resolver o e m (Deriving o e m)
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
-  encodeKind = pure . gqlScalar . serialize . unVContext
+  encodeKind = pure . DerivingScalar . serialize . unVContext
 
 -- ENUM
-instance (Generic a,GQLType a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
-  encodeKind (VContext value) = runDataResolver (__typeName (Proxy @a)) (exploreResolvers (Proxy @(CUSTOM a)) value)
+instance (Generic a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
+  encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
 
-instance (Monad m,Generic a, GQLType a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = runDataResolver (__typeName (Proxy @a)) (exploreResolvers (Proxy @(CUSTOM a)) value)
+instance (Monad m,Generic a,  ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
+  encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 convertNode
   :: (Monad m, LiftOperation o)
   => ResNode o e m
-  -> DataResolver o e m
-convertNode ResNode { resKind = REP_OBJECT, resFields } =
-  ObjectRes $ map toFieldRes resFields
+  -> Deriving o e m
+convertNode ResNode { resDatatypeName, resKind = REP_OBJECT, resFields } =
+  DerivingObject (ObjectDeriving resDatatypeName $ map toFieldRes resFields)
 convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord }
   = encodeUnion resFields
  where
   -- ENUM
-  encodeUnion [] = EnumRes resTypeName
+  encodeUnion [] = DerivingEnum resDatatypeName resTypeName
   -- Type References --------------------------------------------------------------
   encodeUnion [FieldNode { fieldTypeName, fieldResolver, isFieldObject }]
     | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName
-    = UnionRef (fieldTypeName, fieldResolver)
-  -- RECORDS ----------------------------------------------------------------------------
-  encodeUnion fields = UnionRes
-    (resTypeName, resolve__typename resTypeName : map toFieldRes resolvers)
+    = DerivingUnion fieldTypeName fieldResolver
+  -- Inline Union Types ----------------------------------------------------------------------------
+  encodeUnion fields 
+      = DerivingUnion
+        resTypeName
+        $ pure
+        $ DerivingObject 
+        $ ObjectDeriving 
+            resTypeName 
+            (map toFieldRes resolvers)
    where
     resolvers | isResRecord = fields
               | otherwise   = setFieldNames fields
@@ -152,74 +172,78 @@ convertNode ResNode { resDatatypeName, resKind = REP_UNION, resFields, resTypeNa
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeOperation e m a = a -> Context -> ResponseStream e m ValidValue
-
 type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
-
-
-objectResolvers
-  :: forall custom a o e m
-   . ExploreResolvers custom a o e m
-  => Proxy custom
-  -> a
-  -> DataResolver o e m
-objectResolvers isCustom value = case exploreResolvers isCustom value of
-  ObjectRes resFields -> ObjectRes resFields
-  _                   -> InvalidRes "resolver must be an object"
-
 
 --- GENERICS ------------------------------------------------
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: Proxy custom -> a -> DataResolver o e m
+  exploreResolvers :: Proxy custom -> a -> Stateless (Deriving o e m)
 
 instance (Generic a,Monad m,LiftOperation o,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
-  exploreResolvers _ value = convertNode
-    $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
+  exploreResolvers _ value = 
+    pure 
+      $ convertNode
+      $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
 ----- HELPERS ----------------------------
-encodeQuery
-  :: forall m event query (schema :: (* -> *) -> *)
-   . ( Monad m
-     , EncodeCon QUERY event m (schema (Resolver QUERY event m))
-     , EncodeCon QUERY event m query
+objectResolvers
+  :: forall a o e m
+   . ( ExploreResolvers (CUSTOM a) a o e m
+     , Monad m
+     , LiftOperation o
      )
-  => schema (Resolver QUERY event m)
-  -> EncodeOperation event m query
-encodeQuery schema = encodeOperationWith
-  (Proxy @QUERY)
-  (Just $ objectResolvers
-    (Proxy :: Proxy (CUSTOM (schema (Resolver QUERY event m))))
-    schema
-  )
+  => a
+  -> Stateless (Deriving o e m)
+objectResolvers value 
+  = exploreResolvers (Proxy @(CUSTOM a)) value 
+    >>= constraintOnject 
+    where
+      constraintOnject obj@DerivingObject {} 
+        = pure obj
+      constraintOnject _  
+        = failure ("resolver must be an object" :: Message)
 
-encodeMutation
-  :: forall event m mut
-   . (Monad m, EncodeCon MUTATION event m mut)
-  => EncodeOperation event m mut
-encodeMutation = encodeOperationWith (Proxy @MUTATION) Nothing
+type Con o e m a 
+  = ExploreResolvers 
+      (CUSTOM 
+        (a (Resolver o e m))
+      ) 
+      (a (Resolver o e m)) 
+      o 
+      e 
+      m
 
-encodeSubscription
-  :: forall m event mut
-   . (Monad m, EncodeCon SUBSCRIPTION event m mut)
-  => EncodeOperation event m mut
-encodeSubscription = encodeOperationWith (Proxy @SUBSCRIPTION) Nothing
-
-encodeOperationWith
-  :: forall (o :: OperationType) e m a
-   . (Monad m, EncodeCon o e m a, LiftOperation o)
-  => Proxy o
-  -> Maybe (DataResolver o e m)
-  -> EncodeOperation e m a
-encodeOperationWith _ externalRes rootResolver ctx@Context { operation = Operation { operationSelection } } =
-  runResolver (resolveObject operationSelection (rootDataRes <> extDataRes)) ctx
- where
-  rootDataRes = objectResolvers (Proxy :: Proxy (CUSTOM a)) rootResolver
-  extDataRes  = fromMaybe (ObjectRes []) externalRes
+deriveModel
+  :: forall e m query mut sub schema. 
+      ( Con QUERY e m query
+      , Con QUERY e m schema
+      , Con MUTATION e m mut
+      , Con SUBSCRIPTION e m sub
+      , Applicative m
+      , Monad m
+      )
+  => GQLRootResolver m e query mut sub
+  -> schema (Resolver QUERY e m)
+  -> ResolverModel e m
+deriveModel 
+  GQLRootResolver 
+    { queryResolver
+    , mutationResolver
+    , subscriptionResolver 
+    }
+  schema
+  = ResolverModel 
+    { query 
+        = do 
+          schema' <- objectResolvers schema
+          root'   <- objectResolvers queryResolver 
+          root' <:> schema'
+    , mutation = objectResolvers mutationResolver
+    , subscription = objectResolvers subscriptionResolver
+    }
 
 toFieldRes :: FieldNode o e m -> FieldRes o e m
 toFieldRes FieldNode { fieldSelName, fieldResolver } =
   (fieldSelName, fieldResolver)
-
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 data REP_KIND = REP_UNION | REP_OBJECT
@@ -233,9 +257,9 @@ data ResNode o e m = ResNode {
   }
 
 data FieldNode o e m = FieldNode {
-    fieldTypeName :: Name,
-    fieldSelName :: Name,
-    fieldResolver  :: Resolver o e m ValidValue,
+    fieldTypeName  :: Name,
+    fieldSelName   :: Name,
+    fieldResolver  :: Resolver o e m (Deriving o e m),
     isFieldObject  :: Bool
   }
 
@@ -249,11 +273,9 @@ class TypeRep f o e (m :: * -> *) where
 
 instance (Datatype d,TypeRep  f o e m) => TypeRep (M1 D d f) o e m where
   typeResolvers context (M1 src) = (typeResolvers context src)
-    { resDatatypeName = pack $ datatypeName (undefined :: M1 D d f a)
-    }
+    { resDatatypeName = pack $ datatypeName (undefined :: M1 D d f a) }
 
-
-      --- UNION OR OBJECT 
+--- UNION OR OBJECT 
 instance (TypeRep a o e m,TypeRep b o e m) => TypeRep (a :+: b) o e m where
   typeResolvers context (L1 x) =
     (typeResolvers context x) { resKind = REP_UNION }

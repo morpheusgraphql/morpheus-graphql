@@ -5,9 +5,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , Resolver
     , MapStrategy(..)
     , LiftOperation
-    , resolveObject
-    , runResolver
-    , unsafeBind
+    , runResolverModel
     , toResolver
     , lift
     , SubEvent
@@ -22,15 +20,18 @@ module Data.Morpheus.Types.Internal.Resolving
     , unpackEvents
     , LibUpdater
     , resolveUpdates
-    , resolve__typename
-    , DataResolver(..)
+    , setTypeName
+    , ObjectDeriving(..)
+    , Deriving(..)
     , FieldRes
     , WithOperation
     , PushEvents(..)
-    , runDataResolver
     , subscribe
     , Context(..)
     , unsafeInternalContext
+    , ResolverModel(..)
+    , unsafeBind
+    , liftStateless
     )
 where
 

@@ -25,6 +25,7 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , GQLChannel(..)
   , PushEvents(..)
   , mapError
+  , statelessToResultT
   )
 where
 
@@ -129,6 +130,15 @@ newtype ResultT event error (m :: * -> * ) a
       runResultT :: m (Result event error a)  
     }
     deriving (Functor)
+
+statelessToResultT 
+  :: Applicative m 
+  => Stateless a 
+  -> ResultT e GQLError m a
+statelessToResultT 
+  = cleanEvents
+  . ResultT 
+  . pure 
 
 instance Applicative m => Applicative (ResultT event error m) where
   pure = ResultT . pure . pure
