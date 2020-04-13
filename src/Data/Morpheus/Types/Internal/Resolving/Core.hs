@@ -107,11 +107,10 @@ instance Failure [GQLError] (Result ev) where
 
 instance Failure Text Stateless where
   failure text =
-    Failure [GQLError { message = "INTERNAL ERROR: " <> text, locations = [] }]
+    Failure [GQLError { message = "INTERNAL: " <> text, locations = [] }]
 
 instance PushEvents events (Result events) where
   pushEvents events = Success { result = (), warnings = [], events } 
-
 
 -- ResultT
 newtype ResultT event (m :: * -> * ) a 
