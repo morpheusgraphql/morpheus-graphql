@@ -23,7 +23,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , Resolver
   , MapStrategy(..)
   , LiftOperation
-  , unsafeBind
   , toResolver
   , lift
   , subscribe
@@ -100,6 +99,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , StreamChannel
                                                 , GQLChannel(..)
                                                 , PushEvents(..)
+                                                , mapResultT
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
@@ -137,6 +137,11 @@ newtype ResolverState event m a
       runResolverState :: ReaderT Context (ResultT event GQLError m) a
     } 
     deriving (Functor, Applicative, Monad)
+
+
+-- mapResolverStateT :: (m a -> m' a') -> ResolverState e m a -> ResolverState e m' a'
+-- mapResolverStateT f = undefined
+  -- ResolverState . mapReaderT (mapResultT f) . runResolverState
 
 instance Monad m => MonadFail (ResolverState event m) where 
   fail = failure . pack
@@ -179,6 +184,15 @@ resolverFailureMessage Selection { selectionName, selectionPosition } message = 
   , locations = [selectionPosition]
   }
 
+newtype Subresolver e m a = Subresolver { 
+    unsSub :: e -> Maybe (Resolver QUERY e m a)
+} deriving (Functor)
+
+instance Monad m => Applicative (Subresolver e m) where
+  pure = Subresolver .  const . Just . pure
+
+instance Monad (Subresolver e m) where
+
 --     
 -- GraphQL Field Resolver
 --
@@ -186,7 +200,7 @@ resolverFailureMessage Selection { selectionName, selectionPosition } message = 
 data Resolver (o::OperationType) event (m :: * -> * )  value where
     ResolverQ :: { runResolverQ :: ResolverState () m value } -> Resolver QUERY event m value
     ResolverM :: { runResolverM :: ResolverState event m value } -> Resolver MUTATION event m  value
-    ResolverS :: { runResolverS :: ResolverState (Channel event) m (ReaderT event (Resolver QUERY event m) value) } -> Resolver SUBSCRIPTION event m  value
+    ResolverS :: { runResolverS :: ResolverState () m (Subresolver event m value) } -> Resolver SUBSCRIPTION event m  value
 
 deriving instance (Functor m) => Functor (Resolver o e m)
 
@@ -195,12 +209,14 @@ instance (LiftOperation o ,Monad m) => Applicative (Resolver o e m) where
   pure = packResolver . pure
   ResolverQ r1 <*> ResolverQ r2 = ResolverQ $ r1 <*> r2
   ResolverM r1 <*> ResolverM r2 = ResolverM $ r1 <*> r2
-  ResolverS r1 <*> ResolverS r2 = ResolverS $ (<*>) <$> r1 <*> r2
+  --ResolverS r1 <*> ResolverS r2 = ResolverS $ r1 <*> r2
 
 -- Monad 
 instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   return = pure
-  (>>=) = unsafeBind
+  (ResolverQ x) >>= m2 = ResolverQ (x >>= runResolverQ . m2)
+  (ResolverM x) >>= m2 = ResolverM (x >>= runResolverM . m2)
+  --(ResolverS x) >>= m2 = ResolverS (x >>= runResolverS . m2)
 
 -- MonadIO
 instance (MonadIO m) => MonadIO (Resolver QUERY e m) where
@@ -243,18 +259,16 @@ instance LiftOperation MUTATION where
   withResolver ctxRes toRes = ResolverM $ ctxRes >>= runResolverM . toRes 
 
 instance LiftOperation SUBSCRIPTION where
-  packResolver = ResolverS . pure . lift . packResolver
-  withResolver ctxRes toRes = ResolverS $ do 
-    value <- clearStateResolverEvents ctxRes
-    runResolverS $ toRes value
+  -- packResolver = ResolverS 
+  -- withResolver ctxRes toRes = ResolverS $ do 
+  --   value <- clearStateResolverEvents ctxRes
+  --   runResolverS $ toRes value
 
 
 mapResolverContext :: Monad m => (Context -> Context) -> Resolver o e m a -> Resolver o e m a 
 mapResolverContext f (ResolverQ res)  = ResolverQ (mapState f res)
-mapResolverContext f (ResolverM res)  = ResolverM (mapState f res) 
-mapResolverContext f (ResolverS resM)  = ResolverS $ do
-    res <- resM
-    pure $ ReaderT $ ResolverQ . mapState f . runResolverQ . runReaderT res 
+mapResolverContext f (ResolverM res)  = ResolverM (mapState f res)
+mapResolverContext f (ResolverS res)  = ResolverS (mapState f res) 
 
 setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m a 
 setSelection currentSelection 
@@ -263,39 +277,21 @@ setSelection currentSelection
 setTypeName :: Monad m => Name -> Resolver o e m a -> Resolver o e m a 
 setTypeName  currentTypeName 
   = mapResolverContext (\ctx -> ctx { currentTypeName } )
-
--- unsafe variant of >>= , not for public api. user can be confused: 
---  ignores `channels` on second Subsciption, only returns events from first Subscription monad.
---    reason: second monad is waiting for `event` until he does not have some event can't tell which 
---            channel does it want to listen
-unsafeBind
-  :: forall o e m a b
-   . Monad m
-  =>  Resolver o e m a
-  -> (a -> Resolver o e m b)
-  -> Resolver o e m b 
-unsafeBind (ResolverQ x) m2 = ResolverQ (x >>= runResolverQ . m2)
-unsafeBind (ResolverM x) m2 = ResolverM (x >>= runResolverM . m2)
-unsafeBind (ResolverS res) m2 = ResolverS $ do 
-    (readResA :: ReaderT e (Resolver QUERY e m) a ) <- res 
-    pure $ ReaderT $ \e -> ResolverQ $ do 
-         let (resA :: Resolver QUERY e m a) = runReaderT readResA e
-         (valA :: a) <- runResolverQ resA
-         (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearStateResolverEvents $ runResolverS (m2 valA) 
-         runResolverQ $ runReaderT readResB e
-
+  
 subscribe 
   :: forall e m a 
-    . ( PushEvents (Channel e) (ResolverState (Channel e) m)
-      , Monad m
-      ) 
-    => [StreamChannel e] 
-    -> Resolver QUERY e m (e -> Resolver QUERY e m a) 
+    .  Monad m
+    => Resolver QUERY e m (e -> Maybe (Resolver QUERY e m a)) 
     -> Resolver SUBSCRIPTION e m a
-subscribe ch res = ResolverS $ do 
-  pushEvents (map Channel ch :: [Channel e])
-  (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
-  pure $ ReaderT eventRes
+subscribe = ResolverS . mapResolverState (mapReaderT (mapResultT run)) . runResolverQ
+  where    
+    run 
+      :: m (Result () GQLError (e -> Maybe (Resolver QUERY e m a))) 
+      -> (Subresolver e m) (Result () GQLError a) 
+    run = undefined
+  -- (eventRes :: Context -> e -> Maybe (Resolver QUERY e m a) ) <- x
+  -- let (bla :: Subresolver e m) = Subresolver eventRes
+  -- pure $ ResolverState  bla
 
 unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
 unsafeInternalContext = packResolver $ ResolverState ask 
@@ -335,7 +331,7 @@ data ObjectDeriving o e m
     }
   
 instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy  = ResolverS . pure . lift . fmap mapDeriving
+ -- mapStrategy  = ResolverS . pure . lift . fmap mapDeriving
  
 mapDeriving 
   ::  ( MapStrategy o o'
@@ -418,7 +414,7 @@ lookupRes
   | otherwise 
       = maybe 
         (pure gqlNull) 
-        (`unsafeBind` runDataResolver)
+        (>>= runDataResolver)
         . lookup selectionName
         . objectFields
 
@@ -502,7 +498,7 @@ runRootDataResolver
   -> Context 
   -> ResponseStream e m (Value VALID)
 runRootDataResolver res ctx@Context { operation = Operation { operationSelection } }  = 
-    runResolver (res `unsafeBind` resolveObject operationSelection ) ctx
+    runResolver (res >>= resolveObject operationSelection ) ctx
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.

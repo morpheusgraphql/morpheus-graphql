@@ -25,6 +25,7 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , GQLChannel(..)
   , PushEvents(..)
   , mapError
+  , mapResultT
   )
 where
 
@@ -161,6 +162,13 @@ instance Monad m => Failure GQLErrors (ResultT event GQLError m) where
 
 instance Applicative m => PushEvents events (ResultT events err m) where
   pushEvents = ResultT . pure . pushEvents
+
+
+-- mapResultM :: Failure m GQLErrors (m a -> m' b') -> m (Result e er a) -> m' (Result e er a')
+-- mapResultM f =
+
+mapResultT :: (m (Result e er a) -> m' (Result e' er' a') ) -> ResultT e er m a -> ResultT e' er' m' a'
+mapResultT f (ResultT mx) = ResultT (f mx) 
 
 cleanEvents
   :: Functor m
