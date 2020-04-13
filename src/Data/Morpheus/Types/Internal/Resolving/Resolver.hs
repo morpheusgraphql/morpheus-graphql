@@ -190,12 +190,10 @@ data Resolver (o::OperationType) event (m :: * -> * )  value where
     ResolverM :: { runResolverM :: ResolverState event m value } -> Resolver MUTATION event m  value
     ResolverS :: { runResolverS :: ResolverState (Channel event) m (ReaderT event (Resolver QUERY event m) value) } -> Resolver SUBSCRIPTION event m  value
 
-
 instance Show (Resolver o e m value) where
-  show ResolverQ {} = "(Resolver QUERY e m a)"
-  show ResolverM {} = "(Resolver SMUTATION e m a)"
-  show ResolverS {} = "(Resolver SUBSCRIPTION e m a)"
-
+  show ResolverQ {} = "Resolver QUERY e m a"
+  show ResolverM {} = "Resolver MUTATION e m a"
+  show ResolverS {} = "Resolver SUBSCRIPTION e m a"
 
 deriving instance (Functor m) => Functor (Resolver o e m)
 
