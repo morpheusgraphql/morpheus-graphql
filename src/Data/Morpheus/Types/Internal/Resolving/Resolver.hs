@@ -491,7 +491,7 @@ runResolver (ResolverS resT) sel = ResultT $ do
       Success { warnings ,result } -> do
         let eventRes = toEventResolver result sel
         Success {
-          events = [Subscribe $ SubEvent $ \x -> Just (eventRes x) ],
+          events = [Subscribe $ SubEvent $ Just . eventRes ],
           warnings,
           result = gqlNull
         } 
