@@ -71,7 +71,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , unsafeBind
                                                 , failure
                                                 , ObjectDeriving(..)
-                                                , Stateless
+                                                , Eventless
                                                 , liftStateless
                                                 )
 
@@ -176,7 +176,7 @@ type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
 --- GENERICS ------------------------------------------------
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: Proxy custom -> a -> Stateless (Deriving o e m)
+  exploreResolvers :: Proxy custom -> a -> Eventless (Deriving o e m)
 
 instance (Generic a,Monad m,LiftOperation o,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
   exploreResolvers _ value = 
@@ -192,7 +192,7 @@ objectResolvers
      , LiftOperation o
      )
   => a
-  -> Stateless (Deriving o e m)
+  -> Eventless (Deriving o e m)
 objectResolvers value 
   = exploreResolvers (Proxy @(CUSTOM a)) value 
     >>= constraintOnject 

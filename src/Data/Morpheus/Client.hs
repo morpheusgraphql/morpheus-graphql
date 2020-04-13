@@ -29,7 +29,7 @@ import           Data.Morpheus.Execution.Client.Fetch
 import           Data.Morpheus.Parsing.JSONSchema.Parse
                                                 ( decodeIntrospection )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless )
+                                                ( Eventless )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( GQLQuery
                                                 , Schema
@@ -59,7 +59,7 @@ defineByIntrospectionFile = defineByIntrospection . L.readFile
 defineByDocument :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
 defineByDocument doc = defineQuery (schemaByDocument doc)
 
-schemaByDocument :: IO ByteString -> IO (Stateless Schema)
+schemaByDocument :: IO ByteString -> IO (Eventless Schema)
 schemaByDocument documentGQL = parseFullGQLDocument <$> documentGQL
 
 defineByIntrospection :: IO ByteString -> (GQLQuery, String) -> Q [Dec]

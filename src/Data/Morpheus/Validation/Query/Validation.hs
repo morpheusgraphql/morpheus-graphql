@@ -24,7 +24,7 @@ import           Data.Morpheus.Types.Internal.Validation
                                                 , SelectionContext(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless )
+                                                ( Eventless )
 import           Data.Morpheus.Validation.Query.Fragment
                                                 ( validateFragments )
 import           Data.Morpheus.Validation.Query.Selection
@@ -37,7 +37,7 @@ validateRequest
   :: Schema 
   -> VALIDATION_MODE 
   -> GQLQuery 
-  -> Stateless (Operation VALID)
+  -> Eventless (Operation VALID)
 validateRequest 
   schema 
   validationMode 

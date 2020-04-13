@@ -19,11 +19,11 @@ import           GHC.Generics
 -- MORPHEUS
 import           Data.Morpheus.Error.Internal   ( internalError )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless )
+                                                ( Eventless )
 
 class EnumRep f where
   encodeRep :: f a -> Text
-  decodeEnum :: Text -> Stateless (f a)
+  decodeEnum :: Text -> Eventless (f a)
   enumTags :: Proxy f -> [Text]
 
 instance (Datatype c, EnumRep f) => EnumRep (M1 D c f) where

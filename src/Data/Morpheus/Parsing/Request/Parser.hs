@@ -29,7 +29,7 @@ import           Data.Morpheus.Parsing.Request.Operation
 import           Data.Morpheus.Parsing.Request.Selection
                                                 ( parseFragmentDefinition )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless )
+                                                ( Eventless )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( replaceValue
                                                 , GQLQuery(..)
@@ -46,7 +46,7 @@ request = label "GQLQuery" $ do
     fragments <- manyTill parseFragmentDefinition eof >>= fromList
     pure GQLQuery { operation, fragments, inputVariables = [] }
 
-parseGQL :: GQLRequest -> Stateless GQLQuery
+parseGQL :: GQLRequest -> Eventless GQLQuery
 parseGQL GQLRequest { query, variables } = setVariables <$> processParser request query 
  where
   setVariables root = root { inputVariables = toVariableMap variables }

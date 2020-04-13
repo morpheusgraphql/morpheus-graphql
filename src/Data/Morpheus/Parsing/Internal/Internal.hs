@@ -15,7 +15,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , GQLErrors
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless
+                                                ( Eventless
                                                 , failure
                                                 , Result(..)
                                                 )
@@ -48,10 +48,10 @@ toLocation SourcePos { sourceLine, sourceColumn } =
   Position { line = unPos sourceLine, column = unPos sourceColumn }
 
 type MyError = Void
-type Parser = ParsecT MyError Text Stateless
+type Parser = ParsecT MyError Text Eventless
 type ErrorBundle = ParseErrorBundle Text MyError
 
-processParser :: Parser a -> Text -> Stateless a
+processParser :: Parser a -> Text -> Eventless a
 processParser parser txt = case runParserT parser [] txt of
   Success { result } -> case result of
     Right root       -> pure root

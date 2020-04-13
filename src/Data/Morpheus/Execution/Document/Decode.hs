@@ -31,9 +31,9 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.Internal.TH
                                                 ( instanceHeadT )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless )
+                                                ( Eventless )
 
-(.:) :: Decode a => ValidValue -> Text -> Stateless a
+(.:) :: Decode a => ValidValue -> Text -> Eventless a
 value .: selectorName = withObject (decodeFieldWith decode selectorName) value
 
 deriveDecode :: TypeD -> Q [Dec]

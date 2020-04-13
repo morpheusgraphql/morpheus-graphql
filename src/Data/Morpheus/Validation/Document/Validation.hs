@@ -31,14 +31,14 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 , Listable(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Stateless
+                                                ( Eventless
                                                 , Failure(..)
                                                 )
 
-validatePartialDocument :: [TypeDefinition] -> Stateless [TypeDefinition]
+validatePartialDocument :: [TypeDefinition] -> Eventless [TypeDefinition]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
  where
-  validateType :: TypeDefinition -> Stateless (Maybe TypeDefinition)
+  validateType :: TypeDefinition -> Eventless (Maybe TypeDefinition)
   validateType dt@TypeDefinition { typeName , typeContent = DataObject { objectImplements , objectFields}  } = do         
       interface <- traverse getInterfaceByKey objectImplements
       case concatMap (mustBeSubset objectFields) interface of
@@ -66,7 +66,7 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
                )
              ]
   -------------------------------
-  getInterfaceByKey :: Name -> Stateless (Name, FieldsDefinition)
+  getInterfaceByKey :: Name -> Eventless (Name, FieldsDefinition)
   getInterfaceByKey interfaceName = case lookupWith typeName interfaceName lib of
     Just TypeDefinition { typeContent = DataInterface { interfaceFields } } -> pure (interfaceName,interfaceFields)
     _ -> failure $ unknownInterface interfaceName
