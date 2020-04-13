@@ -24,7 +24,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   , Channel(..)
   , GQLChannel(..)
   , PushEvents(..)
-  , mapError
   , statelessToResultT
   )
 where
@@ -38,26 +37,16 @@ import           Data.Morpheus.Types.Internal.Operation
                                                   Failure(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Message 
-                                                , GQLErrors
+                                                ( GQLErrors
                                                 , GQLError(..)
                                                 )
 import           Data.Text                      ( Text
                                                 , pack
-                                                , unpack
                                                 )
 import           Data.Semigroup                 ( (<>) )
 
 
-type Stateless = Result () GQLError
-
-mapError 
-  :: (er1 -> er2)
-  -> Result ev er1 a
-  -> Result ev er2 a
-mapError f Success { warnings = ws , .. } =
-    Success { warnings = fmap f ws , .. }
-mapError f (Failure es) = Failure $ fmap f es
+type Stateless = Result ()
 
 -- EVENTS
 class PushEvents e m where 
@@ -87,7 +76,7 @@ data Event e c = Event
   { channels :: [e], content  :: c}
 
 
-unpackEvents :: Result event error a -> [event]
+unpackEvents :: Result event a -> [event]
 unpackEvents Success { events } = events
 unpackEvents _                  = []
 
@@ -95,56 +84,57 @@ unpackEvents _                  = []
 -- Result
 --
 --
-data Result events error a 
-  = Success { result :: a , warnings :: [error] , events:: [events] }
-  | Failure { errors :: [error] } deriving (Functor)
+data Result events a 
+  = Success { result :: a , warnings :: GQLErrors , events:: [events] }
+  | Failure { errors :: GQLErrors } deriving (Functor)
 
-instance Applicative (Result e error) where
+instance Applicative (Result e) where
   pure x = Success x [] []
   Success f w1 e1 <*> Success x w2 e2 = Success (f x) (w1 <> w2) (e1 <> e2)
   Failure e1      <*> Failure e2      = Failure (e1 <> e2)
   Failure e       <*> Success _ w _   = Failure (e <> w)
   Success _ w _   <*> Failure e       = Failure (e <> w)
 
-instance Monad (Result e error)  where
+instance Monad (Result e)  where
   return = pure
   Success v w1 e1 >>= fm = case fm v of
     (Success x w2 e2) -> Success x (w1 <> w2) (e1 <> e2)
     (Failure e      ) -> Failure (e <> w1)
   Failure e >>= _ = Failure e
 
-instance Failure [error] (Result ev error) where
+instance Failure [GQLError] (Result ev) where
   failure = Failure
 
 instance Failure Text Stateless where
   failure text =
     Failure [GQLError { message = "INTERNAL ERROR: " <> text, locations = [] }]
 
-instance PushEvents events (Result events err) where
+instance PushEvents events (Result events) where
   pushEvents events = Success { result = (), warnings = [], events } 
 
+
 -- ResultT
-newtype ResultT event error (m :: * -> * ) a 
+newtype ResultT event (m :: * -> * ) a 
   = ResultT 
     { 
-      runResultT :: m (Result event error a)  
+      runResultT :: m (Result event a)  
     }
     deriving (Functor)
 
 statelessToResultT 
   :: Applicative m 
   => Stateless a 
-  -> ResultT e GQLError m a
+  -> ResultT e m a
 statelessToResultT 
   = cleanEvents
   . ResultT 
   . pure 
 
-instance Applicative m => Applicative (ResultT event error m) where
+instance Applicative m => Applicative (ResultT event m) where
   pure = ResultT . pure . pure
   ResultT app1 <*> ResultT app2 = ResultT $ liftA2 (<*>) app1 app2
 
-instance Monad m => Monad (ResultT event error m) where
+instance Monad m => Monad (ResultT event m) where
   return = pure
   (ResultT m1) >>= mFunc = ResultT $ do
     result1 <- m1
@@ -156,53 +146,38 @@ instance Monad m => Monad (ResultT event error m) where
           Failure errors   -> pure $ Failure (errors <> w1)
           Success v2 w2 e2 -> return $ Success v2 (w1 <> w2) (e1 <> e2)
 
-instance MonadTrans (ResultT event error) where
+instance MonadTrans (ResultT event) where
   lift = ResultT . fmap pure
 
-instance Monad m => Failure Message (ResultT event String m) where
-  failure message = ResultT $ pure $ Failure [unpack message]
-
-instance Applicative m => Failure String (ResultT ev GQLError m) where
+instance Applicative m => Failure String (ResultT event m) where
   failure x =
     ResultT $ pure $ Failure [GQLError { message = pack x, locations = [] }]
 
-instance Monad m => Failure GQLErrors (ResultT event GQLError m) where
+instance Monad m => Failure GQLErrors (ResultT event m) where
   failure = ResultT . pure . failure
 
-instance Applicative m => PushEvents events (ResultT events err m) where
+instance Applicative m => PushEvents event (ResultT event m) where
   pushEvents = ResultT . pure . pushEvents
 
 cleanEvents
   :: Functor m
-  => ResultT e1 error m a
-  -> ResultT e2 error m a
+  => ResultT e m a
+  -> ResultT e' m a
 cleanEvents resT = ResultT $ replace <$> runResultT resT
  where
   replace (Success v w _) = Success v w []
   replace (Failure e    ) = Failure e
 
-
 mapEvent
   :: Monad m
-  => (ea -> eb)
-  -> ResultT ea er m value
-  -> ResultT eb er m value
+  => (e -> e')
+  -> ResultT e m value
+  -> ResultT e' m value
 mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
  where
   mapEv Success { result, warnings, events } =
     Success { result, warnings, events = map func events }
   mapEv (Failure err) = Failure err
-
--- mapError 
---  :: Monad m
---   => (er1 -> er2)
---   -> ResultT ev er1 con m value
---   -> ResultT ev er2 con m value
--- mapError f (ResultT ma) = ResultT $ mapEv <$> ma
---  where
---   mapEv Success { warnings = ws , .. } =
---     Success { warnings = fmap f ws , .. }
---   mapEv (Failure es) = Failure $ fmap f es
 
 -- Helper Functions
 type LibUpdater lib = lib -> Stateless lib

@@ -116,7 +116,7 @@ import           Data.Morpheus.Types.IO         ( renderResponse
 
 type WithOperation (o :: OperationType) = LiftOperation o
 
-type ResponseStream event m = ResultT (ResponseEvent m event) GQLError m
+type ResponseStream event m = ResultT (ResponseEvent m event) m
 
 data ResponseEvent m event
   = Publish event
@@ -136,9 +136,13 @@ data Context
 newtype ResolverState event m a 
   = ResolverState 
     {
-      runResolverState :: ReaderT Context (ResultT event GQLError m) a
+      runResolverState :: ReaderT Context (ResultT event m) a
     } 
-    deriving (Functor, Applicative, Monad)
+    deriving 
+      ( Functor
+      , Applicative
+      , Monad
+      )
 
 instance Monad m => MonadFail (ResolverState event m) where 
   fail = failure . pack
@@ -158,10 +162,10 @@ instance (Monad m) => PushEvents e (ResolverState e m) where
     pushEvents = ResolverState . lift . pushEvents 
 
 mapResolverState :: 
-  ( ReaderT Context (ResultT e1 GQLError m1) a1 
-    -> ReaderT Context (ResultT e2 GQLError m2) a2 
-  ) -> ResolverState e1 m1 a1
-    -> ResolverState e2 m2 a2
+  ( ReaderT Context (ResultT e m) a
+    -> ReaderT Context (ResultT e' m') a' 
+  ) -> ResolverState e m a
+    -> ResolverState e' m' a'
 mapResolverState f (ResolverState x) = ResolverState (f x)
 
 getState :: (Monad m) => ResolverState e m (Selection VALID)
@@ -172,7 +176,7 @@ mapState f = mapResolverState (withReaderT f)
 
 -- clear evets and starts new resolver with diferenct type of events but with same value
 -- use properly. only if you know what you are doing
-clearStateResolverEvents :: (Functor m) => ResolverState e1 m a -> ResolverState e2 m a
+clearStateResolverEvents :: (Functor m) => ResolverState e m a -> ResolverState e' m a
 clearStateResolverEvents = mapResolverState (mapReaderT cleanEvents)
 
 resolverFailureMessage :: Selection VALID -> Message -> GQLError
@@ -508,7 +512,7 @@ runResolver
 runResolver (ResolverQ resT) sel = cleanEvents $ (runReaderT $ runResolverState resT) sel
 runResolver (ResolverM resT) sel = mapEvent Publish $ (runReaderT $ runResolverState resT) sel 
 runResolver (ResolverS resT) sel = ResultT $ do 
-    (readResValue :: Result (Channel event1) GQLError (ReaderT event (Resolver QUERY event m) ValidValue))  <- runResultT $ (runReaderT $ runResolverState resT) sel
+    (readResValue :: Result (Channel event1) (ReaderT event (Resolver QUERY event m) ValidValue))  <- runResultT $ (runReaderT $ runResolverState resT) sel
     pure $ case readResValue of 
       Failure x -> Failure x
       Success { warnings ,result , events = channels } -> do
