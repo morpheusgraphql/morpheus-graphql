@@ -31,6 +31,7 @@ module Data.Morpheus.Types.Internal.Resolving
     , unsafeInternalContext
     , ResolverModel(..)
     , unsafeBind
+    , liftStateless
     )
 where
 

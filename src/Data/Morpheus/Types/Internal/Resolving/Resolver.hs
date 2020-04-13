@@ -40,6 +40,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   , runResolverModel
   , setTypeName
   , ResolverModel(..)
+  , liftStateless
   )
 where
 
@@ -100,6 +101,7 @@ import           Data.Morpheus.Types.Internal.Resolving.Core
                                                 , StreamChannel
                                                 , GQLChannel(..)
                                                 , PushEvents(..)
+                                                , statelessToResultT
                                                 )
 import           Data.Morpheus.Types.Internal.AST.Value
                                                 ( GQLValue(..)
@@ -226,6 +228,20 @@ instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
 -- PushEvents
 instance (Monad m) => PushEvents e (Resolver MUTATION e m)  where
   pushEvents = packResolver . pushEvents 
+
+liftStateless 
+  :: ( LiftOperation o 
+     , Monad m
+     )
+  => Stateless a 
+  -> Resolver o e m a 
+liftStateless 
+  = packResolver 
+  . ResolverState
+  . ReaderT 
+  . const
+  . statelessToResultT
+
 
 class LiftOperation (o::OperationType) where
   packResolver :: Monad m => ResolverState e m a -> Resolver o e m a
@@ -498,11 +514,15 @@ runResolver (ResolverS resT) sel = ResultT $ do
 
 runRootDataResolver 
   :: (Monad m , LiftOperation o) 
-  => Resolver o e m (Deriving o e m)
+  => Stateless (Deriving o e m)
   -> Context 
   -> ResponseStream e m (Value VALID)
-runRootDataResolver res ctx@Context { operation = Operation { operationSelection } }  = 
-    runResolver (res `unsafeBind` resolveObject operationSelection ) ctx
+runRootDataResolver 
+    res 
+    ctx@Context { operation = Operation { operationSelection } } 
+  = do
+    root <- statelessToResultT res
+    runResolver (resolveObject operationSelection root) ctx
 
 -------------------------------------------------------------------
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
@@ -516,11 +536,10 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> * ) (mut :: (* ->
 
 data ResolverModel e m
     = ResolverModel 
-      { query :: Resolver QUERY e m (Deriving QUERY e m)
-      , mutation :: Resolver MUTATION e m (Deriving MUTATION e m)
-      , subscription :: Resolver SUBSCRIPTION e m (Deriving SUBSCRIPTION e m)
+      { query :: Stateless (Deriving QUERY e m)
+      , mutation :: Stateless (Deriving MUTATION e m)
+      , subscription :: Stateless (Deriving SUBSCRIPTION e m)
       }
-
 
 runResolverModel :: Monad m => ResolverModel e m -> Context -> ResponseStream e m (Value VALID)
 runResolverModel 

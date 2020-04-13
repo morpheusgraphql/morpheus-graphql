@@ -71,6 +71,8 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , unsafeBind
                                                 , failure
                                                 , ObjectDeriving(..)
+                                                , Stateless
+                                                , liftStateless
                                                 )
 
 class Encode resolver o e (m :: * -> *) where
@@ -134,10 +136,10 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 
 -- ENUM
 instance (Generic a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
-  encodeKind (VContext value) = exploreResolvers (Proxy @(CUSTOM a)) value
+  encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 instance (Monad m,Generic a,  ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = exploreResolvers (Proxy @(CUSTOM a)) value
+  encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 convertNode
   :: (Monad m, LiftOperation o)
@@ -174,7 +176,7 @@ type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
 --- GENERICS ------------------------------------------------
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: Proxy custom -> a -> Resolver o e m (Deriving o e m)
+  exploreResolvers :: Proxy custom -> a -> Stateless (Deriving o e m)
 
 instance (Generic a,Monad m,LiftOperation o,TypeRep (Rep a) o e m ) => ExploreResolvers 'False a o e m where
   exploreResolvers _ value = 
@@ -190,10 +192,10 @@ objectResolvers
      , LiftOperation o
      )
   => a
-  -> Resolver o e m (Deriving o e m)
+  -> Stateless (Deriving o e m)
 objectResolvers value 
   = exploreResolvers (Proxy @(CUSTOM a)) value 
-  `unsafeBind` constraintOnject 
+    >>= constraintOnject 
     where
       constraintOnject obj@DerivingObject {} 
         = pure obj
