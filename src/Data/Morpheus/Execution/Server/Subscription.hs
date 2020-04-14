@@ -7,15 +7,13 @@ module Data.Morpheus.Execution.Server.Subscription
   , initGQLState
   , connectClient
   , disconnectClient
-  , startSubscription
-  , publishEvent
+  , publishEvents
   , Action(..)
   , runStream
   , Stream(..)
   , initApolloStream
   , execStream
   , disconnect
-  , collectStream
   , concatStream
   )
 where
@@ -65,8 +63,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Result(..)
                                                 )
 import           Data.Morpheus.Types.Internal.WebSocket
-                                                ( ClientID
-                                                , GQLClient(..)
+                                                ( GQLClient(..)
                                                 , ClientDB
                                                 , GQLState
                                                 , SesionID
@@ -88,11 +85,20 @@ connectClient clientConnection = do
 disconnectClient :: GQLClient m e -> Action m e
 disconnectClient GQLClient { clientID }  = Update $ delete clientID
 
-updateClientByID
-  :: ClientID
-  -> (GQLClient m e -> GQLClient m e) 
+updateClient
+  :: (GQLClient m e -> GQLClient m e) 
+  -> GQLClient m e
+  -> Action m e
+updateClient  f GQLClient { clientID } = Update (adjust f clientID)
+
+publishEvents
+  :: ( Eq (StreamChannel e)
+     , Functor m 
+     , GQLChannel e
+     ) 
+  => e 
   -> Stream m e
-updateClientByID key f = initStream $ Update $ adjust f key
+publishEvents = initStream . publishEvent
 
 publishEvent
   :: ( Eq (StreamChannel e)
@@ -100,8 +106,8 @@ publishEvent
      , GQLChannel e
      ) 
   => e 
-  -> Stream m e
-publishEvent event = initStream $ Notify $ concatMap sendMessage . toList
+  -> Action m e
+publishEvent event = Notify (concatMap sendMessage . toList)
  where
   sendMessage (_,GQLClient { clientSessions, clientConnection })
     | null clientSessions  = [] 
@@ -120,18 +126,20 @@ publishEvent event = initStream $ Notify $ concatMap sendMessage . toList
       . snd
       ) . toList
 
-endSubscription :: SesionID -> Stream m e ->  Stream m e
-endSubscription sid Stream { stream , active } = do
-  let (Stream stream' active') = collectStream (endSubscriptionByClient sid . clientID ) active
-  Stream (stream <> stream') (active <> active')
 
-endSubscriptionByClient :: SesionID ->  ClientID -> Stream m e
-endSubscriptionByClient sid cid = updateClientByID cid endSub
+endSubscription :: SesionID -> Stream m e ->  Stream m e
+endSubscription sid Stream { stream , active } 
+  = Stream 
+      (stream <> map (endSubscriptionByClient sid) active) 
+      active
+
+endSubscriptionByClient :: SesionID ->  GQLClient m e -> Action m e
+endSubscriptionByClient sid = updateClient endSub
  where
   endSub client = client { clientSessions = delete sid (clientSessions client) }
 
-startSubscription :: ClientID -> SubEvent m e -> SesionID -> Stream m e
-startSubscription cid subscriptions sid = updateClientByID cid startSub
+startSubscription :: SubEvent m e -> SesionID -> GQLClient m e -> Action m e
+startSubscription  subscriptions sid = updateClient startSub
  where
   startSub client = client { clientSessions = insert sid subscriptions (clientSessions client) }
 
@@ -162,9 +170,6 @@ concatStream xs = Stream
       (concatMap stream xs) 
       (concatMap active xs)
 
-collectStream :: (a -> Stream m e) -> [a] -> Stream m e
-collectStream f xs = concatStream (map f xs)
-
 handleSubscription
   ::  (  Eq (StreamChannel e)
       , GQLChannel e
@@ -178,7 +183,7 @@ handleSubscription sessionId resStream Stream { stream, active }
   = do
     response <- runResultT resStream
     case response of
-      Success { events } -> pure $ collectStream execute events
+      Success { events } -> pure $ Stream (stream <> concatMap execute events) active
       Failure errors     
         -> pure 
             $ Stream 
@@ -192,11 +197,8 @@ handleSubscription sessionId resStream Stream { stream, active }
                     (pure $ toApolloResponse sessionId $ Errors errors)
                 ]
  where
-  execute :: (Eq (StreamChannel e) , GQLChannel e, Functor m ) => ResponseEvent m e -> Stream m e
-  execute (Publish   pub) = publishEvent pub
-  execute (Subscribe sub) = collectStream start active
-    where
-      start GQLClient { clientID } = startSubscription clientID sub sessionId
+  execute (Publish   pub) = [publishEvent pub]
+  execute (Subscribe sub) = stream <> map (startSubscription sub sessionId) active 
 
 apolloToAction 
   ::  ( Monad m

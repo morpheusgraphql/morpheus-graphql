@@ -44,12 +44,11 @@ import           Data.Morpheus.Execution.Server.Introspect
                                                 )
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
-                                                , publishEvent
+                                                , publishEvents
                                                 , runStream
                                                 )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
---import           Data.Morpheus.Schema.Schema                         (Root)
 import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes
                                                 , hiddenRootFields
                                                 , schemaAPI
@@ -192,7 +191,7 @@ statefulResolver state streamApi requestText = do
   traverse_ execute (unpackEvents res)
   pure $ encode $ renderResponse res
  where
-  execute (Publish events) = runStream (publishEvent events) state
+  execute (Publish events) = runStream (publishEvents events) state
   execute Subscribe{}      = pure ()
 
 fullSchema
