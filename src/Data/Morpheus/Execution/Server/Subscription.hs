@@ -120,8 +120,6 @@ publishEvent event = initStream $ Notify $ concatMap sendMessage . toList
       . snd
       ) . toList
 
-  
-
 endSubscription :: SesionID -> Stream m e ->  Stream m e
 endSubscription sid Stream { stream , active } = do
   let (Stream stream' active') = collectStream (endSubscriptionByClient sid . clientID ) active
