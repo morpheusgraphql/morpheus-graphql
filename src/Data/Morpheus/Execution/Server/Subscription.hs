@@ -43,7 +43,6 @@ import           Data.HashMap.Lazy              ( empty
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Value
                                                 , VALID
-                                                , Message
                                                 , Name
                                                 )
 import           Data.Morpheus.Types.IO         (GQLResponse(..))

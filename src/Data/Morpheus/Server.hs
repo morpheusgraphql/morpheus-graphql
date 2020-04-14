@@ -13,16 +13,14 @@ module Data.Morpheus.Server
   )
 where
 
-import           Data.Foldable                  ( traverse_ )
+
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
 import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
-import           Data.Text                      ( Text )
 import           Network.WebSockets             ( ServerApp
                                                 , acceptRequestWith
                                                 , pendingRequest
                                                 , receiveData
-                                                , sendTextData
                                                 , withPingThread
                                                 )
 
@@ -35,15 +33,12 @@ import           Data.Morpheus.Types.Internal.Apollo
                                                 ( SubAction(..)
                                                 , acceptApolloSubProtocol
                                                 , apolloFormat
-                                                , toApolloResponse
                                                 )
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
                                                 , connectClient
                                                 , disconnectClient
                                                 , initGQLState
-                                                , publishEvent
-                                                , startSubscription
                                                 , endSubscription
                                                 , Stream(..)
                                                 , Action(..)
@@ -51,19 +46,9 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , runStream
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( GQLRootResolver(..)
-                                                , GQLChannel(..)
-                                                , ResponseEvent(..)
-                                                , ResponseStream
-                                                , runResultT
-                                                , Result(..)
-                                                )
+                                                ( GQLRootResolver(..) )
 import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( GQLClient(..) )
-import           Data.Morpheus.Types.IO         ( GQLResponse(..) )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( ValidValue )
-
 
 apolloToAction 
   :: (RootResCon m e que mut sub, MonadIO m)
@@ -76,6 +61,15 @@ apolloToAction root client (AddSub sessionId request)
   = handleSubscription client sessionId (coreResolver root request)
 apolloToAction _ client (RemoveSub sessionId) 
   = pure $ endSubscription (clientID client) sessionId 
+
+subscriptionHandler 
+  :: (RootResCon m e que mut sub, MonadIO m)
+  => GQLRootResolver m e que mut sub 
+  -> GQLClient m e 
+  -> m (Stream m e) 
+subscriptionHandler root client = do
+      d <- liftIO $ receiveData (clientConnection client)
+      apolloToAction root client (apolloFormat d)
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
@@ -90,14 +84,13 @@ gqlSocketMonadIOApp root state f pending = do
   withPingThread connection 30 (return ()) $ do
       (initStrem,client) <- connectClient connection
       f (runStream initStrem state)
-      finally (f $ queryHandler client) ( f $ runStream (disconnectClient client) state)
+      finally (queryHandler client) ( f $ runStream (disconnectClient client) state)
  where
-  queryHandler client = forever handleRequest
-   where
-    handleRequest = do
-      d <- liftIO $ receiveData (clientConnection client)
-      stream <- apolloToAction root client (apolloFormat d)
-      runStream stream state
+  queryHandler client 
+        = f
+        $ forever
+        $ subscriptionHandler root client 
+          >>= (`runStream` state)
 
 -- | Same as above but specific to IO
 gqlSocketApp
