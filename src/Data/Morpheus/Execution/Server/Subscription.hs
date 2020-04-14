@@ -170,16 +170,12 @@ data Action
     Receive:: Client ref e m -> m ByteString -> Action IN ref e m
     Ignore :: Action mode ref e m
 
-instance Show (Action mode ref e m) where
-  show Update {} = "Update"
-  show Notify {} = "Notify"
-  show Error {}    = "Log"
 
 data Stream (mode :: Mode) ref e m = 
   Stream 
     { stream :: [Action mode ref e m]
     , active :: [Client ref e m]
-    } deriving (Show)
+    } 
 
 initStream :: Action mode ref e m -> Stream mode ref e m 
 initStream x = Stream [x] []
@@ -228,15 +224,14 @@ apolloToAction
   -> Client ref e m
   -> SubAction  
   -> m (Action OUT ref e m)
-apolloToAction _  client(SubError x) = pure $ Error x
+apolloToAction _  _ (SubError x) = pure $ Error x
 apolloToAction gqlApp client(AddSub sessionId request) 
   = handleSubscription sessionId (gqlApp request) client
 apolloToAction _ client (RemoveSub sessionId)
   = pure $ endSubscription sessionId client
 
-
 disconnect :: Stream mode ref e m -> Stream mode ref e m
-disconnect (Stream stream active) = Stream (map disconnectClient active) []
+disconnect (Stream _ active) = Stream (map disconnectClient active) []
 
 -- EXECUTION
 notify :: MonadIO m => Notification Connection m -> m ()

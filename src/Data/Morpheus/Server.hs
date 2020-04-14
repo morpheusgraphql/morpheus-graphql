@@ -15,11 +15,8 @@ where
 
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
-import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
+import           Control.Monad.IO.Class         ( MonadIO )
 import           Network.WebSockets             ( ServerApp
-                                                , acceptRequestWith
-                                                , pendingRequest
-                                                , receiveData
                                                 , withPingThread
                                                 , Connection
                                                 )
@@ -30,7 +27,7 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 , coreResolver
                                                 )
 import           Data.Morpheus.Types.Internal.Apollo
-                                                ( acceptApolloSubProtocol )
+                                                ( acceptApolloRequest )
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
                                                 , connect
@@ -41,13 +38,10 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , runInput
                                                 , runStream
                                                 , IN
-                                                , OUT
                                                 , mapS
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
-import           Data.Morpheus.Types.Internal.WebSocket
-                                                ( Client(..) )
 
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
@@ -59,8 +53,7 @@ gqlSocketMonadIOApp
   -> (m (Stream IN Connection e m) -> IO (Stream IN Connection e m))
   -> ServerApp
 gqlSocketMonadIOApp root state f fIn pending = do
-  connection <- acceptRequestWith pending
-    $ acceptApolloSubProtocol (pendingRequest pending)
+  connection <- acceptApolloRequest pending
   withPingThread connection 30 (return ()) $ do
       iStrem <- connect connection
       s <- fIn (mapS (runInput state) iStrem)

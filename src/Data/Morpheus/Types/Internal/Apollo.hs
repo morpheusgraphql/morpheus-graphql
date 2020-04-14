@@ -6,7 +6,7 @@
 module Data.Morpheus.Types.Internal.Apollo
   ( SubAction(..)
   , apolloFormat
-  , acceptApolloSubProtocol
+  , acceptApolloRequest
   , toApolloResponse
   ) where
 
@@ -18,7 +18,14 @@ import           Data.Morpheus.Types.IO     (GQLResponse)
 import           Data.Semigroup             ((<>))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
-import           Network.WebSockets         (AcceptRequest (..), RequestHead, getRequestSubprotocols)
+import           Network.WebSockets         ( AcceptRequest (..)
+                                            , RequestHead
+                                            , getRequestSubprotocols
+                                            , PendingConnection
+                                            , Connection
+                                            , acceptRequestWith
+                                            , pendingRequest
+                                            )
 
 type ApolloID = Text
 
@@ -54,6 +61,12 @@ instance FromJSON RequestPayload where
 instance ToJSON a => ToJSON (ApolloSubscription a) where
   toEncoding (ApolloSubscription id' type' payload') =
     pairs $ "id" .= id' <> "type" .= type' <> "payload" .= payload'
+
+acceptApolloRequest :: PendingConnection -> IO Connection
+acceptApolloRequest pending 
+  = acceptRequestWith 
+        pending
+        (acceptApolloSubProtocol (pendingRequest pending))
 
 acceptApolloSubProtocol :: RequestHead -> AcceptRequest
 acceptApolloSubProtocol reqHead =
