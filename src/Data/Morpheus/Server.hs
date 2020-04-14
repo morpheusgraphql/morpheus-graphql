@@ -50,13 +50,11 @@ gqlSocketMonadIOApp
   => GQLRootResolver m e que mut sub
   -> GQLState Connection e m
   -> (m () -> IO ())
-  -> (m (Stream IN Connection e m) -> IO (Stream IN Connection e m))
   -> ServerApp
-gqlSocketMonadIOApp root state f fIn pending = do
+gqlSocketMonadIOApp root state f pending = do
   connection <- acceptApolloRequest pending
   withPingThread connection 30 (return ()) $ do
-      iStrem <- connect connection
-      s <- fIn (mapS (runInput state) iStrem)
+      s <- connect connection
       finally
         (queryHandler s) 
         $ f (runStream (disconnect s) state) 
@@ -73,4 +71,4 @@ gqlSocketApp
   => GQLRootResolver IO e que mut sub
   -> GQLState Connection e IO
   -> ServerApp
-gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id id
+gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id

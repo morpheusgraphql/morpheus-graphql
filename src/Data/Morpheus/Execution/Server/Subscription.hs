@@ -19,7 +19,6 @@ module Data.Morpheus.Execution.Server.Subscription
   , runStream
   , Stream(..)
   , toResponseStream
-  , execStream
   , RunAction(..)
   , IN
   , OUT
@@ -84,6 +83,7 @@ import           Data.Morpheus.Types.Internal.WebSocket
                                                 , adjust
                                                 , delete
                                                 )
+import          Debug.Trace 
 
 -- | initializes empty GraphQL state
 initGQLState :: IO (GQLState ref e m)
@@ -93,7 +93,7 @@ connect :: MonadIO m => ref -> IO (Stream IN ref e m)
 connect clientConnection = do
   clientID <- nextRandom
   let client = Client { clientID , clientConnection, clientSessions = HM.empty }
-  return $ Stream [Init client,Update (insert clientID client)]
+  return $ Stream [Update (insert clientID client), Receive client]
 
 updateClient
   :: (Client ref e m -> Client ref e m ) 
@@ -149,6 +149,9 @@ startSubscription  subscriptions sid = updateClient startSub
 data Notification ref m = 
   Notification ref (m ByteString)
 
+instance Show (Notification r m) where
+  show _ = "Notification"
+
 data Mode = In | Out
 
 type IN = 'In 
@@ -160,13 +163,12 @@ data Action
     e 
     (m :: * -> * )
   where 
-    Error  :: String -> Action mode ref e m
-    Update :: (PubSubStore ref e m -> PubSubStore ref e m) -> Action mode ref e m 
-    Notify :: (PubSubStore ref e m -> [Notification ref m]) -> Action OUT ref e m
-    Init   :: Client ref e m -> Action IN ref e m
-    Receive:: Client ref e m -> m ByteString -> Action IN ref e m
-    Ignore :: Action mode ref e m
-
+    Error   :: String -> Action mode ref e m
+    Update  :: (PubSubStore ref e m -> PubSubStore ref e m) -> Action mode ref e m 
+    Notify  :: (PubSubStore ref e m -> [Notification ref m]) -> Action OUT ref e m
+    -- Init    :: Client ref e m -> Action IN ref e m
+    Receive :: Client ref e m -> Action IN ref e m
+    Ignore  :: Action mode ref e m
 
 newtype Stream (io :: Mode) ref e m = 
   Stream 
@@ -224,11 +226,11 @@ apolloToAction gqlApp client(AddSub sessionId request)
 apolloToAction _ client (RemoveSub sessionId)
   = pure $ endSubscription sessionId client
 
-disconnectAction :: Action i ref e m -> Action i ref e m 
-disconnectAction (Init Client { clientID })  = Update $ delete clientID
+disconnectAction :: Action i ref e m -> Action OUT ref e m 
+disconnectAction (Receive Client { clientID })  = Update $ delete clientID
 disconnectAction _ = Ignore
 
-disconnect :: Stream mode ref e m -> Stream mode ref e m
+disconnect :: Stream mode ref e m -> Stream OUT ref e m
 disconnect Stream { stream } = Stream (map disconnectAction stream)
 
 toResponseStream 
@@ -236,18 +238,20 @@ toResponseStream
       , Eq (StreamChannel e)
       , GQLChannel e
       , Functor m
+      , RunAction ref m
       ) 
   => (  GQLRequest
      -> ResponseStream e m (Value VALID)
      )
   ->  Action IN ref e m 
   -> m (Action OUT ref e m)
-toResponseStream app (Receive cl txt)
-  = txt 
+toResponseStream app ref@(Receive client)
+  = runInput ref 
     >>= apolloToAction 
           app
-          cl
+          client
           . apolloFormat
+toResponseStream _ (Update x) = pure (Update x) 
 toResponseStream _ _ = pure Ignore
 
 mapS 
@@ -282,32 +286,21 @@ readState = liftIO . readMVar
 modifyState_ :: (MonadIO m) => GQLState ref e m -> (PubSubStore ref e m -> PubSubStore ref e m) -> m ()
 modifyState_ state update = liftIO $ modifyMVar_ state (return . update)
 
-receive :: MonadIO m => Client Connection e m -> m ByteString
-receive Client { clientConnection } = liftIO $ receiveData clientConnection
-
 class (MonadIO m, Applicative m) => RunAction ref m where
-  runAction :: GQLState ref e m -> Action mode ref e m -> m ()
+  runAction :: GQLState ref e m -> Action OUT ref e m -> m ()
+  runInput :: Action IN ref e m -> m ByteString
 
 instance (MonadIO m, Applicative m) => RunAction Connection m where
   runAction state (Update update)  
-    = modifyState_ state update 
+    = modifyState_ state update
   runAction state (Notify toNotification)  
     = readState state 
       >>= traverse_ notify  
         . toNotification
   runAction _ (Error x) = liftIO (print x)
   runAction _ Ignore = pure ()
-  
-runInput :: (RunAction Connection m) => GQLState Connection e m -> Action IN Connection e m -> m (Action IN Connection e m)
-runInput state (Init client) 
-  = runAction state (Update $ insert (clientID client) client) 
-    >> pure (Receive client (receive client))
-runInput _ x = pure x
+  runInput (Receive Client { clientConnection }) 
+    = liftIO (receiveData clientConnection)
 
-runStream :: (RunAction ref m) => Stream mode ref e m -> GQLState ref e m ->  m ()
+runStream :: (RunAction ref m) => Stream OUT ref e m -> GQLState ref e m ->  m ()
 runStream Stream { stream } state = traverse_ (runAction state) stream
-
-execStream :: (RunAction ref m) => Stream mode ref e m -> GQLState ref e m -> m (Stream mode ref e m)
-execStream Stream { stream  } state 
-  = traverse_ (runAction state) stream 
-    $> Stream { stream = [] }

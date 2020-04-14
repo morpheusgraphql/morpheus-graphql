@@ -43,7 +43,7 @@ type SesionID = Text
 newtype PubSubStore ref e ( m :: * -> * ) = 
     PubSubStore 
       { runPubSubStore :: HashMap ID (Client ref e m)
-      }
+      } deriving (Show)
 
 type StoreMap ref e m
   = PubSubStore ref e m 
@@ -89,7 +89,7 @@ data Client ref e ( m :: * -> * ) =
     , clientSessions   :: HashMap SesionID (SubEvent e m)
     }
 
-instance (Show e) => Show (Client ref e m) where
+instance Show (Client ref e m) where
   show Client { clientID, clientSessions } =
     "GQLClient "
       <>"{ id: "
