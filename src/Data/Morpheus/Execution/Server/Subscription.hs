@@ -91,12 +91,12 @@ connect :: MonadIO m => ref -> IO (Stream IN ref e m)
 connect clientConnection = do
   clientID <- nextRandom
   let client = Client { clientID , clientConnection, clientSessions = HM.empty }
-  return $ Stream [Update (insert clientID client), Listen client]
+  return $ Stream [Listen client]
 
 updateClient
   :: (Client ref e m -> Client ref e m ) 
   -> Client  ref e m 
-  -> Action mode ref e m 
+  -> Action OUT ref e m 
 updateClient  f Client { clientID } = Update (adjust f clientID)
 
 publishEvents
@@ -134,12 +134,12 @@ publishEvent event = Notify $ concatUnfold sendMessage
       . snd
       ) . HM.toList
 
-endSubscription :: SesionID ->  Client ref e m -> Action mode ref e m 
+endSubscription :: SesionID ->  Client ref e m -> Action OUT ref e m 
 endSubscription sid = updateClient endSub
  where
   endSub client = client { clientSessions = HM.delete sid (clientSessions client) }
 
-startSubscription :: SubEvent e m -> SesionID -> Client ref e m -> Action mode ref e m 
+startSubscription :: SubEvent e m -> SesionID -> Client ref e m -> Action OUT ref e m 
 startSubscription  subscriptions sid = updateClient startSub
  where
   startSub client = client { clientSessions = HM.insert sid subscriptions (clientSessions client) }
@@ -162,7 +162,7 @@ data Action
     (m :: * -> * )
   where 
     Listen :: Client ref e m -> Action IN ref e m
-    Update  :: (PubSubStore ref e m -> PubSubStore ref e m) -> Action mode ref e m 
+    Update  :: (PubSubStore ref e m -> PubSubStore ref e m) -> Action OUT ref e m 
     Notify  :: (PubSubStore ref e m -> [Notification ref m]) -> Action OUT ref e m
     Error   :: String -> Action OUT ref e m
 
@@ -245,12 +245,10 @@ toResponseStream
   ->  Action IN ref e m 
   -> m (Stream OUT ref e m)
 toResponseStream app ref@(Listen client)
-  = listen ref 
-    >>= apolloToAction 
-          app
-          client
-          . apolloFormat
-toResponseStream _ (Update x) = pure $ singleton (Update x) 
+  = do
+    request <- apolloFormat <$> listen ref 
+    (Stream stream) <- apolloToAction app client request
+    pure $ Stream $ Update (insert client) : stream
 
 traverseS 
   :: (Monad m)
@@ -274,20 +272,20 @@ modifyState_ :: (MonadIO m) => GQLState ref e m -> (PubSubStore ref e m -> PubSu
 modifyState_ state changes = liftIO $ modifyMVar_ state (return . changes)
 
 class (MonadIO m, Applicative m) => RunAction ref m where
-  update :: GQLState ref e m -> Action OUT ref e m -> m ()
+  run :: GQLState ref e m -> Action OUT ref e m -> m ()
   listen :: Action IN ref e m -> m ByteString
 
 instance (MonadIO m, Applicative m) => RunAction Connection m where
-  update state (Update changes)  
+  run state (Update changes)  
     = modifyState_ state changes
-  update state (Notify toNotification)  
+  run state (Notify toNotification)  
     = readState state 
       >>= traverse_ notify  
         . toNotification
-  update _ (Error x) = liftIO (print x)
+  run _ (Error x) = liftIO (print x)
   ----------------------------------------------
   listen (Listen Client { clientConnection }) 
     = liftIO (receiveData clientConnection)
 
 runStream :: (RunAction ref m) => Stream OUT ref e m -> GQLState ref e m ->  m ()
-runStream Stream { stream } state = traverse_ (update state) stream
+runStream Stream { stream } state = traverse_ (run state) stream

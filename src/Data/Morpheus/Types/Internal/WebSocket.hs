@@ -68,10 +68,9 @@ instance Empty (PubSubStore ref e m) where
   empty = PubSubStore HM.empty
 
 insert 
-  :: ID 
-  -> Client ref e m 
+  :: Client ref e m 
   -> StoreMap ref e m
-insert key value = mapStore (HM.insert key value)
+insert c = mapStore (HM.insert (clientID c) c)
 
 adjust 
   :: (Client ref e m -> Client ref e m ) 
