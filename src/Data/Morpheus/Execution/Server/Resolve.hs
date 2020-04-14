@@ -193,7 +193,7 @@ statefulResolver state streamApi requestText = do
   pure $ encode $ renderResponse res
  where
   execute (Publish events) = runStream (publishEvent events) state
-  execute Subscribe{}      = pure []
+  execute Subscribe{}      = pure ()
 
 fullSchema
   :: forall proxy m event query mutation subscription

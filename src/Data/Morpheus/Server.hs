@@ -70,12 +70,12 @@ apolloToAction
   => GQLRootResolver m e que mut sub 
   -> GQLClient m e 
   -> SubAction  
-  -> Stream m e 
-apolloToAction _ _ (SubError x) = Stream [Log x]
+  -> m (Stream m e) 
+apolloToAction _ _ (SubError x) = pure $ Stream [Log x]
 apolloToAction root client (AddSub sessionId request) 
   = handleSubscription client sessionId (coreResolver root request)
 apolloToAction _ client (RemoveSub sessionId) 
-  = endSubscription (clientID client) sessionId 
+  = pure $ endSubscription (clientID client) sessionId 
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
@@ -88,14 +88,16 @@ gqlSocketMonadIOApp root state f pending = do
   connection <- acceptRequestWith pending
     $ acceptApolloSubProtocol (pendingRequest pending)
   withPingThread connection 30 (return ()) $ do
-      client <- connectClient connection state
-      finally (f $ queryHandler client) (runStream (disconnectClient client) state)
+      (initStrem,client) <- connectClient connection
+      f (runStream initStrem state)
+      finally (f $ queryHandler client) ( f $ runStream (disconnectClient client) state)
  where
   queryHandler client = forever handleRequest
    where
     handleRequest = do
       d <- liftIO $ receiveData (clientConnection client)
-      runStream (apolloToAction root client (apolloFormat d)) state
+      stream <- apolloToAction root client (apolloFormat d)
+      runStream stream state
 
 -- | Same as above but specific to IO
 gqlSocketApp

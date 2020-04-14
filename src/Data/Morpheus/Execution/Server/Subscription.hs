@@ -73,11 +73,11 @@ import           Data.Morpheus.Types.Internal.WebSocket
 initGQLState :: IO (GQLState m e)
 initGQLState = newMVar empty
  
-connectClient :: MonadIO m => Connection -> IO (Stream m e)
+connectClient :: MonadIO m => Connection -> IO (Stream m e, GQLClient m e)
 connectClient clientConnection = do
   clientID <- nextRandom
   let client = GQLClient { clientID , clientConnection, clientSessions = empty }
-  return $ Stream [Update (insert clientID client) , Connected client]
+  return (Stream [Update (insert clientID client)], client)
 
 disconnectClient :: GQLClient m e -> Stream m e
 disconnectClient GQLClient { clientID }  = Stream [Update (delete clientID)]
@@ -183,17 +183,15 @@ readState = liftIO . readMVar
 modifyState_ :: (MonadIO m) => GQLState m e -> (ClientDB m e -> ClientDB m e) -> m ()
 modifyState_ state update = liftIO $ modifyMVar_ state (return . update)
 
-runAction :: (MonadIO m) => GQLState m e -> Action m e -> m [GQLClient m e]
+runAction :: (MonadIO m) => GQLState m e -> Action m e -> m ()
 runAction state (Update update)  
   = modifyState_ state update 
-    $> []
 runAction state (Notify toNotification)  
   = readState state 
     >>= traverse_ notify  
       . toNotification
-      $>  pure []
-runAction _ (Connected x) = pure [x]
-runAction _ (Log x) = liftIO (print x) >> pure []
+runAction _ (Connected x) = pure () -- TODO: real connection due Stream
+runAction _ (Log x) = liftIO (print x)
 
-runStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m [GQLClient m e]
-runStream Stream { stream } state = concat <$> traverse (runAction state) stream
+runStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m ()
+runStream Stream { stream } state = traverse_ (runAction state) stream
