@@ -8,7 +8,6 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE RecordWildCards            #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless

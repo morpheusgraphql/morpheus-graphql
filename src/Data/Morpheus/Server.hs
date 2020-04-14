@@ -37,9 +37,12 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , disconnect
                                                 , initGQLState
                                                 , Stream(..)
-                                                , execStream
-                                                , concatStream
                                                 , initApolloStream
+                                                , runInput
+                                                , runStream
+                                                , IN
+                                                , OUT
+                                                , mapS
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
@@ -47,45 +50,35 @@ import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( Client(..) )
 
 
-subscriptionHandler
-  :: (RootResCon m e que mut sub, MonadIO m)
-  => GQLRootResolver m e que mut sub 
-  -> Stream Connection e m
-  -> m (Stream Connection e m)
-subscriptionHandler root s = 
-      traverse getInput (active s)
-      >>= fmap concatStream . traverse (initApolloStream (coreResolver root) s) 
-  where
-    getInput client = liftIO (receiveData (clientConnection client))
-
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
   => GQLRootResolver m e que mut sub
   -> GQLState Connection e m
-  -> (m (Stream Connection e m) -> IO (Stream Connection e m))
+  -> (m () -> IO ())
+  -> (m (Stream IN Connection e m) -> IO (Stream IN Connection e m))
   -> ServerApp
-gqlSocketMonadIOApp root state f pending = do
+gqlSocketMonadIOApp root state f fIn pending = do
   connection <- acceptRequestWith pending
     $ acceptApolloSubProtocol (pendingRequest pending)
   withPingThread connection 30 (return ()) $ do
       iStrem <- connect connection
-      s <- f (execStream iStrem state)
-      finally 
-        (queryHandler s >> pure ()) 
-        $ f (execStream (disconnect s) state) 
-        >> pure ()
+      s <- fIn (mapS (runInput state) iStrem)
+      finally
+        (queryHandler s) 
+        $ f (runStream (disconnect s) state) 
  where
   queryHandler st
         = f
         $ forever
-        $ subscriptionHandler root st
-        >>= (`execStream` state)
-          
+        $ mapS (initApolloStream  (coreResolver root)) st
+        -- getInput client = liftIO (receiveData (clientConnection client)) -- TODO: remove
+        >>= (`runStream` state)
+
 -- | Same as above but specific to IO
 gqlSocketApp
   :: (RootResCon IO e que mut sub)
   => GQLRootResolver IO e que mut sub
   -> GQLState Connection e IO
   -> ServerApp
-gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id
+gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id id
