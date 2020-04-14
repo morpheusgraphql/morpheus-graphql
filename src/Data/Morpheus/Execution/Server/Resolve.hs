@@ -45,6 +45,7 @@ import           Data.Morpheus.Execution.Server.Introspect
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
                                                 , publishEvent
+                                                , runStream
                                                 )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
@@ -191,8 +192,8 @@ statefulResolver state streamApi requestText = do
   traverse_ execute (unpackEvents res)
   pure $ encode $ renderResponse res
  where
-  execute (Publish events) = publishEvent state events
-  execute Subscribe{}       = pure ()
+  execute (Publish events) = runStream (publishEvent events) state
+  execute Subscribe{}      = pure []
 
 fullSchema
   :: forall proxy m event query mutation subscription

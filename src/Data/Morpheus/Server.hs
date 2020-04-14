@@ -45,6 +45,10 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , publishEvent
                                                 , startSubscription
                                                 , endSubscription
+                                                , Stream(..)
+                                                , Action(..)
+                                                , handleSubscription
+                                                , runStream
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -60,24 +64,18 @@ import           Data.Morpheus.Types.IO         ( GQLResponse(..) )
 import           Data.Morpheus.Types.Internal.AST
                                                 ( ValidValue )
 
-handleSubscription
-  :: (Eq (StreamChannel e), GQLChannel e, MonadIO m)
-  => GQLClient m e
-  -> GQLState m e
-  -> Text
-  -> ResponseStream e m ValidValue
-  -> m ()
-handleSubscription GQLClient { clientConnection, clientID } state sessionId stream
-  = do
-    response <- runResultT stream
-    case response of
-      Success { events } -> traverse_ execute events
-      Failure errors     -> liftIO $ sendTextData
-        clientConnection
-        (toApolloResponse sessionId $ Errors errors)
- where
-  execute (Publish   pub) = publishEvent state pub
-  execute (Subscribe sub) = startSubscription clientID sub sessionId state
+
+apolloToAction 
+  :: (RootResCon m e que mut sub, MonadIO m)
+  => GQLRootResolver m e que mut sub 
+  -> GQLClient m e 
+  -> SubAction  
+  -> Stream m e 
+apolloToAction _ _ (SubError x) = Stream [Log x]
+apolloToAction root client (AddSub sessionId request) 
+  = handleSubscription client sessionId (coreResolver root request)
+apolloToAction _ client (RemoveSub sessionId) 
+  = endSubscription (clientID client) sessionId 
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
@@ -86,24 +84,18 @@ gqlSocketMonadIOApp
   -> GQLState m e
   -> (m () -> IO ())
   -> ServerApp
-gqlSocketMonadIOApp gqlRoot state f pending = do
+gqlSocketMonadIOApp root state f pending = do
   connection <- acceptRequestWith pending
     $ acceptApolloSubProtocol (pendingRequest pending)
   withPingThread connection 30 (return ()) $ do
       client <- connectClient connection state
-      finally (f $ queryHandler client) (disconnectClient client state)
+      finally (f $ queryHandler client) (runStream (disconnectClient client) state)
  where
   queryHandler client = forever handleRequest
    where
     handleRequest = do
       d <- liftIO $ receiveData (clientConnection client)
-      resolveMessage (apolloFormat d)
-     where
-      resolveMessage (SubError x) = liftIO $ print x
-      resolveMessage (AddSub sessionId request) =
-        handleSubscription client state sessionId (coreResolver gqlRoot request)
-      resolveMessage (RemoveSub sessionId) =
-        endSubscription (clientID client) sessionId state
+      runStream (apolloToAction root client (apolloFormat d)) state
 
 -- | Same as above but specific to IO
 gqlSocketApp
