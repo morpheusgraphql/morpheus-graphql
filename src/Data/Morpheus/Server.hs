@@ -35,7 +35,7 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , initGQLState
                                                 , toResponseStream
                                                 , runStream
-                                                , mapS
+                                                , traverseS
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
@@ -59,7 +59,7 @@ gqlSocketMonadIOApp root state f pending = do
   queryHandler st
         = f
         $ forever
-        $ mapS (toResponseStream  (coreResolver root)) st
+        $ traverseS (toResponseStream  (coreResolver root)) st
         >>= (`runStream` state)
 
 -- | Same as above but specific to IO

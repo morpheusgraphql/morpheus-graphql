@@ -22,12 +22,10 @@ module Data.Morpheus.Execution.Server.Subscription
   , RunAction(..)
   , IN
   , OUT
-  , mapS
   , traverseS
   )
 where
 
-import           Data.Functor                   (($>))
 import           Data.Foldable                  ( traverse_ )
 import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
 import           Data.ByteString.Lazy.Char8     (ByteString)
@@ -56,6 +54,9 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.IO         ( GQLResponse(..)
                                                 , GQLRequest(..)
                                                 )
+import           Data.Morpheus.Types.Internal.Operation
+                                                ( Empty(..)
+                                                )
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( toApolloResponse 
                                                 , SubAction(..)
@@ -77,7 +78,6 @@ import           Data.Morpheus.Types.Internal.WebSocket
                                                 , GQLState
                                                 , SesionID
                                                 , concatUnfold
-                                                , empty
                                                 , insert
                                                 , adjust
                                                 , delete
@@ -91,7 +91,7 @@ connect :: MonadIO m => ref -> IO (Stream IN ref e m)
 connect clientConnection = do
   clientID <- nextRandom
   let client = Client { clientID , clientConnection, clientSessions = HM.empty }
-  return $ Stream [Update (insert clientID client), Receive client]
+  return $ Stream [Update (insert clientID client), Listen client]
 
 updateClient
   :: (Client ref e m -> Client ref e m ) 
@@ -106,7 +106,7 @@ publishEvents
      ) 
   => e 
   -> Stream OUT ref e m 
-publishEvents = initStream . publishEvent
+publishEvents = singleton . publishEvent
 
 publishEvent
   :: ( Eq (StreamChannel e)
@@ -161,25 +161,33 @@ data Action
     e 
     (m :: * -> * )
   where 
-    Error   :: String -> Action mode ref e m
+    Listen :: Client ref e m -> Action IN ref e m
     Update  :: (PubSubStore ref e m -> PubSubStore ref e m) -> Action mode ref e m 
     Notify  :: (PubSubStore ref e m -> [Notification ref m]) -> Action OUT ref e m
-    -- Init    :: Client ref e m -> Action IN ref e m
-    Receive :: Client ref e m -> Action IN ref e m
-    Ignore  :: Action mode ref e m
+    Error   :: String -> Action OUT ref e m
 
 newtype Stream (io :: Mode) ref e m = 
   Stream 
     { stream :: [Action io ref e m] 
-    } 
+    }
 
-initStream :: Action mode ref e m -> Stream mode ref e m 
-initStream x = Stream [x]
+instance Empty (Stream t ref e m) where
+  empty = Stream []
+
+singleton :: Action mode ref e m -> Stream mode ref e m 
+singleton x = Stream [x]
+
+disconnect :: Stream mode ref e m -> Stream OUT ref e m
+disconnect (Stream x) = Stream $ concatMap __disconnect x
+  where
+    __disconnect:: Action mode ref e m -> [Action OUT ref e m]
+    __disconnect (Listen Client { clientID })  = [Update (delete clientID)]
+    __disconnect _ = []
 
 concatStream :: [Stream mode ref e m ] -> Stream mode ref e m 
 concatStream xs = Stream (concatMap stream xs)
 
-handleSubscription
+handleQuery
   ::  (  Eq (StreamChannel e)
       , GQLChannel e
       , Monad m
@@ -187,25 +195,25 @@ handleSubscription
   => Name
   -> ResponseStream e m (Value VALID)
   -> Client ref e m
-  -> m (Action OUT ref e m)
-handleSubscription sessionId resStream cl@Client { clientConnection }
-  = do
-    response <- runResultT resStream
-    case response of
-      Success { events } -> pure $ execute (head events) -- TODO: solve for liste
-      Failure errors     
-        -> pure notifyError
-       where
-         notifyError = Notify 
+  -> m (Stream OUT ref e m)
+handleQuery sessionId resStream cl@Client { clientConnection }
+  = Stream . unfoldRes <$> runResultT resStream
+  where
+    unfoldRes Success { events } = map execute events
+    unfoldRes Failure { errors } = [notifyError errors]
+    --------------------------------------------------------------
+    execute (Subscribe sub) = startSubscription sub sessionId cl 
+    execute (Publish   pub) = publishEvent pub
+    --------------------------------------------------------------
+    notifyError errors = Notify 
                 $ const
                 [ Notification 
                     clientConnection
-                    (pure $ toApolloResponse sessionId $ Errors errors)
+                    $ pure 
+                    $ toApolloResponse sessionId 
+                    $ Errors errors
                 ]
- where
-  execute (Publish   pub) = publishEvent pub
-  execute (Subscribe sub) = startSubscription sub sessionId cl 
-
+ 
 apolloToAction 
   ::  ( Monad m
       , Eq (StreamChannel e)
@@ -216,20 +224,13 @@ apolloToAction
         -> ResponseStream e m (Value VALID)
      )
   -> Client ref e m
-  -> SubAction  
-  -> m (Action OUT ref e m)
-apolloToAction _  _ (SubError x) = pure $ Error x
+  -> SubAction
+  -> m (Stream OUT ref e m)
+apolloToAction _  _ (SubError x) = pure $ singleton (Error x)
 apolloToAction gqlApp client(AddSub sessionId request) 
-  = handleSubscription sessionId (gqlApp request) client
+  = handleQuery sessionId (gqlApp request) client
 apolloToAction _ client (RemoveSub sessionId)
-  = pure $ endSubscription sessionId client
-
-disconnectAction :: Action i ref e m -> Action OUT ref e m 
-disconnectAction (Receive Client { clientID })  = Update $ delete clientID
-disconnectAction _ = Ignore
-
-disconnect :: Stream mode ref e m -> Stream OUT ref e m
-disconnect Stream { stream } = Stream (map disconnectAction stream)
+  = pure $ singleton (endSubscription sessionId client)
 
 toResponseStream 
   ::  ( Monad m
@@ -242,26 +243,14 @@ toResponseStream
      -> ResponseStream e m (Value VALID)
      )
   ->  Action IN ref e m 
-  -> m (Action OUT ref e m)
-toResponseStream app ref@(Receive client)
-  = runInput ref 
+  -> m (Stream OUT ref e m)
+toResponseStream app ref@(Listen client)
+  = listen ref 
     >>= apolloToAction 
           app
           client
           . apolloFormat
-toResponseStream _ (Update x) = pure (Update x) 
-toResponseStream _ _ = pure Ignore
-
-mapS 
-  :: (Monad m)
-  => ( Action mode ref e m 
-     -> m (Action mode' ref e m)
-     )
-  -> Stream mode ref e m 
-  -> m (Stream mode' ref e m)
-mapS f Stream { stream  } = do
-    stream' <- traverse f stream
-    pure $ Stream { stream = stream' }
+toResponseStream _ (Update x) = pure $ singleton (Update x) 
 
 traverseS 
   :: (Monad m)
@@ -272,7 +261,7 @@ traverseS
   -> m (Stream mode' ref e m)
 traverseS f Stream { stream  } 
   = concatStream 
-    <$> traverse f stream
+  <$> traverse f stream
 
 -- EXECUTION
 notify :: MonadIO m => Notification Connection m -> m ()
@@ -282,23 +271,23 @@ readState :: (MonadIO m) => GQLState ref e m -> m (PubSubStore ref e m)
 readState = liftIO . readMVar 
 
 modifyState_ :: (MonadIO m) => GQLState ref e m -> (PubSubStore ref e m -> PubSubStore ref e m) -> m ()
-modifyState_ state update = liftIO $ modifyMVar_ state (return . update)
+modifyState_ state changes = liftIO $ modifyMVar_ state (return . changes)
 
 class (MonadIO m, Applicative m) => RunAction ref m where
-  runAction :: GQLState ref e m -> Action OUT ref e m -> m ()
-  runInput :: Action IN ref e m -> m ByteString
+  update :: GQLState ref e m -> Action OUT ref e m -> m ()
+  listen :: Action IN ref e m -> m ByteString
 
 instance (MonadIO m, Applicative m) => RunAction Connection m where
-  runAction state (Update update)  
-    = modifyState_ state update
-  runAction state (Notify toNotification)  
+  update state (Update changes)  
+    = modifyState_ state changes
+  update state (Notify toNotification)  
     = readState state 
       >>= traverse_ notify  
         . toNotification
-  runAction _ (Error x) = liftIO (print x)
-  runAction _ Ignore = pure ()
-  runInput (Receive Client { clientConnection }) 
+  update _ (Error x) = liftIO (print x)
+  ----------------------------------------------
+  listen (Listen Client { clientConnection }) 
     = liftIO (receiveData clientConnection)
 
 runStream :: (RunAction ref m) => Stream OUT ref e m -> GQLState ref e m ->  m ()
-runStream Stream { stream } state = traverse_ (runAction state) stream
+runStream Stream { stream } state = traverse_ (update state) stream

@@ -28,6 +28,8 @@ import qualified Data.HashMap.Lazy   as  HM     ( empty
                                                 , elems
                                                 )
 -- MORPHEUS
+import           Data.Morpheus.Types.Internal.Operation
+                                                (Empty(..))
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( SubEvent )
 
@@ -62,8 +64,8 @@ unfold f = map f . HM.elems . runPubSubStore
 concatUnfold :: (Client ref e m -> [a])-> PubSubStore ref e m ->  [a]
 concatUnfold f = concat . unfold f
 
-empty :: PubSubStore ref e m
-empty = PubSubStore HM.empty
+instance Empty (PubSubStore ref e m) where
+  empty = PubSubStore HM.empty
 
 insert 
   :: ID 
