@@ -32,7 +32,7 @@ import           Data.Morpheus.Types.Internal.Apollo
                                                 ( acceptApolloSubProtocol )
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
-                                                , connectClient
+                                                , connect
                                                 , disconnect
                                                 , initGQLState
                                                 , Stream(..)
@@ -68,7 +68,7 @@ gqlSocketMonadIOApp root state f pending = do
   connection <- acceptRequestWith pending
     $ acceptApolloSubProtocol (pendingRequest pending)
   withPingThread connection 30 (return ()) $ do
-      iStrem <- connectClient connection
+      iStrem <- connect connection
       s <- f (execStream iStrem state)
       finally 
         (queryHandler s >> pure ()) 

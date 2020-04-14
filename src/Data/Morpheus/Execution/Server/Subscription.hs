@@ -5,15 +5,13 @@ module Data.Morpheus.Execution.Server.Subscription
   ( ClientDB
   , GQLState
   , initGQLState
-  , connectClient
-  , disconnectClient
+  , connect
+  , disconnect
   , publishEvents
-  , Action(..)
   , runStream
   , Stream(..)
   , initApolloStream
   , execStream
-  , disconnect
   , concatStream
   )
 where
@@ -73,8 +71,8 @@ import           Data.Morpheus.Types.Internal.WebSocket
 initGQLState :: IO (GQLState m e)
 initGQLState = newMVar empty
  
-connectClient :: MonadIO m => Connection -> IO (Stream m e)
-connectClient clientConnection = do
+connect :: MonadIO m => Connection -> IO (Stream m e)
+connect clientConnection = do
   clientID <- nextRandom
   let client = GQLClient { clientID , clientConnection, clientSessions = empty }
   return $ 
