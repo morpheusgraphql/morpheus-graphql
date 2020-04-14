@@ -234,6 +234,9 @@ initApolloStream gqlApp s input
       (apolloFormat input)
       s
 
+disconnect :: Stream m e -> Stream m e
+disconnect (Stream stream active) = Stream (stream <> map disconnectClient active) []
+
 -- EXECUTION
 notify :: MonadIO m => Notificaion m -> m ()
 notify (Notificaion connection msg) = msg >>= liftIO . sendTextData connection
@@ -260,6 +263,3 @@ execStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m (Stream m e)
 execStream Stream { stream , active } state 
   = traverse_ (runAction state) stream 
     $> Stream { stream = [] , active }
-
-disconnect :: Stream m e -> Stream m e
-disconnect (Stream stream active) = Stream (stream <> map disconnectClient active) []
