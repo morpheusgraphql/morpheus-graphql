@@ -70,7 +70,10 @@ gqlSocketMonadIOApp root state f pending = do
   withPingThread connection 30 (return ()) $ do
       iStrem <- connectClient connection
       s <- f (execStream iStrem state)
-      finally (queryHandler s >> pure ()) $ f (execStream (disconnect s) state) >> pure ()
+      finally 
+        (queryHandler s >> pure ()) 
+        $ f (execStream (disconnect s) state) 
+        >> pure ()
  where
   queryHandler st
         = f

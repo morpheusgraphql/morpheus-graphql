@@ -1,6 +1,5 @@
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving    #-}
 
 module Data.Morpheus.Execution.Server.Subscription
   ( ClientDB
@@ -144,13 +143,12 @@ data Notificaion m =
 data Action m e
   = Update (ClientDB m e -> ClientDB m e)
   | Notify (ClientDB m e -> [Notificaion m])
-  | Connected (GQLClient m e)
   | Log String
 
 instance Show (Action m e) where
   show Update {} = "Update"
   show Notify {} = "Notify"
-  show Connected {} = "Connected"
+  show Log {}    = "Log"
 
 data Stream m e = 
   Stream 
@@ -255,19 +253,14 @@ runAction state (Notify toNotification)
   = readState state 
     >>= traverse_ notify  
       . toNotification
-runAction _ (Connected x) = pure () -- TODO: real connection due Stream
 runAction _ (Log x) = liftIO (print x)
 
 runStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m ()
 runStream Stream { stream } state = traverse_ (runAction state) stream
 
-execAction :: (MonadIO m) => GQLState m e -> Action m e -> m [Action m e]
-execAction _ (Connected x) = pure [Connected x]
-execAction state action = runAction state action  $> []
-
 execStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m (Stream m e)
 execStream Stream { stream , active } state 
-  = traverse_ (execAction state) stream 
+  = traverse_ (runAction state) stream 
     $> Stream { stream = [] , active }
 
 disconnect :: Stream m e -> Stream m e
