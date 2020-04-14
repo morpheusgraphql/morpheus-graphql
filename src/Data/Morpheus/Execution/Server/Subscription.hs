@@ -17,13 +17,12 @@ module Data.Morpheus.Execution.Server.Subscription
   , disconnect
   , publishEvents
   , runStream
-  , Stream(..)
+  , Stream
   , toResponseStream
   , RunAction(..)
   , IN
   , OUT
   , mapS
-  , runInput
   , traverseS
   )
 where
@@ -83,7 +82,6 @@ import           Data.Morpheus.Types.Internal.WebSocket
                                                 , adjust
                                                 , delete
                                                 )
-import          Debug.Trace 
 
 -- | initializes empty GraphQL state
 initGQLState :: IO (GQLState ref e m)

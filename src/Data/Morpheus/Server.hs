@@ -33,11 +33,8 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , connect
                                                 , disconnect
                                                 , initGQLState
-                                                , Stream(..)
                                                 , toResponseStream
-                                                , runInput
                                                 , runStream
-                                                , IN
                                                 , mapS
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
