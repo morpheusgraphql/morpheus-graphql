@@ -14,9 +14,14 @@ module Data.Morpheus.Execution.Server.Subscription
   , runStream
   , Stream(..)
   , initApolloStream
+  , execStream
+  , disconnect
+  , collectStream
+  , concatStream
   )
 where
 
+import           Data.Functor                   (($>))
 import           Data.Foldable                  ( traverse_ )
 import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
 import           Data.ByteString.Lazy.Char8     (ByteString)
@@ -72,20 +77,23 @@ import           Data.Morpheus.Types.Internal.WebSocket
 initGQLState :: IO (GQLState m e)
 initGQLState = newMVar empty
  
-connectClient :: MonadIO m => Connection -> IO (Stream m e, GQLClient m e)
+connectClient :: MonadIO m => Connection -> IO (Stream m e)
 connectClient clientConnection = do
   clientID <- nextRandom
   let client = GQLClient { clientID , clientConnection, clientSessions = empty }
-  return (Stream [Update (insert clientID client)], client)
+  return $ 
+      Stream 
+        [Update (insert clientID client)] 
+        [client]
 
-disconnectClient :: GQLClient m e -> Stream m e
-disconnectClient GQLClient { clientID }  = Stream [Update (delete clientID)]
+disconnectClient :: GQLClient m e -> Action m e
+disconnectClient GQLClient { clientID }  = Update $ delete clientID
 
 updateClientByID
   :: ClientID
   -> (GQLClient m e -> GQLClient m e) 
   -> Stream m e
-updateClientByID key f = Stream [Update (adjust f key)]
+updateClientByID key f = initStream $ Update $ adjust f key
 
 publishEvent
   :: ( Eq (StreamChannel e)
@@ -94,7 +102,7 @@ publishEvent
      ) 
   => e 
   -> Stream m e
-publishEvent event = Stream [ Notify $ concatMap sendMessage . toList ]
+publishEvent event = initStream $ Notify $ concatMap sendMessage . toList
  where
   sendMessage (_,GQLClient { clientSessions, clientConnection })
     | null clientSessions  = [] 
@@ -113,8 +121,15 @@ publishEvent event = Stream [ Notify $ concatMap sendMessage . toList ]
       . snd
       ) . toList
 
-endSubscription :: ClientID -> SesionID -> Stream m e
-endSubscription cid sid = updateClientByID cid endSub
+  
+
+endSubscription :: SesionID -> Stream m e ->  Stream m e
+endSubscription sid Stream { stream , active } = do
+  let (Stream stream' active') = collectStream (endSubscriptionByClient sid . clientID ) active
+  Stream (stream <> stream') (active <> active')
+
+endSubscriptionByClient :: SesionID ->  ClientID -> Stream m e
+endSubscriptionByClient sid cid = updateClientByID cid endSub
  where
   endSub client = client { clientSessions = delete sid (clientSessions client) }
 
@@ -137,44 +152,55 @@ instance Show (Action m e) where
   show Notify {} = "Notify"
   show Connected {} = "Connected"
 
-newtype Stream m e = 
+data Stream m e = 
   Stream 
-    { stream :: [Action m e] 
-    } deriving (Show, Semigroup)
+    { stream :: [Action m e]
+    , active :: [GQLClient m e]
+    } deriving (Show)
+
+initStream :: Action m e -> Stream m e 
+initStream x = Stream [x] []
+
+concatStream :: [Stream m e] -> Stream m e
+concatStream xs = Stream 
+      (concatMap stream xs) 
+      (concatMap active xs)
 
 collectStream :: (a -> Stream m e) -> [a] -> Stream m e
-collectStream f x = Stream $ concatMap (stream . f)  x
+collectStream f xs = concatStream (map f xs)
 
 handleSubscription
   ::  (  Eq (StreamChannel e)
       , GQLChannel e
       , Monad m
       )
-  => GQLClient m e
-  -> Name
+  => Name
   -> ResponseStream e m (Value VALID)
+  -> Stream m e
   -> m (Stream m e)
-handleSubscription GQLClient { clientConnection, clientID } sessionId stream
+handleSubscription sessionId resStream Stream { stream, active }
   = do
-    response <- runResultT stream
+    response <- runResultT resStream
     case response of
       Success { events } -> pure $ collectStream execute events
       Failure errors     
         -> pure 
-            $ Stream
-              [ Notify 
+            $ Stream 
+              (stream <> map notifyError active)
+              []
+       where
+         notifyError GQLClient {clientConnection } = Notify 
                 $ const
                 [ Notificaion 
                     clientConnection
                     (pure $ toApolloResponse sessionId $ Errors errors)
                 ]
-              ]
-
  where
   execute :: (Eq (StreamChannel e) , GQLChannel e, Functor m ) => ResponseEvent m e -> Stream m e
   execute (Publish   pub) = publishEvent pub
-  execute (Subscribe sub) = startSubscription clientID sub sessionId
-
+  execute (Subscribe sub) = collectStream start active
+    where
+      start GQLClient { clientID } = startSubscription clientID sub sessionId
 
 apolloToAction 
   ::  ( Monad m
@@ -185,14 +211,14 @@ apolloToAction
   => (  GQLRequest
         -> ResponseStream e m (Value VALID)
      )
-  -> GQLClient m e 
   -> SubAction  
+  -> Stream m e 
   -> m (Stream m e) 
-apolloToAction _ _ (SubError x) = pure $ Stream [Log x]
-apolloToAction gqlApp client (AddSub sessionId request) 
-  = handleSubscription client sessionId (gqlApp request)
-apolloToAction _ client (RemoveSub sessionId)
-  = pure $ endSubscription (clientID client) sessionId 
+apolloToAction _ (SubError x) = const $ pure $ initStream $ Log x
+apolloToAction gqlApp (AddSub sessionId request) 
+  = handleSubscription sessionId (gqlApp request)
+apolloToAction _ (RemoveSub sessionId)
+  = pure . endSubscription sessionId 
 
 initApolloStream 
   ::  ( Monad m
@@ -203,14 +229,14 @@ initApolloStream
   => (  GQLRequest
         -> ResponseStream e m (Value VALID)
      )
-  -> GQLClient m e 
+  -> Stream m e
   -> ByteString
   -> m (Stream m e) 
-initApolloStream gqlApp client input 
+initApolloStream gqlApp s input 
   = apolloToAction 
       gqlApp
-      client
       (apolloFormat input)
+      s
 
 -- EXECUTION
 notify :: MonadIO m => Notificaion m -> m ()
@@ -234,3 +260,15 @@ runAction _ (Log x) = liftIO (print x)
 
 runStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m ()
 runStream Stream { stream } state = traverse_ (runAction state) stream
+
+execAction :: (MonadIO m) => GQLState m e -> Action m e -> m [Action m e]
+execAction _ (Connected x) = pure [Connected x]
+execAction state action = runAction state action  $> []
+
+execStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m (Stream m e)
+execStream Stream { stream , active } state 
+  = traverse_ (execAction state) stream 
+    $> Stream { stream = [] , active }
+
+disconnect :: Stream m e -> Stream m e
+disconnect (Stream stream active) = Stream (stream <> map disconnectClient active) []
