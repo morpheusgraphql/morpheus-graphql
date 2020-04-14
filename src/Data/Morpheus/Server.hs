@@ -72,7 +72,6 @@ gqlSocketMonadIOApp root state f fIn pending = do
         = f
         $ forever
         $ mapS (initApolloStream  (coreResolver root)) st
-        -- getInput client = liftIO (receiveData (clientConnection client)) -- TODO: remove
         >>= (`runStream` state)
 
 -- | Same as above but specific to IO
