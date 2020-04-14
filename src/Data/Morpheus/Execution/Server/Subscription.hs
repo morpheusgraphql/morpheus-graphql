@@ -1,5 +1,8 @@
-{-# LANGUAGE NamedFieldPuns       #-}
-{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE NamedFieldPuns          #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE UndecidableInstances    #-}
+
 
 module Data.Morpheus.Execution.Server.Subscription
   ( ClientDB
@@ -247,19 +250,24 @@ readState = liftIO . readMVar
 modifyState_ :: (MonadIO m) => GQLState m e -> (ClientDB m e -> ClientDB m e) -> m ()
 modifyState_ state update = liftIO $ modifyMVar_ state (return . update)
 
-runAction :: (MonadIO m) => GQLState m e -> Action m e -> m ()
-runAction state (Update update)  
-  = modifyState_ state update 
-runAction state (Notify toNotification)  
-  = readState state 
-    >>= traverse_ notify  
-      . toNotification
-runAction _ (Log x) = liftIO (print x)
+class (MonadIO m, Applicative m) => RunAction m where
+  runAction :: GQLState m e -> Action m e -> m ()
 
-runStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m ()
+instance (MonadIO m, Applicative m) => RunAction m where
+  runAction state (Update update)  
+    = modifyState_ state update 
+  runAction state (Notify toNotification)  
+    = readState state 
+      >>= traverse_ notify  
+        . toNotification
+  runAction _ (Log x) = liftIO (print x)
+
+runStream :: (Applicative m, MonadIO m) => Stream m e -> GQLState m e ->  m ()
 runStream Stream { stream } state = traverse_ (runAction state) stream
 
-execStream :: (MonadIO m) => Stream m e -> GQLState m e ->  m (Stream m e)
+execStream :: (Applicative m, MonadIO m) => Stream m e -> GQLState m e ->  m (Stream m e)
 execStream Stream { stream , active } state 
   = traverse_ (runAction state) stream 
     $> Stream { stream = [] , active }
+
+
