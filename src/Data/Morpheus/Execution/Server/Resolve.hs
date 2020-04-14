@@ -46,6 +46,7 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
                                                 , publishEvents
                                                 , runStream
+                                                , RunAction
                                                 )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
@@ -181,8 +182,11 @@ coreResolver root request
   execOperator ctx@Context {schema } = runResolverModel (deriveModel root (schemaAPI schema)) ctx
     
 statefulResolver
-  :: (EventCon event, MonadIO m)
-  => GQLState m event
+  ::  ( EventCon event
+      , MonadIO m
+      , RunAction ref m
+      )
+  => GQLState ref event m
   -> (GQLRequest -> ResponseStream event m ValidValue)
   -> L.ByteString
   -> m L.ByteString

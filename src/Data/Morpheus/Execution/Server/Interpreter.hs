@@ -25,6 +25,7 @@ import           Data.Text.Lazy.Encoding        ( decodeUtf8
                                                 , encodeUtf8
                                                 )
 import           Control.Monad.IO.Class         ( MonadIO() )
+import           Network.WebSockets             ( Connection )
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Resolve
@@ -95,7 +96,7 @@ instance Interpreter (StateLess m Text) m e  where
    HTTP Interpreter with state and side effects, every mutation will
    trigger subscriptions in  shared `GQLState`
 -}
-type WSPub m e a = GQLState m e -> a -> m a
+type WSPub m e a = GQLState Connection e m -> a -> m a
 
 instance MonadIO m => Interpreter (WSPub m e LB.ByteString) m e where
   interpreter root state = statefulResolver state (coreResolver root)

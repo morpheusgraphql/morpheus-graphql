@@ -21,7 +21,9 @@ import qualified Network.Wai                   as Wai
 import qualified Network.Wai.Handler.Warp      as Warp
 import qualified Network.Wai.Handler.WebSockets
                                                as WaiWs
-import           Network.WebSockets             ( defaultConnectionOptions )
+import           Network.WebSockets             ( defaultConnectionOptions 
+                                                , Connection
+                                                )
 import           Web.Scotty                     ( body
                                                 , file
                                                 , get
@@ -40,6 +42,7 @@ import           Server.Sophisticated.API       ( EVENT
                                                 , gqlRoot
                                                 )
 
+
 scottyServer :: IO ()
 scottyServer = do
   state   <- initGQLState
@@ -51,7 +54,7 @@ scottyServer = do
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
   wsApp    = gqlSocketApp gqlRoot
-  httpServer :: GQLState IO EVENT -> IO Wai.Application
+  httpServer :: GQLState Connection EVENT IO  -> IO Wai.Application
   httpServer state = scottyApp $ do
     post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
     get "/" $ file "./examples/index.html"

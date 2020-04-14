@@ -21,6 +21,7 @@ import           Network.WebSockets             ( ServerApp
                                                 , pendingRequest
                                                 , receiveData
                                                 , withPingThread
+                                                , Connection
                                                 )
 
 -- MORPHEUS
@@ -43,14 +44,14 @@ import           Data.Morpheus.Execution.Server.Subscription
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
 import           Data.Morpheus.Types.Internal.WebSocket
-                                                ( GQLClient(..) )
+                                                ( Client(..) )
 
 
-subscriptionHandler 
+subscriptionHandler
   :: (RootResCon m e que mut sub, MonadIO m)
   => GQLRootResolver m e que mut sub 
-  -> Stream m e
-  -> m (Stream m e)
+  -> Stream Connection e m
+  -> m (Stream Connection e m)
 subscriptionHandler root s = 
       traverse getInput (active s)
       >>= fmap concatStream . traverse (initApolloStream (coreResolver root) s) 
@@ -61,8 +62,8 @@ subscriptionHandler root s =
 gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
   => GQLRootResolver m e que mut sub
-  -> GQLState m e
-  -> (m (Stream m e) -> IO (Stream m e))
+  -> GQLState Connection e m
+  -> (m (Stream Connection e m) -> IO (Stream Connection e m))
   -> ServerApp
 gqlSocketMonadIOApp root state f pending = do
   connection <- acceptRequestWith pending
@@ -85,6 +86,6 @@ gqlSocketMonadIOApp root state f pending = do
 gqlSocketApp
   :: (RootResCon IO e que mut sub)
   => GQLRootResolver IO e que mut sub
-  -> GQLState IO e
+  -> GQLState Connection e IO
   -> ServerApp
 gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id
