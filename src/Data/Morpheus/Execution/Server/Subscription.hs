@@ -9,17 +9,14 @@ module Data.Morpheus.Execution.Server.Subscription
   , connectClient
   , disconnectClient
   , startSubscription
-  , endSubscription
   , publishEvent
   , Action(..)
   , runStream
   , Stream(..)
-  , handleSubscription
+  , initApolloStream
   )
 where
 
-
-import           Data.Functor                   (($>))
 import           Data.Foldable                  ( traverse_ )
 import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
 import           Data.ByteString.Lazy.Char8     (ByteString)
@@ -45,10 +42,13 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , VALID
                                                 , Name
                                                 )
-import           Data.Morpheus.Types.IO         (GQLResponse(..))
+import           Data.Morpheus.Types.IO         ( GQLResponse(..)
+                                                , GQLRequest(..)
+                                                )
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( toApolloResponse 
                                                 , SubAction(..)
+                                                , apolloFormat
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
@@ -146,7 +146,10 @@ collectStream :: (a -> Stream m e) -> [a] -> Stream m e
 collectStream f x = Stream $ concatMap (stream . f)  x
 
 handleSubscription
-  :: (Eq (StreamChannel e), GQLChannel e, MonadIO m)
+  ::  (  Eq (StreamChannel e)
+      , GQLChannel e
+      , Monad m
+      )
   => GQLClient m e
   -> Name
   -> ResponseStream e m (Value VALID)
@@ -171,6 +174,43 @@ handleSubscription GQLClient { clientConnection, clientID } sessionId stream
   execute :: (Eq (StreamChannel e) , GQLChannel e, Functor m ) => ResponseEvent m e -> Stream m e
   execute (Publish   pub) = publishEvent pub
   execute (Subscribe sub) = startSubscription clientID sub sessionId
+
+
+apolloToAction 
+  ::  ( Monad m
+      , Eq (StreamChannel e)
+      , GQLChannel e
+      , Functor m
+      ) 
+  => (  GQLRequest
+        -> ResponseStream e m (Value VALID)
+     )
+  -> GQLClient m e 
+  -> SubAction  
+  -> m (Stream m e) 
+apolloToAction _ _ (SubError x) = pure $ Stream [Log x]
+apolloToAction gqlApp client (AddSub sessionId request) 
+  = handleSubscription client sessionId (gqlApp request)
+apolloToAction _ client (RemoveSub sessionId)
+  = pure $ endSubscription (clientID client) sessionId 
+
+initApolloStream 
+  ::  ( Monad m
+      , Eq (StreamChannel e)
+      , GQLChannel e
+      , Functor m
+      ) 
+  => (  GQLRequest
+        -> ResponseStream e m (Value VALID)
+     )
+  -> GQLClient m e 
+  -> ByteString
+  -> m (Stream m e) 
+initApolloStream gqlApp client input 
+  = apolloToAction 
+      gqlApp
+      client
+      (apolloFormat input)
 
 -- EXECUTION
 notify :: MonadIO m => Notificaion m -> m ()

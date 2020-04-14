@@ -1,6 +1,5 @@
 {-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -30,46 +29,30 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 , coreResolver
                                                 )
 import           Data.Morpheus.Types.Internal.Apollo
-                                                ( SubAction(..)
-                                                , acceptApolloSubProtocol
-                                                , apolloFormat
-                                                )
+                                                ( acceptApolloSubProtocol )
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( GQLState
                                                 , connectClient
                                                 , disconnectClient
                                                 , initGQLState
-                                                , endSubscription
                                                 , Stream(..)
-                                                , Action(..)
-                                                , handleSubscription
                                                 , runStream
+                                                , initApolloStream
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
 import           Data.Morpheus.Types.Internal.WebSocket
                                                 ( GQLClient(..) )
 
-apolloToAction 
-  :: (RootResCon m e que mut sub, MonadIO m)
-  => GQLRootResolver m e que mut sub 
-  -> GQLClient m e 
-  -> SubAction  
-  -> m (Stream m e) 
-apolloToAction _ _ (SubError x) = pure $ Stream [Log x]
-apolloToAction root client (AddSub sessionId request) 
-  = handleSubscription client sessionId (coreResolver root request)
-apolloToAction _ client (RemoveSub sessionId) 
-  = pure $ endSubscription (clientID client) sessionId 
 
 subscriptionHandler 
   :: (RootResCon m e que mut sub, MonadIO m)
   => GQLRootResolver m e que mut sub 
   -> GQLClient m e 
-  -> m (Stream m e) 
-subscriptionHandler root client = do
-      d <- liftIO $ receiveData (clientConnection client)
-      apolloToAction root client (apolloFormat d)
+  -> m (Stream m e)
+subscriptionHandler root client = 
+      liftIO (receiveData (clientConnection client))
+      >>= initApolloStream (coreResolver root) client
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
