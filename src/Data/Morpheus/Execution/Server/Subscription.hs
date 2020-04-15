@@ -72,7 +72,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , runResultT
                                                 , Result(..)
                                                 )
-import           Data.Morpheus.Types.Internal.WebSocket
+import           Data.Morpheus.Types.Internal.Subscription
                                                 ( Client(..)
                                                 , PubSubStore
                                                 , GQLState

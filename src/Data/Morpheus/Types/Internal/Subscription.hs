@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE KindSignatures   #-}
 
-module Data.Morpheus.Types.Internal.WebSocket
+module Data.Morpheus.Types.Internal.Subscription
   ( Client(..)
   , ID
   , PubSubStore
