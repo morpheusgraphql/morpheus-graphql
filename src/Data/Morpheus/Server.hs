@@ -1,7 +1,8 @@
-{-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE CPP                  #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
@@ -17,9 +18,9 @@ import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
 import           Control.Monad.IO.Class         ( MonadIO )
 import           Network.WebSockets             ( ServerApp
-                                                , withPingThread
                                                 , Connection
                                                 )
+import qualified Network.WebSockets          as WS
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Resolve
@@ -41,6 +42,16 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
 
 
+
+
+-- fix breaking changes   
+wsPing :: Connection -> IO () -> IO ()
+#if MIN_VERSION_template_haskell(0,12,6)
+wsPing connection next = WS.withPingThread connection 30 (return ()) next
+#else
+wsPing connection next = WS.forkPingThread connection 30 >> next
+#endif
+
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
@@ -50,11 +61,11 @@ gqlSocketMonadIOApp
   -> ServerApp
 gqlSocketMonadIOApp root state f pending = do
   connection <- acceptApolloRequest pending
-  withPingThread connection 30 (return ()) $ do
-      s <- connect connection
+  wsPing connection $ do
+      stream <- connect connection
       finally
-        (queryHandler s) 
-        $ f (runStream (disconnect s) state) 
+        (queryHandler stream) 
+        $ f (runStream (disconnect stream) state) 
  where
   queryHandler st
         = f
