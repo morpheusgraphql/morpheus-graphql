@@ -45,11 +45,11 @@ import           Data.Morpheus.Types.Internal.Resolving
 
 
 -- fix breaking changes   
-wsPing :: Connection -> IO () -> IO ()
+pingThread :: Connection -> IO () -> IO ()
 #if MIN_VERSION_template_haskell(0,12,6)
-wsPing connection = WS.withPingThread connection 30 (return ())
+pingThread connection = WS.withPingThread connection 30 (return ())
 #else
-wsPing connection = (WS.forkPingThread connection 30 >>)
+pingThread connection = (WS.forkPingThread connection 30 >>)
 #endif
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
@@ -61,7 +61,7 @@ gqlSocketMonadIOApp
   -> ServerApp
 gqlSocketMonadIOApp root state f pending = do
   connection <- acceptApolloRequest pending
-  wsPing connection $ do
+  pingThread connection $ do
       stream <- connect connection
       finally
         (queryHandler stream) 
