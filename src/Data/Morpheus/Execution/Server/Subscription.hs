@@ -13,10 +13,8 @@ module Data.Morpheus.Execution.Server.Subscription
   , connect
   , disconnect
   , publishEvents
-  , runStream
-  , Stream
+  , Stream(..)
   , toResponseStream
-  , Executor(..)
   , IN
   , OUT
   , traverseS
@@ -26,7 +24,6 @@ module Data.Morpheus.Execution.Server.Subscription
   )
 where
 
-import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.List                      ( intersect )
 import           Data.UUID.V4                   ( nextRandom )
@@ -245,12 +242,3 @@ traverseS
 traverseS f Stream { stream  } 
   = concatStream 
   <$> traverse f stream
-
-class Dispatcher ref m where
-  listen :: ref -> m ByteString
-
-class Executor store ref m where
-  run :: store ref e m -> Action OUT ref e m -> m ()
-
-runStream :: (Monad m, Executor store ref m) => Stream OUT ref e m -> store ref e m ->  m ()
-runStream Stream { stream } state = traverse_ (run state) stream

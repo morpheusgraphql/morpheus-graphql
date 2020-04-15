@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
@@ -13,9 +14,11 @@ module Data.Morpheus.Server
   , gqlSocketMonadIOApp
   , initGQLState
   , GQLState
+  , statefulResolver
   )
 where
 
+import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.Foldable                  ( traverse_ )
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
@@ -33,11 +36,28 @@ import           Control.Concurrent             ( MVar
                                                 )
 
 -- MORPHEUS
+import           Data.Morpheus.Types.Internal.Resolving
+                                                ( GQLRootResolver(..)
+                                                , Resolver
+                                                , GQLChannel(..)
+                                                , ResponseEvent(..)
+                                                , ResponseStream
+                                                , Eventless
+                                                , cleanEvents
+                                                , ResultT(..)
+                                                , unpackEvents
+                                                , Failure(..)
+                                                , resolveUpdates
+                                                , Context(..)
+                                                , runResolverModel
+                                                )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
 import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , coreResolver
+                                                , EventCon
+                                                , decodeNoDup
                                                 )
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( acceptApolloRequest )
@@ -45,20 +65,56 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 ( connect
                                                 , disconnect
                                                 , toResponseStream
-                                                , runStream
                                                 , traverseS
-                                                , Executor(..)
                                                 , Notification(..)
                                                 , Action(..)
                                                 , PubSubStore
+                                                , IN
+                                                , OUT
+                                                , Stream(..)
+                                                , publishEvents
                                                 )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( GQLRootResolver(..) )
+import           Data.Morpheus.Types.Internal.AST
+import           Data.Morpheus.Types.IO
+import           Data.Aeson                     ( encode )
 
+
+-- TODO:
+-- Stream IN m ByteString  -> Stream OUT m ByteString
+statefulResolver
+  ::  ( EventCon event
+      , MonadIO m
+      , Executor store ref m
+      )
+  => store ref event m
+  -> (GQLRequest -> ResponseStream event m (Value VALID))
+  -> ByteString
+  -> m ByteString
+statefulResolver store streamApi requestText = do
+  res <- runResultT (decodeNoDup requestText >>= streamApi)
+  runEffects store (unpackEvents res)
+  pure $ encode $ renderResponse res
+
+runEffects 
+  :: ( Executor store ref m
+     , Monad m
+     , EventCon e
+     ) 
+  => store ref e m -> [ResponseEvent e m] -> m ()
+runEffects  store = traverse_ execute 
+  where
+    execute (Publish events) = runStream (publishEvents events) store
+    execute Subscribe{}      = pure ()
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
 type GQLState e m = WSStore Connection e m -- SharedState
+
+class Executor store ref m where
+  run :: store ref e m -> Action OUT ref e m -> m ()
+
+runStream :: (Monad m, Executor store ref m) => Stream OUT ref e m -> store ref e m ->  m ()
+runStream Stream { stream } state = traverse_ (run state) stream
 
 -- | initializes empty GraphQL state
 initGQLState :: (MonadIO m) => IO (WSStore ref e m)

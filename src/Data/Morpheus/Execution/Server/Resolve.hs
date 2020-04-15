@@ -12,10 +12,11 @@ module Data.Morpheus.Execution.Server.Resolve
   ( statelessResolver
   , byteStringIO
   , streamResolver
-  , statefulResolver
   , RootResCon
   , fullSchema
   , coreResolver
+  , EventCon
+  , decodeNoDup
   )
 where
 
@@ -29,7 +30,6 @@ import           Data.Aeson.Parser              ( eitherDecodeWith
 import qualified Data.ByteString.Lazy.Char8    as L
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Proxy                     ( Proxy(..) )
-import           Data.Foldable                   (traverse_)
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( badRequestError )
@@ -41,12 +41,6 @@ import           Data.Morpheus.Execution.Server.Introspect
                                                 ( IntroCon
                                                 , introspectObjectFields
                                                 , TypeScope(..)
-                                                )
-import           Data.Morpheus.Execution.Server.Subscription
-                                                ( publishEvents
-                                                , runStream
-                                                , Executor(..)
-                                                , PubSubStore
                                                 )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
@@ -80,12 +74,10 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver
                                                 , GQLChannel(..)
-                                                , ResponseEvent(..)
                                                 , ResponseStream
                                                 , Eventless
                                                 , cleanEvents
                                                 , ResultT(..)
-                                                , unpackEvents
                                                 , Failure(..)
                                                 , resolveUpdates
                                                 , Context(..)
@@ -98,7 +90,7 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
-import           Control.Monad.IO.Class         ( MonadIO() )
+
 
 type EventCon event
   = (Eq (StreamChannel event), Typeable event, GQLChannel event)
@@ -122,6 +114,7 @@ type RootResCon m event query mutation subscription
         (subscription (Resolver SUBSCRIPTION event m))
     )
 
+-- TODO: Move in base library
 decodeNoDup :: Failure String m => L.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
   Left  (path, x) -> failure $ formatError path x
@@ -180,33 +173,6 @@ coreResolver root request
   }
   ----------------------------------------------------------
   execOperator ctx@Context {schema } = runResolverModel (deriveModel root (schemaAPI schema)) ctx
-
--- TODO:
--- Stream IN m ByteString  -> Stream OUT m ByteString
-statefulResolver
-  ::  ( EventCon event
-      , MonadIO m
-      , Executor store ref m
-      )
-  => store ref event m
-  -> (GQLRequest -> ResponseStream event m ValidValue)
-  -> L.ByteString
-  -> m L.ByteString
-statefulResolver store streamApi requestText = do
-  res <- runResultT (decodeNoDup requestText >>= streamApi)
-  runEffects store (unpackEvents res)
-  pure $ encode $ renderResponse res
-
-runEffects 
-  :: ( Executor store ref m
-     , Monad m
-     , EventCon e
-     ) 
-  => store ref e m -> [ResponseEvent e m] -> m ()
-runEffects  store = traverse_ execute 
-  where
-    execute (Publish events) = runStream (publishEvents events) store
-    execute Subscribe{}      = pure ()
 
 fullSchema
   :: forall proxy m event query mutation subscription

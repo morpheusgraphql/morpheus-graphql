@@ -25,19 +25,18 @@ import           Data.Text.Lazy.Encoding        ( decodeUtf8
                                                 , encodeUtf8
                                                 )
 import           Control.Monad.IO.Class         ( MonadIO() )
-import           Network.WebSockets             ( Connection )
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , byteStringIO
-                                                , statefulResolver
                                                 , statelessResolver
                                                 , streamResolver
                                                 , coreResolver
                                                 )
-import           Data.Morpheus.Server
-                                                ( GQLState )
+import           Data.Morpheus.Server           ( statefulResolver
+                                                , GQLState
+                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , ResponseStream
