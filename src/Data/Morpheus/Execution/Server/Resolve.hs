@@ -43,10 +43,10 @@ import           Data.Morpheus.Execution.Server.Introspect
                                                 , TypeScope(..)
                                                 )
 import           Data.Morpheus.Execution.Server.Subscription
-                                                ( GQLState
-                                                , publishEvents
+                                                ( publishEvents
                                                 , runStream
-                                                , RunAction
+                                                , Executor(..)
+                                                , PubSubStore
                                                 )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
@@ -184,19 +184,27 @@ coreResolver root request
 statefulResolver
   ::  ( EventCon event
       , MonadIO m
-      , RunAction ref m
+      , Executor store ref m
       )
-  => GQLState ref event m
+  => store ref event m
   -> (GQLRequest -> ResponseStream event m ValidValue)
   -> L.ByteString
   -> m L.ByteString
-statefulResolver state streamApi requestText = do
+statefulResolver store streamApi requestText = do
   res <- runResultT (decodeNoDup requestText >>= streamApi)
-  traverse_ execute (unpackEvents res)
+  runEffects store (unpackEvents res)
   pure $ encode $ renderResponse res
- where
-  execute (Publish events) = runStream (publishEvents events) state
-  execute Subscribe{}      = pure ()
+
+runEffects 
+  :: ( Executor store ref m
+     , Monad m
+     , EventCon e
+     ) 
+  => store ref e m -> [ResponseEvent e m] -> m ()
+runEffects  store = traverse_ execute 
+  where
+    execute (Publish events) = runStream (publishEvents events) store
+    execute Subscribe{}      = pure ()
 
 fullSchema
   :: forall proxy m event query mutation subscription

@@ -1,8 +1,11 @@
-{-# LANGUAGE ConstraintKinds      #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE CPP                    #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE GADTs                  #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
@@ -13,16 +16,25 @@ module Data.Morpheus.Server
   )
 where
 
-
+import           Data.Foldable                  ( traverse_ )
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
-import           Control.Monad.IO.Class         ( MonadIO )
+import           Control.Monad.IO.Class         ( MonadIO(..) )
 import           Network.WebSockets             ( ServerApp
                                                 , Connection
+                                                , sendTextData
+                                                , receiveData
                                                 )
 import qualified Network.WebSockets          as WS
+import           Control.Concurrent             ( MVar
+                                                , readMVar
+                                                , newMVar
+                                                , modifyMVar_
+                                                )
 
 -- MORPHEUS
+import           Data.Morpheus.Types.Internal.Operation
+                                                (empty)
 import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , coreResolver
@@ -30,17 +42,55 @@ import           Data.Morpheus.Execution.Server.Resolve
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( acceptApolloRequest )
 import           Data.Morpheus.Execution.Server.Subscription
-                                                ( GQLState
-                                                , connect
+                                                ( connect
                                                 , disconnect
-                                                , initGQLState
                                                 , toResponseStream
                                                 , runStream
                                                 , traverseS
+                                                , Executor(..)
+                                                , Notification(..)
+                                                , Action(..)
+                                                , PubSubStore
+                                                , Dispatcher(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
 
+
+-- | shared GraphQL state between __websocket__ and __http__ server,
+-- stores information about subscriptions
+type GQLState e m = WSStore Connection e m -- SharedState
+
+-- | initializes empty GraphQL state
+initGQLState :: (MonadIO m) => IO (WSStore ref e m)
+initGQLState = WSStore <$> newMVar empty
+
+newtype WSStore ref e m = WSStore { unWSStore :: MVar (PubSubStore ref e m) }
+
+notify :: MonadIO m => Notification Connection m -> m ()
+notify (Notification connection msg) = msg >>= liftIO . sendTextData connection
+
+readState :: (MonadIO m) => GQLState e m -> m (PubSubStore Connection e m)
+readState = liftIO . readMVar . unWSStore
+
+modifyState_ 
+  :: (MonadIO m) 
+  => WSStore Connection e m 
+  -> (PubSubStore Connection e m -> PubSubStore Connection e m) 
+  -> m ()
+modifyState_ state changes = liftIO $ modifyMVar_ (unWSStore state) (return . changes)
+
+instance MonadIO m => Executor WSStore Connection m where
+  run state (Update changes)  
+    = modifyState_ state changes
+  run state (Notify toNotification)  
+    = readState state 
+      >>= traverse_ notify  
+        . toNotification
+  run _ (Error x) = liftIO (print x)
+
+instance MonadIO m => Dispatcher Connection m where
+  listen = liftIO . receiveData 
 
 -- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()
@@ -54,7 +104,7 @@ pingThread connection = (WS.forkPingThread connection 30 >>)
 gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
   => GQLRootResolver m e que mut sub
-  -> GQLState Connection e m
+  -> GQLState e m
   -> (m () -> IO ())
   -> ServerApp
 gqlSocketMonadIOApp root state f pending = do
@@ -75,6 +125,6 @@ gqlSocketMonadIOApp root state f pending = do
 gqlSocketApp
   :: (RootResCon IO e que mut sub)
   => GQLRootResolver IO e que mut sub
-  -> GQLState Connection e IO
+  -> GQLState e IO
   -> ServerApp
 gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id

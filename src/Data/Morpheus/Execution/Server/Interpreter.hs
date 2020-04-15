@@ -36,7 +36,7 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 , streamResolver
                                                 , coreResolver
                                                 )
-import           Data.Morpheus.Execution.Server.Subscription
+import           Data.Morpheus.Server
                                                 ( GQLState )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
@@ -96,7 +96,7 @@ instance Interpreter (StateLess m Text) m e  where
    HTTP Interpreter with state and side effects, every mutation will
    trigger subscriptions in  shared `GQLState`
 -}
-type WSPub m e a = GQLState Connection e m -> a -> m a
+type WSPub m e a = GQLState e m -> a -> m a
 
 instance MonadIO m => Interpreter (WSPub m e LB.ByteString) m e where
   interpreter root state = statefulResolver state (coreResolver root)

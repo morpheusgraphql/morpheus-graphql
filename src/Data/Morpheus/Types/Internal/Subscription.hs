@@ -5,7 +5,6 @@ module Data.Morpheus.Types.Internal.Subscription
   ( Client(..)
   , ID
   , PubSubStore
-  , GQLState
   , SesionID
   , unfold
   , empty
@@ -20,7 +19,6 @@ import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
 import           Data.UUID                      ( UUID )
 import           Data.HashMap.Lazy              ( HashMap , keys)
-import           Control.Concurrent             ( MVar )
 import qualified Data.HashMap.Lazy   as  HM     ( empty
                                                 , insert
                                                 , delete
@@ -41,21 +39,22 @@ type SesionID = Text
 
 data Client ref e ( m :: * -> * ) =
   Client
-    { clientID         :: ID
+    { clientId         :: ID
     , clientConnection :: ref
     , clientSessions   :: HashMap SesionID (SubEvent e m)
     }
 
 instance Show (Client ref e m) where
-  show Client { clientID, clientSessions } =
-    "GQLClient "
-      <>"{ id: "
-      <> show clientID
+  show Client { clientId, clientSessions } =
+    "Client { id: "
+      <> show clientId
       <> ", sessions: "
       <> show (keys clientSessions)
       <> " }"
 
-
+-- subscription 
+-- store
+-- stores active subsciption connections and requests
 newtype PubSubStore ref e ( m :: * -> * ) = 
     PubSubStore 
       { runPubSubStore :: HashMap ID (Client ref e m)
@@ -82,9 +81,12 @@ instance Empty (PubSubStore ref e m) where
   empty = PubSubStore HM.empty
 
 insert 
-  :: Client ref e m 
+  :: ID
+  -> ref
   -> StoreMap ref e m
-insert c = mapStore (HM.insert (clientID c) c)
+insert clientId clientConnection = mapStore (HM.insert clientId  c)
+  where
+    c = Client { clientId , clientConnection, clientSessions = HM.empty }
 
 adjust 
   :: (Client ref e m -> Client ref e m ) 
@@ -96,8 +98,3 @@ delete
   :: ID
   -> StoreMap ref e m
 delete key = mapStore (HM.delete key)
-
-
--- | shared GraphQL state between __websocket__ and __http__ server,
--- stores information about subscriptions
-type GQLState ref e m = MVar (PubSubStore ref e m) -- SharedState

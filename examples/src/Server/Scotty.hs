@@ -54,7 +54,7 @@ scottyServer = do
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
   wsApp    = gqlSocketApp gqlRoot
-  httpServer :: GQLState Connection EVENT IO  -> IO Wai.Application
+  httpServer :: GQLState EVENT IO  -> IO Wai.Application
   httpServer state = scottyApp $ do
     post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
     get "/" $ file "./examples/index.html"
