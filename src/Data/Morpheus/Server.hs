@@ -47,9 +47,9 @@ import           Data.Morpheus.Types.Internal.Resolving
 -- fix breaking changes   
 wsPing :: Connection -> IO () -> IO ()
 #if MIN_VERSION_template_haskell(0,12,6)
-wsPing connection next = WS.withPingThread connection 30 (return ()) next
+wsPing connection = WS.withPingThread connection 30 (return ())
 #else
-wsPing connection next = WS.forkPingThread connection 30 >> next
+wsPing connection = (WS.forkPingThread connection 30 >>)
 #endif
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
