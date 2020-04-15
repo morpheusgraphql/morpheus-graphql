@@ -51,7 +51,6 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , Notification(..)
                                                 , Action(..)
                                                 , PubSubStore
-                                                , Dispatcher(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
@@ -88,9 +87,7 @@ instance MonadIO m => Executor WSStore Connection m where
       >>= traverse_ notify  
         . toNotification
   run _ (Error x) = liftIO (print x)
-
-instance MonadIO m => Dispatcher Connection m where
-  listen = liftIO . receiveData 
+  run state (Request con f) = liftIO (receiveData con) >>= f >>= (`runStream` state)
 
 -- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()

@@ -23,7 +23,6 @@ module Data.Morpheus.Execution.Server.Subscription
   , PubSubStore
   , Notification(..)
   , Action(..)
-  , Dispatcher(..)
   )
 where
 
@@ -74,10 +73,11 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , ID
                                                 )
  
+
 connect :: ref -> IO (Stream IN ref e m)
 connect clientConnection = do
   clientID <- nextRandom
-  return $ Stream [Listen clientID clientConnection]
+  return $ Stream [Init clientID clientConnection ]
 
 updateClient
   :: (Client ref e m -> Client ref e m ) 
@@ -147,7 +147,8 @@ data Action
     e 
     (m :: * -> * )
   where 
-    Listen :: ID -> ref -> Action IN ref e m
+    Init :: ID -> ref -> Action IN ref e m
+    Request :: ref -> (ByteString -> m (Stream OUT ref e m) ) -> Action OUT ref e m 
     Update  :: (PubSubStore ref e m -> PubSubStore ref e m) -> Action OUT ref e m 
     Notify  :: (PubSubStore ref e m -> [Notification ref m]) -> Action OUT ref e m
     Error   :: String -> Action OUT ref e m
@@ -167,7 +168,7 @@ disconnect :: Stream mode ref e m -> Stream OUT ref e m
 disconnect (Stream x) = Stream $ concatMap __disconnect x
   where
     __disconnect:: Action mode ref e m -> [Action OUT ref e m]
-    __disconnect (Listen clientID _)  = [Update (delete clientID)]
+    __disconnect (Init clientID _)  = [Update (delete clientID)]
     __disconnect _ = []
 
 concatStream :: [Stream mode ref e m ] -> Stream mode ref e m 
@@ -223,18 +224,16 @@ toResponseStream
       , Eq (StreamChannel e)
       , GQLChannel e
       , Functor m
-      , Dispatcher ref m
       ) 
   => (  GQLRequest
      -> ResponseStream e m (Value VALID)
      )
   ->  Action IN ref e m 
   -> m (Stream OUT ref e m)
-toResponseStream app (Listen clienId ref)
-  = do
-    request <- apolloFormat <$> listen ref 
-    (Stream stream) <- apolloToAction app (clienId,ref) request
-    pure $ Stream $ Update (insert clienId ref) : stream
+toResponseStream app (Init clienId ref) 
+  = pure $ singleton $ Request ref $ \request -> do
+      (Stream stream) <- apolloToAction app (clienId,ref) (apolloFormat request)
+      pure $ Stream $ Update (insert clienId ref) : stream
 
 traverseS 
   :: (Monad m)
@@ -247,11 +246,8 @@ traverseS f Stream { stream  }
   = concatStream 
   <$> traverse f stream
 
--- EXECUTION
-
 class Dispatcher ref m where
   listen :: ref -> m ByteString
-  -- notify :: [Notification ref m] -> ref -> m ()
 
 class Executor store ref m where
   run :: store ref e m -> Action OUT ref e m -> m ()
