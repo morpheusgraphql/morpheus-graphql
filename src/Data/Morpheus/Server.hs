@@ -42,11 +42,9 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..) )
 
 
-
-
--- fix breaking changes   
+-- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()
-#if MIN_VERSION_template_haskell(0,12,6)
+#if MIN_VERSION_websockets(0,12,6)
 pingThread connection = WS.withPingThread connection 30 (return ())
 #else
 pingThread connection = (WS.forkPingThread connection 30 >>)
@@ -64,10 +62,10 @@ gqlSocketMonadIOApp root state f pending = do
   pingThread connection $ do
       stream <- connect connection
       finally
-        (queryHandler stream) 
+        (handler stream) 
         $ f (runStream (disconnect stream) state) 
  where
-  queryHandler st
+  handler st
         = f
         $ forever
         $ traverseS (toResponseStream  (coreResolver root)) st
