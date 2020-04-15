@@ -180,7 +180,9 @@ coreResolver root request
   }
   ----------------------------------------------------------
   execOperator ctx@Context {schema } = runResolverModel (deriveModel root (schemaAPI schema)) ctx
-    
+
+-- TODO:
+-- Stream IN m ByteString  -> Stream OUT m ByteString
 statefulResolver
   ::  ( EventCon event
       , MonadIO m
