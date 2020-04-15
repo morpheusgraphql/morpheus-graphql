@@ -34,13 +34,27 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( SubEvent )
 
 
--- | shared GraphQL state between __websocket__ and __http__ server,
--- stores information about subscriptions
-type GQLState ref e m = MVar (PubSubStore ref e m) -- SharedState
 
 type ID = UUID
 
 type SesionID = Text
+
+data Client ref e ( m :: * -> * ) =
+  Client
+    { clientID         :: ID
+    , clientConnection :: ref
+    , clientSessions   :: HashMap SesionID (SubEvent e m)
+    }
+
+instance Show (Client ref e m) where
+  show Client { clientID, clientSessions } =
+    "GQLClient "
+      <>"{ id: "
+      <> show clientID
+      <> ", sessions: "
+      <> show (keys clientSessions)
+      <> " }"
+
 
 newtype PubSubStore ref e ( m :: * -> * ) = 
     PubSubStore 
@@ -83,18 +97,7 @@ delete
   -> StoreMap ref e m
 delete key = mapStore (HM.delete key)
 
-data Client ref e ( m :: * -> * ) =
-  Client
-    { clientID         :: ID
-    , clientConnection :: ref
-    , clientSessions   :: HashMap SesionID (SubEvent e m)
-    }
 
-instance Show (Client ref e m) where
-  show Client { clientID, clientSessions } =
-    "GQLClient "
-      <>"{ id: "
-      <> show clientID
-      <> ", sessions: "
-      <> show (keys clientSessions)
-      <> " }"
+-- | shared GraphQL state between __websocket__ and __http__ server,
+-- stores information about subscriptions
+type GQLState ref e m = MVar (PubSubStore ref e m) -- SharedState
