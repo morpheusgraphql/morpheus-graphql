@@ -21,6 +21,7 @@ module Data.Morpheus.Execution.Server.Subscription
   , traverseS
   , PubSubStore
   , Action(..)
+  , Scope(..)
   )
 where
 
@@ -140,18 +141,18 @@ data Action
     Notify  :: (PubSubStore e m -> m ()) -> Action OUT ref e m
     Error   :: String -> Action OUT ref e m
 
+data Scope m
+  = HTTP 
+   | WS 
+     { listener :: m ByteString
+     , callback :: ByteString -> m ()
+     }
+
 newtype Stream (io :: Mode) ref e m = 
   Stream 
     { stream 
         :: m ByteString  -- listen 
-        -> (ByteString -> m ())  -- callback
-        -- TODO: only one argument
-        -- Scope 
-        --  = HTTP 
-        --   | WS 
-        --     { listener :: m ByteString
-        --     , calback :: ByteString -> m ()
-        --     }
+        -> Scope m
         -> m [Action io ref e m] 
     }
 
@@ -185,7 +186,7 @@ handleQuery
 handleQuery sessionId resStream clientId
   = Stream handle
     where
-     handle _ callback = unfoldRes <$> runResultT resStream 
+     handle _ WS { callback } = unfoldRes <$> runResultT resStream 
       where
         unfoldRes Success { events } = map execute events
         unfoldRes Failure { errors } = [notifyError errors]
@@ -229,9 +230,11 @@ toResponseStream
   -> Action IN ref e m 
   -> Stream OUT ref e m
 toResponseStream app (Init clienId) 
-  = Stream $ \listen cb -> do
-      (Stream stream) <- apolloToAction app clienId . apolloFormat  <$> listen
-      (Update (insert clienId cb) :) <$> stream listen cb
+  = Stream handle 
+      where
+        handle ls ws@WS { listener , callback } = do
+          (Stream stream) <- apolloToAction app clienId . apolloFormat  <$> listener
+          (Update (insert clienId callback) :) <$> stream ls ws
 
 traverseS 
   :: (Monad m)

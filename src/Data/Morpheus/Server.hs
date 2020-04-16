@@ -7,7 +7,6 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE OverloadedStrings      #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
@@ -65,6 +64,7 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , OUT
                                                 , IN
                                                 , Stream(..)
+                                                , Scope(..)
                                                 , publishEvents
                                                 )
 import           Data.Morpheus.Types.Internal.AST
@@ -80,7 +80,7 @@ runEffects
   => store ref e m -> [ResponseEvent e m] -> m ()
 runEffects  store = traverse_ execute 
   where
-    execute (Publish events) = runStream store (pure "") (const $ pure ()) (publishEvents events) 
+    execute (Publish events) = runStream store HTTP (publishEvents events) 
     execute Subscribe{}      = pure ()
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
@@ -92,13 +92,12 @@ class Executor store ref m where
 
 runStream 
   :: (Monad m, Executor store ref m) 
-  => store ref e m 
-  -> m ByteString
-  -> (ByteString -> m ())
+  => store ref e m
+  -> Scope m
   -> Stream OUT ref e m 
   ->  m ()
-runStream state receive callback Stream { stream }  
-  = stream receive callback 
+runStream state scope@WS { listener} Stream { stream }  
+  = stream listener scope 
     >>= traverse_ (run state) 
 
 -- | initializes empty GraphQL state
@@ -173,18 +172,21 @@ gqlSocketMonadIOApp
   -> ServerApp
 gqlSocketMonadIOApp root state f pending = do
   connection <- acceptApolloRequest pending
+  let scope = WS 
+              { listener = listen connection
+              , callback = notify connection
+              }
   pingThread connection $ do
       stream <- connect 
       finally
-        (handler connection stream) 
-        $ f $ runStream state (listen connection) (notify connection) $ disconnect stream
+        (handler scope stream) 
+        $ f $ runStream state scope $ disconnect stream
  where
-  handler conn inputStream
+  
+  handler scope inputStream
         = f
         $ forever
-        $ runStream state 
-            (listen conn)
-            (notify conn)
+        $ runStream state scope
         $ streamApp root inputStream 
 
 -- | Same as above but specific to IO
