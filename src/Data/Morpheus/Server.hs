@@ -114,10 +114,9 @@ modifyState_ state changes = liftIO $ modifyMVar_ (unWSStore state) (return . ch
 instance MonadIO m => Executor WSStore Connection m where
   run state (Update changes)  
     = modifyState_ state changes
-  run state (Notify toNotification)  
+  run state (Notify runNotify)  
     = readState state 
-      >>= sequence . toNotification
-      >> pure ()
+      >>= runNotify
   run _ (Error x) = liftIO (print x)
   run state (Request con f) = liftIO (receiveData con) >>= f >>= (`runStream` state)
 

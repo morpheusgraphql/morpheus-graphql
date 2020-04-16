@@ -23,6 +23,7 @@ module Data.Morpheus.Execution.Server.Subscription
   )
 where
 
+import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.List                      ( intersect )
 import           Data.UUID.V4                   ( nextRandom )
@@ -62,7 +63,7 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 ( Client(..)
                                                 , PubSubStore
                                                 , SesionID
-                                                , concatUnfold
+                                                , elems
                                                 , insert
                                                 , adjust
                                                 , delete
@@ -97,11 +98,11 @@ publishEvent
      ) 
   => e 
   -> Action OUT ref e m 
-publishEvent event = Notify $ concatUnfold sendMessage
+publishEvent event = Notify $ traverse_ sendMessage . elems
  where
   sendMessage Client { clientSessions, clientConnection }
-    | null clientSessions  = [] 
-    | otherwise = map send (filterByChannels clientSessions)
+    | null clientSessions  = pure ()
+    | otherwise = traverse_ send (filterByChannels clientSessions)
    where
     send (sid, Event { content = subscriptionRes }) 
       = toApolloResponse sid <$> subscriptionRes event >>= clientConnection
@@ -138,7 +139,7 @@ data Action
     Init :: ID -> ref -> (ByteString -> m ()) -> Action IN ref e m
     Request :: ref -> (ByteString -> m (Stream OUT ref e m) ) -> Action OUT ref e m 
     Update  :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
-    Notify  :: (PubSubStore e m -> [m ()]) -> Action OUT ref e m
+    Notify  :: (PubSubStore e m -> m ()) -> Action OUT ref e m
     Error   :: String -> Action OUT ref e m
 
 newtype Stream (io :: Mode) ref e m = 
@@ -182,10 +183,9 @@ handleQuery sessionId resStream (clientId,callback)
     --------------------------------------------------------------
     notifyError errors = Notify 
                 $ const
-                [ callback 
-                  $ toApolloResponse sessionId 
-                  $ Errors errors 
-                ]
+                $ callback 
+                $ toApolloResponse sessionId 
+                $ Errors errors 
  
 apolloToAction 
   ::  ( Monad m

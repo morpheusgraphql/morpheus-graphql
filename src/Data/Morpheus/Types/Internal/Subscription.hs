@@ -6,12 +6,11 @@ module Data.Morpheus.Types.Internal.Subscription
   , ID
   , PubSubStore
   , SesionID
-  , unfold
   , empty
   , insert
   , adjust
   , delete
-  , concatUnfold
+  , elems
   )
 where
 
@@ -58,7 +57,7 @@ instance Show (Client e m) where
 -- stores active subsciption connections and requests
 newtype PubSubStore e ( m :: * -> * ) = 
     PubSubStore 
-      { runPubSubStore :: HashMap ID (Client e m)
+      { unpackStore :: HashMap ID (Client e m)
       } deriving (Show)
 
 type StoreMap e m
@@ -70,13 +69,10 @@ mapStore
       -> HashMap ID (Client e m)
       )
   -> StoreMap e m
-mapStore f = PubSubStore . f . runPubSubStore
+mapStore f = PubSubStore . f . unpackStore
 
-unfold :: (Client e m -> a)-> PubSubStore e m ->  [a]
-unfold f = map f . HM.elems . runPubSubStore
-
-concatUnfold :: (Client e m -> [a])-> PubSubStore e m ->  [a]
-concatUnfold f = concat . unfold f
+elems :: PubSubStore e m ->  [Client e m]
+elems = HM.elems . unpackStore
 
 instance Empty (PubSubStore e m) where
   empty = PubSubStore HM.empty
