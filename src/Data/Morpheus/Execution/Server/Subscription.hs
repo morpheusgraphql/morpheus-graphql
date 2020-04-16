@@ -145,6 +145,13 @@ newtype Stream (io :: Mode) ref e m =
     { stream 
         :: m ByteString  -- listen 
         -> (ByteString -> m ())  -- callback
+        -- TODO: only one argument
+        -- Scope 
+        --  = HTTP 
+        --   | WS 
+        --     { listener :: m ByteString
+        --     , calback :: ByteString -> m ()
+        --     }
         -> m [Action io ref e m] 
     }
 
