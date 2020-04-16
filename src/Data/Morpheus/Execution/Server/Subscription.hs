@@ -137,6 +137,8 @@ data Action
     (m :: * -> * )
   where 
     Init :: ID -> Action IN ref e m
+    -- TODO: response
+    -- Response :: (m GQLResponse) -> Action OUT ref e m 
     Update  :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
     Notify  :: (PubSubStore e m -> m ()) -> Action OUT ref e m
     Error   :: String -> Action OUT ref e m
@@ -186,14 +188,17 @@ handleQuery
 handleQuery sessionId resStream clientId
   = Stream handle
     where
-      
+     execute (Subscribe sub) = startSubscription sub sessionId clientId 
+     execute (Publish   pub) = publishEvent pub
+     --------------------------------------------------------------
+     handle _ HTTP = unfoldRes <$> runResultT resStream 
+      where
+        unfoldRes Success { events } = map execute events
+        unfoldRes Failure { errors } = [] --TODO: handle
      handle _ WS { callback } = unfoldRes <$> runResultT resStream 
       where
         unfoldRes Success { events } = map execute events
         unfoldRes Failure { errors } = [notifyError errors]
-        --------------------------------------------------------------
-        execute (Subscribe sub) = startSubscription sub sessionId clientId 
-        execute (Publish   pub) = publishEvent pub
         --------------------------------------------------------------
         notifyError errors = Notify 
                     $ const
