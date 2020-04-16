@@ -15,6 +15,7 @@ module Data.Morpheus.Types.Internal.Subscription
   )
 where
 
+import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
 import           Data.UUID                      ( UUID )
@@ -40,7 +41,7 @@ type SesionID = Text
 data Client ref e ( m :: * -> * ) =
   Client
     { clientId         :: ID
-    , clientConnection :: ref
+    , clientConnection :: ByteString -> m ()
     , clientSessions   :: HashMap SesionID (SubEvent e m)
     }
 
@@ -82,7 +83,7 @@ instance Empty (PubSubStore ref e m) where
 
 insert 
   :: ID
-  -> ref
+  -> (ByteString -> m ())
   -> StoreMap ref e m
 insert clientId clientConnection = mapStore (HM.insert clientId  c)
   where

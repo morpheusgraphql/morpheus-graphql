@@ -59,7 +59,6 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , disconnect
                                                 , toResponseStream
                                                 , traverseS
-                                                , Notification(..)
                                                 , Action(..)
                                                 , PubSubStore
                                                 , OUT
@@ -99,8 +98,8 @@ initGQLState = WSStore <$> newMVar empty
 
 newtype WSStore ref e m = WSStore { unWSStore :: MVar (PubSubStore ref e m) }
 
-notify :: MonadIO m => Notification Connection m -> m ()
-notify (Notification connection msg) = msg >>= liftIO . sendTextData connection
+notify :: MonadIO m => Connection -> ByteString -> m ()
+notify conn = liftIO . sendTextData conn
 
 readState :: (MonadIO m) => GQLState e m -> m (PubSubStore Connection e m)
 readState = liftIO . readMVar . unWSStore
@@ -117,8 +116,8 @@ instance MonadIO m => Executor WSStore Connection m where
     = modifyState_ state changes
   run state (Notify toNotification)  
     = readState state 
-      >>= traverse_ notify  
-        . toNotification
+      >>= sequence . toNotification
+      >> pure ()
   run _ (Error x) = liftIO (print x)
   run state (Request con f) = liftIO (receiveData con) >>= f >>= (`runStream` state)
 
@@ -165,7 +164,7 @@ gqlSocketMonadIOApp
 gqlSocketMonadIOApp root state f pending = do
   connection <- acceptApolloRequest pending
   pingThread connection $ do
-      stream <- connect connection
+      stream <- connect notify connection
       finally
         (handler stream) 
         $ f (runStream (disconnect stream) state) 
