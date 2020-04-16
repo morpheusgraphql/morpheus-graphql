@@ -18,6 +18,7 @@ module Data.Morpheus.Server
   )
 where
 
+import           Control.Monad                  ((>=>))
 import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.Foldable                  ( traverse_ )
 import           Control.Exception              ( finally )
@@ -38,18 +39,10 @@ import           Control.Concurrent             ( MVar
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
-                                                , Resolver
-                                                , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
-                                                , Eventless
-                                                , cleanEvents
                                                 , ResultT(..)
                                                 , unpackEvents
-                                                , Failure(..)
-                                                , resolveUpdates
-                                                , Context(..)
-                                                , runResolverModel
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
@@ -69,8 +62,8 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , Notification(..)
                                                 , Action(..)
                                                 , PubSubStore
-                                                , IN
                                                 , OUT
+                                                , IN
                                                 , Stream(..)
                                                 , publishEvents
                                                 )
@@ -78,22 +71,6 @@ import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.IO
 import           Data.Aeson                     ( encode )
 
-
--- TODO:
--- Stream IN m ByteString  -> Stream OUT m ByteString
-statefulResolver
-  ::  ( EventCon event
-      , MonadIO m
-      , Executor store ref m
-      )
-  => store ref event m
-  -> (GQLRequest -> ResponseStream event m (Value VALID))
-  -> ByteString
-  -> m ByteString
-statefulResolver store streamApi requestText = do
-  res <- runResultT (decodeNoDup requestText >>= streamApi)
-  runEffects store (unpackEvents res)
-  pure $ encode $ renderResponse res
 
 runEffects 
   :: ( Executor store ref m
@@ -153,6 +130,31 @@ pingThread connection = WS.withPingThread connection 30 (return ())
 pingThread connection = (WS.forkPingThread connection 30 >>)
 #endif
 
+
+streamApp
+  ::  (RootResCon m e que mut sub
+      , MonadIO m
+      )
+  => GQLRootResolver m e que mut sub
+  -> Stream IN ref e m
+  -> m (Stream OUT ref e m)
+streamApp root = traverseS (toResponseStream (coreResolver root))
+
+statefulResolver
+  ::  ( EventCon event
+      , MonadIO m
+      , Executor store ref m
+      )
+  => store ref event m
+  -> (GQLRequest -> ResponseStream event m (Value VALID))
+  -> ByteString
+  -> m ByteString
+statefulResolver store streamApi requestText = do
+  res <- runResultT (decodeNoDup requestText >>= streamApi)
+  runEffects store (unpackEvents res)
+  pure $ encode $ renderResponse res
+
+
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
@@ -168,10 +170,10 @@ gqlSocketMonadIOApp root state f pending = do
         (handler stream) 
         $ f (runStream (disconnect stream) state) 
  where
-  handler st
+  handler inputStream
         = f
         $ forever
-        $ traverseS (toResponseStream  (coreResolver root)) st
+        $ streamApp root inputStream 
         >>= (`runStream` state)
 
 -- | Same as above but specific to IO
