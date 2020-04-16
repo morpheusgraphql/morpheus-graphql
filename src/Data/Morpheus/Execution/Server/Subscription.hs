@@ -186,6 +186,7 @@ handleQuery
 handleQuery sessionId resStream clientId
   = Stream handle
     where
+      
      handle _ WS { callback } = unfoldRes <$> runResultT resStream 
       where
         unfoldRes Success { events } = map execute events
@@ -235,6 +236,8 @@ toResponseStream app (Init clienId)
         handle ls ws@WS { listener , callback } = do
           (Stream stream) <- apolloToAction app clienId . apolloFormat  <$> listener
           (Update (insert clienId callback) :) <$> stream ls ws
+        -- HTTP Server does not have to wait for subsciprions
+        handle _ HTTP = pure [] 
 
 traverseS 
   :: (Monad m)
