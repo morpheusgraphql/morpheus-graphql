@@ -175,27 +175,24 @@ handleQuery
       )
   => Name
   -> ResponseStream e m (Value VALID)
-  -> (ID, ByteString -> m ())
-  -> m (Stream OUT ref e m)
-handleQuery sessionId resStream (clientId,callback)
-  = Stream 
-    . const 
-    . const 
-    . pure
-    . unfoldRes 
-    <$> runResultT resStream
-  where
-    unfoldRes Success { events } = map execute events
-    unfoldRes Failure { errors } = [notifyError errors]
-    --------------------------------------------------------------
-    execute (Subscribe sub) = startSubscription sub sessionId clientId 
-    execute (Publish   pub) = publishEvent pub
-    --------------------------------------------------------------
-    notifyError errors = Notify 
-                $ const
-                $ callback 
-                $ toApolloResponse sessionId 
-                $ Errors errors 
+  -> ID
+  -> Stream OUT ref e m
+handleQuery sessionId resStream clientId
+  = Stream handle
+    where
+     handle _ callback = unfoldRes <$> runResultT resStream 
+      where
+        unfoldRes Success { events } = map execute events
+        unfoldRes Failure { errors } = [notifyError errors]
+        --------------------------------------------------------------
+        execute (Subscribe sub) = startSubscription sub sessionId clientId 
+        execute (Publish   pub) = publishEvent pub
+        --------------------------------------------------------------
+        notifyError errors = Notify 
+                    $ const
+                    $ callback 
+                    $ toApolloResponse sessionId 
+                    $ Errors errors 
  
 apolloToAction 
   ::  ( Monad m
@@ -206,14 +203,14 @@ apolloToAction
   => (  GQLRequest
         -> ResponseStream e m (Value VALID)
      )
-  -> (ID, ByteString -> m ())
+  -> ID
   -> SubAction
-  -> m (Stream OUT ref e m)
-apolloToAction _  _ (SubError x) = pure $ singleton (Error x)
+  -> Stream OUT ref e m
+apolloToAction _  _ (SubError x) = singleton (Error x)
 apolloToAction gqlApp client (AddSub sessionId request) 
   = handleQuery sessionId (gqlApp request) client
-apolloToAction _ (clientId,_) (RemoveSub sessionId)
-  = pure $ singleton (endSubscription sessionId clientId)
+apolloToAction _ clientId (RemoveSub sessionId)
+  = singleton (endSubscription sessionId clientId)
 
 toResponseStream 
   ::  ( Monad m
@@ -228,9 +225,8 @@ toResponseStream
   -> Stream OUT ref e m
 toResponseStream app (Init clienId _ _) 
   = Stream $ \listen cb -> do
-      (Stream stream) <- listen >>= apolloToAction app (clienId,cb) . apolloFormat 
-      s <- stream listen cb
-      pure $ Update (insert clienId cb):s
+      (Stream stream) <- apolloToAction app clienId . apolloFormat  <$> listen
+      (Update (insert clienId cb) :) <$> stream listen cb
 
 traverseS 
   :: (Monad m)
