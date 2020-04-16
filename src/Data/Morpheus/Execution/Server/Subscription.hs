@@ -6,6 +6,7 @@
 {-# LANGUAGE DataKinds               #-}
 {-# LANGUAGE GADTs                   #-}
 {-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
 
 
 module Data.Morpheus.Execution.Server.Subscription
@@ -71,10 +72,10 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 )
  
 
-connect :: (client -> ByteString -> m ()) -> client -> IO (Stream IN client e m)
+connect :: Monad m => (client -> ByteString -> m ()) -> client -> IO (Stream IN client e m)
 connect cb client = do
-  clientID <- nextRandom
-  return $ Stream [Init clientID client (cb client)]
+  clientId <- nextRandom
+  return $ Stream $ \_ _ -> pure [Init clientId client (cb client)]
 
 updateClient
   :: (Client e m -> Client e m ) 
@@ -137,31 +138,35 @@ data Action
     (m :: * -> * )
   where 
     Init :: ID -> ref -> (ByteString -> m ()) -> Action IN ref e m
-    Request :: ref -> (ByteString -> m (Stream OUT ref e m) ) -> Action OUT ref e m 
     Update  :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
     Notify  :: (PubSubStore e m -> m ()) -> Action OUT ref e m
     Error   :: String -> Action OUT ref e m
 
 newtype Stream (io :: Mode) ref e m = 
   Stream 
-    { stream :: [Action io ref e m] 
+    { stream 
+        :: m ByteString  -- listen 
+        -> (ByteString -> m ())  -- callback
+        -> m [Action io ref e m] 
     }
 
-instance Empty (Stream t ref e m) where
-  empty = Stream []
+instance 
+  Applicative m 
+  => Empty (Stream t ref e m) where
+  empty = Stream $ const $ const $ pure []
 
-singleton :: Action mode ref e m -> Stream mode ref e m 
-singleton x = Stream [x]
+singleton :: Applicative m => Action mode ref e m -> Stream mode ref e m 
+singleton x =  Stream $ const $ const $ pure [x]
 
-disconnect :: Stream mode ref e m -> Stream OUT ref e m
-disconnect (Stream x) = Stream $ concatMap __disconnect x
+disconnect 
+  :: Functor m 
+  => Stream mode ref e m 
+  -> Stream OUT ref e m
+disconnect (Stream x) = Stream $ \r cb -> concatMap __disconnect <$> x r cb
   where
     __disconnect:: Action mode ref e m -> [Action OUT ref e m]
     __disconnect (Init clientID _ _)  = [Update (delete clientID)]
     __disconnect _ = []
-
-concatStream :: [Stream mode ref e m ] -> Stream mode ref e m 
-concatStream xs = Stream (concatMap stream xs)
 
 handleQuery
   ::  (  Eq (StreamChannel e)
@@ -173,7 +178,12 @@ handleQuery
   -> (ID, ByteString -> m ())
   -> m (Stream OUT ref e m)
 handleQuery sessionId resStream (clientId,callback)
-  = Stream . unfoldRes <$> runResultT resStream
+  = Stream 
+    . const 
+    . const 
+    . pure
+    . unfoldRes 
+    <$> runResultT resStream
   where
     unfoldRes Success { events } = map execute events
     unfoldRes Failure { errors } = [notifyError errors]
@@ -214,20 +224,27 @@ toResponseStream
   => (  GQLRequest
      -> ResponseStream e m (Value VALID)
      )
-  ->  Action IN ref e m 
-  -> m (Stream OUT ref e m)
-toResponseStream app (Init clienId ref cb) 
-  = pure $ singleton $ Request ref $ \request -> do
-      (Stream stream) <- apolloToAction app (clienId,cb) (apolloFormat request)
-      pure $ Stream $ Update (insert clienId cb) : stream
+  -> Action IN ref e m 
+  -> Stream OUT ref e m
+toResponseStream app (Init clienId _ _) 
+  = Stream $ \listen cb -> do
+      (Stream stream) <- listen >>= apolloToAction app (clienId,cb) . apolloFormat 
+      s <- stream listen cb
+      pure $ Update (insert clienId cb):s
 
 traverseS 
   :: (Monad m)
-  => ( Action mode ref e m 
-     -> m (Stream mode' ref e m)
+  => ( Action t ref e m 
+     -> Stream t' ref e m
      )
-  -> Stream mode ref e m 
-  -> m (Stream mode' ref e m)
-traverseS f Stream { stream  } 
-  = concatStream 
-  <$> traverse f stream
+  -> Stream t ref e m 
+  -> Stream t' ref e m
+traverseS f (Stream stream) 
+  = Stream handle
+      where
+        handle r cb 
+          = stream r cb 
+            >>= fmap concat 
+              . traverse (go .f) 
+          where 
+            go (Stream s) = s  r cb 

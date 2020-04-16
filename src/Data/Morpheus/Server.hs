@@ -6,7 +6,8 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE OverloadedStrings      #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
@@ -79,7 +80,7 @@ runEffects
   => store ref e m -> [ResponseEvent e m] -> m ()
 runEffects  store = traverse_ execute 
   where
-    execute (Publish events) = runStream store (publishEvents events) 
+    execute (Publish events) = runStream store (pure "") (const $ pure ()) (publishEvents events) 
     execute Subscribe{}      = pure ()
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
@@ -89,14 +90,25 @@ type GQLState e m = WSStore Connection e m -- SharedState
 class Executor store ref m where
   run :: store ref e m -> Action OUT ref e m -> m ()
 
-runStream :: (Monad m, Executor store ref m) => store ref e m -> Stream OUT ref e m ->  m ()
-runStream state Stream { stream }  = traverse_ (run state) stream
+runStream 
+  :: (Monad m, Executor store ref m) 
+  => store ref e m 
+  -> m ByteString
+  -> (ByteString -> m ())
+  -> Stream OUT ref e m 
+  ->  m ()
+runStream state receive callback Stream { stream }  
+  = stream receive callback 
+    >>= traverse_ (run state) 
 
 -- | initializes empty GraphQL state
 initGQLState :: (MonadIO m) => IO (WSStore ref e m)
 initGQLState = WSStore <$> newMVar empty
 
 newtype WSStore ref e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
+
+listen :: MonadIO m => Connection -> m ByteString
+listen = liftIO . receiveData
 
 notify :: MonadIO m => Connection -> ByteString -> m ()
 notify conn = liftIO . sendTextData conn
@@ -118,7 +130,6 @@ instance MonadIO m => Executor WSStore Connection m where
     = readState state 
       >>= runNotify
   run _ (Error x) = liftIO (print x)
-  run state (Request con f) = liftIO (receiveData con) >>= f >>= runStream state
 
 -- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()
@@ -135,7 +146,7 @@ streamApp
       )
   => GQLRootResolver m e que mut sub
   -> Stream IN ref e m
-  -> m (Stream OUT ref e m)
+  -> Stream OUT ref e m
 streamApp root = traverseS (toResponseStream (coreResolver root))
 
 statefulResolver
@@ -152,7 +163,7 @@ statefulResolver store streamApi requestText = do
   runEffects store (unpackEvents res)
   pure $ encode $ renderResponse res
 
-
+ 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
@@ -165,14 +176,16 @@ gqlSocketMonadIOApp root state f pending = do
   pingThread connection $ do
       stream <- connect notify connection
       finally
-        (handler stream) 
-        $ f $ runStream state $ disconnect stream
+        (handler connection stream) 
+        $ f $ runStream state (listen connection) (notify connection) $ disconnect stream
  where
-  handler inputStream
+  handler conn inputStream
         = f
         $ forever
+        $ runStream state 
+            (listen conn)
+            (notify conn)
         $ streamApp root inputStream 
-        >>= runStream state
 
 -- | Same as above but specific to IO
 gqlSocketApp
