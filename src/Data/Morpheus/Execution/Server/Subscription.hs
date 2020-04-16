@@ -100,12 +100,12 @@ publishEvent
   -> Action OUT ref e m 
 publishEvent event = Notify $ traverse_ sendMessage . elems
  where
-  sendMessage Client { clientSessions, clientConnection }
+  sendMessage Client { clientSessions, clientCallback }
     | null clientSessions  = pure ()
     | otherwise = traverse_ send (filterByChannels clientSessions)
    where
     send (sid, Event { content = subscriptionRes }) 
-      = toApolloResponse sid <$> subscriptionRes event >>= clientConnection
+      = toApolloResponse sid <$> subscriptionRes event >>= clientCallback
     ---------------------------
     filterByChannels = filter
       ( not

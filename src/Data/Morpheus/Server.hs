@@ -79,7 +79,7 @@ runEffects
   => store ref e m -> [ResponseEvent e m] -> m ()
 runEffects  store = traverse_ execute 
   where
-    execute (Publish events) = runStream (publishEvents events) store
+    execute (Publish events) = runStream store (publishEvents events) 
     execute Subscribe{}      = pure ()
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
@@ -89,8 +89,8 @@ type GQLState e m = WSStore Connection e m -- SharedState
 class Executor store ref m where
   run :: store ref e m -> Action OUT ref e m -> m ()
 
-runStream :: (Monad m, Executor store ref m) => Stream OUT ref e m -> store ref e m ->  m ()
-runStream Stream { stream } state = traverse_ (run state) stream
+runStream :: (Monad m, Executor store ref m) => store ref e m -> Stream OUT ref e m ->  m ()
+runStream state Stream { stream }  = traverse_ (run state) stream
 
 -- | initializes empty GraphQL state
 initGQLState :: (MonadIO m) => IO (WSStore ref e m)
@@ -118,7 +118,7 @@ instance MonadIO m => Executor WSStore Connection m where
     = readState state 
       >>= runNotify
   run _ (Error x) = liftIO (print x)
-  run state (Request con f) = liftIO (receiveData con) >>= f >>= (`runStream` state)
+  run state (Request con f) = liftIO (receiveData con) >>= f >>= runStream state
 
 -- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()
@@ -166,13 +166,13 @@ gqlSocketMonadIOApp root state f pending = do
       stream <- connect notify connection
       finally
         (handler stream) 
-        $ f (runStream (disconnect stream) state) 
+        $ f $ runStream state $ disconnect stream
  where
   handler inputStream
         = f
         $ forever
         $ streamApp root inputStream 
-        >>= (`runStream` state)
+        >>= runStream state
 
 -- | Same as above but specific to IO
 gqlSocketApp

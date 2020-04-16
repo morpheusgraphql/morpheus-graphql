@@ -39,9 +39,9 @@ type SesionID = Text
 
 data Client e ( m :: * -> * ) =
   Client
-    { clientId         :: ID
-    , clientConnection :: ByteString -> m ()
-    , clientSessions   :: HashMap SesionID (SubEvent e m)
+    { clientId       :: ID
+    , clientCallback :: ByteString -> m ()
+    , clientSessions :: HashMap SesionID (SubEvent e m)
     }
 
 instance Show (Client e m) where
@@ -81,9 +81,9 @@ insert
   :: ID
   -> (ByteString -> m ())
   -> StoreMap e m
-insert clientId clientConnection = mapStore (HM.insert clientId  c)
+insert clientId clientCallback = mapStore (HM.insert clientId  c)
   where
-    c = Client { clientId , clientConnection, clientSessions = HM.empty }
+    c = Client { clientId , clientCallback, clientSessions = HM.empty }
 
 adjust 
   :: (Client e m -> Client e m ) 
