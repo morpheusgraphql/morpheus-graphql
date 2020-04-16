@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE OverloadedStrings      #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
@@ -99,6 +100,9 @@ runStream
 runStream state scope@WS { listener} Stream { stream }  
   = stream listener scope 
     >>= traverse_ (run state) 
+runStream state HTTP Stream { stream } 
+    =  stream (pure "") HTTP 
+      >>= traverse_ (run state) 
 
 -- | initializes empty GraphQL state
 initGQLState :: (MonadIO m) => IO (WSStore ref e m)
