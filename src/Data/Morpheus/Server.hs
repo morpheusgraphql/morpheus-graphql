@@ -174,7 +174,7 @@ gqlSocketMonadIOApp
 gqlSocketMonadIOApp root state f pending = do
   connection <- acceptApolloRequest pending
   pingThread connection $ do
-      stream <- connect notify connection
+      stream <- connect 
       finally
         (handler connection stream) 
         $ f $ runStream state (listen connection) (notify connection) $ disconnect stream

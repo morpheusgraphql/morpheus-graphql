@@ -72,10 +72,8 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 )
  
 
-connect :: Monad m => (client -> ByteString -> m ()) -> client -> IO (Stream IN client e m)
-connect cb client = do
-  clientId <- nextRandom
-  return $ Stream $ \_ _ -> pure [Init clientId client (cb client)]
+connect :: Monad m => IO (Stream IN client e m)
+connect = singleton . Init <$> nextRandom
 
 updateClient
   :: (Client e m -> Client e m ) 
@@ -137,7 +135,7 @@ data Action
     e 
     (m :: * -> * )
   where 
-    Init :: ID -> ref -> (ByteString -> m ()) -> Action IN ref e m
+    Init :: ID -> Action IN ref e m
     Update  :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
     Notify  :: (PubSubStore e m -> m ()) -> Action OUT ref e m
     Error   :: String -> Action OUT ref e m
@@ -165,7 +163,7 @@ disconnect
 disconnect (Stream x) = Stream $ \r cb -> concatMap __disconnect <$> x r cb
   where
     __disconnect:: Action mode ref e m -> [Action OUT ref e m]
-    __disconnect (Init clientID _ _)  = [Update (delete clientID)]
+    __disconnect (Init clientID)  = [Update (delete clientID)]
     __disconnect _ = []
 
 handleQuery
@@ -223,7 +221,7 @@ toResponseStream
      )
   -> Action IN ref e m 
   -> Stream OUT ref e m
-toResponseStream app (Init clienId _ _) 
+toResponseStream app (Init clienId) 
   = Stream $ \listen cb -> do
       (Stream stream) <- apolloToAction app clienId . apolloFormat  <$> listen
       (Update (insert clienId cb) :) <$> stream listen cb
