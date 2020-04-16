@@ -76,7 +76,7 @@ connect cb client = do
   return $ Stream [Init clientID client (cb client)]
 
 updateClient
-  :: (Client ref e m -> Client ref e m ) 
+  :: (Client e m -> Client e m ) 
   -> ID
   -> Action OUT ref e m 
 updateClient  f cid = Update (adjust f cid)
@@ -137,8 +137,8 @@ data Action
   where 
     Init :: ID -> ref -> (ByteString -> m ()) -> Action IN ref e m
     Request :: ref -> (ByteString -> m (Stream OUT ref e m) ) -> Action OUT ref e m 
-    Update  :: (PubSubStore ref e m -> PubSubStore ref e m) -> Action OUT ref e m 
-    Notify  :: (PubSubStore ref e m -> [m ()]) -> Action OUT ref e m
+    Update  :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
+    Notify  :: (PubSubStore e m -> [m ()]) -> Action OUT ref e m
     Error   :: String -> Action OUT ref e m
 
 newtype Stream (io :: Mode) ref e m = 

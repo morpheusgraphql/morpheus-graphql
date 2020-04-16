@@ -96,18 +96,18 @@ runStream Stream { stream } state = traverse_ (run state) stream
 initGQLState :: (MonadIO m) => IO (WSStore ref e m)
 initGQLState = WSStore <$> newMVar empty
 
-newtype WSStore ref e m = WSStore { unWSStore :: MVar (PubSubStore ref e m) }
+newtype WSStore ref e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
 
 notify :: MonadIO m => Connection -> ByteString -> m ()
 notify conn = liftIO . sendTextData conn
 
-readState :: (MonadIO m) => GQLState e m -> m (PubSubStore Connection e m)
+readState :: (MonadIO m) => GQLState e m -> m (PubSubStore e m)
 readState = liftIO . readMVar . unWSStore
 
 modifyState_ 
   :: (MonadIO m) 
   => WSStore Connection e m 
-  -> (PubSubStore Connection e m -> PubSubStore Connection e m) 
+  -> (PubSubStore e m -> PubSubStore  e m) 
   -> m ()
 modifyState_ state changes = liftIO $ modifyMVar_ (unWSStore state) (return . changes)
 

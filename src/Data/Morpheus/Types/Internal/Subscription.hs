@@ -38,14 +38,14 @@ type ID = UUID
 
 type SesionID = Text
 
-data Client ref e ( m :: * -> * ) =
+data Client e ( m :: * -> * ) =
   Client
     { clientId         :: ID
     , clientConnection :: ByteString -> m ()
     , clientSessions   :: HashMap SesionID (SubEvent e m)
     }
 
-instance Show (Client ref e m) where
+instance Show (Client e m) where
   show Client { clientId, clientSessions } =
     "Client { id: "
       <> show clientId
@@ -56,46 +56,46 @@ instance Show (Client ref e m) where
 -- subscription 
 -- store
 -- stores active subsciption connections and requests
-newtype PubSubStore ref e ( m :: * -> * ) = 
+newtype PubSubStore e ( m :: * -> * ) = 
     PubSubStore 
-      { runPubSubStore :: HashMap ID (Client ref e m)
+      { runPubSubStore :: HashMap ID (Client e m)
       } deriving (Show)
 
-type StoreMap ref e m
-  = PubSubStore ref e m 
-  -> PubSubStore ref e m
+type StoreMap e m
+  = PubSubStore e m 
+  -> PubSubStore e m
 
 mapStore 
-  ::  ( HashMap ID (Client ref e m) 
-      -> HashMap ID (Client ref e m)
+  ::  ( HashMap ID (Client e m) 
+      -> HashMap ID (Client e m)
       )
-  -> StoreMap ref e m
+  -> StoreMap e m
 mapStore f = PubSubStore . f . runPubSubStore
 
-unfold :: (Client ref e m -> a)-> PubSubStore ref e m ->  [a]
+unfold :: (Client e m -> a)-> PubSubStore e m ->  [a]
 unfold f = map f . HM.elems . runPubSubStore
 
-concatUnfold :: (Client ref e m -> [a])-> PubSubStore ref e m ->  [a]
+concatUnfold :: (Client e m -> [a])-> PubSubStore e m ->  [a]
 concatUnfold f = concat . unfold f
 
-instance Empty (PubSubStore ref e m) where
+instance Empty (PubSubStore e m) where
   empty = PubSubStore HM.empty
 
 insert 
   :: ID
   -> (ByteString -> m ())
-  -> StoreMap ref e m
+  -> StoreMap e m
 insert clientId clientConnection = mapStore (HM.insert clientId  c)
   where
     c = Client { clientId , clientConnection, clientSessions = HM.empty }
 
 adjust 
-  :: (Client ref e m -> Client ref e m ) 
+  :: (Client e m -> Client e m ) 
   -> ID
-  -> StoreMap ref e m
+  -> StoreMap e m
 adjust f key = mapStore (HM.adjust f key)
 
 delete 
   :: ID
-  -> StoreMap ref e m
+  -> StoreMap e m
 delete key = mapStore (HM.delete key)
