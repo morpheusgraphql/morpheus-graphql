@@ -45,6 +45,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResultT(..)
                                                 , Result(..)
                                                 , unpackEvents
+                                                , Eventless
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
@@ -84,7 +85,7 @@ runStream
   => store ref e m
   -> Scope m
   -> Stream OUT ref e m 
-  ->  m (Result () (Value VALID))
+  ->  m (Eventless (Value VALID))
 runStream state scope Stream { stream }  
   = do
     x <- runResultT (stream (pure ()) scope)
@@ -151,18 +152,21 @@ statefulResolver
   -> GQLRootResolver m e que mut sub
   -> GQLRequest
   -> m GQLResponse
-statefulResolver store root request = do
-  response <- runStream store HTTP $ streamApp root (Request request)
-  pure $ renderResponse response
+statefulResolver store root request = 
+  renderResponse 
+    <$> runStream 
+          store 
+          HTTP 
+          (streamApp root (Request request))
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
-  => GQLRootResolver m e que mut sub
+  => (m () -> IO ())
+  -> GQLRootResolver m e que mut sub
   -> GQLState e m
-  -> (m () -> IO ())
   -> ServerApp
-gqlSocketMonadIOApp root state f pending = do
+gqlSocketMonadIOApp f root state pending = do
   connection <- acceptApolloRequest pending
   let scope = WS 
               { listener = listen connection
@@ -186,4 +190,4 @@ gqlSocketApp
   => GQLRootResolver IO e que mut sub
   -> GQLState e IO
   -> ServerApp
-gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id
+gqlSocketApp = gqlSocketMonadIOApp id
