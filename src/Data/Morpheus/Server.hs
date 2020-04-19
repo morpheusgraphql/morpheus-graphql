@@ -43,6 +43,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResponseEvent(..)
                                                 , ResponseStream
                                                 , ResultT(..)
+                                                , Result(..)
                                                 , unpackEvents
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
@@ -59,30 +60,17 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 ( connect
                                                 , disconnect
                                                 , toOutStream
-                                                , traverseS
                                                 , Action(..)
                                                 , PubSubStore
                                                 , OUT
                                                 , IN
                                                 , Stream(..)
                                                 , Scope(..)
-                                                , publishEvents
                                                 )
 import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.IO
 import           Data.Aeson                     ( encode )
 
-
-runEffects 
-  :: ( Executor store ref m
-     , Monad m
-     , EventCon e
-     ) 
-  => store ref e m -> [ResponseEvent e m] -> m ()
-runEffects  store = traverse_ execute 
-  where
-    execute (Publish events) = runStream store HTTP (publishEvents events) 
-    execute Subscribe{}      = pure ()
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
@@ -96,10 +84,15 @@ runStream
   => store ref e m
   -> Scope m
   -> Stream OUT ref e m 
-  ->  m ()
+  ->  m (Result () (Value VALID))
 runStream state scope Stream { stream }  
-    =  stream (pure ()) scope 
-      >>= traverse_ (run state) 
+  = do
+    x <- runResultT (stream (pure ()) scope)
+    case x of 
+      Success  r w events-> do 
+        traverse_ (run state) events
+        pure (Success r w []) 
+      Failure x -> pure $ Failure x 
 
 -- | initializes empty GraphQL state
 initGQLState :: (MonadIO m) => IO (WSStore ref e m)
@@ -145,25 +138,23 @@ streamApp
       , MonadIO m
       )
   => GQLRootResolver m e que mut sub
-  -> Stream IN ref e m
+  -> Action IN ref e m
   -> Stream OUT ref e m
-streamApp root = traverseS (toOutStream (coreResolver root))
+streamApp root = toOutStream (coreResolver root)
 
 statefulResolver
-  ::  ( EventCon event
-      , MonadIO m
+  ::  ( MonadIO m
       , Executor store ref m
+      , RootResCon m e que mut sub
       )
-  => store ref event m
-  -> (GQLRequest -> ResponseStream event m (Value VALID))
-  -> ByteString
-  -> m ByteString
-statefulResolver store streamApi requestText = do
-  res <- runResultT (decodeNoDup requestText >>= streamApi)
-  runEffects store (unpackEvents res)
-  pure $ encode $ renderResponse res
+  => store ref e m
+  -> GQLRootResolver m e que mut sub
+  -> GQLRequest
+  -> m GQLResponse
+statefulResolver store root request = do
+  response <- runStream store HTTP $ streamApp root (Request request)
+  pure $ renderResponse response
 
- 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
@@ -178,17 +169,16 @@ gqlSocketMonadIOApp root state f pending = do
               , callback = notify connection
               }
   pingThread connection $ do
-      stream <- connect 
+      action <- connect 
       finally
-        (handler scope stream) 
-        $ f $ runStream state scope $ disconnect stream
+        (handler scope action) 
+        $ f $ traverse_ (run state) (disconnect action)
  where
-  
-  handler scope inputStream
+  handler scope inputAction
         = f
         $ forever
-        $ runStream state scope
-        $ streamApp root inputStream 
+        $ runStream state scope 
+        $ streamApp root inputAction
 
 -- | Same as above but specific to IO
 gqlSocketApp

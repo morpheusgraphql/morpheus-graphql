@@ -98,7 +98,7 @@ instance Interpreter (StateLess m Text) m e  where
 type WSPub m e a = GQLState e m -> a -> m a
 
 instance MonadIO m => Interpreter (WSPub m e LB.ByteString) m e where
-  interpreter root state = statefulResolver state (coreResolver root)
+  interpreter root state = byteStringIO (statefulResolver state root)
 
 instance MonadIO m => Interpreter (WSPub m e  LT.Text) m e where
   interpreter root state request =

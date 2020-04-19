@@ -13,13 +13,11 @@ module Data.Morpheus.Execution.Server.Subscription
   ( Client
   , connect
   , disconnect
-  , publishEvents
   , Stream(..)
   , toOutStream
   , handleResponseStream
   , IN
   , OUT
-  , traverseS
   , PubSubStore
   , Action(..)
   , Scope(..)
@@ -37,7 +35,7 @@ import qualified Data.HashMap.Lazy   as   HM    ( toList
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.AST
-                                                ( Value
+                                                ( Value(..)
                                                 , VALID
                                                 , Name
                                                 )
@@ -46,6 +44,7 @@ import           Data.Morpheus.Types.IO         ( GQLResponse(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( Empty(..)
+                                                , failure
                                                 )
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( toApolloResponse 
@@ -61,6 +60,8 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResponseStream
                                                 , runResultT
                                                 , Result(..)
+                                                , ResultT(..)
+                                                , PushEvents(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Subscription
                                                 ( Client(..)
@@ -74,23 +75,18 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 )
  
 
-connect :: Monad m => IO (Stream IN client e m)
-connect = singleton . Init <$> nextRandom
+connect :: Monad m => IO (Action IN client e m)
+connect = Init <$> nextRandom
+
+disconnect:: Action mode ref e m -> [Action OUT ref e m]
+disconnect (Init clientID)  = [Update (delete clientID)]
+disconnect _ = []
 
 updateClient
   :: (Client e m -> Client e m ) 
   -> ID
   -> Action OUT ref e m 
 updateClient  f cid = Update (adjust f cid)
-
-publishEvents
-  :: ( Eq (StreamChannel e)
-     , Monad m 
-     , GQLChannel e
-     ) 
-  => e 
-  -> Stream OUT ref e m 
-publishEvents = singleton . publishEvent
 
 publishEvent
   :: ( Eq (StreamChannel e)
@@ -121,10 +117,10 @@ endSession (clientId, sessionId) = updateClient endSub clientId
  where
   endSub client = client { clientSessions = HM.delete sessionId (clientSessions client) }
 
-startSession :: SubEvent e m -> SesionID -> ID -> Action OUT ref e m 
-startSession  subscriptions sid = updateClient startSub
+startSession :: SubEvent e m -> Session -> Action OUT ref e m 
+startSession  subscriptions (clientId, sessionId) = updateClient startSub clientId
  where
-  startSub client = client { clientSessions = HM.insert sid subscriptions (clientSessions client) }
+  startSub client = client { clientSessions = HM.insert sessionId subscriptions (clientSessions client) }
 
 data Mode = In | Out
 
@@ -139,7 +135,7 @@ data Action
     (m :: * -> * )
   where 
     Init     :: ID -> Action IN ref e m
-    -- Request  :: GQLRequest -> Action IN ref e m
+    Request  :: GQLRequest -> Action IN ref e m
     -------------------------------------------
     Response :: GQLResponse -> Action OUT ref e m 
     Update   :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
@@ -158,26 +154,8 @@ newtype Stream (io :: Mode) ref e m =
     { stream 
         :: m ()  -- ignore 
         -> Scope m  -- scope
-        -> m [Action io ref e m] 
+        -> ResultT (Action io ref e m)  m (Value VALID)
     }
-
-instance 
-  Applicative m 
-  => Empty (Stream t ref e m) where
-  empty = Stream $ const $ const $ pure []
-
-singleton :: Applicative m => Action mode ref e m -> Stream mode ref e m 
-singleton x =  Stream $ const $ const $ pure [x]
-
-disconnect 
-  :: Functor m 
-  => Stream mode ref e m 
-  -> Stream OUT ref e m
-disconnect (Stream x) = Stream $ \r cb -> concatMap __disconnect <$> x r cb
-  where
-    __disconnect:: Action mode ref e m -> [Action OUT ref e m]
-    __disconnect (Init clientID)  = [Update (delete clientID)]
-    __disconnect _ = []
 
 handleResponseStream
   ::  (  Eq (StreamChannel e)
@@ -187,28 +165,38 @@ handleResponseStream
   => Session
   -> ResponseStream e m (Value VALID)
   -> Stream OUT ref e m
-handleResponseStream (clientId, sessionId) resStream 
+handleResponseStream session resStream 
   = Stream handle
     where
     -- httpServer can't start subscription 
      execute HTTP Subscribe {}  = Error "http can't handle subscription"
-     execute _ (Subscribe sub) = startSession sub sessionId clientId
+     execute _ (Subscribe sub) = startSession sub session
      execute _ (Publish   pub) = publishEvent pub
      --------------------------------------------------------------
-     handle _ HTTP = unfoldRes <$> runResultT resStream 
+     handle _ HTTP = ResultT $ unfoldRes <$> runResultT resStream 
       where
-        unfoldRes Success { events } = map (execute HTTP) events
-        unfoldRes Failure { errors } = [Response (Errors errors)]
-     handle _ ws@WS { callback } = unfoldRes <$> runResultT resStream 
+        unfoldRes Success { events, result, warnings } = Success 
+          { result
+          , warnings
+          , events = map (execute HTTP) events
+          }
+        unfoldRes Failure { errors } = Failure { errors }
+     handle _ ws = ResultT $ unfoldRes <$> runResultT resStream 
       where
-        unfoldRes Success { events } = map (execute ws) events
-        unfoldRes Failure { errors } = [notifyError errors]
+        unfoldRes Success { events ,warnings } 
+          = Success 
+            { result = Null
+            , warnings
+            , events = map (execute ws) events
+            }
+        unfoldRes Failure { errors } =  Failure { errors }
         --------------------------------------------------------------
-        notifyError errors = Notify 
-                    $ const
-                    $ callback 
-                    $ toApolloResponse sessionId 
-                    $ Errors errors 
+        -- TODO:
+        -- notifyError errors = Notify 
+        --             $ const
+        --             $ callback 
+        --             $ toApolloResponse sessionId 
+        --             $ Errors errors 
 
 handleWSRequest 
   ::  ( Monad m
@@ -224,11 +212,12 @@ handleWSRequest
   -> Stream OUT ref e m
 handleWSRequest gqlApp clientId = handleApollo . apolloFormat
   where 
-    handleApollo (SubError x) = singleton (Error x)
+    handleApollo (SubError x) = Stream $ const $ const $ failure x
     handleApollo (AddSub sessionId request) 
       = handleResponseStream (clientId, sessionId) (gqlApp request) 
     handleApollo (RemoveSub sessionId)
-      = singleton $ endSession (clientId, sessionId)
+      = Stream $ const $ const $ ResultT $ pure $ 
+        Success Null [] [endSession (clientId, sessionId)]
 
 toOutStream 
   ::  ( Monad m
@@ -245,24 +234,9 @@ toOutStream app (Init clienId)
   = Stream handle 
       where
         handle ls ws@WS { listener , callback } = do
-          (Stream stream) <- handleWSRequest app clienId  <$> listener
-          (Update (insert clienId callback) :) <$> stream ls ws
+          let withUpdate x = Success x [] [Update (insert clienId callback)] 
+          let runS (Stream x) = x ls ws
+          ResultT (withUpdate <$> listener) >>= runS . handleWSRequest app clienId 
         -- HTTP Server does not have to wait for subsciprions
-        handle _ HTTP = pure [] 
-
-traverseS 
-  :: (Monad m)
-  => ( Action t ref e m 
-     -> Stream t' ref e m
-     )
-  -> Stream t ref e m 
-  -> Stream t' ref e m
-traverseS f (Stream stream) 
-  = Stream handle
-      where
-        handle r cb 
-          = stream r cb 
-            >>= fmap concat 
-              . traverse (go .f) 
-          where 
-            go (Stream s) = s  r cb 
+        handle _ HTTP = failure "ws in hhtp are not allowed"
+toOutStream app (Request req) = handleResponseStream undefined (app req)
