@@ -58,7 +58,7 @@ import           Data.Morpheus.Types.Internal.Apollo
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( connect
                                                 , disconnect
-                                                , toResponseStream
+                                                , toOutStream
                                                 , traverseS
                                                 , Action(..)
                                                 , PubSubStore
@@ -97,11 +97,8 @@ runStream
   -> Scope m
   -> Stream OUT ref e m 
   ->  m ()
-runStream state scope@WS { listener} Stream { stream }  
-  = stream listener scope 
-    >>= traverse_ (run state) 
-runStream state HTTP Stream { stream } 
-    =  stream (pure "") HTTP 
+runStream state scope Stream { stream }  
+    =  stream (pure ()) scope 
       >>= traverse_ (run state) 
 
 -- | initializes empty GraphQL state
@@ -150,7 +147,7 @@ streamApp
   => GQLRootResolver m e que mut sub
   -> Stream IN ref e m
   -> Stream OUT ref e m
-streamApp root = traverseS (toResponseStream (coreResolver root))
+streamApp root = traverseS (toOutStream (coreResolver root))
 
 statefulResolver
   ::  ( EventCon event

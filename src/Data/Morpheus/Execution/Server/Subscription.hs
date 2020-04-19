@@ -15,7 +15,8 @@ module Data.Morpheus.Execution.Server.Subscription
   , disconnect
   , publishEvents
   , Stream(..)
-  , toResponseStream
+  , toOutStream
+  , handleResponseStream
   , IN
   , OUT
   , traverseS
@@ -115,13 +116,13 @@ publishEvent event = Notify $ traverse_ sendMessage . elems
       . snd
       ) . HM.toList
 
-endSubscription :: SesionID -> ID -> Action OUT ref e m 
-endSubscription sid = updateClient endSub
+endSession :: Session -> Action OUT ref e m 
+endSession (clientId, sessionId) = updateClient endSub clientId
  where
-  endSub client = client { clientSessions = HM.delete sid (clientSessions client) }
+  endSub client = client { clientSessions = HM.delete sessionId (clientSessions client) }
 
-startSubscription :: SubEvent e m -> SesionID -> ID -> Action OUT ref e m 
-startSubscription  subscriptions sid = updateClient startSub
+startSession :: SubEvent e m -> SesionID -> ID -> Action OUT ref e m 
+startSession  subscriptions sid = updateClient startSub
  where
   startSub client = client { clientSessions = HM.insert sid subscriptions (clientSessions client) }
 
@@ -129,6 +130,7 @@ data Mode = In | Out
 
 type IN = 'In 
 type OUT = 'Out 
+type Session = (ID, Name)
 
 data Action 
     (mode :: Mode)
@@ -136,12 +138,13 @@ data Action
     e 
     (m :: * -> * )
   where 
-    Init :: ID -> Action IN ref e m
-    -- TODO: response
-    -- Response :: (m GQLResponse) -> Action OUT ref e m 
-    Update  :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
-    Notify  :: (PubSubStore e m -> m ()) -> Action OUT ref e m
-    Error   :: String -> Action OUT ref e m
+    Init     :: ID -> Action IN ref e m
+    -- Request  :: GQLRequest -> Action IN ref e m
+    -------------------------------------------
+    Response :: GQLResponse -> Action OUT ref e m 
+    Update   :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
+    Notify   :: (PubSubStore e m -> m ()) -> Action OUT ref e m
+    Error    :: String -> Action OUT ref e m
 
 data Scope m
   = HTTP 
@@ -153,8 +156,8 @@ data Scope m
 newtype Stream (io :: Mode) ref e m = 
   Stream 
     { stream 
-        :: m ByteString  -- listen 
-        -> Scope m
+        :: m ()  -- ignore 
+        -> Scope m  -- scope
         -> m [Action io ref e m] 
     }
 
@@ -176,28 +179,29 @@ disconnect (Stream x) = Stream $ \r cb -> concatMap __disconnect <$> x r cb
     __disconnect (Init clientID)  = [Update (delete clientID)]
     __disconnect _ = []
 
-handleQuery
+handleResponseStream
   ::  (  Eq (StreamChannel e)
       , GQLChannel e
       , Monad m
       )
-  => Name
+  => Session
   -> ResponseStream e m (Value VALID)
-  -> ID
   -> Stream OUT ref e m
-handleQuery sessionId resStream clientId
+handleResponseStream (clientId, sessionId) resStream 
   = Stream handle
     where
-     execute (Subscribe sub) = startSubscription sub sessionId clientId 
-     execute (Publish   pub) = publishEvent pub
+    -- httpServer can't start subscription 
+     execute HTTP Subscribe {}  = Error "http can't handle subscription"
+     execute _ (Subscribe sub) = startSession sub sessionId clientId
+     execute _ (Publish   pub) = publishEvent pub
      --------------------------------------------------------------
      handle _ HTTP = unfoldRes <$> runResultT resStream 
       where
-        unfoldRes Success { events } = map execute events
-        unfoldRes Failure { errors } = [] --TODO: handle
-     handle _ WS { callback } = unfoldRes <$> runResultT resStream 
+        unfoldRes Success { events } = map (execute HTTP) events
+        unfoldRes Failure { errors } = [Response (Errors errors)]
+     handle _ ws@WS { callback } = unfoldRes <$> runResultT resStream 
       where
-        unfoldRes Success { events } = map execute events
+        unfoldRes Success { events } = map (execute ws) events
         unfoldRes Failure { errors } = [notifyError errors]
         --------------------------------------------------------------
         notifyError errors = Notify 
@@ -205,8 +209,8 @@ handleQuery sessionId resStream clientId
                     $ callback 
                     $ toApolloResponse sessionId 
                     $ Errors errors 
- 
-apolloToAction 
+
+handleWSRequest 
   ::  ( Monad m
       , Eq (StreamChannel e)
       , GQLChannel e
@@ -216,15 +220,17 @@ apolloToAction
         -> ResponseStream e m (Value VALID)
      )
   -> ID
-  -> SubAction
+  -> ByteString
   -> Stream OUT ref e m
-apolloToAction _  _ (SubError x) = singleton (Error x)
-apolloToAction gqlApp client (AddSub sessionId request) 
-  = handleQuery sessionId (gqlApp request) client
-apolloToAction _ clientId (RemoveSub sessionId)
-  = singleton (endSubscription sessionId clientId)
+handleWSRequest gqlApp clientId = handleApollo . apolloFormat
+  where 
+    handleApollo (SubError x) = singleton (Error x)
+    handleApollo (AddSub sessionId request) 
+      = handleResponseStream (clientId, sessionId) (gqlApp request) 
+    handleApollo (RemoveSub sessionId)
+      = singleton $ endSession (clientId, sessionId)
 
-toResponseStream 
+toOutStream 
   ::  ( Monad m
       , Eq (StreamChannel e)
       , GQLChannel e
@@ -235,11 +241,11 @@ toResponseStream
      )
   -> Action IN ref e m 
   -> Stream OUT ref e m
-toResponseStream app (Init clienId) 
+toOutStream app (Init clienId) 
   = Stream handle 
       where
         handle ls ws@WS { listener , callback } = do
-          (Stream stream) <- apolloToAction app clienId . apolloFormat  <$> listener
+          (Stream stream) <- handleWSRequest app clienId  <$> listener
           (Update (insert clienId callback) :) <$> stream ls ws
         -- HTTP Server does not have to wait for subsciprions
         handle _ HTTP = pure [] 
