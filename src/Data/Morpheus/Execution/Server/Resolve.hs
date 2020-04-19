@@ -11,7 +11,6 @@
 module Data.Morpheus.Execution.Server.Resolve
   ( statelessResolver
   , byteStringIO
-  , streamResolver
   , RootResCon
   , fullSchema
   , coreResolver
@@ -134,16 +133,6 @@ statelessResolver
   -> m GQLResponse
 statelessResolver root req =
   renderResponse <$> runResultT (coreResolver root req)
-
-streamResolver
-  :: forall event m query mut sub
-   . (Monad m, RootResCon m event query mut sub)
-  => GQLRootResolver m event query mut sub
-  -> GQLRequest
-  -> ResponseStream event m GQLResponse
-streamResolver root req =
-  ResultT $ pure . renderResponse <$> runResultT (coreResolver root req)
-
 
 coreResolver
   :: forall event m query mut sub

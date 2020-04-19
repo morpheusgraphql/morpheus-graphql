@@ -21,9 +21,7 @@ import qualified Network.Wai                   as Wai
 import qualified Network.Wai.Handler.Warp      as Warp
 import qualified Network.Wai.Handler.WebSockets
                                                as WaiWs
-import           Network.WebSockets             ( defaultConnectionOptions 
-                                                , Connection
-                                                )
+import           Network.WebSockets             ( defaultConnectionOptions )
 import           Web.Scotty                     ( body
                                                 , file
                                                 , get
@@ -48,7 +46,7 @@ scottyServer = do
   state   <- initGQLState
   httpApp <- httpServer state
   fetchHero >>= print
-  fetUser (interpreter gqlRoot state) >>= print
+  fetUser (interpreterWS gqlRoot state) >>= print
   Warp.runSettings settings
     $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
  where
@@ -56,7 +54,7 @@ scottyServer = do
   wsApp    = gqlSocketApp gqlRoot
   httpServer :: GQLState EVENT IO  -> IO Wai.Application
   httpServer state = scottyApp $ do
-    post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
+    post "/" $ raw =<< (liftIO . interpreterWS gqlRoot state =<< body)
     get "/" $ file "./examples/index.html"
     get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
     post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
