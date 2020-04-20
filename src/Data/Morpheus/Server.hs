@@ -70,34 +70,40 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 )
 import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.IO
-import           Data.Aeson                     ( encode )
-
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
-type GQLState e m = WSStore Connection e m -- SharedState
+type GQLState e m = Store Connection e m -- SharedState
 
-class Executor store ref m where
-  run :: store ref e m -> Action OUT ref e m -> m ()
+newtype Store ref e m = Store {
+  runStore :: Action OUT ref e m -> m ()
+}
+
+run :: MonadIO m => WSStore Connection e m -> Action OUT ref e m -> m ()
+run state (Update changes)  
+    = modifyState_ state changes
+run state (Notify runNotify)  
+    = readState state 
+      >>= runNotify
 
 runStream 
-  :: (Monad m, Executor store ref m) 
-  => store ref e m
+  :: (Monad m) 
+  => Store ref e m
   -> Scope m
   -> Stream OUT ref e m 
   ->  m (Eventless (Value VALID))
-runStream state scope Stream { stream }  
+runStream store scope Stream { stream }  
   = do
     x <- runResultT (stream (pure ()) scope)
     case x of 
       Success  r w events-> do 
-        traverse_ (run state) events
+        traverse_ (runStore store) events
         pure (Success r w []) 
       Failure x -> pure $ Failure x 
 
 -- | initializes empty GraphQL state
-initGQLState :: (MonadIO m) => IO (WSStore ref e m)
-initGQLState = WSStore <$> newMVar empty
+initGQLState :: (MonadIO m) => IO (GQLState e m)
+initGQLState = Store . run . WSStore <$> newMVar empty
 
 newtype WSStore ref e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
 
@@ -107,7 +113,7 @@ listen = liftIO . receiveData
 notify :: MonadIO m => Connection -> ByteString -> m ()
 notify conn = liftIO . sendTextData conn
 
-readState :: (MonadIO m) => GQLState e m -> m (PubSubStore e m)
+readState :: (MonadIO m) => WSStore Connection e m -> m (PubSubStore e m)
 readState = liftIO . readMVar . unWSStore
 
 modifyState_ 
@@ -117,13 +123,6 @@ modifyState_
   -> m ()
 modifyState_ state changes = liftIO $ modifyMVar_ (unWSStore state) (return . changes)
 
-instance MonadIO m => Executor WSStore Connection m where
-  run state (Update changes)  
-    = modifyState_ state changes
-  run state (Notify runNotify)  
-    = readState state 
-      >>= runNotify
-  run _ (Error x) = liftIO (print x)
 
 -- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()
@@ -145,10 +144,9 @@ streamApp root = toOutStream (coreResolver root)
 
 statefulResolver
   ::  ( MonadIO m
-      , Executor store ref m
       , RootResCon m e que mut sub
       )
-  => store ref e m
+  => Store ref e m
   -> GQLRootResolver m e que mut sub
   -> GQLRequest
   -> m GQLResponse
@@ -164,9 +162,9 @@ gqlSocketMonadIOApp
   :: (RootResCon m e que mut sub, MonadIO m)
   => (m () -> IO ())
   -> GQLRootResolver m e que mut sub
-  -> GQLState e m
+  -> Store ref e m
   -> ServerApp
-gqlSocketMonadIOApp f root state pending = do
+gqlSocketMonadIOApp f root store pending = do
   connection <- acceptApolloRequest pending
   let scope = WS 
               { listener = listen connection
@@ -176,18 +174,18 @@ gqlSocketMonadIOApp f root state pending = do
       action <- connect 
       finally
         (handler scope action) 
-        $ f $ traverse_ (run state) (disconnect action)
+        $ f $ traverse_ (runStore store) (disconnect action)
  where
   handler scope inputAction
         = f
         $ forever
-        $ runStream state scope 
+        $ runStream store scope 
         $ streamApp root inputAction
 
 -- | Same as above but specific to IO
 gqlSocketApp
   :: (RootResCon IO e que mut sub)
   => GQLRootResolver IO e que mut sub
-  -> GQLState e IO
+  -> Store ref e IO
   -> ServerApp
 gqlSocketApp = gqlSocketMonadIOApp id

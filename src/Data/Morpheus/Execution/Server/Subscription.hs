@@ -37,15 +37,12 @@ import qualified Data.HashMap.Lazy   as   HM    ( toList
 import           Data.Morpheus.Types.Internal.AST
                                                 ( Value(..)
                                                 , VALID
-                                                , Name
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLResponse(..)
                                                 , GQLRequest(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
-                                                ( Empty(..)
-                                                , failure
-                                                )
+                                                ( failure )
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( toApolloResponse 
                                                 , SubAction(..)
@@ -61,7 +58,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , runResultT
                                                 , Result(..)
                                                 , ResultT(..)
-                                                , PushEvents(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Subscription
                                                 ( Client(..)
@@ -126,7 +122,7 @@ data Mode = In | Out
 
 type IN = 'In 
 type OUT = 'Out 
-type Session = (ID, Name)
+type Session = (ID, SesionID)
 
 data Action 
     (mode :: Mode)
@@ -137,10 +133,9 @@ data Action
     Init     :: ID -> Action IN ref e m
     Request  :: GQLRequest -> Action IN ref e m
     -------------------------------------------
-    Response :: GQLResponse -> Action OUT ref e m 
+    -- Response :: GQLResponse -> Action OUT ref e m 
     Update   :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
     Notify   :: (PubSubStore e m -> m ()) -> Action OUT ref e m
-    Error    :: String -> Action OUT ref e m
 
 data Scope m
   = HTTP 
@@ -165,31 +160,24 @@ handleResponseStream
   => Session
   -> ResponseStream e m (Value VALID)
   -> Stream OUT ref e m
-handleResponseStream session resStream 
+handleResponseStream session res 
   = Stream handle
     where
     -- httpServer can't start subscription 
-     execute HTTP Subscribe {}  = Error "http can't handle subscription"
-     execute _ (Subscribe sub) = startSession sub session
-     execute _ (Publish   pub) = publishEvent pub
+     execute HTTP Subscribe {}  = failure "http can't handle subscription"
+     execute _ (Subscribe sub) = pure $ startSession sub session
+     execute _ (Publish   pub) = pure $ publishEvent pub
      --------------------------------------------------------------
-     handle _ HTTP = ResultT $ unfoldRes <$> runResultT resStream 
+     handle _ ws = ResultT $ runResultT res >>= runResultT . unfoldRes
       where
-        unfoldRes Success { events, result, warnings } = Success 
-          { result
-          , warnings
-          , events = map (execute HTTP) events
-          }
-        unfoldRes Failure { errors } = Failure { errors }
-     handle _ ws = ResultT $ unfoldRes <$> runResultT resStream 
-      where
-        unfoldRes Success { events ,warnings } 
-          = Success 
-            { result = Null
+        unfoldRes Success { events, result, warnings } = do
+          events' <- traverse (execute ws) events
+          ResultT $ pure $ Success 
+            { result
             , warnings
-            , events = map (execute ws) events
+            , events = events'
             }
-        unfoldRes Failure { errors } =  Failure { errors }
+        unfoldRes Failure { errors } = ResultT $ pure $ Failure { errors }
         --------------------------------------------------------------
         -- TODO:
         -- notifyError errors = Notify 
