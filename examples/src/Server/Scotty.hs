@@ -16,7 +16,7 @@ import           Data.Morpheus.Document         ( toGraphQLDocument )
 import           Data.Morpheus.Server           ( GQLState
                                                 , gqlSocketApp
                                                 , initGQLState
-                                                , statefulResolver
+                                                , statefull
                                                 )
 import qualified Network.Wai                   as Wai
 import qualified Network.Wai.Handler.Warp      as Warp
@@ -52,7 +52,7 @@ scottyServer = do
     $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
-  wsApp    = gqlSocketApp gqlRoot
+  wsApp    = gqlSocketApp (interpreter gqlRoot)
   httpServer :: GQLState EVENT IO  -> IO Wai.Application
   httpServer state = scottyApp $ do
     post "/" $ raw =<< (liftIO . interpreterWS gqlRoot state =<< body)

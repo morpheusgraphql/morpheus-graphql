@@ -71,39 +71,39 @@ class Interpreter e m a b where
     => (RootResCon m e query mut sub) 
         => GQLRootResolver m e query mut sub
         -> a
-        -> m b
+        -> b
   interpreterWS ::
        MonadIO m
     => (RootResCon m e query mut sub) 
         => GQLRootResolver m e query mut sub
         -> GQLState e m 
         -> a
-        -> m b
+        -> b
 
-instance Interpreter e m GQLRequest GQLResponse where
+instance Interpreter e m GQLRequest (m GQLResponse) where
   interpreter = statelessResolver
   -- interpreterWS root state =  statefulResolver state root 
 
 instance Interpreter e m Input (Stream e m) where
-  interpreter root = pure . toOutStream (coreResolver root)
+  interpreter root = toOutStream (coreResolver root)
 
-instance Interpreter e m LB.ByteString LB.ByteString  where
+instance Interpreter e m LB.ByteString (m LB.ByteString)  where
   interpreter root = byteStringIO (interpreter root)
-  -- interpreterWS root state = byteStringIO (statefulResolver state root) 
+  interpreterWS root state = byteStringIO (statefull state (interpreter root)) 
 
-instance Interpreter e m LT.Text LT.Text  where
+instance Interpreter e m LT.Text  (m LT.Text)  where
   interpreter root 
     = fmap decodeUtf8 . interpreter root . encodeUtf8
   interpreterWS root state 
     = fmap decodeUtf8 . interpreterWS root state . encodeUtf8
 
-instance Interpreter e m ByteString ByteString where
+instance Interpreter e m ByteString (m ByteString) where
   interpreter root 
     = fmap LB.toStrict . interpreter root . LB.fromStrict
   interpreterWS root state  
     = fmap LB.toStrict . interpreterWS root state . LB.fromStrict
 
-instance Interpreter e m Text Text where
+instance Interpreter e m Text (m Text) where
   interpreter root 
     = fmap LT.toStrict . interpreter root . LT.fromStrict
   interpreterWS root state 
