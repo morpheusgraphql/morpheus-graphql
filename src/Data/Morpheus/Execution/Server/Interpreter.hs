@@ -8,27 +8,10 @@ module Data.Morpheus.Execution.Server.Interpreter
   )
 where
 
-import           Data.ByteString                ( ByteString )
-import qualified Data.ByteString.Lazy.Char8    as LB
-                                                ( ByteString
-                                                , fromStrict
-                                                , toStrict
-                                                )
-import           Data.Text                      ( Text )
-import qualified Data.Text.Lazy                as LT
-                                                ( Text
-                                                , fromStrict
-                                                , toStrict
-                                                )
-import           Data.Text.Lazy.Encoding        ( decodeUtf8
-                                                , encodeUtf8
-                                                )
-import           Control.Monad.IO.Class         ( MonadIO() )
 
 -- MORPHEUS
 import           Data.Morpheus.Execution.Server.Subscription
-                                                ( Action
-                                                , Stream
+                                                ( Stream
                                                 , Input
                                                 , toOutStream
                                                 )
@@ -36,9 +19,6 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , coreResolver
                                                 , statelessResolver
-                                                )
-import           Data.Morpheus.Server           ( statefull
-                                                , GQLState
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)

@@ -17,13 +17,7 @@ module Data.Morpheus.Execution.Server.Resolve
   )
 where
 
-import           Data.Aeson.Internal            ( formatError
-                                                , ifromJSON
-                                                )
-import           Data.Aeson.Parser              ( eitherDecodeWith
-                                                , jsonNoDup
-                                                )
-import qualified Data.ByteString.Lazy.Char8    as L
+
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Proxy                     ( Proxy(..) )
 
@@ -73,7 +67,6 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Eventless
                                                 , cleanEvents
                                                 , ResultT(..)
-                                                , Failure(..)
                                                 , resolveUpdates
                                                 , Context(..)
                                                 , runResolverModel
