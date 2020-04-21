@@ -40,11 +40,14 @@ import           Control.Concurrent             ( MVar
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( ResultT(..)
                                                 , Result(..)
+                                                , GQLChannel(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( acceptApolloRequest )
+import           Data.Morpheus.Types.Internal.Subscription
+                                                (publish)
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( connect
                                                 , disconnect
@@ -61,8 +64,9 @@ import           Data.Morpheus.Types.IO         ( MapAPI(..)
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
-newtype Store e m = Store {
-  runStore :: Action e m -> m ()
+data Store e m = Store {
+  runStore :: Action e m -> m (),
+  publishStore :: e -> m ()
 }
 
 run :: MonadIO m => WSStore e m -> Action e m -> m ()
@@ -89,8 +93,18 @@ runStream store scope Stream { stream }
         Failure x -> pure $ Failure x 
 
 -- | initializes empty GraphQL state
-initGQLState :: (MonadIO m) => IO (Store e m)
-initGQLState = Store . run . WSStore <$> newMVar empty
+initGQLState :: 
+  ( MonadIO m
+  , (Eq (StreamChannel event)) 
+  , (GQLChannel event) 
+  ) 
+  => IO (Store event m)
+initGQLState = do
+  store <- newMVar empty
+  pure Store 
+    { runStore = run (WSStore store)
+    , publishStore = \event -> liftIO (readMVar store)  >>= publish event
+    }
 
 newtype WSStore e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
 

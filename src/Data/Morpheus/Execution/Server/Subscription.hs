@@ -25,10 +25,8 @@ where
 
 import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
-import           Data.List                      ( intersect )
 import           Data.UUID.V4                   ( nextRandom )
-import qualified Data.HashMap.Lazy   as   HM    ( toList
-                                                , insert
+import qualified Data.HashMap.Lazy   as   HM    ( insert
                                                 , delete
                                                 )
 
@@ -37,19 +35,15 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Value(..)
                                                 , VALID
                                                 )
-import           Data.Morpheus.Types.IO         ( GQLResponse(..)
-                                                , GQLRequest(..)
-                                                )
+import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( failure )
 import           Data.Morpheus.Types.Internal.Apollo
-                                                ( toApolloResponse 
-                                                , SubAction(..)
+                                                ( SubAction(..)
                                                 , apolloFormat
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Event(..)
-                                                , SubEvent
+                                                ( SubEvent
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
@@ -81,15 +75,6 @@ updateClient
   -> ID
   -> Action e m 
 updateClient  f cid = Update (adjust f cid)
-
-publishEvent
-  :: ( Eq (StreamChannel e)
-     , Monad m 
-     , GQLChannel e
-     ) 
-  => e 
-  -> Action e m 
-publishEvent = Notify . publish
 
 endSession :: Session -> Action e m 
 endSession (clientId, sessionId) = updateClient endSub clientId
@@ -142,7 +127,7 @@ handleResponseStream session res
   = Stream handle
     where
     -- httpServer can't start subscription 
-     execute HTTP{} (Publish   pub) = pure $ publishEvent pub
+     execute HTTP{} (Publish event) = pure $ Notify $ publish event
      execute HTTP{} Subscribe {}  = failure "http can't handle subscription"
      execute WS{}   Publish   {} = failure "ws only subscribes"
      execute WS{}   (Subscribe sub) = pure $ startSession sub session
