@@ -10,16 +10,13 @@
 
 module Data.Morpheus.Execution.Server.Resolve
   ( statelessResolver
-  , byteStringIO
   , RootResCon
   , fullSchema
   , coreResolver
   , EventCon
-  , decodeNoDup
   )
 where
 
-import           Data.Aeson                     ( encode )
 import           Data.Aeson.Internal            ( formatError
                                                 , ifromJSON
                                                 )
@@ -31,7 +28,6 @@ import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Proxy                     ( Proxy(..) )
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      ( badRequestError )
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( EncodeCon
                                                 , deriveModel
@@ -112,19 +108,6 @@ type RootResCon m event query mutation subscription
         m
         (subscription (Resolver SUBSCRIPTION event m))
     )
-
--- TODO: Move in base library
-decodeNoDup :: Failure String m => L.ByteString -> m GQLRequest
-decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
-  Left  (path, x) -> failure $ formatError path x
-  Right value     -> pure value
-
-
-byteStringIO
-  :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
-byteStringIO resolver request = case decodeNoDup request of
-  Left  aesonError' -> return $ badRequestError aesonError'
-  Right req         -> encode <$> resolver req
 
 statelessResolver
   :: (Monad m, RootResCon m event query mut sub)

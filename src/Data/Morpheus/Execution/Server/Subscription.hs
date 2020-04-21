@@ -140,8 +140,7 @@ data Scope m
 newtype Stream e m = 
   Stream 
     { stream 
-        :: m ()  -- ignore 
-        -> Scope m  -- scope
+        ::  Scope m 
         -> ResultT (Action e m)  m (Value VALID)
     }
 
@@ -152,7 +151,7 @@ handleResponseStream
       )
   => Session
   -> ResponseStream e m (Value VALID)
-  -> Stream e m
+  -> Stream e m 
 handleResponseStream session res 
   = Stream handle
     where
@@ -161,7 +160,7 @@ handleResponseStream session res
      execute _ (Subscribe sub) = pure $ startSession sub session
      execute _ (Publish   pub) = pure $ publishEvent pub
      --------------------------------------------------------------
-     handle _ ws = ResultT $ runResultT res >>= runResultT . unfoldRes
+     handle ws = ResultT $ runResultT res >>= runResultT . unfoldRes
       where
         unfoldRes Success { events, result, warnings } = do
           events' <- traverse (execute ws) events
@@ -193,11 +192,11 @@ handleWSRequest
   -> Stream e m
 handleWSRequest gqlApp clientId = handleApollo . apolloFormat
   where 
-    handleApollo (SubError x) = Stream $ const $ const $ failure x
+    handleApollo (SubError x) = Stream $ const $ failure x
     handleApollo (AddSub sessionId request) 
       = handleResponseStream (clientId, sessionId) (gqlApp request) 
     handleApollo (RemoveSub sessionId)
-      = Stream $ const $ const $ ResultT $ pure $ 
+      = Stream $ const $ ResultT $ pure $ 
         Success Null [] [endSession (clientId, sessionId)]
 
 toOutStream 
@@ -214,10 +213,10 @@ toOutStream
 toOutStream app (Init clienId) 
   = Stream handle 
       where
-        handle ls ws@WS { listener , callback } = do
+        handle ws@WS { listener , callback } = do
           let withUpdate x = Success x [] [Update (insert clienId callback)] 
-          let runS (Stream x) = x ls ws
+          let runS (Stream x) = x ws
           ResultT (withUpdate <$> listener) >>= runS . handleWSRequest app clienId 
         -- HTTP Server does not have to wait for subsciprions
-        handle _ HTTP = failure "ws in hhtp are not allowed"
+        handle HTTP = failure "ws in hhtp are not allowed"
 toOutStream app (Request req) = handleResponseStream undefined (app req)

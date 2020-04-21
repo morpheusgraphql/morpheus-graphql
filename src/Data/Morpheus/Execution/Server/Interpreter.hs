@@ -34,7 +34,6 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 )
 import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
-                                                , byteStringIO
                                                 , coreResolver
                                                 , statelessResolver
                                                 )
@@ -46,6 +45,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 )
 import           Data.Morpheus.Types.IO         ( GQLRequest
                                                 , GQLResponse
+                                                , MapAPI(..)
                                                 )
 
 -- | main query processor and resolver
@@ -72,13 +72,13 @@ class Interpreter e m a b where
         => GQLRootResolver m e query mut sub
         -> a
         -> b
-  interpreterWS ::
-       MonadIO m
-    => (RootResCon m e query mut sub) 
-        => GQLRootResolver m e query mut sub
-        -> GQLState e m 
-        -> a
-        -> b
+  -- interpreterWS ::
+  --      MonadIO m
+  --   => (RootResCon m e query mut sub) 
+  --       => GQLRootResolver m e query mut sub
+  --       -> GQLState e m 
+  --       -> a
+  --       -> b
 
 instance Interpreter e m GQLRequest (m GQLResponse) where
   interpreter = statelessResolver
@@ -87,24 +87,7 @@ instance Interpreter e m GQLRequest (m GQLResponse) where
 instance Interpreter e m Input (Stream e m) where
   interpreter root = toOutStream (coreResolver root)
 
-instance Interpreter e m LB.ByteString (m LB.ByteString)  where
-  interpreter root = byteStringIO (interpreter root)
-  interpreterWS root state = byteStringIO (statefull state (interpreter root)) 
-
-instance Interpreter e m LT.Text  (m LT.Text)  where
-  interpreter root 
-    = fmap decodeUtf8 . interpreter root . encodeUtf8
-  interpreterWS root state 
-    = fmap decodeUtf8 . interpreterWS root state . encodeUtf8
-
-instance Interpreter e m ByteString (m ByteString) where
-  interpreter root 
-    = fmap LB.toStrict . interpreter root . LB.fromStrict
-  interpreterWS root state  
-    = fmap LB.toStrict . interpreterWS root state . LB.fromStrict
-
-instance Interpreter e m Text (m Text) where
-  interpreter root 
-    = fmap LT.toStrict . interpreter root . LT.fromStrict
-  interpreterWS root state 
-    = fmap LT.toStrict . interpreterWS root state  . LT.fromStrict
+instance ( MapAPI a ) => 
+  Interpreter e m a (m a)  where
+    interpreter root = mapAPI (interpreter root)
+ --   interpreterWS root state = statefull state (interpreter root)

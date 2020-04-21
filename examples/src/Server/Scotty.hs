@@ -47,7 +47,7 @@ scottyServer = do
   state   <- initGQLState
   httpApp <- httpServer state
   fetchHero >>= print
-  fetUser (interpreterWS gqlRoot state) >>= print
+  fetUser (statefull state (interpreter gqlRoot)) >>= print
   Warp.runSettings settings
     $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
  where
@@ -55,7 +55,7 @@ scottyServer = do
   wsApp    = gqlSocketApp (interpreter gqlRoot)
   httpServer :: GQLState EVENT IO  -> IO Wai.Application
   httpServer state = scottyApp $ do
-    post "/" $ raw =<< (liftIO . interpreterWS gqlRoot state =<< body)
+    post "/" $ raw =<< (liftIO . statefull state (interpreter gqlRoot) =<< body)
     get "/" $ file "./examples/index.html"
     get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
     post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)

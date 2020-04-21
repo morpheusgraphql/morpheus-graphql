@@ -52,7 +52,6 @@ import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , coreResolver
                                                 , EventCon
-                                                , decodeNoDup
                                                 )
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( acceptApolloRequest )
@@ -67,7 +66,11 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , Scope(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST
-import           Data.Morpheus.Types.IO
+import           Data.Morpheus.Types.IO         ( MapAPI(..)
+                                                , GQLResponse
+                                                , GQLRequest
+                                                , renderResponse
+                                                )
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
@@ -89,15 +92,16 @@ runStream
   => Store e m
   -> Scope m
   -> Stream e m 
-  ->  m (Eventless (Value VALID))
+  ->  m GQLResponse
 runStream store scope Stream { stream }  
   = do
-    x <- runResultT (stream (pure ()) scope)
-    case x of 
-      Success  r w events-> do 
-        traverse_ (runStore store) events
-        pure (Success r w []) 
-      Failure x -> pure $ Failure x 
+    x <- runResultT (stream scope)
+    renderResponse <$> 
+      case x of 
+        Success  r w events-> do 
+          traverse_ (runStore store) events
+          pure (Success r w []) 
+        Failure x -> pure $ Failure x 
 
 -- | initializes empty GraphQL state
 initGQLState :: (MonadIO m) => IO (GQLState e m)
@@ -131,18 +135,24 @@ pingThread connection = (WS.forkPingThread connection 30 >>)
 #endif
 
 statefull
+  ::  
+   ( MonadIO m,
+     MapAPI a
+   )
+  => Store e m
+  -> (Input -> Stream e m)
+  -> a
+  -> m a
+statefull store api = mapAPI (statefullResponceAPI store api)
+
+statefullResponceAPI
   ::  ( MonadIO m )
   => Store e m
   -> (Input -> Stream e m)
   -> GQLRequest
   -> m GQLResponse
-statefull store streamApp request = 
-  renderResponse 
-    <$> runStream 
-          store 
-          HTTP 
-          (streamApp $ Request request)
-
+statefullResponceAPI store streamApp request 
+  = runStream store HTTP (streamApp $ Request request)
 
 defaultWSScope :: MonadIO m => Connection -> Scope m
 defaultWSScope connection = WS 
