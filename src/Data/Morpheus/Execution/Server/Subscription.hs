@@ -130,17 +130,19 @@ data Action
     Update   :: (PubSubStore e m -> PubSubStore e m) -> Action e m 
     Notify   :: (PubSubStore e m -> m ()) -> Action e m
 
-data Scope m
-  = HTTP 
+data Scope event (m :: * -> * )
+  =  HTTP {
+      httpCallback :: event -> m ()
+    } 
    | WS 
      { listener :: m ByteString
      , callback :: ByteString -> m ()
      }
 
-newtype Stream e m = 
+newtype Stream e (m :: * -> * ) = 
   Stream 
     { stream 
-        ::  Scope m 
+        ::  Scope e m 
         -> ResultT (Action e m)  m (Value VALID)
     }
 
@@ -156,9 +158,10 @@ handleResponseStream session res
   = Stream handle
     where
     -- httpServer can't start subscription 
-     execute HTTP Subscribe {}  = failure "http can't handle subscription"
-     execute _ (Subscribe sub) = pure $ startSession sub session
-     execute _ (Publish   pub) = pure $ publishEvent pub
+     execute HTTP{} (Publish   pub) = pure $ publishEvent pub
+     execute HTTP{} Subscribe {}  = failure "http can't handle subscription"
+     execute WS{}   Publish   {} = failure "ws only subscribes"
+     execute WS{}   (Subscribe sub) = pure $ startSession sub session
      --------------------------------------------------------------
      handle ws = ResultT $ runResultT res >>= runResultT . unfoldRes
       where
@@ -218,5 +221,5 @@ toOutStream app (Init clienId)
           let runS (Stream x) = x ws
           ResultT (withUpdate <$> listener) >>= runS . handleWSRequest app clienId 
         -- HTTP Server does not have to wait for subsciprions
-        handle HTTP = failure "ws in hhtp are not allowed"
+        handle (HTTP _) = failure "ws in hhtp are not allowed"
 toOutStream app (Request req) = handleResponseStream undefined (app req)

@@ -77,7 +77,7 @@ run state (Notify runNotify)
 runStream 
   :: (Monad m) 
   => Store e m
-  -> Scope m
+  -> Scope e m
   -> Stream e m 
   ->  m GQLResponse
 runStream store scope Stream { stream }  
@@ -132,12 +132,12 @@ statefull
   -> m a
 statefull store api 
   = mapAPI 
-    ( runStream store HTTP 
+    ( runStream store HTTP { httpCallback = const $ pure ()}
     . api 
     . Request
     )
 
-defaultWSScope :: MonadIO m => Connection -> Scope m
+defaultWSScope :: MonadIO m => Connection -> Scope e m
 defaultWSScope connection = WS 
   { listener = listen connection
   , callback = notify connection
