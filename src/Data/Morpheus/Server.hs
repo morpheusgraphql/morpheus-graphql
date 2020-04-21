@@ -143,6 +143,13 @@ statefull store streamApp request =
           HTTP 
           (streamApp $ Request request)
 
+
+defaultWSScope :: MonadIO m => Connection -> Scope m
+defaultWSScope connection = WS 
+  { listener = listen connection
+  , callback = notify connection
+  }
+
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
   :: (MonadIO m)
@@ -152,10 +159,7 @@ gqlSocketMonadIOApp
   -> ServerApp
 gqlSocketMonadIOApp f streamApp store pending = do
   connection <- acceptApolloRequest pending
-  let scope = WS 
-              { listener = listen connection
-              , callback = notify connection
-              }
+  let scope = defaultWSScope connection
   pingThread connection $ do
       action <- connect 
       finally
