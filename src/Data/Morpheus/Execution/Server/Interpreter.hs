@@ -72,17 +72,9 @@ class Interpreter e m a b where
         => GQLRootResolver m e query mut sub
         -> a
         -> b
-  -- interpreterWS ::
-  --      MonadIO m
-  --   => (RootResCon m e query mut sub) 
-  --       => GQLRootResolver m e query mut sub
-  --       -> GQLState e m 
-  --       -> a
-  --       -> b
 
 instance Interpreter e m GQLRequest (m GQLResponse) where
   interpreter = statelessResolver
-  -- interpreterWS root state =  statefulResolver state root 
 
 instance Interpreter e m Input (Stream e m) where
   interpreter root = toOutStream (coreResolver root)
@@ -90,4 +82,3 @@ instance Interpreter e m Input (Stream e m) where
 instance ( MapAPI a ) => 
   Interpreter e m a (m a)  where
     interpreter root = mapAPI (interpreter root)
- --   interpreterWS root state = statefull state (interpreter root)
