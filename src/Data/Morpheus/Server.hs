@@ -38,37 +38,24 @@ import           Control.Concurrent             ( MVar
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( GQLRootResolver(..)
-                                                , ResponseEvent(..)
-                                                , ResponseStream
-                                                , ResultT(..)
+                                                ( ResultT(..)
                                                 , Result(..)
-                                                , unpackEvents
-                                                , Eventless
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
-import           Data.Morpheus.Execution.Server.Resolve
-                                                ( RootResCon
-                                                , coreResolver
-                                                , EventCon
-                                                )
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( acceptApolloRequest )
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( connect
                                                 , disconnect
-                                                , toOutStream
                                                 , Action(..)
                                                 , PubSubStore
                                                 , Input(..)
                                                 , Stream(..)
                                                 , Scope(..)
                                                 )
-import           Data.Morpheus.Types.Internal.AST
 import           Data.Morpheus.Types.IO         ( MapAPI(..)
                                                 , GQLResponse
-                                                , GQLRequest
                                                 , renderResponse
                                                 )
 
@@ -143,16 +130,12 @@ statefull
   -> (Input -> Stream e m)
   -> a
   -> m a
-statefull store api = mapAPI (statefullResponceAPI store api)
-
-statefullResponceAPI
-  ::  ( MonadIO m )
-  => Store e m
-  -> (Input -> Stream e m)
-  -> GQLRequest
-  -> m GQLResponse
-statefullResponceAPI store streamApp request 
-  = runStream store HTTP (streamApp $ Request request)
+statefull store api 
+  = mapAPI 
+    ( runStream store HTTP 
+    . api 
+    . Request
+    )
 
 defaultWSScope :: MonadIO m => Connection -> Scope m
 defaultWSScope connection = WS 
