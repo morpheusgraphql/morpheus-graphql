@@ -13,7 +13,7 @@ import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Morpheus                  ( Interpreter(..) )
 import           Data.Morpheus.Document         ( toGraphQLDocument )
-import           Data.Morpheus.Server           ( GQLState
+import           Data.Morpheus.Server           ( Store
                                                 , gqlSocketApp
                                                 , initGQLState
                                                 , statefull
@@ -53,7 +53,7 @@ scottyServer = do
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
   wsApp    = gqlSocketApp (interpreter gqlRoot)
-  httpServer :: GQLState EVENT IO  -> IO Wai.Application
+  httpServer :: Store EVENT IO  -> IO Wai.Application
   httpServer state = scottyApp $ do
     post "/" $ raw =<< (liftIO . statefull state (interpreter gqlRoot) =<< body)
     get "/" $ file "./examples/index.html"

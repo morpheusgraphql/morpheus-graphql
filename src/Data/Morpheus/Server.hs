@@ -13,7 +13,7 @@ module Data.Morpheus.Server
   ( gqlSocketApp
   , gqlSocketMonadIOApp
   , initGQLState
-  , GQLState
+  , Store
   , statefull
   )
 where
@@ -61,8 +61,6 @@ import           Data.Morpheus.Types.IO         ( MapAPI(..)
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
-type GQLState e m = Store e m -- SharedState
-
 newtype Store e m = Store {
   runStore :: Action e m -> m ()
 }
@@ -91,7 +89,7 @@ runStream store scope Stream { stream }
         Failure x -> pure $ Failure x 
 
 -- | initializes empty GraphQL state
-initGQLState :: (MonadIO m) => IO (GQLState e m)
+initGQLState :: (MonadIO m) => IO (Store e m)
 initGQLState = Store . run . WSStore <$> newMVar empty
 
 newtype WSStore e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
