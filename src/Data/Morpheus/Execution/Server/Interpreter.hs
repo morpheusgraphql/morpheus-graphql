@@ -84,7 +84,7 @@ instance Interpreter e m GQLRequest GQLResponse where
   interpreter = statelessResolver
   -- interpreterWS root state =  statefulResolver state root 
 
-instance Interpreter e m Input (Stream ref e m) where
+instance Interpreter e m Input (Stream e m) where
   interpreter root = pure . toOutStream (coreResolver root)
 
 instance Interpreter e m LB.ByteString LB.ByteString  where

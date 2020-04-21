@@ -71,13 +71,13 @@ import           Data.Morpheus.Types.IO
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
-type GQLState e m = Store Connection e m -- SharedState
+type GQLState e m = Store e m -- SharedState
 
-newtype Store ref e m = Store {
-  runStore :: Action ref e m -> m ()
+newtype Store e m = Store {
+  runStore :: Action e m -> m ()
 }
 
-run :: MonadIO m => WSStore Connection e m -> Action ref e m -> m ()
+run :: MonadIO m => WSStore e m -> Action e m -> m ()
 run state (Update changes)  
     = modifyState_ state changes
 run state (Notify runNotify)  
@@ -86,9 +86,9 @@ run state (Notify runNotify)
 
 runStream 
   :: (Monad m) 
-  => Store ref e m
+  => Store e m
   -> Scope m
-  -> Stream ref e m 
+  -> Stream e m 
   ->  m (Eventless (Value VALID))
 runStream store scope Stream { stream }  
   = do
@@ -103,7 +103,7 @@ runStream store scope Stream { stream }
 initGQLState :: (MonadIO m) => IO (GQLState e m)
 initGQLState = Store . run . WSStore <$> newMVar empty
 
-newtype WSStore ref e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
+newtype WSStore e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
 
 listen :: MonadIO m => Connection -> m ByteString
 listen = liftIO . receiveData
@@ -111,13 +111,13 @@ listen = liftIO . receiveData
 notify :: MonadIO m => Connection -> ByteString -> m ()
 notify conn = liftIO . sendTextData conn
 
-readState :: (MonadIO m) => WSStore Connection e m -> m (PubSubStore e m)
+readState :: (MonadIO m) => WSStore e m -> m (PubSubStore e m)
 readState = liftIO . readMVar . unWSStore
 
 modifyState_ 
   :: (MonadIO m) 
-  => WSStore Connection e m 
-  -> (PubSubStore e m -> PubSubStore  e m) 
+  => WSStore e m 
+  -> (PubSubStore e m -> PubSubStore e m) 
   -> m ()
 modifyState_ state changes = liftIO $ modifyMVar_ (unWSStore state) (return . changes)
 
@@ -132,8 +132,8 @@ pingThread connection = (WS.forkPingThread connection 30 >>)
 
 statefull
   ::  ( MonadIO m )
-  => Store ref e m
-  -> (Input -> Stream ref e m)
+  => Store e m
+  -> (Input -> Stream e m)
   -> GQLRequest
   -> m GQLResponse
 statefull store streamApp request = 
@@ -147,8 +147,8 @@ statefull store streamApp request =
 gqlSocketMonadIOApp
   :: (MonadIO m)
   => (m () -> IO ())
-  -> (Input -> Stream ref e m)
-  -> Store ref e m
+  -> (Input -> Stream e m)
+  -> Store e m
   -> ServerApp
 gqlSocketMonadIOApp f streamApp store pending = do
   connection <- acceptApolloRequest pending
@@ -170,7 +170,7 @@ gqlSocketMonadIOApp f streamApp store pending = do
 
 -- | Same as above but specific to IO
 gqlSocketApp
-  :: (Input -> Stream ref e IO)
-  -> Store ref e IO
+  :: (Input -> Stream e IO)
+  -> Store e IO
   -> ServerApp
 gqlSocketApp = gqlSocketMonadIOApp id
