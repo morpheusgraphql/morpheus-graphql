@@ -49,7 +49,6 @@ import           Data.Morpheus.Types.Internal.Apollo
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( Event(..)
-                                                , GQLChannel(..)
                                                 , SubEvent
                                                 , GQLChannel(..)
                                                 , ResponseEvent(..)
@@ -62,11 +61,11 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 ( Client(..)
                                                 , PubSubStore
                                                 , SesionID
-                                                , elems
                                                 , insert
                                                 , adjust
                                                 , delete
                                                 , ID
+                                                , publish
                                                 )
  
 
@@ -90,22 +89,7 @@ publishEvent
      ) 
   => e 
   -> Action e m 
-publishEvent event = Notify $ traverse_ sendMessage . elems
- where
-  sendMessage Client { clientSessions, clientCallback }
-    | null clientSessions  = pure ()
-    | otherwise = traverse_ send (filterByChannels clientSessions)
-   where
-    send (sid, Event { content = subscriptionRes }) 
-      = toApolloResponse sid <$> subscriptionRes event >>= clientCallback
-    ---------------------------
-    filterByChannels = filter
-      ( not
-      . null
-      . intersect (streamChannels event)
-      . channels
-      . snd
-      ) . HM.toList
+publishEvent = Notify . publish
 
 endSession :: Session -> Action e m 
 endSession (clientId, sessionId) = updateClient endSub clientId

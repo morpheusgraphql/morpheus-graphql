@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns   #-}
 {-# LANGUAGE KindSignatures   #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Data.Morpheus.Types.Internal.Subscription
   ( Client(..)
@@ -11,9 +12,12 @@ module Data.Morpheus.Types.Internal.Subscription
   , adjust
   , delete
   , elems
+  , publish
   )
 where
 
+import           Data.List                      ( intersect )
+import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.Semigroup                 ( (<>) )
 import           Data.Text                      ( Text )
@@ -24,14 +28,19 @@ import qualified Data.HashMap.Lazy   as  HM     ( empty
                                                 , delete
                                                 , adjust
                                                 , elems
+                                                , toList
+                                                )
+import           Data.Morpheus.Types.Internal.Apollo
+                                                ( toApolloResponse
                                                 )
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Operation
                                                 (Empty(..))
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( SubEvent )
-
-
+                                                ( SubEvent 
+                                                , Event(..)
+                                                , GQLChannel(..)
+                                                )
 
 type ID = UUID
 
@@ -51,6 +60,31 @@ instance Show (Client e m) where
       <> ", sessions: "
       <> show (keys clientSessions)
       <> " }"
+
+publish
+  :: ( Eq (StreamChannel event)
+     , GQLChannel event
+     , Monad m
+     ) 
+  => event 
+  -> PubSubStore event m 
+  -> m ()
+publish event = traverse_ sendMessage . elems
+ where
+  sendMessage Client { clientSessions, clientCallback }
+    | null clientSessions  = pure ()
+    | otherwise = traverse_ send (filterByChannels clientSessions)
+   where
+    send (sid, Event { content = subscriptionRes }) 
+      = toApolloResponse sid <$> subscriptionRes event >>= clientCallback
+    ---------------------------
+    filterByChannels = filter
+      ( not
+      . null
+      . intersect (streamChannels event)
+      . channels
+      . snd
+      ) . HM.toList
 
 -- subscription 
 -- store
