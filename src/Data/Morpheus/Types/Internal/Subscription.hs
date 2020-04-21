@@ -11,7 +11,6 @@ module Data.Morpheus.Types.Internal.Subscription
   , insert
   , adjust
   , delete
-  , elems
   , publish
   )
 where
