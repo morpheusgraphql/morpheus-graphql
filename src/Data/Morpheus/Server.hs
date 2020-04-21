@@ -7,7 +7,6 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
-{-# LANGUAGE OverloadedStrings      #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
@@ -15,7 +14,7 @@ module Data.Morpheus.Server
   , gqlSocketMonadIOApp
   , initGQLState
   , GQLState
-  , statefulResolver
+  , statefull
   )
 where
 
@@ -63,8 +62,7 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , toOutStream
                                                 , Action(..)
                                                 , PubSubStore
-                                                , OUT
-                                                , IN
+                                                , Input(..)
                                                 , Stream(..)
                                                 , Scope(..)
                                                 )
@@ -76,10 +74,10 @@ import           Data.Morpheus.Types.IO
 type GQLState e m = Store Connection e m -- SharedState
 
 newtype Store ref e m = Store {
-  runStore :: Action OUT ref e m -> m ()
+  runStore :: Action ref e m -> m ()
 }
 
-run :: MonadIO m => WSStore Connection e m -> Action OUT ref e m -> m ()
+run :: MonadIO m => WSStore Connection e m -> Action ref e m -> m ()
 run state (Update changes)  
     = modifyState_ state changes
 run state (Notify runNotify)  
@@ -90,7 +88,7 @@ runStream
   :: (Monad m) 
   => Store ref e m
   -> Scope m
-  -> Stream OUT ref e m 
+  -> Stream ref e m 
   ->  m (Eventless (Value VALID))
 runStream store scope Stream { stream }  
   = do
@@ -132,39 +130,27 @@ pingThread connection = WS.withPingThread connection 30 (return ())
 pingThread connection = (WS.forkPingThread connection 30 >>)
 #endif
 
-
-streamApp
-  ::  (RootResCon m e que mut sub
-      , MonadIO m
-      )
-  => GQLRootResolver m e que mut sub
-  -> Action IN ref e m
-  -> Stream OUT ref e m
-streamApp root = toOutStream (coreResolver root)
-
-statefulResolver
-  ::  ( MonadIO m
-      , RootResCon m e que mut sub
-      )
+statefull
+  ::  ( MonadIO m )
   => Store ref e m
-  -> GQLRootResolver m e que mut sub
+  -> (Input -> Stream ref e m)
   -> GQLRequest
   -> m GQLResponse
-statefulResolver store root request = 
+statefull store streamApp request = 
   renderResponse 
     <$> runStream 
           store 
           HTTP 
-          (streamApp root (Request request))
+          (streamApp $ Request request)
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 gqlSocketMonadIOApp
-  :: (RootResCon m e que mut sub, MonadIO m)
+  :: (MonadIO m)
   => (m () -> IO ())
-  -> GQLRootResolver m e que mut sub
+  -> (Input -> Stream ref e m)
   -> Store ref e m
   -> ServerApp
-gqlSocketMonadIOApp f root store pending = do
+gqlSocketMonadIOApp f streamApp store pending = do
   connection <- acceptApolloRequest pending
   let scope = WS 
               { listener = listen connection
@@ -180,12 +166,11 @@ gqlSocketMonadIOApp f root store pending = do
         = f
         $ forever
         $ runStream store scope 
-        $ streamApp root inputAction
+        $ streamApp inputAction
 
 -- | Same as above but specific to IO
 gqlSocketApp
-  :: (RootResCon IO e que mut sub)
-  => GQLRootResolver IO e que mut sub
+  :: (Input -> Stream ref e IO)
   -> Store ref e IO
   -> ServerApp
 gqlSocketApp = gqlSocketMonadIOApp id

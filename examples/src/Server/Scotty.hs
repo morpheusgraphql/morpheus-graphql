@@ -16,6 +16,7 @@ import           Data.Morpheus.Document         ( toGraphQLDocument )
 import           Data.Morpheus.Server           ( GQLState
                                                 , gqlSocketApp
                                                 , initGQLState
+                                                , statefulResolver
                                                 )
 import qualified Network.Wai                   as Wai
 import qualified Network.Wai.Handler.Warp      as Warp

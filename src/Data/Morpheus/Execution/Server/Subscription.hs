@@ -16,11 +16,10 @@ module Data.Morpheus.Execution.Server.Subscription
   , Stream(..)
   , toOutStream
   , handleResponseStream
-  , IN
-  , OUT
   , PubSubStore
   , Action(..)
   , Scope(..)
+  , Input(..)
   )
 where
 
@@ -71,17 +70,17 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 )
  
 
-connect :: Monad m => IO (Action IN client e m)
+connect :: IO Input
 connect = Init <$> nextRandom
 
-disconnect:: Action mode ref e m -> [Action OUT ref e m]
+disconnect:: Input -> [Action ref e m]
 disconnect (Init clientID)  = [Update (delete clientID)]
 disconnect _ = []
 
 updateClient
   :: (Client e m -> Client e m ) 
   -> ID
-  -> Action OUT ref e m 
+  -> Action ref e m 
 updateClient  f cid = Update (adjust f cid)
 
 publishEvent
@@ -90,7 +89,7 @@ publishEvent
      , GQLChannel e
      ) 
   => e 
-  -> Action OUT ref e m 
+  -> Action ref e m 
 publishEvent event = Notify $ traverse_ sendMessage . elems
  where
   sendMessage Client { clientSessions, clientCallback }
@@ -108,34 +107,29 @@ publishEvent event = Notify $ traverse_ sendMessage . elems
       . snd
       ) . HM.toList
 
-endSession :: Session -> Action OUT ref e m 
+endSession :: Session -> Action ref e m 
 endSession (clientId, sessionId) = updateClient endSub clientId
  where
   endSub client = client { clientSessions = HM.delete sessionId (clientSessions client) }
 
-startSession :: SubEvent e m -> Session -> Action OUT ref e m 
+startSession :: SubEvent e m -> Session -> Action ref e m 
 startSession  subscriptions (clientId, sessionId) = updateClient startSub clientId
  where
   startSub client = client { clientSessions = HM.insert sessionId subscriptions (clientSessions client) }
 
-data Mode = In | Out
-
-type IN = 'In 
-type OUT = 'Out 
 type Session = (ID, SesionID)
 
-data Action 
-    (mode :: Mode)
+data Input 
+  = Init ID
+  | Request GQLRequest 
+
+data Action
     ref 
     e 
     (m :: * -> * )
   where 
-    Init     :: ID -> Action IN ref e m
-    Request  :: GQLRequest -> Action IN ref e m
-    -------------------------------------------
-    -- Response :: GQLResponse -> Action OUT ref e m 
-    Update   :: (PubSubStore e m -> PubSubStore e m) -> Action OUT ref e m 
-    Notify   :: (PubSubStore e m -> m ()) -> Action OUT ref e m
+    Update   :: (PubSubStore e m -> PubSubStore e m) -> Action ref e m 
+    Notify   :: (PubSubStore e m -> m ()) -> Action ref e m
 
 data Scope m
   = HTTP 
@@ -144,12 +138,12 @@ data Scope m
      , callback :: ByteString -> m ()
      }
 
-newtype Stream (io :: Mode) ref e m = 
+newtype Stream ref e m = 
   Stream 
     { stream 
         :: m ()  -- ignore 
         -> Scope m  -- scope
-        -> ResultT (Action io ref e m)  m (Value VALID)
+        -> ResultT (Action ref e m)  m (Value VALID)
     }
 
 handleResponseStream
@@ -159,7 +153,7 @@ handleResponseStream
       )
   => Session
   -> ResponseStream e m (Value VALID)
-  -> Stream OUT ref e m
+  -> Stream ref e m
 handleResponseStream session res 
   = Stream handle
     where
@@ -197,7 +191,7 @@ handleWSRequest
      )
   -> ID
   -> ByteString
-  -> Stream OUT ref e m
+  -> Stream ref e m
 handleWSRequest gqlApp clientId = handleApollo . apolloFormat
   where 
     handleApollo (SubError x) = Stream $ const $ const $ failure x
@@ -216,8 +210,8 @@ toOutStream
   => (  GQLRequest
      -> ResponseStream e m (Value VALID)
      )
-  -> Action IN ref e m 
-  -> Stream OUT ref e m
+  -> Input 
+  -> Stream ref e m
 toOutStream app (Init clienId) 
   = Stream handle 
       where

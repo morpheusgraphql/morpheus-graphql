@@ -26,12 +26,19 @@ import           Data.Text.Lazy.Encoding        ( decodeUtf8
 import           Control.Monad.IO.Class         ( MonadIO() )
 
 -- MORPHEUS
+import           Data.Morpheus.Execution.Server.Subscription
+                                                ( Action
+                                                , Stream
+                                                , Input
+                                                , toOutStream
+                                                )
 import           Data.Morpheus.Execution.Server.Resolve
                                                 ( RootResCon
                                                 , byteStringIO
+                                                , coreResolver
                                                 , statelessResolver
                                                 )
-import           Data.Morpheus.Server           ( statefulResolver
+import           Data.Morpheus.Server           ( statefull
                                                 , GQLState
                                                 )
 import           Data.Morpheus.Types.Internal.Resolving
@@ -75,11 +82,14 @@ class Interpreter e m a b where
 
 instance Interpreter e m GQLRequest GQLResponse where
   interpreter = statelessResolver
-  interpreterWS root state =  statefulResolver state root 
+  -- interpreterWS root state =  statefulResolver state root 
+
+instance Interpreter e m Input (Stream ref e m) where
+  interpreter root = pure . toOutStream (coreResolver root)
 
 instance Interpreter e m LB.ByteString LB.ByteString  where
   interpreter root = byteStringIO (interpreter root)
-  interpreterWS root state = byteStringIO (statefulResolver state root) 
+  -- interpreterWS root state = byteStringIO (statefulResolver state root) 
 
 instance Interpreter e m LT.Text LT.Text  where
   interpreter root 
