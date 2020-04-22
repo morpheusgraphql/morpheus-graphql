@@ -2,7 +2,7 @@
 {-# LANGUAGE KindSignatures   #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Data.Morpheus.Types.Internal.Subscription
+module Data.Morpheus.Types.Internal.PubSubStore
   ( Client(..)
   , ID
   , PubSubStore

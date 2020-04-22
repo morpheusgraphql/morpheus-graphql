@@ -57,7 +57,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Result(..)
                                                 , ResultT(..)
                                                 )
-import           Data.Morpheus.Types.Internal.Subscription
+import           Data.Morpheus.Types.Internal.PubSubStore
                                                 ( Client(..)
                                                 , PubSubStore
                                                 , SesionID

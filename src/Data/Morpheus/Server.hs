@@ -42,7 +42,7 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( acceptApolloRequest )
-import           Data.Morpheus.Types.Internal.Subscription
+import           Data.Morpheus.Types.Internal.PubSubStore
                                                 ( publish
                                                 , PubSubStore
                                                 )
