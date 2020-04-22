@@ -74,7 +74,7 @@ data Store e m = Store {
 run :: MonadIO m => WSStore e m -> Action e m -> m ()
 run state (Update changes)  
     = modifyState_ state changes
--- run state (Notify runNotify)  
+-- run state (Read runNotify)  
 --     = readState state 
 --       >>= runNotify
 
@@ -111,10 +111,10 @@ initGQLState ::
   ) 
   => IO (Store event m)
 initGQLState = do
-  store <- newMVar empty
+  store <- WSStore <$> newMVar empty
   pure Store 
-    { runStore = run (WSStore store)
-    , publishStore = \event -> liftIO (readMVar store)  >>= publish event
+    { runStore = run store
+    , publishStore = \event -> readState store >>= publish event
     }
 
 newtype WSStore e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
@@ -177,16 +177,16 @@ gqlSocketMonadIOApp f streamApp store pending = do
   connection <- acceptApolloRequest pending
   let scope = defaultWSScope connection
   pingThread connection $ do
-      action <- connect 
+      input <- connect 
       finally
-        (handler scope action) 
-        $ f $ runStore store (disconnect action)
+        (handler scope input) 
+        $ f $ runStore store (disconnect input)
  where
-  handler scope inputAction
+  handler scope input
         = f
         $ forever
         $ runStream store scope 
-        $ streamApp inputAction
+        $ streamApp input
 
 -- | Same as above but specific to IO
 gqlSocketApp

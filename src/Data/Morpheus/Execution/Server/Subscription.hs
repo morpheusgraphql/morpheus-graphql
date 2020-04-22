@@ -62,10 +62,8 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , adjust
                                                 , delete
                                                 , ID
-                                                , publish
                                                 )
  
-
 connect :: IO (Input 'Ws)
 connect = Init <$> nextRandom
 
@@ -138,14 +136,13 @@ handleResponseStream
 handleResponseStream session res 
   = StreamWS handle
     where
-    -- httpServer can't start subscription 
-     execute WS{}   Publish   {} = failure "websocket can only handle subscriptions, not mutations"
-     execute WS{}   (Subscribe sub) = pure $ startSession sub session
+     execute Publish   {} = failure "websocket can only handle subscriptions, not mutations"
+     execute (Subscribe sub) = pure $ startSession sub session
      --------------------------------------------------------------
-     handle ws = ResultT $ runResultT res >>= runResultT . unfoldRes
+     handle _ = ResultT $ runResultT res >>= runResultT . unfoldRes
       where
         unfoldRes Success { events, result, warnings } = do
-          events' <- traverse (execute ws) events
+          events' <- traverse execute events
           ResultT $ pure $ Success 
             { result
             , warnings
