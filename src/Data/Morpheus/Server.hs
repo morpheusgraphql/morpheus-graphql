@@ -83,7 +83,7 @@ runStreamWS
   -> Scope 'Ws e m
   -> Stream 'Ws e m 
   ->  m ()
-runStreamWS store scope@WS{callback} StreamWS { streamWS }  
+runStreamWS store scope@WS{ callback } StreamWS { streamWS }  
   = streamWS scope 
     >>= either callback (traverse_ (run store))
 
@@ -92,15 +92,11 @@ runStreamHTTP
   => Scope 'Http e m
   -> Stream 'Http e m 
   ->  m GQLResponse
-runStreamHTTP HTTP{ httpCallback } StreamHTTP { streamHTTP }  
+runStreamHTTP scope@HTTP{ httpCallback } StreamHTTP { streamHTTP }  
   = do
-    x <- runResultT (streamHTTP httpCallback)
-    renderResponse <$>
-      case x of 
-        Success  r w events-> do 
-          traverse_ httpCallback events
-          pure (Success r w []) 
-        Failure x -> pure $ Failure x 
+    (events, response) <- streamHTTP scope
+    traverse_ httpCallback events
+    pure response
 
 -- | initializes empty GraphQL state
 initGQLState :: 

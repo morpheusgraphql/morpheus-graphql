@@ -112,6 +112,7 @@ data Scope (api :: API ) event (m :: * -> * ) where
   WS :: 
      { listener :: m ByteString
      , callback :: ByteString -> m ()
+     , update   :: (PubSubStore e m -> PubSubStore e m) -> m ()
     } -> Scope 'Ws event m
 
 data API = Http | Ws
@@ -127,7 +128,7 @@ data Stream
     } -> Stream 'Ws e m
   StreamHTTP
     :: 
-    { streamHTTP :: (e -> m()) -> ResultT e m (Value VALID)
+    { streamHTTP :: Scope 'Http e m -> m ([e], GQLResponse)
     } -> Stream 'Http e m
 
 handleResponseStream
@@ -190,7 +191,7 @@ toOutStream app (Init clienId)
           let runS (StreamWS x) = x ws
           bla <- listener >>= runS . handleWSRequest app clienId
           pure $ (Update (insert clienId callback) :) <$> bla
-toOutStream app (Request req) = handleResponseHTTP (app req)
+toOutStream app (Request req) = StreamHTTP $ handleResponseHTTP (app req)
 
 handleResponseHTTP
   ::  (  Eq (StreamChannel e)
@@ -198,9 +199,17 @@ handleResponseHTTP
       , Monad m
       )
   => ResponseStream e m (Value VALID)
-  -> Stream 'Http e m 
-handleResponseHTTP res 
-  = StreamHTTP $ const $ handleRes res execute 
+  -> Scope 'Http e m
+  -> m ([e], GQLResponse) 
+handleResponseHTTP 
+  res
+  HTTP { httpCallback } = do
+    x <- runResultT (handleRes res execute)
+    case x of 
+      Success r _ events-> do 
+      --  traverse_ httpCallback events -- TODO: use it
+        pure (events, Data r) 
+      Failure err -> pure ([],Errors err)
     where
      execute (Publish event) = pure event
      execute Subscribe {}  = failure ("http can't handle subscription" :: String)
