@@ -9,11 +9,8 @@
 {-# LANGUAGE ScopedTypeVariables     #-}
 {-# LANGUAGE OverloadedStrings       #-}
 
-module Data.Morpheus.Execution.Server.Subscription
-  ( Client
-  , connect
-  , disconnect
-  , toOutStream
+module Data.Morpheus.Types.Internal.Subscription.Stream
+  ( toOutStream
   , runStreamWS
   , runStreamHTTP
   , Stream
@@ -43,11 +40,6 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( failure )
-import           Data.Morpheus.Types.Internal.Apollo
-                                                ( SubAction(..)
-                                                , apolloFormat
-                                                , toApolloResponse
-                                                )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( SubEvent
                                                 , GQLChannel(..)
@@ -57,9 +49,14 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , Result(..)
                                                 , ResultT(..)
                                                 )
-import           Data.Morpheus.Types.Internal.PubSubStore
+import           Data.Morpheus.Types.Internal.Subscription.Apollo
+                                                ( SubAction(..)
+                                                , apolloFormat
+                                                , toApolloResponse
+                                                )
+import           Data.Morpheus.Types.Internal.Subscription.ClientStore
                                                 ( Client(..)
-                                                , PubSubStore
+                                                , ClientStore
                                                 , SesionID
                                                 , insert
                                                 , adjust
@@ -67,14 +64,6 @@ import           Data.Morpheus.Types.Internal.PubSubStore
                                                 , ID
                                                 )
  
-
-
-connect :: IO (Input 'Ws)
-connect = Init <$> nextRandom
-
-disconnect:: Scope 'Ws e m -> Input 'Ws -> m ()
-disconnect WS { update }  (Init clientID)  = update (delete clientID)
-
 updateClient
   :: (Client e m -> Client e m ) 
   -> ID
@@ -101,7 +90,7 @@ data Input
 
 newtype Updates e ( m :: * -> * ) =  
     Updates {
-      _runUpdate:: PubSubStore e m -> PubSubStore e m  
+      _runUpdate:: ClientStore e m -> ClientStore e m  
     }
 
 run :: Scope 'Ws e m -> Updates e m -> m ()
@@ -114,7 +103,7 @@ data Scope (api :: API ) event (m :: * -> * ) where
   WS :: 
      { listener :: m ByteString
      , callback :: ByteString -> m ()
-     , update   :: (PubSubStore event m -> PubSubStore event m) -> m ()
+     , update   :: (ClientStore event m -> ClientStore event m) -> m ()
     } -> Scope 'Ws event m
 
 data API = Http | Ws

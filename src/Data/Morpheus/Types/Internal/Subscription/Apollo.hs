@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Types.Internal.Apollo
+module Data.Morpheus.Types.Internal.Subscription.Apollo
   ( SubAction(..)
   , apolloFormat
   , acceptApolloRequest

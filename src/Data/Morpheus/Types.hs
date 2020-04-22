@@ -78,7 +78,7 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 )
 import           Data.Morpheus.Types.Types      ( Undefined(..) )
-import           Data.Morpheus.Execution.Server.Subscription  
+import           Data.Morpheus.Types.Internal.Subscription  
                                                 ( Stream
                                                 , Input  
                                                 )

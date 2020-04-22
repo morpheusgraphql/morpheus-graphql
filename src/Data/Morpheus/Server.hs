@@ -40,14 +40,11 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLChannel(..) )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
-import           Data.Morpheus.Types.Internal.Apollo
-                                                ( acceptApolloRequest )
-import           Data.Morpheus.Types.Internal.PubSubStore
-                                                ( publish
-                                                , PubSubStore
-                                                )
-import           Data.Morpheus.Execution.Server.Subscription
+import           Data.Morpheus.Types.IO         ( MapAPI(..) )
+import           Data.Morpheus.Types.Internal.Subscription
                                                 ( connect
+                                                , publish
+                                                , ClientStore
                                                 , disconnect
                                                 , Input(..)
                                                 , Stream
@@ -55,14 +52,14 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , API(..)
                                                 , runStreamHTTP
                                                 , runStreamWS
+                                                , acceptApolloRequest
                                                 )
-import           Data.Morpheus.Types.IO         ( MapAPI(..) )
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
 data Store e m = Store 
-  { readStore :: m (PubSubStore e m)
-  , writeStore :: (PubSubStore e m -> PubSubStore e m) -> m ()
+  { readStore :: m (ClientStore e m)
+  , writeStore :: (ClientStore e m -> ClientStore e m) -> m ()
   }
 
 -- | initializes empty GraphQL state

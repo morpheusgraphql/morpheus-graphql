@@ -2,10 +2,10 @@
 {-# LANGUAGE KindSignatures   #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Data.Morpheus.Types.Internal.PubSubStore
+module Data.Morpheus.Types.Internal.Subscription.ClientStore
   ( Client(..)
   , ID
-  , PubSubStore
+  , ClientStore
   , SesionID
   , empty
   , insert
@@ -29,10 +29,12 @@ import qualified Data.HashMap.Lazy   as  HM     ( empty
                                                 , elems
                                                 , toList
                                                 )
-import           Data.Morpheus.Types.Internal.Apollo
+
+
+-- MORPHEUS
+import           Data.Morpheus.Types.Internal.Subscription.Apollo
                                                 ( toApolloResponse
                                                 )
--- MORPHEUS
 import           Data.Morpheus.Types.Internal.Operation
                                                 (Empty(..))
 import           Data.Morpheus.Types.Internal.Resolving
@@ -66,7 +68,7 @@ publish
      , Monad m
      ) 
   => event 
-  -> PubSubStore event m 
+  -> ClientStore event m 
   -> m ()
 publish event = traverse_ sendMessage . elems
  where
@@ -88,27 +90,27 @@ publish event = traverse_ sendMessage . elems
 -- subscription 
 -- store
 -- stores active subsciption connections and requests
-newtype PubSubStore e ( m :: * -> * ) = 
-    PubSubStore 
+newtype ClientStore e ( m :: * -> * ) = 
+    ClientStore 
       { unpackStore :: HashMap ID (Client e m)
       } deriving (Show)
 
 type StoreMap e m
-  = PubSubStore e m 
-  -> PubSubStore e m
+  = ClientStore e m 
+  -> ClientStore e m
 
 mapStore 
   ::  ( HashMap ID (Client e m) 
       -> HashMap ID (Client e m)
       )
   -> StoreMap e m
-mapStore f = PubSubStore . f . unpackStore
+mapStore f = ClientStore . f . unpackStore
 
-elems :: PubSubStore e m ->  [Client e m]
+elems :: ClientStore e m ->  [Client e m]
 elems = HM.elems . unpackStore
 
-instance Empty (PubSubStore e m) where
-  empty = PubSubStore HM.empty
+instance Empty (ClientStore e m) where
+  empty = ClientStore HM.empty
 
 insert 
   :: ID

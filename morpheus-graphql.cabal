@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5f51c5238e4de56b962f13eb5fbb85edd758a3f31eb9d3d7c09aae5da7be8973
+-- hash: 84dcbdf1008a7404834feeca697a79082a02c2d3a5d2669de08fbebc3ad67ea7
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -358,7 +358,6 @@ library
       Data.Morpheus.Execution.Server.Interpreter
       Data.Morpheus.Execution.Server.Introspect
       Data.Morpheus.Execution.Server.Resolve
-      Data.Morpheus.Execution.Server.Subscription
       Data.Morpheus.Parsing.Document.TypeSystem
       Data.Morpheus.Parsing.Internal.Arguments
       Data.Morpheus.Parsing.Internal.Internal
@@ -378,7 +377,6 @@ library
       Data.Morpheus.Types.GQLScalar
       Data.Morpheus.Types.GQLType
       Data.Morpheus.Types.ID
-      Data.Morpheus.Types.Internal.Apollo
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.Data
       Data.Morpheus.Types.Internal.AST.MergeSet
@@ -386,10 +384,13 @@ library
       Data.Morpheus.Types.Internal.AST.Selection
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Operation
-      Data.Morpheus.Types.Internal.PubSubStore
       Data.Morpheus.Types.Internal.Resolving
       Data.Morpheus.Types.Internal.Resolving.Core
       Data.Morpheus.Types.Internal.Resolving.Resolver
+      Data.Morpheus.Types.Internal.Subscription
+      Data.Morpheus.Types.Internal.Subscription.Apollo
+      Data.Morpheus.Types.Internal.Subscription.ClientStore
+      Data.Morpheus.Types.Internal.Subscription.Stream
       Data.Morpheus.Types.Internal.TH
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error

@@ -10,7 +10,7 @@ where
 
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Subscription
+import           Data.Morpheus.Types.Internal.Subscription
                                                 ( Stream
                                                 , Input
                                                 , toOutStream
