@@ -101,7 +101,7 @@ data Input
 
 newtype Updates e ( m :: * -> * ) =  
     Updates {
-      runUpdate:: PubSubStore e m -> PubSubStore e m  
+      _runUpdate:: PubSubStore e m -> PubSubStore e m  
     }
 
 run :: Scope 'Ws e m -> Updates e m -> m ()

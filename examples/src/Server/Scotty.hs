@@ -11,10 +11,8 @@ where
 
 import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Functor.Identity          ( Identity(..) )
-import           Data.Morpheus                  ( Interpreter(..) )
 import           Data.Morpheus.Document         ( toGraphQLDocument )
-import           Data.Morpheus.Server           ( Store(..)
-                                                , gqlSocketApp
+import           Data.Morpheus.Server           ( gqlSocketApp
                                                 , initGQLState
                                                 , statefull
                                                 , storePublisher
@@ -46,18 +44,18 @@ import           Server.Sophisticated.API       ( EVENT
 scottyServer :: IO ()
 scottyServer = do
   store   <- initGQLState
-  let publish = storePublisher store
-  httpApp <- httpServer publish
+  let publisher = storePublisher store
+  httpApp <- httpServer publisher
   fetchHero >>= print
-  fetUser (statefull publish api) >>= print
+  fetUser (statefull publisher api) >>= print
   Warp.runSettings settings
     $ WaiWs.websocketsOr defaultConnectionOptions (wsApp store) httpApp
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
   wsApp    = gqlSocketApp api
   httpServer :: (EVENT ->  IO ())  -> IO Wai.Application
-  httpServer publish = scottyApp $ do
-    post "/" $ raw =<< (liftIO . statefull publish api =<< body)
+  httpServer publisher = scottyApp $ do
+    post "/" $ raw =<< (liftIO . statefull publisher api =<< body)
     get "/" $ file "./examples/index.html"
     get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
     post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)

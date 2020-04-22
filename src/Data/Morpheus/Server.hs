@@ -21,7 +21,6 @@ module Data.Morpheus.Server
 where
 
 
-import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
 import           Control.Monad.IO.Class         ( MonadIO(..) )
@@ -31,8 +30,7 @@ import           Network.WebSockets             ( ServerApp
                                                 , receiveData
                                                 )
 import qualified Network.WebSockets          as WS
-import           Control.Concurrent             ( MVar
-                                                , readMVar
+import           Control.Concurrent             ( readMVar
                                                 , newMVar
                                                 , modifyMVar_
                                                 )
@@ -75,10 +73,10 @@ initGQLState ::
   ) 
   => IO (Store event m)
 initGQLState = do
-  store <- WSStore <$> newMVar empty
+  store <- newMVar empty
   pure Store 
-    { readStore = readState store
-    , writeStore = modifyState_ store
+    { readStore = liftIO $ readMVar store
+    , writeStore = \changes -> liftIO $ modifyMVar_ store (return . changes)
     }
 
 storePublisher :: 
@@ -87,24 +85,6 @@ storePublisher ::
   , (GQLChannel event) 
   ) => Store event m -> event -> m ()
 storePublisher store event = readStore store >>= publish event
-
-newtype WSStore e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
-
-listen :: MonadIO m => Connection -> m ByteString
-listen = liftIO . receiveData
-
-notify :: MonadIO m => Connection -> ByteString -> m ()
-notify conn = liftIO . sendTextData conn
-
-readState :: (MonadIO m) => WSStore e m -> m (PubSubStore e m)
-readState = liftIO . readMVar . unWSStore
-
-modifyState_ 
-  :: (MonadIO m) 
-  => WSStore e m 
-  -> (PubSubStore e m -> PubSubStore e m) 
-  -> m ()
-modifyState_ state changes = liftIO $ modifyMVar_ (unWSStore state) (return . changes)
 
 
 -- support old version of Websockets
@@ -133,8 +113,8 @@ statefull httpCallback api
 
 defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope 'Ws e m
 defaultWSScope Store { writeStore } connection = WS 
-  { listener = listen connection
-  , callback = notify connection
+  { listener = liftIO (receiveData connection)
+  , callback = liftIO . sendTextData connection
   , update = writeStore
   }
 
