@@ -13,13 +13,10 @@
 module Data.Morpheus.Server
   ( gqlSocketApp
   , gqlSocketMonadIOApp
-  , initGQLState
-  , Store(..)
   , statefull
   , storePublisher
   )
 where
-
 
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
@@ -30,24 +27,18 @@ import           Network.WebSockets             ( ServerApp
                                                 , receiveData
                                                 )
 import qualified Network.WebSockets          as WS
-import           Control.Concurrent             ( readMVar
-                                                , newMVar
-                                                , modifyMVar_
-                                                )
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLChannel(..) )
-import           Data.Morpheus.Types.Internal.Operation
-                                                (empty)
 import           Data.Morpheus.Types.IO         ( MapAPI(..) )
 import           Data.Morpheus.Types.Internal.Subscription
                                                 ( connect
                                                 , publish
-                                                , ClientStore
                                                 , disconnect
                                                 , Input(..)
                                                 , Stream
+                                                , Store(..)
                                                 , Scope(..)
                                                 , API(..)
                                                 , runStreamHTTP
@@ -55,26 +46,6 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , acceptApolloRequest
                                                 )
 
--- | shared GraphQL state between __websocket__ and __http__ server,
--- stores information about subscriptions
-data Store e m = Store 
-  { readStore :: m (ClientStore e m)
-  , writeStore :: (ClientStore e m -> ClientStore e m) -> m ()
-  }
-
--- | initializes empty GraphQL state
-initGQLState :: 
-  ( MonadIO m
-  , (Eq (StreamChannel event)) 
-  , (GQLChannel event) 
-  ) 
-  => IO (Store event m)
-initGQLState = do
-  store <- newMVar empty
-  pure Store 
-    { readStore = liftIO $ readMVar store
-    , writeStore = \changes -> liftIO $ modifyMVar_ store (return . changes)
-    }
 
 storePublisher :: 
   ( MonadIO m

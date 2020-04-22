@@ -12,8 +12,8 @@ where
 import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Morpheus.Document         ( toGraphQLDocument )
+import           Data.Morpheus.Types            ( initDefaultStore )
 import           Data.Morpheus.Server           ( gqlSocketApp
-                                                , initGQLState
                                                 , statefull
                                                 , storePublisher
                                                 )
@@ -43,7 +43,7 @@ import           Server.Sophisticated.API       ( EVENT
 
 scottyServer :: IO ()
 scottyServer = do
-  store   <- initGQLState
+  store   <- initDefaultStore
   let publisher = storePublisher store
   httpApp <- httpServer publisher
   fetchHero >>= print
