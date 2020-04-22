@@ -25,44 +25,11 @@ module Data.Morpheus.Types.Internal.Subscription
   )
 where
 
-import           Data.Foldable                  ( traverse_ )
-import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.UUID.V4                   ( nextRandom )
-import qualified Data.HashMap.Lazy   as   HM    ( insert
-                                                , delete
-                                                )
-
--- MORPHEUS
-import           Data.Morpheus.Error.Utils      ( globalErrorMessage
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Value(..)
-                                                , VALID
-                                                , GQLErrors
-                                                )
-import           Data.Morpheus.Types.IO         ( GQLRequest(..) 
-                                                , GQLResponse(..)
-                                                )
-import           Data.Morpheus.Types.Internal.Operation
-                                                ( failure )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( SubEvent
-                                                , GQLChannel(..)
-                                                , ResponseEvent(..)
-                                                , ResponseStream
-                                                , runResultT
-                                                , Result(..)
-                                                , ResultT(..)
-                                                )
-
 
 -- MORPHEUS SUBSCRIPTION
 import           Data.Morpheus.Types.Internal.Subscription.Apollo
-                                                ( SubAction(..)
-                                                , apolloFormat
-                                                , toApolloResponse
-                                                , acceptApolloRequest
-                                                )
+                                                ( acceptApolloRequest )
 import           Data.Morpheus.Types.Internal.Subscription.ClientStore
                                                 ( delete 
                                                 , Client
