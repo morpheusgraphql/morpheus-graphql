@@ -22,7 +22,6 @@ where
 
 import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
-import           Data.UUID.V4                   ( nextRandom )
 import qualified Data.HashMap.Lazy   as   HM    ( insert
                                                 , delete
                                                 )
@@ -60,7 +59,6 @@ import           Data.Morpheus.Types.Internal.Subscription.ClientStore
                                                 , SesionID
                                                 , insert
                                                 , adjust
-                                                , delete
                                                 , ID
                                                 )
  
