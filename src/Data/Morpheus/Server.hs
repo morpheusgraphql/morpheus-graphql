@@ -73,30 +73,25 @@ data Store e m = Store
   , writeStore :: (PubSubStore e m -> PubSubStore e m) -> m ()
   }
 
-run :: Store e m -> Action e m -> m ()
-run state (Update changes)  
-    = writeStore state changes
+run :: Scope 'Ws e m -> Action e m -> m ()
+run WS { update } (Update changes) = update changes
 
 runStreamWS 
   :: (Monad m) 
-  => Store e m
-  -> Scope 'Ws e m
+  => Scope 'Ws e m
   -> Stream 'Ws e m 
   ->  m ()
-runStreamWS store scope@WS{ callback } StreamWS { streamWS }  
+runStreamWS scope@WS{ callback } StreamWS { streamWS }  
   = streamWS scope 
-    >>= either callback (traverse_ (run store))
+    >>= either callback (traverse_ (run scope))
 
 runStreamHTTP
   :: (Monad m) 
   => Scope 'Http e m
   -> Stream 'Http e m 
   ->  m GQLResponse
-runStreamHTTP scope@HTTP{ httpCallback } StreamHTTP { streamHTTP }  
-  = do
-    (events, response) <- streamHTTP scope
-    traverse_ httpCallback events
-    pure response
+runStreamHTTP scope StreamHTTP { streamHTTP }  
+  = streamHTTP scope
 
 -- | initializes empty GraphQL state
 initGQLState :: 
@@ -162,10 +157,11 @@ statefull httpCallback api
     . Request
     )
 
-defaultWSScope :: MonadIO m => Connection -> Scope 'Ws e m
-defaultWSScope connection = WS 
+defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope 'Ws e m
+defaultWSScope Store { writeStore } connection = WS 
   { listener = listen connection
   , callback = notify connection
+  , update = writeStore
   }
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
@@ -177,17 +173,17 @@ gqlSocketMonadIOApp
   -> ServerApp
 gqlSocketMonadIOApp f streamApp store pending = do
   connection <- acceptApolloRequest pending
-  let scope = defaultWSScope connection
+  let scope = defaultWSScope store connection
   pingThread connection $ do
       input <- connect 
       finally
         (handler scope input) 
-        $ f $ run store (disconnect input)
+        $ f $ disconnect scope input
  where
   handler scope input
         = f
         $ forever
-        $ runStreamWS store scope 
+        $ runStreamWS scope 
         $ streamApp input
 
 -- | Same as above but specific to IO

@@ -72,8 +72,8 @@ import           Data.Morpheus.Types.Internal.Subscription
 connect :: IO (Input 'Ws)
 connect = Init <$> nextRandom
 
-disconnect:: Input 'Ws -> Action e m
-disconnect (Init clientID)  = Update (delete clientID)
+disconnect:: Scope 'Ws e m -> Input 'Ws -> m ()
+disconnect WS { update }  (Init clientID)  = update (delete clientID)
 
 updateClient
   :: (Client e m -> Client e m ) 
@@ -112,7 +112,7 @@ data Scope (api :: API ) event (m :: * -> * ) where
   WS :: 
      { listener :: m ByteString
      , callback :: ByteString -> m ()
-     , update   :: (PubSubStore e m -> PubSubStore e m) -> m ()
+     , update   :: (PubSubStore event m -> PubSubStore event m) -> m ()
     } -> Scope 'Ws event m
 
 data API = Http | Ws
@@ -128,7 +128,7 @@ data Stream
     } -> Stream 'Ws e m
   StreamHTTP
     :: 
-    { streamHTTP :: Scope 'Http e m -> m ([e], GQLResponse)
+    { streamHTTP :: Scope 'Http e m -> m GQLResponse
     } -> Stream 'Http e m
 
 handleResponseStream
@@ -200,16 +200,16 @@ handleResponseHTTP
       )
   => ResponseStream e m (Value VALID)
   -> Scope 'Http e m
-  -> m ([e], GQLResponse) 
+  -> m GQLResponse 
 handleResponseHTTP 
   res
   HTTP { httpCallback } = do
     x <- runResultT (handleRes res execute)
     case x of 
       Success r _ events-> do 
-      --  traverse_ httpCallback events -- TODO: use it
-        pure (events, Data r) 
-      Failure err -> pure ([],Errors err)
+        traverse_ httpCallback events
+        pure $ Data r 
+      Failure err -> pure (Errors err)
     where
      execute (Publish event) = pure event
      execute Subscribe {}  = failure ("http can't handle subscription" :: String)
