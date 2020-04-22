@@ -16,6 +16,7 @@ module Data.Morpheus.Server
   , initGQLState
   , Store(..)
   , statefull
+  , storePublisher
   )
 where
 
@@ -66,17 +67,14 @@ import           Data.Morpheus.Types.IO         ( MapAPI(..)
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
-data Store e m = Store {
-  runStore :: Action e m -> m (),
-  publishStore :: e -> m ()
-}
+data Store e m = Store 
+  { readStore :: m (PubSubStore e m)
+  , writeStore :: (PubSubStore e m -> PubSubStore e m) -> m ()
+  }
 
-run :: MonadIO m => WSStore e m -> Action e m -> m ()
+run :: Store e m -> Action e m -> m ()
 run state (Update changes)  
-    = modifyState_ state changes
--- run state (Read runNotify)  
---     = readState state 
---       >>= runNotify
+    = writeStore state changes
 
 runStream 
   :: (Monad m) 
@@ -90,7 +88,7 @@ runStream store scope StreamWS { streamWS }
     renderResponse <$> 
       case x of 
         Success  r w events-> do 
-          traverse_ (runStore store) events
+          traverse_ (run store) events
           pure (Success r w []) 
         Failure x -> pure $ Failure x 
 runStream _ HTTP{ httpCallback } StreamHTTP { streamHTTP }  
@@ -113,9 +111,16 @@ initGQLState ::
 initGQLState = do
   store <- WSStore <$> newMVar empty
   pure Store 
-    { runStore = run store
-    , publishStore = \event -> readState store >>= publish event
+    { readStore = readState store
+    , writeStore = modifyState_ store
     }
+
+storePublisher :: 
+  ( MonadIO m
+  , (Eq (StreamChannel event)) 
+  , (GQLChannel event) 
+  ) => Store event m -> event -> m ()
+storePublisher store event = readStore store >>= publish event
 
 newtype WSStore e m = WSStore { unWSStore :: MVar (PubSubStore e m) }
 
@@ -180,7 +185,7 @@ gqlSocketMonadIOApp f streamApp store pending = do
       input <- connect 
       finally
         (handler scope input) 
-        $ f $ runStore store (disconnect input)
+        $ f $ run store (disconnect input)
  where
   handler scope input
         = f

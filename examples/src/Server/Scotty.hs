@@ -17,6 +17,7 @@ import           Data.Morpheus.Server           ( Store(..)
                                                 , gqlSocketApp
                                                 , initGQLState
                                                 , statefull
+                                                , storePublisher
                                                 )
 import qualified Network.Wai                   as Wai
 import qualified Network.Wai.Handler.Warp      as Warp
@@ -45,7 +46,7 @@ import           Server.Sophisticated.API       ( EVENT
 scottyServer :: IO ()
 scottyServer = do
   store   <- initGQLState
-  let publish = publishStore store
+  let publish = storePublisher store
   httpApp <- httpServer publish
   fetchHero >>= print
   fetUser (statefull publish api) >>= print
