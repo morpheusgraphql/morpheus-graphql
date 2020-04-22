@@ -13,8 +13,9 @@
 
 
 module Server.Sophisticated.API
-  ( gqlRoot
+  ( api
   , EVENT
+  , gqlRoot
   )
 where
 
@@ -31,6 +32,7 @@ import           Data.Text                      ( Text
 import           GHC.Generics                   ( Generic )
 
 -- MORPHEUS
+import           Data.Morpheus                  ( interpreter )
 import           Data.Morpheus.Document         ( importGQLDocumentWithNamespace
                                                 )
 import           Data.Morpheus.Kind             ( INPUT
@@ -54,6 +56,8 @@ import           Data.Morpheus.Types            ( Event(..)
                                                 , publish
                                                 , subscribe
                                                 , WithOperation
+                                                , Input
+                                                , Stream
                                                 )
 
 newtype A a = A { wrappedA :: a } 
@@ -103,6 +107,9 @@ data Channel = USER | ADDRESS
 newtype Content = Content { contentID :: Int  }
 
 type EVENT = (Event Channel Content)
+
+api :: Input api -> Stream api EVENT IO
+api = interpreter gqlRoot
 
 gqlRoot :: GQLRootResolver IO EVENT Query Mutation Subscription
 gqlRoot = GQLRootResolver { queryResolver

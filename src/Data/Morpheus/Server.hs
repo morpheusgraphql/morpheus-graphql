@@ -7,13 +7,14 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE DataKinds             #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
   ( gqlSocketApp
   , gqlSocketMonadIOApp
   , initGQLState
-  , Store
+  , Store(..)
   , statefull
   )
 where
@@ -56,6 +57,7 @@ import           Data.Morpheus.Execution.Server.Subscription
                                                 , Input(..)
                                                 , Stream(..)
                                                 , Scope(..)
+                                                , API(..)
                                                 )
 import           Data.Morpheus.Types.IO         ( MapAPI(..)
                                                 , GQLResponse
@@ -80,15 +82,24 @@ runStream
   :: (Monad m) 
   => Store e m
   -> Scope e m
-  -> Stream e m 
+  -> Stream api e m 
   ->  m GQLResponse
-runStream store scope Stream { stream }  
+runStream store scope StreamWS { streamWS }  
   = do
-    x <- runResultT (stream scope)
+    x <- runResultT (streamWS scope)
     renderResponse <$> 
       case x of 
         Success  r w events-> do 
           traverse_ (runStore store) events
+          pure (Success r w []) 
+        Failure x -> pure $ Failure x 
+runStream _ HTTP{ httpCallback } StreamHTTP { streamHTTP }  
+  = do
+    x <- runResultT (streamHTTP httpCallback)
+    renderResponse <$>
+      case x of 
+        Success  r w events-> do 
+          traverse_ httpCallback events
           pure (Success r w []) 
         Failure x -> pure $ Failure x 
 
@@ -138,13 +149,13 @@ statefull
    ( MonadIO m,
      MapAPI a
    )
-  => Store e m
-  -> (Input -> Stream e m)
+  => (e -> m ())
+  -> (Input 'Http -> Stream 'Http e m)
   -> a
   -> m a
-statefull store api 
+statefull httpCallback api 
   = mapAPI 
-    ( runStream store HTTP { httpCallback = const $ pure ()}
+    ( runStream undefined HTTP { httpCallback }
     . api 
     . Request
     )
@@ -159,7 +170,7 @@ defaultWSScope connection = WS
 gqlSocketMonadIOApp
   :: (MonadIO m)
   => (m () -> IO ())
-  -> (Input -> Stream e m)
+  -> (Input 'Ws -> Stream 'Ws e m)
   -> Store e m
   -> ServerApp
 gqlSocketMonadIOApp f streamApp store pending = do
@@ -179,7 +190,7 @@ gqlSocketMonadIOApp f streamApp store pending = do
 
 -- | Same as above but specific to IO
 gqlSocketApp
-  :: (Input -> Stream e IO)
+  :: (Input 'Ws -> Stream 'Ws e IO)
   -> Store e IO
   -> ServerApp
 gqlSocketApp = gqlSocketMonadIOApp id

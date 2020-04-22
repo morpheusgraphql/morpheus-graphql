@@ -56,7 +56,7 @@ class Interpreter e m a b where
 instance Interpreter e m GQLRequest (m GQLResponse) where
   interpreter = statelessResolver
 
-instance Interpreter e m Input (Stream e m) where
+instance Interpreter e m (Input api)  (Stream api e m) where
   interpreter root = toOutStream (coreResolver root)
 
 instance ( MapAPI a ) => 

@@ -13,8 +13,9 @@ module Data.Morpheus.Types.Internal.Apollo
 import           Data.Aeson                 (FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, pairs,
                                              withObject, (.:), (.:?), (.=))
 import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus.Types        (GQLRequest (..))
-import           Data.Morpheus.Types.IO     (GQLResponse)
+import           Data.Morpheus.Types.IO     ( GQLResponse 
+                                            , GQLRequest (..)
+                                            )
 import           Data.Semigroup             ((<>))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)

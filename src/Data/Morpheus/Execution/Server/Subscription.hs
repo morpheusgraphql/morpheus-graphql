@@ -20,6 +20,7 @@ module Data.Morpheus.Execution.Server.Subscription
   , Action(..)
   , Scope(..)
   , Input(..)
+  , API(..)
   )
 where
 
@@ -35,7 +36,9 @@ import           Data.Morpheus.Types.Internal.AST
                                                 ( Value(..)
                                                 , VALID
                                                 )
-import           Data.Morpheus.Types.IO         ( GQLRequest(..) )
+import           Data.Morpheus.Types.IO         ( GQLRequest(..) 
+                                                , GQLResponse
+                                                )
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( failure )
 import           Data.Morpheus.Types.Internal.Apollo
@@ -63,10 +66,10 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 )
  
 
-connect :: IO Input
+connect :: IO (Input 'Ws)
 connect = Init <$> nextRandom
 
-disconnect:: Input -> [Action e m]
+disconnect:: Input 'Ws -> [Action e m]
 disconnect (Init clientID)  = [Update (delete clientID)]
 disconnect _ = []
 
@@ -89,8 +92,10 @@ startSession  subscriptions (clientId, sessionId) = updateClient startSub client
 type Session = (ID, SesionID)
 
 data Input 
-  = Init ID
-  | Request GQLRequest 
+  (api:: API) 
+  where
+  Init :: ID -> Input 'Ws 
+  Request :: GQLRequest -> Input 'Http 
 
 data Action
     e 
@@ -108,12 +113,21 @@ data Scope event (m :: * -> * )
      , callback :: ByteString -> m ()
      }
 
-newtype Stream e (m :: * -> * ) = 
-  Stream 
-    { stream 
-        ::  Scope e m 
-        -> ResultT (Action e m)  m (Value VALID)
-    }
+data API = Http | Ws
+
+data Stream 
+    (api:: API) 
+    e 
+    (m :: * -> * ) 
+  where
+  StreamWS 
+    :: 
+    { streamWS ::  Scope e m -> ResultT (Action e m)  m (Value VALID)
+    } -> Stream 'Ws e m
+  StreamHTTP
+    :: 
+    { streamHTTP :: (e -> m()) -> ResultT e m (Value VALID)
+    } -> Stream 'Http e m
 
 handleResponseStream
   ::  (  Eq (StreamChannel e)
@@ -122,9 +136,9 @@ handleResponseStream
       )
   => Session
   -> ResponseStream e m (Value VALID)
-  -> Stream e m 
+  -> Stream 'Ws e m 
 handleResponseStream session res 
-  = Stream handle
+  = StreamWS handle
     where
     -- httpServer can't start subscription 
      execute HTTP{} (Publish event) = pure $ Notify $ publish event
@@ -161,14 +175,14 @@ handleWSRequest
      )
   -> ID
   -> ByteString
-  -> Stream e m
+  -> Stream 'Ws e m
 handleWSRequest gqlApp clientId = handleApollo . apolloFormat
   where 
-    handleApollo (SubError x) = Stream $ const $ failure x
+    handleApollo (SubError x) = StreamWS $ const $ failure x
     handleApollo (AddSub sessionId request) 
       = handleResponseStream (clientId, sessionId) (gqlApp request) 
     handleApollo (RemoveSub sessionId)
-      = Stream $ const $ ResultT $ pure $ 
+      = StreamWS $ const $ ResultT $ pure $ 
         Success Null [] [endSession (clientId, sessionId)]
 
 toOutStream 
@@ -180,15 +194,39 @@ toOutStream
   => (  GQLRequest
      -> ResponseStream e m (Value VALID)
      )
-  -> Input 
-  -> Stream e m
+  -> Input api
+  -> Stream api e m
 toOutStream app (Init clienId) 
-  = Stream handle 
+  = StreamWS handle 
       where
         handle ws@WS { listener , callback } = do
           let withUpdate x = Success x [] [Update (insert clienId callback)] 
-          let runS (Stream x) = x ws
+          let runS (StreamWS x) = x ws
           ResultT (withUpdate <$> listener) >>= runS . handleWSRequest app clienId 
         -- HTTP Server does not have to wait for subsciprions
         handle (HTTP _) = failure "ws in hhtp are not allowed"
-toOutStream app (Request req) = handleResponseStream undefined (app req)
+toOutStream app (Request req) = handleResponseHTTP (app req)
+
+handleResponseHTTP
+  ::  (  Eq (StreamChannel e)
+      , GQLChannel e
+      , Monad m
+      )
+  => ResponseStream e m (Value VALID)
+  -> Stream 'Http e m 
+handleResponseHTTP res 
+  = StreamHTTP handle
+    where
+     execute (Publish event) = pure event
+     execute Subscribe {}  = failure "http can't handle subscription"
+     --------------------------------------------------------------
+     handle _ = ResultT $ runResultT res >>= runResultT . unfoldRes
+      where
+        unfoldRes Success { events, result, warnings } = do
+          events' <- traverse execute events
+          ResultT $ pure $ Success 
+            { result
+            , warnings
+            , events = events'
+            }
+        unfoldRes Failure { errors } = ResultT $ pure $ Failure { errors }

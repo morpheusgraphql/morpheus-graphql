@@ -13,7 +13,7 @@ import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Morpheus                  ( Interpreter(..) )
 import           Data.Morpheus.Document         ( toGraphQLDocument )
-import           Data.Morpheus.Server           ( Store
+import           Data.Morpheus.Server           ( Store(..)
                                                 , gqlSocketApp
                                                 , initGQLState
                                                 , statefull
@@ -38,24 +38,25 @@ import           Client.Client                  ( fetUser
 import           Server.Mythology.API           ( mythologyApi )
 import           Server.TH.Simple               ( thSimpleApi )
 import           Server.Sophisticated.API       ( EVENT
+                                                , api
                                                 , gqlRoot
                                                 )
 
-
 scottyServer :: IO ()
 scottyServer = do
-  state   <- initGQLState
-  httpApp <- httpServer state
+  store   <- initGQLState
+  let publish = publishStore store
+  httpApp <- httpServer publish
   fetchHero >>= print
-  fetUser (statefull state (interpreter gqlRoot)) >>= print
+  fetUser (statefull publish api) >>= print
   Warp.runSettings settings
-    $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
+    $ WaiWs.websocketsOr defaultConnectionOptions (wsApp store) httpApp
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
-  wsApp    = gqlSocketApp (interpreter gqlRoot)
-  httpServer :: Store EVENT IO  -> IO Wai.Application
-  httpServer state = scottyApp $ do
-    post "/" $ raw =<< (liftIO . statefull state (interpreter gqlRoot) =<< body)
+  wsApp    = gqlSocketApp api
+  httpServer :: (EVENT ->  IO ())  -> IO Wai.Application
+  httpServer publish = scottyApp $ do
+    post "/" $ raw =<< (liftIO . statefull publish api =<< body)
     get "/" $ file "./examples/index.html"
     get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
     post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
