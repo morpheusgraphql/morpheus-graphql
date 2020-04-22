@@ -13,18 +13,16 @@ module Data.Morpheus.Execution.Server.Subscription
   ( Client
   , connect
   , disconnect
-  , Stream(..)
   , toOutStream
-  , handleResponseStream
-  , PubSubStore
-  , Action(..)
+  , runStreamWS
+  , runStreamHTTP
+  , Stream
   , Scope(..)
   , Input(..)
   , API(..)
   )
 where
 
-import           Data.Functor
 import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.UUID.V4                   ( nextRandom )
@@ -69,6 +67,8 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , ID
                                                 )
  
+
+
 connect :: IO (Input 'Ws)
 connect = Init <$> nextRandom
 
@@ -78,15 +78,15 @@ disconnect WS { update }  (Init clientID)  = update (delete clientID)
 updateClient
   :: (Client e m -> Client e m ) 
   -> ID
-  -> Action e m 
-updateClient  f cid = Update (adjust f cid)
+  -> Updates e m 
+updateClient  f cid = Updates (adjust f cid)
 
-endSession :: Session -> Action e m 
+endSession :: Session -> Updates e m 
 endSession (clientId, sessionId) = updateClient endSub clientId
  where
   endSub client = client { clientSessions = HM.delete sessionId (clientSessions client) }
 
-startSession :: SubEvent e m -> Session -> Action e m 
+startSession :: SubEvent e m -> Session -> Updates e m 
 startSession  subscriptions (clientId, sessionId) = updateClient startSub clientId
  where
   startSub client = client { clientSessions = HM.insert sessionId subscriptions (clientSessions client) }
@@ -99,11 +99,13 @@ data Input
   Init :: ID -> Input 'Ws 
   Request :: GQLRequest -> Input 'Http 
 
-data Action
-    e 
-    (m :: * -> * )
-  where 
-    Update   :: (PubSubStore e m -> PubSubStore e m) -> Action e m 
+newtype Updates e ( m :: * -> * ) =  
+    Updates {
+      runUpdate:: PubSubStore e m -> PubSubStore e m  
+    }
+
+run :: Scope 'Ws e m -> Updates e m -> m ()
+run WS { update } (Updates changes) = update changes
 
 data Scope (api :: API ) event (m :: * -> * ) where
   HTTP :: {
@@ -124,7 +126,7 @@ data Stream
   where
   StreamWS 
     :: 
-    { streamWS ::  Scope 'Ws e m -> m (Either ByteString [Action e m])
+    { streamWS ::  Scope 'Ws e m -> m (Either ByteString [Updates e m])
     } -> Stream 'Ws e m
   StreamHTTP
     :: 
@@ -173,6 +175,24 @@ handleWSRequest gqlApp clientId = handleApollo . apolloFormat
     handleApollo (RemoveSub sessionId)
       = StreamWS $ const $ pure $ Right [endSession (clientId, sessionId)]
 
+
+runStreamWS 
+  :: (Monad m) 
+  => Scope 'Ws e m
+  -> Stream 'Ws e m 
+  ->  m ()
+runStreamWS scope@WS{ callback } StreamWS { streamWS }  
+  = streamWS scope 
+    >>= either callback (traverse_ (run scope))
+
+runStreamHTTP
+  :: (Monad m) 
+  => Scope 'Http e m
+  -> Stream 'Http e m 
+  ->  m GQLResponse
+runStreamHTTP scope StreamHTTP { streamHTTP }  
+  = streamHTTP scope
+
 toOutStream 
   ::  ( Monad m
       , Eq (StreamChannel e)
@@ -190,7 +210,7 @@ toOutStream app (Init clienId)
         handle ws@WS { listener , callback } = do
           let runS (StreamWS x) = x ws
           bla <- listener >>= runS . handleWSRequest app clienId
-          pure $ (Update (insert clienId callback) :) <$> bla
+          pure $ (Updates (insert clienId callback) :) <$> bla
 toOutStream app (Request req) = StreamHTTP $ handleResponseHTTP (app req)
 
 handleResponseHTTP

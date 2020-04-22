@@ -20,10 +20,8 @@ module Data.Morpheus.Server
   )
 where
 
-import           Data.Either
-import           Control.Monad                  ((>=>))
+
 import           Data.ByteString.Lazy.Char8     (ByteString)
-import           Data.Foldable                  ( traverse_ )
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
 import           Control.Monad.IO.Class         ( MonadIO(..) )
@@ -41,30 +39,26 @@ import           Control.Concurrent             ( MVar
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( ResultT(..)
-                                                , Result(..)
-                                                , GQLChannel(..)
-                                                )
+                                                ( GQLChannel(..) )
 import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
 import           Data.Morpheus.Types.Internal.Apollo
                                                 ( acceptApolloRequest )
 import           Data.Morpheus.Types.Internal.Subscription
-                                                (publish)
+                                                ( publish
+                                                , PubSubStore
+                                                )
 import           Data.Morpheus.Execution.Server.Subscription
                                                 ( connect
                                                 , disconnect
-                                                , Action(..)
-                                                , PubSubStore
                                                 , Input(..)
-                                                , Stream(..)
+                                                , Stream
                                                 , Scope(..)
                                                 , API(..)
+                                                , runStreamHTTP
+                                                , runStreamWS
                                                 )
-import           Data.Morpheus.Types.IO         ( MapAPI(..)
-                                                , GQLResponse
-                                                , renderResponse
-                                                )
+import           Data.Morpheus.Types.IO         ( MapAPI(..) )
 
 -- | shared GraphQL state between __websocket__ and __http__ server,
 -- stores information about subscriptions
@@ -72,26 +66,6 @@ data Store e m = Store
   { readStore :: m (PubSubStore e m)
   , writeStore :: (PubSubStore e m -> PubSubStore e m) -> m ()
   }
-
-run :: Scope 'Ws e m -> Action e m -> m ()
-run WS { update } (Update changes) = update changes
-
-runStreamWS 
-  :: (Monad m) 
-  => Scope 'Ws e m
-  -> Stream 'Ws e m 
-  ->  m ()
-runStreamWS scope@WS{ callback } StreamWS { streamWS }  
-  = streamWS scope 
-    >>= either callback (traverse_ (run scope))
-
-runStreamHTTP
-  :: (Monad m) 
-  => Scope 'Http e m
-  -> Stream 'Http e m 
-  ->  m GQLResponse
-runStreamHTTP scope StreamHTTP { streamHTTP }  
-  = streamHTTP scope
 
 -- | initializes empty GraphQL state
 initGQLState :: 
