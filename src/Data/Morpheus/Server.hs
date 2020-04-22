@@ -20,6 +20,7 @@ module Data.Morpheus.Server
   )
 where
 
+import           Data.Either
 import           Control.Monad                  ((>=>))
 import           Data.ByteString.Lazy.Char8     (ByteString)
 import           Data.Foldable                  ( traverse_ )
@@ -76,22 +77,22 @@ run :: Store e m -> Action e m -> m ()
 run state (Update changes)  
     = writeStore state changes
 
-runStream 
+runStreamWS 
   :: (Monad m) 
   => Store e m
-  -> Scope api e m
-  -> Stream api e m 
+  -> Scope 'Ws e m
+  -> Stream 'Ws e m 
+  ->  m ()
+runStreamWS store scope@WS{callback} StreamWS { streamWS }  
+  = streamWS scope 
+    >>= either callback (traverse_ (run store))
+
+runStreamHTTP
+  :: (Monad m) 
+  => Scope 'Http e m
+  -> Stream 'Http e m 
   ->  m GQLResponse
-runStream store scope StreamWS { streamWS }  
-  = do
-    x <- runResultT (streamWS scope)
-    renderResponse <$> 
-      case x of 
-        Success  r w events-> do 
-          traverse_ (run store) events
-          pure (Success r w []) 
-        Failure x -> pure $ Failure x 
-runStream _ HTTP{ httpCallback } StreamHTTP { streamHTTP }  
+runStreamHTTP HTTP{ httpCallback } StreamHTTP { streamHTTP }  
   = do
     x <- runResultT (streamHTTP httpCallback)
     renderResponse <$>
@@ -160,7 +161,7 @@ statefull
   -> m a
 statefull httpCallback api 
   = mapAPI 
-    ( runStream undefined HTTP { httpCallback }
+    ( runStreamHTTP HTTP { httpCallback }
     . api 
     . Request
     )
@@ -190,7 +191,7 @@ gqlSocketMonadIOApp f streamApp store pending = do
   handler scope input
         = f
         $ forever
-        $ runStream store scope 
+        $ runStreamWS store scope 
         $ streamApp input
 
 -- | Same as above but specific to IO
