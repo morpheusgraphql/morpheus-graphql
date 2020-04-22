@@ -74,14 +74,14 @@ data Store e m = Store {
 run :: MonadIO m => WSStore e m -> Action e m -> m ()
 run state (Update changes)  
     = modifyState_ state changes
-run state (Notify runNotify)  
-    = readState state 
-      >>= runNotify
+-- run state (Notify runNotify)  
+--     = readState state 
+--       >>= runNotify
 
 runStream 
   :: (Monad m) 
   => Store e m
-  -> Scope e m
+  -> Scope api e m
   -> Stream api e m 
   ->  m GQLResponse
 runStream store scope StreamWS { streamWS }  
@@ -160,7 +160,7 @@ statefull httpCallback api
     . Request
     )
 
-defaultWSScope :: MonadIO m => Connection -> Scope e m
+defaultWSScope :: MonadIO m => Connection -> Scope 'Ws e m
 defaultWSScope connection = WS 
   { listener = listen connection
   , callback = notify connection
@@ -180,7 +180,7 @@ gqlSocketMonadIOApp f streamApp store pending = do
       action <- connect 
       finally
         (handler scope action) 
-        $ f $ traverse_ (runStore store) (disconnect action)
+        $ f $ runStore store (disconnect action)
  where
   handler scope inputAction
         = f

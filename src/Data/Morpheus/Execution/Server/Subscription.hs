@@ -69,9 +69,8 @@ import           Data.Morpheus.Types.Internal.Subscription
 connect :: IO (Input 'Ws)
 connect = Init <$> nextRandom
 
-disconnect:: Input 'Ws -> [Action e m]
-disconnect (Init clientID)  = [Update (delete clientID)]
-disconnect _ = []
+disconnect:: Input 'Ws -> Action e m
+disconnect (Init clientID)  = Update (delete clientID)
 
 updateClient
   :: (Client e m -> Client e m ) 
@@ -102,16 +101,15 @@ data Action
     (m :: * -> * )
   where 
     Update   :: (PubSubStore e m -> PubSubStore e m) -> Action e m 
-    Notify   :: (PubSubStore e m -> m ()) -> Action e m
 
-data Scope event (m :: * -> * )
-  =  HTTP {
+data Scope (api :: API ) event (m :: * -> * ) where
+  HTTP :: {
       httpCallback :: event -> m ()
-    } 
-   | WS 
+    } -> Scope 'Http event m
+  WS :: 
      { listener :: m ByteString
      , callback :: ByteString -> m ()
-     }
+    } -> Scope 'Ws event m
 
 data API = Http | Ws
 
@@ -122,7 +120,7 @@ data Stream
   where
   StreamWS 
     :: 
-    { streamWS ::  Scope e m -> ResultT (Action e m)  m (Value VALID)
+    { streamWS ::  Scope 'Ws e m -> ResultT (Action e m)  m (Value VALID)
     } -> Stream 'Ws e m
   StreamHTTP
     :: 
@@ -141,9 +139,7 @@ handleResponseStream session res
   = StreamWS handle
     where
     -- httpServer can't start subscription 
-     execute HTTP{} (Publish event) = pure $ Notify $ publish event
-     execute HTTP{} Subscribe {}  = failure "http can't handle subscription"
-     execute WS{}   Publish   {} = failure "ws only subscribes"
+     execute WS{}   Publish   {} = failure "websocket can only handle subscriptions, not mutations"
      execute WS{}   (Subscribe sub) = pure $ startSession sub session
      --------------------------------------------------------------
      handle ws = ResultT $ runResultT res >>= runResultT . unfoldRes
@@ -202,9 +198,7 @@ toOutStream app (Init clienId)
         handle ws@WS { listener , callback } = do
           let withUpdate x = Success x [] [Update (insert clienId callback)] 
           let runS (StreamWS x) = x ws
-          ResultT (withUpdate <$> listener) >>= runS . handleWSRequest app clienId 
-        -- HTTP Server does not have to wait for subsciprions
-        handle (HTTP _) = failure "ws in hhtp are not allowed"
+          ResultT (withUpdate <$> listener) >>= runS . handleWSRequest app clienId
 toOutStream app (Request req) = handleResponseHTTP (app req)
 
 handleResponseHTTP
