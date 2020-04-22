@@ -11,10 +11,10 @@
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
-  ( gqlSocketApp
-  , gqlSocketMonadIOApp
-  , statefull
-  , storePublisher
+  ( webSocketsApp
+  , webSocketsAppIO
+  , httpAppWithEffect
+  , publishEventWith
   )
 where
 
@@ -47,14 +47,6 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 )
 
 
-storePublisher :: 
-  ( MonadIO m
-  , (Eq (StreamChannel event)) 
-  , (GQLChannel event) 
-  ) => Store event m -> event -> m ()
-storePublisher store event = readStore store >>= publish event
-
-
 -- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()
 #if MIN_VERSION_websockets(0,12,6)
@@ -63,7 +55,21 @@ pingThread connection = WS.withPingThread connection 30 (return ())
 pingThread connection = (WS.forkPingThread connection 30 >>)
 #endif
 
-statefull
+defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope 'Ws e m
+defaultWSScope Store { writeStore } connection = WS 
+  { listener = liftIO (receiveData connection)
+  , callback = liftIO . sendTextData connection
+  , update = writeStore
+  }
+
+publishEventWith :: 
+  ( MonadIO m
+  , (Eq (StreamChannel event)) 
+  , (GQLChannel event) 
+  ) => Store event m -> event -> m ()
+publishEventWith store event = readStore store >>= publish event
+
+httpAppWithEffect
   ::  
    ( MonadIO m,
      MapAPI a
@@ -72,28 +78,21 @@ statefull
   -> (Input 'Http -> Stream 'Http e m)
   -> a
   -> m a
-statefull httpCallback api 
+httpAppWithEffect httpCallback api 
   = mapAPI 
     ( runStreamHTTP HTTP { httpCallback }
     . api 
     . Request
     )
 
-defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope 'Ws e m
-defaultWSScope Store { writeStore } connection = WS 
-  { listener = liftIO (receiveData connection)
-  , callback = liftIO . sendTextData connection
-  , update = writeStore
-  }
-
 -- | Wai WebSocket Server App for GraphQL subscriptions
-gqlSocketMonadIOApp
+webSocketsApp
   :: (MonadIO m)
   => (m () -> IO ())
   -> (Input 'Ws -> Stream 'Ws e m)
   -> Store e m
   -> ServerApp
-gqlSocketMonadIOApp f streamApp store pending = do
+webSocketsApp f streamApp store pending = do
   connection <- acceptApolloRequest pending
   let scope = defaultWSScope store connection
   pingThread connection $ do
@@ -109,8 +108,8 @@ gqlSocketMonadIOApp f streamApp store pending = do
         $ streamApp input
 
 -- | Same as above but specific to IO
-gqlSocketApp
+webSocketsAppIO
   :: (Input 'Ws -> Stream 'Ws e IO)
   -> Store e IO
   -> ServerApp
-gqlSocketApp = gqlSocketMonadIOApp id
+webSocketsAppIO = webSocketsApp id
