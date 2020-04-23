@@ -9,14 +9,14 @@
 
 - in `Data.Morpheus.Server`  replaced
 
-  - gqlSocketApp with webSocketsAppIO
-  - gqlSocketMonadIOApp with  webSocketsApp
+  - `gqlSocketApp` with `webSocketsAppIO`
+  - `gqlSocketMonadIOApp` with  `webSocketsApp`
 
-- replaced from `Data.Morpheus.Server`  initGQLState, GQLState
-  with  initDefaultStore, Store
+- replaced from `Data.Morpheus.Server`  `initGQLState`, `GQLState`
+  with  `initDefaultStore`, `Store`
 
 - for better controlling over subscriptions
-  - added: Input, Stream,  publishEventWith, httpAppWithEffect
+  - added: `Input`, `Stream`,  `publishEventWith`, `httpAppWithEffect`
   - replaced instance supporting `interpreter gqlRoot state` with
     `interpreter gqlRoot`. for example
 
@@ -26,7 +26,7 @@
     ```
 
     that can be used in websockets (`webSocketsAppIO api`)
-    and http app (`httpAppWithEffect publisher api`)
+    and http app (`httpAppWithEffect publish api`)
     where `publish :: e -> m ()`
 
 
