@@ -53,9 +53,9 @@ import           Data.Morpheus.Types.Internal.Subscription.Apollo
                                                 , apolloFormat
                                                 , toApolloResponse
                                                 )
-import           Data.Morpheus.Types.Internal.Subscription.ClientStore
-                                                ( Client(..)
-                                                , ClientStore
+import           Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
+                                                ( ClientConnection(..)
+                                                , ClientConnectionStore
                                                 , SesionID
                                                 , insert
                                                 , adjust
@@ -63,7 +63,7 @@ import           Data.Morpheus.Types.Internal.Subscription.ClientStore
                                                 )
  
 updateClient
-  :: (Client e m -> Client e m ) 
+  :: (ClientConnection e m -> ClientConnection e m ) 
   -> ID
   -> Updates e m 
 updateClient  f cid = Updates (adjust f cid)
@@ -71,12 +71,17 @@ updateClient  f cid = Updates (adjust f cid)
 endSession :: Session -> Updates e m 
 endSession (clientId, sessionId) = updateClient endSub clientId
  where
-  endSub client = client { clientSessions = HM.delete sessionId (clientSessions client) }
+  endSub client = client { connectionSessions = HM.delete sessionId (connectionSessions client) }
 
 startSession :: SubEvent e m -> Session -> Updates e m 
 startSession  subscriptions (clientId, sessionId) = updateClient startSub clientId
  where
-  startSub client = client { clientSessions = HM.insert sessionId subscriptions (clientSessions client) }
+  startSub client = client { connectionSessions = HM.insert sessionId subscriptions (connectionSessions client) }
+
+newtype Updates e ( m :: * -> * ) =  
+    Updates {
+      _runUpdate:: ClientConnectionStore e m -> ClientConnectionStore e m  
+    }
 
 type Session = (ID, SesionID)
 
@@ -86,10 +91,6 @@ data Input
   Init :: ID -> Input 'Ws 
   Request :: GQLRequest -> Input 'Http 
 
-newtype Updates e ( m :: * -> * ) =  
-    Updates {
-      _runUpdate:: ClientStore e m -> ClientStore e m  
-    }
 
 run :: Scope 'Ws e m -> Updates e m -> m ()
 run WS { update } (Updates changes) = update changes
@@ -101,7 +102,7 @@ data Scope (api :: API ) event (m :: * -> * ) where
   WS :: 
      { listener :: m ByteString
      , callback :: ByteString -> m ()
-     , update   :: (ClientStore event m -> ClientStore event m) -> m ()
+     , update   :: (ClientConnectionStore event m -> ClientConnectionStore event m) -> m ()
     } -> Scope 'Ws event m
 
 data API = Http | Ws

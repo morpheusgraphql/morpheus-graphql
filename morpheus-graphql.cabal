@@ -389,7 +389,7 @@ library
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.Subscription
       Data.Morpheus.Types.Internal.Subscription.Apollo
-      Data.Morpheus.Types.Internal.Subscription.ClientStore
+      Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
       Data.Morpheus.Types.Internal.Subscription.Stream
       Data.Morpheus.Types.Internal.TH
       Data.Morpheus.Types.Internal.Validation

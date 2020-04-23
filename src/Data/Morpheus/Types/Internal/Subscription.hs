@@ -9,8 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables     #-}
 
 module Data.Morpheus.Types.Internal.Subscription
-  ( Client
-  , connect
+  ( connect
   , disconnect
   , toOutStream
   , runStreamWS
@@ -41,11 +40,10 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLChannel(..) )
 import           Data.Morpheus.Types.Internal.Subscription.Apollo
                                                 ( acceptApolloRequest )
-import           Data.Morpheus.Types.Internal.Subscription.ClientStore
+import           Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
                                                 ( delete 
-                                                , Client
                                                 , publish
-                                                , ClientStore
+                                                , ClientConnectionStore
                                                 )
 import           Data.Morpheus.Types.Internal.Subscription.Stream
                                                 ( toOutStream
@@ -67,13 +65,13 @@ disconnect WS { update }  (Init clientID)  = update (delete clientID)
 -- | PubSubStore interface
 -- shared GraphQL state between __websocket__ and __http__ server,
 -- you can define your own store if you provide write and read methods
--- to work properly Morpheus needs all entries of ClientStore (+ client Callbacks)
+-- to work properly Morpheus needs all entries of ClientConnectionStore (+ client Callbacks)
 -- that why it is recomended that you use many local ClientStores on evenry server node
 -- rathen then single centralized Store.
 -- 
 data Store e m = Store 
-  { readStore :: m (ClientStore e m)
-  , writeStore :: (ClientStore e m -> ClientStore e m) -> m ()
+  { readStore :: m (ClientConnectionStore e m)
+  , writeStore :: (ClientConnectionStore e m -> ClientConnectionStore e m) -> m ()
   }
 
 publishEventWith :: 

@@ -2,11 +2,11 @@
 {-# LANGUAGE KindSignatures   #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Data.Morpheus.Types.Internal.Subscription.ClientStore
-  ( Client(..)
-  , ID
-  , ClientStore
+module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
+  ( ID
   , SesionID
+  , ClientConnection(..)
+  , ClientConnectionStore
   , empty
   , insert
   , adjust
@@ -47,20 +47,20 @@ type ID = UUID
 
 type SesionID = Text
 
-data Client e ( m :: * -> * ) =
-  Client
-    { clientId       :: ID
-    , clientCallback :: ByteString -> m ()
-    -- one client can have multiple subsciprion session
-    , clientSessions :: HashMap SesionID (SubEvent e m)
+data ClientConnection e ( m :: * -> * ) =
+  ClientConnection
+    { connectionId       :: ID
+    , connectionCallback :: ByteString -> m ()
+    -- one connection can have multiple subsciprion session
+    , connectionSessions :: HashMap SesionID (SubEvent e m)
     }
 
-instance Show (Client e m) where
-  show Client { clientId, clientSessions } =
-    "Client { id: "
-      <> show clientId
+instance Show (ClientConnection e m) where
+  show ClientConnection { connectionId, connectionSessions } =
+    "Connection { id: "
+      <> show connectionId
       <> ", sessions: "
-      <> show (keys clientSessions)
+      <> show (keys connectionSessions)
       <> " }"
 
 publish
@@ -69,16 +69,16 @@ publish
      , Monad m
      ) 
   => event 
-  -> ClientStore event m 
+  -> ClientConnectionStore event m 
   -> m ()
 publish event = traverse_ sendMessage . elems
  where
-  sendMessage Client { clientSessions, clientCallback }
-    | null clientSessions  = pure ()
-    | otherwise = traverse_ send (filterByChannels clientSessions)
+  sendMessage ClientConnection { connectionSessions, connectionCallback  }
+    | null connectionSessions  = pure ()
+    | otherwise = traverse_ send (filterByChannels connectionSessions)
    where
     send (sid, Event { content = subscriptionRes }) 
-      = toApolloResponse sid <$> subscriptionRes event >>= clientCallback
+      = toApolloResponse sid <$> subscriptionRes event >>= connectionCallback
     ---------------------------
     filterByChannels = filter
       ( not
@@ -92,38 +92,38 @@ publish event = traverse_ sendMessage . elems
 -- stores active client connections
 -- every registered client has ID
 -- when client connection is closed client(including all its subsciprions) can By removed By its ID
-newtype ClientStore e ( m :: * -> * ) = 
-    ClientStore 
-      { unpackStore :: HashMap ID (Client e m)
+newtype ClientConnectionStore e ( m :: * -> * ) = 
+    ClientConnectionStore 
+      { unpackStore :: HashMap ID (ClientConnection e m)
       } deriving (Show)
 
 type StoreMap e m
-  = ClientStore e m 
-  -> ClientStore e m
+  = ClientConnectionStore e m 
+  -> ClientConnectionStore e m
 
 mapStore 
-  ::  ( HashMap ID (Client e m) 
-      -> HashMap ID (Client e m)
+  ::  ( HashMap ID (ClientConnection e m) 
+      -> HashMap ID (ClientConnection e m)
       )
   -> StoreMap e m
-mapStore f = ClientStore . f . unpackStore
+mapStore f = ClientConnectionStore . f . unpackStore
 
-elems :: ClientStore e m ->  [Client e m]
+elems :: ClientConnectionStore e m ->  [ClientConnection e m]
 elems = HM.elems . unpackStore
 
-instance Empty (ClientStore e m) where
-  empty = ClientStore HM.empty
+instance Empty (ClientConnectionStore e m) where
+  empty = ClientConnectionStore HM.empty
 
 insert 
   :: ID
   -> (ByteString -> m ())
   -> StoreMap e m
-insert clientId clientCallback = mapStore (HM.insert clientId  c)
+insert connectionId connectionCallback = mapStore (HM.insert connectionId  c)
   where
-    c = Client { clientId , clientCallback, clientSessions = HM.empty }
+    c = ClientConnection { connectionId , connectionCallback, connectionSessions = HM.empty }
 
 adjust 
-  :: (Client e m -> Client e m ) 
+  :: (ClientConnection e m -> ClientConnection e m ) 
   -> ID
   -> StoreMap e m
 adjust f key = mapStore (HM.adjust f key)
