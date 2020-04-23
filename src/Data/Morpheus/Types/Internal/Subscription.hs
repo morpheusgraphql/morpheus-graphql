@@ -63,8 +63,13 @@ disconnect:: Scope 'Ws e m -> Input 'Ws -> m ()
 disconnect WS { update }  (Init clientID)  = update (delete clientID)
 
 
--- | shared GraphQL state between __websocket__ and __http__ server,
--- stores information about subscriptions
+-- | PubSubStore interface
+-- shared GraphQL state between __websocket__ and __http__ server,
+-- you can define your own store if you provide write and read methods
+-- to work properly Morpheus needs all entries of ClientStore (+ client Callbacks)
+-- that why it is recomended that you use many local ClientStores on evenry server node
+-- rathen then single centralized Store.
+-- 
 data Store e m = Store 
   { readStore :: m (ClientStore e m)
   , writeStore :: (ClientStore e m -> ClientStore e m) -> m ()
