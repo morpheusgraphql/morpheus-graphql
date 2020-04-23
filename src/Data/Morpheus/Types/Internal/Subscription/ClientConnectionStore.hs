@@ -4,12 +4,13 @@
 
 module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ID
-  , SesionID
-  , ClientConnection(..)
+  , Session
   , ClientConnectionStore
+  , Updates(..)
+  , startSession
+  , endSession
   , empty
   , insert
-  , adjust
   , delete
   , publish
   )
@@ -46,6 +47,9 @@ import           Data.Morpheus.Types.Internal.Resolving
 type ID = UUID
 
 type SesionID = Text
+
+type Session = (ID, SesionID)
+
 
 data ClientConnection e ( m :: * -> * ) =
   ClientConnection
@@ -87,6 +91,30 @@ publish event = traverse_ sendMessage . elems
       . channels
       . snd
       ) . HM.toList
+
+
+
+newtype Updates e ( m :: * -> * ) =  
+    Updates {
+      _runUpdate:: ClientConnectionStore e m -> ClientConnectionStore e m  
+    }
+
+updateClient
+  :: (ClientConnection e m -> ClientConnection e m ) 
+  -> ID
+  -> Updates e m 
+updateClient  f cid = Updates (adjust f cid)
+
+endSession :: Session -> Updates e m 
+endSession (clientId, sessionId) = updateClient endSub clientId
+ where
+  endSub client = client { connectionSessions = HM.delete sessionId (connectionSessions client) }
+
+startSession :: SubEvent e m -> Session -> Updates e m 
+startSession  subscriptions (clientId, sessionId) = updateClient startSub clientId
+ where
+  startSub client = client { connectionSessions = HM.insert sessionId subscriptions (connectionSessions client) }
+
 
 
 -- stores active client connections

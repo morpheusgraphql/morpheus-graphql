@@ -22,9 +22,6 @@ where
 
 import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
-import qualified Data.HashMap.Lazy   as   HM    ( insert
-                                                , delete
-                                                )
 
 -- MORPHEUS
 import           Data.Morpheus.Error.Utils      ( globalErrorMessage
@@ -40,8 +37,7 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
 import           Data.Morpheus.Types.Internal.Operation
                                                 ( failure )
 import           Data.Morpheus.Types.Internal.Resolving
-                                                ( SubEvent
-                                                , GQLChannel(..)
+                                                ( GQLChannel(..)
                                                 , ResponseEvent(..)
                                                 , ResponseStream
                                                 , runResultT
@@ -54,55 +50,32 @@ import           Data.Morpheus.Types.Internal.Subscription.Apollo
                                                 , toApolloResponse
                                                 )
 import           Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
-                                                ( ClientConnection(..)
-                                                , ClientConnectionStore
-                                                , SesionID
+                                                ( ClientConnectionStore
                                                 , insert
-                                                , adjust
                                                 , ID
+                                                , Updates(..)
+                                                , startSession
+                                                , endSession
+                                                , Session
                                                 )
  
-updateClient
-  :: (ClientConnection e m -> ClientConnection e m ) 
-  -> ID
-  -> Updates e m 
-updateClient  f cid = Updates (adjust f cid)
-
-endSession :: Session -> Updates e m 
-endSession (clientId, sessionId) = updateClient endSub clientId
- where
-  endSub client = client { connectionSessions = HM.delete sessionId (connectionSessions client) }
-
-startSession :: SubEvent e m -> Session -> Updates e m 
-startSession  subscriptions (clientId, sessionId) = updateClient startSub clientId
- where
-  startSub client = client { connectionSessions = HM.insert sessionId subscriptions (connectionSessions client) }
-
-newtype Updates e ( m :: * -> * ) =  
-    Updates {
-      _runUpdate:: ClientConnectionStore e m -> ClientConnectionStore e m  
-    }
-
-type Session = (ID, SesionID)
-
 data Input 
   (api:: API) 
   where
   Init :: ID -> Input 'Ws 
   Request :: GQLRequest -> Input 'Http 
 
-
 run :: Scope 'Ws e m -> Updates e m -> m ()
 run WS { update } (Updates changes) = update changes
 
 data Scope (api :: API ) event (m :: * -> * ) where
-  HTTP :: {
-      httpCallback :: event -> m ()
+  HTTP :: 
+    { httpCallback :: event -> m ()
     } -> Scope 'Http event m
   WS :: 
-     { listener :: m ByteString
-     , callback :: ByteString -> m ()
-     , update   :: (ClientConnectionStore event m -> ClientConnectionStore event m) -> m ()
+    { listener :: m ByteString
+    , callback :: ByteString -> m ()
+    , update   :: (ClientConnectionStore event m -> ClientConnectionStore event m) -> m ()
     } -> Scope 'Ws event m
 
 data API = Http | Ws
@@ -162,7 +135,6 @@ handleWSRequest gqlApp clientId = handleApollo . apolloFormat
       = handleResponseStream (clientId, sessionId) (gqlApp request) 
     handleApollo (RemoveSub sessionId)
       = StreamWS $ const $ pure $ Right [endSession (clientId, sessionId)]
-
 
 runStreamWS 
   :: (Monad m) 
