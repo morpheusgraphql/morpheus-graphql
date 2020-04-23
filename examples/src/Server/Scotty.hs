@@ -12,9 +12,6 @@ where
 import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Morpheus.Document         ( toGraphQLDocument )
-import           Data.Morpheus.Types            ( initDefaultStore
-                                                , publishEventWith
-                                                )
 import           Data.Morpheus.Server           ( webSocketsApp
                                                 , httpAppWithEffect
                                                 )
@@ -44,12 +41,10 @@ import           Server.Sophisticated.API       ( EVENT
 
 scottyServer :: IO ()
 scottyServer = do
-  store   <- initDefaultStore
-  let publish = publishEventWith store
+  (wsApp, publish) <- webSocketsApp api
   httpApp <- httpServer publish
   fetchHero >>= print
   fetUser (httpAppWithEffect publish api) >>= print
-  wsApp <- webSocketsApp api store
   Warp.runSettings settings
     $ WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
  where

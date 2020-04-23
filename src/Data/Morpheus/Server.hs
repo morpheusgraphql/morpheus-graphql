@@ -31,6 +31,8 @@ import           Network.WebSockets             ( Connection
 import qualified Network.WebSockets          as WS
 
 -- MORPHEUS
+import           Data.Morpheus.Types.Internal.Resolving         
+                                                ( GQLChannel(..) )
 import           Data.Morpheus.Types.IO         ( MapAPI(..) )
 import           Data.Morpheus.Types.Internal.Subscription
                                                 ( connect
@@ -43,6 +45,8 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , runStreamHTTP
                                                 , runStreamWS
                                                 , acceptApolloRequest
+                                                , initDefaultStore
+                                                , publishEventWith
                                                 )
 
 
@@ -84,15 +88,18 @@ finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
 webSocketsApp
   ::  ( MonadIO m 
       , MonadUnliftIO m
+      , (Eq (StreamChannel e)) 
+      , (GQLChannel e) 
       )
   => (Input 'Ws -> Stream 'Ws e m)
-  -> Store e m
-  -> m ServerApp
-webSocketsApp api store = withRunInIO handle
+  -> m (ServerApp , e -> m ())
+webSocketsApp api = withRunInIO handle
   where
-    handle runIO  = pure wsApp
+    handle runIO  = do 
+      store <- initDefaultStore      
+      pure (wsApp store, publishEventWith store)
      where
-      wsApp pending = do
+      wsApp store pending = do
         connection <- acceptApolloRequest pending
         let scope = defaultWSScope store connection
         pingThread connection $ do
