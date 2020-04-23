@@ -23,6 +23,7 @@ module Data.Morpheus.Types.Internal.Subscription
   , publish
   , Store(..)
   , initDefaultStore
+  , publishEventWith
   )
 where
 
@@ -74,6 +75,13 @@ data Store e m = Store
   { readStore :: m (ClientStore e m)
   , writeStore :: (ClientStore e m -> ClientStore e m) -> m ()
   }
+
+publishEventWith :: 
+  ( MonadIO m
+  , (Eq (StreamChannel event)) 
+  , (GQLChannel event) 
+  ) => Store event m -> event -> m ()
+publishEventWith store event = readStore store >>= publish event
 
 -- | initializes empty GraphQL state
 initDefaultStore :: 

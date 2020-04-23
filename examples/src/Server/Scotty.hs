@@ -12,10 +12,11 @@ where
 import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Morpheus.Document         ( toGraphQLDocument )
-import           Data.Morpheus.Types            ( initDefaultStore )
+import           Data.Morpheus.Types            ( initDefaultStore
+                                                , publishEventWith
+                                                )
 import           Data.Morpheus.Server           ( webSocketsAppIO
                                                 , httpAppWithEffect
-                                                , publishEventWith
                                                 )
 import qualified Network.Wai                   as Wai
 import qualified Network.Wai.Handler.Warp      as Warp

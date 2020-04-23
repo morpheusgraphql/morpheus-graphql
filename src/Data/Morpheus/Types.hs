@@ -38,7 +38,9 @@ module Data.Morpheus.Types
   , SubField
   , Input
   , Stream
+  , Store(..)
   , initDefaultStore
+  , publishEventWith
   )
 where
 
@@ -82,7 +84,9 @@ import           Data.Morpheus.Types.Types      ( Undefined(..) )
 import           Data.Morpheus.Types.Internal.Subscription  
                                                 ( Stream
                                                 , Input 
+                                                , Store(..)
                                                 , initDefaultStore 
+                                                , publishEventWith
                                                 )
 
 type Res = Resolver QUERY

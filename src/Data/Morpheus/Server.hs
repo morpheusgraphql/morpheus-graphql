@@ -14,7 +14,6 @@ module Data.Morpheus.Server
   ( webSocketsApp
   , webSocketsAppIO
   , httpAppWithEffect
-  , publishEventWith
   )
 where
 
@@ -29,12 +28,9 @@ import           Network.WebSockets             ( ServerApp
 import qualified Network.WebSockets          as WS
 
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( GQLChannel(..) )
 import           Data.Morpheus.Types.IO         ( MapAPI(..) )
 import           Data.Morpheus.Types.Internal.Subscription
                                                 ( connect
-                                                , publish
                                                 , disconnect
                                                 , Input(..)
                                                 , Stream
@@ -61,13 +57,6 @@ defaultWSScope Store { writeStore } connection = WS
   , callback = liftIO . sendTextData connection
   , update = writeStore
   }
-
-publishEventWith :: 
-  ( MonadIO m
-  , (Eq (StreamChannel event)) 
-  , (GQLChannel event) 
-  ) => Store event m -> event -> m ()
-publishEventWith store event = readStore store >>= publish event
 
 httpAppWithEffect
   ::  
