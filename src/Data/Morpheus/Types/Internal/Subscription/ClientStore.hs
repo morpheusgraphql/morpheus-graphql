@@ -51,6 +51,7 @@ data Client e ( m :: * -> * ) =
   Client
     { clientId       :: ID
     , clientCallback :: ByteString -> m ()
+    -- one client can have multiple subsciprion session
     , clientSessions :: HashMap SesionID (SubEvent e m)
     }
 
@@ -87,9 +88,10 @@ publish event = traverse_ sendMessage . elems
       . snd
       ) . HM.toList
 
--- subscription 
--- store
--- stores active subsciption connections and requests
+
+-- stores active client connections
+-- every registered client has ID
+-- when client connection is closed client(including all its subsciprions) can By removed By its ID
 newtype ClientStore e ( m :: * -> * ) = 
     ClientStore 
       { unpackStore :: HashMap ID (Client e m)
