@@ -26,6 +26,7 @@ import           Network.WebSockets             ( Connection
                                                 , PendingConnection
                                                 , sendTextData
                                                 , receiveData
+                                                , ServerApp
                                                 )
 import qualified Network.WebSockets          as WS
 
@@ -76,12 +77,8 @@ httpAppWithEffect httpCallback api
     . Request
     )
 
-finallyUnIO :: MonadUnliftIO m => m () -> m () -> m ()
-finallyUnIO loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
-
-pingThreadUnIO :: MonadUnliftIO m => Connection -> m () -> m ()
-pingThreadUnIO conn x = withRunInIO $ \runIO -> pingThread conn (runIO x) 
-
+finallyM :: MonadUnliftIO m => m () -> m () -> m ()
+finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp
@@ -90,19 +87,27 @@ webSocketsApp
       )
   => (Input 'Ws -> Stream 'Ws e m)
   -> Store e m
-  -- WebSocket App 
-  -> PendingConnection 
+  -> m ServerApp
+webSocketsApp api store = withRunInIO handle
+  where
+    handle runIO  = pure wsApp
+     where
+      wsApp pending = do
+        connection <- acceptApolloRequest pending
+        let scope = defaultWSScope store connection
+        pingThread connection $ do
+          input <- connect 
+          runIO $ finallyM
+            (inputLoop api scope input)
+            (disconnect scope input)
+
+inputLoop 
+  :: Monad m 
+  => (Input 'Ws -> Stream 'Ws e m) 
+  -> Scope 'Ws e m 
+  -> Input 'Ws 
   -> m ()
-webSocketsApp streamApp store pending = do
-  connection <- acceptApolloRequest pending
-  let scope = defaultWSScope store connection
-  pingThreadUnIO connection $ do
-      input <- connect 
-      finallyUnIO
-        (handler scope input) 
-        $ disconnect scope input
- where
-  handler scope input
-        = forever
-        $ runStreamWS scope 
-        $ streamApp input
+inputLoop api scope input
+            = forever
+            $ runStreamWS scope 
+            $ api input

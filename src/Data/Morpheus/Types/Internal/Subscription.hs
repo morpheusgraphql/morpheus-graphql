@@ -62,7 +62,6 @@ connect = Init <$> liftIO nextRandom
 disconnect:: Scope 'Ws e m -> Input 'Ws -> m ()
 disconnect WS { update }  (Init clientID)  = update (delete clientID)
 
-
 -- | PubSubStore interface
 -- shared GraphQL state between __websocket__ and __http__ server,
 -- you can define your own store if you provide write and read methods

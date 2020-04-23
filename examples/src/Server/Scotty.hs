@@ -49,11 +49,11 @@ scottyServer = do
   httpApp <- httpServer publish
   fetchHero >>= print
   fetUser (httpAppWithEffect publish api) >>= print
+  wsApp <- webSocketsApp api store
   Warp.runSettings settings
-    $ WaiWs.websocketsOr defaultConnectionOptions (wsApp store) httpApp
+    $ WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
-  wsApp    = webSocketsApp api
   httpServer :: (EVENT ->  IO ())  -> IO Wai.Application
   httpServer publish = scottyApp $ do
     post "/" $ raw =<< (liftIO . httpAppWithEffect publish api =<< body)
