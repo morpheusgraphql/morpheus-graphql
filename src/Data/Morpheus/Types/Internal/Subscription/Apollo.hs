@@ -10,12 +10,19 @@ module Data.Morpheus.Types.Internal.Subscription.Apollo
   , toApolloResponse
   ) where
 
-import           Data.Aeson                 (FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, pairs,
-                                             withObject, (.:), (.:?), (.=))
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus.Types.IO     ( GQLResponse 
-                                            , GQLRequest (..)
+import           Control.Monad.IO.Class     ( MonadIO(..) )
+import           Data.Aeson                 (FromJSON (..)
+                                            , ToJSON (..)
+                                            , Value (..)
+                                            , eitherDecode
+                                            , encode
+                                            , pairs
+                                            , withObject
+                                            , (.:)
+                                            , (.:?)
+                                            , (.=)
                                             )
+import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Semigroup             ((<>))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
@@ -26,6 +33,11 @@ import           Network.WebSockets         ( AcceptRequest (..)
                                             , Connection
                                             , acceptRequestWith
                                             , pendingRequest
+                                            )
+
+-- MORPHEUS
+import           Data.Morpheus.Types.IO     ( GQLResponse 
+                                            , GQLRequest (..)
                                             )
 
 type ApolloID = Text
@@ -63,9 +75,13 @@ instance ToJSON a => ToJSON (ApolloSubscription a) where
   toEncoding (ApolloSubscription id' type' payload') =
     pairs $ "id" .= id' <> "type" .= type' <> "payload" .= payload'
 
-acceptApolloRequest :: PendingConnection -> IO Connection
+acceptApolloRequest 
+  :: MonadIO m 
+  => PendingConnection 
+  -> m Connection
 acceptApolloRequest pending 
-  = acceptRequestWith 
+  = liftIO 
+    $ acceptRequestWith
         pending
         (acceptApolloSubProtocol (pendingRequest pending))
 

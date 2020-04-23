@@ -15,7 +15,7 @@ import           Data.Morpheus.Document         ( toGraphQLDocument )
 import           Data.Morpheus.Types            ( initDefaultStore
                                                 , publishEventWith
                                                 )
-import           Data.Morpheus.Server           ( webSocketsAppIO
+import           Data.Morpheus.Server           ( webSocketsApp
                                                 , httpAppWithEffect
                                                 )
 import qualified Network.Wai                   as Wai
@@ -53,7 +53,7 @@ scottyServer = do
     $ WaiWs.websocketsOr defaultConnectionOptions (wsApp store) httpApp
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
-  wsApp    = webSocketsAppIO api
+  wsApp    = webSocketsApp api
   httpServer :: (EVENT ->  IO ())  -> IO Wai.Application
   httpServer publish = scottyApp $ do
     post "/" $ raw =<< (liftIO . httpAppWithEffect publish api =<< body)

@@ -12,16 +12,18 @@
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
   ( webSocketsApp
-  , webSocketsAppIO
   , httpAppWithEffect
   )
 where
 
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
+import           Control.Monad.IO.Unlift        ( MonadUnliftIO
+                                                , withRunInIO
+                                                )
 import           Control.Monad.IO.Class         ( MonadIO(..) )
-import           Network.WebSockets             ( ServerApp
-                                                , Connection
+import           Network.WebSockets             ( Connection
+                                                , PendingConnection
                                                 , sendTextData
                                                 , receiveData
                                                 )
@@ -74,31 +76,33 @@ httpAppWithEffect httpCallback api
     . Request
     )
 
+finallyUnIO :: MonadUnliftIO m => m () -> m () -> m ()
+finallyUnIO loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
+
+pingThreadUnIO :: MonadUnliftIO m => Connection -> m () -> m ()
+pingThreadUnIO conn x = withRunInIO $ \runIO -> pingThread conn (runIO x) 
+
+
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp
-  :: (MonadIO m)
-  => (m () -> IO ())
-  -> (Input 'Ws -> Stream 'Ws e m)
+  ::  ( MonadIO m 
+      , MonadUnliftIO m
+      )
+  => (Input 'Ws -> Stream 'Ws e m)
   -> Store e m
-  -> ServerApp
-webSocketsApp f streamApp store pending = do
+  -- WebSocket App 
+  -> PendingConnection 
+  -> m ()
+webSocketsApp streamApp store pending = do
   connection <- acceptApolloRequest pending
   let scope = defaultWSScope store connection
-  pingThread connection $ do
+  pingThreadUnIO connection $ do
       input <- connect 
-      finally
+      finallyUnIO
         (handler scope input) 
-        $ f $ disconnect scope input
+        $ disconnect scope input
  where
   handler scope input
-        = f
-        $ forever
+        = forever
         $ runStreamWS scope 
         $ streamApp input
-
--- | Same as above but specific to IO
-webSocketsAppIO
-  :: (Input 'Ws -> Stream 'Ws e IO)
-  -> Store e IO
-  -> ServerApp
-webSocketsAppIO = webSocketsApp id

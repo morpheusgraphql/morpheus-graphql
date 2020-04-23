@@ -26,16 +26,17 @@ module Data.Morpheus.Types.Internal.Subscription
   )
 where
 
+
 import           Control.Concurrent             ( readMVar
                                                 , newMVar
                                                 , modifyMVar_
                                                 )
 import           Data.UUID.V4                   ( nextRandom )
+import           Control.Monad.IO.Class         ( MonadIO(..) )
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Operation
                                                 (empty)
-import           Control.Monad.IO.Class         ( MonadIO(..) )
 import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLChannel(..) )
 import           Data.Morpheus.Types.Internal.Subscription.Apollo
@@ -55,8 +56,8 @@ import           Data.Morpheus.Types.Internal.Subscription.Stream
                                                 , API(..)
                                                 )
  
-connect :: IO (Input 'Ws)
-connect = Init <$> nextRandom
+connect :: MonadIO m => m (Input 'Ws)
+connect = Init <$> liftIO nextRandom
 
 disconnect:: Scope 'Ws e m -> Input 'Ws -> m ()
 disconnect WS { update }  (Init clientID)  = update (delete clientID)
