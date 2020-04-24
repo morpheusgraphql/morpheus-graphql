@@ -1,5 +1,11 @@
 subscription {
-  user {
+  newUser {
     name
+  }
+  newAddress {
+    street
+  }
+  address2: newAddress {
+    street
   }
 }

@@ -96,11 +96,12 @@ renderSource (SourceVariable Variable { variableName })
   = "Variable \"$" <> variableName <>"\" got invalid value. "
 
 data Context = Context 
-  { schema           :: Schema
-  , fragments        :: Fragments
-  , scopePosition    :: Position
-  , scopeTypeName    :: Name
-  , operationName    :: Maybe Name
+  { schema             :: Schema
+  , fragments          :: Fragments
+  , scopePosition      :: Position
+  , scopeTypeName      :: Name
+  , operationName      :: Maybe Name
+  , scopeSelectionName :: Name
   } deriving (Show)
 
 data InputContext 

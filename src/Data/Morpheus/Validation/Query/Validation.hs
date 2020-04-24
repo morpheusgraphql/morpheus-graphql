@@ -62,6 +62,7 @@ validateRequest
         { schema 
         , fragments
         , scopeTypeName = "Root"
+        , scopeSelectionName = "Root"
         , scopePosition = operationPosition
         , operationName
         }
