@@ -36,6 +36,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Arguments
                                                 , isEntNode
                                                 , getOperationDataType
+                                                , GQLError(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 ( concatTraverse )
@@ -43,6 +44,8 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty
                                                 , singleton
                                                 , Failure(..)
+                                                , keyOf
+                                                , toList
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( SelectionValidator
@@ -75,6 +78,22 @@ getOperationObject operation = do
         <> typeName
         <> "\" must be an Object"
 
+
+singleTopLevelSelection :: Maybe Name -> SelectionSet VALID -> SelectionValidator ()
+singleTopLevelSelection name x =  case filter (("__typename" /=) . keyOf) (toList x) of
+  (_:xs) | not (null xs) -> failure $ map (singleTopLevelSelectionError  name) xs
+  _ -> pure ()
+
+singleTopLevelSelectionError :: Maybe Name -> Selection VALID -> GQLError
+singleTopLevelSelectionError name Selection { selectionPosition} = GQLError 
+      { message 
+        = subscriptionName <> " must select " 
+        <> "only one top level field."
+      , locations = [selectionPosition]
+      }
+    where
+      subscriptionName = maybe "Anonymous Subscription" (("Subscription \"" <>) . (<> "\""))  name
+
 validateOperation
   :: Operation RAW
   -> SelectionValidator (Operation VALID)
@@ -88,6 +107,7 @@ validateOperation
     = do
       typeDef  <-  getOperationObject rawOperation
       selection <- validateSelectionSet typeDef operationSelection
+      singleTopLevelSelection operationName selection
       pure $ Operation 
               { operationName
               , operationType
@@ -95,6 +115,7 @@ validateOperation
               , operationSelection = selection
               , operationPosition
               }
+
 
 validateSelectionSet
     :: TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
