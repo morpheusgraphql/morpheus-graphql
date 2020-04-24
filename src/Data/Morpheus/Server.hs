@@ -1,114 +1,101 @@
-{-# LANGUAGE ConstraintKinds     #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds        #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE CPP                    #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE NamedFieldPuns         #-}
+{-# LANGUAGE DataKinds             #-}
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
-  ( gqlSocketApp
-  , gqlSocketMonadIOApp
-  , initGQLState
-  , GQLState
+  ( webSocketsApp
+  , httpPubApp
   )
 where
 
-import           Data.Foldable                  ( traverse_ )
-import           Control.Exception              ( finally )
-import           Control.Monad                  ( forever )
-import           Control.Monad.IO.Class         ( MonadIO(liftIO) )
-import           Data.Text                      ( Text )
-import           Network.WebSockets             ( ServerApp
-                                                , acceptRequestWith
-                                                , forkPingThread
-                                                , pendingRequest
-                                                , receiveData
-                                                , sendTextData
+
+import           Control.Monad.IO.Unlift        ( MonadUnliftIO
+                                                , withRunInIO
                                                 )
+import           Control.Monad.IO.Class         ( MonadIO(..) )
+import           Network.WebSockets             ( Connection
+                                                , sendTextData
+                                                , receiveData
+                                                , ServerApp
+                                                )
+import qualified Network.WebSockets          as WS
 
 -- MORPHEUS
-import           Data.Morpheus.Execution.Server.Resolve
-                                                ( RootResCon
-                                                , coreResolver
+import           Data.Morpheus.Types.Internal.Resolving         
+                                                ( GQLChannel(..) )
+import           Data.Morpheus.Types.IO         ( MapAPI(..) )
+import           Data.Morpheus.Types.Internal.Subscription
+                                                ( connectionThread
+                                                , Input(..)
+                                                , Stream
+                                                , Store(..)
+                                                , Scope(..)
+                                                , HTTP
+                                                , WS
+                                                , runStreamHTTP
+                                                , acceptApolloRequest
+                                                , initDefaultStore
+                                                , publishEventWith
                                                 )
-import           Data.Morpheus.Types.Internal.Apollo
-                                                ( SubAction(..)
-                                                , acceptApolloSubProtocol
-                                                , apolloFormat
-                                                , toApolloResponse
-                                                )
-import           Data.Morpheus.Execution.Server.Subscription
-                                                ( GQLState
-                                                , connectClient
-                                                , disconnectClient
-                                                , initGQLState
-                                                , publishEvent
-                                                , startSubscription
-                                                , endSubscription
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( GQLRootResolver(..)
-                                                , GQLChannel(..)
-                                                , ResponseEvent(..)
-                                                , ResponseStream
-                                                , runResultT
-                                                , Result(..)
-                                                )
-import           Data.Morpheus.Types.Internal.WebSocket
-                                                ( GQLClient(..) )
-import           Data.Morpheus.Types.IO         ( GQLResponse(..) )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( ValidValue )
 
-handleSubscription
-  :: (Eq (StreamChannel e), GQLChannel e, MonadIO m)
-  => GQLClient m e
-  -> GQLState m e
-  -> Text
-  -> ResponseStream e m ValidValue
-  -> m ()
-handleSubscription GQLClient { clientConnection, clientID } state sessionId stream
-  = do
-    response <- runResultT stream
-    case response of
-      Success { events } -> traverse_ execute events
-      Failure errors     -> liftIO $ sendTextData
-        clientConnection
-        (toApolloResponse sessionId $ Errors errors)
- where
-  execute (Publish   pub) = publishEvent state pub
-  execute (Subscribe sub) = startSubscription clientID sub sessionId state
+
+-- support old version of Websockets
+pingThread :: Connection -> IO () -> IO ()
+#if MIN_VERSION_websockets(0,12,6)
+pingThread connection = WS.withPingThread connection 30 (return ())
+#else
+pingThread connection = (WS.forkPingThread connection 30 >>)
+#endif
+
+defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope WS e m
+defaultWSScope Store { writeStore } connection = ScopeWS 
+  { listener = liftIO (receiveData connection)
+  , callback = liftIO . sendTextData connection
+  , update = writeStore
+  }
+
+httpPubApp
+  ::  
+   ( MonadIO m,
+     MapAPI a
+   )
+  => (Input HTTP -> Stream HTTP e m)
+  -> (e -> m ())
+  -> a
+  -> m a
+httpPubApp api httpCallback  
+  = mapAPI 
+    ( runStreamHTTP ScopeHTTP { httpCallback }
+    . api 
+    . Request
+    )
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
-gqlSocketMonadIOApp
-  :: (RootResCon m e que mut sub, MonadIO m)
-  => GQLRootResolver m e que mut sub
-  -> GQLState m e
-  -> (m () -> IO ())
-  -> ServerApp
-gqlSocketMonadIOApp gqlRoot state f pending = do
-  connection <- acceptRequestWith pending
-    $ acceptApolloSubProtocol (pendingRequest pending)
-  forkPingThread connection 30
-  client <- connectClient connection state
-  finally (f $ queryHandler client) (disconnectClient client state)
- where
-  queryHandler client = forever handleRequest
-   where
-    handleRequest = do
-      d <- liftIO $ receiveData (clientConnection client)
-      resolveMessage (apolloFormat d)
+webSocketsApp
+  ::  ( MonadIO m 
+      , MonadUnliftIO m
+      , (Eq (StreamChannel e)) 
+      , (GQLChannel e) 
+      )
+  => (Input WS -> Stream WS e m)
+  -> m (ServerApp , e -> m ())
+webSocketsApp api = withRunInIO handle
+  where
+    handle runIO  = do 
+      store <- initDefaultStore      
+      pure (wsApp store, publishEventWith store)
      where
-      resolveMessage (SubError x) = liftIO $ print x
-      resolveMessage (AddSub sessionId request) =
-        handleSubscription client state sessionId (coreResolver gqlRoot request)
-      resolveMessage (RemoveSub sessionId) =
-        endSubscription (clientID client) sessionId state
-
--- | Same as above but specific to IO
-gqlSocketApp
-  :: (RootResCon IO e que mut sub)
-  => GQLRootResolver IO e que mut sub
-  -> GQLState IO e
-  -> ServerApp
-gqlSocketApp gqlRoot state = gqlSocketMonadIOApp gqlRoot state id
+      wsApp store pending = do
+        connection <- acceptApolloRequest pending
+        let scope = defaultWSScope store connection
+        pingThread 
+          connection 
+          $ runIO (connectionThread api scope)

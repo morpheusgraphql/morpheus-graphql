@@ -36,6 +36,8 @@ module Data.Morpheus.Types
   , subscribe
   , unsafeInternalContext
   , SubField
+  , Input
+  , Stream
   )
 where
 
@@ -76,6 +78,10 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
                                                 , GQLResponse(..)
                                                 )
 import           Data.Morpheus.Types.Types      ( Undefined(..) )
+import           Data.Morpheus.Types.Internal.Subscription  
+                                                ( Stream
+                                                , Input
+                                                )
 
 type Res = Resolver QUERY
 type MutRes = Resolver MUTATION

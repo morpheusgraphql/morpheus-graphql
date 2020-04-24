@@ -7,6 +7,35 @@
 - Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
 - for Variant selection inputUnion uses `inputname` insead of `__typename`
 
+- in `Data.Morpheus.Server`  
+  - `gqlSocketApp` and `gqlSocketMonadIOApp` are replaced with `webSocketsApp`
+  - removed `initGQLState`, `GQLState`
+
+- for better control of subscriptions
+  - replaced instance  `interpreter gqlRoot state` with
+    `interpreter gqlRoot`.
+  - added: `Input`, `Stream`, `httpPubApp`
+  
+  from now on you can define API that can be
+  used in websockets as well as in http servers
+
+  ```hs
+  api :: Input api -> Stream api EVENT IO
+  api = interpreter gqlRoot
+  
+  server :: IO ()
+  server = do
+    (wsApp, publish) <- webSocketsApp api
+    let httpApp = httpPubApp api publish
+    ...
+    runBoth wsApp httpApp
+  ```
+  
+  where `publish :: e -> m ()`
+
+  websockets and http app do not have to be on the same server. 
+  e.g. you can pass events between servers with webhooks.
+
 ### New features
 
 - Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).

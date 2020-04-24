@@ -35,6 +35,7 @@ dependencies:
   - template-haskell      >= 2.0       && <= 2.16
   - th-lift-instances     >= 0.1.1     && <= 0.2.0
   - mtl                   >= 2.0       && <= 2.3
+  - unliftio-core         >= 0.0.1     && <= 0.3
 
 library:
   source-dirs: src

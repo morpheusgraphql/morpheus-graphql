@@ -10,29 +10,18 @@
 
 module Data.Morpheus.Execution.Server.Resolve
   ( statelessResolver
-  , byteStringIO
-  , streamResolver
-  , statefulResolver
   , RootResCon
   , fullSchema
   , coreResolver
+  , EventCon
   )
 where
 
-import           Data.Aeson                     ( encode )
-import           Data.Aeson.Internal            ( formatError
-                                                , ifromJSON
-                                                )
-import           Data.Aeson.Parser              ( eitherDecodeWith
-                                                , jsonNoDup
-                                                )
-import qualified Data.ByteString.Lazy.Char8    as L
+
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Proxy                     ( Proxy(..) )
-import           Data.Foldable                   (traverse_)
 
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      ( badRequestError )
 import           Data.Morpheus.Execution.Server.Encode
                                                 ( EncodeCon
                                                 , deriveModel
@@ -42,13 +31,8 @@ import           Data.Morpheus.Execution.Server.Introspect
                                                 , introspectObjectFields
                                                 , TypeScope(..)
                                                 )
-import           Data.Morpheus.Execution.Server.Subscription
-                                                ( GQLState
-                                                , publishEvent
-                                                )
 import           Data.Morpheus.Parsing.Request.Parser
                                                 ( parseGQL )
---import           Data.Morpheus.Schema.Schema                         (Root)
 import           Data.Morpheus.Schema.SchemaAPI ( defaultTypes
                                                 , hiddenRootFields
                                                 , schemaAPI
@@ -79,13 +63,10 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLRootResolver(..)
                                                 , Resolver
                                                 , GQLChannel(..)
-                                                , ResponseEvent(..)
                                                 , ResponseStream
                                                 , Eventless
                                                 , cleanEvents
                                                 , ResultT(..)
-                                                , unpackEvents
-                                                , Failure(..)
                                                 , resolveUpdates
                                                 , Context(..)
                                                 , runResolverModel
@@ -97,7 +78,7 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
 import           Data.Morpheus.Validation.Query.Validation
                                                 ( validateRequest )
 import           Data.Typeable                  ( Typeable )
-import           Control.Monad.IO.Class         ( MonadIO() )
+
 
 type EventCon event
   = (Eq (StreamChannel event), Typeable event, GQLChannel event)
@@ -121,18 +102,6 @@ type RootResCon m event query mutation subscription
         (subscription (Resolver SUBSCRIPTION event m))
     )
 
-decodeNoDup :: Failure String m => L.ByteString -> m GQLRequest
-decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
-  Left  (path, x) -> failure $ formatError path x
-  Right value     -> pure value
-
-
-byteStringIO
-  :: Monad m => (GQLRequest -> m GQLResponse) -> L.ByteString -> m L.ByteString
-byteStringIO resolver request = case decodeNoDup request of
-  Left  aesonError' -> return $ badRequestError aesonError'
-  Right req         -> encode <$> resolver req
-
 statelessResolver
   :: (Monad m, RootResCon m event query mut sub)
   => GQLRootResolver m event query mut sub
@@ -140,16 +109,6 @@ statelessResolver
   -> m GQLResponse
 statelessResolver root req =
   renderResponse <$> runResultT (coreResolver root req)
-
-streamResolver
-  :: forall event m query mut sub
-   . (Monad m, RootResCon m event query mut sub)
-  => GQLRootResolver m event query mut sub
-  -> GQLRequest
-  -> ResponseStream event m GQLResponse
-streamResolver root req =
-  ResultT $ pure . renderResponse <$> runResultT (coreResolver root req)
-
 
 coreResolver
   :: forall event m query mut sub
@@ -179,20 +138,6 @@ coreResolver root request
   }
   ----------------------------------------------------------
   execOperator ctx@Context {schema } = runResolverModel (deriveModel root (schemaAPI schema)) ctx
-    
-statefulResolver
-  :: (EventCon event, MonadIO m)
-  => GQLState m event
-  -> (GQLRequest -> ResponseStream event m ValidValue)
-  -> L.ByteString
-  -> m L.ByteString
-statefulResolver state streamApi requestText = do
-  res <- runResultT (decodeNoDup requestText >>= streamApi)
-  traverse_ execute (unpackEvents res)
-  pure $ encode $ renderResponse res
- where
-  execute (Publish events) = publishEvent state events
-  execute Subscribe{}       = pure ()
 
 fullSchema
   :: forall proxy m event query mutation subscription

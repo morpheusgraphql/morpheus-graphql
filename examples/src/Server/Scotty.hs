@@ -11,11 +11,9 @@ where
 
 import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Functor.Identity          ( Identity(..) )
-import           Data.Morpheus                  ( Interpreter(..) )
 import           Data.Morpheus.Document         ( toGraphQLDocument )
-import           Data.Morpheus.Server           ( GQLState
-                                                , gqlSocketApp
-                                                , initGQLState
+import           Data.Morpheus.Server           ( webSocketsApp
+                                                , httpPubApp
                                                 )
 import qualified Network.Wai                   as Wai
 import qualified Network.Wai.Handler.Warp      as Warp
@@ -37,23 +35,23 @@ import           Client.Client                  ( fetUser
 import           Server.Mythology.API           ( mythologyApi )
 import           Server.TH.Simple               ( thSimpleApi )
 import           Server.Sophisticated.API       ( EVENT
+                                                , api
                                                 , gqlRoot
                                                 )
 
 scottyServer :: IO ()
 scottyServer = do
-  state   <- initGQLState
-  httpApp <- httpServer state
+  (wsApp, publish) <- webSocketsApp api
+  httpApp <- httpServer publish
   fetchHero >>= print
-  fetUser (interpreter gqlRoot state) >>= print
+  fetUser (httpPubApp api publish) >>= print
   Warp.runSettings settings
-    $ WaiWs.websocketsOr defaultConnectionOptions (wsApp state) httpApp
+    $ WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
-  wsApp    = gqlSocketApp gqlRoot
-  httpServer :: GQLState IO EVENT -> IO Wai.Application
-  httpServer state = scottyApp $ do
-    post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
+  httpServer :: (EVENT ->  IO ())  -> IO Wai.Application
+  httpServer publish = scottyApp $ do
+    post "/" $ raw =<< (liftIO . httpPubApp api publish =<< body)
     get "/" $ file "./examples/index.html"
     get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
     post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)

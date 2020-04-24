@@ -116,13 +116,13 @@ import           Data.Morpheus.Types.IO         ( renderResponse
 
 type WithOperation (o :: OperationType) = LiftOperation o
 
-type ResponseStream event m = ResultT (ResponseEvent m event) m
+type ResponseStream event (m :: * -> *) = ResultT (ResponseEvent event m) m
 
-data ResponseEvent m event
+data ResponseEvent event (m :: * -> *)
   = Publish event
-  | Subscribe (SubEvent m event)
+  | Subscribe (SubEvent event m)
 
-type SubEvent m event = Event (Channel event) (event -> m GQLResponse)
+type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
 data Context 
   = Context 

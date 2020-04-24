@@ -3,22 +3,42 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Types.Internal.Apollo
+module Data.Morpheus.Types.Internal.Subscription.Apollo
   ( SubAction(..)
   , apolloFormat
-  , acceptApolloSubProtocol
+  , acceptApolloRequest
   , toApolloResponse
   ) where
 
-import           Data.Aeson                 (FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, pairs,
-                                             withObject, (.:), (.:?), (.=))
+import           Control.Monad.IO.Class     ( MonadIO(..) )
+import           Data.Aeson                 (FromJSON (..)
+                                            , ToJSON (..)
+                                            , Value (..)
+                                            , eitherDecode
+                                            , encode
+                                            , pairs
+                                            , withObject
+                                            , (.:)
+                                            , (.:?)
+                                            , (.=)
+                                            )
 import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Morpheus.Types        (GQLRequest (..))
-import           Data.Morpheus.Types.IO     (GQLResponse)
 import           Data.Semigroup             ((<>))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
-import           Network.WebSockets         (AcceptRequest (..), RequestHead, getRequestSubprotocols)
+import           Network.WebSockets         ( AcceptRequest (..)
+                                            , RequestHead
+                                            , getRequestSubprotocols
+                                            , PendingConnection
+                                            , Connection
+                                            , acceptRequestWith
+                                            , pendingRequest
+                                            )
+
+-- MORPHEUS
+import           Data.Morpheus.Types.IO     ( GQLResponse 
+                                            , GQLRequest (..)
+                                            )
 
 type ApolloID = Text
 
@@ -54,6 +74,16 @@ instance FromJSON RequestPayload where
 instance ToJSON a => ToJSON (ApolloSubscription a) where
   toEncoding (ApolloSubscription id' type' payload') =
     pairs $ "id" .= id' <> "type" .= type' <> "payload" .= payload'
+
+acceptApolloRequest 
+  :: MonadIO m 
+  => PendingConnection 
+  -> m Connection
+acceptApolloRequest pending 
+  = liftIO 
+    $ acceptRequestWith
+        pending
+        (acceptApolloSubProtocol (pendingRequest pending))
 
 acceptApolloSubProtocol :: RequestHead -> AcceptRequest
 acceptApolloSubProtocol reqHead =
