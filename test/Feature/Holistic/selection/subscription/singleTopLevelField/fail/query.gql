@@ -3,6 +3,6 @@ subscription SomeTestSubscription {
     name
   }
   newAddress {
-    street
+    houseNumber
   }
 }

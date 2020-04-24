@@ -1,11 +1,20 @@
 {
   "errors": [
     {
-      "message": "Field \"user\" of type \"User\" must have a selection of subfields",
+      "message": "Anonymous Subscription must select only one top level field.",
       "locations": [
         {
-          "line": 2,
-          "column": 3
+          "line": 5,
+          "column": 14
+        }
+      ]
+    },
+    {
+      "message": "Anonymous Subscription must select only one top level field.",
+      "locations": [
+        {
+          "line": 8,
+          "column": 24
         }
       ]
     }

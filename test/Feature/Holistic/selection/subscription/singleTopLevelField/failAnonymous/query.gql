@@ -3,9 +3,9 @@ subscription {
     name
   }
   newAddress {
-    street
+    houseNumber
   }
   address2: newAddress {
-    street
+    houseNumber
   }
 }

@@ -1,13 +1,11 @@
 {
   "errors": [
     {
-      "message": "Field \"user\" of type \"User\" must have a selection of subfields",
+      "message": "Subscription \"SomeTestSubscription\" must select only one top level field.",
       "locations": [
         {
-          "line": 2,
-          "column": 3
+          "line": 5,
+          "column": 14
         }
       ]
     }
-  ]
-}
