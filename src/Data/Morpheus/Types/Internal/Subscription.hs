@@ -9,8 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables     #-}
 
 module Data.Morpheus.Types.Internal.Subscription
-  ( connect
-  , disconnect
+  ( connectionThread
   , toOutStream
   , runStreamWS
   , runStreamHTTP
@@ -28,12 +27,17 @@ module Data.Morpheus.Types.Internal.Subscription
 where
 
 
+import           Control.Exception              ( finally )
+import           Control.Monad                  ( forever )
 import           Control.Concurrent             ( readMVar
                                                 , newMVar
                                                 , modifyMVar_
                                                 )
 import           Data.UUID.V4                   ( nextRandom )
 import           Control.Monad.IO.Class         ( MonadIO(..) )
+import           Control.Monad.IO.Unlift        ( MonadUnliftIO
+                                                , withRunInIO
+                                                )
 
 -- MORPHEUS
 import           Data.Morpheus.Types.Internal.Operation
@@ -96,3 +100,32 @@ initDefaultStore = do
     { readStore = liftIO $ readMVar store
     , writeStore = \changes -> liftIO $ modifyMVar_ store (return . changes)
     }
+
+
+finallyM :: MonadUnliftIO m => m () -> m () -> m ()
+finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
+
+
+connectionThread 
+  :: ( MonadUnliftIO m
+     ) 
+  => (Input WS -> Stream WS e m) 
+  -> Scope WS e m
+  -> m ()
+connectionThread api scope = do
+  input <- connect 
+  finallyM
+    (connectionLoop api scope input)
+    (disconnect scope input)
+
+connectionLoop 
+  :: Monad m 
+  => (Input WS -> Stream WS e m) 
+  -> Scope WS e m 
+  -> Input WS 
+  -> m ()
+connectionLoop api scope input
+            = forever
+            $ runStreamWS scope 
+            $ api input
+

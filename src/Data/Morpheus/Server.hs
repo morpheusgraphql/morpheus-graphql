@@ -16,8 +16,7 @@ module Data.Morpheus.Server
   )
 where
 
-import           Control.Exception              ( finally )
-import           Control.Monad                  ( forever )
+
 import           Control.Monad.IO.Unlift        ( MonadUnliftIO
                                                 , withRunInIO
                                                 )
@@ -34,8 +33,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 ( GQLChannel(..) )
 import           Data.Morpheus.Types.IO         ( MapAPI(..) )
 import           Data.Morpheus.Types.Internal.Subscription
-                                                ( connect
-                                                , disconnect
+                                                ( connectionThread
                                                 , Input(..)
                                                 , Stream
                                                 , Store(..)
@@ -43,7 +41,6 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , HTTP
                                                 , WS
                                                 , runStreamHTTP
-                                                , runStreamWS
                                                 , acceptApolloRequest
                                                 , initDefaultStore
                                                 , publishEventWith
@@ -81,9 +78,6 @@ httpPubApp api httpCallback
     . Request
     )
 
-finallyM :: MonadUnliftIO m => m () -> m () -> m ()
-finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
-
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp
   ::  ( MonadIO m 
@@ -105,26 +99,3 @@ webSocketsApp api = withRunInIO handle
         pingThread 
           connection 
           $ runIO (connectionThread api scope)
-
-connectionThread 
-  :: ( MonadUnliftIO m
-     ) 
-  => (Input WS -> Stream WS e m) 
-  -> Scope WS e m
-  -> m ()
-connectionThread api scope = do
-  input <- connect 
-  finallyM
-    (connectionLoop api scope input)
-    (disconnect scope input)
-
-connectionLoop 
-  :: Monad m 
-  => (Input WS -> Stream WS e m) 
-  -> Scope WS e m 
-  -> Input WS 
-  -> m ()
-connectionLoop api scope input
-            = forever
-            $ runStreamWS scope 
-            $ api input
