@@ -4,14 +4,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Types.Internal.Subscription.Apollo
-  ( SubAction(..)
+  ( ApolloAction(..)
   , apolloFormat
   , acceptApolloRequest
   , toApolloResponse
+  , Validation
   ) where
 
+import           Data.Maybe                 ( maybe )        
 import           Control.Monad.IO.Class     ( MonadIO(..) )
-import           Data.Aeson                 (FromJSON (..)
+import           Data.Aeson                 ( FromJSON (..)
                                             , ToJSON (..)
                                             , Value (..)
                                             , eitherDecode
@@ -22,10 +24,14 @@ import           Data.Aeson                 (FromJSON (..)
                                             , (.:?)
                                             , (.=)
                                             )
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Semigroup             ((<>))
-import           Data.Text                  (Text)
-import           GHC.Generics               (Generic)
+import           Data.ByteString.Lazy.Char8 ( ByteString
+                                            , pack
+                                            )
+import           Data.Semigroup             ( (<>) )
+import           Data.Text                  ( Text 
+                                            , unpack
+                                            )
+import           GHC.Generics               ( Generic )
 import           Network.WebSockets         ( AcceptRequest (..)
                                             , RequestHead
                                             , getRequestSubprotocols
@@ -40,11 +46,11 @@ import           Data.Morpheus.Types.IO     ( GQLResponse
                                             , GQLRequest (..)
                                             )
 
-type ApolloID = Text
+type ID = Text
 
 data ApolloSubscription payload =
   ApolloSubscription
-    { apolloId      :: Maybe ApolloID
+    { apolloId      :: Maybe ID
     , apolloType    :: Text
     , apolloPayload :: Maybe payload
     }
@@ -94,29 +100,45 @@ acceptApolloSubProtocol reqHead =
     apolloProtocol ["graphql-ws"] = AcceptRequest (Just "graphql-ws") []
     apolloProtocol _ = AcceptRequest Nothing []
 
-toApolloResponse :: ApolloID -> GQLResponse -> ByteString
+toApolloResponse :: ID -> GQLResponse -> ByteString
 toApolloResponse sid val =
   encode $ ApolloSubscription (Just sid) "data" (Just val)
 
-data SubAction
-  = RemoveSub ApolloID
-  | AddSub ApolloID GQLRequest
-  | SubError String
+data ApolloAction
+  = SessionStop ID
+  | SessionStart ID GQLRequest
+  | ConnectionInit
 
-apolloFormat :: ByteString -> SubAction
-apolloFormat = toWsAPI . eitherDecode
+type Validation = Either ByteString
+
+apolloFormat :: ByteString -> Validation ApolloAction
+apolloFormat = validateReq . eitherDecode
   where
-    toWsAPI :: Either String (ApolloSubscription RequestPayload) -> SubAction
-    toWsAPI (Right ApolloSubscription { apolloType = "start"
-                                      , apolloId = Just sessionId
-                                      , apolloPayload = Just RequestPayload { payloadQuery = Just query
-                                                                            , payloadOperationName = operationName
-                                                                            , payloadVariables = variables
-                                                                            }
-                                      }) =
-      AddSub sessionId (GQLRequest {query, operationName, variables})
-    toWsAPI (Right ApolloSubscription { apolloType = "stop"
-                                      , apolloId = Just sessionId
-                                      }) = RemoveSub sessionId
-    toWsAPI (Right x) = SubError (show x)
-    toWsAPI (Left x) = SubError x
+    validateReq :: Either String (ApolloSubscription RequestPayload) -> Validation ApolloAction
+    validateReq = either (Left . pack) validateSub
+    -------------------------------------
+    validateSub :: ApolloSubscription RequestPayload ->  Validation ApolloAction
+    validateSub ApolloSubscription { apolloType = "connection_init" }
+      = pure ConnectionInit 
+    validateSub ApolloSubscription { apolloType = "start", apolloId , apolloPayload }
+      = do
+        sessionId <- validateSession apolloId
+        payload   <- validatePayload apolloPayload
+        pure $ SessionStart sessionId payload
+    validateSub ApolloSubscription { apolloType = "stop", apolloId }
+      = SessionStop <$> validateSession apolloId
+    validateSub ApolloSubscription { apolloType } 
+      = Left $ "Unknown Request type \""<> pack (unpack apolloType) <> "\"."
+    --------------------------------------------
+    validateSession :: Maybe ID -> Validation ID
+    validateSession = maybe (Left "\"id\" was not provided") Right
+    -------------------------------------
+    validatePayload = maybe (Left "\"payload\" was not provided") validatePayloadContent
+    -------------------------------------
+    validatePayloadContent RequestPayload 
+          { payloadQuery 
+          , payloadOperationName = operationName
+          , payloadVariables = variables
+          } = do
+            query <- maybe (Left "\"payload.query\" was not provided") Right payloadQuery
+            pure $ GQLRequest {query, operationName, variables}
