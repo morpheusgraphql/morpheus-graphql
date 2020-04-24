@@ -102,19 +102,29 @@ webSocketsApp api = withRunInIO handle
       wsApp store pending = do
         connection <- acceptApolloRequest pending
         let scope = defaultWSScope store connection
-        pingThread connection $ do
-          input <- connect 
-          runIO $ finallyM
-            (inputLoop api scope input)
-            (disconnect scope input)
+        pingThread 
+          connection 
+          $ runIO (connectionThread api scope)
 
-inputLoop 
+connectionThread 
+  :: ( MonadUnliftIO m
+     ) 
+  => (Input WS -> Stream WS e m) 
+  -> Scope WS e m
+  -> m ()
+connectionThread api scope = do
+  input <- connect 
+  finallyM
+    (connectionLoop api scope input)
+    (disconnect scope input)
+
+connectionLoop 
   :: Monad m 
   => (Input WS -> Stream WS e m) 
   -> Scope WS e m 
   -> Input WS 
   -> m ()
-inputLoop api scope input
+connectionLoop api scope input
             = forever
             $ runStreamWS scope 
             $ api input
