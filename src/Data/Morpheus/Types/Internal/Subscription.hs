@@ -17,7 +17,8 @@ module Data.Morpheus.Types.Internal.Subscription
   , Stream
   , Scope(..)
   , Input(..)
-  , API(..)
+  , WS
+  , HTTP
   , acceptApolloRequest
   , publish
   , Store(..)
@@ -53,14 +54,15 @@ import           Data.Morpheus.Types.Internal.Subscription.Stream
                                                 , Stream
                                                 , Scope(..)
                                                 , Input(..)
-                                                , API(..)
+                                                , WS
+                                                , HTTP
                                                 )
  
-connect :: MonadIO m => m (Input 'Ws)
+connect :: MonadIO m => m (Input WS)
 connect = Init <$> liftIO nextRandom
 
-disconnect:: Scope 'Ws e m -> Input 'Ws -> m ()
-disconnect WS { update }  (Init clientID)  = update (delete clientID)
+disconnect:: Scope WS e m -> Input WS -> m ()
+disconnect ScopeWS { update }  (Init clientID)  = update (delete clientID)
 
 -- | PubSubStore interface
 -- shared GraphQL state between __websocket__ and __http__ server,

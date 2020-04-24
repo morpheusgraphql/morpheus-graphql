@@ -23,7 +23,6 @@ import           Control.Monad.IO.Unlift        ( MonadUnliftIO
                                                 )
 import           Control.Monad.IO.Class         ( MonadIO(..) )
 import           Network.WebSockets             ( Connection
-                                                , PendingConnection
                                                 , sendTextData
                                                 , receiveData
                                                 , ServerApp
@@ -41,7 +40,8 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , Stream
                                                 , Store(..)
                                                 , Scope(..)
-                                                , API(..)
+                                                , HTTP
+                                                , WS
                                                 , runStreamHTTP
                                                 , runStreamWS
                                                 , acceptApolloRequest
@@ -58,8 +58,8 @@ pingThread connection = WS.withPingThread connection 30 (return ())
 pingThread connection = (WS.forkPingThread connection 30 >>)
 #endif
 
-defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope 'Ws e m
-defaultWSScope Store { writeStore } connection = WS 
+defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope WS e m
+defaultWSScope Store { writeStore } connection = ScopeWS 
   { listener = liftIO (receiveData connection)
   , callback = liftIO . sendTextData connection
   , update = writeStore
@@ -71,12 +71,12 @@ httpAppWithEffect
      MapAPI a
    )
   => (e -> m ())
-  -> (Input 'Http -> Stream 'Http e m)
+  -> (Input HTTP -> Stream HTTP e m)
   -> a
   -> m a
 httpAppWithEffect httpCallback api 
   = mapAPI 
-    ( runStreamHTTP HTTP { httpCallback }
+    ( runStreamHTTP ScopeHTTP { httpCallback }
     . api 
     . Request
     )
@@ -91,7 +91,7 @@ webSocketsApp
       , (Eq (StreamChannel e)) 
       , (GQLChannel e) 
       )
-  => (Input 'Ws -> Stream 'Ws e m)
+  => (Input WS -> Stream WS e m)
   -> m (ServerApp , e -> m ())
 webSocketsApp api = withRunInIO handle
   where
@@ -110,9 +110,9 @@ webSocketsApp api = withRunInIO handle
 
 inputLoop 
   :: Monad m 
-  => (Input 'Ws -> Stream 'Ws e m) 
-  -> Scope 'Ws e m 
-  -> Input 'Ws 
+  => (Input WS -> Stream WS e m) 
+  -> Scope WS e m 
+  -> Input WS 
   -> m ()
 inputLoop api scope input
             = forever

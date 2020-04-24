@@ -17,6 +17,8 @@ module Data.Morpheus.Types.Internal.Subscription.Stream
   , Scope(..)
   , Input(..)
   , API(..)
+  , HTTP
+  , WS
   )
 where
 
@@ -59,26 +61,31 @@ import           Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
                                                 , Session
                                                 )
  
+data API = HTTP | WS
+
+type WS = 'WS
+
+type HTTP = 'HTTP 
+
 data Input 
   (api:: API) 
   where
-  Init :: ID -> Input 'Ws 
-  Request :: GQLRequest -> Input 'Http 
+  Init :: ID -> Input WS 
+  Request :: GQLRequest -> Input HTTP 
 
-run :: Scope 'Ws e m -> Updates e m -> m ()
-run WS { update } (Updates changes) = update changes
+run :: Scope WS e m -> Updates e m -> m ()
+run ScopeWS { update } (Updates changes) = update changes
 
 data Scope (api :: API ) event (m :: * -> * ) where
-  HTTP :: 
+  ScopeHTTP :: 
     { httpCallback :: event -> m ()
-    } -> Scope 'Http event m
-  WS :: 
+    } -> Scope HTTP event m
+  ScopeWS :: 
     { listener :: m ByteString
     , callback :: ByteString -> m ()
     , update   :: (ClientConnectionStore event m -> ClientConnectionStore event m) -> m ()
-    } -> Scope 'Ws event m
+    } -> Scope WS event m
 
-data API = Http | Ws
 
 data Stream 
     (api:: API) 
@@ -87,12 +94,12 @@ data Stream
   where
   StreamWS 
     :: 
-    { streamWS ::  Scope 'Ws e m -> m (Either ByteString [Updates e m])
-    } -> Stream 'Ws e m
+    { streamWS ::  Scope WS e m -> m (Either ByteString [Updates e m])
+    } -> Stream WS e m
   StreamHTTP
     :: 
-    { streamHTTP :: Scope 'Http e m -> m GQLResponse
-    } -> Stream 'Http e m
+    { streamHTTP :: Scope HTTP e m -> m GQLResponse
+    } -> Stream HTTP e m
 
 handleResponseStream
   ::  (  Eq (StreamChannel e)
@@ -101,7 +108,7 @@ handleResponseStream
       )
   => Session
   -> ResponseStream e m (Value VALID)
-  -> Stream 'Ws e m 
+  -> Stream WS e m 
 handleResponseStream session (ResultT res) 
   = StreamWS $ const $ unfoldR <$> res  
     where
@@ -125,7 +132,7 @@ handleWSRequest
      )
   -> ID
   -> ByteString
-  -> Stream 'Ws e m
+  -> Stream WS e m
 handleWSRequest gqlApp clientId = handleApollo . apolloFormat
   where 
     handleApollo (SubError err) 
@@ -138,17 +145,17 @@ handleWSRequest gqlApp clientId = handleApollo . apolloFormat
 
 runStreamWS 
   :: (Monad m) 
-  => Scope 'Ws e m
-  -> Stream 'Ws e m 
+  => Scope WS e m
+  -> Stream WS e m 
   ->  m ()
-runStreamWS scope@WS{ callback } StreamWS { streamWS }  
+runStreamWS scope@ScopeWS{ callback } StreamWS { streamWS }  
   = streamWS scope 
     >>= either callback (traverse_ (run scope))
 
 runStreamHTTP
   :: (Monad m) 
-  => Scope 'Http e m
-  -> Stream 'Http e m 
+  => Scope HTTP e m
+  -> Stream HTTP e m 
   ->  m GQLResponse
 runStreamHTTP scope StreamHTTP { streamHTTP }  
   = streamHTTP scope
@@ -167,7 +174,7 @@ toOutStream
 toOutStream app (Init clienId) 
   = StreamWS handle 
       where
-        handle ws@WS { listener , callback } = do
+        handle ws@ScopeWS { listener , callback } = do
           let runS (StreamWS x) = x ws
           bla <- listener >>= runS . handleWSRequest app clienId
           pure $ (Updates (insert clienId callback) :) <$> bla
@@ -179,11 +186,11 @@ handleResponseHTTP
       , Monad m
       )
   => ResponseStream e m (Value VALID)
-  -> Scope 'Http e m
+  -> Scope HTTP e m
   -> m GQLResponse 
 handleResponseHTTP 
   res
-  HTTP { httpCallback } = do
+  ScopeHTTP { httpCallback } = do
     x <- runResultT (handleRes res execute)
     case x of 
       Success r _ events-> do 
