@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 32c2b16f72c001cbe4fe83808b82db4070624d4ec66a85990176737bc0ceee8c
+-- hash: daf2c440da655b06dcebb11fdd64060a04fee75fd9588a437428db79c05c7b4d
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -89,6 +89,8 @@ data-files:
     test/Feature/Holistic/selection/mergeSelection/query.gql
     test/Feature/Holistic/selection/mergeUnionSelection/query.gql
     test/Feature/Holistic/selection/mustHaveSubFields/query.gql
+    test/Feature/Holistic/selection/subscription/singleTopLevelField/fail/query.gql
+    test/Feature/Holistic/selection/subscription/singleTopLevelField/failAnonymous/query.gql
     test/Feature/Holistic/selection/unknownField/query.gql
     test/Feature/Input/Enum/decode2Con/query.gql
     test/Feature/Input/Enum/decode3Con/query.gql
@@ -223,6 +225,8 @@ data-files:
     test/Feature/Holistic/selection/mergeSelection/response.json
     test/Feature/Holistic/selection/mergeUnionSelection/response.json
     test/Feature/Holistic/selection/mustHaveSubFields/response.json
+    test/Feature/Holistic/selection/subscription/singleTopLevelField/fail/response.json
+    test/Feature/Holistic/selection/subscription/singleTopLevelField/failAnonymous/response.json
     test/Feature/Holistic/selection/unknownField/response.json
     test/Feature/Input/Enum/cases.json
     test/Feature/Input/Enum/decode2Con/response.json

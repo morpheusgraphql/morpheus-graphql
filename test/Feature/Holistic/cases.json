@@ -258,5 +258,13 @@
   {
     "path": "selection/mergeSelection",
     "description": "merge selection on same fields"
+  },
+  {
+    "path": "selection/subscription/singleTopLevelField/fail",
+    "description": "fail if subscription selects more then one top level field."
+  },
+  {
+    "path": "selection/subscription/singleTopLevelField/failAnonymous",
+    "description": "fail if subscription selects more then one top level field. (for anonymous subscription)"
   }
 ]
