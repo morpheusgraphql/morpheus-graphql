@@ -46,6 +46,7 @@
 ### minor
 
 - changes to internal types
+- fixed validation of apollo websockets requests  
 
 ## 0.10.0 - 07.01.2020
 

@@ -22,6 +22,7 @@ module Data.Morpheus.Types.Internal.Subscription.Stream
   )
 where
 
+import           Data.Semigroup                 ( (<>) )
 import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
 
@@ -47,7 +48,7 @@ import           Data.Morpheus.Types.Internal.Resolving
                                                 , ResultT(..)
                                                 )
 import           Data.Morpheus.Types.Internal.Subscription.Apollo
-                                                ( SubAction(..)
+                                                ( ApolloAction(..)
                                                 , apolloFormat
                                                 , toApolloResponse
                                                 )
@@ -112,12 +113,12 @@ handleResponseStream
 handleResponseStream session (ResultT res) 
   = StreamWS $ const $ unfoldR <$> res  
     where
-      execute Publish   {} = apolloError $ globalErrorMessage "websocket can only handle subscriptions, not mutations"
+      execute Publish   {}    = apolloError $ globalErrorMessage "websocket can only handle subscriptions, not mutations"
       execute (Subscribe sub) = Right $ startSession sub session
-      -------------------
+      --------------------------
       unfoldR Success { events } = traverse execute events
       unfoldR Failure { errors } = apolloError errors
-      ---------------
+      --------------------------
       apolloError :: GQLErrors -> Either ByteString a
       apolloError = Left . toApolloResponse (snd session) . Errors  
 
@@ -133,15 +134,24 @@ handleWSRequest
   -> ID
   -> ByteString
   -> Stream WS e m
-handleWSRequest gqlApp clientId = handleApollo . apolloFormat
+handleWSRequest gqlApp clientId = handle . apolloFormat
   where 
-    handleApollo (SubError err) 
-      = StreamWS $ const $ -- bla
-        pure $ Right []
-    handleApollo (AddSub sessionId request) 
+    --handle :: Applicative m => Validation ApolloAction -> Stream WS e m
+    handle = either (liftWS . Left . ("Error: " <>)) handleAction
+    --------------------------------------------------
+    -- handleAction :: ApolloAction -> Stream WS e m
+    handleAction ConnectionInit = liftWS $ Right []
+    handleAction (SessionStart sessionId request)
       = handleResponseStream (clientId, sessionId) (gqlApp request) 
-    handleApollo (RemoveSub sessionId)
-      = StreamWS $ const $ pure $ Right [endSession (clientId, sessionId)]
+    handleAction (SessionStop sessionId)
+      = liftWS 
+      $ Right [endSession (clientId, sessionId)]
+
+liftWS 
+  :: Applicative m 
+  => Either ByteString [Updates e m]
+  -> Stream WS e m
+liftWS = StreamWS . const . pure 
 
 runStreamWS 
   :: (Monad m) 
