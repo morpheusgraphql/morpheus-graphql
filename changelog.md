@@ -8,22 +8,22 @@
 - for Variant selection inputUnion uses `inputname` insead of `__typename`
 
 - in `Data.Morpheus.Server`  
-  - replaced `gqlSocketApp` and `gqlSocketMonadIOApp` with `webSocketsApp`
+  - `gqlSocketApp` and `gqlSocketMonadIOApp` are replaced with `webSocketsApp`
   - removed `initGQLState`, `GQLState`
 
-- for better controlling over subscriptions
+- for better control of subscriptions
+  - replaced instance  `interpreter gqlRoot state` with
+    `interpreter gqlRoot`.
   - added: `Input`, `Stream`, `httpPubApp`
-  - replaced instance supporting `interpreter gqlRoot state` with
-    `interpreter gqlRoot`. for example
+  
+  from now on you can define API that can be
+  used in websockets as well as in http servers
 
   ```hs
   api :: Input api -> Stream api EVENT IO
   api = interpreter gqlRoot
-  ```
-
-  can be used in websockets and http server
-
-  ```hs
+  
+  server :: IO ()
   server = do
     (wsApp, publish) <- webSocketsApp api
     let httpApp = httpPubApp api publish
@@ -33,8 +33,8 @@
   
   where `publish :: e -> m ()`
 
-  websockets and http app does not have to be on same server.
-  e.g you pass event between servers due webhooks.
+  websockets and http app do not have to be on the same server. 
+  e.g. you can pass events between servers with webhooks.
 
 ### New features
 
