@@ -25,7 +25,7 @@
 
   ```hs
   server = do
-    (wsApp, publish) <- webSocketsAppIO api
+    (wsApp, publish) <- webSocketsApp api
     let httpApp = httpPubApp api publish
     ...
     runBoth wsApp httpApp
