@@ -22,6 +22,7 @@ module Data.Morpheus.Types.Internal.Subscription.Stream
   )
 where
 
+import           Data.Semigroup                 ( (<>) )
 import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
 
