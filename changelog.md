@@ -33,6 +33,9 @@
   
   where `publish :: e -> m ()`
 
+  websockets and http app does not have to be on same server.
+  e.g you pass event between servers due webhooks.
+
 ### New features
 
 - Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).
