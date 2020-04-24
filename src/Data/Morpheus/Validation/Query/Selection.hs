@@ -80,14 +80,18 @@ getOperationObject operation = do
         <> "\" must be an Object"
 
 
+selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID] 
+selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . toList
+
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
-singleTopLevelSelection Operation { operationType = Subscription , operationName } x =  case filter (("__typename" /=) . keyOf) (toList x) of
+singleTopLevelSelection Operation { operationType = Subscription , operationName } selSet = 
+   case selectionsWitoutTypename selSet of
   (_:xs) | not (null xs) -> failure $ map (singleTopLevelSelectionError  operationName) xs
   _ -> pure ()
 singleTopLevelSelection _ _ = pure () 
 
 singleTopLevelSelectionError :: Maybe Name -> Selection VALID -> GQLError
-singleTopLevelSelectionError name Selection { selectionPosition} = GQLError 
+singleTopLevelSelectionError name Selection { selectionPosition } = GQLError 
       { message 
         = subscriptionName <> " must select " 
         <> "only one top level field."
