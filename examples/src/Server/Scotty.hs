@@ -13,7 +13,7 @@ import           Control.Monad.IO.Class         ( liftIO )
 import           Data.Functor.Identity          ( Identity(..) )
 import           Data.Morpheus.Document         ( toGraphQLDocument )
 import           Data.Morpheus.Server           ( webSocketsApp
-                                                , httpAppWithEffect
+                                                , httpPubApp
                                                 )
 import qualified Network.Wai                   as Wai
 import qualified Network.Wai.Handler.Warp      as Warp
@@ -44,14 +44,14 @@ scottyServer = do
   (wsApp, publish) <- webSocketsApp api
   httpApp <- httpServer publish
   fetchHero >>= print
-  fetUser (httpAppWithEffect api publish) >>= print
+  fetUser (httpPubApp api publish) >>= print
   Warp.runSettings settings
     $ WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
   httpServer :: (EVENT ->  IO ())  -> IO Wai.Application
   httpServer publish = scottyApp $ do
-    post "/" $ raw =<< (liftIO . httpAppWithEffect api publish =<< body)
+    post "/" $ raw =<< (liftIO . httpPubApp api publish =<< body)
     get "/" $ file "./examples/index.html"
     get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
     post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)

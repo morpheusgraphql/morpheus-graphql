@@ -12,7 +12,7 @@
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
   ( webSocketsApp
-  , httpAppWithEffect
+  , httpPubApp
   )
 where
 
@@ -65,7 +65,7 @@ defaultWSScope Store { writeStore } connection = ScopeWS
   , update = writeStore
   }
 
-httpAppWithEffect
+httpPubApp
   ::  
    ( MonadIO m,
      MapAPI a
@@ -74,7 +74,7 @@ httpAppWithEffect
   -> (e -> m ())
   -> a
   -> m a
-httpAppWithEffect api httpCallback  
+httpPubApp api httpCallback  
   = mapAPI 
     ( runStreamHTTP ScopeHTTP { httpCallback }
     . api 

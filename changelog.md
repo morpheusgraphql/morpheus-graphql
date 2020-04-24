@@ -12,7 +12,7 @@
   - removed `initGQLState`, `GQLState`
 
 - for better controlling over subscriptions
-  - added: `Input`, `Stream`, `httpAppWithEffect`
+  - added: `Input`, `Stream`, `httpPubApp`
   - replaced instance supporting `interpreter gqlRoot state` with
     `interpreter gqlRoot`. for example
 
@@ -26,7 +26,7 @@
   ```hs
   server = do
     (wsApp, publish) <- webSocketsAppIO api
-    let httpApp = httpAppWithEffect api publish
+    let httpApp = httpPubApp api publish
     ...
     runBoth wsApp httpApp
   ```
