@@ -36,6 +36,8 @@
   websockets and http app do not have to be on the same server. 
   e.g. you can pass events between servers with webhooks.
 
+- subscription can select only one top level field.  
+
 ### New features
 
 - Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).
@@ -47,6 +49,7 @@
 
 - changes to internal types
 - fixed validation of apollo websockets requests  
+
 
 ## 0.10.0 - 07.01.2020
 
