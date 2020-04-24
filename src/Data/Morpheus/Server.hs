@@ -70,11 +70,11 @@ httpAppWithEffect
    ( MonadIO m,
      MapAPI a
    )
-  => (e -> m ())
-  -> (Input HTTP -> Stream HTTP e m)
+  => (Input HTTP -> Stream HTTP e m)
+  -> (e -> m ())
   -> a
   -> m a
-httpAppWithEffect httpCallback api 
+httpAppWithEffect api httpCallback  
   = mapAPI 
     ( runStreamHTTP ScopeHTTP { httpCallback }
     . api 

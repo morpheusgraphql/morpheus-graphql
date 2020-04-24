@@ -38,9 +38,6 @@ module Data.Morpheus.Types
   , SubField
   , Input
   , Stream
-  , Store(..)
-  , initDefaultStore
-  , publishEventWith
   )
 where
 
@@ -83,10 +80,7 @@ import           Data.Morpheus.Types.IO         ( GQLRequest(..)
 import           Data.Morpheus.Types.Types      ( Undefined(..) )
 import           Data.Morpheus.Types.Internal.Subscription  
                                                 ( Stream
-                                                , Input 
-                                                , Store(..)
-                                                , initDefaultStore 
-                                                , publishEventWith
+                                                , Input
                                                 )
 
 type Res = Resolver QUERY

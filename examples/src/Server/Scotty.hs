@@ -44,14 +44,14 @@ scottyServer = do
   (wsApp, publish) <- webSocketsApp api
   httpApp <- httpServer publish
   fetchHero >>= print
-  fetUser (httpAppWithEffect publish api) >>= print
+  fetUser (httpAppWithEffect api publish) >>= print
   Warp.runSettings settings
     $ WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
  where
   settings = Warp.setPort 3000 Warp.defaultSettings
   httpServer :: (EVENT ->  IO ())  -> IO Wai.Application
   httpServer publish = scottyApp $ do
-    post "/" $ raw =<< (liftIO . httpAppWithEffect publish api =<< body)
+    post "/" $ raw =<< (liftIO . httpAppWithEffect api publish =<< body)
     get "/" $ file "./examples/index.html"
     get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
     post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
