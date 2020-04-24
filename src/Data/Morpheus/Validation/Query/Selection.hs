@@ -37,6 +37,7 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , isEntNode
                                                 , getOperationDataType
                                                 , GQLError(..)
+                                                , OperationType(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 ( concatTraverse )
@@ -79,10 +80,11 @@ getOperationObject operation = do
         <> "\" must be an Object"
 
 
-singleTopLevelSelection :: Maybe Name -> SelectionSet VALID -> SelectionValidator ()
-singleTopLevelSelection name x =  case filter (("__typename" /=) . keyOf) (toList x) of
-  (_:xs) | not (null xs) -> failure $ map (singleTopLevelSelectionError  name) xs
+singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
+singleTopLevelSelection Operation { operationType = Subscription , operationName } x =  case filter (("__typename" /=) . keyOf) (toList x) of
+  (_:xs) | not (null xs) -> failure $ map (singleTopLevelSelectionError  operationName) xs
   _ -> pure ()
+singleTopLevelSelection _ _ = pure () 
 
 singleTopLevelSelectionError :: Maybe Name -> Selection VALID -> GQLError
 singleTopLevelSelectionError name Selection { selectionPosition} = GQLError 
@@ -107,7 +109,7 @@ validateOperation
     = do
       typeDef  <-  getOperationObject rawOperation
       selection <- validateSelectionSet typeDef operationSelection
-      singleTopLevelSelection operationName selection
+      singleTopLevelSelection rawOperation selection
       pure $ Operation 
               { operationName
               , operationType
