@@ -23,27 +23,27 @@ import qualified Feature.WrappedTypeName.API   as TypeName
                                                 ( api )
 import qualified Feature.TypeInference.API     as Inference
                                                 ( api )
+import qualified Subscription.API              as Subsciption 
+                                                ( api )
 import           Rendering.TestSchemaRendering  ( testSchemaRendering )
 import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )
 import           TestFeature                    ( testFeature )
 import           Subscription.TestSubscription  ( testSubscription )
-import qualified Subscription.API              as Sub 
-                                                ( api )
 
 main :: IO ()
 main = do
-  ioTests       <- testFeature Holistic.api "Feature/Holistic"
-  unionTest     <- testFeature UnionType.api "Feature/UnionType"
-  inputTest     <- testFeature InputType.api "Feature/InputType"
-  schemaTest    <- testFeature Schema.api "Feature/Schema"
-  typeName      <- testFeature TypeName.api "Feature/WrappedTypeName"
-  inputEnum     <- testFeature InputEnum.api "Feature/Input/Enum"
-  inputScalar   <- testFeature InputScalar.api "Feature/Input/Scalar"
-  inputObject   <- testFeature InputObject.api "Feature/Input/Object"
-  inference     <- testFeature Inference.api "Feature/TypeInference"
-  subscription  <- testSubscription Sub.api "Subscription"
+  ioTests       <- testFeature        Holistic.api    "Feature/Holistic"
+  unionTest     <- testFeature        UnionType.api   "Feature/UnionType"
+  inputTest     <- testFeature        InputType.api   "Feature/InputType"
+  schemaTest    <- testFeature        Schema.api      "Feature/Schema"
+  typeName      <- testFeature        TypeName.api    "Feature/WrappedTypeName"
+  inputEnum     <- testFeature        InputEnum.api   "Feature/Input/Enum"
+  inputScalar   <- testFeature        InputScalar.api "Feature/Input/Scalar"
+  inputObject   <- testFeature        InputObject.api "Feature/Input/Object"
+  inference     <- testFeature        Inference.api   "Feature/TypeInference"
+  subscription  <- testSubscription   Subsciption.api "Subscription"
   defaultMain
     (testGroup
       "Morpheus Graphql Tests"
