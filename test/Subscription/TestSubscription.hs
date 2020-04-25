@@ -13,7 +13,11 @@ module Subscription.TestSubscription
 import           Data.Aeson                 (FromJSON, Value, decode, encode)
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
-import           Data.Morpheus.Types        (GQLRequest (..), GQLResponse (..))
+import           Data.Morpheus.Types        ( GQLRequest (..)
+                                            , GQLResponse (..)
+                                            , Input
+                                            , Stream
+                                            )
 import           Data.Semigroup             ((<>))
 import           Data.Text                  (Text, unpack)
 import qualified Data.Text                  as T (concat)
@@ -55,7 +59,7 @@ import           Test.Tasty.HUnit           (assertFailure, testCase)
 --                 assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
 
 
-testSubscription :: (GQLRequest -> IO GQLResponse) -> Text -> IO TestTree
+testSubscription :: (Input api -> Stream api event IO) -> Text -> IO TestTree
 testSubscription api dir = 
   pure 
     $ testCase "test subscription"
