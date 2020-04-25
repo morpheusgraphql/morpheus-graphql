@@ -100,12 +100,12 @@ class MissingRequired c ctx where
 
 instance MissingRequired (Arguments s) ctx where
   missingRequired 
-    Context { scopePosition , scopeTypeName } 
+    Context { scopePosition , scopeSelectionName } 
     _
     Ref { refName  } _ 
     = GQLError 
       { message 
-        = "Field \"" <> scopeTypeName <> "\" argument \""
+        = "Field \"" <> scopeSelectionName <> "\" argument \""
         <> refName <> "\" is required but not provided."
       , locations = [scopePosition]
       }

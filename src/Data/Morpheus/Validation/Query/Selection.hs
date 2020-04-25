@@ -138,10 +138,12 @@ validateSelectionSet dataType@(typeName,fieldsDef) =
           , selectionPosition 
           } 
       = withScope 
-        typeName 
-        selectionPosition $ 
-        validateSelectionContent selectionContent
+          typeName 
+          currentSelectionRef
+        $ validateSelectionContent 
+          selectionContent
       where
+        currentSelectionRef = Ref selectionName selectionPosition
         commonValidation :: SelectionValidator (TypeDefinition, Arguments VALID)
         commonValidation  = do
           (fieldDef :: FieldDefinition) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
@@ -172,7 +174,7 @@ validateSelectionSet dataType@(typeName,fieldsDef) =
         validateSelectionContent (SelectionSet rawSelectionSet)
           = do
             (TypeDefinition { typeName = name , typeContent}, validArgs) <- commonValidation
-            selContent <- withScope name selectionPosition $ validateByTypeContent name typeContent
+            selContent <- withScope name currentSelectionRef $ validateByTypeContent name typeContent
             pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = selContent }
            where
             validateByTypeContent :: Name -> TypeContent -> SelectionValidator (SelectionContent VALID)

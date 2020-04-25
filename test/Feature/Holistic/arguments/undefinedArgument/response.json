@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Field \"city\" argument \"coordinates\" is required but not provided.",
+      "message": "Field \"address\" argument \"coordinates\" is required but not provided.",
       "locations": [
         {
           "line": 3,

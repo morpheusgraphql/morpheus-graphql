@@ -308,10 +308,10 @@ setGlobalContext
   -> Validator c a
 setGlobalContext f = Validator . withReaderT ( \(x,y) -> (f x,y)) . _runValidator
 
-withScope :: Name -> Position -> Validator ctx a -> Validator ctx a
-withScope scopeTypeName scopePosition = setGlobalContext update
+withScope :: Name -> Ref -> Validator ctx a -> Validator ctx a
+withScope scopeTypeName (Ref scopeSelectionName scopePosition) = setGlobalContext update
      where
-       update ctx = ctx { scopeTypeName , scopePosition }
+       update ctx = ctx { scopeTypeName , scopePosition , scopeSelectionName}
 
 withScopePosition :: Position -> Validator ctx a -> Validator ctx a
 withScopePosition scopePosition = setGlobalContext update
