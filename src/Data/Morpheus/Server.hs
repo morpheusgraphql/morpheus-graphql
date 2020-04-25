@@ -13,9 +13,9 @@
 module Data.Morpheus.Server
   ( webSocketsApp
   , httpPubApp
+  , subscriptionApp
   )
 where
-
 
 import           Control.Monad.IO.Unlift        ( MonadUnliftIO
                                                 , withRunInIO
