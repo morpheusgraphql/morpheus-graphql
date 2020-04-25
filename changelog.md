@@ -36,7 +36,7 @@
   websockets and http app do not have to be on the same server. 
   e.g. you can pass events between servers with webhooks.
 
-- subscription can select only one top level field.  
+- subscription can select only one top level field (based on the GraphQL specification).
 
 ### New features
 
