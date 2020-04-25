@@ -85,24 +85,27 @@ subscriptionApp
       , (Eq (StreamChannel e)) 
       , (GQLChannel e) 
       )
-  =>  ( Input WS -> Stream WS e m )
-  ->  ( (Scope WS e m -> IO () ) 
-        -> Store e m  
+  =>  ( Store e m  
+        -> (Scope WS e m -> IO () ) 
         -> serverApp 
       )
+  ->  ( Input WS -> Stream WS e m )
   ->  m ( serverApp, e -> m () )
-subscriptionApp api appWrapper 
+subscriptionApp appWrapper api  
   = withRunInIO 
     $ \runIO -> do 
         store <- initDefaultStore      
-        pure (appWrapper (runIO . connectionThread api) store, publishEventWith store)
+        pure 
+          ( appWrapper store (runIO . connectionThread api)
+          , publishEventWith store
+          )
 
 webSocketsWrapper 
   :: (MonadUnliftIO m, MonadIO m)
-  => (Scope WS e m -> IO ())
-  -> Store e m 
+  => Store e m 
+  -> (Scope WS e m -> IO ())
   -> ServerApp
-webSocketsWrapper handler store pending 
+webSocketsWrapper store handler pending 
   = do
     connection <- acceptApolloRequest pending
     let scope = defaultWSScope store connection
@@ -119,4 +122,4 @@ webSocketsApp
       )
   => (Input WS -> Stream WS e m)
   -> m (ServerApp , e -> m ())
-webSocketsApp api = subscriptionApp api webSocketsWrapper
+webSocketsApp = subscriptionApp webSocketsWrapper
