@@ -85,9 +85,12 @@ subscriptionApp
       , (Eq (StreamChannel e)) 
       , (GQLChannel e) 
       )
-  => (Input WS -> Stream WS e m)
-  -> ((Scope WS e m -> IO () ) -> Store e m  -> serverApp )
-  -> m ( serverApp , e -> m ())
+  =>  ( Input WS -> Stream WS e m )
+  ->  ( (Scope WS e m -> IO () ) 
+        -> Store e m  
+        -> serverApp 
+      )
+  ->  m ( serverApp, e -> m () )
 subscriptionApp api appWrapper 
   = withRunInIO 
     $ \runIO -> do 
