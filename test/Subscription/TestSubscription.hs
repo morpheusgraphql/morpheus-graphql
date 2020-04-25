@@ -52,6 +52,10 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , Scope(..)
                                                 , Store(..)
                                                 )
+import           Types                          ( Case(..)
+                                                , Name
+                                                , testWith
+                                                )           
 
 -- packGQLRequest :: ByteString -> Maybe Value -> GQLRequest
 -- packGQLRequest queryBS variables = GQLRequest 
@@ -104,8 +108,23 @@ mockWSApp
   -> m ( m () , e -> m ())
 mockWSApp = subscriptionApp mockWSWrapper
 
-testSubscription :: (Input api -> Stream api event IO) -> Text -> IO TestTree
-testSubscription api dir = 
+testSubscription :: ( Input api -> Stream api event IO ) -> Name -> IO TestTree
+testSubscription api = testWith (testByFiles api)
+
+testByFiles :: ( Input api -> Stream api event IO ) -> Case -> IO TestTree
+testByFiles testApi Case {path, description} = do
+  -- testCaseQuery <- getGQLBody path
+  -- testCaseVariables <- maybeVariables path
+  -- expectedResponse <- getResponseBody path
+  -- actualResponse <- encode <$> testApi (packGQLRequest testCaseQuery testCaseVariables)
+  -- case decode actualResponse of
+  --   Nothing -> assertFailure "Bad Response"
+  --   Just response -> return $ testCase (unpack path ++ " | " ++ description) $ customTest expectedResponse response
+  --     where customTest expected value
+  --             | expected == value = return ()
+  --             | otherwise =
+  --               assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
+
   pure 
     $ testCase "test subscription"
     $ customTest ("1" :: String) ("2" :: String)
@@ -114,3 +133,4 @@ testSubscription api dir =
       | expected == value = return ()
       | otherwise =
         assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " 
+

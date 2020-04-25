@@ -21,6 +21,10 @@ import           GHC.Generics
 import           Lib                        (getCases, getGQLBody, getResponseBody, maybeVariables)
 import           Test.Tasty                 (TestTree, testGroup)
 import           Test.Tasty.HUnit           (assertFailure, testCase)
+import           Types                      ( Case(..)
+                                            , testWith
+                                            , Name
+                                            )
 
 packGQLRequest :: ByteString -> Maybe Value -> GQLRequest
 packGQLRequest queryBS variables = GQLRequest 
@@ -29,16 +33,8 @@ packGQLRequest queryBS variables = GQLRequest
   , variables
   }
 
-data Case = Case
-  { path        :: Text
-  , description :: String
-  } deriving (Generic, FromJSON)
-
-testFeature :: (GQLRequest -> IO GQLResponse) -> Text -> IO TestTree
-testFeature api dir = do
-  cases' <- getCases (unpack dir)
-  test' <- sequence $ testByFiles api <$> map (\x -> x {path = T.concat [dir, "/", path x]}) cases'
-  return $ testGroup (unpack dir) test'
+testFeature :: (GQLRequest -> IO GQLResponse) -> Name -> IO TestTree
+testFeature api = testWith(testByFiles api)
 
 testByFiles :: (GQLRequest -> IO GQLResponse) -> Case -> IO TestTree
 testByFiles testApi Case {path, description} = do
