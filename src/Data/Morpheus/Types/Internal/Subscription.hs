@@ -90,12 +90,13 @@ publishEventWith store event = readStore store >>= publish event
 -- | initializes empty GraphQL state
 initDefaultStore :: 
   ( MonadIO m
+  , MonadIO m2
   , (Eq (StreamChannel event)) 
   , (GQLChannel event) 
   ) 
-  => IO (Store event m)
+  => m2 (Store event m)
 initDefaultStore = do
-  store <- newMVar empty
+  store <- liftIO $ newMVar empty
   pure Store 
     { readStore = liftIO $ readMVar store
     , writeStore = \changes -> liftIO $ modifyMVar_ store (return . changes)
