@@ -26,7 +26,6 @@ module Data.Morpheus.Types.Internal.Subscription
   )
 where
 
-
 import           Control.Exception              ( finally )
 import           Control.Monad                  ( forever )
 import           Control.Concurrent             ( readMVar

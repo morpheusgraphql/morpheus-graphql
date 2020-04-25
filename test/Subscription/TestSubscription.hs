@@ -1,7 +1,8 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE FlexibleContexts   #-}
 
 module Subscription.TestSubscription
   ( testSubscription
@@ -10,21 +11,47 @@ module Subscription.TestSubscription
 -- import qualified Data.Text.Lazy             as LT (toStrict)
 -- import           Data.Text.Lazy.Encoding    (decodeUtf8)
 
-import           Data.Aeson                 (FromJSON, Value, decode, encode)
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
-import           Data.Morpheus.Types        ( GQLRequest (..)
-                                            , GQLResponse (..)
-                                            , Input
-                                            , Stream
-                                            )
-import           Data.Semigroup             ((<>))
-import           Data.Text                  (Text, unpack)
-import qualified Data.Text                  as T (concat)
-import           GHC.Generics
-import           Lib                        (getCases, getGQLBody, getResponseBody, maybeVariables)
-import           Test.Tasty                 (TestTree, testGroup)
-import           Test.Tasty.HUnit           (assertFailure, testCase)
+import           Control.Monad.IO.Unlift        ( MonadUnliftIO
+                                                , withRunInIO
+                                                )
+import           Data.Aeson                     ( FromJSON
+                                                , Value
+                                                , decode
+                                                , encode
+                                                )
+import           Data.ByteString.Lazy.Char8     ( ByteString )
+import qualified Data.ByteString.Lazy.Char8     as LB 
+                                                (unpack)
+import           Data.Morpheus.Types            ( GQLRequest (..)
+                                                , GQLResponse (..)
+                                                , Input
+                                                , Stream
+                                                )
+import           Data.Semigroup                 ( (<>) )
+import           Data.Text                      ( Text, unpack)
+import qualified Data.Text                      as T 
+                                                (concat)
+import           Control.Monad.IO.Class         ( MonadIO(..) )
+-- import           GHC.Generics
+import           Lib                            ( getCases
+                                                , getGQLBody
+                                                , getResponseBody
+                                                , maybeVariables
+                                                )
+import           Test.Tasty.HUnit               ( assertFailure
+                                                , testCase
+                                                )
+import           Test.Tasty                     ( TestTree
+                                                , testGroup
+                                                )
+import           Data.Morpheus.Server           ( subscriptionApp
+                                                , ServerConstraint
+                                                )
+import           Data.Morpheus.Types.Internal.Subscription           
+                                                ( WS
+                                                , Scope(..)
+                                                , Store(..)
+                                                )
 
 -- packGQLRequest :: ByteString -> Maybe Value -> GQLRequest
 -- packGQLRequest queryBS variables = GQLRequest 
@@ -58,6 +85,24 @@ import           Test.Tasty.HUnit           (assertFailure, testCase)
 --               | otherwise =
 --                 assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
 
+mockWSWrapper 
+  :: (MonadUnliftIO m, MonadIO m)
+  => Store e m 
+  -> (Scope WS e m -> IO ())
+  -> m ()
+mockWSWrapper Store { writeStore } handler 
+  = liftIO $ handler 
+      ScopeWS 
+        { update = writeStore
+        ,  listener = pure ""
+        , callback = const $ pure ()
+        }
+
+mockWSApp
+  :: ServerConstraint e m 
+  => (Input WS -> Stream WS e m)
+  -> m ( m () , e -> m ())
+mockWSApp = subscriptionApp mockWSWrapper
 
 testSubscription :: (Input api -> Stream api event IO) -> Text -> IO TestTree
 testSubscription api dir = 

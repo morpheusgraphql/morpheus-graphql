@@ -14,6 +14,7 @@ module Data.Morpheus.Server
   ( webSocketsApp
   , httpPubApp
   , subscriptionApp
+  , ServerConstraint
   )
 where
 
@@ -46,6 +47,13 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , publishEventWith
                                                 )
 
+
+type ServerConstraint e m 
+  = ( MonadIO m 
+    , MonadUnliftIO m
+    , Eq (StreamChannel e)
+    , GQLChannel e
+    )
 
 -- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()
