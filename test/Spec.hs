@@ -28,6 +28,9 @@ import           Test.Tasty                     ( defaultMain
                                                 , testGroup
                                                 )
 import           TestFeature                    ( testFeature )
+import           Subscription.TestSubscription  ( testSubscription )
+import qualified Subscription.API              as Sub 
+                                                ( api )
 
 main :: IO ()
 main = do
@@ -40,7 +43,7 @@ main = do
   inputScalar   <- testFeature InputScalar.api "Feature/Input/Scalar"
   inputObject   <- testFeature InputObject.api "Feature/Input/Object"
   inference     <- testFeature Inference.api "Feature/TypeInference"
-  subscription  <- testFeature Inference.api "Subscription/.."
+  subscription  <- testSubscription Sub.api "Subscription"
   defaultMain
     (testGroup
       "Morpheus Graphql Tests"
