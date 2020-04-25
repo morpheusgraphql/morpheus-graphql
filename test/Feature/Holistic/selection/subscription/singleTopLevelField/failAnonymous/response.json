@@ -1,0 +1,22 @@
+{
+  "errors": [
+    {
+      "message": "Anonymous Subscription must select only one top level field.",
+      "locations": [
+        {
+          "line": 5,
+          "column": 14
+        }
+      ]
+    },
+    {
+      "message": "Anonymous Subscription must select only one top level field.",
+      "locations": [
+        {
+          "line": 8,
+          "column": 24
+        }
+      ]
+    }
+  ]
+}

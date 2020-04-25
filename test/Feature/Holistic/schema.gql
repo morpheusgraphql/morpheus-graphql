@@ -102,4 +102,5 @@ type Mutation {
 
 type Subscription {
   newUser: User!
+  newAddress: Address!
 }

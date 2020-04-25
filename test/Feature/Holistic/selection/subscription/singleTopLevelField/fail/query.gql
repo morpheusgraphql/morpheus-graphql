@@ -1,0 +1,8 @@
+subscription SomeTestSubscription {
+  newUser {
+    name
+  }
+  newAddress {
+    houseNumber
+  }
+}

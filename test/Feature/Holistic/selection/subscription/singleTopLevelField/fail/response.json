@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Subscription \"SomeTestSubscription\" must select only one top level field.",
+      "locations": [
+        {
+          "line": 5,
+          "column": 14
+        }
+      ]
+    }
+  ]
+}

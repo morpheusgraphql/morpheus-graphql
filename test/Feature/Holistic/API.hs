@@ -54,8 +54,6 @@ type EVENT = Event Channel ()
 
 importGQLDocument "test/Feature/Holistic/schema.gql"
 
-
-
 alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail with Either"
 
@@ -68,7 +66,10 @@ rootResolver = GQLRootResolver
                                  , fail2 =  failRes "fail with failRes"
                                  }
   , mutationResolver     = Mutation { createUser = const user }
-  , subscriptionResolver = Subscription { newUser = subscribe [Channel] (pure $ const user)}
+  , subscriptionResolver = Subscription 
+    { newUser = subscribe [Channel] (pure $ const user)
+    , newAddress = subscribe [Channel] (pure resolveAddress)
+    }
   }
  where
   user :: Applicative m => m (User m)
@@ -78,9 +79,9 @@ rootResolver = GQLRootResolver
                      , office  = resolveAddress
                      , friend  = pure Nothing
                      }
-   where
-    resolveAddress :: Applicative m => a -> m (Address m)
-    resolveAddress _ = pure Address { city        = pure ""
+  ----------------------------------------------------- 
+  resolveAddress :: Applicative m => a -> m (Address m)
+  resolveAddress _ = pure Address { city        = pure ""
                                     , houseNumber = pure 0
                                     , street      = const $ pure Nothing
                                     }

@@ -36,6 +36,8 @@ import           Data.Morpheus.Types.Internal.AST
                                                 , Arguments
                                                 , isEntNode
                                                 , getOperationDataType
+                                                , GQLError(..)
+                                                , OperationType(..)
                                                 )
 import           Data.Morpheus.Types.Internal.AST.MergeSet
                                                 ( concatTraverse )
@@ -43,6 +45,8 @@ import           Data.Morpheus.Types.Internal.Operation
                                                 ( empty
                                                 , singleton
                                                 , Failure(..)
+                                                , keyOf
+                                                , toList
                                                 )
 import           Data.Morpheus.Types.Internal.Validation
                                                 ( SelectionValidator
@@ -75,6 +79,27 @@ getOperationObject operation = do
         <> typeName
         <> "\" must be an Object"
 
+
+selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID] 
+selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . toList
+
+singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
+singleTopLevelSelection Operation { operationType = Subscription , operationName } selSet = 
+   case selectionsWitoutTypename selSet of
+  (_:xs) | not (null xs) -> failure $ map (singleTopLevelSelectionError  operationName) xs
+  _ -> pure ()
+singleTopLevelSelection _ _ = pure () 
+
+singleTopLevelSelectionError :: Maybe Name -> Selection VALID -> GQLError
+singleTopLevelSelectionError name Selection { selectionPosition } = GQLError 
+      { message 
+        = subscriptionName <> " must select " 
+        <> "only one top level field."
+      , locations = [selectionPosition]
+      }
+    where
+      subscriptionName = maybe "Anonymous Subscription" (("Subscription \"" <>) . (<> "\""))  name
+
 validateOperation
   :: Operation RAW
   -> SelectionValidator (Operation VALID)
@@ -88,6 +113,7 @@ validateOperation
     = do
       typeDef  <-  getOperationObject rawOperation
       selection <- validateSelectionSet typeDef operationSelection
+      singleTopLevelSelection rawOperation selection
       pure $ Operation 
               { operationName
               , operationType
@@ -95,6 +121,7 @@ validateOperation
               , operationSelection = selection
               , operationPosition
               }
+
 
 validateSelectionSet
     :: TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
@@ -111,10 +138,12 @@ validateSelectionSet dataType@(typeName,fieldsDef) =
           , selectionPosition 
           } 
       = withScope 
-        typeName 
-        selectionPosition $ 
-        validateSelectionContent selectionContent
+          typeName 
+          currentSelectionRef
+        $ validateSelectionContent 
+          selectionContent
       where
+        currentSelectionRef = Ref selectionName selectionPosition
         commonValidation :: SelectionValidator (TypeDefinition, Arguments VALID)
         commonValidation  = do
           (fieldDef :: FieldDefinition) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
@@ -145,7 +174,7 @@ validateSelectionSet dataType@(typeName,fieldsDef) =
         validateSelectionContent (SelectionSet rawSelectionSet)
           = do
             (TypeDefinition { typeName = name , typeContent}, validArgs) <- commonValidation
-            selContent <- withScope name selectionPosition $ validateByTypeContent name typeContent
+            selContent <- withScope name currentSelectionRef $ validateByTypeContent name typeContent
             pure $ singleton $ sel { selectionArguments = validArgs, selectionContent = selContent }
            where
             validateByTypeContent :: Name -> TypeContent -> SelectionValidator (SelectionContent VALID)

@@ -22,7 +22,6 @@ module Data.Morpheus.Types.Internal.Subscription.Stream
   )
 where
 
-import           Data.Semigroup                 ( (<>) )
 import           Data.Foldable                  ( traverse_ )
 import           Data.ByteString.Lazy.Char8     (ByteString)
 
@@ -137,7 +136,7 @@ handleWSRequest
 handleWSRequest gqlApp clientId = handle . apolloFormat
   where 
     --handle :: Applicative m => Validation ApolloAction -> Stream WS e m
-    handle = either (liftWS . Left . ("Error: " <>)) handleAction
+    handle = either (liftWS . Left) handleAction
     --------------------------------------------------
     -- handleAction :: ApolloAction -> Stream WS e m
     handleAction ConnectionInit = liftWS $ Right []
