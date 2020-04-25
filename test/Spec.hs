@@ -31,15 +31,16 @@ import           TestFeature                    ( testFeature )
 
 main :: IO ()
 main = do
-  ioTests     <- testFeature Holistic.api "Feature/Holistic"
-  unionTest   <- testFeature UnionType.api "Feature/UnionType"
-  inputTest   <- testFeature InputType.api "Feature/InputType"
-  schemaTest  <- testFeature Schema.api "Feature/Schema"
-  typeName    <- testFeature TypeName.api "Feature/WrappedTypeName"
-  inputEnum   <- testFeature InputEnum.api "Feature/Input/Enum"
-  inputScalar <- testFeature InputScalar.api "Feature/Input/Scalar"
-  inputObject <- testFeature InputObject.api "Feature/Input/Object"
-  inference   <- testFeature Inference.api "Feature/TypeInference"
+  ioTests       <- testFeature Holistic.api "Feature/Holistic"
+  unionTest     <- testFeature UnionType.api "Feature/UnionType"
+  inputTest     <- testFeature InputType.api "Feature/InputType"
+  schemaTest    <- testFeature Schema.api "Feature/Schema"
+  typeName      <- testFeature TypeName.api "Feature/WrappedTypeName"
+  inputEnum     <- testFeature InputEnum.api "Feature/Input/Enum"
+  inputScalar   <- testFeature InputScalar.api "Feature/Input/Scalar"
+  inputObject   <- testFeature InputObject.api "Feature/Input/Object"
+  inference     <- testFeature Inference.api "Feature/TypeInference"
+  subscription  <- testFeature Inference.api "Subscription/.."
   defaultMain
     (testGroup
       "Morpheus Graphql Tests"
@@ -53,5 +54,6 @@ main = do
       , inputObject
       , testSchemaRendering
       , inference
+      , subscription
       ]
     )
