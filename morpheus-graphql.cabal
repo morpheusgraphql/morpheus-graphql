@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: daf2c440da655b06dcebb11fdd64060a04fee75fd9588a437428db79c05c7b4d
+-- hash: c9e1dacc6c80bf57ed2f0ae4cdf9bdcdf1e61b14abdd6a204a952dd1f30c921c
 
 name:           morpheus-graphql
 version:        0.10.1
@@ -157,6 +157,7 @@ data-files:
     test/Feature/WrappedTypeName/ignoreSubscriptionResolver/query.gql
     test/Feature/WrappedTypeName/validWrappedTypes/query.gql
     test/Rendering/schema.gql
+    test/Subscription/schema.gql
     test/Feature/Holistic/arguments/nameConflict/response.json
     test/Feature/Holistic/arguments/undefinedArgument/response.json
     test/Feature/Holistic/arguments/unknownArguments/response.json
@@ -315,6 +316,7 @@ data-files:
     test/Feature/WrappedTypeName/ignoreQueryResolver/response.json
     test/Feature/WrappedTypeName/ignoreSubscriptionResolver/response.json
     test/Feature/WrappedTypeName/validWrappedTypes/response.json
+    test/Subscription/cases.json
 
 source-repository head
   type: git
@@ -449,6 +451,8 @@ test-suite morpheus-test
       Lib
       Rendering.Schema
       Rendering.TestSchemaRendering
+      Subscription.API
+      Subscription.TestSubscription
       TestFeature
       Paths_morpheus_graphql
   hs-source-dirs:

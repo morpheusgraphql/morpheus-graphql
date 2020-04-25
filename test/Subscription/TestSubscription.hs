@@ -3,12 +3,12 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module TestSubscription
+module Subscription.TestSubscription
   ( testSubscription
   ) where
 
-import qualified Data.Text.Lazy             as LT (toStrict)
-import           Data.Text.Lazy.Encoding    (decodeUtf8)
+-- import qualified Data.Text.Lazy             as LT (toStrict)
+-- import           Data.Text.Lazy.Encoding    (decodeUtf8)
 
 import           Data.Aeson                 (FromJSON, Value, decode, encode)
 import           Data.ByteString.Lazy.Char8 (ByteString)
@@ -57,4 +57,11 @@ import           Test.Tasty.HUnit           (assertFailure, testCase)
 
 testSubscription :: (GQLRequest -> IO GQLResponse) -> Text -> IO TestTree
 testSubscription api dir = 
-  testCase "test subscription" "subscription responce"
+  pure 
+    $ testCase "test subscription"
+    $ customTest ("1" :: String) ("2" :: String)
+  where
+    customTest expected value
+      | expected == value = return ()
+      | otherwise =
+        assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " 

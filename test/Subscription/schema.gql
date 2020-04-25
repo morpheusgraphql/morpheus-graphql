@@ -1,0 +1,30 @@
+type Deity {
+  name: String!
+  age: Int!
+}
+
+type Human {
+  name: String!
+  age: Int!
+}
+
+type Query {
+  queryField: String!
+}
+
+input Character 
+  { name: String!
+  , age: Int!
+  }
+
+type Mutation {
+  createDeity
+    ( input: Character! ): Deity!
+  createHuman
+    ( input: Character! ): Human!
+}
+
+type Subscription {
+  newDeity: Deity!
+  newHuman: Human!
+}
