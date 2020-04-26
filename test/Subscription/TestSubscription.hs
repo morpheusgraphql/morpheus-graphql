@@ -111,6 +111,7 @@ mockWSApp api input
   = runStreamWS
       ScopeWS 
       { update = undefined 
+      -- use quick check for responce type
       ,  listener = pure "{ \"type\":\"bla\" }"
       , callback = put
       }
