@@ -56,6 +56,13 @@ import           Types                          ( Case(..)
                                                 , Name
                                                 , testWith
                                                 )           
+import          Control.Monad.State.Lazy        ( StateT
+                                                , get 
+                                                , put
+                                                , runStateT
+                                                )
+
+
 
 -- packGQLRequest :: ByteString -> Maybe Value -> GQLRequest
 -- packGQLRequest queryBS variables = GQLRequest 
@@ -89,30 +96,35 @@ import           Types                          ( Case(..)
 --               | otherwise =
 --                 assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
 
+
+
+type SubM = IO -- StateT ByteString IO
+
 mockWSWrapper 
-  :: (MonadUnliftIO m, MonadIO m)
-  => Store e m 
-  -> (Scope WS e m -> IO ())
-  -> m ()
+  :: Store e SubM 
+  -> (Scope WS e SubM -> SubM ())
+  -> SubM ()
 mockWSWrapper Store { writeStore } handler 
-  = liftIO $ handler 
+  = handler 
       ScopeWS 
-        { update = writeStore
-        ,  listener = pure ""
-        , callback = const $ pure ()
-        }
+      { update = writeStore
+      ,  listener = pure "some text"
+      , callback = put 
+      }
 
 mockWSApp
-  :: ServerConstraint e m 
-  => (Input WS -> Stream WS e m)
-  -> m ( m () , e -> m ())
+  :: ServerConstraint e SubM 
+  => (Input WS -> Stream WS e SubM)
+  -> SubM ( () , e -> SubM ())
 mockWSApp = subscriptionApp mockWSWrapper
 
 testSubscription :: ( Input api -> Stream api event IO ) -> Name -> IO TestTree
-testSubscription api = testWith (testByFiles api)
+testSubscription api = testWith (testSubCase api)
 
-testByFiles :: ( Input api -> Stream api event IO ) -> Case -> IO TestTree
-testByFiles testApi Case {path, description} = do
+testSubCase 
+  :: ServerConstraint e SubM 
+  => ( Input api -> Stream api e SubM ) -> Case -> IO TestTree
+testSubCase api Case {path, description} = do
   -- testCaseQuery <- getGQLBody path
   -- testCaseVariables <- maybeVariables path
   -- expectedResponse <- getResponseBody path
@@ -124,7 +136,7 @@ testByFiles testApi Case {path, description} = do
   --             | expected == value = return ()
   --             | otherwise =
   --               assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
-
+  _ <-  mockWSApp api
   pure 
     $ testCase "test subscription"
     $ customTest ("1" :: String) ("2" :: String)

@@ -88,38 +88,39 @@ httpPubApp api httpCallback
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 subscriptionApp
-  ::  ( MonadIO m 
-      , MonadUnliftIO m
+  ::  ( MonadUnliftIO m
       , (Eq (StreamChannel e)) 
       , (GQLChannel e) 
       )
   =>  ( Store e m  
-        -> (Scope WS e m -> IO () ) 
-        -> serverApp 
+        -> ( Scope WS e m -> m () ) 
+        -> m app 
       )
   ->  ( Input WS -> Stream WS e m )
-  ->  m ( serverApp, e -> m () )
+  ->  m ( app , e -> m () )
 subscriptionApp appWrapper api  
-  = withRunInIO 
-    $ \runIO -> do 
-        store <- initDefaultStore      
-        pure 
-          ( appWrapper store (runIO . connectionThread api)
-          , publishEventWith store
-          )
+  = do 
+    store <- initDefaultStore   
+    app <- appWrapper store (connectionThread api)   
+    pure 
+      ( app
+      , publishEventWith store
+      )
 
 webSocketsWrapper 
   :: (MonadUnliftIO m, MonadIO m)
   => Store e m 
-  -> (Scope WS e m -> IO ())
-  -> ServerApp
-webSocketsWrapper store handler pending 
-  = do
-    connection <- acceptApolloRequest pending
-    let scope = defaultWSScope store connection
-    pingThread 
-      connection 
-      $ handler scope
+  -> (Scope WS e m -> m ())
+  -> m ServerApp
+webSocketsWrapper store handler 
+  = withRunInIO 
+    $ \runIO 
+      -> pure $ 
+        \pending -> do 
+          conn <- acceptApolloRequest pending
+          pingThread 
+            conn 
+            $ runIO (handler (defaultWSScope store conn))
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp
