@@ -14,6 +14,7 @@ module Subscription.API
   ( api )
 where
 
+import           Data.ByteString.Lazy.Char8     ( ByteString )
 import           Data.Morpheus                  ( interpreter )
 import           Data.Morpheus.Document         ( importGQLDocument )
 import           Data.Morpheus.Types            ( Event
@@ -23,6 +24,11 @@ import           Data.Morpheus.Types            ( Event
                                                 , subscribe
                                                 )
 import           Data.Text                      ( Text )
+import          Control.Monad.State.Lazy        ( StateT
+                                                , get 
+                                                , put
+                                                , runStateT
+                                                )
 
 data Channel =
   Channel
@@ -48,7 +54,7 @@ deity
       , age   = pure 1
       }
 
-rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
+rootResolver :: GQLRootResolver (StateT ByteString IO) EVENT Query Mutation Subscription
 rootResolver = GQLRootResolver
   { queryResolver
       = Query 
@@ -66,5 +72,5 @@ rootResolver = GQLRootResolver
         }
   }
 
-api :: Input api -> Stream api EVENT IO
+api :: Input api -> Stream api EVENT (StateT ByteString IO)
 api = interpreter rootResolver

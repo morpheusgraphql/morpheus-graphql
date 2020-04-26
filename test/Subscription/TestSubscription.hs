@@ -51,6 +51,9 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 ( WS
                                                 , Scope(..)
                                                 , Store(..)
+                                                , runStreamWS
+                                                , connect
+                                                , GQLChannel(..)
                                                 )
 import           Types                          ( Case(..)
                                                 , Name
@@ -98,32 +101,34 @@ import          Control.Monad.State.Lazy        ( StateT
 
 
 
-type SubM = IO -- StateT ByteString IO
+type SubM = StateT ByteString IO
 
-mockWSWrapper 
-  :: Store e SubM 
-  -> (Scope WS e SubM -> SubM ())
+mockWSApp ::
+  (Input WS -> Stream WS e SubM)
+  -> Input WS
   -> SubM ()
-mockWSWrapper Store { writeStore } handler 
-  = handler 
+mockWSApp api input
+  = runStreamWS
       ScopeWS 
-      { update = writeStore
-      ,  listener = pure "some text"
-      , callback = put 
+      { update = undefined 
+      ,  listener = pure "{ \"type\":\"bla\" }"
+      , callback = put
       }
-
-mockWSApp
-  :: ServerConstraint e SubM 
-  => (Input WS -> Stream WS e SubM)
-  -> SubM ( () , e -> SubM ())
-mockWSApp = subscriptionApp mockWSWrapper
-
-testSubscription :: ( Input api -> Stream api event IO ) -> Name -> IO TestTree
+      (api input)
+  
+testSubscription 
+  ::  
+    (Eq (StreamChannel e)
+    , GQLChannel e
+    )
+  => ( Input WS -> Stream WS e SubM ) -> Name -> IO TestTree
 testSubscription api = testWith (testSubCase api)
 
 testSubCase 
-  :: ServerConstraint e SubM 
-  => ( Input api -> Stream api e SubM ) -> Case -> IO TestTree
+  :: (Eq (StreamChannel e)
+    , GQLChannel e
+    )
+  => ( Input WS -> Stream WS e SubM ) -> Case -> IO TestTree
 testSubCase api Case {path, description} = do
   -- testCaseQuery <- getGQLBody path
   -- testCaseVariables <- maybeVariables path
@@ -132,17 +137,16 @@ testSubCase api Case {path, description} = do
   -- case decode actualResponse of
   --   Nothing -> assertFailure "Bad Response"
   --   Just response -> return $ testCase (unpack path ++ " | " ++ description) $ customTest expectedResponse response
-  --     where customTest expected value
-  --             | expected == value = return ()
-  --             | otherwise =
-  --               assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
-  _ <-  mockWSApp api
+
+  input <- connect 
+  (_,result) <-  runStateT (mockWSApp api input) "bla"
   pure 
     $ testCase "test subscription"
-    $ customTest ("1" :: String) ("2" :: String)
-  where
-    customTest expected value
+    $ customTest "some text"  result
+
+customTest :: ByteString -> ByteString -> IO () 
+customTest expected value
       | expected == value = return ()
       | otherwise =
-        assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " 
+        assertFailure $ LB.unpack $ "expected: \n " <> expected <> " \n but got: \n " <> value
 

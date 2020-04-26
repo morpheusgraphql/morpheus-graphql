@@ -9,7 +9,9 @@
 {-# LANGUAGE ScopedTypeVariables     #-}
 
 module Data.Morpheus.Types.Internal.Subscription
-  ( connectionThread
+  ( connect
+  , disconnect
+  , connectionThread
   , toOutStream
   , runStreamWS
   , runStreamHTTP
@@ -23,6 +25,7 @@ module Data.Morpheus.Types.Internal.Subscription
   , Store(..)
   , initDefaultStore
   , publishEventWith
+  , GQLChannel(..)
   )
 where
 
