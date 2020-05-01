@@ -1,5 +1,6 @@
-module Data.Morpheus.Parsing.Parser (parseSchema, parseGQL, decodeIntrospection) where
+module Data.Morpheus.Parsing.Parser (parseTypeSystemDefinition, parseGQL, decodeIntrospection) where
 
+import Control.Monad ((>=>))
 import Data.Morpheus.Parsing.Document.TypeSystem (parseSchema)
 import Data.Morpheus.Parsing.JSONSchema.Parse
   ( decodeIntrospection,
