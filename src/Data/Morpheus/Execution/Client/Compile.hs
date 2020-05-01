@@ -19,7 +19,7 @@ import Data.Morpheus.Execution.Client.Selection
   ( operationTypes,
   )
 import Data.Morpheus.Parsing.Parser
-  ( parseGQL,
+  ( parseRequest,
   )
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import qualified Data.Morpheus.Types.Internal.AST as O
@@ -44,7 +44,7 @@ import qualified Data.Text as T
 import Language.Haskell.TH
 
 compileSyntax :: String -> Q Exp
-compileSyntax queryText = case parseGQL request of
+compileSyntax queryText = case parseRequest request of
   Failure errors -> fail (renderGQLErrors errors)
   Success {result, warnings} ->
     gqlWarnings warnings >> [|(result, queryText)|]

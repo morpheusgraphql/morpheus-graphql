@@ -28,7 +28,7 @@ import Data.Morpheus.Execution.Server.Introspect
     introspectObjectFields,
   )
 import Data.Morpheus.Parsing.Parser
-  ( parseGQL,
+  ( parseRequestWith,
   )
 import Data.Morpheus.Schema.SchemaAPI
   ( defaultTypes,
@@ -54,7 +54,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     TypeContent (..),
     TypeDefinition (..),
-    VALIDATION_MODE (..),
     ValidValue,
     initTypeLib,
   )
@@ -73,9 +72,6 @@ import Data.Morpheus.Types.Internal.Resolving
     cleanEvents,
     resolveUpdates,
     runResolverModel,
-  )
-import Data.Morpheus.Validation.Query.Validation
-  ( validateRequest,
   )
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
@@ -123,7 +119,7 @@ coreResolver root request =
       Monad m => ResponseStream event m Context
     validRequest = cleanEvents $ ResultT $ pure $ do
       schema <- fullSchema $ Identity root
-      operation <- parseGQL request >>= validateRequest schema FULL_VALIDATION
+      operation <- parseRequestWith schema request
       pure $
         Context
           { schema,
