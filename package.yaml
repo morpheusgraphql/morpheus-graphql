@@ -1,5 +1,5 @@
 name: morpheus-graphql
-version: 0.10.1
+version: 0.11.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
@@ -48,6 +48,7 @@ library:
     - Data.Morpheus.Client
     - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.Internal.Subscription
+    - Data.Morpheus.Parsing.Internal
   ghc-options: -Wall
 
 tests:

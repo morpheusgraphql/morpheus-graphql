@@ -7,7 +7,7 @@ cabal-version: 1.12
 -- hash: 20c7232531fd6dbb144c9f7c25a34d0f82854d0b3fd5e9126f4f5b031bb2d736
 
 name:           morpheus-graphql
-version:        0.10.1
+version:        0.11.0
 synopsis:       Morpheus GraphQL
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql
