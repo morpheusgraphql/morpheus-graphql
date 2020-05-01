@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5720b2d8912270704f74de18114473a76c2fc690afb1055df79362f5ecf625bd
+-- hash: 0666d2e613e99c6c7b5cdcbd1a6118db45d43f89c5def858541e4bd881711add
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -453,6 +453,7 @@ test-suite morpheus-test
       Rendering.Schema
       Rendering.TestSchemaRendering
       Subscription.API
+      Subscription.Test
       Subscription.TestSubscription
       TestFeature
       Types

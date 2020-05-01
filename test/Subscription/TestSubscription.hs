@@ -1,74 +1,55 @@
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Subscription.TestSubscription
-  ( testSubscription
-  ) where
+  ( testSubscription,
+    SubM,
+  )
+where
 
 -- import qualified Data.Text.Lazy             as LT (toStrict)
 -- import           Data.Text.Lazy.Encoding    (decodeUtf8)
-
-import           Control.Monad.IO.Unlift        ( MonadUnliftIO
-                                                , withRunInIO
-                                                )
-import           Data.Aeson                     ( FromJSON
-                                                , Value
-                                                , decode
-                                                , encode
-                                                )
-import           Data.ByteString.Lazy.Char8     ( ByteString )
-import qualified Data.ByteString.Lazy.Char8     as LB 
-                                                (unpack)
-import           Data.Morpheus.Types            ( GQLRequest (..)
-                                                , GQLResponse (..)
-                                                , Input
-                                                , Stream
-                                                )
-import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text, unpack)
-import qualified Data.Text                      as T 
-                                                (concat)
-import           Control.Monad.IO.Class         ( MonadIO(..) )
--- import           GHC.Generics
-import           Lib                            ( getCases
-                                                , getGQLBody
-                                                , getResponseBody
-                                                , maybeVariables
-                                                )
-import           Test.Tasty.HUnit               ( assertFailure
-                                                , testCase
-                                                )
-import           Test.Tasty                     ( TestTree
-                                                , testGroup
-                                                )
-import           Data.Morpheus.Server           ( subscriptionApp
-                                                , ServerConstraint
-                                                )
-import           Data.Morpheus.Types.Internal.Subscription           
-                                                ( WS
-                                                , Scope(..)
-                                                , Store(..)
-                                                , runStreamWS
-                                                , connect
-                                                , GQLChannel(..)
-                                                )
-import           Types                          ( Case(..)
-                                                , Name
-                                                , testWith
-                                                )           
-import          Control.Monad.State.Lazy        ( StateT
-                                                , get 
-                                                , put
-                                                , runStateT
-                                                )
-
-
+import Control.Monad.State.Lazy
+  ( StateT,
+    get,
+    runStateT,
+    state,
+  )
+import Data.ByteString.Lazy.Char8 (ByteString)
+-- import qualified Data.ByteString.Lazy.Char8 as LB
+--   ( unpack,
+--   )
+import Data.Morpheus.Types
+  ( Input,
+    Stream,
+  )
+import Data.Morpheus.Types.Internal.Subscription
+  ( ClientConnectionStore,
+    GQLChannel (..),
+    Scope (..),
+    WS,
+    connect,
+    empty,
+    runStreamWS,
+  )
+import Data.Semigroup ((<>))
+import Test.Tasty
+  ( TestTree,
+    testGroup,
+  )
+import Test.Tasty.HUnit
+  ( assertFailure,
+    testCase,
+  )
+import Types
+  ( Case (..),
+    Name,
+    testWith,
+  )
 
 -- packGQLRequest :: ByteString -> Maybe Value -> GQLRequest
--- packGQLRequest queryBS variables = GQLRequest 
+-- packGQLRequest queryBS variables = GQLRequest
 --   { operationName = Nothing
 --   , query = LT.toStrict $ decodeUtf8 queryBS
 --   , variables
@@ -99,55 +80,68 @@ import          Control.Monad.State.Lazy        ( StateT
 --               | otherwise =
 --                 assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
 
+data Session e = Session
+  { inputs :: ByteString,
+    outputs :: [ByteString],
+    store :: ClientConnectionStore e (SubM e)
+  }
 
-
-type SubM = StateT ByteString IO
+type SubM e = StateT (Session e) IO
 
 mockWSApp ::
-  (Input WS -> Stream WS e SubM)
-  -> Input WS
-  -> SubM ()
-mockWSApp api input
-  = runStreamWS
-      ScopeWS 
-      { update = undefined 
-      -- use quick check for responce type
-      ,  listener = pure "{ \"type\":\"bla\" }"
-      , callback = put
+  (Input WS -> Stream WS e (SubM e)) ->
+  Input WS ->
+  SubM e ()
+mockWSApp api input =
+  runStreamWS
+    ScopeWS
+      { update = state . updateStore,
+        -- use quick check for responce type
+        listener = inputs <$> get,
+        callback = state . addOutput
       }
-      (api input)
-  
-testSubscription 
-  ::  
-    (Eq (StreamChannel e)
-    , GQLChannel e
-    )
-  => ( Input WS -> Stream WS e SubM ) -> Name -> IO TestTree
+    (api input)
+
+addOutput :: ByteString -> Session e -> ((), Session e)
+addOutput x (Session i xs st) = ((), Session i (xs <> [x]) st)
+
+updateStore :: (ClientConnectionStore e (SubM e) -> ClientConnectionStore e (SubM e)) -> Session e -> ((), Session e)
+updateStore up (Session i o st) = ((), Session i o (up st))
+
+testSubscription ::
+  ( Eq (StreamChannel e),
+    GQLChannel e
+  ) =>
+  (Input WS -> Stream WS e (SubM e)) ->
+  Name ->
+  IO TestTree
 testSubscription api = testWith (testSubCase api)
 
-testSubCase 
-  :: (Eq (StreamChannel e)
-    , GQLChannel e
-    )
-  => ( Input WS -> Stream WS e SubM ) -> Case -> IO TestTree
+startCase ::
+  (Input WS -> Stream WS e (SubM e)) ->
+  Input WS ->
+  ByteString ->
+  IO (Session e)
+startCase api input inputs = snd <$> runStateT (mockWSApp api input) (Session inputs [] empty)
+
+testSubCase ::
+  ( Eq (StreamChannel e),
+    GQLChannel e
+  ) =>
+  (Input WS -> Stream WS e (SubM e)) ->
+  Case ->
+  IO TestTree
 testSubCase api Case {path, description} = do
-  -- testCaseQuery <- getGQLBody path
-  -- testCaseVariables <- maybeVariables path
-  -- expectedResponse <- getResponseBody path
-  -- actualResponse <- encode <$> testApi (packGQLRequest testCaseQuery testCaseVariables)
-  -- case decode actualResponse of
-  --   Nothing -> assertFailure "Bad Response"
-  --   Just response -> return $ testCase (unpack path ++ " | " ++ description) $ customTest expectedResponse response
+  input <- connect
+  Session {outputs, store} <- startCase api input "{ \"type\":\"bla\" }"
+  pure
+    $ testCase "fail on unknown case"
+    $ expectedStream
+      ["Unknown Request type \"bla\"."]
+      outputs
 
-  input <- connect 
-  (_,result) <-  runStateT (mockWSApp api input) "bla"
-  pure 
-    $ testCase "test subscription"
-    $ customTest "some text"  result
-
-customTest :: ByteString -> ByteString -> IO () 
-customTest expected value
-      | expected == value = return ()
-      | otherwise =
-        assertFailure $ LB.unpack $ "expected: \n " <> expected <> " \n but got: \n " <> value
-
+expectedStream :: [ByteString] -> [ByteString] -> IO ()
+expectedStream expected value
+  | expected == value = return ()
+  | otherwise =
+    assertFailure $ "expected: \n " <> show expected <> " \n but got: \n " <> show value
