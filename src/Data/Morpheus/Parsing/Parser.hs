@@ -29,7 +29,6 @@ import Data.Morpheus.Validation.Query.Validation
   )
 import Data.Text (Text)
 
--- TODO: must pickup type
 parseTypeSystemDefinition ::
   Text -> Eventless Schema
 parseTypeSystemDefinition =
