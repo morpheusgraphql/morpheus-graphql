@@ -36,7 +36,6 @@ import Data.Morpheus.Schema.SchemaAPI (defaultTypes)
 import Data.Morpheus.Types (GQLRootResolver)
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
-    createDataTypeLib,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
