@@ -1,4 +1,4 @@
-module Data.Morpheus.Parsing.Parser (parseTypeSystemDefinition, parseTypeDefinitions, parseRequestWith, parseRequest, decodeIntrospection) where
+module Data.Morpheus.Parsing.Parser (parseTypeDefinitions, parseTypeSystemDefinition, parseRequestWith, parseRequest, decodeIntrospection) where
 
 import Control.Monad ((>=>))
 import Data.Morpheus.Parsing.Document.TypeSystem (parseSchema)
@@ -16,6 +16,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     VALID,
     VALIDATION_MODE (..),
+    createDataTypeLib,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -30,9 +31,9 @@ import Data.Text (Text)
 
 -- TODO: must pickup type
 parseTypeSystemDefinition ::
-  Text -> Eventless [TypeDefinition]
+  Text -> Eventless Schema
 parseTypeSystemDefinition =
-  parseSchema >=> validatePartialDocument
+  parseSchema >=> createDataTypeLib
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition]

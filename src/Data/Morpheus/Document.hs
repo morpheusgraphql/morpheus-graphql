@@ -42,7 +42,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Text (Text)
 import qualified Data.Text.Lazy as LT
   ( toStrict,
   )
@@ -54,11 +53,8 @@ parseDSL doc = case parseGraphQLDocument doc of
   Failure errors -> Left (show errors)
   Success {result} -> Right result
 
-parseDocument :: Text -> Eventless Schema
-parseDocument = parseTypeSystemDefinition >=> createDataTypeLib
-
 parseGraphQLDocument :: ByteString -> Eventless Schema
-parseGraphQLDocument x = parseDocument (LT.toStrict $ decodeUtf8 x)
+parseGraphQLDocument x = parseTypeSystemDefinition (LT.toStrict $ decodeUtf8 x)
 
 parseFullGQLDocument :: ByteString -> Eventless Schema
 parseFullGQLDocument = parseGraphQLDocument >=> defaultTypes

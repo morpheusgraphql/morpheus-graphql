@@ -20,7 +20,7 @@ import Data.Morpheus.Execution.Document.Declare
   ( declareTypes,
   )
 import Data.Morpheus.Parsing.Parser
-  ( parseTypeSystemDefinition,
+  ( parseTypeDefinitions,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Result (..),
@@ -57,7 +57,7 @@ gqlDocument =
 
 compileDocument :: Bool -> String -> Q [Dec]
 compileDocument namespace documentTXT =
-  case parseTypeSystemDefinition (T.pack documentTXT) of
+  case parseTypeDefinitions (T.pack documentTXT) of
     Failure errors -> fail (renderGQLErrors errors)
     Success {result = schema, warnings} ->
       gqlWarnings warnings >> toTHDefinitions namespace schema >>= declareTypes namespace
