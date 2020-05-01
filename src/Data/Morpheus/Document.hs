@@ -27,7 +27,7 @@ import Data.Morpheus.Execution.Server.Resolve
     fullSchema,
   )
 import Data.Morpheus.Parsing.Parser
-  ( parseSchema,
+  ( parseTypeSystemDefinition,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( renderGraphQLDocument,
@@ -42,9 +42,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Morpheus.Validation.Document.Validation
-  ( validatePartialDocument,
-  )
 import Data.Text (Text)
 import qualified Data.Text.Lazy as LT
   ( toStrict,
@@ -58,8 +55,7 @@ parseDSL doc = case parseGraphQLDocument doc of
   Success {result} -> Right result
 
 parseDocument :: Text -> Eventless Schema
-parseDocument doc =
-  parseSchema doc >>= validatePartialDocument >>= createDataTypeLib
+parseDocument = parseTypeSystemDefinition >=> createDataTypeLib
 
 parseGraphQLDocument :: ByteString -> Eventless Schema
 parseGraphQLDocument x = parseDocument (LT.toStrict $ decodeUtf8 x)

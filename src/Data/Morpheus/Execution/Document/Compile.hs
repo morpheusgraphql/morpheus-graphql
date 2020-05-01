@@ -20,12 +20,11 @@ import Data.Morpheus.Execution.Document.Declare
   ( declareTypes,
   )
 import Data.Morpheus.Parsing.Parser
-  ( parseSchema,
+  ( parseTypeSystemDefinition,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Result (..),
   )
-import Data.Morpheus.Validation.Document.Validation
 import qualified Data.Text as T
   ( pack,
   )
@@ -58,8 +57,7 @@ gqlDocument =
 
 compileDocument :: Bool -> String -> Q [Dec]
 compileDocument namespace documentTXT =
-  case parseSchema (T.pack documentTXT)
-    >>= validatePartialDocument of
+  case parseTypeSystemDefinition (T.pack documentTXT) of
     Failure errors -> fail (renderGQLErrors errors)
     Success {result = schema, warnings} ->
       gqlWarnings warnings >> toTHDefinitions namespace schema >>= declareTypes namespace
