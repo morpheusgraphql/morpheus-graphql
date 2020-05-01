@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 Unreleased Changes
+
+## New features
+
+- exposed morpheus parser `Data.Morpheus.Parsing.Parser`
+
 ## 0.11.0 - 01.05.2020
 
 ### Breaking Changes
