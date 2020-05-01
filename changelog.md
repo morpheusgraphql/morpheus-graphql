@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.11.0 - Unreleased
+## 0.11.0 - 01.05.2020
 
 ### Breaking Changes
 
@@ -43,13 +43,12 @@
 - Instead of rejecting conflicting selections, they are merged (based on the GraphQL specification).
 - Support for input lists separated by newlines. thanks @charlescrain
 - conflicting variable , fragment ... validation
-- issue #411: Aeson `FromJSON` `ToJSON` instances for `ID` 
+- issue #411: Aeson `FromJSON` `ToJSON` instances for `ID`
 
 ### minor
 
 - changes to internal types
 - fixed validation of apollo websockets requests  
-
 
 ## 0.10.0 - 07.01.2020
 
