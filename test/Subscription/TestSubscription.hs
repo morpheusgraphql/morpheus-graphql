@@ -12,7 +12,6 @@ where
 -- import           Data.Text.Lazy.Encoding    (decodeUtf8)
 import Control.Monad.State.Lazy
   ( StateT,
-    get,
     runStateT,
     state,
   )
@@ -81,7 +80,7 @@ import Types
 --                 assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
 
 data Session e = Session
-  { inputs :: ByteString,
+  { inputs :: [ByteString],
     outputs :: [ByteString],
     store :: ClientConnectionStore e (SubM e)
   }
@@ -97,7 +96,7 @@ mockWSApp api input =
     ScopeWS
       { update = state . updateStore,
         -- use quick check for responce type
-        listener = inputs <$> get,
+        listener = state readInput,
         callback = state . addOutput
       }
     (api input)
@@ -107,6 +106,10 @@ addOutput x (Session i xs st) = ((), Session i (xs <> [x]) st)
 
 updateStore :: (ClientConnectionStore e (SubM e) -> ClientConnectionStore e (SubM e)) -> Session e -> ((), Session e)
 updateStore up (Session i o st) = ((), Session i o (up st))
+
+readInput :: Session e -> (ByteString, Session e)
+readInput (Session (i : inputs) o s) = (i, Session inputs o s)
+readInput (Session [] o s) = ("<Error>", Session [] o s)
 
 testSubscription ::
   ( Eq (StreamChannel e),
@@ -120,7 +123,7 @@ testSubscription api = testWith (testSubCase api)
 startCase ::
   (Input WS -> Stream WS e (SubM e)) ->
   Input WS ->
-  ByteString ->
+  [ByteString] ->
   IO (Session e)
 startCase api input inputs = snd <$> runStateT (mockWSApp api input) (Session inputs [] empty)
 
@@ -133,9 +136,9 @@ testSubCase ::
   IO TestTree
 testSubCase api Case {path, description} = do
   input <- connect
-  Session {outputs, store} <- startCase api input "{ \"type\":\"bla\" }"
+  Session {inputs, outputs, store} <- startCase api input ["{ \"type\":\"bla\" }"]
   pure
-    $ testCase "fail on unknown case"
+    $ testCase "fail on unknown request type"
     $ expectedStream
       ["Unknown Request type \"bla\"."]
       outputs
