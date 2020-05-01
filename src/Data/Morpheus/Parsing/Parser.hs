@@ -1,4 +1,4 @@
-module Data.Morpheus.Parsing.Parser (parseTypeSystemDefinition, parseRequestWith, parseRequest, decodeIntrospection) where
+module Data.Morpheus.Parsing.Parser (parseTypeSystemDefinition, parseTypeDefinitions, parseRequestWith, parseRequest, decodeIntrospection) where
 
 import Control.Monad ((>=>))
 import Data.Morpheus.Parsing.Document.TypeSystem (parseSchema)
@@ -28,9 +28,15 @@ import Data.Morpheus.Validation.Query.Validation
   )
 import Data.Text (Text)
 
+-- TODO: must pickup type
 parseTypeSystemDefinition ::
   Text -> Eventless [TypeDefinition]
 parseTypeSystemDefinition =
+  parseSchema >=> validatePartialDocument
+
+parseTypeDefinitions ::
+  Text -> Eventless [TypeDefinition]
+parseTypeDefinitions =
   parseSchema >=> validatePartialDocument
 
 parseRequest :: GQLRequest -> Eventless GQLQuery
