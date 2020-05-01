@@ -27,7 +27,7 @@ import Data.Morpheus.Execution.Client.Compile
 import Data.Morpheus.Execution.Client.Fetch
   ( Fetch (..),
   )
-import Data.Morpheus.Parsing.Parser
+import Data.Morpheus.Parsing.Internal
   ( decodeIntrospection,
   )
 import Data.Morpheus.Types.Internal.AST

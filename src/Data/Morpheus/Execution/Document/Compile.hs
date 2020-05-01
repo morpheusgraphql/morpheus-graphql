@@ -19,7 +19,7 @@ import Data.Morpheus.Execution.Document.Convert
 import Data.Morpheus.Execution.Document.Declare
   ( declareTypes,
   )
-import Data.Morpheus.Parsing.Parser
+import Data.Morpheus.Parsing.Internal
   ( parseTypeDefinitions,
   )
 import Data.Morpheus.Types.Internal.Resolving

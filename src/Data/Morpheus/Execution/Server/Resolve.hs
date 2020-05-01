@@ -27,7 +27,7 @@ import Data.Morpheus.Execution.Server.Introspect
     TypeScope (..),
     introspectObjectFields,
   )
-import Data.Morpheus.Parsing.Parser
+import Data.Morpheus.Parsing.Internal
   ( parseRequestWith,
   )
 import Data.Morpheus.Schema.SchemaAPI

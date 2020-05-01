@@ -4,7 +4,7 @@
 
 ## New features
 
-- exposed morpheus parser `Data.Morpheus.Parsing.Parser`
+- exposed morpheus parser `Data.Morpheus.Parsing.Internal`
 
 ## 0.11.0 - 01.05.2020
 

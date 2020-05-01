@@ -1,4 +1,4 @@
-module Data.Morpheus.Parsing.Parser (parseTypeDefinitions, parseTypeSystemDefinition, parseRequestWith, parseRequest, decodeIntrospection) where
+module Data.Morpheus.Parsing.Internal (parseTypeDefinitions, parseTypeSystemDefinition, parseRequestWith, parseRequest, decodeIntrospection) where
 
 import Control.Monad ((>=>))
 import Data.Morpheus.Parsing.Document.TypeSystem (parseSchema)

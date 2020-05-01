@@ -26,7 +26,7 @@ import Data.Morpheus.Execution.Server.Resolve
   ( RootResCon,
     fullSchema,
   )
-import Data.Morpheus.Parsing.Parser
+import Data.Morpheus.Parsing.Internal
   ( parseTypeSystemDefinition,
   )
 import Data.Morpheus.Rendering.RenderGQL

@@ -18,7 +18,7 @@ import Data.Morpheus.Error.Client.Client
 import Data.Morpheus.Execution.Client.Selection
   ( operationTypes,
   )
-import Data.Morpheus.Parsing.Parser
+import Data.Morpheus.Parsing.Internal
   ( parseRequest,
   )
 import Data.Morpheus.Types.IO (GQLRequest (..))
