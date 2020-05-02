@@ -28,6 +28,7 @@ import qualified Data.HashMap.Lazy as HM
     elems,
     empty,
     insert,
+    insertWith,
     keys,
     toList,
   )
@@ -148,11 +149,12 @@ toList = HM.toList . unpackStore
 instance Empty (ClientConnectionStore e m) where
   empty = ClientConnectionStore HM.empty
 
+-- returns original store, if connection with same id already exist
 insert ::
   ID ->
   (ByteString -> m ()) ->
   StoreMap e m
-insert connectionId connectionCallback = mapStore (HM.insert connectionId c)
+insert connectionId connectionCallback = mapStore (HM.insertWith (curry snd) connectionId c)
   where
     c = ClientConnection {connectionId, connectionCallback, connectionSessions = HM.empty}
 
