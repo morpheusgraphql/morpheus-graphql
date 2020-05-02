@@ -26,7 +26,12 @@ import Control.Monad.State.Lazy
     runStateT,
     state,
   )
-import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+  )
+import Data.List
+  ( sort,
+  )
 import Data.Maybe
   ( isJust,
   )
@@ -48,7 +53,9 @@ import Data.Morpheus.Types.Internal.Subscription
     runStreamWS,
     toList,
   )
-import Data.Semigroup ((<>))
+import Data.Semigroup
+  ( (<>),
+  )
 import Test.Tasty
   ( TestTree,
   )
@@ -91,7 +98,11 @@ wsApp api input =
       }
     (api input)
 
-simulatePublish :: (GQLChannel e, Eq (StreamChannel e)) => e -> TrailState e -> IO (TrailState e)
+simulatePublish ::
+  (GQLChannel e, Eq (StreamChannel e)) =>
+  e ->
+  TrailState e ->
+  IO (TrailState e)
 simulatePublish event s = snd <$> runStateT (publish event (store s)) s
 
 trail ::
@@ -159,23 +170,27 @@ storeSubscriptions ::
   [Name] ->
   Store e ->
   TestTree
-storeSubscriptions (Init uuid) sids cStore = checkSession (lookup uuid (toList cStore))
-  where
-    checkSession (Just conn)
-      | sids == connectionSessionIds conn =
-        testCase "stored subscriptions" $ return ()
-      | otherwise =
-        testCase "stored subscriptions"
+storeSubscriptions
+  (Init uuid)
+  sids
+  cStore =
+    checkSession (lookup uuid (toList cStore))
+    where
+      checkSession (Just conn)
+        | sort sids == sort (connectionSessionIds conn) =
+          testCase "stored subscriptions" $ return ()
+        | otherwise =
+          testCase "stored subscriptions"
+            $ assertFailure
+            $ " must store subscriptions with id \"" <> show sids <> "\" but stored: "
+              <> show
+                (connectionSessionIds conn)
+      checkSession _ =
+        testCase "stored connection"
           $ assertFailure
-          $ " must store subscriptions with id \"" <> show sids <> "\" but stored: "
+          $ " must store connection \"" <> show uuid <> "\" but: "
             <> show
-              (connectionSessionIds conn)
-    checkSession _ =
-      testCase "stored connection"
-        $ assertFailure
-        $ " must store connection \"" <> show uuid <> "\" but: "
-          <> show
-            cStore
+              cStore
 
 apolloStart :: ByteString -> ByteString -> ByteString
 apolloStart query sid = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
