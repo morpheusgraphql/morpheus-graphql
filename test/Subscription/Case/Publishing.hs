@@ -32,7 +32,7 @@ import Subscription.Utils
     apolloStart,
     apolloStop,
     inputsAreConsumed,
-    simulateAll,
+    simulate,
     simulatePublish,
     storeSubscriptions,
     testResponse,
