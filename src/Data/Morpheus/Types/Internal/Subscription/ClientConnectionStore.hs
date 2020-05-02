@@ -15,6 +15,7 @@ module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
     delete,
     publish,
     toList,
+    connectionSessionIds,
   )
 where
 
@@ -27,6 +28,7 @@ import qualified Data.HashMap.Lazy as HM
     elems,
     empty,
     insert,
+    keys,
     toList,
   )
 import Data.List (intersect)
@@ -59,6 +61,9 @@ data ClientConnection e (m :: * -> *) = ClientConnection
     -- one connection can have multiple subsciprion session
     connectionSessions :: HashMap SesionID (SubEvent e m)
   }
+
+connectionSessionIds :: ClientConnection e m -> [SesionID]
+connectionSessionIds = HM.keys . connectionSessions
 
 instance Show (ClientConnection e m) where
   show ClientConnection {connectionId, connectionSessions} =

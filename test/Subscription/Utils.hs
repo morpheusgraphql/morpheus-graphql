@@ -12,6 +12,7 @@ module Subscription.Utils
     storeIsEmpty,
     storedSingle,
     stored,
+    storeSubscription,
   )
 where
 
@@ -28,11 +29,15 @@ import Data.Morpheus.Types
   ( Input,
     Stream,
   )
+import Data.Morpheus.Types.Internal.AST
+  ( Name,
+  )
 import Data.Morpheus.Types.Internal.Subscription
   ( ClientConnectionStore,
     Input (..),
     Scope (..),
     WS,
+    connectionSessionIds,
     runStreamWS,
     toList,
   )
@@ -138,3 +143,26 @@ stored (Init uuid) cStore
       $ " must store connection \"" <> show uuid <> "\" but: "
         <> show
           cStore
+
+storeSubscription ::
+  Input WS ->
+  Name ->
+  Store e ->
+  TestTree
+storeSubscription (Init uuid) sid cStore = checkSession (lookup uuid (toList cStore))
+  where
+    checkSession (Just conn)
+      | sid `elem` connectionSessionIds conn =
+        testCase "stored subscription" $ return ()
+      | otherwise =
+        testCase "stored subscription"
+          $ assertFailure
+          $ " must store subscription \"" <> show sid <> "\" but: "
+            <> show
+              conn
+    checkSession _ =
+      testCase "stored connection"
+        $ assertFailure
+        $ " must store connection \"" <> show uuid <> "\" but: "
+          <> show
+            cStore

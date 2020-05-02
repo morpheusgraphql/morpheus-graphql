@@ -30,6 +30,7 @@ import Subscription.Utils
     TrailState (..),
     inputsAreConsumed,
     storeIsEmpty,
+    storeSubscription,
     stored,
     storedSingle,
     testResponse,
@@ -84,8 +85,8 @@ testConnectionInit api = do
         storedSingle store
       ]
 
-apolloQueryWrapper :: ByteString -> ByteString
-apolloQueryWrapper query = "{\"id\":\"1\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
+apolloQueryWrapper :: ByteString -> ByteString -> ByteString
+apolloQueryWrapper sid query = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
 
 subscriptionQuery :: ByteString
 subscriptionQuery = "subscription MySubscription { newDeity { name }}"
@@ -93,7 +94,7 @@ subscriptionQuery = "subscription MySubscription { newDeity { name }}"
 simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
 simulateStart api = do
   (input, TrailState _ o s) <- simulateConnection api
-  state <- trail api input (TrailState [apolloQueryWrapper subscriptionQuery] o s)
+  state <- trail api input (TrailState [apolloQueryWrapper "1" subscriptionQuery] o s)
   pure (input, state)
 
 testSubscriptionStart ::
@@ -103,12 +104,18 @@ testSubscriptionStart ::
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
 testSubscriptionStart api = do
-  (_, TrailState {inputs, outputs, store}) <- simulateStart api
+  (input, TrailState {inputs, outputs, store}) <- simulateStart api
   pure $
     testGroup
       "subscription start"
       [ inputsAreConsumed inputs,
-        testResponse [] outputs
+        testResponse
+          []
+          outputs,
+        storeSubscription
+          input
+          "1"
+          store
       ]
 
 testApolloRequest ::

@@ -29,6 +29,7 @@ module Data.Morpheus.Types.Internal.Subscription
     ClientConnectionStore,
     empty,
     toList,
+    connectionSessionIds,
   )
 where
 
@@ -56,6 +57,7 @@ import Data.Morpheus.Types.Internal.Subscription.Apollo
   )
 import Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ClientConnectionStore,
+    connectionSessionIds,
     delete,
     publish,
     toList,
