@@ -12,7 +12,7 @@ module Subscription.Utils
     storeIsEmpty,
     storedSingle,
     stored,
-    storeSubscription,
+    storeSubscriptions,
   )
 where
 
@@ -144,20 +144,20 @@ stored (Init uuid) cStore
         <> show
           cStore
 
-storeSubscription ::
+storeSubscriptions ::
   Input WS ->
-  Name ->
+  [Name] ->
   Store e ->
   TestTree
-storeSubscription (Init uuid) sid cStore = checkSession (lookup uuid (toList cStore))
+storeSubscriptions (Init uuid) sids cStore = checkSession (lookup uuid (toList cStore))
   where
     checkSession (Just conn)
-      | sid `elem` connectionSessionIds conn =
-        testCase "stored subscription" $ return ()
+      | sids == connectionSessionIds conn =
+        testCase "stored subscriptions" $ return ()
       | otherwise =
-        testCase "stored subscription"
+        testCase "stored subscriptions"
           $ assertFailure
-          $ " must store subscription \"" <> show sid <> "\" but: "
+          $ " must store subscriptions \"" <> show sids <> "\" but: "
             <> show
               conn
     checkSession _ =

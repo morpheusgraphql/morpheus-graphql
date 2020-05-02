@@ -30,7 +30,7 @@ import Subscription.Utils
     TrailState (..),
     inputsAreConsumed,
     storeIsEmpty,
-    storeSubscription,
+    storeSubscriptions,
     stored,
     storedSingle,
     testResponse,
@@ -94,7 +94,8 @@ subscriptionQuery = "subscription MySubscription { newDeity { name }}"
 simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
 simulateStart api = do
   (input, TrailState _ o s) <- simulateConnection api
-  state <- trail api input (TrailState [apolloQueryWrapper "1" subscriptionQuery] o s)
+  TrailState _ o' s' <- trail api input (TrailState [apolloQueryWrapper "1" subscriptionQuery] o s)
+  state <- trail api input (TrailState [apolloQueryWrapper "5" subscriptionQuery] o' s')
   pure (input, state)
 
 testSubscriptionStart ::
@@ -112,9 +113,9 @@ testSubscriptionStart api = do
         testResponse
           []
           outputs,
-        storeSubscription
+        storeSubscriptions
           input
-          "1"
+          ["1", "5"]
           store
       ]
 
