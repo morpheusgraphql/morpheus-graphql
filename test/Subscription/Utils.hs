@@ -18,6 +18,7 @@ module Subscription.Utils
     apolloStop,
     apolloRes,
     apolloInit,
+    testSimulation,
   )
 where
 
@@ -48,7 +49,9 @@ import Data.Morpheus.Types.Internal.Subscription
     Input (..),
     Scope (..),
     WS,
+    connect,
     connectionSessionIds,
+    empty,
     publish,
     runStreamWS,
     toList,
@@ -112,6 +115,16 @@ simulate ::
   IO (SimulationState e)
 simulate _ _ s@SimulationState {inputs = []} = pure s
 simulate api input s = snd <$> runStateT (wsApp api input) s >>= simulate api input
+
+testSimulation ::
+  (Input WS -> SimulationState e -> TestTree) ->
+  [ByteString] ->
+  (Input WS -> Stream WS e (SubM e)) ->
+  IO TestTree
+testSimulation test simInputs api = do
+  input <- connect
+  s <- simulate api input (SimulationState simInputs [] empty)
+  pure $ test input s
 
 expectedResponse :: [ByteString] -> [ByteString] -> IO ()
 expectedResponse expected value
