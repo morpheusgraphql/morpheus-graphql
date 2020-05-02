@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 17f7648976616b78bd9760e4e6f72445ab6bec5e6cd58073c08a6e077baac4a9
+-- hash: 168745207d816b7fa7e5e1b555f1a190727abd70a29e8f762f83e94c47c8dc51
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -157,6 +157,7 @@ data-files:
     test/Feature/WrappedTypeName/ignoreSubscriptionResolver/query.gql
     test/Feature/WrappedTypeName/validWrappedTypes/query.gql
     test/Rendering/schema.gql
+    test/Subscription/schema.gql
     test/Feature/Holistic/arguments/nameConflict/response.json
     test/Feature/Holistic/arguments/undefinedArgument/response.json
     test/Feature/Holistic/arguments/unknownArguments/response.json
@@ -328,8 +329,10 @@ library
       Data.Morpheus.Server
       Data.Morpheus.Document
       Data.Morpheus.Client
-      Data.Morpheus.Types.Internal.AST
       Data.Morpheus.Parsing.Internal
+      Data.Morpheus.Types.Internal.AST
+      Data.Morpheus.Types.Internal.Resolving
+      Data.Morpheus.Types.Internal.Subscription
   other-modules:
       Data.Morpheus.Error.Client.Client
       Data.Morpheus.Error.Document.Interface
@@ -389,10 +392,8 @@ library
       Data.Morpheus.Types.Internal.AST.Selection
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Operation
-      Data.Morpheus.Types.Internal.Resolving
       Data.Morpheus.Types.Internal.Resolving.Core
       Data.Morpheus.Types.Internal.Resolving.Resolver
-      Data.Morpheus.Types.Internal.Subscription
       Data.Morpheus.Types.Internal.Subscription.Apollo
       Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
       Data.Morpheus.Types.Internal.Subscription.Stream
@@ -450,7 +451,13 @@ test-suite morpheus-test
       Lib
       Rendering.Schema
       Rendering.TestSchemaRendering
+      Subscription.API
+      Subscription.Case.ApolloRequest
+      Subscription.Case.Publishing
+      Subscription.Test
+      Subscription.Utils
       TestFeature
+      Types
       Paths_morpheus_graphql
   hs-source-dirs:
       test

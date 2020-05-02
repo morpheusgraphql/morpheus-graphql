@@ -38,6 +38,8 @@ module Data.Morpheus.Types
   , SubField
   , Input
   , Stream
+  , WS
+  , HTTP
   )
 where
 
@@ -81,6 +83,8 @@ import           Data.Morpheus.Types.Types      ( Undefined(..) )
 import           Data.Morpheus.Types.Internal.Subscription  
                                                 ( Stream
                                                 , Input
+                                                , WS
+                                                , HTTP
                                                 )
 
 type Res = Resolver QUERY

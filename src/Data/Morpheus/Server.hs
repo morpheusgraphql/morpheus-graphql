@@ -13,9 +13,10 @@
 module Data.Morpheus.Server
   ( webSocketsApp
   , httpPubApp
+  , subscriptionApp
+  , ServerConstraint
   )
 where
-
 
 import           Control.Monad.IO.Unlift        ( MonadUnliftIO
                                                 , withRunInIO
@@ -46,6 +47,13 @@ import           Data.Morpheus.Types.Internal.Subscription
                                                 , publishEventWith
                                                 )
 
+
+type ServerConstraint e m 
+  = ( MonadIO m 
+    , MonadUnliftIO m
+    , Eq (StreamChannel e)
+    , GQLChannel e
+    )
 
 -- support old version of Websockets
 pingThread :: Connection -> IO () -> IO ()
@@ -79,6 +87,42 @@ httpPubApp api httpCallback
     )
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
+subscriptionApp
+  ::  ( MonadUnliftIO m
+      , (Eq (StreamChannel e)) 
+      , (GQLChannel e) 
+      )
+  =>  ( Store e m  
+        -> ( Scope WS e m -> m () ) 
+        -> m app 
+      )
+  ->  ( Input WS -> Stream WS e m )
+  ->  m ( app , e -> m () )
+subscriptionApp appWrapper api  
+  = do 
+    store <- initDefaultStore   
+    app <- appWrapper store (connectionThread api)   
+    pure 
+      ( app
+      , publishEventWith store
+      )
+
+webSocketsWrapper 
+  :: (MonadUnliftIO m, MonadIO m)
+  => Store e m 
+  -> (Scope WS e m -> m ())
+  -> m ServerApp
+webSocketsWrapper store handler 
+  = withRunInIO 
+    $ \runIO 
+      -> pure $ 
+        \pending -> do 
+          conn <- acceptApolloRequest pending
+          pingThread 
+            conn 
+            $ runIO (handler (defaultWSScope store conn))
+
+-- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp
   ::  ( MonadIO m 
       , MonadUnliftIO m
@@ -87,15 +131,4 @@ webSocketsApp
       )
   => (Input WS -> Stream WS e m)
   -> m (ServerApp , e -> m ())
-webSocketsApp api = withRunInIO handle
-  where
-    handle runIO  = do 
-      store <- initDefaultStore      
-      pure (wsApp store, publishEventWith store)
-     where
-      wsApp store pending = do
-        connection <- acceptApolloRequest pending
-        let scope = defaultWSScope store connection
-        pingThread 
-          connection 
-          $ runIO (connectionThread api scope)
+webSocketsApp = subscriptionApp webSocketsWrapper
