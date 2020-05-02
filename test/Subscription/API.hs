@@ -25,7 +25,8 @@ import Data.Text (Text)
 import Subscription.Utils (SubM)
 
 data Channel
-  = Channel
+  = DEITY
+  | HUMAN
   deriving (Show, Eq)
 
 type EVENT = Event Channel ()
@@ -62,8 +63,8 @@ rootResolver =
           },
       subscriptionResolver =
         Subscription
-          { newDeity = subscribe [Channel] (pure $ const deity),
-            newHuman = subscribe [Channel] (pure $ const human)
+          { newDeity = subscribe [DEITY] (pure $ const deity),
+            newHuman = subscribe [HUMAN] (pure $ const human)
           }
     }
 
