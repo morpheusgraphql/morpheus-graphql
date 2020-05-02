@@ -10,12 +10,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Subscription.API (api, EVENT, Channel (..)) where
+module Subscription.API (api, EVENT, Channel (..), Info (..)) where
 
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
-  ( Event,
+  ( Event (..),
     GQLRootResolver (..),
     Input,
     Stream,
@@ -29,24 +29,24 @@ data Channel
   | HUMAN
   deriving (Show, Eq)
 
-type EVENT = Event Channel ()
-
 importGQLDocument "test/Subscription/schema.gql"
 
-human :: Applicative m => m (Human m)
-human =
+type EVENT = Event Channel Info
+
+character :: Applicative m => m (Character m)
+character =
   pure
-    Human
+    Character
       { name = pure "testName",
         age = pure 1
       }
 
-deity :: Applicative m => m (Deity m)
-deity =
+characterSub :: Applicative m => EVENT -> m (Character m)
+characterSub (Event _ Info {name, age}) =
   pure
-    Deity
-      { name = pure "testName",
-        age = pure 1
+    Character
+      { name = pure name,
+        age = pure age
       }
 
 rootResolver :: GQLRootResolver (SubM EVENT) EVENT Query Mutation Subscription
@@ -58,13 +58,13 @@ rootResolver =
           },
       mutationResolver =
         Mutation
-          { createDeity = const deity,
-            createHuman = const human
+          { createDeity = const character,
+            createHuman = const character
           },
       subscriptionResolver =
         Subscription
-          { newDeity = subscribe [DEITY] (pure $ const deity),
-            newHuman = subscribe [HUMAN] (pure $ const human)
+          { newDeity = subscribe [DEITY] (pure characterSub),
+            newHuman = subscribe [HUMAN] (pure characterSub)
           }
     }
 

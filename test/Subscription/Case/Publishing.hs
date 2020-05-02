@@ -7,7 +7,9 @@ module Subscription.Case.Publishing
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+  )
 import Data.Morpheus.Types
   ( Event (..),
     Input,
@@ -17,7 +19,12 @@ import Data.Morpheus.Types.Internal.Subscription
     connect,
     empty,
   )
-import Subscription.API (Channel (..), EVENT, api)
+import Subscription.API
+  ( Channel (..),
+    EVENT,
+    Info (..),
+    api,
+  )
 import Subscription.Utils
   ( TrailState (..),
     apolloInit,
@@ -36,10 +43,10 @@ import Test.Tasty
   )
 
 startNewDeity :: ByteString -> ByteString
-startNewDeity = apolloStart "subscription MySubscription { newDeity { name }}"
+startNewDeity = apolloStart "subscription MySubscription { newDeity { name , age }}"
 
 startNewHuman :: ByteString -> ByteString
-startNewHuman = apolloStart "subscription MySubscription { newHuman { name }}"
+startNewHuman = apolloStart "subscription MySubscription { newHuman { name , age }}"
 
 simulateSubscriptions :: IO (Input WS, TrailState EVENT)
 simulateSubscriptions = do
@@ -76,8 +83,8 @@ triggerSubsciption ::
 triggerSubsciption = do
   (input, state) <- simulateSubscriptions
   TrailState {inputs, outputs, store} <-
-    simulatePublish (Event [DEITY] ()) state
-      >>= simulatePublish (Event [HUMAN] ())
+    simulatePublish (Event [DEITY] Info {name = "Zeus", age = 1200}) state
+      >>= simulatePublish (Event [HUMAN] Info {name = "Hercules", age = 18})
   pure $
     testGroup
       "publish event"
@@ -86,13 +93,13 @@ triggerSubsciption = do
           -- triggers subscriptions by channels
           [ apolloRes
               "2"
-              "{\"newDeity\":{\"name\":\"testName\"}}",
+              "{\"newDeity\":{\"name\":\"Zeus\",\"age\":1200}}",
             apolloRes
               "3"
-              "{\"newDeity\":{\"name\":\"testName\"}}",
+              "{\"newDeity\":{\"name\":\"Zeus\",\"age\":1200}}",
             apolloRes
               "4"
-              "{\"newHuman\":{\"name\":\"testName\"}}"
+              "{\"newHuman\":{\"name\":\"Hercules\",\"age\":18}}"
           ]
           outputs,
         storeSubscriptions
