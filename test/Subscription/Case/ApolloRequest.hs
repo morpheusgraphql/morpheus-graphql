@@ -8,12 +8,7 @@ module Subscription.Case.ApolloRequest
   )
 where
 
--- import qualified Data.Text.Lazy             as LT (toStrict)
--- import           Data.Text.Lazy.Encoding    (decodeUtf8)
 import Data.ByteString.Lazy.Char8 (ByteString)
--- import qualified Data.ByteString.Lazy.Char8 as LB
---   ( unpack,
---   )
 import Data.Morpheus.Types
   ( Input,
     Stream,
@@ -86,16 +81,19 @@ testConnectionInit api = do
       ]
 
 apolloQueryWrapper :: ByteString -> ByteString -> ByteString
-apolloQueryWrapper sid query = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
+apolloQueryWrapper query sid = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
 
 subscriptionQuery :: ByteString
 subscriptionQuery = "subscription MySubscription { newDeity { name }}"
 
+apolloStart :: ByteString -> ByteString
+apolloStart = apolloQueryWrapper subscriptionQuery
+
 simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
 simulateStart api = do
   (input, TrailState _ o s) <- simulateConnection api
-  TrailState _ o' s' <- trail api input (TrailState [apolloQueryWrapper "1" subscriptionQuery] o s)
-  state <- trail api input (TrailState [apolloQueryWrapper "5" subscriptionQuery] o' s')
+  state0 <- trail api input (TrailState [apolloStart "1", apolloStart "5"] o s)
+  state <- trail api input state0
   pure (input, state)
 
 testSubscriptionStart ::
