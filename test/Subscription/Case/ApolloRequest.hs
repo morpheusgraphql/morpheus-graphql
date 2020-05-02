@@ -20,18 +20,18 @@ import Data.Morpheus.Types.Internal.Subscription
     empty,
   )
 import Subscription.Utils
-  ( SubM,
-    TrailState (..),
+  ( SimulationState (..),
+    SubM,
     apolloInit,
     apolloStart,
     apolloStop,
     inputsAreConsumed,
+    simulate,
     storeIsEmpty,
     storeSubscriptions,
     stored,
     storedSingle,
     testResponse,
-    trail,
   )
 import Test.Tasty
   ( TestTree,
@@ -46,7 +46,7 @@ testUnknownType ::
   IO TestTree
 testUnknownType api = do
   input <- connect
-  TrailState {inputs, outputs, store} <- trail api input (TrailState ["{ \"type\":\"bla\" }"] [] empty)
+  SimulationState {inputs, outputs, store} <- simulate api input (SimulationState ["{ \"type\":\"bla\" }"] [] empty)
   pure $
     testGroup
       "unknown request type"
@@ -57,10 +57,10 @@ testUnknownType api = do
         storeIsEmpty store
       ]
 
-simulateConnection :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
+simulateConnection :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, SimulationState e)
 simulateConnection api = do
   input <- connect
-  state <- trail api input (TrailState [apolloInit] [] empty)
+  state <- simulate api input (SimulationState [apolloInit] [] empty)
   pure (input, state)
 
 testConnectionInit ::
@@ -70,7 +70,7 @@ testConnectionInit ::
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
 testConnectionInit api = do
-  (input, TrailState {inputs, outputs, store}) <- simulateConnection api
+  (input, SimulationState {inputs, outputs, store}) <- simulateConnection api
   pure $
     testGroup
       "connection init"
@@ -85,11 +85,11 @@ testConnectionInit api = do
 startSub :: ByteString -> ByteString
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
-simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
+simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, SimulationState e)
 simulateStart api = do
-  (input, TrailState _ o s) <- simulateConnection api
-  state0 <- trail api input (TrailState [startSub "1", startSub "5"] o s)
-  state <- trail api input state0
+  (input, SimulationState _ o s) <- simulateConnection api
+  state0 <- simulate api input (SimulationState [startSub "1", startSub "5"] o s)
+  state <- simulate api input state0
   pure (input, state)
 
 testSubscriptionStart ::
@@ -99,7 +99,7 @@ testSubscriptionStart ::
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
 testSubscriptionStart api = do
-  (input, TrailState {inputs, outputs, store}) <- simulateStart api
+  (input, SimulationState {inputs, outputs, store}) <- simulateStart api
   pure $
     testGroup
       "subscription start"
@@ -120,8 +120,8 @@ testSubscriptionStop ::
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
 testSubscriptionStop api = do
-  (input, TrailState _ o s) <- simulateStart api
-  TrailState {inputs, outputs, store} <- trail api input (TrailState [apolloStop "1"] o s)
+  (input, SimulationState _ o s) <- simulateStart api
+  SimulationState {inputs, outputs, store} <- simulate api input (SimulationState [apolloStop "1"] o s)
   pure $
     testGroup
       "stop subscription"

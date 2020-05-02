@@ -3,8 +3,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Subscription.Utils
-  ( TrailState (..),
-    trail,
+  ( SimulationState (..),
+    simulate,
     expectedResponse,
     SubM,
     testResponse,
@@ -65,7 +65,7 @@ import Test.Tasty.HUnit
     testCase,
   )
 
-data TrailState e = TrailState
+data SimulationState e = SimulationState
   { inputs :: [ByteString],
     outputs :: [ByteString],
     store :: ClientConnectionStore e (SubM e)
@@ -73,17 +73,17 @@ data TrailState e = TrailState
 
 type Store e = ClientConnectionStore e (SubM e)
 
-type SubM e = StateT (TrailState e) IO
+type SubM e = StateT (SimulationState e) IO
 
-addOutput :: ByteString -> TrailState e -> ((), TrailState e)
-addOutput x (TrailState i xs st) = ((), TrailState i (xs <> [x]) st)
+addOutput :: ByteString -> SimulationState e -> ((), SimulationState e)
+addOutput x (SimulationState i xs st) = ((), SimulationState i (xs <> [x]) st)
 
-updateStore :: (Store e -> Store e) -> TrailState e -> ((), TrailState e)
-updateStore up (TrailState i o st) = ((), TrailState i o (up st))
+updateStore :: (Store e -> Store e) -> SimulationState e -> ((), SimulationState e)
+updateStore up (SimulationState i o st) = ((), SimulationState i o (up st))
 
-readInput :: TrailState e -> (ByteString, TrailState e)
-readInput (TrailState (i : ins) o s) = (i, TrailState ins o s)
-readInput (TrailState [] o s) = ("<Error>", TrailState [] o s)
+readInput :: SimulationState e -> (ByteString, SimulationState e)
+readInput (SimulationState (i : ins) o s) = (i, SimulationState ins o s)
+readInput (SimulationState [] o s) = ("<Error>", SimulationState [] o s)
 
 wsApp ::
   (Input WS -> Stream WS e (SubM e)) ->
@@ -101,16 +101,16 @@ wsApp api input =
 simulatePublish ::
   (GQLChannel e, Eq (StreamChannel e)) =>
   e ->
-  TrailState e ->
-  IO (TrailState e)
+  SimulationState e ->
+  IO (SimulationState e)
 simulatePublish event s = snd <$> runStateT (publish event (store s)) s
 
-trail ::
+simulate ::
   (Input WS -> Stream WS e (SubM e)) ->
   Input WS ->
-  TrailState e ->
-  IO (TrailState e)
-trail api input = fmap snd . runStateT (wsApp api input)
+  SimulationState e ->
+  IO (SimulationState e)
+simulate api input = fmap snd . runStateT (wsApp api input)
 
 expectedResponse :: [ByteString] -> [ByteString] -> IO ()
 expectedResponse expected value
