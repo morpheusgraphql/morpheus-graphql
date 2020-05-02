@@ -32,7 +32,7 @@ import Subscription.Utils
     apolloStart,
     apolloStop,
     inputsAreConsumed,
-    simulate,
+    simulateAll,
     simulatePublish,
     storeSubscriptions,
     testResponse,
@@ -52,7 +52,7 @@ simulateSubscriptions :: IO (Input WS, SimulationState EVENT)
 simulateSubscriptions = do
   input <- connect
   state <-
-    simulate
+    simulateAll
       api
       input
       ( SimulationState
@@ -66,16 +66,6 @@ simulateSubscriptions = do
           []
           empty
       )
-      -- execute startNewDeity "1"
-      >>= simulate api input
-      -- execute startNewDeity "2"
-      >>= simulate api input
-      -- execute startNewDeity "3"
-      >>= simulate api input
-      -- execute startNewHuman "4"
-      >>= simulate api input
-      -- execute stopSubscription "1"
-      >>= simulate api input
   pure (input, state)
 
 triggerSubsciption ::
