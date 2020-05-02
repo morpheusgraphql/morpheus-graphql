@@ -11,7 +11,7 @@
 
 ### minor
 
-- fixed subscription sessions
+- fixed subscription sessions, srarting new session does not affects old ones.
 - added tests for subscriptions
 
 ## 0.11.0 - 01.05.2020
