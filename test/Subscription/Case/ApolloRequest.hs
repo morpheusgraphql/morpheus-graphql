@@ -28,7 +28,6 @@ import Data.Semigroup ((<>))
 import Subscription.Utils
   ( SubM,
     TrailState (..),
-    expectedResponse,
     inputsAreConsumed,
     storeIsEmpty,
     stored,
@@ -39,10 +38,6 @@ import Subscription.Utils
 import Test.Tasty
   ( TestTree,
     testGroup,
-  )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
   )
 
 testUnknownType ::
@@ -64,6 +59,12 @@ testUnknownType api = do
         storeIsEmpty store
       ]
 
+simulateConnection :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
+simulateConnection api = do
+  input <- connect
+  state <- trail api input (TrailState ["{ \"type\":\"connection_init\" }"] [] empty)
+  pure (input, state)
+
 testConnectionInit ::
   ( Eq (StreamChannel e),
     GQLChannel e
@@ -71,8 +72,7 @@ testConnectionInit ::
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
 testConnectionInit api = do
-  input <- connect
-  TrailState {inputs, outputs, store} <- trail api input (TrailState ["{ \"type\":\"connection_init\" }"] [] empty)
+  (input, TrailState {inputs, outputs, store}) <- simulateConnection api
   pure $
     testGroup
       "connection init"
@@ -84,6 +84,33 @@ testConnectionInit api = do
         storedSingle store
       ]
 
+apolloQueryWrapper :: ByteString -> ByteString
+apolloQueryWrapper query = "{\"id\":\"1\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
+
+subscriptionQuery :: ByteString
+subscriptionQuery = "subscription MySubscription { newDeity { name }}"
+
+simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
+simulateStart api = do
+  (input, TrailState _ o s) <- simulateConnection api
+  state <- trail api input (TrailState [apolloQueryWrapper subscriptionQuery] o s)
+  pure (input, state)
+
+testSubscriptionStart ::
+  ( Eq (StreamChannel e),
+    GQLChannel e
+  ) =>
+  (Input WS -> Stream WS e (SubM e)) ->
+  IO TestTree
+testSubscriptionStart api = do
+  (_, TrailState {inputs, outputs, store}) <- simulateStart api
+  pure $
+    testGroup
+      "subscription start"
+      [ inputsAreConsumed inputs,
+        testResponse [] outputs
+      ]
+
 testApolloRequest ::
   ( Eq (StreamChannel e),
     GQLChannel e
@@ -93,4 +120,5 @@ testApolloRequest ::
 testApolloRequest api = do
   unknownType <- testUnknownType api
   connection_init <- testConnectionInit api
-  return $ testGroup "ApolloRequest" [unknownType, connection_init]
+  subscriptionStart <- testSubscriptionStart api
+  return $ testGroup "ApolloRequest" [unknownType, connection_init, subscriptionStart]
