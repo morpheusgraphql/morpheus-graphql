@@ -57,12 +57,6 @@ testUnknownType api = do
         storeIsEmpty store
       ]
 
-simulateConnection :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, SimulationState e)
-simulateConnection api = do
-  input <- connect
-  state <- simulate api input (SimulationState [apolloInit] [] empty)
-  pure (input, state)
-
 testConnectionInit ::
   ( Eq (StreamChannel e),
     GQLChannel e
@@ -70,7 +64,8 @@ testConnectionInit ::
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
 testConnectionInit api = do
-  (input, SimulationState {inputs, outputs, store}) <- simulateConnection api
+  input <- connect
+  SimulationState {inputs, outputs, store} <- simulate api input (SimulationState [apolloInit] [] empty)
   pure $
     testGroup
       "connection init"
@@ -85,33 +80,28 @@ testConnectionInit api = do
 startSub :: ByteString -> ByteString
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
-simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, SimulationState e)
-simulateStart api = do
-  (input, SimulationState _ o s) <- simulateConnection api
-  state0 <- simulate api input (SimulationState [startSub "1", startSub "5"] o s)
-  state <- simulate api input state0
-  pure (input, state)
-
 testSubscriptionStart ::
   ( Eq (StreamChannel e),
     GQLChannel e
   ) =>
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
-testSubscriptionStart api = do
-  (input, SimulationState {inputs, outputs, store}) <- simulateStart api
-  pure $
-    testGroup
-      "subscription start"
-      [ inputsAreConsumed inputs,
-        testResponse
-          []
-          outputs,
-        storeSubscriptions
-          input
-          ["1", "5"]
-          store
-      ]
+testSubscriptionStart api =
+  do
+    input <- connect
+    SimulationState {inputs, outputs, store} <- simulate api input (SimulationState [apolloInit, startSub "1", startSub "5"] [] empty)
+    pure $
+      testGroup
+        "subscription start"
+        [ inputsAreConsumed inputs,
+          testResponse
+            []
+            outputs,
+          storeSubscriptions
+            input
+            ["1", "5"]
+            store
+        ]
 
 testSubscriptionStop ::
   ( Eq (StreamChannel e),
@@ -120,8 +110,8 @@ testSubscriptionStop ::
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
 testSubscriptionStop api = do
-  (input, SimulationState _ o s) <- simulateStart api
-  SimulationState {inputs, outputs, store} <- simulate api input (SimulationState [apolloStop "1"] o s)
+  input <- connect
+  SimulationState {inputs, outputs, store} <- simulate api input (SimulationState [apolloInit, startSub "1", startSub "5", apolloStop "1"] [] empty)
   pure $
     testGroup
       "stop subscription"

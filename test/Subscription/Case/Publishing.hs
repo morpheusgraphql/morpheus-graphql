@@ -52,7 +52,7 @@ simulateSubscriptions :: IO (Input WS, SimulationState EVENT)
 simulateSubscriptions = do
   input <- connect
   state <-
-    simulateAll
+    simulate
       api
       input
       ( SimulationState

@@ -18,7 +18,6 @@ module Subscription.Utils
     apolloStop,
     apolloRes,
     apolloInit,
-    simulateAll,
   )
 where
 
@@ -111,22 +110,8 @@ simulate ::
   Input WS ->
   SimulationState e ->
   IO (SimulationState e)
-simulate api input = fmap snd . runStateT (wsApp api input)
-
-simulateAll ::
-  (Input WS -> Stream WS e (SubM e)) ->
-  Input WS ->
-  SimulationState e ->
-  IO (SimulationState e)
-simulateAll _ _ s@SimulationState {inputs = []} = pure s
-simulateAll api input s = simulate api input s >>= simulateAll api input
-
--- batchSimulation ::
---   (Input WS -> Stream WS e (SubM e)) ->
---   Input WS ->
---   SimulationState e ->
---   IO (SimulationState e)
--- batchSimulation api input = fmap snd . runStateT (wsApp api input)
+simulate _ _ s@SimulationState {inputs = []} = pure s
+simulate api input s = snd <$> runStateT (wsApp api input) s >>= simulate api input
 
 expectedResponse :: [ByteString] -> [ByteString] -> IO ()
 expectedResponse expected value
