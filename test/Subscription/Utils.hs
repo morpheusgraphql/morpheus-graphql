@@ -13,6 +13,7 @@ module Subscription.Utils
     storedSingle,
     stored,
     storeSubscriptions,
+    simulatePublish,
   )
 where
 
@@ -34,10 +35,12 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Subscription
   ( ClientConnectionStore,
+    GQLChannel (..),
     Input (..),
     Scope (..),
     WS,
     connectionSessionIds,
+    publish,
     runStreamWS,
     toList,
   )
@@ -83,6 +86,9 @@ wsApp api input =
         callback = state . addOutput
       }
     (api input)
+
+simulatePublish :: (GQLChannel e, Eq (StreamChannel e)) => e -> TrailState e -> IO (TrailState e)
+simulatePublish event s = snd <$> runStateT (publish event (store s)) s
 
 trail ::
   (Input WS -> Stream WS e (SubM e)) ->

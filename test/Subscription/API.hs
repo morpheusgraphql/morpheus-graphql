@@ -10,7 +10,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Subscription.API (api) where
+module Subscription.API (api, EVENT, Channel (..)) where
 
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
