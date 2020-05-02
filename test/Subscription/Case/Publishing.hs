@@ -9,10 +9,9 @@ where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Types
-  ( Input,
-    Stream,
+  ( Event (..),
+    Input,
   )
-import Data.Morpheus.Types (Event (..))
 import Data.Morpheus.Types.Internal.Subscription
   ( WS,
     connect,
@@ -21,14 +20,10 @@ import Data.Morpheus.Types.Internal.Subscription
 import Data.Semigroup ((<>))
 import Subscription.API (Channel (..), EVENT, api)
 import Subscription.Utils
-  ( SubM,
-    TrailState (..),
+  ( TrailState (..),
     inputsAreConsumed,
     simulatePublish,
-    storeIsEmpty,
     storeSubscriptions,
-    stored,
-    storedSingle,
     testResponse,
     trail,
   )
@@ -36,12 +31,6 @@ import Test.Tasty
   ( TestTree,
     testGroup,
   )
-
-simulateConnection :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
-simulateConnection api = do
-  input <- connect
-  state <- trail api input (TrailState ["{ \"type\":\"connection_init\" }"] [] empty)
-  pure (input, state)
 
 apolloQueryWrapper :: ByteString -> ByteString -> ByteString
 apolloQueryWrapper query sid = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
@@ -60,9 +49,11 @@ stopSubscription x = "{\"id\":\"" <> x <> "\",\"type\":\"stop\"}"
 
 simulateSubscriptions :: IO (Input WS, TrailState EVENT)
 simulateSubscriptions = do
-  (input, TrailState _ o s) <- simulateConnection api
+  input <- connect
   state <-
-    trail api input (TrailState [apolloStart "1", apolloStart "5", stopSubscription "1"] o s)
+    trail api input (TrailState ["{ \"type\":\"connection_init\" }", apolloStart "1", apolloStart "5", stopSubscription "1"] [] empty)
+      -- execute apolloStart "1"
+      >>= trail api input
       -- execute apolloStart "5"
       >>= trail api input
       -- execute stopSubscription "1"
