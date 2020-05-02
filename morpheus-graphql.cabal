@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1fc4244e03bfb28cd9107749fb016823a883bfa746cf62f11a6bb2c42d6071ae
+-- hash: 168745207d816b7fa7e5e1b555f1a190727abd70a29e8f762f83e94c47c8dc51
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -316,7 +316,6 @@ data-files:
     test/Feature/WrappedTypeName/ignoreQueryResolver/response.json
     test/Feature/WrappedTypeName/ignoreSubscriptionResolver/response.json
     test/Feature/WrappedTypeName/validWrappedTypes/response.json
-    test/Subscription/cases.json
 
 source-repository head
   type: git
