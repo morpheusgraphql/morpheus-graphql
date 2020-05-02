@@ -14,6 +14,10 @@ module Subscription.Utils
     stored,
     storeSubscriptions,
     simulatePublish,
+    apolloStart,
+    apolloStop,
+    apolloRes,
+    apolloInit,
   )
 where
 
@@ -172,3 +176,15 @@ storeSubscriptions (Init uuid) sids cStore = checkSession (lookup uuid (toList c
         $ " must store connection \"" <> show uuid <> "\" but: "
           <> show
             cStore
+
+apolloStart :: ByteString -> ByteString -> ByteString
+apolloStart query sid = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
+
+apolloStop :: ByteString -> ByteString
+apolloStop x = "{\"id\":\"" <> x <> "\",\"type\":\"stop\"}"
+
+apolloRes :: ByteString -> ByteString -> ByteString
+apolloRes sid value = "{\"id\":\"" <> sid <> "\",\"type\":\"data\",\"payload\":{\"data\":" <> value <> "}}"
+
+apolloInit :: ByteString
+apolloInit = "{ \"type\":\"connection_init\" }"

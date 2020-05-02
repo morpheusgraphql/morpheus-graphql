@@ -17,10 +17,13 @@ import Data.Morpheus.Types.Internal.Subscription
     connect,
     empty,
   )
-import Data.Semigroup ((<>))
 import Subscription.API (Channel (..), EVENT, api)
 import Subscription.Utils
   ( TrailState (..),
+    apolloInit,
+    apolloRes,
+    apolloStart,
+    apolloStop,
     inputsAreConsumed,
     simulatePublish,
     storeSubscriptions,
@@ -32,26 +35,14 @@ import Test.Tasty
     testGroup,
   )
 
-apolloQueryWrapper :: ByteString -> ByteString -> ByteString
-apolloQueryWrapper query sid = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
-
-apolloResWrapper :: ByteString -> ByteString -> ByteString
-apolloResWrapper sid value = "{\"id\":\"" <> sid <> "\",\"type\":\"data\",\"payload\":{\"data\":" <> value <> "}}"
-
-subscriptionQuery :: ByteString
-subscriptionQuery = "subscription MySubscription { newDeity { name }}"
-
-apolloStart :: ByteString -> ByteString
-apolloStart = apolloQueryWrapper subscriptionQuery
-
-stopSubscription :: ByteString -> ByteString
-stopSubscription x = "{\"id\":\"" <> x <> "\",\"type\":\"stop\"}"
+start :: ByteString -> ByteString
+start = apolloStart "subscription MySubscription { newDeity { name }}"
 
 simulateSubscriptions :: IO (Input WS, TrailState EVENT)
 simulateSubscriptions = do
   input <- connect
   state <-
-    trail api input (TrailState ["{ \"type\":\"connection_init\" }", apolloStart "1", apolloStart "5", stopSubscription "1"] [] empty)
+    trail api input (TrailState [apolloInit, start "1", start "5", apolloStop "1"] [] empty)
       -- execute apolloStart "1"
       >>= trail api input
       -- execute apolloStart "5"
@@ -70,7 +61,7 @@ triggerSubsciption = do
       "publish event"
       [ inputsAreConsumed inputs,
         testResponse
-          [ apolloResWrapper
+          [ apolloRes
               "5"
               "{\"newDeity\":{\"name\":\"testName\"}}"
           ]
