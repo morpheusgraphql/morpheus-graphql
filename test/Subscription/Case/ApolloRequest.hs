@@ -119,6 +119,31 @@ testSubscriptionStart api = do
           store
       ]
 
+stopSubscription :: ByteString -> ByteString
+stopSubscription x = "{\"id\":\"" <> x <> "\",\"type\":\"stop\"}"
+
+testSubscriptionStop ::
+  ( Eq (StreamChannel e),
+    GQLChannel e
+  ) =>
+  (Input WS -> Stream WS e (SubM e)) ->
+  IO TestTree
+testSubscriptionStop api = do
+  (input, TrailState _ o s) <- simulateStart api
+  TrailState {inputs, outputs, store} <- trail api input (TrailState [stopSubscription "1"] o s)
+  pure $
+    testGroup
+      "stop subscription"
+      [ inputsAreConsumed inputs,
+        testResponse
+          []
+          outputs,
+        storeSubscriptions
+          input
+          ["5"]
+          store
+      ]
+
 testApolloRequest ::
   ( Eq (StreamChannel e),
     GQLChannel e
@@ -128,5 +153,6 @@ testApolloRequest ::
 testApolloRequest api = do
   unknownType <- testUnknownType api
   connection_init <- testConnectionInit api
-  subscriptionStart <- testSubscriptionStart api
-  return $ testGroup "ApolloRequest" [unknownType, connection_init, subscriptionStart]
+  start <- testSubscriptionStart api
+  stop <- testSubscriptionStop api
+  return $ testGroup "ApolloRequest" [unknownType, connection_init, start, stop]
