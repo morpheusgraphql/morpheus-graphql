@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Subscription.Utils
@@ -9,6 +10,8 @@ module Subscription.Utils
     testResponse,
     inputsAreConsumed,
     storeIsEmpty,
+    storedSingle,
+    stored,
   )
 where
 
@@ -18,16 +21,20 @@ import Control.Monad.State.Lazy
     state,
   )
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Maybe
+  ( isJust,
+  )
 import Data.Morpheus.Types
   ( Input,
     Stream,
   )
 import Data.Morpheus.Types.Internal.Subscription
   ( ClientConnectionStore,
+    Input (..),
     Scope (..),
     WS,
     runStreamWS,
-    size,
+    toList,
   )
 import Data.Semigroup ((<>))
 import Test.Tasty
@@ -88,7 +95,7 @@ expectedResponse expected value
 testResponse :: [ByteString] -> [ByteString] -> TestTree
 testResponse expected =
   testCase
-    "response"
+    "expected response"
     . expectedResponse
       expected
 
@@ -101,11 +108,33 @@ inputsAreConsumed =
 
 storeIsEmpty :: Store e -> TestTree
 storeIsEmpty cStore
-  | size cStore == 0 =
-    testCase "connectionStore is empty" $ return ()
+  | null (toList cStore) =
+    testCase "connectionStore: is empty" $ return ()
   | otherwise =
-    testCase "connectionStore is empty"
+    testCase "connectionStore: is empty"
       $ assertFailure
       $ " must be empty but "
+        <> show
+          cStore
+
+storedSingle :: Store e -> TestTree
+storedSingle cStore
+  | length (toList cStore) == 1 =
+    testCase "stored single connection" $ return ()
+  | otherwise =
+    testCase "stored single connection"
+      $ assertFailure
+      $ "connectionStore must store single connection"
+        <> show
+          cStore
+
+stored :: Input WS -> Store e -> TestTree
+stored (Init uuid) cStore
+  | isJust (lookup uuid (toList cStore)) =
+    testCase "stored connection" $ return ()
+  | otherwise =
+    testCase "stored connection"
+      $ assertFailure
+      $ " must store connection \"" <> show uuid <> "\" but: "
         <> show
           cStore

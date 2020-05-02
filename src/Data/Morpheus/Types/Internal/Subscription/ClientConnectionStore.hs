@@ -6,6 +6,7 @@ module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ID,
     Session,
     ClientConnectionStore,
+    ClientConnection,
     Updates (..),
     startSession,
     endSession,
@@ -13,7 +14,7 @@ module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
     insert,
     delete,
     publish,
-    size,
+    toList,
   )
 where
 
@@ -26,7 +27,6 @@ import qualified Data.HashMap.Lazy as HM
     elems,
     empty,
     insert,
-    size,
     toList,
   )
 import Data.List (intersect)
@@ -137,8 +137,8 @@ mapStore f = ClientConnectionStore . f . unpackStore
 elems :: ClientConnectionStore e m -> [ClientConnection e m]
 elems = HM.elems . unpackStore
 
-size :: ClientConnectionStore e m -> Int
-size = HM.size . unpackStore
+toList :: ClientConnectionStore e m -> [(UUID, ClientConnection e m)]
+toList = HM.toList . unpackStore
 
 instance Empty (ClientConnectionStore e m) where
   empty = ClientConnectionStore HM.empty

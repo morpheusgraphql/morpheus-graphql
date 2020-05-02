@@ -31,6 +31,8 @@ import Subscription.Utils
     expectedResponse,
     inputsAreConsumed,
     storeIsEmpty,
+    stored,
+    storedSingle,
     testResponse,
     trail,
   )
@@ -42,58 +44,6 @@ import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
   )
-import Types
-  ( Case (..),
-    Name,
-    testWith,
-  )
-
--- packGQLRequest :: ByteString -> Maybe Value -> GQLRequest
--- packGQLRequest queryBS variables = GQLRequest
---   { operationName = Nothing
---   , query = LT.toStrict $ decodeUtf8 queryBS
---   , variables
---   }
-
--- data Case = Case
---   { path        :: Text
---   , description :: String
---   } deriving (Generic, FromJSON)
-
--- testSubscription :: (GQLRequest -> IO GQLResponse) -> Text -> IO TestTree
--- testSubscription api dir = do
---   cases' <- getCases (unpack dir)
---   test' <- sequence $ testByFiles api <$> map (\x -> x {path = T.concat [dir, "/", path x]}) cases'
---   return $ testGroup (unpack dir) test'
-
--- testByFiles :: (GQLRequest -> IO GQLResponse) -> Case -> IO TestTree
--- testByFiles testApi Case {path, description} = do
---   testCaseQuery <- getGQLBody path
---   testCaseVariables <- maybeVariables path
---   expectedResponse <- getResponseBody path
---   actualResponse <- encode <$> testApi (packGQLRequest testCaseQuery testCaseVariables)
---   case decode actualResponse of
---     Nothing -> assertFailure "Bad Response"
---     Just response -> return $ testCase (unpack path ++ " | " ++ description) $ customTest expectedResponse response
---       where customTest expected value
---               | expected == value = return ()
---               | otherwise =
---                 assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
-
-testSubCase ::
-  ( Eq (StreamChannel e),
-    GQLChannel e
-  ) =>
-  (Input WS -> Stream WS e (SubM e)) ->
-  IO TestTree
-testSubCase api = do
-  input <- connect
-  TrailState {inputs, outputs, store} <- trail api input (TrailState ["{ \"type\":\"bla\" }"] [] empty)
-  pure
-    $ testCase "fail on unknown request type"
-    $ expectedResponse
-      ["Unknown Request type \"bla\"."]
-      outputs
 
 testUnknownType ::
   ( Eq (StreamChannel e),
@@ -114,6 +64,26 @@ testUnknownType api = do
         storeIsEmpty store
       ]
 
+testConnectionInit ::
+  ( Eq (StreamChannel e),
+    GQLChannel e
+  ) =>
+  (Input WS -> Stream WS e (SubM e)) ->
+  IO TestTree
+testConnectionInit api = do
+  input <- connect
+  TrailState {inputs, outputs, store} <- trail api input (TrailState ["{ \"type\":\"connection_init\" }"] [] empty)
+  pure $
+    testGroup
+      "connection init"
+      [ inputsAreConsumed inputs,
+        testResponse
+          []
+          outputs,
+        stored input store,
+        storedSingle store
+      ]
+
 testApolloRequest ::
   ( Eq (StreamChannel e),
     GQLChannel e
@@ -122,4 +92,5 @@ testApolloRequest ::
   IO TestTree
 testApolloRequest api = do
   unknownType <- testUnknownType api
-  return $ testGroup "ApolloRequest" [unknownType]
+  connection_init <- testConnectionInit api
+  return $ testGroup "ApolloRequest" [unknownType, connection_init]
