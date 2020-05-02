@@ -140,7 +140,7 @@ stored (Init uuid) cStore
   | otherwise =
     testCase "stored connection"
       $ assertFailure
-      $ " must store connection \"" <> show uuid <> "\" but: "
+      $ " must store connection \"" <> show uuid <> "\" but stored: "
         <> show
           cStore
 
@@ -157,9 +157,9 @@ storeSubscriptions (Init uuid) sids cStore = checkSession (lookup uuid (toList c
       | otherwise =
         testCase "stored subscriptions"
           $ assertFailure
-          $ " must store subscriptions \"" <> show sids <> "\" but: "
+          $ " must store subscriptions with id \"" <> show sids <> "\" but stored: "
             <> show
-              conn
+              (connectionSessionIds conn)
     checkSession _ =
       testCase "stored connection"
         $ assertFailure
