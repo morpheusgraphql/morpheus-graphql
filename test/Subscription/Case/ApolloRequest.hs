@@ -16,8 +16,6 @@ import Data.Morpheus.Types
 import Data.Morpheus.Types.Internal.Subscription
   ( GQLChannel (..),
     WS,
-    connect,
-    empty,
   )
 import Subscription.Utils
   ( SimulationState (..),
@@ -26,12 +24,12 @@ import Subscription.Utils
     apolloStart,
     apolloStop,
     inputsAreConsumed,
-    simulate,
     storeIsEmpty,
     storeSubscriptions,
     stored,
     storedSingle,
     testResponse,
+    testSimulation,
   )
 import Test.Tasty
   ( TestTree,
@@ -44,24 +42,20 @@ testUnknownType ::
   ) =>
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
-testUnknownType api = do
-  input <- connect
-  SimulationState {inputs, outputs, store} <- simulate api input (SimulationState ["{ \"type\":\"bla\" }"] [] empty)
-  pure $
-    testGroup
-      "unknown request type"
-      [ inputsAreConsumed inputs,
-        testResponse
-          ["Unknown Request type \"bla\"."]
-          outputs,
-        storeIsEmpty store
-      ]
-
-simulateConnection :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, SimulationState e)
-simulateConnection api = do
-  input <- connect
-  state <- simulate api input (SimulationState [apolloInit] [] empty)
-  pure (input, state)
+testUnknownType =
+  testSimulation
+    test
+    ["{ \"type\":\"bla\" }"]
+  where
+    test _ SimulationState {inputs, outputs, store} =
+      testGroup
+        "unknown request type"
+        [ inputsAreConsumed inputs,
+          testResponse
+            ["Unknown Request type \"bla\"."]
+            outputs,
+          storeIsEmpty store
+        ]
 
 testConnectionInit ::
   ( Eq (StreamChannel e),
@@ -69,28 +63,21 @@ testConnectionInit ::
   ) =>
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
-testConnectionInit api = do
-  (input, SimulationState {inputs, outputs, store}) <- simulateConnection api
-  pure $
-    testGroup
-      "connection init"
-      [ inputsAreConsumed inputs,
-        testResponse
-          []
-          outputs,
-        stored input store,
-        storedSingle store
-      ]
+testConnectionInit = testSimulation test [apolloInit]
+  where
+    test input SimulationState {inputs, outputs, store} =
+      testGroup
+        "connection init"
+        [ inputsAreConsumed inputs,
+          testResponse
+            []
+            outputs,
+          stored input store,
+          storedSingle store
+        ]
 
 startSub :: ByteString -> ByteString
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
-
-simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, SimulationState e)
-simulateStart api = do
-  (input, SimulationState _ o s) <- simulateConnection api
-  state0 <- simulate api input (SimulationState [startSub "1", startSub "5"] o s)
-  state <- simulate api input state0
-  pure (input, state)
 
 testSubscriptionStart ::
   ( Eq (StreamChannel e),
@@ -98,20 +85,26 @@ testSubscriptionStart ::
   ) =>
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
-testSubscriptionStart api = do
-  (input, SimulationState {inputs, outputs, store}) <- simulateStart api
-  pure $
-    testGroup
-      "subscription start"
-      [ inputsAreConsumed inputs,
-        testResponse
-          []
-          outputs,
-        storeSubscriptions
-          input
-          ["1", "5"]
-          store
-      ]
+testSubscriptionStart =
+  testSimulation
+    test
+    [ apolloInit,
+      startSub "1",
+      startSub "5"
+    ]
+  where
+    test input SimulationState {inputs, outputs, store} =
+      testGroup
+        "subscription start"
+        [ inputsAreConsumed inputs,
+          testResponse
+            []
+            outputs,
+          storeSubscriptions
+            input
+            ["1", "5"]
+            store
+        ]
 
 testSubscriptionStop ::
   ( Eq (StreamChannel e),
@@ -119,21 +112,27 @@ testSubscriptionStop ::
   ) =>
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
-testSubscriptionStop api = do
-  (input, SimulationState _ o s) <- simulateStart api
-  SimulationState {inputs, outputs, store} <- simulate api input (SimulationState [apolloStop "1"] o s)
-  pure $
-    testGroup
-      "stop subscription"
-      [ inputsAreConsumed inputs,
-        testResponse
-          []
-          outputs,
-        storeSubscriptions
-          input
-          ["5"]
-          store
-      ]
+testSubscriptionStop =
+  testSimulation
+    test
+    [ apolloInit,
+      startSub "1",
+      startSub "5",
+      apolloStop "1"
+    ]
+  where
+    test input SimulationState {inputs, outputs, store} =
+      testGroup
+        "stop subscription"
+        [ inputsAreConsumed inputs,
+          testResponse
+            []
+            outputs,
+          storeSubscriptions
+            input
+            ["5"]
+            store
+        ]
 
 testApolloRequest ::
   ( Eq (StreamChannel e),

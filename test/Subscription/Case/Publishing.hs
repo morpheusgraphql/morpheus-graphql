@@ -66,16 +66,6 @@ simulateSubscriptions = do
           []
           empty
       )
-      -- execute startNewDeity "1"
-      >>= simulate api input
-      -- execute startNewDeity "2"
-      >>= simulate api input
-      -- execute startNewDeity "3"
-      >>= simulate api input
-      -- execute startNewHuman "4"
-      >>= simulate api input
-      -- execute stopSubscription "1"
-      >>= simulate api input
   pure (input, state)
 
 triggerSubsciption ::
