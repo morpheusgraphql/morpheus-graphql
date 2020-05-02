@@ -4,7 +4,15 @@
 
 ## New features
 
-- exposed morpheus parser `Data.Morpheus.Parsing.Internal`
+- exposed:
+  - morpheus parser `Data.Morpheus.Parsing.Internal`
+  - `Data.Morpheus.Types.Internal.Resolving`
+  - `Data.Morpheus.Types.Internal.Subscription`
+
+### minor
+
+- fixed subscription sessions
+- added tests for subscriptions
 
 ## 0.11.0 - 01.05.2020
 
