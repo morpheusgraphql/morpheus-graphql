@@ -19,10 +19,12 @@ import Data.Morpheus.Types.Internal.Subscription
     connect,
     empty,
   )
-import Data.Semigroup ((<>))
 import Subscription.Utils
   ( SubM,
     TrailState (..),
+    apolloInit,
+    apolloStart,
+    apolloStop,
     inputsAreConsumed,
     storeIsEmpty,
     storeSubscriptions,
@@ -58,7 +60,7 @@ testUnknownType api = do
 simulateConnection :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
 simulateConnection api = do
   input <- connect
-  state <- trail api input (TrailState ["{ \"type\":\"connection_init\" }"] [] empty)
+  state <- trail api input (TrailState [apolloInit] [] empty)
   pure (input, state)
 
 testConnectionInit ::
@@ -80,19 +82,13 @@ testConnectionInit api = do
         storedSingle store
       ]
 
-apolloQueryWrapper :: ByteString -> ByteString -> ByteString
-apolloQueryWrapper query sid = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
-
-subscriptionQuery :: ByteString
-subscriptionQuery = "subscription MySubscription { newDeity { name }}"
-
-apolloStart :: ByteString -> ByteString
-apolloStart = apolloQueryWrapper subscriptionQuery
+startSub :: ByteString -> ByteString
+startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
 simulateStart :: (Input WS -> Stream WS e (SubM e)) -> IO (Input WS, TrailState e)
 simulateStart api = do
   (input, TrailState _ o s) <- simulateConnection api
-  state0 <- trail api input (TrailState [apolloStart "1", apolloStart "5"] o s)
+  state0 <- trail api input (TrailState [startSub "1", startSub "5"] o s)
   state <- trail api input state0
   pure (input, state)
 
@@ -117,9 +113,6 @@ testSubscriptionStart api = do
           store
       ]
 
-stopSubscription :: ByteString -> ByteString
-stopSubscription x = "{\"id\":\"" <> x <> "\",\"type\":\"stop\"}"
-
 testSubscriptionStop ::
   ( Eq (StreamChannel e),
     GQLChannel e
@@ -128,7 +121,7 @@ testSubscriptionStop ::
   IO TestTree
 testSubscriptionStop api = do
   (input, TrailState _ o s) <- simulateStart api
-  TrailState {inputs, outputs, store} <- trail api input (TrailState [stopSubscription "1"] o s)
+  TrailState {inputs, outputs, store} <- trail api input (TrailState [apolloStop "1"] o s)
   pure $
     testGroup
       "stop subscription"
