@@ -29,6 +29,9 @@ import Subscription.Utils
   ( SubM,
     TrailState (..),
     expectedResponse,
+    inputsAreConsumed,
+    storeIsEmpty,
+    testResponse,
     trail,
   )
 import Test.Tasty
@@ -36,7 +39,8 @@ import Test.Tasty
     testGroup,
   )
 import Test.Tasty.HUnit
-  ( testCase,
+  ( assertEqual,
+    testCase,
   )
 import Types
   ( Case (..),
@@ -91,6 +95,25 @@ testSubCase api = do
       ["Unknown Request type \"bla\"."]
       outputs
 
+testUnknownType ::
+  ( Eq (StreamChannel e),
+    GQLChannel e
+  ) =>
+  (Input WS -> Stream WS e (SubM e)) ->
+  IO TestTree
+testUnknownType api = do
+  input <- connect
+  TrailState {inputs, outputs, store} <- trail api input (TrailState ["{ \"type\":\"bla\" }"] [] empty)
+  pure $
+    testGroup
+      "unknown request type"
+      [ inputsAreConsumed inputs,
+        testResponse
+          ["Unknown Request type \"bla\"."]
+          outputs,
+        storeIsEmpty store
+      ]
+
 testApolloRequest ::
   ( Eq (StreamChannel e),
     GQLChannel e
@@ -98,5 +121,5 @@ testApolloRequest ::
   (Input WS -> Stream WS e (SubM e)) ->
   IO TestTree
 testApolloRequest api = do
-  subscription <- testSubCase api
-  return $ testGroup "ApolloRequest" [subscription]
+  unknownType <- testUnknownType api
+  return $ testGroup "ApolloRequest" [unknownType]

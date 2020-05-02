@@ -28,6 +28,7 @@ module Data.Morpheus.Types.Internal.Subscription
     GQLChannel (..),
     ClientConnectionStore,
     empty,
+    size,
   )
 where
 
@@ -57,6 +58,7 @@ import Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ClientConnectionStore,
     delete,
     publish,
+    size,
   )
 import Data.Morpheus.Types.Internal.Subscription.Stream
   ( HTTP,

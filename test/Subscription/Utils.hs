@@ -6,6 +6,9 @@ module Subscription.Utils
     trail,
     expectedResponse,
     SubM,
+    testResponse,
+    inputsAreConsumed,
+    storeIsEmpty,
   )
 where
 
@@ -24,10 +27,16 @@ import Data.Morpheus.Types.Internal.Subscription
     Scope (..),
     WS,
     runStreamWS,
+    size,
   )
 import Data.Semigroup ((<>))
+import Test.Tasty
+  ( TestTree,
+  )
 import Test.Tasty.HUnit
-  ( assertFailure,
+  ( assertEqual,
+    assertFailure,
+    testCase,
   )
 
 data TrailState e = TrailState
@@ -36,12 +45,14 @@ data TrailState e = TrailState
     store :: ClientConnectionStore e (SubM e)
   }
 
+type Store e = ClientConnectionStore e (SubM e)
+
 type SubM e = StateT (TrailState e) IO
 
 addOutput :: ByteString -> TrailState e -> ((), TrailState e)
 addOutput x (TrailState i xs st) = ((), TrailState i (xs <> [x]) st)
 
-updateStore :: (ClientConnectionStore e (SubM e) -> ClientConnectionStore e (SubM e)) -> TrailState e -> ((), TrailState e)
+updateStore :: (Store e -> Store e) -> TrailState e -> ((), TrailState e)
 updateStore up (TrailState i o st) = ((), TrailState i o (up st))
 
 readInput :: TrailState e -> (ByteString, TrailState e)
@@ -73,3 +84,28 @@ expectedResponse expected value
   | expected == value = return ()
   | otherwise =
     assertFailure $ "expected: \n " <> show expected <> " \n but got: \n " <> show value
+
+testResponse :: [ByteString] -> [ByteString] -> TestTree
+testResponse expected =
+  testCase
+    "response"
+    . expectedResponse
+      expected
+
+inputsAreConsumed :: [ByteString] -> TestTree
+inputsAreConsumed =
+  testCase "inputs are consumed"
+    . assertEqual
+      "input stream should be consumed"
+      []
+
+storeIsEmpty :: Store e -> TestTree
+storeIsEmpty cStore
+  | size cStore == 0 =
+    testCase "connectionStore is empty" $ return ()
+  | otherwise =
+    testCase "connectionStore is empty"
+      $ assertFailure
+      $ " must be empty but "
+        <> show
+          cStore
