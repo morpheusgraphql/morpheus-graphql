@@ -2,19 +2,14 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Subscription.TestSubscription
-  ( testSubscription,
+module Subscription.Case.ApolloRequest
+  ( testApolloRequest,
     SubM,
   )
 where
 
 -- import qualified Data.Text.Lazy             as LT (toStrict)
 -- import           Data.Text.Lazy.Encoding    (decodeUtf8)
-import Control.Monad.State.Lazy
-  ( StateT,
-    runStateT,
-    state,
-  )
 import Data.ByteString.Lazy.Char8 (ByteString)
 -- import qualified Data.ByteString.Lazy.Char8 as LB
 --   ( unpack,
@@ -24,22 +19,24 @@ import Data.Morpheus.Types
     Stream,
   )
 import Data.Morpheus.Types.Internal.Subscription
-  ( ClientConnectionStore,
-    GQLChannel (..),
-    Scope (..),
+  ( GQLChannel (..),
     WS,
     connect,
     empty,
-    runStreamWS,
   )
 import Data.Semigroup ((<>))
+import Subscription.Utils
+  ( SubM,
+    TrailState (..),
+    expectedResponse,
+    trail,
+  )
 import Test.Tasty
   ( TestTree,
     testGroup,
   )
 import Test.Tasty.HUnit
-  ( assertFailure,
-    testCase,
+  ( testCase,
   )
 import Types
   ( Case (..),
@@ -79,72 +76,27 @@ import Types
 --               | otherwise =
 --                 assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
 
-data Session e = Session
-  { inputs :: [ByteString],
-    outputs :: [ByteString],
-    store :: ClientConnectionStore e (SubM e)
-  }
-
-type SubM e = StateT (Session e) IO
-
-mockWSApp ::
-  (Input WS -> Stream WS e (SubM e)) ->
-  Input WS ->
-  SubM e ()
-mockWSApp api input =
-  runStreamWS
-    ScopeWS
-      { update = state . updateStore,
-        -- use quick check for responce type
-        listener = state readInput,
-        callback = state . addOutput
-      }
-    (api input)
-
-addOutput :: ByteString -> Session e -> ((), Session e)
-addOutput x (Session i xs st) = ((), Session i (xs <> [x]) st)
-
-updateStore :: (ClientConnectionStore e (SubM e) -> ClientConnectionStore e (SubM e)) -> Session e -> ((), Session e)
-updateStore up (Session i o st) = ((), Session i o (up st))
-
-readInput :: Session e -> (ByteString, Session e)
-readInput (Session (i : inputs) o s) = (i, Session inputs o s)
-readInput (Session [] o s) = ("<Error>", Session [] o s)
-
-testSubscription ::
-  ( Eq (StreamChannel e),
-    GQLChannel e
-  ) =>
-  (Input WS -> Stream WS e (SubM e)) ->
-  Name ->
-  IO TestTree
-testSubscription api = testWith (testSubCase api)
-
-startCase ::
-  (Input WS -> Stream WS e (SubM e)) ->
-  Input WS ->
-  [ByteString] ->
-  IO (Session e)
-startCase api input inputs = snd <$> runStateT (mockWSApp api input) (Session inputs [] empty)
-
 testSubCase ::
   ( Eq (StreamChannel e),
     GQLChannel e
   ) =>
   (Input WS -> Stream WS e (SubM e)) ->
-  Case ->
   IO TestTree
-testSubCase api Case {path, description} = do
+testSubCase api = do
   input <- connect
-  Session {inputs, outputs, store} <- startCase api input ["{ \"type\":\"bla\" }"]
+  TrailState {inputs, outputs, store} <- trail api input (TrailState ["{ \"type\":\"bla\" }"] [] empty)
   pure
     $ testCase "fail on unknown request type"
-    $ expectedStream
+    $ expectedResponse
       ["Unknown Request type \"bla\"."]
       outputs
 
-expectedStream :: [ByteString] -> [ByteString] -> IO ()
-expectedStream expected value
-  | expected == value = return ()
-  | otherwise =
-    assertFailure $ "expected: \n " <> show expected <> " \n but got: \n " <> show value
+testApolloRequest ::
+  ( Eq (StreamChannel e),
+    GQLChannel e
+  ) =>
+  (Input WS -> Stream WS e (SubM e)) ->
+  IO TestTree
+testApolloRequest api = do
+  subscription <- testSubCase api
+  return $ testGroup "ApolloRequest" [subscription]

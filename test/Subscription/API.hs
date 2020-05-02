@@ -22,7 +22,7 @@ import Data.Morpheus.Types
     subscribe,
   )
 import Data.Text (Text)
-import Subscription.TestSubscription (SubM)
+import Subscription.Utils (SubM)
 
 data Channel
   = Channel
