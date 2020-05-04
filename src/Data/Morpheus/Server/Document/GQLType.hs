@@ -11,8 +11,12 @@ where
 
 --
 -- MORPHEUS
-import Data.Morpheus.Internal.Declare
-  ( tyConArgs,
+import Data.Morpheus.Internal.TH
+  ( instanceHeadT,
+    instanceProxyFunD,
+    tyConArgs,
+    typeInstanceDec,
+    typeT,
   )
 import Data.Morpheus.Kind
   ( ENUM,
@@ -33,12 +37,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeD (..),
     isObject,
     isSchemaTypeName,
-  )
-import Data.Morpheus.Types.Internal.TH
-  ( instanceHeadT,
-    instanceProxyFunD,
-    typeInstanceDec,
-    typeT,
   )
 import Data.Semigroup ((<>))
 import Data.Text

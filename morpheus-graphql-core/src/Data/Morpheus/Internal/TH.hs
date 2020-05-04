@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -8,18 +9,29 @@
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Data.Morpheus.Internal.Declare
+module Data.Morpheus.Internal.TH
   ( declareType,
-    isEnum,
     tyConArgs,
     Scope (..),
+    apply,
+    applyT,
+    typeT,
+    instanceHeadT,
+    instanceProxyFunD,
+    instanceFunD,
+    instanceHeadMultiT,
+    destructRecord,
+    typeInstanceDec,
+    infoTyVars,
+    decArgs,
   )
 where
 
 import Data.Maybe (maybe)
 -- MORPHEUS
 import Data.Morpheus.Internal.Utils
-  ( nameSpaceType,
+  ( isEnum,
+    nameSpaceType,
     nameSpaceWith,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -40,7 +52,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( UnSubResolver,
   )
 import Data.Semigroup ((<>))
-import Data.Text (unpack)
+import Data.Text (Text, unpack)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
@@ -119,5 +131,47 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
                 ------------------------------------------------
                 result = declareTypeRef (maybe False isSubscription kindD) fieldType
 
-isEnum :: [ConsD] -> Bool
-isEnum = all (null . cFields)
+apply :: Name -> [Q Exp] -> Q Exp
+apply n = foldl appE (conE n)
+
+applyT :: Name -> [Q Type] -> Q Type
+applyT name = foldl appT (conT name)
+
+typeT :: Name -> [Text] -> Q Type
+typeT name li = applyT name (map (varT . mkName . unpack) li)
+
+instanceHeadT :: Name -> Text -> [Text] -> Q Type
+instanceHeadT cName iType tArgs = applyT cName [applyT (mkName $ unpack iType) (map (varT . mkName . unpack) tArgs)]
+
+instanceProxyFunD :: (Name, ExpQ) -> DecQ
+instanceProxyFunD (name, body) = instanceFunD name ["_"] body
+
+instanceFunD :: Name -> [Text] -> ExpQ -> Q Dec
+instanceFunD name args body = funD name [clause (map (varP . mkName . unpack) args) (normalB body) []]
+
+instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
+instanceHeadMultiT className iType li = applyT className (iType : li)
+
+-- "User" -> ["name","id"] -> (User name id)
+destructRecord :: Text -> [Text] -> PatQ
+destructRecord conName fields = conP (mkName $ unpack conName) (map (varP . mkName . unpack) fields)
+
+typeInstanceDec :: Name -> Type -> Type -> Dec
+
+#if MIN_VERSION_template_haskell(2,15,0)
+-- fix breaking changes
+typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
+#else
+--
+typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
+#endif
+
+infoTyVars :: Info -> [TyVarBndr]
+infoTyVars (TyConI x) = decArgs x
+infoTyVars _ = []
+
+decArgs :: Dec -> [TyVarBndr]
+decArgs (DataD _ _ args _ _ _) = args
+decArgs (NewtypeD _ _ args _ _ _) = args
+decArgs (TySynD _ args _) = args
+decArgs _ = []

@@ -26,7 +26,7 @@ import Data.Morpheus.Error.Warning
   ( gqlWarnings,
     renderGQLErrors,
   )
-import Data.Morpheus.Internal.Declare
+import Data.Morpheus.Internal.TH
   ( Scope (..),
     declareType,
   )

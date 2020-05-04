@@ -13,6 +13,7 @@ where
 
 -- MORPHEUS
 
+import Data.Morpheus.Internal.TH (infoTyVars)
 import Data.Morpheus.Internal.Utils
   ( capital,
   )
@@ -37,7 +38,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Operation
   ( Listable (..),
   )
-import Data.Morpheus.Types.Internal.TH (infoTyVars)
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Language.Haskell.TH

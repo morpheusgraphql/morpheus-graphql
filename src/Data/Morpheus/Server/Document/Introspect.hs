@@ -13,7 +13,14 @@ where
 
 import Data.Maybe (maybeToList)
 -- MORPHEUS
-import Data.Morpheus.Internal.Declare (tyConArgs)
+import Data.Morpheus.Internal.TH
+  ( instanceFunD,
+    instanceHeadMultiT,
+    instanceHeadT,
+    instanceProxyFunD,
+    tyConArgs,
+    typeT,
+  )
 import Data.Morpheus.Server.Deriving.Introspect (Introspect (..), IntrospectRep (..), TypeScope (..), introspectObjectFields)
 import Data.Morpheus.Server.Types.GQLType (GQLType (__typeName), TRUE)
 import Data.Morpheus.Types.Internal.AST
@@ -29,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     unsafeFromFields,
     unsafeFromInputFields,
   )
-import Data.Morpheus.Types.Internal.TH (instanceFunD, instanceHeadMultiT, instanceHeadT, instanceProxyFunD, typeT)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text, unpack)
 import Data.Typeable (Typeable)

@@ -13,6 +13,9 @@ where
 --
 -- MORPHEUS
 
+import Data.Morpheus.Internal.TH
+  ( instanceHeadT,
+  )
 import Data.Morpheus.Server.Deriving.Decode
   ( Decode (..),
     DecodeType (..),
@@ -28,9 +31,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-  )
-import Data.Morpheus.Types.Internal.TH
-  ( instanceHeadT,
   )
 import Data.Text (Text)
 import Language.Haskell.TH

@@ -47,9 +47,6 @@ library:
     - Data.Morpheus.Types
     - Data.Morpheus.Server
     - Data.Morpheus.Document
-    - Data.Morpheus.Internal.Utils
-    - Data.Morpheus.Internal.Declare
-    - Data.Morpheus.Types.Internal.TH
     - Data.Morpheus.Types.Internal.Subscription
     - Data.Morpheus.Parsing.JSONSchema.Parse
   ghc-options: -Wall

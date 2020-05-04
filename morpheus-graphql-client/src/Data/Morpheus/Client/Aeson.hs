@@ -22,11 +22,15 @@ import qualified Data.HashMap.Lazy as H
   )
 --
 -- MORPHEUS
-import Data.Morpheus.Internal.Declare
-  ( isEnum,
+
+import Data.Morpheus.Internal.TH
+  ( destructRecord,
+    instanceFunD,
+    instanceHeadT,
   )
 import Data.Morpheus.Internal.Utils
-  ( nameSpaceType,
+  ( isEnum,
+    nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
@@ -34,11 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     Key,
     TypeD (..),
     isFieldNullable,
-  )
-import Data.Morpheus.Types.Internal.TH
-  ( destructRecord,
-    instanceFunD,
-    instanceHeadT,
   )
 import Data.Semigroup ((<>))
 import Data.Text

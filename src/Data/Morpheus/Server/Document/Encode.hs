@@ -10,6 +10,13 @@ where
 
 --
 -- MORPHEUS
+
+import Data.Morpheus.Internal.TH
+  ( applyT,
+    destructRecord,
+    instanceHeadMultiT,
+    typeT,
+  )
 import Data.Morpheus.Server.Deriving.Encode
   ( Encode (..),
     ExploreResolvers (..),
@@ -31,12 +38,6 @@ import Data.Morpheus.Types.Internal.Resolving
     MapStrategy (..),
     ObjectDeriving (..),
     Resolver,
-  )
-import Data.Morpheus.Types.Internal.TH
-  ( applyT,
-    destructRecord,
-    instanceHeadMultiT,
-    typeT,
   )
 import Data.Semigroup ((<>))
 import Data.Text (unpack)

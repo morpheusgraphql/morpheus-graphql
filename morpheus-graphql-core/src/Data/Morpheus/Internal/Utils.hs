@@ -3,12 +3,16 @@ module Data.Morpheus.Internal.Utils
     nonCapital,
     nameSpaceWith,
     nameSpaceType,
+    isEnum,
   )
 where
 
 import Data.Char
   ( toLower,
     toUpper,
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( ConsD (..),
   )
 import Data.Semigroup ((<>))
 import Data.Text
@@ -37,3 +41,6 @@ capital = pack . __capital . unpack
   where
     __capital [] = []
     __capital (x : xs) = toUpper x : xs
+
+isEnum :: [ConsD] -> Bool
+isEnum = all (null . cFields)

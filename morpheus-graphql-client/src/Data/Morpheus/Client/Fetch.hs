@@ -24,13 +24,13 @@ import Data.ByteString.Lazy (ByteString)
 --
 -- MORPHEUS
 
+import Data.Morpheus.Internal.TH
+  ( instanceHeadT,
+    typeInstanceDec,
+  )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     JSONResponse (..),
-  )
-import Data.Morpheus.Types.Internal.TH
-  ( instanceHeadT,
-    typeInstanceDec,
   )
 import Data.Text
   ( Text,
