@@ -36,7 +36,7 @@ import Data.Morpheus.Server.Schema.SchemaAPI
     hiddenRootFields,
     schemaAPI,
   )
-import Data.Morpheus.Types.GQLType (GQLType (CUSTOM))
+import Data.Morpheus.Server.Types.GQLType (GQLType (CUSTOM))
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),

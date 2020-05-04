@@ -38,8 +38,13 @@ import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
   )
-import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
-import Data.Morpheus.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
+import Data.Morpheus.Server.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.Types
+  ( MapKind,
+    Pair (..),
+    mapKindFromList,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Message,
@@ -65,11 +70,6 @@ import Data.Morpheus.Types.Internal.Resolving
     liftStateless,
     toResolver,
     unsafeBind,
-  )
-import Data.Morpheus.Types.Types
-  ( MapKind,
-    Pair (..),
-    mapKindFromList,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))

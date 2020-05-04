@@ -21,7 +21,7 @@ import Data.Morpheus.Kind
     SCALAR,
     WRAPPER,
   )
-import Data.Morpheus.Types.GQLType
+import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
   )

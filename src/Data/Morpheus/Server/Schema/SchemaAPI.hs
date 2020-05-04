@@ -29,8 +29,8 @@ import Data.Morpheus.Server.Schema.Schema
     S__Schema (..),
     S__Type,
   )
-import Data.Morpheus.Types.GQLType (CUSTOM)
-import Data.Morpheus.Types.ID (ID)
+import Data.Morpheus.Server.Types.GQLType (CUSTOM)
+import Data.Morpheus.Server.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
   ( FieldsDefinition,
     QUERY,

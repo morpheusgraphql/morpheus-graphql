@@ -15,7 +15,7 @@ import Data.Maybe (maybeToList)
 -- MORPHEUS
 import Data.Morpheus.Execution.Internal.Declare (tyConArgs)
 import Data.Morpheus.Server.Deriving.Introspect (Introspect (..), IntrospectRep (..), TypeScope (..), introspectObjectFields)
-import Data.Morpheus.Types.GQLType (GQLType (__typeName), TRUE)
+import Data.Morpheus.Server.Types.GQLType (GQLType (__typeName), TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     ConsD (..),

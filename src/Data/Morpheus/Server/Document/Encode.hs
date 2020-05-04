@@ -14,7 +14,7 @@ import Data.Morpheus.Server.Deriving.Encode
   ( Encode (..),
     ExploreResolvers (..),
   )
-import Data.Morpheus.Types.GQLType (TRUE)
+import Data.Morpheus.Server.Types.GQLType (TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),

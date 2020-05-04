@@ -1,49 +1,52 @@
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE DefaultSignatures    #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Types.GQLType
-  ( GQLType(..)
-  , TRUE
-  , FALSE
+module Data.Morpheus.Server.Types.GQLType
+  ( GQLType (..),
+    TRUE,
+    FALSE,
   )
 where
 
-import           Data.Map                       ( Map )
-import           Data.Proxy                     ( Proxy(..) )
-import           Data.Set                       ( Set )
-import           Data.Text                      ( Text
-                                                , intercalate
-                                                , pack
-                                                )
-import           Data.Typeable                  ( TyCon
-                                                , TypeRep
-                                                , Typeable
-                                                , splitTyConApp
-                                                , tyConFingerprint
-                                                , tyConName
-                                                , typeRep
-                                                , typeRepTyCon
-                                                )
-
+import Data.Map (Map)
 -- MORPHEUS
-import           Data.Morpheus.Kind
-import           Data.Morpheus.Types.Types      ( MapKind
-                                                , Pair
-                                                , Undefined(..)
-                                                )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( DataFingerprint(..)
-                                                , QUERY
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Resolver )
+import Data.Morpheus.Kind
+import Data.Morpheus.Server.Types.Types
+  ( MapKind,
+    Pair,
+    Undefined (..),
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( DataFingerprint (..),
+    QUERY,
+  )
+import Data.Morpheus.Types.Internal.Resolving
+  ( Resolver,
+  )
+import Data.Proxy (Proxy (..))
+import Data.Set (Set)
+import Data.Text
+  ( Text,
+    intercalate,
+    pack,
+  )
+import Data.Typeable
+  ( TyCon,
+    TypeRep,
+    Typeable,
+    splitTyConApp,
+    tyConFingerprint,
+    tyConName,
+    typeRep,
+    typeRepTyCon,
+  )
 
 type TRUE = 'True
 
@@ -55,9 +58,9 @@ resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
 replacePairCon x | hsPair == x = gqlPair
- where
-  hsPair  = typeRepTyCon $ typeRep $ Proxy @(Int, Int)
-  gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
+  where
+    hsPair = typeRepTyCon $ typeRep $ Proxy @(Int, Int)
+    gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
 replacePairCon x = x
 
 -- Ignores Resolver name  from typeName
@@ -80,7 +83,6 @@ ignoreResolver (con, args) =
 --     instance GQLType ... where
 --       description = const "your description ..."
 --  @
-
 class IsObject (a :: GQL_KIND) where
   isObject :: Proxy a -> Bool
 
@@ -109,14 +111,18 @@ class IsObject (KIND a) => GQLType a where
   isObjectKind :: Proxy a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
   __typeName :: Proxy a -> Text
-  default __typeName :: (Typeable a) =>
-    Proxy a -> Text
+  default __typeName ::
+    (Typeable a) =>
+    Proxy a ->
+    Text
   __typeName _ = intercalate "_" (getName $ Proxy @a)
     where
       getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
   __typeFingerprint :: Proxy a -> DataFingerprint
-  default __typeFingerprint :: (Typeable a) =>
-    Proxy a -> DataFingerprint
+  default __typeFingerprint ::
+    (Typeable a) =>
+    Proxy a ->
+    DataFingerprint
   __typeFingerprint _ = DataFingerprint "Typeable" $ map show $ conFingerprints (Proxy @a)
     where
       conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
@@ -147,7 +153,6 @@ instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
-
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER

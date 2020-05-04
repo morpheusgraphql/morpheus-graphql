@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 509003008d293344cd84522d413af98b46a85d354c08847f4c7f54acdac5ef75
+-- hash: e31c9a482fd48959ccac39fac93634ddcab3b02935c56501c947d5b7790ebcca
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -366,9 +366,6 @@ library
       Data.Morpheus.Parsing.Request.Selection
       Data.Morpheus.Rendering.RenderGQL
       Data.Morpheus.Rendering.RenderIntrospection
-      Data.Morpheus.Server.Schema.Schema
-      Data.Morpheus.Server.Schema.SchemaAPI
-      Data.Morpheus.Server.Schema.TypeKind
       Data.Morpheus.Server.Deriving.Decode
       Data.Morpheus.Server.Deriving.Encode
       Data.Morpheus.Server.Deriving.Generics.EnumRep
@@ -382,9 +379,13 @@ library
       Data.Morpheus.Server.Document.Encode
       Data.Morpheus.Server.Document.GQLType
       Data.Morpheus.Server.Document.Introspect
-      Data.Morpheus.Types.GQLScalar
-      Data.Morpheus.Types.GQLType
-      Data.Morpheus.Types.ID
+      Data.Morpheus.Server.Schema.Schema
+      Data.Morpheus.Server.Schema.SchemaAPI
+      Data.Morpheus.Server.Schema.TypeKind
+      Data.Morpheus.Server.Types.GQLScalar
+      Data.Morpheus.Server.Types.GQLType
+      Data.Morpheus.Server.Types.ID
+      Data.Morpheus.Server.Types.Types
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.Data
       Data.Morpheus.Types.Internal.AST.MergeSet
@@ -402,7 +403,6 @@ library
       Data.Morpheus.Types.Internal.Validation.Error
       Data.Morpheus.Types.Internal.Validation.Validator
       Data.Morpheus.Types.IO
-      Data.Morpheus.Types.Types
       Data.Morpheus.Validation.Document.Validation
       Data.Morpheus.Validation.Internal.Value
       Data.Morpheus.Validation.Query.Arguments

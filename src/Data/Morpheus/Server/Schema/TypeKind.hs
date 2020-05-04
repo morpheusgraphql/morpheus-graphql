@@ -10,7 +10,7 @@ where
 
 import Data.Aeson (FromJSON (..))
 import Data.Morpheus.Kind (ENUM)
-import Data.Morpheus.Types.GQLType (GQLType (KIND, __typeName))
+import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import GHC.Generics
 
 instance GQLType TypeKind where

@@ -45,8 +45,12 @@ import Data.Morpheus.Kind
 import Data.Morpheus.Server.Deriving.Generics.EnumRep
   ( EnumRep (..),
   )
-import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
-import Data.Morpheus.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
+import Data.Morpheus.Server.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.Types
+  ( MapKind,
+    Pair,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DataFingerprint (..),
@@ -78,10 +82,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
     Resolver,
     resolveUpdates,
-  )
-import Data.Morpheus.Types.Types
-  ( MapKind,
-    Pair,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
