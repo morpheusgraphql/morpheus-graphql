@@ -1,31 +1,32 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Input
-  ( typeViolation 
+  ( typeViolation,
   )
 where
 
-import           Data.Semigroup                 ( (<>) )
-import           Data.Aeson                     ( encode )
-import           Data.ByteString.Lazy.Char8     ( unpack )
-import           Data.Text                      ( pack )
-
+import Data.Aeson (encode)
+import Data.ByteString.Lazy.Char8 (unpack)
 -- MORPHEUS
-import           Data.Morpheus.Types.Internal.AST 
-                                                ( Message
-                                                , ResolvedValue
-                                                , TypeRef(..) 
-                                                )
-import           Data.Morpheus.Rendering.RenderGQL
-                                                ( RenderGQL(..) )
 
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( Message,
+    ResolvedValue,
+    TypeRef (..),
+  )
+import Data.Semigroup ((<>))
+import Data.Text (pack)
 
 typeViolation :: TypeRef -> ResolvedValue -> Message
-typeViolation expected found = "Expected type \""
-  <> render expected
-  <> "\" found "
-  <> pack (unpack $ encode found)
-  <> "."
+typeViolation expected found =
+  "Expected type \""
+    <> render expected
+    <> "\" found "
+    <> pack (unpack $ encode found)
+    <> "."
 
 {-
   ARGUMENTS:

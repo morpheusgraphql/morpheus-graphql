@@ -1,25 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Fragment
-  ( cannotSpreadWithinItself
-  , cannotBeSpreadOnType
+  ( cannotSpreadWithinItself,
+    cannotBeSpreadOnType,
   )
 where
 
-import           Data.Semigroup                 ( (<>) )
-import           Data.Text                      ( Text
-                                                , intercalate
-                                                )
-import qualified Data.Text                     as T
-
 -- MORPHEUS
-import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Ref(..)
-                                                , Position
-                                                , GQLError(..)
-                                                , GQLErrors
-                                                )
+import Data.Morpheus.Error.Utils (errorMessage)
+import Data.Morpheus.Types.Internal.AST.Base
+  ( GQLError (..),
+    GQLErrors,
+    Position,
+    Ref (..),
+  )
+import Data.Semigroup ((<>))
+import Data.Text
+  ( Text,
+    intercalate,
+  )
+import qualified Data.Text as T
 
 {-
   FRAGMENT:
@@ -34,27 +34,29 @@ import           Data.Morpheus.Types.Internal.AST.Base
 -}
 
 cannotSpreadWithinItself :: [Ref] -> GQLErrors
-cannotSpreadWithinItself fragments = [GQLError { message = text, locations = map refPosition fragments }]
- where
-  text = "Cannot spread fragment \""
-    <> refName (head fragments)
-    <> "\" within itself via "
-    <> T.intercalate ", " (map refName fragments)
-    <> "."
+cannotSpreadWithinItself fragments = [GQLError {message = text, locations = map refPosition fragments}]
+  where
+    text =
+      "Cannot spread fragment \""
+        <> refName (head fragments)
+        <> "\" within itself via "
+        <> T.intercalate ", " (map refName fragments)
+        <> "."
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
 cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> [Text] -> GQLErrors
-cannotBeSpreadOnType key fragmentType position typeMembers = errorMessage
-  position
-  msg
- where
-  msg =
-    "Fragment "
-      <> getName key
-      <> "cannot be spread here as objects of type \""
-      <> intercalate ", " typeMembers
-      <> "\" can never be of type \""
-      <> fragmentType
-      <> "\"."
-  getName (Just x) = "\"" <> x <> "\" "
-  getName Nothing  = ""
+cannotBeSpreadOnType key fragmentType position typeMembers =
+  errorMessage
+    position
+    msg
+  where
+    msg =
+      "Fragment "
+        <> getName key
+        <> "cannot be spread here as objects of type \""
+        <> intercalate ", " typeMembers
+        <> "\" can never be of type \""
+        <> fragmentType
+        <> "\"."
+    getName (Just x) = "\"" <> x <> "\" "
+    getName Nothing = ""
