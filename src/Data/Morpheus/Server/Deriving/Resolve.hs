@@ -20,8 +20,7 @@ import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
 import Data.Morpheus.Core
-  ( parseRequestWith,
-    runApi,
+  ( runApi,
   )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
@@ -48,12 +47,9 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition (..),
     MUTATION,
     Name,
-    Operation (..),
     QUERY,
     SUBSCRIPTION,
     Schema (..),
-    Selection (..),
-    SelectionContent (..),
     TypeContent (..),
     TypeDefinition (..),
     ValidValue,
@@ -61,11 +57,9 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Merge (..),
-    empty,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Context (..),
-    Eventless,
+  ( Eventless,
     GQLChannel (..),
     GQLRootResolver (..),
     Resolver,
@@ -73,7 +67,6 @@ import Data.Morpheus.Types.Internal.Resolving
     ResultT (..),
     cleanEvents,
     resolveUpdates,
-    runResolverModel,
   )
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
