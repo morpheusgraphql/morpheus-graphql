@@ -365,7 +365,7 @@ library
       Data.Morpheus.Parsing.Request.Parser
       Data.Morpheus.Parsing.Request.Selection
       Data.Morpheus.Rendering.RenderGQL
-      Data.Morpheus.Rendering.RenderIntrospection
+      Data.Morpheus.Server.RenderIntrospection
       Data.Morpheus.Server.Deriving.Decode
       Data.Morpheus.Server.Deriving.Encode
       Data.Morpheus.Server.Deriving.Generics.EnumRep

@@ -13,15 +13,15 @@ where
 
 -- MORPHEUS
 
-import Data.Morpheus.Rendering.RenderIntrospection
-  ( createObjectType,
-    render,
-  )
 import Data.Morpheus.Server.Deriving.Introspect
   ( TypeScope (..),
     TypeUpdater,
     introspect,
     introspectObjectFields,
+  )
+import Data.Morpheus.Server.RenderIntrospection
+  ( createObjectType,
+    render,
   )
 import Data.Morpheus.Server.Schema.Schema
   ( Root (..),

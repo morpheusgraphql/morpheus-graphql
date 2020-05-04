@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Rendering.RenderIntrospection
+module Data.Morpheus.Server.RenderIntrospection
   ( render,
     createObjectType,
   )
