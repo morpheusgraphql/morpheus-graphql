@@ -3,8 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Client.Compile
-  ( compileSyntax,
-    validateWith,
+  ( validateWith,
   )
 where
 
@@ -42,19 +41,6 @@ import qualified Data.Text as T
   ( pack,
   )
 import Language.Haskell.TH
-
-compileSyntax :: String -> Q Exp
-compileSyntax queryText = case parseRequest request of
-  Failure errors -> fail (renderGQLErrors errors)
-  Success {result, warnings} ->
-    gqlWarnings warnings >> [|(result, queryText)|]
-  where
-    request =
-      GQLRequest
-        { query = T.pack queryText,
-          operationName = Nothing,
-          variables = Nothing
-        }
 
 validateWith :: Schema -> (GQLQuery, String) -> Eventless ClientQuery
 validateWith schema (rawRequest@GQLQuery {operation}, queryText) = do

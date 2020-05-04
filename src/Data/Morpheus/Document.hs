@@ -3,10 +3,8 @@
 module Data.Morpheus.Document
   ( toGraphQLDocument,
     gqlDocument,
-    parseFullGQLDocument,
     importGQLDocument,
     importGQLDocumentWithNamespace,
-    parseDSL,
   )
 where
 
@@ -17,11 +15,6 @@ import Data.ByteString.Lazy.Char8
   )
 --
 -- MORPHEUS
-
-import Data.Morpheus.Core
-  ( parseDSL,
-    parseFullGQLDocument,
-  )
 import Data.Morpheus.Rendering.RenderGQL
   ( renderGraphQLDocument,
   )

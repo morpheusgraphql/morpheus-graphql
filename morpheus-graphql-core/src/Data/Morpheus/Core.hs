@@ -11,8 +11,9 @@ module Data.Morpheus.Core
     EventCon,
     parseDSL,
     parseGraphQLDocument,
-    parseFullGQLDocument,
     decodeIntrospection,
+    parseTypeSystemDefinition,
+    parseTypeDefinitions,
   )
 where
 
@@ -32,12 +33,12 @@ import Data.ByteString.Lazy.Char8
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Parsing.Internal
   ( parseRequestWith,
+    parseTypeDefinitions,
     parseTypeSystemDefinition,
   )
 import Data.Morpheus.Parsing.JSONSchema.Parse
   ( decodeIntrospection,
   )
-import Data.Morpheus.Schema.Schema (defaultTypes)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -118,8 +119,6 @@ runApi schema resModel request =
     ----------------------------------------------------------
     execOperator ctx@Context {schema} = runResolverModel resModel ctx
 
--- TODO: add schema api without TH: (deriveModel root (schemaAPI schema))--
-
 parseDSL :: ByteString -> Either String Schema
 parseDSL doc = case parseGraphQLDocument doc of
   Failure errors -> Left (show errors)
@@ -127,6 +126,3 @@ parseDSL doc = case parseGraphQLDocument doc of
 
 parseGraphQLDocument :: ByteString -> Eventless Schema
 parseGraphQLDocument x = parseTypeSystemDefinition (LT.toStrict $ decodeUtf8 x)
-
-parseFullGQLDocument :: ByteString -> Eventless Schema
-parseFullGQLDocument = parseGraphQLDocument >=> defaultTypes

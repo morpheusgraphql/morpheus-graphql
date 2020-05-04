@@ -8,7 +8,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
@@ -141,6 +144,9 @@ newtype ScalarDefinition = ScalarDefinition
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
 
+instance Lift ScalarDefinition where
+  lift _ = [|ScalarDefinition pure|]
+
 data Argument (valid :: Stage) = Argument
   { argumentName :: Name,
     argumentValue :: Value valid,
@@ -259,7 +265,7 @@ data TypeDefinition = TypeDefinition
     typeMeta :: Maybe Meta,
     typeContent :: TypeContent
   }
-  deriving (Show)
+  deriving (Show, Lift)
 
 data TypeContent
   = DataScalar
@@ -284,7 +290,7 @@ data TypeContent
   | DataInterface
       { interfaceFields :: FieldsDefinition
       }
-  deriving (Show)
+  deriving (Show, Lift)
 
 createType :: Key -> TypeContent -> TypeDefinition
 createType typeName typeContent =
@@ -393,7 +399,7 @@ popByKey name lib = case lookupWith typeName name lib of
 --
 newtype FieldsDefinition = FieldsDefinition
   {unFieldsDefinition :: OrderedMap FieldDefinition}
-  deriving (Show, Empty)
+  deriving (Show, Empty, Lift)
 
 unsafeFromFields :: [FieldDefinition] -> FieldsDefinition
 unsafeFromFields = FieldsDefinition . unsafeFromValues
@@ -480,7 +486,7 @@ toListField dataField = dataField {fieldType = listW (fieldType dataField)}
 
 newtype InputFieldsDefinition = InputFieldsDefinition
   {unInputFieldsDefinition :: OrderedMap FieldDefinition}
-  deriving (Show, Empty)
+  deriving (Show, Empty, Lift)
 
 unsafeFromInputFields :: [FieldDefinition] -> InputFieldsDefinition
 unsafeFromInputFields = InputFieldsDefinition . unsafeFromValues

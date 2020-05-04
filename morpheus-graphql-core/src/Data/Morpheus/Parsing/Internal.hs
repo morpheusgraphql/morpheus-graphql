@@ -3,6 +3,7 @@ module Data.Morpheus.Parsing.Internal
     parseTypeSystemDefinition,
     parseRequestWith,
     parseRequest,
+    parseTypeDefinitions,
   )
 where
 
