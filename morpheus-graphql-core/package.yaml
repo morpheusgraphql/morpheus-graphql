@@ -35,6 +35,7 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
+    - Data.Morpheus.Core
     - Data.Morpheus.Internal.TH
     - Data.Morpheus.Internal.Utils
     - Data.Morpheus.Error.Schema
@@ -49,3 +50,4 @@ library:
     - Data.Morpheus.Types.IO
     - Data.Morpheus.Types.Internal.Resolving
   ghc-options: -Wall
+
