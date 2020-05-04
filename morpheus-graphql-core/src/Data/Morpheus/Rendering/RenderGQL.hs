@@ -8,7 +8,6 @@ module Data.Morpheus.Rendering.RenderGQL
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
 -- MORPHEUS
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -40,10 +39,6 @@ import Data.Text
   ( Text,
     intercalate,
   )
-import qualified Data.Text.Lazy as LT
-  ( fromStrict,
-  )
-import Data.Text.Lazy.Encoding (encodeUtf8)
 
 class RenderGQL a where
   render :: a -> Key
