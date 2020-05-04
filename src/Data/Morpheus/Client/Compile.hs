@@ -2,7 +2,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Execution.Client.Compile
+module Data.Morpheus.Client.Compile
   ( compileSyntax,
     validateWith,
   )
@@ -11,12 +11,12 @@ where
 --
 --  Morpheus
 
+import Data.Morpheus.Client.Selection
+  ( operationTypes,
+  )
 import Data.Morpheus.Error.Client.Client
   ( gqlWarnings,
     renderGQLErrors,
-  )
-import Data.Morpheus.Execution.Client.Selection
-  ( operationTypes,
   )
 import Data.Morpheus.Parsing.Internal
   ( parseRequest,

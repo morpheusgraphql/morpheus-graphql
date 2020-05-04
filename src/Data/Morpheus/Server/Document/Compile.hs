@@ -1,6 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Data.Morpheus.Execution.Document.Compile
+module Data.Morpheus.Server.Document.Compile
   ( compileDocument,
     gqlDocument,
     gqlDocumentNamespace,
@@ -13,14 +13,14 @@ import Data.Morpheus.Error.Client.Client
   ( gqlWarnings,
     renderGQLErrors,
   )
-import Data.Morpheus.Execution.Document.Convert
-  ( toTHDefinitions,
-  )
-import Data.Morpheus.Execution.Document.Declare
-  ( declareTypes,
-  )
 import Data.Morpheus.Parsing.Internal
   ( parseTypeDefinitions,
+  )
+import Data.Morpheus.Server.Document.Convert
+  ( toTHDefinitions,
+  )
+import Data.Morpheus.Server.Document.Declare
+  ( declareTypes,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Result (..),

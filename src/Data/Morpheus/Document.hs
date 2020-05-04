@@ -18,14 +18,7 @@ import Data.ByteString.Lazy.Char8
   )
 --
 -- MORPHEUS
-import Data.Morpheus.Execution.Document.Compile
-  ( compileDocument,
-    gqlDocument,
-  )
-import Data.Morpheus.Execution.Server.Resolve
-  ( RootResCon,
-    fullSchema,
-  )
+
 import Data.Morpheus.Parsing.Internal
   ( parseTypeSystemDefinition,
   )
@@ -33,6 +26,14 @@ import Data.Morpheus.Rendering.RenderGQL
   ( renderGraphQLDocument,
   )
 import Data.Morpheus.Schema.SchemaAPI (defaultTypes)
+import Data.Morpheus.Server.Deriving.Resolve
+  ( RootResCon,
+    fullSchema,
+  )
+import Data.Morpheus.Server.Document.Compile
+  ( compileDocument,
+    gqlDocument,
+  )
 import Data.Morpheus.Types (GQLRootResolver)
 import Data.Morpheus.Types.Internal.AST
   ( Schema,

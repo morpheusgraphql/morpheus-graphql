@@ -1,33 +1,33 @@
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Schema.Schema
-  ( Root(..)
-  , Root__typeArgs(..)
-  , S__Schema(..)
-  , S__Type(..)
-  , S__Field(..)
-  , S__EnumValue(..)
-  , S__InputValue(..)
+  ( Root (..),
+    Root__typeArgs (..),
+    S__Schema (..),
+    S__Type (..),
+    S__Field (..),
+    S__EnumValue (..),
+    S__InputValue (..),
   )
 where
 
-import           Data.Text                      ( Text )
-
 -- MORPHEUS
-import           Data.Morpheus.Execution.Document.Compile
-                                                ( gqlDocumentNamespace )
-import           Data.Morpheus.Schema.TypeKind  ( TypeKind )
+
+import Data.Morpheus.Schema.TypeKind (TypeKind)
+import Data.Morpheus.Server.Document.Compile
+  ( gqlDocumentNamespace,
+  )
+import Data.Text (Text)
 
 type S__TypeKind = TypeKind
 

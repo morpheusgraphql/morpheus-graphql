@@ -16,17 +16,17 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
-import Data.Morpheus.Document (parseFullGQLDocument)
 -- MORPHEUS
-import Data.Morpheus.Execution.Client.Build
+import Data.Morpheus.Client.Build
   ( defineQuery,
   )
-import Data.Morpheus.Execution.Client.Compile
+import Data.Morpheus.Client.Compile
   ( compileSyntax,
   )
-import Data.Morpheus.Execution.Client.Fetch
+import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
+import Data.Morpheus.Document (parseFullGQLDocument)
 import Data.Morpheus.Parsing.Internal
   ( decodeIntrospection,
   )

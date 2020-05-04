@@ -7,7 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Data.Morpheus.Execution.Server.Resolve
+module Data.Morpheus.Server.Deriving.Resolve
   ( statelessResolver,
     RootResCon,
     fullSchema,
@@ -18,15 +18,7 @@ where
 
 import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
-import Data.Morpheus.Execution.Server.Encode
-  ( EncodeCon,
-    deriveModel,
-  )
-import Data.Morpheus.Execution.Server.Introspect
-  ( IntroCon,
-    TypeScope (..),
-    introspectObjectFields,
-  )
+
 import Data.Morpheus.Parsing.Internal
   ( parseRequestWith,
   )
@@ -34,6 +26,15 @@ import Data.Morpheus.Schema.SchemaAPI
   ( defaultTypes,
     hiddenRootFields,
     schemaAPI,
+  )
+import Data.Morpheus.Server.Deriving.Encode
+  ( EncodeCon,
+    deriveModel,
+  )
+import Data.Morpheus.Server.Deriving.Introspect
+  ( IntroCon,
+    TypeScope (..),
+    introspectObjectFields,
   )
 import Data.Morpheus.Types.GQLType (GQLType (CUSTOM))
 import Data.Morpheus.Types.IO
