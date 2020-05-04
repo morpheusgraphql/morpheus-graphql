@@ -14,7 +14,6 @@ module Data.Morpheus.Client.Schema
 where
 
 -- MORPHEUS
-
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.Internal.AST
   ( TypeDefinition (..),
@@ -124,6 +123,4 @@ type Root  {
   __type(name: String!): __Type
   __schema : __Schema!
 }
-
-
 |]
