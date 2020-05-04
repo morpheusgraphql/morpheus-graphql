@@ -8,7 +8,6 @@ module Data.Morpheus.Document
   )
 where
 
-import Control.Monad ((>=>))
 import Data.ByteString.Lazy.Char8
   ( ByteString,
     pack,
@@ -26,19 +25,10 @@ import Data.Morpheus.Server.Document.Compile
   ( compileDocument,
     gqlDocument,
   )
-import Data.Morpheus.Server.Schema.SchemaAPI (defaultTypes)
 import Data.Morpheus.Types (GQLRootResolver)
-import Data.Morpheus.Types.Internal.AST
-  ( Schema,
-  )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
+  ( resultOr,
   )
-import qualified Data.Text.Lazy as LT
-  ( toStrict,
-  )
-import Data.Text.Lazy.Encoding (decodeUtf8)
 import Language.Haskell.TH
 
 importGQLDocument :: String -> Q [Dec]
@@ -53,6 +43,6 @@ toGraphQLDocument ::
   RootResCon m event query mut sub =>
   proxy (GQLRootResolver m event query mut sub) ->
   ByteString
-toGraphQLDocument x = case fullSchema x of
-  Failure errors -> pack (show errors)
-  Success {result = lib} -> renderGraphQLDocument lib
+toGraphQLDocument =
+  resultOr (pack . show) renderGraphQLDocument
+    . fullSchema
