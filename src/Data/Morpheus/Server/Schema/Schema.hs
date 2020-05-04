@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Schema.Schema
+module Data.Morpheus.Server.Schema.Schema
   ( Root (..),
     Root__typeArgs (..),
     S__Schema (..),
@@ -23,10 +23,10 @@ where
 
 -- MORPHEUS
 
-import Data.Morpheus.Schema.TypeKind (TypeKind)
 import Data.Morpheus.Server.Document.Compile
   ( gqlDocumentNamespace,
   )
+import Data.Morpheus.Server.Schema.TypeKind (TypeKind)
 import Data.Text (Text)
 
 type S__TypeKind = TypeKind

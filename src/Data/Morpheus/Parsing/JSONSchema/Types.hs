@@ -1,54 +1,58 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Parsing.JSONSchema.Types
-  ( Introspection(..)
-  , Schema(..)
-  , Type(..)
-  , Field(..)
-  , InputValue(..)
-  , EnumValue(..)
-  ) where
+  ( Introspection (..),
+    Schema (..),
+    Type (..),
+    Field (..),
+    InputValue (..),
+    EnumValue (..),
+  )
+where
 
-import           Data.Aeson
-import           Data.Text                     (Text)
-import           GHC.Generics                  (Generic)
-
+import Data.Aeson
 --
 -- MORPHEUS
-import           Data.Morpheus.Schema.TypeKind (TypeKind)
+import Data.Morpheus.Server.Schema.TypeKind (TypeKind)
+import Data.Text (Text)
+import GHC.Generics (Generic)
 
 -- TYPES FOR DECODING JSON INTROSPECTION
 --
 newtype Introspection = Introspection
   { __schema :: Schema
-  } deriving (Generic, Show, FromJSON)
+  }
+  deriving (Generic, Show, FromJSON)
 
 newtype Schema = Schema
   { types :: [Type]
-  } deriving (Generic, Show, FromJSON)
+  }
+  deriving (Generic, Show, FromJSON)
 
 -- TYPE
 data Type = Type
-  { kind          :: TypeKind
-  , name          :: Maybe Text
-  , fields        :: Maybe [Field]
-  , interfaces    :: Maybe [Type]
-  , possibleTypes :: Maybe [Type]
-  , enumValues    :: Maybe [EnumValue]
-  , inputFields   :: Maybe [InputValue]
-  , ofType        :: Maybe Type
-  } deriving (Generic, Show, FromJSON)
+  { kind :: TypeKind,
+    name :: Maybe Text,
+    fields :: Maybe [Field],
+    interfaces :: Maybe [Type],
+    possibleTypes :: Maybe [Type],
+    enumValues :: Maybe [EnumValue],
+    inputFields :: Maybe [InputValue],
+    ofType :: Maybe Type
+  }
+  deriving (Generic, Show, FromJSON)
 
 -- FIELD
 data Field = Field
-  { fieldName :: Text
-  , fieldArgs :: [InputValue]
-  , fieldType :: Type
-  } deriving (Show, Generic)
+  { fieldName :: Text,
+    fieldArgs :: [InputValue],
+    fieldType :: Type
+  }
+  deriving (Show, Generic)
 
 instance FromJSON Field where
   parseJSON = withObject "Field" objectParser
@@ -57,9 +61,10 @@ instance FromJSON Field where
 
 -- INPUT
 data InputValue = InputValue
-  { inputName :: Text
-  , inputType :: Type
-  } deriving (Show, Generic)
+  { inputName :: Text,
+    inputType :: Type
+  }
+  deriving (Show, Generic)
 
 instance FromJSON InputValue where
   parseJSON = withObject "InputValue" objectParser
@@ -69,7 +74,8 @@ instance FromJSON InputValue where
 -- ENUM
 newtype EnumValue = EnumValue
   { enumName :: Text
-  } deriving (Generic, Show)
+  }
+  deriving (Generic, Show)
 
 instance FromJSON EnumValue where
   parseJSON = withObject "EnumValue" objectParser

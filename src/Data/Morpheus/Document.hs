@@ -25,7 +25,6 @@ import Data.Morpheus.Parsing.Internal
 import Data.Morpheus.Rendering.RenderGQL
   ( renderGraphQLDocument,
   )
-import Data.Morpheus.Schema.SchemaAPI (defaultTypes)
 import Data.Morpheus.Server.Deriving.Resolve
   ( RootResCon,
     fullSchema,
@@ -34,6 +33,7 @@ import Data.Morpheus.Server.Document.Compile
   ( compileDocument,
     gqlDocument,
   )
+import Data.Morpheus.Server.Schema.SchemaAPI (defaultTypes)
 import Data.Morpheus.Types (GQLRootResolver)
 import Data.Morpheus.Types.Internal.AST
   ( Schema,

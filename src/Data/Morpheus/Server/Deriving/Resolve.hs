@@ -22,11 +22,6 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Parsing.Internal
   ( parseRequestWith,
   )
-import Data.Morpheus.Schema.SchemaAPI
-  ( defaultTypes,
-    hiddenRootFields,
-    schemaAPI,
-  )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
     deriveModel,
@@ -35,6 +30,11 @@ import Data.Morpheus.Server.Deriving.Introspect
   ( IntroCon,
     TypeScope (..),
     introspectObjectFields,
+  )
+import Data.Morpheus.Server.Schema.SchemaAPI
+  ( defaultTypes,
+    hiddenRootFields,
+    schemaAPI,
   )
 import Data.Morpheus.Types.GQLType (GQLType (CUSTOM))
 import Data.Morpheus.Types.IO

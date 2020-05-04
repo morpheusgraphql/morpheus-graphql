@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Schema.SchemaAPI
+module Data.Morpheus.Server.Schema.SchemaAPI
   ( hiddenRootFields,
     defaultTypes,
     schemaAPI,
@@ -17,17 +17,17 @@ import Data.Morpheus.Rendering.RenderIntrospection
   ( createObjectType,
     render,
   )
-import Data.Morpheus.Schema.Schema
-  ( Root (..),
-    Root__typeArgs (..),
-    S__Schema (..),
-    S__Type,
-  )
 import Data.Morpheus.Server.Deriving.Introspect
   ( TypeScope (..),
     TypeUpdater,
     introspect,
     introspectObjectFields,
+  )
+import Data.Morpheus.Server.Schema.Schema
+  ( Root (..),
+    Root__typeArgs (..),
+    S__Schema (..),
+    S__Type,
   )
 import Data.Morpheus.Types.GQLType (CUSTOM)
 import Data.Morpheus.Types.ID (ID)
