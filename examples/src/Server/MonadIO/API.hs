@@ -20,8 +20,8 @@
 module Server.MonadIO.API where
 
 import Control.Concurrent.STM
-import Control.Monad.Except (ExceptT, MonadError, runExceptT, throwError)
-import Control.Monad.Reader (MonadReader, asks, runReader, runReaderT)
+import Control.Monad.Except (ExceptT, MonadError, runExceptT)
+import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Monad.Trans (MonadIO, MonadTrans, liftIO)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -194,7 +194,7 @@ loginResolver LoginArgs {username, password} = do
 
 getUserResolver :: GetUserArgs -> OptionalObject QUERY User
 getUserResolver GetUserArgs {id} = do
-  requireAuthorized
+  _ <- requireAuthorized
   users <- fmap userTable getDB
   case find ((== id) . userId) users of
     Just userRow -> do
@@ -204,7 +204,7 @@ getUserResolver GetUserArgs {id} = do
 
 dogsResolver :: ArrayObject QUERY Dog
 dogsResolver = do
-  requireAuthorized
+  _ <- requireAuthorized
   dogs <- fmap dogTable getDB
   traverse dogResolver dogs
 
