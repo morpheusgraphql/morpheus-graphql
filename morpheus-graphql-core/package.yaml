@@ -37,15 +37,10 @@ library:
   exposed-modules:
     - Data.Morpheus.Core
     - Data.Morpheus.QuasiQuoter
+    - Data.Morpheus.Error
+
     - Data.Morpheus.Internal.TH
     - Data.Morpheus.Internal.Utils
-
-    - Data.Morpheus.Error.Internal
-    - Data.Morpheus.Error.Utils
-    - Data.Morpheus.Error.Warning
-    
-    - Data.Morpheus.Parsing.Internal
-    
     - Data.Morpheus.Rendering.RenderGQL
     
     - Data.Morpheus.Types.Internal.Operation

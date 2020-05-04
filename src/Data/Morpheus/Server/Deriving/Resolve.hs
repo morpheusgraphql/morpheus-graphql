@@ -19,9 +19,9 @@ where
 import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
-import Data.Morpheus.Core (runApi)
-import Data.Morpheus.Parsing.Internal
+import Data.Morpheus.Core
   ( parseRequestWith,
+    runApi,
   )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,

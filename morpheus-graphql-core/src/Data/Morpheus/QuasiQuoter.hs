@@ -16,11 +16,11 @@ where
 import Data.Morpheus.Core
   ( parseTypeDefinitions,
   )
-import Data.Morpheus.Error.Warning
+import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
-import Data.Morpheus.Parsing.Internal
+import Data.Morpheus.Parser
   ( parseRequest,
   )
 import Data.Morpheus.Types.IO (GQLRequest (..))

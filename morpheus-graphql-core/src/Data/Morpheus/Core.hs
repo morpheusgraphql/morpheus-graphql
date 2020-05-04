@@ -15,6 +15,8 @@ module Data.Morpheus.Core
     parseTypeSystemDefinition,
     parseTypeDefinitions,
     validateRequest,
+    parseRequestWith,
+    parseRequest,
   )
 where
 
@@ -22,8 +24,9 @@ where
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
-import Data.Morpheus.Parsing.Internal
-  ( parseRequestWith,
+import Data.Morpheus.Parser
+  ( parseRequest,
+    parseRequestWith,
     parseTypeDefinitions,
     parseTypeSystemDefinition,
   )

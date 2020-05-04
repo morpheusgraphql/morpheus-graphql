@@ -9,12 +9,13 @@ where
 
 --
 --  Morpheus
-import Data.Morpheus.Error.Warning
+
+import Data.Morpheus.Core
+  ( parseTypeDefinitions,
+  )
+import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
-  )
-import Data.Morpheus.Parsing.Internal
-  ( parseTypeDefinitions,
   )
 import Data.Morpheus.Server.Document.Convert
   ( toTHDefinitions,

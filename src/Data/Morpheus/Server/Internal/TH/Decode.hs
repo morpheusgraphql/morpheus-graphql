@@ -15,7 +15,7 @@ module Data.Morpheus.Server.Internal.TH.Decode
 where
 
 -- MORPHEUS
-import Data.Morpheus.Error.Internal
+import Data.Morpheus.Error
   ( internalTypeMismatch,
   )
 import Data.Morpheus.Types.Internal.AST

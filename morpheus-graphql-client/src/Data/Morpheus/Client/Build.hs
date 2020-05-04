@@ -25,7 +25,7 @@ import Data.Morpheus.Client.Selection
 import Data.Morpheus.Core
   ( validateRequest,
   )
-import Data.Morpheus.Error.Warning
+import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )

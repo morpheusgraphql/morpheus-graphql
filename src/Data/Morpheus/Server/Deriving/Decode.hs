@@ -20,7 +20,7 @@ module Data.Morpheus.Server.Deriving.Decode
 where
 
 -- MORPHEUS
-import Data.Morpheus.Error.Internal
+import Data.Morpheus.Error
   ( internalError,
     internalTypeMismatch,
   )

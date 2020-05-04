@@ -32,7 +32,7 @@ import Data.List (partition)
 import Data.Map (Map)
 -- MORPHEUS
 
-import Data.Morpheus.Error.Utils (globalErrorMessage)
+import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Kind
   ( Context (..),
     ENUM,

@@ -13,9 +13,9 @@ where
 --
 -- MORPHEUS
 
-import Data.Morpheus.Error.Utils (globalErrorMessage)
-import Data.Morpheus.Error.Warning
+import Data.Morpheus.Error
   ( deprecatedField,
+    globalErrorMessage,
   )
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
