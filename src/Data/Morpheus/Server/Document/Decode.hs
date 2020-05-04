@@ -12,14 +12,15 @@ where
 
 --
 -- MORPHEUS
-import Data.Morpheus.Internal.Decode
-  ( decodeFieldWith,
-    decodeObjectExpQ,
-    withObject,
-  )
+
 import Data.Morpheus.Server.Deriving.Decode
   ( Decode (..),
     DecodeType (..),
+  )
+import Data.Morpheus.Server.Internal.TH.Decode
+  ( decodeFieldWith,
+    decodeObjectExpQ,
+    withObject,
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeD (..),

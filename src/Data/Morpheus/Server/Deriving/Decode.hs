@@ -24,19 +24,19 @@ import Data.Morpheus.Error.Internal
   ( internalError,
     internalTypeMismatch,
   )
-import Data.Morpheus.Internal.Decode
-  ( decodeFieldWith,
-    withList,
-    withMaybe,
-    withObject,
-    withUnion,
-  )
 import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
     INPUT,
     OUTPUT,
     SCALAR,
+  )
+import Data.Morpheus.Server.Internal.TH.Decode
+  ( decodeFieldWith,
+    withList,
+    withMaybe,
+    withObject,
+    withUnion,
   )
 import Data.Morpheus.Server.Types.GQLScalar
   ( GQLScalar (..),

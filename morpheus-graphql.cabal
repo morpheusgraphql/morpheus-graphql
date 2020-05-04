@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9809e4810fae40a4f5fdd8dfd5a283cebd644723983ef739e0533ed5591891d8
+-- hash: 3de970965d47b21e8fbfeb3d264f2212156b335f5823e7c51a42911c48c431d1
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -330,6 +330,7 @@ library
       Data.Morpheus.Document
       Data.Morpheus.Parsing.Internal
       Data.Morpheus.Types.Internal.AST
+      Data.Morpheus.Types.Internal.TH
       Data.Morpheus.Types.Internal.Resolving
       Data.Morpheus.Types.Internal.Subscription
   other-modules:
@@ -345,7 +346,6 @@ library
       Data.Morpheus.Error.Variable
       Data.Morpheus.Error.Warning
       Data.Morpheus.Internal.Declare
-      Data.Morpheus.Internal.Decode
       Data.Morpheus.Internal.Utils
       Data.Morpheus.Parsing.Document.TypeSystem
       Data.Morpheus.Parsing.Internal.Arguments
@@ -372,6 +372,7 @@ library
       Data.Morpheus.Server.Document.Encode
       Data.Morpheus.Server.Document.GQLType
       Data.Morpheus.Server.Document.Introspect
+      Data.Morpheus.Server.Internal.TH.Decode
       Data.Morpheus.Server.RenderIntrospection
       Data.Morpheus.Server.Schema.Schema
       Data.Morpheus.Server.Schema.SchemaAPI
@@ -392,7 +393,6 @@ library
       Data.Morpheus.Types.Internal.Subscription.Apollo
       Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
       Data.Morpheus.Types.Internal.Subscription.Stream
-      Data.Morpheus.Types.Internal.TH
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error
       Data.Morpheus.Types.Internal.Validation.Validator

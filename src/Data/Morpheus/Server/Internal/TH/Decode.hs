@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Internal.Decode
+module Data.Morpheus.Server.Internal.TH.Decode
   ( withObject,
     withMaybe,
     withList,

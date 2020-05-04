@@ -48,6 +48,7 @@ library:
     - Data.Morpheus.Document
     - Data.Morpheus.Parsing.Internal
     - Data.Morpheus.Types.Internal.AST
+    - Data.Morpheus.Types.Internal.TH
     - Data.Morpheus.Types.Internal.Resolving
     - Data.Morpheus.Types.Internal.Subscription
   ghc-options: -Wall

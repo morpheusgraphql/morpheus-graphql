@@ -32,6 +32,7 @@ dependencies:
   - vector                >= 0.12.0.1  && <  0.13
   - mtl                   >= 2.0       && <= 2.3
   - morpheus-graphql      >= 0.11.0
+  - template-haskell      >= 2.0       && <= 2.16
 
 library:
   source-dirs: src
