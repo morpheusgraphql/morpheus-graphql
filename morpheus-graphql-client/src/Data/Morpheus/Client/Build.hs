@@ -16,11 +16,11 @@ import Data.Morpheus.Client.Aeson
   ( deriveFromJSON,
     deriveToJSON,
   )
-import Data.Morpheus.Client.Compile
-  ( validateWith,
-  )
 import Data.Morpheus.Client.Fetch
   ( deriveFetch,
+  )
+import Data.Morpheus.Client.Selection
+  ( operationTypes,
   )
 import Data.Morpheus.Error.Warning
   ( gqlWarnings,
@@ -30,6 +30,9 @@ import Data.Morpheus.Internal.TH
   ( Scope (..),
     declareType,
   )
+import qualified Data.Morpheus.Types.Internal.AST as O
+  ( Operation (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ClientQuery (..),
     ClientType (..),
@@ -37,11 +40,15 @@ import Data.Morpheus.Types.Internal.AST
     GQLQuery (..),
     Schema,
     TypeD (..),
+    VALIDATION_MODE (..),
     isOutputObject,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
+  )
+import Data.Morpheus.Validation.Query.Validation
+  ( validateRequest,
   )
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
@@ -100,3 +107,13 @@ defineOperationType (argType, argumentTypes) query ClientType {clientType} =
     typeClassFetch <- deriveFetch argType (tName clientType) query
     argsT <- argumentTypes
     pure $ rootType <> typeClassFetch <> argsT
+
+validateWith :: Schema -> (GQLQuery, String) -> Eventless ClientQuery
+validateWith schema (rawRequest@GQLQuery {operation}, queryText) = do
+  validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
+  (queryArgsType, queryTypes) <-
+    operationTypes
+      schema
+      (O.operationArguments operation)
+      validOperation
+  return ClientQuery {queryText, queryTypes, queryArgsType}
