@@ -1,39 +1,40 @@
 module Data.Morpheus.Types.Internal.Resolving
-    ( Event(..)
-    , GQLRootResolver(..)
-    , UnSubResolver
-    , Resolver
-    , MapStrategy(..)
-    , LiftOperation
-    , runResolverModel
-    , toResolver
-    , lift
-    , SubEvent
-    , Eventless
-    , Failure(..)
-    , GQLChannel(..)
-    , ResponseEvent(..)
-    , ResponseStream
-    , cleanEvents
-    , Result(..)
-    , ResultT(..)
-    , unpackEvents
-    , LibUpdater
-    , resolveUpdates
-    , setTypeName
-    , ObjectDeriving(..)
-    , Deriving(..)
-    , FieldRes
-    , WithOperation
-    , PushEvents(..)
-    , subscribe
-    , Context(..)
-    , unsafeInternalContext
-    , ResolverModel(..)
-    , unsafeBind
-    , liftStateless
-    )
+  ( Event (..),
+    GQLRootResolver (..),
+    UnSubResolver,
+    Resolver,
+    MapStrategy (..),
+    LiftOperation,
+    runResolverModel,
+    toResolver,
+    lift,
+    SubEvent,
+    Eventless,
+    Failure (..),
+    GQLChannel (..),
+    ResponseEvent (..),
+    ResponseStream,
+    cleanEvents,
+    Result (..),
+    ResultT (..),
+    unpackEvents,
+    LibUpdater,
+    resolveUpdates,
+    setTypeName,
+    ObjectDeriving (..),
+    Deriving (..),
+    FieldRes,
+    WithOperation,
+    PushEvents (..),
+    subscribe,
+    Context (..),
+    unsafeInternalContext,
+    ResolverModel (..),
+    unsafeBind,
+    liftStateless,
+    resultOr,
+  )
 where
 
-import           Data.Morpheus.Types.Internal.Resolving.Resolver
-import           Data.Morpheus.Types.Internal.Resolving.Core
+import Data.Morpheus.Types.Internal.Resolving.Core
+import Data.Morpheus.Types.Internal.Resolving.Resolver

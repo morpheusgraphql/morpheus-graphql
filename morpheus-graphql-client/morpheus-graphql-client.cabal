@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3ca69364715dabd17e6bf17a54592e7c0b639ec18921a09602aef22efa57c3a3
+-- hash: d4f3c63d17d1765ad32fccb8371f71976317c3cc0073772b887d6f57964b853a
 
 name:           morpheus-graphql-client
 version:        0.11.0
@@ -34,7 +34,6 @@ library
       Data.Morpheus.Client.Aeson
       Data.Morpheus.Client.Build
       Data.Morpheus.Client.Fetch
-      Data.Morpheus.Client.QuasiQuoter
       Data.Morpheus.Client.Schema
       Data.Morpheus.Client.Selection
       Paths_morpheus_graphql_client

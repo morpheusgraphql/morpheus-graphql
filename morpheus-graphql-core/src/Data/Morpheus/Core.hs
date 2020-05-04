@@ -18,13 +18,6 @@ module Data.Morpheus.Core
 where
 
 -- MORPHEUS
-
--- import Data.Morpheus.Server.Schema.SchemaAPI
---   ( defaultTypes,
---     hiddenRootFields,
---     schemaAPI,
---   )
-
 import Control.Monad ((>=>))
 import Data.ByteString.Lazy.Char8
   ( ByteString,
@@ -41,44 +34,29 @@ import Data.Morpheus.Parsing.JSONSchema.Parse
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
-    GQLResponse (..),
-    renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( DataFingerprint (..),
-    FieldsDefinition (..),
-    MUTATION,
-    Name,
-    Operation (..),
-    QUERY,
-    SUBSCRIPTION,
+  ( Operation (..),
     Schema (..),
     Selection (..),
     SelectionContent (..),
-    TypeContent (..),
-    TypeDefinition (..),
-    ValidValue,
-    initTypeLib,
+    VALID,
+    Value,
   )
 import Data.Morpheus.Types.Internal.Operation
-  ( Merge (..),
-    empty,
+  ( empty,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Context (..),
     Eventless,
     GQLChannel (..),
-    GQLRootResolver (..),
-    Resolver,
     ResolverModel,
     ResponseStream,
-    Result (..),
     ResultT (..),
     cleanEvents,
-    resolveUpdates,
+    resultOr,
     runResolverModel,
   )
-import Data.Proxy (Proxy (..))
 import qualified Data.Text.Lazy as LT
   ( toStrict,
   )
@@ -94,9 +72,9 @@ runApi ::
   Schema ->
   ResolverModel event m ->
   GQLRequest ->
-  ResponseStream event m ValidValue
+  ResponseStream event m (Value VALID)
 runApi schema resModel request =
-  validRequest >>= execOperator
+  validRequest >>= runResolverModel resModel
   where
     validRequest ::
       Monad m => ResponseStream event m Context
@@ -116,13 +94,9 @@ runApi schema resModel request =
                   selectionContent = SelectionSet (operationSelection operation)
                 }
           }
-    ----------------------------------------------------------
-    execOperator ctx@Context {schema} = runResolverModel resModel ctx
 
 parseDSL :: ByteString -> Either String Schema
-parseDSL doc = case parseGraphQLDocument doc of
-  Failure errors -> Left (show errors)
-  Success {result} -> Right result
+parseDSL = resultOr (Left . show) pure . parseGraphQLDocument
 
 parseGraphQLDocument :: ByteString -> Eventless Schema
-parseGraphQLDocument x = parseTypeSystemDefinition (LT.toStrict $ decodeUtf8 x)
+parseGraphQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8

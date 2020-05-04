@@ -15,27 +15,15 @@ where
 
 -- MORPHEUS
 
-import Data.Morpheus.Client.QuasiQuoter (dsl)
+import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
-    FieldDefinition (..),
-    FieldsDefinition,
-    Name,
-    TypeContent (..),
-    TypeDefinition (..),
+  ( TypeDefinition (..),
     TypeUpdater,
-    TypeWrapper (..),
-    createField,
-    createScalarType,
-    createType,
     insertType,
-    unsafeFromFields,
   )
-import Data.Morpheus.Types.Internal.Operation (Listable (..), Singleton (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
-import Data.Text (Text)
 
 defaultTypes :: TypeUpdater
 defaultTypes = (`resolveUpdates` map insertType schemaTypes)

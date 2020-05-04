@@ -36,6 +36,7 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Core
+    - Data.Morpheus.QuasiQuoter
     - Data.Morpheus.Internal.TH
     - Data.Morpheus.Internal.Utils
     - Data.Morpheus.Error.Schema

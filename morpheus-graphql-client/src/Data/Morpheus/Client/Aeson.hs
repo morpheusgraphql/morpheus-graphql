@@ -22,7 +22,6 @@ import qualified Data.HashMap.Lazy as H
   )
 --
 -- MORPHEUS
-
 import Data.Morpheus.Internal.TH
   ( destructRecord,
     instanceFunD,

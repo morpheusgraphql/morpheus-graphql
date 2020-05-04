@@ -24,7 +24,6 @@ import Data.Morpheus.Client.Build
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
-import Data.Morpheus.Client.QuasiQuoter (compileSyntax, gql)
 import Data.Morpheus.Client.Schema
   ( defaultTypes,
   )
@@ -32,6 +31,7 @@ import Data.Morpheus.Core
   ( decodeIntrospection,
     parseGraphQLDocument,
   )
+import Data.Morpheus.QuasiQuoter (gql)
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery,
     Schema,
@@ -40,7 +40,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Language.Haskell.TH
-import Language.Haskell.TH.Quote
 
 defineByDocumentFile :: String -> (GQLQuery, String) -> Q [Dec]
 defineByDocumentFile = defineByDocument . L.readFile
