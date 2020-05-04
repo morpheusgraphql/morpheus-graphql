@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.Morpheus.Client.Error
+module Data.Morpheus.Error.Warning
   ( renderGQLErrors,
     deprecatedEnum,
     deprecatedField,

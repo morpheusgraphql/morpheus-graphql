@@ -9,7 +9,7 @@ where
 
 --
 --  Morpheus
-import Data.Morpheus.Client.Error
+import Data.Morpheus.Error.Warning
   ( gqlWarnings,
     renderGQLErrors,
   )

@@ -1,10 +1,10 @@
-name: morpheus-graphql
+name: morpheus-graphql-client
 version: 0.11.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
-category: web, graphql
-synopsis: Morpheus GraphQL
+category: web, graphql, client
+synopsis: Morpheus GraphQL Client
 maintainer: "d.nalchevanidze@gmail.com"
 homepage: https://morpheusgraphql.com
 copyright: "(c) 2019 Daviti Nalchevanidze"
@@ -41,24 +41,5 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Data.Morpheus
-    - Data.Morpheus.Kind
-    - Data.Morpheus.Types
-    - Data.Morpheus.Server
-    - Data.Morpheus.Document
-    - Data.Morpheus.Parsing.Internal
-    - Data.Morpheus.Types.Internal.AST
-    - Data.Morpheus.Types.Internal.Resolving
-    - Data.Morpheus.Types.Internal.Subscription
+    - Data.Morpheus.Client
   ghc-options: -Wall
-
-tests:
-  morpheus-test:
-    main: Spec.hs
-    source-dirs: test
-    ghc-options: -Wall
-    dependencies:
-      - morpheus-graphql
-      - tasty
-      - tasty-hunit
-      - aeson
