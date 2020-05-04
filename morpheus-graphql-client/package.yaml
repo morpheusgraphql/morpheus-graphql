@@ -26,6 +26,7 @@ dependencies:
   - aeson                 >= 1.4.4.0   && <= 1.6
   - unordered-containers  >= 0.2.8.0   && <  0.3
   - morpheus-graphql      >= 0.11.0
+  - morpheus-graphql-core >= 0.11.0
   - template-haskell      >= 2.0       && <= 2.16
 
 library:

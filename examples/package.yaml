@@ -18,6 +18,7 @@ dependencies:
   - websockets              >= 0.11.0    &&  <= 0.13
   - morpheus-graphql        >= 0.11.0
   - morpheus-graphql-client >= 0.11.0
+  - morpheus-graphql-core   >= 0.11.0
   - scotty
   - wai
   - warp

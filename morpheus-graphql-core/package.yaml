@@ -1,10 +1,10 @@
-name: morpheus-graphql
+name: morpheus-graphql-core
 version: 0.11.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
 category: web, graphql
-synopsis: Morpheus GraphQL
+synopsis: Morpheus GraphQL Core
 maintainer: "d.nalchevanidze@gmail.com"
 homepage: https://morpheusgraphql.com
 copyright: "(c) 2019 Daviti Nalchevanidze"
@@ -31,10 +31,7 @@ dependencies:
   - scientific            >= 0.3.6.2   && <  0.4
   - vector                >= 0.12.0.1  && <  0.13
   - mtl                   >= 2.0       && <= 2.3
-  - morpheus-graphql-core >= 0.11.0
 
-  - uuid                  >= 1.0       && <= 1.4
-  - websockets            >= 0.11.0    && <= 0.13
   - template-haskell      >= 2.0       && <= 2.16
   - th-lift-instances     >= 0.1.1     && <= 0.2.0
   - unliftio-core         >= 0.0.1     && <= 0.3
@@ -42,25 +39,18 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Data.Morpheus
-    - Data.Morpheus.Kind
-    - Data.Morpheus.Types
-    - Data.Morpheus.Server
-    - Data.Morpheus.Document
-    - Data.Morpheus.Internal.Utils
-    - Data.Morpheus.Internal.Declare
-    - Data.Morpheus.Types.Internal.TH
-    - Data.Morpheus.Types.Internal.Subscription
-    - Data.Morpheus.Parsing.JSONSchema.Parse
+    - Data.Morpheus.Parsing.Internal
+    # - Data.Morpheus.Internal.Utils
+    # - Data.Morpheus.Internal.Declare
+    - Data.Morpheus.Types.IO
+    - Data.Morpheus.Error.Schema
+    - Data.Morpheus.Error.Internal
+    - Data.Morpheus.Error.Utils
+    - Data.Morpheus.Error.Warning
+    - Data.Morpheus.Rendering.RenderGQL
+    - Data.Morpheus.Validation.Query.Validation
+    - Data.Morpheus.Types.Internal.Operation
+    - Data.Morpheus.Types.Internal.AST
+    # - Data.Morpheus.Types.Internal.TH
+    - Data.Morpheus.Types.Internal.Resolving
   ghc-options: -Wall
-
-tests:
-  morpheus-test:
-    main: Spec.hs
-    source-dirs: test
-    ghc-options: -Wall
-    dependencies:
-      - morpheus-graphql
-      - tasty
-      - tasty-hunit
-      - aeson

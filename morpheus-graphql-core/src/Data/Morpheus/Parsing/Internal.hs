@@ -1,10 +1,13 @@
-module Data.Morpheus.Parsing.Internal (parseTypeDefinitions, parseTypeSystemDefinition, parseRequestWith, parseRequest, decodeIntrospection) where
+module Data.Morpheus.Parsing.Internal
+  ( parseTypeDefinitions,
+    parseTypeSystemDefinition,
+    parseRequestWith,
+    parseRequest,
+  )
+where
 
 import Control.Monad ((>=>))
 import Data.Morpheus.Parsing.Document.TypeSystem (parseSchema)
-import Data.Morpheus.Parsing.JSONSchema.Parse
-  ( decodeIntrospection,
-  )
 import Data.Morpheus.Parsing.Request.Parser (parseGQL)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),

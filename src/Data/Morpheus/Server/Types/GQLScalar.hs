@@ -10,12 +10,10 @@ module Data.Morpheus.Server.Types.GQLScalar
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( ScalarValue (..),
+  ( ScalarDefinition (..),
+    ScalarValue (..),
     ValidValue,
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.AST.Data
-  ( ScalarDefinition (..),
   )
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)

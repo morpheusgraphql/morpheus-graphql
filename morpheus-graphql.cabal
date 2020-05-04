@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b99a8013a9cbad383f2ca63712f13ec9fff98298afb3664a6fda232f65a57d4b
+-- hash: 59e01dbf08255a814b67712b4ea212a1abf5ef14d650cfce06bdc29329e77b31
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -328,40 +328,13 @@ library
       Data.Morpheus.Types
       Data.Morpheus.Server
       Data.Morpheus.Document
-      Data.Morpheus.Parsing.Internal
       Data.Morpheus.Internal.Utils
       Data.Morpheus.Internal.Declare
-      Data.Morpheus.Types.IO
-      Data.Morpheus.Error.Utils
-      Data.Morpheus.Error.Warning
-      Data.Morpheus.Validation.Query.Validation
-      Data.Morpheus.Types.Internal.Operation
-      Data.Morpheus.Types.Internal.AST
       Data.Morpheus.Types.Internal.TH
-      Data.Morpheus.Types.Internal.Resolving
       Data.Morpheus.Types.Internal.Subscription
-  other-modules:
-      Data.Morpheus.Error.Document.Interface
-      Data.Morpheus.Error.Fragment
-      Data.Morpheus.Error.Input
-      Data.Morpheus.Error.Internal
-      Data.Morpheus.Error.NameCollision
-      Data.Morpheus.Error.Operation
-      Data.Morpheus.Error.Schema
-      Data.Morpheus.Error.Selection
-      Data.Morpheus.Error.Variable
-      Data.Morpheus.Parsing.Document.TypeSystem
-      Data.Morpheus.Parsing.Internal.Arguments
-      Data.Morpheus.Parsing.Internal.Internal
-      Data.Morpheus.Parsing.Internal.Pattern
-      Data.Morpheus.Parsing.Internal.Terms
-      Data.Morpheus.Parsing.Internal.Value
       Data.Morpheus.Parsing.JSONSchema.Parse
+  other-modules:
       Data.Morpheus.Parsing.JSONSchema.Types
-      Data.Morpheus.Parsing.Request.Operation
-      Data.Morpheus.Parsing.Request.Parser
-      Data.Morpheus.Parsing.Request.Selection
-      Data.Morpheus.Rendering.RenderGQL
       Data.Morpheus.Server.Deriving.Decode
       Data.Morpheus.Server.Deriving.Encode
       Data.Morpheus.Server.Deriving.Generics.EnumRep
@@ -384,27 +357,9 @@ library
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.ID
       Data.Morpheus.Server.Types.Types
-      Data.Morpheus.Types.Internal.AST.Base
-      Data.Morpheus.Types.Internal.AST.Data
-      Data.Morpheus.Types.Internal.AST.MergeSet
-      Data.Morpheus.Types.Internal.AST.OrderedMap
-      Data.Morpheus.Types.Internal.AST.Selection
-      Data.Morpheus.Types.Internal.AST.Value
-      Data.Morpheus.Types.Internal.Resolving.Core
-      Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.Subscription.Apollo
       Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
       Data.Morpheus.Types.Internal.Subscription.Stream
-      Data.Morpheus.Types.Internal.Validation
-      Data.Morpheus.Types.Internal.Validation.Error
-      Data.Morpheus.Types.Internal.Validation.Validator
-      Data.Morpheus.Validation.Document.Validation
-      Data.Morpheus.Validation.Internal.Value
-      Data.Morpheus.Validation.Query.Arguments
-      Data.Morpheus.Validation.Query.Fragment
-      Data.Morpheus.Validation.Query.Selection
-      Data.Morpheus.Validation.Query.UnionSelection
-      Data.Morpheus.Validation.Query.Variable
       Paths_morpheus_graphql
   hs-source-dirs:
       src
@@ -415,6 +370,7 @@ library
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
+    , morpheus-graphql-core >=0.11.0
     , mtl >=2.0 && <=2.3
     , scientific >=0.3.6.2 && <0.4
     , template-haskell >=2.0 && <=2.16
@@ -463,6 +419,7 @@ test-suite morpheus-test
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql
+    , morpheus-graphql-core >=0.11.0
     , mtl >=2.0 && <=2.3
     , scientific >=0.3.6.2 && <0.4
     , tasty

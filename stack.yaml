@@ -4,6 +4,7 @@ resolver: lts-14.14
 packages:
   - examples
   - morpheus-graphql-client
+  - morpheus-graphql-core
   - .
 
 extra-deps:

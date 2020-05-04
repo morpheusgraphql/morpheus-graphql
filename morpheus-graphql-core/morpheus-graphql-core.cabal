@@ -1,0 +1,97 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 11934fea7a9381f800f92e1e594e5bd2db3e8f9cebf52953b2bc4745c330c3ec
+
+name:           morpheus-graphql-core
+version:        0.11.0
+synopsis:       Morpheus GraphQL Core
+description:    Build GraphQL APIs with your favourite functional language!
+category:       web, graphql
+homepage:       https://morpheusgraphql.com
+bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
+author:         Daviti Nalchevanidze
+maintainer:     d.nalchevanidze@gmail.com
+copyright:      (c) 2019 Daviti Nalchevanidze
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    changelog.md
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/nalchevanidze/morpheus-graphql
+
+library
+  exposed-modules:
+      Data.Morpheus.Parsing.Internal
+      Data.Morpheus.Types.IO
+      Data.Morpheus.Error.Schema
+      Data.Morpheus.Error.Internal
+      Data.Morpheus.Error.Utils
+      Data.Morpheus.Error.Warning
+      Data.Morpheus.Rendering.RenderGQL
+      Data.Morpheus.Validation.Query.Validation
+      Data.Morpheus.Types.Internal.Operation
+      Data.Morpheus.Types.Internal.AST
+      Data.Morpheus.Types.Internal.Resolving
+  other-modules:
+      Data.Morpheus.Error.Document.Interface
+      Data.Morpheus.Error.Fragment
+      Data.Morpheus.Error.Input
+      Data.Morpheus.Error.NameCollision
+      Data.Morpheus.Error.Operation
+      Data.Morpheus.Error.Selection
+      Data.Morpheus.Error.Variable
+      Data.Morpheus.Parsing.Document.TypeSystem
+      Data.Morpheus.Parsing.Internal.Arguments
+      Data.Morpheus.Parsing.Internal.Internal
+      Data.Morpheus.Parsing.Internal.Pattern
+      Data.Morpheus.Parsing.Internal.Terms
+      Data.Morpheus.Parsing.Internal.Value
+      Data.Morpheus.Parsing.Request.Operation
+      Data.Morpheus.Parsing.Request.Parser
+      Data.Morpheus.Parsing.Request.Selection
+      Data.Morpheus.Types.Internal.AST.Base
+      Data.Morpheus.Types.Internal.AST.Data
+      Data.Morpheus.Types.Internal.AST.MergeSet
+      Data.Morpheus.Types.Internal.AST.OrderedMap
+      Data.Morpheus.Types.Internal.AST.Selection
+      Data.Morpheus.Types.Internal.AST.Value
+      Data.Morpheus.Types.Internal.Resolving.Core
+      Data.Morpheus.Types.Internal.Resolving.Resolver
+      Data.Morpheus.Types.Internal.Validation
+      Data.Morpheus.Types.Internal.Validation.Error
+      Data.Morpheus.Types.Internal.Validation.Validator
+      Data.Morpheus.Validation.Document.Validation
+      Data.Morpheus.Validation.Internal.Value
+      Data.Morpheus.Validation.Query.Arguments
+      Data.Morpheus.Validation.Query.Fragment
+      Data.Morpheus.Validation.Query.Selection
+      Data.Morpheus.Validation.Query.UnionSelection
+      Data.Morpheus.Validation.Query.Variable
+      Paths_morpheus_graphql_core
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      aeson >=1.4.4.0 && <=1.6
+    , base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
+    , megaparsec >=7.0.0 && <9.0.0
+    , mtl >=2.0 && <=2.3
+    , scientific >=0.3.6.2 && <0.4
+    , template-haskell >=2.0 && <=2.16
+    , text >=1.2.3.0 && <1.3
+    , th-lift-instances >=0.1.1 && <=0.2.0
+    , transformers >=0.3.0.0 && <0.6
+    , unliftio-core >=0.0.1 && <=0.3
+    , unordered-containers >=0.2.8.0 && <0.3
+    , vector >=0.12.0.1 && <0.13
+  default-language: Haskell2010

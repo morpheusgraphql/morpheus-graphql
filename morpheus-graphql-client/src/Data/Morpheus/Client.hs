@@ -27,7 +27,7 @@ import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
 import Data.Morpheus.Document (parseFullGQLDocument)
-import Data.Morpheus.Parsing.Internal
+import Data.Morpheus.Parsing.JSONSchema.Parse
   ( decodeIntrospection,
   )
 import Data.Morpheus.Types.Internal.AST
