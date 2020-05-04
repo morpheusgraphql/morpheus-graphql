@@ -9,20 +9,35 @@
 module Data.Morpheus.Core
   ( runApi,
     EventCon,
+    parseDSL,
+    parseGraphQLDocument,
+    parseFullGQLDocument,
+    decodeIntrospection,
   )
 where
 
-import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
-import Data.Morpheus.Parsing.Internal
-  ( parseRequestWith,
-  )
 -- import Data.Morpheus.Server.Schema.SchemaAPI
 --   ( defaultTypes,
 --     hiddenRootFields,
 --     schemaAPI,
 --   )
+
+import Control.Monad ((>=>))
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+    pack,
+  )
+import Data.Functor.Identity (Identity (..))
+import Data.Morpheus.Parsing.Internal
+  ( parseRequestWith,
+    parseTypeSystemDefinition,
+  )
+import Data.Morpheus.Parsing.JSONSchema.Parse
+  ( decodeIntrospection,
+  )
+import Data.Morpheus.Schema.Schema (defaultTypes)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -56,12 +71,17 @@ import Data.Morpheus.Types.Internal.Resolving
     Resolver,
     ResolverModel,
     ResponseStream,
+    Result (..),
     ResultT (..),
     cleanEvents,
     resolveUpdates,
     runResolverModel,
   )
 import Data.Proxy (Proxy (..))
+import qualified Data.Text.Lazy as LT
+  ( toStrict,
+  )
+import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Typeable (Typeable)
 
 type EventCon event =
@@ -99,3 +119,14 @@ runApi schema resModel request =
     execOperator ctx@Context {schema} = runResolverModel resModel ctx
 
 -- TODO: add schema api without TH: (deriveModel root (schemaAPI schema))--
+
+parseDSL :: ByteString -> Either String Schema
+parseDSL doc = case parseGraphQLDocument doc of
+  Failure errors -> Left (show errors)
+  Success {result} -> Right result
+
+parseGraphQLDocument :: ByteString -> Eventless Schema
+parseGraphQLDocument x = parseTypeSystemDefinition (LT.toStrict $ decodeUtf8 x)
+
+parseFullGQLDocument :: ByteString -> Eventless Schema
+parseFullGQLDocument = parseGraphQLDocument >=> defaultTypes

@@ -21,7 +21,7 @@ import Data.Morpheus.Parsing.JSONSchema.Types
     Schema (..),
     Type (..),
   )
-import Data.Morpheus.Server.Schema.TypeKind (TypeKind (..))
+import Data.Morpheus.Schema.TypeKind (TypeKind (..))
 import Data.Morpheus.Types.IO (JSONResponse (..))
 import qualified Data.Morpheus.Types.Internal.AST as AST
   ( Schema,

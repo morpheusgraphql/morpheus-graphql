@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Document
   ( toGraphQLDocument,
@@ -19,8 +18,9 @@ import Data.ByteString.Lazy.Char8
 --
 -- MORPHEUS
 
-import Data.Morpheus.Parsing.Internal
-  ( parseTypeSystemDefinition,
+import Data.Morpheus.Core
+  ( parseDSL,
+    parseFullGQLDocument,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( renderGraphQLDocument,
@@ -48,16 +48,12 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Language.Haskell.TH
 
-parseDSL :: ByteString -> Either String Schema
-parseDSL doc = case parseGraphQLDocument doc of
-  Failure errors -> Left (show errors)
-  Success {result} -> Right result
+importGQLDocument :: String -> Q [Dec]
+importGQLDocument src = runIO (readFile src) >>= compileDocument False
 
-parseGraphQLDocument :: ByteString -> Eventless Schema
-parseGraphQLDocument x = parseTypeSystemDefinition (LT.toStrict $ decodeUtf8 x)
-
-parseFullGQLDocument :: ByteString -> Eventless Schema
-parseFullGQLDocument = parseGraphQLDocument >=> defaultTypes
+importGQLDocumentWithNamespace :: String -> Q [Dec]
+importGQLDocumentWithNamespace src =
+  runIO (readFile src) >>= compileDocument True
 
 -- | Generates schema.gql file from 'GQLRootResolver'
 toGraphQLDocument ::
@@ -67,10 +63,3 @@ toGraphQLDocument ::
 toGraphQLDocument x = case fullSchema x of
   Failure errors -> pack (show errors)
   Success {result = lib} -> renderGraphQLDocument lib
-
-importGQLDocument :: String -> Q [Dec]
-importGQLDocument src = runIO (readFile src) >>= compileDocument False
-
-importGQLDocumentWithNamespace :: String -> Q [Dec]
-importGQLDocumentWithNamespace src =
-  runIO (readFile src) >>= compileDocument True

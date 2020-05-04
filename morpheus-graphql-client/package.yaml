@@ -15,17 +15,12 @@ extra-source-files:
   - changelog.md
   - README.md
 
-data-files:
-  - test/**/*.gql
-  - test/**/*.json
-
 dependencies:
   - base                  >= 4.7       && <  5
   - bytestring            >= 0.10.4    && <  0.11
   - text                  >= 1.2.3.0   && <  1.3
   - aeson                 >= 1.4.4.0   && <= 1.6
   - unordered-containers  >= 0.2.8.0   && <  0.3
-  - morpheus-graphql      >= 0.11.0
   - morpheus-graphql-core >= 0.11.0
   - template-haskell      >= 2.0       && <= 2.16
 

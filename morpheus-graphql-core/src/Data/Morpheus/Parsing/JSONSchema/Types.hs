@@ -17,7 +17,7 @@ where
 import Data.Aeson
 --
 -- MORPHEUS
-import Data.Morpheus.Server.Schema.TypeKind (TypeKind)
+import Data.Morpheus.Schema.TypeKind (TypeKind)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
