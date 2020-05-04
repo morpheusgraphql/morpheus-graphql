@@ -32,7 +32,6 @@ import Data.List (partition)
 import Data.Map (Map)
 -- MORPHEUS
 
-import Data.Morpheus.Error.Schema (nameCollisionError)
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Kind
   ( Context (..),
@@ -69,10 +68,10 @@ import Data.Morpheus.Types.Internal.AST
     createAlias,
     createEnumValue,
     defineType,
-    isTypeDefined,
     toListField,
     toNullableField,
     unsafeFromFields,
+    updateSchema,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Empty (..),
@@ -268,15 +267,7 @@ updateLib ::
   [TypeUpdater] ->
   Proxy a ->
   TypeUpdater
-updateLib typeBuilder stack proxy lib =
-  case isTypeDefined (__typeName proxy) lib of
-    Nothing ->
-      resolveUpdates
-        (defineType (typeBuilder proxy) lib)
-        stack
-    Just fingerprint' | fingerprint' == __typeFingerprint proxy -> return lib
-    -- throw error if 2 different types has same name
-    Just _ -> failure $ nameCollisionError (__typeName proxy)
+updateLib f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 

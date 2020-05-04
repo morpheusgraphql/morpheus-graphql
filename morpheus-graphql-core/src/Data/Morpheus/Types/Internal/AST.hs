@@ -84,7 +84,6 @@ module Data.Morpheus.Types.Internal.AST
     DataInputUnion,
     VariableContent (..),
     TypeLib,
-    isTypeDefined,
     initTypeLib,
     defineType,
     isFieldNullable,
@@ -139,6 +138,7 @@ module Data.Morpheus.Types.Internal.AST
     UnionTag (..),
     isInputDataType,
     __inputname,
+    updateSchema,
   )
 where
 

@@ -70,6 +70,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     isInputDataType,
     unsafeFromInputFields,
     __inputname,
+    updateSchema,
   )
 where
 
@@ -374,6 +375,23 @@ insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName 
     | fingerprint == typeFingerprint datatype -> return lib
     -- throw error if 2 different types has same name
     | otherwise -> failure $ nameCollisionError typeName
+
+updateSchema ::
+  Name ->
+  DataFingerprint ->
+  [TypeUpdater] ->
+  (a -> TypeDefinition) ->
+  a ->
+  TypeUpdater
+updateSchema name fingerprint stack f x lib =
+  case isTypeDefined name lib of
+    Nothing ->
+      resolveUpdates
+        (defineType (f x) lib)
+        stack
+    Just fingerprint' | fingerprint' == fingerprint -> return lib
+    -- throw error if 2 different types has same name
+    Just _ -> failure $ nameCollisionError name
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
