@@ -22,6 +22,9 @@ import Data.Morpheus.Client.Fetch
 import Data.Morpheus.Client.Selection
   ( operationTypes,
   )
+import Data.Morpheus.Core
+  ( validateRequest,
+  )
 import Data.Morpheus.Error.Warning
   ( gqlWarnings,
     renderGQLErrors,
@@ -46,9 +49,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
-  )
-import Data.Morpheus.Validation.Query.Validation
-  ( validateRequest,
   )
 import Data.Semigroup ((<>))
 import Data.Text (unpack)

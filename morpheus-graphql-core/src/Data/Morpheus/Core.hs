@@ -14,16 +14,14 @@ module Data.Morpheus.Core
     decodeIntrospection,
     parseTypeSystemDefinition,
     parseTypeDefinitions,
+    validateRequest,
   )
 where
 
 -- MORPHEUS
-import Control.Monad ((>=>))
 import Data.ByteString.Lazy.Char8
   ( ByteString,
-    pack,
   )
-import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Parsing.Internal
   ( parseRequestWith,
     parseTypeDefinitions,
@@ -56,6 +54,9 @@ import Data.Morpheus.Types.Internal.Resolving
     cleanEvents,
     resultOr,
     runResolverModel,
+  )
+import Data.Morpheus.Validation.Query.Validation
+  ( validateRequest,
   )
 import qualified Data.Text.Lazy as LT
   ( toStrict,
