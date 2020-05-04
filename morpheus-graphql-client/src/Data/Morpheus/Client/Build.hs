@@ -19,12 +19,12 @@ import Data.Morpheus.Client.Aeson
 import Data.Morpheus.Client.Compile
   ( validateWith,
   )
-import Data.Morpheus.Client.Error
-  ( gqlWarnings,
-    renderGQLErrors,
-  )
 import Data.Morpheus.Client.Fetch
   ( deriveFetch,
+  )
+import Data.Morpheus.Error.Warning
+  ( gqlWarnings,
+    renderGQLErrors,
   )
 import Data.Morpheus.Internal.Declare
   ( Scope (..),

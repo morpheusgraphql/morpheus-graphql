@@ -11,12 +11,12 @@ where
 --
 --  Morpheus
 
-import Data.Morpheus.Client.Error
-  ( gqlWarnings,
-    renderGQLErrors,
-  )
 import Data.Morpheus.Client.Selection
   ( operationTypes,
+  )
+import Data.Morpheus.Error.Warning
+  ( gqlWarnings,
+    renderGQLErrors,
   )
 import Data.Morpheus.Parsing.Internal
   ( parseRequest,

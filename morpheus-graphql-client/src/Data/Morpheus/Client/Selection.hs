@@ -12,10 +12,11 @@ where
 
 --
 -- MORPHEUS
-import Data.Morpheus.Client.Error
+
+import Data.Morpheus.Error.Utils (globalErrorMessage)
+import Data.Morpheus.Error.Warning
   ( deprecatedField,
   )
-import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
   )

@@ -47,6 +47,13 @@ library:
     - Data.Morpheus.Server
     - Data.Morpheus.Document
     - Data.Morpheus.Parsing.Internal
+    - Data.Morpheus.Internal.Utils
+    - Data.Morpheus.Internal.Declare
+    - Data.Morpheus.Types.IO
+    - Data.Morpheus.Error.Utils
+    - Data.Morpheus.Error.Warning
+    - Data.Morpheus.Validation.Query.Validation
+    - Data.Morpheus.Types.Internal.Operation
     - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.Internal.TH
     - Data.Morpheus.Types.Internal.Resolving

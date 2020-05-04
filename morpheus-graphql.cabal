@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3de970965d47b21e8fbfeb3d264f2212156b335f5823e7c51a42911c48c431d1
+-- hash: b99a8013a9cbad383f2ca63712f13ec9fff98298afb3664a6fda232f65a57d4b
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -329,6 +329,13 @@ library
       Data.Morpheus.Server
       Data.Morpheus.Document
       Data.Morpheus.Parsing.Internal
+      Data.Morpheus.Internal.Utils
+      Data.Morpheus.Internal.Declare
+      Data.Morpheus.Types.IO
+      Data.Morpheus.Error.Utils
+      Data.Morpheus.Error.Warning
+      Data.Morpheus.Validation.Query.Validation
+      Data.Morpheus.Types.Internal.Operation
       Data.Morpheus.Types.Internal.AST
       Data.Morpheus.Types.Internal.TH
       Data.Morpheus.Types.Internal.Resolving
@@ -342,11 +349,7 @@ library
       Data.Morpheus.Error.Operation
       Data.Morpheus.Error.Schema
       Data.Morpheus.Error.Selection
-      Data.Morpheus.Error.Utils
       Data.Morpheus.Error.Variable
-      Data.Morpheus.Error.Warning
-      Data.Morpheus.Internal.Declare
-      Data.Morpheus.Internal.Utils
       Data.Morpheus.Parsing.Document.TypeSystem
       Data.Morpheus.Parsing.Internal.Arguments
       Data.Morpheus.Parsing.Internal.Internal
@@ -387,7 +390,6 @@ library
       Data.Morpheus.Types.Internal.AST.OrderedMap
       Data.Morpheus.Types.Internal.AST.Selection
       Data.Morpheus.Types.Internal.AST.Value
-      Data.Morpheus.Types.Internal.Operation
       Data.Morpheus.Types.Internal.Resolving.Core
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.Subscription.Apollo
@@ -396,14 +398,12 @@ library
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error
       Data.Morpheus.Types.Internal.Validation.Validator
-      Data.Morpheus.Types.IO
       Data.Morpheus.Validation.Document.Validation
       Data.Morpheus.Validation.Internal.Value
       Data.Morpheus.Validation.Query.Arguments
       Data.Morpheus.Validation.Query.Fragment
       Data.Morpheus.Validation.Query.Selection
       Data.Morpheus.Validation.Query.UnionSelection
-      Data.Morpheus.Validation.Query.Validation
       Data.Morpheus.Validation.Query.Variable
       Paths_morpheus_graphql
   hs-source-dirs:
