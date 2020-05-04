@@ -12,7 +12,7 @@ where
 
 --
 -- MORPHEUS
-import Data.Morpheus.Error.Client.Client
+import Data.Morpheus.Client.Error
   ( deprecatedField,
   )
 import Data.Morpheus.Error.Utils (globalErrorMessage)
