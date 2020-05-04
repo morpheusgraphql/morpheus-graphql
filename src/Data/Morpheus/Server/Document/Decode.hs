@@ -12,7 +12,7 @@ where
 
 --
 -- MORPHEUS
-import Data.Morpheus.Execution.Internal.Decode
+import Data.Morpheus.Internal.Decode
   ( decodeFieldWith,
     decodeObjectExpQ,
     withObject,

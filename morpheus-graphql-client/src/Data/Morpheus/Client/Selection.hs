@@ -16,7 +16,7 @@ import Data.Morpheus.Client.Error
   ( deprecatedField,
   )
 import Data.Morpheus.Error.Utils (globalErrorMessage)
-import Data.Morpheus.Execution.Internal.Utils
+import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST

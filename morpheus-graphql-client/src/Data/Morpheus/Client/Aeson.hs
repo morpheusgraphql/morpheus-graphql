@@ -22,10 +22,10 @@ import qualified Data.HashMap.Lazy as H
   )
 --
 -- MORPHEUS
-import Data.Morpheus.Execution.Internal.Declare
+import Data.Morpheus.Internal.Declare
   ( isEnum,
   )
-import Data.Morpheus.Execution.Internal.Utils
+import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST

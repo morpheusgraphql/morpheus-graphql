@@ -24,7 +24,7 @@ import Data.Morpheus.Error.Internal
   ( internalError,
     internalTypeMismatch,
   )
-import Data.Morpheus.Execution.Internal.Decode
+import Data.Morpheus.Internal.Decode
   ( decodeFieldWith,
     withList,
     withMaybe,

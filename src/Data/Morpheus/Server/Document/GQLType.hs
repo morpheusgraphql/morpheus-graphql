@@ -11,7 +11,7 @@ where
 
 --
 -- MORPHEUS
-import Data.Morpheus.Execution.Internal.Declare
+import Data.Morpheus.Internal.Declare
   ( tyConArgs,
   )
 import Data.Morpheus.Kind

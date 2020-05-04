@@ -9,7 +9,7 @@ where
 
 -- MORPHEUS
 
-import Data.Morpheus.Execution.Internal.Declare
+import Data.Morpheus.Internal.Declare
   ( Scope (..),
     declareType,
   )

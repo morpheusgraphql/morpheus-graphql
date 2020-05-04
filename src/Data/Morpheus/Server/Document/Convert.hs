@@ -13,7 +13,7 @@ where
 
 -- MORPHEUS
 
-import Data.Morpheus.Execution.Internal.Utils
+import Data.Morpheus.Internal.Utils
   ( capital,
   )
 import Data.Morpheus.Types.Internal.AST

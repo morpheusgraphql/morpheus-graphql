@@ -26,7 +26,7 @@ import Data.Morpheus.Client.Error
 import Data.Morpheus.Client.Fetch
   ( deriveFetch,
   )
-import Data.Morpheus.Execution.Internal.Declare
+import Data.Morpheus.Internal.Declare
   ( Scope (..),
     declareType,
   )
