@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7db04405df353ded8281fc13c376a6c5cd6b21b6b21c9cf36b29a6e102a7140f
+-- hash: df01c056ec28812efca78ba089980318b3df7efe58fbdf5c2a037388d8182f17
 
 name:           morpheus-graphql-client
 version:        0.11.0
@@ -44,14 +44,10 @@ library
       aeson >=1.4.4.0 && <=1.6
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
-    , containers >=0.4.2.1 && <0.7
-    , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql >=0.11.0
     , mtl >=2.0 && <=2.3
-    , scientific >=0.3.6.2 && <0.4
     , template-haskell >=2.0 && <=2.16
     , text >=1.2.3.0 && <1.3
     , transformers >=0.3.0.0 && <0.6
     , unordered-containers >=0.2.8.0 && <0.3
-    , vector >=0.12.0.1 && <0.13
   default-language: Haskell2010
