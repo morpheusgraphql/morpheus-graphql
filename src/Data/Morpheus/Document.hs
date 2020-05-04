@@ -12,10 +12,8 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
     pack,
   )
---
--- MORPHEUS
-import Data.Morpheus.Rendering.RenderGQL
-  ( renderGraphQLDocument,
+import Data.Morpheus.Core
+  ( render,
   )
 import Data.Morpheus.Server.Deriving.Resolve
   ( RootResCon,
@@ -29,6 +27,10 @@ import Data.Morpheus.Types (GQLRootResolver)
 import Data.Morpheus.Types.Internal.Resolving
   ( resultOr,
   )
+import qualified Data.Text.Lazy as LT
+  ( fromStrict,
+  )
+import Data.Text.Lazy.Encoding (encodeUtf8)
 import Language.Haskell.TH
 
 importGQLDocument :: String -> Q [Dec]
@@ -44,5 +46,5 @@ toGraphQLDocument ::
   proxy (GQLRootResolver m event query mut sub) ->
   ByteString
 toGraphQLDocument =
-  resultOr (pack . show) renderGraphQLDocument
+  resultOr (pack . show) (encodeUtf8 . LT.fromStrict . render)
     . fullSchema

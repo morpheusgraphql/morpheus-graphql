@@ -17,6 +17,7 @@ module Data.Morpheus.Core
     validateRequest,
     parseRequestWith,
     parseRequest,
+    RenderGQL (..),
   )
 where
 
@@ -32,6 +33,9 @@ import Data.Morpheus.Parser
   )
 import Data.Morpheus.Parsing.JSONSchema.Parse
   ( decodeIntrospection,
+  )
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),

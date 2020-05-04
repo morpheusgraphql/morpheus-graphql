@@ -41,8 +41,6 @@ library:
 
     - Data.Morpheus.Internal.TH
     - Data.Morpheus.Internal.Utils
-    - Data.Morpheus.Rendering.RenderGQL
-    
     - Data.Morpheus.Types.Internal.Operation
     - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.IO

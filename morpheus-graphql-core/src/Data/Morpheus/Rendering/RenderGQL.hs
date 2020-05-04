@@ -5,8 +5,6 @@
 
 module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
-    renderGraphQLDocument,
-    renderWrapped,
   )
 where
 
@@ -47,14 +45,13 @@ import qualified Data.Text.Lazy as LT
   )
 import Data.Text.Lazy.Encoding (encodeUtf8)
 
-renderGraphQLDocument :: Schema -> ByteString
-renderGraphQLDocument lib =
-  encodeUtf8 $ LT.fromStrict $ intercalate "\n\n" $ map render visibleTypes
-  where
-    visibleTypes = filter (not . isDefaultTypeName . typeName) (allDataTypes lib)
-
 class RenderGQL a where
   render :: a -> Key
+
+instance RenderGQL Schema where
+  render schema = intercalate "\n\n" $ map render visibleTypes
+    where
+      visibleTypes = filter (not . isDefaultTypeName . typeName) (allDataTypes schema)
 
 instance RenderGQL TypeDefinition where
   render TypeDefinition {typeName, typeContent} = __render typeContent
