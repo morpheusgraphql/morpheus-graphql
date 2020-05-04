@@ -1,5 +1,10 @@
 # ghc 8.4.4
 resolver: lts-12.16
+packages:
+  - examples
+  - morpheus-graphql-client
+  - morpheus-graphql-core
+  - .
 
 extra-deps:
   - megaparsec-7.0.5
@@ -9,7 +14,3 @@ extra-deps:
   - req-2.1.0
   - modern-uri-0.3.0.0
   - retry-0.8.1.0
-
-packages:
-  - examples
-  - .

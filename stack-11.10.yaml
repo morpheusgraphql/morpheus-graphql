@@ -1,6 +1,11 @@
 # ghc 8.2.2
 resolver: lts-11.10
-
+packages:
+  - examples
+  - morpheus-graphql-client
+  - morpheus-graphql-core
+  - .
+  
 allow-newer: true 
 
 extra-deps:
@@ -15,7 +20,3 @@ extra-deps:
   - req-2.1.0
   - modern-uri-0.3.0.0
   - retry-0.8.1.0
-
-packages:
-  - examples
-  - .
