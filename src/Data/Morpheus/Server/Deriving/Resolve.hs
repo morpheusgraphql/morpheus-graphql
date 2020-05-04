@@ -19,6 +19,7 @@ where
 import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
+import Data.Morpheus.Core (runApi)
 import Data.Morpheus.Parsing.Internal
   ( parseRequestWith,
   )
@@ -114,29 +115,14 @@ coreResolver ::
   GQLRequest ->
   ResponseStream event m ValidValue
 coreResolver root request =
-  validRequest >>= execOperator
+  validRequest
+    >>= execOperator
   where
     validRequest ::
-      Monad m => ResponseStream event m Context
-    validRequest = cleanEvents $ ResultT $ pure $ do
-      schema <- fullSchema $ Identity root
-      operation <- parseRequestWith schema request
-      pure $
-        Context
-          { schema,
-            operation,
-            currentTypeName = "Root",
-            currentSelection =
-              Selection
-                { selectionName = "Root",
-                  selectionArguments = empty,
-                  selectionPosition = operationPosition operation,
-                  selectionAlias = Nothing,
-                  selectionContent = SelectionSet (operationSelection operation)
-                }
-          }
-    ----------------------------------------------------------
-    execOperator ctx@Context {schema} = runResolverModel (deriveModel root (schemaAPI schema)) ctx
+      Monad m => ResponseStream event m Schema
+    validRequest = cleanEvents $ ResultT $ pure $ fullSchema $ Identity root
+    --------------------------------------
+    execOperator schema = runApi schema (deriveModel root (schemaAPI schema)) request
 
 fullSchema ::
   forall proxy m event query mutation subscription.

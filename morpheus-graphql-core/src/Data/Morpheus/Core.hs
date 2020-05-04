@@ -7,7 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Core
-  ( coreResolver,
+  ( runApi,
     EventCon,
   )
 where
@@ -67,14 +67,14 @@ import Data.Typeable (Typeable)
 type EventCon event =
   (Eq (StreamChannel event), Typeable event, GQLChannel event)
 
-coreResolver ::
+runApi ::
   forall event m.
   (Monad m) =>
   Schema ->
   ResolverModel event m ->
   GQLRequest ->
   ResponseStream event m ValidValue
-coreResolver schema resModel request =
+runApi schema resModel request =
   validRequest >>= execOperator
   where
     validRequest ::
