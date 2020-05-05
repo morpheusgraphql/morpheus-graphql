@@ -13,11 +13,12 @@ import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST (Name, Schema, VALID, Value (..), schemaFromTypeDefinitions)
-import Data.Morpheus.Types.Internal.Resolving (Deriving (..), ResolverModel (..), ResponseStream, Result (..), ResultT (..))
+import Data.Morpheus.Types.Internal.Resolving (Deriving (..), ObjectDeriving (..), ResolverModel (..), ResponseStream, Result (..), ResultT (..))
 import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as LT (toStrict)
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Lib (getGQLBody, maybeVariables)
+import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
 
 getSchema :: Applicative m => ResponseStream e m Schema
@@ -40,7 +41,7 @@ getSchema =
 encoding :: ResolverModel e m
 encoding =
   ResolverModel
-    { query = pure DerivingNull,
+    { query = pure $ DerivingObject (ObjectDeriving {__typename = "Query", objectFields = []}),
       mutation = pure DerivingNull,
       subscription = pure DerivingNull
     }
@@ -54,17 +55,23 @@ main :: IO ()
 main =
   do
     request <- getRequest "simpleQuery"
-    let subscription = simpleTest request
-    assertion subscription
+    defaultMain $
+      testGroup
+        "core tests"
+        [basicTest (simpleTest request)]
 
 expected :: Value VALID
 expected = Null
+
+basicTest :: ResponseStream e Identity (Value VALID) -> TestTree
+basicTest = testCase "basic test" . assertion
 
 assertion :: ResponseStream e Identity (Value VALID) -> IO ()
 assertion (ResultT (Identity Success {result}))
   | expected == result = return ()
   | otherwise =
-    assertFailure $ "expected: \n " <> show expected <> " \n but got: \n " <> show result
+    assertFailure $
+      "expected: \n " <> show expected <> " \n but got: \n " <> show result
 assertion (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 
 getRequest :: Name -> IO GQLRequest
