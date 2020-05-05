@@ -15,19 +15,21 @@ jobs:
         cabal-version: '3.0'
     - name: Install dependencies
       run: | 
-        bash release.sh
+        # bash release.sh
+        cabal update
+        cabal build --only-dependencies
     - name: Build
       run: |
-        cd $DIST_PATH
-        cd release
-        echo $PWD
-        ls
+        # cd $DIST_PATH
+        # cd release
+        # echo $PWD
+        # ls
         cabal configure --enable-tests
         cabal build
     - name: Run tests
       run: |
-        cd $DIST_PATH
-        cd release
-        echo $PWD
-        ls
+        # cd $DIST_PATH
+        # cd release
+        # echo $PWD
+        # ls
         cabal test
