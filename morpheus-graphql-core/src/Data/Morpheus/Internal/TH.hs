@@ -56,8 +56,6 @@ import Data.Text (Text, unpack)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
-type Arrow = (->)
-
 m_ :: Key
 m_ = "m"
 
@@ -124,7 +122,7 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
                     (AppT monadVar result)
                   where
                     argType = ConT $ mkName (unpack argsTypename)
-                    arrowType = ConT ''Arrow
+                    arrowType = ConT ''(->)
                 genFieldT _
                   | (isOutputObject <$> kindD) == Just True = AppT monadVar result
                   | otherwise = result
