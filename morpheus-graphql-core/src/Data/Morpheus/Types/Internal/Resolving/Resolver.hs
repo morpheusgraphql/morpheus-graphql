@@ -362,11 +362,6 @@ data ObjectDeriving o e m = ObjectDeriving
 
 newtype FieldDeriving o e m = FieldDeriving {runFieldDeriving :: Arguments VALID -> Resolver o e m (Deriving o e m)}
 
--- | FieldDerivingWithArgs
-
--- instance KeyOf (FieldDeriving o e m) where
---   keyOf = fieldName
-
 instance Show (FieldDeriving o e m) where
   show _ = "FieldDeriving"
 
