@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2611eda1eec707782baf62a5ec768dc20c0242d85caf4713ba57adb80d7de830
+-- hash: 2279916974e739ea587135e6c23259637c1bb1c8e7ec3dd406c56ae51c4cbdba
 
 name:           morpheus-graphql-core
 version:        0.11.0
@@ -93,6 +93,32 @@ library
     , bytestring >=0.10.4 && <0.11
     , megaparsec >=7.0.0 && <9.0.0
     , scientific >=0.3.6.2 && <0.4
+    , template-haskell >=2.0 && <=2.16
+    , text >=1.2.3.0 && <1.3
+    , th-lift-instances >=0.1.1 && <=0.2.0
+    , transformers >=0.3.0.0 && <0.6
+    , unordered-containers >=0.2.8.0 && <0.3
+    , vector >=0.12.0.1 && <0.13
+  default-language: Haskell2010
+
+test-suite morpheus-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Lib
+      Paths_morpheus_graphql_core
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , megaparsec >=7.0.0 && <9.0.0
+    , morpheus-graphql-core
+    , scientific >=0.3.6.2 && <0.4
+    , tasty
+    , tasty-hunit
     , template-haskell >=2.0 && <=2.16
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0

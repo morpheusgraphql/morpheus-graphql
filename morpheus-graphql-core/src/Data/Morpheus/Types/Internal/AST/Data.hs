@@ -42,7 +42,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     allDataTypes,
     createField,
     createArgument,
-    createDataTypeLib,
+    schemaFromTypeDefinitions,
     createEnumType,
     createScalarType,
     createType,
@@ -242,8 +242,8 @@ typeRegister Schema {types, query, mutation, subscription} =
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
-createDataTypeLib :: Failure Message m => [TypeDefinition] -> m Schema
-createDataTypeLib types = case popByKey "Query" types of
+schemaFromTypeDefinitions :: Failure Message m => [TypeDefinition] -> m Schema
+schemaFromTypeDefinitions types = case popByKey "Query" types of
   (Nothing, _) -> failure ("INTERNAL: Query Not Defined" :: Message)
   (Just query, lib1) -> do
     let (mutation, lib2) = popByKey "Mutation" lib1

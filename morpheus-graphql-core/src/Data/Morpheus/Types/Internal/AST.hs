@@ -107,7 +107,7 @@ module Data.Morpheus.Types.Internal.AST
     isEntNode,
     createField,
     createArgument,
-    createDataTypeLib,
+    schemaFromTypeDefinitions,
     createEnumType,
     createScalarType,
     createType,
