@@ -41,8 +41,8 @@ getSchema =
 string :: Name -> Deriving o e m
 string = DerivingScalar . String
 
-encoding :: Monad m => ResolverModel e m
-encoding =
+resolver :: Monad m => ResolverModel e m
+resolver =
   ResolverModel
     { query =
         pure $
@@ -77,7 +77,7 @@ encoding =
 simpleTest :: GQLRequest -> ResponseStream e Identity (Value VALID)
 simpleTest request = do
   schema <- getSchema
-  runApi schema encoding request
+  runApi schema resolver request
 
 main :: IO ()
 main =
