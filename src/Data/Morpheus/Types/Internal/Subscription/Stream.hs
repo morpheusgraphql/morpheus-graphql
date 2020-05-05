@@ -25,7 +25,7 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (traverse_)
 -- MORPHEUS
-import Data.Morpheus.Error.Utils
+import Data.Morpheus.Error
   ( globalErrorMessage,
   )
 import Data.Morpheus.Types.IO

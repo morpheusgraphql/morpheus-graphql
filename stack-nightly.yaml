@@ -1,6 +1,7 @@
 # ghc-8.8.1
 resolver: nightly-2020-05-01
-
 packages:
   - examples
+  - morpheus-graphql-client
+  - morpheus-graphql-core
   - .

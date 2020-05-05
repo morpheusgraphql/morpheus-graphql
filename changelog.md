@@ -2,12 +2,27 @@
 
 ## 0.12.0 Unreleased Changes
 
-## New features
+### Breaking Changes
 
-- exposed:
-  - morpheus parser `Data.Morpheus.Parsing.Internal`
-  - `Data.Morpheus.Types.Internal.Resolving`
-  - `Data.Morpheus.Types.Internal.Subscription`
+- Package was extracted as:
+  - `morpheus-graphql-core`: core components like: parser, validator, executor, utils.
+    - Data.Morpheus.Core
+    - Data.Morpheus.QuasiQuoter
+    - Data.Morpheus.Error
+    - Data.Morpheus.Internal.TH
+    - Data.Morpheus.Internal.Utils
+    - Data.Morpheus.Types.Internal.Resolving
+    - Data.Morpheus.Types.Internal.Operation
+    - Data.Morpheus.Types.Internal.AST
+    - Data.Morpheus.Types.IO
+  - `morpheus-graphql-client`: lightweight version of morpheus client without server implementation
+    - Data.Morpheus.Client
+  - `morpheus-graphql`: morpheus graphql server
+    - Data.Morpheus
+    - Data.Morpheus.Kind
+    - Data.Morpheus.Types
+    - Data.Morpheus.Server
+    - Data.Morpheus.Document
 
 ### minor
 

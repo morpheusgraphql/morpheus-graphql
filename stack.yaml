@@ -1,9 +1,7 @@
 # ghc 8.6.5
 resolver: lts-14.14
-
 packages:
   - examples
+  - morpheus-graphql-client
+  - morpheus-graphql-core
   - .
-
-extra-deps:
-  - megaparsec-8.0.0

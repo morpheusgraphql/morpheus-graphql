@@ -1,107 +1,115 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DataKinds  #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 -- | GQL Types
 module Data.Morpheus.Types
-  ( Event(..)
-  -- Type Classes
-  , GQLType(KIND, description)
-  , GQLScalar(parseValue, serialize)
-  , GQLRequest(..)
-  , GQLResponse(..)
-  , ID(..)
-  , ScalarValue(..)
-  , GQLRootResolver(..)
-  , constRes
-  , constMutRes
-  , Undefined(..)
-  , Res
-  , MutRes
-  , SubRes
-  , IORes
-  , IOMutRes
-  , IOSubRes
-  , Resolver
-  , QUERY
-  , MUTATION
-  , SUBSCRIPTION
-  , lift
-  , liftEither
-  , ResolveQ
-  , ResolveM
-  , ResolveS
-  , failRes
-  , WithOperation
-  , publish
-  , subscribe
-  , unsafeInternalContext
-  , SubField
-  , Input
-  , Stream
-  , WS
-  , HTTP
+  ( Event (..),
+    -- Type Classes
+    GQLType (KIND, description),
+    GQLScalar (parseValue, serialize),
+    GQLRequest (..),
+    GQLResponse (..),
+    ID (..),
+    ScalarValue (..),
+    GQLRootResolver (..),
+    constRes,
+    constMutRes,
+    Undefined (..),
+    Res,
+    MutRes,
+    SubRes,
+    IORes,
+    IOMutRes,
+    IOSubRes,
+    Resolver,
+    QUERY,
+    MUTATION,
+    SUBSCRIPTION,
+    lift,
+    liftEither,
+    ResolveQ,
+    ResolveM,
+    ResolveS,
+    failRes,
+    WithOperation,
+    publish,
+    subscribe,
+    unsafeInternalContext,
+    SubField,
+    Input,
+    Stream,
+    WS,
+    HTTP,
   )
 where
 
-import           Data.Text                      ( pack )
-import           Data.Either                    (either)
-import           Control.Monad.Trans.Class      ( MonadTrans(..) )
-
+import Control.Monad.Trans.Class (MonadTrans (..))
+import Data.Either (either)
 -- MORPHEUS
-import           Data.Morpheus.Types.GQLScalar  ( GQLScalar
-                                                  ( parseValue
-                                                  , serialize
-                                                  )
-                                                )
-import           Data.Morpheus.Types.GQLType    ( GQLType(KIND, description) )
-import           Data.Morpheus.Types.ID         ( ID(..) )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( MUTATION
-                                                , QUERY
-                                                , SUBSCRIPTION
-                                                , ScalarValue(..)
-                                                , Message
-                                                )
-import           Data.Morpheus.Types.Internal.Resolving
-                                                ( Event(..)
-                                                , GQLRootResolver(..)
-                                                , Resolver
-                                                , WithOperation
-                                                , lift
-                                                , failure
-                                                , Failure
-                                                , pushEvents
-                                                , PushEvents(..)
-                                                , subscribe
-                                                , unsafeInternalContext
-                                                , UnSubResolver
-                                                )
-import           Data.Morpheus.Types.IO         ( GQLRequest(..)
-                                                , GQLResponse(..)
-                                                )
-import           Data.Morpheus.Types.Types      ( Undefined(..) )
-import           Data.Morpheus.Types.Internal.Subscription  
-                                                ( Stream
-                                                , Input
-                                                , WS
-                                                , HTTP
-                                                )
+import Data.Morpheus.Server.Types.GQLScalar
+  ( GQLScalar
+      ( parseValue,
+        serialize
+      ),
+  )
+import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, description))
+import Data.Morpheus.Server.Types.ID (ID (..))
+import Data.Morpheus.Server.Types.Types (Undefined (..))
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+    GQLResponse (..),
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( MUTATION,
+    Message,
+    QUERY,
+    SUBSCRIPTION,
+    ScalarValue (..),
+  )
+import Data.Morpheus.Types.Internal.Resolving
+  ( Event (..),
+    Failure,
+    GQLRootResolver (..),
+    PushEvents (..),
+    Resolver,
+    UnSubResolver,
+    WithOperation,
+    failure,
+    lift,
+    pushEvents,
+    subscribe,
+    unsafeInternalContext,
+  )
+import Data.Morpheus.Types.Internal.Subscription
+  ( HTTP,
+    Input,
+    Stream,
+    WS,
+  )
+import Data.Text (pack)
 
 type Res = Resolver QUERY
+
 type MutRes = Resolver MUTATION
+
 type SubRes = Resolver SUBSCRIPTION
 
 type IORes e = Res e IO
+
 type IOMutRes e = MutRes e IO
+
 type IOSubRes e = SubRes e IO
 
 -- Recursive Resolvers
 type ResolveQ e m a = Res e m (a (Res e m))
+
 type ResolveM e m a = MutRes e m (a (MutRes e m))
+
 type ResolveS e m a = SubRes e m (a (Res e m))
 
 -- Subsciption Object Resolver Fields
-type SubField m a = (m (a (UnSubResolver m))) 
+type SubField m a = (m (a (UnSubResolver m)))
 
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents
@@ -111,8 +119,8 @@ constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a
-constMutRes events value = const $ do 
-  publish events  
+constMutRes events value = const $ do
+  publish events
   pure value
 
 failRes :: (WithOperation o, Monad m) => String -> Resolver o e m a
