@@ -13,7 +13,7 @@ import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST (Name, ScalarValue (..), Schema, VALID, Value (..), replaceValue, schemaFromTypeDefinitions)
-import Data.Morpheus.Types.Internal.Resolving (Deriving (..), ObjectDeriving (..), ResolverModel (..), ResponseStream, Result (..), ResultT (..))
+import Data.Morpheus.Types.Internal.Resolving (Deriving (..), ObjectRes (..), ResolverModel (..), ResponseStream, Result (..), ResultT (..))
 import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as LT (toStrict)
 import Data.Text.Lazy.Encoding (decodeUtf8)
@@ -39,21 +39,21 @@ getSchema =
 |]
 
 string :: Name -> Deriving o e m
-string = DerivingScalar . String
+string = ResScalar . String
 
 resolver :: Monad m => ResolverModel e m
 resolver =
   ResolverModel
     { query =
         pure $
-          DerivingObject
-            ( ObjectDeriving
+          ResObject
+            ( ObjectRes
                 { __typename = "Query",
                   objectFields =
                     [ ( "deity",
                         pure
-                          $ DerivingObject
-                          $ ObjectDeriving
+                          $ ResObject
+                          $ ObjectRes
                             { __typename = "Deity",
                               objectFields =
                                 [ ( "name",
@@ -61,7 +61,7 @@ resolver =
                                   ),
                                   ( "power",
                                     pure $
-                                      DerivingList
+                                      ResList
                                         [string "Shapeshifting"]
                                   )
                                 ]
@@ -70,8 +70,8 @@ resolver =
                     ]
                 }
             ),
-      mutation = pure DerivingNull,
-      subscription = pure DerivingNull
+      mutation = pure ResNull,
+      subscription = pure ResNull
     }
 
 simpleTest :: GQLRequest -> ResponseStream e Identity (Value VALID)

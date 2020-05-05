@@ -63,7 +63,7 @@ import Data.Morpheus.Types.Internal.Resolving
     GQLRootResolver (..),
     LiftOperation,
     MapStrategy (..),
-    ObjectDeriving (..),
+    ObjectRes (..),
     Resolver,
     ResolverModel (..),
     failure,
@@ -88,11 +88,11 @@ instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => 
 
 -- MAYBE
 instance (Monad m, LiftOperation o, Encode a o e m) => Encode (Maybe a) o e m where
-  encode = maybe (pure DerivingNull) encode
+  encode = maybe (pure ResNull) encode
 
 -- LIST []
 instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
-  encode = fmap DerivingList . traverse encode
+  encode = fmap ResList . traverse encode
 
 --  Tuple  (a,b)
 instance Encode (Pair k v) o e m => Encode (k, v) o e m where
@@ -139,7 +139,7 @@ class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
-  encodeKind = pure . DerivingScalar . serialize . unVContext
+  encodeKind = pure . ResScalar . serialize . unVContext
 
 -- ENUM
 instance (Generic a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
@@ -153,23 +153,23 @@ convertNode ::
   ResNode o e m ->
   Deriving o e m
 convertNode ResNode {resDatatypeName, resKind = REP_OBJECT, resFields} =
-  DerivingObject (ObjectDeriving resDatatypeName $ map toFieldRes resFields)
+  ResObject (ObjectRes resDatatypeName $ map toFieldRes resFields)
 convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord} =
   encodeUnion resFields
   where
     -- ENUM
-    encodeUnion [] = DerivingEnum resDatatypeName resTypeName
+    encodeUnion [] = ResEnum resDatatypeName resTypeName
     -- Type References --------------------------------------------------------------
     encodeUnion [FieldNode {fieldTypeName, fieldResolver, isFieldObject}]
       | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName =
-        DerivingUnion fieldTypeName fieldResolver
+        ResUnion fieldTypeName fieldResolver
     -- Inline Union Types ----------------------------------------------------------------------------
     encodeUnion fields =
-      DerivingUnion
+      ResUnion
         resTypeName
         $ pure
-        $ DerivingObject
-        $ ObjectDeriving
+        $ ResObject
+        $ ObjectRes
           resTypeName
           (map toFieldRes resolvers)
       where
@@ -205,7 +205,7 @@ objectResolvers value =
   exploreResolvers (Proxy @(CUSTOM a)) value
     >>= constraintOnject
   where
-    constraintOnject obj@DerivingObject {} =
+    constraintOnject obj@ResObject {} =
       pure obj
     constraintOnject _ =
       failure ("resolver must be an object" :: Message)
