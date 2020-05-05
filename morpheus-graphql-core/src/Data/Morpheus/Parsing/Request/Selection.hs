@@ -1,48 +1,50 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Parsing.Request.Selection
-  ( parseSelectionSet
-  , parseFragmentDefinition
+  ( parseSelectionSet,
+    parseFragmentDefinition,
   )
 where
 
-import           Text.Megaparsec                ( label
-                                                , try
-                                                , (<|>)
-                                                )
-
 --
 -- MORPHEUS
-import           Data.Morpheus.Parsing.Internal.Internal
-                                                ( Parser
-                                                , getLocation
-                                                )
-import           Data.Morpheus.Parsing.Internal.Pattern
-                                                ( optionalDirectives )
-import           Data.Morpheus.Parsing.Internal.Terms
-                                                ( keyword
-                                                , parseAlias
-                                                , parseName
-                                                , parseTypeCondition
-                                                , setOf
-                                                , spreadLiteral
-                                                , token
-                                                )
-import           Data.Morpheus.Parsing.Internal.Arguments
-                                                ( maybeArguments )
-import           Data.Morpheus.Types.Internal.AST
-                                                ( Selection(..)
-                                                , SelectionContent(..)
-                                                , Ref(..)
-                                                , Fragment(..)
-                                                , Arguments
-                                                , RAW
-                                                , SelectionSet
-                                                , Name
-                                                , Position
-                                                )
 
+import Data.Morpheus.Parsing.Internal.Arguments
+  ( maybeArguments,
+  )
+import Data.Morpheus.Parsing.Internal.Internal
+  ( Parser,
+    getLocation,
+  )
+import Data.Morpheus.Parsing.Internal.Pattern
+  ( optionalDirectives,
+  )
+import Data.Morpheus.Parsing.Internal.Terms
+  ( keyword,
+    parseAlias,
+    parseName,
+    parseTypeCondition,
+    setOf,
+    spreadLiteral,
+    token,
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( Arguments,
+    Fragment (..),
+    Name,
+    Position,
+    RAW,
+    Ref (..),
+    Selection (..),
+    SelectionContent (..),
+    SelectionSet,
+  )
+import Text.Megaparsec
+  ( (<|>),
+    label,
+    try,
+  )
 
 -- Selection Sets : https://graphql.github.io/graphql-spec/June2018/#sec-Selection-Sets
 --
@@ -56,12 +58,12 @@ import           Data.Morpheus.Types.Internal.AST
 --
 parseSelectionSet :: Parser (SelectionSet RAW)
 parseSelectionSet = label "SelectionSet" $ setOf parseSelection
- where
-  parseSelection =
-    label "Selection"
-      $   try inlineFragment
-      <|> try spread
-      <|> parseSelectionField
+  where
+    parseSelection =
+      label "Selection" $
+        try inlineFragment
+          <|> try spread
+          <|> parseSelectionField
 
 -- Fields: https://graphql.github.io/graphql-spec/June2018/#sec-Language.Fields
 --
@@ -70,20 +72,20 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
 --
 parseSelectionField :: Parser (Selection RAW)
 parseSelectionField = label "SelectionField" $ do
-  selectionPosition   <- getLocation
-  selectionAlias      <- parseAlias
-  selectionName       <- parseName
-  selectionArguments  <- maybeArguments
+  selectionPosition <- getLocation
+  selectionAlias <- parseAlias
+  selectionName <- parseName
+  selectionArguments <- maybeArguments
   -- TODO: handle Directives
-  _directives   <- optionalDirectives
-  selSet selectionName selectionAlias selectionArguments <|> pure Selection { selectionContent   = SelectionField, ..}
- where
-  -----------------------------------------
-  selSet :: Name -> Maybe Name -> Arguments RAW -> Parser (Selection RAW)
-  selSet selectionName selectionAlias selectionArguments = label "body" $ do
-    selectionPosition <- getLocation
-    selectionSet      <- parseSelectionSet
-    pure Selection { selectionContent   = SelectionSet selectionSet, ..}
+  _directives <- optionalDirectives
+  selSet selectionName selectionAlias selectionArguments <|> pure Selection {selectionContent = SelectionField, ..}
+  where
+    -----------------------------------------
+    selSet :: Name -> Maybe Name -> Arguments RAW -> Parser (Selection RAW)
+    selSet selectionName selectionAlias selectionArguments = label "body" $ do
+      selectionPosition <- getLocation
+      selectionSet <- parseSelectionSet
+      pure Selection {selectionContent = SelectionSet selectionSet, ..}
 
 --
 -- Fragments: https://graphql.github.io/graphql-spec/June2018/#sec-Language.Fragments
@@ -97,10 +99,10 @@ parseSelectionField = label "SelectionField" $ do
 spread :: Parser (Selection RAW)
 spread = label "FragmentSpread" $ do
   refPosition <- spreadLiteral
-  refName     <- token
+  refName <- token
   -- TODO: handle Directives
   _directives <- optionalDirectives
-  pure $ Spread Ref { .. }
+  pure $ Spread Ref {..}
 
 -- FragmentDefinition : https://graphql.github.io/graphql-spec/June2018/#FragmentDefinition
 --
@@ -110,8 +112,8 @@ spread = label "FragmentSpread" $ do
 parseFragmentDefinition :: Parser Fragment
 parseFragmentDefinition = label "FragmentDefinition" $ do
   keyword "fragment"
-  fragmentPosition  <- getLocation
-  fragmentName      <- parseName
+  fragmentPosition <- getLocation
+  fragmentName <- parseName
   fragmentBody fragmentName fragmentPosition
 
 -- Inline Fragments : https://graphql.github.io/graphql-spec/June2018/#sec-Inline-Fragments
@@ -121,13 +123,13 @@ parseFragmentDefinition = label "FragmentDefinition" $ do
 --
 inlineFragment :: Parser (Selection RAW)
 inlineFragment = label "InlineFragment" $ do
-  fragmentPosition  <- spreadLiteral
+  fragmentPosition <- spreadLiteral
   InlineFragment <$> fragmentBody "INLINE_FRAGMENT" fragmentPosition
 
 fragmentBody :: Name -> Position -> Parser Fragment
 fragmentBody fragmentName fragmentPosition = label "FragmentBody" $ do
-  fragmentType      <- parseTypeCondition
+  fragmentType <- parseTypeCondition
   -- TODO: handle Directives
-  _directives       <- optionalDirectives
+  _directives <- optionalDirectives
   fragmentSelection <- parseSelectionSet
-  pure $ Fragment { .. }
+  pure $ Fragment {..}

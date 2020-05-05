@@ -1,32 +1,31 @@
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Server.TH.Simple
-  ( thSimpleApi
-  ) where
+  ( thSimpleApi,
+  )
+where
 
 import qualified Data.ByteString.Lazy.Char8 as B
-
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), Undefined (..))
-import           Data.Text                  (Text)
+import Data.Morpheus (interpreter)
+import Data.Morpheus.Document (importGQLDocumentWithNamespace)
+import Data.Morpheus.Types (GQLRootResolver (..), Undefined (..))
+import Data.Text (Text)
 
 importGQLDocumentWithNamespace "src/Server/TH/simple.gql"
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    {
-      queryResolver = Query {queryDeity},
-      mutationResolver =  Undefined,
+    { queryResolver = Query {queryDeity},
+      mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
   where

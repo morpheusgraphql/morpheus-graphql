@@ -1,12 +1,12 @@
 module Data.Morpheus.Error.NameCollision
-  ( NameCollision(..)
+  ( NameCollision (..),
   )
 where
 
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Name 
-                                                , GQLError(..)
-                                                )
+import Data.Morpheus.Types.Internal.AST.Base
+  ( GQLError (..),
+    Name,
+  )
 
-class NameCollision a where 
+class NameCollision a where
   nameCollision :: Name -> a -> GQLError

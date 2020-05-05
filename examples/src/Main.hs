@@ -1,13 +1,13 @@
 module Main
-  ( main
+  ( main,
   )
 where
 
-import           Server.Servant                 (servantServer)
-import           Server.Scotty                  (scottyServer)
-
+import Server.Scotty (scottyServer)
+import Server.Servant (servantServer)
 
 main :: IO ()
-main = scottyServer 
+main = scottyServer
+
 -- or
 -- main = servantServer

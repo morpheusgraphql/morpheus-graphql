@@ -1,15 +1,15 @@
-{-# LANGUAGE DeriveGeneric   #-}
-{-# LANGUAGE DeriveAnyClass  #-}
-{-# LANGUAGE TypeFamilies    #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Server.Mythology.Place
-  ( Realm(..)
-  , City(..)
+  ( Realm (..),
+    City (..),
   )
 where
 
-import           Data.Morpheus.Types            ( GQLType(..) )
-import           GHC.Generics                   ( Generic )
+import Data.Morpheus.Types (GQLType (..))
+import GHC.Generics (Generic)
 
 data Realm
   = MountOlympus

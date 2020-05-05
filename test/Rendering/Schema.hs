@@ -1,29 +1,36 @@
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DerivingStrategies    #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Rendering.Schema
-  ( schemaProxy
-  ) where
+  ( schemaProxy,
+  )
+where
 
-import           Data.Morpheus.Document (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Kind     (SCALAR)
-import           Data.Morpheus.Types    (GQLRootResolver (..), GQLScalar (..), GQLType (..), ID (..), ScalarValue (..),
-                                         Undefined (..))
-import           Data.Proxy             (Proxy (..))
-import           Data.Text              (Text)
-import           GHC.Generics           (Generic)
+import Data.Morpheus.Document (importGQLDocumentWithNamespace)
+import Data.Morpheus.Kind (SCALAR)
+import Data.Morpheus.Types
+  ( GQLRootResolver (..),
+    GQLScalar (..),
+    GQLType (..),
+    ID (..),
+    ScalarValue (..),
+    Undefined (..),
+  )
+import Data.Proxy (Proxy (..))
+import Data.Text (Text)
+import GHC.Generics (Generic)
 
-data TestScalar =
-  TestScalar
+data TestScalar
+  = TestScalar
   deriving (Show, Generic)
 
 instance GQLType TestScalar where
@@ -35,5 +42,5 @@ instance GQLScalar TestScalar where
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
-schemaProxy :: Proxy (GQLRootResolver IO () Query  Undefined Undefined)
-schemaProxy = Proxy @(GQLRootResolver IO () Query  Undefined Undefined)
+schemaProxy :: Proxy (GQLRootResolver IO () Query Undefined Undefined)
+schemaProxy = Proxy @(GQLRootResolver IO () Query Undefined Undefined)

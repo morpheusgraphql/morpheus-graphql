@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Operation
-  ( mutationIsNotDefined
-  , subscriptionIsNotDefined
+  ( mutationIsNotDefined,
+    subscriptionIsNotDefined,
   )
 where
 
-import           Data.Morpheus.Error.Utils      ( errorMessage )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Position 
-                                                , GQLErrors 
-                                                )
+import Data.Morpheus.Error.Utils (errorMessage)
+import Data.Morpheus.Types.Internal.AST.Base
+  ( GQLErrors,
+    Position,
+  )
 
 mutationIsNotDefined :: Position -> GQLErrors
 mutationIsNotDefined position =
