@@ -397,8 +397,7 @@ mapFieldDeriving ::
   ) ->
   (Name, FieldDeriving from e m) ->
   (Name, FieldDeriving to e m)
---mapFieldDeriving f (name, FieldDeriving value) = (name, FieldDeriving $ f value)
-mapFieldDeriving f (name, FieldDeriving value) = (name, FieldDeriving $ \x -> f (value x))
+mapFieldDeriving f (name, FieldDeriving value) = (name, FieldDeriving $ f . value)
 
 --
 -- Selection Processing
