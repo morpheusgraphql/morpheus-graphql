@@ -90,8 +90,7 @@ import Data.Morpheus.Types.Internal.AST.Value
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Operation
-  ( KeyOf (..),
-    Merge (..),
+  ( Merge (..),
     empty,
     keyOf,
     selectOr,
