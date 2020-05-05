@@ -41,6 +41,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     setTypeName,
     ResolverModel (..),
     liftStateless,
+    withArguments,
   )
 where
 
@@ -391,6 +392,18 @@ mapObjectDeriving (ObjectDeriving tyname x) =
 
 mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
 mapEntry f (name, value) = (name, f value)
+
+withArguments ::
+  forall o e m a.
+  (LiftOperation o, Monad m) =>
+  (Arguments VALID -> Resolver o e m a) ->
+  Resolver o e m a
+withArguments = withResolver args
+  where
+    args :: ResolverState e m (Arguments VALID)
+    args = do
+      Selection {selectionArguments} <- getState
+      pure selectionArguments
 
 --
 -- Selection Processing

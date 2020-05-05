@@ -33,6 +33,7 @@ module Data.Morpheus.Types.Internal.Resolving
     unsafeBind,
     liftStateless,
     resultOr,
+    withArguments,
   )
 where
 
