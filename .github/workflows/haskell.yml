@@ -44,7 +44,8 @@ jobs:
       - name: Install
         run: |
           cabal update
-          cabal build --only-dependencies
+          cabal install hlint
+          cabal install ormolu
       - name: lint
         run: |
           hlint .
