@@ -1,18 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib
-  ( getGQLBody
-  , getResponseBody
-  , getCases
-  , maybeVariables
-  ) where
+  ( getGQLBody,
+    getResponseBody,
+    getCases,
+    maybeVariables,
+  )
+where
 
-import           Control.Applicative        ((<|>))
-import           Data.Aeson                 (FromJSON, Value (..), decode)
-import qualified Data.ByteString.Lazy       as L (readFile)
-import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.Maybe                 (fromMaybe)
-import           Data.Text                  (Text, unpack)
+import Control.Applicative ((<|>))
+import Data.Aeson (FromJSON, Value (..), decode)
+import qualified Data.ByteString.Lazy as L (readFile)
+import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Maybe (fromMaybe)
+import Data.Text (Text, unpack)
 
 path :: Text -> String
 path name = "test/" ++ unpack name

@@ -1,30 +1,30 @@
-{-# LANGUAGE NamedFieldPuns             #-}
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Utils
-  ( errorMessage
-  , globalErrorMessage
-  , badRequestError
+  ( errorMessage,
+    globalErrorMessage,
+    badRequestError,
   )
 where
 
-import           Data.Semigroup                         ((<>))
-import           Data.ByteString.Lazy.Char8     ( ByteString
-                                                , pack
-                                                )
-import           Data.Morpheus.Types.Internal.AST.Base
-                                                ( Position(..)
-                                                , GQLError(..)
-                                                , GQLErrors
-                                                )
-import           Data.Text                      ( Text )
-
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+    pack,
+  )
+import Data.Morpheus.Types.Internal.AST.Base
+  ( GQLError (..),
+    GQLErrors,
+    Position (..),
+  )
+import Data.Semigroup ((<>))
+import Data.Text (Text)
 
 errorMessage :: Position -> Text -> GQLErrors
-errorMessage position message = [GQLError { message, locations = [position] }]
+errorMessage position message = [GQLError {message, locations = [position]}]
 
 globalErrorMessage :: Text -> GQLErrors
-globalErrorMessage message = [GQLError { message, locations = [] }]
+globalErrorMessage message = [GQLError {message, locations = []}]
 
 badRequestError :: String -> ByteString
-badRequestError = ("Bad Request. Could not decode Request body: " <>) . pack 
+badRequestError = ("Bad Request. Could not decode Request body: " <>) . pack

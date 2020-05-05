@@ -8,28 +8,46 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-haskell@v1
-      with:
-        ghc-version: '8.6.5'
-        cabal-version: '3.0'
-    - name: Install dependencies
-      run: | 
-        # bash release.sh
-        cabal update
-        cabal build --only-dependencies
-    - name: Build
-      run: |
-        # cd $DIST_PATH
-        # cd release
-        # echo $PWD
-        # ls
-        cabal configure --enable-tests
-        cabal build
-    - name: Run tests
-      run: |
-        # cd $DIST_PATH
-        # cd release
-        # echo $PWD
-        # ls
-        cabal test
+      - uses: actions/checkout@v1
+      - uses: actions/setup-haskell@v1
+        with:
+          ghc-version: "8.6.5"
+          cabal-version: "3.0"
+      - name: Install dependencies
+        run: |
+          # bash release.sh
+          cabal update
+          cabal build --only-dependencies
+      - name: Build
+        run: |
+          # cd $DIST_PATH
+          # cd release
+          # echo $PWD
+          # ls
+          cabal configure --enable-tests
+          cabal build
+      - name: Run tests
+        run: |
+          # cd $DIST_PATH
+          # cd release
+          # echo $PWD
+          # ls
+          cabal test
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v1
+  #     - uses: actions/setup-haskell@v1
+  #       with:
+  #         ghc-version: "8.6.5"
+  #         cabal-version: "3.0"
+  #     - name: Install
+  #       run: |
+  #         curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+  #         # cabal update
+  #         # cabal install hlint
+  #         # cabal install ormolu
+  #     - name: lint
+  #       run: |
+  #         hlint .
+  #         # ormolu --mode check $(find . -name '*.hs')

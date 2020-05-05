@@ -1,33 +1,35 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric  #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TypeFamilies   #-}
-{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Feature.Input.Object.API
-  ( api
+  ( api,
   )
 where
 
-import           Data.Morpheus                  ( interpreter )
-import           Data.Morpheus.Types            ( GQLRequest
-                                                , GQLResponse
-                                                , GQLRootResolver(..)
-                                                , GQLType(..)
-                                                , Undefined(..)
-                                                )
-import           GHC.Generics                   ( Generic )
-import           Data.Morpheus.Kind             ( INPUT )
-import           Data.Text                      ( Text
-                                                , pack
-                                                )
+import Data.Morpheus (interpreter)
+import Data.Morpheus.Kind (INPUT)
+import Data.Morpheus.Types
+  ( GQLRequest,
+    GQLResponse,
+    GQLRootResolver (..),
+    GQLType (..),
+    Undefined (..),
+  )
+import Data.Text
+  ( Text,
+    pack,
+  )
+import GHC.Generics (Generic)
 
-
-data InputObject = InputObject {
-  field :: Text,
-  nullableField :: Maybe Int,
-  recursive :: Maybe InputObject
-} deriving (Generic, Show)
+data InputObject = InputObject
+  { field :: Text,
+    nullableField :: Maybe Int,
+    recursive :: Maybe InputObject
+  }
+  deriving (Generic, Show)
 
 instance GQLType InputObject where
   type KIND InputObject = INPUT
@@ -35,22 +37,26 @@ instance GQLType InputObject where
 -- types & args
 newtype Arg a = Arg
   { value :: a
-  } deriving (Generic, Show)
+  }
+  deriving (Generic, Show)
 
 -- query
 testRes :: Show a => Applicative m => Arg a -> m Text
-testRes Arg { value } = pure $ pack $ show value
+testRes Arg {value} = pure $ pack $ show value
 
 -- resolver
 newtype Query m = Query
-  { input  :: Arg InputObject -> m Text
-  } deriving (Generic, GQLType)
+  { input :: Arg InputObject -> m Text
+  }
+  deriving (Generic, GQLType)
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
-rootResolver = GQLRootResolver { queryResolver = Query { input = testRes }
-                               , mutationResolver = Undefined
-                               , subscriptionResolver = Undefined
-                               }
+rootResolver =
+  GQLRootResolver
+    { queryResolver = Query {input = testRes},
+      mutationResolver = Undefined,
+      subscriptionResolver = Undefined
+    }
 
 api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver
