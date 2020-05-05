@@ -55,6 +55,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Merge (..),
+    empty,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Deriving (..),
@@ -160,7 +161,7 @@ convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeNam
     -- Type References --------------------------------------------------------------
     encodeUnion [FieldNode {fieldTypeName, fieldResolver, isFieldObject}]
       | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName =
-        DerivingUnion fieldTypeName (runFieldDeriving fieldResolver undefined)
+        DerivingUnion fieldTypeName (runFieldDeriving fieldResolver empty)
     -- Inline Union Types ----------------------------------------------------------------------------
     encodeUnion fields =
       DerivingUnion
