@@ -33,13 +33,13 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     ResponseStream,
     ObjectDeriving (..),
     Deriving (..),
-    FieldRes,
     WithOperation,
     Context (..),
     unsafeInternalContext,
     runResolverModel,
     setTypeName,
     ResolverModel (..),
+    FieldDeriving (..),
     liftStateless,
   )
 where
@@ -48,7 +48,6 @@ import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader (ReaderT (..), ask, mapReaderT, withReaderT)
-import Data.Maybe (maybe)
 -- MORPHEUS
 import Data.Morpheus.Error.Internal (internalResolvingError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
@@ -91,7 +90,8 @@ import Data.Morpheus.Types.Internal.AST.Value
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Operation
-  ( Merge (..),
+  ( KeyOf (..),
+    Merge (..),
     empty,
     keyOf,
     selectOr,
@@ -356,12 +356,19 @@ data Deriving (o :: OperationType) e (m :: * -> *)
 data ObjectDeriving o e m = ObjectDeriving
   { __typename :: Name,
     objectFields ::
-      [ ( Name,
-          Resolver o e m (Deriving o e m)
-        )
-      ]
+      [(Name, FieldDeriving o e m)]
   }
   deriving (Show)
+
+newtype FieldDeriving o e m = FieldDeriving {runFieldDeriving :: Arguments VALID -> Resolver o e m (Deriving o e m)}
+
+-- | FieldDerivingWithArgs
+
+-- instance KeyOf (FieldDeriving o e m) where
+--   keyOf = fieldName
+
+instance Show (FieldDeriving o e m) where
+  show _ = "FieldDeriving"
 
 instance MapStrategy QUERY SUBSCRIPTION where
   mapStrategy = ResolverS . pure . lift . fmap mapDeriving
@@ -385,33 +392,33 @@ mapObjectDeriving ::
   ) =>
   ObjectDeriving o e m ->
   ObjectDeriving o' e m
-mapObjectDeriving (ObjectDeriving tyname x) =
+mapObjectDeriving (ObjectDeriving tyname fields) =
   ObjectDeriving tyname $
-    map (mapEntry mapStrategy) x
+    map (mapFieldDeriving mapStrategy) fields
 
-mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
-mapEntry f (name, value) = (name, f value)
+mapFieldDeriving ::
+  ( Resolver from e m (Deriving from e m) ->
+    Resolver to e m (Deriving to e m)
+  ) ->
+  (Name, FieldDeriving from e m) ->
+  (Name, FieldDeriving to e m)
+--mapFieldDeriving f (name, FieldDeriving value) = (name, FieldDeriving $ f value)
+mapFieldDeriving f (name, FieldDeriving value) = (name, FieldDeriving $ \x -> f (value x))
 
 --
 -- Selection Processing
 toResolver ::
   forall o e m a b.
   (LiftOperation o, Monad m) =>
-  (Arguments VALID -> Eventless a) ->
+  Eventless a ->
   (a -> Resolver o e m b) ->
   Resolver o e m b
-toResolver toArgs = withResolver args
+toResolver args = withResolver resState
   where
-    args :: ResolverState e m a
-    args = do
-      Selection {selectionArguments} <- getState
-      let resT = ResultT $ pure $ toArgs selectionArguments
-      ResolverState $ lift $ cleanEvents resT
+    resState :: ResolverState e m a
+    resState = ResolverState $ lift $ cleanEvents $ ResultT $ pure args
 
 -- DataResolver
-type FieldRes o e m =
-  (Name, Resolver o e m (Deriving o e m))
-
 instance Merge (Deriving o e m) where
   merge p (DerivingObject x) (DerivingObject y) =
     DerivingObject <$> merge p x y
@@ -440,15 +447,17 @@ lookupRes ::
   Selection VALID ->
   ObjectDeriving o e m ->
   Resolver o e m ValidValue
-lookupRes Selection {selectionName}
+lookupRes Selection {selectionName, selectionArguments}
   | selectionName == "__typename" =
     pure . Scalar . String . __typename
   | otherwise =
     maybe
       (pure gqlNull)
-      (`unsafeBind` runDataResolver)
+      toRes
       . lookup selectionName
       . objectFields
+  where
+    toRes (FieldDeriving f) = f selectionArguments `unsafeBind` runDataResolver
 
 resolveObject ::
   forall o e m.
@@ -490,7 +499,7 @@ runDataResolver = withResolver getState . __encode
               DerivingUnion name
                 $ pure
                 $ DerivingObject
-                $ ObjectDeriving name [("enum", pure $ DerivingScalar $ String enum)]
+                $ ObjectDeriving name [("enum", FieldDeriving $ const $ pure $ DerivingScalar $ String enum)]
         encodeNode DerivingEnum {} _ =
           failure ("wrong selection on enum value" :: Message)
         -- UNION

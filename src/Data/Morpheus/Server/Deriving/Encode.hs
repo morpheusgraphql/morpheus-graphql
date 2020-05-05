@@ -59,7 +59,7 @@ import Data.Morpheus.Types.Internal.Operation
 import Data.Morpheus.Types.Internal.Resolving
   ( Deriving (..),
     Eventless,
-    FieldRes,
+    FieldDeriving (..),
     GQLRootResolver (..),
     LiftOperation,
     MapStrategy (..),
@@ -81,18 +81,18 @@ import Data.Text (pack)
 import GHC.Generics
 
 class Encode resolver o e (m :: * -> *) where
-  encode :: resolver -> Resolver o e m (Deriving o e m)
+  encode :: resolver -> FieldDeriving o e m
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => Encode a o e m where
-  encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
+  encode resolver = FieldDeriving $ const $ encodeKind (VContext resolver :: VContext (KIND a) a)
 
 -- MAYBE
 instance (Monad m, LiftOperation o, Encode a o e m) => Encode (Maybe a) o e m where
-  encode = maybe (pure DerivingNull) encode
+  encode = maybe (FieldDeriving $ const $ pure DerivingNull) encode
 
 -- LIST []
 instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
-  encode = fmap DerivingList . traverse encode
+  encode res = FieldDeriving $ \x -> DerivingList <$> traverse (flip runFieldDeriving x . encode) res
 
 --  Tuple  (a,b)
 instance Encode (Pair k v) o e m => Encode (k, v) o e m where
@@ -118,9 +118,7 @@ instance
   ) =>
   Encode (a -> Resolver fo e m b) o e m
   where
-  encode x =
-    mapStrategy $
-      toResolver decodeArguments x `unsafeBind` encode
+  encode res = FieldDeriving $ \args -> mapStrategy (toResolver (decodeArguments args) res `unsafeBind` (flip runFieldDeriving args . encode))
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
@@ -131,7 +129,7 @@ instance
   ) =>
   Encode (Resolver fo e m b) o e m
   where
-  encode = mapStrategy . (`unsafeBind` encode)
+  encode res = FieldDeriving $ \args -> mapStrategy (res `unsafeBind` (flip runFieldDeriving args . encode))
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
@@ -162,7 +160,7 @@ convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeNam
     -- Type References --------------------------------------------------------------
     encodeUnion [FieldNode {fieldTypeName, fieldResolver, isFieldObject}]
       | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName =
-        DerivingUnion fieldTypeName fieldResolver
+        DerivingUnion fieldTypeName (runFieldDeriving fieldResolver undefined)
     -- Inline Union Types ----------------------------------------------------------------------------
     encodeUnion fields =
       DerivingUnion
@@ -248,7 +246,7 @@ deriveModel
         subscription = objectResolvers subscriptionResolver
       }
 
-toFieldRes :: FieldNode o e m -> FieldRes o e m
+toFieldRes :: FieldNode o e m -> (Name, FieldDeriving o e m)
 toFieldRes FieldNode {fieldSelName, fieldResolver} =
   (fieldSelName, fieldResolver)
 
@@ -266,7 +264,7 @@ data ResNode o e m = ResNode
 data FieldNode o e m = FieldNode
   { fieldTypeName :: Name,
     fieldSelName :: Name,
-    fieldResolver :: Resolver o e m (Deriving o e m),
+    fieldResolver :: FieldDeriving o e m,
     isFieldObject :: Bool
   }
 

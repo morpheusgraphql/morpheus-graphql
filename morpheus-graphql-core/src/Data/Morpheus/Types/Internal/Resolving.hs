@@ -23,7 +23,6 @@ module Data.Morpheus.Types.Internal.Resolving
     setTypeName,
     ObjectDeriving (..),
     Deriving (..),
-    FieldRes,
     WithOperation,
     PushEvents (..),
     subscribe,
@@ -33,6 +32,7 @@ module Data.Morpheus.Types.Internal.Resolving
     unsafeBind,
     liftStateless,
     resultOr,
+    FieldDeriving (..),
   )
 where
 
