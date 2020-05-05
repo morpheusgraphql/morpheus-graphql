@@ -1,12 +1,6 @@
 {
-  "data": {
-    "testUnion": {
-      "name": "testName",
-      "email": "",
-      "email2": "",
-      "address": {
-        "city": ""
-      }
-    }
+  "deity": {
+    "name": "Morpheus",
+    "power": ["Shapeshifting"]
   }
 }
