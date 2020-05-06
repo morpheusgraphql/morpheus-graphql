@@ -16,7 +16,8 @@ where
 -- MORPHEUS
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.Internal.AST
-  ( TypeDefinition (..),
+  ( DataFingerprint (..),
+    TypeDefinition (..),
     TypeUpdater,
     insertType,
   )
@@ -25,7 +26,14 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 
 withSystemTypes :: TypeUpdater
-withSystemTypes = (`resolveUpdates` map insertType schemaTypes)
+withSystemTypes = (`resolveUpdates` map (insertType . reserved) schemaTypes)
+
+reserved :: TypeDefinition -> TypeDefinition
+reserved
+  tyDef@TypeDefinition
+    { typeFingerprint = DataFingerprint name xs
+    } =
+    tyDef {typeFingerprint = DataFingerprint ("SYSTEM.RESERVED." <> name) xs}
 
 schemaTypes :: [TypeDefinition]
 schemaTypes =
