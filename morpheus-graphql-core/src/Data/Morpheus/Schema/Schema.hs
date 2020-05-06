@@ -16,18 +16,49 @@ where
 -- MORPHEUS
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.Internal.AST
-  ( DataFingerprint (..),
+  ( ArgumentsDefinition (..),
+    DataFingerprint (..),
+    FieldsDefinition,
+    Schema (..),
+    TypeContent (..),
     TypeDefinition (..),
     TypeUpdater,
+    TypeWrapper (..),
+    createArgument,
+    createField,
     insertType,
     internalFingerprint,
+    unsafeFromFields,
+  )
+import Data.Morpheus.Types.Internal.Operation
+  ( Merge (..),
+    singleton,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
 
 withSystemTypes :: TypeUpdater
-withSystemTypes = (`resolveUpdates` map (insertType . internalType) schemaTypes)
+withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject inter fields}} =
+  ( do
+      fs <- fields <:> hiddenFields
+      pure $ s {query = q {typeContent = DataObject inter fs}}
+  )
+    >>= (`resolveUpdates` map (insertType . internalType) schemaTypes)
+withSystemTypes _ = fail "query must be an Object Type"
+
+hiddenFields :: FieldsDefinition
+hiddenFields =
+  unsafeFromFields
+    [ createField
+        (singleton (createArgument "name" ([], "String")))
+        "__type"
+        ([TypeMaybe], "__Type"),
+      createField
+        NoArguments
+        "__schema"
+        ([], "__Schema")
+    ]
 
 internalType :: TypeDefinition -> TypeDefinition
 internalType
