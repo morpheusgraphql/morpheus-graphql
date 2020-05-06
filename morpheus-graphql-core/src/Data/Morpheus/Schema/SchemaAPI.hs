@@ -77,23 +77,21 @@ findType name lib = maybe (pure ResNull) (`render` lib) (lookupDataType name lib
 schemaResolver ::
   Monad m =>
   Schema ->
-  ResModel QUERY e m
+  Resolver QUERY e m (ResModel QUERY e m)
 schemaResolver schema@Schema {query, mutation, subscription} =
-  ResObject
-    ( ObjectResModel
-        { __typename = "__Schema",
-          objectFields =
-            [ ("__SchemaTypes", resolveTypes schema),
-              ("__SchemaQueryType", pure $ buildSchemaLinkType $ Just query),
-              ("__SchemaMutationType", pure $ buildSchemaLinkType mutation),
-              ("__SchemaSubscriptionType", pure $ buildSchemaLinkType subscription),
-              ("__SchemaDirectives", pure $ ResList [])
-            ]
-        }
-    )
-
-string :: Name -> ResModel o e m
-string = ResScalar . String
+  pure $
+    ResObject
+      ( ObjectResModel
+          { __typename = "__Schema",
+            objectFields =
+              [ ("__SchemaTypes", resolveTypes schema),
+                ("__SchemaQueryType", pure $ buildSchemaLinkType $ Just query),
+                ("__SchemaMutationType", pure $ buildSchemaLinkType mutation),
+                ("__SchemaSubscriptionType", pure $ buildSchemaLinkType subscription),
+                ("__SchemaDirectives", pure $ ResList [])
+              ]
+          }
+      )
 
 schemaAPI :: Monad m => Schema -> ResModel QUERY e m
 schemaAPI schema =
@@ -102,7 +100,7 @@ schemaAPI schema =
         { __typename = "Root",
           objectFields =
             [ ("__type", typeResolver),
-              ("__schema", pure $ schemaResolver schema)
+              ("__schema", schemaResolver schema)
             ]
         }
     )
