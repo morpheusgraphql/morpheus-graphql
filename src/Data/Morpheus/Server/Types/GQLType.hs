@@ -26,6 +26,7 @@ import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Types.Internal.AST
   ( DataFingerprint (..),
     QUERY,
+    internalFingerprint,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
@@ -137,17 +138,21 @@ instance Typeable m => GQLType (Undefined m) where
 
 instance GQLType Int where
   type KIND Int = SCALAR
+  __typeFingerprint _ = internalFingerprint "Int" []
 
 instance GQLType Float where
   type KIND Float = SCALAR
+  __typeFingerprint _ = internalFingerprint "Float" []
 
 instance GQLType Text where
   type KIND Text = SCALAR
-  __typeName = const "String"
+  __typeName _ = "String"
+  __typeFingerprint _ = internalFingerprint "String" []
 
 instance GQLType Bool where
   type KIND Bool = SCALAR
-  __typeName = const "Boolean"
+  __typeName _ = "Boolean"
+  __typeFingerprint _ = internalFingerprint "Boolean" []
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER

@@ -139,6 +139,7 @@ module Data.Morpheus.Types.Internal.AST
     isInputDataType,
     __inputname,
     updateSchema,
+    internalFingerprint,
   )
 where
 

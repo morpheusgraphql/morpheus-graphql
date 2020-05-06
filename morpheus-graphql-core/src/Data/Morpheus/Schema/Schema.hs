@@ -20,20 +20,21 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeUpdater,
     insertType,
+    internalFingerprint,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
 
 withSystemTypes :: TypeUpdater
-withSystemTypes = (`resolveUpdates` map (insertType . reserved) schemaTypes)
+withSystemTypes = (`resolveUpdates` map (insertType . internalType) schemaTypes)
 
-reserved :: TypeDefinition -> TypeDefinition
-reserved
+internalType :: TypeDefinition -> TypeDefinition
+internalType
   tyDef@TypeDefinition
     { typeFingerprint = DataFingerprint name xs
     } =
-    tyDef {typeFingerprint = DataFingerprint ("SYSTEM.RESERVED." <> name) xs}
+    tyDef {typeFingerprint = internalFingerprint name xs}
 
 schemaTypes :: [TypeDefinition]
 schemaTypes =

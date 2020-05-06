@@ -52,6 +52,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     removeDuplicates,
     GQLError (..),
     GQLErrors,
+    internalFingerprint,
   )
 where
 
@@ -106,6 +107,9 @@ data VALIDATION_MODE
   deriving (Eq, Show)
 
 data DataFingerprint = DataFingerprint Name [String] deriving (Show, Eq, Ord, Lift)
+
+internalFingerprint :: Name -> [String] -> DataFingerprint
+internalFingerprint name = DataFingerprint ("SYSTEM.INTERNAL." <> name)
 
 data OperationType
   = Query
