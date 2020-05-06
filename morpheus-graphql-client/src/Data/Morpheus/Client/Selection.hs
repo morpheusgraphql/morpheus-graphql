@@ -326,7 +326,7 @@ leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: Schema -> Text -> Eventless TypeDefinition
-getType lib typename = selectBy (compileError typename) typename lib
+getType lib typename = selectBy (compileError $ " cant find Type" <> typename) typename lib
 
 typeFrom :: [Name] -> TypeDefinition -> Name
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent

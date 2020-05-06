@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,7 +11,8 @@ module Data.Morpheus.Core
   ( runApi,
     EventCon,
     parseDSL,
-    parseGraphQLDocument,
+    parseFullGQLDocument,
+    parseGQLDocument,
     decodeIntrospection,
     parseTypeSystemDefinition,
     parseTypeDefinitions,
@@ -22,6 +24,7 @@ module Data.Morpheus.Core
 where
 
 -- MORPHEUS
+import Control.Monad ((>=>))
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
@@ -37,6 +40,7 @@ import Data.Morpheus.Parsing.JSONSchema.Parse
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
+import Data.Morpheus.Schema.Schema (withSystemTypes)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
@@ -81,13 +85,14 @@ runApi ::
   RootResModel event m ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runApi schema resModel request =
+runApi inputSchema resModel request =
   validRequest >>= runRootResModel resModel
   where
     validRequest ::
       Monad m => ResponseStream event m Context
     validRequest = cleanEvents $ ResultT $ pure $ do
-      operation <- parseRequestWith schema request
+      operation <- parseRequestWith inputSchema request
+      schema <- withSystemTypes inputSchema
       pure $
         Context
           { schema,
@@ -104,7 +109,10 @@ runApi schema resModel request =
           }
 
 parseDSL :: ByteString -> Either String Schema
-parseDSL = resultOr (Left . show) pure . parseGraphQLDocument
+parseDSL = resultOr (Left . show) pure . parseGQLDocument
 
-parseGraphQLDocument :: ByteString -> Eventless Schema
-parseGraphQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8
+parseGQLDocument :: ByteString -> Eventless Schema
+parseGQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8
+
+parseFullGQLDocument :: ByteString -> Eventless Schema
+parseFullGQLDocument = parseGQLDocument >=> withSystemTypes

@@ -8,8 +8,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Client.Schema
-  ( defaultTypes,
+module Data.Morpheus.Schema.Schema
+  ( withSystemTypes,
   )
 where
 
@@ -24,8 +24,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
 
-defaultTypes :: TypeUpdater
-defaultTypes = (`resolveUpdates` map insertType schemaTypes)
+withSystemTypes :: TypeUpdater
+withSystemTypes = (`resolveUpdates` map insertType schemaTypes)
 
 schemaTypes :: [TypeDefinition]
 schemaTypes =

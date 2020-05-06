@@ -1,8 +1,8 @@
 module Data.Morpheus.Parser
   ( parseTypeDefinitions,
     parseTypeSystemDefinition,
-    parseRequestWith,
     parseRequest,
+    parseRequestWith,
   )
 where
 
