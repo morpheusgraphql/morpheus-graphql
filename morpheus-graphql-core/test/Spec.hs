@@ -25,8 +25,6 @@ getSchema :: Applicative m => ResponseStream e m Schema
 getSchema =
   schemaFromTypeDefinitions
     [dsl|
-
-  scalar String
   
   type Query {
     deity(name: String): Deity!

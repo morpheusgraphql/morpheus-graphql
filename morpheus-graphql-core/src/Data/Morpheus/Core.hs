@@ -91,8 +91,8 @@ runApi inputSchema resModel request =
     validRequest ::
       Monad m => ResponseStream event m Context
     validRequest = cleanEvents $ ResultT $ pure $ do
-      operation <- parseRequestWith inputSchema request
       schema <- withSystemTypes inputSchema
+      operation <- parseRequestWith schema request
       pure $
         Context
           { schema,
