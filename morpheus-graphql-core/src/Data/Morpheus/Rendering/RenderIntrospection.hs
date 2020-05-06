@@ -84,7 +84,6 @@ instance RenderSchema TypeDefinition where
         constRes $ typeFromUnion (typeName, typeMeta, union)
       __render (DataInputUnion members) =
         renderInputUnion (typeName, typeMeta, members)
-      __render _ = undefined --TODO.
 
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
 createEnumValue DataEnumValue {enumName, enumMeta} =
@@ -113,9 +112,9 @@ description enumMeta = ("description", opt resString (enumMeta >>= metaDescripti
 string :: Text -> ResModel o e m
 string = ResScalar . String
 
--- renderArguments :: (Monad m, Failure Text m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
--- renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ toList arguments
--- renderArguments NoArguments _ = pure []
+renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
+renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ toList arguments
+renderArguments NoArguments _ = pure []
 
 instance RenderSchema FieldDefinition where
   render field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}, fieldArgs, fieldMeta} lib =
@@ -127,10 +126,9 @@ instance RenderSchema FieldDefinition where
               { __typename = "__Field",
                 objectFields =
                   [ ("name", resString (convertToJSONName fieldName)),
-                    ("description", opt resString (fieldMeta >>= metaDescription))
-                    -- s__FieldArgs = renderArguments fieldArgs lib,
-                    -- s__FieldType' =
-                    --   pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just []),
+                    ("description", opt resString (fieldMeta >>= metaDescription)),
+                    ("args", ResList <$> renderArguments fieldArgs lib),
+                    ("type", pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just []))
                   ]
                     <> renderDeprecated fieldMeta
               }
@@ -213,9 +211,8 @@ typeFromUnion (name, typeMeta, typeContent) =
           objectFields =
             [ ("kind", renderKind UNION),
               ("name", resString name),
-              description typeMeta
-              --   s__TypePossibleTypes =
-              --     pure $ Just (map (\x -> createObjectType x Nothing $ Just []) typeContent),
+              description typeMeta,
+              ("possibleTypes", pure $ ResList (map (\x -> createObjectType x Nothing $ Just []) typeContent))
             ]
         }
     )
