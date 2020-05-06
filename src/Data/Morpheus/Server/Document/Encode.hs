@@ -33,10 +33,10 @@ import Data.Morpheus.Types.Internal.AST
     isSubscription,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Deriving (..),
-    LiftOperation,
+  ( LiftOperation,
     MapStrategy (..),
     ObjectResModel (..),
+    ResModel (..),
     Resolver,
   )
 import Data.Semigroup ((<>))

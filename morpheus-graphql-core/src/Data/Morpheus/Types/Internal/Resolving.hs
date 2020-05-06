@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving
     resolveUpdates,
     setTypeName,
     ObjectResModel (..),
-    Deriving (..),
+    ResModel (..),
     FieldResModel,
     WithOperation,
     PushEvents (..),

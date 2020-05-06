@@ -31,7 +31,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     ResponseEvent (..),
     ResponseStream,
     ObjectResModel (..),
-    Deriving (..),
+    ResModel (..),
     FieldResModel,
     WithOperation,
     Context (..),
@@ -390,7 +390,7 @@ resolveObject ::
   forall o e m.
   (LiftOperation o, Monad m) =>
   SelectionSet VALID ->
-  Deriving o e m ->
+  ResModel o e m ->
   Resolver o e m ValidValue
 resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
   Object . toOrderedMap <$> traverse resolver selectionSet
@@ -408,7 +408,7 @@ toEventResolver (ReaderT subRes) sel event = do
   value <- runResultT $ runReaderT (runResolverState $ runResolverQ (subRes event)) sel
   pure $ renderResponse value
 
-runDataResolver :: (Monad m, LiftOperation o) => Deriving o e m -> Resolver o e m ValidValue
+runDataResolver :: (Monad m, LiftOperation o) => ResModel o e m -> Resolver o e m ValidValue
 runDataResolver = withResolver getState . __encode
   where
     __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
@@ -463,7 +463,7 @@ runResolver (ResolverS resT) sel = ResultT $ do
 
 -- Resolver Models -------------------------------------------------------------------
 type FieldResModel o e m =
-  (Name, Resolver o e m (Deriving o e m))
+  (Name, Resolver o e m (ResModel o e m))
 
 data ObjectResModel o e m = ObjectResModel
   { __typename :: Name,
@@ -476,30 +476,30 @@ instance Merge (ObjectResModel o e m) where
   merge _ (ObjectResModel tyname x) (ObjectResModel _ y) =
     pure $ ObjectResModel tyname (x <> y)
 
-data Deriving (o :: OperationType) e (m :: * -> *)
+data ResModel (o :: OperationType) e (m :: * -> *)
   = ResNull
   | ResScalar ScalarValue
   | ResEnum Name Name
-  | ResList [Deriving o e m]
+  | ResList [ResModel o e m]
   | ResObject (ObjectResModel o e m)
-  | ResUnion Name (Resolver o e m (Deriving o e m))
+  | ResUnion Name (Resolver o e m (ResModel o e m))
   deriving (Show)
 
-instance Merge (Deriving o e m) where
+instance Merge (ResModel o e m) where
   merge p (ResObject x) (ResObject y) =
     ResObject <$> merge p x y
   merge _ _ _ =
     failure $ internalResolvingError "can't merge: incompatible resolvers"
 
 data RootResModel e m = RootResModel
-  { query :: Eventless (Deriving QUERY e m),
-    mutation :: Eventless (Deriving MUTATION e m),
-    subscription :: Eventless (Deriving SUBSCRIPTION e m)
+  { query :: Eventless (ResModel QUERY e m),
+    mutation :: Eventless (ResModel MUTATION e m),
+    subscription :: Eventless (ResModel SUBSCRIPTION e m)
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
-  Eventless (Deriving o e m) ->
+  Eventless (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)
 runRootDataResolver
@@ -534,8 +534,8 @@ class
   where
   mapStrategy ::
     Monad m =>
-    Resolver from e m (Deriving from e m) ->
-    Resolver to e m (Deriving to e m)
+    Resolver from e m (ResModel from e m) ->
+    Resolver to e m (ResModel to e m)
 
 instance MapStrategy o o where
   mapStrategy = id
@@ -547,8 +547,8 @@ mapDeriving ::
   ( MapStrategy o o',
     Monad m
   ) =>
-  Deriving o e m ->
-  Deriving o' e m
+  ResModel o e m ->
+  ResModel o' e m
 mapDeriving ResNull = ResNull
 mapDeriving (ResScalar x) = ResScalar x
 mapDeriving (ResEnum typeName enum) = ResEnum typeName enum

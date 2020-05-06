@@ -60,12 +60,12 @@ import Data.Morpheus.Types.Internal.Operation
   ( Merge (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Deriving (..),
-    Eventless,
+  ( Eventless,
     FieldResModel,
     LiftOperation,
     MapStrategy (..),
     ObjectResModel (..),
+    ResModel (..),
     Resolver,
     RootResModel (..),
     failure,
@@ -83,7 +83,7 @@ import Data.Text (pack)
 import GHC.Generics
 
 class Encode resolver o e (m :: * -> *) where
-  encode :: resolver -> Resolver o e m (Deriving o e m)
+  encode :: resolver -> Resolver o e m (ResModel o e m)
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => Encode a o e m where
   encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
@@ -137,7 +137,7 @@ instance
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
-  encodeKind :: LiftOperation o => VContext kind a -> Resolver o e m (Deriving o e m)
+  encodeKind :: LiftOperation o => VContext kind a -> Resolver o e m (ResModel o e m)
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
@@ -153,7 +153,7 @@ instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind
 convertNode ::
   (Monad m, LiftOperation o) =>
   ResNode o e m ->
-  Deriving o e m
+  ResModel o e m
 convertNode ResNode {resDatatypeName, resKind = REP_OBJECT, resFields} =
   ResObject (ObjectResModel resDatatypeName $ map toFieldRes resFields)
 convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord} =
@@ -186,7 +186,7 @@ type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
 --- GENERICS ------------------------------------------------
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: Proxy custom -> a -> Eventless (Deriving o e m)
+  exploreResolvers :: Proxy custom -> a -> Eventless (ResModel o e m)
 
 instance (Generic a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers 'False a o e m where
   exploreResolvers _ value =
@@ -202,7 +202,7 @@ objectResolvers ::
     LiftOperation o
   ) =>
   a ->
-  Eventless (Deriving o e m)
+  Eventless (ResModel o e m)
 objectResolvers value =
   exploreResolvers (Proxy @(CUSTOM a)) value
     >>= constraintOnject
@@ -268,7 +268,7 @@ data ResNode o e m = ResNode
 data FieldNode o e m = FieldNode
   { fieldTypeName :: Name,
     fieldSelName :: Name,
-    fieldResolver :: Resolver o e m (Deriving o e m),
+    fieldResolver :: Resolver o e m (ResModel o e m),
     isFieldObject :: Bool
   }
 
