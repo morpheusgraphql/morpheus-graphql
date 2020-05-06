@@ -34,8 +34,7 @@ import Data.Morpheus.Types.Internal.Operation
   ( Merge (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    ObjectResModel (..),
+  ( ObjectResModel (..),
     ResModel (..),
     Resolver,
     ResultT,
@@ -50,6 +49,7 @@ resolveTypes lib = ResList <$> traverse (`render` lib) (allDataTypes lib)
 buildSchemaLinkType ::
   Monad m => Maybe TypeDefinition -> ResModel QUERY e m
 buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing $ Just []
+buildSchemaLinkType Nothing = ResNull
 
 findType ::
   Monad m =>
@@ -89,7 +89,7 @@ schemaAPI schema =
         }
     )
   where
-    typeResolver = findType "__Schema" schema
+    typeResolver = findType "String" schema
 
 withSystemFields :: Monad m => Schema -> RootResModel e m -> ResultT e' m (RootResModel e m)
 withSystemFields schema RootResModel {query, ..} =
