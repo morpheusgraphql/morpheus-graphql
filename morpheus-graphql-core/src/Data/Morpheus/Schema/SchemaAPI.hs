@@ -84,11 +84,11 @@ schemaResolver schema@Schema {query, mutation, subscription} =
       ( ObjectResModel
           { __typename = "__Schema",
             objectFields =
-              [ ("__SchemaTypes", resolveTypes schema),
-                ("__SchemaQueryType", pure $ buildSchemaLinkType $ Just query),
-                ("__SchemaMutationType", pure $ buildSchemaLinkType mutation),
-                ("__SchemaSubscriptionType", pure $ buildSchemaLinkType subscription),
-                ("__SchemaDirectives", pure $ ResList [])
+              [ ("types", resolveTypes schema),
+                ("queryType", pure $ buildSchemaLinkType $ Just query),
+                ("mutationType", pure $ buildSchemaLinkType mutation),
+                ("subscriptionType", pure $ buildSchemaLinkType subscription),
+                ("directives", pure $ ResList [])
               ]
           }
       )
@@ -105,7 +105,7 @@ schemaAPI schema =
         }
     )
   where
-    typeResolver = findType "name" schema
+    typeResolver = findType "__Schema" schema
 
 withSystemFields :: Monad m => Schema -> RootResModel e m -> ResultT e' m (RootResModel e m)
 withSystemFields schema RootResModel {query, ..} =
