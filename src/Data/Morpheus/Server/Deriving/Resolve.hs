@@ -31,12 +31,10 @@ import Data.Morpheus.Server.Deriving.Introspect
     TypeScope (..),
     introspectObjectFields,
   )
-import Data.Morpheus.Server.Schema.SchemaAPI
-  ( defaultTypes,
-    hiddenRootFields,
-    schemaAPI,
-  )
 import Data.Morpheus.Server.Types.GQLType (GQLType (CUSTOM))
+import Data.Morpheus.Types
+  ( GQLRootResolver (..),
+  )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -55,13 +53,9 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     initTypeLib,
   )
-import Data.Morpheus.Types.Internal.Operation
-  ( Merge (..),
-  )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     GQLChannel (..),
-    GQLRootResolver (..),
     Resolver,
     ResponseStream,
     ResultT (..),
@@ -115,7 +109,7 @@ coreResolver root request =
       Monad m => ResponseStream event m Schema
     validRequest = cleanEvents $ ResultT $ pure $ fullSchema $ Identity root
     --------------------------------------
-    execOperator schema = runApi schema (deriveModel root (schemaAPI schema)) request
+    execOperator schema = runApi schema (deriveModel root) request
 
 fullSchema ::
   forall proxy m event query mutation subscription.
@@ -124,9 +118,8 @@ fullSchema ::
   Eventless Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
-    querySchema = do
-      fs <- hiddenRootFields <:> fields
-      resolveUpdates (initTypeLib (operatorType fs "Query")) (defaultTypes : types)
+    querySchema =
+      resolveUpdates (initTypeLib (operatorType fields "Query")) types
       where
         (fields, types) =
           introspectObjectFields

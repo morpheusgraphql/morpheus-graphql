@@ -8,33 +8,77 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Client.Schema
-  ( defaultTypes,
+module Data.Morpheus.Schema.Schema
+  ( withSystemTypes,
   )
 where
 
 -- MORPHEUS
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.Internal.AST
-  ( TypeDefinition (..),
+  ( ArgumentsDefinition (..),
+    DataFingerprint (..),
+    FieldsDefinition,
+    Message,
+    Schema (..),
+    TypeContent (..),
+    TypeDefinition (..),
     TypeUpdater,
+    TypeWrapper (..),
+    createArgument,
+    createField,
     insertType,
+    internalFingerprint,
+    unsafeFromFields,
+  )
+import Data.Morpheus.Types.Internal.Operation
+  ( Merge (..),
+    singleton,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( resolveUpdates,
+  ( failure,
+    resolveUpdates,
   )
 
-defaultTypes :: TypeUpdater
-defaultTypes = (`resolveUpdates` map insertType schemaTypes)
+withSystemTypes :: TypeUpdater
+withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject inter fields}} =
+  ( do
+      fs <- fields <:> hiddenFields
+      pure $ s {query = q {typeContent = DataObject inter fs}}
+  )
+    >>= (`resolveUpdates` map (insertType . internalType) schemaTypes)
+withSystemTypes _ = failure ("Query must be an Object Type" :: Message)
+
+hiddenFields :: FieldsDefinition
+hiddenFields =
+  unsafeFromFields
+    [ createField
+        (singleton (createArgument "name" ([], "String")))
+        "__type"
+        ([TypeMaybe], "__Type"),
+      createField
+        NoArguments
+        "__schema"
+        ([], "__Schema")
+    ]
+
+internalType :: TypeDefinition -> TypeDefinition
+internalType
+  tyDef@TypeDefinition
+    { typeFingerprint = DataFingerprint name xs
+    } =
+    tyDef {typeFingerprint = internalFingerprint name xs}
 
 schemaTypes :: [TypeDefinition]
 schemaTypes =
   [dsl|
 
+# default scalars
+scalar Boolean
+scalar Int
 scalar Float
 scalar String
-scalar Int
-scalar Boolean
+scalar ID
 
 type __Schema {
   types: [__Type!]!
@@ -119,8 +163,15 @@ enum __DirectiveLocation {
   INPUT_FIELD_DEFINITION
 }
 
-type Root  {
-  __type(name: String!): __Type
-  __schema : __Schema!
+enum __TypeKind {
+  SCALAR
+  OBJECT
+  INTERFACE
+  UNION
+  ENUM
+  INPUT_OBJECT
+  LIST
+  NON_NULL
 }
+
 |]

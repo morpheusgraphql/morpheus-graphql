@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,7 +11,8 @@ module Data.Morpheus.Core
   ( runApi,
     EventCon,
     parseDSL,
-    parseGraphQLDocument,
+    parseFullGQLDocument,
+    parseGQLDocument,
     decodeIntrospection,
     parseTypeSystemDefinition,
     parseTypeDefinitions,
@@ -22,6 +24,7 @@ module Data.Morpheus.Core
 where
 
 -- MORPHEUS
+import Control.Monad ((>=>))
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
@@ -37,6 +40,8 @@ import Data.Morpheus.Parsing.JSONSchema.Parse
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
+import Data.Morpheus.Schema.Schema (withSystemTypes)
+import Data.Morpheus.Schema.SchemaAPI (withSystemFields)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
@@ -55,12 +60,12 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Context (..),
     Eventless,
     GQLChannel (..),
-    ResolverModel,
     ResponseStream,
     ResultT (..),
+    RootResModel,
     cleanEvents,
     resultOr,
-    runResolverModel,
+    runRootResModel,
   )
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
@@ -78,15 +83,18 @@ runApi ::
   forall event m.
   (Monad m) =>
   Schema ->
-  ResolverModel event m ->
+  RootResModel event m ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runApi schema resModel request =
-  validRequest >>= runResolverModel resModel
+runApi inputSchema resModel request = do
+  ctx <- validRequest
+  model <- withSystemFields (schema ctx) resModel
+  runRootResModel model ctx
   where
     validRequest ::
       Monad m => ResponseStream event m Context
     validRequest = cleanEvents $ ResultT $ pure $ do
+      schema <- withSystemTypes inputSchema
       operation <- parseRequestWith schema request
       pure $
         Context
@@ -104,7 +112,10 @@ runApi schema resModel request =
           }
 
 parseDSL :: ByteString -> Either String Schema
-parseDSL = resultOr (Left . show) pure . parseGraphQLDocument
+parseDSL = resultOr (Left . show) pure . parseGQLDocument
 
-parseGraphQLDocument :: ByteString -> Eventless Schema
-parseGraphQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8
+parseGQLDocument :: ByteString -> Eventless Schema
+parseGQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8
+
+parseFullGQLDocument :: ByteString -> Eventless Schema
+parseFullGQLDocument = parseGQLDocument >=> withSystemTypes

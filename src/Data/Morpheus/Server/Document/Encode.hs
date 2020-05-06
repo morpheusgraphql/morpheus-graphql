@@ -33,10 +33,10 @@ import Data.Morpheus.Types.Internal.AST
     isSubscription,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Deriving (..),
-    LiftOperation,
+  ( LiftOperation,
     MapStrategy (..),
-    ObjectDeriving (..),
+    ObjectResModel (..),
+    ResModel (..),
     Resolver,
   )
 import Data.Semigroup ((<>))
@@ -114,10 +114,10 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
         body =
           appE (varE 'pure)
             $ appE
-              (conE 'DerivingObject)
+              (conE 'ResObject)
             $ appE
               ( appE
-                  (conE 'ObjectDeriving)
+                  (conE 'ObjectResModel)
                   (stringE (unpack tName))
               )
               (listE $ map (decodeVar . unpack) varNames)

@@ -1,8 +1,8 @@
 module Data.Morpheus.Parser
   ( parseTypeDefinitions,
     parseTypeSystemDefinition,
-    parseRequestWith,
     parseRequest,
+    parseRequestWith,
   )
 where
 
@@ -19,7 +19,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     VALID,
     VALIDATION_MODE (..),
-    createDataTypeLib,
+    schemaFromTypeDefinitions,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -35,7 +35,7 @@ import Data.Text (Text)
 parseTypeSystemDefinition ::
   Text -> Eventless Schema
 parseTypeSystemDefinition =
-  parseSchema >=> createDataTypeLib
+  parseSchema >=> schemaFromTypeDefinitions
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition]

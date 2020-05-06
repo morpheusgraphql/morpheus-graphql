@@ -104,7 +104,7 @@ instance Monad (Result e) where
 instance Failure [GQLError] (Result ev) where
   failure = Failure
 
-instance Failure Text Eventless where
+instance Failure Text (Result e) where
   failure text =
     Failure [GQLError {message = "INTERNAL: " <> text, locations = []}]
 
@@ -154,6 +154,9 @@ instance Applicative m => Failure String (ResultT event m) where
     ResultT $ pure $ Failure [GQLError {message = pack x, locations = []}]
 
 instance Monad m => Failure GQLErrors (ResultT event m) where
+  failure = ResultT . pure . failure
+
+instance Applicative m => Failure Text (ResultT event m) where
   failure = ResultT . pure . failure
 
 instance Applicative m => PushEvents event (ResultT event m) where

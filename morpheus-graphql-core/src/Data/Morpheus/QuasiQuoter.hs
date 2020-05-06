@@ -13,15 +13,13 @@ module Data.Morpheus.QuasiQuoter
   )
 where
 
-import Data.Morpheus.Core
-  ( parseTypeDefinitions,
-  )
 import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
 import Data.Morpheus.Parser
   ( parseRequest,
+    parseTypeDefinitions,
   )
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.Resolving

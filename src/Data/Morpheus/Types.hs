@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
 
 -- | GQL Types
 module Data.Morpheus.Types
@@ -70,7 +71,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Event (..),
     Failure,
-    GQLRootResolver (..),
     PushEvents (..),
     Resolver,
     UnSubResolver,
@@ -128,3 +128,12 @@ failRes = failure . pack
 
 liftEither :: (MonadTrans t, Monad (t m), Failure Message (t m)) => Monad m => m (Either String a) -> t m a
 liftEither x = lift x >>= either (failure . pack) pure
+
+-- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
+--  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
+--  if your schema does not supports __mutation__ or __subscription__ , you can use __()__ for it.
+data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) -> *) (sub :: (* -> *) -> *) = GQLRootResolver
+  { queryResolver :: query (Resolver QUERY event m),
+    mutationResolver :: mut (Resolver MUTATION event m),
+    subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
+  }

@@ -107,7 +107,7 @@ module Data.Morpheus.Types.Internal.AST
     isEntNode,
     createField,
     createArgument,
-    createDataTypeLib,
+    schemaFromTypeDefinitions,
     createEnumType,
     createScalarType,
     createType,
@@ -139,6 +139,7 @@ module Data.Morpheus.Types.Internal.AST
     isInputDataType,
     __inputname,
     updateSchema,
+    internalFingerprint,
   )
 where
 
