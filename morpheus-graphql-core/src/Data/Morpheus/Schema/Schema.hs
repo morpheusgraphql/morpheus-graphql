@@ -128,6 +128,17 @@ enum __DirectiveLocation {
   INPUT_FIELD_DEFINITION
 }
 
+enum __TypeKind {
+  SCALAR
+  OBJECT
+  INTERFACE
+  UNION
+  ENUM
+  INPUT_OBJECT
+  LIST
+  NON_NULL
+}
+
 type Root  {
   __type(name: String!): __Type
   __schema : __Schema!

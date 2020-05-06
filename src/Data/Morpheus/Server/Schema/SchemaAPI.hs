@@ -6,7 +6,6 @@
 
 module Data.Morpheus.Server.Schema.SchemaAPI
   ( hiddenRootFields,
-    defaultTypes,
     schemaAPI,
   )
 where
@@ -15,8 +14,6 @@ where
 
 import Data.Morpheus.Server.Deriving.Introspect
   ( TypeScope (..),
-    TypeUpdater,
-    introspect,
     introspectObjectFields,
   )
 import Data.Morpheus.Server.RenderIntrospection
@@ -30,7 +27,6 @@ import Data.Morpheus.Server.Schema.Schema
     S__Type,
   )
 import Data.Morpheus.Server.Types.GQLType (CUSTOM)
-import Data.Morpheus.Server.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
   ( FieldsDefinition,
     QUERY,
@@ -41,7 +37,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
-    resolveUpdates,
   )
 import Data.Proxy
 import Data.Text (Text)
@@ -84,18 +79,6 @@ hiddenRootFields =
     introspectObjectFields
       (Proxy :: Proxy (CUSTOM (Root Maybe)))
       ("Root", OutputType, Proxy @(Root Maybe))
-
-defaultTypes :: TypeUpdater
-defaultTypes =
-  flip
-    resolveUpdates
-    [ introspect (Proxy @Bool),
-      introspect (Proxy @Int),
-      introspect (Proxy @Float),
-      introspect (Proxy @Text),
-      introspect (Proxy @ID),
-      introspect (Proxy @(S__Schema Maybe))
-    ]
 
 schemaAPI :: Monad m => Schema -> Root (Resolver QUERY e m)
 schemaAPI lib = Root {root__type, root__schema = initSchema lib}

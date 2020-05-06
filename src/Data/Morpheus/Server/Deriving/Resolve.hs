@@ -32,8 +32,7 @@ import Data.Morpheus.Server.Deriving.Introspect
     introspectObjectFields,
   )
 import Data.Morpheus.Server.Schema.SchemaAPI
-  ( defaultTypes,
-    hiddenRootFields,
+  ( hiddenRootFields,
     schemaAPI,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (CUSTOM))
@@ -128,7 +127,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema = do
       fs <- hiddenRootFields <:> fields
-      resolveUpdates (initTypeLib (operatorType fs "Query")) (defaultTypes : types)
+      resolveUpdates (initTypeLib (operatorType fs "Query")) types
       where
         (fields, types) =
           introspectObjectFields
