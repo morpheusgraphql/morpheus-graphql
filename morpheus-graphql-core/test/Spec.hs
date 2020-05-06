@@ -13,7 +13,7 @@ import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST (Name, ScalarValue (..), Schema, VALID, Value (..), replaceValue, schemaFromTypeDefinitions)
-import Data.Morpheus.Types.Internal.Resolving (Deriving (..), ObjectRes (..), ResolverModel (..), ResponseStream, Result (..), ResultT (..))
+import Data.Morpheus.Types.Internal.Resolving (Deriving (..), ObjectRes (..), ResponseStream, Result (..), ResultT (..), RootResModel (..))
 import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as LT (toStrict)
 import Data.Text.Lazy.Encoding (decodeUtf8)
@@ -41,9 +41,9 @@ getSchema =
 string :: Name -> Deriving o e m
 string = ResScalar . String
 
-resolver :: Monad m => ResolverModel e m
+resolver :: Monad m => RootResModel e m
 resolver =
-  ResolverModel
+  RootResModel
     { query =
         pure $
           ResObject

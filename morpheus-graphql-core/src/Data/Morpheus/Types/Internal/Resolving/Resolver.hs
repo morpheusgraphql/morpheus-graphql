@@ -18,7 +18,6 @@
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event (..),
-    GQLRootResolver (..),
     UnSubResolver,
     Resolver,
     MapStrategy (..),
@@ -37,9 +36,9 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     WithOperation,
     Context (..),
     unsafeInternalContext,
-    runResolverModel,
+    runRootResModel,
     setTypeName,
-    ResolverModel (..),
+    RootResModel (..),
     liftStateless,
     withArguments,
   )
@@ -550,26 +549,18 @@ runRootDataResolver
       root <- statelessToResultT res
       runResolver (resolveObject operationSelection root) ctx
 
--------------------------------------------------------------------
-
--- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
---  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
---  if your schema does not supports __mutation__ or __subscription__ , you can use __()__ for it.
-data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) -> *) (sub :: (* -> *) -> *) = GQLRootResolver
-  { queryResolver :: query (Resolver QUERY event m),
-    mutationResolver :: mut (Resolver MUTATION event m),
-    subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
-  }
-
-data ResolverModel e m = ResolverModel
+-- Resolver Models
+data RootResModel e m = RootResModel
   { query :: Eventless (Deriving QUERY e m),
     mutation :: Eventless (Deriving MUTATION e m),
     subscription :: Eventless (Deriving SUBSCRIPTION e m)
   }
 
-runResolverModel :: Monad m => ResolverModel e m -> Context -> ResponseStream e m (Value VALID)
-runResolverModel
-  ResolverModel
+-------------------------------------------------------------------
+
+runRootResModel :: Monad m => RootResModel e m -> Context -> ResponseStream e m (Value VALID)
+runRootResModel
+  RootResModel
     { query,
       mutation,
       subscription

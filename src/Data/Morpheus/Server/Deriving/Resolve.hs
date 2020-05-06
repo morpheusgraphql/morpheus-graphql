@@ -37,6 +37,9 @@ import Data.Morpheus.Server.Schema.SchemaAPI
     schemaAPI,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (CUSTOM))
+import Data.Morpheus.Types
+  ( GQLRootResolver (..),
+  )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -61,7 +64,6 @@ import Data.Morpheus.Types.Internal.Operation
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     GQLChannel (..),
-    GQLRootResolver (..),
     Resolver,
     ResponseStream,
     ResultT (..),

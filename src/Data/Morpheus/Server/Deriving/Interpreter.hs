@@ -15,13 +15,13 @@ import Data.Morpheus.Server.Deriving.Resolve
     coreResolver,
     statelessResolver,
   )
+import Data.Morpheus.Types
+  ( GQLRootResolver (..),
+  )
 import Data.Morpheus.Types.IO
   ( GQLRequest,
     GQLResponse,
     MapAPI (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( GQLRootResolver (..),
   )
 import Data.Morpheus.Types.Internal.Subscription
   ( Input,

@@ -45,6 +45,9 @@ import Data.Morpheus.Server.Types.Types
     Pair (..),
     mapKindFromList,
   )
+import Data.Morpheus.Types
+  ( GQLRootResolver (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Message,
@@ -60,12 +63,11 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Deriving (..),
     Eventless,
     FieldRes,
-    GQLRootResolver (..),
     LiftOperation,
     MapStrategy (..),
     ObjectRes (..),
     Resolver,
-    ResolverModel (..),
+    RootResModel (..),
     failure,
     liftStateless,
     toResolver,
@@ -231,7 +233,7 @@ deriveModel ::
   ) =>
   GQLRootResolver m e query mut sub ->
   schema (Resolver QUERY e m) ->
-  ResolverModel e m
+  RootResModel e m
 deriveModel
   GQLRootResolver
     { queryResolver,
@@ -239,7 +241,7 @@ deriveModel
       subscriptionResolver
     }
   schema =
-    ResolverModel
+    RootResModel
       { query = do
           schema' <- objectResolvers schema
           root' <- objectResolvers queryResolver

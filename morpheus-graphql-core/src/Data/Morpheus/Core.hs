@@ -55,12 +55,12 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Context (..),
     Eventless,
     GQLChannel (..),
-    ResolverModel,
     ResponseStream,
     ResultT (..),
+    RootResModel,
     cleanEvents,
     resultOr,
-    runResolverModel,
+    runRootResModel,
   )
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
@@ -78,11 +78,11 @@ runApi ::
   forall event m.
   (Monad m) =>
   Schema ->
-  ResolverModel event m ->
+  RootResModel event m ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
 runApi schema resModel request =
-  validRequest >>= runResolverModel resModel
+  validRequest >>= runRootResModel resModel
   where
     validRequest ::
       Monad m => ResponseStream event m Context
