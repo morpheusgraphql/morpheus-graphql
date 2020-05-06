@@ -30,7 +30,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     GQLChannel (..),
     ResponseEvent (..),
     ResponseStream,
-    ObjectRes (..),
+    ObjectResModel (..),
     Deriving (..),
     FieldRes,
     WithOperation,
@@ -344,25 +344,6 @@ class
 instance MapStrategy o o where
   mapStrategy = id
 
-data Deriving (o :: OperationType) e (m :: * -> *)
-  = ResNull
-  | ResScalar ScalarValue
-  | ResEnum Name Name
-  | ResList [Deriving o e m]
-  | ResObject (ObjectRes o e m)
-  | ResUnion Name (Resolver o e m (Deriving o e m))
-  deriving (Show)
-
-data ObjectRes o e m = ObjectRes
-  { __typename :: Name,
-    objectFields ::
-      [ ( Name,
-          Resolver o e m (Deriving o e m)
-        )
-      ]
-  }
-  deriving (Show)
-
 instance MapStrategy QUERY SUBSCRIPTION where
   mapStrategy = ResolverS . pure . lift . fmap mapDeriving
 
@@ -383,10 +364,10 @@ mapObjectDeriving ::
   ( MapStrategy o o',
     Monad m
   ) =>
-  ObjectRes o e m ->
-  ObjectRes o' e m
-mapObjectDeriving (ObjectRes tyname x) =
-  ObjectRes tyname $
+  ObjectResModel o e m ->
+  ObjectResModel o' e m
+mapObjectDeriving (ObjectResModel tyname x) =
+  ObjectResModel tyname $
     map (mapEntry mapStrategy) x
 
 mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
@@ -430,9 +411,9 @@ instance Merge (Deriving o e m) where
   merge _ _ _ =
     failure $ internalResolvingError "can't merge: incompatible resolvers"
 
-instance Merge (ObjectRes o e m) where
-  merge _ (ObjectRes tyname x) (ObjectRes _ y) =
-    pure $ ObjectRes tyname (x <> y)
+instance Merge (ObjectResModel o e m) where
+  merge _ (ObjectResModel tyname x) (ObjectResModel _ y) =
+    pure $ ObjectResModel tyname (x <> y)
 
 pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
@@ -450,7 +431,7 @@ withObject f Selection {selectionName, selectionContent, selectionPosition} = ch
 lookupRes ::
   (LiftOperation o, Monad m) =>
   Selection VALID ->
-  ObjectRes o e m ->
+  ObjectResModel o e m ->
   Resolver o e m ValidValue
 lookupRes Selection {selectionName}
   | selectionName == "__typename" =
@@ -468,7 +449,7 @@ resolveObject ::
   SelectionSet VALID ->
   Deriving o e m ->
   Resolver o e m ValidValue
-resolveObject selectionSet (ResObject drv@ObjectRes {__typename}) =
+resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
   Object . toOrderedMap <$> traverse resolver selectionSet
   where
     resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
@@ -502,7 +483,7 @@ runDataResolver = withResolver getState . __encode
               ResUnion name
                 $ pure
                 $ ResObject
-                $ ObjectRes name [("enum", pure $ ResScalar $ String enum)]
+                $ ObjectResModel name [("enum", pure $ ResScalar $ String enum)]
         encodeNode ResEnum {} _ =
           failure ("wrong selection on enum value" :: Message)
         -- UNION
@@ -549,14 +530,31 @@ runRootDataResolver
       root <- statelessToResultT res
       runResolver (resolveObject operationSelection root) ctx
 
--- Resolver Models
+-- Resolver Models -------------------------------------------------------------------
+data Deriving (o :: OperationType) e (m :: * -> *)
+  = ResNull
+  | ResScalar ScalarValue
+  | ResEnum Name Name
+  | ResList [Deriving o e m]
+  | ResObject (ObjectResModel o e m)
+  | ResUnion Name (Resolver o e m (Deriving o e m))
+  deriving (Show)
+
+data ObjectResModel o e m = ObjectResModel
+  { __typename :: Name,
+    objectFields ::
+      [ ( Name,
+          Resolver o e m (Deriving o e m)
+        )
+      ]
+  }
+  deriving (Show)
+
 data RootResModel e m = RootResModel
   { query :: Eventless (Deriving QUERY e m),
     mutation :: Eventless (Deriving MUTATION e m),
     subscription :: Eventless (Deriving SUBSCRIPTION e m)
   }
-
--------------------------------------------------------------------
 
 runRootResModel :: Monad m => RootResModel e m -> Context -> ResponseStream e m (Value VALID)
 runRootResModel

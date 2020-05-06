@@ -65,7 +65,7 @@ import Data.Morpheus.Types.Internal.Resolving
     FieldRes,
     LiftOperation,
     MapStrategy (..),
-    ObjectRes (..),
+    ObjectResModel (..),
     Resolver,
     RootResModel (..),
     failure,
@@ -155,7 +155,7 @@ convertNode ::
   ResNode o e m ->
   Deriving o e m
 convertNode ResNode {resDatatypeName, resKind = REP_OBJECT, resFields} =
-  ResObject (ObjectRes resDatatypeName $ map toFieldRes resFields)
+  ResObject (ObjectResModel resDatatypeName $ map toFieldRes resFields)
 convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord} =
   encodeUnion resFields
   where
@@ -171,7 +171,7 @@ convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeNam
         resTypeName
         $ pure
         $ ResObject
-        $ ObjectRes
+        $ ObjectResModel
           resTypeName
           (map toFieldRes resolvers)
       where
