@@ -41,6 +41,7 @@ import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
 import Data.Morpheus.Schema.Schema (withSystemTypes)
+import Data.Morpheus.Schema.SchemaAPI (withSystemFields)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
@@ -85,8 +86,10 @@ runApi ::
   RootResModel event m ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runApi inputSchema resModel request =
-  validRequest >>= runRootResModel resModel
+runApi inputSchema resModel request = do
+  ctx <- validRequest
+  model <- withSystemFields (schema ctx) resModel
+  runRootResModel model ctx
   where
     validRequest ::
       Monad m => ResponseStream event m Context

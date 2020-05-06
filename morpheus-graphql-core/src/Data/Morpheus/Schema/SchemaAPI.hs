@@ -1,20 +1,17 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Schema.SchemaAPI
-  ( hiddenRootFields,
-    schemaAPI,
+  ( withSystemFields,
   )
 where
 
 -- MORPHEUS
 
--- import Data.Morpheus.Server.Deriving.Introspect
---   ( TypeScope (..),
---   )
 import Data.Morpheus.Rendering.RenderIntrospection
   ( createObjectType,
     render,
@@ -33,10 +30,16 @@ import Data.Morpheus.Types.Internal.AST
     allDataTypes,
     lookupDataType,
   )
+import Data.Morpheus.Types.Internal.Operation
+  ( Merge (..),
+  )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ObjectResModel (..),
+  ( Eventless,
+    ObjectResModel (..),
     ResModel (..),
     Resolver,
+    ResultT,
+    RootResModel (..),
   )
 import Data.Text (Text)
 
@@ -75,27 +78,19 @@ schemaResolver ::
   Monad m =>
   Schema ->
   ResModel QUERY e m
-schemaResolver schema =
+schemaResolver schema@Schema {query, mutation, subscription} =
   ResObject
     ( ObjectResModel
         { __typename = "__Schema",
           objectFields =
             [ ("__SchemaTypes", resolveTypes schema),
-              ("__SchemaQueryType", pure $ buildSchemaLinkType $ Just $ query schema),
-              ("__SchemaMutationType", pure $ buildSchemaLinkType $ mutation schema),
-              ("__SchemaSubscriptionType", pure $ buildSchemaLinkType $ subscription schema),
+              ("__SchemaQueryType", pure $ buildSchemaLinkType $ Just query),
+              ("__SchemaMutationType", pure $ buildSchemaLinkType mutation),
+              ("__SchemaSubscriptionType", pure $ buildSchemaLinkType subscription),
               ("__SchemaDirectives", pure $ ResList [])
             ]
         }
     )
-
-hiddenRootFields :: FieldsDefinition
-hiddenRootFields = undefined
-
--- fst $
---   introspectObjectFields
---     (Proxy :: Proxy (CUSTOM (Root Maybe)))
---     ("Root", OutputType, Proxy @(Root Maybe))
 
 string :: Name -> ResModel o e m
 string = ResScalar . String
@@ -113,3 +108,11 @@ schemaAPI schema =
     )
   where
     typeResolver = findType "name" schema
+
+withSystemFields :: Monad m => Schema -> RootResModel e m -> ResultT e' m (RootResModel e m)
+withSystemFields schema RootResModel {query, ..} =
+  pure $
+    RootResModel
+      { query = query >>= (<:> schemaAPI schema),
+        ..
+      }
