@@ -22,7 +22,6 @@ import Data.Morpheus.Rendering.RenderIntrospection
 import Data.Morpheus.Schema.Schema
   (
   )
-import Data.Morpheus.Server.Types.GQLType (CUSTOM)
 import Data.Morpheus.Types.Internal.AST
   ( FieldsDefinition,
     Name,
@@ -43,7 +42,7 @@ import Data.Text (Text)
 
 resolveTypes ::
   Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
-resolveTypes lib = traverse (`render` lib) (allDataTypes lib)
+resolveTypes lib = ResList <$> traverse (`render` lib) (allDataTypes lib)
 
 buildSchemaLinkType ::
   Monad m => Maybe TypeDefinition -> ResModel QUERY e m
@@ -54,7 +53,7 @@ findType ::
   Text ->
   Schema ->
   Resolver QUERY e m (ResModel QUERY e m)
-findType name lib = maybe (pure ResNull) (render datatype lib) (lookupDataType name lib)
+findType name lib = maybe (pure ResNull) (`render` lib) (lookupDataType name lib)
 
 -- pure
 --   $ ResObject

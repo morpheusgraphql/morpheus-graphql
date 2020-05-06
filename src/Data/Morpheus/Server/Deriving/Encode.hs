@@ -223,29 +223,23 @@ type Con o e m a =
     m
 
 deriveModel ::
-  forall e m query mut sub schema.
+  forall e m query mut sub.
   ( Con QUERY e m query,
-    Con QUERY e m schema,
     Con MUTATION e m mut,
     Con SUBSCRIPTION e m sub,
     Applicative m,
     Monad m
   ) =>
   GQLRootResolver m e query mut sub ->
-  schema (Resolver QUERY e m) ->
   RootResModel e m
 deriveModel
   GQLRootResolver
     { queryResolver,
       mutationResolver,
       subscriptionResolver
-    }
-  schema =
+    } =
     RootResModel
-      { query = do
-          schema' <- objectResolvers schema
-          root' <- objectResolvers queryResolver
-          root' <:> schema',
+      { query = objectResolvers queryResolver,
         mutation = objectResolvers mutationResolver,
         subscription = objectResolvers subscriptionResolver
       }
