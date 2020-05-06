@@ -173,7 +173,7 @@ createLeafType kind name meta enums =
   object
     "__Type"
     [ renderKind kind,
-      ("name", string name),
+      renderName name,
       description meta,
       ("enumValues", optList enums)
     ]
@@ -194,7 +194,7 @@ createObjectType name meta fields =
   object
     "__Type"
     [ renderKind OBJECT,
-      ("name", string name),
+      renderName name,
       description meta,
       ("fields", optList fields),
       ("interfaces", pure $ ResList [])
@@ -218,7 +218,7 @@ createType ::
   Monad m =>
   TypeKind ->
   Text ->
-  Maybe Text ->
+  Maybe Meta ->
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
 createType kind name desc fields =
@@ -226,7 +226,7 @@ createType kind name desc fields =
     "__Type"
     [ renderKind kind,
       renderName name,
-      ("description", opt string desc),
+      description desc,
       ("fields", pure $ maybe ResNull ResList fields),
       ("enumValues", pure $ ResList [])
     ]
