@@ -22,7 +22,7 @@ module Data.Morpheus.Types.Internal.Resolving
     setTypeName,
     ObjectResModel (..),
     Deriving (..),
-    FieldRes,
+    FieldResModel,
     WithOperation,
     PushEvents (..),
     subscribe,

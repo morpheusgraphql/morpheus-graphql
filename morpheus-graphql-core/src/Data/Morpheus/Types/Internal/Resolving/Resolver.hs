@@ -32,7 +32,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     ResponseStream,
     ObjectResModel (..),
     Deriving (..),
-    FieldRes,
+    FieldResModel,
     WithOperation,
     Context (..),
     unsafeInternalContext,
@@ -401,20 +401,6 @@ toResolver toArgs = withResolver args
       let resT = ResultT $ pure $ toArgs selectionArguments
       ResolverState $ lift $ cleanEvents resT
 
--- DataResolver
-type FieldRes o e m =
-  (Name, Resolver o e m (Deriving o e m))
-
-instance Merge (Deriving o e m) where
-  merge p (ResObject x) (ResObject y) =
-    ResObject <$> merge p x y
-  merge _ _ _ =
-    failure $ internalResolvingError "can't merge: incompatible resolvers"
-
-instance Merge (ObjectResModel o e m) where
-  merge _ (ObjectResModel tyname x) (ObjectResModel _ y) =
-    pure $ ObjectResModel tyname (x <> y)
-
 pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
 
@@ -518,6 +504,42 @@ runResolver (ResolverS resT) sel = ResultT $ do
           result = gqlNull
         }
 
+-- Resolver Models -------------------------------------------------------------------
+type FieldResModel o e m =
+  (Name, Resolver o e m (Deriving o e m))
+
+data ObjectResModel o e m = ObjectResModel
+  { __typename :: Name,
+    objectFields ::
+      [FieldResModel o e m]
+  }
+  deriving (Show)
+
+instance Merge (ObjectResModel o e m) where
+  merge _ (ObjectResModel tyname x) (ObjectResModel _ y) =
+    pure $ ObjectResModel tyname (x <> y)
+
+data Deriving (o :: OperationType) e (m :: * -> *)
+  = ResNull
+  | ResScalar ScalarValue
+  | ResEnum Name Name
+  | ResList [Deriving o e m]
+  | ResObject (ObjectResModel o e m)
+  | ResUnion Name (Resolver o e m (Deriving o e m))
+  deriving (Show)
+
+instance Merge (Deriving o e m) where
+  merge p (ResObject x) (ResObject y) =
+    ResObject <$> merge p x y
+  merge _ _ _ =
+    failure $ internalResolvingError "can't merge: incompatible resolvers"
+
+data RootResModel e m = RootResModel
+  { query :: Eventless (Deriving QUERY e m),
+    mutation :: Eventless (Deriving MUTATION e m),
+    subscription :: Eventless (Deriving SUBSCRIPTION e m)
+  }
+
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
   Eventless (Deriving o e m) ->
@@ -529,32 +551,6 @@ runRootDataResolver
     do
       root <- statelessToResultT res
       runResolver (resolveObject operationSelection root) ctx
-
--- Resolver Models -------------------------------------------------------------------
-data Deriving (o :: OperationType) e (m :: * -> *)
-  = ResNull
-  | ResScalar ScalarValue
-  | ResEnum Name Name
-  | ResList [Deriving o e m]
-  | ResObject (ObjectResModel o e m)
-  | ResUnion Name (Resolver o e m (Deriving o e m))
-  deriving (Show)
-
-data ObjectResModel o e m = ObjectResModel
-  { __typename :: Name,
-    objectFields ::
-      [ ( Name,
-          Resolver o e m (Deriving o e m)
-        )
-      ]
-  }
-  deriving (Show)
-
-data RootResModel e m = RootResModel
-  { query :: Eventless (Deriving QUERY e m),
-    mutation :: Eventless (Deriving MUTATION e m),
-    subscription :: Eventless (Deriving SUBSCRIPTION e m)
-  }
 
 runRootResModel :: Monad m => RootResModel e m -> Context -> ResponseStream e m (Value VALID)
 runRootResModel

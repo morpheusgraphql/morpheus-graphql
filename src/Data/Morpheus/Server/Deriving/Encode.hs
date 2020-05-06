@@ -62,7 +62,7 @@ import Data.Morpheus.Types.Internal.Operation
 import Data.Morpheus.Types.Internal.Resolving
   ( Deriving (..),
     Eventless,
-    FieldRes,
+    FieldResModel,
     LiftOperation,
     MapStrategy (..),
     ObjectResModel (..),
@@ -250,7 +250,7 @@ deriveModel
         subscription = objectResolvers subscriptionResolver
       }
 
-toFieldRes :: FieldNode o e m -> FieldRes o e m
+toFieldRes :: FieldNode o e m -> FieldResModel o e m
 toFieldRes FieldNode {fieldSelName, fieldResolver} =
   (fieldSelName, fieldResolver)
 
