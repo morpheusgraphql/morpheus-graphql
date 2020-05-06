@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Rendering.RenderIntrospection
@@ -15,7 +16,6 @@ where
 import Data.Maybe (isJust)
 -- Morpheus
 
-import Data.Morpheus.Schema.Schema
 import Data.Morpheus.Schema.TypeKind (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -25,7 +25,6 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeKind (..),
     DataTypeWrapper (..),
     DataUnion,
-    Directive,
     FieldDefinition (..),
     Meta (..),
     Name,
@@ -78,7 +77,7 @@ instance RenderSchema TypeDefinition where
         createInputObject typeName typeMeta
           <$> traverse (`renderinputValue` lib) (toList fields)
       __render DataObject {objectFields} = \lib ->
-        createObjectType typeName (typeMeta >>= metaDescription)
+        createObjectType typeName typeMeta
           <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ toList objectFields))
       __render (DataUnion union) =
         constRes $ typeFromUnion (typeName, typeMeta, union)
@@ -87,15 +86,11 @@ instance RenderSchema TypeDefinition where
 
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
 createEnumValue DataEnumValue {enumName, enumMeta} =
-  ResObject $
-    ObjectResModel
-      { __typename = "__Field",
-        objectFields =
-          [ ("name", resString enumName),
-            description enumMeta
-          ]
-            <> renderDeprecated enumMeta
-      }
+  object "__Field" $
+    [ renderName enumName,
+      description enumMeta
+    ]
+      <> renderDeprecated enumMeta
 
 renderDeprecated ::
   (Monad m) =>
@@ -103,14 +98,11 @@ renderDeprecated ::
   [(Name, Resolver QUERY e m (ResModel QUERY e m))]
 renderDeprecated meta =
   [ ("isDeprecated", pure $ ResScalar $ Boolean (isJust $ meta >>= lookupDeprecated)),
-    ("deprecationReason", opt resString (meta >>= lookupDeprecated >>= lookupDeprecatedReason))
+    ("deprecationReason", opt string (meta >>= lookupDeprecated >>= lookupDeprecatedReason))
   ]
 
 description :: Monad m => Maybe Meta -> (Name, Resolver QUERY e m (ResModel QUERY e m))
-description enumMeta = ("description", opt resString (enumMeta >>= metaDescription))
-
-string :: Text -> ResModel o e m
-string = ResScalar . String
+description enumMeta = ("description", opt string (enumMeta >>= metaDescription))
 
 renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
 renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ toList arguments
@@ -120,19 +112,14 @@ instance RenderSchema FieldDefinition where
   render field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}, fieldArgs, fieldMeta} lib =
     do
       kind <- renderTypeKind <$> lookupKind typeConName lib
-      pure $
-        ResObject
-          ( ObjectResModel
-              { __typename = "__Field",
-                objectFields =
-                  [ ("name", resString (convertToJSONName fieldName)),
-                    ("description", opt resString (fieldMeta >>= metaDescription)),
-                    ("args", ResList <$> renderArguments fieldArgs lib),
-                    ("type'", pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just []))
-                  ]
-                    <> renderDeprecated fieldMeta
-              }
-          )
+      pure
+        $ object "__Field"
+        $ [ renderName fieldName,
+            description fieldMeta,
+            ("args", ResList <$> renderArguments fieldArgs lib),
+            ("type'", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
+          ]
+          <> renderDeprecated fieldMeta
 
 renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar = SCALAR
@@ -143,14 +130,6 @@ renderTypeKind KindEnum = ENUM
 renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList = LIST
 renderTypeKind KindNonNull = NON_NULL
-
-applyTypeWrapper :: Monad m => FieldDefinition -> ResModel QUERY e m -> ResModel QUERY e m
-applyTypeWrapper FieldDefinition {fieldType = TypeRef {typeWrappers}} typ =
-  foldr wrapByTypeWrapper typ (toGQLWrapper typeWrappers)
-
-wrapByTypeWrapper :: Monad m => DataTypeWrapper -> ResModel QUERY e m -> ResModel QUERY e m
-wrapByTypeWrapper ListType = wrapAs LIST
-wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
 lookupKind :: (Monad m) => Text -> Result e m DataTypeKind
 lookupKind name lib = case lookupDataType name lib of
@@ -168,7 +147,7 @@ createInputObjectType ::
 createInputObjectType field@FieldDefinition {fieldType = TypeRef {typeConName}} lib =
   do
     kind <- renderTypeKind <$> lookupKind typeConName lib
-    pure $ applyTypeWrapper field $ createType kind typeConName Nothing $ Just []
+    pure $ withTypeWrapper field $ createType kind typeConName Nothing $ Just []
 
 renderInputUnion ::
   (Monad m) =>
@@ -191,47 +170,35 @@ createLeafType ::
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
 createLeafType kind name meta enums =
-  ResObject
-    ( ObjectResModel
-        { __typename = "__Type",
-          objectFields =
-            [ ("kind", renderKind kind),
-              ("name", resString name),
-              description meta,
-              ("enumValues", optList enums)
-            ]
-        }
-    )
+  object
+    "__Type"
+    [ renderKind kind,
+      ("name", string name),
+      description meta,
+      ("enumValues", optList enums)
+    ]
 
 typeFromUnion :: Monad m => (Text, Maybe Meta, DataUnion) -> ResModel QUERY e m
 typeFromUnion (name, typeMeta, typeContent) =
-  ResObject
-    ( ObjectResModel
-        { __typename = "__Type",
-          objectFields =
-            [ ("kind", renderKind UNION),
-              ("name", resString name),
-              description typeMeta,
-              ("possibleTypes", pure $ ResList (map (\x -> createObjectType x Nothing $ Just []) typeContent))
-            ]
-        }
-    )
+  object
+    "__Type"
+    [ renderKind UNION,
+      renderName name,
+      description typeMeta,
+      ("possibleTypes", pure $ ResList (map (\x -> createObjectType x Nothing $ Just []) typeContent))
+    ]
 
 createObjectType ::
-  Monad m => Text -> Maybe Text -> Maybe [ResModel QUERY e m] -> ResModel QUERY e m
-createObjectType name desc fields =
-  ResObject
-    ( ObjectResModel
-        { __typename = "__Type",
-          objectFields =
-            [ ("kind", renderKind OBJECT),
-              ("name", resString name),
-              ("description", opt resString desc),
-              ("fields", optList fields),
-              ("interfaces", pure $ ResList [])
-            ]
-        }
-    )
+  Monad m => Text -> Maybe Meta -> Maybe [ResModel QUERY e m] -> ResModel QUERY e m
+createObjectType name meta fields =
+  object
+    "__Type"
+    [ renderKind OBJECT,
+      ("name", string name),
+      description meta,
+      ("fields", optList fields),
+      ("interfaces", pure $ ResList [])
+    ]
 
 optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel QUERY e m)
 optList = pure . maybe ResNull ResList
@@ -239,17 +206,13 @@ optList = pure . maybe ResNull ResList
 createInputObject ::
   Monad m => Text -> Maybe Meta -> [ResModel QUERY e m] -> ResModel QUERY e m
 createInputObject name meta fields =
-  ResObject
-    ( ObjectResModel
-        { __typename = "__Type",
-          objectFields =
-            [ ("kind", resString "INPUT_OBJECT"),
-              ("name", resString name),
-              description meta,
-              ("inputFields", pure $ ResList fields)
-            ]
-        }
-    )
+  object
+    "__Type"
+    [ renderKind INPUT_OBJECT,
+      renderName name,
+      description meta,
+      ("inputFields", pure $ ResList fields)
+    ]
 
 createType ::
   Monad m =>
@@ -259,51 +222,61 @@ createType ::
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
 createType kind name desc fields =
-  ResObject
-    ( ObjectResModel
-        { __typename = "__Type",
-          objectFields =
-            [ ("kind", renderKind kind),
-              ("name", resString name),
-              ("description", opt resString desc),
-              ("fields", pure $ maybe ResNull ResList fields),
-              ("enumValues", pure $ ResList [])
-            ]
-        }
-    )
+  object
+    "__Type"
+    [ renderKind kind,
+      renderName name,
+      ("description", opt string desc),
+      ("fields", pure $ maybe ResNull ResList fields),
+      ("enumValues", pure $ ResList [])
+    ]
 
 opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> Resolver QUERY e m (ResModel QUERY e m)
 opt f (Just x) = f x
 opt _ Nothing = pure ResNull
 
-resString :: Monad m => Text -> Resolver QUERY e m (ResModel QUERY e m)
-resString = pure . string
+string :: Monad m => Text -> Resolver QUERY e m (ResModel QUERY e m)
+string = pure . ResScalar . String
 
-renderKind :: Monad m => TypeKind -> Resolver QUERY e m (ResModel QUERY e m)
-renderKind = resString . pack . show
+renderName :: Monad m => Text -> (Name, Resolver QUERY e m (ResModel QUERY e m))
+renderName = ("name",) . string . convertToJSONName
 
-wrapAs :: Monad m => TypeKind -> ResModel QUERY e m -> ResModel QUERY e m
-wrapAs kind contentType =
+renderKind :: Monad m => TypeKind -> (Name, Resolver QUERY e m (ResModel QUERY e m))
+renderKind = ("kind",) . string . pack . show
+
+object ::
+  Name ->
+  [(Name, Resolver QUERY e m (ResModel QUERY e m))] ->
+  ResModel QUERY e m
+object __typename objectFields =
   ResObject
     ( ObjectResModel
-        { __typename = "__Type",
-          objectFields =
-            [ ("kind", renderKind kind),
-              ("ofType", pure contentType)
-            ]
+        { __typename,
+          objectFields
         }
     )
+
+withTypeWrapper :: Monad m => FieldDefinition -> ResModel QUERY e m -> ResModel QUERY e m
+withTypeWrapper FieldDefinition {fieldType = TypeRef {typeWrappers}} typ =
+  foldr wrapAs typ (toGQLWrapper typeWrappers)
+
+wrapAs :: Monad m => DataTypeWrapper -> ResModel QUERY e m -> ResModel QUERY e m
+wrapAs wrapper contentType =
+  object
+    "__Type"
+    [ renderKind (kind wrapper),
+      ("ofType", pure contentType)
+    ]
+  where
+    kind ListType = LIST
+    kind NonNullType = NON_NULL
 
 createInputValueWith ::
   Monad m => Text -> Maybe Meta -> ResModel QUERY e m -> ResModel QUERY e m
 createInputValueWith name meta ivType =
-  ResObject
-    ( ObjectResModel
-        { __typename = "__InputValue",
-          objectFields =
-            [ ("name", resString $ convertToJSONName name),
-              description meta,
-              ("type'", pure ivType)
-            ]
-        }
-    )
+  object
+    "__InputValue"
+    [ renderName name,
+      description meta,
+      ("type'", pure ivType)
+    ]
