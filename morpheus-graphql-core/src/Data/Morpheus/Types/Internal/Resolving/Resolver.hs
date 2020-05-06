@@ -330,49 +330,6 @@ type family UnSubResolver (a :: * -> *) :: (* -> *)
 
 type instance UnSubResolver (Resolver SUBSCRIPTION e m) = Resolver QUERY e m
 
--- map Resolving strategies
-class
-  MapStrategy
-    (from :: OperationType)
-    (to :: OperationType)
-  where
-  mapStrategy ::
-    Monad m =>
-    Resolver from e m (Deriving from e m) ->
-    Resolver to e m (Deriving to e m)
-
-instance MapStrategy o o where
-  mapStrategy = id
-
-instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy = ResolverS . pure . lift . fmap mapDeriving
-
-mapDeriving ::
-  ( MapStrategy o o',
-    Monad m
-  ) =>
-  Deriving o e m ->
-  Deriving o' e m
-mapDeriving ResNull = ResNull
-mapDeriving (ResScalar x) = ResScalar x
-mapDeriving (ResEnum typeName enum) = ResEnum typeName enum
-mapDeriving (ResList x) = ResList $ map mapDeriving x
-mapDeriving (ResObject x) = ResObject (mapObjectDeriving x)
-mapDeriving (ResUnion name x) = ResUnion name (mapStrategy x)
-
-mapObjectDeriving ::
-  ( MapStrategy o o',
-    Monad m
-  ) =>
-  ObjectResModel o e m ->
-  ObjectResModel o' e m
-mapObjectDeriving (ObjectResModel tyname x) =
-  ObjectResModel tyname $
-    map (mapEntry mapStrategy) x
-
-mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
-mapEntry f (name, value) = (name, f value)
-
 withArguments ::
   forall o e m a.
   (LiftOperation o, Monad m) =>
@@ -568,3 +525,46 @@ runRootResModel
         runRootDataResolver mutation ctx
       selectByOperation Subscription =
         runRootDataResolver subscription ctx
+
+-- map Resolving strategies
+class
+  MapStrategy
+    (from :: OperationType)
+    (to :: OperationType)
+  where
+  mapStrategy ::
+    Monad m =>
+    Resolver from e m (Deriving from e m) ->
+    Resolver to e m (Deriving to e m)
+
+instance MapStrategy o o where
+  mapStrategy = id
+
+instance MapStrategy QUERY SUBSCRIPTION where
+  mapStrategy = ResolverS . pure . lift . fmap mapDeriving
+
+mapDeriving ::
+  ( MapStrategy o o',
+    Monad m
+  ) =>
+  Deriving o e m ->
+  Deriving o' e m
+mapDeriving ResNull = ResNull
+mapDeriving (ResScalar x) = ResScalar x
+mapDeriving (ResEnum typeName enum) = ResEnum typeName enum
+mapDeriving (ResList x) = ResList $ map mapDeriving x
+mapDeriving (ResObject x) = ResObject (mapObjectDeriving x)
+mapDeriving (ResUnion name x) = ResUnion name (mapStrategy x)
+
+mapObjectDeriving ::
+  ( MapStrategy o o',
+    Monad m
+  ) =>
+  ObjectResModel o e m ->
+  ObjectResModel o' e m
+mapObjectDeriving (ObjectResModel tyname x) =
+  ObjectResModel tyname $
+    map (mapEntry mapStrategy) x
+
+mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
+mapEntry f (name, value) = (name, f value)
