@@ -115,7 +115,7 @@ instance RenderSchema FieldDefinition where
           ( ObjectResModel
               { __typename = "__Field",
                 objectFields =
-                  [ ("name", pure $ string (convertToJSONName fieldName))
+                  [ ("name", resString (convertToJSONName fieldName))
                     -- s__FieldDescription = pure (fieldMeta >>= metaDescription),
                     -- s__FieldArgs = renderArguments fieldArgs lib,
                     -- s__FieldType' =
@@ -191,8 +191,8 @@ createLeafType kind name meta enums =
     ( ObjectResModel
         { __typename = "__Type",
           objectFields =
-            [ ("kind", resString (pack $ show kind))
-              -- s__TypeName = pure $ Just name,
+            [ ("kind", renderKind kind),
+              ("name", resString name)
               -- s__TypeDescription = pure (meta >>= metaDescription),
               -- s__TypeFields = constRes Nothing,
               -- s__TypeOfType = pure Nothing,
@@ -210,8 +210,8 @@ typeFromUnion (name, typeMeta, typeContent) =
     ( ObjectResModel
         { __typename = "__Type",
           objectFields =
-            [ ("kind", resString "UNION")
-              --   s__TypeName = pure $ Just name,
+            [ ("kind", renderKind UNION),
+              ("name", resString name)
               --   s__TypeDescription = pure (typeMeta >>= metaDescription),
               --   s__TypeFields = constRes Nothing,
               --   s__TypeOfType = pure Nothing,
@@ -231,8 +231,8 @@ createObjectType name description fields =
     ( ObjectResModel
         { __typename = "__Type",
           objectFields =
-            [ ("kind", resString "OBJECT")
-              --   s__TypeName = pure $ Just name,
+            [ ("kind", renderKind OBJECT),
+              ("name", resString name)
               --   s__TypeDescription = pure description,
               --   s__TypeFields = constRes fields,
               --   s__TypeOfType = pure Nothing,
@@ -277,9 +277,9 @@ createType kind name description fields =
     ( ObjectResModel
         { __typename = "__Type",
           objectFields =
-            [ -- ("kind", resString kind),
+            [ ("kind", renderKind kind),
               ("name", resString name),
-              -- ("description", pure description),
+              -- ("description", resString description),
               -- ("fields", constRes fields),
               ("ofType", resNull),
               ("interfaces", resNull),
@@ -296,13 +296,16 @@ resString = pure . string
 resNull :: Monad m => Resolver QUERY e m (ResModel QUERY e m)
 resNull = pure ResNull
 
+renderKind :: Monad m => TypeKind -> Resolver QUERY e m (ResModel QUERY e m)
+renderKind = resString . pack . show
+
 wrapAs :: Monad m => TypeKind -> ResModel QUERY e m -> ResModel QUERY e m
 wrapAs kind contentType =
   ResObject
     ( ObjectResModel
         { __typename = "__Type",
           objectFields =
-            [ -- ("kind", resString kind),
+            [ ("kind", renderKind kind),
               ("name", resNull),
               ("description", resNull),
               ("fields", resNull),

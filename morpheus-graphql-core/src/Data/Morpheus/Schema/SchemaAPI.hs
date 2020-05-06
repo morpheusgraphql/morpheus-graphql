@@ -89,7 +89,7 @@ schemaAPI schema =
         }
     )
   where
-    typeResolver = findType "String" schema
+    typeResolver = findType "__Schema" schema
 
 withSystemFields :: Monad m => Schema -> RootResModel e m -> ResultT e' m (RootResModel e m)
 withSystemFields schema RootResModel {query, ..} =
