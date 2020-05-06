@@ -19,6 +19,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DataFingerprint (..),
     FieldsDefinition,
+    Message,
     Schema (..),
     TypeContent (..),
     TypeDefinition (..),
@@ -35,7 +36,8 @@ import Data.Morpheus.Types.Internal.Operation
     singleton,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( resolveUpdates,
+  ( failure,
+    resolveUpdates,
   )
 
 withSystemTypes :: TypeUpdater
@@ -45,7 +47,7 @@ withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject int
       pure $ s {query = q {typeContent = DataObject inter fs}}
   )
     >>= (`resolveUpdates` map (insertType . internalType) schemaTypes)
-withSystemTypes _ = fail "query must be an Object Type"
+withSystemTypes _ = failure ("Query must be an Object Type" :: Message)
 
 hiddenFields :: FieldsDefinition
 hiddenFields =
