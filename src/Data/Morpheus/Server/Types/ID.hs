@@ -10,9 +10,10 @@ where
 import qualified Data.Aeson as A
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
-import Data.Morpheus.Server.Types.GQLType (GQLType (KIND))
+import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( ScalarValue (..),
+    internalFingerprint,
   )
 import Data.Text
   ( Text,
@@ -30,6 +31,7 @@ newtype ID = ID
 
 instance GQLType ID where
   type KIND ID = SCALAR
+  __typeFingerprint _ = internalFingerprint "ID" []
 
 instance A.ToJSON ID where
   toJSON = A.toJSON . unpackID

@@ -40,10 +40,12 @@ schemaTypes :: [TypeDefinition]
 schemaTypes =
   [dsl|
 
+# default scalars
+scalar Boolean
+scalar Int
 scalar Float
 scalar String
-scalar Int
-scalar Boolean
+scalar ID
 
 type __Schema {
   types: [__Type!]!
@@ -139,8 +141,4 @@ enum __TypeKind {
   NON_NULL
 }
 
-type Root  {
-  __type(name: String!): __Type
-  __schema : __Schema!
-}
 |]
