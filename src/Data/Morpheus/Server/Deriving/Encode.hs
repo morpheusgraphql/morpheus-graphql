@@ -56,9 +56,6 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
   )
-import Data.Morpheus.Types.Internal.Operation
-  ( Merge (..),
-  )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     FieldResModel,

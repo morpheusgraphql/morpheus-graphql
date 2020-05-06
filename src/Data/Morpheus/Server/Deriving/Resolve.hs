@@ -53,9 +53,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     initTypeLib,
   )
-import Data.Morpheus.Types.Internal.Operation
-  ( Merge (..),
-  )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     GQLChannel (..),

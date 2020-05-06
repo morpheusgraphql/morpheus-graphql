@@ -21,8 +21,6 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
-    FieldsDefinition,
-    Name,
     QUERY,
     ScalarValue (..),
     Schema (..),
