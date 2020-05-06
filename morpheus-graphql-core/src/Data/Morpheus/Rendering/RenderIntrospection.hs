@@ -25,8 +25,10 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeKind (..),
     DataTypeWrapper (..),
     DataUnion,
+    Directive,
     FieldDefinition (..),
     Meta (..),
+    Name,
     QUERY,
     ScalarValue (..),
     Schema,
@@ -90,14 +92,23 @@ createEnumValue DataEnumValue {enumName, enumMeta} =
     ObjectResModel
       { __typename = "__Field",
         objectFields =
-          [ ("name", resString enumName)
-            -- s__EnumValueDescription = pure (enumMeta >>= metaDescription),
-            -- s__EnumValueIsDeprecated = pure (isJust deprecated),
-            -- s__EnumValueDeprecationReason = pure (deprecated >>= lookupDeprecatedReason)
+          [ ("name", resString enumName),
+            description enumMeta
           ]
+            <> renderDeprecated enumMeta
       }
-  where
-    deprecated = enumMeta >>= lookupDeprecated
+
+renderDeprecated ::
+  (Monad m) =>
+  Maybe Meta ->
+  [(Name, Resolver QUERY e m (ResModel QUERY e m))]
+renderDeprecated meta =
+  [ ("isDeprecated", pure $ ResScalar $ Boolean (isJust $ meta >>= lookupDeprecated)),
+    ("deprecationReason", opt resString (meta >>= lookupDeprecated >>= lookupDeprecatedReason))
+  ]
+
+description :: Monad m => Maybe Meta -> (Name, Resolver QUERY e m (ResModel QUERY e m))
+description enumMeta = ("description", opt resString (enumMeta >>= metaDescription))
 
 string :: Text -> ResModel o e m
 string = ResScalar . String
@@ -115,20 +126,15 @@ instance RenderSchema FieldDefinition where
           ( ObjectResModel
               { __typename = "__Field",
                 objectFields =
-                  [ ("name", resString (convertToJSONName fieldName))
-                    -- s__FieldDescription = pure (fieldMeta >>= metaDescription),
+                  [ ("name", resString (convertToJSONName fieldName)),
+                    ("description", opt resString (fieldMeta >>= metaDescription))
                     -- s__FieldArgs = renderArguments fieldArgs lib,
                     -- s__FieldType' =
                     --   pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just []),
-                    -- s__FieldIsDeprecated = pure (isJust deprecated),
-                    -- s__FieldDeprecationReason =
-                    --   pure
-                    --     (deprecated >>= lookupDeprecatedReason)
                   ]
+                    <> renderDeprecated fieldMeta
               }
           )
-    where
-      deprecated = fieldMeta >>= lookupDeprecated
 
 renderTypeKind :: DataTypeKind -> TypeKind
 renderTypeKind KindScalar = SCALAR
@@ -192,14 +198,9 @@ createLeafType kind name meta enums =
         { __typename = "__Type",
           objectFields =
             [ ("kind", renderKind kind),
-              ("name", resString name)
-              -- s__TypeDescription = pure (meta >>= metaDescription),
-              -- s__TypeFields = constRes Nothing,
-              -- s__TypeOfType = pure Nothing,
-              -- s__TypeInterfaces = pure Nothing,
-              -- s__TypePossibleTypes = pure Nothing,
-              -- s__TypeEnumValues = constRes enums,
-              -- s__TypeInputFields = pure Nothing
+              ("name", resString name),
+              description meta,
+              ("enumValues", optList enums)
             ]
         }
     )
@@ -211,39 +212,32 @@ typeFromUnion (name, typeMeta, typeContent) =
         { __typename = "__Type",
           objectFields =
             [ ("kind", renderKind UNION),
-              ("name", resString name)
-              --   s__TypeDescription = pure (typeMeta >>= metaDescription),
-              --   s__TypeFields = constRes Nothing,
-              --   s__TypeOfType = pure Nothing,
-              --   s__TypeInterfaces = pure Nothing,
+              ("name", resString name),
+              description typeMeta
               --   s__TypePossibleTypes =
               --     pure $ Just (map (\x -> createObjectType x Nothing $ Just []) typeContent),
-              --   s__TypeEnumValues = constRes Nothing,
-              --   s__TypeInputFields = pure Nothing
             ]
         }
     )
 
 createObjectType ::
   Monad m => Text -> Maybe Text -> Maybe [ResModel QUERY e m] -> ResModel QUERY e m
-createObjectType name description fields =
+createObjectType name desc fields =
   ResObject
     ( ObjectResModel
         { __typename = "__Type",
           objectFields =
             [ ("kind", renderKind OBJECT),
-              ("name", resString name)
-              --   s__TypeDescription = pure description,
-              --   s__TypeFields = constRes fields,
-              --   s__TypeOfType = pure Nothing,
-              --   s__TypeInterfaces = pure $ Just [],
-              --   s__TypePossibleTypes = pure Nothing,
-              --   s__TypeEnumValues = constRes Nothing,
-              --   s__TypeInputFields = pure Nothing
-              -- }
+              ("name", resString name),
+              ("description", opt resString desc),
+              ("fields", optList fields),
+              ("interfaces", pure $ ResList [])
             ]
         }
     )
+
+optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel QUERY e m)
+optList = pure . maybe ResNull ResList
 
 createInputObject ::
   Monad m => Text -> Maybe Meta -> [ResModel QUERY e m] -> ResModel QUERY e m
@@ -254,13 +248,8 @@ createInputObject name meta fields =
           objectFields =
             [ ("kind", resString "INPUT_OBJECT"),
               ("name", resString name),
-              -- ("description", pure (meta >>= metaDescription)),
-              ("fields", resNull),
-              ("ofType", resNull),
-              ("interfaces", resNull),
-              ("possibleTypes", resNull),
-              ("enumValues", resNull)
-              -- ("inputFields", pure $ Just fields)
+              description meta,
+              ("inputFields", pure $ ResList fields)
             ]
         }
     )
@@ -272,29 +261,26 @@ createType ::
   Maybe Text ->
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
-createType kind name description fields =
+createType kind name desc fields =
   ResObject
     ( ObjectResModel
         { __typename = "__Type",
           objectFields =
             [ ("kind", renderKind kind),
               ("name", resString name),
-              -- ("description", resString description),
-              -- ("fields", constRes fields),
-              ("ofType", resNull),
-              ("interfaces", resNull),
-              ("possibleTypes", resNull),
-              ("enumValues", pure $ ResList []),
-              ("inputFields", resNull)
+              ("description", opt resString desc),
+              ("fields", pure $ maybe ResNull ResList fields),
+              ("enumValues", pure $ ResList [])
             ]
         }
     )
 
+opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> Resolver QUERY e m (ResModel QUERY e m)
+opt f (Just x) = f x
+opt _ Nothing = pure ResNull
+
 resString :: Monad m => Text -> Resolver QUERY e m (ResModel QUERY e m)
 resString = pure . string
-
-resNull :: Monad m => Resolver QUERY e m (ResModel QUERY e m)
-resNull = pure ResNull
 
 renderKind :: Monad m => TypeKind -> Resolver QUERY e m (ResModel QUERY e m)
 renderKind = resString . pack . show
@@ -306,14 +292,7 @@ wrapAs kind contentType =
         { __typename = "__Type",
           objectFields =
             [ ("kind", renderKind kind),
-              ("name", resNull),
-              ("description", resNull),
-              ("fields", resNull),
-              ("ofType", pure contentType),
-              ("interfaces", resNull),
-              ("possibleTypes", resNull),
-              ("enumValues", resNull),
-              ("inputFields", resNull)
+              ("ofType", pure contentType)
             ]
         }
     )
@@ -325,10 +304,9 @@ createInputValueWith name meta ivType =
     ( ObjectResModel
         { __typename = "__InputValue",
           objectFields =
-            [ ("name", pure $ string $ convertToJSONName name),
-              -- ("description", meta >>= metaDescription),
-              ("type", pure ivType),
-              ("defaultValue", pure ResNull)
+            [ ("name", resString $ convertToJSONName name),
+              description meta,
+              ("type", pure ivType)
             ]
         }
     )
