@@ -20,7 +20,8 @@ import Data.Morpheus.Schema.Schema
   (
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldsDefinition,
+  ( Argument (..),
+    FieldsDefinition,
     Name,
     QUERY,
     ScalarValue (..),
@@ -32,6 +33,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Merge (..),
+    selectOr,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ObjectResModel (..),
@@ -39,6 +41,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Resolver,
     ResultT,
     RootResModel (..),
+    withArguments,
   )
 import Data.Text (Text)
 
@@ -83,13 +86,19 @@ schemaAPI schema =
     ( ObjectResModel
         { __typename = "Root",
           objectFields =
-            [ ("__type", typeResolver),
+            [ ("__type", withArguments typeResolver),
               ("__schema", schemaResolver schema)
             ]
         }
     )
   where
-    typeResolver = findType "__Schema" schema
+    typeResolver = selectOr (pure ResNull) handleArg "name"
+      where
+        handleArg
+          Argument
+            { argumentValue = (Scalar (String typename))
+            } = findType typename schema
+        handleArg _ = pure ResNull
 
 withSystemFields :: Monad m => Schema -> RootResModel e m -> ResultT e' m (RootResModel e m)
 withSystemFields schema RootResModel {query, ..} =
