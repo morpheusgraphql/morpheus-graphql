@@ -128,7 +128,7 @@ instance RenderSchema FieldDefinition where
                   [ ("name", resString (convertToJSONName fieldName)),
                     ("description", opt resString (fieldMeta >>= metaDescription)),
                     ("args", ResList <$> renderArguments fieldArgs lib),
-                    ("type", pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just []))
+                    ("type'", pure (applyTypeWrapper field $ createType kind typeConName Nothing $ Just []))
                   ]
                     <> renderDeprecated fieldMeta
               }
@@ -303,7 +303,7 @@ createInputValueWith name meta ivType =
           objectFields =
             [ ("name", resString $ convertToJSONName name),
               description meta,
-              ("type", pure ivType)
+              ("type'", pure ivType)
             ]
         }
     )
