@@ -58,22 +58,6 @@ findType ::
   Resolver QUERY e m (ResModel QUERY e m)
 findType name lib = maybe (pure ResNull) (`render` lib) (lookupDataType name lib)
 
--- pure
---   $ ResObject
---   $ ObjectResModel
---     { __typename = "Deity",
---       objectFields =
---         [ ( "name",
---             pure $ string "Morpheus"
---           ),
---           ( "power",
---             pure $
---               ResList
---                 [string "Shapeshifting"]
---           )
---         ]
---     }
-
 schemaResolver ::
   Monad m =>
   Schema ->
