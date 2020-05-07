@@ -7,8 +7,6 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 
-{-# PolyKinds #-}
-
 -- | GQL Types
 module Data.Morpheus.Types
   ( Event (..),
@@ -95,6 +93,18 @@ import Data.Morpheus.Types.Internal.Subscription
   )
 import Data.Text (pack)
 
+class GQL (f :: * -> *) a where
+  type Resolve (m :: * -> *) a :: *
+  type ComposeRes (m :: * -> *) f a :: *
+
+instance GQL f (a :: *) where
+  type Resolve m a = m a
+  type ComposeRes m f a = m (f a)
+
+instance GQL f (a :: (* -> *) -> *) where
+  type Resolve m a = m (a m)
+  type ComposeRes m f a = m (f (a m))
+
 type Res = Resolver QUERY
 
 type MutRes = Resolver MUTATION
@@ -107,25 +117,24 @@ type IOMutRes e = MutRes e IO
 
 type IOSubRes e = SubRes e IO
 
-class GQL (f :: * -> *) a where
-  type Resolve (m :: * -> *) a :: *
-  type CompRes (m :: * -> *) f a :: *
-
-instance GQL f (a :: (* -> *) -> *) where
-  type Resolve m a = m (a m)
-  type CompRes m f a = m (f (a m))
-
-instance GQL f (a :: *) where
-  type Resolve m a = m a
-  type CompRes m f a = m (f a)
-
 -- Recursive Resolvers
+type ResolveO o e m a = Resolve (Resolver o e m) a
 
-type ResolveQ e m a = Res e m (a (Res e m))
+type ResolveQ e m a = ResolveO QUERY e m a
 
-type ResolveM e m a = MutRes e m (a (MutRes e m))
+type ResolveM e m a = ResolveO MUTATION e m a
 
 type ResolveS e m a = SubRes e m (a (Res e m))
+
+type ResolveList o e m a = ComposeRes (Resolver o e m) [] a
+
+resList :: ResolveList QUERY () IO Int
+resList = pure [1]
+
+newtype B m = B (m Int)
+
+resB :: ResolveList QUERY () IO B
+resB = pure [B $ pure 2]
 
 -- Subsciption Object Resolver Fields
 type SubField m a = (m (a (UnSubResolver m)))
