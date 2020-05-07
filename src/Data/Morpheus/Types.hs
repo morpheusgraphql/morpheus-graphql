@@ -131,7 +131,7 @@ type ResolveList o e m a = ComposeRes (Resolver o e m) [] a
 resList :: ResolveList QUERY () IO Int
 resList = pure [1]
 
-newtype B m = B (m Int)
+newtype B m = B {unB :: m Int}
 
 resB :: ResolveList QUERY () IO B
 resB = pure [B $ pure 2]
