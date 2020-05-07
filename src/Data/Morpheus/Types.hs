@@ -10,7 +10,6 @@
 -- | GQL Types
 module Data.Morpheus.Types
   ( Event (..),
-    -- Type Classes
     GQLType (KIND, description),
     GQLScalar (parseValue, serialize),
     GQLRequest (..),
@@ -21,21 +20,12 @@ module Data.Morpheus.Types
     constRes,
     constMutRes,
     Undefined (..),
-    Res,
-    MutRes,
-    SubRes,
-    IORes,
-    IOMutRes,
-    IOSubRes,
     Resolver,
     QUERY,
     MUTATION,
     SUBSCRIPTION,
     lift,
     liftEither,
-    ResolveQ,
-    ResolveM,
-    ResolveS,
     failRes,
     WithOperation,
     publish,
@@ -46,6 +36,12 @@ module Data.Morpheus.Types
     Stream,
     WS,
     HTTP,
+    -- Resolvers
+    SmartResolver,
+    ComposedResolver,
+    ResolverQ,
+    ResolverM,
+    ResolverS,
   )
 where
 
@@ -105,46 +101,34 @@ instance GQL f (a :: (* -> *) -> *) where
   type Resolve m a = m (a m)
   type ComposeRes m f a = m (f (a m))
 
-type Res = Resolver QUERY
-
-type MutRes = Resolver MUTATION
-
-type SubRes = Resolver SUBSCRIPTION
-
-type IORes e = Res e IO
-
-type IOMutRes e = MutRes e IO
-
-type IOSubRes e = SubRes e IO
-
 -- Recursive Resolvers
-type ResolveO o e m a =
+type SmartResolver o e m a =
   (WithOperation o) =>
   Resolve (Resolver o e m) a
 
-type ResolveComp o e m f a =
+type ComposedResolver o e m f a =
   (WithOperation o) =>
   ComposeRes (Resolver o e m) f a
 
-type ResolveQ e m a = ResolveO QUERY e m a
+type ResolverQ e m a = SmartResolver QUERY e m a
 
-type ResolveM e m a = ResolveO MUTATION e m a
+type ResolverM e m a = SmartResolver MUTATION e m a
 
-type ResolveS e m a = SubRes e m (a (Res e m))
+type ResolverS e m a = Resolver SUBSCRIPTION e m (a (Resolver QUERY e m))
 
-newtype B m = B {field1 :: m Int}
+-- newtype B m = B {field1 :: m Int}
 
-resInt :: ResolveO o () IO Int
-resInt = pure 1
+-- resInt :: SmartResolver o () IO Int
+-- resInt = pure 1
 
-resB :: ResolveO o () IO B
-resB = pure B {field1 = pure 1}
+-- resB :: SmartResolver o () IO B
+-- resB = pure B {field1 = pure 1}
 
-resList :: ResolveComp o () IO [] Int
-resList = pure [1]
+-- resList :: ComposedResolver o () IO [] Int
+-- resList = pure [1]
 
-resListB :: ResolveComp o () IO [] B
-resListB = pure [B {field1 = pure 1}]
+-- resListB :: ComposedResolver o () IO [] B
+-- resListB = pure [B {field1 = pure 1}]
 
 -- Subsciption Object Resolver Fields
 type SubField m a = (m (a (UnSubResolver m)))
@@ -156,7 +140,7 @@ publish = pushEvents
 constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
-constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a
+constMutRes :: Monad m => [e] -> a -> args -> ResolverM e m a
 constMutRes events value = const $ do
   publish events
   pure value
