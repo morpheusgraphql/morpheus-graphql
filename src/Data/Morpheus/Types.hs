@@ -1,7 +1,13 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+
+{-# PolyKinds #-}
 
 -- | GQL Types
 module Data.Morpheus.Types
@@ -101,7 +107,20 @@ type IOMutRes e = MutRes e IO
 
 type IOSubRes e = SubRes e IO
 
+class GQL (f :: * -> *) a where
+  type Resolve (m :: * -> *) a :: *
+  type CompRes (m :: * -> *) f a :: *
+
+instance GQL f (a :: (* -> *) -> *) where
+  type Resolve m a = m (a m)
+  type CompRes m f a = m (f (a m))
+
+instance GQL f (a :: *) where
+  type Resolve m a = m a
+  type CompRes m f a = m (f a)
+
 -- Recursive Resolvers
+
 type ResolveQ e m a = Res e m (a (Res e m))
 
 type ResolveM e m a = MutRes e m (a (MutRes e m))
