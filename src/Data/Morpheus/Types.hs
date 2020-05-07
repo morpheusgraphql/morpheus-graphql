@@ -2,9 +2,9 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- | GQL Types
@@ -118,9 +118,13 @@ type IOMutRes e = MutRes e IO
 type IOSubRes e = SubRes e IO
 
 -- Recursive Resolvers
-type ResolveO o e m a = Resolve (Resolver o e m) a
+type ResolveO o e m a =
+  (WithOperation o) =>
+  Resolve (Resolver o e m) a
 
-type ResolveComp o e m f a = ComposeRes (Resolver o e m) f a
+type ResolveComp o e m f a =
+  (WithOperation o) =>
+  ComposeRes (Resolver o e m) f a
 
 type ResolveQ e m a = ResolveO QUERY e m a
 
@@ -128,13 +132,19 @@ type ResolveM e m a = ResolveO MUTATION e m a
 
 type ResolveS e m a = SubRes e m (a (Res e m))
 
-resList :: ResolveComp QUERY () IO [] Int
+newtype B m = B {field1 :: m Int}
+
+resInt :: ResolveO o () IO Int
+resInt = pure 1
+
+resB :: ResolveO o () IO B
+resB = pure B {field1 = pure 1}
+
+resList :: ResolveComp o () IO [] Int
 resList = pure [1]
 
-newtype B m = B {unB :: m Int}
-
-resB :: ResolveComp QUERY () IO [] B
-resB = pure [B $ pure 2]
+resListB :: ResolveComp o () IO [] B
+resListB = pure [B {field1 = pure 1}]
 
 -- Subsciption Object Resolver Fields
 type SubField m a = (m (a (UnSubResolver m)))
