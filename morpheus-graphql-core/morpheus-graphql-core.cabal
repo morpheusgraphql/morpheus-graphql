@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9384767ed4f98d11b917a1971ace6dedad3a28938ee74c566906a0415f21acf0
+-- hash: 753e086ab59034ee6061210f31112e582bc9cad18ba39d4ca11a71617aaf1de1
 
 name:           morpheus-graphql-core
 version:        0.11.0
@@ -22,6 +22,9 @@ build-type:     Simple
 extra-source-files:
     changelog.md
     README.md
+data-files:
+    test/simpleQuery/query.gql
+    test/simpleQuery/response.json
 
 source-repository head
   type: git
