@@ -120,20 +120,20 @@ type IOSubRes e = SubRes e IO
 -- Recursive Resolvers
 type ResolveO o e m a = Resolve (Resolver o e m) a
 
+type ResolveComp o e m f a = ComposeRes (Resolver o e m) f a
+
 type ResolveQ e m a = ResolveO QUERY e m a
 
 type ResolveM e m a = ResolveO MUTATION e m a
 
 type ResolveS e m a = SubRes e m (a (Res e m))
 
-type ResolveList o e m a = ComposeRes (Resolver o e m) [] a
-
-resList :: ResolveList QUERY () IO Int
+resList :: ResolveComp QUERY () IO [] Int
 resList = pure [1]
 
 newtype B m = B {unB :: m Int}
 
-resB :: ResolveList QUERY () IO B
+resB :: ResolveComp QUERY () IO [] B
 resB = pure [B $ pure 2]
 
 -- Subsciption Object Resolver Fields
