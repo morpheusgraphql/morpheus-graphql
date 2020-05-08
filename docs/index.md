@@ -393,7 +393,7 @@ screenshots from `Insomnia`
 
 ## Handling Errors
 
-for errors you can use use either `liftEither` or `failRes`:
+for errors you can use use either `liftEither` or `MonadFail`:
 at the and they have same result.
 
 with `liftEither`
@@ -406,11 +406,11 @@ dbDeity ::  IO Either Deity
 dbDeity = pure $ Left "db error"
 ```
 
-with `failRes`
+with `MonadFail`
 
 ```haskell
 resolveDeity :: DeityArgs -> ResolverQ e IO Deity
-resolveDeity DeityArgs { } = failRes "db error"
+resolveDeity DeityArgs { } = fail "db error"
 ```
 
 ### Mutations

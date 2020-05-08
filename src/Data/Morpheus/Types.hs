@@ -180,8 +180,14 @@ constMutRes events value = const $ do
   publish events
   pure value
 
-failRes :: (WithOperation o, Monad m) => String -> Resolver o e m a
-failRes = failure . pack
+{-# DEPRECATED failRes "use \"fail\" from \"MonadFail\"" #-}
+failRes ::
+  ( Monad m,
+    WithOperation o
+  ) =>
+  String ->
+  Resolver o e m a
+failRes = fail
 
 liftEither :: (MonadTrans t, Monad (t m), Failure Message (t m)) => Monad m => m (Either String a) -> t m a
 liftEither x = lift x >>= either (failure . pack) pure

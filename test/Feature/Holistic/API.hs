@@ -27,7 +27,6 @@ import Data.Morpheus.Types
     GQLType (..),
     ID (..),
     ScalarValue (..),
-    failRes,
     liftEither,
     subscribe,
   )
@@ -66,7 +65,7 @@ rootResolver =
           { user,
             testUnion = Just . TestUnionUser <$> user,
             fail1 = liftEither alwaysFail,
-            fail2 = failRes "fail with failRes"
+            fail2 = fail "fail with MonadFail"
           },
       mutationResolver = Mutation {createUser = const user},
       subscriptionResolver =

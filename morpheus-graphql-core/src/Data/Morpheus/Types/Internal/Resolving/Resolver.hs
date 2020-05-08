@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -145,9 +146,6 @@ newtype ResolverState event m a = ResolverState
       Monad
     )
 
-instance Monad m => MonadFail (ResolverState event m) where
-  fail = failure . pack
-
 instance MonadTrans (ResolverState e) where
   lift = ResolverState . lift . lift
 
@@ -216,6 +214,10 @@ instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   return = pure
   (>>=) = unsafeBind
 
+#if __GLASGOW_HASKELL__ < 808
+  fail = failure . pack
+# endif
+
 -- MonadIO
 instance (MonadIO m, LiftOperation o) => MonadIO (Resolver o e m) where
   liftIO = lift . liftIO
@@ -230,6 +232,9 @@ instance (LiftOperation o, Monad m) => Failure Message (Resolver o e m) where
 
 instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
   failure = packResolver . failure
+
+instance (Monad m, LiftOperation o) => MonadFail (Resolver o e m) where
+  fail = failure . pack
 
 -- PushEvents
 instance (Monad m) => PushEvents e (Resolver MUTATION e m) where
@@ -333,9 +338,7 @@ withArguments ::
 withArguments = withResolver args
   where
     args :: ResolverState e m (Arguments VALID)
-    args = do
-      Selection {selectionArguments} <- getState
-      pure selectionArguments
+    args = selectionArguments <$> getState
 
 --
 -- Selection Processing
@@ -348,10 +351,9 @@ toResolver ::
 toResolver toArgs = withResolver args
   where
     args :: ResolverState e m a
-    args = do
-      Selection {selectionArguments} <- getState
-      let resT = ResultT $ pure $ toArgs selectionArguments
-      ResolverState $ lift $ cleanEvents resT
+    args =
+      ResultT . pure . toArgs . selectionArguments <$> getState
+        >>= ResolverState . lift . cleanEvents
 
 pickSelection :: Name -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection

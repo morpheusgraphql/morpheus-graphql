@@ -5,7 +5,7 @@
       "locations": [{ "line": 2, "column": 3 }]
     },
     {
-      "message": "Failure on Resolving Field \"fail2\": fail with failRes",
+      "message": "Failure on Resolving Field \"fail2\": fail with MonadFail",
       "locations": [{ "line": 3, "column": 3 }]
     }
   ]
