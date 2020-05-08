@@ -100,15 +100,15 @@ import Data.Morpheus.Types.Internal.Subscription
   )
 import Data.Text (pack)
 
-class GQL (f :: * -> *) a where
+class FlexibleResolver (f :: * -> *) a where
   type Resolve (m :: * -> *) a :: *
   type ComposeRes (m :: * -> *) f a :: *
 
-instance GQL f (a :: *) where
+instance FlexibleResolver f (a :: *) where
   type Resolve m a = m a
   type ComposeRes m f a = m (f a)
 
-instance GQL f (a :: (* -> *) -> *) where
+instance FlexibleResolver f (a :: (* -> *) -> *) where
   type Resolve m a = m (a m)
   type ComposeRes m f a = m (f (a m))
 
