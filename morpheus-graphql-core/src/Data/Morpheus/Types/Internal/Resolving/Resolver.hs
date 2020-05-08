@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -212,7 +213,10 @@ instance (LiftOperation o, Monad m) => Applicative (Resolver o e m) where
 instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   return = pure
   (>>=) = unsafeBind
+
+#if __GLASGOW_HASKELL__ < 808
   fail = failure . pack
+# endif
 
 -- MonadIO
 instance (MonadIO m, LiftOperation o) => MonadIO (Resolver o e m) where
