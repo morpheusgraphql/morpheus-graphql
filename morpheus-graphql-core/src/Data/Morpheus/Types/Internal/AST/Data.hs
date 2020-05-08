@@ -213,18 +213,18 @@ data DataEnumValue = DataEnumValue
 
 data Schema = Schema
   { types :: TypeLib,
-    query :: TypeDefinition,
-    mutation :: Maybe TypeDefinition,
-    subscription :: Maybe TypeDefinition
+    query :: TypeDefinition 'Out,
+    mutation :: Maybe (TypeDefinition 'Out),
+    subscription :: Maybe (TypeDefinition 'Out)
   }
   deriving (Show)
 
-type TypeLib = HashMap Key TypeDefinition
+type TypeLib = HashMap Key AnyTypeDefinition
 
-instance Selectable Schema TypeDefinition where
+instance Selectable Schema AnyTypeDefinition where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-initTypeLib :: TypeDefinition -> Schema
+initTypeLib :: TypeDefinition 'Out -> Schema
 initTypeLib query =
   Schema
     { types = empty,
@@ -233,8 +233,8 @@ initTypeLib query =
       subscription = Nothing
     }
 
-allDataTypes :: Schema -> [TypeDefinition]
-allDataTypes = elems . typeRegister
+allDataTypes :: forall (a :: TypeDirection). Schema -> [TypeDefinition a]
+allDataTypes = fmap runAny . elems . typeRegister
 
 typeRegister :: Schema -> TypeLib
 typeRegister Schema {types, query, mutation, subscription} =
@@ -242,13 +242,13 @@ typeRegister Schema {types, query, mutation, subscription} =
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
-schemaFromTypeDefinitions :: Failure Message m => [TypeDefinition] -> m Schema
+schemaFromTypeDefinitions :: Failure Message m => [AnyTypeDefinition] -> m Schema
 schemaFromTypeDefinitions types = case popByKey "Query" types of
   (Nothing, _) -> failure ("INTERNAL: Query Not Defined" :: Message)
   (Just query, lib1) -> do
     let (mutation, lib2) = popByKey "Mutation" lib1
     let (subscription, lib3) = popByKey "Subscription" lib2
-    pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
+    pure $ (foldr (defineType . runAny) (initTypeLib query) lib3) {mutation, subscription}
 
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
 -------------------------------------------------------------------------
@@ -260,15 +260,31 @@ schemaFromTypeDefinitions types = case popByKey "Query" types of
 --   EnumTypeDefinition
 --   InputObjectTypeDefinition
 
-data TypeDefinition = TypeDefinition
+data TypeDefinition (a :: TypeDirection) = TypeDefinition
   { typeName :: Key,
     typeFingerprint :: DataFingerprint,
     typeMeta :: Maybe Meta,
-    typeContent :: TypeContent
+    typeContent :: TypeContent a
   }
   deriving (Show, Lift)
 
+data AnyTypeDefinition where
+  AnyTypeDefinition :: {runAny :: forall (a :: TypeDirection). TypeDefinition a} -> AnyTypeDefinition
+
+instance Show AnyTypeDefinition where
+  show = show . runAny
+
 data TypeDirection = In | Out
+
+type IN = 'In
+
+type OUT = 'Out
+
+class Trans a b where
+  trans :: TypeDefinition a -> TypeDefinition b
+
+instance (a ~ b) => Trans a b where
+  trans x = x
 
 data TypeContent (a :: TypeDirection) where
   DataScalar ::
@@ -300,9 +316,12 @@ data TypeContent (a :: TypeDirection) where
     { interfaceFields :: FieldsDefinition
     } ->
     TypeContent 'Out
-  deriving (Show, Lift)
 
-createType :: Key -> TypeContent -> TypeDefinition
+deriving instance Show (TypeContent a)
+
+deriving instance Lift (TypeContent a)
+
+createType :: Key -> TypeContent a -> TypeDefinition a
 createType typeName typeContent =
   TypeDefinition
     { typeName,
@@ -311,10 +330,10 @@ createType typeName typeContent =
       typeContent
     }
 
-createScalarType :: Name -> TypeDefinition
+createScalarType :: Name -> TypeDefinition a
 createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
 
-createEnumType :: Name -> [Key] -> TypeDefinition
+createEnumType :: Name -> [Key] -> TypeDefinition a
 createEnumType typeName typeData = createType typeName (DataEnum enumValues)
   where
     enumValues = map createEnumValue typeData
@@ -322,15 +341,15 @@ createEnumType typeName typeData = createType typeName (DataEnum enumValues)
 createEnumValue :: Name -> DataEnumValue
 createEnumValue enumName = DataEnumValue {enumName, enumMeta = Nothing}
 
-createUnionType :: Key -> [Key] -> TypeDefinition
+createUnionType :: Key -> [Key] -> TypeDefinition OUT
 createUnionType typeName typeData = createType typeName (DataUnion typeData)
 
-isEntNode :: TypeContent -> Bool
+isEntNode :: TypeContent a -> Bool
 isEntNode DataScalar {} = True
 isEntNode DataEnum {} = True
 isEntNode _ = False
 
-isInputDataType :: TypeDefinition -> Bool
+isInputDataType :: TypeDefinition a -> Bool
 isInputDataType TypeDefinition {typeContent} = __isInput typeContent
   where
     __isInput DataScalar {} = True
@@ -339,7 +358,7 @@ isInputDataType TypeDefinition {typeContent} = __isInput typeContent
     __isInput DataInputUnion {} = True
     __isInput _ = False
 
-kindOf :: TypeDefinition -> DataTypeKind
+kindOf :: TypeDefinition a -> DataTypeKind
 kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
   where
     __kind DataScalar {} = KindScalar
@@ -352,32 +371,33 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 -- TODO:
 -- __kind DataInterface   {} = KindInterface
 
-fromOperation :: Maybe TypeDefinition -> [(Name, TypeDefinition)]
+fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, AnyTypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype, datatype)]
 fromOperation Nothing = []
 
-lookupDataType :: Key -> Schema -> Maybe TypeDefinition
+lookupDataType :: Key -> Schema -> Maybe AnyTypeDefinition
 lookupDataType name = HM.lookup name . typeRegister
 
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
-isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
+isTypeDefined name lib = typeFingerprint . runAny <$> lookupDataType name lib
 
-defineType :: TypeDefinition -> Schema -> Schema
+defineType :: TypeDefinition a -> Schema -> Schema
 defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
-  lib {types = HM.insert name unionTags (HM.insert typeName dt (types lib))}
+  lib {types = HM.insert name unionTags (HM.insert typeName (AnyTypeDefinition (trans dt)) (types lib))}
   where
     name = typeName <> "Tags"
     unionTags =
-      TypeDefinition
-        { typeName = name,
-          typeFingerprint,
-          typeMeta = Nothing,
-          typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
-        }
+      AnyTypeDefinition
+        TypeDefinition
+          { typeName = name,
+            typeFingerprint,
+            typeMeta = Nothing,
+            typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
+          }
 defineType datatype lib =
-  lib {types = HM.insert (typeName datatype) datatype (types lib)}
+  lib {types = HM.insert (typeName datatype) (AnyTypeDefinition datatype) (types lib)}
 
-insertType :: TypeDefinition -> TypeUpdater
+insertType :: TypeDefinition a -> TypeUpdater
 insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName lib of
   Nothing -> resolveUpdates (defineType datatype lib) []
   Just fingerprint
@@ -389,7 +409,7 @@ updateSchema ::
   Name ->
   DataFingerprint ->
   [TypeUpdater] ->
-  (a -> TypeDefinition) ->
+  (a -> TypeDefinition d) ->
   a ->
   TypeUpdater
 updateSchema name fingerprint stack f x lib =
@@ -406,11 +426,11 @@ lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
 -- lookups and removes TypeDefinition from hashmap
-popByKey :: Name -> [TypeDefinition] -> (Maybe TypeDefinition, [TypeDefinition])
-popByKey name lib = case lookupWith typeName name lib of
-  Just dt@TypeDefinition {typeContent = DataObject {}} ->
-    (Just dt, filter ((/= name) . typeName) lib)
-  _ -> (Nothing, lib)
+popByKey :: Name -> [AnyTypeDefinition] -> (Maybe (TypeDefinition OUT), [AnyTypeDefinition])
+popByKey name types = case lookupWith (typeName . runAny) name types of
+  Just (AnyTypeDefinition dt@TypeDefinition {typeContent = DataObject {}}) ->
+    (Just dt, filter ((/= name) . typeName . runAny) types)
+  _ -> (Nothing, types)
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
@@ -632,7 +652,7 @@ data GQLTypeD = GQLTypeD
   { typeD :: TypeD,
     typeKindD :: DataTypeKind,
     typeArgD :: [TypeD],
-    typeOriginal :: TypeDefinition
+    typeOriginal :: AnyTypeDefinition
   }
   deriving (Show)
 
