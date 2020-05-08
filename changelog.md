@@ -36,7 +36,7 @@ deprecated:
 
 ## New Feature
 
-- `Semogroup` support for Resolver
+- `Semigroup` support for Resolver
 - `MonadFail` Support for Resolver
 - flexible resolvers: `ResolverO`, `ResolverQ` , `RwsolverM`, `ResolverS`
   they can handle object and scalar types:
