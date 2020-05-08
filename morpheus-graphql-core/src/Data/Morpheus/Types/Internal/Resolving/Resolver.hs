@@ -240,6 +240,9 @@ instance (Monad m, LiftOperation o) => MonadFail (Resolver o e m) where
 instance (Monad m) => PushEvents e (Resolver MUTATION e m) where
   pushEvents = packResolver . pushEvents
 
+instance (Monad m, Semigroup a, LiftOperation o) => Semigroup (Resolver o e m a) where
+  x <> y = fmap (<>) x <*> y
+
 liftStateless ::
   ( LiftOperation o,
     Monad m
