@@ -180,7 +180,7 @@ constMutRes events value = const $ do
   publish events
   pure value
 
-{-# DEPRECATED failRes "use fail from MonadFail" #-}
+{-# DEPRECATED failRes "use \"fail\" from \"MonadFail\"" #-}
 failRes ::
   ( Monad m,
     WithOperation o

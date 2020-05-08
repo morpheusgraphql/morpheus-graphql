@@ -148,7 +148,7 @@ requireAuthorized = do
       | token == tokenUser1 -> return 1
       | token == tokenUser2 -> return 2
       | token == tokenUser2 -> return 3
-    _ -> failRes "Unauthorized"
+    _ -> fail "Unauthorized"
 
 -------------------------------------------------------------------------------
 rootResolver :: GQLRootResolver Web () Query Mutation Undefined
@@ -179,7 +179,7 @@ loginResolver LoginArgs {username, password} = do
       pure
         $ Just
         $ Session {token = pure tokenUser, user = userResolver userRow}
-    Nothing -> failRes "Invalid user or password"
+    Nothing -> fail "Invalid user or password"
 
 getUserResolver :: GetUserArgs -> Composed o Maybe User
 getUserResolver GetUserArgs {id} = do
