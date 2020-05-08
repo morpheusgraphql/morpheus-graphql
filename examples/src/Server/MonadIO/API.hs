@@ -38,6 +38,7 @@ import qualified Data.Text.Lazy as LT
 import Data.Tuple.Extra (both)
 import Network.HTTP.Types (Status (..))
 import Web.Scotty
+import Prelude hiding (id)
 
 importGQLDocument "src/Server/MonadIO/schema.graphql"
 
@@ -146,8 +147,8 @@ getDB = do
 -------------------------------------------------------------------------------
 requireAuthorized :: GraphQL o => Value o Int
 requireAuthorized = do
-  headers <- lift $ asks reqHeaders
-  case find ((== "Authorization") . fst) headers of
+  reqHeaders <- lift $ asks reqHeaders
+  case find ((== "Authorization") . fst) reqHeaders of
     Just (_, token)
       | token == tokenUser1 -> return 1
       | token == tokenUser2 -> return 2
