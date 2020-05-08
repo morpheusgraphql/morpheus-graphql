@@ -1,4 +1,4 @@
-name: examples
+name: morpheus-graphql-examples
 version: 0.1.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
@@ -30,6 +30,11 @@ dependencies:
   - stm
   - servant
   - servant-server
+
+data-files:
+  - assets/**/*.gql
+  - assets/**/*.json
+  - assets/**/*.html
 
 executables:
   api:

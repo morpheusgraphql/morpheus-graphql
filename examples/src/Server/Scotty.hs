@@ -53,9 +53,9 @@ scottyServer = do
     httpServer :: (EVENT -> IO ()) -> IO Wai.Application
     httpServer publish = scottyApp $ do
       post "/" $ raw =<< (liftIO . httpPubApp api publish =<< body)
-      get "/" $ file "./examples/index.html"
+      get "/" $ file "./examples/assets/index.html"
       get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
       post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
-      get "/mythology" $ file "./examples/index.html"
+      get "/mythology" $ file "./examples/assets/index.html"
       post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
-      get "/th" $ file "./examples/index.html"
+      get "/th" $ file "./examples/assets/index.html"
