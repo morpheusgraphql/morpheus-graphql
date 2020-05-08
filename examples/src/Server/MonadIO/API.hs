@@ -133,16 +133,14 @@ type Value (o :: OperationType) (a :: k) = ResolverO o () Web a
 -- | Resolve (f value)
 type Composed (o :: OperationType) f (a :: k) = ComposedResolver o () Web f a
 
-type GraphQL o = (WithOperation o)
-
 -------------------------------------------------------------------------------
-getDB :: GraphQL o => Value o Database
+getDB :: Value o Database
 getDB = do
   dbTVar <- lift $ asks database
   liftIO . atomically $ readTVar dbTVar
 
 -------------------------------------------------------------------------------
-requireAuthorized :: GraphQL o => Value o Int
+requireAuthorized :: Value o Int
 requireAuthorized = do
   reqHeaders <- lift $ asks reqHeaders
   case find ((== "Authorization") . fst) reqHeaders of
@@ -214,7 +212,7 @@ addDogResolver AddDogArgs {name} = do
   dogResolver dogToAdd
 
 -------------------------------------------------------------------------------
-userResolver :: GraphQL o => UserRow -> Value o User
+userResolver :: UserRow -> Value o User
 userResolver UserRow {userId = thisUserId, userFullName} =
   pure $
     User
@@ -226,7 +224,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
   where
     idResolver = pure thisUserId
     nameResolver = pure userFullName
-    favoriteDogResolver :: GraphQL o => Composed o Maybe Dog
+    favoriteDogResolver :: Composed o Maybe Dog
     favoriteDogResolver = do
       dogs <- fmap dogTable getDB
       -- the 1st dog is the favorite dog
@@ -235,7 +233,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
           dog <- dogResolver dogRow
           return . Just $ dog
         Nothing -> return Nothing
-    followsResolver :: GraphQL o => Composed o [] User
+    followsResolver :: Composed o [] User
     followsResolver = do
       follows <- fmap followTable getDB
       users <- fmap userTable getDB
@@ -244,13 +242,13 @@ userResolver UserRow {userId = thisUserId, userFullName} =
       let userFollowees = filter ((`elem` userFolloweeIds) . userId) users
       traverse userResolver userFollowees
 
-dogResolver :: GraphQL o => DogRow -> Value o Dog
+dogResolver :: DogRow -> Value o Dog
 dogResolver (DogRow dogId dogName ownerId) =
   pure $ Dog {id = idResolver, name = nameResolver, owner = ownerResolver}
   where
     idResolver = pure dogId
     nameResolver = pure dogName
-    ownerResolver :: GraphQL o => Value o User
+    ownerResolver :: Value o User
     ownerResolver = do
       users <- fmap userTable getDB
       let userRow = fromJust . find ((== ownerId) . userId) $ users
