@@ -37,7 +37,7 @@ module Data.Morpheus.Types
     WS,
     HTTP,
     -- Resolvers
-    SmartResolver,
+    ResolverO,
     ComposedResolver,
     ResolverQ,
     ResolverM,
@@ -112,7 +112,7 @@ instance GQL f (a :: (* -> *) -> *) where
   type ComposeRes m f a = m (f (a m))
 
 -- Recursive Resolvers
-type SmartResolver o e m a =
+type ResolverO o e m a =
   (WithOperation o) =>
   Resolve (Resolver o e m) a
 
@@ -120,18 +120,18 @@ type ComposedResolver o e m f a =
   (WithOperation o) =>
   ComposeRes (Resolver o e m) f a
 
-type ResolverQ e m a = SmartResolver QUERY e m a
+type ResolverQ e m a = ResolverO QUERY e m a
 
-type ResolverM e m a = SmartResolver MUTATION e m a
+type ResolverM e m a = ResolverO MUTATION e m a
 
 type ResolverS e m a = Resolver SUBSCRIPTION e m (a (Resolver QUERY e m))
 
 -- newtype B m = B {field1 :: m Int}
 
--- resInt :: SmartResolver o () IO Int
+-- resInt :: ResolverO o () IO Int
 -- resInt = pure 1
 
--- resB :: SmartResolver o () IO B
+-- resB :: ResolverO o () IO B
 -- resB = pure B {field1 = pure 1}
 
 -- resList :: ComposedResolver o () IO [] Int
@@ -152,11 +152,11 @@ type IOMutRes e = MutRes e IO
 
 type IOSubRes e = SubRes e IO
 
-type ResolveQ e m a = Res e m (a (Res e m))
+type ResolveQ e m a = ResolverQ e m a
 
-type ResolveM e m a = MutRes e m (a (MutRes e m))
+type ResolveM e m a = ResolverM e m a
 
-type ResolveS e m a = SubRes e m (a (Res e m))
+type ResolveS e m a = ResolverS e m a
 
 -- Subsciption Object Resolver Fields
 type SubField m a = (m (a (UnSubResolver m)))
