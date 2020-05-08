@@ -15,7 +15,7 @@ import Data.Morpheus.Types
     GQLResponse,
     GQLRootResolver (..),
     GQLType (..),
-    IORes,
+    ResolverQ,
     Undefined (..),
   )
 import Data.Text (Text)
@@ -50,7 +50,7 @@ data Query m = Query
   }
   deriving (Generic, GQLType)
 
-resolveUnion :: () -> IORes () [Sum]
+resolveUnion :: () -> ResolverQ () IO [Sum]
 resolveUnion _ =
   return [SumA A {aText = "at", aInt = 1}, SumB B {bText = "bt", bInt = 2}]
 

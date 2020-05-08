@@ -15,7 +15,7 @@ import Data.Morpheus.Types
     GQLResponse,
     GQLRootResolver (..),
     GQLType (..),
-    IORes,
+    ResolverQ,
     Undefined (..),
   )
 import Data.Text (Text)
@@ -34,8 +34,8 @@ data F2Args = F2Args
   deriving (Generic)
 
 data A = A
-  { a1 :: F1Args -> IORes () Text,
-    a2 :: F2Args -> IORes () Int
+  { a1 :: F1Args -> ResolverQ () IO Text,
+    a2 :: F2Args -> ResolverQ () IO Int
   }
   deriving (Generic, GQLType)
 

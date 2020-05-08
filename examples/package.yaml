@@ -31,6 +31,11 @@ dependencies:
   - servant
   - servant-server
 
+data-files:
+  - assets/**/*.gql
+  - assets/**/*.json
+  - assets/**/*.html
+
 executables:
   api:
     main: Main.hs

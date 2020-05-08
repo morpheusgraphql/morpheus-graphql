@@ -5,8 +5,8 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql-core
   - .
-  
-allow-newer: true 
+
+allow-newer: true
 
 extra-deps:
   - bifunctors-5.5.2

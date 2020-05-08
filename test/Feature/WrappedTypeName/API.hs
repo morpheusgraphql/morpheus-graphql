@@ -11,12 +11,12 @@ where
 
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
-  ( Event,
+  ( ComposedSubField,
+    Event,
     GQLRequest,
     GQLResponse,
     GQLRootResolver (..),
     GQLType (..),
-    IORes,
     constRes,
     subscribe,
   )
@@ -35,17 +35,21 @@ data WA m = WA
   }
   deriving (Generic, GQLType)
 
+type Wrapped1 = Wrapped Int Int
+
+type Wrapped2 = Wrapped (Wrapped Text Int) Text
+
 data Query m = Query
   { a1 :: WA m,
-    a2 :: Maybe (Wrapped Int Int),
-    a3 :: Maybe (Wrapped (Wrapped Text Int) Text)
+    a2 :: Maybe Wrapped1,
+    a3 :: Maybe Wrapped2
   }
   deriving (Generic, GQLType)
 
 data Mutation m = Mutation
   { mut1 :: Maybe (WA m),
-    mut2 :: Maybe (Wrapped Int Int),
-    mut3 :: Maybe (Wrapped (Wrapped Text Int) Text)
+    mut2 :: Maybe Wrapped1,
+    mut3 :: Maybe Wrapped2
   }
   deriving (Generic, GQLType)
 
@@ -56,9 +60,9 @@ data Channel
 type EVENT = Event Channel ()
 
 data Subscription (m :: * -> *) = Subscription
-  { sub1 :: m (Maybe (WA (IORes EVENT))),
-    sub2 :: m (Maybe (Wrapped Int Int)),
-    sub3 :: m (Maybe (Wrapped (Wrapped Text Int) Text))
+  { sub1 :: ComposedSubField m Maybe WA,
+    sub2 :: m (Maybe Wrapped1),
+    sub3 :: m (Maybe Wrapped2)
   }
   deriving (Generic, GQLType)
 

@@ -10,7 +10,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -22,7 +24,7 @@ module Server.MonadIO.API where
 import Control.Concurrent.STM
 import Control.Monad.Except (ExceptT, MonadError, runExceptT)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
-import Control.Monad.Trans (MonadIO, MonadTrans, liftIO)
+import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List (find)
@@ -37,6 +39,7 @@ import qualified Data.Text.Lazy as LT
 import Data.Tuple.Extra (both)
 import Network.HTTP.Types (Status (..))
 import Web.Scotty
+import Prelude hiding (id)
 
 importGQLDocument "src/Server/MonadIO/schema.graphql"
 
@@ -124,37 +127,23 @@ newtype Web a = Web
 
 -------------------------------------------------------------------------------
 
--- | Resolve single value
-type Value (o :: OperationType) a = Resolver o () Web a
+-- | Resolve value
+type Value (o :: OperationType) (a :: k) = ResolverO o () Web a
 
--- | Resolve object (which includes other fields that need their own resolvers)
-type Object (o :: OperationType) a = Resolver o () Web (a (Resolver o () Web))
-
--- | Resolve (Maybe object)
-type OptionalObject (o :: OperationType) a =
-  Resolver o () Web (Maybe (a (Resolver o () Web)))
-
--- | Resolve [object]
-type ArrayObject (o :: OperationType) a =
-  Resolver o () Web [a (Resolver o () Web)]
-
-type GraphQL o =
-  ( MonadIO (Resolver o () Web),
-    WithOperation o,
-    MonadTrans (Resolver o ())
-  )
+-- | Resolve (f value)
+type Composed (o :: OperationType) f (a :: k) = ComposedResolver o () Web f a
 
 -------------------------------------------------------------------------------
-getDB :: GraphQL o => Value o Database
+getDB :: Value o Database
 getDB = do
   dbTVar <- lift $ asks database
   liftIO . atomically $ readTVar dbTVar
 
 -------------------------------------------------------------------------------
-requireAuthorized :: GraphQL o => Value o Int
+requireAuthorized :: Value o Int
 requireAuthorized = do
-  headers <- lift $ asks reqHeaders
-  case find ((== "Authorization") . fst) headers of
+  reqHeaders <- lift $ asks reqHeaders
+  case find ((== "Authorization") . fst) reqHeaders of
     Just (_, token)
       | token == tokenUser1 -> return 1
       | token == tokenUser2 -> return 2
@@ -176,7 +165,7 @@ rootResolver =
     }
 
 -------------------------------------------------------------------------------
-loginResolver :: LoginArgs -> OptionalObject QUERY Session
+loginResolver :: LoginArgs -> Composed QUERY Maybe Session
 loginResolver LoginArgs {username, password} = do
   users <- fmap userTable getDB
   let match user =
@@ -192,7 +181,7 @@ loginResolver LoginArgs {username, password} = do
         $ Session {token = pure tokenUser, user = userResolver userRow}
     Nothing -> failRes "Invalid user or password"
 
-getUserResolver :: GetUserArgs -> OptionalObject QUERY User
+getUserResolver :: GetUserArgs -> Composed o Maybe User
 getUserResolver GetUserArgs {id} = do
   _ <- requireAuthorized
   users <- fmap userTable getDB
@@ -202,14 +191,14 @@ getUserResolver GetUserArgs {id} = do
       pure $ Just user
     _ -> pure Nothing
 
-dogsResolver :: ArrayObject QUERY Dog
+dogsResolver :: Composed QUERY [] Dog
 dogsResolver = do
   _ <- requireAuthorized
   dogs <- fmap dogTable getDB
   traverse dogResolver dogs
 
 -------------------------------------------------------------------------------
-addDogResolver :: AddDogArgs -> Object MUTATION Dog
+addDogResolver :: AddDogArgs -> Value MUTATION Dog
 addDogResolver AddDogArgs {name} = do
   currentUserId <- requireAuthorized
   db <- getDB
@@ -223,7 +212,7 @@ addDogResolver AddDogArgs {name} = do
   dogResolver dogToAdd
 
 -------------------------------------------------------------------------------
-userResolver :: GraphQL o => UserRow -> Object o User
+userResolver :: UserRow -> Value o User
 userResolver UserRow {userId = thisUserId, userFullName} =
   pure $
     User
@@ -235,7 +224,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
   where
     idResolver = pure thisUserId
     nameResolver = pure userFullName
-    favoriteDogResolver :: GraphQL o => OptionalObject o Dog
+    favoriteDogResolver :: Composed o Maybe Dog
     favoriteDogResolver = do
       dogs <- fmap dogTable getDB
       -- the 1st dog is the favorite dog
@@ -244,7 +233,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
           dog <- dogResolver dogRow
           return . Just $ dog
         Nothing -> return Nothing
-    followsResolver :: GraphQL o => ArrayObject o User
+    followsResolver :: Composed o [] User
     followsResolver = do
       follows <- fmap followTable getDB
       users <- fmap userTable getDB
@@ -253,13 +242,13 @@ userResolver UserRow {userId = thisUserId, userFullName} =
       let userFollowees = filter ((`elem` userFolloweeIds) . userId) users
       traverse userResolver userFollowees
 
-dogResolver :: GraphQL o => DogRow -> Object o Dog
+dogResolver :: DogRow -> Value o Dog
 dogResolver (DogRow dogId dogName ownerId) =
   pure $ Dog {id = idResolver, name = nameResolver, owner = ownerResolver}
   where
     idResolver = pure dogId
     nameResolver = pure dogName
-    ownerResolver :: GraphQL o => Object o User
+    ownerResolver :: Value o User
     ownerResolver = do
       users <- fmap userTable getDB
       let userRow = fromJust . find ((== ownerId) . userId) $ users

@@ -1,12 +1,15 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | GQL Types
 module Data.Morpheus.Types
   ( Event (..),
-    -- Type Classes
     GQLType (KIND, description),
     GQLScalar (parseValue, serialize),
     GQLRequest (..),
@@ -17,31 +20,39 @@ module Data.Morpheus.Types
     constRes,
     constMutRes,
     Undefined (..),
-    Res,
-    MutRes,
-    SubRes,
-    IORes,
-    IOMutRes,
-    IOSubRes,
     Resolver,
     QUERY,
     MUTATION,
     SUBSCRIPTION,
     lift,
     liftEither,
-    ResolveQ,
-    ResolveM,
-    ResolveS,
     failRes,
     WithOperation,
     publish,
     subscribe,
     unsafeInternalContext,
     SubField,
+    ComposedSubField,
     Input,
     Stream,
     WS,
     HTTP,
+    -- Resolvers
+    ResolverO,
+    ComposedResolver,
+    ResolverQ,
+    ResolverM,
+    ResolverS,
+    -- Resolvers Deprecated
+    ResolveQ,
+    ResolveM,
+    ResolveS,
+    Res,
+    MutRes,
+    SubRes,
+    IORes,
+    IOMutRes,
+    IOSubRes,
   )
 where
 
@@ -89,27 +100,73 @@ import Data.Morpheus.Types.Internal.Subscription
   )
 import Data.Text (pack)
 
+class FlexibleResolver (f :: * -> *) (a :: k) where
+  type Flexible (m :: * -> *) a :: *
+  type Composed (m :: * -> *) f a :: *
+
+instance FlexibleResolver f (a :: *) where
+  type Flexible m a = m a
+  type Composed m f a = m (f a)
+
+instance FlexibleResolver f (a :: (* -> *) -> *) where
+  type Flexible m a = m (a m)
+  type Composed m f a = m (f (a m))
+
+-- Recursive Resolvers
+type ResolverO o e m a =
+  (WithOperation o) =>
+  Flexible (Resolver o e m) a
+
+type ComposedResolver o e m f a =
+  (WithOperation o) =>
+  Composed (Resolver o e m) f a
+
+type ResolverQ e m a = Flexible (Resolver QUERY e m) a
+
+type ResolverM e m a = Flexible (Resolver MUTATION e m) a
+
+type ResolverS e m a = Resolver SUBSCRIPTION e m (a (Resolver QUERY e m))
+
+{-# DEPRECATED Res "use ResolverQ" #-}
+
 type Res = Resolver QUERY
+
+{-# DEPRECATED MutRes "use ResolverM" #-}
 
 type MutRes = Resolver MUTATION
 
+{-# DEPRECATED SubRes "use ResolverS" #-}
+
 type SubRes = Resolver SUBSCRIPTION
+
+{-# DEPRECATED IORes "use ResolverQ" #-}
 
 type IORes e = Res e IO
 
+{-# DEPRECATED IOMutRes "use ResolverM" #-}
+
 type IOMutRes e = MutRes e IO
+
+{-# DEPRECATED IOSubRes "use ResolverS" #-}
 
 type IOSubRes e = SubRes e IO
 
--- Recursive Resolvers
-type ResolveQ e m a = Res e m (a (Res e m))
+{-# DEPRECATED ResolveQ "use ResolverQ" #-}
 
-type ResolveM e m a = MutRes e m (a (MutRes e m))
+type ResolveQ e m a = ResolverQ e m a
 
-type ResolveS e m a = SubRes e m (a (Res e m))
+{-# DEPRECATED ResolveM "use ResolverM" #-}
+
+type ResolveM e m a = ResolverM e m a
+
+{-# DEPRECATED ResolveS "use ResolverS" #-}
+
+type ResolveS e m a = ResolverS e m a
 
 -- Subsciption Object Resolver Fields
 type SubField m a = (m (a (UnSubResolver m)))
+
+type ComposedSubField m f a = (m (f (a (UnSubResolver m))))
 
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents
@@ -118,7 +175,7 @@ publish = pushEvents
 constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
-constMutRes :: Monad m => [e] -> a -> args -> MutRes e m a
+constMutRes :: Monad m => [e] -> a -> args -> ResolverM e m a
 constMutRes events value = const $ do
   publish events
   pure value
