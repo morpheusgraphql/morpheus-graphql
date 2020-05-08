@@ -65,7 +65,7 @@ rootResolver =
           { user,
             testUnion = Just . TestUnionUser <$> user,
             fail1 = liftEither alwaysFail,
-            fail2 = fail "fail with failRes"
+            fail2 = fail "fail with MonadFail"
           },
       mutationResolver = Mutation {createUser = const user},
       subscriptionResolver =
