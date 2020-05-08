@@ -374,8 +374,8 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 class ToAny a where
   toAny :: TypeDefinition a -> AnyTypeDefinition
 
-instance ToAny OUT where
-  toAny = AnyTypeDefinition
+instance ToAny a where
+  toAny = undefined
 
 fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, AnyTypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
