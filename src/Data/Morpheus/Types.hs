@@ -140,9 +140,15 @@ type ResolverS e m a = Resolver SUBSCRIPTION e m (a (Resolver QUERY e m))
 -- resListB :: ComposedResolver o () IO [] B
 -- resListB = pure [B {field1 = pure 1}]
 
+{-# DEPRECATED Res "use ResolveQ" #-}
+
 type Res = Resolver QUERY
 
+{-# DEPRECATED MutRes "use ResolveM" #-}
+
 type MutRes = Resolver MUTATION
+
+{-# DEPRECATED SubRes "use ResolveS" #-}
 
 type SubRes = Resolver SUBSCRIPTION
 
