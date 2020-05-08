@@ -183,7 +183,7 @@ loginResolver LoginArgs {username, password} = do
         $ Session {token = pure tokenUser, user = userResolver userRow}
     Nothing -> failRes "Invalid user or password"
 
-getUserResolver :: GetUserArgs -> Composed QUERY Maybe User
+getUserResolver :: GetUserArgs -> Composed o Maybe User
 getUserResolver GetUserArgs {id} = do
   _ <- requireAuthorized
   users <- fmap userTable getDB

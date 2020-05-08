@@ -114,16 +114,16 @@ instance GQL f (a :: (* -> *) -> *) where
 
 -- Recursive Resolvers
 type ResolverO o e m a =
-  -- (WithOperation o) =>
+  (WithOperation o) =>
   Resolve (Resolver o e m) a
 
 type ComposedResolver o e m f a =
-  -- (WithOperation o) =>
+  (WithOperation o) =>
   ComposeRes (Resolver o e m) f a
 
-type ResolverQ e m a = ResolverO QUERY e m a
+type ResolverQ e m a = Resolve (Resolver QUERY e m) a
 
-type ResolverM e m a = ResolverO MUTATION e m a
+type ResolverM e m a = Resolve (Resolver MUTATION e m) a
 
 type ResolverS e m a = Resolver SUBSCRIPTION e m (a (Resolver QUERY e m))
 
