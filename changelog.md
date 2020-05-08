@@ -32,9 +32,11 @@ deprecated:
 - `Res`, `IORes`, `ResolveQ` : use `ResolverQ`
 - `MutRes`, `IOMutRes`, `ResolveM` : use `ResolverM`
 - `SubRes`, `IOSubRes`, `ResolveS`: use `ResolverS`
+- `failRes`: use `MonadFail`
 
 ## New Feature
 
+- `MonadFail` Support for Resolvers
 - flexible resolvers: `ResolverO`, `ResolverQ` , `RwsolverM`, `ResolverS`
   they can handle object and scalar types:
 
