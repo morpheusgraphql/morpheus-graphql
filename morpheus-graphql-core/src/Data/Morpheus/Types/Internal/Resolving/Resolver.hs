@@ -212,6 +212,7 @@ instance (LiftOperation o, Monad m) => Applicative (Resolver o e m) where
 instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   return = pure
   (>>=) = unsafeBind
+  fail = failure . pack
 
 -- MonadIO
 instance (MonadIO m, LiftOperation o) => MonadIO (Resolver o e m) where
