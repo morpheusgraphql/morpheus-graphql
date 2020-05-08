@@ -36,7 +36,7 @@ deprecated:
 ## New Feature
 
 - flexible resolvers: `ResolverO`, `ResolverQ` , `RwsolverM`, `ResolverS`
-  they can be handled both object and scalar types:
+  they can handle object and scalar types:
 
   ```hs
   -- if we have record and regular Int
