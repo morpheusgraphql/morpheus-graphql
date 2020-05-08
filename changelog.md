@@ -62,8 +62,8 @@ deprecated:
   resolveList :: ComposedResolver o EVENT IO [] Object
   -- is alias to: Resolver o () IO [Object (Resolver o () IO))]
   
-  resolveList :: ComposedResolver o EVENT IO Maybe Object
-  -- is alias to: Resolver o () IO (Maybe (Object (Resolver o () IO)))
+  resolveList :: ComposedResolver o EVENT IO Maybe Int
+  -- is alias to: Resolver o () IO (Maybe Int)
   ```
 
 ### minor
