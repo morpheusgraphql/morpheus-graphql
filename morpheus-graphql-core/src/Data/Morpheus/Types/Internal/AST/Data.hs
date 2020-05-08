@@ -371,8 +371,14 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 -- TODO:
 -- __kind DataInterface   {} = KindInterface
 
+class ToAny a where
+  toAny :: TypeDefinition a -> AnyTypeDefinition
+
+instance ToAny OUT where
+  toAny = AnyTypeDefinition
+
 fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, AnyTypeDefinition)]
-fromOperation (Just datatype) = [(typeName datatype, datatype)]
+fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
 lookupDataType :: Key -> Schema -> Maybe AnyTypeDefinition
@@ -383,7 +389,7 @@ isTypeDefined name lib = typeFingerprint . runAny <$> lookupDataType name lib
 
 defineType :: TypeDefinition a -> Schema -> Schema
 defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
-  lib {types = HM.insert name unionTags (HM.insert typeName (AnyTypeDefinition (trans dt)) (types lib))}
+  lib {types = HM.insert name unionTags (HM.insert typeName (toAny dt) (types lib))}
   where
     name = typeName <> "Tags"
     unionTags =
@@ -395,7 +401,7 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
             typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
           }
 defineType datatype lib =
-  lib {types = HM.insert (typeName datatype) (AnyTypeDefinition datatype) (types lib)}
+  lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
 
 insertType :: TypeDefinition a -> TypeUpdater
 insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName lib of
