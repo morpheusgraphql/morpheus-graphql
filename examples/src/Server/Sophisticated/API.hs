@@ -41,11 +41,10 @@ import Data.Morpheus.Types
     Input,
     MUTATION,
     QUERY,
-    ResolveM,
-    ResolveQ,
-    ResolveS,
     Resolver,
+    ResolverM,
     ResolverQ,
+    ResolverS,
     ScalarValue (..),
     Stream,
     WithOperation,
@@ -152,7 +151,7 @@ gqlRoot =
 alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail example"
 
-resolveUser :: ResolveQ EVENT IO User
+resolveUser :: ResolverQ EVENT IO User
 resolveUser = liftEither (getDBUser (Content 2))
 
 resolveAnimal :: QueryAnimalArgs -> ResolverQ EVENT IO Text
@@ -162,32 +161,32 @@ resolveAnimal QueryAnimalArgs {queryAnimalArgsAnimal} =
 -- Resolve MUTATIONS
 --
 -- Mutation With Event Triggering : sends events to subscription
-resolveCreateUser :: ResolveM EVENT IO User
+resolveCreateUser :: ResolverM EVENT IO User
 resolveCreateUser = do
   requireAuthorized
   publish [userUpdate]
   liftEither setDBUser
 
 -- Mutation With Event Triggering : sends events to subscription
-resolveCreateAdress :: ResolveM EVENT IO Address
+resolveCreateAdress :: ResolverM EVENT IO Address
 resolveCreateAdress = do
   requireAuthorized
   publish [addressUpdate]
   lift setDBAddress
 
 -- Mutation Without Event Triggering
-resolveSetAdress :: ResolveM EVENT IO Address
+resolveSetAdress :: ResolverM EVENT IO Address
 resolveSetAdress = lift setDBAddress
 
 -- Resolve SUBSCRIPTION
-resolveNewUser :: ResolveS EVENT IO User
+resolveNewUser :: ResolverS EVENT IO User
 resolveNewUser = subscribe [USER] $ do
   requireAuthorized
   pure subResolver
   where
     subResolver (Event _ content) = liftEither (getDBUser content)
 
-resolveNewAdress :: ResolveS EVENT IO Address
+resolveNewAdress :: ResolverS EVENT IO Address
 resolveNewAdress = subscribe [ADDRESS] $ do
   requireAuthorized
   pure subResolver
