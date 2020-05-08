@@ -12,6 +12,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -23,7 +24,7 @@ module Server.MonadIO.API where
 import Control.Concurrent.STM
 import Control.Monad.Except (ExceptT, MonadError, runExceptT)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
-import Control.Monad.Trans (MonadIO, MonadTrans, liftIO)
+import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List (find)
@@ -132,11 +133,7 @@ type Value (o :: OperationType) (a :: k) = ResolverO o () Web a
 -- | Resolve (f value)
 type Composed (o :: OperationType) f (a :: k) = ComposedResolver o () Web f a
 
-type GraphQL o =
-  ( MonadIO (Resolver o () Web),
-    WithOperation o,
-    MonadTrans (Resolver o ())
-  )
+type GraphQL o = (WithOperation o)
 
 -------------------------------------------------------------------------------
 getDB :: GraphQL o => Value o Database

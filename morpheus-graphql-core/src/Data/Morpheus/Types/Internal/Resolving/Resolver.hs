@@ -287,7 +287,7 @@ setTypeName currentTypeName =
 -- unsafe variant of >>= , not for public api. user can be confused:
 --  ignores `channels` on second Subsciption, only returns events from first Subscription monad.
 --    reason: second monad is waiting for `event` until he does not have some event can't tell which
---            channel does it want to listen
+--            channel does it have to listen
 unsafeBind ::
   forall o e m a b.
   Monad m =>
