@@ -101,45 +101,31 @@ import Data.Morpheus.Types.Internal.Subscription
 import Data.Text (pack)
 
 class FlexibleResolver (f :: * -> *) a where
-  type Resolve (m :: * -> *) a :: *
-  type ComposeRes (m :: * -> *) f a :: *
+  type Flexible (m :: * -> *) a :: *
+  type Composed (m :: * -> *) f a :: *
 
 instance FlexibleResolver f (a :: *) where
-  type Resolve m a = m a
-  type ComposeRes m f a = m (f a)
+  type Flexible m a = m a
+  type Composed m f a = m (f a)
 
 instance FlexibleResolver f (a :: (* -> *) -> *) where
-  type Resolve m a = m (a m)
-  type ComposeRes m f a = m (f (a m))
+  type Flexible m a = m (a m)
+  type Composed m f a = m (f (a m))
 
 -- Recursive Resolvers
 type ResolverO o e m a =
   (WithOperation o) =>
-  Resolve (Resolver o e m) a
+  Flexible (Resolver o e m) a
 
 type ComposedResolver o e m f a =
   (WithOperation o) =>
-  ComposeRes (Resolver o e m) f a
+  Composed (Resolver o e m) f a
 
-type ResolverQ e m a = Resolve (Resolver QUERY e m) a
+type ResolverQ e m a = Flexible (Resolver QUERY e m) a
 
-type ResolverM e m a = Resolve (Resolver MUTATION e m) a
+type ResolverM e m a = Flexible (Resolver MUTATION e m) a
 
 type ResolverS e m a = Resolver SUBSCRIPTION e m (a (Resolver QUERY e m))
-
--- newtype B m = B {field1 :: m Int}
-
--- resInt :: ResolverO o () IO Int
--- resInt = pure 1
-
--- resB :: ResolverO o () IO B
--- resB = pure B {field1 = pure 1}
-
--- resList :: ComposedResolver o () IO [] Int
--- resList = pure [1]
-
--- resListB :: ComposedResolver o () IO [] B
--- resListB = pure [B {field1 = pure 1}]
 
 {-# DEPRECATED Res "use ResolverQ" #-}
 
