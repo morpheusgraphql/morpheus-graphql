@@ -165,11 +165,15 @@ type IOMutRes e = MutRes e IO
 
 type IOSubRes e = SubRes e IO
 
--- {-# DEPRECATED ResolveQ "use ResolverQ" #-}
+{-# DEPRECATED ResolveQ "use ResolverQ" #-}
 
 type ResolveQ e m a = ResolverQ e m a
 
+{-# DEPRECATED ResolveM "use ResolverM" #-}
+
 type ResolveM e m a = ResolverM e m a
+
+{-# DEPRECATED ResolveS "use ResolverS" #-}
 
 type ResolveS e m a = ResolverS e m a
 
