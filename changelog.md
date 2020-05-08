@@ -36,7 +36,8 @@ deprecated:
 
 ## New Feature
 
-- `MonadFail` Support for Resolvers
+- `Semogroup` support for Resolver
+- `MonadFail` Support for Resolver
 - flexible resolvers: `ResolverO`, `ResolverQ` , `RwsolverM`, `ResolverS`
   they can handle object and scalar types:
 
