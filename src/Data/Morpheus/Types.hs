@@ -100,7 +100,7 @@ import Data.Morpheus.Types.Internal.Subscription
   )
 import Data.Text (pack)
 
-class FlexibleResolver (f :: * -> *) a where
+class FlexibleResolver (f :: * -> *) (a :: k) where
   type Flexible (m :: * -> *) a :: *
   type Composed (m :: * -> *) f a :: *
 

@@ -4,25 +4,67 @@
 
 ### Breaking Changes
 
-- Package was extracted as:
-  - `morpheus-graphql-core`: core components like: parser, validator, executor, utils.
-    - Data.Morpheus.Core
-    - Data.Morpheus.QuasiQuoter
-    - Data.Morpheus.Error
-    - Data.Morpheus.Internal.TH
-    - Data.Morpheus.Internal.Utils
-    - Data.Morpheus.Types.Internal.Resolving
-    - Data.Morpheus.Types.Internal.Operation
-    - Data.Morpheus.Types.Internal.AST
-    - Data.Morpheus.Types.IO
-  - `morpheus-graphql-client`: lightweight version of morpheus client without server implementation
-    - Data.Morpheus.Client
-  - `morpheus-graphql`: morpheus graphql server
-    - Data.Morpheus
-    - Data.Morpheus.Kind
-    - Data.Morpheus.Types
-    - Data.Morpheus.Server
-    - Data.Morpheus.Document
+Package was extracted as:
+
+- `morpheus-graphql-core`: core components like: parser, validator, executor, utils.
+  - Data.Morpheus.Core
+  - Data.Morpheus.QuasiQuoter
+  - Data.Morpheus.Error
+  - Data.Morpheus.Internal.TH
+  - Data.Morpheus.Internal.Utils
+  - Data.Morpheus.Types.Internal.Resolving
+  - Data.Morpheus.Types.Internal.Operation
+  - Data.Morpheus.Types.Internal.AST
+  - Data.Morpheus.Types.IO
+
+- `morpheus-graphql-client`: lightweight version of morpheus client without server implementation
+  - Data.Morpheus.Client
+
+- `morpheus-graphql`: morpheus graphql server
+  - Data.Morpheus
+  - Data.Morpheus.Kind
+  - Data.Morpheus.Types
+  - Data.Morpheus.Server
+  - Data.Morpheus.Document
+
+deprecated:
+
+- `Res`, `IORes`, `ResolveQ` : use `ResolverQ`
+- `MutRes`, `IOMutRes`, `ResolveM` : use `ResolverM`
+- `SubRes`, `IOSubRes`, `ResolveS`: use `ResolverS`
+
+## New Feature
+
+- flexible resolvers: `ResolverO`, `ResolverQ` , `RwsolverM`, `ResolverS`
+  they can be handled both object and scalar types:
+
+  ```hs
+  -- if we have record and regular Int
+  data Object m = Object { field :: m Int }
+
+  -- we canwrite
+  -- handes kind : (* -> *) -> *
+  resolveObject :: ResolverO o EVENT IO Object
+  -- is alias to: Resolver o () IO (Object (Resolver o () IO))
+  -- or
+  -- handes kind : *
+  resolveInt :: ResolverO o EVENT IO Int
+  -- is alias to: Resolver o () IO Int
+  ```
+
+  the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
+  `ResolverO` but with `QUERY` , `MUTATION` and `SUBSCRIPTION` as argument.
+
+- flexible compsed Resolver Type alias: `ComposedResolver`. extends `ResolverO` with
+  parameter `(f :: * -> *)`. so that you can compose Resolvers e.g:
+  
+  ```hs
+  resolveList :: ComposedResolver o EVENT IO [] Object
+  -- is alias to: Resolver o () IO [Object (Resolver o () IO))]
+  
+  resolveList :: ComposedResolver o EVENT IO Maybe Object
+  -- is alias to: Resolver o () IO (Maybe (Object (Resolver o () IO)))
+  ```
 
 ### minor
 
