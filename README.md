@@ -109,7 +109,7 @@ Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be us
 ### with Native Haskell Types
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
-which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> IORes b`, representing resolving a set of arguments `a` to a concrete value `b`.
+which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResolverQ () IO b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
 data Query m = Query
@@ -143,7 +143,7 @@ data DeityArgs = DeityArgs
 The field name in the final request will be `type` instead of `type'`. The Morpheus request parser converts each of the reserved identities in Haskell 2010 to their corresponding names internally. This also applies to selections.
 
 ```haskell
-resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity :: DeityArgs -> ResolverQ e () Deity
 resolveDeity DeityArgs { name, mythology } = liftEither $ dbDeity name mythology
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
@@ -395,7 +395,7 @@ at the and they have same result.
 with `liftEither`
 
 ```haskell
-resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {} = liftEither $ dbDeity
 
 dbDeity ::  IO Either Deity
@@ -405,7 +405,7 @@ dbDeity = pure $ Left "db error"
 with `failRes`
 
 ```haskell
-resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs { } = failRes "db error"
 ```
 
@@ -427,7 +427,7 @@ rootResolver =
     }
     where
       -- Mutation Without Event Triggering
-      createDeity :: MutArgs -> ResolveM () IO Deity
+      createDeity :: MutArgs -> ResolverM () IO Deity
       createDeity_args = lift setDBAddress
 
 gqlApi :: ByteString -> IO ByteString
@@ -474,7 +474,7 @@ rootResolver = GQLRootResolver
   }
  where
   -- Mutation Without Event Triggering
-  createDeity :: ResolveM EVENT IO Address
+  createDeity :: ResolverM EVENT IO Address
   createDeity = do
       requireAuthorized
       publish [Event { channels = [ChannelA], content = ContentA 1 }]
