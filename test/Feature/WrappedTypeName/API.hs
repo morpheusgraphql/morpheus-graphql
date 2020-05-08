@@ -17,7 +17,6 @@ import Data.Morpheus.Types
     GQLResponse,
     GQLRootResolver (..),
     GQLType (..),
-    IORes,
     constRes,
     subscribe,
   )
