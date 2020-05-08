@@ -32,6 +32,7 @@ module Data.Morpheus.Types
     subscribe,
     unsafeInternalContext,
     SubField,
+    ComposedSubField,
     Input,
     Stream,
     WS,
@@ -174,6 +175,8 @@ type ResolveS e m a = ResolverS e m a
 
 -- Subsciption Object Resolver Fields
 type SubField m a = (m (a (UnSubResolver m)))
+
+type ComposedSubField m f a = (m (f (a (UnSubResolver m))))
 
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents
