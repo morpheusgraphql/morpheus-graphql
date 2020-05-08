@@ -234,7 +234,7 @@ initTypeLib query =
     }
 
 allDataTypes :: forall (a :: TypeDirection). Schema -> [TypeDefinition a]
-allDataTypes = fmap runAny . elems . typeRegister
+allDataTypes = fmap fromAny . elems . typeRegister
 
 typeRegister :: Schema -> TypeLib
 typeRegister Schema {types, query, mutation, subscription} =
@@ -248,7 +248,7 @@ schemaFromTypeDefinitions types = case popByKey "Query" types of
   (Just query, lib1) -> do
     let (mutation, lib2) = popByKey "Mutation" lib1
     let (subscription, lib3) = popByKey "Subscription" lib2
-    pure $ (foldr (defineType . runAny) (initTypeLib query) lib3) {mutation, subscription}
+    pure $ (foldr (defineType . fromAny) (initTypeLib query) lib3) {mutation, subscription}
 
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
 -------------------------------------------------------------------------
@@ -269,22 +269,22 @@ data TypeDefinition (a :: TypeDirection) = TypeDefinition
   deriving (Show, Lift)
 
 data AnyTypeDefinition where
-  AnyTypeDefinition :: {runAny :: forall (a :: TypeDirection). TypeDefinition a} -> AnyTypeDefinition
+  AnyTypeDefinition :: {fromAny :: forall (a :: TypeDirection). TypeDefinition a} -> AnyTypeDefinition
 
 instance Show AnyTypeDefinition where
-  show = show . runAny
+  show = show . fromAny
+
+class ToAny a where
+  toAny :: TypeDefinition a -> AnyTypeDefinition
+
+instance ToAny a where
+  toAny = AnyTypeDefinition
 
 data TypeDirection = In | Out
 
 type IN = 'In
 
 type OUT = 'Out
-
-class Trans a b where
-  trans :: TypeDefinition a -> TypeDefinition b
-
-instance (a ~ b) => Trans a b where
-  trans x = x
 
 data TypeContent (a :: TypeDirection) where
   DataScalar ::
@@ -371,12 +371,6 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 -- TODO:
 -- __kind DataInterface   {} = KindInterface
 
-class ToAny a where
-  toAny :: TypeDefinition a -> AnyTypeDefinition
-
-instance ToAny a where
-  toAny = undefined
-
 fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, AnyTypeDefinition)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
@@ -385,7 +379,7 @@ lookupDataType :: Key -> Schema -> Maybe AnyTypeDefinition
 lookupDataType name = HM.lookup name . typeRegister
 
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
-isTypeDefined name lib = typeFingerprint . runAny <$> lookupDataType name lib
+isTypeDefined name lib = typeFingerprint . fromAny <$> lookupDataType name lib
 
 defineType :: TypeDefinition a -> Schema -> Schema
 defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
@@ -433,9 +427,9 @@ lookupWith f key = find ((== key) . f)
 
 -- lookups and removes TypeDefinition from hashmap
 popByKey :: Name -> [AnyTypeDefinition] -> (Maybe (TypeDefinition OUT), [AnyTypeDefinition])
-popByKey name types = case lookupWith (typeName . runAny) name types of
+popByKey name types = case lookupWith (typeName . fromAny) name types of
   Just (AnyTypeDefinition dt@TypeDefinition {typeContent = DataObject {}}) ->
-    (Just dt, filter ((/= name) . typeName . runAny) types)
+    (Just dt, filter ((/= name) . typeName . fromAny) types)
   _ -> (Nothing, types)
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
