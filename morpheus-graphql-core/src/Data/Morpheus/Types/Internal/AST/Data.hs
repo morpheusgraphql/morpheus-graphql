@@ -268,29 +268,38 @@ data TypeDefinition = TypeDefinition
   }
   deriving (Show, Lift)
 
-data TypeContent
-  = DataScalar
-      { dataScalar :: ScalarDefinition
-      }
-  | DataEnum
-      { enumMembers :: DataEnum
-      }
-  | DataInputObject
-      { inputObjectFields :: InputFieldsDefinition
-      }
-  | DataObject
-      { objectImplements :: [Name],
-        objectFields :: FieldsDefinition
-      }
-  | DataUnion
-      { unionMembers :: DataUnion
-      }
-  | DataInputUnion
-      { inputUnionMembers :: [(Key, Bool)]
-      }
-  | DataInterface
-      { interfaceFields :: FieldsDefinition
-      }
+data TypeDirection = In | Out
+
+data TypeContent (a :: TypeDirection) where
+  DataScalar ::
+    { dataScalar :: ScalarDefinition
+    } ->
+    TypeContent a
+  DataEnum ::
+    { enumMembers :: DataEnum
+    } ->
+    TypeContent a
+  DataInputObject ::
+    { inputObjectFields :: InputFieldsDefinition
+    } ->
+    TypeContent 'In
+  DataInputUnion ::
+    { inputUnionMembers :: [(Key, Bool)]
+    } ->
+    TypeContent 'In
+  DataObject ::
+    { objectImplements :: [Name],
+      objectFields :: FieldsDefinition
+    } ->
+    TypeContent 'Out
+  DataUnion ::
+    { unionMembers :: DataUnion
+    } ->
+    TypeContent 'Out
+  DataInterface ::
+    { interfaceFields :: FieldsDefinition
+    } ->
+    TypeContent 'Out
   deriving (Show, Lift)
 
 createType :: Key -> TypeContent -> TypeDefinition
