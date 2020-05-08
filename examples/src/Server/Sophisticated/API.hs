@@ -38,13 +38,14 @@ import Data.Morpheus.Types
     GQLScalar (..),
     GQLType (..),
     ID,
-    IOMutRes,
-    IORes,
     Input,
+    MUTATION,
+    QUERY,
     ResolveM,
     ResolveQ,
     ResolveS,
     Resolver,
+    ResolverQ,
     ScalarValue (..),
     Stream,
     WithOperation,
@@ -154,7 +155,7 @@ alwaysFail = pure $ Left "fail example"
 resolveUser :: ResolveQ EVENT IO User
 resolveUser = liftEither (getDBUser (Content 2))
 
-resolveAnimal :: QueryAnimalArgs -> IORes EVENT Text
+resolveAnimal :: QueryAnimalArgs -> ResolverQ EVENT IO Text
 resolveAnimal QueryAnimalArgs {queryAnimalArgsAnimal} =
   pure (pack $ show queryAnimalArgsAnimal)
 
@@ -201,7 +202,7 @@ userUpdate :: EVENT
 userUpdate = Event [USER] (Content {contentID = 12})
 
 -- DB::Getter --------------------------------------------------------------------
-getDBAddress :: Content -> IO (Address (IORes EVENT))
+getDBAddress :: Content -> IO (Address (Resolver QUERY EVENT IO))
 getDBAddress _id = do
   city <- dbText
   street <- dbText
@@ -213,7 +214,7 @@ getDBAddress _id = do
         addressHouseNumber = pure number
       }
 
-getDBUser :: Content -> IO (Either String (User (IORes EVENT)))
+getDBUser :: Content -> IO (Either String (User (Resolver QUERY EVENT IO)))
 getDBUser _ = do
   Person {name, email} <- dbPerson
   pure $
@@ -245,7 +246,7 @@ getDBUser _ = do
         }
 
 -- DB::Setter --------------------------------------------------------------------
-setDBAddress :: IO (Address (IOMutRes EVENT))
+setDBAddress :: IO (Address (Resolver MUTATION EVENT IO))
 setDBAddress = do
   city <- dbText
   street <- dbText
@@ -257,7 +258,7 @@ setDBAddress = do
         addressHouseNumber = pure houseNumber
       }
 
-setDBUser :: IO (Either String (User (IOMutRes EVENT)))
+setDBUser :: IO (Either String (User (Resolver MUTATION EVENT IO)))
 setDBUser = do
   Person {name, email} <- dbPerson
   pure $ Right $
