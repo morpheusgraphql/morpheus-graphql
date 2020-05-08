@@ -57,7 +57,7 @@ type Deity {
   Description for name
   """
   name: String!
-  power: String String! @deprecated(reason: "some reason for")
+  power: String @deprecated(reason: "some reason for")
 }
 ```
 
@@ -80,7 +80,7 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), ResolverQ)
+import           Data.Morpheus.Types        (GQLRootResolver (..), ResolverQ, Undefined(..))
 import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "schema.gql"
@@ -113,7 +113,7 @@ Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be us
 ### with Native Haskell Types
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
-which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> IORes b`, representing resolving a set of arguments `a` to a concrete value `b`.
+which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResolverQ () IO b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
 data Query m = Query
@@ -147,7 +147,7 @@ data DeityArgs = DeityArgs
 The field name in the final request will be `type` instead of `type'`. The Morpheus request parser converts each of the reserved identities in Haskell 2010 to their corresponding names internally. This also applies to selections.
 
 ```haskell
-resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity :: DeityArgs -> ResolverQ e () Deity
 resolveDeity DeityArgs { name, mythology } = liftEither $ dbDeity name mythology
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
@@ -257,12 +257,12 @@ This type will be represented as
 
 ```gql
 union Character =
-    Deity # unwrapped union: becouse Character + Deity = CharacterDeity
+    Deity # unwrapped union: because "Character" <> "Deity" == "CharacterDeity"
   | Creature
-  | SomeDeity # wrapped union: becouse Character + Deity != SomeDeity
+  | SomeDeity # wrapped union: because "Character" <> "Deity" /= SomeDeity
   | CharacterInt
   | SomeMutli
-  | CharacterEnumObject # object wrapped for enums
+  | CharacterEnumObject # no-argument constructors all wrapped into an enum
 
 type Creature {
   creatureName: String!
@@ -293,7 +293,57 @@ enum CharacterEnum {
 }
 ```
 
-- namespaced Unions: `CharacterDeity` where `Character` is TypeConstructor and `Deity` referenced object (not scalar) type: will be generate regular graphql Union
+By default, union members will be generated with wrapper objects.
+There is one exception to this: if a constructor of a type is the type name concatinated with the name of the contained type, it will be referenced directly.
+That is, given:
+
+```haskell
+data Song = { songName :: Text, songDuration :: Float } deriving (Generic, GQLType)
+
+data Skit = { skitName :: Text, skitDuration :: Float } deriving (Generic, GQLType)
+
+data WrappedNode
+  = WrappedSong Song
+  | WrappedSkit Skit
+  deriving (Generic, GQLType)
+
+data NonWrapped
+  = NonWrappedSong Song
+  | NonWrappedSkit Skit
+  deriving (Generic, GQLType)
+
+```
+
+You will get the following schema:
+
+
+```gql
+
+# has wrapper types
+union WrappedNode = WrappedSong | WrappedSkit
+
+# is a direct union
+union NonWrapped = Song | Skit
+
+type WrappedSong {
+  _0: Song!
+}
+
+type WrappedSKit {
+  _0: Skit!
+}
+
+type Song {
+  songDuration: Float!
+  songName: String!
+}
+
+type Skit {
+  skitDuration: Float!
+  skitName: String!
+}
+
+```
 
 - for all other unions will be generated new object type. for types without record syntax, fields will be automatally indexed.
 
@@ -349,7 +399,7 @@ at the and they have same result.
 with `liftEither`
 
 ```haskell
-resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {} = liftEither $ dbDeity
 
 dbDeity ::  IO Either Deity
@@ -359,7 +409,7 @@ dbDeity = pure $ Left "db error"
 with `failRes`
 
 ```haskell
-resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs { } = failRes "db error"
 ```
 
@@ -381,7 +431,7 @@ rootResolver =
     }
     where
       -- Mutation Without Event Triggering
-      createDeity :: MutArgs -> ResolveM () IO Deity
+      createDeity :: MutArgs -> ResolverM () IO Deity
       createDeity_args = lift setDBAddress
 
 gqlApi :: ByteString -> IO ByteString
@@ -391,7 +441,7 @@ gqlApi = interpreter rootResolver
 ### Subscriptions
 
 In morpheus subscription and mutation communicate with Events,
-`Event` consists of user defined `Channel` and `Content`.
+`Event` consists with user defined `Channel` and `Content`.
 
 Every subscription has its own Channel by which it will be triggered
 
@@ -428,7 +478,7 @@ rootResolver = GQLRootResolver
   }
  where
   -- Mutation Without Event Triggering
-  createDeity :: ResolveM EVENT IO Address
+  createDeity :: ResolverM EVENT IO Address
   createDeity = do
       requireAuthorized
       publish [Event { channels = [ChannelA], content = ContentA 1 }]
