@@ -10,6 +10,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -216,17 +217,11 @@ instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   (>>=) = unsafeBind
 
 -- MonadIO
-instance (MonadIO m) => MonadIO (Resolver QUERY e m) where
-  liftIO = lift . liftIO
-
-instance (MonadIO m) => MonadIO (Resolver MUTATION e m) where
+instance (MonadIO m, LiftOperation o) => MonadIO (Resolver o e m) where
   liftIO = lift . liftIO
 
 -- Monad Transformers
-instance MonadTrans (Resolver QUERY e) where
-  lift = packResolver . lift
-
-instance MonadTrans (Resolver MUTATION e) where
+instance (LiftOperation o) => MonadTrans (Resolver o e) where
   lift = packResolver . lift
 
 -- Failure
