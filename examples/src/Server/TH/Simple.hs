@@ -31,7 +31,7 @@ rootResolver =
   where
     queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity {deityName, deityPower}
       where
-        deityName = pure "Morpheus"
+        deityName = pure queryDeityArgsName
         deityPower = pure (Just "Shapeshifting")
 
 thSimpleApi :: B.ByteString -> IO B.ByteString
