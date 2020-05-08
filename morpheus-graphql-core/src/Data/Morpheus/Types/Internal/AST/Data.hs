@@ -274,8 +274,8 @@ data AnyTypeDefinition where
 instance Show AnyTypeDefinition where
   show = show . fromAny
 
-class ToAny a where
-  toAny :: TypeDefinition a -> AnyTypeDefinition
+class ToAny (a :: TypeDirection) where
+  toAny :: forall b. (a ~ b) => TypeDefinition b -> AnyTypeDefinition
 
 instance ToAny a where
   toAny = AnyTypeDefinition
