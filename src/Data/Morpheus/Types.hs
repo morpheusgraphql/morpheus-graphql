@@ -42,6 +42,16 @@ module Data.Morpheus.Types
     ResolverQ,
     ResolverM,
     ResolverS,
+    -- Resolvers Deprecated
+    ResolveQ,
+    ResolveM,
+    ResolveS,
+    Res,
+    MutRes,
+    SubRes,
+    IORes,
+    IOMutRes,
+    IOSubRes,
   )
 where
 
@@ -129,6 +139,24 @@ type ResolverS e m a = Resolver SUBSCRIPTION e m (a (Resolver QUERY e m))
 
 -- resListB :: ComposedResolver o () IO [] B
 -- resListB = pure [B {field1 = pure 1}]
+
+type Res = Resolver QUERY
+
+type MutRes = Resolver MUTATION
+
+type SubRes = Resolver SUBSCRIPTION
+
+type IORes e = Res e IO
+
+type IOMutRes e = MutRes e IO
+
+type IOSubRes e = SubRes e IO
+
+type ResolveQ e m a = Res e m (a (Res e m))
+
+type ResolveM e m a = MutRes e m (a (MutRes e m))
+
+type ResolveS e m a = SubRes e m (a (Res e m))
 
 -- Subsciption Object Resolver Fields
 type SubField m a = (m (a (UnSubResolver m)))
