@@ -15,7 +15,7 @@ import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRootResolver (..),
     GQLType,
-    IORes,
+    ResolverQ,
     Undefined (..),
     liftEither,
   )
@@ -58,7 +58,7 @@ data DeityArgs = DeityArgs
   }
   deriving (Generic)
 
-resolveDeity :: DeityArgs -> IORes e Deity
+resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
   liftEither $ dbDeity name bornPlace
 
