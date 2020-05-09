@@ -73,6 +73,11 @@ module Data.Morpheus.Types.Internal.AST.Data
     unsafeFromInputFields,
     __inputname,
     updateSchema,
+    OUT,
+    IN,
+    ANY,
+    FromAny (..),
+    ToAny (..),
   )
 where
 
@@ -236,7 +241,7 @@ initTypeLib query =
       subscription = Nothing
     }
 
-allDataTypes :: Schema -> [TypeDefinition ALL]
+allDataTypes :: Schema -> [TypeDefinition ANY]
 allDataTypes = elems . typeRegister
 
 typeRegister :: Schema -> TypeLib
@@ -271,18 +276,18 @@ data TypeDefinition (a :: TypeDirection) = TypeDefinition
   }
   deriving (Show, Lift)
 
-type AnyTypeDefinition = TypeDefinition ALL
+type AnyTypeDefinition = TypeDefinition ANY
 
-data TypeDirection = In | Out | All
+data TypeDirection = In | Out | Any
 
 type IN = 'In
 
 type OUT = 'Out
 
-type ALL = 'All
+type ANY = 'Any
 
 class ToAny a where
-  toAny :: a (k :: TypeDirection) -> a ALL
+  toAny :: a (k :: TypeDirection) -> a ANY
 
 instance ToAny TypeDefinition where
   toAny TypeDefinition {typeContent, ..} = TypeDefinition {typeContent = toAny typeContent, ..}
@@ -297,7 +302,7 @@ instance ToAny (TypeContent TRUE) where
   toAny DataInterface {..} = DataInterface {..}
 
 class FromAny a (k :: TypeDirection) where
-  fromAny :: a ALL -> Maybe (a k)
+  fromAny :: a ANY -> Maybe (a k)
 
 instance (FromAny (TypeContent TRUE) a) => FromAny TypeDefinition a where
   fromAny TypeDefinition {typeContent, ..} = bla <$> fromAny typeContent
@@ -322,8 +327,8 @@ instance FromAny (TypeContent TRUE) OUT where
 class SelectType (c :: TypeDirection) (a :: TypeDirection) where
   type IsSelected c a :: Bool
 
-instance SelectType ALL a where
-  type IsSelected ALL a = TRUE
+instance SelectType ANY a where
+  type IsSelected ANY a = TRUE
 
 instance SelectType OUT OUT where
   type IsSelected OUT OUT = TRUE
@@ -416,7 +421,7 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 -- TODO:
 -- __kind DataInterface   {} = KindInterface
 
-fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ALL)]
+fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ANY)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
@@ -426,7 +431,7 @@ lookupDataType name = HM.lookup name . typeRegister
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
-defineType :: TypeDefinition ALL -> Schema -> Schema
+defineType :: TypeDefinition ANY -> Schema -> Schema
 defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
   lib {types = HM.insert name unionTags (HM.insert typeName dt (types lib))}
   where
@@ -442,7 +447,7 @@ defineType datatype lib =
   lib {types = HM.insert (typeName datatype) datatype (types lib)}
 
 insertType ::
-  TypeDefinition ALL ->
+  TypeDefinition ANY ->
   TypeUpdater
 insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName lib of
   Nothing -> resolveUpdates (defineType datatype lib) []
@@ -455,7 +460,7 @@ updateSchema ::
   Name ->
   DataFingerprint ->
   [TypeUpdater] ->
-  (a -> TypeDefinition ALL) ->
+  (a -> TypeDefinition ANY) ->
   a ->
   TypeUpdater
 updateSchema name fingerprint stack f x lib =

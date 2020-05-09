@@ -29,13 +29,17 @@ import Data.Morpheus.Parsing.Internal.Terms
     spaceAndComments,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( DataFingerprint (..),
+  ( ANY,
+    DataFingerprint (..),
     Description,
+    IN,
     Meta (..),
     Name,
+    OUT,
     ScalarDefinition (..),
     TypeContent (..),
     TypeDefinition (..),
+    toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -54,7 +58,7 @@ import Text.Megaparsec
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Description -> Parser TypeDefinition
+scalarTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
 scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
   typeName <- typDeclaration "scalar"
   metaDirectives <- optionalDirectives
@@ -81,7 +85,7 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-objectTypeDefinition :: Maybe Description -> Parser TypeDefinition
+objectTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
   typeName <- typDeclaration "type"
   objectImplements <- optionalImplementsInterfaces
@@ -107,7 +111,7 @@ optionalImplementsInterfaces = implements <|> pure []
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
-interfaceTypeDefinition :: Maybe Description -> Parser TypeDefinition
+interfaceTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
 interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
   typeName <- typDeclaration "interface"
   metaDirectives <- optionalDirectives
@@ -130,7 +134,7 @@ interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Maybe Description -> Parser TypeDefinition
+unionTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
 unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
   typeName <- typDeclaration "union"
   metaDirectives <- optionalDirectives
@@ -157,7 +161,7 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Maybe Description -> Parser TypeDefinition
+enumTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
 enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
   typeName <- typDeclaration "enum"
   metaDirectives <- optionalDirectives
@@ -179,7 +183,7 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputObjectTypeDefinition :: Maybe Description -> Parser TypeDefinition
+inputObjectTypeDefinition :: Maybe Description -> Parser (TypeDefinition IN)
 inputObjectTypeDefinition metaDescription =
   label "InputObjectTypeDefinition" $ do
     typeName <- typDeclaration "input"
@@ -194,18 +198,18 @@ inputObjectTypeDefinition metaDescription =
           typeMeta = Just Meta {metaDescription, metaDirectives}
         }
 
-parseDataType :: Parser TypeDefinition
+parseDataType :: Parser (TypeDefinition ANY)
 parseDataType = label "TypeDefinition" $ do
   description <- optDescription
   -- scalar | enum |  input | object | union | interface
-  inputObjectTypeDefinition description
-    <|> unionTypeDefinition description
+  (toAny <$> inputObjectTypeDefinition description)
+    <|> (toAny <$> unionTypeDefinition description)
     <|> enumTypeDefinition description
     <|> scalarTypeDefinition description
-    <|> objectTypeDefinition description
-    <|> interfaceTypeDefinition description
+    <|> (toAny <$> objectTypeDefinition description)
+    <|> (toAny <$> interfaceTypeDefinition description)
 
-parseSchema :: Text -> Eventless [TypeDefinition]
+parseSchema :: Text -> Eventless [TypeDefinition ANY]
 parseSchema = processParser request
   where
     request = label "DocumentTypes" $ do
