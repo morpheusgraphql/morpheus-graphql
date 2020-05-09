@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -70,6 +71,7 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     __inputname,
     entryValue,
+    fromAny,
     isFieldNullable,
     isInputDataType,
   )
@@ -267,9 +269,10 @@ askInputMember name =
       failure $ typeInfo name <> scopeType <> "\" can't found in Schema."
     --------------------------------------
     constraintINPUT_OBJECT :: TypeDefinition ANY -> InputValidator (TypeDefinition IN)
-    constraintINPUT_OBJECT tyDef@TypeDefinition {typeName, typeContent} = con typeContent
+    constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
       where
-        con DataInputObject {} = pure tyDef
+        con :: Maybe (TypeContent a IN) -> InputValidator (TypeDefinition IN)
+        con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
           scopeType <- askScopeTypeName
           failure $ typeInfo typeName <> "\"" <> scopeType <> "\" must be an INPUT_OBJECT."
