@@ -69,7 +69,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     lookupWith,
     hasArguments,
     unsafeFromFields,
-    isInputDataType,
     unsafeFromInputFields,
     __inputname,
     updateSchema,
@@ -396,15 +395,6 @@ isEntNode :: TypeContent TRUE a -> Bool
 isEntNode DataScalar {} = True
 isEntNode DataEnum {} = True
 isEntNode _ = False
-
-isInputDataType :: TypeDefinition a -> Bool
-isInputDataType TypeDefinition {typeContent} = __isInput typeContent
-  where
-    __isInput DataScalar {} = True
-    __isInput DataEnum {} = True
-    __isInput DataInputObject {} = True
-    __isInput DataInputUnion {} = True
-    __isInput _ = False
 
 kindOf :: TypeDefinition a -> DataTypeKind
 kindOf TypeDefinition {typeName, typeContent} = __kind typeContent

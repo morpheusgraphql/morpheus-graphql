@@ -73,7 +73,6 @@ import Data.Morpheus.Types.Internal.AST
     entryValue,
     fromAny,
     isFieldNullable,
-    isInputDataType,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),

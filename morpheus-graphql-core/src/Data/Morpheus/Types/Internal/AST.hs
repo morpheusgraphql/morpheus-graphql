@@ -136,7 +136,6 @@ module Data.Morpheus.Types.Internal.AST
     GQLErrors,
     ObjectEntry (..),
     UnionTag (..),
-    isInputDataType,
     __inputname,
     updateSchema,
     internalFingerprint,
