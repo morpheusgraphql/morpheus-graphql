@@ -127,7 +127,7 @@ checkUnused :: (KeyOf b, Selectable ca a, Unused b) => ca -> [b] -> Validator ct
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
-  forall (a :: Target) inp ctx k.
+  forall (a :: Target) inp ctx.
   KindViolation a inp =>
   Constraint (a :: Target) ->
   inp ->
