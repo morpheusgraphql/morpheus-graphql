@@ -52,11 +52,14 @@ import Control.Monad.Trans.Reader
 -- MORPHEUS
 
 import Data.Morpheus.Types.Internal.AST
-  ( FieldDefinition (..),
+  ( ANY,
+    FieldDefinition (..),
     FieldsDefinition (..),
     Fragments,
+    IN,
     Message,
     Name,
+    OUT,
     Object,
     Position,
     Ref (..),
@@ -123,11 +126,11 @@ checkUnused :: (KeyOf b, Selectable ca a, Unused b) => ca -> [b] -> Validator ct
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
-  forall (a :: Target) inp ctx.
+  forall (a :: Target) inp ctx k.
   KindViolation a inp =>
   Constraint (a :: Target) ->
   inp ->
-  TypeDefinition ->
+  TypeDefinition ANY ->
   Validator ctx (Resolution a)
 constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields}, typeName} =
   pure (typeName, objectFields)
@@ -194,7 +197,7 @@ selectKnown selector lib =
 
 askFieldType ::
   FieldDefinition ->
-  SelectionValidator TypeDefinition
+  SelectionValidator (TypeDefinition OUT)
 askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   do
     schema <- askSchema
@@ -232,7 +235,7 @@ askTypeMember name =
 
 askInputFieldType ::
   FieldDefinition ->
-  InputValidator TypeDefinition
+  InputValidator (TypeDefinition IN)
 askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}} =
   askSchema
     >>= selectBy
@@ -251,7 +254,7 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
 
 askInputMember ::
   Name ->
-  InputValidator TypeDefinition
+  InputValidator (TypeDefinition IN)
 askInputMember name =
   askSchema
     >>= selectOr notFound pure name
@@ -263,6 +266,7 @@ askInputMember name =
       scopeType <- askScopeTypeName
       failure $ typeInfo name <> scopeType <> "\" can't found in Schema."
     --------------------------------------
+    constraintINPUT_OBJECT :: TypeDefinition ANY -> InputValidator (TypeDefinition IN)
     constraintINPUT_OBJECT tyDef@TypeDefinition {typeName, typeContent} = con typeContent
       where
         con DataInputObject {} = pure tyDef
