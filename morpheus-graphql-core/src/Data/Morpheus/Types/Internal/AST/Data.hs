@@ -431,9 +431,9 @@ lookupDataType name = HM.lookup name . typeRegister
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
-defineType :: TypeDefinition ANY -> Schema -> Schema
+defineType :: TypeDefinition cat -> Schema -> Schema
 defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
-  lib {types = HM.insert name unionTags (HM.insert typeName dt (types lib))}
+  lib {types = HM.insert name unionTags (HM.insert typeName (toAny dt) (types lib))}
   where
     name = typeName <> "Tags"
     unionTags =
@@ -444,7 +444,7 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
           typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
         }
 defineType datatype lib =
-  lib {types = HM.insert (typeName datatype) datatype (types lib)}
+  lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
 
 insertType ::
   TypeDefinition ANY ->
