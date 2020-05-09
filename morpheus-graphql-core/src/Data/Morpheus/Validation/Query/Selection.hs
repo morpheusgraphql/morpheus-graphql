@@ -24,6 +24,7 @@ import Data.Morpheus.Types.Internal.AST
     Fragment (..),
     GQLError (..),
     Name,
+    OUT,
     Operation (..),
     OperationType (..),
     RAW,
@@ -31,6 +32,7 @@ import Data.Morpheus.Types.Internal.AST
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     VALID,
@@ -145,7 +147,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
             selectionContent
         where
           currentSelectionRef = Ref selectionName selectionPosition
-          commonValidation :: SelectionValidator (TypeDefinition, Arguments VALID)
+          commonValidation :: SelectionValidator (TypeDefinition OUT, Arguments VALID)
           commonValidation = do
             (fieldDef :: FieldDefinition) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             -- validate field Argument -----
@@ -154,7 +156,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                 fieldDef
                 selectionArguments
             -- check field Type existence  -----
-            (typeDef :: TypeDefinition) <- askFieldType fieldDef
+            (typeDef :: TypeDefinition OUT) <- askFieldType fieldDef
             pure (typeDef, arguments)
           -----------------------------------------------------------------------------------
           validateSelectionContent :: SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
@@ -167,7 +169,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
               pure $ singleton $ sel {selectionArguments = validArgs, selectionContent = SelectionField}
             where
               ------------------------------------------------------------
-              isLeaf :: TypeDefinition -> SelectionValidator ()
+              isLeaf :: TypeDefinition OUT -> SelectionValidator ()
               isLeaf TypeDefinition {typeName = typename, typeContent}
                 | isEntNode typeContent = pure ()
                 | otherwise =
@@ -180,7 +182,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
               selContent <- withScope name currentSelectionRef $ validateByTypeContent name typeContent
               pure $ singleton $ sel {selectionArguments = validArgs, selectionContent = selContent}
             where
-              validateByTypeContent :: Name -> TypeContent -> SelectionValidator (SelectionContent VALID)
+              validateByTypeContent :: Name -> TypeContent TRUE OUT -> SelectionValidator (SelectionContent VALID)
               -- Validate UnionSelection
               validateByTypeContent _ DataUnion {unionMembers} =
                 validateUnionSelection

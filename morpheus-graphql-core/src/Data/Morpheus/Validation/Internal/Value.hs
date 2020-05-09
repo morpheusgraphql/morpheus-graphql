@@ -15,6 +15,7 @@ import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Types.Internal.AST
   ( DataEnumValue (..),
     FieldDefinition (..),
+    IN,
     InputFieldsDefinition (..),
     Message,
     Name,
@@ -23,6 +24,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     ResolvedValue,
     ScalarDefinition (..),
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeRef (..),
@@ -90,7 +92,7 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
 -- Validate Variable Argument or all Possible input Values
 validateInput ::
   [TypeWrapper] ->
-  TypeDefinition ->
+  TypeDefinition IN ->
   ObjectEntry RESOLVED ->
   InputValidator ValidValue
 validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
@@ -102,7 +104,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     -- VALIDATION
     validateWrapped ::
       [TypeWrapper] ->
-      TypeContent ->
+      TypeContent TRUE IN ->
       ObjectEntry RESOLVED ->
       InputValidator ValidValue
     -- Validate Null. value = null ?
@@ -123,7 +125,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     validateWrapped [] dt v = validate dt v
       where
         validate ::
-          TypeContent -> ObjectEntry RESOLVED -> InputValidator ValidValue
+          TypeContent TRUE IN -> ObjectEntry RESOLVED -> InputValidator ValidValue
         validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} = do
           traverse_ requiredFieldsDefined (unInputFieldsDefinition parentFields)
           Object <$> traverse validateField fields

@@ -136,7 +136,7 @@ constraint ::
   Validator ctx (Resolution a)
 constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields}, typeName} =
   pure (typeName, objectFields)
-constraint INPUT _ x | isInputDataType x = pure x
+constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny x)
 constraint target ctx _ = failure [kindViolation target ctx]
 
 selectRequired ::
@@ -203,10 +203,18 @@ askFieldType ::
 askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   do
     schema <- askSchema
-    selectBy
-      [internalError field]
-      typeConName
-      schema
+    anyType <-
+      selectBy
+        [internalError field]
+        typeConName
+        schema
+    case fromAny anyType of
+      Just x -> pure x
+      Nothing ->
+        failure $
+          "Type \"" <> typeName anyType
+            <> "\" referenced by OBJECT \""
+            <> "\" must be an OUTPUT_TYPE."
 
 askTypeMember ::
   Name ->
@@ -224,6 +232,7 @@ askTypeMember name =
           <> scopeType
           <> "\" can't found in Schema."
     --------------------------------------
+    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (Name, FieldsDefinition)
     constraintOBJECT TypeDefinition {typeName, typeContent} = con typeContent
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
@@ -245,9 +254,10 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
       typeConName
     >>= constraintINPUT
   where
-    constraintINPUT x
-      | isInputDataType x = pure x
-      | otherwise =
+    constraintINPUT :: TypeDefinition ANY -> InputValidator (TypeDefinition IN)
+    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN)) of
+      Just inputType -> pure inputType
+      Nothing ->
         failure $
           "Type \"" <> typeName x
             <> "\" referenced by field \""

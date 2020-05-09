@@ -16,7 +16,8 @@ where
 -- MORPHEUS
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     DataFingerprint (..),
     FieldsDefinition,
     Message,
@@ -62,14 +63,14 @@ hiddenFields =
         ([], "__Schema")
     ]
 
-internalType :: TypeDefinition -> TypeDefinition
+internalType :: TypeDefinition a -> TypeDefinition a
 internalType
   tyDef@TypeDefinition
     { typeFingerprint = DataFingerprint name xs
     } =
     tyDef {typeFingerprint = internalFingerprint name xs}
 
-schemaTypes :: [TypeDefinition]
+schemaTypes :: [TypeDefinition ANY]
 schemaTypes =
   [dsl|
 

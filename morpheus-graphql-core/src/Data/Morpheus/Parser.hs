@@ -13,7 +13,8 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLQuery (..),
+  ( ANY,
+    GQLQuery (..),
     Operation,
     Schema (..),
     TypeDefinition (..),
@@ -38,7 +39,7 @@ parseTypeSystemDefinition =
   parseSchema >=> schemaFromTypeDefinitions
 
 parseTypeDefinitions ::
-  Text -> Eventless [TypeDefinition]
+  Text -> Eventless [TypeDefinition ANY]
 parseTypeDefinitions =
   parseSchema >=> validatePartialDocument
 
