@@ -10,9 +10,11 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
@@ -67,10 +69,14 @@ module Data.Morpheus.Types.Internal.AST.Data
     lookupWith,
     hasArguments,
     unsafeFromFields,
-    isInputDataType,
     unsafeFromInputFields,
     __inputname,
     updateSchema,
+    OUT,
+    IN,
+    ANY,
+    FromAny (..),
+    ToAny (..),
   )
 where
 
@@ -96,6 +102,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Name,
     Position,
     Stage,
+    TRUE,
     TypeRef (..),
     TypeWrapper (..),
     VALID,
@@ -213,18 +220,18 @@ data DataEnumValue = DataEnumValue
 
 data Schema = Schema
   { types :: TypeLib,
-    query :: TypeDefinition,
-    mutation :: Maybe TypeDefinition,
-    subscription :: Maybe TypeDefinition
+    query :: TypeDefinition 'Out,
+    mutation :: Maybe (TypeDefinition 'Out),
+    subscription :: Maybe (TypeDefinition 'Out)
   }
   deriving (Show)
 
-type TypeLib = HashMap Key TypeDefinition
+type TypeLib = HashMap Key (TypeDefinition ANY)
 
-instance Selectable Schema TypeDefinition where
+instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-initTypeLib :: TypeDefinition -> Schema
+initTypeLib :: TypeDefinition 'Out -> Schema
 initTypeLib query =
   Schema
     { types = empty,
@@ -233,7 +240,7 @@ initTypeLib query =
       subscription = Nothing
     }
 
-allDataTypes :: Schema -> [TypeDefinition]
+allDataTypes :: Schema -> [TypeDefinition ANY]
 allDataTypes = elems . typeRegister
 
 typeRegister :: Schema -> TypeLib
@@ -242,7 +249,7 @@ typeRegister Schema {types, query, mutation, subscription} =
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
-schemaFromTypeDefinitions :: Failure Message m => [TypeDefinition] -> m Schema
+schemaFromTypeDefinitions :: Failure Message m => [TypeDefinition ANY] -> m Schema
 schemaFromTypeDefinitions types = case popByKey "Query" types of
   (Nothing, _) -> failure ("INTERNAL: Query Not Defined" :: Message)
   (Just query, lib1) -> do
@@ -260,40 +267,108 @@ schemaFromTypeDefinitions types = case popByKey "Query" types of
 --   EnumTypeDefinition
 --   InputObjectTypeDefinition
 
-data TypeDefinition = TypeDefinition
+data TypeDefinition (a :: TypeCategory) = TypeDefinition
   { typeName :: Key,
     typeFingerprint :: DataFingerprint,
     typeMeta :: Maybe Meta,
-    typeContent :: TypeContent
+    typeContent :: TypeContent TRUE a
   }
   deriving (Show, Lift)
 
-data TypeContent
-  = DataScalar
-      { dataScalar :: ScalarDefinition
-      }
-  | DataEnum
-      { enumMembers :: DataEnum
-      }
-  | DataInputObject
-      { inputObjectFields :: InputFieldsDefinition
-      }
-  | DataObject
-      { objectImplements :: [Name],
-        objectFields :: FieldsDefinition
-      }
-  | DataUnion
-      { unionMembers :: DataUnion
-      }
-  | DataInputUnion
-      { inputUnionMembers :: [(Key, Bool)]
-      }
-  | DataInterface
-      { interfaceFields :: FieldsDefinition
-      }
-  deriving (Show, Lift)
+data TypeCategory = In | Out | Any
 
-createType :: Key -> TypeContent -> TypeDefinition
+type IN = 'In
+
+type OUT = 'Out
+
+type ANY = 'Any
+
+class ToAny a where
+  toAny :: a (k :: TypeCategory) -> a ANY
+
+instance ToAny TypeDefinition where
+  toAny TypeDefinition {typeContent, ..} = TypeDefinition {typeContent = toAny typeContent, ..}
+
+instance ToAny (TypeContent TRUE) where
+  toAny DataScalar {..} = DataScalar {..}
+  toAny DataEnum {..} = DataEnum {..}
+  toAny DataInputObject {..} = DataInputObject {..}
+  toAny DataInputUnion {..} = DataInputUnion {..}
+  toAny DataObject {..} = DataObject {..}
+  toAny DataUnion {..} = DataUnion {..}
+  toAny DataInterface {..} = DataInterface {..}
+
+class FromAny a (k :: TypeCategory) where
+  fromAny :: a ANY -> Maybe (a k)
+
+instance (FromAny (TypeContent TRUE) a) => FromAny TypeDefinition a where
+  fromAny TypeDefinition {typeContent, ..} = bla <$> fromAny typeContent
+    where
+      bla x = TypeDefinition {typeContent = x, ..}
+
+instance FromAny (TypeContent TRUE) IN where
+  fromAny DataScalar {..} = Just DataScalar {..}
+  fromAny DataEnum {..} = Just DataEnum {..}
+  fromAny DataInputObject {..} = Just DataInputObject {..}
+  fromAny DataInputUnion {..} = Just DataInputUnion {..}
+  fromAny _ = Nothing
+
+instance FromAny (TypeContent TRUE) OUT where
+  fromAny DataScalar {..} = Just DataScalar {..}
+  fromAny DataEnum {..} = Just DataEnum {..}
+  fromAny DataObject {..} = Just DataObject {..}
+  fromAny DataUnion {..} = Just DataUnion {..}
+  fromAny DataInterface {..} = Just DataInterface {..}
+  fromAny _ = Nothing
+
+class SelectType (c :: TypeCategory) (a :: TypeCategory) where
+  type IsSelected c a :: Bool
+
+instance SelectType ANY a where
+  type IsSelected ANY a = TRUE
+
+instance SelectType OUT OUT where
+  type IsSelected OUT OUT = TRUE
+
+instance SelectType IN IN where
+  type IsSelected IN IN = TRUE
+
+data TypeContent (b :: Bool) (a :: TypeCategory) where
+  DataScalar ::
+    { dataScalar :: ScalarDefinition
+    } ->
+    TypeContent TRUE a
+  DataEnum ::
+    { enumMembers :: DataEnum
+    } ->
+    TypeContent TRUE a
+  DataInputObject ::
+    { inputObjectFields :: InputFieldsDefinition
+    } ->
+    TypeContent (IsSelected a IN) a
+  DataInputUnion ::
+    { inputUnionMembers :: [(Key, Bool)]
+    } ->
+    TypeContent (IsSelected a IN) a
+  DataObject ::
+    { objectImplements :: [Name],
+      objectFields :: FieldsDefinition
+    } ->
+    TypeContent (IsSelected a OUT) a
+  DataUnion ::
+    { unionMembers :: DataUnion
+    } ->
+    TypeContent (IsSelected a OUT) a
+  DataInterface ::
+    { interfaceFields :: FieldsDefinition
+    } ->
+    TypeContent (IsSelected a OUT) a
+
+deriving instance Show (TypeContent a b)
+
+deriving instance Lift (TypeContent a b)
+
+createType :: Key -> TypeContent TRUE a -> TypeDefinition a
 createType typeName typeContent =
   TypeDefinition
     { typeName,
@@ -302,10 +377,10 @@ createType typeName typeContent =
       typeContent
     }
 
-createScalarType :: Name -> TypeDefinition
+createScalarType :: Name -> TypeDefinition a
 createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
 
-createEnumType :: Name -> [Key] -> TypeDefinition
+createEnumType :: Name -> [Key] -> TypeDefinition a
 createEnumType typeName typeData = createType typeName (DataEnum enumValues)
   where
     enumValues = map createEnumValue typeData
@@ -313,24 +388,15 @@ createEnumType typeName typeData = createType typeName (DataEnum enumValues)
 createEnumValue :: Name -> DataEnumValue
 createEnumValue enumName = DataEnumValue {enumName, enumMeta = Nothing}
 
-createUnionType :: Key -> [Key] -> TypeDefinition
+createUnionType :: Key -> [Key] -> TypeDefinition OUT
 createUnionType typeName typeData = createType typeName (DataUnion typeData)
 
-isEntNode :: TypeContent -> Bool
+isEntNode :: TypeContent TRUE a -> Bool
 isEntNode DataScalar {} = True
 isEntNode DataEnum {} = True
 isEntNode _ = False
 
-isInputDataType :: TypeDefinition -> Bool
-isInputDataType TypeDefinition {typeContent} = __isInput typeContent
-  where
-    __isInput DataScalar {} = True
-    __isInput DataEnum {} = True
-    __isInput DataInputObject {} = True
-    __isInput DataInputUnion {} = True
-    __isInput _ = False
-
-kindOf :: TypeDefinition -> DataTypeKind
+kindOf :: TypeDefinition a -> DataTypeKind
 kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
   where
     __kind DataScalar {} = KindScalar
@@ -343,19 +409,19 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 -- TODO:
 -- __kind DataInterface   {} = KindInterface
 
-fromOperation :: Maybe TypeDefinition -> [(Name, TypeDefinition)]
-fromOperation (Just datatype) = [(typeName datatype, datatype)]
+fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ANY)]
+fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
-lookupDataType :: Key -> Schema -> Maybe TypeDefinition
+lookupDataType :: Key -> Schema -> Maybe (TypeDefinition ANY)
 lookupDataType name = HM.lookup name . typeRegister
 
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
-defineType :: TypeDefinition -> Schema -> Schema
+defineType :: TypeDefinition cat -> Schema -> Schema
 defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
-  lib {types = HM.insert name unionTags (HM.insert typeName dt (types lib))}
+  lib {types = HM.insert name unionTags (HM.insert typeName (toAny dt) (types lib))}
   where
     name = typeName <> "Tags"
     unionTags =
@@ -366,9 +432,11 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
           typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
         }
 defineType datatype lib =
-  lib {types = HM.insert (typeName datatype) datatype (types lib)}
+  lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
 
-insertType :: TypeDefinition -> TypeUpdater
+insertType ::
+  TypeDefinition ANY ->
+  TypeUpdater
 insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName lib of
   Nothing -> resolveUpdates (defineType datatype lib) []
   Just fingerprint
@@ -380,7 +448,7 @@ updateSchema ::
   Name ->
   DataFingerprint ->
   [TypeUpdater] ->
-  (a -> TypeDefinition) ->
+  (a -> TypeDefinition ANY) ->
   a ->
   TypeUpdater
 updateSchema name fingerprint stack f x lib =
@@ -397,11 +465,11 @@ lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
 -- lookups and removes TypeDefinition from hashmap
-popByKey :: Name -> [TypeDefinition] -> (Maybe TypeDefinition, [TypeDefinition])
-popByKey name lib = case lookupWith typeName name lib of
+popByKey :: Name -> [TypeDefinition ANY] -> (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+popByKey name types = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
-    (Just dt, filter ((/= name) . typeName) lib)
-  _ -> (Nothing, lib)
+    (fromAny dt, filter ((/= name) . typeName) types)
+  _ -> (Nothing, types)
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
@@ -623,7 +691,7 @@ data GQLTypeD = GQLTypeD
   { typeD :: TypeD,
     typeKindD :: DataTypeKind,
     typeArgD :: [TypeD],
-    typeOriginal :: TypeDefinition
+    typeOriginal :: TypeDefinition ANY
   }
   deriving (Show)
 

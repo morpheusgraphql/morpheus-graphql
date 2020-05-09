@@ -1,6 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -63,11 +64,11 @@ type Result e m a = Schema -> Resolver QUERY e m a
 class RenderSchema a where
   render :: (Monad m) => a -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
 
-instance RenderSchema TypeDefinition where
+instance RenderSchema (TypeDefinition a) where
   render TypeDefinition {typeName, typeMeta, typeContent} = __render typeContent
     where
       __render ::
-        (Monad m) => TypeContent -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+        (Monad m) => TypeContent bool a -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
       __render DataScalar {} =
         constRes $ createLeafType SCALAR typeName typeMeta Nothing
       __render (DataEnum enums) =

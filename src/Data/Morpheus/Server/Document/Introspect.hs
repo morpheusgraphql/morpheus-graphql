@@ -41,7 +41,7 @@ import Data.Text (Text, unpack)
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
-instanceIntrospect :: TypeDefinition -> Q [Dec]
+instanceIntrospect :: TypeDefinition cat -> Q [Dec]
 instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..}
   -- FIXME: dirty fix for introspection
   | typeName `elem` ["__DirectiveLocation", "__TypeKind"] = pure []

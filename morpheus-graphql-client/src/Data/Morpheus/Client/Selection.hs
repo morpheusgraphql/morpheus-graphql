@@ -21,7 +21,8 @@ import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     ClientType (..),
     ConsD (..),
     DataEnumValue (..),
@@ -38,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    TRUE,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
@@ -51,6 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecated,
     lookupDeprecatedReason,
     removeDuplicates,
+    toAny,
     typeFromScalar,
   )
 import Data.Morpheus.Types.Internal.Operation
@@ -88,7 +91,7 @@ operationTypes lib variables = genOperation
         genRecordType
           []
           (getOperationName operationName)
-          datatype
+          (toAny datatype)
           operationSelection
       inputTypeRequests <-
         resolveUpdates [] $
@@ -130,7 +133,7 @@ operationTypes lib variables = genOperation
     genRecordType ::
       [Name] ->
       Name ->
-      TypeDefinition ->
+      TypeDefinition ANY ->
       SelectionSet VALID ->
       Eventless ([ClientType], [Name])
     genRecordType path tName dataType recordSelSet = do
@@ -152,7 +155,7 @@ operationTypes lib variables = genOperation
       where
         genConsD ::
           Name ->
-          TypeDefinition ->
+          TypeDefinition ANY ->
           SelectionSet VALID ->
           Eventless (ConsD, [ClientType], [Text])
         genConsD cName datatype selSet = do
@@ -192,7 +195,7 @@ operationTypes lib variables = genOperation
                   fieldName = keyOf sel
                   ------------------------------------------
                   subTypesBySelection ::
-                    TypeDefinition -> Selection VALID -> Eventless ([ClientType], [Text])
+                    TypeDefinition ANY -> Selection VALID -> Eventless ([ClientType], [Text])
                   subTypesBySelection dType Selection {selectionContent = SelectionField} =
                     leafType dType
                   --withLeaf buildLeaf dType
@@ -290,10 +293,10 @@ buildInputType lib name = getType lib name >>= generateTypes
 lookupFieldType ::
   Schema ->
   [Key] ->
-  TypeDefinition ->
+  TypeDefinition ANY ->
   Position ->
   Text ->
-  Eventless (TypeDefinition, TypeRef)
+  Eventless (TypeDefinition ANY, TypeRef)
 lookupFieldType lib path TypeDefinition {typeContent = DataObject {objectFields}, typeName} refPosition key =
   selectBy selError key objectFields >>= processDeprecation
   where
@@ -317,18 +320,18 @@ lookupFieldType lib path TypeDefinition {typeContent = DataObject {objectFields}
 lookupFieldType _ _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
-leafType :: TypeDefinition -> Eventless ([ClientType], [Text])
+leafType :: TypeDefinition a -> Eventless ([ClientType], [Text])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
-    fromKind :: TypeContent -> Eventless ([ClientType], [Text])
+    fromKind :: TypeContent TRUE a -> Eventless ([ClientType], [Text])
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], [])
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
-getType :: Schema -> Text -> Eventless TypeDefinition
+getType :: Schema -> Text -> Eventless (TypeDefinition ANY)
 getType lib typename = selectBy (compileError $ " cant find Type" <> typename) typename lib
 
-typeFrom :: [Name] -> TypeDefinition -> Name
+typeFrom :: [Name] -> TypeDefinition a -> Name
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
   where
     __typeFrom DataScalar {} = typeFromScalar typeName

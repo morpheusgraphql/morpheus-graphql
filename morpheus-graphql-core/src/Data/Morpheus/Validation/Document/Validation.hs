@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Validation.Document.Validation
@@ -17,7 +18,8 @@ import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldDefinition (..),
+  ( ANY,
+    FieldDefinition (..),
     FieldsDefinition (..),
     Name,
     TypeContent (..),
@@ -35,10 +37,10 @@ import Data.Morpheus.Types.Internal.Resolving
     Failure (..),
   )
 
-validatePartialDocument :: [TypeDefinition] -> Eventless [TypeDefinition]
+validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
   where
-    validateType :: TypeDefinition -> Eventless (Maybe TypeDefinition)
+    validateType :: TypeDefinition ANY -> Eventless (Maybe (TypeDefinition ANY))
     validateType dt@TypeDefinition {typeName, typeContent = DataObject {objectImplements, objectFields}} = do
       interface <- traverse getInterfaceByKey objectImplements
       case concatMap (mustBeSubset objectFields) interface of

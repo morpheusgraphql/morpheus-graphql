@@ -50,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
+    OUT,
     Schema (..),
     TypeDefinition (..),
   )
@@ -255,7 +256,7 @@ data Operation (s :: Stage) = Operation
 getOperationName :: Maybe Key -> Key
 getOperationName = fromMaybe "AnonymousOperation"
 
-getOperationDataType :: Failure GQLErrors m => Operation a -> Schema -> m TypeDefinition
+getOperationDataType :: Failure GQLErrors m => Operation a -> Schema -> m (TypeDefinition OUT)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)
 getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
   case mutation lib of

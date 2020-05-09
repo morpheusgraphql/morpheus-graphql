@@ -52,6 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     Fragments,
     GQLError (..),
     GQLErrors,
+    IN,
     Message,
     Name,
     Position,
@@ -137,7 +138,7 @@ type family Resolution (a :: Target)
 
 type instance Resolution 'TARGET_OBJECT = (Name, FieldsDefinition)
 
-type instance Resolution 'TARGET_INPUT = TypeDefinition
+type instance Resolution 'TARGET_INPUT = TypeDefinition IN
 
 --type instance Resolution 'TARGET_UNION = DataUnion
 

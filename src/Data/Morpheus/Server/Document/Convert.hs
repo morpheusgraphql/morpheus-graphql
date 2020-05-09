@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
--- {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -18,13 +18,15 @@ import Data.Morpheus.Internal.Utils
   ( capital,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     ConsD (..),
     DataEnumValue (..),
     FieldDefinition (..),
     GQLTypeD (..),
     InputFieldsDefinition (..),
     Key,
+    TRUE,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
@@ -45,7 +47,7 @@ import Language.Haskell.TH
 m_ :: Key
 m_ = "m"
 
-getTypeArgs :: Key -> [TypeDefinition] -> Q (Maybe Key)
+getTypeArgs :: Key -> [TypeDefinition ANY] -> Q (Maybe Key)
 getTypeArgs "__TypeKind" _ = pure Nothing
 getTypeArgs "Boolean" _ = pure Nothing
 getTypeArgs "String" _ = pure Nothing
@@ -60,15 +62,15 @@ getTyArgs x
   | null (infoTyVars x) = Nothing
   | otherwise = Just m_
 
-kindToTyArgs :: TypeContent -> Maybe Key
+kindToTyArgs :: TypeContent TRUE ANY -> Maybe Key
 kindToTyArgs DataObject {} = Just m_
 kindToTyArgs DataUnion {} = Just m_
 kindToTyArgs _ = Nothing
 
-toTHDefinitions :: Bool -> [TypeDefinition] -> Q [GQLTypeD]
+toTHDefinitions :: Bool -> [TypeDefinition ANY] -> Q [GQLTypeD]
 toTHDefinitions namespace lib = traverse renderTHType lib
   where
-    renderTHType :: TypeDefinition -> Q GQLTypeD
+    renderTHType :: TypeDefinition ANY -> Q GQLTypeD
     renderTHType x = generateType x
       where
         genArgsTypeName :: Key -> Key
@@ -92,7 +94,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
               | hasArguments fieldArgs = fieldArgs {argumentsTypename = Just $ genArgsTypeName fieldName}
               | otherwise = fieldArgs
         --------------------------------------------
-        generateType :: TypeDefinition -> Q GQLTypeD
+        generateType :: TypeDefinition ANY -> Q GQLTypeD
         generateType typeOriginal@TypeDefinition {typeName, typeContent, typeMeta} =
           genType
             typeContent
@@ -113,7 +115,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   }
               ]
             typeKindD = kindOf typeOriginal
-            genType :: TypeContent -> Q GQLTypeD
+            genType :: TypeContent TRUE ANY -> Q GQLTypeD
             genType (DataEnum tags) =
               pure
                 GQLTypeD

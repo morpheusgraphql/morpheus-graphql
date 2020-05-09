@@ -53,6 +53,8 @@ module Data.Morpheus.Types.Internal.AST.Base
     GQLError (..),
     GQLErrors,
     internalFingerprint,
+    TRUE,
+    FALSE,
   )
 where
 
@@ -65,6 +67,10 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
+
+type TRUE = 'True
+
+type FALSE = 'False
 
 type Key = Text
 

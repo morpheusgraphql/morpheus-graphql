@@ -21,6 +21,7 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    OUT,
     QUERY,
     ScalarValue (..),
     Schema (..),
@@ -48,7 +49,7 @@ resolveTypes ::
 resolveTypes lib = ResList <$> traverse (`render` lib) (allDataTypes lib)
 
 buildSchemaLinkType ::
-  Monad m => Maybe TypeDefinition -> ResModel QUERY e m
+  Monad m => Maybe (TypeDefinition OUT) -> ResModel QUERY e m
 buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing $ Just []
 buildSchemaLinkType Nothing = ResNull
 

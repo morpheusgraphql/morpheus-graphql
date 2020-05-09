@@ -447,10 +447,10 @@ runResolver ::
   Resolver o event m ValidValue ->
   Context ->
   ResponseStream event m ValidValue
-runResolver (ResolverQ resT) sel = cleanEvents $ (runReaderT $ runResolverState resT) sel
-runResolver (ResolverM resT) sel = mapEvent Publish $ (runReaderT $ runResolverState resT) sel
+runResolver (ResolverQ resT) sel = cleanEvents $ runReaderT (runResolverState resT) sel
+runResolver (ResolverM resT) sel = mapEvent Publish $ runReaderT (runResolverState resT) sel
 runResolver (ResolverS resT) sel = ResultT $ do
-  (readResValue :: Result (Channel event1) (ReaderT event (Resolver QUERY event m) ValidValue)) <- runResultT $ (runReaderT $ runResolverState resT) sel
+  readResValue <- runResultT $ runReaderT (runResolverState resT) sel
   pure $ case readResValue of
     Failure x -> Failure x
     Success {warnings, result, events = channels} -> do

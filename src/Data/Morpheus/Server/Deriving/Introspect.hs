@@ -51,16 +51,20 @@ import Data.Morpheus.Server.Types.Types
     Pair,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     DataFingerprint (..),
     DataUnion,
     FieldDefinition (..),
     FieldsDefinition (..),
+    IN,
     InputFieldsDefinition (..),
     Key,
     Message,
     Meta (..),
     Name,
+    OUT,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeRef (..),
@@ -68,6 +72,7 @@ import Data.Morpheus.Types.Internal.AST
     createAlias,
     createEnumValue,
     defineType,
+    toAny,
     toListField,
     toNullableField,
     unsafeFromFields,
@@ -233,7 +238,7 @@ introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
-  introspectRep :: proxy1 custom -> (proxy2 a, TypeScope, Name, DataFingerprint) -> (TypeContent, [TypeUpdater])
+  introspectRep :: proxy1 custom -> (proxy2 a, TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
 instance (TypeRep (Rep a), Generic a) => IntrospectRep 'False a where
   introspectRep _ (_, scope, name, fing) =
@@ -247,7 +252,7 @@ buildField proxy fieldArgs fieldName =
       ..
     }
 
-buildType :: GQLType a => TypeContent -> Proxy a -> TypeDefinition
+buildType :: GQLType a => TypeContent TRUE cat -> Proxy a -> TypeDefinition cat
 buildType typeContent proxy =
   TypeDefinition
     { typeName = __typeName proxy,
@@ -263,7 +268,7 @@ buildType typeContent proxy =
 
 updateLib ::
   GQLType a =>
-  (Proxy a -> TypeDefinition) ->
+  (Proxy a -> TypeDefinition ANY) ->
   [TypeUpdater] ->
   Proxy a ->
   TypeUpdater
@@ -327,7 +332,7 @@ derivingDataContent ::
   Proxy a ->
   (Name, DataFingerprint) ->
   TypeScope ->
-  (TypeContent, [TypeUpdater])
+  (TypeContent TRUE ANY, [TypeUpdater])
 derivingDataContent _ (baseName, baseFingerprint) scope =
   builder $ typeRep $ Proxy @(Rep a)
   where
@@ -335,40 +340,44 @@ derivingDataContent _ (baseName, baseFingerprint) scope =
     builder cons = genericUnion scope cons
       where
         genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
-        genericUnion OutputType =
-          buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
+        genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
 buildInputUnion ::
-  (Name, DataFingerprint) -> [ConsRep] -> (TypeContent, [TypeUpdater])
+  (Name, DataFingerprint) -> [ConsRep] -> (TypeContent TRUE ANY, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons =
   datatype
     (analyseRep baseName cons)
   where
+    datatype :: ResRep -> (TypeContent TRUE ANY, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
       (DataEnum (map createEnumValue enumCons), types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (DataInputUnion typeMembers, types <> unionTypes)
       where
+        typeMembers :: [(Name, Bool)]
         typeMembers =
           map (,True) (unionRef <> unionMembers) <> map (,False) enumCons
         (unionMembers, unionTypes) =
-          buildUnions (DataInputObject . toInput) baseFingerprint unionRecordRep
+          buildUnions wrapInputObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
+    wrapInputObject :: (FieldsDefinition -> TypeContent TRUE IN)
+    wrapInputObject = DataInputObject . toInput
 
 buildUnionType ::
   (Name, DataFingerprint) ->
-  (DataUnion -> TypeContent) ->
-  (FieldsDefinition -> TypeContent) ->
+  (DataUnion -> TypeContent TRUE OUT) ->
+  (FieldsDefinition -> TypeContent TRUE OUT) ->
   [ConsRep] ->
-  (TypeContent, [TypeUpdater])
+  (TypeContent TRUE ANY, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
   datatype
     (analyseRep baseName cons)
   where
+    datatype :: ResRep -> (TypeContent TRUE ANY, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
       (DataEnum (map createEnumValue enumCons), types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
-      (wrapUnion typeMembers, types <> enumTypes <> unionTypes)
+      (toAny $ wrapUnion typeMembers, types <> enumTypes <> unionTypes)
       where
         typeMembers = unionRef <> enumMembers <> unionMembers
         (enumMembers, enumTypes) =
@@ -377,7 +386,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
           buildUnions wrapObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
 
-buildObject :: TypeScope -> [FieldRep] -> (TypeContent, [TypeUpdater])
+buildObject :: TypeScope -> [FieldRep] -> (TypeContent TRUE ANY, [TypeUpdater])
 buildObject isOutput consFields = (wrapWith fields, types)
   where
     (fields, types) = buildDataObject consFields
@@ -392,7 +401,7 @@ buildDataObject consFields = (fields, types)
     types = map fieldTypeUpdater consFields
 
 buildUnions ::
-  (FieldsDefinition -> TypeContent) ->
+  (FieldsDefinition -> TypeContent TRUE cat) ->
   DataFingerprint ->
   [ConsRep] ->
   ([Name], [TypeUpdater])
@@ -405,7 +414,7 @@ buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
     members = map consName cons
 
 buildUnionRecord ::
-  (FieldsDefinition -> TypeContent) -> DataFingerprint -> ConsRep -> TypeDefinition
+  (FieldsDefinition -> TypeContent TRUE cat) -> DataFingerprint -> ConsRep -> TypeDefinition cat
 buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
   TypeDefinition
     { typeName = consName,
@@ -415,7 +424,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
     }
 
 buildUnionEnum ::
-  (FieldsDefinition -> TypeContent) ->
+  (FieldsDefinition -> TypeContent TRUE OUT) ->
   Name ->
   DataFingerprint ->
   [Name] ->
@@ -452,7 +461,7 @@ buildEnum typeName typeFingerprint tags =
         }
 
 buildEnumObject ::
-  (FieldsDefinition -> TypeContent) ->
+  (FieldsDefinition -> TypeContent TRUE OUT) ->
   Name ->
   DataFingerprint ->
   Name ->

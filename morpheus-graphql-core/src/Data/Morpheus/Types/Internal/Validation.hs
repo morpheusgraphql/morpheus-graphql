@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -52,11 +53,14 @@ import Control.Monad.Trans.Reader
 -- MORPHEUS
 
 import Data.Morpheus.Types.Internal.AST
-  ( FieldDefinition (..),
+  ( ANY,
+    FieldDefinition (..),
     FieldsDefinition (..),
     Fragments,
+    IN,
     Message,
     Name,
+    OUT,
     Object,
     Position,
     Ref (..),
@@ -67,8 +71,8 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     __inputname,
     entryValue,
+    fromAny,
     isFieldNullable,
-    isInputDataType,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -127,11 +131,11 @@ constraint ::
   KindViolation a inp =>
   Constraint (a :: Target) ->
   inp ->
-  TypeDefinition ->
+  TypeDefinition ANY ->
   Validator ctx (Resolution a)
 constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields}, typeName} =
   pure (typeName, objectFields)
-constraint INPUT _ x | isInputDataType x = pure x
+constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny x)
 constraint target ctx _ = failure [kindViolation target ctx]
 
 selectRequired ::
@@ -194,14 +198,22 @@ selectKnown selector lib =
 
 askFieldType ::
   FieldDefinition ->
-  SelectionValidator TypeDefinition
+  SelectionValidator (TypeDefinition OUT)
 askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   do
     schema <- askSchema
-    selectBy
-      [internalError field]
-      typeConName
-      schema
+    anyType <-
+      selectBy
+        [internalError field]
+        typeConName
+        schema
+    case fromAny anyType of
+      Just x -> pure x
+      Nothing ->
+        failure $
+          "Type \"" <> typeName anyType
+            <> "\" referenced by OBJECT \""
+            <> "\" must be an OUTPUT_TYPE."
 
 askTypeMember ::
   Name ->
@@ -219,6 +231,7 @@ askTypeMember name =
           <> scopeType
           <> "\" can't found in Schema."
     --------------------------------------
+    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (Name, FieldsDefinition)
     constraintOBJECT TypeDefinition {typeName, typeContent} = con typeContent
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
@@ -232,7 +245,7 @@ askTypeMember name =
 
 askInputFieldType ::
   FieldDefinition ->
-  InputValidator TypeDefinition
+  InputValidator (TypeDefinition IN)
 askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}} =
   askSchema
     >>= selectBy
@@ -240,9 +253,10 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
       typeConName
     >>= constraintINPUT
   where
-    constraintINPUT x
-      | isInputDataType x = pure x
-      | otherwise =
+    constraintINPUT :: TypeDefinition ANY -> InputValidator (TypeDefinition IN)
+    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN)) of
+      Just inputType -> pure inputType
+      Nothing ->
         failure $
           "Type \"" <> typeName x
             <> "\" referenced by field \""
@@ -251,7 +265,7 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
 
 askInputMember ::
   Name ->
-  InputValidator TypeDefinition
+  InputValidator (TypeDefinition IN)
 askInputMember name =
   askSchema
     >>= selectOr notFound pure name
@@ -263,9 +277,11 @@ askInputMember name =
       scopeType <- askScopeTypeName
       failure $ typeInfo name <> scopeType <> "\" can't found in Schema."
     --------------------------------------
-    constraintINPUT_OBJECT tyDef@TypeDefinition {typeName, typeContent} = con typeContent
+    constraintINPUT_OBJECT :: TypeDefinition ANY -> InputValidator (TypeDefinition IN)
+    constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
       where
-        con DataInputObject {} = pure tyDef
+        con :: Maybe (TypeContent a IN) -> InputValidator (TypeDefinition IN)
+        con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
           scopeType <- askScopeTypeName
           failure $ typeInfo typeName <> "\"" <> scopeType <> "\" must be an INPUT_OBJECT."

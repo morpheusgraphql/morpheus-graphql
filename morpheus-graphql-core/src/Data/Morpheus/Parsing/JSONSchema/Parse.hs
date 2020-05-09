@@ -27,7 +27,8 @@ import qualified Data.Morpheus.Types.Internal.AST as AST
   ( Schema,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     DataTypeWrapper (..),
     FieldDefinition,
     TypeContent (..),
@@ -40,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     createType,
     createUnionType,
     schemaFromTypeDefinitions,
+    toAny,
     toHSWrappers,
   )
 import Data.Morpheus.Types.Internal.Operation
@@ -67,7 +69,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
 class ParseJSONSchema a b where
   parse :: a -> Eventless b
 
-instance ParseJSONSchema Type [TypeDefinition] where
+instance ParseJSONSchema Type [TypeDefinition ANY] where
   parse Type {name = Just typeName, kind = SCALAR} =
     pure [createScalarType typeName]
   parse Type {name = Just typeName, kind = ENUM, enumValues = Just enums} =
@@ -75,7 +77,7 @@ instance ParseJSONSchema Type [TypeDefinition] where
   parse Type {name = Just typeName, kind = UNION, possibleTypes = Just unions} =
     case traverse name unions of
       Nothing -> internalError "ERROR: GQL ERROR"
-      Just uni -> pure [createUnionType typeName uni]
+      Just uni -> pure [toAny $ createUnionType typeName uni]
   parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
     do
       (fields :: [FieldDefinition]) <- traverse parse iFields

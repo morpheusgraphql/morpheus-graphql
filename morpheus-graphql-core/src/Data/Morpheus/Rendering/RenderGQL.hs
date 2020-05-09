@@ -48,7 +48,7 @@ instance RenderGQL Schema where
     where
       visibleTypes = filter (not . isDefaultTypeName . typeName) (allDataTypes schema)
 
-instance RenderGQL TypeDefinition where
+instance RenderGQL (TypeDefinition a) where
   render TypeDefinition {typeName, typeContent} = __render typeContent
     where
       __render DataInterface {interfaceFields} = "interface " <> typeName <> render interfaceFields
