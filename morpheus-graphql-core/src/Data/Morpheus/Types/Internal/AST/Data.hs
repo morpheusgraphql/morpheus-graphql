@@ -227,9 +227,9 @@ data Schema = Schema
   }
   deriving (Show)
 
-type TypeLib = HashMap Key AnyTypeDefinition
+type TypeLib = HashMap Key (TypeDefinition ANY)
 
-instance Selectable Schema AnyTypeDefinition where
+instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 initTypeLib :: TypeDefinition 'Out -> Schema
@@ -250,7 +250,7 @@ typeRegister Schema {types, query, mutation, subscription} =
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
-schemaFromTypeDefinitions :: Failure Message m => [AnyTypeDefinition] -> m Schema
+schemaFromTypeDefinitions :: Failure Message m => [TypeDefinition ANY] -> m Schema
 schemaFromTypeDefinitions types = case popByKey "Query" types of
   (Nothing, _) -> failure ("INTERNAL: Query Not Defined" :: Message)
   (Just query, lib1) -> do
@@ -268,7 +268,7 @@ schemaFromTypeDefinitions types = case popByKey "Query" types of
 --   EnumTypeDefinition
 --   InputObjectTypeDefinition
 
-data TypeDefinition (a :: TypeDirection) = TypeDefinition
+data TypeDefinition (a :: TypeCategory) = TypeDefinition
   { typeName :: Key,
     typeFingerprint :: DataFingerprint,
     typeMeta :: Maybe Meta,
@@ -276,9 +276,7 @@ data TypeDefinition (a :: TypeDirection) = TypeDefinition
   }
   deriving (Show, Lift)
 
-type AnyTypeDefinition = TypeDefinition ANY
-
-data TypeDirection = In | Out | Any
+data TypeCategory = In | Out | Any
 
 type IN = 'In
 
@@ -287,7 +285,7 @@ type OUT = 'Out
 type ANY = 'Any
 
 class ToAny a where
-  toAny :: a (k :: TypeDirection) -> a ANY
+  toAny :: a (k :: TypeCategory) -> a ANY
 
 instance ToAny TypeDefinition where
   toAny TypeDefinition {typeContent, ..} = TypeDefinition {typeContent = toAny typeContent, ..}
@@ -301,7 +299,7 @@ instance ToAny (TypeContent TRUE) where
   toAny DataUnion {..} = DataUnion {..}
   toAny DataInterface {..} = DataInterface {..}
 
-class FromAny a (k :: TypeDirection) where
+class FromAny a (k :: TypeCategory) where
   fromAny :: a ANY -> Maybe (a k)
 
 instance (FromAny (TypeContent TRUE) a) => FromAny TypeDefinition a where
@@ -324,7 +322,7 @@ instance FromAny (TypeContent TRUE) OUT where
   fromAny DataInterface {..} = Just DataInterface {..}
   fromAny _ = Nothing
 
-class SelectType (c :: TypeDirection) (a :: TypeDirection) where
+class SelectType (c :: TypeCategory) (a :: TypeCategory) where
   type IsSelected c a :: Bool
 
 instance SelectType ANY a where
@@ -336,7 +334,7 @@ instance SelectType OUT OUT where
 instance SelectType IN IN where
   type IsSelected IN IN = TRUE
 
-data TypeContent (b :: Bool) (a :: TypeDirection) where
+data TypeContent (b :: Bool) (a :: TypeCategory) where
   DataScalar ::
     { dataScalar :: ScalarDefinition
     } ->
@@ -425,7 +423,7 @@ fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ANY)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
-lookupDataType :: Key -> Schema -> Maybe AnyTypeDefinition
+lookupDataType :: Key -> Schema -> Maybe (TypeDefinition ANY)
 lookupDataType name = HM.lookup name . typeRegister
 
 isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
@@ -477,7 +475,7 @@ lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
 -- lookups and removes TypeDefinition from hashmap
-popByKey :: Name -> [AnyTypeDefinition] -> (Maybe (TypeDefinition OUT), [AnyTypeDefinition])
+popByKey :: Name -> [TypeDefinition ANY] -> (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
 popByKey name types = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     (fromAny dt, filter ((/= name) . typeName) types)
@@ -703,7 +701,7 @@ data GQLTypeD = GQLTypeD
   { typeD :: TypeD,
     typeKindD :: DataTypeKind,
     typeArgD :: [TypeD],
-    typeOriginal :: AnyTypeDefinition
+    typeOriginal :: TypeDefinition ANY
   }
   deriving (Show)
 
