@@ -282,6 +282,7 @@ type ALL = 'All
 
 class SelectType (c :: TypeDirection) (a :: TypeDirection) where
   type IsSelected c a :: Bool
+  convert :: f c -> f a
 
 instance SelectType ALL a where
   type IsSelected ALL a = TRUE
@@ -294,6 +295,9 @@ instance SelectType OUT IN where
 
 instance SelectType IN IN where
   type IsSelected IN IN = TRUE
+
+instance SelectType a ALL where
+  type IsSelected a All = TRUE
 
 data TypeContent (a :: TypeDirection) (b :: Bool) where
   DataScalar ::
@@ -381,7 +385,7 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 -- __kind DataInterface   {} = KindInterface
 
 fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ALL)]
-fromOperation (Just datatype) = [(typeName datatype, datatype)]
+fromOperation (Just datatype) = [(typeName datatype, convert datatype)]
 fromOperation Nothing = []
 
 lookupDataType :: Key -> Schema -> Maybe AnyTypeDefinition
@@ -405,7 +409,9 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
 defineType datatype lib =
   lib {types = HM.insert (typeName datatype) datatype (types lib)}
 
-insertType :: TypeDefinition a -> TypeUpdater
+insertType ::
+  TypeDefinition ALL ->
+  TypeUpdater
 insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName lib of
   Nothing -> resolveUpdates (defineType datatype lib) []
   Just fingerprint
@@ -437,7 +443,7 @@ lookupWith f key = find ((== key) . f)
 popByKey :: Name -> [AnyTypeDefinition] -> (Maybe (TypeDefinition OUT), [AnyTypeDefinition])
 popByKey name types = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
-    (Just dt, filter ((/= name) . typeName) types)
+    (Just (convert dt), filter ((/= name) . typeName) types)
   _ -> (Nothing, types)
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
