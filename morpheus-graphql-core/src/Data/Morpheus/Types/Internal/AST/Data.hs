@@ -280,7 +280,7 @@ type OUT = 'Out
 
 type ALL = 'All
 
-class SelectType (c :: TypeDirection) a where
+class SelectType (c :: TypeDirection) (a :: TypeDirection) where
   type IsSelected c a :: Bool
 
 instance SelectType ALL a where
