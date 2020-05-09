@@ -45,6 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition (..),
     MUTATION,
     Name,
+    OUT,
     QUERY,
     SUBSCRIPTION,
     Schema (..),
@@ -151,11 +152,11 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
               OutputType,
               Proxy @(subscription (Resolver SUBSCRIPTION event m))
             )
-    maybeOperator :: FieldsDefinition -> Name -> Maybe TypeDefinition
+    maybeOperator :: FieldsDefinition -> Name -> Maybe (TypeDefinition OUT)
     maybeOperator (FieldsDefinition x) | null x = const Nothing
     maybeOperator fields = Just . operatorType fields
     -------------------------------------------------
-    operatorType :: FieldsDefinition -> Name -> TypeDefinition
+    operatorType :: FieldsDefinition -> Name -> TypeDefinition OUT
     operatorType fields typeName =
       TypeDefinition
         { typeContent = DataObject [] fields,
