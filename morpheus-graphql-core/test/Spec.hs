@@ -8,13 +8,14 @@ module Main
   )
 where
 
-import Data.Aeson (encode)
+import qualified Data.Aeson as A
+import Data.Aeson (decode, encode)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO (GQLRequest (..))
-import Data.Morpheus.Types.Internal.AST (Name, ScalarValue (..), Schema, VALID, Value (..), replaceValue)
+import Data.Morpheus.Types.Internal.AST (Name, ScalarValue (..), Schema, VALID, Value (..))
 import Data.Morpheus.Types.Internal.Operation (fromList)
 import Data.Morpheus.Types.Internal.Resolving (ObjectResModel (..), ResModel (..), ResponseStream, Result (..), ResultT (..), RootResModel (..))
 import Data.Semigroup ((<>))
@@ -109,12 +110,12 @@ simpleTest request = do
   schema <- getSchema
   runApi schema resolver request
 
-expectedResponse :: Name -> IO (Value VALID)
-expectedResponse = fmap replaceValue . getResponseBody
+expectedResponse :: Name -> IO A.Value
+expectedResponse = getResponseBody
 
-assertion :: Value VALID -> ResponseStream e Identity (Value VALID) -> IO ()
+assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
 assertion expected (ResultT (Identity Success {result}))
-  | expected == result = return ()
+  | Just expected == decode (encode result) = return ()
   | otherwise =
     assertFailure $
       LB.unpack ("expected: \n " <> encode expected <> " \n but got: \n " <> encode result)

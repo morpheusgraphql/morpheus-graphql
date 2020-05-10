@@ -89,6 +89,7 @@ kindName KindInputObject = ''INPUT
 kindName KindList = ''WRAPPER
 kindName KindNonNull = ''WRAPPER
 kindName KindInputUnion = ''INPUT
+kindName KindInterface = ''OUTPUT
 
 toHSTypename :: Key -> Key
 toHSTypename = pack . hsTypename . unpack
