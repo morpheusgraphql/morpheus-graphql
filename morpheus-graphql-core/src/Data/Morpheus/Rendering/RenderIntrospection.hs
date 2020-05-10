@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -27,6 +28,8 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeWrapper (..),
     DataUnion,
     FieldDefinition (..),
+    FieldsDefinition,
+    Message,
     Meta (..),
     Name,
     QUERY,
@@ -39,17 +42,17 @@ import Data.Morpheus.Types.Internal.AST
     createInputUnionFields,
     fieldVisibility,
     kindOf,
-    lookupDataType,
     lookupDeprecated,
     lookupDeprecatedReason,
     toGQLWrapper,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Listable (..),
+    failure,
+    selectBy,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Failure (..),
-    ObjectResModel (..),
+  ( ObjectResModel (..),
     ResModel (..),
     Resolver,
   )
@@ -77,13 +80,41 @@ instance RenderSchema (TypeDefinition a) where
       __render (DataInputObject fields) = \lib ->
         createInputObject typeName typeMeta
           <$> traverse (`renderinputValue` lib) (toList fields)
-      __render DataObject {objectFields} = \lib ->
-        createObjectType typeName typeMeta
-          <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ toList objectFields))
-      __render (DataUnion union) =
-        constRes $ typeFromUnion (typeName, typeMeta, union)
+      __render DataObject {objectImplements, objectFields} =
+        pure . createObjectType typeName typeMeta objectImplements objectFields
+      __render (DataUnion union) = \schema ->
+        pure $ typeFromUnion schema (typeName, typeMeta, union)
       __render (DataInputUnion members) =
         renderInputUnion (typeName, typeMeta, members)
+      __render (DataInterface fields) =
+        renderInterface typeName Nothing fields
+
+renderFields :: Monad m => Schema -> FieldsDefinition -> Resolver QUERY e m [ResModel QUERY e m]
+renderFields schema = traverse (`render` schema) . filter fieldVisibility . toList
+
+renderInterface ::
+  Monad m => Text -> Maybe Meta -> FieldsDefinition -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+renderInterface name meta fields schema =
+  pure $
+    object
+      "__Type"
+      [ renderKind INTERFACE,
+        renderName name,
+        description meta,
+        ("fields", ResList <$> renderFields schema fields),
+        ("possibleTypes", ResList <$> interfacePossibleTypes schema name)
+      ]
+
+interfacePossibleTypes ::
+  (Monad m) =>
+  Schema ->
+  Name ->
+  Resolver QUERY e m [ResModel QUERY e m]
+interfacePossibleTypes schema interfaceName = sequence $ concatMap implements (toList schema)
+  where
+    implements typeDef@TypeDefinition {typeContent = DataObject {objectImplements}, ..}
+      | interfaceName `elem` objectImplements = [render typeDef schema]
+    implements _ = []
 
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
 createEnumValue DataEnumValue {enumName, enumMeta} =
@@ -131,11 +162,10 @@ renderTypeKind KindEnum = ENUM
 renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList = LIST
 renderTypeKind KindNonNull = NON_NULL
+renderTypeKind KindInterface = INTERFACE
 
 lookupKind :: (Monad m) => Text -> Result e m DataTypeKind
-lookupKind name lib = case lookupDataType name lib of
-  Nothing -> failure $ "Kind Not Found: " <> name
-  Just value -> pure (kindOf value)
+lookupKind name schema = kindOf <$> selectBy ("Kind Not Found: " <> name) name schema
 
 renderinputValue ::
   (Monad m) =>
@@ -179,27 +209,44 @@ createLeafType kind name meta enums =
       ("enumValues", optList enums)
     ]
 
-typeFromUnion :: Monad m => (Text, Maybe Meta, DataUnion) -> ResModel QUERY e m
-typeFromUnion (name, typeMeta, typeContent) =
+typeFromUnion :: Monad m => Schema -> (Text, Maybe Meta, DataUnion) -> ResModel QUERY e m
+typeFromUnion schema (name, typeMeta, typeContent) =
   object
     "__Type"
     [ renderKind UNION,
       renderName name,
       description typeMeta,
-      ("possibleTypes", pure $ ResList (map (\x -> createObjectType x Nothing $ Just []) typeContent))
+      ("possibleTypes", ResList <$> traverse (unionPossibleType schema) typeContent)
     ]
 
+unionPossibleType :: Monad m => Schema -> Name -> Resolver QUERY e m (ResModel QUERY e m)
+unionPossibleType schema name =
+  selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> name <> "\"") name schema
+    >>= (`render` schema)
+
 createObjectType ::
-  Monad m => Text -> Maybe Meta -> Maybe [ResModel QUERY e m] -> ResModel QUERY e m
-createObjectType name meta fields =
+  Monad m => Text -> Maybe Meta -> [Name] -> FieldsDefinition -> Schema -> ResModel QUERY e m
+createObjectType name meta interfaces fields schema =
   object
     "__Type"
     [ renderKind OBJECT,
       renderName name,
       description meta,
-      ("fields", optList fields),
-      ("interfaces", pure $ ResList [])
+      ("fields", ResList <$> renderFields schema fields),
+      ("interfaces", ResList <$> traverse (implementedInterface schema) interfaces) -- TODO: list of all implemented interfaces
     ]
+
+implementedInterface ::
+  (Monad m) =>
+  Schema ->
+  Name ->
+  Resolver QUERY e m (ResModel QUERY e m)
+implementedInterface schema name =
+  selectBy ("INTERNAL: cant found  Interface \"" <> name <> "\"") name schema
+    >>= __render
+  where
+    __render typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef schema
+    __render _ = failure ("Type \"" <> name <> "\" must be an Interface" :: Message)
 
 optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel QUERY e m)
 optList = pure . maybe ResNull ResList

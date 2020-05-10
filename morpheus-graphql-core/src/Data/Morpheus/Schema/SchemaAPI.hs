@@ -27,12 +27,12 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TypeDefinition (..),
     Value (..),
-    allDataTypes,
-    lookupDataType,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Merge (..),
+    empty,
     selectOr,
+    toList,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ObjectResModel (..),
@@ -46,19 +46,19 @@ import Data.Text (Text)
 
 resolveTypes ::
   Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
-resolveTypes lib = ResList <$> traverse (`render` lib) (allDataTypes lib)
+resolveTypes schema = ResList <$> traverse (`render` schema) (toList schema)
 
 buildSchemaLinkType ::
-  Monad m => Maybe (TypeDefinition OUT) -> ResModel QUERY e m
-buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing $ Just []
-buildSchemaLinkType Nothing = ResNull
+  Monad m => Maybe (TypeDefinition OUT) -> Schema -> ResModel QUERY e m
+buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] empty
+buildSchemaLinkType Nothing = const ResNull
 
 findType ::
   Monad m =>
   Text ->
   Schema ->
   Resolver QUERY e m (ResModel QUERY e m)
-findType name lib = maybe (pure ResNull) (`render` lib) (lookupDataType name lib)
+findType name schema = selectOr (pure ResNull) (`render` schema) name schema
 
 schemaResolver ::
   Monad m =>
@@ -71,9 +71,9 @@ schemaResolver schema@Schema {query, mutation, subscription} =
           { __typename = "__Schema",
             objectFields =
               [ ("types", resolveTypes schema),
-                ("queryType", pure $ buildSchemaLinkType $ Just query),
-                ("mutationType", pure $ buildSchemaLinkType mutation),
-                ("subscriptionType", pure $ buildSchemaLinkType subscription),
+                ("queryType", pure $ buildSchemaLinkType (Just query) schema),
+                ("mutationType", pure $ buildSchemaLinkType mutation schema),
+                ("subscriptionType", pure $ buildSchemaLinkType subscription schema),
                 ("directives", pure $ ResList [])
               ]
           }

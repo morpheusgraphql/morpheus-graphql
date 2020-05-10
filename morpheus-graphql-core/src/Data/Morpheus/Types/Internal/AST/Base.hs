@@ -170,6 +170,7 @@ data DataTypeKind
   | KindList
   | KindNonNull
   | KindInputUnion
+  | KindInterface
   deriving (Eq, Show, Lift)
 
 isSubscription :: DataTypeKind -> Bool

@@ -46,7 +46,6 @@ validatePartialDocument lib = catMaybes <$> traverse validateType lib
       case concatMap (mustBeSubset objectFields) interface of
         [] -> pure (Just dt)
         errors -> failure $ partialImplements typeName errors
-    validateType TypeDefinition {typeContent = DataInterface {}} = pure Nothing
     validateType x = pure (Just x)
     mustBeSubset ::
       FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]

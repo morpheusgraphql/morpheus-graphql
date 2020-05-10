@@ -40,7 +40,6 @@ import Data.Morpheus.Types.Internal.AST
     createScalarType,
     createType,
     createUnionType,
-    schemaFromTypeDefinitions,
     toAny,
     toHSWrappers,
   )
@@ -60,7 +59,7 @@ decodeIntrospection :: ByteString -> Eventless AST.Schema
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ pack errors
   Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
-    traverse parse types >>= schemaFromTypeDefinitions . concat
+    traverse parse types >>= fromList . concat
   Right res -> internalError (pack $ show res)
   where
     jsonSchema :: Either String (JSONResponse Introspection)

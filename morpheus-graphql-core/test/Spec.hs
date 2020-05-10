@@ -8,11 +8,15 @@ module Main
   )
 where
 
+import qualified Data.Aeson as A
+import Data.Aeson (decode, encode)
+import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO (GQLRequest (..))
-import Data.Morpheus.Types.Internal.AST (Name, ScalarValue (..), Schema, VALID, Value (..), replaceValue, schemaFromTypeDefinitions)
+import Data.Morpheus.Types.Internal.AST (Name, ScalarValue (..), Schema, VALID, Value (..))
+import Data.Morpheus.Types.Internal.Operation (fromList)
 import Data.Morpheus.Types.Internal.Resolving (ObjectResModel (..), ResModel (..), ResponseStream, Result (..), ResultT (..), RootResModel (..))
 import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as LT (toStrict)
@@ -21,16 +25,28 @@ import Lib (getGQLBody, getResponseBody, maybeVariables)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
 
-getSchema :: Applicative m => ResponseStream e m Schema
+getSchema :: Monad m => ResponseStream e m Schema
 getSchema =
-  schemaFromTypeDefinitions
+  fromList
     [dsl|
   
   type Query {
     deity(name: String): Deity!
   }
 
-  type Deity {
+  interface Character {
+    name : String
+  }
+
+  interface Supernatural {
+    power: [String!]!
+  }
+
+  type Hero implements Character {
+    name: String
+  }
+
+  type Deity implements Character Supernatural {
     name: String!
     power: [String!]!
   }
@@ -72,33 +88,37 @@ resolver =
       subscription = pure ResNull
     }
 
+main :: IO ()
+main =
+  defaultMain
+    $ testGroup
+      "core tests"
+    $ map
+      (uncurry basicTest)
+      [ ("basic Test", "simpleQuery"),
+        ("test interface", "interface")
+      ]
+
+basicTest :: String -> Name -> TestTree
+basicTest description path = testCase description $ do
+  actual <- simpleTest <$> getRequest path
+  expected <- expectedResponse path
+  assertion expected actual
+
 simpleTest :: GQLRequest -> ResponseStream e Identity (Value VALID)
 simpleTest request = do
   schema <- getSchema
   runApi schema resolver request
 
-main :: IO ()
-main =
-  do
-    request <- getRequest "simpleQuery"
-    response <- expectedResponse "simpleQuery"
-    defaultMain $
-      testGroup
-        "core tests"
-        [basicTest response (simpleTest request)]
+expectedResponse :: Name -> IO A.Value
+expectedResponse = getResponseBody
 
-basicTest :: Value VALID -> ResponseStream e Identity (Value VALID) -> TestTree
-basicTest expected = testCase "basic test" . assertion expected
-
-expectedResponse :: Name -> IO (Value VALID)
-expectedResponse = fmap replaceValue . getResponseBody
-
-assertion :: Value VALID -> ResponseStream e Identity (Value VALID) -> IO ()
+assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
 assertion expected (ResultT (Identity Success {result}))
-  | expected == result = return ()
+  | Just expected == decode (encode result) = return ()
   | otherwise =
     assertFailure $
-      "expected: \n " <> show expected <> " \n but got: \n " <> show result
+      LB.unpack ("expected: \n " <> encode expected <> " \n but got: \n " <> encode result)
 assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 
 getRequest :: Name -> IO GQLRequest

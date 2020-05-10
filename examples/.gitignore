@@ -5,3 +5,4 @@ examples.cabal
 examples.iml
 docs/vendor
 out/
+dist-newstyle/

@@ -20,7 +20,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     VALID,
     VALIDATION_MODE (..),
-    schemaFromTypeDefinitions,
+  )
+import Data.Morpheus.Types.Internal.Operation
+  ( fromList,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -36,7 +38,7 @@ import Data.Text (Text)
 parseTypeSystemDefinition ::
   Text -> Eventless Schema
 parseTypeSystemDefinition =
-  parseSchema >=> schemaFromTypeDefinitions
+  parseSchema >=> fromList
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition ANY]

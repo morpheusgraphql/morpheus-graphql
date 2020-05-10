@@ -197,7 +197,7 @@ ignoredTokens =
 
 -- COMPLEX
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (char '&' *> spaceAndComments)
+sepByAnd entry = entry `sepBy` (optional (char '&') *> spaceAndComments)
 
 -----------------------------
 collection :: Parser a -> Parser [a]
