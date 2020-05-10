@@ -23,7 +23,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeRef (..),
     TypeWrapper (..),
-    allDataTypes,
     convertToJSONName,
     createInputUnionFields,
     fieldVisibility,
@@ -46,7 +45,7 @@ class RenderGQL a where
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes
     where
-      visibleTypes = filter (not . isDefaultTypeName . typeName) (allDataTypes schema)
+      visibleTypes = filter (not . isDefaultTypeName . typeName) (toList schema)
 
 instance RenderGQL (TypeDefinition a) where
   render TypeDefinition {typeName, typeContent} = __render typeContent

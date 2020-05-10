@@ -41,10 +41,8 @@ module Data.Morpheus.Types.Internal.AST.Data
     ClientType (..),
     DataInputUnion,
     Argument (..),
-    allDataTypes,
     createField,
     createArgument,
-    schemaFromTypeDefinitions,
     createEnumType,
     createScalarType,
     createType,
@@ -63,7 +61,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     toListField,
     toHSFieldDefinition,
     isEntNode,
-    lookupDataType,
     lookupDeprecated,
     lookupDeprecatedReason,
     lookupWith,
@@ -82,12 +79,13 @@ where
 
 import Data.HashMap.Lazy
   ( HashMap,
-    elems,
     union,
   )
 import qualified Data.HashMap.Lazy as HM
 import Data.List (find)
 -- MORPHEUS
+
+import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -98,7 +96,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     Description,
     GQLError (..),
     Key,
-    Message,
     Name,
     Position,
     Stage,
@@ -123,7 +120,6 @@ import Data.Morpheus.Types.Internal.AST.Value
 import Data.Morpheus.Types.Internal.Operation
   ( Empty (..),
     KeyOf (..),
-    Listable (..),
     Listable (..),
     Merge (..),
     Selectable (..),
@@ -231,6 +227,15 @@ type TypeLib = HashMap Key (TypeDefinition ANY)
 instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
+instance Listable Schema (TypeDefinition ANY) where
+  toAssoc = HM.toList . typeRegister
+  fromAssoc types = case popByKey "Query" (map snd types) of
+    (Nothing, _) -> failure (globalErrorMessage "INTERNAL: Query Not Defined")
+    (Just query, lib1) -> do
+      let (mutation, lib2) = popByKey "Mutation" lib1
+      let (subscription, lib3) = popByKey "Subscription" lib2
+      pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
+
 initTypeLib :: TypeDefinition 'Out -> Schema
 initTypeLib query =
   Schema
@@ -240,22 +245,17 @@ initTypeLib query =
       subscription = Nothing
     }
 
-allDataTypes :: Schema -> [TypeDefinition ANY]
-allDataTypes = elems . typeRegister
-
 typeRegister :: Schema -> TypeLib
 typeRegister Schema {types, query, mutation, subscription} =
   types
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
-schemaFromTypeDefinitions :: Failure Message m => [TypeDefinition ANY] -> m Schema
-schemaFromTypeDefinitions types = case popByKey "Query" types of
-  (Nothing, _) -> failure ("INTERNAL: Query Not Defined" :: Message)
-  (Just query, lib1) -> do
-    let (mutation, lib2) = popByKey "Mutation" lib1
-    let (subscription, lib3) = popByKey "Subscription" lib2
-    pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
+lookupDataType :: Key -> Schema -> Maybe (TypeDefinition ANY)
+lookupDataType name = HM.lookup name . typeRegister
+
+isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
+isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
 -------------------------------------------------------------------------
@@ -274,6 +274,9 @@ data TypeDefinition (a :: TypeCategory) = TypeDefinition
     typeContent :: TypeContent TRUE a
   }
   deriving (Show, Lift)
+
+instance KeyOf (TypeDefinition a) where
+  keyOf = typeName
 
 data TypeCategory = In | Out | Any
 
@@ -410,12 +413,6 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ANY)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
-
-lookupDataType :: Key -> Schema -> Maybe (TypeDefinition ANY)
-lookupDataType name = HM.lookup name . typeRegister
-
-isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
-isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
 defineType :: TypeDefinition cat -> Schema -> Schema
 defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =

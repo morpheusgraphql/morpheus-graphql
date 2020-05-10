@@ -27,12 +27,11 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TypeDefinition (..),
     Value (..),
-    allDataTypes,
-    lookupDataType,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Merge (..),
     selectOr,
+    toList,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ObjectResModel (..),
@@ -46,7 +45,7 @@ import Data.Text (Text)
 
 resolveTypes ::
   Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
-resolveTypes lib = ResList <$> traverse (`render` lib) (allDataTypes lib)
+resolveTypes schema = ResList <$> traverse (`render` schema) (toList schema)
 
 buildSchemaLinkType ::
   Monad m => Maybe (TypeDefinition OUT) -> ResModel QUERY e m
@@ -58,7 +57,7 @@ findType ::
   Text ->
   Schema ->
   Resolver QUERY e m (ResModel QUERY e m)
-findType name lib = maybe (pure ResNull) (`render` lib) (lookupDataType name lib)
+findType name schema = selectOr (pure ResNull) (`render` schema) name schema
 
 schemaResolver ::
   Monad m =>

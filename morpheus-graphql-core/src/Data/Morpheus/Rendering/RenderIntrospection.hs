@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -40,13 +41,14 @@ import Data.Morpheus.Types.Internal.AST
     createInputUnionFields,
     fieldVisibility,
     kindOf,
-    lookupDataType,
     lookupDeprecated,
     lookupDeprecatedReason,
     toGQLWrapper,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Listable (..),
+    selectBy,
+    selectOr,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
@@ -94,7 +96,7 @@ renderFields schema = traverse (`render` schema) . filter fieldVisibility . toLi
 
 renderInterface ::
   Monad m => Text -> Maybe Meta -> [ResModel QUERY e m] -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
-renderInterface name meta fields _ =
+renderInterface name meta fields schema =
   pure $
     object
       "__Type"
@@ -102,8 +104,19 @@ renderInterface name meta fields _ =
         renderName name,
         description meta,
         ("fields", pure $ ResList fields),
-        ("possibleTypes", pure $ ResList []) -- TODO: list of all objects that implements interface
+        ("possibleTypes", ResList <$> interfacePossibleTypes schema name)
       ]
+
+interfacePossibleTypes ::
+  (Monad m) =>
+  Schema ->
+  Name ->
+  Resolver QUERY e m [ResModel QUERY e m]
+interfacePossibleTypes schema interfaceName = sequence $ concatMap implements (toList schema)
+  where
+    implements typeDef@TypeDefinition {typeContent = DataObject {objectImplements}, ..}
+      | interfaceName `elem` objectImplements = [render typeDef schema]
+    implements _ = []
 
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
 createEnumValue DataEnumValue {enumName, enumMeta} =
@@ -154,9 +167,7 @@ renderTypeKind KindNonNull = NON_NULL
 renderTypeKind KindInterface = INTERFACE
 
 lookupKind :: (Monad m) => Text -> Result e m DataTypeKind
-lookupKind name lib = case lookupDataType name lib of
-  Nothing -> failure $ "Kind Not Found: " <> name
-  Just value -> pure (kindOf value)
+lookupKind name schema = kindOf <$> selectBy ("Kind Not Found: " <> name) name schema
 
 renderinputValue ::
   (Monad m) =>
