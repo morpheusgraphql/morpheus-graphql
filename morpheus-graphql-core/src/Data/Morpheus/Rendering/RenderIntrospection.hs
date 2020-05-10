@@ -85,15 +85,14 @@ instance RenderSchema (TypeDefinition a) where
         pure $ typeFromUnion schema (typeName, typeMeta, union)
       __render (DataInputUnion members) =
         renderInputUnion (typeName, typeMeta, members)
-      __render (DataInterface fields) = \schema -> do
-        fields' <- renderFields schema fields
-        renderInterface typeName Nothing fields' schema
+      __render (DataInterface fields) =
+        renderInterface typeName Nothing fields
 
 renderFields :: Monad m => Schema -> FieldsDefinition -> Resolver QUERY e m [ResModel QUERY e m]
 renderFields schema = traverse (`render` schema) . filter fieldVisibility . toList
 
 renderInterface ::
-  Monad m => Text -> Maybe Meta -> [ResModel QUERY e m] -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+  Monad m => Text -> Maybe Meta -> FieldsDefinition -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
 renderInterface name meta fields schema =
   pure $
     object
@@ -101,7 +100,7 @@ renderInterface name meta fields schema =
       [ renderKind INTERFACE,
         renderName name,
         description meta,
-        ("fields", pure $ ResList fields),
+        ("fields", ResList <$> renderFields schema fields),
         ("possibleTypes", ResList <$> interfacePossibleTypes schema name)
       ]
 
