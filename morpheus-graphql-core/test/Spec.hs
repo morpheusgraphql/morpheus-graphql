@@ -95,7 +95,7 @@ main =
       "core tests"
     $ map
       (uncurry basicTest)
-      [ ("basic Test", "simpleQuery"),
+      [ ("basic Test", "simple"),
         ("test interface", "interface")
       ]
 
