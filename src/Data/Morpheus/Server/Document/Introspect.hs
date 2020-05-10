@@ -73,13 +73,14 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, typeOriginal, tKind) 
     methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
       where
         body
-          | tKind == Just KindInputObject || null tKind = [|(DataInputObject $ unsafeFromInputFields $(buildFields cFields), concat $(buildTypes cFields))|]
-          | otherwise = [|(DataObject interfacesRefs $ unsafeFromFields $(buildFields cFields), concat $(buildTypes cFields))|]
+          | tKind == Just KindInputObject || null tKind = [|(DataInputObject $ unsafeFromInputFields $(buildFields cFields), concat $(typeUpdates))|]
+          | otherwise = [|(DataObject interfacesRefs $ unsafeFromFields $(buildFields cFields), concat $(typeUpdates) <> interfaceTypes)|]
         -------------------------------------------------------------
+        typeUpdates = buildTypes cFields
         (interfacesRefs, interfaceTypes) = interfacesFrom typeOriginal
 deriveObjectRep _ = pure []
 
-interfacesFrom :: Maybe (TypeDefinition ANY) -> ([Key], [TypeUpdater])
+interfacesFrom :: Maybe (TypeDefinition ANY) -> ([Key], [TypeDefinition ANY])
 interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = (objectImplements, [])
 interfacesFrom _ = ([], [])
 
