@@ -73,23 +73,23 @@ resolver =
       subscription = pure ResNull
     }
 
+main :: IO ()
+main =
+  defaultMain $
+    testGroup
+      "core tests"
+      [basicTest "basic Test" "simpleQuery"]
+
+basicTest :: String -> Name -> TestTree
+basicTest description path = testCase description $ do
+  actual <- simpleTest <$> getRequest path
+  expected <- expectedResponse path
+  assertion expected actual
+
 simpleTest :: GQLRequest -> ResponseStream e Identity (Value VALID)
 simpleTest request = do
   schema <- getSchema
   runApi schema resolver request
-
-main :: IO ()
-main =
-  do
-    request <- getRequest "simpleQuery"
-    response <- expectedResponse "simpleQuery"
-    defaultMain $
-      testGroup
-        "core tests"
-        [basicTest response (simpleTest request)]
-
-basicTest :: Value VALID -> ResponseStream e Identity (Value VALID) -> TestTree
-basicTest expected = testCase "basic test" . assertion expected
 
 expectedResponse :: Name -> IO (Value VALID)
 expectedResponse = fmap replaceValue . getResponseBody
