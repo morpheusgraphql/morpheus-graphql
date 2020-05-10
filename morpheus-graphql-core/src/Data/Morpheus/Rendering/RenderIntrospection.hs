@@ -29,6 +29,7 @@ import Data.Morpheus.Types.Internal.AST
     DataUnion,
     FieldDefinition (..),
     FieldsDefinition,
+    Message,
     Meta (..),
     Name,
     QUERY,
@@ -47,6 +48,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Listable (..),
+    failure,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -231,8 +233,20 @@ createObjectType name meta interfaces fields schema =
       renderName name,
       description meta,
       ("fields", ResList <$> renderFields schema fields),
-      ("interfaces", pure $ ResList []) -- TODO: list of all implemented interfaces
+      ("interfaces", ResList <$> traverse (implementedInterface schema) interfaces) -- TODO: list of all implemented interfaces
     ]
+
+implementedInterface ::
+  (Monad m) =>
+  Schema ->
+  Name ->
+  Resolver QUERY e m (ResModel QUERY e m)
+implementedInterface schema name =
+  selectBy ("INTERNAL: cant found  Interface \"" <> name <> "\"") name schema
+    >>= __render
+  where
+    __render typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef schema
+    __render _ = failure ("Type \"" <> name <> "\" must be an Interface" :: Message)
 
 optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel QUERY e m)
 optList = pure . maybe ResNull ResList
