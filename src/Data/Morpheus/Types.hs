@@ -200,3 +200,6 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> 
     mutationResolver :: mut (Resolver MUTATION event m),
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
+
+class Implements object interface  where
+  implements :: object -> interface

@@ -88,7 +88,7 @@ interfacesFrom _ = ([], [|[]|])
 
 getInterfaces :: [Key] -> ExpQ
 getInterfaces [] = [|[]|]
-getInterfaces (typeName : _) = [|[insertType (createType typeName (DataInterface empty))]|]
+getInterfaces names = [|map (\typeName -> insertType (createType typeName (DataInterface empty))) names|]
 
 buildTypes :: [FieldDefinition] -> ExpQ
 buildTypes = listE . concatMap introspectField
