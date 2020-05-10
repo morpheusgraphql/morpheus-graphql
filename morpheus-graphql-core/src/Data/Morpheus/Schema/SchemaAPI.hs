@@ -30,6 +30,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Merge (..),
+    empty,
     selectOr,
     toList,
   )
@@ -48,9 +49,9 @@ resolveTypes ::
 resolveTypes schema = ResList <$> traverse (`render` schema) (toList schema)
 
 buildSchemaLinkType ::
-  Monad m => Maybe (TypeDefinition OUT) -> ResModel QUERY e m
-buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] []
-buildSchemaLinkType Nothing = ResNull
+  Monad m => Maybe (TypeDefinition OUT) -> Schema -> ResModel QUERY e m
+buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] empty
+buildSchemaLinkType Nothing = const ResNull
 
 findType ::
   Monad m =>
@@ -70,9 +71,9 @@ schemaResolver schema@Schema {query, mutation, subscription} =
           { __typename = "__Schema",
             objectFields =
               [ ("types", resolveTypes schema),
-                ("queryType", pure $ buildSchemaLinkType $ Just query),
-                ("mutationType", pure $ buildSchemaLinkType mutation),
-                ("subscriptionType", pure $ buildSchemaLinkType subscription),
+                ("queryType", pure $ buildSchemaLinkType (Just query) schema),
+                ("mutationType", pure $ buildSchemaLinkType mutation schema),
+                ("subscriptionType", pure $ buildSchemaLinkType subscription schema),
                 ("directives", pure $ ResList [])
               ]
           }

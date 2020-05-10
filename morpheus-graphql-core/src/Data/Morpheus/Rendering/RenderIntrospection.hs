@@ -78,9 +78,8 @@ instance RenderSchema (TypeDefinition a) where
       __render (DataInputObject fields) = \lib ->
         createInputObject typeName typeMeta
           <$> traverse (`renderinputValue` lib) (toList fields)
-      __render DataObject {objectImplements, objectFields} = \schema ->
-        createObjectType typeName typeMeta objectImplements
-          <$> renderFields schema objectFields
+      __render DataObject {objectImplements, objectFields} =
+        pure . createObjectType typeName typeMeta objectImplements objectFields
       __render (DataUnion union) = \schema ->
         pure $ typeFromUnion schema (typeName, typeMeta, union)
       __render (DataInputUnion members) =
@@ -224,14 +223,14 @@ unionPossibleType schema name =
     >>= (`render` schema)
 
 createObjectType ::
-  Monad m => Text -> Maybe Meta -> [Name] -> [ResModel QUERY e m] -> ResModel QUERY e m
-createObjectType name meta interfaces fields =
+  Monad m => Text -> Maybe Meta -> [Name] -> FieldsDefinition -> Schema -> ResModel QUERY e m
+createObjectType name meta interfaces fields schema =
   object
     "__Type"
     [ renderKind OBJECT,
       renderName name,
       description meta,
-      ("fields", pure $ ResList fields),
+      ("fields", ResList <$> renderFields schema fields),
       ("interfaces", pure $ ResList []) -- TODO: list of all implemented interfaces
     ]
 
