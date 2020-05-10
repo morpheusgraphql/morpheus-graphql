@@ -107,7 +107,7 @@ data Channel = USER | ADDRESS
 
 newtype Content = Content {contentID :: Int}
 
-type EVENT = (Event Channel Content)
+type EVENT = Event Channel Content
 
 api :: Input api -> Stream api EVENT IO
 api = interpreter gqlRoot

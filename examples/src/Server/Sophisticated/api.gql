@@ -42,6 +42,10 @@ input UniqueID {
   rec: UniqueID
 }
 
+interface Person {
+  name: String
+}
+
 type Address @typeDirective(id: 1) {
   """
   temporary multiline Test for Enum field descripions
@@ -55,7 +59,7 @@ type Address @typeDirective(id: 1) {
 """
 my custom description for user
 """
-type User {
+type User implements Person {
   name: String!
   """
   some email adress
