@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d37adb85b48038f9e012077e66eaca1e51b08295e9e997895205375402efbb2f
+-- hash: 87c5037a02c2bb9500d1cacbb545e128fb2f89f32abd1f5ad5790574f4a1b07f
 
 name:           morpheus-graphql-client
 version:        0.11.0
@@ -44,7 +44,7 @@ library
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , morpheus-graphql-core >=0.11.0
-    , template-haskell >=2.0 && <=2.16
+    , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , unordered-containers >=0.2.8.0 && <0.3
   default-language: Haskell2010

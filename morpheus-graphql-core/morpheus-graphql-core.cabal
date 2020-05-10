@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 753e086ab59034ee6061210f31112e582bc9cad18ba39d4ca11a71617aaf1de1
+-- hash: d98731b2d6cca5fb42bb6f76b974995f20c064ff87d9e06790913cefb8c50598
 
 name:           morpheus-graphql-core
 version:        0.11.0
@@ -99,7 +99,7 @@ library
     , bytestring >=0.10.4 && <0.11
     , megaparsec >=7.0.0 && <9.0.0
     , scientific >=0.3.6.2 && <0.4
-    , template-haskell >=2.0 && <=2.16
+    , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0
     , transformers >=0.3.0.0 && <0.6
@@ -125,7 +125,7 @@ test-suite morpheus-test
     , scientific >=0.3.6.2 && <0.4
     , tasty
     , tasty-hunit
-    , template-haskell >=2.0 && <=2.16
+    , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0
     , transformers >=0.3.0.0 && <0.6
