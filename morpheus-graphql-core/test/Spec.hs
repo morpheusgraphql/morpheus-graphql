@@ -34,11 +34,15 @@ getSchema =
   }
 
   interface Character {
-    name : String!
+    name : String
   }
 
   interface Supernatural {
     power: [String!]!
+  }
+
+  type Hero implements Character {
+    name: String
   }
 
   type Deity implements Character Supernatural {
