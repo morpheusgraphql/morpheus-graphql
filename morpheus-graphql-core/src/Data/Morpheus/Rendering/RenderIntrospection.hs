@@ -48,11 +48,9 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Operation
   ( Listable (..),
     selectBy,
-    selectOr,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Failure (..),
-    ObjectResModel (..),
+  ( ObjectResModel (..),
     ResModel (..),
     Resolver,
   )
@@ -80,11 +78,11 @@ instance RenderSchema (TypeDefinition a) where
       __render (DataInputObject fields) = \lib ->
         createInputObject typeName typeMeta
           <$> traverse (`renderinputValue` lib) (toList fields)
-      __render DataObject {objectFields} = \schema ->
-        createObjectType typeName typeMeta
-          <$> (Just <$> renderFields schema objectFields)
-      __render (DataUnion union) =
-        constRes $ typeFromUnion (typeName, typeMeta, union)
+      __render DataObject {objectImplements, objectFields} = \schema ->
+        createObjectType typeName typeMeta objectImplements
+          <$> renderFields schema objectFields
+      __render (DataUnion union) = \schema ->
+        pure $ typeFromUnion schema (typeName, typeMeta, union)
       __render (DataInputUnion members) =
         renderInputUnion (typeName, typeMeta, members)
       __render (DataInterface fields) = \schema -> do
@@ -211,25 +209,30 @@ createLeafType kind name meta enums =
       ("enumValues", optList enums)
     ]
 
-typeFromUnion :: Monad m => (Text, Maybe Meta, DataUnion) -> ResModel QUERY e m
-typeFromUnion (name, typeMeta, typeContent) =
+typeFromUnion :: Monad m => Schema -> (Text, Maybe Meta, DataUnion) -> ResModel QUERY e m
+typeFromUnion schema (name, typeMeta, typeContent) =
   object
     "__Type"
     [ renderKind UNION,
       renderName name,
       description typeMeta,
-      ("possibleTypes", pure $ ResList (map (\x -> createObjectType x Nothing $ Just []) typeContent))
+      ("possibleTypes", ResList <$> traverse (unionPossibleType schema) typeContent)
     ]
 
+unionPossibleType :: Monad m => Schema -> Name -> Resolver QUERY e m (ResModel QUERY e m)
+unionPossibleType schema name =
+  selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> name <> "\"") name schema
+    >>= (`render` schema)
+
 createObjectType ::
-  Monad m => Text -> Maybe Meta -> Maybe [ResModel QUERY e m] -> ResModel QUERY e m
-createObjectType name meta fields =
+  Monad m => Text -> Maybe Meta -> [Name] -> [ResModel QUERY e m] -> ResModel QUERY e m
+createObjectType name meta interfaces fields =
   object
     "__Type"
     [ renderKind OBJECT,
       renderName name,
       description meta,
-      ("fields", optList fields),
+      ("fields", pure $ ResList fields),
       ("interfaces", pure $ ResList []) -- TODO: list of all implemented interfaces
     ]
 

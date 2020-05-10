@@ -49,7 +49,7 @@ resolveTypes schema = ResList <$> traverse (`render` schema) (toList schema)
 
 buildSchemaLinkType ::
   Monad m => Maybe (TypeDefinition OUT) -> ResModel QUERY e m
-buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing $ Just []
+buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] []
 buildSchemaLinkType Nothing = ResNull
 
 findType ::
