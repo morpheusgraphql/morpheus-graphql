@@ -7,3 +7,5 @@
   ```gql
   type T implements A , B C & D {
   ```
+
+- introspection can renders interfaces
