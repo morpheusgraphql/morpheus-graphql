@@ -27,6 +27,7 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeWrapper (..),
     DataUnion,
     FieldDefinition (..),
+    FieldsDefinition,
     Meta (..),
     Name,
     QUERY,
@@ -84,6 +85,11 @@ instance RenderSchema (TypeDefinition a) where
         constRes $ typeFromUnion (typeName, typeMeta, union)
       __render (DataInputUnion members) =
         renderInputUnion (typeName, typeMeta, members)
+      __render (DataInterface interface) = renderInterface interface
+
+-- TODO: render interface
+renderInterface :: Monad m => FieldsDefinition -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+renderInterface _ _ = pure $ object "__Interface" []
 
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
 createEnumValue DataEnumValue {enumName, enumMeta} =
@@ -131,6 +137,7 @@ renderTypeKind KindEnum = ENUM
 renderTypeKind KindInputObject = INPUT_OBJECT
 renderTypeKind KindList = LIST
 renderTypeKind KindNonNull = NON_NULL
+renderTypeKind KindInterface = INTERFACE
 
 lookupKind :: (Monad m) => Text -> Result e m DataTypeKind
 lookupKind name lib = case lookupDataType name lib of

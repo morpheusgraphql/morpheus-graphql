@@ -407,9 +407,6 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
 
--- TODO:
--- __kind DataInterface   {} = KindInterface
-
 fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ANY)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
