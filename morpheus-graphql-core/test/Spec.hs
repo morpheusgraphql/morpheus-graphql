@@ -8,6 +8,8 @@ module Main
   )
 where
 
+import Data.Aeson (encode)
+import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
@@ -35,7 +37,11 @@ getSchema =
     name : String!
   }
 
-  type Deity implements Character {
+  interface Supernatural {
+    power: [String!]!
+  }
+
+  type Deity implements Character Supernatural {
     name: String!
     power: [String!]!
   }
@@ -107,7 +113,7 @@ assertion expected (ResultT (Identity Success {result}))
   | expected == result = return ()
   | otherwise =
     assertFailure $
-      "expected: \n " <> show expected <> " \n but got: \n " <> show result
+      LB.unpack ("expected: \n " <> encode expected <> " \n but got: \n " <> encode result)
 assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 
 getRequest :: Name -> IO GQLRequest
