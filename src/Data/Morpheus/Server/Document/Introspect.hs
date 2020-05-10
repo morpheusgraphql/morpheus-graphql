@@ -24,14 +24,18 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Server.Deriving.Introspect (Introspect (..), IntrospectRep (..), TypeScope (..), introspectObjectFields)
 import Data.Morpheus.Server.Types.GQLType (GQLType (__typeName), TRUE)
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     ConsD (..),
     DataTypeKind (..),
     FieldDefinition (..),
+    GQLTypeD (..),
+    Key,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
     TypeRef (..),
+    TypeUpdater,
     insertType,
     unsafeFromFields,
     unsafeFromInputFields,
@@ -55,8 +59,8 @@ instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
-deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
-deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
+deriveObjectRep :: (TypeD, Maybe (TypeDefinition ANY), Maybe DataTypeKind) -> Q [Dec]
+deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, typeOriginal, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
     mainTypeName = typeT (mkName $ unpack tName) typeArgs
@@ -70,8 +74,14 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
       where
         body
           | tKind == Just KindInputObject || null tKind = [|(DataInputObject $ unsafeFromInputFields $(buildFields cFields), concat $(buildTypes cFields))|]
-          | otherwise = [|(DataObject [] $ unsafeFromFields $(buildFields cFields), concat $(buildTypes cFields))|]
+          | otherwise = [|(DataObject interfacesRefs $ unsafeFromFields $(buildFields cFields), concat $(buildTypes cFields))|]
+        -------------------------------------------------------------
+        (interfacesRefs, interfaceTypes) = interfacesFrom typeOriginal
 deriveObjectRep _ = pure []
+
+interfacesFrom :: Maybe (TypeDefinition ANY) -> ([Key], [TypeUpdater])
+interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = (objectImplements, [])
+interfacesFrom _ = ([], [])
 
 buildTypes :: [FieldDefinition] -> ExpQ
 buildTypes = listE . concatMap introspectField

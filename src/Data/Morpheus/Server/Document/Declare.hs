@@ -51,9 +51,9 @@ declareGQLType namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD, typeOrigi
       where
         gqlInstances
           | isObject typeKindD && isInput typeKindD =
-            [deriveObjectRep (typeD, Nothing), deriveDecode typeD]
+            [deriveObjectRep (typeD, Just typeOriginal, Nothing), deriveDecode typeD]
           | isObject typeKindD =
-            [deriveObjectRep (typeD, Just typeKindD), deriveEncode gqlType]
+            [deriveObjectRep (typeD, Just typeOriginal, Just typeKindD), deriveEncode gqlType]
           | otherwise =
             []
     --------------------------------------------------
@@ -62,7 +62,7 @@ declareGQLType namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD, typeOrigi
       decodeArgs <- concat <$> traverse deriveDecode typeArgD
       return $ argsTypeDecs <> decodeArgs <> introspectArgs
       where
-        deriveArgsRep args = deriveObjectRep (args, Nothing)
+        deriveArgsRep args = deriveObjectRep (args, Nothing, Nothing)
         ----------------------------------------------------
         argsTypeDecs = map (declareType SERVER namespace Nothing []) typeArgD
     --------------------------------------------------
