@@ -31,7 +31,11 @@ getSchema =
     deity(name: String): Deity!
   }
 
-  type Deity {
+  interface Character {
+    name : String!
+  }
+
+  type Deity implements Character {
     name: String!
     power: [String!]!
   }
@@ -75,10 +79,14 @@ resolver =
 
 main :: IO ()
 main =
-  defaultMain $
-    testGroup
+  defaultMain
+    $ testGroup
       "core tests"
-      [basicTest "basic Test" "simpleQuery"]
+    $ map
+      (uncurry basicTest)
+      [ ("basic Test", "simpleQuery"),
+        ("test interface", "interface")
+      ]
 
 basicTest :: String -> Name -> TestTree
 basicTest description path = testCase description $ do
