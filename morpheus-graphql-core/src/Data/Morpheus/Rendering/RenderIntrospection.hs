@@ -78,18 +78,32 @@ instance RenderSchema (TypeDefinition a) where
       __render (DataInputObject fields) = \lib ->
         createInputObject typeName typeMeta
           <$> traverse (`renderinputValue` lib) (toList fields)
-      __render DataObject {objectFields} = \lib ->
+      __render DataObject {objectFields} = \schema ->
         createObjectType typeName typeMeta
-          <$> (Just <$> traverse (`render` lib) (filter fieldVisibility $ toList objectFields))
+          <$> (Just <$> renderFields schema objectFields)
       __render (DataUnion union) =
         constRes $ typeFromUnion (typeName, typeMeta, union)
       __render (DataInputUnion members) =
         renderInputUnion (typeName, typeMeta, members)
-      __render (DataInterface interface) = renderInterface interface
+      __render (DataInterface fields) = \schema -> do
+        fields' <- renderFields schema fields
+        renderInterface typeName Nothing fields' schema
 
--- TODO: render interface
-renderInterface :: Monad m => FieldsDefinition -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
-renderInterface _ _ = pure $ object "__Interface" []
+renderFields :: Monad m => Schema -> FieldsDefinition -> Resolver QUERY e m [ResModel QUERY e m]
+renderFields schema = traverse (`render` schema) . filter fieldVisibility . toList
+
+renderInterface ::
+  Monad m => Text -> Maybe Meta -> [ResModel QUERY e m] -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+renderInterface name meta fields _ =
+  pure $
+    object
+      "__Type"
+      [ renderKind INTERFACE,
+        renderName name,
+        description meta,
+        ("fields", pure $ ResList fields),
+        ("possibleTypes", pure $ ResList []) -- TODO: list of all objects that implements interface
+      ]
 
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
 createEnumValue DataEnumValue {enumName, enumMeta} =
@@ -205,7 +219,7 @@ createObjectType name meta fields =
       renderName name,
       description meta,
       ("fields", optList fields),
-      ("interfaces", pure $ ResList [])
+      ("interfaces", pure $ ResList []) -- TODO: list of all implemented interfaces
     ]
 
 optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel QUERY e m)
