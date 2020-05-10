@@ -9,7 +9,7 @@ copyright: "(c) 2019 Daviti Nalchevanidze"
 description: examples of GraphQL APIs
 
 dependencies:
-  - base                    >= 4.7       && <  5
+  - base                    >= 4.7       && <  6
   - aeson                   >= 1.4.4.0   && <= 1.6
   - bytestring              >= 0.10.4    && <  0.11
   - text                    >= 1.2.3.0   && <  1.3

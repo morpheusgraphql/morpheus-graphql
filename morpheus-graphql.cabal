@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4a7730420267f120c5d82ad35cc27e933116bdf2f945075d743a8480b6d940c1
+-- hash: 6ddd2529e5a938e56156c39f19612a0542fd1e926e66ea2584abcc6ce5b9da54
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -358,7 +358,7 @@ library
   ghc-options: -Wall
   build-depends:
       aeson >=1.4.4.0 && <=1.6
-    , base >=4.7 && <5
+    , base >=4.7 && <6
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
@@ -368,7 +368,7 @@ library
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0
-    , transformers >=0.3.0.0 && <0.6
+    , transformers >=0.3 && <0.8
     , unliftio-core >=0.0.1 && <=0.3
     , unordered-containers >=0.2.8.0 && <0.3
     , uuid >=1.0 && <=1.4
@@ -406,7 +406,7 @@ test-suite morpheus-test
   ghc-options: -Wall
   build-depends:
       aeson
-    , base >=4.7 && <5
+    , base >=4.7 && <6
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
@@ -419,7 +419,7 @@ test-suite morpheus-test
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0
-    , transformers >=0.3.0.0 && <0.6
+    , transformers >=0.3 && <0.8
     , unliftio-core >=0.0.1 && <=0.3
     , unordered-containers >=0.2.8.0 && <0.3
     , uuid >=1.0 && <=1.4

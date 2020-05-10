@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d98731b2d6cca5fb42bb6f76b974995f20c064ff87d9e06790913cefb8c50598
+-- hash: c218b45bae1aafebca19363a7704607b7aaa8700926fa41b0719d47166ff333f
 
 name:           morpheus-graphql-core
 version:        0.11.0
@@ -95,14 +95,14 @@ library
   ghc-options: -Wall
   build-depends:
       aeson >=1.4.4.0 && <=1.6
-    , base >=4.7 && <5
+    , base >=4.7 && <6
     , bytestring >=0.10.4 && <0.11
     , megaparsec >=7.0.0 && <9.0.0
     , scientific >=0.3.6.2 && <0.4
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0
-    , transformers >=0.3.0.0 && <0.6
+    , transformers >=0.3 && <0.8
     , unordered-containers >=0.2.8.0 && <0.3
     , vector >=0.12.0.1 && <0.13
   default-language: Haskell2010
@@ -118,7 +118,7 @@ test-suite morpheus-test
   ghc-options: -Wall
   build-depends:
       aeson
-    , base >=4.7 && <5
+    , base >=4.7 && <6
     , bytestring >=0.10.4 && <0.11
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql-core
@@ -128,7 +128,7 @@ test-suite morpheus-test
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.2.0
-    , transformers >=0.3.0.0 && <0.6
+    , transformers >=0.3 && <0.8
     , unordered-containers >=0.2.8.0 && <0.3
     , vector >=0.12.0.1 && <0.13
   default-language: Haskell2010
