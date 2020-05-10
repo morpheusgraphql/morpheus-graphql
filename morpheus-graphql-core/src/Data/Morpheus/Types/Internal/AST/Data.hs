@@ -405,6 +405,7 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataObject {} = KindObject (toOperationType typeName)
     __kind DataUnion {} = KindUnion
     __kind DataInputUnion {} = KindInputUnion
+    __kind DataInterface {} = KindInterface
 
 -- TODO:
 -- __kind DataInterface   {} = KindInterface
