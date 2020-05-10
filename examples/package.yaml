@@ -28,8 +28,8 @@ dependencies:
   - extra
   - http-types
   - stm
-  # - servant
-  # - servant-server
+  - servant
+  - servant-server # crasches no 8.10
 
 data-files:
   - assets/**/*.gql
