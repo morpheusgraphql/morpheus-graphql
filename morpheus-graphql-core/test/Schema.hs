@@ -10,8 +10,9 @@ module Schema
 where
 
 import Control.Monad ((<=<))
-import Data.Aeson (FromJSON, ToJSON, decode, encode)
+import Data.Aeson ((.:), FromJSON (..), ToJSON, Value (..), decode, eitherDecode, encode)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
+import Data.Either (either)
 import Data.Maybe (fromMaybe)
 import Data.Morpheus.Core (parseFullGQLDocument, validateSchema)
 import Data.Morpheus.Types.Internal.AST
@@ -30,18 +31,22 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
 
 readSchema :: Name -> IO (Eventless Schema)
-readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . ("/schema/" <>) . (<> "schema.gql")
+readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . ("schema/" <>) . (<> "/schema.gql")
 
 readResponse :: Name -> IO Response
-readResponse = fmap (fromMaybe AesonError . decode) . readSource . ("/schema/" <>) . (<> "response.json")
+readResponse = fmap (either AesonError id . eitherDecode) . readSource . ("schema/" <>) . (<> "/response.json")
 
 data Response
-  = Ok
-  | AesonError
-  | Errors
-      { errors :: GQLErrors
-      }
-  deriving (FromJSON, Generic, ToJSON)
+  = OK
+  | Errors {errors :: GQLErrors}
+  | AesonError String
+  deriving (Generic, ToJSON)
+
+instance FromJSON Response where
+  parseJSON (Object v) =
+    Errors <$> v .: "errors"
+  parseJSON (String "OK") = pure OK
+  parseJSON v = pure $ AesonError (show v)
 
 testSchema :: TestTree
 testSchema =
@@ -51,8 +56,8 @@ testSchema =
         "Validation"
         $ map
           (uncurry schemaCase)
-          [ ("interface/ok", "interface validation success"),
-            ("interface/fail", "interface validation fails")
+          [ ("validation/interface/ok", "interface validation success"),
+            ("validation/interface/fail", "interface validation fails")
           ]
     ]
 
@@ -63,7 +68,7 @@ schemaCase path description = testCase description $ do
   assertion expected schema
 
 assertion :: Response -> Eventless Schema -> IO ()
-assertion Ok Success {} = return ()
+assertion OK Success {} = return ()
 assertion Errors {errors = err} Failure {errors}
   | err == errors =
     pure

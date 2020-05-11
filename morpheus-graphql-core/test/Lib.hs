@@ -17,7 +17,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text, unpack)
 
 readSource :: Text -> IO ByteString
-readSource p = L.readFile (path p <> "schema.gql")
+readSource = L.readFile . path
 
 path :: Text -> String
 path name = "test/" ++ unpack name
