@@ -347,7 +347,6 @@ derivingDataContent ::
 derivingDataContent _ interfaces (baseName, baseFingerprint) scope =
   builder $ typeRep $ Proxy @(Rep a)
   where
-    -- TODO: implements
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
     builder cons = genericUnion scope cons
       where
