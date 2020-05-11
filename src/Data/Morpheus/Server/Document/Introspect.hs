@@ -49,7 +49,6 @@ instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..
   | typeName `elem` ["__DirectiveLocation", "__TypeKind"] = pure []
   | otherwise = pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
-    -----------------------------------------------
     iHead = instanceHeadT ''Introspect typeName []
     defineIntrospect = instanceProxyFunD ('introspect, body)
       where

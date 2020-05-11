@@ -29,6 +29,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
   )
+import Data.Morpheus.Types (interface)
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeKind (..),
     GQLTypeD (..),
