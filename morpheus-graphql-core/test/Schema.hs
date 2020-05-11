@@ -10,10 +10,9 @@ module Schema
 where
 
 import Control.Monad ((<=<))
-import Data.Aeson ((.:), FromJSON (..), ToJSON, Value (..), decode, eitherDecode, encode)
+import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Either (either)
-import Data.Maybe (fromMaybe)
 import Data.Morpheus.Core (parseFullGQLDocument, validateSchema)
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
@@ -25,6 +24,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
   )
 import Data.Semigroup ((<>))
+import Data.Text (pack)
 import GHC.Generics (Generic)
 import Lib (readSource)
 import Test.Tasty (TestTree, testGroup)
@@ -40,13 +40,18 @@ data Response
   = OK
   | Errors {errors :: GQLErrors}
   | AesonError String
-  deriving (Generic, ToJSON)
+  deriving (Generic)
 
 instance FromJSON Response where
   parseJSON (Object v) =
     Errors <$> v .: "errors"
   parseJSON (String "OK") = pure OK
   parseJSON v = pure $ AesonError (show v)
+
+instance ToJSON Response where
+  toJSON OK = String "OK"
+  toJSON (Errors err) = object ["errors" .= toJSON err]
+  toJSON (AesonError err) = String (pack err)
 
 testSchema :: TestTree
 testSchema =
@@ -80,4 +85,4 @@ assertion expected Success {} =
 assertion expected Failure {errors} =
   assertFailure $
     LB.unpack
-      ("expected: \n " <> encode expected <> " \n but got: \n " <> encode errors)
+      ("expected: \n " <> encode expected <> " \n but got: \n " <> encode (Errors errors))
