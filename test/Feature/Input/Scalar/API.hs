@@ -14,7 +14,7 @@ import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
     GQLRootResolver (..),
-    GQLType (..),
+    GQLType,
     Undefined (..),
   )
 import GHC.Generics (Generic)
@@ -23,7 +23,7 @@ import GHC.Generics (Generic)
 newtype Arg a = Arg
   { value :: a
   }
-  deriving (Generic, Show, GQLType)
+  deriving (Generic, Show)
 
 -- query
 testRes :: Applicative m => Arg a -> m a

@@ -75,7 +75,7 @@ data Character (m :: * -> *)
 newtype MonsterArgs = MonsterArgs
   { monster :: Monster
   }
-  deriving (Generic, GQLType)
+  deriving (Generic)
 
 data Query (m :: * -> *) = Query
   { deity :: Deity m,
