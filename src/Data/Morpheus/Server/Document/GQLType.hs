@@ -62,11 +62,12 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD, typeOriginal} =
     functions =
       map
         instanceProxyFunD
-        [ ('__typeName, [|toHSTypename tName|]),
+        [ ('__typeName, [|typename|]),
           ('description, descriptionValue),
           ('implements, implementsFunc)
         ]
       where
+        typename = toHSTypename tName
         implementsFunc = listE $ map introspectInterface (interfacesFrom (Just typeOriginal))
         descriptionValue = case tMeta >>= metaDescription of
           Nothing -> [|Nothing|]
