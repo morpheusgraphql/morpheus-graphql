@@ -74,7 +74,7 @@ deprecated:
   1. define interface with Haskell Types (runtime validation):
   2. define interface with `importGQLDocument` and `DSL` (compile time validation):
   
-- SelectionTree interface for operation on AST: `Selection`
+- SelectionTree interface  `Selection`
 
 ### minor
 
