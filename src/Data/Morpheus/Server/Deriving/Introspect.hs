@@ -239,8 +239,11 @@ toInput = InputFieldsDefinition . unFieldsDefinition
 deriveCustomInputObjectType ::
   DeriveTypeContent TRUE a =>
   (Name, proxy a) ->
-  [TypeUpdater]
-deriveCustomInputObjectType (name, proxy) = deriveCustomObjectType (name, InputType, proxy)
+  TypeUpdater
+deriveCustomInputObjectType (name, proxy) =
+  flip
+    resolveUpdates
+    (deriveCustomObjectType (name, InputType, proxy))
 
 deriveCustomObjectType ::
   DeriveTypeContent TRUE a =>

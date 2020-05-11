@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -25,18 +26,20 @@ import Data.Morpheus.Kind
     SCALAR,
     WRAPPER,
   )
-import Data.Morpheus.Server.Document.Introspect (interfacesFrom)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
   )
 import Data.Morpheus.Types (interface)
 import Data.Morpheus.Types.Internal.AST
-  ( DataTypeKind (..),
+  ( ANY,
+    DataTypeKind (..),
     GQLTypeD (..),
     Key,
     Meta (..),
+    TypeContent (..),
     TypeD (..),
+    TypeDefinition (..),
     isObject,
     isSchemaTypeName,
   )
@@ -110,3 +113,7 @@ toHSTypename = pack . hsTypename . unpack
   where
     hsTypename ('S' : name) | isSchemaTypeName (pack name) = name
     hsTypename name = name
+
+interfacesFrom :: Maybe (TypeDefinition ANY) -> [Key]
+interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
+interfacesFrom _ = []
