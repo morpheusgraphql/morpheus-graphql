@@ -195,6 +195,11 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                   <$> validateSelectionSet
                     (typename, objectFields)
                     rawSelectionSet
+              validateByTypeContent typename DataInterface {interfaceFields} =
+                SelectionSet
+                  <$> validateSelectionSet
+                    (typename, interfaceFields)
+                    rawSelectionSet
               validateByTypeContent typename _ =
                 failure $
                   hasNoSubfields
