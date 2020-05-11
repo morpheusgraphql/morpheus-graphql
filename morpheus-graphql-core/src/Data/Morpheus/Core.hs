@@ -19,7 +19,6 @@ module Data.Morpheus.Core
     validateRequest,
     parseRequestWith,
     parseRequest,
-    validateSchema,
     RenderGQL (..),
     SelectionTree (..),
   )
@@ -98,7 +97,8 @@ runApi inputSchema resModel request = do
     validRequest ::
       Monad m => ResponseStream event m Context
     validRequest = cleanEvents $ ResultT $ pure $ do
-      schema <- withSystemTypes inputSchema
+      validSchema <- validateSchema inputSchema
+      schema <- withSystemTypes validSchema
       operation <- parseRequestWith schema request
       pure $
         Context

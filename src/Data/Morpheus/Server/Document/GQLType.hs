@@ -54,7 +54,7 @@ import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
 interfaceF :: Name -> ExpQ
-interfaceF name = [|interface (Proxy :: (Proxy $(conT name)))|]
+interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) Maybe)))|]
 
 introspectInterface :: Key -> ExpQ
 introspectInterface = interfaceF . mkName . unpack

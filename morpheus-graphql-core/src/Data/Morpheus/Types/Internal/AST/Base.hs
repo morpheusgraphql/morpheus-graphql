@@ -184,11 +184,13 @@ isOutputType _ = False
 
 isOutputObject :: DataTypeKind -> Bool
 isOutputObject (KindObject _) = True
+isOutputObject KindInterface = True
 isOutputObject _ = False
 
 isObject :: DataTypeKind -> Bool
 isObject (KindObject _) = True
 isObject KindInputObject = True
+isObject KindInterface = True
 isObject _ = False
 
 isInput :: DataTypeKind -> Bool
