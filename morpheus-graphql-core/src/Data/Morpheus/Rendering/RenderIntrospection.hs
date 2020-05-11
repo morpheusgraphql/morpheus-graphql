@@ -233,7 +233,7 @@ createObjectType name meta interfaces fields schema =
       renderName name,
       description meta,
       ("fields", ResList <$> renderFields schema fields),
-      ("interfaces", ResList <$> traverse (implementedInterface schema) interfaces) -- TODO: list of all implemented interfaces
+      ("interfaces", ResList <$> traverse (implementedInterface schema) interfaces)
     ]
 
 implementedInterface ::
