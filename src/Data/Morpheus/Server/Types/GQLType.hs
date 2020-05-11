@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -102,11 +103,14 @@ instance IsObject INPUT where
 instance IsObject OUTPUT where
   isObject _ = True
 
+newtype InterfaceRef = InterfaceRef {interfaceRef :: forall a. (GQLType a) => a}
+
 class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
+  implements :: Proxy a -> [InterfaceRef]
   description :: Proxy a -> Maybe Text
   description _ = Nothing
   isObjectKind :: Proxy a -> Bool
