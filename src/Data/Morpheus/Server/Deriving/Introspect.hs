@@ -19,7 +19,7 @@
 module Data.Morpheus.Server.Deriving.Introspect
   ( TypeUpdater,
     Introspect (..),
-    IntrospectRep (..),
+    DeriveTypeContent (..),
     IntroCon,
     updateLib,
     buildType,
@@ -97,7 +97,7 @@ import Data.Text
   )
 import GHC.Generics
 
-type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
+type IntroCon a = (GQLType a, DeriveTypeContent (CUSTOM a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect a where
@@ -149,7 +149,7 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
   introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
-instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m b) where
+instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
   field _ name = fieldObj {fieldArgs}
     where
@@ -192,13 +192,13 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
       enumType =
         buildType $ DataEnum $ map createEnumValue $ enumTags (Proxy @(Rep a))
 
-instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INPUT a where
+instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INPUT a where
   introspectKind _ = derivingData (Proxy @a) InputType
 
-instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind OUTPUT a where
+instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind OUTPUT a where
   introspectKind _ = derivingData (Proxy @a) OutputType
 
-instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INTERFACE a where
+instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INTERFACE a where
   introspectKind _ = updateLib (buildType (DataInterface fields)) types (Proxy @a)
     where
       (fields, types) =
@@ -209,14 +209,14 @@ instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INTERFACE a 
 
 derivingData ::
   forall a.
-  (GQLType a, IntrospectRep (CUSTOM a) a) =>
+  (GQLType a, DeriveTypeContent (CUSTOM a) a) =>
   Proxy a ->
   TypeScope ->
   TypeUpdater
 derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
   where
     (datatypeContent, updates) =
-      introspectRep
+      deriveTypeContent
         (Proxy @(CUSTOM a))
         (Proxy @a, unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
     baseName = __typeName (Proxy @a)
@@ -231,13 +231,13 @@ toInput :: FieldsDefinition -> InputFieldsDefinition
 toInput = InputFieldsDefinition . unFieldsDefinition
 
 introspectObjectFields ::
-  IntrospectRep custom a =>
+  DeriveTypeContent custom a =>
   proxy1 (custom :: Bool) ->
   (Name, TypeScope, proxy2 a) ->
   (FieldsDefinition, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) =
   withObject
-    (introspectRep p1 (proxy, ([], []), scope, "", DataFingerprint "" []))
+    (deriveTypeContent p1 (proxy, ([], []), scope, "", DataFingerprint "" []))
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
     withObject (DataInputObject x, ts) = (fromInput x, ts)
@@ -247,11 +247,11 @@ introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
-class IntrospectRep (custom :: Bool) a where
-  introspectRep :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
+class DeriveTypeContent (custom :: Bool) a where
+  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
-instance (TypeRep (Rep a), Generic a) => IntrospectRep 'False a where
-  introspectRep _ (_, interfaces, scope, baseName, baseFingerprint) =
+instance (TypeRep (Rep a), Generic a) => DeriveTypeContent 'False a where
+  deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
     builder $ typeRep $ Proxy @(Rep a)
     where
       builder [ConsRep {consFields}] = buildObject interfaces scope consFields
