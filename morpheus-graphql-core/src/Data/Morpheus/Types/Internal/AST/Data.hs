@@ -439,7 +439,7 @@ insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName 
   Just fingerprint
     | fingerprint == typeFingerprint datatype -> return lib
     -- throw error if 2 different types has same name
-    | otherwise -> failure $ nameCollisionError (typeName <> pack (": " <> show fingerprint <> " !=" <> show (typeFingerprint datatype)))
+    | otherwise -> failure $ nameCollisionError typeName
 
 updateSchema ::
   Name ->
@@ -456,7 +456,7 @@ updateSchema name fingerprint stack f x lib =
         stack
     Just fingerprint' | fingerprint' == fingerprint -> return lib
     -- throw error if 2 different types has same name
-    Just fingerprint' -> failure $ nameCollisionError (name <> pack (": " <> show fingerprint' <> " !=" <> show fingerprint))
+    Just _ -> failure $ nameCollisionError name
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
