@@ -38,6 +38,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     ConsD (..),
     ClientQuery (..),
     GQLTypeD (..),
+    TypeCategory,
     ClientType (..),
     DataInputUnion,
     Argument (..),
@@ -443,7 +444,7 @@ updateSchema ::
   Name ->
   DataFingerprint ->
   [TypeUpdater] ->
-  (a -> TypeDefinition ANY) ->
+  (a -> TypeDefinition cat) ->
   a ->
   TypeUpdater
 updateSchema name fingerprint stack f x lib =

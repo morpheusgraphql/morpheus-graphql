@@ -80,6 +80,7 @@ module Data.Morpheus.Types.Internal.AST
     ConsD (..),
     ClientQuery (..),
     GQLTypeD (..),
+    TypeCategory,
     ClientType (..),
     DataInputUnion,
     VariableContent (..),

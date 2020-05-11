@@ -3,6 +3,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,6 +11,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -52,10 +54,10 @@ import Data.Morpheus.Server.Types.Types
     Pair,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    ArgumentsDefinition (..),
+  ( ArgumentsDefinition (..),
     DataFingerprint (..),
     DataUnion,
+    FALSE,
     FieldDefinition (..),
     FieldsDefinition (..),
     IN,
@@ -66,6 +68,7 @@ import Data.Morpheus.Types.Internal.AST
     Name,
     OUT,
     TRUE,
+    TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
     TypeRef (..),
@@ -198,7 +201,7 @@ instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind OUTPUT a
   introspectKind _ = derivingData (Proxy @a) OutputType
 
 instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INTERFACE a where
-  introspectKind _ = updateLib (buildType (DataInterface fields)) types (Proxy @a)
+  introspectKind _ = updateLib (buildType (DataInterface fields :: TypeContent TRUE OUT)) types (Proxy @a)
     where
       (fields, types) =
         introspectObjectFields
@@ -207,10 +210,10 @@ instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INTERFAC
       baseName = __typeName (Proxy @a)
 
 derivingData ::
-  forall a.
+  forall a cat.
   (GQLType a, DeriveTypeContent (CUSTOM a) a) =>
   Proxy a ->
-  TypeScope ->
+  TypeScope cat ->
   TypeUpdater
 derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
   where
@@ -232,7 +235,7 @@ toInput = InputFieldsDefinition . unFieldsDefinition
 introspectObjectFields ::
   DeriveTypeContent custom a =>
   proxy1 (custom :: Bool) ->
-  (Name, TypeScope, proxy2 a) ->
+  (Name, TypeScope cat, proxy2 a) ->
   (FieldsDefinition, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) =
   withObject
@@ -247,9 +250,9 @@ introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <
 
 -- Object Fields
 class DeriveTypeContent (custom :: Bool) a where
-  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
+  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope cat, Name, DataFingerprint) -> (TypeContent TRUE cat, [TypeUpdater])
 
-instance (TypeRep (Rep a), Generic a) => DeriveTypeContent 'False a where
+instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
   deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
     builder $ typeRep $ Proxy @(Rep a)
     where
@@ -283,7 +286,7 @@ buildType typeContent proxy =
 
 updateLib ::
   GQLType a =>
-  (Proxy a -> TypeDefinition ANY) ->
+  (Proxy a -> TypeDefinition cat) ->
   [TypeUpdater] ->
   Proxy a ->
   TypeUpdater
@@ -342,12 +345,12 @@ analyseRep baseName cons =
     (unionRecordRep, anyonimousUnionRep) = partition consIsRecord left2
 
 buildInputUnion ::
-  (Name, DataFingerprint) -> [ConsRep] -> (TypeContent TRUE ANY, [TypeUpdater])
+  (Name, DataFingerprint) -> [ConsRep] -> (TypeContent TRUE IN, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons =
   datatype
     (analyseRep baseName cons)
   where
-    datatype :: ResRep -> (TypeContent TRUE ANY, [TypeUpdater])
+    datatype :: ResRep -> (TypeContent TRUE IN, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
       (DataEnum (map createEnumValue enumCons), types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
@@ -385,13 +388,13 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
           buildUnions wrapObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
 
-buildObject :: ([Name], [TypeUpdater]) -> TypeScope -> [FieldRep] -> (TypeContent TRUE ANY, [TypeUpdater])
-buildObject (interfaces, interfaceTypes) isOutput consFields = (wrapWith fields, types <> interfaceTypes)
+buildObject :: ([Name], [TypeUpdater]) -> TypeScope cat -> [FieldRep] -> (TypeContent TRUE cat, [TypeUpdater])
+buildObject (interfaces, interfaceTypes) scope consFields = (wrapWith scope, types <> interfaceTypes)
   where
     (fields, types) = buildDataObject consFields
-    wrapWith
-      | isOutput == OutputType = DataObject interfaces
-      | otherwise = DataInputObject . toInput
+    wrapWith :: TypeScope cat -> TypeContent TRUE cat
+    wrapWith InputType = DataInputObject (toInput fields)
+    wrapWith OutputType = DataObject interfaces fields
 
 buildDataObject :: [FieldRep] -> (FieldsDefinition, [TypeUpdater])
 buildDataObject consFields = (fields, types)
@@ -483,7 +486,15 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
                   }
         }
 
-data TypeScope = InputType | OutputType deriving (Show, Eq, Ord)
+data TypeScope (cat :: TypeCategory) where
+  InputType :: TypeScope IN
+  OutputType :: TypeScope OUT
+
+deriving instance Show (TypeScope cat)
+
+deriving instance Eq (TypeScope cat)
+
+deriving instance Ord (TypeScope cat)
 
 --  GENERIC UNION
 class TypeRep f where
