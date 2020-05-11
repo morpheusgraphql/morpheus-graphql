@@ -20,8 +20,7 @@ import Data.Map (Map)
 -- MORPHEUS
 import Data.Morpheus.Kind
 import Data.Morpheus.Server.Types.Types
-  ( MapArgs (..),
-    MapKind,
+  ( MapKind,
     Pair,
     Undefined (..),
   )
@@ -213,5 +212,3 @@ instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER
   __typeName _ = __typeName (Proxy @b)
   __typeFingerprint _ = __typeFingerprint (Proxy @b)
-
-instance Typeable a => GQLType (MapArgs a)
