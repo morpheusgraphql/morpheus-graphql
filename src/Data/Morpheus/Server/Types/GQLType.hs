@@ -111,6 +111,7 @@ class IsObject (KIND a) => GQLType a where
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
   implements :: Proxy a -> [InterfaceRef]
+  implements _ = []
   description :: Proxy a -> Maybe Text
   description _ = Nothing
   isObjectKind :: Proxy a -> Bool
