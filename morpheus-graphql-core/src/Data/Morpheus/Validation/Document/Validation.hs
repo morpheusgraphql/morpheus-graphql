@@ -3,9 +3,11 @@
 
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument,
+    validateSchema,
   )
 where
 
+import Data.Functor (($>))
 import Data.Maybe
 --
 -- Morpheus
@@ -22,6 +24,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldsDefinition (..),
     Name,
+    Schema,
     TypeContent (..),
     TypeDefinition (..),
     TypeRef (..),
@@ -36,6 +39,9 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Failure (..),
   )
+
+validateSchema :: Schema -> Eventless Schema
+validateSchema schema = validatePartialDocument (toList schema) $> schema
 
 validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
 validatePartialDocument lib = catMaybes <$> traverse validateType lib
