@@ -42,7 +42,7 @@ input UniqueID {
   rec: UniqueID
 }
 
-interface Person {
+interface Account {
   name: String
 }
 
@@ -59,7 +59,7 @@ type Address @typeDirective(id: 1) {
 """
 my custom description for user
 """
-type User implements Person {
+type User implements Account {
   name: String!
   """
   some email adress
