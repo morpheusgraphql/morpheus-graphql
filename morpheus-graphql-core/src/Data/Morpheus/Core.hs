@@ -20,6 +20,7 @@ module Data.Morpheus.Core
     parseRequestWith,
     parseRequest,
     RenderGQL (..),
+    SelectionTree (..),
   )
 where
 
@@ -67,6 +68,7 @@ import Data.Morpheus.Types.Internal.Resolving
     resultOr,
     runRootResModel,
   )
+import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
