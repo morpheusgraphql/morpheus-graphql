@@ -39,7 +39,7 @@ data Level
 newtype TestArgs a = TestArgs
   { level :: a
   }
-  deriving (Generic, Show)
+  deriving (Generic, Show, GQLType)
 
 instance GQLType Level where
   type KIND Level = ENUM

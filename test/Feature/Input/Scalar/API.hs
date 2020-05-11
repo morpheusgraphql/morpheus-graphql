@@ -23,7 +23,7 @@ import GHC.Generics (Generic)
 newtype Arg a = Arg
   { value :: a
   }
-  deriving (Generic, Show)
+  deriving (Generic, Show, GQLType)
 
 -- query
 testRes :: Applicative m => Arg a -> m a

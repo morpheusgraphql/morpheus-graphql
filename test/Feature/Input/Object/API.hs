@@ -38,7 +38,7 @@ instance GQLType InputObject where
 newtype Arg a = Arg
   { value :: a
   }
-  deriving (Generic, Show)
+  deriving (Generic, Show, GQLType)
 
 -- query
 testRes :: Show a => Applicative m => Arg a -> m Text
