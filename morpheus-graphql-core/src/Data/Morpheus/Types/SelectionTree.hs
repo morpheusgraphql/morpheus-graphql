@@ -7,13 +7,12 @@
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
-import Data.Morpheus.Types.Internal.AST.Base (VALID)
-import Data.Morpheus.Types.Internal.AST.MergeSet (unpack)
+import Data.Morpheus.Types.Internal.AST.Base (Name, VALID)
 import Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (selectionContent, selectionName),
     SelectionContent (SelectionField, SelectionSet),
   )
-import Data.Text (Text)
+import Data.Morpheus.Types.Internal.Operation (toList)
 
 -- | The 'SelectionTree' instance is a simple interface for interacting
 -- with morpheus's internal AST while keeping the ability to safely change the concrete
@@ -27,7 +26,7 @@ class SelectionTree nodeType where
   getChildrenList :: nodeType -> [nodeType]
 
   -- | get a node's name
-  getName :: nodeType -> Text
+  getName :: nodeType -> Name
 
 instance SelectionTree (Selection VALID) where
   isLeaf node = case selectionContent node of
@@ -35,5 +34,5 @@ instance SelectionTree (Selection VALID) where
     _ -> False
   getChildrenList node = case selectionContent node of
     SelectionField -> mempty
-    (SelectionSet deeperSel) -> unpack deeperSel
+    (SelectionSet deeperSel) -> toList deeperSel
   getName = selectionName
