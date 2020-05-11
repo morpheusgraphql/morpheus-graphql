@@ -22,6 +22,7 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Kind
   ( ENUM,
     INPUT,
+    INTERFACE,
     OUTPUT,
     SCALAR,
     WRAPPER,
@@ -106,7 +107,7 @@ kindName KindInputObject = ''INPUT
 kindName KindList = ''WRAPPER
 kindName KindNonNull = ''WRAPPER
 kindName KindInputUnion = ''INPUT
-kindName KindInterface = ''OUTPUT
+kindName KindInterface = ''INTERFACE
 
 toHSTypename :: Key -> Key
 toHSTypename = pack . hsTypename . unpack
