@@ -1,13 +1,10 @@
-{
-  "errors": [
-    {
-      "message": "Fragment \"UserFragment\" cannot be spread here as objects of type \"User\" can never be of type \"Address\".",
-      "locations": [
-        {
-          "line": 3,
-          "column": 5
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "message": "type \"Deity\" implements Interface \"Character\" Partially, on key \"name\" expected type \"String\" found \"Int\".",
+    "locations": []
+  },
+  {
+    "message": "type \"Deity\" implements Interface \"Supernatural\" Partially, on key \"power\" expected type \"[String!]!\" found \"[String!]\".",
+    "locations": []
+  }
+]
