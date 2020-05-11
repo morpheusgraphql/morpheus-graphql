@@ -19,6 +19,7 @@ module Data.Morpheus.Core
     validateRequest,
     parseRequestWith,
     parseRequest,
+    validateSchema,
     RenderGQL (..),
     SelectionTree (..),
   )
@@ -69,6 +70,7 @@ import Data.Morpheus.Types.Internal.Resolving
     runRootResModel,
   )
 import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
+import Data.Morpheus.Validation.Document.Validation (validateSchema)
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
