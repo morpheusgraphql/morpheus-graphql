@@ -64,6 +64,7 @@ getTyArgs x
 kindToTyArgs :: TypeContent TRUE ANY -> Maybe Key
 kindToTyArgs DataObject {} = Just m_
 kindToTyArgs DataUnion {} = Just m_
+kindToTyArgs DataInterface {} = Just m_
 kindToTyArgs _ = Nothing
 
 toTHDefinitions :: Bool -> [TypeDefinition ANY] -> Q [GQLTypeD]
@@ -134,11 +135,12 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
             genType DataInputUnion {} = fail "Input Unions not Supported"
             genType DataInterface {interfaceFields} = do
-              interfaceCons <- buildObjectCons <$> traverse genResField (toList interfaceFields)
+              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList interfaceFields)
+              objCons <- buildObjectCons <$> traverse genResField (toList interfaceFields)
               pure
                 GQLTypeD
-                  { typeD = buildType interfaceCons,
-                    typeArgD = [],
+                  { typeD = buildType objCons,
+                    typeArgD,
                     ..
                   }
             genType (DataInputObject fields) =

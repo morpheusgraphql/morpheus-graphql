@@ -57,6 +57,9 @@ import Language.Haskell.TH
 
 type Arrow = (->)
 
+m' :: Type
+m' = VarT $ mkName $ unpack m_
+
 m_ :: Key
 m_ = "m"
 
@@ -74,7 +77,7 @@ declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
     --------------------------------------------
     decType _
       | isSub =
-        AppT typeName (AppT (ConT ''UnSubResolver) (VarT $ mkName $ unpack m_))
+        AppT typeName (AppT (ConT ''UnSubResolver) m')
     decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
     decType _ = typeName
 
@@ -86,7 +89,6 @@ tyConArgs kindD
 data Scope = CLIENT | SERVER
   deriving (Eq)
 
--- declareType
 declareType :: Scope -> Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
 declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
   DataD [] (genName tName) tVars Nothing cons $
@@ -115,17 +117,16 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
               | otherwise = mkName (unpack fieldName)
             fiType = genFieldT fieldArgs
               where
-                monadVar = VarT $ mkName $ unpack m_
                 ---------------------------
                 genFieldT ArgumentsDefinition {argumentsTypename = Just argsTypename} =
                   AppT
                     (AppT arrowType argType)
-                    (AppT monadVar result)
+                    (AppT m' result)
                   where
                     argType = ConT $ mkName (unpack argsTypename)
                     arrowType = ConT ''Arrow
                 genFieldT _
-                  | (isOutputObject <$> kindD) == Just True = AppT monadVar result
+                  | (isOutputObject <$> kindD) == Just True = AppT m' result
                   | otherwise = result
                 ------------------------------------------------
                 result = declareTypeRef (maybe False isSubscription kindD) fieldType
