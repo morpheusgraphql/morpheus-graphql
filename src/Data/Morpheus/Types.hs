@@ -207,12 +207,5 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> 
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
 
--- class Implements object interface where
---   implements :: object -> interface
-
--- newtype Interface object interface = Interface
---   { implementable :: Implements object interface => object
---   }
-
 interface :: (GQLType a, Introspect a) => Proxy a -> (Name, TypeUpdater)
 interface x = (__typeName x, introspect x)
