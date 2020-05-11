@@ -251,8 +251,14 @@ class IntrospectRep (custom :: Bool) a where
   introspectRep :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
 instance (TypeRep (Rep a), Generic a) => IntrospectRep 'False a where
-  introspectRep _ (_, interfaces, scope, name, fing) =
-    derivingDataContent (Proxy @a) interfaces (name, fing) scope
+  introspectRep _ (_, interfaces, scope, baseName, baseFingerprint) =
+    builder $ typeRep $ Proxy @(Rep a)
+    where
+      builder [ConsRep {consFields}] = buildObject interfaces scope consFields
+      builder cons = genericUnion scope cons
+        where
+          genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
+          genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
 buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> Text -> FieldDefinition
 buildField proxy fieldArgs fieldName =
@@ -335,23 +341,6 @@ analyseRep baseName cons =
     (enumRep, left1) = partition isEmpty cons
     (unionRefRep, left2) = partition (isUnionRef baseName) left1
     (unionRecordRep, anyonimousUnionRep) = partition consIsRecord left2
-
-derivingDataContent ::
-  forall a.
-  (Generic a, TypeRep (Rep a)) =>
-  Proxy a ->
-  ([Name], [TypeUpdater]) ->
-  (Name, DataFingerprint) ->
-  TypeScope ->
-  (TypeContent TRUE ANY, [TypeUpdater])
-derivingDataContent _ interfaces (baseName, baseFingerprint) scope =
-  builder $ typeRep $ Proxy @(Rep a)
-  where
-    builder [ConsRep {consFields}] = buildObject interfaces scope consFields
-    builder cons = genericUnion scope cons
-      where
-        genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
-        genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
 buildInputUnion ::
   (Name, DataFingerprint) -> [ConsRep] -> (TypeContent TRUE ANY, [TypeUpdater])
