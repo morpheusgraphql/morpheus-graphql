@@ -38,6 +38,7 @@ import Data.Morpheus.Kind
     ENUM,
     GQL_KIND,
     INPUT,
+    INTERFACE,
     OUTPUT,
     SCALAR,
   )
@@ -196,6 +197,15 @@ instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INPUT a wher
 
 instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind OUTPUT a where
   introspectKind _ = derivingData (Proxy @a) OutputType
+
+instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INTERFACE a where
+  introspectKind _ = updateLib (buildType (DataInterface fields)) types (Proxy @a)
+    where
+      (fields, types) =
+        introspectObjectFields
+          (Proxy @(CUSTOM a))
+          (baseName, OutputType, Proxy @a)
+      baseName = __typeName (Proxy @a)
 
 derivingData ::
   forall a.

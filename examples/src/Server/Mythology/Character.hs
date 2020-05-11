@@ -17,6 +17,7 @@ module Server.Mythology.Character
   )
 where
 
+import Data.Morpheus.Kind (INTERFACE)
 import Data.Morpheus.Types (GQLType (..), interface)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
@@ -27,7 +28,10 @@ import Server.Mythology.Place
   )
 
 newtype Person = Person {name :: Text}
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType Person where
+  type KIND Person = INTERFACE
 
 data Deity = Deity
   { name :: Text, -- Non-Nullable Field

@@ -106,6 +106,9 @@ instance IsObject INPUT where
 instance IsObject OUTPUT where
   isObject _ = True
 
+instance IsObject INTERFACE where
+  isObject _ = True
+
 class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
