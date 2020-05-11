@@ -11,7 +11,7 @@ interface Supernatural {
 }
 
 type Hero implements Character {
-  name: String
+  field: String
 }
 
 type Deity implements Character & Supernatural {

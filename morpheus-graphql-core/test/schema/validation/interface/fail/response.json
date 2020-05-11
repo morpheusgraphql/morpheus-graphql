@@ -6,5 +6,9 @@
   {
     "message": "type \"Deity\" implements Interface \"Supernatural\" Partially, on key \"power\" expected type \"[String!]!\" found \"[String!]\".",
     "locations": []
+  },
+  {
+    "message": "type \"Hero\" implements Interface \"Character\" Partially, key \"name\" not found .",
+    "locations": []
   }
 ]
