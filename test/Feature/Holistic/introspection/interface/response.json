@@ -16,7 +16,7 @@
       "inputFields": null,
       "interfaces": null,
       "enumValues": null,
-      "possibleTypes": []
+      "possibleTypes": [{ "kind": "OBJECT", "name": "User", "ofType": null }]
     },
     "user": {
       "kind": "OBJECT",
@@ -117,7 +117,7 @@
         }
       ],
       "inputFields": null,
-      "interfaces": [],
+      "interfaces": [{ "kind": "INTERFACE", "name": "Person", "ofType": null }],
       "enumValues": null,
       "possibleTypes": null
     }
