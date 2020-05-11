@@ -31,13 +31,14 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
   )
-import Data.Morpheus.Types (interface)
+import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataTypeKind (..),
     GQLTypeD (..),
     Key,
     Meta (..),
+    QUERY,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
@@ -54,7 +55,7 @@ import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
 interfaceF :: Name -> ExpQ
-interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) Maybe)))|]
+interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () Maybe))))|]
 
 introspectInterface :: Key -> ExpQ
 introspectInterface = interfaceF . mkName . unpack
