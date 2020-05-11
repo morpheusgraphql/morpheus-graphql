@@ -10,7 +10,7 @@
 -- | GQL Types
 module Data.Morpheus.Types
   ( Event (..),
-    GQLType (KIND, description),
+    GQLType (KIND, description, implements),
     GQLScalar (parseValue, serialize),
     GQLRequest (..),
     GQLResponse (..),
@@ -53,19 +53,22 @@ module Data.Morpheus.Types
     IORes,
     IOMutRes,
     IOSubRes,
+    interface,
   )
 where
 
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Data.Either (either)
 -- MORPHEUS
+
+import Data.Morpheus.Server.Deriving.Introspect (Introspect (..))
 import Data.Morpheus.Server.Types.GQLScalar
   ( GQLScalar
       ( parseValue,
         serialize
       ),
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, description))
+import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.ID (ID (..))
 import Data.Morpheus.Server.Types.Types (Undefined (..))
 import Data.Morpheus.Types.IO
@@ -75,9 +78,11 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Message,
+    Name,
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
+    TypeUpdater,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Event (..),
@@ -98,6 +103,7 @@ import Data.Morpheus.Types.Internal.Subscription
     Stream,
     WS,
   )
+import Data.Proxy (Proxy (..))
 import Data.Text (pack)
 
 class FlexibleResolver (f :: * -> *) (a :: k) where
@@ -201,11 +207,12 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> 
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
 
-class Implements object interface where
-  implements :: object -> interface
+-- class Implements object interface where
+--   implements :: object -> interface
 
-newtype Interface object interface = Interface
-  { implementable :: Implements object interface => object
-  }
+-- newtype Interface object interface = Interface
+--   { implementable :: Implements object interface => object
+--   }
 
-newtype InterfaceRef = InterfaceRef {interfaceRef :: forall a. (GQLType a) => a}
+interface :: (GQLType a, Introspect a) => Proxy a -> (Name, TypeUpdater)
+interface x = (__typeName x, introspect x)
