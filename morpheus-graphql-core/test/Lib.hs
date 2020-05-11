@@ -5,6 +5,7 @@ module Lib
     getResponseBody,
     getCases,
     maybeVariables,
+    readSource,
   )
 where
 
@@ -14,6 +15,9 @@ import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text, unpack)
+
+readSource :: Text -> IO ByteString
+readSource p = L.readFile (path p <> "schema.gql")
 
 path :: Text -> String
 path name = "test/" ++ unpack name

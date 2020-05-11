@@ -18,6 +18,7 @@ module Data.Morpheus.Core
     parseTypeDefinitions,
     validateRequest,
     parseRequestWith,
+    validateSchema,
     parseRequest,
     RenderGQL (..),
     SelectionTree (..),

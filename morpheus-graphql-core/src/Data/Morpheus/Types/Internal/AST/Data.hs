@@ -132,7 +132,6 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     resolveUpdates,
   )
 import Data.Semigroup ((<>), Semigroup (..))
-import Data.Text (pack)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 

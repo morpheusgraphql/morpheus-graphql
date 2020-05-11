@@ -96,7 +96,7 @@ data GQLError = GQLError
   { message :: Message,
     locations :: [Position]
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 type GQLErrors = [GQLError]
 
