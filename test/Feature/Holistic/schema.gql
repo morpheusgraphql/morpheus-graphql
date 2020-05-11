@@ -79,7 +79,7 @@ MultilineDescription
 
 Test
 """
-type User {
+type User implements Person {
   """
   field description: name
   """
