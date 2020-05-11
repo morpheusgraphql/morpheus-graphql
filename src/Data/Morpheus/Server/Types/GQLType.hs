@@ -108,14 +108,19 @@ newtype InterfaceRef = InterfaceRef {interfaceRef :: forall a. (GQLType a) => a}
 class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
+
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
+
   implements :: Proxy a -> [InterfaceRef]
   implements _ = []
+
   description :: Proxy a -> Maybe Text
   description _ = Nothing
+
   isObjectKind :: Proxy a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
+
   __typeName :: Proxy a -> Text
   default __typeName ::
     (Typeable a) =>
@@ -124,6 +129,7 @@ class IsObject (KIND a) => GQLType a where
   __typeName _ = intercalate "_" (getName $ Proxy @a)
     where
       getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint ::
     (Typeable a) =>
