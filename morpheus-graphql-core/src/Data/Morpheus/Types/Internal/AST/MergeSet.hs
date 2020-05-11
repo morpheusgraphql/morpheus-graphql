@@ -11,6 +11,7 @@ module Data.Morpheus.Types.Internal.AST.MergeSet
     toOrderedMap,
     concatTraverse,
     join,
+    unpack,
   )
 where
 
