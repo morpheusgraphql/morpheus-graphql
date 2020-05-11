@@ -21,7 +21,7 @@ import Data.Morpheus.Internal.TH
     tyConArgs,
     typeT,
   )
-import Data.Morpheus.Server.Deriving.Introspect (Introspect (..), IntrospectRep (..), TypeScope (..), introspectObjectFields)
+import Data.Morpheus.Server.Deriving.Introspect (DeriveTypeContent (..), Introspect (..), TypeScope (..), introspectObjectFields)
 import Data.Morpheus.Server.Types.GQLType (GQLType (__typeName), TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -29,13 +29,11 @@ import Data.Morpheus.Types.Internal.AST
     ConsD (..),
     DataTypeKind (..),
     FieldDefinition (..),
-    GQLTypeD (..),
     Key,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
     TypeRef (..),
-    TypeUpdater,
     createType,
     insertType,
     unsafeFromFields,
@@ -71,8 +69,8 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, typeOriginal, tKind) 
       where
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
-    iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [mainTypeName]
-    methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
+    iHead = instanceHeadMultiT ''DeriveTypeContent (conT ''TRUE) [mainTypeName]
+    methods = [instanceFunD 'deriveTypeContent ["_proxy1", "_proxy2"] body]
       where
         body
           | tKind == Just KindInputObject || null tKind = [|(DataInputObject $ unsafeFromInputFields $(buildFields cFields), concat $(typeUpdates))|]

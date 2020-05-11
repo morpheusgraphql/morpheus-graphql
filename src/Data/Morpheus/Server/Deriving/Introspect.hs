@@ -54,7 +54,8 @@ import Data.Morpheus.Server.Types.Types
     Pair,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     DataFingerprint (..),
     DataUnion,
     FALSE,
@@ -76,6 +77,7 @@ import Data.Morpheus.Types.Internal.AST
     createAlias,
     createEnumValue,
     defineType,
+    toAny,
     toListField,
     toNullableField,
     unsafeFromFields,
@@ -250,12 +252,13 @@ introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <
 
 -- Object Fields
 class DeriveTypeContent (custom :: Bool) a where
-  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope cat, Name, DataFingerprint) -> (TypeContent TRUE cat, [TypeUpdater])
+  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope cat, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
 instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
   deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
-    builder $ typeRep $ Proxy @(Rep a)
+    fa $ builder $ typeRep $ Proxy @(Rep a)
     where
+      fa (x, y) = (toAny x, y)
       builder [ConsRep {consFields}] = buildObject interfaces scope consFields
       builder cons = genericUnion scope cons
         where
