@@ -8,6 +8,7 @@
 module Data.Morpheus.Server.Document.Introspect
   ( deriveObjectRep,
     instanceIntrospect,
+    interfacesFrom,
   )
 where
 

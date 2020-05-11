@@ -25,6 +25,7 @@ import Data.Morpheus.Kind
     SCALAR,
     WRAPPER,
   )
+import Data.Morpheus.Server.Document.Introspect (interfacesFrom)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
@@ -39,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     isObject,
     isSchemaTypeName,
   )
+import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Text
   ( pack,
@@ -47,15 +49,25 @@ import Data.Text
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
+interfaceF :: Name -> ExpQ
+interfaceF name = [|interface (Proxy :: (Proxy $(conT name)))|]
+
+introspectInterface :: Key -> ExpQ
+introspectInterface = interfaceF . mkName . unpack
+
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD} =
+deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD, typeOriginal} =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
   where
     functions =
       map
         instanceProxyFunD
-        [('__typeName, [|toHSTypename tName|]), ('description, descriptionValue)]
+        [ ('__typeName, [|toHSTypename tName|]),
+          ('description, descriptionValue),
+          ('implements, implementsFunc)
+        ]
       where
+        implementsFunc = listE $ map introspectInterface (interfacesFrom (Just typeOriginal))
         descriptionValue = case tMeta >>= metaDescription of
           Nothing -> [|Nothing|]
           Just desc -> [|Just desc|]

@@ -133,10 +133,11 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   ConsD {cName = hsTypeName enumName, cFields = []}
             genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
             genType DataInputUnion {} = fail "Input Unions not Supported"
-            genType DataInterface {interfaceFields} =
+            genType DataInterface {interfaceFields} = do
+              interfaceCons <- buildObjectCons <$> traverse genResField (toList interfaceFields)
               pure
                 GQLTypeD
-                  { typeD = buildType $ buildObjectCons $ toList interfaceFields,
+                  { typeD = buildType interfaceCons,
                     typeArgD = [],
                     ..
                   }

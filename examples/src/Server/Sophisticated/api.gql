@@ -43,7 +43,7 @@ input UniqueID {
 }
 
 interface Account {
-  name: String
+  name: String!
 }
 
 type Address @typeDirective(id: 1) {
