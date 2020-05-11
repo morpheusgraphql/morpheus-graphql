@@ -240,7 +240,7 @@ introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <
 class IntrospectRep (custom :: Bool) a where
   introspectRep :: proxy1 custom -> (proxy2 a, TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
-instance (TypeRep (Rep a), Generic a) => IntrospectRep 'False a where
+instance (TypeRep (Rep a), Generic a, GQLType a) => IntrospectRep 'False a where
   introspectRep _ (_, scope, name, fing) =
     derivingDataContent (Proxy @a) (name, fing) scope
 
@@ -328,7 +328,7 @@ analyseRep baseName cons =
 
 derivingDataContent ::
   forall a.
-  (Generic a, TypeRep (Rep a)) =>
+  (Generic a, TypeRep (Rep a), GQLType a) =>
   Proxy a ->
   (Name, DataFingerprint) ->
   TypeScope ->
@@ -336,7 +336,8 @@ derivingDataContent ::
 derivingDataContent _ (baseName, baseFingerprint) scope =
   builder $ typeRep $ Proxy @(Rep a)
   where
-    builder [ConsRep {consFields}] = buildObject scope consFields
+    -- TODO: implements
+    builder [ConsRep {consFields}] = buildObject (unzip $ implements (Proxy @a)) scope consFields
     builder cons = genericUnion scope cons
       where
         genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
@@ -386,12 +387,12 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
           buildUnions wrapObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
 
-buildObject :: TypeScope -> [FieldRep] -> (TypeContent TRUE ANY, [TypeUpdater])
-buildObject isOutput consFields = (wrapWith fields, types)
+buildObject :: ([Name], [TypeUpdater]) -> TypeScope -> [FieldRep] -> (TypeContent TRUE ANY, [TypeUpdater])
+buildObject (interfaces, interfaceTypes) isOutput consFields = (wrapWith fields, types <> interfaceTypes)
   where
     (fields, types) = buildDataObject consFields
     wrapWith
-      | isOutput == OutputType = DataObject []
+      | isOutput == OutputType = DataObject interfaces
       | otherwise = DataInputObject . toInput
 
 buildDataObject :: [FieldRep] -> (FieldsDefinition, [TypeUpdater])
