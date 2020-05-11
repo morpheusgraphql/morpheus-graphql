@@ -116,6 +116,10 @@
     "description": "returns on a query that pads all '!' chars with whitespace"
   },
   {
+    "path": "introspection/interface",
+    "description": "interface must be visible in introspection"
+  },
+  {
     "path": "introspection/schemaTypes/__Type",
     "description": "benchmark  __Type"
   },
