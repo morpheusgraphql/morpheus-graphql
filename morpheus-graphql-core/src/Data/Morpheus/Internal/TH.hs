@@ -45,7 +45,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper (..),
     isOutputObject,
-    isOutputObject,
     isSubscription,
   )
 import Data.Morpheus.Types.Internal.Resolving

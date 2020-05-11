@@ -43,7 +43,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     isObject,
     isInput,
     isNullableWrapper,
-    isOutputType,
     sysFields,
     typeFromScalar,
     hsTypeName,
@@ -176,11 +175,6 @@ data DataTypeKind
 isSubscription :: DataTypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
 isSubscription _ = False
-
-isOutputType :: DataTypeKind -> Bool
-isOutputType (KindObject _) = True
-isOutputType KindUnion = True
-isOutputType _ = False
 
 isOutputObject :: DataTypeKind -> Bool
 isOutputObject (KindObject _) = True

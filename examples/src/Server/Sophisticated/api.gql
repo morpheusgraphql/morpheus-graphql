@@ -93,6 +93,7 @@ type Query {
   fail1: Int!
   fail2: Int!
   shared: SharedType!
+  testInterface: Account!
 }
 
 type Mutation {

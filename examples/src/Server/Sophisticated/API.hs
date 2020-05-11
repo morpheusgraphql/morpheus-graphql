@@ -130,7 +130,16 @@ gqlRoot =
           queryWrapped2 = pure $ A "",
           queryFail1 = fail "fail example",
           queryFail2 = liftEither alwaysFail,
-          queryShared = pure SharedType {sharedTypeName = pure "some name"}
+          queryShared =
+            pure
+              SharedType
+                { sharedTypeName = pure "some name"
+                },
+          queryTestInterface =
+            pure
+              Account
+                { accountName = pure "Value from Interface"
+                }
         }
     -------------------------------------------------------------
     mutationResolver =

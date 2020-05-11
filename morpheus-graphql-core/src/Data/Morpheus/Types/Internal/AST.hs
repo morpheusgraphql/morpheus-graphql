@@ -43,7 +43,6 @@ module Data.Morpheus.Types.Internal.AST
     Selection (..),
     Fragments,
     Fragment (..),
-    isOutputType,
     -- OPERATION
     Operation (..),
     Variable (..),
