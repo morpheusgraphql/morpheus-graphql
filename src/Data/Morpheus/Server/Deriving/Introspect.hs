@@ -26,7 +26,6 @@ module Data.Morpheus.Server.Deriving.Introspect
     updateLib,
     buildType,
     introspectObjectFields,
-    deriveCustomObjectType,
     deriveCustomInputObjectType,
     TypeScope (..),
   )
