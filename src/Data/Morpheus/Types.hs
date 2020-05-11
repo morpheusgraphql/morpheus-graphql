@@ -207,3 +207,5 @@ class Implements object interface where
 newtype Interface object interface = Interface
   { implementable :: Implements object interface => object
   }
+
+newtype InterfaceRef = InterfaceRef {interfaceRef :: forall a. (GQLType a) => a}
