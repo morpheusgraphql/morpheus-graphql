@@ -7,7 +7,6 @@
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
-import Data.Maybe (Maybe)
 import Data.Morpheus.Types.Internal.AST.Base (VALID)
 import Data.Morpheus.Types.Internal.AST.MergeSet (unpack)
 import Data.Morpheus.Types.Internal.AST.Selection
