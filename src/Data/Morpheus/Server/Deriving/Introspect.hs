@@ -73,7 +73,6 @@ import Data.Morpheus.Types.Internal.AST
     createAlias,
     createEnumValue,
     defineType,
-    toAny,
     toListField,
     toNullableField,
     unsafeFromFields,
@@ -365,19 +364,19 @@ buildInputUnion (baseName, baseFingerprint) cons =
 
 buildUnionType ::
   (Name, DataFingerprint) ->
-  (DataUnion -> TypeContent TRUE OUT) ->
-  (FieldsDefinition -> TypeContent TRUE OUT) ->
+  (DataUnion -> TypeContent TRUE cat) ->
+  (FieldsDefinition -> TypeContent TRUE cat) ->
   [ConsRep] ->
-  (TypeContent TRUE ANY, [TypeUpdater])
+  (TypeContent TRUE cat, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
   datatype
     (analyseRep baseName cons)
   where
-    datatype :: ResRep -> (TypeContent TRUE ANY, [TypeUpdater])
+    --datatype :: ResRep -> (TypeContent TRUE cat, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
       (DataEnum (map createEnumValue enumCons), types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
-      (toAny $ wrapUnion typeMembers, types <> enumTypes <> unionTypes)
+      (wrapUnion typeMembers, types <> enumTypes <> unionTypes)
       where
         typeMembers = unionRef <> enumMembers <> unionMembers
         (enumMembers, enumTypes) =
@@ -424,7 +423,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
     }
 
 buildUnionEnum ::
-  (FieldsDefinition -> TypeContent TRUE OUT) ->
+  (FieldsDefinition -> TypeContent TRUE cat) ->
   Name ->
   DataFingerprint ->
   [Name] ->
@@ -461,7 +460,7 @@ buildEnum typeName typeFingerprint tags =
         }
 
 buildEnumObject ::
-  (FieldsDefinition -> TypeContent TRUE OUT) ->
+  (FieldsDefinition -> TypeContent TRUE cat) ->
   Name ->
   DataFingerprint ->
   Name ->
