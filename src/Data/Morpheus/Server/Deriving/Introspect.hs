@@ -218,7 +218,7 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
     (datatypeContent, updates) =
       introspectRep
         (Proxy @(CUSTOM a))
-        (Proxy @a, scope, baseName, baseFingerprint)
+        (Proxy @a, unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
     baseName = __typeName (Proxy @a)
     baseFingerprint = __typeFingerprint (Proxy @a)
 
@@ -237,7 +237,7 @@ introspectObjectFields ::
   (FieldsDefinition, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) =
   withObject
-    (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
+    (introspectRep p1 (proxy, ([], []), scope, "", DataFingerprint "" []))
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
     withObject (DataInputObject x, ts) = (fromInput x, ts)
@@ -248,11 +248,11 @@ introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <
 
 -- Object Fields
 class IntrospectRep (custom :: Bool) a where
-  introspectRep :: proxy1 custom -> (proxy2 a, TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
+  introspectRep :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
-instance (TypeRep (Rep a), Generic a, GQLType a) => IntrospectRep 'False a where
-  introspectRep _ (_, scope, name, fing) =
-    derivingDataContent (Proxy @a) (name, fing) scope
+instance (TypeRep (Rep a), Generic a) => IntrospectRep 'False a where
+  introspectRep _ (_, interfaces, scope, name, fing) =
+    derivingDataContent (Proxy @a) interfaces (name, fing) scope
 
 buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> Text -> FieldDefinition
 buildField proxy fieldArgs fieldName =
@@ -338,16 +338,17 @@ analyseRep baseName cons =
 
 derivingDataContent ::
   forall a.
-  (Generic a, TypeRep (Rep a), GQLType a) =>
+  (Generic a, TypeRep (Rep a)) =>
   Proxy a ->
+  ([Name], [TypeUpdater]) ->
   (Name, DataFingerprint) ->
   TypeScope ->
   (TypeContent TRUE ANY, [TypeUpdater])
-derivingDataContent _ (baseName, baseFingerprint) scope =
+derivingDataContent _ interfaces (baseName, baseFingerprint) scope =
   builder $ typeRep $ Proxy @(Rep a)
   where
     -- TODO: implements
-    builder [ConsRep {consFields}] = buildObject (unzip $ implements (Proxy @a)) scope consFields
+    builder [ConsRep {consFields}] = buildObject interfaces scope consFields
     builder cons = genericUnion scope cons
       where
         genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
