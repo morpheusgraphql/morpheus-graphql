@@ -56,7 +56,7 @@ data DeityArgs = DeityArgs
   { name :: Text, -- Required Argument
     bornPlace :: Maybe City -- Optional Argument
   }
-  deriving (Generic, GQLType)
+  deriving (Generic)
 
 resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
