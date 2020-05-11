@@ -34,12 +34,10 @@ import Data.Morpheus.Types.Internal.AST
     TypeD (..),
     TypeDefinition (..),
     TypeRef (..),
-    createType,
     insertType,
     unsafeFromFields,
     unsafeFromInputFields,
   )
-import Data.Morpheus.Types.Internal.Operation (empty)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text, unpack)
 import Data.Typeable (Typeable)
@@ -74,19 +72,15 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, typeOriginal, tKind) 
       where
         body
           | tKind == Just KindInputObject || null tKind = [|(DataInputObject $ unsafeFromInputFields $(buildFields cFields), concat $(typeUpdates))|]
-          | otherwise = [|(DataObject interfacesRefs $ unsafeFromFields $(buildFields cFields), concat $(typeUpdates) <> $(interfaceTypes))|]
+          | otherwise = [|(DataObject interfacesNames $ unsafeFromFields $(buildFields cFields), concat $(typeUpdates))|]
         -------------------------------------------------------------
         typeUpdates = buildTypes cFields
-        (interfacesRefs, interfaceTypes) = interfacesFrom typeOriginal
+        interfacesNames = interfacesFrom typeOriginal
 deriveObjectRep _ = pure []
 
-interfacesFrom :: Maybe (TypeDefinition ANY) -> ([Key], ExpQ)
-interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = (objectImplements, getInterfaces objectImplements)
-interfacesFrom _ = ([], [|[]|])
-
-getInterfaces :: [Key] -> ExpQ
-getInterfaces [] = [|[]|]
-getInterfaces names = [|map (\typeName -> insertType (createType typeName (DataInterface empty))) names|]
+interfacesFrom :: Maybe (TypeDefinition ANY) -> [Key]
+interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
+interfacesFrom _ = []
 
 buildTypes :: [FieldDefinition] -> ExpQ
 buildTypes = listE . concatMap introspectField
