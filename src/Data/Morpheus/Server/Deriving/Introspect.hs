@@ -26,6 +26,8 @@ module Data.Morpheus.Server.Deriving.Introspect
     updateLib,
     buildType,
     introspectObjectFields,
+    deriveCustomObjectType,
+    deriveCustomInputObjectType,
     TypeScope (..),
   )
 where
@@ -233,6 +235,18 @@ fromInput = FieldsDefinition . unInputFieldsDefinition
 
 toInput :: FieldsDefinition -> InputFieldsDefinition
 toInput = InputFieldsDefinition . unFieldsDefinition
+
+deriveCustomInputObjectType ::
+  DeriveTypeContent TRUE a =>
+  (Name, proxy a) ->
+  [TypeUpdater]
+deriveCustomInputObjectType (name, proxy) = deriveCustomObjectType (name, InputType, proxy)
+
+deriveCustomObjectType ::
+  DeriveTypeContent TRUE a =>
+  (Name, TypeScope cat, proxy a) ->
+  [TypeUpdater]
+deriveCustomObjectType = snd . introspectObjectFields (Proxy :: Proxy TRUE)
 
 introspectObjectFields ::
   DeriveTypeContent custom a =>
