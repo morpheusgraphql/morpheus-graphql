@@ -128,6 +128,7 @@ data ResponseEvent event (m :: * -> *)
 
 type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
+-- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
 data Context = Context
   { currentSelection :: Selection VALID,
     schema :: Schema,
@@ -325,6 +326,10 @@ subscribe ch res = ResolverS $ do
   (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
   pure $ ReaderT eventRes
 
+-- | A function to return the internal 'Context' within a resolver's monad.
+-- Using the 'Context' itself is unsafe because it expposes internal structures
+-- of the AST, but you can use the "Data.Morpheus.Types.SelectionTree" typeclass to manipulate
+-- the internal AST with a safe interface.
 unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
 unsafeInternalContext = packResolver $ ResolverState ask
 
