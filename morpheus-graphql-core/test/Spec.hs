@@ -14,7 +14,6 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
-import Data.Morpheus.Types (WithOperation)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
@@ -34,6 +33,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
     ResultT (..),
     RootResModel (..),
+    WithOperation,
     mkList,
     mkNull,
     mkObject,
