@@ -35,30 +35,32 @@ import Data.Morpheus.Types.Internal.Operation
     toList,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ObjectResModel (..),
-    ResModel (..),
+  ( ResModel,
     Resolver,
     ResultT,
     RootResModel (..),
+    mkList,
+    mkNull,
+    mkObject,
     withArguments,
   )
 import Data.Text (Text)
 
 resolveTypes ::
   Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
-resolveTypes schema = ResList <$> traverse (`render` schema) (toList schema)
+resolveTypes schema = mkList <$> traverse (`render` schema) (toList schema)
 
 buildSchemaLinkType ::
   Monad m => Maybe (TypeDefinition OUT) -> Schema -> ResModel QUERY e m
 buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] empty
-buildSchemaLinkType Nothing = const ResNull
+buildSchemaLinkType Nothing = const mkNull
 
 findType ::
   Monad m =>
   Text ->
   Schema ->
   Resolver QUERY e m (ResModel QUERY e m)
-findType name schema = selectOr (pure ResNull) (`render` schema) name schema
+findType name schema = selectOr (pure mkNull) (`render` schema) name schema
 
 schemaResolver ::
   Monad m =>
@@ -66,38 +68,30 @@ schemaResolver ::
   Resolver QUERY e m (ResModel QUERY e m)
 schemaResolver schema@Schema {query, mutation, subscription} =
   pure $
-    ResObject
-      ( ObjectResModel
-          { __typename = "__Schema",
-            objectFields =
-              [ ("types", resolveTypes schema),
-                ("queryType", pure $ buildSchemaLinkType (Just query) schema),
-                ("mutationType", pure $ buildSchemaLinkType mutation schema),
-                ("subscriptionType", pure $ buildSchemaLinkType subscription schema),
-                ("directives", pure $ ResList [])
-              ]
-          }
-      )
+    mkObject
+      "__Schema"
+      [ ("types", resolveTypes schema),
+        ("queryType", pure $ buildSchemaLinkType (Just query) schema),
+        ("mutationType", pure $ buildSchemaLinkType mutation schema),
+        ("subscriptionType", pure $ buildSchemaLinkType subscription schema),
+        ("directives", pure $ mkList [])
+      ]
 
 schemaAPI :: Monad m => Schema -> ResModel QUERY e m
 schemaAPI schema =
-  ResObject
-    ( ObjectResModel
-        { __typename = "Root",
-          objectFields =
-            [ ("__type", withArguments typeResolver),
-              ("__schema", schemaResolver schema)
-            ]
-        }
-    )
+  mkObject
+    "Root"
+    [ ("__type", withArguments typeResolver),
+      ("__schema", schemaResolver schema)
+    ]
   where
-    typeResolver = selectOr (pure ResNull) handleArg "name"
+    typeResolver = selectOr (pure mkNull) handleArg "name"
       where
         handleArg
           Argument
             { argumentValue = (Scalar (String typename))
             } = findType typename schema
-        handleArg _ = pure ResNull
+        handleArg _ = pure mkNull
 
 withSystemFields :: Monad m => Schema -> RootResModel e m -> ResultT e' m (RootResModel e m)
 withSystemFields schema RootResModel {query, ..} =
