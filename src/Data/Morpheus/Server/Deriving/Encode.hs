@@ -63,7 +63,7 @@ import Data.Morpheus.Types.Internal.Resolving
     LiftOperation,
     MapStrategy (..),
     ObjectResModel (..),
-    ResModel,
+    ResModel (..),
     Resolver,
     RootResModel (..),
     failure,
