@@ -78,8 +78,8 @@ mkNull = ResNull
 
 mkObject ::
   Name ->
-  [(Name, Resolver QUERY e m (ResModel QUERY e m))] ->
-  ResModel QUERY e m
+  [(Name, Resolver o e m (ResModel o e m))] ->
+  ResModel o e m
 mkObject __typename objectFields =
   ResObject
     ( ObjectResModel

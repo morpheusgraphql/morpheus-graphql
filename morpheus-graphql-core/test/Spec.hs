@@ -14,6 +14,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
+import Data.Morpheus.Types (WithOperation)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
@@ -28,10 +29,15 @@ import Data.Morpheus.Types.Internal.Operation
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResModel,
+    Resolver,
     ResponseStream,
     Result (..),
     ResultT (..),
     RootResModel (..),
+    mkList,
+    mkNull,
+    mkObject,
+    mkString,
   )
 import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as LT (toStrict)
@@ -81,41 +87,26 @@ getSchema =
   }
 |]
 
-string :: Name -> ResModel o e m
-string = ResScalar . String
-
 resolver :: Monad m => RootResModel e m
 resolver =
   RootResModel
     { query =
         pure $
-          ResObject
-            ( ObjectResModel
-                { __typename = "Query",
-                  objectFields =
-                    [ ( "deity",
-                        pure
-                          $ ResObject
-                          $ ObjectResModel
-                            { __typename = "Deity",
-                              objectFields =
-                                [ ( "name",
-                                    pure $ string "Morpheus"
-                                  ),
-                                  ( "power",
-                                    pure $
-                                      ResList
-                                        [string "Shapeshifting"]
-                                  )
-                                ]
-                            }
-                      )
-                    ]
-                }
-            ),
-      mutation = pure ResNull,
-      subscription = pure ResNull
+          mkObject
+            "Query"
+            [("deity", resolveDeity)],
+      mutation = pure mkNull,
+      subscription = pure mkNull
     }
+
+resolveDeity :: (WithOperation o, Monad m) => Resolver o e m (ResModel o e m)
+resolveDeity =
+  pure $
+    mkObject
+      "Deity"
+      [ ("name", pure $ mkString "Morpheus"),
+        ("power", pure $ mkList [mkString "Shapeshifting"])
+      ]
 
 main :: IO ()
 main =
