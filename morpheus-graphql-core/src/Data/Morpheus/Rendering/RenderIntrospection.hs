@@ -33,7 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     Meta (..),
     Name,
     QUERY,
-    ScalarValue (..),
     Schema,
     TypeContent (..),
     TypeDefinition (..),

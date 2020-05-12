@@ -14,17 +14,45 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
-import Data.Morpheus.Types.IO (GQLRequest (..))
-import Data.Morpheus.Types.Internal.AST (Name, ScalarValue (..), Schema, VALID, Value (..))
-import Data.Morpheus.Types.Internal.Operation (fromList)
-import Data.Morpheus.Types.Internal.Resolving (ObjectResModel (..), ResModel (..), ResponseStream, Result (..), ResultT (..), RootResModel (..))
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( Name,
+    Schema,
+    VALID,
+    Value (..),
+  )
+import Data.Morpheus.Types.Internal.Operation
+  ( fromList,
+  )
+import Data.Morpheus.Types.Internal.Resolving
+  ( ResModel,
+    ResponseStream,
+    Result (..),
+    ResultT (..),
+    RootResModel (..),
+  )
 import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as LT (toStrict)
 import Data.Text.Lazy.Encoding (decodeUtf8)
-import Lib (getGQLBody, getResponseBody, maybeVariables)
-import Schema (testSchema)
-import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit (assertFailure, testCase)
+import Lib
+  ( getGQLBody,
+    getResponseBody,
+    maybeVariables,
+  )
+import Schema
+  ( testSchema,
+  )
+import Test.Tasty
+  ( TestTree,
+    defaultMain,
+    testGroup,
+  )
+import Test.Tasty.HUnit
+  ( assertFailure,
+    testCase,
+  )
 
 getSchema :: Monad m => ResponseStream e m Schema
 getSchema =
