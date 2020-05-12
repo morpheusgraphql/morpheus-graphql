@@ -48,7 +48,10 @@ module Data.Morpheus.Types.Internal.Resolving
   )
 where
 
-import Data.Morpheus.Types.Internal.AST (Name, QUERY, ScalarValue (..))
+import Data.Morpheus.Types.Internal.AST
+  ( Name,
+    ScalarValue (..),
+  )
 import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 
