@@ -17,6 +17,7 @@ module Data.Morpheus.Kind
     ResContext (..),
     OUTPUT,
     INPUT,
+    INTERFACE,
   )
 where
 
@@ -30,6 +31,7 @@ data GQL_KIND
   | INPUT
   | OUTPUT
   | WRAPPER
+  | INTERFACE
 
 data ResContext (kind :: GQL_KIND) (operation :: OperationType) event (m :: * -> *) value = ResContext
 
@@ -74,3 +76,5 @@ type UNION = 'OUTPUT
 
 -- | GraphQL Object
 type OBJECT = 'OUTPUT
+
+type INTERFACE = 'INTERFACE

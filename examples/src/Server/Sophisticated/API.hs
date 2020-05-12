@@ -107,7 +107,7 @@ data Channel = USER | ADDRESS
 
 newtype Content = Content {contentID :: Int}
 
-type EVENT = (Event Channel Content)
+type EVENT = Event Channel Content
 
 api :: Input api -> Stream api EVENT IO
 api = interpreter gqlRoot
@@ -130,7 +130,16 @@ gqlRoot =
           queryWrapped2 = pure $ A "",
           queryFail1 = fail "fail example",
           queryFail2 = liftEither alwaysFail,
-          queryShared = pure SharedType {sharedTypeName = pure "some name"}
+          queryShared =
+            pure
+              SharedType
+                { sharedTypeName = pure "some name"
+                },
+          queryTestInterface =
+            pure
+              Account
+                { accountName = pure "Value from Interface"
+                }
         }
     -------------------------------------------------------------
     mutationResolver =
@@ -276,7 +285,7 @@ data Person = Person
   }
 
 dbText :: IO Text
-dbText = pure "Updated Text"
+dbText = pure "Updated Text s"
 
 dbInt :: IO Int
 dbInt = pure 11

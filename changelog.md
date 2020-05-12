@@ -69,6 +69,13 @@ deprecated:
   -- is alias to: Resolver o () IO (Maybe Int)
   ```
 
+- server supports interfaces (see Readme):
+
+  1. define interface with Haskell Types (runtime validation):
+  2. define interface with `importGQLDocument` and `DSL` (compile time validation):
+  
+- SelectionTree interface 
+
 ### minor
 
 - fixed subscription sessions, srarting new session does not affects old ones.

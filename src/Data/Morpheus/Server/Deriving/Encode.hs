@@ -29,6 +29,7 @@ import qualified Data.Map as M
 import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
+    INTERFACE,
     OUTPUT,
     ResContext (..),
     SCALAR,
@@ -145,6 +146,9 @@ instance (Generic a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind
   encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
+  encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
+
+instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind INTERFACE a o e m where
   encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 convertNode ::

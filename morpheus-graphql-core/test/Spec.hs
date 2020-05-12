@@ -22,6 +22,7 @@ import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as LT (toStrict)
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Lib (getGQLBody, getResponseBody, maybeVariables)
+import Schema (testSchema)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
 
@@ -95,9 +96,10 @@ main =
       "core tests"
     $ map
       (uncurry basicTest)
-      [ ("basic Test", "simpleQuery"),
+      [ ("basic Test", "simple"),
         ("test interface", "interface")
       ]
+      <> [testSchema]
 
 basicTest :: String -> Name -> TestTree
 basicTest description path = testCase description $ do

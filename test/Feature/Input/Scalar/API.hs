@@ -14,7 +14,7 @@ import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
     GQLRootResolver (..),
-    GQLType (..),
+    GQLType,
     Undefined (..),
   )
 import GHC.Generics (Generic)

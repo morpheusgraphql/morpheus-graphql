@@ -68,6 +68,10 @@ some random text for union type
 """
 union TestUnion = User | Address
 
+interface Person {
+  name: String
+}
+
 """
 User
 
@@ -75,7 +79,7 @@ MultilineDescription
 
 Test
 """
-type User {
+type User implements Person {
   """
   field description: name
   """
@@ -94,6 +98,7 @@ type Query {
   testUnion: TestUnion
   fail1: String!
   fail2: Int!
+  person: Person!
 }
 
 type Mutation {

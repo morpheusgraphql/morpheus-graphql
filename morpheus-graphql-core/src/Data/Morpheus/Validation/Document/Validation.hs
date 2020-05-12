@@ -3,9 +3,11 @@
 
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument,
+    validateSchema,
   )
 where
 
+import Data.Functor (($>))
 import Data.Maybe
 --
 -- Morpheus
@@ -22,6 +24,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldsDefinition (..),
     Name,
+    Schema,
     TypeContent (..),
     TypeDefinition (..),
     TypeRef (..),
@@ -37,16 +40,19 @@ import Data.Morpheus.Types.Internal.Resolving
     Failure (..),
   )
 
+validateSchema :: Schema -> Eventless Schema
+validateSchema schema = validatePartialDocument (toList schema) $> schema
+
 validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
-validatePartialDocument lib = catMaybes <$> traverse validateType lib
+validatePartialDocument lib = traverse validateType lib
   where
-    validateType :: TypeDefinition ANY -> Eventless (Maybe (TypeDefinition ANY))
+    validateType :: TypeDefinition ANY -> Eventless (TypeDefinition ANY)
     validateType dt@TypeDefinition {typeName, typeContent = DataObject {objectImplements, objectFields}} = do
       interface <- traverse getInterfaceByKey objectImplements
       case concatMap (mustBeSubset objectFields) interface of
-        [] -> pure (Just dt)
+        [] -> pure dt
         errors -> failure $ partialImplements typeName errors
-    validateType x = pure (Just x)
+    validateType x = pure x
     mustBeSubset ::
       FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
     mustBeSubset objFields (typeName, fields) = concatMap checkField (toList fields)

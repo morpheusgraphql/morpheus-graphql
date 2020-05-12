@@ -21,20 +21,33 @@ import Data.Morpheus.Internal.TH
     tyConArgs,
     typeT,
   )
-import Data.Morpheus.Server.Deriving.Introspect (Introspect (..), IntrospectRep (..), TypeScope (..), introspectObjectFields)
-import Data.Morpheus.Server.Types.GQLType (GQLType (__typeName), TRUE)
+import Data.Morpheus.Server.Deriving.Introspect
+  ( DeriveTypeContent (..),
+    Introspect (..),
+    deriveCustomInputObjectType,
+  )
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType (__typeName, implements),
+    TRUE,
+  )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     ConsD (..),
     DataTypeKind (..),
     FieldDefinition (..),
+    Key,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
     TypeRef (..),
+    TypeUpdater,
     insertType,
     unsafeFromFields,
     unsafeFromInputFields,
+  )
+import Data.Morpheus.Types.Internal.Resolving
+  ( resolveUpdates,
   )
 import Data.Proxy (Proxy (..))
 import Data.Text (Text, unpack)
@@ -47,7 +60,6 @@ instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..
   | typeName `elem` ["__DirectiveLocation", "__TypeKind"] = pure []
   | otherwise = pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
-    -----------------------------------------------
     iHead = instanceHeadT ''Introspect typeName []
     defineIntrospect = instanceProxyFunD ('introspect, body)
       where
@@ -55,8 +67,8 @@ instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
-deriveObjectRep :: (TypeD, Maybe DataTypeKind) -> Q [Dec]
-deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
+deriveObjectRep :: (TypeD, Maybe (TypeDefinition ANY), Maybe DataTypeKind) -> Q [Dec]
+deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
     mainTypeName = typeT (mkName $ unpack tName) typeArgs
@@ -65,25 +77,50 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, tKind) =
       where
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
-    iHead = instanceHeadMultiT ''IntrospectRep (conT ''TRUE) [mainTypeName]
-    methods = [instanceFunD 'introspectRep ["_proxy1", "_proxy2"] body]
+    iHead = instanceHeadMultiT ''DeriveTypeContent (conT ''TRUE) [mainTypeName]
+    methods = [instanceFunD 'deriveTypeContent ["_proxy1", "_proxy2"] body]
       where
         body
-          | tKind == Just KindInputObject || null tKind = [|(DataInputObject $ unsafeFromInputFields $(buildFields cFields), concat $(buildTypes cFields))|]
-          | otherwise = [|(DataObject [] $ unsafeFromFields $(buildFields cFields), concat $(buildTypes cFields))|]
+          | tKind == Just KindInputObject || null tKind =
+            [|
+              ( DataInputObject
+                  (unsafeFromInputFields $(buildFields cFields)),
+                $(typeUpdates)
+              )
+              |]
+          | otherwise =
+            [|
+              ( DataObject
+                  (interfaceNames $(proxy))
+                  (unsafeFromFields $(buildFields cFields)),
+                interfaceTypes $(proxy)
+                  : $(typeUpdates)
+              )
+              |]
+        -------------------------------------------------------------
+        typeUpdates = buildTypes cFields
+        proxy = [|(Proxy :: Proxy $(mainTypeName))|]
 deriveObjectRep _ = pure []
+
+interfaceNames :: GQLType a => Proxy a -> [Key]
+interfaceNames = map fst . implements
+
+interfaceTypes :: GQLType a => Proxy a -> TypeUpdater
+interfaceTypes = flip resolveUpdates . map snd . implements
 
 buildTypes :: [FieldDefinition] -> ExpQ
 buildTypes = listE . concatMap introspectField
+
+introspectField :: FieldDefinition -> [ExpQ]
+introspectField FieldDefinition {fieldType, fieldArgs} =
+  [|introspect $(proxyT fieldType)|] : inputTypes fieldArgs
   where
-    introspectField FieldDefinition {fieldType, fieldArgs} =
-      [|[introspect $(proxyT fieldType)]|] : inputTypes fieldArgs
+    inputTypes :: ArgumentsDefinition -> [ExpQ]
+    inputTypes ArgumentsDefinition {argumentsTypename = Just argsTypeName}
+      | argsTypeName /= "()" = [[|deriveCustomInputObjectType (argsTypeName, $(proxyT tAlias))|]]
       where
-        inputTypes ArgumentsDefinition {argumentsTypename = Just argsTypeName}
-          | argsTypeName /= "()" = [[|snd $ introspectObjectFields (Proxy :: Proxy TRUE) (argsTypeName, InputType, $(proxyT tAlias))|]]
-          where
-            tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
-        inputTypes _ = []
+        tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
+    inputTypes _ = []
 
 conTX :: Text -> Q Type
 conTX = conT . mkName . unpack

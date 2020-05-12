@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -21,6 +22,7 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Kind
   ( ENUM,
     INPUT,
+    INTERFACE,
     OUTPUT,
     SCALAR,
     WRAPPER,
@@ -29,15 +31,21 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
   )
+import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
-  ( DataTypeKind (..),
+  ( ANY,
+    DataTypeKind (..),
     GQLTypeD (..),
     Key,
     Meta (..),
+    QUERY,
+    TypeContent (..),
     TypeD (..),
+    TypeDefinition (..),
     isObject,
     isSchemaTypeName,
   )
+import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Text
   ( pack,
@@ -46,15 +54,26 @@ import Data.Text
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
+interfaceF :: Name -> ExpQ
+interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () Maybe))))|]
+
+introspectInterface :: Key -> ExpQ
+introspectInterface = interfaceF . mkName . unpack
+
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD} =
+deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD, typeOriginal} =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
   where
     functions =
       map
         instanceProxyFunD
-        [('__typeName, [|toHSTypename tName|]), ('description, descriptionValue)]
+        [ ('__typeName, [|typename|]),
+          ('description, descriptionValue),
+          ('implements, implementsFunc)
+        ]
       where
+        typename = toHSTypename tName
+        implementsFunc = listE $ map introspectInterface (interfacesFrom (Just typeOriginal))
         descriptionValue = case tMeta >>= metaDescription of
           Nothing -> [|Nothing|]
           Just desc -> [|Just desc|]
@@ -89,10 +108,14 @@ kindName KindInputObject = ''INPUT
 kindName KindList = ''WRAPPER
 kindName KindNonNull = ''WRAPPER
 kindName KindInputUnion = ''INPUT
-kindName KindInterface = ''OUTPUT
+kindName KindInterface = ''INTERFACE
 
 toHSTypename :: Key -> Key
 toHSTypename = pack . hsTypename . unpack
   where
     hsTypename ('S' : name) | isSchemaTypeName (pack name) = name
     hsTypename name = name
+
+interfacesFrom :: Maybe (TypeDefinition ANY) -> [Key]
+interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
+interfacesFrom _ = []

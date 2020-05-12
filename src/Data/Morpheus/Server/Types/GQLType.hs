@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -25,7 +26,9 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataFingerprint (..),
+    Name,
     QUERY,
+    TypeUpdater,
     internalFingerprint,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -102,15 +105,25 @@ instance IsObject INPUT where
 instance IsObject OUTPUT where
   isObject _ = True
 
+instance IsObject INTERFACE where
+  isObject _ = True
+
 class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
+
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
+
+  implements :: Proxy a -> [(Name, TypeUpdater)]
+  implements _ = []
+
   description :: Proxy a -> Maybe Text
   description _ = Nothing
+
   isObjectKind :: Proxy a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
+
   __typeName :: Proxy a -> Text
   default __typeName ::
     (Typeable a) =>
@@ -119,6 +132,7 @@ class IsObject (KIND a) => GQLType a where
   __typeName _ = intercalate "_" (getName $ Proxy @a)
     where
       getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+
   __typeFingerprint :: Proxy a -> DataFingerprint
   default __typeFingerprint ::
     (Typeable a) =>

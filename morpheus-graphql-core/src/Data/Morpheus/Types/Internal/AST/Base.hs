@@ -43,7 +43,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     isObject,
     isInput,
     isNullableWrapper,
-    isOutputType,
     sysFields,
     typeFromScalar,
     hsTypeName,
@@ -97,7 +96,7 @@ data GQLError = GQLError
   { message :: Message,
     locations :: [Position]
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 type GQLErrors = [GQLError]
 
@@ -177,18 +176,15 @@ isSubscription :: DataTypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
 isSubscription _ = False
 
-isOutputType :: DataTypeKind -> Bool
-isOutputType (KindObject _) = True
-isOutputType KindUnion = True
-isOutputType _ = False
-
 isOutputObject :: DataTypeKind -> Bool
 isOutputObject (KindObject _) = True
+isOutputObject KindInterface = True
 isOutputObject _ = False
 
 isObject :: DataTypeKind -> Bool
 isObject (KindObject _) = True
 isObject KindInputObject = True
+isObject KindInterface = True
 isObject _ = False
 
 isInput :: DataTypeKind -> Bool

@@ -1,0 +1,33 @@
+type Query {
+  deity(name: String): Deity!
+}
+
+interface Character {
+  name: String
+}
+
+interface Supernatural {
+  power: [String!]!
+}
+
+type Hero implements Character {
+  field: String
+}
+
+type Deity implements Character & Supernatural {
+  name: Int
+  power: [String!]
+}
+
+# TODO: validate arguments
+# interface Aged {
+#   age(num: Int): String!
+# }
+
+# type Human implements Aged {
+#   age(num: Int!): String
+# }
+
+# type God implements Aged {
+#   age(date: String!): String
+# }

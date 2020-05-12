@@ -25,13 +25,13 @@ data F1Args = F1Args
   { arg1 :: Text,
     arg2 :: Maybe Int
   }
-  deriving (Generic)
+  deriving (Generic, GQLType)
 
 data F2Args = F2Args
   { argList :: [Text],
     argNestedList :: [Maybe [[Int]]]
   }
-  deriving (Generic)
+  deriving (Generic, GQLType)
 
 data A = A
   { a1 :: F1Args -> ResolverQ () IO Text,

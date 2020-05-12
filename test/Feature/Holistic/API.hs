@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -65,7 +66,8 @@ rootResolver =
           { user,
             testUnion = Just . TestUnionUser <$> user,
             fail1 = liftEither alwaysFail,
-            fail2 = fail "fail with MonadFail"
+            fail2 = fail "fail with MonadFail",
+            person = pure Person {name = pure (Just "test Person Name")}
           },
       mutationResolver = Mutation {createUser = const user},
       subscriptionResolver =

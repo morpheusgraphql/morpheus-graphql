@@ -42,6 +42,10 @@ input UniqueID {
   rec: UniqueID
 }
 
+interface Account {
+  name: String!
+}
+
 type Address @typeDirective(id: 1) {
   """
   temporary multiline Test for Enum field descripions
@@ -55,7 +59,7 @@ type Address @typeDirective(id: 1) {
 """
 my custom description for user
 """
-type User {
+type User implements Account {
   name: String!
   """
   some email adress
@@ -89,6 +93,7 @@ type Query {
   fail1: Int!
   fail2: Int!
   shared: SharedType!
+  testInterface: Account!
 }
 
 type Mutation {

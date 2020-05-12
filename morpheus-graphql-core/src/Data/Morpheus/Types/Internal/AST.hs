@@ -43,7 +43,6 @@ module Data.Morpheus.Types.Internal.AST
     Selection (..),
     Fragments,
     Fragment (..),
-    isOutputType,
     -- OPERATION
     Operation (..),
     Variable (..),
@@ -80,6 +79,7 @@ module Data.Morpheus.Types.Internal.AST
     ConsD (..),
     ClientQuery (..),
     GQLTypeD (..),
+    TypeCategory,
     ClientType (..),
     DataInputUnion,
     VariableContent (..),

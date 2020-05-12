@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6e149fb61111540b14d06189b74a5f6310e08e8c26063c8b93948f11e8b13bab
+-- hash: 22769a075f84b3c373443d5add0f041464f67b9bbd64eb0f76ef25461e425812
 
 name:           morpheus-graphql
 version:        0.11.0
@@ -47,6 +47,7 @@ data-files:
     test/Feature/Holistic/introspection/description/inputObject/query.gql
     test/Feature/Holistic/introspection/description/object/query.gql
     test/Feature/Holistic/introspection/description/union/query.gql
+    test/Feature/Holistic/introspection/interface/query.gql
     test/Feature/Holistic/introspection/kinds/ENUM/query.gql
     test/Feature/Holistic/introspection/kinds/INPUT_OBJECT/query.gql
     test/Feature/Holistic/introspection/kinds/OBJECT/query.gql
@@ -183,6 +184,7 @@ data-files:
     test/Feature/Holistic/introspection/description/inputObject/response.json
     test/Feature/Holistic/introspection/description/object/response.json
     test/Feature/Holistic/introspection/description/union/response.json
+    test/Feature/Holistic/introspection/interface/response.json
     test/Feature/Holistic/introspection/kinds/ENUM/response.json
     test/Feature/Holistic/introspection/kinds/INPUT_OBJECT/response.json
     test/Feature/Holistic/introspection/kinds/OBJECT/response.json

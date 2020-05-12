@@ -12,7 +12,6 @@ module Data.Morpheus.Server.Document.Convert
 where
 
 -- MORPHEUS
-
 import Data.Morpheus.Internal.TH (infoTyVars)
 import Data.Morpheus.Internal.Utils
   ( capital,
@@ -65,6 +64,7 @@ getTyArgs x
 kindToTyArgs :: TypeContent TRUE ANY -> Maybe Key
 kindToTyArgs DataObject {} = Just m_
 kindToTyArgs DataUnion {} = Just m_
+kindToTyArgs DataInterface {} = Just m_
 kindToTyArgs _ = Nothing
 
 toTHDefinitions :: Bool -> [TypeDefinition ANY] -> Q [GQLTypeD]
@@ -134,7 +134,15 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   ConsD {cName = hsTypeName enumName, cFields = []}
             genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
             genType DataInputUnion {} = fail "Input Unions not Supported"
-            genType DataInterface {} = fail "interfaces must be eliminated in Validation"
+            genType DataInterface {interfaceFields} = do
+              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList interfaceFields)
+              objCons <- buildObjectCons <$> traverse genResField (toList interfaceFields)
+              pure
+                GQLTypeD
+                  { typeD = buildType objCons,
+                    typeArgD,
+                    ..
+                  }
             genType (DataInputObject fields) =
               pure
                 GQLTypeD

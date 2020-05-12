@@ -3,6 +3,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,6 +11,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -19,11 +21,12 @@
 module Data.Morpheus.Server.Deriving.Introspect
   ( TypeUpdater,
     Introspect (..),
-    IntrospectRep (..),
+    DeriveTypeContent (..),
     IntroCon,
     updateLib,
     buildType,
     introspectObjectFields,
+    deriveCustomInputObjectType,
     TypeScope (..),
   )
 where
@@ -38,6 +41,7 @@ import Data.Morpheus.Kind
     ENUM,
     GQL_KIND,
     INPUT,
+    INTERFACE,
     OUTPUT,
     SCALAR,
   )
@@ -55,6 +59,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition (..),
     DataFingerprint (..),
     DataUnion,
+    FALSE,
     FieldDefinition (..),
     FieldsDefinition (..),
     IN,
@@ -65,6 +70,7 @@ import Data.Morpheus.Types.Internal.AST
     Name,
     OUT,
     TRUE,
+    TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
     TypeRef (..),
@@ -96,7 +102,7 @@ import Data.Text
   )
 import GHC.Generics
 
-type IntroCon a = (GQLType a, IntrospectRep (CUSTOM a) a)
+type IntroCon a = (GQLType a, DeriveTypeContent (CUSTOM a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect a where
@@ -148,7 +154,7 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
   introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
-instance (GQLType b, IntrospectRep 'False a, Introspect b) => Introspect (a -> m b) where
+instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
   field _ name = fieldObj {fieldArgs}
     where
@@ -191,24 +197,33 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
       enumType =
         buildType $ DataEnum $ map createEnumValue $ enumTags (Proxy @(Rep a))
 
-instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind INPUT a where
+instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INPUT a where
   introspectKind _ = derivingData (Proxy @a) InputType
 
-instance (GQL_TYPE a, IntrospectRep (CUSTOM a) a) => IntrospectKind OUTPUT a where
+instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind OUTPUT a where
   introspectKind _ = derivingData (Proxy @a) OutputType
 
+instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INTERFACE a where
+  introspectKind _ = updateLib (buildType (DataInterface fields :: TypeContent TRUE OUT)) types (Proxy @a)
+    where
+      (fields, types) =
+        introspectObjectFields
+          (Proxy @(CUSTOM a))
+          (baseName, OutputType, Proxy @a)
+      baseName = __typeName (Proxy @a)
+
 derivingData ::
-  forall a.
-  (GQLType a, IntrospectRep (CUSTOM a) a) =>
+  forall a cat.
+  (GQLType a, DeriveTypeContent (CUSTOM a) a) =>
   Proxy a ->
-  TypeScope ->
+  TypeScope cat ->
   TypeUpdater
 derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
   where
     (datatypeContent, updates) =
-      introspectRep
+      deriveTypeContent
         (Proxy @(CUSTOM a))
-        (Proxy @a, scope, baseName, baseFingerprint)
+        (Proxy @a, unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
     baseName = __typeName (Proxy @a)
     baseFingerprint = __typeFingerprint (Proxy @a)
 
@@ -220,14 +235,29 @@ fromInput = FieldsDefinition . unInputFieldsDefinition
 toInput :: FieldsDefinition -> InputFieldsDefinition
 toInput = InputFieldsDefinition . unFieldsDefinition
 
+deriveCustomInputObjectType ::
+  DeriveTypeContent TRUE a =>
+  (Name, proxy a) ->
+  TypeUpdater
+deriveCustomInputObjectType (name, proxy) =
+  flip
+    resolveUpdates
+    (deriveCustomObjectType (name, InputType, proxy))
+
+deriveCustomObjectType ::
+  DeriveTypeContent TRUE a =>
+  (Name, TypeScope cat, proxy a) ->
+  [TypeUpdater]
+deriveCustomObjectType = snd . introspectObjectFields (Proxy :: Proxy TRUE)
+
 introspectObjectFields ::
-  IntrospectRep custom a =>
+  DeriveTypeContent custom a =>
   proxy1 (custom :: Bool) ->
-  (Name, TypeScope, proxy2 a) ->
+  (Name, TypeScope cat, proxy2 a) ->
   (FieldsDefinition, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) =
   withObject
-    (introspectRep p1 (proxy, scope, "", DataFingerprint "" []))
+    (deriveTypeContent p1 (proxy, ([], []), scope, "", DataFingerprint "" []))
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
     withObject (DataInputObject x, ts) = (fromInput x, ts)
@@ -237,12 +267,19 @@ introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
-class IntrospectRep (custom :: Bool) a where
-  introspectRep :: proxy1 custom -> (proxy2 a, TypeScope, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
+class DeriveTypeContent (custom :: Bool) a where
+  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope cat, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
-instance (TypeRep (Rep a), Generic a) => IntrospectRep 'False a where
-  introspectRep _ (_, scope, name, fing) =
-    derivingDataContent (Proxy @a) (name, fing) scope
+instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
+  deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
+    fa $ builder $ typeRep $ Proxy @(Rep a)
+    where
+      fa (x, y) = (toAny x, y)
+      builder [ConsRep {consFields}] = buildObject interfaces scope consFields
+      builder cons = genericUnion scope cons
+        where
+          genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
+          genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
 buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> Text -> FieldDefinition
 buildField proxy fieldArgs fieldName =
@@ -268,7 +305,7 @@ buildType typeContent proxy =
 
 updateLib ::
   GQLType a =>
-  (Proxy a -> TypeDefinition ANY) ->
+  (Proxy a -> TypeDefinition cat) ->
   [TypeUpdater] ->
   Proxy a ->
   TypeUpdater
@@ -326,29 +363,13 @@ analyseRep baseName cons =
     (unionRefRep, left2) = partition (isUnionRef baseName) left1
     (unionRecordRep, anyonimousUnionRep) = partition consIsRecord left2
 
-derivingDataContent ::
-  forall a.
-  (Generic a, TypeRep (Rep a)) =>
-  Proxy a ->
-  (Name, DataFingerprint) ->
-  TypeScope ->
-  (TypeContent TRUE ANY, [TypeUpdater])
-derivingDataContent _ (baseName, baseFingerprint) scope =
-  builder $ typeRep $ Proxy @(Rep a)
-  where
-    builder [ConsRep {consFields}] = buildObject scope consFields
-    builder cons = genericUnion scope cons
-      where
-        genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
-        genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
-
 buildInputUnion ::
-  (Name, DataFingerprint) -> [ConsRep] -> (TypeContent TRUE ANY, [TypeUpdater])
+  (Name, DataFingerprint) -> [ConsRep] -> (TypeContent TRUE IN, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons =
   datatype
     (analyseRep baseName cons)
   where
-    datatype :: ResRep -> (TypeContent TRUE ANY, [TypeUpdater])
+    datatype :: ResRep -> (TypeContent TRUE IN, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
       (DataEnum (map createEnumValue enumCons), types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
@@ -365,19 +386,19 @@ buildInputUnion (baseName, baseFingerprint) cons =
 
 buildUnionType ::
   (Name, DataFingerprint) ->
-  (DataUnion -> TypeContent TRUE OUT) ->
-  (FieldsDefinition -> TypeContent TRUE OUT) ->
+  (DataUnion -> TypeContent TRUE cat) ->
+  (FieldsDefinition -> TypeContent TRUE cat) ->
   [ConsRep] ->
-  (TypeContent TRUE ANY, [TypeUpdater])
+  (TypeContent TRUE cat, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
   datatype
     (analyseRep baseName cons)
   where
-    datatype :: ResRep -> (TypeContent TRUE ANY, [TypeUpdater])
+    --datatype :: ResRep -> (TypeContent TRUE cat, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
       (DataEnum (map createEnumValue enumCons), types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
-      (toAny $ wrapUnion typeMembers, types <> enumTypes <> unionTypes)
+      (wrapUnion typeMembers, types <> enumTypes <> unionTypes)
       where
         typeMembers = unionRef <> enumMembers <> unionMembers
         (enumMembers, enumTypes) =
@@ -386,13 +407,13 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
           buildUnions wrapObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
 
-buildObject :: TypeScope -> [FieldRep] -> (TypeContent TRUE ANY, [TypeUpdater])
-buildObject isOutput consFields = (wrapWith fields, types)
+buildObject :: ([Name], [TypeUpdater]) -> TypeScope cat -> [FieldRep] -> (TypeContent TRUE cat, [TypeUpdater])
+buildObject (interfaces, interfaceTypes) scope consFields = (wrapWith scope, types <> interfaceTypes)
   where
     (fields, types) = buildDataObject consFields
-    wrapWith
-      | isOutput == OutputType = DataObject []
-      | otherwise = DataInputObject . toInput
+    wrapWith :: TypeScope cat -> TypeContent TRUE cat
+    wrapWith InputType = DataInputObject (toInput fields)
+    wrapWith OutputType = DataObject interfaces fields
 
 buildDataObject :: [FieldRep] -> (FieldsDefinition, [TypeUpdater])
 buildDataObject consFields = (fields, types)
@@ -424,7 +445,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
     }
 
 buildUnionEnum ::
-  (FieldsDefinition -> TypeContent TRUE OUT) ->
+  (FieldsDefinition -> TypeContent TRUE cat) ->
   Name ->
   DataFingerprint ->
   [Name] ->
@@ -461,7 +482,7 @@ buildEnum typeName typeFingerprint tags =
         }
 
 buildEnumObject ::
-  (FieldsDefinition -> TypeContent TRUE OUT) ->
+  (FieldsDefinition -> TypeContent TRUE cat) ->
   Name ->
   DataFingerprint ->
   Name ->
@@ -484,7 +505,15 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
                   }
         }
 
-data TypeScope = InputType | OutputType deriving (Show, Eq, Ord)
+data TypeScope (cat :: TypeCategory) where
+  InputType :: TypeScope IN
+  OutputType :: TypeScope OUT
+
+deriving instance Show (TypeScope cat)
+
+deriving instance Eq (TypeScope cat)
+
+deriving instance Ord (TypeScope cat)
 
 --  GENERIC UNION
 class TypeRep f where
