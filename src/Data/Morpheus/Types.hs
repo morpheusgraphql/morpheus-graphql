@@ -31,6 +31,7 @@ module Data.Morpheus.Types
     publish,
     subscribe,
     unsafeInternalContext,
+    Context (..),
     SubField,
     ComposedSubField,
     Input,
@@ -85,7 +86,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeUpdater,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Event (..),
+  ( Context (..),
+    Event (..),
     Failure,
     PushEvents (..),
     Resolver,
