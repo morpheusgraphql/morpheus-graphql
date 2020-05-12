@@ -2,11 +2,11 @@
 
 core Functionalities of Morpheus GraphQL, can be used to build GraphQL server or client
 
-- parsing
-- validating
-- executing
+- parser
+- validar
+- api
 
-## Executing with internal Types
+## Build GraphQL api with Core
 
 ```hs
 getSchema :: Monad m => ResponseStream e m Schema
