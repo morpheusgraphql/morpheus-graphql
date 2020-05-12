@@ -1,5 +1,5 @@
 name: morpheus-graphql-client
-version: 0.11.0
+version: 0.12.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
@@ -21,7 +21,7 @@ dependencies:
   - text                  >= 1.2.3.0   && <  1.3
   - aeson                 >= 1.4.4.0   && <= 1.6
   - unordered-containers  >= 0.2.8.0   && <  0.3
-  - morpheus-graphql-core >= 0.11.0
+  - morpheus-graphql-core >= 0.12.0
   - template-haskell      >= 2.0       && <= 2.16
 
 library:
