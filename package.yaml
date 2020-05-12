@@ -1,5 +1,5 @@
 name: morpheus-graphql
-version: 0.11.0
+version: 0.12.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
@@ -31,7 +31,7 @@ dependencies:
   - scientific            >= 0.3.6.2   && <  0.4
   - vector                >= 0.12.0.1  && <  0.13
   - mtl                   >= 2.0       && <= 2.3
-  - morpheus-graphql-core >= 0.11.0
+  - morpheus-graphql-core >= 0.12.0
 
   - uuid                  >= 1.0       && <= 1.4
   - websockets            >= 0.11.0    && <= 0.13

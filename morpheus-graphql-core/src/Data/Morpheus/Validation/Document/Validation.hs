@@ -8,7 +8,6 @@ module Data.Morpheus.Validation.Document.Validation
 where
 
 import Data.Functor (($>))
-import Data.Maybe
 --
 -- Morpheus
 import Data.Morpheus.Error.Document.Interface
