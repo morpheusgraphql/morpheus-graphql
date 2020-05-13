@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     getOperationDataType,
     isEntNode,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
@@ -79,7 +80,7 @@ getOperationObject operation = do
     TypeDefinition {typeName} ->
       failure $
         "Type Mismatch: operation \""
-          <> typeName
+          <> msg typeName
           <> "\" must be an Object"
 
 selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
@@ -96,7 +97,8 @@ singleTopLevelSelectionError :: Maybe Name -> Selection VALID -> GQLError
 singleTopLevelSelectionError name Selection {selectionPosition} =
   GQLError
     { message =
-        subscriptionName <> " must select "
+        msg subscriptionName
+          <> " must select "
           <> "only one top level field.",
       locations = [selectionPosition]
     }

@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableContent (..),
     isNullableWrapper,
     isWeaker,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( unsafeFromValues,
@@ -180,7 +181,7 @@ validateScalar ScalarDefinition {validateValue} value err = do
   case validateValue scalarValue of
     Right _ -> return scalarValue
     Left "" -> err Nothing value
-    Left message -> err (Just message) value
+    Left message -> err (Just $ msg message) value
   where
     toScalar :: ResolvedValue -> InputValidator ValidValue
     toScalar (Scalar x) = pure (Scalar x)
