@@ -291,11 +291,6 @@ buildInputType name = getType name >>= generateTypes
                   clientKind = KindInputObject
                 }
             ]
-          where
-            toFieldD :: FieldDefinition -> Converter FieldDefinition
-            toFieldD field@FieldDefinition {fieldType} = do
-              typeConName <- typeFrom [] <$> getType (typeConName fieldType)
-              pure $ field {fieldType = fieldType {typeConName}}
         subTypes (DataEnum enumTags) =
           pure
             [ ClientType
@@ -309,10 +304,16 @@ buildInputType name = getType name >>= generateTypes
                   clientKind = KindEnum
                 }
             ]
-          where
-            enumOption DataEnumValue {enumName} =
-              ConsD {cName = enumName, cFields = []}
         subTypes _ = pure []
+
+enumOption :: DataEnumValue -> ConsD
+enumOption DataEnumValue {enumName} =
+  ConsD {cName = enumName, cFields = []}
+
+toFieldD :: FieldDefinition -> Converter FieldDefinition
+toFieldD field@FieldDefinition {fieldType} = do
+  typeConName <- typeFrom [] <$> getType (typeConName fieldType)
+  pure $ field {fieldType = fieldType {typeConName}}
 
 lookupFieldType ::
   [Key] ->
