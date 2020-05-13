@@ -72,6 +72,7 @@ import Data.Aeson
   )
 import Data.ByteString.Lazy.Char8 (ByteString, unpack)
 import Data.Hashable (Hashable)
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Semigroup ((<>))
 import Data.String (IsString)
 import Data.Text (Text, intercalate, pack)
@@ -124,6 +125,9 @@ instance Lift Name where
 
 instance Msg Name where
   msg Name {readName} = Message $ "\"" <> readName <> "\""
+
+instance RenderGQL Name where
+  render = readName
 
 intercalateName :: Name -> [Name] -> Name
 intercalateName (Name x) = Name . intercalate x . map readName
@@ -215,6 +219,9 @@ data TypeRef = TypeRef
 isNullable :: TypeRef -> Bool
 isNullable TypeRef {typeWrappers = typeWrappers} = isNullableWrapper typeWrappers
 
+instance RenderGQL TypeRef where
+  render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
+
 -- Kind
 -----------------------------------------------------------------------------------
 data DataTypeKind
@@ -284,6 +291,13 @@ toHSWrappers (NonNullType : (ListType : xs)) = TypeList : toHSWrappers xs
 toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers [] = [TypeMaybe]
 toHSWrappers [NonNullType] = []
+
+renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Token
+renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
+  where
+    showGQLWrapper [] = render x
+    showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
+    showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
 isDefaultTypeName :: Key -> Bool
 isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x

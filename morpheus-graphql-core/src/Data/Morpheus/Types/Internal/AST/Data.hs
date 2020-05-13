@@ -89,6 +89,11 @@ import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
 import Data.Morpheus.Error.Schema (nameCollisionError)
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+    renderIndent,
+    renderObject,
+  )
 import Data.Morpheus.Types.Internal.AST.Base
   ( DataFingerprint (..),
     DataTypeKind (..),
@@ -106,6 +111,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeWrapper (..),
     VALID,
     hsTypeName,
+    isDefaultTypeName,
     isNullable,
     msg,
     sysFields,
@@ -119,6 +125,7 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
     ValidValue,
     Value (..),
+    convertToJSONName,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Empty (..),
@@ -134,6 +141,7 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     resolveUpdates,
   )
 import Data.Semigroup ((<>), Semigroup (..))
+import Data.Text (intercalate)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 
@@ -525,6 +533,9 @@ instance NameCollision FieldDefinition where
         locations = []
       }
 
+instance RenderGQL FieldsDefinition where
+  render = renderObject render . ignoreHidden . toList
+
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 
@@ -694,3 +705,45 @@ data ConsD = ConsD
     cFields :: [FieldDefinition]
   }
   deriving (Show)
+
+instance RenderGQL Schema where
+  render schema = intercalate "\n\n" $ map render visibleTypes
+    where
+      visibleTypes = filter (not . isDefaultTypeName . typeName) (toList schema)
+
+instance RenderGQL (TypeDefinition a) where
+  render TypeDefinition {typeName, typeContent} = __render typeContent
+    where
+      __render DataInterface {interfaceFields} = "interface " <> render typeName <> render interfaceFields
+      __render DataScalar {} = "scalar " <> render typeName
+      __render (DataEnum tags) = "enum " <> render typeName <> renderObject render tags
+      __render (DataUnion members) =
+        "union "
+          <> render typeName
+          <> " =\n    "
+          <> intercalate ("\n" <> renderIndent <> "| ") (map render members)
+      __render (DataInputObject fields) = "input " <> render typeName <> render fields
+      __render (DataInputUnion members) = "input " <> render typeName <> render fieldsDef
+        where
+          fieldsDef = unsafeFromFields fields
+          fields = createInputUnionFields typeName (fmap fst members)
+      __render DataObject {objectFields} = "type " <> render typeName <> render objectFields
+
+ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
+ignoreHidden = filter fieldVisibility
+
+-- OBJECT
+
+instance RenderGQL InputFieldsDefinition where
+  render = renderObject render . ignoreHidden . toList
+
+instance RenderGQL FieldDefinition where
+  render FieldDefinition {fieldName, fieldType, fieldArgs} =
+    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
+
+instance RenderGQL ArgumentsDefinition where
+  render NoArguments = ""
+  render arguments = "(" <> intercalate ", " (map render $ toList arguments) <> ")"
+
+instance RenderGQL DataEnumValue where
+  render DataEnumValue {enumName} = render enumName
