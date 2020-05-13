@@ -18,7 +18,6 @@ import Data.Morpheus.Client.Transform.Core (Converter (..), getType, typeFrom)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
-    ClientType (..),
     ConsD (..),
     DataEnumValue (..),
     DataTypeKind (..),
@@ -59,8 +58,7 @@ renderArguments variables argsName
       TypeD
         { tName = argsName,
           tNamespace = [],
-          tCons = [ConsD {cName = argsName, cFields = map fieldD (toList variables)}],
-          tMeta = Nothing
+          tCons = [ConsD {cName = argsName, cFields = map fieldD (toList variables)}]
         }
       where
         fieldD :: Variable RAW -> FieldDefinition
@@ -78,7 +76,7 @@ renderOperationArguments Operation {operationName} = do
   pure $ renderArguments variables (getOperationName operationName <> "Args")
 
 -- INPUTS
-renderNonOutputTypes :: [Key] -> Converter [ClientType]
+renderNonOutputTypes :: [Key] -> Converter [TypeD]
 renderNonOutputTypes enums = do
   variables <- toList <$> asks snd
   inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
@@ -102,12 +100,12 @@ exploreInputTypeNames name collected
         scanType (DataEnum _) = pure (collected <> [typeName])
         scanType _ = pure collected
 
-buildInputType :: Text -> Converter [ClientType]
+buildInputType :: Text -> Converter [TypeD]
 buildInputType name = getType name >>= generateTypes
   where
     generateTypes TypeDefinition {typeName, typeContent} = subTypes typeContent
       where
-        subTypes :: TypeContent TRUE ANY -> Converter [ClientType]
+        subTypes :: TypeContent TRUE ANY -> Converter [TypeD]
         subTypes (DataInputObject inputFields) = do
           fields <- traverse toFieldD (toList inputFields)
           pure
@@ -129,17 +127,14 @@ buildInputType name = getType name >>= generateTypes
             ]
         subTypes _ = pure []
 
-mkInputType :: Name -> DataTypeKind -> [ConsD] -> ClientType
-mkInputType tName clientKind tCons =
-  ClientType
-    { clientType =
-        TypeD
-          { tName,
-            tNamespace = [],
-            tCons,
-            tMeta = Nothing
-          },
-      clientKind
+mkInputType :: Name -> DataTypeKind -> [ConsD] -> TypeD
+mkInputType tName tKind tCons =
+  TypeD
+    { tName,
+      tNamespace = [],
+      tCons,
+      tKind
+      -- tMeta = Nothing
     }
 
 enumOption :: DataEnumValue -> ConsD

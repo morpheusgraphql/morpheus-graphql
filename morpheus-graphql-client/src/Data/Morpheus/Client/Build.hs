@@ -38,10 +38,10 @@ import qualified Data.Morpheus.Types.Internal.AST as O
   )
 import Data.Morpheus.Types.Internal.AST
   ( ClientQuery (..),
-    ClientType (..),
     DataTypeKind (..),
     GQLQuery (..),
     Schema,
+    TypeD (..),
     TypeD (..),
     VALIDATION_MODE (..),
     isOutputObject,
@@ -72,7 +72,7 @@ defineQueryD ClientQuery {queryTypes = rootType : subTypes, queryText, queryArgs
     subTypeDecs <- concat <$> traverse declareT subTypes
     return $ rootDecs ++ subTypeDecs
   where
-    declareT ClientType {clientType, clientKind}
+    declareT TypeD {clientType, clientKind}
       | isOutputObject clientKind || clientKind == KindUnion =
         withToJSON
           declareOutputType
@@ -100,8 +100,8 @@ queryArgumentType Nothing = (ConT $ mkName "()", pure [])
 queryArgumentType (Just rootType@TypeD {tName}) =
   (ConT $ mkName $ unpack tName, declareInputType rootType)
 
-defineOperationType :: (Type, Q [Dec]) -> String -> ClientType -> Q [Dec]
-defineOperationType (argType, argumentTypes) query ClientType {clientType} =
+defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
+defineOperationType (argType, argumentTypes) query TypeD {clientType} =
   do
     rootType <- withToJSON declareOutputType clientType
     typeClassFetch <- deriveFetch argType (tName clientType) query

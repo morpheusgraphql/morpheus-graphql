@@ -39,7 +39,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     ClientQuery (..),
     GQLTypeD (..),
     TypeCategory,
-    ClientType (..),
     DataInputUnion,
     Argument (..),
     createField,
@@ -671,30 +670,25 @@ type TypeUpdater = LibUpdater Schema
 -- TEMPLATE HASKELL DATA TYPES
 data ClientQuery = ClientQuery
   { queryText :: String,
-    queryTypes :: [ClientType],
+    queryTypes :: [TypeD],
     queryArgsType :: Maybe TypeD
-  }
-  deriving (Show)
-
-data ClientType = ClientType
-  { clientType :: TypeD,
-    clientKind :: DataTypeKind
   }
   deriving (Show)
 
 -- Document
 data GQLTypeD = GQLTypeD
   { typeD :: TypeD,
-    typeKindD :: DataTypeKind,
     typeArgD :: [TypeD],
     typeOriginal :: TypeDefinition ANY
   }
   deriving (Show)
 
+--- Core
 data TypeD = TypeD
   { tName :: Name,
     tNamespace :: [Name],
     tCons :: [ConsD],
+    tKind :: DataTypeKind,
     tMeta :: Maybe Meta
   }
   deriving (Show)

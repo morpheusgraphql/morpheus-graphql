@@ -33,7 +33,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ClientType (..),
     GQLErrors,
     Key,
     Message,
@@ -44,6 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TRUE,
     TypeContent (..),
+    TypeD,
     TypeDefinition (..),
     VariableDefinitions,
     lookupDeprecated,
@@ -81,10 +81,10 @@ compileError x =
 getType :: Key -> Converter (TypeDefinition ANY)
 getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename
 
-leafType :: TypeDefinition a -> Converter ([ClientType], [Key])
+leafType :: TypeDefinition a -> Converter ([TypeD], [Key])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
-    fromKind :: TypeContent TRUE a -> Converter ([ClientType], [Key])
+    fromKind :: TypeContent TRUE a -> Converter ([TypeD], [Key])
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], [])
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"

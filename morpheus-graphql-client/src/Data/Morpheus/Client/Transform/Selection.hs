@@ -19,7 +19,6 @@ import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperat
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
-    ClientType (..),
     ConsD (..),
     DataTypeKind (..),
     FieldDefinition (..),
@@ -58,7 +57,7 @@ import Data.Text
     pack,
   )
 
-renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [ClientType], [Name])
+renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [TypeD], [Name])
 renderOperationType op@Operation {operationName, operationSelection} = do
   datatype <- asks fst >>= getOperationDataType op
   arguments <- renderOperationArguments op
@@ -74,10 +73,10 @@ operationTypes ::
   Schema ->
   VariableDefinitions RAW ->
   Operation VALID ->
-  Eventless (Maybe TypeD, [ClientType])
+  Eventless (Maybe TypeD, [TypeD])
 operationTypes schema vars = flip runReaderT (schema, vars) . runConverter . genOperation
 
-genOperation :: Operation VALID -> Converter (Maybe TypeD, [ClientType])
+genOperation :: Operation VALID -> Converter (Maybe TypeD, [TypeD])
 genOperation operation = do
   (arguments, outputTypes, enums) <- renderOperationType operation
   nonOutputTypes <- renderNonOutputTypes enums
@@ -90,19 +89,16 @@ genRecordType ::
   Name ->
   TypeDefinition ANY ->
   SelectionSet VALID ->
-  Converter ([ClientType], [Name])
+  Converter ([TypeD], [Name])
 genRecordType path tName dataType recordSelSet = do
   (con, subTypes, requests) <- genConsD path tName dataType recordSelSet
   pure
-    ( ClientType
-        { clientType =
-            TypeD
-              { tName,
-                tNamespace = path,
-                tCons = [con],
-                tMeta = Nothing
-              },
-          clientKind = KindObject Nothing
+    ( TypeD
+        { tName,
+          tNamespace = path,
+          tCons = [con],
+          tKind = KindObject Nothing,
+          tMeta = Nothing
         }
         : subTypes,
       requests
@@ -113,14 +109,14 @@ genConsD ::
   Name ->
   TypeDefinition ANY ->
   SelectionSet VALID ->
-  Converter (ConsD, [ClientType], [Text])
+  Converter (ConsD, [TypeD], [Text])
 genConsD path cName datatype selSet = do
   (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
   pure (ConsD {cName, cFields}, concat subTypes, concat requests)
   where
     genField ::
       Selection VALID ->
-      Converter (FieldDefinition, [ClientType], [Text])
+      Converter (FieldDefinition, [TypeD], [Text])
     genField sel =
       do
         (fieldDataType, fieldType) <-
@@ -149,7 +145,7 @@ subTypesBySelection ::
   [Name] ->
   TypeDefinition ANY ->
   Selection VALID ->
-  Converter ([ClientType], [Text])
+  Converter ([TypeD], [Text])
 subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
@@ -159,15 +155,12 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection unio
     (tCons, subTypes, requests) <-
       unzip3 <$> traverse getUnionType (toList unionSelections)
     pure
-      ( ClientType
-          { clientType =
-              TypeD
-                { tNamespace = path,
-                  tName = typeFrom [] dType,
-                  tCons,
-                  tMeta = Nothing
-                },
-            clientKind = KindUnion
+      ( TypeD
+          { tNamespace = path,
+            tName = typeFrom [] dType,
+            tCons,
+            tKind = KindUnion,
+            tMeta = Nothing
           }
           : concat subTypes,
         concat requests
