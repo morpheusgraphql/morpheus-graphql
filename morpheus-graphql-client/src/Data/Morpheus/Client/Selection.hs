@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,7 +14,12 @@ where
 
 --
 -- MORPHEUS
-
+import Control.Monad.Reader (MonadReader, asks, runReaderT)
+import Control.Monad.Trans.Class (MonadTrans, lift)
+import Control.Monad.Trans.Reader
+  ( ReaderT (..),
+    ask,
+  )
 import Data.Morpheus.Error
   ( deprecatedField,
     globalErrorMessage,
@@ -57,7 +64,8 @@ import Data.Morpheus.Types.Internal.AST
     typeFromScalar,
   )
 import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
+  ( Failure (..),
+    Listable (..),
     keyOf,
     selectBy,
   )
@@ -78,14 +86,27 @@ compileError :: Text -> GQLErrors
 compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
+type Env = (Schema, VariableDefinitions RAW)
+
+newtype Converter a = Converter
+  { runConverter ::
+      ReaderT
+        Env
+        Eventless
+        a
+  }
+  deriving (Functor, Applicative, Monad, MonadReader Env)
+
+instance Failure GQLErrors Converter
+
 operationTypes ::
-  Schema ->
-  VariableDefinitions RAW ->
   Operation VALID ->
-  Eventless (Maybe TypeD, [ClientType])
-operationTypes lib variables = genOperation
+  Converter (Maybe TypeD, [ClientType])
+operationTypes = genOperation
   where
+    genOperation :: Operation VALID -> Converter (Maybe TypeD, [ClientType])
     genOperation operation@Operation {operationName, operationSelection} = do
+      (lib, variables) <- asks id
       datatype <- getOperationDataType operation lib
       (queryTypes, enums) <-
         genRecordType
@@ -98,16 +119,16 @@ operationTypes lib variables = genOperation
           map (scanInputTypes lib . typeConName . variableType) (toList variables)
       inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
       pure
-        ( rootArguments (getOperationName operationName <> "Args"),
+        ( rootArguments variables (getOperationName operationName <> "Args"),
           queryTypes <> inputTypesAndEnums
         )
     -------------------------------------------------------------------------
     buildListedTypes =
-      fmap concat . traverse (buildInputType lib) . removeDuplicates
+      fmap concat . traverse buildInputType . removeDuplicates
     -------------------------------------------------------------------------
     -- generates argument types for Operation Head
-    rootArguments :: Text -> Maybe TypeD
-    rootArguments argsName
+    rootArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
+    rootArguments variables argsName
       | null variables = Nothing
       | otherwise = Just rootArgumentsType
       where
@@ -135,7 +156,7 @@ operationTypes lib variables = genOperation
       Name ->
       TypeDefinition ANY ->
       SelectionSet VALID ->
-      Eventless ([ClientType], [Name])
+      Converter ([ClientType], [Name])
     genRecordType path tName dataType recordSelSet = do
       (con, subTypes, requests) <- genConsD tName dataType recordSelSet
       pure
@@ -157,14 +178,14 @@ operationTypes lib variables = genOperation
           Name ->
           TypeDefinition ANY ->
           SelectionSet VALID ->
-          Eventless (ConsD, [ClientType], [Text])
+          Converter (ConsD, [ClientType], [Text])
         genConsD cName datatype selSet = do
           (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
           pure (ConsD {cName, cFields}, concat subTypes, concat requests)
           where
             genField ::
               Selection VALID ->
-              Eventless (FieldDefinition, [ClientType], [Text])
+              Converter (FieldDefinition, [ClientType], [Text])
             genField
               sel@Selection
                 { selectionName,
@@ -173,7 +194,6 @@ operationTypes lib variables = genOperation
                 do
                   (fieldDataType, fieldType) <-
                     lookupFieldType
-                      lib
                       fieldPath
                       datatype
                       selectionPosition
@@ -195,7 +215,7 @@ operationTypes lib variables = genOperation
                   fieldName = keyOf sel
                   ------------------------------------------
                   subTypesBySelection ::
-                    TypeDefinition ANY -> Selection VALID -> Eventless ([ClientType], [Text])
+                    TypeDefinition ANY -> Selection VALID -> Converter ([ClientType], [Text])
                   subTypesBySelection dType Selection {selectionContent = SelectionField} =
                     leafType dType
                   --withLeaf buildLeaf dType
@@ -222,7 +242,7 @@ operationTypes lib variables = genOperation
                         )
                     where
                       getUnionType (UnionTag selectedTyName selectionVariant) = do
-                        conDatatype <- getType lib selectedTyName
+                        conDatatype <- getType selectedTyName
                         genConsD selectedTyName conDatatype selectionVariant
 
 scanInputTypes :: Schema -> Key -> LibUpdater [Key]
@@ -243,8 +263,8 @@ scanInputTypes lib name collected
         scanType (DataEnum _) = pure (collected <> [typeName])
         scanType _ = pure collected
 
-buildInputType :: Schema -> Text -> Eventless [ClientType]
-buildInputType lib name = getType lib name >>= generateTypes
+buildInputType :: Text -> Converter [ClientType]
+buildInputType name = getType name >>= generateTypes
   where
     generateTypes TypeDefinition {typeName, typeContent} = subTypes typeContent
       where
@@ -268,9 +288,9 @@ buildInputType lib name = getType lib name >>= generateTypes
                 }
             ]
           where
-            toFieldD :: FieldDefinition -> Eventless FieldDefinition
+            toFieldD :: FieldDefinition -> Converter FieldDefinition
             toFieldD field@FieldDefinition {fieldType} = do
-              typeConName <- typeFrom [] <$> getType lib (typeConName fieldType)
+              typeConName <- typeFrom [] <$> getType (typeConName fieldType)
               pure $ field {fieldType = fieldType {typeConName}}
         subTypes (DataEnum enumTags) =
           pure
@@ -291,25 +311,24 @@ buildInputType lib name = getType lib name >>= generateTypes
         subTypes _ = pure []
 
 lookupFieldType ::
-  Schema ->
   [Key] ->
   TypeDefinition ANY ->
   Position ->
   Text ->
-  Eventless (TypeDefinition ANY, TypeRef)
-lookupFieldType lib path TypeDefinition {typeContent = DataObject {objectFields}, typeName} refPosition key =
+  Converter (TypeDefinition ANY, TypeRef)
+lookupFieldType path TypeDefinition {typeContent = DataObject {objectFields}, typeName} refPosition key =
   selectBy selError key objectFields >>= processDeprecation
   where
     selError = compileError $ "cant find field \"" <> pack (show objectFields) <> "\""
     processDeprecation FieldDefinition {fieldType = alias@TypeRef {typeConName}, fieldMeta} =
-      checkDeprecated >> (trans <$> getType lib typeConName)
+      checkDeprecated >> (trans <$> getType typeConName)
       where
         trans x =
           (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})
         ------------------------------------------------------------------
-        checkDeprecated :: Eventless ()
+        checkDeprecated :: Converter ()
         checkDeprecated = case fieldMeta >>= lookupDeprecated of
-          Just deprecation -> Success {result = (), warnings, events = []}
+          Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
             where
               warnings =
                 deprecatedField
@@ -317,19 +336,19 @@ lookupFieldType lib path TypeDefinition {typeContent = DataObject {objectFields}
                   Ref {refName = key, refPosition}
                   (lookupDeprecatedReason deprecation)
           Nothing -> pure ()
-lookupFieldType _ _ dt _ _ =
+lookupFieldType _ dt _ _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
-leafType :: TypeDefinition a -> Eventless ([ClientType], [Text])
+leafType :: TypeDefinition a -> Converter ([ClientType], [Text])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
-    fromKind :: TypeContent TRUE a -> Eventless ([ClientType], [Text])
+    fromKind :: TypeContent TRUE a -> Converter ([ClientType], [Text])
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], [])
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
-getType :: Schema -> Text -> Eventless (TypeDefinition ANY)
-getType lib typename = selectBy (compileError $ " cant find Type" <> typename) typename lib
+getType :: Text -> Converter (TypeDefinition ANY)
+getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename
 
 typeFrom :: [Name] -> TypeDefinition a -> Name
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
