@@ -36,7 +36,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     TypeUpdater,
     TypeD (..),
     ConsD (..),
-    ClientQuery (..),
     GQLTypeD (..),
     TypeCategory,
     DataInputUnion,
@@ -667,14 +666,7 @@ createAlias typeConName =
 
 type TypeUpdater = LibUpdater Schema
 
--- TEMPLATE HASKELL DATA TYPES
-data ClientQuery = ClientQuery
-  { queryText :: String,
-    queryTypes :: [TypeD],
-    queryArgsType :: Maybe TypeD
-  }
-  deriving (Show)
-
+-- Template Haskell Types
 -- Document
 data GQLTypeD = GQLTypeD
   { typeD :: TypeD,

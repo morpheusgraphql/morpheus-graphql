@@ -77,7 +77,6 @@ module Data.Morpheus.Types.Internal.AST
     TypeUpdater,
     TypeD (..),
     ConsD (..),
-    ClientQuery (..),
     GQLTypeD (..),
     TypeCategory,
     DataInputUnion,

@@ -37,8 +37,7 @@ import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ClientQuery (..),
-    DataTypeKind (..),
+  ( DataTypeKind (..),
     GQLQuery (..),
     Schema,
     TypeD (..),
@@ -54,6 +53,13 @@ import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Language.Haskell.TH
 
+data Client = Client
+  { clientQuery :: String,
+    clientArguments :: Maybe TypeD,
+    clientTypes :: [TypeD]
+  }
+  deriving (Show)
+
 defineQuery :: IO (Eventless Schema) -> (GQLQuery, String) -> Q [Dec]
 defineQuery ioSchema queryRoot = do
   schema <- runIO ioSchema
@@ -61,13 +67,14 @@ defineQuery ioSchema queryRoot = do
     Failure errors -> fail (renderGQLErrors errors)
     Success {result, warnings} -> gqlWarnings warnings >> defineQueryD result
 
-defineQueryD :: ClientQuery -> Q [Dec]
-defineQueryD ClientQuery {queryTypes = rootType : subTypes, queryText, queryArgsType} =
+defineQueryD :: Client -> Q [Dec]
+defineQueryD Client {clientTypes = []} = return []
+defineQueryD Client {clientQuery, clientArguments, clientTypes = rootType : subTypes} =
   do
     rootDecs <-
       defineOperationType
-        (queryArgumentType queryArgsType)
-        queryText
+        (queryArgumentType clientArguments)
+        clientQuery
         rootType
     subTypeDecs <- concat <$> traverse declareT subTypes
     return $ rootDecs ++ subTypeDecs
@@ -79,7 +86,6 @@ defineQueryD ClientQuery {queryTypes = rootType : subTypes, queryText, queryArgs
           clientType
       | tKind == KindEnum = withToJSON declareInputType clientType
       | otherwise = declareInputType clientType
-defineQueryD ClientQuery {queryTypes = []} = return []
 
 declareOutputType :: TypeD -> Q [Dec]
 declareOutputType typeD = pure [declareType CLIENT False Nothing [''Show] typeD]
@@ -108,12 +114,12 @@ defineOperationType (argType, argumentTypes) query clientType =
     argsT <- argumentTypes
     pure $ rootType <> typeClassFetch <> argsT
 
-validateWith :: Schema -> (GQLQuery, String) -> Eventless ClientQuery
-validateWith schema (rawRequest@GQLQuery {operation}, queryText) = do
+validateWith :: Schema -> (GQLQuery, String) -> Eventless Client
+validateWith schema (rawRequest@GQLQuery {operation}, clientQuery) = do
   validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
-  (queryArgsType, queryTypes) <-
+  (clientArguments, clientTypes) <-
     operationTypes
       schema
       (O.operationArguments operation)
       validOperation
-  return ClientQuery {queryText, queryTypes, queryArgsType}
+  return Client {clientQuery, clientTypes, clientArguments}
