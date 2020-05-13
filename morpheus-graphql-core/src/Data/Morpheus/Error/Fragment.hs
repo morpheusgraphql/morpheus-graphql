@@ -9,15 +9,16 @@ where
 -- MORPHEUS
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( FieldName,
+    GQLError (..),
     GQLErrors,
     Position,
     Ref (..),
+    TypeName,
   )
 import Data.Semigroup ((<>))
 import Data.Text
-  ( Text,
-    intercalate,
+  ( intercalate,
   )
 import qualified Data.Text as T
 
@@ -44,7 +45,7 @@ cannotSpreadWithinItself fragments = [GQLError {message = text, locations = map 
         <> "."
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> [Text] -> GQLErrors
+cannotBeSpreadOnType :: Maybe FieldName -> TypeName -> Position -> [TypeName] -> GQLErrors
 cannotBeSpreadOnType key fragmentType position typeMembers =
   errorMessage
     position

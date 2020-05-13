@@ -99,6 +99,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Position,
     Stage,
     TRUE,
+    TypeName,
     TypeRef (..),
     TypeWrapper (..),
     VALID,
@@ -267,7 +268,7 @@ isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 --   InputObjectTypeDefinition
 
 data TypeDefinition (a :: TypeCategory) = TypeDefinition
-  { typeName :: Key,
+  { typeName :: TypeName,
     typeFingerprint :: DataFingerprint,
     typeMeta :: Maybe Meta,
     typeContent :: TypeContent TRUE a

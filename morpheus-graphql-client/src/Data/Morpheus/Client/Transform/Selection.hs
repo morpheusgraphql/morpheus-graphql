@@ -23,8 +23,7 @@ import Data.Morpheus.Types.Internal.AST
     ConsD (..),
     DataTypeKind (..),
     FieldDefinition (..),
-    Key,
-    Name,
+    FieldName,
     Operation (..),
     RAW,
     Ref (..),
@@ -35,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeName,
     TypeRef (..),
     UnionTag (..),
     VALID,
@@ -76,7 +76,7 @@ genOperation operation = do
   nonOutputTypes <- renderNonOutputTypes enums
   pure ClientDefinition {clientArguments, clientTypes = outputTypes <> nonOutputTypes}
 
-renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [TypeD], [Name])
+renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [TypeD], [TypeName])
 renderOperationType op@Operation {operationName, operationSelection} = do
   datatype <- asks fst >>= getOperationDataType op
   arguments <- renderOperationArguments op
@@ -91,11 +91,11 @@ renderOperationType op@Operation {operationName, operationSelection} = do
 -------------------------------------------------------------------------
 -- generates selection Object Types
 genRecordType ::
-  [Name] ->
-  Name ->
+  [FieldName] ->
+  TypeName ->
   TypeDefinition ANY ->
   SelectionSet VALID ->
-  Converter ([TypeD], [Name])
+  Converter ([TypeD], [TypeName])
 genRecordType path tName dataType recordSelSet = do
   (con, subTypes, requests) <- genConsD path tName dataType recordSelSet
   pure
@@ -111,18 +111,18 @@ genRecordType path tName dataType recordSelSet = do
     )
 
 genConsD ::
-  [Name] ->
-  Name ->
+  [FieldName] ->
+  TypeName ->
   TypeDefinition ANY ->
   SelectionSet VALID ->
-  Converter (ConsD, [TypeD], [Name])
+  Converter (ConsD, [TypeD], [TypeName])
 genConsD path cName datatype selSet = do
   (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
   pure (ConsD {cName, cFields}, concat subTypes, concat requests)
   where
     genField ::
       Selection VALID ->
-      Converter (FieldDefinition, [TypeD], [Name])
+      Converter (FieldDefinition, [TypeD], [TypeName])
     genField sel =
       do
         (fieldDataType, fieldType) <-
@@ -148,10 +148,10 @@ genConsD path cName datatype selSet = do
 
 ------------------------------------------
 subTypesBySelection ::
-  [Name] ->
+  [FieldName] ->
   TypeDefinition ANY ->
   Selection VALID ->
-  Converter ([TypeD], [Name])
+  Converter ([TypeD], [TypeName])
 subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =

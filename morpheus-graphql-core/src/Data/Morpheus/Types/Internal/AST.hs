@@ -141,6 +141,8 @@ module Data.Morpheus.Types.Internal.AST
     ToAny (..),
     TRUE,
     FALSE,
+    TypeName,
+    FieldName,
   )
 where
 

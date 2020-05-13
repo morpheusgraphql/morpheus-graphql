@@ -36,12 +36,12 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     Key,
     TypeD (..),
+    TypeName,
     isFieldNullable,
   )
 import Data.Semigroup ((<>))
 import Data.Text
-  ( Text,
-    append,
+  ( append,
     unpack,
   )
 import Language.Haskell.TH
@@ -124,7 +124,7 @@ defineFromJSON tName parseJ cFields = instanceD (cxt []) iHead [method]
     -----------------------------------------
     method = instanceFunD 'parseJSON [] (parseJ cFields)
 
-aesonFromJSONEnumBody :: Text -> [ConsD] -> ExpQ
+aesonFromJSONEnumBody :: TypeName -> [ConsD] -> ExpQ
 aesonFromJSONEnumBody tName cons = lamCaseE handlers
   where
     handlers = map buildMatch cons <> [elseCaseEXP]
@@ -148,7 +148,7 @@ elseCaseEXP = match (varP varName) body []
               (stringE " is Not Valid Union Constructor")
           )
 
-aesonToJSONEnumBody :: Text -> [ConsD] -> ExpQ
+aesonToJSONEnumBody :: TypeName -> [ConsD] -> ExpQ
 aesonToJSONEnumBody tName cons = lamCaseE handlers
   where
     handlers = map buildMatch cons

@@ -9,15 +9,16 @@ where
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
+    Message,
+    TypeName,
   )
 import Data.Semigroup ((<>))
-import Data.Text (Text)
 
-schemaValidationError :: Text -> GQLErrors
+schemaValidationError :: Message -> GQLErrors
 schemaValidationError error' =
   globalErrorMessage $ "Schema Validation Error, " <> error'
 
-nameCollisionError :: Text -> GQLErrors
+nameCollisionError :: TypeName -> GQLErrors
 nameCollisionError name =
   schemaValidationError $
     "Name collision: \""

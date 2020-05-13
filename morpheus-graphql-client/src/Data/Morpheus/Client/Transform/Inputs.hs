@@ -22,14 +22,14 @@ import Data.Morpheus.Types.Internal.AST
     DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
-    Key,
-    Name,
+    FieldName,
     Operation (..),
     RAW,
     TRUE,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeName,
     TypeRef (..),
     VALID,
     Variable (..),
@@ -44,11 +44,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( Text,
-  )
 
-renderArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
+renderArguments :: VariableDefinitions RAW -> FieldName -> Maybe TypeD
 renderArguments variables argsName
   | null variables = Nothing
   | otherwise = Just rootArgumentsType
@@ -78,13 +75,13 @@ renderOperationArguments Operation {operationName} = do
   pure $ renderArguments variables (getOperationName operationName <> "Args")
 
 -- INPUTS
-renderNonOutputTypes :: [Key] -> Converter [TypeD]
+renderNonOutputTypes :: [TypeName] -> Converter [TypeD]
 renderNonOutputTypes enums = do
   variables <- toList <$> asks snd
   inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
   concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> enums)
 
-exploreInputTypeNames :: Key -> [Key] -> Converter [Key]
+exploreInputTypeNames :: TypeName -> [TypeName] -> Converter [TypeName]
 exploreInputTypeNames name collected
   | name `elem` collected = pure collected
   | otherwise = getType name >>= scanInpType
@@ -96,13 +93,13 @@ exploreInputTypeNames name collected
             (name : collected)
             (map toInputTypeD $ toList fields)
           where
-            toInputTypeD :: FieldDefinition -> [Key] -> Converter [Key]
+            toInputTypeD :: FieldDefinition -> [TypeName] -> Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
               exploreInputTypeNames typeConName
         scanType (DataEnum _) = pure (collected <> [typeName])
         scanType _ = pure collected
 
-buildInputType :: Text -> Converter [TypeD]
+buildInputType :: TypeName -> Converter [TypeD]
 buildInputType name = getType name >>= generateTypes
   where
     generateTypes TypeDefinition {typeName, typeContent} = subTypes typeContent
@@ -129,7 +126,7 @@ buildInputType name = getType name >>= generateTypes
             ]
         subTypes _ = pure []
 
-mkInputType :: Name -> DataTypeKind -> [ConsD] -> TypeD
+mkInputType :: TypeName -> DataTypeKind -> [ConsD] -> TypeD
 mkInputType tName tKind tCons =
   TypeD
     { tName,

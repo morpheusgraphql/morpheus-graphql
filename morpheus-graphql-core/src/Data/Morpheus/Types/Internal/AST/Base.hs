@@ -54,6 +54,8 @@ module Data.Morpheus.Types.Internal.AST.Base
     internalFingerprint,
     TRUE,
     FALSE,
+    TypeName,
+    FieldName,
   )
 where
 
@@ -75,7 +77,11 @@ type Key = Text
 
 type Message = Text
 
-type Name = Key
+type Name = Text
+
+type TypeName = Text
+
+type FieldName = Text
 
 type Description = Key
 
