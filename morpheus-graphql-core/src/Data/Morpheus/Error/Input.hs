@@ -22,9 +22,9 @@ import Data.Semigroup ((<>))
 
 typeViolation :: TypeRef -> ResolvedValue -> Message
 typeViolation expected found =
-  "Expected type \""
+  "Expected type "
     <> msg (render expected)
-    <> "\" found "
+    <> " found "
     <> msg found
     <> "."
 

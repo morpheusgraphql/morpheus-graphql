@@ -35,9 +35,9 @@ cannotSpreadWithinItself :: [Ref] -> GQLErrors
 cannotSpreadWithinItself fragments = [GQLError {message = text, locations = map refPosition fragments}]
   where
     text =
-      "Cannot spread fragment \""
+      "Cannot spread fragment "
         <> msg (refName $ head fragments)
-        <> "\" within itself via "
+        <> " within itself via "
         <> msg (map refName fragments)
         <> "."
 
@@ -51,10 +51,10 @@ cannotBeSpreadOnType key fragmentType position typeMembers =
     text =
       "Fragment "
         <> msg (getName key)
-        <> "cannot be spread here as objects of type \""
+        <> "cannot be spread here as objects of type "
         <> msg typeMembers
-        <> "\" can never be of type \""
+        <> " can never be of type "
         <> msg fragmentType
-        <> "\"."
+        <> "."
     getName (Just x) = "\"" <> x <> "\" "
     getName Nothing = ""
