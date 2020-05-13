@@ -285,7 +285,7 @@ data Person = Person
   }
 
 dbText :: IO Text
-dbText = pure "Updated Text s"
+dbText = pure "Updated Text"
 
 dbInt :: IO Int
 dbInt = pure 11
