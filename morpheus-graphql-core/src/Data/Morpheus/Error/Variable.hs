@@ -8,9 +8,6 @@ module Data.Morpheus.Error.Variable
 where
 
 import Data.Morpheus.Error.Utils (errorMessage)
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     Ref (..),
@@ -32,9 +29,9 @@ incompatibleVariableType
         "Variable "
           <> msg ("$" <> variableName)
           <> " of type "
-          <> msg (render variableType)
+          <> msg variableType
           <> " used in position expecting type "
-          <> msg (render argumentType)
+          <> msg argumentType
           <> "."
 
 uninitializedVariable :: Variable s -> GQLErrors
@@ -44,5 +41,5 @@ uninitializedVariable Variable {variableName, variableType, variablePosition} =
     $ "Variable "
       <> msg ("$" <> variableName)
       <> " of required type "
-      <> msg (render variableType)
+      <> msg variableType
       <> " was not provided."

@@ -9,9 +9,6 @@ import Data.Aeson (encode)
 import Data.ByteString.Lazy.Char8 (unpack)
 -- MORPHEUS
 
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( Message,
     ResolvedValue,
@@ -23,7 +20,7 @@ import Data.Semigroup ((<>))
 typeViolation :: TypeRef -> ResolvedValue -> Message
 typeViolation expected found =
   "Expected type "
-    <> msg (render expected)
+    <> msg expected
     <> " found "
     <> msg found
     <> "."

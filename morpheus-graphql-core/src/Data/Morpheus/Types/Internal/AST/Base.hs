@@ -222,6 +222,9 @@ isNullable TypeRef {typeWrappers = typeWrappers} = isNullableWrapper typeWrapper
 instance RenderGQL TypeRef where
   render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
 
+instance Msg TypeRef where
+  msg = msg . Name . render
+
 -- Kind
 -----------------------------------------------------------------------------------
 data DataTypeKind
