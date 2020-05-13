@@ -13,7 +13,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   ( Key,
     Ref (..),
     Position (..),
-    Message,
+    Message (..),
     Name (..),
     Named,
     Description,
@@ -66,6 +66,8 @@ where
 import Data.Aeson
   ( FromJSON,
     ToJSON,
+    Value,
+    encode,
   )
 import Data.ByteString.Lazy.Char8 (ByteString, unpack)
 import Data.Hashable (Hashable)
@@ -84,9 +86,9 @@ type Token = Text
 
 newtype Message = Message {readMessage :: Text}
   deriving
-    (Generic)
+    (Generic, Lift)
   deriving newtype
-    (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON, Lift)
+    (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
 
 class Msg a where
   msg :: a -> Message
@@ -102,11 +104,14 @@ instance Msg ByteString where
 instance Msg Text where
   msg = Message
 
+instance Msg Value where
+  msg = msg . encode
+
 newtype Name = Name {readName :: Text}
   deriving
-    (Generic)
+    (Generic, Lift)
   deriving newtype
-    (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON, Lift)
+    (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
 
 instance Msg Name where
   msg Name {readName} = Message readName

@@ -22,6 +22,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema,
     VALID,
     Value (..),
+    msg,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( fromList,
@@ -138,8 +139,7 @@ assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
 assertion expected (ResultT (Identity Success {result}))
   | Just expected == decode (encode result) = return ()
   | otherwise =
-    assertFailure $
-      LB.unpack ("expected: \n " <> encode expected <> " \n but got: \n " <> encode result)
+    assertFailure $ show ("expected: \n " <> msg expected <> " \n but got: \n " <> msg result)
 assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 
 getRequest :: Name -> IO GQLRequest

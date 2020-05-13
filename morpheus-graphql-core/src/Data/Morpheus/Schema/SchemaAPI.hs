@@ -21,6 +21,7 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    Name (..),
     OUT,
     QUERY,
     ScalarValue (..),
@@ -90,7 +91,7 @@ schemaAPI schema =
         handleArg
           Argument
             { argumentValue = (Scalar (String typename))
-            } = findType typename schema
+            } = findType (Name typename) schema
         handleArg _ = pure mkNull
 
 withSystemFields :: Monad m => Schema -> RootResModel e m -> ResultT e' m (RootResModel e m)
