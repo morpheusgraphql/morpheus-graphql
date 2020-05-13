@@ -15,10 +15,9 @@ where
 --
 -- MORPHEUS
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
-import Control.Monad.Trans.Class (MonadTrans, lift)
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
-    ask,
   )
 import Data.Morpheus.Error
   ( deprecatedField,
@@ -71,8 +70,6 @@ import Data.Morpheus.Types.Internal.Operation
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    Failure (..),
-    LibUpdater,
     Result (..),
     resolveUpdates,
   )
@@ -97,12 +94,15 @@ newtype Converter a = Converter
   }
   deriving (Functor, Applicative, Monad, MonadReader Env)
 
-instance Failure GQLErrors Converter
+instance Failure GQLErrors Converter where
+  failure = Converter . lift . failure
 
 operationTypes ::
+  Schema ->
+  VariableDefinitions RAW ->
   Operation VALID ->
-  Converter (Maybe TypeD, [ClientType])
-operationTypes = genOperation
+  Eventless (Maybe TypeD, [ClientType])
+operationTypes schema vars = flip runReaderT (schema, vars) . runConverter . genOperation
   where
     genOperation :: Operation VALID -> Converter (Maybe TypeD, [ClientType])
     genOperation operation@Operation {operationName, operationSelection} = do
@@ -116,7 +116,7 @@ operationTypes = genOperation
           operationSelection
       inputTypeRequests <-
         resolveUpdates [] $
-          map (scanInputTypes lib . typeConName . variableType) (toList variables)
+          map (scanInputTypes . typeConName . variableType) (toList variables)
       inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
       pure
         ( rootArguments variables (getOperationName operationName <> "Args"),
@@ -245,10 +245,10 @@ operationTypes = genOperation
                         conDatatype <- getType selectedTyName
                         genConsD selectedTyName conDatatype selectionVariant
 
-scanInputTypes :: Schema -> Key -> LibUpdater [Key]
-scanInputTypes lib name collected
+scanInputTypes :: Key -> [Key] -> Converter [Key]
+scanInputTypes name collected
   | name `elem` collected = pure collected
-  | otherwise = getType lib name >>= scanInpType
+  | otherwise = getType name >>= scanInpType
   where
     scanInpType TypeDefinition {typeContent, typeName} = scanType typeContent
       where
@@ -257,9 +257,9 @@ scanInputTypes lib name collected
             (name : collected)
             (map toInputTypeD $ toList fields)
           where
-            toInputTypeD :: FieldDefinition -> LibUpdater [Key]
+            toInputTypeD :: FieldDefinition -> [Key] -> Converter [Key]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
-              scanInputTypes lib typeConName
+              scanInputTypes typeConName
         scanType (DataEnum _) = pure (collected <> [typeName])
         scanType _ = pure collected
 
@@ -268,6 +268,7 @@ buildInputType name = getType name >>= generateTypes
   where
     generateTypes TypeDefinition {typeName, typeContent} = subTypes typeContent
       where
+        subTypes :: TypeContent TRUE ANY -> Converter [ClientType]
         subTypes (DataInputObject inputFields) = do
           fields <- traverse toFieldD (toList inputFields)
           pure

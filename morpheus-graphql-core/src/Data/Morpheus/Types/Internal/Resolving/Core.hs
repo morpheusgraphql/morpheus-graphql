@@ -185,5 +185,5 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
 -- Helper Functions
 type LibUpdater lib = lib -> Eventless lib
 
-resolveUpdates :: lib -> [LibUpdater lib] -> Eventless lib
+resolveUpdates :: Monad m => lib -> [lib -> m lib] -> m lib
 resolveUpdates = foldM (&)
