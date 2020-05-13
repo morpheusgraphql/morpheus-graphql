@@ -60,6 +60,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     TypeName,
     FieldName,
     Msg (..),
+    intercalateName,
   )
 where
 
@@ -118,6 +119,9 @@ instance Msg Name where
 
 instance Msg [Name] where
   msg = Message . intercalate ", " . map readName
+
+intercalateName :: Name -> [Name] -> Name
+intercalateName (Name x) = Name . intercalate x . map readName
 
 type Key = Name
 

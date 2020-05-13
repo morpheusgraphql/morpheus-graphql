@@ -27,6 +27,8 @@ module Data.Morpheus.Internal.TH
     makeName,
     nameLitP,
     nameStringL,
+    nameConT,
+    nameVarT,
   )
 where
 
@@ -64,9 +66,9 @@ import Language.Haskell.TH
 type Arrow = (->)
 
 m' :: Type
-m' = VarT $ mkName $ unpack m_
+m' = VarT $ makeName m_
 
-m_ :: Text
+m_ :: TypeName
 m_ = "m"
 
 declareTypeRef :: Bool -> TypeRef -> Type
@@ -87,7 +89,7 @@ declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
     decType (Just par) = AppT typeName (VarT $ makeName par)
     decType _ = typeName
 
-tyConArgs :: DataTypeKind -> [Text]
+tyConArgs :: DataTypeKind -> [TypeName]
 tyConArgs kindD
   | isOutputObject kindD || kindD == KindUnion = [m_]
   | otherwise = []
@@ -103,7 +105,7 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
     genName = makeName . nameSpaceType tNamespace
     tVars = maybe [] (declareTyVar . tyConArgs) kindD
       where
-        declareTyVar = map (PlainTV . mkName . unpack)
+        declareTyVar = map (PlainTV . makeName)
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT className]
     cons
@@ -190,3 +192,9 @@ decArgs (DataD _ _ args _ _ _) = args
 decArgs (NewtypeD _ _ args _ _ _) = args
 decArgs (TySynD _ args _) = args
 decArgs _ = []
+
+nameConT :: TypeName -> Q Type
+nameConT = conT . makeName
+
+nameVarT :: TypeName -> Q Type
+nameVarT = varT . makeName

@@ -18,6 +18,9 @@ import Data.Morpheus.Internal.TH
     instanceHeadMultiT,
     instanceHeadT,
     instanceProxyFunD,
+    makeName,
+    nameConT,
+    nameVarT,
     tyConArgs,
     typeT,
   )
@@ -51,7 +54,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
 import Data.Proxy (Proxy (..))
-import Data.Text (unpack)
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
@@ -72,7 +74,7 @@ deriveObjectRep :: (TypeD, Maybe (TypeDefinition ANY), Maybe DataTypeKind) -> Q 
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
-    mainTypeName = typeT (mkName $ unpack tName) typeArgs
+    mainTypeName = typeT (makeName tName) typeArgs
     typeArgs = concatMap tyConArgs (maybeToList tKind)
     constrains = map conTypeable typeArgs
       where
@@ -123,17 +125,11 @@ introspectField FieldDefinition {fieldType, fieldArgs} =
         tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
     inputTypes _ = []
 
-conTX :: TypeName -> Q Type
-conTX = conT . mkName . unpack
-
-varTX :: TypeName -> Q Type
-varTX = varT . mkName . unpack
-
 proxyT :: TypeRef -> Q Exp
 proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (conTX typeConName) (varTX m)
-    genSig _ = conTX typeConName
+    genSig (Just m) = appT (nameConT typeConName) (nameVarT m)
+    genSig _ = nameConT typeConName
 
 buildFields :: [FieldDefinition] -> ExpQ
 buildFields = listE . map buildField

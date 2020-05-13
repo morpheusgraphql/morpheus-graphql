@@ -46,12 +46,13 @@ import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
-    Name,
+    Name (..),
     ObjectEntry (..),
     VALID,
     ValidObject,
     ValidValue,
     Value (..),
+    msg,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Listable (..),
@@ -92,7 +93,7 @@ class DecodeKind (kind :: GQL_KIND) a where
 instance (GQLScalar a) => DecodeKind SCALAR a where
   decodeKind _ value = case toScalar value >>= parseValue of
     Right scalar -> return scalar
-    Left errorMessage -> internalTypeMismatch errorMessage value
+    Left errorMessage -> internalTypeMismatch (msg errorMessage) value
 
 -- ENUM
 instance DecodeType a => DecodeKind ENUM a where
@@ -131,7 +132,10 @@ decideUnion (left, f1) (right, f2) name value
   | name `elem` right =
     R1 <$> f2 value
   | otherwise =
-    failure $ "Constructor \"" <> name <> "\" could not find in Union"
+    failure $
+      "Constructor \""
+        <> msg name
+        <> "\" could not find in Union"
 
 data Tag = D_CONS | D_UNION deriving (Eq, Ord)
 
@@ -162,7 +166,7 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   decodeRep (x, y) =
     M1
       <$> decodeRep
-        (x, y {typeName = pack $ datatypeName (undefined :: (M1 D d f a))})
+        (x, y {typeName = Name $ pack $ datatypeName (undefined :: (M1 D d f a))})
 
 getEnumTag :: ValidObject -> Eventless Name
 getEnumTag x = case toList x of
@@ -206,7 +210,7 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
         | otherwise = Info {kind = D_CONS, tagName = [consName]}
       getTag Nothing = Info {kind = D_CONS, tagName = [consName]}
       --------
-      consName = pack $ conName unsafeType
+      consName = Name $ pack $ conName unsafeType
       ----------
       isUnionRef x = baseName <> x == consName
       --------------------------
@@ -228,7 +232,7 @@ instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) whe
     | otherwise = __decode value
     where
       __decode = fmap (M1 . K1) . decodeRec
-      fieldName = pack $ selName (undefined :: M1 S s f a)
+      fieldName = Name $ pack $ selName (undefined :: M1 S s f a)
       decodeRec = withObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where

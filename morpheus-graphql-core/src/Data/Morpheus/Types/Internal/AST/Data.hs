@@ -95,10 +95,12 @@ import Data.Morpheus.Types.Internal.AST.Base
     Description,
     GQLError (..),
     Key,
+    Message,
     Name (..),
     Position,
     Stage,
     TRUE,
+    Token,
     TypeName,
     TypeRef (..),
     TypeWrapper (..),
@@ -144,7 +146,7 @@ type DataInputUnion = [(Key, Bool)]
 -- scalar
 ------------------------------------------------------------------
 newtype ScalarDefinition = ScalarDefinition
-  {validateValue :: ValidValue -> Either Key ValidValue}
+  {validateValue :: ValidValue -> Either Token ValidValue}
 
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"

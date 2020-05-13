@@ -145,6 +145,7 @@ module Data.Morpheus.Types.Internal.AST
     FieldName,
     Token,
     Msg (..),
+    intercalateName,
   )
 where
 

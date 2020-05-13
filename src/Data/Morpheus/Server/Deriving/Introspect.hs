@@ -69,6 +69,7 @@ import Data.Morpheus.Types.Internal.AST
     Message,
     Meta (..),
     Name,
+    Name (..),
     OUT,
     TRUE,
     TypeCategory,
@@ -79,6 +80,7 @@ import Data.Morpheus.Types.Internal.AST
     createAlias,
     createEnumValue,
     defineType,
+    msg,
     toAny,
     toListField,
     toNullableField,
@@ -195,7 +197,7 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
     where
       enumType =
-        buildType $ DataEnum $ map createEnumValue $ enumTags (Proxy @(Rep a))
+        buildType $ DataEnum $ map (createEnumValue . Name) $ enumTags (Proxy @(Rep a))
 
 instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INPUT a where
   introspectKind _ = derivingData (Proxy @a) InputType
@@ -261,7 +263,7 @@ introspectObjectFields p1 (name, scope, proxy) =
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
     withObject (DataInputObject x, ts) = (fromInput x, ts)
-    withObject _ = (empty, [introspectFailure (name <> " should have only one nonempty constructor")])
+    withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
@@ -349,7 +351,7 @@ setFieldNames cons@ConsRep {consFields} =
   where
     setFieldName i fieldR@FieldRep {fieldData = fieldD} = fieldR {fieldData = fieldD {fieldName}}
       where
-        fieldName = "_" <> pack (show i)
+        fieldName = Name ("_" <> pack (show i))
 
 analyseRep :: Name -> [ConsRep] -> ResRep
 analyseRep baseName cons =
@@ -529,7 +531,7 @@ instance (TypeRep a, TypeRep b) => TypeRep (a :+: b) where
 instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
   typeRep _ =
     [ ConsRep
-        { consName = pack $ conName (undefined :: (M1 C c f a)),
+        { consName = Name $ pack $ conName (undefined :: (M1 C c f a)),
           consFields = conRep (Proxy @f),
           consIsRecord = conIsRecord (undefined :: (M1 C c f a))
         }
@@ -552,7 +554,7 @@ instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
         }
     ]
     where
-      name = pack $ selName (undefined :: M1 S s (Rec0 ()) ())
+      name = Name $ pack $ selName (undefined :: M1 S s (Rec0 ()) ())
       fieldData = field (Proxy @a) name
 
 instance ConRep U1 where
