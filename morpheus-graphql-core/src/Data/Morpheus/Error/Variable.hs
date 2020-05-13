@@ -29,20 +29,20 @@ incompatibleVariableType
     errorMessage argPosition text
     where
       text =
-        "Variable \"$"
-          <> msg variableName
-          <> "\" of type \""
+        "Variable "
+          <> msg ("$" <> variableName)
+          <> " of type "
           <> msg (render variableType)
-          <> "\" used in position expecting type \""
+          <> " used in position expecting type "
           <> msg (render argumentType)
-          <> "\"."
+          <> "."
 
 uninitializedVariable :: Variable s -> GQLErrors
 uninitializedVariable Variable {variableName, variableType, variablePosition} =
   errorMessage
     variablePosition
-    $ "Variable \"$"
-      <> msg variableName
-      <> "\" of required type \""
+    $ "Variable "
+      <> msg ("$" <> variableName)
+      <> " of required type "
       <> msg (render variableType)
-      <> "\" was not provided."
+      <> " was not provided."
