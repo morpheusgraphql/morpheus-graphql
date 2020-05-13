@@ -75,8 +75,10 @@ import Data.Hashable (Hashable)
 import Data.Semigroup ((<>))
 import Data.String (IsString)
 import Data.Text (Text, intercalate, pack)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Instances.TH.Lift ()
+import Language.Haskell.TH (stringE)
 import Language.Haskell.TH.Syntax (Lift (..))
 
 type TRUE = 'True
@@ -110,9 +112,12 @@ instance Msg Value where
 
 newtype Name = Name {readName :: Text}
   deriving
-    (Generic, Lift)
+    (Generic)
   deriving newtype
     (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
+
+instance Lift Name where
+  lift = stringE . T.unpack . readName
 
 instance Msg Name where
   msg Name {readName} = Message readName
