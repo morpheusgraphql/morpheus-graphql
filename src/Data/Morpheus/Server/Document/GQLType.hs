@@ -61,7 +61,7 @@ introspectInterface :: Key -> ExpQ
 introspectInterface = interfaceF . mkName . unpack
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD, typeOriginal} =
+deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta, tKind}, typeOriginal} =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
   where
     functions =
@@ -78,7 +78,7 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD, typeOriginal} =
           Nothing -> [|Nothing|]
           Just desc -> [|Just desc|]
     --------------------------------
-    typeArgs = tyConArgs typeKindD
+    typeArgs = tyConArgs tKind
     --------------------------------
     iHead = instanceHeadT ''GQLType tName typeArgs
     headSig = typeT (mkName $ unpack tName) typeArgs
@@ -88,11 +88,11 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD, typeOriginal} =
         conTypeable name = typeT ''Typeable [name]
     -------------------------------------------------
     typeFamilies
-      | isObject typeKindD = [deriveKIND, deriveCUSTOM]
+      | isObject tKind = [deriveKIND, deriveCUSTOM]
       | otherwise = [deriveKIND]
       where
         deriveCUSTOM = deriveInstance ''CUSTOM ''TRUE
-        deriveKIND = deriveInstance ''KIND (kindName typeKindD)
+        deriveKIND = deriveInstance ''KIND (kindName tKind)
         -------------------------------------------------------
         deriveInstance :: Name -> Name -> Q Dec
         deriveInstance insName tyName = do

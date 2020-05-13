@@ -72,12 +72,12 @@ defineQueryD ClientQuery {queryTypes = rootType : subTypes, queryText, queryArgs
     subTypeDecs <- concat <$> traverse declareT subTypes
     return $ rootDecs ++ subTypeDecs
   where
-    declareT TypeD {clientType, clientKind}
-      | isOutputObject clientKind || clientKind == KindUnion =
+    declareT clientType@TypeD {tKind}
+      | isOutputObject tKind || tKind == KindUnion =
         withToJSON
           declareOutputType
           clientType
-      | clientKind == KindEnum = withToJSON declareInputType clientType
+      | tKind == KindEnum = withToJSON declareInputType clientType
       | otherwise = declareInputType clientType
 defineQueryD ClientQuery {queryTypes = []} = return []
 
@@ -101,7 +101,7 @@ queryArgumentType (Just rootType@TypeD {tName}) =
   (ConT $ mkName $ unpack tName, declareInputType rootType)
 
 defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
-defineOperationType (argType, argumentTypes) query TypeD {clientType} =
+defineOperationType (argType, argumentTypes) query clientType =
   do
     rootType <- withToJSON declareOutputType clientType
     typeClassFetch <- deriveFetch argType (tName clientType) query

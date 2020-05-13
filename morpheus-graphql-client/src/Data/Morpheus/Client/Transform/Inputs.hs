@@ -58,7 +58,9 @@ renderArguments variables argsName
       TypeD
         { tName = argsName,
           tNamespace = [],
-          tCons = [ConsD {cName = argsName, cFields = map fieldD (toList variables)}]
+          tCons = [ConsD {cName = argsName, cFields = map fieldD (toList variables)}],
+          tMeta = Nothing,
+          tKind = KindInputObject
         }
       where
         fieldD :: Variable RAW -> FieldDefinition
@@ -133,8 +135,8 @@ mkInputType tName tKind tCons =
     { tName,
       tNamespace = [],
       tCons,
-      tKind
-      -- tMeta = Nothing
+      tKind,
+      tMeta = Nothing
     }
 
 enumOption :: DataEnumValue -> ConsD

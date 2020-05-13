@@ -25,7 +25,6 @@ import Data.Morpheus.Server.Types.GQLType (TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
-    GQLTypeD (..),
     Key,
     QUERY,
     SUBSCRIPTION,
@@ -62,22 +61,22 @@ encodeVars = [e_, m_]
 encodeVarsT :: [TypeQ]
 encodeVarsT = map (varT . mkName . unpack) encodeVars
 
-deriveEncode :: GQLTypeD -> Q [Dec]
-deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}]}} =
+deriveEncode :: TypeD -> Q [Dec]
+deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
   pure <$> instanceD (cxt constrains) appHead methods
   where
     subARgs = conT ''SUBSCRIPTION : encodeVarsT
     instanceArgs
-      | isSubscription typeKindD = subARgs
+      | isSubscription tKind = subARgs
       | otherwise = map (varT . mkName . unpack) (po_ : encodeVars)
     mainType = applyT (mkName $ unpack tName) [mainTypeArg]
       where
         mainTypeArg
-          | isSubscription typeKindD = applyT ''Resolver subARgs
+          | isSubscription tKind = applyT ''Resolver subARgs
           | otherwise = typeT ''Resolver (fo_ : encodeVars)
     -----------------------------------------------------------------------------------------
     typeables
-      | isSubscription typeKindD =
+      | isSubscription tKind =
         [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
       | otherwise =
         [ iLiftOp po_,

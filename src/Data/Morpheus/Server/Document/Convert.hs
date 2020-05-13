@@ -21,6 +21,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition (..),
     ConsD (..),
     DataEnumValue (..),
+    DataTypeKind (..),
     FieldDefinition (..),
     GQLTypeD (..),
     InputFieldsDefinition (..),
@@ -105,7 +106,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                 { tName = hsTypeName typeName,
                   tMeta = typeMeta,
                   tNamespace = [],
-                  tCons
+                  tCons,
+                  ..
                 }
             buildObjectCons :: [FieldDefinition] -> [ConsD]
             buildObjectCons cFields =
@@ -114,7 +116,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                     cFields
                   }
               ]
-            typeKindD = kindOf typeOriginal
+            tKind = kindOf typeOriginal
             genType :: TypeContent TRUE ANY -> Q GQLTypeD
             genType (DataEnum tags) =
               pure
@@ -124,7 +126,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                         { tName = hsTypeName typeName,
                           tNamespace = [],
                           tCons = map enumOption tags,
-                          tMeta = typeMeta
+                          tMeta = typeMeta,
+                          ..
                         },
                     typeArgD = [],
                     ..
@@ -201,7 +204,8 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
                   cFields = genArguments fieldArgs
                 }
             ],
-          tMeta = Nothing
+          tMeta = Nothing,
+          tKind = KindInputObject
         }
     ]
   where

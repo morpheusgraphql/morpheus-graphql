@@ -29,6 +29,7 @@ import Data.Morpheus.Server.Document.Introspect
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLTypeD (..),
+    TypeD (..),
     isInput,
     isObject,
   )
@@ -45,7 +46,7 @@ instance Declare a => Declare [a] where
 
 instance Declare GQLTypeD where
   type DeclareCtx GQLTypeD = Bool
-  declare namespace gqlType@GQLTypeD {typeD, typeKindD, typeArgD, typeOriginal} =
+  declare namespace gqlType@GQLTypeD {typeD = typeD@TypeD {tKind}, typeArgD, typeOriginal} =
     do
       mainType <- declareMainType
       argTypes <- declareArgTypes
@@ -57,10 +58,10 @@ instance Declare GQLTypeD where
       deriveGQLInstances = concat <$> sequence gqlInstances
         where
           gqlInstances
-            | isObject typeKindD && isInput typeKindD =
+            | isObject tKind && isInput tKind =
               [deriveObjectRep (typeD, Just typeOriginal, Nothing), deriveDecode typeD]
-            | isObject typeKindD =
-              [deriveObjectRep (typeD, Just typeOriginal, Just typeKindD), deriveEncode gqlType]
+            | isObject tKind =
+              [deriveObjectRep (typeD, Just typeOriginal, Just tKind), deriveEncode typeD]
             | otherwise =
               []
       --------------------------------------------------
@@ -76,7 +77,7 @@ instance Declare GQLTypeD where
       declareMainType = declareT
         where
           declareT =
-            pure [declareType SERVER namespace (Just typeKindD) derivingClasses typeD]
+            pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
           derivingClasses
-            | isInput typeKindD = [''Show]
+            | isInput tKind = [''Show]
             | otherwise = []
