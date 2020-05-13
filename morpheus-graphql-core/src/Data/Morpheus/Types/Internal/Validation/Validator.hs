@@ -63,8 +63,8 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Variable (..),
     VariableDefinitions,
+    intercalateName,
     msg,
-    msgSepBy,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -87,7 +87,7 @@ type Path = [Prop]
 
 renderPath :: Path -> Message
 renderPath [] = ""
-renderPath path = "in field " <> msgSepBy "." (fmap propName path) <> ": "
+renderPath path = "in field " <> msg (intercalateName "." $ map propName path) <> ": "
 
 renderInputPrefix :: InputContext -> Message
 renderInputPrefix InputContext {inputPath, inputSource} =
