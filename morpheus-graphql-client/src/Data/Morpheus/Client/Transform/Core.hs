@@ -13,6 +13,7 @@ module Data.Morpheus.Client.Transform.Core
     getType,
     leafType,
     typeFrom,
+    deprecationWarning,
   )
 where
 
@@ -32,52 +33,32 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ArgumentsDefinition (..),
     ClientType (..),
-    ConsD (..),
-    DataEnumValue (..),
-    DataTypeKind (..),
-    FieldDefinition (..),
     GQLErrors,
     Key,
+    Message,
+    Meta,
     Name,
-    Operation (..),
     RAW,
     Ref (..),
     Schema (..),
-    Selection (..),
-    SelectionContent (..),
-    SelectionSet,
     TRUE,
     TypeContent (..),
-    TypeD (..),
     TypeDefinition (..),
-    TypeRef (..),
-    UnionTag (..),
-    VALID,
-    Variable (..),
     VariableDefinitions,
-    getOperationDataType,
-    getOperationName,
     lookupDeprecated,
     lookupDeprecatedReason,
-    removeDuplicates,
-    toAny,
     typeFromScalar,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
-    Listable (..),
-    keyOf,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
-    resolveUpdates,
   )
 import Data.Semigroup ((<>))
-import Data.Text
 
 type Env = (Schema, VariableDefinitions RAW)
 
@@ -93,17 +74,17 @@ newtype Converter a = Converter
 instance Failure GQLErrors Converter where
   failure = Converter . lift . failure
 
-compileError :: Text -> GQLErrors
+compileError :: Message -> GQLErrors
 compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
-getType :: Text -> Converter (TypeDefinition ANY)
+getType :: Key -> Converter (TypeDefinition ANY)
 getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename
 
-leafType :: TypeDefinition a -> Converter ([ClientType], [Text])
+leafType :: TypeDefinition a -> Converter ([ClientType], [Key])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
-    fromKind :: TypeContent TRUE a -> Converter ([ClientType], [Text])
+    fromKind :: TypeContent TRUE a -> Converter ([ClientType], [Key])
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], [])
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
@@ -115,3 +96,14 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
     __typeFrom DataObject {} = nameSpaceType path typeName
     __typeFrom DataUnion {} = nameSpaceType path typeName
     __typeFrom _ = typeName
+
+deprecationWarning :: Maybe Meta -> (Name, Ref) -> Converter ()
+deprecationWarning meta (typename, ref) = case meta >>= lookupDeprecated of
+  Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
+    where
+      warnings =
+        deprecatedField
+          typename
+          ref
+          (lookupDeprecatedReason deprecation)
+  Nothing -> pure ()

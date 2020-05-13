@@ -14,12 +14,8 @@ where
 --
 -- MORPHEUS
 import Control.Monad.Reader (asks, runReaderT)
-import Control.Monad.Trans.Class (lift)
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, getType, leafType, typeFrom)
+import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
 import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
-import Data.Morpheus.Error
-  ( deprecatedField,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -45,8 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationDataType,
     getOperationName,
-    lookupDeprecated,
-    lookupDeprecatedReason,
     toAny,
   )
 import Data.Morpheus.Types.Internal.Operation
@@ -57,7 +51,6 @@ import Data.Morpheus.Types.Internal.Operation
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    Result (..),
   )
 import Data.Semigroup ((<>))
 import Data.Text
@@ -206,14 +199,9 @@ getFieldType
             (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})
           ------------------------------------------------------------------
           checkDeprecated :: Converter ()
-          checkDeprecated = case fieldMeta >>= lookupDeprecated of
-            Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
-              where
-                warnings =
-                  deprecatedField
-                    typeName
-                    Ref {refName = selectionName, refPosition = selectionPosition}
-                    (lookupDeprecatedReason deprecation)
-            Nothing -> pure ()
+          checkDeprecated =
+            deprecationWarning
+              fieldMeta
+              (typeName, Ref {refName = selectionName, refPosition = selectionPosition})
 getFieldType _ dt _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
