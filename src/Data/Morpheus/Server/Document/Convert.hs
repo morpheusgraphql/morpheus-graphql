@@ -107,7 +107,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   tMeta = typeMeta,
                   tNamespace = [],
                   tCons,
-                  ..
+                  tKind
                 }
             buildObjectCons :: [FieldDefinition] -> [ConsD]
             buildObjectCons cFields =
@@ -127,7 +127,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                           tNamespace = [],
                           tCons = map enumOption tags,
                           tMeta = typeMeta,
-                          ..
+                          tKind
                         },
                     typeArgD = [],
                     ..
