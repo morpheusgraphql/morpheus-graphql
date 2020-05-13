@@ -87,7 +87,7 @@ type Path = [Prop]
 
 renderPath :: Path -> Message
 renderPath [] = ""
-renderPath path = "in field \"" <> msgSepBy "." (fmap propName path) <> "\": "
+renderPath path = "in field " <> msgSepBy "." (fmap propName path) <> ": "
 
 renderInputPrefix :: InputContext -> Message
 renderInputPrefix InputContext {inputPath, inputSource} =
@@ -95,9 +95,9 @@ renderInputPrefix InputContext {inputPath, inputSource} =
 
 renderSource :: InputSource -> Message
 renderSource (SourceArgument Argument {argumentName}) =
-  "Argument \"" <> msg argumentName <> "\" got invalid value. "
+  "Argument " <> msg argumentName <> " got invalid value. "
 renderSource (SourceVariable Variable {variableName}) =
-  "Variable \"$" <> msg variableName <> "\" got invalid value. "
+  "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
 
 data Context = Context
   { schema :: Schema,
