@@ -22,7 +22,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
     FieldsDefinition (..),
-    Name,
+    Name (..),
     Schema,
     TypeContent (..),
     TypeDefinition (..),
@@ -68,8 +68,8 @@ validatePartialDocument lib = traverse validateType lib
                 [ ( typeName,
                     fieldName,
                     UnexpectedType
-                      { expectedType = render interfaceT,
-                        foundType = render objT
+                      { expectedType = Name (render interfaceT),
+                        foundType = Name (render objT)
                       }
                   )
                 ]
