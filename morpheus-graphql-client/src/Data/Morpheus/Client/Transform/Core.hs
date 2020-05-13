@@ -9,6 +9,7 @@
 module Data.Morpheus.Client.Transform.Core
   ( Converter (..),
     compileError,
+    getType,
   )
 where
 
@@ -92,3 +93,6 @@ instance Failure GQLErrors Converter where
 compileError :: Text -> GQLErrors
 compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
+
+getType :: Text -> Converter (TypeDefinition ANY)
+getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename

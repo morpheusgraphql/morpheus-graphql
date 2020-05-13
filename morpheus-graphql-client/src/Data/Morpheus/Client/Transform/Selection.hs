@@ -15,11 +15,10 @@ where
 -- MORPHEUS
 import Control.Monad.Reader (asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError)
+import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, getType)
 import Data.Morpheus.Client.Transform.Inputs (leafType, renderNonOutputTypes)
 import Data.Morpheus.Error
   ( deprecatedField,
-    globalErrorMessage,
   )
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
@@ -31,7 +30,6 @@ import Data.Morpheus.Types.Internal.AST
     ConsD (..),
     DataTypeKind (..),
     FieldDefinition (..),
-    GQLErrors,
     Key,
     Name,
     Operation (..),
@@ -166,7 +164,7 @@ genConsD path cName datatype selSet = do
     genField sel =
       do
         (fieldDataType, fieldType) <-
-          lookupFieldType
+          getFieldType
             fieldPath
             datatype
             sel
@@ -219,12 +217,12 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection unio
       conDatatype <- getType selectedTyName
       genConsD path selectedTyName conDatatype selectionVariant
 
-lookupFieldType ::
+getFieldType ::
   [Key] ->
   TypeDefinition ANY ->
   Selection VALID ->
   Converter (TypeDefinition ANY, TypeRef)
-lookupFieldType
+getFieldType
   path
   TypeDefinition {typeContent = DataObject {objectFields}, typeName}
   Selection
@@ -250,11 +248,8 @@ lookupFieldType
                     Ref {refName = selectionName, refPosition = selectionPosition}
                     (lookupDeprecatedReason deprecation)
             Nothing -> pure ()
-lookupFieldType _ dt _ =
+getFieldType _ dt _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
-
-getType :: Text -> Converter (TypeDefinition ANY)
-getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename
 
 typeFrom :: [Name] -> TypeDefinition a -> Name
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent

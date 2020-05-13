@@ -14,13 +14,8 @@ where
 
 --
 -- MORPHEUS
-import Control.Monad.Reader (MonadReader, asks, runReaderT)
-import Control.Monad.Trans.Class (lift)
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError)
-import Data.Morpheus.Error
-  ( deprecatedField,
-    globalErrorMessage,
-  )
+import Control.Monad.Reader (asks)
+import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, getType)
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
   )
@@ -32,48 +27,32 @@ import Data.Morpheus.Types.Internal.AST
     DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
-    GQLErrors,
     Key,
     Name,
     Operation (..),
     RAW,
-    Ref (..),
-    Schema (..),
-    Selection (..),
-    SelectionContent (..),
-    SelectionSet,
     TRUE,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
     TypeRef (..),
-    UnionTag (..),
     VALID,
     Variable (..),
     VariableDefinitions,
-    getOperationDataType,
     getOperationName,
-    lookupDeprecated,
-    lookupDeprecatedReason,
     removeDuplicates,
-    toAny,
     typeFromScalar,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
     Listable (..),
-    keyOf,
-    selectBy,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
-    resolveUpdates,
+  ( resolveUpdates,
   )
 import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
-    pack,
   )
 
 renderArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
@@ -185,9 +164,6 @@ leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], [])
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
-
-getType :: Text -> Converter (TypeDefinition ANY)
-getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename
 
 typeFrom :: [Name] -> TypeDefinition a -> Name
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
