@@ -89,9 +89,12 @@ type Token = Text
 
 newtype Message = Message {readMessage :: Text}
   deriving
-    (Generic, Lift)
+    (Generic)
   deriving newtype
     (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
+
+instance Lift Message where
+  lift = stringE . T.unpack . readMessage
 
 class Msg a where
   msg :: a -> Message
