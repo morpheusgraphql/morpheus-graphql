@@ -20,7 +20,8 @@ import Data.Morpheus.Client.Fetch
   ( deriveFetch,
   )
 import Data.Morpheus.Client.Transform.Selection
-  ( operationTypes,
+  ( ClientDefinition (..),
+    toClientDefinition,
   )
 import Data.Morpheus.Core
   ( validateRequest,
@@ -53,28 +54,21 @@ import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Language.Haskell.TH
 
-data Client = Client
-  { clientQuery :: String,
-    clientArguments :: Maybe TypeD,
-    clientTypes :: [TypeD]
-  }
-  deriving (Show)
-
 defineQuery :: IO (Eventless Schema) -> (GQLQuery, String) -> Q [Dec]
-defineQuery ioSchema queryRoot = do
+defineQuery ioSchema (query, src) = do
   schema <- runIO ioSchema
-  case schema >>= (`validateWith` queryRoot) of
+  case schema >>= (`validateWith` query) of
     Failure errors -> fail (renderGQLErrors errors)
-    Success {result, warnings} -> gqlWarnings warnings >> defineQueryD result
+    Success {result, warnings} -> gqlWarnings warnings >> defineQueryD src result
 
-defineQueryD :: Client -> Q [Dec]
-defineQueryD Client {clientTypes = []} = return []
-defineQueryD Client {clientQuery, clientArguments, clientTypes = rootType : subTypes} =
+defineQueryD :: String -> ClientDefinition -> Q [Dec]
+defineQueryD _ ClientDefinition {clientTypes = []} = return []
+defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
   do
     rootDecs <-
       defineOperationType
         (queryArgumentType clientArguments)
-        clientQuery
+        src
         rootType
     subTypeDecs <- concat <$> traverse declareT subTypes
     return $ rootDecs ++ subTypeDecs
@@ -114,12 +108,10 @@ defineOperationType (argType, argumentTypes) query clientType =
     argsT <- argumentTypes
     pure $ rootType <> typeClassFetch <> argsT
 
-validateWith :: Schema -> (GQLQuery, String) -> Eventless Client
-validateWith schema (rawRequest@GQLQuery {operation}, clientQuery) = do
+validateWith :: Schema -> GQLQuery -> Eventless ClientDefinition
+validateWith schema rawRequest@GQLQuery {operation} = do
   validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
-  (clientArguments, clientTypes) <-
-    operationTypes
-      schema
-      (O.operationArguments operation)
-      validOperation
-  return Client {clientQuery, clientTypes, clientArguments}
+  toClientDefinition
+    schema
+    (O.operationArguments operation)
+    validOperation

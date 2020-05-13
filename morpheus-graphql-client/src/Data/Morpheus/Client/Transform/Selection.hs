@@ -7,7 +7,8 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Client.Transform.Selection
-  ( operationTypes,
+  ( toClientDefinition,
+    ClientDefinition (..),
   )
 where
 
@@ -57,6 +58,25 @@ import Data.Text
     pack,
   )
 
+data ClientDefinition = ClientDefinition
+  { clientArguments :: Maybe TypeD,
+    clientTypes :: [TypeD]
+  }
+  deriving (Show)
+
+toClientDefinition ::
+  Schema ->
+  VariableDefinitions RAW ->
+  Operation VALID ->
+  Eventless ClientDefinition
+toClientDefinition schema vars = flip runReaderT (schema, vars) . runConverter . genOperation
+
+genOperation :: Operation VALID -> Converter ClientDefinition
+genOperation operation = do
+  (clientArguments, outputTypes, enums) <- renderOperationType operation
+  nonOutputTypes <- renderNonOutputTypes enums
+  pure ClientDefinition {clientArguments, clientTypes = outputTypes <> nonOutputTypes}
+
 renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [TypeD], [Name])
 renderOperationType op@Operation {operationName, operationSelection} = do
   datatype <- asks fst >>= getOperationDataType op
@@ -68,19 +88,6 @@ renderOperationType op@Operation {operationName, operationSelection} = do
       (toAny datatype)
       operationSelection
   pure (arguments, outputTypes, enums)
-
-operationTypes ::
-  Schema ->
-  VariableDefinitions RAW ->
-  Operation VALID ->
-  Eventless (Maybe TypeD, [TypeD])
-operationTypes schema vars = flip runReaderT (schema, vars) . runConverter . genOperation
-
-genOperation :: Operation VALID -> Converter (Maybe TypeD, [TypeD])
-genOperation operation = do
-  (arguments, outputTypes, enums) <- renderOperationType operation
-  nonOutputTypes <- renderNonOutputTypes enums
-  pure (arguments, outputTypes <> nonOutputTypes)
 
 -------------------------------------------------------------------------
 -- generates selection Object Types
