@@ -188,7 +188,7 @@ getFieldType
     } =
     selectBy selError selectionName objectFields >>= processDeprecation
     where
-      selError = compileError $ "cant find field \"" <> msg (show objectFields) <> "\""
+      selError = compileError $ "cant find field " <> msg (show objectFields)
       processDeprecation FieldDefinition {fieldType = alias@TypeRef {typeConName}, fieldMeta} =
         checkDeprecated >> (trans <$> getType typeConName)
         where

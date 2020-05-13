@@ -167,7 +167,7 @@ instance KeyOf (Argument stage) where
 instance NameCollision (Argument s) where
   nameCollision _ Argument {argumentName, argumentPosition} =
     GQLError
-      { message = "There can Be only One Argument Named \"" <> msg argumentName <> "\"",
+      { message = "There can Be only One Argument Named " <> msg argumentName,
         locations = [argumentPosition]
       }
 
@@ -521,7 +521,7 @@ instance Selectable FieldDefinition ArgumentDefinition where
 instance NameCollision FieldDefinition where
   nameCollision name _ =
     GQLError
-      { message = "There can Be only One field Named \"" <> msg name <> "\"",
+      { message = "There can Be only One field Named " <> msg name,
         locations = []
       }
 

@@ -134,7 +134,7 @@ mergeConflict refs@(rootField : xs) err =
       }
   ]
   where
-    fieldConflicts ref = "\"" <> msg (refName ref) <> "\" conflict because "
+    fieldConflicts ref = msg (refName ref) <> " conflict because "
     renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
     renderStart = "Fields " <> fieldConflicts rootField
     renderSubfields =
@@ -206,8 +206,8 @@ instance Merge (Selection a) where
           failure $ mergeConflict path $
             GQLError
               { message =
-                  "\"" <> msg (selectionName old) <> "\" and \"" <> msg (selectionName current)
-                    <> "\" are different fields. "
+                  "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
+                    <> " are different fields. "
                     <> useDufferentAliases,
                 locations = [pos1, pos2]
               }
