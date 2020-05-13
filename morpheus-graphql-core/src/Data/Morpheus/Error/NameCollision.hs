@@ -5,8 +5,8 @@ where
 
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
-    Name,
   )
+import Data.Morpheus.Types.Internal.Operation (KeyOf (..))
 
 class NameCollision a where
-  nameCollision :: Name -> a -> GQLError
+  nameCollision :: KEY a -> a -> GQLError

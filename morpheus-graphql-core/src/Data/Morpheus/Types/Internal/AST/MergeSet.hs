@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,6 +21,7 @@ import Data.Maybe (maybe)
 
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
+    Name,
     Named,
     Ref,
   )
@@ -46,17 +48,40 @@ newtype MergeSet a = MergeSet
   }
   deriving (Show, Eq, Functor, Foldable, Lift)
 
-concatTraverse :: (KeyOf a, Eq a, Eq b, Merge a, Merge b, KeyOf b, Monad m, Failure GQLErrors m) => (a -> m (MergeSet b)) -> MergeSet a -> m (MergeSet b)
+concatTraverse ::
+  ( KeyOf a,
+    Eq a,
+    Eq b,
+    KEY a ~ Name,
+    Merge a,
+    Merge b,
+    KeyOf b,
+    KEY b ~ Name,
+    Monad m,
+    Failure GQLErrors m
+  ) =>
+  (a -> m (MergeSet b)) ->
+  MergeSet a ->
+  m (MergeSet b)
 concatTraverse f smap = traverse f (toList smap) >>= join
 
-join :: (Eq a, KeyOf a, Merge a, Monad m, Failure GQLErrors m) => [MergeSet a] -> m (MergeSet a)
+join ::
+  ( Eq a,
+    KeyOf a,
+    Merge a,
+    Monad m,
+    KEY a ~ Name,
+    Failure GQLErrors m
+  ) =>
+  [MergeSet a] ->
+  m (MergeSet a)
 join = __join empty
   where
-    __join :: (Eq a, KeyOf a, Merge a, Monad m, Failure GQLErrors m) => MergeSet a -> [MergeSet a] -> m (MergeSet a)
+    __join :: (Eq a, KeyOf a, KEY a ~ Name, Merge a, Monad m, Failure GQLErrors m) => MergeSet a -> [MergeSet a] -> m (MergeSet a)
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
-toOrderedMap :: KeyOf a => MergeSet a -> OrderedMap a
+toOrderedMap :: (KEY a ~ Name, KeyOf a) => MergeSet a -> OrderedMap Name a
 toOrderedMap = OM.unsafeFromValues . unpack
 
 instance Traversable MergeSet where
@@ -68,29 +93,29 @@ instance Empty (MergeSet a) where
 instance (KeyOf a) => Singleton (MergeSet a) a where
   singleton x = MergeSet [x]
 
-instance KeyOf a => Selectable (MergeSet a) a where
+instance (KeyOf a, KEY a ~ Name) => Selectable (MergeSet a) a where
   selectOr fb _ "" _ = fb
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
 
 -- must merge files on collision
-instance (KeyOf a, Merge a, Eq a) => Merge (MergeSet a) where
+instance (KeyOf a, KEY a ~ Name, Merge a, Eq a) => Merge (MergeSet a) where
   merge = safeJoin
 
-instance (KeyOf a, Merge a, Eq a) => Listable (MergeSet a) a where
+instance (KeyOf a, KEY a ~ Name, Merge a, Eq a) => Listable (MergeSet a) a where
   fromAssoc = safeFromList
   toAssoc = map toPair . unpack
 
-safeFromList :: (Monad m, KeyOf a, Eq a, Merge a, Failure GQLErrors m) => [Named a] -> m (MergeSet a)
+safeFromList :: (Monad m, KeyOf a, KEY a ~ Name, Eq a, Merge a, Failure GQLErrors m) => [Named a] -> m (MergeSet a)
 safeFromList = insertList [] empty . map snd
 
-safeJoin :: (Monad m, KeyOf a, Eq a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> MergeSet a -> m (MergeSet a)
+safeJoin :: (Monad m, KeyOf a, Eq a, KEY a ~ Name, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> MergeSet a -> m (MergeSet a)
 safeJoin path hm1 hm2 = insertList path hm1 (toList hm2)
 
-insertList :: (Monad m, Eq a, KeyOf a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> [a] -> m (MergeSet a)
+insertList :: (Monad m, Eq a, KeyOf a, KEY a ~ Name, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> [a] -> m (MergeSet a)
 insertList _ smap [] = pure smap
 insertList path smap (x : xs) = insert path smap x >>= flip (insertList path) xs
 
-insert :: (Monad m, Eq a, KeyOf a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> a -> m (MergeSet a)
+insert :: (Monad m, Eq a, KeyOf a, KEY a ~ Name, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> a -> m (MergeSet a)
 insert path mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
   where
     __insert =

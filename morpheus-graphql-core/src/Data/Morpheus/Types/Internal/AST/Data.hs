@@ -186,7 +186,7 @@ type Arguments s = OrderedMap (Argument s)
 ------------------------------------------------------------------
 data Directive = Directive
   { directiveName :: Name,
-    directiveArgs :: OrderedMap (Argument VALID)
+    directiveArgs :: OrderedMap FieldName (Argument VALID)
   }
   deriving (Show, Lift)
 
@@ -288,6 +288,7 @@ data TypeDefinition (a :: TypeCategory) = TypeDefinition
   deriving (Show, Lift)
 
 instance KeyOf (TypeDefinition a) where
+  type KEY (TypeDefinition a) = TypeName
   keyOf = typeName
 
 data TypeCategory = In | Out | Any
@@ -491,7 +492,7 @@ popByKey name types = case lookupWith typeName name types of
 --    { FieldDefinition(list) }
 --
 newtype FieldsDefinition = FieldsDefinition
-  {unFieldsDefinition :: OrderedMap FieldDefinition}
+  {unFieldsDefinition :: OrderedMap FieldName FieldDefinition}
   deriving (Show, Empty, Lift)
 
 unsafeFromFields :: [FieldDefinition] -> FieldsDefinition
@@ -581,7 +582,7 @@ toListField dataField = dataField {fieldType = listW (fieldType dataField)}
 -- { InputValueDefinition(list) }
 
 newtype InputFieldsDefinition = InputFieldsDefinition
-  {unInputFieldsDefinition :: OrderedMap FieldDefinition}
+  {unInputFieldsDefinition :: OrderedMap FieldName FieldDefinition}
   deriving (Show, Empty, Lift)
 
 unsafeFromInputFields :: [FieldDefinition] -> InputFieldsDefinition
@@ -608,7 +609,7 @@ instance Listable InputFieldsDefinition FieldDefinition where
 data ArgumentsDefinition
   = ArgumentsDefinition
       { argumentsTypename :: Maybe Name,
-        arguments :: OrderedMap ArgumentDefinition
+        arguments :: OrderedMap FieldName ArgumentDefinition
       }
   | NoArguments
   deriving (Show, Lift)

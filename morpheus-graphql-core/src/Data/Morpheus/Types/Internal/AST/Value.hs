@@ -49,7 +49,8 @@ import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( FieldName,
+    GQLError (..),
     Msg (..),
     Name (..),
     Position,
@@ -217,7 +218,7 @@ instance NameCollision (ObjectEntry s) where
 instance KeyOf (ObjectEntry s) where
   keyOf = entryName
 
-type Object a = OrderedMap (ObjectEntry a)
+type Object a = OrderedMap FieldName (ObjectEntry a)
 
 type ValidObject = Object VALID
 
