@@ -98,6 +98,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( DataFingerprint (..),
     DataTypeKind (..),
     Description,
+    FieldName,
     GQLError (..),
     Key,
     Message,
@@ -147,9 +148,9 @@ import Language.Haskell.TH.Syntax (Lift (..))
 
 type DataEnum = [DataEnumValue]
 
-type DataUnion = [Key]
+type DataUnion = [TypeName]
 
-type DataInputUnion = [(Key, Bool)]
+type DataInputUnion = [(TypeName, Bool)]
 
 -- scalar
 ------------------------------------------------------------------
@@ -233,7 +234,7 @@ data Schema = Schema
   }
   deriving (Show)
 
-type TypeLib = HashMap Key (TypeDefinition ANY)
+type TypeLib = HashMap TypeName (TypeDefinition ANY)
 
 instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
@@ -262,10 +263,10 @@ typeRegister Schema {types, query, mutation, subscription} =
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
-lookupDataType :: Key -> Schema -> Maybe (TypeDefinition ANY)
+lookupDataType :: TypeName -> Schema -> Maybe (TypeDefinition ANY)
 lookupDataType name = HM.lookup name . typeRegister
 
-isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
+isTypeDefined :: TypeName -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
@@ -382,7 +383,7 @@ deriving instance Show (TypeContent a b)
 
 deriving instance Lift (TypeContent a b)
 
-createType :: Key -> TypeContent TRUE a -> TypeDefinition a
+createType :: TypeName -> TypeContent TRUE a -> TypeDefinition a
 createType typeName typeContent =
   TypeDefinition
     { typeName,
@@ -391,10 +392,10 @@ createType typeName typeContent =
       typeContent
     }
 
-createScalarType :: Name -> TypeDefinition a
+createScalarType :: TypeName -> TypeDefinition a
 createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
 
-createEnumType :: Name -> [Key] -> TypeDefinition a
+createEnumType :: TypeName -> [FieldName] -> TypeDefinition a
 createEnumType typeName typeData = createType typeName (DataEnum enumValues)
   where
     enumValues = map createEnumValue typeData
@@ -402,7 +403,7 @@ createEnumType typeName typeData = createType typeName (DataEnum enumValues)
 createEnumValue :: Name -> DataEnumValue
 createEnumValue enumName = DataEnumValue {enumName, enumMeta = Nothing}
 
-createUnionType :: Key -> [Key] -> TypeDefinition OUT
+createUnionType :: TypeName -> [TypeName] -> TypeDefinition OUT
 createUnionType typeName typeData = createType typeName (DataUnion typeData)
 
 isEntNode :: TypeContent TRUE a -> Bool
@@ -421,7 +422,7 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
 
-fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ANY)]
+fromOperation :: Maybe (TypeDefinition OUT) -> [(TypeName, TypeDefinition ANY)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
@@ -451,7 +452,7 @@ insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName 
     | otherwise -> failure $ nameCollisionError typeName
 
 updateSchema ::
-  Name ->
+  TypeName ->
   DataFingerprint ->
   [TypeUpdater] ->
   (a -> TypeDefinition cat) ->
@@ -471,7 +472,7 @@ lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
 -- lookups and removes TypeDefinition from hashmap
-popByKey :: Name -> [TypeDefinition ANY] -> (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+popByKey :: TypeName -> [TypeDefinition ANY] -> (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
 popByKey name types = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     (fromAny dt, filter ((/= name) . typeName) types)
@@ -542,7 +543,7 @@ fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 isFieldNullable :: FieldDefinition -> Bool
 isFieldNullable = isNullable . fieldType
 
-createField :: ArgumentsDefinition -> Key -> ([TypeWrapper], Key) -> FieldDefinition
+createField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition
 createField dataArguments fieldName (typeWrappers, typeConName) =
   FieldDefinition
     { fieldArgs = dataArguments,
@@ -627,7 +628,7 @@ instance Listable ArgumentsDefinition ArgumentDefinition where
   fromAssoc [] = pure NoArguments
   fromAssoc args = ArgumentsDefinition Nothing <$> fromAssoc args
 
-createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
+createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition
 createArgument = createField NoArguments
 
 hasArguments :: ArgumentsDefinition -> Bool
@@ -648,7 +649,7 @@ hasArguments _ = True
 __inputname :: Name
 __inputname = "inputname"
 
-createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
+createInputUnionFields :: TypeName -> [TypeName] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members
   where
     fieldTag =
@@ -675,7 +676,7 @@ createInputUnionFields name members = fieldTag : map unionField members
 -- OTHER
 --------------------------------------------------------------------------------------------------
 
-createAlias :: Key -> TypeRef
+createAlias :: TypeName -> TypeRef
 createAlias typeConName =
   TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
 

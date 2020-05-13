@@ -134,7 +134,20 @@ intercalateName (Name x) = Name . intercalate x . map readName
 
 type Key = Name
 
-type TypeName = Name
+newtype TypeName = TypeName {readTypeName :: Text}
+  deriving
+    (Generic)
+  deriving newtype
+    (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
+
+instance Lift TypeName where
+  lift = stringE . T.unpack . readTypeName
+
+instance Msg TypeName where
+  msg TypeName {readTypeName} = Message $ "\"" <> readTypeName <> "\""
+
+instance RenderGQL TypeName where
+  render = readTypeName
 
 type FieldName = Name
 
@@ -172,9 +185,9 @@ data VALIDATION_MODE
   | FULL_VALIDATION
   deriving (Eq, Show)
 
-data DataFingerprint = DataFingerprint Name [String] deriving (Show, Eq, Ord, Lift)
+data DataFingerprint = DataFingerprint TypeName [String] deriving (Show, Eq, Ord, Lift)
 
-internalFingerprint :: Name -> [String] -> DataFingerprint
+internalFingerprint :: TypeName -> [String] -> DataFingerprint
 internalFingerprint name = DataFingerprint ("SYSTEM.INTERNAL." <> name)
 
 data OperationType
@@ -210,8 +223,8 @@ anonymousRef refName = Ref {refName, refPosition = Position 0 0}
 -- TypeRef
 -------------------------------------------------------------------
 data TypeRef = TypeRef
-  { typeConName :: Name,
-    typeArgs :: Maybe Name,
+  { typeConName :: TypeName,
+    typeArgs :: Maybe TypeName,
     typeWrappers :: [TypeWrapper]
   }
   deriving (Show, Eq, Lift)
@@ -302,16 +315,16 @@ renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
     showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
-isDefaultTypeName :: Key -> Bool
+isDefaultTypeName :: TypeName -> Bool
 isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
 
 isSchemaTypeName :: TypeName -> Bool
 isSchemaTypeName = (`elem` sysTypes)
 
-isPrimitiveTypeName :: Key -> Bool
+isPrimitiveTypeName :: TypeName -> Bool
 isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
 
-sysTypes :: [Key]
+sysTypes :: [TypeName]
 sysTypes =
   [ "__Schema",
     "__Type",
@@ -334,13 +347,13 @@ typeFromScalar "String" = "Text"
 typeFromScalar "ID" = "ID"
 typeFromScalar _ = "ScalarValue"
 
-hsTypeName :: Key -> Key
+hsTypeName :: TypeName -> TypeName
 hsTypeName "String" = "Text"
 hsTypeName "Boolean" = "Bool"
 hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name = name
 
-toOperationType :: Name -> Maybe OperationType
+toOperationType :: TypeName -> Maybe OperationType
 toOperationType "Subscription" = Just Subscription
 toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query
