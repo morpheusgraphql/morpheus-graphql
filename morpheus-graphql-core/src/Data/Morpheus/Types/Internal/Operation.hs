@@ -29,7 +29,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     Named,
     Ref (..),
   )
-import Data.Text (Text)
 import Instances.TH.Lift ()
 import Text.Megaparsec.Internal (ParsecT (..))
 import Text.Megaparsec.Stream (Stream)
@@ -46,7 +45,7 @@ class Selectable c a | c -> a where
 instance KeyOf a => Selectable [a] a where
   selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
 
-instance Selectable (HashMap Text a) a where
+instance Selectable (HashMap Name a) a where
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
 selectBy :: (Failure e m, Selectable c a, Monad m) => e -> Name -> c -> m a

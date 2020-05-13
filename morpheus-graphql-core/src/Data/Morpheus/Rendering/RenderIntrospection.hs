@@ -36,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     TypeRef (..),
     convertToJSONName,
     createInputUnionFields,
@@ -60,7 +61,7 @@ import Data.Morpheus.Types.Internal.Resolving
     mkString,
   )
 import Data.Semigroup ((<>))
-import Data.Text (Text, pack)
+import Data.Text (pack)
 
 constRes :: Applicative m => a -> b -> m a
 constRes = const . pure
@@ -96,7 +97,7 @@ renderFields :: Monad m => Schema -> FieldsDefinition -> Resolver QUERY e m [Res
 renderFields schema = traverse (`render` schema) . filter fieldVisibility . toList
 
 renderInterface ::
-  Monad m => Text -> Maybe Meta -> FieldsDefinition -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+  Monad m => TypeName -> Maybe Meta -> FieldsDefinition -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
 renderInterface name meta fields schema =
   pure $
     mkObject
@@ -167,7 +168,7 @@ renderTypeKind KindList = LIST
 renderTypeKind KindNonNull = NON_NULL
 renderTypeKind KindInterface = INTERFACE
 
-lookupKind :: (Monad m) => Text -> Result e m DataTypeKind
+lookupKind :: (Monad m) => TypeName -> Result e m DataTypeKind
 lookupKind name schema = kindOf <$> selectBy ("Kind Not Found: " <> name) name schema
 
 renderinputValue ::
@@ -185,7 +186,7 @@ createInputObjectType field@FieldDefinition {fieldType = TypeRef {typeConName}} 
 
 renderInputUnion ::
   (Monad m) =>
-  (Text, Maybe Meta, DataInputUnion) ->
+  (TypeName, Maybe Meta, DataInputUnion) ->
   Result e m (ResModel QUERY e m)
 renderInputUnion (key, meta, fields) lib =
   createInputObject key meta
@@ -199,7 +200,7 @@ renderInputUnion (key, meta, fields) lib =
 createLeafType ::
   Monad m =>
   TypeKind ->
-  Text ->
+  TypeName ->
   Maybe Meta ->
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
@@ -212,7 +213,7 @@ createLeafType kind name meta enums =
       ("enumValues", optList enums)
     ]
 
-typeFromUnion :: Monad m => Schema -> (Text, Maybe Meta, DataUnion) -> ResModel QUERY e m
+typeFromUnion :: Monad m => Schema -> (TypeName, Maybe Meta, DataUnion) -> ResModel QUERY e m
 typeFromUnion schema (name, typeMeta, typeContent) =
   mkObject
     "__Type"
@@ -228,7 +229,7 @@ unionPossibleType schema name =
     >>= (`render` schema)
 
 createObjectType ::
-  Monad m => Text -> Maybe Meta -> [Name] -> FieldsDefinition -> Schema -> ResModel QUERY e m
+  Monad m => TypeName -> Maybe Meta -> [Name] -> FieldsDefinition -> Schema -> ResModel QUERY e m
 createObjectType name meta interfaces fields schema =
   mkObject
     "__Type"
@@ -255,7 +256,7 @@ optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel
 optList = pure . maybe mkNull mkList
 
 createInputObject ::
-  Monad m => Text -> Maybe Meta -> [ResModel QUERY e m] -> ResModel QUERY e m
+  Monad m => TypeName -> Maybe Meta -> [ResModel QUERY e m] -> ResModel QUERY e m
 createInputObject name meta fields =
   mkObject
     "__Type"
@@ -268,7 +269,7 @@ createInputObject name meta fields =
 createType ::
   Monad m =>
   TypeKind ->
-  Text ->
+  TypeName ->
   Maybe Meta ->
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
@@ -286,7 +287,7 @@ opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> R
 opt f (Just x) = f x
 opt _ Nothing = pure mkNull
 
-renderName :: Monad m => Text -> (Name, Resolver QUERY e m (ResModel QUERY e m))
+renderName :: Monad m => Name -> (Name, Resolver QUERY e m (ResModel QUERY e m))
 renderName = ("name",) . pure . mkString . convertToJSONName
 
 renderKind :: Monad m => TypeKind -> (Name, Resolver QUERY e m (ResModel QUERY e m))
@@ -308,7 +309,7 @@ wrapAs wrapper contentType =
     kind NonNullType = NON_NULL
 
 createInputValueWith ::
-  Monad m => Text -> Maybe Meta -> ResModel QUERY e m -> ResModel QUERY e m
+  Monad m => Name -> Maybe Meta -> ResModel QUERY e m -> ResModel QUERY e m
 createInputValueWith name meta ivType =
   mkObject
     "__InputValue"

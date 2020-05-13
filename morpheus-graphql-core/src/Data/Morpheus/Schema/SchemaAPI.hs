@@ -26,6 +26,7 @@ import Data.Morpheus.Types.Internal.AST
     ScalarValue (..),
     Schema (..),
     TypeDefinition (..),
+    TypeName,
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Operation
@@ -44,7 +45,6 @@ import Data.Morpheus.Types.Internal.Resolving
     mkObject,
     withArguments,
   )
-import Data.Text (Text)
 
 resolveTypes ::
   Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
@@ -57,7 +57,7 @@ buildSchemaLinkType Nothing = const mkNull
 
 findType ::
   Monad m =>
-  Text ->
+  TypeName ->
   Schema ->
   Resolver QUERY e m (ResModel QUERY e m)
 findType name schema = selectOr (pure mkNull) (`render` schema) name schema
