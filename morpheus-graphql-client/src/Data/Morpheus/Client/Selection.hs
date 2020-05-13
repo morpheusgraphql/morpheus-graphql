@@ -82,8 +82,6 @@ compileError :: Text -> GQLErrors
 compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
-data TypeNode = TypeNode {node :: Maybe TypeD, childrens :: [ClientType]}
-
 type Env = (Schema, VariableDefinitions RAW)
 
 newtype Converter a = Converter
@@ -98,8 +96,8 @@ newtype Converter a = Converter
 instance Failure GQLErrors Converter where
   failure = Converter . lift . failure
 
-renderOperationArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
-renderOperationArguments variables argsName
+renderArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
+renderArguments variables argsName
   | null variables = Nothing
   | otherwise = Just rootArgumentsType
   where
@@ -121,18 +119,22 @@ renderOperationArguments variables argsName
               fieldMeta = Nothing
             }
 
+renderOperationArguments :: Operation VALID -> Converter (Maybe TypeD)
+renderOperationArguments Operation {operationName} = do
+  variables <- asks snd
+  pure $ renderArguments variables (getOperationName operationName <> "Args")
+
 renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [ClientType], [Name])
 renderOperationType op@Operation {operationName, operationSelection} = do
-  (lib, variables) <- asks id
-  datatype <- getOperationDataType op lib
-  let arguments = renderOperationArguments variables (getOperationName operationName <> "Args")
-  (queryTypes, enums) <-
+  datatype <- asks fst >>= getOperationDataType op
+  arguments <- renderOperationArguments op
+  (outputTypes, enums) <-
     genRecordType
       []
       (getOperationName operationName)
       (toAny datatype)
       operationSelection
-  pure (arguments, queryTypes, enums)
+  pure (arguments, outputTypes, enums)
 
 operationTypes ::
   Schema ->
