@@ -22,7 +22,7 @@ import Data.Semigroup ((<>))
 unknownInterface :: Name -> GQLErrors
 unknownInterface name = globalErrorMessage message
   where
-    message = "Unknown Interface \"" <> msg name <> "\"."
+    message = "Unknown Interface " <> msg name <> "."
 
 data ImplementsError
   = UnexpectedType
@@ -41,18 +41,18 @@ partialImplements name = map impError
         }
       where
         message =
-          "type \""
+          "type "
             <> msg name
-            <> "\" implements Interface \""
+            <> " implements Interface "
             <> msg interfaceName
-            <> "\" Partially,"
+            <> " Partially,"
             <> detailedMessage errorType
         detailedMessage UnexpectedType {expectedType, foundType} =
-          " on key \""
+          " on key "
             <> msg key
-            <> "\" expected type \""
+            <> " expected type "
             <> msg expectedType
-            <> "\" found \""
+            <> " found "
             <> msg foundType
-            <> "\"."
-        detailedMessage UndefinedField = " key \"" <> msg key <> "\" not found ."
+            <> "."
+        detailedMessage UndefinedField = " key " <> msg key <> " not found ."
