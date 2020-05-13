@@ -69,7 +69,7 @@ import Data.Aeson
   )
 import Data.Semigroup ((<>))
 import Data.String (IsString)
-import Data.Text (Text)
+import Data.Text (Text, intercalate)
 import GHC.Generics (Generic)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
@@ -97,6 +97,9 @@ newtype Name = Name {readName :: Text}
 
 instance Msg Name where
   msg Name {readName} = Message readName
+
+instance Msg [Name] where
+  msg = Message . intercalate ", " . map readName
 
 type Key = Name
 
