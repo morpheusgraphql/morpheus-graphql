@@ -34,6 +34,7 @@ import Data.Morpheus.Types.IO
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
+    Message,
     VALID,
     Value (..),
   )
@@ -213,7 +214,7 @@ handleResponseHTTP
       Failure err -> pure (Errors err)
     where
       execute (Publish event) = pure event
-      execute Subscribe {} = failure ("http can't handle subscription" :: String)
+      execute Subscribe {} = failure ("http can't handle subscription" :: Message)
 
 handleRes ::
   ( Eq (StreamChannel e),

@@ -35,6 +35,10 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
   )
+import Data.Morpheus.Types.Internal.AST
+  ( Name,
+    Token,
+  )
 import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
@@ -67,8 +71,8 @@ instance FromJSON a => FromJSON (ApolloSubscription a) where
         ApolloSubscription <$> o .:? "id" <*> o .: "type" <*> o .:? "payload"
 
 data RequestPayload = RequestPayload
-  { payloadOperationName :: Maybe Text,
-    payloadQuery :: Maybe Text,
+  { payloadOperationName :: Maybe Name,
+    payloadQuery :: Maybe Token,
     payloadVariables :: Maybe Value
   }
   deriving (Show, Generic)
