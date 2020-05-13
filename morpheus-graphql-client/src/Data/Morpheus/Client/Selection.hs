@@ -38,7 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     Key,
     Name,
     Operation (..),
-    Position,
     RAW,
     Ref (..),
     Schema (..),
@@ -190,33 +189,28 @@ genConsD path cName datatype selSet = do
     genField ::
       Selection VALID ->
       Converter (FieldDefinition, [ClientType], [Text])
-    genField
-      sel@Selection
-        { selectionName,
-          selectionPosition
-        } =
-        do
-          (fieldDataType, fieldType) <-
-            lookupFieldType
-              fieldPath
-              datatype
-              selectionPosition
-              selectionName
-          (subTypes, requests) <- subTypesBySelection fieldPath fieldDataType sel
-          pure
-            ( FieldDefinition
-                { fieldName,
-                  fieldType,
-                  fieldArgs = NoArguments,
-                  fieldMeta = Nothing
-                },
-              subTypes,
-              requests
-            )
-        where
-          fieldPath = path <> [fieldName]
-          -------------------------------
-          fieldName = keyOf sel
+    genField sel =
+      do
+        (fieldDataType, fieldType) <-
+          lookupFieldType
+            fieldPath
+            datatype
+            sel
+        (subTypes, requests) <- subTypesBySelection fieldPath fieldDataType sel
+        pure
+          ( FieldDefinition
+              { fieldName,
+                fieldType,
+                fieldArgs = NoArguments,
+                fieldMeta = Nothing
+              },
+            subTypes,
+            requests
+          )
+      where
+        fieldPath = path <> [fieldName]
+        -------------------------------
+        fieldName = keyOf sel
 
 ------------------------------------------
 subTypesBySelection ::
@@ -323,30 +317,35 @@ toFieldD field@FieldDefinition {fieldType} = do
 lookupFieldType ::
   [Key] ->
   TypeDefinition ANY ->
-  Position ->
-  Text ->
+  Selection VALID ->
   Converter (TypeDefinition ANY, TypeRef)
-lookupFieldType path TypeDefinition {typeContent = DataObject {objectFields}, typeName} refPosition key =
-  selectBy selError key objectFields >>= processDeprecation
-  where
-    selError = compileError $ "cant find field \"" <> pack (show objectFields) <> "\""
-    processDeprecation FieldDefinition {fieldType = alias@TypeRef {typeConName}, fieldMeta} =
-      checkDeprecated >> (trans <$> getType typeConName)
-      where
-        trans x =
-          (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})
-        ------------------------------------------------------------------
-        checkDeprecated :: Converter ()
-        checkDeprecated = case fieldMeta >>= lookupDeprecated of
-          Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
-            where
-              warnings =
-                deprecatedField
-                  typeName
-                  Ref {refName = key, refPosition}
-                  (lookupDeprecatedReason deprecation)
-          Nothing -> pure ()
-lookupFieldType _ dt _ _ =
+lookupFieldType
+  path
+  TypeDefinition {typeContent = DataObject {objectFields}, typeName}
+  Selection
+    { selectionName,
+      selectionPosition
+    } =
+    selectBy selError selectionName objectFields >>= processDeprecation
+    where
+      selError = compileError $ "cant find field \"" <> pack (show objectFields) <> "\""
+      processDeprecation FieldDefinition {fieldType = alias@TypeRef {typeConName}, fieldMeta} =
+        checkDeprecated >> (trans <$> getType typeConName)
+        where
+          trans x =
+            (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})
+          ------------------------------------------------------------------
+          checkDeprecated :: Converter ()
+          checkDeprecated = case fieldMeta >>= lookupDeprecated of
+            Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
+              where
+                warnings =
+                  deprecatedField
+                    typeName
+                    Ref {refName = selectionName, refPosition = selectionPosition}
+                    (lookupDeprecatedReason deprecation)
+            Nothing -> pure ()
+lookupFieldType _ dt _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
 
 leafType :: TypeDefinition a -> Converter ([ClientType], [Text])
