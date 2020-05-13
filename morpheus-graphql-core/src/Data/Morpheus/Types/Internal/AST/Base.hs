@@ -68,6 +68,7 @@ import Data.Aeson
     ToJSON,
   )
 import Data.ByteString.Lazy.Char8 (ByteString, unpack)
+import Data.Hashable (Hashable)
 import Data.Semigroup ((<>))
 import Data.String (IsString)
 import Data.Text (Text, intercalate, pack)
@@ -85,7 +86,7 @@ newtype Message = Message {readMessage :: Text}
   deriving
     (Generic)
   deriving newtype
-    (Show, Eq, Ord, IsString, Semigroup, FromJSON, ToJSON, Lift)
+    (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON, Lift)
 
 class Msg a where
   msg :: a -> Message
@@ -97,7 +98,7 @@ newtype Name = Name {readName :: Text}
   deriving
     (Generic)
   deriving newtype
-    (Show, Ord, Eq, IsString, Semigroup, FromJSON, ToJSON, Lift)
+    (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON, Lift)
 
 instance Msg Name where
   msg Name {readName} = Message readName
