@@ -54,8 +54,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text
-  ( Text,
-    pack,
+  ( pack,
   )
 
 data ClientDefinition = ClientDefinition
@@ -116,14 +115,14 @@ genConsD ::
   Name ->
   TypeDefinition ANY ->
   SelectionSet VALID ->
-  Converter (ConsD, [TypeD], [Text])
+  Converter (ConsD, [TypeD], [Name])
 genConsD path cName datatype selSet = do
   (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
   pure (ConsD {cName, cFields}, concat subTypes, concat requests)
   where
     genField ::
       Selection VALID ->
-      Converter (FieldDefinition, [TypeD], [Text])
+      Converter (FieldDefinition, [TypeD], [Name])
     genField sel =
       do
         (fieldDataType, fieldType) <-
@@ -152,7 +151,7 @@ subTypesBySelection ::
   [Name] ->
   TypeDefinition ANY ->
   Selection VALID ->
-  Converter ([TypeD], [Text])
+  Converter ([TypeD], [Name])
 subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
