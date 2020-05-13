@@ -50,11 +50,11 @@ cannotBeSpreadOnType key fragmentType position typeMembers =
   where
     text =
       "Fragment "
-        <> msg (getName key)
+        <> getName key
         <> "cannot be spread here as objects of type "
         <> msg typeMembers
         <> " can never be of type "
         <> msg fragmentType
         <> "."
-    getName (Just x) = "\"" <> x <> "\" "
+    getName (Just x) = msg ("\"" <> x <> "\" ")
     getName Nothing = ""
