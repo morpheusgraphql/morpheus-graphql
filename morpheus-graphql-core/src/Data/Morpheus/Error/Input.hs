@@ -16,16 +16,16 @@ import Data.Morpheus.Types.Internal.AST
   ( Message,
     ResolvedValue,
     TypeRef (..),
+    msg,
   )
 import Data.Semigroup ((<>))
-import Data.Text (pack)
 
 typeViolation :: TypeRef -> ResolvedValue -> Message
 typeViolation expected found =
   "Expected type \""
-    <> render expected
+    <> msg (render expected)
     <> "\" found "
-    <> pack (unpack $ encode found)
+    <> msg found
     <> "."
 
 {-

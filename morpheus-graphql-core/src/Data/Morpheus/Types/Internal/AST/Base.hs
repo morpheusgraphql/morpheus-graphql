@@ -67,9 +67,10 @@ import Data.Aeson
   ( FromJSON,
     ToJSON,
   )
+import Data.ByteString.Lazy.Char8 (ByteString, unpack)
 import Data.Semigroup ((<>))
 import Data.String (IsString)
-import Data.Text (Text, intercalate)
+import Data.Text (Text, intercalate, pack)
 import GHC.Generics (Generic)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
@@ -88,6 +89,9 @@ newtype Message = Message {readMessage :: Text}
 
 class Msg a where
   msg :: a -> Message
+
+instance Msg ByteString where
+  msg = Message . pack . unpack
 
 newtype Name = Name {readName :: Text}
   deriving

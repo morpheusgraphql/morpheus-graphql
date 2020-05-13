@@ -37,6 +37,7 @@ import qualified Data.Aeson as A
     FromJSON (..),
     ToJSON (..),
     Value (..),
+    encode,
     object,
     pairs,
   )
@@ -49,6 +50,7 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
+    Msg (..),
     Name,
     Position,
     RAW,
@@ -199,7 +201,6 @@ deriving instance Eq (Value s)
 data ObjectEntry (s :: Stage) = ObjectEntry
   { entryName :: Name,
     entryValue :: Value s
-    -- ObjectEntryposition :: Position
   }
   deriving (Eq)
 
@@ -251,6 +252,9 @@ instance Show (Value a) where
       toEntry :: String -> Value a -> String
       toEntry "" value = show value
       toEntry txt value = txt <> ", " <> show value
+
+instance Msg (Value a) where
+  msg = msg . A.encode
 
 instance A.ToJSON (Value a) where
   toJSON (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
