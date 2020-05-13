@@ -220,10 +220,8 @@ subTypesBySelection ::
   Converter ([ClientType], [Text])
 subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
---withLeaf buildLeaf dType
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
   genRecordType path (typeFrom [] dType) dType selectionSet
----- UNION
 subTypesBySelection path dType Selection {selectionContent = UnionSelection unionSelections} =
   do
     (tCons, subTypes, requests) <-
