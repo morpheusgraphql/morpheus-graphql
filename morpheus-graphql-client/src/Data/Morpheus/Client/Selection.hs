@@ -275,36 +275,36 @@ buildInputType name = getType name >>= generateTypes
         subTypes (DataInputObject inputFields) = do
           fields <- traverse toFieldD (toList inputFields)
           pure
-            [ ClientType
-                { clientType =
-                    TypeD
-                      { tName = typeName,
-                        tNamespace = [],
-                        tCons =
-                          [ ConsD
-                              { cName = typeName,
-                                cFields = fields
-                              }
-                          ],
-                        tMeta = Nothing
-                      },
-                  clientKind = KindInputObject
-                }
+            [ mkInputType
+                typeName
+                KindInputObject
+                [ ConsD
+                    { cName = typeName,
+                      cFields = fields
+                    }
+                ]
             ]
         subTypes (DataEnum enumTags) =
           pure
-            [ ClientType
-                { clientType =
-                    TypeD
-                      { tName = typeName,
-                        tNamespace = [],
-                        tCons = map enumOption enumTags,
-                        tMeta = Nothing
-                      },
-                  clientKind = KindEnum
-                }
+            [ mkInputType
+                typeName
+                KindEnum
+                (map enumOption enumTags)
             ]
         subTypes _ = pure []
+
+mkInputType :: Name -> DataTypeKind -> [ConsD] -> ClientType
+mkInputType tName clientKind tCons =
+  ClientType
+    { clientType =
+        TypeD
+          { tName,
+            tNamespace = [],
+            tCons,
+            tMeta = Nothing
+          },
+      clientKind
+    }
 
 enumOption :: DataEnumValue -> ConsD
 enumOption DataEnumValue {enumName} =
