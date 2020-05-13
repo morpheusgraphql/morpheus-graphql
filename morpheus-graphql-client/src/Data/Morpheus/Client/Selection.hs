@@ -82,6 +82,8 @@ compileError :: Text -> GQLErrors
 compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
+data TypeNode = TypeNode {node :: Maybe TypeD, childrens :: [ClientType]}
+
 type Env = (Schema, VariableDefinitions RAW)
 
 newtype Converter a = Converter
@@ -96,9 +98,8 @@ newtype Converter a = Converter
 instance Failure GQLErrors Converter where
   failure = Converter . lift . failure
 
--- generates argument types for Operation Head
-rootArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
-rootArguments variables argsName
+renderOperationArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
+renderOperationArguments variables argsName
   | null variables = Nothing
   | otherwise = Just rootArgumentsType
   where
@@ -120,6 +121,19 @@ rootArguments variables argsName
               fieldMeta = Nothing
             }
 
+renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [ClientType], [Name])
+renderOperationType op@Operation {operationName, operationSelection} = do
+  (lib, variables) <- asks id
+  datatype <- getOperationDataType op lib
+  let arguments = renderOperationArguments variables (getOperationName operationName <> "Args")
+  (queryTypes, enums) <-
+    genRecordType
+      []
+      (getOperationName operationName)
+      (toAny datatype)
+      operationSelection
+  pure (arguments, queryTypes, enums)
+
 operationTypes ::
   Schema ->
   VariableDefinitions RAW ->
@@ -128,23 +142,18 @@ operationTypes ::
 operationTypes schema vars = flip runReaderT (schema, vars) . runConverter . genOperation
 
 genOperation :: Operation VALID -> Converter (Maybe TypeD, [ClientType])
-genOperation operation@Operation {operationName, operationSelection} = do
-  (lib, variables) <- asks id
-  datatype <- getOperationDataType operation lib
-  (queryTypes, enums) <-
-    genRecordType
-      []
-      (getOperationName operationName)
-      (toAny datatype)
-      operationSelection
+genOperation operation = do
+  (arguments, outputTypes, enums) <- renderOperationType operation
+  nonOutputTypes <- renderNonOutputTypes enums
+  pure (arguments, outputTypes <> nonOutputTypes)
+
+renderNonOutputTypes :: [Key] -> Converter [ClientType]
+renderNonOutputTypes enums = do
+  variables <- asks snd
   inputTypeRequests <-
     resolveUpdates [] $
       map (scanInputTypes . typeConName . variableType) (toList variables)
-  inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
-  pure
-    ( rootArguments variables (getOperationName operationName <> "Args"),
-      queryTypes <> inputTypesAndEnums
-    )
+  buildListedTypes (inputTypeRequests <> enums)
 
 -------------------------------------------------------------------------
 buildListedTypes :: [Text] -> Converter [ClientType]
