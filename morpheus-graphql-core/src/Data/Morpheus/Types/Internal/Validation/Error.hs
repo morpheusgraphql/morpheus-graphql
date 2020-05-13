@@ -76,7 +76,7 @@ instance Unused (Variable s) where
     Variable {variableName, variablePosition} =
       GQLError
         { message =
-            "Variable \"$" <> msg variableName
+            "Variable " <> msg ("$" <> variableName)
               <> " is never used in operation "
               <> msg (getOperationName operationName)
               <> ".",
@@ -207,9 +207,9 @@ instance KindViolation 'TARGET_INPUT (Variable s) where
       } =
       GQLError
         { message =
-            "Variable \"$"
-              <> msg variableName
-              <> "\" cannot be non-input type "
+            "Variable "
+              <> msg ("$" <> variableName)
+              <> " cannot be non-input type "
               <> msg typeConName
               <> ".",
           locations = [variablePosition]
