@@ -186,7 +186,7 @@ instance NameCollision (Variable s) where
         locations = [variablePosition]
       }
 
-type VariableDefinitions s = OrderedMap (Variable s)
+type VariableDefinitions s = OrderedMap FieldName (Variable s)
 
 data Value (stage :: Stage) where
   ResolvedVariable :: Ref -> Variable VALID -> Value RESOLVED

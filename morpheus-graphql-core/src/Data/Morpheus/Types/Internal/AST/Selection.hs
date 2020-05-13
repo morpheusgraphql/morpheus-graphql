@@ -36,16 +36,17 @@ import Data.Morpheus.Error.Operation
     subscriptionIsNotDefined,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( FieldName,
+    GQLError (..),
     GQLErrors,
     Key,
     Message,
-    Name,
     OperationType (..),
     Position,
     RAW,
     Ref (..),
     Stage,
+    TypeName,
     VALID,
     msg,
   )
@@ -75,8 +76,8 @@ import Data.Semigroup ((<>))
 import Language.Haskell.TH.Syntax (Lift (..))
 
 data Fragment = Fragment
-  { fragmentName :: Name,
-    fragmentType :: Name,
+  { fragmentName :: FieldName,
+    fragmentType :: TypeName,
     fragmentPosition :: Position,
     fragmentSelection :: SelectionSet RAW
   }
@@ -93,7 +94,7 @@ instance NameCollision Fragment where
 instance KeyOf Fragment where
   keyOf = fragmentName
 
-type Fragments = OrderedMap Fragment
+type Fragments = OrderedMap FieldName Fragment
 
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
@@ -102,7 +103,7 @@ data SelectionContent (s :: Stage) where
 
 instance Merge (SelectionContent s) where
   merge path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> merge path s1 s2
-  merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
+  --  merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
   merge path oldC currC
     | oldC == currC = pure oldC
     | otherwise =
@@ -120,7 +121,7 @@ deriving instance Eq (SelectionContent a)
 deriving instance Lift (SelectionContent a)
 
 data UnionTag = UnionTag
-  { unionTagName :: Name,
+  { unionTagName :: TypeName,
     unionTagSelection :: SelectionSet VALID
   }
   deriving (Show, Eq, Lift)
@@ -148,6 +149,7 @@ instance Merge UnionTag where
     UnionTag oldTag <$> merge path oldSel currentSel
 
 instance KeyOf UnionTag where
+  type KEY UnionTag = TypeName
   keyOf = unionTagName
 
 type UnionSelection = MergeSet UnionTag
@@ -156,8 +158,8 @@ type SelectionSet s = MergeSet (Selection s)
 
 data Selection (s :: Stage) where
   Selection ::
-    { selectionName :: Name,
-      selectionAlias :: Maybe Name,
+    { selectionName :: FieldName,
+      selectionAlias :: Maybe FieldName,
       selectionPosition :: Position,
       selectionArguments :: Arguments s,
       selectionContent :: SelectionContent s

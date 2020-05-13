@@ -68,6 +68,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
+    TypeName,
     VALID,
     msg,
     readName,
@@ -364,7 +365,7 @@ toResolver toArgs = withResolver args
       ResultT . pure . toArgs . selectionArguments <$> getState
         >>= ResolverState . lift . cleanEvents
 
-pickSelection :: Name -> UnionSelection -> SelectionSet VALID
+pickSelection :: TypeName -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
 
 withObject ::

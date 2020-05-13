@@ -61,6 +61,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     FieldName,
     Msg (..),
     intercalateName,
+    toFieldName,
   )
 where
 
@@ -148,6 +149,9 @@ instance Msg TypeName where
 
 instance RenderGQL TypeName where
   render = readTypeName
+
+toFieldName :: TypeName -> FieldName
+toFieldName = Name . readTypeName
 
 type FieldName = Name
 

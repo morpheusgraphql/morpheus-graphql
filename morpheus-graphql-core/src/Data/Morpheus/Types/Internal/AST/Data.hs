@@ -100,8 +100,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     Description,
     FieldName,
     GQLError (..),
-    Key,
-    Message,
     Name (..),
     Position,
     Stage,
@@ -116,6 +114,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     isNullable,
     msg,
     sysFields,
+    toFieldName,
     toOperationType,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
@@ -180,7 +179,7 @@ instance NameCollision (Argument s) where
         locations = [argumentPosition]
       }
 
-type Arguments s = OrderedMap (Argument s)
+type Arguments s = OrderedMap FieldName (Argument s)
 
 -- directive
 ------------------------------------------------------------------
@@ -363,7 +362,7 @@ data TypeContent (b :: Bool) (a :: TypeCategory) where
     } ->
     TypeContent (IsSelected a IN) a
   DataInputUnion ::
-    { inputUnionMembers :: [(Key, Bool)]
+    { inputUnionMembers :: DataInputUnion
     } ->
     TypeContent (IsSelected a IN) a
   DataObject ::
@@ -437,7 +436,7 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
         { typeName = name,
           typeFingerprint,
           typeMeta = Nothing,
-          typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
+          typeContent = DataEnum $ map (createEnumValue . toFieldName . fst) enumKeys
         }
 defineType datatype lib =
   lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
@@ -515,7 +514,7 @@ instance Listable FieldsDefinition FieldDefinition where
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 data FieldDefinition = FieldDefinition
-  { fieldName :: Key,
+  { fieldName :: FieldName,
     fieldArgs :: ArgumentsDefinition,
     fieldType :: TypeRef,
     fieldMeta :: Maybe Meta
@@ -663,7 +662,7 @@ createInputUnionFields name members = fieldTag : map unionField members
     unionField memberName =
       FieldDefinition
         { fieldArgs = NoArguments,
-          fieldName = memberName,
+          fieldName = toFieldName memberName,
           fieldType =
             TypeRef
               { typeConName = memberName,
@@ -728,7 +727,8 @@ instance RenderGQL (TypeDefinition a) where
       __render (DataInputUnion members) = "input " <> render typeName <> render fieldsDef
         where
           fieldsDef = unsafeFromFields fields
-          fields = createInputUnionFields typeName (fmap fst members)
+          fields :: [FieldDefinition]
+          fields = createInputUnionFields typeName (fst <$> members :: [TypeName])
       __render DataObject {objectFields} = "type " <> render typeName <> render objectFields
 
 ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
