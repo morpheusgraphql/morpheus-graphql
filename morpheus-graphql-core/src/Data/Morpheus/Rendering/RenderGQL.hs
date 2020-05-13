@@ -42,22 +42,23 @@ import Data.Text
 class RenderGQL a where
   render :: a -> Key
 
-instance RenderGQL Schema where
-  render schema = intercalate "\n\n" $ map render visibleTypes
-    where
-      visibleTypes = filter (not . isDefaultTypeName . typeName) (toList schema)
+instance RenderGQL Schema
+
+-- render schema = intercalate "\n\n" $ map render visibleTypes
+--   where
+--     visibleTypes = filter (not . isDefaultTypeName . typeName) (toList schema)
 
 instance RenderGQL (TypeDefinition a) where
   render TypeDefinition {typeName, typeContent} = __render typeContent
     where
       __render DataInterface {interfaceFields} = "interface " <> typeName <> render interfaceFields
       __render DataScalar {} = "scalar " <> typeName
-      __render (DataEnum tags) = "enum " <> typeName <> renderObject render tags
-      __render (DataUnion members) =
-        "union "
-          <> typeName
-          <> " =\n    "
-          <> intercalate ("\n" <> renderIndent <> "| ") members
+      -- __render (DataEnum tags) = "enum " <> typeName <> renderObject render tags
+      -- __render (DataUnion members) =
+      --   "union "
+      --     <> typeName
+      --     <> " =\n    "
+      --     <> intercalate ("\n" <> renderIndent <> "| ") members
       __render (DataInputObject fields) = "input " <> typeName <> render fields
       __render (DataInputUnion members) = "input " <> typeName <> render fieldsDef
         where
@@ -69,19 +70,23 @@ ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
 ignoreHidden = filter fieldVisibility
 
 -- OBJECT
-instance RenderGQL FieldsDefinition where
-  render = renderObject render . ignoreHidden . toList
+instance RenderGQL FieldsDefinition
 
-instance RenderGQL InputFieldsDefinition where
-  render = renderObject render . ignoreHidden . toList
+--  render = renderObject render . ignoreHidden . toList
 
-instance RenderGQL FieldDefinition where
-  render FieldDefinition {fieldName, fieldType, fieldArgs} =
-    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
+instance RenderGQL InputFieldsDefinition
+
+--  render = renderObject render . ignoreHidden . toList
+
+instance RenderGQL FieldDefinition
+
+--  render FieldDefinition {fieldName, fieldType, fieldArgs} =
+--    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
 
 instance RenderGQL ArgumentsDefinition where
   render NoArguments = ""
-  render arguments = "(" <> intercalate ", " (map render $ toList arguments) <> ")"
+
+--  render arguments = "(" <> intercalate ", " (map render $ toList arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue {enumName} = enumName

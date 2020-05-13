@@ -47,8 +47,7 @@ import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
     Description,
     FieldName,
-    Key,
-    Name,
+    Name (..),
     Ref (..),
     Token,
     TypeName,
@@ -101,8 +100,8 @@ parseNegativeSign = (char '-' $> True <* spaceAndComments) <|> pure False
 parseName :: Parser Name
 parseName = token
 
-keyword :: Key -> Parser ()
-keyword word = string word *> space1 *> spaceAndComments
+keyword :: Name -> Parser ()
+keyword (Name word) = string word *> space1 *> spaceAndComments
 
 operator :: Char -> Parser ()
 operator x = char x *> spaceAndComments
@@ -125,14 +124,14 @@ litAssignment = char ':' *> spaceAndComments
 
 -- PRIMITIVE
 ------------------------------------
-token :: Parser Token
+token :: Parser Name
 token = label "token" $ do
   firstChar <- letterChar <|> char '_'
   restToken <- many $ letterChar <|> char '_' <|> digitChar
   spaceAndComments
-  return $ convertToHaskellName $ pack $ firstChar : restToken
+  return $ convertToHaskellName $ Name $ pack $ firstChar : restToken
 
-qualifier :: Parser (Token, Position)
+qualifier :: Parser (Name, Position)
 qualifier = label "qualifier" $ do
   position <- getLocation
   value <- token

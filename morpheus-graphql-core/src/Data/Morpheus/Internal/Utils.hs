@@ -13,7 +13,7 @@ import Data.Char
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
-    Name,
+    Name (..),
   )
 import Data.Semigroup ((<>))
 import qualified Data.Text as T
@@ -23,10 +23,10 @@ import qualified Data.Text as T
   )
 
 mapName :: (String -> String) -> Name -> Name
-mapName f = T.pack . f . T.unpack
+mapName f = Name . T.pack . f . T.unpack . readName
 
 nameSpaceType :: [Name] -> Name -> Name
-nameSpaceType list name = T.concat $ map capital (list <> [name])
+nameSpaceType list name = Name . T.concat $ map (readName . capital) (list <> [name])
 
 nameSpaceWith :: Name -> Name -> Name
 nameSpaceWith nSpace name = nonCapital nSpace <> capital name

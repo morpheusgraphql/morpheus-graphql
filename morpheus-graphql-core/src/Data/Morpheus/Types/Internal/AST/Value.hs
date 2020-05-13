@@ -51,7 +51,7 @@ import Data.Morpheus.Error.NameCollision
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     Msg (..),
-    Name,
+    Name (..),
     Position,
     RAW,
     RESOLVED,
@@ -114,14 +114,14 @@ isReserved "_" = True
 isReserved _ = False
 {-# INLINE isReserved #-}
 
-convertToJSONName :: Text -> Text
-convertToJSONName hsName
-  | not (T.null hsName) && isReserved name && (T.last hsName == '\'') = name
+convertToJSONName :: Name -> Text
+convertToJSONName (Name hsName)
+  | not (T.null hsName) && isReserved (Name name) && (T.last hsName == '\'') = name
   | otherwise = hsName
   where
     name = T.init hsName
 
-convertToHaskellName :: Text -> Text
+convertToHaskellName :: Name -> Name
 convertToHaskellName name
   | isReserved name = name <> "'"
   | otherwise = name
@@ -181,7 +181,7 @@ instance KeyOf (Variable s) where
 instance NameCollision (Variable s) where
   nameCollision _ Variable {variableName, variablePosition} =
     GQLError
-      { message = "There can Be only One Variable Named \"" <> variableName <> "\"",
+      { message = "There can Be only One Variable Named " <> msg variableName,
         locations = [variablePosition]
       }
 
@@ -205,12 +205,12 @@ data ObjectEntry (s :: Stage) = ObjectEntry
   deriving (Eq)
 
 instance Show (ObjectEntry s) where
-  show (ObjectEntry name value) = unpack name <> ":" <> show value
+  show (ObjectEntry (Name name) value) = unpack name <> ":" <> show value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision _ ObjectEntry {entryName} =
     GQLError
-      { message = "There can Be only One field Named \"" <> entryName <> "\"",
+      { message = "There can Be only One field Named " <> msg entryName,
         locations = []
       }
 
@@ -237,11 +237,11 @@ deriving instance Lift (ObjectEntry a)
 
 instance Show (Value a) where
   show Null = "null"
-  show (Enum x) = "" <> unpack x
+  show (Enum x) = "" <> unpack (readName x)
   show (Scalar x) = show x
   show (ResolvedVariable Ref {refName} Variable {variableValue}) =
-    "($" <> unpack refName <> ": " <> show variableValue <> ") "
-  show (VariableValue Ref {refName}) = "$" <> unpack refName <> " "
+    "($" <> unpack (readName refName) <> ": " <> show variableValue <> ") "
+  show (VariableValue Ref {refName}) = "$" <> unpack (readName refName) <> " "
   show (Object keys) = "{" <> foldWithKey toEntry "" keys <> "}"
     where
       toEntry :: Name -> ObjectEntry a -> String -> String
@@ -260,14 +260,14 @@ instance A.ToJSON (Value a) where
   toJSON (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
     A.toJSON x
   toJSON (VariableValue Ref {refName}) =
-    A.String $ "($ref:" <> refName <> ")"
+    A.String $ "($ref:" <> readName refName <> ")"
   toJSON Null = A.Null
-  toJSON (Enum x) = A.String x
+  toJSON (Enum (Name x)) = A.String x
   toJSON (Scalar x) = A.toJSON x
   toJSON (List x) = A.toJSON x
   toJSON (Object fields) = A.object $ map toEntry (toList fields)
     where
-      toEntry (ObjectEntry key value) = key A..= A.toJSON value
+      toEntry (ObjectEntry (Name name) value) = name A..= A.toJSON value
 
   -------------------------------------------
   toEncoding (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
@@ -296,7 +296,7 @@ replaceValue (A.String v) = gqlString v
 replaceValue (A.Object v) = gqlObject $ map replace (M.toList v)
   where
     --replace :: (a, A.Value) -> (a, Value a)
-    replace (key, val) = (key, replaceValue val)
+    replace (key, val) = (Name key, replaceValue val)
 replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
 replaceValue A.Null = gqlNull
 

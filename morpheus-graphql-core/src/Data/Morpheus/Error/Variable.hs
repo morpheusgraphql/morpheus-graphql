@@ -16,6 +16,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     TypeRef,
     Variable (..),
+    msg,
   )
 import Data.Semigroup ((<>))
 
@@ -29,18 +30,19 @@ incompatibleVariableType
     where
       text =
         "Variable \"$"
-          <> variableName
+          <> msg variableName
           <> "\" of type \""
-          <> render variableType
+          <> msg (render variableType)
           <> "\" used in position expecting type \""
-          <> render argumentType
+          <> msg (render argumentType)
           <> "\"."
 
 uninitializedVariable :: Variable s -> GQLErrors
 uninitializedVariable Variable {variableName, variableType, variablePosition} =
   errorMessage
     variablePosition
-    $ "Variable \"$" <> variableName
+    $ "Variable \"$"
+      <> msg variableName
       <> "\" of required type \""
-      <> render variableType
+      <> msg (render variableType)
       <> "\" was not provided."

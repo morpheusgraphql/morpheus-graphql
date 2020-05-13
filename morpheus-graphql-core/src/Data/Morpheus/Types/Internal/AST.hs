@@ -10,7 +10,7 @@ module Data.Morpheus.Types.Internal.AST
     Position (..),
     Message,
     anonymousRef,
-    Name,
+    Name (..),
     Description,
     Stage,
     RESOLVED,

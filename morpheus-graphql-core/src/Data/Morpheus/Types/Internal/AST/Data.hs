@@ -95,7 +95,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Description,
     GQLError (..),
     Key,
-    Name,
+    Name (..),
     Position,
     Stage,
     TRUE,
@@ -105,6 +105,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     VALID,
     hsTypeName,
     isNullable,
+    msg,
     sysFields,
     toOperationType,
   )
@@ -164,7 +165,7 @@ instance KeyOf (Argument stage) where
 instance NameCollision (Argument s) where
   nameCollision _ Argument {argumentName, argumentPosition} =
     GQLError
-      { message = "There can Be only One Argument Named \"" <> argumentName <> "\"",
+      { message = "There can Be only One Argument Named \"" <> msg argumentName <> "\"",
         locations = [argumentPosition]
       }
 
@@ -184,11 +185,11 @@ lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives
     isDeprecation Directive {directiveName = "deprecated"} = True
     isDeprecation _ = False
 
-lookupDeprecatedReason :: Directive -> Maybe Key
+lookupDeprecatedReason :: Directive -> Maybe Description
 lookupDeprecatedReason Directive {directiveArgs} =
   selectOr Nothing (Just . maybeString) "reason" directiveArgs
   where
-    maybeString :: Argument VALID -> Name
+    maybeString :: Argument VALID -> Description
     maybeString Argument {argumentValue = (Scalar (String x))} = x
     maybeString _ = "can't read deprecated Reason Value"
 
@@ -518,7 +519,7 @@ instance Selectable FieldDefinition ArgumentDefinition where
 instance NameCollision FieldDefinition where
   nameCollision name _ =
     GQLError
-      { message = "There can Be only One field Named \"" <> name <> "\"",
+      { message = "There can Be only One field Named \"" <> msg name <> "\"",
         locations = []
       }
 

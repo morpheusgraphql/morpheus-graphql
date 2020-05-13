@@ -14,7 +14,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     Ref (..),
     Position (..),
     Message,
-    Name,
+    Name (..),
     Named,
     Description,
     VALID,
@@ -90,9 +90,17 @@ newtype Message = Message {readMessage :: Text}
 
 class Msg a where
   msg :: a -> Message
+  msgSepBy :: Text -> [a] -> Message
+  msgSepBy t = Message . intercalate t . map (readMessage . msg)
+
+instance Msg String where
+  msg = Message . pack
 
 instance Msg ByteString where
-  msg = Message . pack . unpack
+  msg = msg . unpack
+
+instance Msg Text where
+  msg = Message
 
 newtype Name = Name {readName :: Text}
   deriving
@@ -112,7 +120,7 @@ type TypeName = Name
 
 type FieldName = Name
 
-type Description = Name
+type Description = Text
 
 data Stage = RAW | RESOLVED | VALID
 

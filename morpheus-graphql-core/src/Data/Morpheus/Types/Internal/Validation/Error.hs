@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableDefinitions,
     getOperationName,
+    msg,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( Context (..),
@@ -58,9 +59,9 @@ instance InternalError FieldDefinition where
       } =
       GQLError
         { message =
-            "INTERNAL: Type \"" <> typeConName
+            "INTERNAL: Type \"" <> msg typeConName
               <> "\" referenced by field \""
-              <> fieldName
+              <> msg fieldName
               <> "\" can't found in Schema ",
           locations = []
         }
@@ -75,9 +76,9 @@ instance Unused (Variable s) where
     Variable {variableName, variablePosition} =
       GQLError
         { message =
-            "Variable \"$" <> variableName
+            "Variable \"$" <> msg variableName
               <> "\" is never used in operation \""
-              <> getOperationName operationName
+              <> msg (getOperationName operationName)
               <> "\".",
           locations = [variablePosition]
         }
@@ -88,7 +89,7 @@ instance Unused Fragment where
     Fragment {fragmentName, fragmentPosition} =
       GQLError
         { message =
-            "Fragment \"" <> fragmentName
+            "Fragment \"" <> msg fragmentName
               <> "\" is never used.",
           locations = [fragmentPosition]
         }
@@ -104,8 +105,10 @@ instance MissingRequired (Arguments s) ctx where
     _ =
       GQLError
         { message =
-            "Field \"" <> scopeSelectionName <> "\" argument \""
-              <> refName
+            "Field \""
+              <> msg scopeSelectionName
+              <> "\" argument \""
+              <> msg refName
               <> "\" is required but not provided.",
           locations = [scopePosition]
         }
@@ -118,7 +121,10 @@ instance MissingRequired (Object s) InputContext where
     _ =
       GQLError
         { message =
-            renderInputPrefix inputCTX <> "Undefined Field \"" <> refName <> "\".",
+            renderInputPrefix inputCTX
+              <> "Undefined Field \""
+              <> msg refName
+              <> "\".",
           locations = [scopePosition]
         }
 
@@ -130,9 +136,10 @@ instance MissingRequired (VariableDefinitions s) ctx where
     _ =
       GQLError
         { message =
-            "Variable \"" <> refName
+            "Variable \""
+              <> msg refName
               <> "\" is not defined by operation \""
-              <> getOperationName operationName
+              <> msg (getOperationName operationName)
               <> "\".",
           locations = [refPosition]
         }
@@ -147,25 +154,25 @@ instance Unknown Fragments ctx where
   unknown _ _ _ (Ref name pos) =
     errorMessage
       pos
-      ("Unknown Fragment \"" <> name <> "\".")
+      ("Unknown Fragment \"" <> msg name <> "\".")
 
 instance Unknown Schema ctx where
   type UnknownSelector Schema = Ref
   unknown _ _ _ Ref {refName, refPosition} =
-    errorMessage refPosition ("Unknown type \"" <> refName <> "\".")
+    errorMessage refPosition ("Unknown type \"" <> msg refName <> "\".")
 
 instance Unknown FieldDefinition ctx where
   type UnknownSelector FieldDefinition = Argument RESOLVED
   unknown _ _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
-      ("Unknown Argument \"" <> argumentName <> "\" on Field \"" <> fieldName <> "\".")
+      ("Unknown Argument \"" <> msg argumentName <> "\" on Field \"" <> msg fieldName <> "\".")
 
 instance Unknown InputFieldsDefinition InputContext where
   type UnknownSelector InputFieldsDefinition = ObjectEntry RESOLVED
   unknown Context {scopePosition} ctx _ ObjectEntry {entryName} =
     [ GQLError
-        { message = renderInputPrefix ctx <> "Unknown Field \"" <> entryName <> "\".",
+        { message = renderInputPrefix ctx <> "Unknown Field \"" <> msg entryName <> "\".",
           locations = [scopePosition]
         }
     ]
@@ -182,9 +189,10 @@ instance KindViolation 'TARGET_OBJECT Fragment where
   kindViolation _ Fragment {fragmentName, fragmentType, fragmentPosition} =
     GQLError
       { message =
-          "Fragment \"" <> fragmentName
+          "Fragment \""
+            <> msg fragmentName
             <> "\" cannot condition on non composite type \""
-            <> fragmentType
+            <> msg fragmentType
             <> "\".",
         locations = [fragmentPosition]
       }
@@ -199,9 +207,10 @@ instance KindViolation 'TARGET_INPUT (Variable s) where
       } =
       GQLError
         { message =
-            "Variable \"$" <> variableName
+            "Variable \"$"
+              <> msg variableName
               <> "\" cannot be non-input type \""
-              <> typeConName
+              <> msg typeConName
               <> "\".",
           locations = [variablePosition]
         }

@@ -73,6 +73,7 @@ import Data.Morpheus.Types.Internal.AST
     entryValue,
     fromAny,
     isFieldNullable,
+    msg,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -211,7 +212,7 @@ askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
       Just x -> pure x
       Nothing ->
         failure $
-          "Type \"" <> typeName anyType
+          "Type \"" <> msg (typeName anyType)
             <> "\" referenced by OBJECT \""
             <> "\" must be an OUTPUT_TYPE."
 
@@ -226,9 +227,10 @@ askTypeMember name =
     notFound = do
       scopeType <- askScopeTypeName
       failure $
-        "Type \"" <> name
+        "Type \""
+          <> msg name
           <> "\" referenced by union \""
-          <> scopeType
+          <> msg scopeType
           <> "\" can't found in Schema."
     --------------------------------------
     constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (Name, FieldsDefinition)
@@ -238,9 +240,9 @@ askTypeMember name =
         con _ = do
           scopeType <- askScopeTypeName
           failure $
-            "Type \"" <> typeName
+            "Type \"" <> msg typeName
               <> "\" referenced by union \""
-              <> scopeType
+              <> msg scopeType
               <> "\" must be an OBJECT."
 
 askInputFieldType ::
@@ -258,9 +260,10 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
       Just inputType -> pure inputType
       Nothing ->
         failure $
-          "Type \"" <> typeName x
+          "Type \""
+            <> msg (typeName x)
             <> "\" referenced by field \""
-            <> fieldName
+            <> msg fieldName
             <> "\" must be an input type."
 
 askInputMember ::
@@ -272,10 +275,13 @@ askInputMember name =
     >>= constraintINPUT_OBJECT
   where
     typeInfo tName =
-      "Type \"" <> tName <> "\" referenced by inputUnion "
+      "Type \"" <> msg tName <> "\" referenced by inputUnion "
     notFound = do
       scopeType <- askScopeTypeName
-      failure $ typeInfo name <> scopeType <> "\" can't found in Schema."
+      failure $
+        typeInfo name
+          <> msg scopeType
+          <> "\" can't found in Schema."
     --------------------------------------
     constraintINPUT_OBJECT :: TypeDefinition ANY -> InputValidator (TypeDefinition IN)
     constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
@@ -284,7 +290,11 @@ askInputMember name =
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
           scopeType <- askScopeTypeName
-          failure $ typeInfo typeName <> "\"" <> scopeType <> "\" must be an INPUT_OBJECT."
+          failure $
+            typeInfo typeName
+              <> "\""
+              <> msg scopeType
+              <> "\" must be an INPUT_OBJECT."
 
 startInput :: InputSource -> InputValidator a -> Validator ctx a
 startInput inputSource =
@@ -358,7 +368,10 @@ constraintInputUnion tags hm = do
   (enum :: Value stage) <-
     entryValue
       <$> selectBy
-        ("valid input union should contain \"" <> __inputname <> "\" and actual value")
+        ( "valid input union should contain \""
+            <> msg __inputname
+            <> "\" and actual value"
+        )
         __inputname
         hm
   tyName <- isPosibeInputUnion tags enum
@@ -368,7 +381,10 @@ constraintInputUnion tags hm = do
       value <-
         entryValue
           <$> selectBy
-            ("value for Union \"" <> tyName <> "\" was not Provided.")
+            ( "value for Union \""
+                <> msg tyName
+                <> "\" was not Provided."
+            )
             tyName
             hm
       pure (tyName, Just value)
@@ -376,6 +392,14 @@ constraintInputUnion tags hm = do
 
 isPosibeInputUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
 isPosibeInputUnion tags (Enum name) = case lookup name tags of
-  Nothing -> failure (name <> " is not posible union type" :: Message)
+  Nothing ->
+    failure
+      ( msg name
+          <> " is not posible union type"
+      )
   _ -> pure name
-isPosibeInputUnion _ _ = failure $ "\"" <> __inputname <> "\" must be Enum"
+isPosibeInputUnion _ _ =
+  failure $
+    "\""
+      <> msg __inputname
+      <> "\" must be Enum"

@@ -47,6 +47,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Ref (..),
     Stage,
     VALID,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
@@ -71,7 +72,6 @@ import Data.Morpheus.Types.Internal.Operation
     Merge (..),
   )
 import Data.Semigroup ((<>))
-import qualified Data.Text as T
 import Language.Haskell.TH.Syntax (Lift (..))
 
 data Fragment = Fragment
@@ -86,7 +86,7 @@ data Fragment = Fragment
 instance NameCollision Fragment where
   nameCollision _ Fragment {fragmentName, fragmentPosition} =
     GQLError
-      { message = "There can be only one fragment named \"" <> fragmentName <> "\".",
+      { message = "There can be only one fragment named " <> msg fragmentName <> ".",
         locations = [fragmentPosition]
       }
 
@@ -108,7 +108,7 @@ instance Merge (SelectionContent s) where
     | otherwise =
       failure
         [ GQLError
-            { message = T.concat $ map refName path,
+            { -- message = T.concat $ map refName path,
               locations = map refPosition path
             }
         ]
@@ -134,7 +134,7 @@ mergeConflict refs@(rootField : xs) err =
       }
   ]
   where
-    fieldConflicts ref = "\"" <> refName ref <> "\" conflict because "
+    fieldConflicts ref = "\"" <> msg (refName ref) <> "\" conflict because "
     renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
     renderStart = "Fields " <> fieldConflicts rootField
     renderSubfields =
@@ -206,7 +206,7 @@ instance Merge (Selection a) where
           failure $ mergeConflict path $
             GQLError
               { message =
-                  "\"" <> selectionName old <> "\" and \"" <> selectionName current
+                  "\"" <> msg (selectionName old) <> "\" and \"" <> msg (selectionName current)
                     <> "\" are different fields. "
                     <> useDufferentAliases,
                 locations = [pos1, pos2]

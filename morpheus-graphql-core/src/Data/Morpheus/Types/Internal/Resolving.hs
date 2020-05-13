@@ -51,11 +51,12 @@ where
 import Data.Morpheus.Types.Internal.AST
   ( Name,
     ScalarValue (..),
+    Token,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 
-mkString :: Name -> ResModel o e m
+mkString :: Token -> ResModel o e m
 mkString = ResScalar . String
 
 mkFloat :: Float -> ResModel o e m

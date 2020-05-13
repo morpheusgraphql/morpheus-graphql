@@ -41,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     createScalarType,
     createType,
     createUnionType,
+    msg,
     toAny,
     toHSWrappers,
   )
@@ -51,16 +52,13 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( pack,
-  )
 
 decodeIntrospection :: ByteString -> Eventless AST.Schema
 decodeIntrospection jsonDoc = case jsonSchema of
-  Left errors -> internalError $ pack errors
+  Left errors -> internalError $ msg errors
   Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
     traverse parse types >>= fromList . concat
-  Right res -> internalError (pack $ show res)
+  Right res -> internalError (msg $ show res)
   where
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
@@ -112,4 +110,4 @@ fieldTypeFromJSON = fmap toHs . fieldTypeRec []
     fieldTypeRec acc Type {kind = NON_NULL, ofType = Just ofType} =
       fieldTypeRec (NonNullType : acc) ofType
     fieldTypeRec acc Type {name = Just name} = pure (acc, name)
-    fieldTypeRec _ x = internalError $ "Unsuported Field" <> pack (show x)
+    fieldTypeRec _ x = internalError $ "Unsuported Field" <> msg (show x)

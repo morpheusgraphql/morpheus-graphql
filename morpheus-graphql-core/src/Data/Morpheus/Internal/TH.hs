@@ -46,6 +46,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     isOutputObject,
     isSubscription,
+    readName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( UnSubResolver,
@@ -60,7 +61,7 @@ type Arrow = (->)
 m' :: Type
 m' = VarT $ mkName $ unpack m_
 
-m_ :: Key
+m_ :: Text
 m_ = "m"
 
 declareTypeRef :: Bool -> TypeRef -> Type
@@ -73,15 +74,15 @@ declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT [] = decType typeArgs
     ------------------------------------------------------
-    typeName = ConT (mkName $ unpack typeConName)
+    typeName = ConT (makeName typeConName)
     --------------------------------------------
     decType _
       | isSub =
         AppT typeName (AppT (ConT ''UnSubResolver) m')
-    decType (Just par) = AppT typeName (VarT $ mkName $ unpack par)
+    decType (Just par) = AppT typeName (VarT $ makeName par)
     decType _ = typeName
 
-tyConArgs :: DataTypeKind -> [Key]
+tyConArgs :: DataTypeKind -> [Text]
 tyConArgs kindD
   | isOutputObject kindD || kindD == KindUnion = [m_]
   | otherwise = []
@@ -94,7 +95,7 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
   DataD [] (genName tName) tVars Nothing cons $
     map derive (''Generic : derivingList)
   where
-    genName = mkName . unpack . nameSpaceType tNamespace
+    genName = makeName . nameSpaceType tNamespace
     tVars = maybe [] (declareTyVar . tyConArgs) kindD
       where
         declareTyVar = map (PlainTV . mkName . unpack)
@@ -113,8 +114,8 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
           (fName, defBang, fiType)
           where
             fName
-              | namespace = mkName $ unpack (nameSpaceWith tName fieldName)
-              | otherwise = mkName (unpack fieldName)
+              | namespace = makeName (nameSpaceWith tName fieldName)
+              | otherwise = makeName fieldName
             fiType = genFieldT fieldArgs
               where
                 ---------------------------
@@ -123,13 +124,16 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
                     (AppT arrowType argType)
                     (AppT m' result)
                   where
-                    argType = ConT $ mkName (unpack argsTypename)
+                    argType = ConT $ makeName argsTypename
                     arrowType = ConT ''Arrow
                 genFieldT _
                   | (isOutputObject <$> kindD) == Just True = AppT m' result
                   | otherwise = result
                 ------------------------------------------------
                 result = declareTypeRef (maybe False isSubscription kindD) fieldType
+
+makeName :: Key -> Name
+makeName = mkName . unpack . readName
 
 apply :: Name -> [Q Exp] -> Q Exp
 apply n = foldl appE (conE n)

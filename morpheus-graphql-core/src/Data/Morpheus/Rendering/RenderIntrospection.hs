@@ -44,6 +44,7 @@ import Data.Morpheus.Types.Internal.AST
     kindOf,
     lookupDeprecated,
     lookupDeprecatedReason,
+    msg,
     toGQLWrapper,
   )
 import Data.Morpheus.Types.Internal.Operation
@@ -169,7 +170,7 @@ renderTypeKind KindNonNull = NON_NULL
 renderTypeKind KindInterface = INTERFACE
 
 lookupKind :: (Monad m) => TypeName -> Result e m DataTypeKind
-lookupKind name schema = kindOf <$> selectBy ("Kind Not Found: " <> name) name schema
+lookupKind name schema = kindOf <$> selectBy ("Kind Not Found: " <> msg name) name schema
 
 renderinputValue ::
   (Monad m) =>
@@ -225,7 +226,7 @@ typeFromUnion schema (name, typeMeta, typeContent) =
 
 unionPossibleType :: Monad m => Schema -> Name -> Resolver QUERY e m (ResModel QUERY e m)
 unionPossibleType schema name =
-  selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> name <> "\"") name schema
+  selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> msg name <> "\"") name schema
     >>= (`render` schema)
 
 createObjectType ::
@@ -246,11 +247,11 @@ implementedInterface ::
   Name ->
   Resolver QUERY e m (ResModel QUERY e m)
 implementedInterface schema name =
-  selectBy ("INTERNAL: cant found  Interface \"" <> name <> "\"") name schema
+  selectBy ("INTERNAL: cant found  Interface " <> msg name) name schema
     >>= __render
   where
     __render typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef schema
-    __render _ = failure ("Type \"" <> name <> "\" must be an Interface" :: Message)
+    __render _ = failure ("Type " <> msg name <> " must be an Interface" :: Message)
 
 optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel QUERY e m)
 optList = pure . maybe mkNull mkList

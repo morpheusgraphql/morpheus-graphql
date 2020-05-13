@@ -69,6 +69,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     QUERY,
     SUBSCRIPTION,
     VALID,
+    msg,
+    readName,
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
@@ -116,7 +118,6 @@ import Data.Semigroup
   ( (<>),
     Semigroup (..),
   )
-import Data.Text (pack)
 
 type WithOperation (o :: OperationType) = LiftOperation o
 
@@ -183,7 +184,7 @@ clearStateResolverEvents = mapResolverState (mapReaderT cleanEvents)
 resolverFailureMessage :: Selection VALID -> Message -> GQLError
 resolverFailureMessage Selection {selectionName, selectionPosition} message =
   GQLError
-    { message = "Failure on Resolving Field \"" <> selectionName <> "\": " <> message,
+    { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
       locations = [selectionPosition]
     }
 
@@ -216,7 +217,7 @@ instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   (>>=) = unsafeBind
 
 #if __GLASGOW_HASKELL__ < 808
-  fail = failure . pack
+  fail = failure . msg
 # endif
 
 -- MonadIO
@@ -235,7 +236,7 @@ instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
   failure = packResolver . failure
 
 instance (Monad m, LiftOperation o) => MonadFail (Resolver o e m) where
-  fail = failure . pack
+  fail = failure . msg
 
 -- PushEvents
 instance (Monad m) => PushEvents e (Resolver MUTATION e m) where
@@ -383,7 +384,7 @@ lookupRes ::
   Resolver o e m ValidValue
 lookupRes Selection {selectionName}
   | selectionName == "__typename" =
-    pure . Scalar . String . __typename
+    pure . Scalar . String . readName . __typename
   | otherwise =
     maybe
       (pure gqlNull)
@@ -423,7 +424,7 @@ runDataResolver = withResolver getState . __encode
         -- Object -----------------
         encodeNode objDrv@ResObject {} _ = withObject (`resolveObject` objDrv) sel
         -- ENUM
-        encodeNode (ResEnum _ enum) SelectionField = pure $ gqlString enum
+        encodeNode (ResEnum _ enum) SelectionField = pure $ gqlString $ readName enum
         encodeNode (ResEnum typename enum) unionSel@UnionSelection {} =
           encodeNode (unionDrv (typename <> "EnumObject")) unionSel
           where
@@ -431,7 +432,7 @@ runDataResolver = withResolver getState . __encode
               ResUnion name
                 $ pure
                 $ ResObject
-                $ ObjectResModel name [("enum", pure $ ResScalar $ String enum)]
+                $ ObjectResModel name [("enum", pure $ ResScalar $ String $ readName enum)]
         encodeNode ResEnum {} _ =
           failure ("wrong selection on enum value" :: Message)
         -- UNION
@@ -440,7 +441,7 @@ runDataResolver = withResolver getState . __encode
           where
             currentSelection = pickSelection typename selections
         encodeNode (ResUnion name _) _ =
-          failure ("union Resolver \"" <> name <> "\" should only recieve UnionSelection" :: Message)
+          failure ("union Resolver " <> msg name <> " should only recieve UnionSelection")
         -- SCALARS
         encodeNode ResNull _ = pure Null
         encodeNode (ResScalar x) SelectionField = pure $ Scalar x

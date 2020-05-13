@@ -25,7 +25,7 @@ import Data.Morpheus.Parsing.Request.Selection
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
-    Name,
+    Name (..),
     ResolvedValue,
     replaceValue,
   )
@@ -55,5 +55,5 @@ parseGQL GQLRequest {query, variables} = setVariables <$> processParser request 
     toVariableMap :: Maybe Aeson.Value -> [(Name, ResolvedValue)]
     toVariableMap (Just (Aeson.Object x)) = map toMorpheusValue (toList x)
       where
-        toMorpheusValue (key, value) = (key, replaceValue value)
+        toMorpheusValue (key, value) = (Name key, replaceValue value)
     toVariableMap _ = []
