@@ -149,13 +149,30 @@ genOperation operation = do
   nonOutputTypes <- renderNonOutputTypes enums
   pure (arguments, outputTypes <> nonOutputTypes)
 
+-- INPUTS
 renderNonOutputTypes :: [Key] -> Converter [ClientType]
 renderNonOutputTypes enums = do
-  variables <- asks snd
-  inputTypeRequests <-
-    resolveUpdates [] $
-      map (scanInputTypes . typeConName . variableType) (toList variables)
+  variables <- toList <$> asks snd
+  inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
   concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> enums)
+
+exploreInputTypeNames :: Key -> [Key] -> Converter [Key]
+exploreInputTypeNames name collected
+  | name `elem` collected = pure collected
+  | otherwise = getType name >>= scanInpType
+  where
+    scanInpType TypeDefinition {typeContent, typeName} = scanType typeContent
+      where
+        scanType (DataInputObject fields) =
+          resolveUpdates
+            (name : collected)
+            (map toInputTypeD $ toList fields)
+          where
+            toInputTypeD :: FieldDefinition -> [Key] -> Converter [Key]
+            toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
+              exploreInputTypeNames typeConName
+        scanType (DataEnum _) = pure (collected <> [typeName])
+        scanType _ = pure collected
 
 -------------------------------------------------------------------------
 -- generates selection Object Types
@@ -250,24 +267,6 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection unio
     getUnionType (UnionTag selectedTyName selectionVariant) = do
       conDatatype <- getType selectedTyName
       genConsD path selectedTyName conDatatype selectionVariant
-
-scanInputTypes :: Key -> [Key] -> Converter [Key]
-scanInputTypes name collected
-  | name `elem` collected = pure collected
-  | otherwise = getType name >>= scanInpType
-  where
-    scanInpType TypeDefinition {typeContent, typeName} = scanType typeContent
-      where
-        scanType (DataInputObject fields) =
-          resolveUpdates
-            (name : collected)
-            (map toInputTypeD $ toList fields)
-          where
-            toInputTypeD :: FieldDefinition -> [Key] -> Converter [Key]
-            toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
-              scanInputTypes typeConName
-        scanType (DataEnum _) = pure (collected <> [typeName])
-        scanType _ = pure collected
 
 buildInputType :: Text -> Converter [ClientType]
 buildInputType name = getType name >>= generateTypes
