@@ -97,153 +97,156 @@ newtype Converter a = Converter
 instance Failure GQLErrors Converter where
   failure = Converter . lift . failure
 
+-- generates argument types for Operation Head
+rootArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
+rootArguments variables argsName
+  | null variables = Nothing
+  | otherwise = Just rootArgumentsType
+  where
+    rootArgumentsType :: TypeD
+    rootArgumentsType =
+      TypeD
+        { tName = argsName,
+          tNamespace = [],
+          tCons = [ConsD {cName = argsName, cFields = map fieldD (toList variables)}],
+          tMeta = Nothing
+        }
+      where
+        fieldD :: Variable RAW -> FieldDefinition
+        fieldD Variable {variableName, variableType} =
+          FieldDefinition
+            { fieldName = variableName,
+              fieldArgs = NoArguments,
+              fieldType = variableType,
+              fieldMeta = Nothing
+            }
+
 operationTypes ::
   Schema ->
   VariableDefinitions RAW ->
   Operation VALID ->
   Eventless (Maybe TypeD, [ClientType])
 operationTypes schema vars = flip runReaderT (schema, vars) . runConverter . genOperation
+
+genOperation :: Operation VALID -> Converter (Maybe TypeD, [ClientType])
+genOperation operation@Operation {operationName, operationSelection} = do
+  (lib, variables) <- asks id
+  datatype <- getOperationDataType operation lib
+  (queryTypes, enums) <-
+    genRecordType
+      []
+      (getOperationName operationName)
+      (toAny datatype)
+      operationSelection
+  inputTypeRequests <-
+    resolveUpdates [] $
+      map (scanInputTypes . typeConName . variableType) (toList variables)
+  inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
+  pure
+    ( rootArguments variables (getOperationName operationName <> "Args"),
+      queryTypes <> inputTypesAndEnums
+    )
+
+-------------------------------------------------------------------------
+buildListedTypes :: [Text] -> Converter [ClientType]
+buildListedTypes =
+  fmap concat . traverse buildInputType . removeDuplicates
+
+-------------------------------------------------------------------------
+-- generates selection Object Types
+genRecordType ::
+  [Name] ->
+  Name ->
+  TypeDefinition ANY ->
+  SelectionSet VALID ->
+  Converter ([ClientType], [Name])
+genRecordType path tName dataType recordSelSet = do
+  (con, subTypes, requests) <- genConsD tName dataType recordSelSet
+  pure
+    ( ClientType
+        { clientType =
+            TypeD
+              { tName,
+                tNamespace = path,
+                tCons = [con],
+                tMeta = Nothing
+              },
+          clientKind = KindObject Nothing
+        }
+        : subTypes,
+      requests
+    )
   where
-    genOperation :: Operation VALID -> Converter (Maybe TypeD, [ClientType])
-    genOperation operation@Operation {operationName, operationSelection} = do
-      (lib, variables) <- asks id
-      datatype <- getOperationDataType operation lib
-      (queryTypes, enums) <-
-        genRecordType
-          []
-          (getOperationName operationName)
-          (toAny datatype)
-          operationSelection
-      inputTypeRequests <-
-        resolveUpdates [] $
-          map (scanInputTypes . typeConName . variableType) (toList variables)
-      inputTypesAndEnums <- buildListedTypes (inputTypeRequests <> enums)
-      pure
-        ( rootArguments variables (getOperationName operationName <> "Args"),
-          queryTypes <> inputTypesAndEnums
-        )
-    -------------------------------------------------------------------------
-    buildListedTypes =
-      fmap concat . traverse buildInputType . removeDuplicates
-    -------------------------------------------------------------------------
-    -- generates argument types for Operation Head
-    rootArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
-    rootArguments variables argsName
-      | null variables = Nothing
-      | otherwise = Just rootArgumentsType
-      where
-        rootArgumentsType :: TypeD
-        rootArgumentsType =
-          TypeD
-            { tName = argsName,
-              tNamespace = [],
-              tCons = [ConsD {cName = argsName, cFields = map fieldD (toList variables)}],
-              tMeta = Nothing
-            }
-          where
-            fieldD :: Variable RAW -> FieldDefinition
-            fieldD Variable {variableName, variableType} =
-              FieldDefinition
-                { fieldName = variableName,
-                  fieldArgs = NoArguments,
-                  fieldType = variableType,
-                  fieldMeta = Nothing
-                }
-    ---------------------------------------------------------
-    -- generates selection Object Types
-    genRecordType ::
-      [Name] ->
+    genConsD ::
       Name ->
       TypeDefinition ANY ->
       SelectionSet VALID ->
-      Converter ([ClientType], [Name])
-    genRecordType path tName dataType recordSelSet = do
-      (con, subTypes, requests) <- genConsD tName dataType recordSelSet
-      pure
-        ( ClientType
-            { clientType =
-                TypeD
-                  { tName,
-                    tNamespace = path,
-                    tCons = [con],
-                    tMeta = Nothing
-                  },
-              clientKind = KindObject Nothing
-            }
-            : subTypes,
-          requests
-        )
+      Converter (ConsD, [ClientType], [Text])
+    genConsD cName datatype selSet = do
+      (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
+      pure (ConsD {cName, cFields}, concat subTypes, concat requests)
       where
-        genConsD ::
-          Name ->
-          TypeDefinition ANY ->
-          SelectionSet VALID ->
-          Converter (ConsD, [ClientType], [Text])
-        genConsD cName datatype selSet = do
-          (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
-          pure (ConsD {cName, cFields}, concat subTypes, concat requests)
-          where
-            genField ::
-              Selection VALID ->
-              Converter (FieldDefinition, [ClientType], [Text])
-            genField
-              sel@Selection
-                { selectionName,
+        genField ::
+          Selection VALID ->
+          Converter (FieldDefinition, [ClientType], [Text])
+        genField
+          sel@Selection
+            { selectionName,
+              selectionPosition
+            } =
+            do
+              (fieldDataType, fieldType) <-
+                lookupFieldType
+                  fieldPath
+                  datatype
                   selectionPosition
-                } =
+                  selectionName
+              (subTypes, requests) <- subTypesBySelection fieldDataType sel
+              pure
+                ( FieldDefinition
+                    { fieldName,
+                      fieldType,
+                      fieldArgs = NoArguments,
+                      fieldMeta = Nothing
+                    },
+                  subTypes,
+                  requests
+                )
+            where
+              fieldPath = path <> [fieldName]
+              -------------------------------
+              fieldName = keyOf sel
+              ------------------------------------------
+              subTypesBySelection ::
+                TypeDefinition ANY -> Selection VALID -> Converter ([ClientType], [Text])
+              subTypesBySelection dType Selection {selectionContent = SelectionField} =
+                leafType dType
+              --withLeaf buildLeaf dType
+              subTypesBySelection dType Selection {selectionContent = SelectionSet selectionSet} =
+                genRecordType fieldPath (typeFrom [] dType) dType selectionSet
+              ---- UNION
+              subTypesBySelection dType Selection {selectionContent = UnionSelection unionSelections} =
                 do
-                  (fieldDataType, fieldType) <-
-                    lookupFieldType
-                      fieldPath
-                      datatype
-                      selectionPosition
-                      selectionName
-                  (subTypes, requests) <- subTypesBySelection fieldDataType sel
+                  (tCons, subTypes, requests) <-
+                    unzip3 <$> traverse getUnionType (toList unionSelections)
                   pure
-                    ( FieldDefinition
-                        { fieldName,
-                          fieldType,
-                          fieldArgs = NoArguments,
-                          fieldMeta = Nothing
-                        },
-                      subTypes,
-                      requests
+                    ( ClientType
+                        { clientType =
+                            TypeD
+                              { tNamespace = fieldPath,
+                                tName = typeFrom [] dType,
+                                tCons,
+                                tMeta = Nothing
+                              },
+                          clientKind = KindUnion
+                        }
+                        : concat subTypes,
+                      concat requests
                     )
                 where
-                  fieldPath = path <> [fieldName]
-                  -------------------------------
-                  fieldName = keyOf sel
-                  ------------------------------------------
-                  subTypesBySelection ::
-                    TypeDefinition ANY -> Selection VALID -> Converter ([ClientType], [Text])
-                  subTypesBySelection dType Selection {selectionContent = SelectionField} =
-                    leafType dType
-                  --withLeaf buildLeaf dType
-                  subTypesBySelection dType Selection {selectionContent = SelectionSet selectionSet} =
-                    genRecordType fieldPath (typeFrom [] dType) dType selectionSet
-                  ---- UNION
-                  subTypesBySelection dType Selection {selectionContent = UnionSelection unionSelections} =
-                    do
-                      (tCons, subTypes, requests) <-
-                        unzip3 <$> traverse getUnionType (toList unionSelections)
-                      pure
-                        ( ClientType
-                            { clientType =
-                                TypeD
-                                  { tNamespace = fieldPath,
-                                    tName = typeFrom [] dType,
-                                    tCons,
-                                    tMeta = Nothing
-                                  },
-                              clientKind = KindUnion
-                            }
-                            : concat subTypes,
-                          concat requests
-                        )
-                    where
-                      getUnionType (UnionTag selectedTyName selectionVariant) = do
-                        conDatatype <- getType selectedTyName
-                        genConsD selectedTyName conDatatype selectionVariant
+                  getUnionType (UnionTag selectedTyName selectionVariant) = do
+                    conDatatype <- getType selectedTyName
+                    genConsD selectedTyName conDatatype selectionVariant
 
 scanInputTypes :: Key -> [Key] -> Converter [Key]
 scanInputTypes name collected
