@@ -155,12 +155,7 @@ renderNonOutputTypes enums = do
   inputTypeRequests <-
     resolveUpdates [] $
       map (scanInputTypes . typeConName . variableType) (toList variables)
-  buildListedTypes (inputTypeRequests <> enums)
-
--------------------------------------------------------------------------
-buildListedTypes :: [Text] -> Converter [ClientType]
-buildListedTypes =
-  fmap concat . traverse buildInputType . removeDuplicates
+  concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> enums)
 
 -------------------------------------------------------------------------
 -- generates selection Object Types
