@@ -7,7 +7,6 @@
 
 module Data.Morpheus.Client.Transform.Inputs
   ( renderNonOutputTypes,
-    leafType,
     renderOperationArguments,
   )
 where
@@ -15,10 +14,7 @@ where
 --
 -- MORPHEUS
 import Control.Monad.Reader (asks)
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, getType)
-import Data.Morpheus.Internal.Utils
-  ( nameSpaceType,
-  )
+import Data.Morpheus.Client.Transform.Core (Converter (..), getType, typeFrom)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -41,11 +37,9 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationName,
     removeDuplicates,
-    typeFromScalar,
   )
 import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    Listable (..),
+  ( Listable (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
@@ -156,19 +150,3 @@ toFieldD :: FieldDefinition -> Converter FieldDefinition
 toFieldD field@FieldDefinition {fieldType} = do
   typeConName <- typeFrom [] <$> getType (typeConName fieldType)
   pure $ field {fieldType = fieldType {typeConName}}
-
-leafType :: TypeDefinition a -> Converter ([ClientType], [Text])
-leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
-  where
-    fromKind :: TypeContent TRUE a -> Converter ([ClientType], [Text])
-    fromKind DataEnum {} = pure ([], [typeName])
-    fromKind DataScalar {} = pure ([], [])
-    fromKind _ = failure $ compileError "Invalid schema Expected scalar"
-
-typeFrom :: [Name] -> TypeDefinition a -> Name
-typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
-  where
-    __typeFrom DataScalar {} = typeFromScalar typeName
-    __typeFrom DataObject {} = nameSpaceType path typeName
-    __typeFrom DataUnion {} = nameSpaceType path typeName
-    __typeFrom _ = typeName

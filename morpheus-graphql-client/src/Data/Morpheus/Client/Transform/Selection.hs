@@ -15,13 +15,10 @@ where
 -- MORPHEUS
 import Control.Monad.Reader (asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, getType)
-import Data.Morpheus.Client.Transform.Inputs (leafType, renderNonOutputTypes)
+import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, getType, leafType, typeFrom)
+import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
 import Data.Morpheus.Error
   ( deprecatedField,
-  )
-import Data.Morpheus.Internal.Utils
-  ( nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -45,14 +42,12 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     UnionTag (..),
     VALID,
-    Variable (..),
     VariableDefinitions,
     getOperationDataType,
     getOperationName,
     lookupDeprecated,
     lookupDeprecatedReason,
     toAny,
-    typeFromScalar,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -69,34 +64,6 @@ import Data.Text
   ( Text,
     pack,
   )
-
-renderArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
-renderArguments variables argsName
-  | null variables = Nothing
-  | otherwise = Just rootArgumentsType
-  where
-    rootArgumentsType :: TypeD
-    rootArgumentsType =
-      TypeD
-        { tName = argsName,
-          tNamespace = [],
-          tCons = [ConsD {cName = argsName, cFields = map fieldD (toList variables)}],
-          tMeta = Nothing
-        }
-      where
-        fieldD :: Variable RAW -> FieldDefinition
-        fieldD Variable {variableName, variableType} =
-          FieldDefinition
-            { fieldName = variableName,
-              fieldArgs = NoArguments,
-              fieldType = variableType,
-              fieldMeta = Nothing
-            }
-
-renderOperationArguments :: Operation VALID -> Converter (Maybe TypeD)
-renderOperationArguments Operation {operationName} = do
-  variables <- asks snd
-  pure $ renderArguments variables (getOperationName operationName <> "Args")
 
 renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [ClientType], [Name])
 renderOperationType op@Operation {operationName, operationSelection} = do
@@ -250,11 +217,3 @@ getFieldType
             Nothing -> pure ()
 getFieldType _ dt _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
-
-typeFrom :: [Name] -> TypeDefinition a -> Name
-typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
-  where
-    __typeFrom DataScalar {} = typeFromScalar typeName
-    __typeFrom DataObject {} = nameSpaceType path typeName
-    __typeFrom DataUnion {} = nameSpaceType path typeName
-    __typeFrom _ = typeName

@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -10,12 +11,14 @@ module Data.Morpheus.Client.Transform.Core
   ( Converter (..),
     compileError,
     getType,
+    leafType,
+    typeFrom,
   )
 where
 
 --
 -- MORPHEUS
-import Control.Monad.Reader (MonadReader, asks, runReaderT)
+import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -96,3 +99,19 @@ compileError x =
 
 getType :: Text -> Converter (TypeDefinition ANY)
 getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename
+
+leafType :: TypeDefinition a -> Converter ([ClientType], [Text])
+leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
+  where
+    fromKind :: TypeContent TRUE a -> Converter ([ClientType], [Text])
+    fromKind DataEnum {} = pure ([], [typeName])
+    fromKind DataScalar {} = pure ([], [])
+    fromKind _ = failure $ compileError "Invalid schema Expected scalar"
+
+typeFrom :: [Name] -> TypeDefinition a -> Name
+typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
+  where
+    __typeFrom DataScalar {} = typeFromScalar typeName
+    __typeFrom DataObject {} = nameSpaceType path typeName
+    __typeFrom DataUnion {} = nameSpaceType path typeName
+    __typeFrom _ = typeName
