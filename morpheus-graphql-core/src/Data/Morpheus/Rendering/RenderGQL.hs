@@ -19,6 +19,7 @@ import Data.Morpheus.Types.Internal.AST
     Key,
     Name,
     Schema,
+    Token,
     TypeContent (..),
     TypeDefinition (..),
     TypeRef (..),
@@ -35,8 +36,7 @@ import Data.Morpheus.Types.Internal.Operation
   )
 import Data.Semigroup ((<>))
 import Data.Text
-  ( Text,
-    intercalate,
+  ( intercalate,
   )
 
 class RenderGQL a where
@@ -99,9 +99,9 @@ renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
     showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
-renderIndent :: Text
+renderIndent :: Token
 renderIndent = "  "
 
-renderObject :: (a -> Text) -> [a] -> Text
+renderObject :: (a -> Token) -> [a] -> Token
 renderObject f list =
   " { \n  " <> intercalate ("\n" <> renderIndent) (map f list) <> "\n}"

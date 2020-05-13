@@ -2,7 +2,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -29,6 +31,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     DataTypeKind (..),
     DataFingerprint (..),
     DataTypeWrapper (..),
+    Token,
     anonymousRef,
     toHSWrappers,
     toGQLWrapper,
@@ -56,6 +59,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     FALSE,
     TypeName,
     FieldName,
+    Msg (..),
   )
 where
 
@@ -64,6 +68,7 @@ import Data.Aeson
     ToJSON,
   )
 import Data.Semigroup ((<>))
+import Data.String (IsString)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Instances.TH.Lift ()
@@ -73,17 +78,33 @@ type TRUE = 'True
 
 type FALSE = 'False
 
-type Key = Text
+type Token = Text
 
-type Message = Text
+newtype Message = Message {readMessage :: Text}
+  deriving
+    (Generic)
+  deriving newtype
+    (Show, Eq, Ord, IsString, Semigroup, FromJSON, ToJSON, Lift)
 
-type Name = Text
+class Msg a where
+  msg :: a -> Message
 
-type TypeName = Text
+newtype Name = Name {readName :: Text}
+  deriving
+    (Generic)
+  deriving newtype
+    (Show, Ord, Eq, IsString, Semigroup, FromJSON, ToJSON, Lift)
 
-type FieldName = Text
+instance Msg Name where
+  msg Name {readName} = Message readName
 
-type Description = Key
+type Key = Name
+
+type TypeName = Name
+
+type FieldName = Name
+
+type Description = Name
 
 data Stage = RAW | RESOLVED | VALID
 

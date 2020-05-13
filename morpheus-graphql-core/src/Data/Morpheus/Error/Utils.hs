@@ -15,15 +15,15 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
+    Message,
     Position (..),
   )
 import Data.Semigroup ((<>))
-import Data.Text (Text)
 
-errorMessage :: Position -> Text -> GQLErrors
+errorMessage :: Position -> Message -> GQLErrors
 errorMessage position message = [GQLError {message, locations = [position]}]
 
-globalErrorMessage :: Text -> GQLErrors
+globalErrorMessage :: Message -> GQLErrors
 globalErrorMessage message = [GQLError {message, locations = []}]
 
 badRequestError :: String -> ByteString

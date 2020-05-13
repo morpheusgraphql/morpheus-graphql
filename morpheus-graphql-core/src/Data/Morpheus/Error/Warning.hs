@@ -19,6 +19,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLErrors,
     Name,
     Ref (..),
+    msg,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
@@ -33,21 +34,21 @@ deprecatedEnum :: Name -> Ref -> Maybe Description -> GQLErrors
 deprecatedEnum typeName Ref {refPosition, refName} reason =
   errorMessage refPosition $
     "the enum value "
-      <> typeName
+      <> msg typeName
       <> "."
-      <> refName
+      <> msg refName
       <> "\" is deprecated."
-      <> maybe "" (" " <>) reason
+      <> msg (maybe "" (" " <>) reason)
 
 deprecatedField :: Name -> Ref -> Maybe Description -> GQLErrors
 deprecatedField typeName Ref {refPosition, refName} reason =
   errorMessage refPosition $
     "the field \""
-      <> typeName
+      <> msg typeName
       <> "."
-      <> refName
+      <> msg refName
       <> "\" is deprecated."
-      <> maybe "" (" " <>) reason
+      <> msg (maybe "" (" " <>) reason)
 
 gqlWarnings :: GQLErrors -> Q ()
 gqlWarnings [] = pure ()

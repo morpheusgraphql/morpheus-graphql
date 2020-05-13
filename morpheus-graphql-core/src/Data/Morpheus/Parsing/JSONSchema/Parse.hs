@@ -33,6 +33,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     TypeWrapper,
     createArgument,
     createEnumType,
@@ -51,8 +52,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text
-  ( Text,
-    pack,
+  ( pack,
   )
 
 decodeIntrospection :: ByteString -> Eventless AST.Schema
@@ -101,12 +101,12 @@ instance ParseJSONSchema Field FieldDefinition where
 instance ParseJSONSchema InputValue FieldDefinition where
   parse InputValue {inputName, inputType} = createField NoArguments inputName <$> fieldTypeFromJSON inputType
 
-fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], Text)
+fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], TypeName)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []
   where
     toHs (w, t) = (toHSWrappers w, t)
     fieldTypeRec ::
-      [DataTypeWrapper] -> Type -> Eventless ([DataTypeWrapper], Text)
+      [DataTypeWrapper] -> Type -> Eventless ([DataTypeWrapper], TypeName)
     fieldTypeRec acc Type {kind = LIST, ofType = Just ofType} =
       fieldTypeRec (ListType : acc) ofType
     fieldTypeRec acc Type {kind = NON_NULL, ofType = Just ofType} =

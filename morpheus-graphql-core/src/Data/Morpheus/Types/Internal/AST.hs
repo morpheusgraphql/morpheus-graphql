@@ -143,6 +143,8 @@ module Data.Morpheus.Types.Internal.AST
     FALSE,
     TypeName,
     FieldName,
+    Token,
+    Msg (..),
   )
 where
 

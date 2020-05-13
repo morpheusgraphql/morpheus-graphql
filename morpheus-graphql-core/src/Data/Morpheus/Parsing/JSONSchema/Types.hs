@@ -18,7 +18,10 @@ import Data.Aeson
 --
 -- MORPHEUS
 import Data.Morpheus.Schema.TypeKind (TypeKind)
-import Data.Text (Text)
+import Data.Morpheus.Types.Internal.AST
+  ( FieldName,
+    TypeName,
+  )
 import GHC.Generics (Generic)
 
 -- TYPES FOR DECODING JSON INTROSPECTION
@@ -36,7 +39,7 @@ newtype Schema = Schema
 -- TYPE
 data Type = Type
   { kind :: TypeKind,
-    name :: Maybe Text,
+    name :: Maybe TypeName,
     fields :: Maybe [Field],
     interfaces :: Maybe [Type],
     possibleTypes :: Maybe [Type],
@@ -48,7 +51,7 @@ data Type = Type
 
 -- FIELD
 data Field = Field
-  { fieldName :: Text,
+  { fieldName :: FieldName,
     fieldArgs :: [InputValue],
     fieldType :: Type
   }
@@ -61,7 +64,7 @@ instance FromJSON Field where
 
 -- INPUT
 data InputValue = InputValue
-  { inputName :: Text,
+  { inputName :: FieldName,
     inputType :: Type
   }
   deriving (Show, Generic)
@@ -73,7 +76,7 @@ instance FromJSON InputValue where
 
 -- ENUM
 newtype EnumValue = EnumValue
-  { enumName :: Text
+  { enumName :: FieldName
   }
   deriving (Generic, Show)
 

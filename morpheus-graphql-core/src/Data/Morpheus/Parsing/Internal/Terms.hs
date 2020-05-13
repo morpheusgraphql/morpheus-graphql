@@ -46,9 +46,12 @@ import Data.Morpheus.Parsing.Internal.Internal
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
     Description,
+    FieldName,
     Key,
     Name,
     Ref (..),
+    Token,
+    TypeName,
     TypeRef (..),
     convertToHaskellName,
     toHSWrappers,
@@ -58,8 +61,7 @@ import Data.Morpheus.Types.Internal.Operation
     Listable (..),
   )
 import Data.Text
-  ( Text,
-    pack,
+  ( pack,
     strip,
   )
 import Text.Megaparsec
@@ -123,14 +125,14 @@ litAssignment = char ':' *> spaceAndComments
 
 -- PRIMITIVE
 ------------------------------------
-token :: Parser Text
+token :: Parser Token
 token = label "token" $ do
   firstChar <- letterChar <|> char '_'
   restToken <- many $ letterChar <|> char '_' <|> digitChar
   spaceAndComments
   return $ convertToHaskellName $ pack $ firstChar : restToken
 
-qualifier :: Parser (Text, Position)
+qualifier :: Parser (Token, Position)
 qualifier = label "qualifier" $ do
   position <- getLocation
   value <- token
@@ -160,7 +162,7 @@ spaceAndComments1 = space1 *> spaceAndComments
 optDescription :: Parser (Maybe Description)
 optDescription = optional parseDescription
 
-parseDescription :: Parser Text
+parseDescription :: Parser Description
 parseDescription =
   strip . pack <$> (blockDescription <|> singleLine) <* spaceAndComments
   where
@@ -242,7 +244,7 @@ parseAssignment nameParser valueParser = label "assignment" $ do
 --  TypeCondition:
 --    on NamedType
 --
-parseTypeCondition :: Parser Text
+parseTypeCondition :: Parser TypeName
 parseTypeCondition = do
   _ <- string "on"
   space1
@@ -255,13 +257,13 @@ spreadLiteral = do
   space
   return index
 
-parseWrappedType :: Parser ([DataTypeWrapper], Text)
+parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
   where
-    unwrapped :: Parser ([DataTypeWrapper], Text)
+    unwrapped :: Parser ([DataTypeWrapper], TypeName)
     unwrapped = ([],) <$> token <* spaceAndComments
     ----------------------------------------------
-    wrapped :: Parser ([DataTypeWrapper], Text)
+    wrapped :: Parser ([DataTypeWrapper], TypeName)
     wrapped =
       between
         (char '[' *> spaceAndComments)
@@ -275,7 +277,7 @@ parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
 --  Name:
-parseAlias :: Parser (Maybe Key)
+parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
     alias = label "alias" $ token <* char ':' <* spaceAndComments
