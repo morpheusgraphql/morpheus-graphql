@@ -52,7 +52,7 @@ import Data.Morpheus.Types
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Message,
-    Name,
+    Name (..),
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
@@ -271,7 +271,7 @@ data FieldNode o e m = FieldNode
 setFieldNames :: [FieldNode o e m] -> [FieldNode o e m]
 setFieldNames = zipWith setFieldName ([0 ..] :: [Int])
   where
-    setFieldName i field = field {fieldSelName = "_" <> pack (show i)}
+    setFieldName i field = field {fieldSelName = Name $ "_" <> pack (show i)}
 
 class TypeRep f o e (m :: * -> *) where
   typeResolvers :: ResContext OUTPUT o e m value -> f a -> ResNode o e m
@@ -279,7 +279,7 @@ class TypeRep f o e (m :: * -> *) where
 instance (Datatype d, TypeRep f o e m) => TypeRep (M1 D d f) o e m where
   typeResolvers context (M1 src) =
     (typeResolvers context src)
-      { resDatatypeName = pack $ datatypeName (undefined :: M1 D d f a)
+      { resDatatypeName = Name $ pack $ datatypeName (undefined :: M1 D d f a)
       }
 
 --- UNION OR OBJECT
@@ -293,7 +293,7 @@ instance (FieldRep f o e m, Constructor c) => TypeRep (M1 C c f) o e m where
   typeResolvers context (M1 src) =
     ResNode
       { resDatatypeName = "",
-        resTypeName = pack (conName proxy),
+        resTypeName = Name $ pack (conName proxy),
         resKind = REP_OBJECT,
         resFields = fieldRep context src,
         isResRecord = conIsRecord proxy
@@ -311,7 +311,7 @@ instance (FieldRep f o e m, FieldRep g o e m) => FieldRep (f :*: g) o e m where
 instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
   fieldRep _ m@(M1 (K1 src)) =
     [ FieldNode
-        { fieldSelName = pack (selName m),
+        { fieldSelName = Name $ pack (selName m),
           fieldTypeName = __typeName (Proxy @a),
           fieldResolver = encode src,
           isFieldObject = isObjectKind (Proxy @a)

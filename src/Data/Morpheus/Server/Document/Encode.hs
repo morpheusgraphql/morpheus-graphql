@@ -15,6 +15,9 @@ import Data.Morpheus.Internal.TH
   ( applyT,
     destructRecord,
     instanceHeadMultiT,
+    makeName,
+    nameStringE,
+    nameVarT,
     typeT,
   )
 import Data.Morpheus.Server.Deriving.Encode
@@ -29,6 +32,7 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
     TypeD (..),
+    TypeName,
     isSubscription,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -43,23 +47,23 @@ import Data.Text (unpack)
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
-m_ :: Key
+m_ :: TypeName
 m_ = "m"
 
-fo_ :: Key
+fo_ :: TypeName
 fo_ = "fieldOperationKind"
 
-po_ :: Key
+po_ :: TypeName
 po_ = "parentOparation"
 
-e_ :: Key
+e_ :: TypeName
 e_ = "encodeEvent"
 
 encodeVars :: [Key]
 encodeVars = [e_, m_]
 
 encodeVarsT :: [TypeQ]
-encodeVarsT = map (varT . mkName . unpack) encodeVars
+encodeVarsT = map nameVarT encodeVars
 
 deriveEncode :: TypeD -> Q [Dec]
 deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
@@ -68,8 +72,8 @@ deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
     subARgs = conT ''SUBSCRIPTION : encodeVarsT
     instanceArgs
       | isSubscription tKind = subARgs
-      | otherwise = map (varT . mkName . unpack) (po_ : encodeVars)
-    mainType = applyT (mkName $ unpack tName) [mainTypeArg]
+      | otherwise = map nameVarT (po_ : encodeVars)
+    mainType = applyT (makeName tName) [mainTypeArg]
       where
         mainTypeArg
           | isSubscription tKind = applyT ''Resolver subARgs
@@ -86,7 +90,7 @@ deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
           iTypeable po_
         ]
     -------------------------
-    iLiftOp op = applyT ''LiftOperation [varT $ mkName $ unpack op]
+    iLiftOp op = applyT ''LiftOperation [nameVarT op]
     -------------------------
     iTypeable name = typeT ''Typeable [name]
     -------------------------------------------
@@ -117,11 +121,11 @@ deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
             $ appE
               ( appE
                   (conE 'ObjectResModel)
-                  (stringE (unpack tName))
+                  (nameStringE tName)
               )
-              (listE $ map (decodeVar . unpack) varNames)
+              (listE $ map decodeVar varNames)
         decodeVar name = [|(name, encode $(varName))|]
           where
-            varName = varE $ mkName name
+            varName = varE $ makeName name
         varNames = map fieldName cFields
 deriveEncode _ = pure []

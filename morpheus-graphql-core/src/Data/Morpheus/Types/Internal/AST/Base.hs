@@ -283,7 +283,7 @@ toHSWrappers [NonNullType] = []
 isDefaultTypeName :: Key -> Bool
 isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
 
-isSchemaTypeName :: Key -> Bool
+isSchemaTypeName :: TypeName -> Bool
 isSchemaTypeName = (`elem` sysTypes)
 
 isPrimitiveTypeName :: Key -> Bool
