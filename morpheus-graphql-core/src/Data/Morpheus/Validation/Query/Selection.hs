@@ -97,13 +97,13 @@ singleTopLevelSelectionError :: Maybe Name -> Selection VALID -> GQLError
 singleTopLevelSelectionError name Selection {selectionPosition} =
   GQLError
     { message =
-        msg subscriptionName
+        subscriptionName
           <> " must select "
           <> "only one top level field.",
       locations = [selectionPosition]
     }
   where
-    subscriptionName = maybe "Anonymous Subscription" (("Subscription \"" <>) . (<> "\"")) name
+    subscriptionName = maybe "Anonymous Subscription" (("Subscription " <>) . msg) name
 
 validateOperation ::
   Operation RAW ->

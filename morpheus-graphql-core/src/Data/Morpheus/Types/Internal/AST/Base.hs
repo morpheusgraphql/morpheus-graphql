@@ -125,9 +125,6 @@ instance Lift Name where
 instance Msg Name where
   msg Name {readName} = Message $ "\"" <> readName <> "\""
 
-instance Msg [Name] where
-  msg = Message . intercalate ", " . map readName
-
 intercalateName :: Name -> [Name] -> Name
 intercalateName (Name x) = Name . intercalate x . map readName
 
