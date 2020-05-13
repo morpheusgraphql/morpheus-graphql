@@ -10,13 +10,14 @@ where
 
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
+  ( FieldName,
+    GQLErrors,
     Name,
     Position,
     Ref (..),
+    TypeName,
   )
 import Data.Semigroup ((<>))
-import Data.Text (Text)
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
 hasNoSubfields :: Ref -> Name -> GQLErrors
@@ -30,10 +31,10 @@ unknownSelectionField typeName Ref {refName, refPosition} = errorMessage refPosi
     text = "Cannot query field \"" <> refName <> "\" on type \"" <> typeName <> "\"."
 
 -- GQL:: Field \"hobby\" of type \"Hobby!\" must have a selection of subfields. Did you mean \"hobby { ... }\"?
-subfieldsNotSelected :: Text -> Text -> Position -> GQLErrors
-subfieldsNotSelected key typeName position = errorMessage position text
+subfieldsNotSelected :: FieldName -> TypeName -> Position -> GQLErrors
+subfieldsNotSelected fieldName typeName position = errorMessage position text
   where
     text =
-      "Field \"" <> key <> "\" of type \""
+      "Field \"" <> fieldName <> "\" of type \""
         <> typeName
         <> "\" must have a selection of subfields"
