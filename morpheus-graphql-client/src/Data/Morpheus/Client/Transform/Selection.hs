@@ -1,24 +1,22 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Client.Selection
+module Data.Morpheus.Client.Transform.Selection
   ( operationTypes,
   )
 where
 
 --
 -- MORPHEUS
-import Control.Monad.Reader (MonadReader, asks, runReaderT)
+import Control.Monad.Reader (asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-  )
+import Data.Morpheus.Client.Transform.Core (Converter (..))
+import Data.Morpheus.Client.Transform.Inputs (leafType, renderNonOutputTypes)
 import Data.Morpheus.Error
   ( deprecatedField,
     globalErrorMessage,
@@ -31,7 +29,6 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition (..),
     ClientType (..),
     ConsD (..),
-    DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
     GQLErrors,
@@ -44,7 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     Selection (..),
     SelectionContent (..),
     SelectionSet,
-    TRUE,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
@@ -57,7 +53,6 @@ import Data.Morpheus.Types.Internal.AST
     getOperationName,
     lookupDeprecated,
     lookupDeprecatedReason,
-    removeDuplicates,
     toAny,
     typeFromScalar,
   )
@@ -70,7 +65,6 @@ import Data.Morpheus.Types.Internal.Operation
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
-    resolveUpdates,
   )
 import Data.Semigroup ((<>))
 import Data.Text
@@ -81,20 +75,6 @@ import Data.Text
 compileError :: Text -> GQLErrors
 compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
-
-type Env = (Schema, VariableDefinitions RAW)
-
-newtype Converter a = Converter
-  { runConverter ::
-      ReaderT
-        Env
-        Eventless
-        a
-  }
-  deriving (Functor, Applicative, Monad, MonadReader Env)
-
-instance Failure GQLErrors Converter where
-  failure = Converter . lift . failure
 
 renderArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
 renderArguments variables argsName
@@ -148,31 +128,6 @@ genOperation operation = do
   (arguments, outputTypes, enums) <- renderOperationType operation
   nonOutputTypes <- renderNonOutputTypes enums
   pure (arguments, outputTypes <> nonOutputTypes)
-
--- INPUTS
-renderNonOutputTypes :: [Key] -> Converter [ClientType]
-renderNonOutputTypes enums = do
-  variables <- toList <$> asks snd
-  inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
-  concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> enums)
-
-exploreInputTypeNames :: Key -> [Key] -> Converter [Key]
-exploreInputTypeNames name collected
-  | name `elem` collected = pure collected
-  | otherwise = getType name >>= scanInpType
-  where
-    scanInpType TypeDefinition {typeContent, typeName} = scanType typeContent
-      where
-        scanType (DataInputObject fields) =
-          resolveUpdates
-            (name : collected)
-            (map toInputTypeD $ toList fields)
-          where
-            toInputTypeD :: FieldDefinition -> [Key] -> Converter [Key]
-            toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
-              exploreInputTypeNames typeConName
-        scanType (DataEnum _) = pure (collected <> [typeName])
-        scanType _ = pure collected
 
 -------------------------------------------------------------------------
 -- generates selection Object Types
@@ -268,55 +223,6 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection unio
       conDatatype <- getType selectedTyName
       genConsD path selectedTyName conDatatype selectionVariant
 
-buildInputType :: Text -> Converter [ClientType]
-buildInputType name = getType name >>= generateTypes
-  where
-    generateTypes TypeDefinition {typeName, typeContent} = subTypes typeContent
-      where
-        subTypes :: TypeContent TRUE ANY -> Converter [ClientType]
-        subTypes (DataInputObject inputFields) = do
-          fields <- traverse toFieldD (toList inputFields)
-          pure
-            [ mkInputType
-                typeName
-                KindInputObject
-                [ ConsD
-                    { cName = typeName,
-                      cFields = fields
-                    }
-                ]
-            ]
-        subTypes (DataEnum enumTags) =
-          pure
-            [ mkInputType
-                typeName
-                KindEnum
-                (map enumOption enumTags)
-            ]
-        subTypes _ = pure []
-
-mkInputType :: Name -> DataTypeKind -> [ConsD] -> ClientType
-mkInputType tName clientKind tCons =
-  ClientType
-    { clientType =
-        TypeD
-          { tName,
-            tNamespace = [],
-            tCons,
-            tMeta = Nothing
-          },
-      clientKind
-    }
-
-enumOption :: DataEnumValue -> ConsD
-enumOption DataEnumValue {enumName} =
-  ConsD {cName = enumName, cFields = []}
-
-toFieldD :: FieldDefinition -> Converter FieldDefinition
-toFieldD field@FieldDefinition {fieldType} = do
-  typeConName <- typeFrom [] <$> getType (typeConName fieldType)
-  pure $ field {fieldType = fieldType {typeConName}}
-
 lookupFieldType ::
   [Key] ->
   TypeDefinition ANY ->
@@ -350,14 +256,6 @@ lookupFieldType
             Nothing -> pure ()
 lookupFieldType _ dt _ =
   failure (compileError $ "Type should be output Object \"" <> pack (show dt))
-
-leafType :: TypeDefinition a -> Converter ([ClientType], [Text])
-leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
-  where
-    fromKind :: TypeContent TRUE a -> Converter ([ClientType], [Text])
-    fromKind DataEnum {} = pure ([], [typeName])
-    fromKind DataScalar {} = pure ([], [])
-    fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
 getType :: Text -> Converter (TypeDefinition ANY)
 getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename

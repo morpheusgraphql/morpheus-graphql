@@ -19,7 +19,7 @@ import Data.Morpheus.Client.Aeson
 import Data.Morpheus.Client.Fetch
   ( deriveFetch,
   )
-import Data.Morpheus.Client.Selection
+import Data.Morpheus.Client.Transform.Selection
   ( operationTypes,
   )
 import Data.Morpheus.Core
