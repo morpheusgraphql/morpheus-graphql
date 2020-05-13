@@ -16,7 +16,7 @@ where
 -- MORPHEUS
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
-import Data.Morpheus.Client.Transform.Core (Converter (..))
+import Data.Morpheus.Client.Transform.Core (Converter (..), compileError)
 import Data.Morpheus.Error
   ( deprecatedField,
     globalErrorMessage,
@@ -75,10 +75,6 @@ import Data.Text
   ( Text,
     pack,
   )
-
-compileError :: Text -> GQLErrors
-compileError x =
-  globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
 renderArguments :: VariableDefinitions RAW -> Text -> Maybe TypeD
 renderArguments variables argsName

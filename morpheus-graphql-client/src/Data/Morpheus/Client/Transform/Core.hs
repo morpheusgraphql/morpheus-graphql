@@ -2,11 +2,13 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Client.Transform.Core
   ( Converter (..),
+    compileError,
   )
 where
 
@@ -86,3 +88,7 @@ newtype Converter a = Converter
 
 instance Failure GQLErrors Converter where
   failure = Converter . lift . failure
+
+compileError :: Text -> GQLErrors
+compileError x =
+  globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
