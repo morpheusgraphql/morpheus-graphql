@@ -65,13 +65,13 @@ defineQueryD :: String -> ClientDefinition -> Q [Dec]
 defineQueryD _ ClientDefinition {clientTypes = []} = return []
 defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
   do
-    rootDecs <-
+    rootDeclaration <-
       defineOperationType
         (queryArgumentType clientArguments)
         src
         rootType
-    subTypeDecs <- concat <$> traverse declareT subTypes
-    return $ rootDecs ++ subTypeDecs
+    typeDeclarations <- concat <$> traverse declareT subTypes
+    pure (rootDeclaration <> typeDeclarations)
   where
     declareT clientType@TypeD {tKind}
       | isOutputObject tKind || tKind == KindUnion =
