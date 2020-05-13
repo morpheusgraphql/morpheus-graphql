@@ -123,7 +123,7 @@ instance Lift Name where
   lift = stringE . T.unpack . readName
 
 instance Msg Name where
-  msg Name {readName} = Message readName
+  msg Name {readName} = Message $ "\"" <> readName <> "\""
 
 instance Msg [Name] where
   msg = Message . intercalate ", " . map readName
