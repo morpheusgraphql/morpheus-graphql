@@ -48,6 +48,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     lookupDeprecated,
     lookupDeprecatedReason,
+    msg,
     typeFromScalar,
   )
 import Data.Morpheus.Types.Internal.Operation
@@ -79,7 +80,7 @@ compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
 getType :: TypeName -> Converter (TypeDefinition ANY)
-getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> typename) typename
+getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> msg typename) typename
 
 leafType :: TypeDefinition a -> Converter ([TypeD], [TypeName])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent

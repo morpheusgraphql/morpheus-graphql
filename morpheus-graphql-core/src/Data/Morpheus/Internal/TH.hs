@@ -24,6 +24,9 @@ module Data.Morpheus.Internal.TH
     typeInstanceDec,
     infoTyVars,
     decArgs,
+    makeName,
+    nameLitP,
+    nameStringL,
   )
 where
 
@@ -40,8 +43,10 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeKind (..),
     DataTypeKind (..),
     FieldDefinition (..),
+    FieldName,
     Key,
     TypeD (..),
+    TypeName,
     TypeRef (..),
     TypeWrapper (..),
     isOutputObject,
@@ -141,26 +146,32 @@ apply n = foldl appE (conE n)
 applyT :: Name -> [Q Type] -> Q Type
 applyT name = foldl appT (conT name)
 
-typeT :: Name -> [Text] -> Q Type
-typeT name li = applyT name (map (varT . mkName . unpack) li)
+typeT :: Name -> [TypeName] -> Q Type
+typeT name li = applyT name (map (varT . makeName) li)
 
-instanceHeadT :: Name -> Text -> [Text] -> Q Type
-instanceHeadT cName iType tArgs = applyT cName [applyT (mkName $ unpack iType) (map (varT . mkName . unpack) tArgs)]
+instanceHeadT :: Name -> TypeName -> [TypeName] -> Q Type
+instanceHeadT cName iType tArgs = applyT cName [applyT (makeName iType) (map (varT . makeName) tArgs)]
 
 instanceProxyFunD :: (Name, ExpQ) -> DecQ
 instanceProxyFunD (name, body) = instanceFunD name ["_"] body
 
-instanceFunD :: Name -> [Text] -> ExpQ -> Q Dec
-instanceFunD name args body = funD name [clause (map (varP . mkName . unpack) args) (normalB body) []]
+instanceFunD :: Name -> [FieldName] -> ExpQ -> Q Dec
+instanceFunD name args body = funD name [clause (map (varP . makeName) args) (normalB body) []]
 
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
 instanceHeadMultiT className iType li = applyT className (iType : li)
 
 -- "User" -> ["name","id"] -> (User name id)
-destructRecord :: Text -> [Text] -> PatQ
-destructRecord conName fields = conP (mkName $ unpack conName) (map (varP . mkName . unpack) fields)
+destructRecord :: TypeName -> [FieldName] -> PatQ
+destructRecord conName fields = conP (makeName conName) (map (varP . makeName) fields)
 
 typeInstanceDec :: Name -> Type -> Type -> Dec
+
+nameLitP :: TypeName -> PatQ
+nameLitP = litP . nameStringL
+
+nameStringL :: TypeName -> Lit
+nameStringL = stringL . unpack . readName
 
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes

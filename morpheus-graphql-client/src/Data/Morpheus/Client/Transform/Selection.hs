@@ -41,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationDataType,
     getOperationName,
+    msg,
     toAny,
   )
 import Data.Morpheus.Types.Internal.Operation
@@ -53,9 +54,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( pack,
-  )
 
 data ClientDefinition = ClientDefinition
   { clientArguments :: Maybe TypeD,
@@ -177,7 +175,7 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection unio
       genConsD path selectedTyName conDatatype selectionVariant
 
 getFieldType ::
-  [Key] ->
+  [FieldName] ->
   TypeDefinition ANY ->
   Selection VALID ->
   Converter (TypeDefinition ANY, TypeRef)
@@ -190,7 +188,7 @@ getFieldType
     } =
     selectBy selError selectionName objectFields >>= processDeprecation
     where
-      selError = compileError $ "cant find field \"" <> pack (show objectFields) <> "\""
+      selError = compileError $ "cant find field \"" <> msg (show objectFields) <> "\""
       processDeprecation FieldDefinition {fieldType = alias@TypeRef {typeConName}, fieldMeta} =
         checkDeprecated >> (trans <$> getType typeConName)
         where
@@ -203,4 +201,4 @@ getFieldType
               fieldMeta
               (typeName, Ref {refName = selectionName, refPosition = selectionPosition})
 getFieldType _ dt _ =
-  failure (compileError $ "Type should be output Object \"" <> pack (show dt))
+  failure (compileError $ "Type should be output Object \"" <> msg (show dt))

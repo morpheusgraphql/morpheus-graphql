@@ -12,7 +12,10 @@ module Data.Morpheus.Server.Document.Convert
 where
 
 -- MORPHEUS
-import Data.Morpheus.Internal.TH (infoTyVars)
+import Data.Morpheus.Internal.TH
+  ( infoTyVars,
+    makeName,
+  )
 import Data.Morpheus.Internal.Utils
   ( capital,
   )
@@ -41,7 +44,6 @@ import Data.Morpheus.Types.Internal.Operation
   ( Listable (..),
   )
 import Data.Semigroup ((<>))
-import Data.Text (unpack)
 import Language.Haskell.TH
 
 m_ :: Key
@@ -55,7 +57,7 @@ getTypeArgs "Int" _ = pure Nothing
 getTypeArgs "Float" _ = pure Nothing
 getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
   Just x -> pure (kindToTyArgs x)
-  Nothing -> getTyArgs <$> reify (mkName $ unpack key)
+  Nothing -> getTyArgs <$> reify (makeName key)
 
 getTyArgs :: Info -> Maybe Key
 getTyArgs x

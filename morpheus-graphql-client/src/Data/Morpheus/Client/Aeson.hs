@@ -26,6 +26,9 @@ import Data.Morpheus.Internal.TH
   ( destructRecord,
     instanceFunD,
     instanceHeadT,
+    makeName,
+    nameLitP,
+    nameStringL,
   )
 import Data.Morpheus.Internal.Utils
   ( isEnum,
@@ -38,18 +41,20 @@ import Data.Morpheus.Types.Internal.AST
     TypeD (..),
     TypeName,
     isFieldNullable,
+    msg,
   )
 import Data.Semigroup ((<>))
 import Data.Text
-  ( append,
-    unpack,
+  ( unpack,
   )
 import Language.Haskell.TH
+
+failure = fail . show
 
 -- FromJSON
 deriveFromJSON :: TypeD -> Q Dec
 deriveFromJSON TypeD {tCons = [], tName} =
-  fail $ "Type " <> unpack tName <> " Should Have at least one Constructor"
+  failure $ "Type " <> msg tName <> " Should Have at least one Constructor"
 deriveFromJSON TypeD {tName, tNamespace, tCons = [cons]} =
   defineFromJSON
     name
@@ -63,29 +68,31 @@ deriveFromJSON typeD@TypeD {tName, tCons, tNamespace}
   where
     name = nameSpaceType tNamespace tName
 
-aesonObject :: [Key] -> ConsD -> ExpQ
+aesonObject :: [TypeName] -> ConsD -> ExpQ
 aesonObject tNamespace con@ConsD {cName} =
   appE
     [|withObject name|]
     (lamE [varP (mkName "o")] (aesonObjectBody tNamespace con))
   where
-    name = unpack $ nameSpaceType tNamespace cName
+    name = nameSpaceType tNamespace cName
 
 aesonObjectBody :: [Key] -> ConsD -> ExpQ
 aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
   where
-    consName = mkName $ unpack $ nameSpaceType namespace cName
+    consName = makeName $ nameSpaceType namespace cName
     ----------------------------------------------------------
-    handleFields [] = fail $ "Type \"" <> unpack cName <> "\" is Empty Object"
+    handleFields [] =
+      failure $
+        "Type \""
+          <> msg cName
+          <> "\" is Empty Object"
     handleFields fields = startExp fields
       where
         ----------------------------------------------------------
 
         defField field@FieldDefinition {fieldName}
-          | isFieldNullable field = [|o .:? fName|]
-          | otherwise = [|o .: fName|]
-          where
-            fName = unpack fieldName
+          | isFieldNullable field = [|o .:? fieldName|]
+          | otherwise = [|o .: fieldName|]
         --------------------------------------------------------
         startExp fNames =
           uInfixE
@@ -106,7 +113,7 @@ aesonUnionObject namespace TypeD {tCons} =
   where
     buildMatch cons@ConsD {cName} = match objectPattern body []
       where
-        objectPattern = tupP [litP (stringL $ unpack cName), varP $ mkName "o"]
+        objectPattern = tupP [nameLitP cName, varP $ mkName "o"]
         body = normalB $ aesonObjectBody namespace cons
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
@@ -131,8 +138,8 @@ aesonFromJSONEnumBody tName cons = lamCaseE handlers
       where
         buildMatch ConsD {cName} = match enumPat body []
           where
-            enumPat = litP $ stringL $ unpack cName
-            body = normalB $ appE (varE 'pure) (conE $ mkName $ unpack $ append tName cName)
+            enumPat = nameLitP cName
+            body = normalB $ appE (varE 'pure) (conE $ makeName $ nameSpaceType [tName] cName)
 
 elseCaseEXP :: MatchQ
 elseCaseEXP = match (varP varName) body []
@@ -155,8 +162,8 @@ aesonToJSONEnumBody tName cons = lamCaseE handlers
       where
         buildMatch ConsD {cName} = match enumPat body []
           where
-            enumPat = conP (mkName $ unpack $ append tName cName) []
-            body = normalB $ litE (stringL $ unpack cName)
+            enumPat = conP (makeName $ nameSpaceType [tName] cName) []
+            body = normalB $ litE (nameStringL cName)
 
 -- ToJSON
 deriveToJSON :: TypeD -> Q [Dec]
@@ -171,8 +178,8 @@ deriveToJSON TypeD {tName, tCons = [ConsD {cFields}]} =
     methods = [funD 'toJSON [clause argsE (normalB body) []]]
       where
         argsE = [destructRecord tName varNames]
-        body = appE (varE 'object) (listE $ map (decodeVar . unpack) varNames)
-        decodeVar name = [|name .= $(varName)|] where varName = varE $ mkName name
+        body = appE (varE 'object) (listE $ map decodeVar varNames)
+        decodeVar name = [|name .= $(varName)|] where varName = varE $ makeName name
         varNames = map fieldName cFields
 deriveToJSON TypeD {tName, tCons}
   | isEnum tCons =

@@ -26,6 +26,7 @@ import Data.ByteString.Lazy (ByteString)
 
 import Data.Morpheus.Internal.TH
   ( instanceHeadT,
+    makeName,
     typeInstanceDec,
   )
 import Data.Morpheus.Types.IO
@@ -38,7 +39,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Text
   ( pack,
-    unpack,
   )
 import Language.Haskell.TH
 
@@ -71,5 +71,5 @@ deriveFetch resultType typeName queryString =
     iHead = instanceHeadT ''Fetch typeName []
     methods =
       [ funD 'fetch [clause [] (normalB [|__fetch queryString typeName|]) []],
-        pure $ typeInstanceDec ''Args (ConT $ mkName $ unpack typeName) resultType
+        pure $ typeInstanceDec ''Args (ConT $ makeName typeName) resultType
       ]
