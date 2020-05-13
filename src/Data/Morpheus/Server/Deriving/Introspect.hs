@@ -61,6 +61,7 @@ import Data.Morpheus.Types.Internal.AST
     DataUnion,
     FALSE,
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition (..),
     IN,
     InputFieldsDefinition (..),
@@ -97,8 +98,7 @@ import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Set (Set)
 import Data.Text
-  ( Text,
-    pack,
+  ( pack,
   )
 import GHC.Generics
 
@@ -109,14 +109,14 @@ class Introspect a where
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> Text -> FieldDefinition
+  field :: proxy a -> FieldName -> FieldDefinition
   introspect :: proxy a -> TypeUpdater
 
   -----------------------------------------------
   default field ::
     GQLType a =>
     proxy a ->
-    Text ->
+    FieldName ->
     FieldDefinition
   field _ = buildField (Proxy @a) NoArguments
 
@@ -281,7 +281,7 @@ instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
           genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
           genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
-buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> Text -> FieldDefinition
+buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> FieldName -> FieldDefinition
 buildField proxy fieldArgs fieldName =
   FieldDefinition
     { fieldType = createAlias $ __typeName proxy,

@@ -40,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeName,
     TypeRef (..),
     TypeUpdater,
     insertType,
@@ -50,7 +51,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
 import Data.Proxy (Proxy (..))
-import Data.Text (Text, unpack)
+import Data.Text (unpack)
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
@@ -122,10 +123,10 @@ introspectField FieldDefinition {fieldType, fieldArgs} =
         tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
     inputTypes _ = []
 
-conTX :: Text -> Q Type
+conTX :: TypeName -> Q Type
 conTX = conT . mkName . unpack
 
-varTX :: Text -> Q Type
+varTX :: TypeName -> Q Type
 varTX = varT . mkName . unpack
 
 proxyT :: TypeRef -> Q Exp
