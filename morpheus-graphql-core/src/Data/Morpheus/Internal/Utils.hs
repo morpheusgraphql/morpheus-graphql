@@ -84,6 +84,9 @@ class Empty a where
 instance Empty (HashMap k v) where
   empty = HM.empty
 
+instance Empty [a] where
+  empty = []
+
 class Selectable c a | c -> a where
   selectOr :: d -> (a -> d) -> KEY a -> c -> d
 

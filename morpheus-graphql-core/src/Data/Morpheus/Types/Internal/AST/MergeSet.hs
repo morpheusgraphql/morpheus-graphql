@@ -54,7 +54,8 @@ newtype MergeSet a = MergeSet
       Functor,
       Foldable,
       Lift,
-      Traversable
+      Traversable,
+      Empty
     )
 
 concatTraverse ::
@@ -92,9 +93,6 @@ join = __join empty
 
 toOrderedMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet a -> OrderedMap FieldName a
 toOrderedMap = OM.unsafeFromValues . unpack
-
-instance Empty (MergeSet a) where
-  empty = MergeSet []
 
 instance (KeyOf a) => Singleton (MergeSet a) a where
   singleton x = MergeSet [x]
