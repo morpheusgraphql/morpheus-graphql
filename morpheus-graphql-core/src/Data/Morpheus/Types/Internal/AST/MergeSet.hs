@@ -104,8 +104,8 @@ instance (KeyOf a, k ~ KEY a, IsString k) => Selectable (MergeSet a) a where
 instance (KeyOf a, KEY a ~ Name, Merge a, Eq a) => Merge (MergeSet a) where
   merge = safeJoin
 
-instance (KeyOf a, KEY a ~ Name, Merge a, Eq a) => Listable (MergeSet a) a where
-  fromAssoc = safeFromList
+instance (KeyOf a, Merge a, Eq a) => Listable (MergeSet a) a where
+  -- fromAssoc = safeFromList
   toAssoc = map toPair . unpack
 
 safeFromList :: (Monad m, KeyOf a, KEY a ~ Name, Eq a, Merge a, Failure GQLErrors m) => [Named a] -> m (MergeSet a)

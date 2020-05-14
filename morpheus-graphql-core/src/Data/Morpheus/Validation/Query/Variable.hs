@@ -29,6 +29,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     TypeDefinition,
+    TypeNameRef (..),
     TypeRef (..),
     VALID,
     VALIDATION_MODE (..),
@@ -132,7 +133,7 @@ lookupAndValidateValueOnBody
     withScopePosition variablePosition $
       toVariable
         <$> ( askSchema
-                >>= selectKnown (Ref (typeConName variableType) variablePosition)
+                >>= selectKnown (TypeNameRef (typeConName variableType) variablePosition)
                 >>= constraint INPUT var
                 >>= checkType getVariable defaultValue
             )
