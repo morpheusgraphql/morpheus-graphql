@@ -147,7 +147,7 @@ renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY 
 renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ elems arguments
 renderArguments NoArguments _ = pure []
 
-instance RenderSchema (FieldDefinition OUT) where
+instance RenderSchema (FieldDefinition cat) where
   render field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}, fieldArgs, fieldMeta} lib =
     do
       kind <- renderTypeKind <$> lookupKind typeConName lib
