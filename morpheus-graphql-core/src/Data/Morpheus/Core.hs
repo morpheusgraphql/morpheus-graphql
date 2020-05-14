@@ -30,6 +30,9 @@ import Control.Monad ((>=>))
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
+import Data.Morpheus.Internal.Utils
+  ( empty,
+  )
 import Data.Morpheus.Parser
   ( parseRequest,
     parseRequestWith,
@@ -54,9 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     VALID,
     Value,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( empty,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Context (..),

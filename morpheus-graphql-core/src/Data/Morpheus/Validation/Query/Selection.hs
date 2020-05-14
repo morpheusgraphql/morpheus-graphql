@@ -17,6 +17,13 @@ import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
   )
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    empty,
+    keyOf,
+    singleton,
+    toList,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldDefinition (..),
@@ -43,13 +50,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    empty,
-    keyOf,
-    singleton,
-    toList,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( SelectionValidator,

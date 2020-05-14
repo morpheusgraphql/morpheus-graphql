@@ -31,8 +31,7 @@ import Data.Morpheus.Internal.TH
     nameStringL,
   )
 import Data.Morpheus.Internal.Utils
-  ( isEnum,
-    nameSpaceType,
+  ( nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
@@ -41,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     Message,
     TypeD (..),
     TypeName (..),
+    isEnum,
     isFieldNullable,
     msg,
     readName,

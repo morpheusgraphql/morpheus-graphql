@@ -16,6 +16,11 @@ import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
     cannotSpreadWithinItself,
   )
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    selectOr,
+    toList,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     Fragment (..),
@@ -28,11 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionSet,
     TypeName,
     TypeNameRef (..),
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    selectOr,
-    toList,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( BaseValidator,

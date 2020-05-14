@@ -20,16 +20,7 @@ import Data.List ((\\), find)
 import Data.Maybe (maybe)
 -- MORPHEUS
 
-import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    GQLErrors,
-    Ref,
-  )
-import Data.Morpheus.Types.Internal.AST.OrderedMap
-  ( OrderedMap (..),
-  )
-import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM
-import Data.Morpheus.Types.Internal.Operation
+import Data.Morpheus.Internal.Utils
   ( Empty (..),
     Failure (..),
     KeyOf (..),
@@ -39,6 +30,15 @@ import Data.Morpheus.Types.Internal.Operation
     Singleton (..),
     toPair,
   )
+import Data.Morpheus.Types.Internal.AST.Base
+  ( FieldName,
+    GQLErrors,
+    Ref,
+  )
+import Data.Morpheus.Types.Internal.AST.OrderedMap
+  ( OrderedMap (..),
+  )
+import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM
 import Data.Semigroup ((<>))
 import Data.String (IsString)
 import Language.Haskell.TH.Syntax (Lift (..))

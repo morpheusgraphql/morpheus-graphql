@@ -143,6 +143,7 @@ module Data.Morpheus.Types.Internal.AST
     intercalateName,
     toFieldName,
     TypeNameRef (..),
+    isEnum,
   )
 where
 

@@ -15,6 +15,10 @@ import Data.Morpheus.Error.Document.Interface
     partialImplements,
     unknownInterface,
   )
+import Data.Morpheus.Internal.Utils
+  ( Listable (..),
+    Selectable (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
@@ -27,10 +31,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     isWeaker,
     lookupWith,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
-    Selectable (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

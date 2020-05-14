@@ -15,6 +15,9 @@ where
 -- MORPHEUS
 import Control.Monad.Reader (asks)
 import Data.Morpheus.Client.Transform.Core (Converter (..), getType, typeFrom)
+import Data.Morpheus.Internal.Utils
+  ( Listable (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -35,9 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationName,
     removeDuplicates,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,

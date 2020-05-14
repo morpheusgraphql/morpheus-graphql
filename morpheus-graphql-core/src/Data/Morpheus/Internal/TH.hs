@@ -36,8 +36,7 @@ where
 import Data.Maybe (maybe)
 -- MORPHEUS
 import Data.Morpheus.Internal.Utils
-  ( isEnum,
-    nameSpaceField,
+  ( nameSpaceField,
     nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -51,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
+    isEnum,
     isOutputObject,
     isSubscription,
     readName,

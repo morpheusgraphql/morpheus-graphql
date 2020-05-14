@@ -14,6 +14,11 @@ module Data.Morpheus.Schema.Schema
 where
 
 -- MORPHEUS
+
+import Data.Morpheus.Internal.Utils
+  ( Merge (..),
+    singleton,
+  )
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -31,10 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     insertType,
     internalFingerprint,
     unsafeFromFields,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Merge (..),
-    singleton,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( failure,

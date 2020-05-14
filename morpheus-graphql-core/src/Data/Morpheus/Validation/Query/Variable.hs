@@ -14,6 +14,10 @@ import qualified Data.HashMap.Lazy as M
 import Data.Maybe (maybe)
 --- MORPHEUS
 import Data.Morpheus.Error.Variable (uninitializedVariable)
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    Listable (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     DefaultValue,
@@ -40,10 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     Variables,
     isNullable,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    Listable (..),
   )
 import Data.Morpheus.Types.Internal.Validation
   ( BaseValidator,

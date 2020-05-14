@@ -46,6 +46,9 @@ import Control.Monad.Trans.Reader
   )
 -- MORPHEUS
 
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     FieldName,
@@ -66,9 +69,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     intercalateName,
     msg,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

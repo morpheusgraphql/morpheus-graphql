@@ -54,6 +54,12 @@ import Data.Maybe (maybe)
 -- MORPHEUS
 import Data.Morpheus.Error.Internal (internalResolvingError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
+import Data.Morpheus.Internal.Utils
+  ( Merge (..),
+    empty,
+    keyOf,
+    selectOr,
+  )
 import Data.Morpheus.Types.IO
   ( GQLResponse,
     renderResponse,
@@ -93,12 +99,6 @@ import Data.Morpheus.Types.Internal.AST.Value
     ScalarValue (..),
     ValidValue,
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Merge (..),
-    empty,
-    keyOf,
-    selectOr,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Channel (..),

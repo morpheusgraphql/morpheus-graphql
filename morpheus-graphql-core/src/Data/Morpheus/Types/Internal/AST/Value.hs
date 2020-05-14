@@ -48,6 +48,10 @@ import qualified Data.HashMap.Strict as M
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
+import Data.Morpheus.Internal.Utils
+  ( KeyOf (..),
+    Listable (..),
+  )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -67,10 +71,6 @@ import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,
     foldWithKey,
     unsafeFromValues,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( KeyOf (..),
-    Listable (..),
   )
 import Data.Scientific
   ( Scientific,

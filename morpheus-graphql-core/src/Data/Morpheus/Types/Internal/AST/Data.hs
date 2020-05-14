@@ -73,6 +73,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     ANY,
     FromAny (..),
     ToAny (..),
+    isEnum,
   )
 where
 
@@ -89,6 +90,14 @@ import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
 import Data.Morpheus.Error.Schema (nameCollisionError)
+import Data.Morpheus.Internal.Utils
+  ( Empty (..),
+    KeyOf (..),
+    Listable (..),
+    Merge (..),
+    Selectable (..),
+    Singleton (..),
+  )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     renderIndent,
@@ -126,14 +135,6 @@ import Data.Morpheus.Types.Internal.AST.Value
     ValidValue,
     Value (..),
     convertToJSONName,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Empty (..),
-    KeyOf (..),
-    Listable (..),
-    Merge (..),
-    Selectable (..),
-    Singleton (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Failure (..),
@@ -706,6 +707,9 @@ data ConsD = ConsD
     cFields :: [FieldDefinition]
   }
   deriving (Show)
+
+isEnum :: [ConsD] -> Bool
+isEnum = all (null . cFields)
 
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes

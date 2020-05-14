@@ -24,10 +24,7 @@ import Data.Hashable (Hashable)
 import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
-  )
-import Data.Morpheus.Types.Internal.Operation
+import Data.Morpheus.Internal.Utils
   ( Empty (..),
     Failure (..),
     KeyOf (..),
@@ -36,6 +33,9 @@ import Data.Morpheus.Types.Internal.Operation
     Selectable (..),
     Singleton (..),
     toPair,
+  )
+import Data.Morpheus.Types.Internal.AST.Base
+  ( GQLErrors,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH.Syntax (Lift (..))

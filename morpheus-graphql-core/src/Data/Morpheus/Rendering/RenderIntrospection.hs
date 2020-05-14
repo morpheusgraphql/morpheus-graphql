@@ -18,6 +18,11 @@ where
 import Data.Maybe (isJust)
 -- Morpheus
 
+import Data.Morpheus.Internal.Utils
+  ( Listable (..),
+    failure,
+    selectBy,
+  )
 import Data.Morpheus.Schema.TypeKind (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -46,11 +51,6 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecatedReason,
     msg,
     toGQLWrapper,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
-    failure,
-    selectBy,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResModel,

@@ -24,6 +24,9 @@ import Data.Morpheus.Error
   ( internalError,
     internalTypeMismatch,
   )
+import Data.Morpheus.Internal.Utils
+  ( Listable (..),
+  )
 import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
@@ -58,9 +61,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

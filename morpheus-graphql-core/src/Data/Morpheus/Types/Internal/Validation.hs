@@ -52,6 +52,15 @@ import Control.Monad.Trans.Reader
   )
 -- MORPHEUS
 
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    KeyOf (..),
+    Selectable,
+    member,
+    selectBy,
+    selectOr,
+    size,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
@@ -76,15 +85,6 @@ import Data.Morpheus.Types.Internal.AST
     isFieldNullable,
     msg,
     toFieldName,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    KeyOf (..),
-    Selectable,
-    member,
-    selectBy,
-    selectOr,
-    size,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

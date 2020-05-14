@@ -28,6 +28,9 @@ import Data.Foldable (traverse_)
 import Data.Morpheus.Error
   ( globalErrorMessage,
   )
+import Data.Morpheus.Internal.Utils
+  ( failure,
+  )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -37,9 +40,6 @@ import Data.Morpheus.Types.Internal.AST
     Message,
     VALID,
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( failure,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( GQLChannel (..),

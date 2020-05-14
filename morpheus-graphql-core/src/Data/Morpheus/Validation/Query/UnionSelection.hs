@@ -15,6 +15,13 @@ where
 import Control.Monad ((>=>))
 -- MORPHEUS
 import Data.Morpheus.Error.Selection (unknownSelectionField)
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    Listable (..),
+    empty,
+    selectOr,
+    singleton,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( DataUnion,
     FieldsDefinition (..),
@@ -31,13 +38,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
   ( join,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    Listable (..),
-    empty,
-    selectOr,
-    singleton,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( SelectionValidator,

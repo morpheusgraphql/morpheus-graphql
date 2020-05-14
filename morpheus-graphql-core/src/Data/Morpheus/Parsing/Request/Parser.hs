@@ -9,6 +9,10 @@ import qualified Data.Aeson as Aeson
 import Data.HashMap.Lazy (toList)
 --
 -- MORPHEUS
+
+import Data.Morpheus.Internal.Utils
+  ( fromList,
+  )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
@@ -28,9 +32,6 @@ import Data.Morpheus.Types.Internal.AST
     GQLQuery (..),
     ResolvedValue,
     replaceValue,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( fromList,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

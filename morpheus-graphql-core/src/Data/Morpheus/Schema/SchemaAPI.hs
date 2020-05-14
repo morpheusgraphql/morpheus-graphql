@@ -12,6 +12,12 @@ where
 
 -- MORPHEUS
 
+import Data.Morpheus.Internal.Utils
+  ( Merge (..),
+    empty,
+    selectOr,
+    toList,
+  )
 import Data.Morpheus.Rendering.RenderIntrospection
   ( createObjectType,
     render,
@@ -28,12 +34,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Merge (..),
-    empty,
-    selectOr,
-    toList,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResModel,

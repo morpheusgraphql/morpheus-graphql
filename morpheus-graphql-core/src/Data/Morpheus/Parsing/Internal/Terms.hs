@@ -39,6 +39,10 @@ import Control.Monad ((>=>))
 import Data.Functor (($>))
 -- MORPHEUS
 
+import Data.Morpheus.Internal.Utils
+  ( KeyOf,
+    Listable (..),
+  )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     Position,
@@ -54,10 +58,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     convertToHaskellName,
     toHSWrappers,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( KeyOf,
-    Listable (..),
   )
 import Data.Text
   ( pack,

@@ -19,6 +19,9 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
   )
+import Data.Morpheus.Internal.Utils
+  ( Listable (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -41,9 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     lookupWith,
     toFieldName,
     toHSFieldDefinition,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH

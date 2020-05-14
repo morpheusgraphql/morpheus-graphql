@@ -13,6 +13,9 @@ where
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Error.Internal (internalError)
+import Data.Morpheus.Internal.Utils
+  ( Listable (..),
+  )
 import Data.Morpheus.Parsing.JSONSchema.Types
   ( EnumValue (..),
     Field (..),
@@ -44,9 +47,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toAny,
     toHSWrappers,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

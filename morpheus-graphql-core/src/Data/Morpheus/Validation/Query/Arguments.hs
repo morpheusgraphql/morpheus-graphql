@@ -8,6 +8,10 @@ module Data.Morpheus.Validation.Query.Arguments
 where
 
 import Data.Foldable (traverse_)
+import Data.Morpheus.Internal.Utils
+  ( Listable (..),
+    empty,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     ArgumentDefinition,
@@ -22,10 +26,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     VALID,
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
-    empty,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),

@@ -12,6 +12,9 @@ import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
+import Data.Morpheus.Internal.Utils
+  ( fromList,
+  )
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -22,9 +25,6 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( fromList,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResModel,

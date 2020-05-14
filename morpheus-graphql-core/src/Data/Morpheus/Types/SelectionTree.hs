@@ -7,12 +7,12 @@
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
+import Data.Morpheus.Internal.Utils (toList)
 import Data.Morpheus.Types.Internal.AST.Base (FieldName, VALID)
 import Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (selectionContent, selectionName),
     SelectionContent (SelectionField, SelectionSet),
   )
-import Data.Morpheus.Types.Internal.Operation (toList)
 
 -- | The 'SelectionTree' instance is a simple interface for interacting
 -- with morpheus's internal AST while keeping the ability to safely change the concrete

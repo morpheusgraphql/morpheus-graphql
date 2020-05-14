@@ -36,6 +36,10 @@ import Data.Map (Map)
 -- MORPHEUS
 
 import Data.Morpheus.Error (globalErrorMessage)
+import Data.Morpheus.Internal.Utils
+  ( Empty (..),
+    Singleton (..),
+  )
 import Data.Morpheus.Kind
   ( Context (..),
     ENUM,
@@ -88,10 +92,6 @@ import Data.Morpheus.Types.Internal.AST
     toNullableField,
     unsafeFromFields,
     updateSchema,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Empty (..),
-    Singleton (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),

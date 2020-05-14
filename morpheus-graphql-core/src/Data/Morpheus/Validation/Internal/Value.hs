@@ -12,6 +12,9 @@ import Data.Maybe (maybe)
 import Data.Morpheus.Error.Input (typeViolation)
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( DataEnumValue (..),
     FieldDefinition (..),
@@ -43,9 +46,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( unsafeFromValues,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputValidator,
