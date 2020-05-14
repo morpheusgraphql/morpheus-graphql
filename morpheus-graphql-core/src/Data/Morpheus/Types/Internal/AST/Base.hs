@@ -39,9 +39,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     isWeaker,
     isSubscription,
     isOutputObject,
-    isDefaultTypeName,
-    isSchemaTypeName,
-    isPrimitiveTypeName,
+    isSystemTypeName,
     isObject,
     isInput,
     isNullableWrapper,
@@ -323,14 +321,8 @@ renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
     showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
-isDefaultTypeName :: TypeName -> Bool
-isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
-
-isSchemaTypeName :: TypeName -> Bool
-isSchemaTypeName = (`elem` sysTypes)
-
-isPrimitiveTypeName :: TypeName -> Bool
-isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
+isSystemTypeName :: TypeName -> Bool
+isSystemTypeName = (`elem` sysTypes)
 
 sysTypes :: [TypeName]
 sysTypes =
@@ -341,7 +333,12 @@ sysTypes =
     "__Field",
     "__DirectiveLocation",
     "__InputValue",
-    "__EnumValue"
+    "__EnumValue",
+    "String",
+    "Float",
+    "Int",
+    "Boolean",
+    "ID"
   ]
 
 sysFields :: [FieldName]

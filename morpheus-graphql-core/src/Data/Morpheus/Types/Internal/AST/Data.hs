@@ -110,8 +110,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeWrapper (..),
     VALID,
     hsTypeName,
-    isDefaultTypeName,
     isNullable,
+    isSystemTypeName,
     msg,
     sysFields,
     toFieldName,
@@ -710,7 +710,7 @@ data ConsD = ConsD
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes
     where
-      visibleTypes = filter (not . isDefaultTypeName . typeName) (toList schema)
+      visibleTypes = filter (not . isSystemTypeName . typeName) (toList schema)
 
 instance RenderGQL (TypeDefinition a) where
   render TypeDefinition {typeName, typeContent} = __render typeContent
