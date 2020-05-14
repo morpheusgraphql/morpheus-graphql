@@ -12,7 +12,6 @@
 module Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap (..),
     unsafeFromValues,
-    update,
   )
 where
 
@@ -44,14 +43,6 @@ data OrderedMap k a = OrderedMap
     mapEntries :: HashMap k a
   }
   deriving (Show, Eq, Functor)
-
-update :: (KeyOf a, KEY a ~ k, Eq k, Hashable k) => a -> OrderedMap k a -> OrderedMap k a
-update x (OrderedMap names values) = OrderedMap newNames $ HM.insert name x values
-  where
-    name = keyOf x
-    newNames
-      | name `elem` names = names
-      | otherwise = names <> [name]
 
 instance (Lift a, Lift k) => Lift (OrderedMap k a) where
   lift (OrderedMap names x) = [|OrderedMap names (HM.fromList ls)|]
