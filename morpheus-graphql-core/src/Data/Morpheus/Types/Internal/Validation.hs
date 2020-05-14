@@ -225,7 +225,7 @@ askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
 
 askTypeMember ::
   TypeName ->
-  SelectionValidator (Name, FieldsDefinition)
+  SelectionValidator (TypeName, FieldsDefinition)
 askTypeMember name =
   askSchema
     >>= selectOr notFound pure name
@@ -240,10 +240,10 @@ askTypeMember name =
           <> msg scopeType
           <> "\" can't found in Schema."
     --------------------------------------
-    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (Name, FieldsDefinition)
+    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (TypeName, FieldsDefinition)
     constraintOBJECT TypeDefinition {typeName, typeContent} = con typeContent
       where
-        con DataObject {objectFields} = pure (toFieldName typeName, objectFields)
+        con DataObject {objectFields} = pure (typeName, objectFields)
         con _ = do
           scopeType <- askScopeTypeName
           failure $

@@ -20,10 +20,10 @@ import Data.Morpheus.Error.Selection
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition (..),
     Fragment (..),
     GQLError (..),
-    Name,
     OUT,
     Operation (..),
     OperationType (..),
@@ -35,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     VALID,
     getOperationDataType,
     isEntNode,
@@ -69,10 +70,10 @@ import Data.Morpheus.Validation.Query.UnionSelection
   )
 import Data.Semigroup ((<>))
 
-type TypeDef = (Name, FieldsDefinition)
+type TypeDef = (TypeName, FieldsDefinition)
 
 getOperationObject ::
-  Operation a -> SelectionValidator (Name, FieldsDefinition)
+  Operation a -> SelectionValidator (TypeName, FieldsDefinition)
 getOperationObject operation = do
   dt <- askSchema >>= getOperationDataType operation
   case dt of
@@ -93,7 +94,7 @@ singleTopLevelSelection Operation {operationType = Subscription, operationName} 
     _ -> pure ()
 singleTopLevelSelection _ _ = pure ()
 
-singleTopLevelSelectionError :: Maybe Name -> Selection VALID -> GQLError
+singleTopLevelSelectionError :: Maybe FieldName -> Selection VALID -> GQLError
 singleTopLevelSelectionError name Selection {selectionPosition} =
   GQLError
     { message =
@@ -184,7 +185,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
               selContent <- withScope name currentSelectionRef $ validateByTypeContent name typeContent
               pure $ singleton $ sel {selectionArguments = validArgs, selectionContent = selContent}
             where
-              validateByTypeContent :: Name -> TypeContent TRUE OUT -> SelectionValidator (SelectionContent VALID)
+              validateByTypeContent :: TypeName -> TypeContent TRUE OUT -> SelectionValidator (SelectionContent VALID)
               -- Validate UnionSelection
               validateByTypeContent _ DataUnion {unionMembers} =
                 validateUnionSelection
