@@ -47,7 +47,6 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeKind (..),
     FieldDefinition (..),
     FieldName,
-    Key,
     TypeD (..),
     TypeName (..),
     TypeRef (..),

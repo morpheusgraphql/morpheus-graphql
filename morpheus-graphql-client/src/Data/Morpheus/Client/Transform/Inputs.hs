@@ -22,7 +22,6 @@ import Data.Morpheus.Types.Internal.AST
     DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
-    FieldName,
     Operation (..),
     RAW,
     TRUE,

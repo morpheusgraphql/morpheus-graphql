@@ -57,8 +57,9 @@ concatTraverse ::
     Merge a,
     Merge b,
     KeyOf b,
-    KEY b ~ Name,
     Monad m,
+    IsString (KEY a),
+    IsString (KEY b),
     Failure GQLErrors m
   ) =>
   (a -> m (MergeSet b)) ->
@@ -71,14 +72,13 @@ join ::
     KeyOf a,
     Merge a,
     Monad m,
-    KEY a ~ Name,
+    IsString (KEY a),
     Failure GQLErrors m
   ) =>
   [MergeSet a] ->
   m (MergeSet a)
 join = __join empty
   where
-    __join :: (Eq a, KeyOf a, KEY a ~ Name, Merge a, Monad m, Failure GQLErrors m) => MergeSet a -> [MergeSet a] -> m (MergeSet a)
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
@@ -99,7 +99,7 @@ instance (KeyOf a, k ~ KEY a, IsString k) => Selectable (MergeSet a) a where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
 
 -- must merge files on collision
-instance (KeyOf a, KEY a ~ Name, Merge a, Eq a) => Merge (MergeSet a) where
+instance (KeyOf a, IsString (KEY a), Merge a, Eq a) => Merge (MergeSet a) where
   merge = safeJoin
 
 instance (KeyOf a, Merge a, IsString (KEY a), Eq a) => Listable (MergeSet a) a where

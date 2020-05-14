@@ -71,7 +71,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeName (..),
     VALID,
     msg,
-    readName,
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,

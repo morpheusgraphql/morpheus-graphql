@@ -60,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST
     Fragments,
     IN,
     Message,
-    Name (..),
     OUT,
     Object,
     Position,

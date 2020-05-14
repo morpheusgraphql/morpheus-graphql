@@ -41,9 +41,6 @@ import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( pack,
-  )
 
 type Eventless = Result ()
 

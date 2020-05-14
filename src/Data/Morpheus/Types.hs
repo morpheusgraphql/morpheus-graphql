@@ -79,8 +79,6 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Message,
-    Name,
-    Name,
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),

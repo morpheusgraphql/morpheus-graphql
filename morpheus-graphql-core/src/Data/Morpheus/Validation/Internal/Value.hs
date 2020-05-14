@@ -18,7 +18,6 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     InputFieldsDefinition (..),
     Message,
-    Name (..),
     ObjectEntry (..),
     RESOLVED,
     Ref (..),

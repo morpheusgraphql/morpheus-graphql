@@ -48,6 +48,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Stage,
     TypeName (..),
     VALID,
+    intercalateName,
     msg,
     readName,
   )
@@ -104,13 +105,13 @@ data SelectionContent (s :: Stage) where
 
 instance Merge (SelectionContent s) where
   merge path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> merge path s1 s2
-  --  merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
+  merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
   merge path oldC currC
     | oldC == currC = pure oldC
     | otherwise =
       failure
         [ GQLError
-            { -- message = T.concat $ map refName path,
+            { message = msg (intercalateName "." $ map refName path),
               locations = map refPosition path
             }
         ]

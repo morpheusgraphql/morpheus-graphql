@@ -52,7 +52,6 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
   )
 import Data.Semigroup ((<>))
-import Data.Text (unpack)
 import Language.Haskell.TH
 
 defineQuery :: IO (Eventless Schema) -> (GQLQuery, String) -> Q [Dec]

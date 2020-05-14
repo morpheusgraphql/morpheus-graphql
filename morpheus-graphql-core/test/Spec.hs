@@ -10,7 +10,6 @@ where
 
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
-import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
