@@ -20,6 +20,7 @@ import Data.Morpheus.Parsing.Internal.Terms
   ( litEquals,
     parseAssignment,
     parseNegativeSign,
+    parseTypeName,
     setOf,
     spaceAndComments,
     token,
@@ -74,7 +75,7 @@ valueNumber = do
 
 enumValue :: Parser (Value a)
 enumValue = do
-  enum <- Enum <$> token
+  enum <- Enum <$> parseTypeName
   spaceAndComments
   return enum
 

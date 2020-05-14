@@ -398,13 +398,13 @@ constraintInputUnion tags hm = do
     _ -> failure ("input union can have only one variant." :: Message)
 
 isPosibeInputUnion :: [(TypeName, Bool)] -> Value stage -> Either Message TypeName
-isPosibeInputUnion tags (Enum (Name name)) = case lookup (TypeName name) tags of
+isPosibeInputUnion tags (Enum name) = case lookup name tags of
   Nothing ->
     failure
       ( msg name
           <> " is not posible union type"
       )
-  _ -> pure (TypeName name)
+  _ -> pure name
 isPosibeInputUnion _ _ =
   failure $
     "\""

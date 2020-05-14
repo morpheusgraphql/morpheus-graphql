@@ -154,7 +154,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validate (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
           case constraintInputUnion inputUnion rawFields of
             Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields)
-            Right (name, Nothing) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum $ toFieldName name)])
+            Right (name, Nothing) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
             Right (name, Just value) -> do
               inputDef <- askInputMember name
               validValue <-
@@ -162,7 +162,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
                   [TypeMaybe]
                   inputDef
                   (ObjectEntry (toFieldName name) value)
-              return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum $ toFieldName name), ObjectEntry (toFieldName name) validValue])
+              return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry (toFieldName name) validValue])
         {-- VALIDATE ENUM --}
         validate (DataEnum tags) ObjectEntry {entryValue} =
           validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
@@ -194,8 +194,8 @@ validateEnum ::
   [DataEnumValue] ->
   ResolvedValue ->
   InputValidator ValidValue
-validateEnum err enumValues value@(Enum (Name enumValue))
-  | TypeName enumValue `elem` tags = pure (Enum (Name enumValue))
+validateEnum err enumValues value@(Enum enumValue)
+  | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise = err value
   where
     tags = map enumName enumValues
