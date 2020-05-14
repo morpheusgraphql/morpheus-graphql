@@ -27,7 +27,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     TypeName,
-    toFieldName,
+    TypeNameRef (..),
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -98,7 +98,7 @@ fragmentsConditionTypeChecking =
 checkTypeExistence :: Fragment -> BaseValidator ()
 checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
   askSchema
-    >>= selectKnown (Ref fragmentType fragmentPosition)
+    >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
     >>= constraint OBJECT fr
     >> pure ()
 

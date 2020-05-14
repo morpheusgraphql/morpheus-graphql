@@ -17,7 +17,6 @@ import Control.Monad ((>=>))
 import Data.Morpheus.Error.Selection (unknownSelectionField)
 import Data.Morpheus.Types.Internal.AST
   ( DataUnion,
-    FieldName,
     FieldsDefinition (..),
     Fragment (..),
     RAW,

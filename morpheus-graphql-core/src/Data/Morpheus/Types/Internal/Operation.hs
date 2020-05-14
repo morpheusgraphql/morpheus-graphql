@@ -29,6 +29,8 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
     Name,
     Ref (..),
+    TypeName,
+    TypeNameRef (..),
   )
 import Instances.TH.Lift ()
 import Text.Megaparsec.Internal (ParsecT (..))
@@ -68,6 +70,10 @@ class Eq (KEY a) => KeyOf a where
 
 instance KeyOf Ref where
   keyOf = refName
+
+instance KeyOf TypeNameRef where
+  type KEY TypeNameRef = TypeName
+  keyOf = typeNameRef
 
 toPair :: KeyOf a => a -> (KEY a, a)
 toPair x = (keyOf x, x)

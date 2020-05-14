@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     RESOLVED,
     Ref (..),
     Schema,
+    TypeNameRef (..),
     TypeRef (..),
     Variable (..),
     VariableDefinitions,
@@ -157,9 +158,9 @@ instance Unknown Fragments ctx where
       ("Unknown Fragment " <> msg name <> ".")
 
 instance Unknown Schema ctx where
-  type UnknownSelector Schema = Ref
-  unknown _ _ _ Ref {refName, refPosition} =
-    errorMessage refPosition ("Unknown type " <> msg refName <> ".")
+  type UnknownSelector Schema = TypeNameRef
+  unknown _ _ _ TypeNameRef {typeNameRef, typeNamePosition} =
+    errorMessage typeNamePosition ("Unknown type " <> msg typeNameRef <> ".")
 
 instance Unknown FieldDefinition ctx where
   type UnknownSelector FieldDefinition = Argument RESOLVED

@@ -62,6 +62,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     Msg (..),
     intercalateName,
     toFieldName,
+    TypeNameRef (..),
   )
 where
 
@@ -208,12 +209,18 @@ type SUBSCRIPTION = 'Subscription
 
 type Named a = (Name, a)
 
+data TypeNameRef = TypeNameRef
+  { typeNameRef :: TypeName,
+    typeNamePosition :: Position
+  }
+  deriving (Show, Lift, Eq)
+
 -- Refference with Position information
 --
 -- includes position for debugging, where Ref "a" 1 === Ref "a" 3
 --
 data Ref = Ref
-  { refName :: Key,
+  { refName :: FieldName,
     refPosition :: Position
   }
   deriving (Show, Lift, Eq)
