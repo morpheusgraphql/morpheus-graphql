@@ -9,6 +9,10 @@ import qualified Data.Aeson as Aeson
 import Data.HashMap.Lazy (toList)
 --
 -- MORPHEUS
+
+import Data.Morpheus.Internal.Utils
+  ( fromElems,
+  )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
@@ -29,9 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     ResolvedValue,
     replaceValue,
   )
-import Data.Morpheus.Types.Internal.Operation
-  ( fromList,
-  )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
@@ -45,7 +46,7 @@ request :: Parser GQLQuery
 request = label "GQLQuery" $ do
   spaceAndComments
   operation <- parseOperation
-  fragments <- manyTill parseFragmentDefinition eof >>= fromList
+  fragments <- manyTill parseFragmentDefinition eof >>= fromElems
   pure GQLQuery {operation, fragments, inputVariables = []}
 
 parseGQL :: GQLRequest -> Eventless GQLQuery

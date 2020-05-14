@@ -15,6 +15,9 @@ where
 -- MORPHEUS
 import Control.Monad.Reader (asks)
 import Data.Morpheus.Client.Transform.Core (Converter (..), getType, typeFrom)
+import Data.Morpheus.Internal.Utils
+  ( elems,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -36,9 +39,6 @@ import Data.Morpheus.Types.Internal.AST
     getOperationName,
     removeDuplicates,
   )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
-  )
 import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
@@ -54,7 +54,7 @@ renderArguments variables argsName
       TypeD
         { tName = argsName,
           tNamespace = [],
-          tCons = [ConsD {cName = argsName, cFields = map fieldD (toList variables)}],
+          tCons = [ConsD {cName = argsName, cFields = map fieldD (elems variables)}],
           tMeta = Nothing,
           tKind = KindInputObject
         }
@@ -76,7 +76,7 @@ renderOperationArguments Operation {operationName} = do
 -- INPUTS
 renderNonOutputTypes :: [TypeName] -> Converter [TypeD]
 renderNonOutputTypes enums = do
-  variables <- toList <$> asks snd
+  variables <- elems <$> asks snd
   inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
   concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> enums)
 
@@ -90,7 +90,7 @@ exploreInputTypeNames name collected
         scanType (DataInputObject fields) =
           resolveUpdates
             (name : collected)
-            (map toInputTypeD $ toList fields)
+            (map toInputTypeD $ elems fields)
           where
             toInputTypeD :: FieldDefinition -> [TypeName] -> Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
@@ -105,7 +105,7 @@ buildInputType name = getType name >>= generateTypes
       where
         subTypes :: TypeContent TRUE ANY -> Converter [TypeD]
         subTypes (DataInputObject inputFields) = do
-          fields <- traverse toFieldD (toList inputFields)
+          fields <- traverse toFieldD (elems inputFields)
           pure
             [ mkInputType
                 typeName

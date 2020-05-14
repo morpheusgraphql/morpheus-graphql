@@ -21,6 +21,11 @@ import Data.Morpheus.Error
 import Data.Morpheus.Internal.TH
   ( makeName,
   )
+import Data.Morpheus.Internal.Utils
+  ( empty,
+    selectBy,
+    selectOr,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
@@ -32,11 +37,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     toFieldName,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( empty,
-    selectBy,
-    selectOr,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

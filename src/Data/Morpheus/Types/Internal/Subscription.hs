@@ -47,7 +47,8 @@ import Control.Monad.IO.Unlift
     withRunInIO,
   )
 -- MORPHEUS
-import Data.Morpheus.Types.Internal.Operation
+
+import Data.Morpheus.Internal.Utils
   ( empty,
   )
 import Data.Morpheus.Types.Internal.Resolving

@@ -16,6 +16,11 @@ import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
     cannotSpreadWithinItself,
   )
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    elems,
+    selectOr,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     Fragment (..),
@@ -28,11 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionSet,
     TypeName,
     TypeNameRef (..),
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    selectOr,
-    toList,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( BaseValidator,
@@ -56,8 +56,8 @@ checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do
   fragments <- askFragments
   checkUnused
-    (usedFragments fragments (toList selectionSet))
-    (toList fragments)
+    (usedFragments fragments (elems selectionSet))
+    (elems fragments)
 
 castFragmentType ::
   Maybe FieldName -> Position -> [TypeName] -> Fragment -> Validator ctx Fragment
@@ -92,7 +92,7 @@ usedFragments fragments = concatMap findAllUses
 
 fragmentsConditionTypeChecking :: BaseValidator ()
 fragmentsConditionTypeChecking =
-  toList <$> askFragments
+  elems <$> askFragments
     >>= traverse_ checkTypeExistence
 
 checkTypeExistence :: Fragment -> BaseValidator ()
@@ -106,7 +106,7 @@ fragmentsCycleChecking :: BaseValidator ()
 fragmentsCycleChecking = exploreSpreads >>= fragmentCycleChecking
 
 exploreSpreads :: BaseValidator Graph
-exploreSpreads = map exploreFragmentSpreads . toList <$> askFragments
+exploreSpreads = map exploreFragmentSpreads . elems <$> askFragments
 
 exploreFragmentSpreads :: Fragment -> NodeEdges
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =

@@ -29,7 +29,9 @@ import Data.Morpheus.Error
     globalErrorMessage,
   )
 import Data.Morpheus.Internal.Utils
-  ( nameSpaceType,
+  ( Failure (..),
+    nameSpaceType,
+    selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -50,10 +52,6 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecatedReason,
     msg,
     typeFromScalar,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    selectBy,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

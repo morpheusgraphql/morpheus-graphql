@@ -35,6 +35,11 @@ import Data.Morpheus.Error.Operation
   ( mutationIsNotDefined,
     subscriptionIsNotDefined,
   )
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    KeyOf (..),
+    Merge (..),
+  )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     GQLError (..),
@@ -67,11 +72,6 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( ResolvedValue,
     Variable (..),
     VariableDefinitions,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    KeyOf (..),
-    Merge (..),
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH.Syntax (Lift (..))

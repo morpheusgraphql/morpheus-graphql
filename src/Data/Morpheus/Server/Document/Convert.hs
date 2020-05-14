@@ -18,6 +18,7 @@ import Data.Morpheus.Internal.TH
   )
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
+    elems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -41,9 +42,6 @@ import Data.Morpheus.Types.Internal.AST
     lookupWith,
     toFieldName,
     toHSFieldDefinition,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
@@ -142,8 +140,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
             genType DataInputUnion {} = fail "Input Unions not Supported"
             genType DataInterface {interfaceFields} = do
-              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList interfaceFields)
-              objCons <- buildObjectCons <$> traverse genResField (toList interfaceFields)
+              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems interfaceFields)
+              objCons <- buildObjectCons <$> traverse genResField (elems interfaceFields)
               pure
                 GQLTypeD
                   { typeD = buildType objCons,
@@ -158,8 +156,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                     ..
                   }
             genType DataObject {objectFields} = do
-              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (toList objectFields)
-              objCons <- buildObjectCons <$> traverse genResField (toList objectFields)
+              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems objectFields)
+              objCons <- buildObjectCons <$> traverse genResField (elems objectFields)
               pure
                 GQLTypeD
                   { typeD = buildType objCons,
@@ -219,4 +217,4 @@ genArguments :: ArgumentsDefinition -> [FieldDefinition]
 genArguments = genInputFields . InputFieldsDefinition . arguments
 
 genInputFields :: InputFieldsDefinition -> [FieldDefinition]
-genInputFields = map toHSFieldDefinition . toList
+genInputFields = map toHSFieldDefinition . elems

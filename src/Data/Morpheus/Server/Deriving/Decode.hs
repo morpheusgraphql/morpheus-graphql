@@ -24,6 +24,9 @@ import Data.Morpheus.Error
   ( internalError,
     internalTypeMismatch,
   )
+import Data.Morpheus.Internal.Utils
+  ( elems,
+  )
 import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
@@ -58,9 +61,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -173,7 +173,7 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
         (x, y {typeName = datatypeNameProxy (Proxy @d)})
 
 getEnumTag :: ValidObject -> Eventless TypeName
-getEnumTag x = case toList x of
+getEnumTag x = case elems x of
   [ObjectEntry "enum" (Enum value)] -> pure value
   _ -> internalError "bad union enum object"
 

@@ -48,6 +48,10 @@ import qualified Data.HashMap.Strict as M
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
+import Data.Morpheus.Internal.Utils
+  ( KeyOf (..),
+    elems,
+  )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -65,12 +69,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,
-    foldWithKey,
     unsafeFromValues,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( KeyOf (..),
-    Listable (..),
   )
 import Data.Scientific
   ( Scientific,
@@ -244,11 +243,11 @@ instance Show (Value a) where
   show (ResolvedVariable Ref {refName} Variable {variableValue}) =
     "($" <> unpack (readName refName) <> ": " <> show variableValue <> ") "
   show (VariableValue Ref {refName}) = "$" <> unpack (readName refName) <> " "
-  show (Object keys) = "{" <> foldWithKey toEntry "" keys <> "}"
+  show (Object keys) = "{" <> foldr toEntry "" keys <> "}"
     where
-      toEntry :: FieldName -> ObjectEntry a -> String -> String
-      toEntry _ value "" = show value
-      toEntry _ value txt = txt <> ", " <> show value
+      toEntry :: ObjectEntry a -> String -> String
+      toEntry value "" = show value
+      toEntry value txt = txt <> ", " <> show value
   show (List list) = "[" <> foldl toEntry "" list <> "]"
     where
       toEntry :: String -> Value a -> String
@@ -267,7 +266,7 @@ instance A.ToJSON (Value a) where
   toJSON (Enum (TypeName x)) = A.String x
   toJSON (Scalar x) = A.toJSON x
   toJSON (List x) = A.toJSON x
-  toJSON (Object fields) = A.object $ map toEntry (toList fields)
+  toJSON (Object fields) = A.object $ map toEntry (elems fields)
     where
       toEntry (ObjectEntry (FieldName name) value) = name A..= A.toJSON value
 
@@ -282,7 +281,7 @@ instance A.ToJSON (Value a) where
   toEncoding (List x) = A.toEncoding x
   toEncoding (Object ordmap)
     | null ordmap = A.toEncoding $ A.object []
-    | otherwise = A.pairs $ foldl1 (<>) $ map encodeField (toList ordmap)
+    | otherwise = A.pairs $ foldl1 (<>) $ map encodeField (elems ordmap)
     where
       encodeField (ObjectEntry key value) = convertToJSONName key A..= value
 

@@ -18,6 +18,11 @@ where
 import Data.Maybe (isJust)
 -- Morpheus
 
+import Data.Morpheus.Internal.Utils
+  ( elems,
+    failure,
+    selectBy,
+  )
 import Data.Morpheus.Schema.TypeKind (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -46,11 +51,6 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecatedReason,
     msg,
     toGQLWrapper,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Listable (..),
-    failure,
-    selectBy,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResModel,
@@ -84,7 +84,7 @@ instance RenderSchema (TypeDefinition a) where
           createLeafType ENUM typeName typeMeta (Just $ map createEnumValue enums)
       __render (DataInputObject fields) = \lib ->
         createInputObject typeName typeMeta
-          <$> traverse (`renderinputValue` lib) (toList fields)
+          <$> traverse (`renderinputValue` lib) (elems fields)
       __render DataObject {objectImplements, objectFields} =
         pure . createObjectType typeName typeMeta objectImplements objectFields
       __render (DataUnion union) = \schema ->
@@ -95,7 +95,7 @@ instance RenderSchema (TypeDefinition a) where
         renderInterface typeName Nothing fields
 
 renderFields :: Monad m => Schema -> FieldsDefinition -> Resolver QUERY e m [ResModel QUERY e m]
-renderFields schema = traverse (`render` schema) . filter fieldVisibility . toList
+renderFields schema = traverse (`render` schema) . filter fieldVisibility . elems
 
 renderInterface ::
   Monad m => TypeName -> Maybe Meta -> FieldsDefinition -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
@@ -115,7 +115,7 @@ interfacePossibleTypes ::
   Schema ->
   TypeName ->
   Resolver QUERY e m [ResModel QUERY e m]
-interfacePossibleTypes schema interfaceName = sequence $ concatMap implements (toList schema)
+interfacePossibleTypes schema interfaceName = sequence $ concatMap implements (elems schema)
   where
     implements typeDef@TypeDefinition {typeContent = DataObject {objectImplements}, ..}
       | interfaceName `elem` objectImplements = [render typeDef schema]
@@ -142,7 +142,7 @@ description :: Monad m => Maybe Meta -> (FieldName, Resolver QUERY e m (ResModel
 description enumMeta = ("description", opt (pure . mkString) (enumMeta >>= metaDescription))
 
 renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
-renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ toList arguments
+renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ elems arguments
 renderArguments NoArguments _ = pure []
 
 instance RenderSchema FieldDefinition where

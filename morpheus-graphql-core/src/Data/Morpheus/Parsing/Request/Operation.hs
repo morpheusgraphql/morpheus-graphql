@@ -9,6 +9,10 @@ where
 import Data.Functor (($>))
 --
 -- MORPHEUS
+
+import Data.Morpheus.Internal.Utils
+  ( empty,
+  )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     getLocation,
@@ -37,9 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Variable (..),
     VariableContent (..),
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( empty,
   )
 import Text.Megaparsec
   ( (<?>),

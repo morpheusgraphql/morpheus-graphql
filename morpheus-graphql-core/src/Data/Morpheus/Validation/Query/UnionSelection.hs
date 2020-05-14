@@ -15,6 +15,14 @@ where
 import Control.Monad ((>=>))
 -- MORPHEUS
 import Data.Morpheus.Error.Selection (unknownSelectionField)
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    elems,
+    empty,
+    fromElems,
+    selectOr,
+    singleton,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( DataUnion,
     FieldsDefinition (..),
@@ -31,13 +39,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
   ( join,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    Listable (..),
-    empty,
-    selectOr,
-    singleton,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( SelectionValidator,
@@ -103,7 +104,7 @@ validateCluster ::
   SelectionSet RAW ->
   [(TypeDef, [Fragment])] ->
   SelectionValidator (SelectionContent VALID)
-validateCluster validator __typename = traverse _validateCluster >=> fmap UnionSelection . fromList
+validateCluster validator __typename = traverse _validateCluster >=> fmap UnionSelection . fromElems
   where
     _validateCluster :: (TypeDef, [Fragment]) -> SelectionValidator UnionTag
     _validateCluster (unionType, fragmets) = do
@@ -121,6 +122,6 @@ validateUnionSelection validate selectionSet members = do
   -- [("User", FieldsDefinition { ... }), ("Product", FieldsDefinition { ...
   unionTypes <- traverse askTypeMember members
   -- find all Fragments used in Selection
-  spreads <- concat <$> traverse (exploreUnionFragments members) (toList selectionSet)
+  spreads <- concat <$> traverse (exploreUnionFragments members) (elems selectionSet)
   let categories = tagUnionFragments unionTypes spreads
   validateCluster validate __typename categories

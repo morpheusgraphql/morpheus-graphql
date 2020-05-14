@@ -17,6 +17,12 @@ where
 import Control.Monad.Reader (asks, runReaderT)
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
 import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    elems,
+    keyOf,
+    selectBy,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -44,12 +50,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toAny,
     toFieldName,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    Listable (..),
-    keyOf,
-    selectBy,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -116,7 +116,7 @@ genConsD ::
   SelectionSet VALID ->
   Converter (ConsD, [TypeD], [TypeName])
 genConsD path cName datatype selSet = do
-  (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
+  (cFields, subTypes, requests) <- unzip3 <$> traverse genField (elems selSet)
   pure (ConsD {cName, cFields}, concat subTypes, concat requests)
   where
     genField ::
@@ -158,7 +158,7 @@ subTypesBySelection path dType Selection {selectionContent = SelectionSet select
 subTypesBySelection path dType Selection {selectionContent = UnionSelection unionSelections} =
   do
     (tCons, subTypes, requests) <-
-      unzip3 <$> traverse getUnionType (toList unionSelections)
+      unzip3 <$> traverse getUnionType (elems unionSelections)
     pure
       ( TypeD
           { tNamespace = path,

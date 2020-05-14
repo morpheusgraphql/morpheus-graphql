@@ -32,13 +32,13 @@ import Control.Applicative (liftA2)
 import Control.Monad (foldM)
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Data.Function ((&))
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+  )
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
     Message,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
   )
 import Data.Semigroup ((<>))
 

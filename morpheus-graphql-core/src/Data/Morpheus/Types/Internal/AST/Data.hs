@@ -73,6 +73,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     ANY,
     FromAny (..),
     ToAny (..),
+    isEnum,
   )
 where
 
@@ -89,6 +90,15 @@ import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
 import Data.Morpheus.Error.Schema (nameCollisionError)
+import Data.Morpheus.Internal.Utils
+  ( Empty (..),
+    KeyOf (..),
+    Listable (..),
+    Merge (..),
+    Selectable (..),
+    Singleton (..),
+    elems,
+  )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     renderIndent,
@@ -126,14 +136,6 @@ import Data.Morpheus.Types.Internal.AST.Value
     ValidValue,
     Value (..),
     convertToJSONName,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Empty (..),
-    KeyOf (..),
-    Listable (..),
-    Merge (..),
-    Selectable (..),
-    Singleton (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Failure (..),
@@ -239,8 +241,8 @@ instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 instance Listable Schema (TypeDefinition ANY) where
-  toAssoc = HM.toList . typeRegister
-  fromAssoc types = case popByKey "Query" (map snd types) of
+  elems = HM.elems . typeRegister
+  fromElems types = case popByKey "Query" types of
     (Nothing, _) -> failure (globalErrorMessage "INTERNAL: Query Not Defined")
     (Just query, lib1) -> do
       let (mutation, lib2) = popByKey "Mutation" lib1
@@ -507,8 +509,8 @@ instance Singleton FieldsDefinition FieldDefinition where
   singleton = FieldsDefinition . singleton
 
 instance Listable FieldsDefinition FieldDefinition where
-  fromAssoc ls = FieldsDefinition <$> fromAssoc ls
-  toAssoc = toAssoc . unFieldsDefinition
+  fromElems = fmap FieldsDefinition . fromElems
+  elems = elems . unFieldsDefinition
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -535,7 +537,7 @@ instance NameCollision FieldDefinition where
       }
 
 instance RenderGQL FieldsDefinition where
-  render = renderObject render . ignoreHidden . toList
+  render = renderObject render . ignoreHidden . elems
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
@@ -597,8 +599,8 @@ instance Singleton InputFieldsDefinition FieldDefinition where
   singleton = InputFieldsDefinition . singleton
 
 instance Listable InputFieldsDefinition FieldDefinition where
-  fromAssoc ls = InputFieldsDefinition <$> fromAssoc ls
-  toAssoc = toAssoc . unInputFieldsDefinition
+  fromElems = fmap InputFieldsDefinition . fromElems
+  elems = elems . unInputFieldsDefinition
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 -----------------------------------------------------------------------------------------------
@@ -623,10 +625,10 @@ instance Singleton ArgumentsDefinition ArgumentDefinition where
   singleton = ArgumentsDefinition Nothing . singleton
 
 instance Listable ArgumentsDefinition ArgumentDefinition where
-  toAssoc NoArguments = []
-  toAssoc (ArgumentsDefinition _ args) = toAssoc args
-  fromAssoc [] = pure NoArguments
-  fromAssoc args = ArgumentsDefinition Nothing <$> fromAssoc args
+  elems NoArguments = []
+  elems (ArgumentsDefinition _ args) = elems args
+  fromElems [] = pure NoArguments
+  fromElems args = ArgumentsDefinition Nothing <$> fromElems args
 
 createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition
 createArgument = createField NoArguments
@@ -707,10 +709,13 @@ data ConsD = ConsD
   }
   deriving (Show)
 
+isEnum :: [ConsD] -> Bool
+isEnum = all (null . cFields)
+
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes
     where
-      visibleTypes = filter (not . isSystemTypeName . typeName) (toList schema)
+      visibleTypes = filter (not . isSystemTypeName . typeName) (elems schema)
 
 instance RenderGQL (TypeDefinition a) where
   render TypeDefinition {typeName, typeContent} = __render typeContent
@@ -737,7 +742,7 @@ ignoreHidden = filter fieldVisibility
 -- OBJECT
 
 instance RenderGQL InputFieldsDefinition where
-  render = renderObject render . ignoreHidden . toList
+  render = renderObject render . ignoreHidden . elems
 
 instance RenderGQL FieldDefinition where
   render FieldDefinition {fieldName, fieldType, fieldArgs} =
@@ -745,7 +750,7 @@ instance RenderGQL FieldDefinition where
 
 instance RenderGQL ArgumentsDefinition where
   render NoArguments = ""
-  render arguments = "(" <> intercalate ", " (map render $ toList arguments) <> ")"
+  render arguments = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue {enumName} = render enumName

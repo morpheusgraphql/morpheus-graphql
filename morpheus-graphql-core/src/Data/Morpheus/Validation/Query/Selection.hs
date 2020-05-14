@@ -17,6 +17,13 @@ import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
   )
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    elems,
+    empty,
+    keyOf,
+    singleton,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldDefinition (..),
@@ -43,13 +50,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    empty,
-    keyOf,
-    singleton,
-    toList,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( SelectionValidator,
@@ -85,7 +85,7 @@ getOperationObject operation = do
           <> "\" must be an Object"
 
 selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
-selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . toList
+selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . elems
 
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
 singleTopLevelSelection Operation {operationType = Subscription, operationName} selSet =

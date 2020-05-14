@@ -12,9 +12,6 @@
 module Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap (..),
     unsafeFromValues,
-    traverseWithKey,
-    foldWithKey,
-    update,
   )
 where
 
@@ -24,10 +21,7 @@ import Data.Hashable (Hashable)
 import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
-  )
-import Data.Morpheus.Types.Internal.Operation
+import Data.Morpheus.Internal.Utils
   ( Empty (..),
     Failure (..),
     KeyOf (..),
@@ -36,6 +30,9 @@ import Data.Morpheus.Types.Internal.Operation
     Selectable (..),
     Singleton (..),
     toPair,
+  )
+import Data.Morpheus.Types.Internal.AST.Base
+  ( GQLErrors,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH.Syntax (Lift (..))
@@ -46,20 +43,6 @@ data OrderedMap k a = OrderedMap
     mapEntries :: HashMap k a
   }
   deriving (Show, Eq, Functor)
-
-traverseWithKey :: Applicative t => (k -> a -> t b) -> OrderedMap k a -> t (OrderedMap k b)
-traverseWithKey f (OrderedMap names hmap) = OrderedMap names <$> HM.traverseWithKey f hmap
-
-foldWithKey :: (NameCollision a, Eq (KEY a), Hashable (KEY a)) => (KEY a -> a -> b -> b) -> b -> OrderedMap (KEY a) a -> b
-foldWithKey f defValue om = foldr (uncurry f) defValue (toAssoc om)
-
-update :: (KeyOf a, KEY a ~ k, Eq k, Hashable k) => a -> OrderedMap k a -> OrderedMap k a
-update x (OrderedMap names values) = OrderedMap newNames $ HM.insert name x values
-  where
-    name = keyOf x
-    newNames
-      | name `elem` names = names
-      | otherwise = names <> [name]
 
 instance (Lift a, Lift k) => Lift (OrderedMap k a) where
   lift (OrderedMap names x) = [|OrderedMap names (HM.fromList ls)|]
@@ -85,21 +68,22 @@ instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (OrderedMap k a
   merge _ (OrderedMap k1 x) (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
 
 instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable (OrderedMap k a) a where
-  fromAssoc = safeFromList
-  toAssoc OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
+  fromElems = safeFromList
+  elems OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
     where
-      takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries))
+      takeValue key = fromMaybe (error "TODO: invalid Ordered Map") (key `HM.lookup` mapEntries)
 
 safeFromList ::
   ( Failure GQLErrors m,
     Applicative m,
     NameCollision a,
     Eq (KEY a),
-    Hashable (KEY a)
+    Hashable (KEY a),
+    KeyOf a
   ) =>
-  [(KEY a, a)] ->
+  [a] ->
   m (OrderedMap (KEY a) a)
-safeFromList values = OrderedMap (map fst values) <$> safeUnionWith HM.empty values
+safeFromList values = OrderedMap (map keyOf values) <$> safeUnionWith HM.empty (map toPair values)
 
 unsafeFromValues ::
   ( KeyOf a,

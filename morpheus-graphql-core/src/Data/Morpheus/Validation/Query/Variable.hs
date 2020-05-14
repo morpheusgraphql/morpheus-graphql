@@ -14,6 +14,10 @@ import qualified Data.HashMap.Lazy as M
 import Data.Maybe (maybe)
 --- MORPHEUS
 import Data.Morpheus.Error.Variable (uninitializedVariable)
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    elems,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     DefaultValue,
@@ -40,10 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     Variables,
     isNullable,
-  )
-import Data.Morpheus.Types.Internal.Operation
-  ( Failure (..),
-    Listable (..),
   )
 import Data.Morpheus.Types.Internal.Validation
   ( BaseValidator,
@@ -114,7 +114,7 @@ resolveOperationVariables
       checkUnusedVariables :: BaseValidator ()
       checkUnusedVariables = do
         uses <- allVariableRefs [operationSelection]
-        checkUnused uses (toList operationArguments)
+        checkUnused uses (elems operationArguments)
 
 lookupAndValidateValueOnBody ::
   Variables ->

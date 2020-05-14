@@ -36,7 +36,7 @@ import qualified Data.HashMap.Lazy as HM
 import Data.List (intersect)
 -- MORPHEUS
 
-import Data.Morpheus.Types.Internal.Operation
+import Data.Morpheus.Internal.Utils
   ( Empty (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
