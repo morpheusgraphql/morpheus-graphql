@@ -493,7 +493,11 @@ popByKey name types = case lookupWith typeName name types of
 --
 newtype FieldsDefinition = FieldsDefinition
   {unFieldsDefinition :: OrderedMap FieldName FieldDefinition}
-  deriving (Show, Lift)
+  deriving
+    ( Show,
+      Lift,
+      Collection FieldDefinition
+    )
 
 unsafeFromFields :: [FieldDefinition] -> FieldsDefinition
 unsafeFromFields = FieldsDefinition . unsafeFromValues
@@ -503,10 +507,6 @@ instance Merge FieldsDefinition where
 
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
-
-instance Collection FieldDefinition FieldsDefinition where
-  empty = FieldsDefinition empty
-  singleton = FieldsDefinition . singleton
 
 instance Listable FieldsDefinition FieldDefinition where
   fromElems = fmap FieldsDefinition . fromElems
@@ -584,7 +584,7 @@ toListField dataField = dataField {fieldType = listW (fieldType dataField)}
 
 newtype InputFieldsDefinition = InputFieldsDefinition
   {unInputFieldsDefinition :: OrderedMap FieldName FieldDefinition}
-  deriving (Show, Lift)
+  deriving (Show, Lift, Collection FieldDefinition)
 
 unsafeFromInputFields :: [FieldDefinition] -> InputFieldsDefinition
 unsafeFromInputFields = InputFieldsDefinition . unsafeFromValues
@@ -594,9 +594,6 @@ instance Merge InputFieldsDefinition where
 
 instance Selectable InputFieldsDefinition FieldDefinition where
   selectOr fb f name (InputFieldsDefinition lib) = selectOr fb f name lib
-
-instance Collection FieldDefinition InputFieldsDefinition where
-  singleton = InputFieldsDefinition . singleton
 
 instance Listable InputFieldsDefinition FieldDefinition where
   fromElems = fmap InputFieldsDefinition . fromElems
@@ -622,6 +619,7 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
 instance Collection ArgumentDefinition ArgumentsDefinition where
+  empty = ArgumentsDefinition Nothing empty
   singleton = ArgumentsDefinition Nothing . singleton
 
 instance Listable ArgumentsDefinition ArgumentDefinition where
