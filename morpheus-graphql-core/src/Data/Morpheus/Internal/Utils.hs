@@ -23,7 +23,6 @@ module Data.Morpheus.Internal.Utils
     selectBy,
     member,
     keys,
-    fromElems,
     elems,
     size,
   )
@@ -122,12 +121,10 @@ instance KeyOf TypeNameRef where
 toPair :: KeyOf a => a -> (KEY a, a)
 toPair x = (keyOf x, x)
 
+-- list Like Collections
 class Listable c a | c -> a where
-  fromAssoc :: (Monad m, Failure GQLErrors m) => [(KEY a, a)] -> m c
   toAssoc :: c -> [(KEY a, a)]
-
-fromElems :: (Listable c a, KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m c
-fromElems = fromAssoc . map toPair
+  fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m c
 
 keys :: Listable c a => c -> [KEY a]
 keys = map fst . toAssoc
@@ -138,11 +135,13 @@ elems = map snd . toAssoc
 size :: Listable c a => c -> Int
 size = length . elems
 
+-- Merge Object with of Failure as an Option
 class Merge a where
   (<:>) :: (Monad m, Failure GQLErrors m) => a -> a -> m a
   (<:>) = merge []
   merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
 
+-- Failure: for custome Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where
   failure :: error -> f v
 

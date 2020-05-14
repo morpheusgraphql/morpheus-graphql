@@ -85,7 +85,7 @@ instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (OrderedMap k a
   merge _ (OrderedMap k1 x) (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
 
 instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable (OrderedMap k a) a where
-  fromAssoc = safeFromList
+  fromElems = safeFromList
   toAssoc OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
     where
       takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries))
@@ -95,11 +95,12 @@ safeFromList ::
     Applicative m,
     NameCollision a,
     Eq (KEY a),
-    Hashable (KEY a)
+    Hashable (KEY a),
+    KeyOf a
   ) =>
-  [(KEY a, a)] ->
+  [a] ->
   m (OrderedMap (KEY a) a)
-safeFromList values = OrderedMap (map fst values) <$> safeUnionWith HM.empty values
+safeFromList values = OrderedMap (map keyOf values) <$> safeUnionWith HM.empty (map toPair values)
 
 unsafeFromValues ::
   ( KeyOf a,

@@ -104,11 +104,11 @@ instance (KeyOf a, IsString (KEY a), Merge a, Eq a) => Merge (MergeSet a) where
   merge = safeJoin
 
 instance (KeyOf a, Merge a, IsString (KEY a), Eq a) => Listable (MergeSet a) a where
-  fromAssoc = safeFromList
+  fromElems = safeFromList
   toAssoc = map toPair . unpack
 
-safeFromList :: (Monad m, KeyOf a, IsString (KEY a), Eq a, Merge a, Failure GQLErrors m) => [(k, a)] -> m (MergeSet a)
-safeFromList = insertList [] empty . map snd
+safeFromList :: (Monad m, KeyOf a, IsString (KEY a), Eq a, Merge a, Failure GQLErrors m) => [a] -> m (MergeSet a)
+safeFromList = insertList [] empty
 
 safeJoin :: (Monad m, KeyOf a, Eq a, IsString (KEY a), Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> MergeSet a -> m (MergeSet a)
 safeJoin path hm1 hm2 = insertList path hm1 (elems hm2)

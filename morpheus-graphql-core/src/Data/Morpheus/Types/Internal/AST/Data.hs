@@ -242,7 +242,7 @@ instance Selectable Schema (TypeDefinition ANY) where
 
 instance Listable Schema (TypeDefinition ANY) where
   toAssoc = HM.toList . typeRegister
-  fromAssoc types = case popByKey "Query" (map snd types) of
+  fromElems types = case popByKey "Query" types of
     (Nothing, _) -> failure (globalErrorMessage "INTERNAL: Query Not Defined")
     (Just query, lib1) -> do
       let (mutation, lib2) = popByKey "Mutation" lib1
@@ -509,7 +509,7 @@ instance Singleton FieldsDefinition FieldDefinition where
   singleton = FieldsDefinition . singleton
 
 instance Listable FieldsDefinition FieldDefinition where
-  fromAssoc ls = FieldsDefinition <$> fromAssoc ls
+  fromElems = fmap FieldsDefinition . fromElems
   toAssoc = toAssoc . unFieldsDefinition
 
 --  FieldDefinition
@@ -599,7 +599,7 @@ instance Singleton InputFieldsDefinition FieldDefinition where
   singleton = InputFieldsDefinition . singleton
 
 instance Listable InputFieldsDefinition FieldDefinition where
-  fromAssoc ls = InputFieldsDefinition <$> fromAssoc ls
+  fromElems = fmap InputFieldsDefinition . fromElems
   toAssoc = toAssoc . unInputFieldsDefinition
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
@@ -627,8 +627,8 @@ instance Singleton ArgumentsDefinition ArgumentDefinition where
 instance Listable ArgumentsDefinition ArgumentDefinition where
   toAssoc NoArguments = []
   toAssoc (ArgumentsDefinition _ args) = toAssoc args
-  fromAssoc [] = pure NoArguments
-  fromAssoc args = ArgumentsDefinition Nothing <$> fromAssoc args
+  fromElems [] = pure NoArguments
+  fromElems args = ArgumentsDefinition Nothing <$> fromElems args
 
 createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition
 createArgument = createField NoArguments
