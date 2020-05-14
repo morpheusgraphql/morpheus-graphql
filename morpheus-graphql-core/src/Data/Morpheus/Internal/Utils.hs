@@ -23,7 +23,6 @@ module Data.Morpheus.Internal.Utils
     selectBy,
     member,
     keys,
-    elems,
     size,
   )
 where
@@ -123,14 +122,11 @@ toPair x = (keyOf x, x)
 
 -- list Like Collections
 class Listable c a | c -> a where
-  toAssoc :: c -> [(KEY a, a)]
+  elems :: Listable c a => c -> [a]
   fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m c
 
-keys :: Listable c a => c -> [KEY a]
-keys = map fst . toAssoc
-
-elems :: Listable c a => c -> [a]
-elems = map snd . toAssoc
+keys :: (KeyOf a, Listable c a) => c -> [KEY a]
+keys = map keyOf . elems
 
 size :: Listable c a => c -> Int
 size = length . elems

@@ -13,7 +13,6 @@ module Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap (..),
     unsafeFromValues,
     traverseWithKey,
-    foldWithKey,
     update,
   )
 where
@@ -50,9 +49,6 @@ data OrderedMap k a = OrderedMap
 traverseWithKey :: Applicative t => (k -> a -> t b) -> OrderedMap k a -> t (OrderedMap k b)
 traverseWithKey f (OrderedMap names hmap) = OrderedMap names <$> HM.traverseWithKey f hmap
 
-foldWithKey :: (NameCollision a, Eq (KEY a), Hashable (KEY a)) => (KEY a -> a -> b -> b) -> b -> OrderedMap (KEY a) a -> b
-foldWithKey f defValue om = foldr (uncurry f) defValue (toAssoc om)
-
 update :: (KeyOf a, KEY a ~ k, Eq k, Hashable k) => a -> OrderedMap k a -> OrderedMap k a
 update x (OrderedMap names values) = OrderedMap newNames $ HM.insert name x values
   where
@@ -86,9 +82,9 @@ instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (OrderedMap k a
 
 instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable (OrderedMap k a) a where
   fromElems = safeFromList
-  toAssoc OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
+  elems OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
     where
-      takeValue key = (key, fromMaybe (error "TODO:error") (key `HM.lookup` mapEntries))
+      takeValue key = fromMaybe (error "TODO: invalid Ordered Map") (key `HM.lookup` mapEntries)
 
 safeFromList ::
   ( Failure GQLErrors m,

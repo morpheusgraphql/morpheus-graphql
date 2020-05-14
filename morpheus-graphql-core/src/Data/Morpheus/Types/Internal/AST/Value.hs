@@ -69,7 +69,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,
-    foldWithKey,
     unsafeFromValues,
   )
 import Data.Scientific
@@ -244,11 +243,11 @@ instance Show (Value a) where
   show (ResolvedVariable Ref {refName} Variable {variableValue}) =
     "($" <> unpack (readName refName) <> ": " <> show variableValue <> ") "
   show (VariableValue Ref {refName}) = "$" <> unpack (readName refName) <> " "
-  show (Object keys) = "{" <> foldWithKey toEntry "" keys <> "}"
+  show (Object keys) = "{" <> foldr toEntry "" keys <> "}"
     where
-      toEntry :: FieldName -> ObjectEntry a -> String -> String
-      toEntry _ value "" = show value
-      toEntry _ value txt = txt <> ", " <> show value
+      toEntry :: ObjectEntry a -> String -> String
+      toEntry value "" = show value
+      toEntry value txt = txt <> ", " <> show value
   show (List list) = "[" <> foldl toEntry "" list <> "]"
     where
       toEntry :: String -> Value a -> String
