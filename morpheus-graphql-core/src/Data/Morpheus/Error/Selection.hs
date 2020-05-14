@@ -31,7 +31,7 @@ hasNoSubfields (Ref selectionName position) typeName = errorMessage position tex
         <> msg typeName
         <> " has no subfields."
 
-unknownSelectionField :: Name -> Ref -> GQLErrors
+unknownSelectionField :: TypeName -> Ref -> GQLErrors
 unknownSelectionField typeName Ref {refName, refPosition} = errorMessage refPosition text
   where
     text =

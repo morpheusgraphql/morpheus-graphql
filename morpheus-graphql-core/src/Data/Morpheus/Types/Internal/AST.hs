@@ -141,11 +141,12 @@ module Data.Morpheus.Types.Internal.AST
     ToAny (..),
     TRUE,
     FALSE,
-    TypeName,
+    TypeName (..),
     FieldName,
     Token,
     Msg (..),
     intercalateName,
+    toFieldName,
   )
 where
 

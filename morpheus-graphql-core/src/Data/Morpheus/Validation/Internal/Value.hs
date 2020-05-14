@@ -18,7 +18,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     InputFieldsDefinition (..),
     Message,
-    Name,
+    Name (..),
     ObjectEntry (..),
     RESOLVED,
     Ref (..),
@@ -27,6 +27,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName (..),
     TypeRef (..),
     TypeRef (..),
     TypeWrapper (..),
@@ -39,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     isNullableWrapper,
     isWeaker,
     msg,
+    toFieldName,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( unsafeFromValues,
@@ -70,7 +72,7 @@ castFailure expected message value = do
     $ prefix <> typeViolation expected value <> maybe "" (" " <>) message
 
 checkTypeEquality ::
-  (Name, [TypeWrapper]) ->
+  (TypeName, [TypeWrapper]) ->
   Ref ->
   Variable VALID ->
   InputValidator ValidValue
@@ -152,15 +154,15 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validate (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
           case constraintInputUnion inputUnion rawFields of
             Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields)
-            Right (name, Nothing) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
+            Right (name, Nothing) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum $ toFieldName name)])
             Right (name, Just value) -> do
               inputDef <- askInputMember name
               validValue <-
                 validateInput
                   [TypeMaybe]
                   inputDef
-                  (ObjectEntry name value)
-              return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
+                  (ObjectEntry (toFieldName name) value)
+              return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum $ toFieldName name), ObjectEntry (toFieldName name) validValue])
         {-- VALIDATE ENUM --}
         validate (DataEnum tags) ObjectEntry {entryValue} =
           validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue

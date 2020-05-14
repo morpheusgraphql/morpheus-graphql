@@ -366,7 +366,7 @@ data TypeContent (b :: Bool) (a :: TypeCategory) where
     } ->
     TypeContent (IsSelected a IN) a
   DataObject ::
-    { objectImplements :: [Name],
+    { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition
     } ->
     TypeContent (IsSelected a OUT) a
@@ -607,7 +607,7 @@ instance Listable InputFieldsDefinition FieldDefinition where
 
 data ArgumentsDefinition
   = ArgumentsDefinition
-      { argumentsTypename :: Maybe Name,
+      { argumentsTypename :: Maybe TypeName,
         arguments :: OrderedMap FieldName ArgumentDefinition
       }
   | NoArguments
@@ -693,8 +693,8 @@ data GQLTypeD = GQLTypeD
 
 --- Core
 data TypeD = TypeD
-  { tName :: Name,
-    tNamespace :: [Name],
+  { tName :: TypeName,
+    tNamespace :: [FieldName],
     tCons :: [ConsD],
     tKind :: DataTypeKind,
     tMeta :: Maybe Meta
@@ -702,7 +702,7 @@ data TypeD = TypeD
   deriving (Show)
 
 data ConsD = ConsD
-  { cName :: Name,
+  { cName :: TypeName,
     cFields :: [FieldDefinition]
   }
   deriving (Show)

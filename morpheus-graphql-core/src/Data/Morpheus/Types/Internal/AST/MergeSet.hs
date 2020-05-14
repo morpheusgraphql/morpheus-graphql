@@ -6,6 +6,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.AST.MergeSet
   ( MergeSet,
@@ -24,6 +25,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Name,
     Named,
     Ref,
+    TypeName,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap (..),
@@ -40,6 +42,7 @@ import Data.Morpheus.Types.Internal.Operation
     toPair,
   )
 import Data.Semigroup ((<>))
+import Data.String (IsString)
 import Language.Haskell.TH.Syntax (Lift (..))
 
 -- set with mergeable components
@@ -93,7 +96,7 @@ instance Empty (MergeSet a) where
 instance (KeyOf a) => Singleton (MergeSet a) a where
   singleton x = MergeSet [x]
 
-instance (KeyOf a, KEY a ~ Name) => Selectable (MergeSet a) a where
+instance (KeyOf a, k ~ KEY a, IsString k) => Selectable (MergeSet a) a where
   selectOr fb _ "" _ = fb
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
 

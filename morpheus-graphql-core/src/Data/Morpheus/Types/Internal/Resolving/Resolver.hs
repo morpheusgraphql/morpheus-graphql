@@ -68,10 +68,11 @@ import Data.Morpheus.Types.Internal.AST.Base
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
-    TypeName,
+    TypeName (..),
     VALID,
     msg,
     readName,
+    toFieldName,
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
@@ -135,7 +136,7 @@ data Context = Context
   { currentSelection :: Selection VALID,
     schema :: Schema,
     operation :: Operation VALID,
-    currentTypeName :: Name
+    currentTypeName :: TypeName
   }
   deriving (Show)
 
@@ -291,7 +292,7 @@ setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m
 setSelection currentSelection =
   mapResolverContext (\ctx -> ctx {currentSelection})
 
-setTypeName :: Monad m => Name -> Resolver o e m a -> Resolver o e m a
+setTypeName :: Monad m => TypeName -> Resolver o e m a -> Resolver o e m a
 setTypeName currentTypeName =
   mapResolverContext (\ctx -> ctx {currentTypeName})
 
@@ -385,7 +386,7 @@ lookupRes ::
   Resolver o e m ValidValue
 lookupRes Selection {selectionName}
   | selectionName == "__typename" =
-    pure . Scalar . String . readName . __typename
+    pure . Scalar . String . readTypeName . __typename
   | otherwise =
     maybe
       (pure gqlNull)
@@ -473,7 +474,7 @@ type FieldResModel o e m =
   (Name, Resolver o e m (ResModel o e m))
 
 data ObjectResModel o e m = ObjectResModel
-  { __typename :: Name,
+  { __typename :: TypeName,
     objectFields ::
       [FieldResModel o e m]
   }
@@ -486,10 +487,10 @@ instance Merge (ObjectResModel o e m) where
 data ResModel (o :: OperationType) e (m :: * -> *)
   = ResNull
   | ResScalar ScalarValue
-  | ResEnum Name Name
+  | ResEnum TypeName Name
   | ResList [ResModel o e m]
   | ResObject (ObjectResModel o e m)
-  | ResUnion Name (Resolver o e m (ResModel o e m))
+  | ResUnion TypeName (Resolver o e m (ResModel o e m))
   deriving (Show)
 
 instance Merge (ResModel o e m) where

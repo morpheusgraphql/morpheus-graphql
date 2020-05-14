@@ -1,7 +1,7 @@
 module Data.Morpheus.Internal.Utils
   ( capital,
     nonCapital,
-    nameSpaceWith,
+    nameSpaceField,
     nameSpaceType,
     isEnum,
   )
@@ -13,7 +13,10 @@ import Data.Char
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
+    FieldName,
     Name (..),
+    Token,
+    TypeName (..),
   )
 import Data.Semigroup ((<>))
 import qualified Data.Text as T
@@ -22,23 +25,23 @@ import qualified Data.Text as T
     unpack,
   )
 
-mapName :: (String -> String) -> Name -> Name
-mapName f = Name . T.pack . f . T.unpack . readName
+mapText :: (String -> String) -> Token -> Token
+mapText f = T.pack . f . T.unpack
 
-nameSpaceType :: [Name] -> Name -> Name
-nameSpaceType list name = Name . T.concat $ map (readName . capital) (list <> [name])
+nameSpaceType :: [Name] -> TypeName -> TypeName
+nameSpaceType list (TypeName name) = TypeName . T.concat $ map capital (map readName list <> [name])
 
-nameSpaceWith :: Name -> Name -> Name
-nameSpaceWith nSpace name = nonCapital nSpace <> capital name
+nameSpaceField :: TypeName -> FieldName -> FieldName
+nameSpaceField nSpace (Name name) = Name (nonCapital nSpace <> capital name)
 
-nonCapital :: Name -> Name
-nonCapital = mapName __nonCapital
+nonCapital :: TypeName -> Token
+nonCapital = mapText __nonCapital . readTypeName
   where
     __nonCapital [] = []
     __nonCapital (x : xs) = toLower x : xs
 
-capital :: Name -> Name
-capital = mapName __capital
+capital :: Token -> Token
+capital = mapText __capital
   where
     __capital [] = []
     __capital (x : xs) = toUpper x : xs

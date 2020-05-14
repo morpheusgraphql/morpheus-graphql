@@ -28,15 +28,15 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeWrapper (..),
     DataUnion,
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition,
     Message,
     Meta (..),
-    Name,
     QUERY,
     Schema,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
+    TypeName (..),
     TypeRef (..),
     convertToJSONName,
     createInputUnionFields,
@@ -113,7 +113,7 @@ renderInterface name meta fields schema =
 interfacePossibleTypes ::
   (Monad m) =>
   Schema ->
-  Name ->
+  TypeName ->
   Resolver QUERY e m [ResModel QUERY e m]
 interfacePossibleTypes schema interfaceName = sequence $ concatMap implements (toList schema)
   where
@@ -124,7 +124,7 @@ interfacePossibleTypes schema interfaceName = sequence $ concatMap implements (t
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
 createEnumValue DataEnumValue {enumName, enumMeta} =
   mkObject "__Field" $
-    [ renderName enumName,
+    [ renderFieldName enumName,
       description enumMeta
     ]
       <> renderDeprecated enumMeta
@@ -132,13 +132,13 @@ createEnumValue DataEnumValue {enumName, enumMeta} =
 renderDeprecated ::
   (Monad m) =>
   Maybe Meta ->
-  [(Name, Resolver QUERY e m (ResModel QUERY e m))]
+  [(FieldName, Resolver QUERY e m (ResModel QUERY e m))]
 renderDeprecated meta =
   [ ("isDeprecated", pure $ mkBoolean (isJust $ meta >>= lookupDeprecated)),
     ("deprecationReason", opt (pure . mkString) (meta >>= lookupDeprecated >>= lookupDeprecatedReason))
   ]
 
-description :: Monad m => Maybe Meta -> (Name, Resolver QUERY e m (ResModel QUERY e m))
+description :: Monad m => Maybe Meta -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 description enumMeta = ("description", opt (pure . mkString) (enumMeta >>= metaDescription))
 
 renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
@@ -151,7 +151,7 @@ instance RenderSchema FieldDefinition where
       kind <- renderTypeKind <$> lookupKind typeConName lib
       pure
         $ mkObject "__Field"
-        $ [ renderName fieldName,
+        $ [ renderFieldName fieldName,
             description fieldMeta,
             ("args", mkList <$> renderArguments fieldArgs lib),
             ("type'", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
@@ -224,13 +224,13 @@ typeFromUnion schema (name, typeMeta, typeContent) =
       ("possibleTypes", mkList <$> traverse (unionPossibleType schema) typeContent)
     ]
 
-unionPossibleType :: Monad m => Schema -> Name -> Resolver QUERY e m (ResModel QUERY e m)
+unionPossibleType :: Monad m => Schema -> TypeName -> Resolver QUERY e m (ResModel QUERY e m)
 unionPossibleType schema name =
   selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> msg name <> "\"") name schema
     >>= (`render` schema)
 
 createObjectType ::
-  Monad m => TypeName -> Maybe Meta -> [Name] -> FieldsDefinition -> Schema -> ResModel QUERY e m
+  Monad m => TypeName -> Maybe Meta -> [TypeName] -> FieldsDefinition -> Schema -> ResModel QUERY e m
 createObjectType name meta interfaces fields schema =
   mkObject
     "__Type"
@@ -244,7 +244,7 @@ createObjectType name meta interfaces fields schema =
 implementedInterface ::
   (Monad m) =>
   Schema ->
-  Name ->
+  TypeName ->
   Resolver QUERY e m (ResModel QUERY e m)
 implementedInterface schema name =
   selectBy ("INTERNAL: cant found  Interface " <> msg name) name schema
@@ -288,10 +288,13 @@ opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> R
 opt f (Just x) = f x
 opt _ Nothing = pure mkNull
 
-renderName :: Monad m => Name -> (Name, Resolver QUERY e m (ResModel QUERY e m))
-renderName = ("name",) . pure . mkString . convertToJSONName
+renderName :: Monad m => TypeName -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+renderName = ("name",) . pure . mkString . readTypeName
 
-renderKind :: Monad m => TypeKind -> (Name, Resolver QUERY e m (ResModel QUERY e m))
+renderFieldName :: Monad m => FieldName -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+renderFieldName = ("name",) . pure . mkString . convertToJSONName
+
+renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 renderKind = ("kind",) . pure . mkString . pack . show
 
 withTypeWrapper :: Monad m => FieldDefinition -> ResModel QUERY e m -> ResModel QUERY e m
@@ -310,11 +313,11 @@ wrapAs wrapper contentType =
     kind NonNullType = NON_NULL
 
 createInputValueWith ::
-  Monad m => Name -> Maybe Meta -> ResModel QUERY e m -> ResModel QUERY e m
+  Monad m => FieldName -> Maybe Meta -> ResModel QUERY e m -> ResModel QUERY e m
 createInputValueWith name meta ivType =
   mkObject
     "__InputValue"
-    [ renderName name,
+    [ renderFieldName name,
       description meta,
       ("type'", pure ivType)
     ]

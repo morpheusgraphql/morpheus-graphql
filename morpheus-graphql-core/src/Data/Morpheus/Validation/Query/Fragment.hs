@@ -26,6 +26,7 @@ import Data.Morpheus.Types.Internal.AST
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    TypeName,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -58,12 +59,12 @@ checkUnusedFragments selectionSet = do
     (toList fragments)
 
 castFragmentType ::
-  Maybe Name -> Position -> [Name] -> Fragment -> Validator ctx Fragment
+  Maybe Name -> Position -> [TypeName] -> Fragment -> Validator ctx Fragment
 castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [Name] -> Ref -> Validator ctx Fragment
+resolveSpread :: [TypeName] -> Ref -> Validator ctx Fragment
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref

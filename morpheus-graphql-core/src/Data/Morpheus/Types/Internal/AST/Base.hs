@@ -57,7 +57,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     internalFingerprint,
     TRUE,
     FALSE,
-    TypeName,
+    TypeName (..),
     FieldName,
     Msg (..),
     intercalateName,

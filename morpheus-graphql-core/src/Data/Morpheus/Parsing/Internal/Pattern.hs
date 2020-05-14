@@ -3,7 +3,7 @@
 module Data.Morpheus.Parsing.Internal.Pattern
   ( inputValueDefinition,
     fieldsDefinition,
-    typDeclaration,
+    typeDeclaration,
     optionalDirectives,
     enumValueDefinition,
     inputFieldsDefinition,
@@ -25,6 +25,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     optDescription,
     parseName,
     parseType,
+    parseTypeName,
     setOf,
     uniqTuple,
   )
@@ -40,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     InputFieldsDefinition (..),
     Meta (..),
     Name,
+    TypeName,
   )
 import Text.Megaparsec
   ( (<|>),
@@ -154,7 +156,7 @@ directive = label "Directive" $ do
 --  typDeclaration
 --   Description(opt) scalar Name
 --
-typDeclaration :: Name -> Parser Name
-typDeclaration kind = do
+typeDeclaration :: Name -> Parser TypeName
+typeDeclaration kind = do
   keyword kind
-  parseName
+  parseTypeName

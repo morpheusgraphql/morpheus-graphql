@@ -16,14 +16,14 @@ import Data.Morpheus.Parsing.Internal.Pattern
     fieldsDefinition,
     inputFieldsDefinition,
     optionalDirectives,
-    typDeclaration,
+    typeDeclaration,
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( collection,
     keyword,
     operator,
     optDescription,
-    parseName,
+    parseTypeName,
     pipeLiteral,
     sepByAnd,
     spaceAndComments,
@@ -34,11 +34,11 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     IN,
     Meta (..),
-    Name,
     OUT,
     ScalarDefinition (..),
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -60,7 +60,7 @@ import Text.Megaparsec
 --
 scalarTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
 scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
-  typeName <- typDeclaration "scalar"
+  typeName <- typeDeclaration "scalar"
   metaDirectives <- optionalDirectives
   pure
     TypeDefinition
@@ -87,7 +87,7 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --
 objectTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
 objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
-  typeName <- typDeclaration "type"
+  typeName <- typeDeclaration "type"
   objectImplements <- optionalImplementsInterfaces
   metaDirectives <- optionalDirectives
   objectFields <- fieldsDefinition
@@ -100,11 +100,11 @@ objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
         typeContent = DataObject {objectImplements, objectFields}
       }
 
-optionalImplementsInterfaces :: Parser [Name]
+optionalImplementsInterfaces :: Parser [TypeName]
 optionalImplementsInterfaces = implements <|> pure []
   where
     implements =
-      label "ImplementsInterfaces" $ keyword "implements" *> sepByAnd parseName
+      label "ImplementsInterfaces" $ keyword "implements" *> sepByAnd parseTypeName
 
 -- Interfaces: https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces
 --
@@ -113,7 +113,7 @@ optionalImplementsInterfaces = implements <|> pure []
 --
 interfaceTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
 interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
-  typeName <- typDeclaration "interface"
+  typeName <- typeDeclaration "interface"
   metaDirectives <- optionalDirectives
   fields <- fieldsDefinition
   -- build interface
@@ -136,7 +136,7 @@ interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
 --
 unionTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
 unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
-  typeName <- typDeclaration "union"
+  typeName <- typeDeclaration "union"
   metaDirectives <- optionalDirectives
   memberTypes <- unionMemberTypes
   -- build union
@@ -148,7 +148,7 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
         typeContent = DataUnion memberTypes
       }
   where
-    unionMemberTypes = operator '=' *> parseName `sepBy1` pipeLiteral
+    unionMemberTypes = operator '=' *> parseTypeName `sepBy1` pipeLiteral
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
 --
@@ -163,7 +163,7 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
 --
 enumTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
 enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
-  typeName <- typDeclaration "enum"
+  typeName <- typeDeclaration "enum"
   metaDirectives <- optionalDirectives
   enumValuesDefinitions <- collection enumValueDefinition
   -- build enum
@@ -186,7 +186,7 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
 inputObjectTypeDefinition :: Maybe Description -> Parser (TypeDefinition IN)
 inputObjectTypeDefinition metaDescription =
   label "InputObjectTypeDefinition" $ do
-    typeName <- typDeclaration "input"
+    typeName <- typeDeclaration "input"
     metaDirectives <- optionalDirectives
     fields <- inputFieldsDefinition
     -- build input

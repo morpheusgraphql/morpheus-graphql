@@ -13,25 +13,25 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     GQLError (..),
     GQLErrors,
-    Name,
     TypeName,
+    TypeRef,
     msg,
   )
 import Data.Semigroup ((<>))
 
-unknownInterface :: Name -> GQLErrors
+unknownInterface :: TypeName -> GQLErrors
 unknownInterface name = globalErrorMessage message
   where
     message = "Unknown Interface " <> msg name <> "."
 
 data ImplementsError
   = UnexpectedType
-      { expectedType :: TypeName,
-        foundType :: TypeName
+      { expectedType :: TypeRef,
+        foundType :: TypeRef
       }
   | UndefinedField
 
-partialImplements :: TypeName -> [(Name, FieldName, ImplementsError)] -> GQLErrors
+partialImplements :: TypeName -> [(TypeName, FieldName, ImplementsError)] -> GQLErrors
 partialImplements name = map impError
   where
     impError (interfaceName, key, errorType) =

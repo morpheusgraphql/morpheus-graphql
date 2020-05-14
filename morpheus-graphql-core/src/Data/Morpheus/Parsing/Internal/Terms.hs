@@ -31,6 +31,7 @@ module Data.Morpheus.Parsing.Internal.Terms
     optDescription,
     optionalList,
     parseNegativeSign,
+    parseTypeName,
   )
 where
 
@@ -50,7 +51,7 @@ import Data.Morpheus.Types.Internal.AST
     Name (..),
     Ref (..),
     Token,
-    TypeName,
+    TypeName (..),
     TypeRef (..),
     convertToHaskellName,
     toHSWrappers,
@@ -99,6 +100,9 @@ parseNegativeSign = (char '-' $> True <* spaceAndComments) <|> pure False
 
 parseName :: Parser Name
 parseName = token
+
+parseTypeName :: Parser TypeName
+parseTypeName = TypeName . readName <$> token
 
 keyword :: Name -> Parser ()
 keyword (Name word) = string word *> space1 *> spaceAndComments
@@ -247,7 +251,7 @@ parseTypeCondition :: Parser TypeName
 parseTypeCondition = do
   _ <- string "on"
   space1
-  token
+  TypeName . readName <$> token
 
 spreadLiteral :: Parser Position
 spreadLiteral = do
@@ -260,7 +264,7 @@ parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
   where
     unwrapped :: Parser ([DataTypeWrapper], TypeName)
-    unwrapped = ([],) <$> token <* spaceAndComments
+    unwrapped = ([],) . TypeName . readName <$> token <* spaceAndComments
     ----------------------------------------------
     wrapped :: Parser ([DataTypeWrapper], TypeName)
     wrapped =

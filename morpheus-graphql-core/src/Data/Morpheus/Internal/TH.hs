@@ -37,8 +37,8 @@ import Data.Maybe (maybe)
 -- MORPHEUS
 import Data.Morpheus.Internal.Utils
   ( isEnum,
+    nameSpaceField,
     nameSpaceType,
-    nameSpaceWith,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -49,7 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     Key,
     TypeD (..),
-    TypeName,
+    TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
     isOutputObject,
@@ -60,7 +60,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( UnSubResolver,
   )
 import Data.Semigroup ((<>))
-import Data.Text (Text, unpack)
+import Data.Text (unpack)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
@@ -119,11 +119,11 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
         (map declareField cFields)
       where
         declareField FieldDefinition {fieldName, fieldArgs, fieldType} =
-          (fName, defBang, fiType)
+          (mkFieldName fName, defBang, fiType)
           where
             fName
-              | namespace = makeName (nameSpaceWith tName fieldName)
-              | otherwise = makeName fieldName
+              | namespace = nameSpaceField tName fieldName
+              | otherwise = fieldName
             fiType = genFieldT fieldArgs
               where
                 ---------------------------
@@ -140,8 +140,11 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
                 ------------------------------------------------
                 result = declareTypeRef (maybe False isSubscription kindD) fieldType
 
-makeName :: Key -> Name
-makeName = mkName . unpack . readName
+makeName :: TypeName -> Name
+makeName = mkName . unpack . readTypeName
+
+mkFieldName :: FieldName -> Name
+mkFieldName = mkName . unpack . readName
 
 apply :: Name -> [Q Exp] -> Q Exp
 apply n = foldl appE (conE n)
@@ -158,7 +161,7 @@ instanceHeadT cName iType tArgs = applyT cName [applyT (makeName iType) (map (va
 instanceProxyFunD :: (Name, ExpQ) -> DecQ
 instanceProxyFunD (name, body) = instanceFunD name ["_"] body
 
-instanceFunD :: Name -> [FieldName] -> ExpQ -> Q Dec
+instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
 instanceFunD name args body = funD name [clause (map (varP . makeName) args) (normalB body) []]
 
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
@@ -166,7 +169,7 @@ instanceHeadMultiT className iType li = applyT className (iType : li)
 
 -- "User" -> ["name","id"] -> (User name id)
 destructRecord :: TypeName -> [FieldName] -> PatQ
-destructRecord conName fields = conP (makeName conName) (map (varP . makeName) fields)
+destructRecord conName fields = conP (makeName conName) (map (varP . mkFieldName) fields)
 
 typeInstanceDec :: Name -> Type -> Type -> Dec
 
@@ -174,10 +177,10 @@ nameLitP :: TypeName -> PatQ
 nameLitP = litP . nameStringL
 
 nameStringL :: TypeName -> Lit
-nameStringL = stringL . unpack . readName
+nameStringL = stringL . unpack . readTypeName
 
 nameStringE :: TypeName -> ExpQ
-nameStringE = stringE . (unpack . readName)
+nameStringE = stringE . (unpack . readTypeName)
 
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes
