@@ -23,9 +23,7 @@ import Data.Maybe (maybe)
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
     Name,
-    Named,
     Ref,
-    TypeName,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap (..),
@@ -104,21 +102,21 @@ instance (KeyOf a, k ~ KEY a, IsString k) => Selectable (MergeSet a) a where
 instance (KeyOf a, KEY a ~ Name, Merge a, Eq a) => Merge (MergeSet a) where
   merge = safeJoin
 
-instance (KeyOf a, Merge a, Eq a) => Listable (MergeSet a) a where
-  -- fromAssoc = safeFromList
+instance (KeyOf a, Merge a, IsString (KEY a), Eq a) => Listable (MergeSet a) a where
+  fromAssoc = safeFromList
   toAssoc = map toPair . unpack
 
-safeFromList :: (Monad m, KeyOf a, KEY a ~ Name, Eq a, Merge a, Failure GQLErrors m) => [Named a] -> m (MergeSet a)
+safeFromList :: (Monad m, KeyOf a, IsString (KEY a), Eq a, Merge a, Failure GQLErrors m) => [(k, a)] -> m (MergeSet a)
 safeFromList = insertList [] empty . map snd
 
-safeJoin :: (Monad m, KeyOf a, Eq a, KEY a ~ Name, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> MergeSet a -> m (MergeSet a)
+safeJoin :: (Monad m, KeyOf a, Eq a, IsString (KEY a), Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> MergeSet a -> m (MergeSet a)
 safeJoin path hm1 hm2 = insertList path hm1 (toList hm2)
 
-insertList :: (Monad m, Eq a, KeyOf a, KEY a ~ Name, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> [a] -> m (MergeSet a)
+insertList :: (Monad m, Eq a, KeyOf a, IsString (KEY a), Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> [a] -> m (MergeSet a)
 insertList _ smap [] = pure smap
 insertList path smap (x : xs) = insert path smap x >>= flip (insertList path) xs
 
-insert :: (Monad m, Eq a, KeyOf a, KEY a ~ Name, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> a -> m (MergeSet a)
+insert :: (Monad m, Eq a, IsString (KEY a), KeyOf a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> a -> m (MergeSet a)
 insert path mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
   where
     __insert =
