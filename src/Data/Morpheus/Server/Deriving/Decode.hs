@@ -31,6 +31,11 @@ import Data.Morpheus.Kind
     OUTPUT,
     SCALAR,
   )
+import Data.Morpheus.Server.Deriving.Utils
+  ( conNameProxy,
+    datatypeNameProxy,
+    selNameProxy,
+  )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
     withList,
@@ -46,8 +51,6 @@ import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
-    FieldName,
-    Name (..),
     ObjectEntry (..),
     TypeName (..),
     VALID,
@@ -65,7 +68,6 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
-import Data.Text (pack)
 import GHC.Generics
 
 -- GENERIC

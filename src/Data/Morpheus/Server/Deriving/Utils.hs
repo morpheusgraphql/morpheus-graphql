@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -13,17 +14,9 @@ module Data.Morpheus.Server.Deriving.Utils
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( Argument (..),
-    Arguments,
-    FieldName,
+  ( FieldName,
     Name (..),
-    ObjectEntry (..),
     TypeName (..),
-    VALID,
-    ValidObject,
-    ValidValue,
-    Value (..),
-    msg,
   )
 import Data.Proxy (Proxy (..))
 import Data.Text

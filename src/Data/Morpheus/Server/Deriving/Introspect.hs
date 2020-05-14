@@ -47,6 +47,9 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.Server.Deriving.Utils
   ( EnumRep (..),
+    conNameProxy,
+    datatypeNameProxy,
+    selNameProxy,
   )
 import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
@@ -65,7 +68,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition (..),
     IN,
     InputFieldsDefinition (..),
-    Key,
     Message,
     Meta (..),
     Name (..),
@@ -270,7 +272,7 @@ introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <
 
 -- Object Fields
 class DeriveTypeContent (custom :: Bool) a where
-  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([Name], [TypeUpdater]), TypeScope cat, Name, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
+  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([TypeName], [TypeUpdater]), TypeScope cat, TypeName, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
 instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
   deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
@@ -409,7 +411,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
           buildUnions wrapObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
 
-buildObject :: ([Name], [TypeUpdater]) -> TypeScope cat -> [FieldRep] -> (TypeContent TRUE cat, [TypeUpdater])
+buildObject :: ([TypeName], [TypeUpdater]) -> TypeScope cat -> [FieldRep] -> (TypeContent TRUE cat, [TypeUpdater])
 buildObject (interfaces, interfaceTypes) scope consFields = (wrapWith scope, types <> interfaceTypes)
   where
     (fields, types) = buildDataObject consFields
@@ -427,7 +429,7 @@ buildUnions ::
   (FieldsDefinition -> TypeContent TRUE cat) ->
   DataFingerprint ->
   [ConsRep] ->
-  ([Name], [TypeUpdater])
+  ([TypeName], [TypeUpdater])
 buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
   where
     buildURecType consRep =
@@ -448,10 +450,10 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
 
 buildUnionEnum ::
   (FieldsDefinition -> TypeContent TRUE cat) ->
-  Name ->
+  TypeName ->
   DataFingerprint ->
-  [Name] ->
-  ([Name], [TypeUpdater])
+  [TypeName] ->
+  ([TypeName], [TypeUpdater])
 buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
   where
     members
@@ -531,7 +533,7 @@ instance (TypeRep a, TypeRep b) => TypeRep (a :+: b) where
 instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
   typeRep _ =
     [ ConsRep
-        { consName = TypeName $ pack $ conName (undefined :: (M1 C c f a)),
+        { consName = conNameProxy (Proxy @c),
           consFields = conRep (Proxy @f),
           consIsRecord = conIsRecord (undefined :: (M1 C c f a))
         }
@@ -554,7 +556,7 @@ instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
         }
     ]
     where
-      name = Name $ pack $ selName (undefined :: M1 S s (Rec0 ()) ())
+      name = selNameProxy (Proxy @s)
       fieldData = field (Proxy @a) name
 
 instance ConRep U1 where
