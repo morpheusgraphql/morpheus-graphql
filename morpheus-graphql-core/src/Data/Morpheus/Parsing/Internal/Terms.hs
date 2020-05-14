@@ -99,10 +99,10 @@ parseNegativeSign :: Parser Bool
 parseNegativeSign = (char '-' $> True <* spaceAndComments) <|> pure False
 
 parseName :: Parser Name
-parseName = token
+parseName = convertToHaskellName . Name <$> token
 
 parseTypeName :: Parser TypeName
-parseTypeName = TypeName . readName <$> token
+parseTypeName = TypeName <$> token
 
 keyword :: Name -> Parser ()
 keyword (Name word) = string word *> space1 *> spaceAndComments
@@ -128,17 +128,17 @@ litAssignment = char ':' *> spaceAndComments
 
 -- PRIMITIVE
 ------------------------------------
-token :: Parser Name
+token :: Parser Token
 token = label "token" $ do
   firstChar <- letterChar <|> char '_'
   restToken <- many $ letterChar <|> char '_' <|> digitChar
   spaceAndComments
-  return $ convertToHaskellName $ Name $ pack $ firstChar : restToken
+  return $ pack $ firstChar : restToken
 
 qualifier :: Parser (Name, Position)
 qualifier = label "qualifier" $ do
   position <- getLocation
-  value <- token
+  value <- parseName
   return (value, position)
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
@@ -149,7 +149,7 @@ variable :: Parser Ref
 variable = label "variable" $ do
   refPosition <- getLocation
   _ <- char '$'
-  refName <- token
+  refName <- parseName
   spaceAndComments
   pure $ Ref {refName, refPosition}
 

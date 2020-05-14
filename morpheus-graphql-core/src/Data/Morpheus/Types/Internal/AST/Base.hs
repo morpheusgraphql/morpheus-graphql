@@ -75,7 +75,7 @@ import Data.Aeson
 import Data.ByteString.Lazy.Char8 (ByteString, unpack)
 import Data.Hashable (Hashable)
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
-import Data.Semigroup ((<>))
+import Data.Semigroup (Semigroup (..))
 import Data.String (IsString)
 import Data.Text (Text, intercalate, pack)
 import qualified Data.Text as T

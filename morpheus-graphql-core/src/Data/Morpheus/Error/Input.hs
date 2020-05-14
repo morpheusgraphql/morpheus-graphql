@@ -5,10 +5,6 @@ module Data.Morpheus.Error.Input
   )
 where
 
-import Data.Aeson (encode)
-import Data.ByteString.Lazy.Char8 (unpack)
--- MORPHEUS
-
 import Data.Morpheus.Types.Internal.AST
   ( Message,
     ResolvedValue,
