@@ -241,7 +241,7 @@ instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 instance Listable Schema (TypeDefinition ANY) where
-  elems = HM.toList . typeRegister
+  elems = HM.elems . typeRegister
   fromElems types = case popByKey "Query" types of
     (Nothing, _) -> failure (globalErrorMessage "INTERNAL: Query Not Defined")
     (Just query, lib1) -> do

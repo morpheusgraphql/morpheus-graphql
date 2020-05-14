@@ -29,7 +29,6 @@ import Data.Morpheus.Internal.Utils
     Selectable (..),
     Singleton (..),
     elems,
-    toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
@@ -105,7 +104,7 @@ instance (KeyOf a, IsString (KEY a), Merge a, Eq a) => Merge (MergeSet a) where
 
 instance (KeyOf a, Merge a, IsString (KEY a), Eq a) => Listable (MergeSet a) a where
   fromElems = safeFromList
-  elems = map toPair . unpack
+  elems = unpack
 
 safeFromList :: (Monad m, KeyOf a, IsString (KEY a), Eq a, Merge a, Failure GQLErrors m) => [a] -> m (MergeSet a)
 safeFromList = insertList [] empty
