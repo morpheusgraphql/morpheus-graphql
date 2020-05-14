@@ -14,7 +14,7 @@ import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Error.Internal (internalError)
 import Data.Morpheus.Internal.Utils
-  ( Listable (..),
+  ( fromElems,
   )
 import Data.Morpheus.Parsing.JSONSchema.Types
   ( EnumValue (..),
@@ -57,7 +57,7 @@ decodeIntrospection :: ByteString -> Eventless AST.Schema
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ msg errors
   Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
-    traverse parse types >>= fromList . concat
+    traverse parse types >>= fromElems . concat
   Right res -> internalError (msg $ show res)
   where
     jsonSchema :: Either String (JSONResponse Introspection)
@@ -78,19 +78,19 @@ instance ParseJSONSchema Type [TypeDefinition ANY] where
   parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
     do
       (fields :: [FieldDefinition]) <- traverse parse iFields
-      fs <- fromList fields
+      fs <- fromElems fields
       pure [createType typeName $ DataInputObject fs]
   parse Type {name = Just typeName, kind = OBJECT, fields = Just oFields} =
     do
       (fields :: [FieldDefinition]) <- traverse parse oFields
-      fs <- fromList fields
+      fs <- fromElems fields
       pure [createType typeName $ DataObject [] fs]
   parse _ = pure []
 
 instance ParseJSONSchema Field FieldDefinition where
   parse Field {fieldName, fieldArgs, fieldType} = do
     fType <- fieldTypeFromJSON fieldType
-    args <- traverse genArg fieldArgs >>= fromList
+    args <- traverse genArg fieldArgs >>= fromElems
     pure $ createField (ArgumentsDefinition Nothing args) fieldName fType
     where
       genArg InputValue {inputName = argName, inputType = argType} =

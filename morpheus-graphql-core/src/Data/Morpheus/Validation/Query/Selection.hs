@@ -19,10 +19,10 @@ import Data.Morpheus.Error.Selection
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    elems,
     empty,
     keyOf,
     singleton,
-    toList,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
@@ -85,7 +85,7 @@ getOperationObject operation = do
           <> "\" must be an Object"
 
 selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
-selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . toList
+selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . elems
 
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
 singleTopLevelSelection Operation {operationType = Subscription, operationName} selSet =

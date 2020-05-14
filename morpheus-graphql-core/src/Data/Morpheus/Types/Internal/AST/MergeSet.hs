@@ -28,6 +28,7 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
     Singleton (..),
+    elems,
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -65,7 +66,7 @@ concatTraverse ::
   (a -> m (MergeSet b)) ->
   MergeSet a ->
   m (MergeSet b)
-concatTraverse f smap = traverse f (toList smap) >>= join
+concatTraverse f smap = traverse f (elems smap) >>= join
 
 join ::
   ( Eq a,
@@ -110,7 +111,7 @@ safeFromList :: (Monad m, KeyOf a, IsString (KEY a), Eq a, Merge a, Failure GQLE
 safeFromList = insertList [] empty . map snd
 
 safeJoin :: (Monad m, KeyOf a, Eq a, IsString (KEY a), Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> MergeSet a -> m (MergeSet a)
-safeJoin path hm1 hm2 = insertList path hm1 (toList hm2)
+safeJoin path hm1 hm2 = insertList path hm1 (elems hm2)
 
 insertList :: (Monad m, Eq a, KeyOf a, IsString (KEY a), Merge a, Failure GQLErrors m) => [Ref] -> MergeSet a -> [a] -> m (MergeSet a)
 insertList _ smap [] = pure smap

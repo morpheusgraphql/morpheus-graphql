@@ -97,6 +97,7 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
     Singleton (..),
+    elems,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -536,7 +537,7 @@ instance NameCollision FieldDefinition where
       }
 
 instance RenderGQL FieldsDefinition where
-  render = renderObject render . ignoreHidden . toList
+  render = renderObject render . ignoreHidden . elems
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
@@ -714,7 +715,7 @@ isEnum = all (null . cFields)
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes
     where
-      visibleTypes = filter (not . isSystemTypeName . typeName) (toList schema)
+      visibleTypes = filter (not . isSystemTypeName . typeName) (elems schema)
 
 instance RenderGQL (TypeDefinition a) where
   render TypeDefinition {typeName, typeContent} = __render typeContent
@@ -741,7 +742,7 @@ ignoreHidden = filter fieldVisibility
 -- OBJECT
 
 instance RenderGQL InputFieldsDefinition where
-  render = renderObject render . ignoreHidden . toList
+  render = renderObject render . ignoreHidden . elems
 
 instance RenderGQL FieldDefinition where
   render FieldDefinition {fieldName, fieldType, fieldArgs} =
@@ -749,7 +750,7 @@ instance RenderGQL FieldDefinition where
 
 instance RenderGQL ArgumentsDefinition where
   render NoArguments = ""
-  render arguments = "(" <> intercalate ", " (map render $ toList arguments) <> ")"
+  render arguments = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
 
 instance RenderGQL DataEnumValue where
   render DataEnumValue {enumName} = render enumName

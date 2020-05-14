@@ -50,7 +50,7 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
-    Listable (..),
+    elems,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
@@ -267,7 +267,7 @@ instance A.ToJSON (Value a) where
   toJSON (Enum (TypeName x)) = A.String x
   toJSON (Scalar x) = A.toJSON x
   toJSON (List x) = A.toJSON x
-  toJSON (Object fields) = A.object $ map toEntry (toList fields)
+  toJSON (Object fields) = A.object $ map toEntry (elems fields)
     where
       toEntry (ObjectEntry (FieldName name) value) = name A..= A.toJSON value
 
@@ -282,7 +282,7 @@ instance A.ToJSON (Value a) where
   toEncoding (List x) = A.toEncoding x
   toEncoding (Object ordmap)
     | null ordmap = A.toEncoding $ A.object []
-    | otherwise = A.pairs $ foldl1 (<>) $ map encodeField (toList ordmap)
+    | otherwise = A.pairs $ foldl1 (<>) $ map encodeField (elems ordmap)
     where
       encodeField (ObjectEntry key value) = convertToJSONName key A..= value
 

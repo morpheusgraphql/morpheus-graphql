@@ -1,13 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 -- |
 -- Module      : Data.Morpheus.Types.SelectionTree
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
-import Data.Morpheus.Internal.Utils (toList)
+import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Types.Internal.AST.Base (FieldName, VALID)
 import Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (selectionContent, selectionName),
@@ -34,5 +33,5 @@ instance SelectionTree (Selection VALID) where
     _ -> False
   getChildrenList node = case selectionContent node of
     SelectionField -> mempty
-    (SelectionSet deeperSel) -> toList deeperSel
+    (SelectionSet deeperSel) -> elems deeperSel
   getName = selectionName

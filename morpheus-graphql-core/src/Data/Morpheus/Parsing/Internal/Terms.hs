@@ -42,6 +42,7 @@ import Data.Functor (($>))
 import Data.Morpheus.Internal.Utils
   ( KeyOf,
     Listable (..),
+    fromElems,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -208,7 +209,7 @@ collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
 
 setOf :: (Listable c a, KeyOf a) => Parser a -> Parser c
-setOf = collection >=> fromList
+setOf = collection >=> fromElems
 
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
@@ -229,10 +230,10 @@ parseTuple parser =
       )
 
 uniqTuple :: (Listable c a, KeyOf a) => Parser a -> Parser c
-uniqTuple = parseTuple >=> fromList
+uniqTuple = parseTuple >=> fromElems
 
 uniqTupleOpt :: (Listable c a, KeyOf a) => Parser a -> Parser c
-uniqTupleOpt = optionalList . parseTuple >=> fromList
+uniqTupleOpt = optionalList . parseTuple >=> fromElems
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser = label "assignment" $ do

@@ -11,7 +11,7 @@ import Data.HashMap.Lazy (toList)
 -- MORPHEUS
 
 import Data.Morpheus.Internal.Utils
-  ( fromList,
+  ( fromElems,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -46,7 +46,7 @@ request :: Parser GQLQuery
 request = label "GQLQuery" $ do
   spaceAndComments
   operation <- parseOperation
-  fragments <- manyTill parseFragmentDefinition eof >>= fromList
+  fragments <- manyTill parseFragmentDefinition eof >>= fromElems
   pure GQLQuery {operation, fragments, inputVariables = []}
 
 parseGQL :: GQLRequest -> Eventless GQLQuery

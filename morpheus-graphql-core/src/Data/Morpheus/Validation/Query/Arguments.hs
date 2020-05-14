@@ -9,7 +9,7 @@ where
 
 import Data.Foldable (traverse_)
 import Data.Morpheus.Internal.Utils
-  ( Listable (..),
+  ( elems,
     empty,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -115,7 +115,7 @@ validateArguments
   rawArgs =
     do
       args <- resolveArgumentVariables rawArgs
-      traverse_ checkUnknown (toList args)
+      traverse_ checkUnknown (elems args)
       traverse (validateArgument args) argsDef
     where
       argsDef = case fieldArgs of

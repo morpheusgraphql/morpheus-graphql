@@ -16,8 +16,8 @@ import Data.Morpheus.Error.Document.Interface
     unknownInterface,
   )
 import Data.Morpheus.Internal.Utils
-  ( Listable (..),
-    Selectable (..),
+  ( Selectable (..),
+    elems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -38,7 +38,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 
 validateSchema :: Schema -> Eventless Schema
-validateSchema schema = validatePartialDocument (toList schema) $> schema
+validateSchema schema = validatePartialDocument (elems schema) $> schema
 
 validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
 validatePartialDocument lib = traverse validateType lib
@@ -52,7 +52,7 @@ validatePartialDocument lib = traverse validateType lib
     validateType x = pure x
     mustBeSubset ::
       FieldsDefinition -> (TypeName, FieldsDefinition) -> [(TypeName, FieldName, ImplementsError)]
-    mustBeSubset objFields (typeName, fields) = concatMap checkField (toList fields)
+    mustBeSubset objFields (typeName, fields) = concatMap checkField (elems fields)
       where
         checkField :: FieldDefinition -> [(TypeName, FieldName, ImplementsError)]
         checkField FieldDefinition {fieldName, fieldType = interfaceT@TypeRef {typeConName = interfaceTypeName, typeWrappers = interfaceWrappers}} =

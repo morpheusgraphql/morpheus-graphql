@@ -23,6 +23,9 @@ module Data.Morpheus.Internal.Utils
     selectBy,
     member,
     keys,
+    fromElems,
+    elems,
+    size,
   )
 where
 
@@ -34,9 +37,6 @@ import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
--- import Data.Morpheus.Types.Internal.AST
---   ( ConsD (..),
---   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -123,21 +123,20 @@ toPair :: KeyOf a => a -> (KEY a, a)
 toPair x = (keyOf x, x)
 
 class Listable c a | c -> a where
-  size :: c -> Int
-  size = length . toList
   fromAssoc :: (Monad m, Failure GQLErrors m) => [(KEY a, a)] -> m c
   toAssoc :: c -> [(KEY a, a)]
-  fromList :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m c
 
-  -- TODO: fromValues
-  toList = map snd . toAssoc
-  fromList = fromAssoc . map toPair
-
-  -- TODO: toValues
-  toList :: c -> [a]
+fromElems :: (Listable c a, KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m c
+fromElems = fromAssoc . map toPair
 
 keys :: Listable c a => c -> [KEY a]
 keys = map fst . toAssoc
+
+elems :: Listable c a => c -> [a]
+elems = map snd . toAssoc
+
+size :: Listable c a => c -> Int
+size = length . elems
 
 class Merge a where
   (<:>) :: (Monad m, Failure GQLErrors m) => a -> a -> m a
