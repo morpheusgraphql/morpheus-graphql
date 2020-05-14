@@ -75,7 +75,7 @@ import Data.String (IsString)
 import Data.Text (Text, intercalate, pack)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
-import Instances.TH.Lift ()
+-- import Instances.TH.Lift ()
 import Language.Haskell.TH (stringE)
 import Language.Haskell.TH.Syntax (Lift (..))
 
