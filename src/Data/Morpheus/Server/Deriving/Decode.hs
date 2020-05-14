@@ -46,8 +46,10 @@ import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
+    FieldName,
     Name (..),
     ObjectEntry (..),
+    TypeName (..),
     VALID,
     ValidObject,
     ValidValue,
@@ -141,12 +143,12 @@ data Tag = D_CONS | D_UNION deriving (Eq, Ord)
 
 data Cont = Cont
   { contKind :: Tag,
-    typeName :: Name
+    typeName :: TypeName
   }
 
 data Info = Info
   { kind :: Tag,
-    tagName :: [Name]
+    tagName :: [TypeName]
   }
 
 instance Semigroup Info where
@@ -158,7 +160,7 @@ instance Semigroup Info where
 -- GENERICS
 --
 class DecodeRep f where
-  tags :: Proxy f -> Name -> Info
+  tags :: Proxy f -> TypeName -> Info
   decodeRep :: (ValidValue, Cont) -> Eventless (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
@@ -166,7 +168,7 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   decodeRep (x, y) =
     M1
       <$> decodeRep
-        (x, y {typeName = Name $ pack $ datatypeName (undefined :: (M1 D d f a))})
+        (x, y {typeName = datatypeNameProxy (Proxy @d)})
 
 getEnumTag :: ValidObject -> Eventless Name
 getEnumTag x = case toList x of
@@ -210,15 +212,18 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
         | otherwise = Info {kind = D_CONS, tagName = [consName]}
       getTag Nothing = Info {kind = D_CONS, tagName = [consName]}
       --------
-      consName = Name $ pack $ conName unsafeType
+      consName = conNameProxy (Proxy @c)
       ----------
       isUnionRef x = baseName <> x == consName
-      --------------------------
-      unsafeType :: (M1 C c U1 x)
-      unsafeType = undefined
+
+datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
+datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))
+
+conNameProxy :: forall f (c :: Meta). Constructor c => f c -> TypeName
+conNameProxy _ = TypeName $ pack $ conName (undefined :: M1 C c U1 a)
 
 class DecodeFields f where
-  refType :: Proxy f -> Maybe Name
+  refType :: Proxy f -> Maybe TypeName
   decodeFields :: (ValidValue, Cont) -> Eventless (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where

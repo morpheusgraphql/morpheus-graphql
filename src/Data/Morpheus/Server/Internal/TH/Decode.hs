@@ -24,9 +24,10 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
-    Key,
+    FieldName (..),
     Message,
     ObjectEntry (..),
+    TypeName (..),
     ValidObject,
     ValidValue,
     Value (..),
@@ -40,7 +41,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Failure (..),
   )
-import Data.Text (unpack)
 import Language.Haskell.TH
   ( ExpQ,
     conE,
@@ -78,11 +78,11 @@ withList :: (ValidValue -> Eventless a) -> ValidValue -> Eventless [a]
 withList decode (List li) = traverse decode li
 withList _ isType = internalTypeMismatch "List" isType
 
-withEnum :: (Key -> Eventless a) -> ValidValue -> Eventless a
+withEnum :: (FieldName -> Eventless a) -> ValidValue -> Eventless a
 withEnum decode (Enum value) = decode value
 withEnum _ isType = internalTypeMismatch "Enum" isType
 
-withUnion :: (Key -> ValidObject -> ValidObject -> Eventless a) -> ValidObject -> Eventless a
+withUnion :: (TypeName -> ValidObject -> ValidObject -> Eventless a) -> ValidObject -> Eventless a
 withUnion decoder unions = do
   (enum :: ValidValue) <- entryValue <$> selectBy ("__typename not found on Input Union" :: Message) "__typename" unions
   case enum of
@@ -92,5 +92,5 @@ withUnion decoder unions = do
         onFound = withObject (decoder key unions) . entryValue
     _ -> failure ("__typename must be Enum" :: Message)
 
-decodeFieldWith :: (ValidValue -> Eventless a) -> Key -> ValidObject -> Eventless a
+decodeFieldWith :: (ValidValue -> Eventless a) -> FieldName -> ValidObject -> Eventless a
 decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)
