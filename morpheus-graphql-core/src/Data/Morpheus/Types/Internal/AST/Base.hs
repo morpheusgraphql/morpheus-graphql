@@ -10,8 +10,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
-  ( Key,
-    Ref (..),
+  ( Ref (..),
     Position (..),
     Message (..),
     Name (..),
@@ -134,8 +133,6 @@ instance RenderGQL Name where
 intercalateName :: Name -> [Name] -> Name
 intercalateName (Name x) = Name . intercalate x . map readName
 
-type Key = Name
-
 newtype TypeName = TypeName {readTypeName :: Text}
   deriving
     (Generic)
@@ -228,7 +225,7 @@ data Ref = Ref
 instance Ord Ref where
   compare (Ref x _) (Ref y _) = compare x y
 
-anonymousRef :: Key -> Ref
+anonymousRef :: FieldName -> Ref
 anonymousRef refName = Ref {refName, refPosition = Position 0 0}
 
 -- TypeRef
@@ -347,7 +344,7 @@ sysTypes =
     "__EnumValue"
   ]
 
-sysFields :: [Key]
+sysFields :: [FieldName]
 sysFields = ["__typename", "__schema", "__type"]
 
 typeFromScalar :: TypeName -> TypeName

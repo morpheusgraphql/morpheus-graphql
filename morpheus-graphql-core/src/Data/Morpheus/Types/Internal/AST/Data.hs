@@ -641,7 +641,7 @@ hasArguments _ = True
 -- TODO: implement inputValue
 
 -- data InputValueDefinition = InputValueDefinition
---   { inputValueName  :: Key
+--   { inputValueName  :: FieldName
 --   , inputValueType  :: TypeRef
 --   , inputValueMeta  :: Maybe Meta
 --   } deriving (Show,Lift)

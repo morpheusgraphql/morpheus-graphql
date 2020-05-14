@@ -39,7 +39,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     GQLError (..),
     GQLErrors,
-    Key,
     Message,
     OperationType (..),
     Position,
@@ -249,7 +248,7 @@ deriving instance Eq (Selection a)
 type DefaultValue = Maybe ResolvedValue
 
 data Operation (s :: Stage) = Operation
-  { operationName :: Maybe Key,
+  { operationName :: Maybe FieldName,
     operationType :: OperationType,
     operationArguments :: VariableDefinitions s,
     operationSelection :: SelectionSet s,

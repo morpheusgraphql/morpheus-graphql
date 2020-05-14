@@ -5,7 +5,6 @@
 
 module Data.Morpheus.Types.Internal.AST
   ( -- BASE
-    Key,
     Ref (..),
     Position (..),
     Message,
@@ -160,11 +159,11 @@ import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Value
 import Language.Haskell.TH.Syntax (Lift)
 
-type Variables = HashMap Key ResolvedValue
+type Variables = HashMap FieldName ResolvedValue
 
 data GQLQuery = GQLQuery
   { fragments :: Fragments,
     operation :: Operation RAW,
-    inputVariables :: [(Key, ResolvedValue)]
+    inputVariables :: [(FieldName, ResolvedValue)]
   }
   deriving (Show, Lift)
