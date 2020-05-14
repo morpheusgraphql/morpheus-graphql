@@ -23,6 +23,7 @@ module Data.Morpheus.Internal.Utils
     member,
     keys,
     size,
+    (<:>),
   )
 where
 
@@ -136,9 +137,10 @@ size = length . elems
 
 -- Merge Object with of Failure as an Option
 class Merge a where
-  (<:>) :: (Monad m, Failure GQLErrors m) => a -> a -> m a
-  (<:>) = merge []
   merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
+
+(<:>) :: (Monad m, Merge a, Failure GQLErrors m) => a -> a -> m a
+(<:>) = merge []
 
 -- Failure: for custome Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where

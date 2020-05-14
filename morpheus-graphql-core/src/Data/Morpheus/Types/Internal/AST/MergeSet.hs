@@ -22,7 +22,8 @@ import Data.Maybe (maybe)
 -- MORPHEUS
 
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
+  ( (<:>),
+    Collection (..),
     Failure (..),
     KeyOf (..),
     Listable (..),

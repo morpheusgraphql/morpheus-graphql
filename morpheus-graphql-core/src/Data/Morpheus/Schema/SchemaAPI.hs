@@ -13,7 +13,8 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Internal.Utils
-  ( Merge (..),
+  ( (<:>),
+    Merge (..),
     elems,
     empty,
     selectOr,

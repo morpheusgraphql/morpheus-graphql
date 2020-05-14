@@ -16,7 +16,8 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Internal.Utils
-  ( Merge (..),
+  ( (<:>),
+    Merge (..),
     singleton,
   )
 import Data.Morpheus.QuasiQuoter (dsl)
