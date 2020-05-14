@@ -7,7 +7,7 @@
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
-import Data.Morpheus.Types.Internal.AST.Base (Name, VALID)
+import Data.Morpheus.Types.Internal.AST.Base (FieldName, VALID)
 import Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (selectionContent, selectionName),
     SelectionContent (SelectionField, SelectionSet),
@@ -26,7 +26,7 @@ class SelectionTree nodeType where
   getChildrenList :: nodeType -> [nodeType]
 
   -- | get a node's name
-  getName :: nodeType -> Name
+  getName :: nodeType -> FieldName
 
 instance SelectionTree (Selection VALID) where
   isLeaf node = case selectionContent node of

@@ -13,8 +13,7 @@ module Data.Morpheus.Types.Internal.AST.Base
   ( Ref (..),
     Position (..),
     Message (..),
-    Name (..),
-    Named,
+    FieldName (..),
     Description,
     VALID,
     RAW,
@@ -55,7 +54,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     TRUE,
     FALSE,
     TypeName (..),
-    FieldName,
     Msg (..),
     intercalateName,
     toFieldName,
@@ -85,8 +83,10 @@ type TRUE = 'True
 
 type FALSE = 'False
 
+-- Strings
 type Token = Text
 
+-- Error / Warning Messages
 newtype Message = Message {readMessage :: Text}
   deriving
     (Generic)
@@ -113,23 +113,24 @@ instance Msg Text where
 instance Msg Value where
   msg = msg . encode
 
-newtype Name = Name {readName :: Text}
+-- FieldName : lower case names
+newtype FieldName = FieldName {readName :: Text}
   deriving
     (Generic)
   deriving newtype
     (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
 
-instance Lift Name where
+instance Lift FieldName where
   lift = stringE . T.unpack . readName
 
-instance Msg Name where
-  msg Name {readName} = Message $ "\"" <> readName <> "\""
+instance Msg FieldName where
+  msg FieldName {readName} = Message $ "\"" <> readName <> "\""
 
-instance RenderGQL Name where
+instance RenderGQL FieldName where
   render = readName
 
-intercalateName :: Name -> [Name] -> Name
-intercalateName (Name x) = Name . intercalate x . map readName
+intercalateName :: FieldName -> [FieldName] -> FieldName
+intercalateName (FieldName x) = FieldName . intercalate x . map readName
 
 newtype TypeName = TypeName {readTypeName :: Text}
   deriving
@@ -147,9 +148,7 @@ instance RenderGQL TypeName where
   render = readTypeName
 
 toFieldName :: TypeName -> FieldName
-toFieldName = Name . readTypeName
-
-type FieldName = Name
+toFieldName = FieldName . readTypeName
 
 type Description = Text
 
@@ -202,8 +201,6 @@ type MUTATION = 'Mutation
 
 type SUBSCRIPTION = 'Subscription
 
-type Named a = (Name, a)
-
 data TypeNameRef = TypeNameRef
   { typeNameRef :: TypeName,
     typeNamePosition :: Position
@@ -242,7 +239,7 @@ instance RenderGQL TypeRef where
   render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
 
 instance Msg TypeRef where
-  msg = msg . Name . render
+  msg = msg . FieldName . render
 
 -- Kind
 -----------------------------------------------------------------------------------

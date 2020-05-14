@@ -99,8 +99,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     DataTypeKind (..),
     Description,
     FieldName,
+    FieldName (..),
     GQLError (..),
-    Name (..),
     Position,
     Stage,
     TRUE,
@@ -163,7 +163,7 @@ instance Lift ScalarDefinition where
   lift _ = [|ScalarDefinition pure|]
 
 data Argument (valid :: Stage) = Argument
-  { argumentName :: Name,
+  { argumentName :: FieldName,
     argumentValue :: Value valid,
     argumentPosition :: Position
   }
@@ -184,7 +184,7 @@ type Arguments s = OrderedMap FieldName (Argument s)
 -- directive
 ------------------------------------------------------------------
 data Directive = Directive
-  { directiveName :: Name,
+  { directiveName :: FieldName,
     directiveArgs :: OrderedMap FieldName (Argument VALID)
   }
   deriving (Show, Lift)
@@ -646,7 +646,7 @@ hasArguments _ = True
 --   , inputValueMeta  :: Maybe Meta
 --   } deriving (Show,Lift)
 
-__inputname :: Name
+__inputname :: FieldName
 __inputname = "inputname"
 
 createInputUnionFields :: TypeName -> [TypeName] -> [FieldDefinition]

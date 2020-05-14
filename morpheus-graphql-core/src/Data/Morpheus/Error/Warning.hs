@@ -16,8 +16,8 @@ import Data.Foldable (traverse_)
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
+    FieldName,
     GQLErrors,
-    Name,
     Ref (..),
     msg,
   )
@@ -30,7 +30,7 @@ import Language.Haskell.TH
 renderGQLErrors :: GQLErrors -> String
 renderGQLErrors = unpack . encode
 
-deprecatedEnum :: Name -> Ref -> Maybe Description -> GQLErrors
+deprecatedEnum :: FieldName -> Ref -> Maybe Description -> GQLErrors
 deprecatedEnum typeName Ref {refPosition, refName} reason =
   errorMessage refPosition $
     "the enum value "
@@ -40,7 +40,7 @@ deprecatedEnum typeName Ref {refPosition, refName} reason =
       <> " is deprecated."
       <> msg (maybe "" (" " <>) reason)
 
-deprecatedField :: Name -> Ref -> Maybe Description -> GQLErrors
+deprecatedField :: FieldName -> Ref -> Maybe Description -> GQLErrors
 deprecatedField typeName Ref {refPosition, refName} reason =
   errorMessage refPosition $
     "the field "

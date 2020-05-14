@@ -14,8 +14,8 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Either (either)
 import Data.Morpheus.Core (parseFullGQLDocument, validateSchema)
 import Data.Morpheus.Types.Internal.AST
-  ( GQLErrors,
-    Name,
+  ( FieldName,
+    GQLErrors,
     Schema,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -29,10 +29,10 @@ import Lib (readSource)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
 
-readSchema :: Name -> IO (Eventless Schema)
+readSchema :: FieldName -> IO (Eventless Schema)
 readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . ("schema/" <>) . (<> "/schema.gql")
 
-readResponse :: Name -> IO Response
+readResponse :: FieldName -> IO Response
 readResponse = fmap (either AesonError id . eitherDecode) . readSource . ("schema/" <>) . (<> "/response.json")
 
 data Response
@@ -65,7 +65,7 @@ testSchema =
           ]
     ]
 
-schemaCase :: Name -> String -> TestTree
+schemaCase :: FieldName -> String -> TestTree
 schemaCase path description = testCase description $ do
   schema <- readSchema path
   expected <- readResponse path

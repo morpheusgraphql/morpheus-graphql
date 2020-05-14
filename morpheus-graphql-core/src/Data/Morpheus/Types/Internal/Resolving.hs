@@ -49,7 +49,7 @@ module Data.Morpheus.Types.Internal.Resolving
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( Name,
+  ( FieldName,
     ScalarValue (..),
     Token,
     TypeName,
@@ -83,7 +83,7 @@ mkNull = ResNull
 
 mkObject ::
   TypeName ->
-  [(Name, Resolver o e m (ResModel o e m))] ->
+  [(FieldName, Resolver o e m (ResModel o e m))] ->
   ResModel o e m
 mkObject __typename objectFields =
   ResObject

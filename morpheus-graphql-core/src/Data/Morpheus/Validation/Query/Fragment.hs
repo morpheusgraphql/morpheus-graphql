@@ -17,9 +17,9 @@ import Data.Morpheus.Error.Fragment
     cannotSpreadWithinItself,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Fragment (..),
+  ( FieldName,
+    Fragment (..),
     Fragments,
-    Name,
     Position,
     RAW,
     Ref (..),
@@ -60,7 +60,7 @@ checkUnusedFragments selectionSet = do
     (toList fragments)
 
 castFragmentType ::
-  Maybe Name -> Position -> [TypeName] -> Fragment -> Validator ctx Fragment
+  Maybe FieldName -> Position -> [TypeName] -> Fragment -> Validator ctx Fragment
 castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers

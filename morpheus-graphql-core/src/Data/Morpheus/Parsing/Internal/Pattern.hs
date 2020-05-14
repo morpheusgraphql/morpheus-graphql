@@ -37,10 +37,10 @@ import Data.Morpheus.Types.Internal.AST
     DataEnumValue (..),
     Directive (..),
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition (..),
     InputFieldsDefinition (..),
     Meta (..),
-    Name,
     TypeName,
   )
 import Text.Megaparsec
@@ -156,7 +156,7 @@ directive = label "Directive" $ do
 --  typDeclaration
 --   Description(opt) scalar Name
 --
-typeDeclaration :: Name -> Parser TypeName
+typeDeclaration :: FieldName -> Parser TypeName
 typeDeclaration kind = do
   keyword kind
   parseTypeName

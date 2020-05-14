@@ -21,8 +21,8 @@ import Data.Maybe (maybe)
 -- MORPHEUS
 
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
-    Name,
+  ( FieldName,
+    GQLErrors,
     Ref,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
@@ -53,7 +53,7 @@ concatTraverse ::
   ( KeyOf a,
     Eq a,
     Eq b,
-    KEY a ~ Name,
+    KEY a ~ FieldName,
     Merge a,
     Merge b,
     KeyOf b,
@@ -82,7 +82,7 @@ join = __join empty
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
-toOrderedMap :: (KEY a ~ Name, KeyOf a) => MergeSet a -> OrderedMap Name a
+toOrderedMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet a -> OrderedMap FieldName a
 toOrderedMap = OM.unsafeFromValues . unpack
 
 instance Traversable MergeSet where

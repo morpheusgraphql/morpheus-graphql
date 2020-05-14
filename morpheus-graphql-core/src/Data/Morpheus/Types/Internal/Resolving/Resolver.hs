@@ -59,11 +59,11 @@ import Data.Morpheus.Types.IO
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( FieldName,
+    GQLError (..),
     GQLErrors,
     MUTATION,
     Message,
-    Name,
     OperationType,
     OperationType (..),
     QUERY,
@@ -469,7 +469,7 @@ runResolver (ResolverS resT) sel = ResultT $ do
 
 -- Resolver Models -------------------------------------------------------------------
 type FieldResModel o e m =
-  (Name, Resolver o e m (ResModel o e m))
+  (FieldName, Resolver o e m (ResModel o e m))
 
 data ObjectResModel o e m = ObjectResModel
   { __typename :: TypeName,
@@ -572,5 +572,5 @@ mapObjectDeriving (ObjectResModel tyname x) =
   ObjectResModel tyname $
     map (mapEntry mapStrategy) x
 
-mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
+mapEntry :: (a -> b) -> (k, a) -> (k, b)
 mapEntry f (name, value) = (name, f value)

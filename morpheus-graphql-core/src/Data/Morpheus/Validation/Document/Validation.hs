@@ -18,8 +18,8 @@ import Data.Morpheus.Error.Document.Interface
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
+    FieldName (..),
     FieldsDefinition (..),
-    Name (..),
     Schema,
     TypeContent (..),
     TypeDefinition (..),
@@ -51,10 +51,10 @@ validatePartialDocument lib = traverse validateType lib
         errors -> failure $ partialImplements typeName errors
     validateType x = pure x
     mustBeSubset ::
-      FieldsDefinition -> (TypeName, FieldsDefinition) -> [(TypeName, Name, ImplementsError)]
+      FieldsDefinition -> (TypeName, FieldsDefinition) -> [(TypeName, FieldName, ImplementsError)]
     mustBeSubset objFields (typeName, fields) = concatMap checkField (toList fields)
       where
-        checkField :: FieldDefinition -> [(TypeName, Name, ImplementsError)]
+        checkField :: FieldDefinition -> [(TypeName, FieldName, ImplementsError)]
         checkField FieldDefinition {fieldName, fieldType = interfaceT@TypeRef {typeConName = interfaceTypeName, typeWrappers = interfaceWrappers}} =
           selectOr err checkTypeEq fieldName objFields
           where

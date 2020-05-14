@@ -65,12 +65,12 @@ import Data.Morpheus.Types.Internal.AST
     FALSE,
     FieldDefinition (..),
     FieldName,
+    FieldName (..),
     FieldsDefinition (..),
     IN,
     InputFieldsDefinition (..),
     Message,
     Meta (..),
-    Name (..),
     OUT,
     TRUE,
     TypeCategory,
@@ -353,7 +353,7 @@ setFieldNames cons@ConsRep {consFields} =
   where
     setFieldName i fieldR@FieldRep {fieldData = fieldD} = fieldR {fieldData = fieldD {fieldName}}
       where
-        fieldName = Name ("_" <> pack (show i))
+        fieldName = FieldName ("_" <> pack (show i))
 
 analyseRep :: TypeName -> [ConsRep] -> ResRep
 analyseRep baseName cons =

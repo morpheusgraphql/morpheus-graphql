@@ -26,8 +26,8 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
-    Name,
+  ( FieldName,
+    GQLErrors,
     Ref (..),
     TypeName,
     TypeNameRef (..),
@@ -65,7 +65,7 @@ class KeyOf a => Singleton c a | c -> a where
 
 class Eq (KEY a) => KeyOf a where
   type KEY a :: *
-  type KEY a = Name
+  type KEY a = FieldName
   keyOf :: a -> KEY a
 
 instance KeyOf Ref where

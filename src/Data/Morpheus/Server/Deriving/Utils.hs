@@ -16,7 +16,7 @@ where
 
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    Name (..),
+    FieldName (..),
     TypeName (..),
   )
 import Data.Proxy (Proxy (..))
@@ -46,7 +46,7 @@ conNameProxy :: forall f (c :: Meta). Constructor c => f c -> TypeName
 conNameProxy _ = TypeName $ pack $ conName (undefined :: M1 C c U1 a)
 
 selNameProxy :: forall f (s :: Meta). Selector s => f s -> FieldName
-selNameProxy _ = Name $ pack $ selName (undefined :: M1 S s f a)
+selNameProxy _ = FieldName $ pack $ selName (undefined :: M1 S s f a)
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))

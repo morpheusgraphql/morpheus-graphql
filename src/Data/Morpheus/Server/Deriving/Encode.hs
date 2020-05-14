@@ -56,9 +56,9 @@ import Data.Morpheus.Types
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
+    FieldName (..),
     MUTATION,
     Message,
-    Name (..),
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
@@ -278,7 +278,7 @@ data FieldNode o e m = FieldNode
 setFieldNames :: [FieldNode o e m] -> [FieldNode o e m]
 setFieldNames = zipWith setFieldName ([0 ..] :: [Int])
   where
-    setFieldName i field = field {fieldSelName = Name $ "_" <> pack (show i)}
+    setFieldName i field = field {fieldSelName = FieldName $ "_" <> pack (show i)}
 
 class TypeRep f o e (m :: * -> *) where
   typeResolvers :: ResContext OUTPUT o e m value -> f a -> ResNode o e m
@@ -316,7 +316,7 @@ instance (FieldRep f o e m, FieldRep g o e m) => FieldRep (f :*: g) o e m where
 instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
   fieldRep _ m@(M1 (K1 src)) =
     [ FieldNode
-        { fieldSelName = Name $ pack (selName m),
+        { fieldSelName = FieldName $ pack (selName m),
           fieldTypeName = __typeName (Proxy @a),
           fieldResolver = encode src,
           isFieldObject = isObjectKind (Proxy @a)

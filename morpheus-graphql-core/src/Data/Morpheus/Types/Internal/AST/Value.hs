@@ -50,9 +50,9 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
+    FieldName (..),
     GQLError (..),
     Msg (..),
-    Name (..),
     Position,
     RAW,
     RESOLVED,
@@ -117,8 +117,8 @@ isReserved _ = False
 {-# INLINE isReserved #-}
 
 convertToJSONName :: FieldName -> Text
-convertToJSONName (Name hsName)
-  | not (T.null hsName) && isReserved (Name name) && (T.last hsName == '\'') = name
+convertToJSONName (FieldName hsName)
+  | not (T.null hsName) && isReserved (FieldName name) && (T.last hsName == '\'') = name
   | otherwise = hsName
   where
     name = T.init hsName
@@ -207,7 +207,7 @@ data ObjectEntry (s :: Stage) = ObjectEntry
   deriving (Eq)
 
 instance Show (ObjectEntry s) where
-  show (ObjectEntry (Name name) value) = unpack name <> ":" <> show value
+  show (ObjectEntry (FieldName name) value) = unpack name <> ":" <> show value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision _ ObjectEntry {entryName} =
@@ -269,7 +269,7 @@ instance A.ToJSON (Value a) where
   toJSON (List x) = A.toJSON x
   toJSON (Object fields) = A.object $ map toEntry (toList fields)
     where
-      toEntry (ObjectEntry (Name name) value) = name A..= A.toJSON value
+      toEntry (ObjectEntry (FieldName name) value) = name A..= A.toJSON value
 
   -------------------------------------------
   toEncoding (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
@@ -298,7 +298,7 @@ replaceValue (A.String v) = gqlString v
 replaceValue (A.Object v) = gqlObject $ map replace (M.toList v)
   where
     --replace :: (a, A.Value) -> (a, Value a)
-    replace (key, val) = (Name key, replaceValue val)
+    replace (key, val) = (FieldName key, replaceValue val)
 replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
 replaceValue A.Null = gqlNull
 

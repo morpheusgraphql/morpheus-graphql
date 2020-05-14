@@ -14,8 +14,7 @@ import Data.Char
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
-    FieldName,
-    Name (..),
+    FieldName (..),
     Token,
     TypeName (..),
   )
@@ -29,11 +28,11 @@ import qualified Data.Text as T
 mapText :: (String -> String) -> Token -> Token
 mapText f = T.pack . f . T.unpack
 
-nameSpaceType :: [Name] -> TypeName -> TypeName
+nameSpaceType :: [FieldName] -> TypeName -> TypeName
 nameSpaceType list (TypeName name) = TypeName . T.concat $ map capital (map readName list <> [name])
 
 nameSpaceField :: TypeName -> FieldName -> FieldName
-nameSpaceField nSpace (Name name) = Name (nonCapital nSpace <> capital name)
+nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capital name)
 
 nonCapital :: TypeName -> Token
 nonCapital = mapText __nonCapital . readTypeName
