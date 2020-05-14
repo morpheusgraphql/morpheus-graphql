@@ -23,8 +23,8 @@ dependencies:
   - unordered-containers  >= 0.2.8.0   && <  0.3
   - morpheus-graphql-core >= 0.12.0
   - template-haskell      >= 2.0       && <= 2.16
-  - transformers
-  - mtl
+  - transformers          >= 0.3.0.0   && <  0.6
+  - mtl                   >= 2.0       && <= 2.3
 
 library:
   source-dirs: src
