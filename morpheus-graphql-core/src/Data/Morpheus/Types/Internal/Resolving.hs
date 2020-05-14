@@ -49,13 +49,15 @@ module Data.Morpheus.Types.Internal.Resolving
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( Name,
+  ( FieldName,
     ScalarValue (..),
+    Token,
+    TypeName,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 
-mkString :: Name -> ResModel o e m
+mkString :: Token -> ResModel o e m
 mkString = ResScalar . String
 
 mkFloat :: Float -> ResModel o e m
@@ -67,21 +69,21 @@ mkInt = ResScalar . Int
 mkBoolean :: Bool -> ResModel o e m
 mkBoolean = ResScalar . Boolean
 
-mkEnum :: Name -> Name -> ResModel o e m
+mkEnum :: TypeName -> TypeName -> ResModel o e m
 mkEnum = ResEnum
 
 mkList :: [ResModel o e m] -> ResModel o e m
 mkList = ResList
 
-mkUnion :: Name -> Resolver o e m (ResModel o e m) -> ResModel o e m
+mkUnion :: TypeName -> Resolver o e m (ResModel o e m) -> ResModel o e m
 mkUnion = ResUnion
 
 mkNull :: ResModel o e m
 mkNull = ResNull
 
 mkObject ::
-  Name ->
-  [(Name, Resolver o e m (ResModel o e m))] ->
+  TypeName ->
+  [(FieldName, Resolver o e m (ResModel o e m))] ->
   ResModel o e m
 mkObject __typename objectFields =
   ResObject

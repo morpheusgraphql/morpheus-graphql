@@ -20,10 +20,10 @@ import Data.Morpheus.Error.Selection
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition (..),
     Fragment (..),
     GQLError (..),
-    Name,
     OUT,
     Operation (..),
     OperationType (..),
@@ -35,9 +35,11 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     VALID,
     getOperationDataType,
     isEntNode,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
@@ -68,10 +70,10 @@ import Data.Morpheus.Validation.Query.UnionSelection
   )
 import Data.Semigroup ((<>))
 
-type TypeDef = (Name, FieldsDefinition)
+type TypeDef = (TypeName, FieldsDefinition)
 
 getOperationObject ::
-  Operation a -> SelectionValidator (Name, FieldsDefinition)
+  Operation a -> SelectionValidator (TypeName, FieldsDefinition)
 getOperationObject operation = do
   dt <- askSchema >>= getOperationDataType operation
   case dt of
@@ -79,7 +81,7 @@ getOperationObject operation = do
     TypeDefinition {typeName} ->
       failure $
         "Type Mismatch: operation \""
-          <> typeName
+          <> msg typeName
           <> "\" must be an Object"
 
 selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
@@ -92,16 +94,17 @@ singleTopLevelSelection Operation {operationType = Subscription, operationName} 
     _ -> pure ()
 singleTopLevelSelection _ _ = pure ()
 
-singleTopLevelSelectionError :: Maybe Name -> Selection VALID -> GQLError
+singleTopLevelSelectionError :: Maybe FieldName -> Selection VALID -> GQLError
 singleTopLevelSelectionError name Selection {selectionPosition} =
   GQLError
     { message =
-        subscriptionName <> " must select "
+        subscriptionName
+          <> " must select "
           <> "only one top level field.",
       locations = [selectionPosition]
     }
   where
-    subscriptionName = maybe "Anonymous Subscription" (("Subscription \"" <>) . (<> "\"")) name
+    subscriptionName = maybe "Anonymous Subscription" (("Subscription " <>) . msg) name
 
 validateOperation ::
   Operation RAW ->
@@ -182,7 +185,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
               selContent <- withScope name currentSelectionRef $ validateByTypeContent name typeContent
               pure $ singleton $ sel {selectionArguments = validArgs, selectionContent = selContent}
             where
-              validateByTypeContent :: Name -> TypeContent TRUE OUT -> SelectionValidator (SelectionContent VALID)
+              validateByTypeContent :: TypeName -> TypeContent TRUE OUT -> SelectionValidator (SelectionContent VALID)
               -- Validate UnionSelection
               validateByTypeContent _ DataUnion {unionMembers} =
                 validateUnionSelection

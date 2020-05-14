@@ -33,6 +33,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     TypeWrapper,
     createArgument,
     createEnumType,
@@ -40,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     createScalarType,
     createType,
     createUnionType,
+    msg,
     toAny,
     toHSWrappers,
   )
@@ -50,17 +52,13 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( Text,
-    pack,
-  )
 
 decodeIntrospection :: ByteString -> Eventless AST.Schema
 decodeIntrospection jsonDoc = case jsonSchema of
-  Left errors -> internalError $ pack errors
+  Left errors -> internalError $ msg errors
   Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
     traverse parse types >>= fromList . concat
-  Right res -> internalError (pack $ show res)
+  Right res -> internalError (msg $ show res)
   where
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
@@ -101,15 +99,15 @@ instance ParseJSONSchema Field FieldDefinition where
 instance ParseJSONSchema InputValue FieldDefinition where
   parse InputValue {inputName, inputType} = createField NoArguments inputName <$> fieldTypeFromJSON inputType
 
-fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], Text)
+fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], TypeName)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []
   where
     toHs (w, t) = (toHSWrappers w, t)
     fieldTypeRec ::
-      [DataTypeWrapper] -> Type -> Eventless ([DataTypeWrapper], Text)
+      [DataTypeWrapper] -> Type -> Eventless ([DataTypeWrapper], TypeName)
     fieldTypeRec acc Type {kind = LIST, ofType = Just ofType} =
       fieldTypeRec (ListType : acc) ofType
     fieldTypeRec acc Type {kind = NON_NULL, ofType = Just ofType} =
       fieldTypeRec (NonNullType : acc) ofType
     fieldTypeRec acc Type {name = Just name} = pure (acc, name)
-    fieldTypeRec _ x = internalError $ "Unsuported Field" <> pack (show x)
+    fieldTypeRec _ x = internalError $ "Unsuported Field" <> msg (show x)

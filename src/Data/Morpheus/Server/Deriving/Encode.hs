@@ -39,6 +39,11 @@ import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
   )
+import Data.Morpheus.Server.Deriving.Utils
+  ( conNameProxy,
+    datatypeNameProxy,
+    isRecordProxy,
+  )
 import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
@@ -50,12 +55,14 @@ import Data.Morpheus.Types
   ( GQLRootResolver (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( MUTATION,
+  ( FieldName,
+    FieldName (..),
+    MUTATION,
     Message,
-    Name,
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
+    TypeName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -253,16 +260,16 @@ toFieldRes FieldNode {fieldSelName, fieldResolver} =
 data REP_KIND = REP_UNION | REP_OBJECT
 
 data ResNode o e m = ResNode
-  { resDatatypeName :: Name,
-    resTypeName :: Name,
+  { resDatatypeName :: TypeName,
+    resTypeName :: TypeName,
     resKind :: REP_KIND,
     resFields :: [FieldNode o e m],
     isResRecord :: Bool
   }
 
 data FieldNode o e m = FieldNode
-  { fieldTypeName :: Name,
-    fieldSelName :: Name,
+  { fieldTypeName :: TypeName,
+    fieldSelName :: FieldName,
     fieldResolver :: Resolver o e m (ResModel o e m),
     isFieldObject :: Bool
   }
@@ -271,7 +278,7 @@ data FieldNode o e m = FieldNode
 setFieldNames :: [FieldNode o e m] -> [FieldNode o e m]
 setFieldNames = zipWith setFieldName ([0 ..] :: [Int])
   where
-    setFieldName i field = field {fieldSelName = "_" <> pack (show i)}
+    setFieldName i field = field {fieldSelName = FieldName $ "_" <> pack (show i)}
 
 class TypeRep f o e (m :: * -> *) where
   typeResolvers :: ResContext OUTPUT o e m value -> f a -> ResNode o e m
@@ -279,7 +286,7 @@ class TypeRep f o e (m :: * -> *) where
 instance (Datatype d, TypeRep f o e m) => TypeRep (M1 D d f) o e m where
   typeResolvers context (M1 src) =
     (typeResolvers context src)
-      { resDatatypeName = pack $ datatypeName (undefined :: M1 D d f a)
+      { resDatatypeName = datatypeNameProxy (Proxy @d)
       }
 
 --- UNION OR OBJECT
@@ -293,13 +300,11 @@ instance (FieldRep f o e m, Constructor c) => TypeRep (M1 C c f) o e m where
   typeResolvers context (M1 src) =
     ResNode
       { resDatatypeName = "",
-        resTypeName = pack (conName proxy),
+        resTypeName = conNameProxy (Proxy @c),
         resKind = REP_OBJECT,
         resFields = fieldRep context src,
-        isResRecord = conIsRecord proxy
+        isResRecord = isRecordProxy (Proxy @c)
       }
-    where
-      proxy = undefined :: (M1 C c U1 x)
 
 --- FIELDS
 class FieldRep f o e (m :: * -> *) where
@@ -311,7 +316,7 @@ instance (FieldRep f o e m, FieldRep g o e m) => FieldRep (f :*: g) o e m where
 instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
   fieldRep _ m@(M1 (K1 src)) =
     [ FieldNode
-        { fieldSelName = pack (selName m),
+        { fieldSelName = FieldName $ pack (selName m),
           fieldTypeName = __typeName (Proxy @a),
           fieldResolver = encode src,
           isFieldObject = isObjectKind (Proxy @a)

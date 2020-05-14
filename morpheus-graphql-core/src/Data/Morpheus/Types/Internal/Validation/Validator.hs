@@ -48,21 +48,24 @@ import Control.Monad.Trans.Reader
 
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    FieldName,
     FieldsDefinition (..),
     Fragments,
     GQLError (..),
     GQLErrors,
     IN,
     Message,
-    Name,
     Position,
     RAW,
     RESOLVED,
     Schema,
     TypeDefinition (..),
+    TypeName,
     VALID,
     Variable (..),
     VariableDefinitions,
+    intercalateName,
+    msg,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -74,11 +77,10 @@ import Data.Semigroup
   ( (<>),
     Semigroup (..),
   )
-import Data.Text (intercalate)
 
 data Prop = Prop
-  { propName :: Name,
-    propTypeName :: Name
+  { propName :: FieldName,
+    propTypeName :: TypeName
   }
   deriving (Show)
 
@@ -86,7 +88,7 @@ type Path = [Prop]
 
 renderPath :: Path -> Message
 renderPath [] = ""
-renderPath path = "in field \"" <> intercalate "." (fmap propName path) <> "\": "
+renderPath path = "in field " <> msg (intercalateName "." $ map propName path) <> ": "
 
 renderInputPrefix :: InputContext -> Message
 renderInputPrefix InputContext {inputPath, inputSource} =
@@ -94,17 +96,17 @@ renderInputPrefix InputContext {inputPath, inputSource} =
 
 renderSource :: InputSource -> Message
 renderSource (SourceArgument Argument {argumentName}) =
-  "Argument \"" <> argumentName <> "\" got invalid value. "
+  "Argument " <> msg argumentName <> " got invalid value. "
 renderSource (SourceVariable Variable {variableName}) =
-  "Variable \"$" <> variableName <> "\" got invalid value. "
+  "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
 
 data Context = Context
   { schema :: Schema,
     fragments :: Fragments,
     scopePosition :: Position,
-    scopeTypeName :: Name,
-    operationName :: Maybe Name,
-    scopeSelectionName :: Name
+    scopeTypeName :: TypeName,
+    operationName :: Maybe FieldName,
+    scopeSelectionName :: FieldName
   }
   deriving (Show)
 
@@ -136,7 +138,7 @@ data Constraint (a :: Target) where
 
 type family Resolution (a :: Target)
 
-type instance Resolution 'TARGET_OBJECT = (Name, FieldsDefinition)
+type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition)
 
 type instance Resolution 'TARGET_INPUT = TypeDefinition IN
 
@@ -157,7 +159,7 @@ askSchema = schema . fst <$> Validator ask
 askFragments :: Validator ctx Fragments
 askFragments = fragments . fst <$> Validator ask
 
-askScopeTypeName :: Validator ctx Name
+askScopeTypeName :: Validator ctx TypeName
 askScopeTypeName = scopeTypeName . fst <$> Validator ask
 
 askScopePosition :: Validator ctx Position
@@ -175,7 +177,7 @@ setGlobalContext ::
   Validator c a
 setGlobalContext f = Validator . withReaderT (\(x, y) -> (f x, y)) . _runValidator
 
-withScope :: Name -> Position -> Validator ctx a -> Validator ctx a
+withScope :: TypeName -> Position -> Validator ctx a -> Validator ctx a
 withScope scopeTypeName scopePosition = setGlobalContext update
   where
     update ctx = ctx {scopeTypeName, scopePosition}
@@ -185,7 +187,7 @@ withScopePosition scopePosition = setGlobalContext update
   where
     update ctx = ctx {scopePosition}
 
-withScopeType :: Name -> Validator ctx a -> Validator ctx a
+withScopeType :: TypeName -> Validator ctx a -> Validator ctx a
 withScopeType scopeTypeName = setGlobalContext update
   where
     update ctx = ctx {scopeTypeName}

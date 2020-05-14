@@ -10,25 +10,28 @@ where
 
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( FieldName,
+    GQLError (..),
     GQLErrors,
-    Key,
+    TypeName,
+    TypeRef,
+    msg,
   )
 import Data.Semigroup ((<>))
 
-unknownInterface :: Key -> GQLErrors
+unknownInterface :: TypeName -> GQLErrors
 unknownInterface name = globalErrorMessage message
   where
-    message = "Unknown Interface \"" <> name <> "\"."
+    message = "Unknown Interface " <> msg name <> "."
 
 data ImplementsError
   = UnexpectedType
-      { expectedType :: Key,
-        foundType :: Key
+      { expectedType :: TypeRef,
+        foundType :: TypeRef
       }
   | UndefinedField
 
-partialImplements :: Key -> [(Key, Key, ImplementsError)] -> GQLErrors
+partialImplements :: TypeName -> [(TypeName, FieldName, ImplementsError)] -> GQLErrors
 partialImplements name = map impError
   where
     impError (interfaceName, key, errorType) =
@@ -38,18 +41,18 @@ partialImplements name = map impError
         }
       where
         message =
-          "type \""
-            <> name
-            <> "\" implements Interface \""
-            <> interfaceName
-            <> "\" Partially,"
+          "type "
+            <> msg name
+            <> " implements Interface "
+            <> msg interfaceName
+            <> " Partially,"
             <> detailedMessage errorType
         detailedMessage UnexpectedType {expectedType, foundType} =
-          " on key \""
-            <> key
-            <> "\" expected type \""
-            <> expectedType
-            <> "\" found \""
-            <> foundType
-            <> "\"."
-        detailedMessage UndefinedField = " key \"" <> key <> "\" not found ."
+          " on key "
+            <> msg key
+            <> " expected type "
+            <> msg expectedType
+            <> " found "
+            <> msg foundType
+            <> "."
+        detailedMessage UndefinedField = " key " <> msg key <> " not found ."

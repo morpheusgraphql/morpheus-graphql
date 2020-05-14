@@ -5,6 +5,7 @@
 module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ID,
     Session,
+    SessionID,
     ClientConnectionStore,
     ClientConnection,
     Updates (..),
@@ -52,18 +53,18 @@ import Data.UUID (UUID)
 
 type ID = UUID
 
-type SesionID = Text
+type SessionID = Text
 
-type Session = (ID, SesionID)
+type Session = (ID, SessionID)
 
 data ClientConnection e (m :: * -> *) = ClientConnection
   { connectionId :: ID,
     connectionCallback :: ByteString -> m (),
     -- one connection can have multiple subsciprion session
-    connectionSessions :: HashMap SesionID (SubEvent e m)
+    connectionSessions :: HashMap SessionID (SubEvent e m)
   }
 
-connectionSessionIds :: ClientConnection e m -> [SesionID]
+connectionSessionIds :: ClientConnection e m -> [SessionID]
 connectionSessionIds = HM.keys . connectionSessions
 
 instance Show (ClientConnection e m) where

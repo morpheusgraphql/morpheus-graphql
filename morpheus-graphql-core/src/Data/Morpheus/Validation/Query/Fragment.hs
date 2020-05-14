@@ -17,15 +17,17 @@ import Data.Morpheus.Error.Fragment
     cannotSpreadWithinItself,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Fragment (..),
+  ( FieldName,
+    Fragment (..),
     Fragments,
-    Name,
     Position,
     RAW,
     Ref (..),
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    TypeName,
+    TypeNameRef (..),
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -58,12 +60,12 @@ checkUnusedFragments selectionSet = do
     (toList fragments)
 
 castFragmentType ::
-  Maybe Name -> Position -> [Name] -> Fragment -> Validator ctx Fragment
+  Maybe FieldName -> Position -> [TypeName] -> Fragment -> Validator ctx Fragment
 castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [Name] -> Ref -> Validator ctx Fragment
+resolveSpread :: [TypeName] -> Ref -> Validator ctx Fragment
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref
@@ -96,7 +98,7 @@ fragmentsConditionTypeChecking =
 checkTypeExistence :: Fragment -> BaseValidator ()
 checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
   askSchema
-    >>= selectKnown (Ref fragmentType fragmentPosition)
+    >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
     >>= constraint OBJECT fr
     >> pure ()
 

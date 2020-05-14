@@ -40,14 +40,12 @@ import Data.Morpheus.Types
   ( Input,
     Stream,
   )
-import Data.Morpheus.Types.Internal.AST
-  ( Name,
-  )
 import Data.Morpheus.Types.Internal.Subscription
   ( ClientConnectionStore,
     GQLChannel (..),
     Input (..),
     Scope (..),
+    SessionID,
     WS,
     connect,
     connectionSessionIds,
@@ -181,7 +179,7 @@ stored (Init uuid) cStore
 
 storeSubscriptions ::
   Input WS ->
-  [Name] ->
+  [SessionID] ->
   Store e ->
   TestTree
 storeSubscriptions

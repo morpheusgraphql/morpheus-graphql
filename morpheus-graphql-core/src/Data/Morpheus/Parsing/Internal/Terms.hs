@@ -31,6 +31,7 @@ module Data.Morpheus.Parsing.Internal.Terms
     optDescription,
     optionalList,
     parseNegativeSign,
+    parseTypeName,
   )
 where
 
@@ -46,9 +47,10 @@ import Data.Morpheus.Parsing.Internal.Internal
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
     Description,
-    Key,
-    Name,
+    FieldName (..),
     Ref (..),
+    Token,
+    TypeName (..),
     TypeRef (..),
     convertToHaskellName,
     toHSWrappers,
@@ -58,8 +60,7 @@ import Data.Morpheus.Types.Internal.Operation
     Listable (..),
   )
 import Data.Text
-  ( Text,
-    pack,
+  ( pack,
     strip,
   )
 import Text.Megaparsec
@@ -96,11 +97,14 @@ import Text.Megaparsec.Char
 parseNegativeSign :: Parser Bool
 parseNegativeSign = (char '-' $> True <* spaceAndComments) <|> pure False
 
-parseName :: Parser Name
-parseName = token
+parseName :: Parser FieldName
+parseName = convertToHaskellName . FieldName <$> token
 
-keyword :: Key -> Parser ()
-keyword word = string word *> space1 *> spaceAndComments
+parseTypeName :: Parser TypeName
+parseTypeName = TypeName <$> token
+
+keyword :: FieldName -> Parser ()
+keyword (FieldName word) = string word *> space1 *> spaceAndComments
 
 operator :: Char -> Parser ()
 operator x = char x *> spaceAndComments
@@ -123,17 +127,17 @@ litAssignment = char ':' *> spaceAndComments
 
 -- PRIMITIVE
 ------------------------------------
-token :: Parser Text
+token :: Parser Token
 token = label "token" $ do
   firstChar <- letterChar <|> char '_'
   restToken <- many $ letterChar <|> char '_' <|> digitChar
   spaceAndComments
-  return $ convertToHaskellName $ pack $ firstChar : restToken
+  return $ pack $ firstChar : restToken
 
-qualifier :: Parser (Text, Position)
+qualifier :: Parser (FieldName, Position)
 qualifier = label "qualifier" $ do
   position <- getLocation
-  value <- token
+  value <- parseName
   return (value, position)
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
@@ -144,7 +148,7 @@ variable :: Parser Ref
 variable = label "variable" $ do
   refPosition <- getLocation
   _ <- char '$'
-  refName <- token
+  refName <- parseName
   spaceAndComments
   pure $ Ref {refName, refPosition}
 
@@ -160,7 +164,7 @@ spaceAndComments1 = space1 *> spaceAndComments
 optDescription :: Parser (Maybe Description)
 optDescription = optional parseDescription
 
-parseDescription :: Parser Text
+parseDescription :: Parser Description
 parseDescription =
   strip . pack <$> (blockDescription <|> singleLine) <* spaceAndComments
   where
@@ -242,11 +246,11 @@ parseAssignment nameParser valueParser = label "assignment" $ do
 --  TypeCondition:
 --    on NamedType
 --
-parseTypeCondition :: Parser Text
+parseTypeCondition :: Parser TypeName
 parseTypeCondition = do
   _ <- string "on"
   space1
-  token
+  parseTypeName
 
 spreadLiteral :: Parser Position
 spreadLiteral = do
@@ -255,13 +259,13 @@ spreadLiteral = do
   space
   return index
 
-parseWrappedType :: Parser ([DataTypeWrapper], Text)
+parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
   where
-    unwrapped :: Parser ([DataTypeWrapper], Text)
-    unwrapped = ([],) <$> token <* spaceAndComments
+    unwrapped :: Parser ([DataTypeWrapper], TypeName)
+    unwrapped = ([],) <$> parseTypeName <* spaceAndComments
     ----------------------------------------------
-    wrapped :: Parser ([DataTypeWrapper], Text)
+    wrapped :: Parser ([DataTypeWrapper], TypeName)
     wrapped =
       between
         (char '[' *> spaceAndComments)
@@ -275,10 +279,10 @@ parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
 --  Name:
-parseAlias :: Parser (Maybe Key)
+parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
-    alias = label "alias" $ token <* char ':' <* spaceAndComments
+    alias = label "alias" $ parseName <* char ':' <* spaceAndComments
 
 parseType :: Parser TypeRef
 parseType = do

@@ -4,6 +4,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Types.Internal.Operation
   ( Empty (..),
@@ -22,14 +23,15 @@ where
 
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
+import Data.Hashable (Hashable)
 import Data.List (find)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
-    Name,
-    Named,
+  ( FieldName,
+    GQLErrors,
     Ref (..),
+    TypeName,
+    TypeNameRef (..),
   )
-import Data.Text (Text)
 import Instances.TH.Lift ()
 import Text.Megaparsec.Internal (ParsecT (..))
 import Text.Megaparsec.Stream (Stream)
@@ -41,18 +43,18 @@ instance Empty (HashMap k v) where
   empty = HM.empty
 
 class Selectable c a | c -> a where
-  selectOr :: d -> (a -> d) -> Name -> c -> d
+  selectOr :: d -> (a -> d) -> KEY a -> c -> d
 
 instance KeyOf a => Selectable [a] a where
   selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
 
-instance Selectable (HashMap Text a) a where
+instance (KEY a ~ k, Eq k, Hashable k) => Selectable (HashMap k a) a where
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
-selectBy :: (Failure e m, Selectable c a, Monad m) => e -> Name -> c -> m a
+selectBy :: (Failure e m, Selectable c a, Monad m) => e -> KEY a -> c -> m a
 selectBy err = selectOr (failure err) pure
 
-member :: forall a c. Selectable c a => Name -> c -> Bool
+member :: forall a c. Selectable c a => KEY a -> c -> Bool
 member = selectOr False toTrue
   where
     toTrue :: a -> Bool
@@ -61,20 +63,26 @@ member = selectOr False toTrue
 class KeyOf a => Singleton c a | c -> a where
   singleton :: a -> c
 
-class KeyOf a where
-  keyOf :: a -> Name
+class Eq (KEY a) => KeyOf a where
+  type KEY a :: *
+  type KEY a = FieldName
+  keyOf :: a -> KEY a
 
 instance KeyOf Ref where
   keyOf = refName
 
-toPair :: KeyOf a => a -> (Name, a)
+instance KeyOf TypeNameRef where
+  type KEY TypeNameRef = TypeName
+  keyOf = typeNameRef
+
+toPair :: KeyOf a => a -> (KEY a, a)
 toPair x = (keyOf x, x)
 
 class Listable c a | c -> a where
   size :: c -> Int
   size = length . toList
-  fromAssoc :: (Monad m, Failure GQLErrors m) => [Named a] -> m c
-  toAssoc :: c -> [Named a]
+  fromAssoc :: (Monad m, Failure GQLErrors m) => [(KEY a, a)] -> m c
+  toAssoc :: c -> [(KEY a, a)]
   fromList :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m c
 
   -- TODO: fromValues
@@ -84,7 +92,7 @@ class Listable c a | c -> a where
   -- TODO: toValues
   toList :: c -> [a]
 
-keys :: Listable c a => c -> [Name]
+keys :: Listable c a => c -> [KEY a]
 keys = map fst . toAssoc
 
 class Merge a where

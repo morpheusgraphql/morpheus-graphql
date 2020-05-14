@@ -19,8 +19,9 @@ import Data.Morpheus.Client.Aeson
 import Data.Morpheus.Client.Fetch
   ( deriveFetch,
   )
-import Data.Morpheus.Client.Selection
-  ( operationTypes,
+import Data.Morpheus.Client.Transform.Selection
+  ( ClientDefinition (..),
+    toClientDefinition,
   )
 import Data.Morpheus.Core
   ( validateRequest,
@@ -32,16 +33,16 @@ import Data.Morpheus.Error
 import Data.Morpheus.Internal.TH
   ( Scope (..),
     declareType,
+    makeName,
   )
 import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ClientQuery (..),
-    ClientType (..),
-    DataTypeKind (..),
+  ( DataTypeKind (..),
     GQLQuery (..),
     Schema,
+    TypeD (..),
     TypeD (..),
     VALIDATION_MODE (..),
     isOutputObject,
@@ -51,35 +52,34 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
   )
 import Data.Semigroup ((<>))
-import Data.Text (unpack)
 import Language.Haskell.TH
 
 defineQuery :: IO (Eventless Schema) -> (GQLQuery, String) -> Q [Dec]
-defineQuery ioSchema queryRoot = do
+defineQuery ioSchema (query, src) = do
   schema <- runIO ioSchema
-  case schema >>= (`validateWith` queryRoot) of
+  case schema >>= (`validateWith` query) of
     Failure errors -> fail (renderGQLErrors errors)
-    Success {result, warnings} -> gqlWarnings warnings >> defineQueryD result
+    Success {result, warnings} -> gqlWarnings warnings >> defineQueryD src result
 
-defineQueryD :: ClientQuery -> Q [Dec]
-defineQueryD ClientQuery {queryTypes = rootType : subTypes, queryText, queryArgsType} =
+defineQueryD :: String -> ClientDefinition -> Q [Dec]
+defineQueryD _ ClientDefinition {clientTypes = []} = return []
+defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
   do
-    rootDecs <-
+    rootDeclaration <-
       defineOperationType
-        (queryArgumentType queryArgsType)
-        queryText
+        (queryArgumentType clientArguments)
+        src
         rootType
-    subTypeDecs <- concat <$> traverse declareT subTypes
-    return $ rootDecs ++ subTypeDecs
+    typeDeclarations <- concat <$> traverse declareT subTypes
+    pure (rootDeclaration <> typeDeclarations)
   where
-    declareT ClientType {clientType, clientKind}
-      | isOutputObject clientKind || clientKind == KindUnion =
+    declareT clientType@TypeD {tKind}
+      | isOutputObject tKind || tKind == KindUnion =
         withToJSON
           declareOutputType
           clientType
-      | clientKind == KindEnum = withToJSON declareInputType clientType
+      | tKind == KindEnum = withToJSON declareInputType clientType
       | otherwise = declareInputType clientType
-defineQueryD ClientQuery {queryTypes = []} = return []
 
 declareOutputType :: TypeD -> Q [Dec]
 declareOutputType typeD = pure [declareType CLIENT False Nothing [''Show] typeD]
@@ -98,22 +98,20 @@ withToJSON f datatype = do
 queryArgumentType :: Maybe TypeD -> (Type, Q [Dec])
 queryArgumentType Nothing = (ConT $ mkName "()", pure [])
 queryArgumentType (Just rootType@TypeD {tName}) =
-  (ConT $ mkName $ unpack tName, declareInputType rootType)
+  (ConT $ makeName tName, declareInputType rootType)
 
-defineOperationType :: (Type, Q [Dec]) -> String -> ClientType -> Q [Dec]
-defineOperationType (argType, argumentTypes) query ClientType {clientType} =
+defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
+defineOperationType (argType, argumentTypes) query clientType =
   do
     rootType <- withToJSON declareOutputType clientType
     typeClassFetch <- deriveFetch argType (tName clientType) query
     argsT <- argumentTypes
     pure $ rootType <> typeClassFetch <> argsT
 
-validateWith :: Schema -> (GQLQuery, String) -> Eventless ClientQuery
-validateWith schema (rawRequest@GQLQuery {operation}, queryText) = do
+validateWith :: Schema -> GQLQuery -> Eventless ClientDefinition
+validateWith schema rawRequest@GQLQuery {operation} = do
   validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
-  (queryArgsType, queryTypes) <-
-    operationTypes
-      schema
-      (O.operationArguments operation)
-      validOperation
-  return ClientQuery {queryText, queryTypes, queryArgsType}
+  toClientDefinition
+    schema
+    (O.operationArguments operation)
+    validOperation

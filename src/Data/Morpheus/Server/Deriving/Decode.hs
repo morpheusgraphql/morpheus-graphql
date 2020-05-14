@@ -31,6 +31,11 @@ import Data.Morpheus.Kind
     OUTPUT,
     SCALAR,
   )
+import Data.Morpheus.Server.Deriving.Utils
+  ( conNameProxy,
+    datatypeNameProxy,
+    selNameProxy,
+  )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
     withList,
@@ -46,12 +51,13 @@ import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
-    Name,
     ObjectEntry (..),
+    TypeName (..),
     VALID,
     ValidObject,
     ValidValue,
     Value (..),
+    msg,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Listable (..),
@@ -62,7 +68,6 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
-import Data.Text (pack)
 import GHC.Generics
 
 -- GENERIC
@@ -92,7 +97,7 @@ class DecodeKind (kind :: GQL_KIND) a where
 instance (GQLScalar a) => DecodeKind SCALAR a where
   decodeKind _ value = case toScalar value >>= parseValue of
     Right scalar -> return scalar
-    Left errorMessage -> internalTypeMismatch errorMessage value
+    Left errorMessage -> internalTypeMismatch (msg errorMessage) value
 
 -- ENUM
 instance DecodeType a => DecodeKind ENUM a where
@@ -120,9 +125,9 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeType a whe
 --     deriving (Generic, GQLType)
 
 decideUnion ::
-  ([Name], value -> Eventless (f1 a)) ->
-  ([Name], value -> Eventless (f2 a)) ->
-  Name ->
+  ([TypeName], value -> Eventless (f1 a)) ->
+  ([TypeName], value -> Eventless (f2 a)) ->
+  TypeName ->
   value ->
   Eventless ((:+:) f1 f2 a)
 decideUnion (left, f1) (right, f2) name value
@@ -131,18 +136,21 @@ decideUnion (left, f1) (right, f2) name value
   | name `elem` right =
     R1 <$> f2 value
   | otherwise =
-    failure $ "Constructor \"" <> name <> "\" could not find in Union"
+    failure $
+      "Constructor \""
+        <> msg name
+        <> "\" could not find in Union"
 
 data Tag = D_CONS | D_UNION deriving (Eq, Ord)
 
 data Cont = Cont
   { contKind :: Tag,
-    typeName :: Name
+    typeName :: TypeName
   }
 
 data Info = Info
   { kind :: Tag,
-    tagName :: [Name]
+    tagName :: [TypeName]
   }
 
 instance Semigroup Info where
@@ -154,7 +162,7 @@ instance Semigroup Info where
 -- GENERICS
 --
 class DecodeRep f where
-  tags :: Proxy f -> Name -> Info
+  tags :: Proxy f -> TypeName -> Info
   decodeRep :: (ValidValue, Cont) -> Eventless (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
@@ -162,9 +170,9 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   decodeRep (x, y) =
     M1
       <$> decodeRep
-        (x, y {typeName = pack $ datatypeName (undefined :: (M1 D d f a))})
+        (x, y {typeName = datatypeNameProxy (Proxy @d)})
 
-getEnumTag :: ValidObject -> Eventless Name
+getEnumTag :: ValidObject -> Eventless TypeName
 getEnumTag x = case toList x of
   [ObjectEntry "enum" (Enum value)] -> pure value
   _ -> internalError "bad union enum object"
@@ -206,15 +214,12 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
         | otherwise = Info {kind = D_CONS, tagName = [consName]}
       getTag Nothing = Info {kind = D_CONS, tagName = [consName]}
       --------
-      consName = pack $ conName unsafeType
+      consName = conNameProxy (Proxy @c)
       ----------
       isUnionRef x = baseName <> x == consName
-      --------------------------
-      unsafeType :: (M1 C c U1 x)
-      unsafeType = undefined
 
 class DecodeFields f where
-  refType :: Proxy f -> Maybe Name
+  refType :: Proxy f -> Maybe TypeName
   decodeFields :: (ValidValue, Cont) -> Eventless (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
@@ -228,7 +233,7 @@ instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) whe
     | otherwise = __decode value
     where
       __decode = fmap (M1 . K1) . decodeRec
-      fieldName = pack $ selName (undefined :: M1 S s f a)
+      fieldName = selNameProxy (Proxy @s)
       decodeRec = withObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where

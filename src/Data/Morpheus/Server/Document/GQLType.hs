@@ -15,6 +15,7 @@ where
 import Data.Morpheus.Internal.TH
   ( instanceHeadT,
     instanceProxyFunD,
+    makeName,
     tyConArgs,
     typeInstanceDec,
     typeT,
@@ -36,63 +37,57 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataTypeKind (..),
     GQLTypeD (..),
-    Key,
     Meta (..),
     QUERY,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeName,
     isObject,
-    isSchemaTypeName,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
-import Data.Text
-  ( pack,
-    unpack,
-  )
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
 interfaceF :: Name -> ExpQ
 interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () Maybe))))|]
 
-introspectInterface :: Key -> ExpQ
-introspectInterface = interfaceF . mkName . unpack
+introspectInterface :: TypeName -> ExpQ
+introspectInterface = interfaceF . makeName
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta}, typeKindD, typeOriginal} =
+deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta, tKind}, typeOriginal} =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
   where
     functions =
       map
         instanceProxyFunD
-        [ ('__typeName, [|typename|]),
+        [ ('__typeName, [|tName|]),
           ('description, descriptionValue),
           ('implements, implementsFunc)
         ]
       where
-        typename = toHSTypename tName
         implementsFunc = listE $ map introspectInterface (interfacesFrom (Just typeOriginal))
         descriptionValue = case tMeta >>= metaDescription of
           Nothing -> [|Nothing|]
           Just desc -> [|Just desc|]
     --------------------------------
-    typeArgs = tyConArgs typeKindD
+    typeArgs = tyConArgs tKind
     --------------------------------
     iHead = instanceHeadT ''GQLType tName typeArgs
-    headSig = typeT (mkName $ unpack tName) typeArgs
+    headSig = typeT (makeName tName) typeArgs
     ---------------------------------------------------
     constrains = map conTypeable typeArgs
       where
         conTypeable name = typeT ''Typeable [name]
     -------------------------------------------------
     typeFamilies
-      | isObject typeKindD = [deriveKIND, deriveCUSTOM]
+      | isObject tKind = [deriveKIND, deriveCUSTOM]
       | otherwise = [deriveKIND]
       where
         deriveCUSTOM = deriveInstance ''CUSTOM ''TRUE
-        deriveKIND = deriveInstance ''KIND (kindName typeKindD)
+        deriveKIND = deriveInstance ''KIND (kindName tKind)
         -------------------------------------------------------
         deriveInstance :: Name -> Name -> Q Dec
         deriveInstance insName tyName = do
@@ -110,12 +105,6 @@ kindName KindNonNull = ''WRAPPER
 kindName KindInputUnion = ''INPUT
 kindName KindInterface = ''INTERFACE
 
-toHSTypename :: Key -> Key
-toHSTypename = pack . hsTypename . unpack
-  where
-    hsTypename ('S' : name) | isSchemaTypeName (pack name) = name
-    hsTypename name = name
-
-interfacesFrom :: Maybe (TypeDefinition ANY) -> [Key]
+interfacesFrom :: Maybe (TypeDefinition ANY) -> [TypeName]
 interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
 interfacesFrom _ = []

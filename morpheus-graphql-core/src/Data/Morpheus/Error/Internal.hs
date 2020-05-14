@@ -12,6 +12,7 @@ import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
     Message,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ValidValue,
@@ -21,7 +22,6 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     Failure (..),
   )
 import Data.Semigroup ((<>))
-import Data.Text (pack)
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- all kind internal error in development
@@ -34,4 +34,4 @@ internalResolvingError = globalErrorMessage . ("INTERNAL ERROR:" <>)
 -- if value is already validated but value has different type
 internalTypeMismatch :: Message -> ValidValue -> Eventless a
 internalTypeMismatch text jsType =
-  internalError $ "Type mismatch " <> text <> pack (show jsType)
+  internalError $ "Type mismatch " <> text <> msg jsType

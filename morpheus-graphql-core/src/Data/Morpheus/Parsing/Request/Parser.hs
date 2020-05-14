@@ -24,7 +24,8 @@ import Data.Morpheus.Parsing.Request.Selection
   )
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST
-  ( GQLQuery (..),
+  ( FieldName (..),
+    GQLQuery (..),
     ResolvedValue,
     replaceValue,
   )
@@ -34,7 +35,6 @@ import Data.Morpheus.Types.Internal.Operation
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
-import Data.Text (Text)
 import Text.Megaparsec
   ( eof,
     label,
@@ -52,8 +52,8 @@ parseGQL :: GQLRequest -> Eventless GQLQuery
 parseGQL GQLRequest {query, variables} = setVariables <$> processParser request query
   where
     setVariables root = root {inputVariables = toVariableMap variables}
-    toVariableMap :: Maybe Aeson.Value -> [(Text, ResolvedValue)]
+    toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolvedValue)]
     toVariableMap (Just (Aeson.Object x)) = map toMorpheusValue (toList x)
       where
-        toMorpheusValue (key, value) = (key, replaceValue value)
+        toMorpheusValue (key, value) = (FieldName key, replaceValue value)
     toVariableMap _ = []

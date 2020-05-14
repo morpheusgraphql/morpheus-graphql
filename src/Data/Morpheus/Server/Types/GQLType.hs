@@ -26,8 +26,8 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataFingerprint (..),
-    Name,
     QUERY,
+    TypeName (..),
     TypeUpdater,
     internalFingerprint,
   )
@@ -115,7 +115,7 @@ class IsObject (KIND a) => GQLType a where
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
 
-  implements :: Proxy a -> [(Name, TypeUpdater)]
+  implements :: Proxy a -> [(TypeName, TypeUpdater)]
   implements _ = []
 
   description :: Proxy a -> Maybe Text
@@ -124,12 +124,12 @@ class IsObject (KIND a) => GQLType a where
   isObjectKind :: Proxy a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
-  __typeName :: Proxy a -> Text
+  __typeName :: Proxy a -> TypeName
   default __typeName ::
     (Typeable a) =>
     Proxy a ->
-    Text
-  __typeName _ = intercalate "_" (getName $ Proxy @a)
+    TypeName
+  __typeName _ = TypeName $ intercalate "_" (getName $ Proxy @a)
     where
       getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 

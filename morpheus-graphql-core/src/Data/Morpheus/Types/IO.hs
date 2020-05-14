@@ -46,8 +46,9 @@ import qualified Data.HashMap.Lazy as LH
 -- MORPHEUS
 import Data.Morpheus.Error.Utils (badRequestError)
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError (..),
-    Key,
+  ( FieldName,
+    GQLError (..),
+    Token,
     ValidValue,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
@@ -105,8 +106,8 @@ data JSONResponse a = JSONResponse
 
 -- | GraphQL HTTP Request Body
 data GQLRequest = GQLRequest
-  { query :: Key,
-    operationName :: Maybe Key,
+  { query :: Token,
+    operationName :: Maybe FieldName,
     variables :: Maybe Aeson.Value
   }
   deriving (Show, Generic, FromJSON, ToJSON)

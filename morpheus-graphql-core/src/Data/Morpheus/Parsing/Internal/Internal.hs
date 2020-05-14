@@ -13,6 +13,7 @@ import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
     Position (..),
+    msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -21,7 +22,6 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Text
   ( Text,
-    pack,
   )
 import Data.Void (Void)
 import Text.Megaparsec
@@ -68,7 +68,7 @@ processErrorBundle = map parseErrorToGQLError . bundleToErrors
     parseErrorToGQLError :: (ParseError Text MyError, SourcePos) -> GQLError
     parseErrorToGQLError (err, position) =
       GQLError
-        { message = pack (parseErrorPretty err),
+        { message = msg (parseErrorPretty err),
           locations = [toLocation position]
         }
     bundleToErrors ::

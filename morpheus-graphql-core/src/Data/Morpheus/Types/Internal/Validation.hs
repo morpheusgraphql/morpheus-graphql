@@ -55,11 +55,11 @@ import Control.Monad.Trans.Reader
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition (..),
     Fragments,
     IN,
     Message,
-    Name,
     OUT,
     Object,
     Position,
@@ -67,12 +67,15 @@ import Data.Morpheus.Types.Internal.AST
     Schema,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName (..),
     TypeRef (..),
     Value (..),
     __inputname,
     entryValue,
     fromAny,
     isFieldNullable,
+    msg,
+    toFieldName,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -113,7 +116,7 @@ import Data.Semigroup
     Semigroup (..),
   )
 
-getUnused :: (KeyOf b, Selectable ca a) => ca -> [b] -> [b]
+getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a) => ca -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
 
 failOnUnused :: Unused b => [b] -> Validator ctx ()
@@ -123,7 +126,7 @@ failOnUnused x
     (gctx, _) <- Validator ask
     failure $ map (unused gctx) x
 
-checkUnused :: (KeyOf b, Selectable ca a, Unused b) => ca -> [b] -> Validator ctx ()
+checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused b) => ca -> [b] -> Validator ctx ()
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
@@ -140,7 +143,8 @@ constraint target ctx _ = failure [kindViolation target ctx]
 
 selectRequired ::
   ( Selectable c value,
-    MissingRequired c ctx
+    MissingRequired c ctx,
+    KEY Ref ~ KEY value
   ) =>
   Ref ->
   c ->
@@ -155,7 +159,8 @@ selectRequired selector container =
 
 selectWithDefaultValue ::
   ( Selectable values value,
-    MissingRequired values ctx
+    MissingRequired values ctx,
+    KEY value ~ FieldName
   ) =>
   value ->
   FieldDefinition ->
@@ -183,9 +188,11 @@ selectWithDefaultValue
 selectKnown ::
   ( Selectable c a,
     Unknown c ctx,
-    KeyOf (UnknownSelector c)
+    KeyOf sel,
+    sel ~ UnknownSelector c,
+    KEY sel ~ KEY a
   ) =>
-  UnknownSelector c ->
+  sel ->
   c ->
   Validator ctx a
 selectKnown selector lib =
@@ -211,13 +218,13 @@ askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
       Just x -> pure x
       Nothing ->
         failure $
-          "Type \"" <> typeName anyType
+          "Type \"" <> msg (typeName anyType)
             <> "\" referenced by OBJECT \""
             <> "\" must be an OUTPUT_TYPE."
 
 askTypeMember ::
-  Name ->
-  SelectionValidator (Name, FieldsDefinition)
+  TypeName ->
+  SelectionValidator (TypeName, FieldsDefinition)
 askTypeMember name =
   askSchema
     >>= selectOr notFound pure name
@@ -226,21 +233,22 @@ askTypeMember name =
     notFound = do
       scopeType <- askScopeTypeName
       failure $
-        "Type \"" <> name
+        "Type \""
+          <> msg name
           <> "\" referenced by union \""
-          <> scopeType
+          <> msg scopeType
           <> "\" can't found in Schema."
     --------------------------------------
-    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (Name, FieldsDefinition)
+    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (TypeName, FieldsDefinition)
     constraintOBJECT TypeDefinition {typeName, typeContent} = con typeContent
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
         con _ = do
           scopeType <- askScopeTypeName
           failure $
-            "Type \"" <> typeName
+            "Type \"" <> msg typeName
               <> "\" referenced by union \""
-              <> scopeType
+              <> msg scopeType
               <> "\" must be an OBJECT."
 
 askInputFieldType ::
@@ -258,13 +266,14 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
       Just inputType -> pure inputType
       Nothing ->
         failure $
-          "Type \"" <> typeName x
+          "Type \""
+            <> msg (typeName x)
             <> "\" referenced by field \""
-            <> fieldName
+            <> msg fieldName
             <> "\" must be an input type."
 
 askInputMember ::
-  Name ->
+  TypeName ->
   InputValidator (TypeDefinition IN)
 askInputMember name =
   askSchema
@@ -272,10 +281,13 @@ askInputMember name =
     >>= constraintINPUT_OBJECT
   where
     typeInfo tName =
-      "Type \"" <> tName <> "\" referenced by inputUnion "
+      "Type \"" <> msg tName <> "\" referenced by inputUnion "
     notFound = do
       scopeType <- askScopeTypeName
-      failure $ typeInfo name <> scopeType <> "\" can't found in Schema."
+      failure $
+        typeInfo name
+          <> msg scopeType
+          <> "\" can't found in Schema."
     --------------------------------------
     constraintINPUT_OBJECT :: TypeDefinition ANY -> InputValidator (TypeDefinition IN)
     constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
@@ -284,7 +296,11 @@ askInputMember name =
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
           scopeType <- askScopeTypeName
-          failure $ typeInfo typeName <> "\"" <> scopeType <> "\" must be an INPUT_OBJECT."
+          failure $
+            typeInfo typeName
+              <> "\""
+              <> msg scopeType
+              <> "\" must be an INPUT_OBJECT."
 
 startInput :: InputSource -> InputValidator a -> Validator ctx a
 startInput inputSource =
@@ -313,7 +329,7 @@ askSchema = schema . fst <$> Validator ask
 askFragments :: Validator ctx Fragments
 askFragments = fragments . fst <$> Validator ask
 
-askScopeTypeName :: Validator ctx Name
+askScopeTypeName :: Validator ctx TypeName
 askScopeTypeName = scopeTypeName . fst <$> Validator ask
 
 askScopePosition :: Validator ctx Position
@@ -331,7 +347,7 @@ setGlobalContext ::
   Validator c a
 setGlobalContext f = Validator . withReaderT (\(x, y) -> (f x, y)) . _runValidator
 
-withScope :: Name -> Ref -> Validator ctx a -> Validator ctx a
+withScope :: TypeName -> Ref -> Validator ctx a -> Validator ctx a
 withScope scopeTypeName (Ref scopeSelectionName scopePosition) = setGlobalContext update
   where
     update ctx = ctx {scopeTypeName, scopePosition, scopeSelectionName}
@@ -341,7 +357,7 @@ withScopePosition scopePosition = setGlobalContext update
   where
     update ctx = ctx {scopePosition}
 
-withScopeType :: Name -> Validator ctx a -> Validator ctx a
+withScopeType :: TypeName -> Validator ctx a -> Validator ctx a
 withScopeType scopeTypeName = setGlobalContext update
   where
     update ctx = ctx {scopeTypeName}
@@ -351,14 +367,17 @@ inputMessagePrefix = renderInputPrefix <$> askContext
 
 constraintInputUnion ::
   forall stage.
-  [(Name, Bool)] ->
+  [(TypeName, Bool)] ->
   Object stage ->
-  Either Message (Name, Maybe (Value stage))
+  Either Message (TypeName, Maybe (Value stage))
 constraintInputUnion tags hm = do
   (enum :: Value stage) <-
     entryValue
       <$> selectBy
-        ("valid input union should contain \"" <> __inputname <> "\" and actual value")
+        ( "valid input union should contain \""
+            <> msg __inputname
+            <> "\" and actual value"
+        )
         __inputname
         hm
   tyName <- isPosibeInputUnion tags enum
@@ -368,14 +387,25 @@ constraintInputUnion tags hm = do
       value <-
         entryValue
           <$> selectBy
-            ("value for Union \"" <> tyName <> "\" was not Provided.")
-            tyName
+            ( "value for Union \""
+                <> msg tyName
+                <> "\" was not Provided."
+            )
+            (toFieldName tyName)
             hm
       pure (tyName, Just value)
     _ -> failure ("input union can have only one variant." :: Message)
 
-isPosibeInputUnion :: [(Name, Bool)] -> Value stage -> Either Message Name
+isPosibeInputUnion :: [(TypeName, Bool)] -> Value stage -> Either Message TypeName
 isPosibeInputUnion tags (Enum name) = case lookup name tags of
-  Nothing -> failure (name <> " is not posible union type" :: Message)
+  Nothing ->
+    failure
+      ( msg name
+          <> " is not posible union type"
+      )
   _ -> pure name
-isPosibeInputUnion _ _ = failure $ "\"" <> __inputname <> "\" must be Enum"
+isPosibeInputUnion _ _ =
+  failure $
+    "\""
+      <> msg __inputname
+      <> "\" must be Enum"

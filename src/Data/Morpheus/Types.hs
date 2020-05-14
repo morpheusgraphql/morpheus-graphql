@@ -79,11 +79,12 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Message,
-    Name,
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
+    TypeName,
     TypeUpdater,
+    msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Context (..),
@@ -106,7 +107,6 @@ import Data.Morpheus.Types.Internal.Subscription
     WS,
   )
 import Data.Proxy (Proxy (..))
-import Data.Text (pack)
 
 class FlexibleResolver (f :: * -> *) (a :: k) where
   type Flexible (m :: * -> *) a :: *
@@ -198,7 +198,7 @@ failRes ::
 failRes = fail
 
 liftEither :: (MonadTrans t, Monad (t m), Failure Message (t m)) => Monad m => m (Either String a) -> t m a
-liftEither x = lift x >>= either (failure . pack) pure
+liftEither x = lift x >>= either (failure . msg) pure
 
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
@@ -209,5 +209,5 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> 
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
 
-interface :: (GQLType a, Introspect a) => Proxy a -> (Name, TypeUpdater)
+interface :: (GQLType a, Introspect a) => Proxy a -> (TypeName, TypeUpdater)
 interface x = (__typeName x, introspect x)

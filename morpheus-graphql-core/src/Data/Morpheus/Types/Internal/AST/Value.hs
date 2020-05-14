@@ -37,6 +37,7 @@ import qualified Data.Aeson as A
     FromJSON (..),
     ToJSON (..),
     Value (..),
+    encode,
     object,
     pairs,
   )
@@ -48,13 +49,16 @@ import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
-    Name,
+  ( FieldName,
+    FieldName (..),
+    GQLError (..),
+    Msg (..),
     Position,
     RAW,
     RESOLVED,
     Ref (..),
     Stage,
+    TypeName (..),
     TypeRef,
     TypeRef (..),
     VALID,
@@ -85,7 +89,7 @@ import GHC.Generics (Generic)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 
-isReserved :: Name -> Bool
+isReserved :: FieldName -> Bool
 isReserved "case" = True
 isReserved "class" = True
 isReserved "data" = True
@@ -112,14 +116,14 @@ isReserved "_" = True
 isReserved _ = False
 {-# INLINE isReserved #-}
 
-convertToJSONName :: Text -> Text
-convertToJSONName hsName
-  | not (T.null hsName) && isReserved name && (T.last hsName == '\'') = name
+convertToJSONName :: FieldName -> Text
+convertToJSONName (FieldName hsName)
+  | not (T.null hsName) && isReserved (FieldName name) && (T.last hsName == '\'') = name
   | otherwise = hsName
   where
     name = T.init hsName
 
-convertToHaskellName :: Text -> Text
+convertToHaskellName :: FieldName -> FieldName
 convertToHaskellName name
   | isReserved name = name <> "'"
   | otherwise = name
@@ -166,7 +170,7 @@ deriving instance Show (VariableContent a)
 deriving instance Eq (VariableContent a)
 
 data Variable (stage :: Stage) = Variable
-  { variableName :: Name,
+  { variableName :: FieldName,
     variableType :: TypeRef,
     variablePosition :: Position,
     variableValue :: VariableContent (VAR stage)
@@ -179,44 +183,43 @@ instance KeyOf (Variable s) where
 instance NameCollision (Variable s) where
   nameCollision _ Variable {variableName, variablePosition} =
     GQLError
-      { message = "There can Be only One Variable Named \"" <> variableName <> "\"",
+      { message = "There can Be only One Variable Named " <> msg variableName,
         locations = [variablePosition]
       }
 
-type VariableDefinitions s = OrderedMap (Variable s)
+type VariableDefinitions s = OrderedMap FieldName (Variable s)
 
 data Value (stage :: Stage) where
   ResolvedVariable :: Ref -> Variable VALID -> Value RESOLVED
   VariableValue :: Ref -> Value RAW
   Object :: Object stage -> Value stage
   List :: [Value stage] -> Value stage
-  Enum :: Name -> Value stage
+  Enum :: TypeName -> Value stage
   Scalar :: ScalarValue -> Value stage
   Null :: Value stage
 
 deriving instance Eq (Value s)
 
 data ObjectEntry (s :: Stage) = ObjectEntry
-  { entryName :: Name,
+  { entryName :: FieldName,
     entryValue :: Value s
-    -- ObjectEntryposition :: Position
   }
   deriving (Eq)
 
 instance Show (ObjectEntry s) where
-  show (ObjectEntry name value) = unpack name <> ":" <> show value
+  show (ObjectEntry (FieldName name) value) = unpack name <> ":" <> show value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision _ ObjectEntry {entryName} =
     GQLError
-      { message = "There can Be only One field Named \"" <> entryName <> "\"",
+      { message = "There can Be only One field Named " <> msg entryName,
         locations = []
       }
 
 instance KeyOf (ObjectEntry s) where
   keyOf = entryName
 
-type Object a = OrderedMap (ObjectEntry a)
+type Object a = OrderedMap FieldName (ObjectEntry a)
 
 type ValidObject = Object VALID
 
@@ -236,14 +239,14 @@ deriving instance Lift (ObjectEntry a)
 
 instance Show (Value a) where
   show Null = "null"
-  show (Enum x) = "" <> unpack x
+  show (Enum x) = "" <> unpack (readTypeName x)
   show (Scalar x) = show x
   show (ResolvedVariable Ref {refName} Variable {variableValue}) =
-    "($" <> unpack refName <> ": " <> show variableValue <> ") "
-  show (VariableValue Ref {refName}) = "$" <> unpack refName <> " "
+    "($" <> unpack (readName refName) <> ": " <> show variableValue <> ") "
+  show (VariableValue Ref {refName}) = "$" <> unpack (readName refName) <> " "
   show (Object keys) = "{" <> foldWithKey toEntry "" keys <> "}"
     where
-      toEntry :: Name -> ObjectEntry a -> String -> String
+      toEntry :: FieldName -> ObjectEntry a -> String -> String
       toEntry _ value "" = show value
       toEntry _ value txt = txt <> ", " <> show value
   show (List list) = "[" <> foldl toEntry "" list <> "]"
@@ -252,18 +255,21 @@ instance Show (Value a) where
       toEntry "" value = show value
       toEntry txt value = txt <> ", " <> show value
 
+instance Msg (Value a) where
+  msg = msg . A.encode
+
 instance A.ToJSON (Value a) where
   toJSON (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
     A.toJSON x
   toJSON (VariableValue Ref {refName}) =
-    A.String $ "($ref:" <> refName <> ")"
+    A.String $ "($ref:" <> readName refName <> ")"
   toJSON Null = A.Null
-  toJSON (Enum x) = A.String x
+  toJSON (Enum (TypeName x)) = A.String x
   toJSON (Scalar x) = A.toJSON x
   toJSON (List x) = A.toJSON x
   toJSON (Object fields) = A.object $ map toEntry (toList fields)
     where
-      toEntry (ObjectEntry key value) = key A..= A.toJSON value
+      toEntry (ObjectEntry (FieldName name) value) = name A..= A.toJSON value
 
   -------------------------------------------
   toEncoding (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
@@ -292,7 +298,7 @@ replaceValue (A.String v) = gqlString v
 replaceValue (A.Object v) = gqlObject $ map replace (M.toList v)
   where
     --replace :: (a, A.Value) -> (a, Value a)
-    replace (key, val) = (key, replaceValue val)
+    replace (key, val) = (FieldName key, replaceValue val)
 replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
 replaceValue A.Null = gqlNull
 
@@ -306,7 +312,7 @@ class GQLValue a where
   gqlBoolean :: Bool -> a
   gqlString :: Text -> a
   gqlList :: [a] -> a
-  gqlObject :: [(Name, a)] -> a
+  gqlObject :: [(FieldName, a)] -> a
 
 -- build GQL Values for Subscription Resolver
 instance GQLValue (Value a) where

@@ -59,16 +59,18 @@ import Data.Morpheus.Types.IO
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( FieldName,
+    GQLError (..),
     GQLErrors,
     MUTATION,
     Message,
-    Name,
     OperationType,
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
+    TypeName (..),
     VALID,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
@@ -116,7 +118,6 @@ import Data.Semigroup
   ( (<>),
     Semigroup (..),
   )
-import Data.Text (pack)
 
 type WithOperation (o :: OperationType) = LiftOperation o
 
@@ -133,7 +134,7 @@ data Context = Context
   { currentSelection :: Selection VALID,
     schema :: Schema,
     operation :: Operation VALID,
-    currentTypeName :: Name
+    currentTypeName :: TypeName
   }
   deriving (Show)
 
@@ -183,7 +184,7 @@ clearStateResolverEvents = mapResolverState (mapReaderT cleanEvents)
 resolverFailureMessage :: Selection VALID -> Message -> GQLError
 resolverFailureMessage Selection {selectionName, selectionPosition} message =
   GQLError
-    { message = "Failure on Resolving Field \"" <> selectionName <> "\": " <> message,
+    { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
       locations = [selectionPosition]
     }
 
@@ -216,7 +217,7 @@ instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   (>>=) = unsafeBind
 
 #if __GLASGOW_HASKELL__ < 808
-  fail = failure . pack
+  fail = failure . msg
 # endif
 
 -- MonadIO
@@ -235,7 +236,7 @@ instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
   failure = packResolver . failure
 
 instance (Monad m, LiftOperation o) => MonadFail (Resolver o e m) where
-  fail = failure . pack
+  fail = failure . msg
 
 -- PushEvents
 instance (Monad m) => PushEvents e (Resolver MUTATION e m) where
@@ -289,7 +290,7 @@ setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m
 setSelection currentSelection =
   mapResolverContext (\ctx -> ctx {currentSelection})
 
-setTypeName :: Monad m => Name -> Resolver o e m a -> Resolver o e m a
+setTypeName :: Monad m => TypeName -> Resolver o e m a -> Resolver o e m a
 setTypeName currentTypeName =
   mapResolverContext (\ctx -> ctx {currentTypeName})
 
@@ -363,7 +364,7 @@ toResolver toArgs = withResolver args
       ResultT . pure . toArgs . selectionArguments <$> getState
         >>= ResolverState . lift . cleanEvents
 
-pickSelection :: Name -> UnionSelection -> SelectionSet VALID
+pickSelection :: TypeName -> UnionSelection -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
 
 withObject ::
@@ -383,7 +384,7 @@ lookupRes ::
   Resolver o e m ValidValue
 lookupRes Selection {selectionName}
   | selectionName == "__typename" =
-    pure . Scalar . String . __typename
+    pure . Scalar . String . readTypeName . __typename
   | otherwise =
     maybe
       (pure gqlNull)
@@ -423,7 +424,7 @@ runDataResolver = withResolver getState . __encode
         -- Object -----------------
         encodeNode objDrv@ResObject {} _ = withObject (`resolveObject` objDrv) sel
         -- ENUM
-        encodeNode (ResEnum _ enum) SelectionField = pure $ gqlString enum
+        encodeNode (ResEnum _ enum) SelectionField = pure $ gqlString $ readTypeName enum
         encodeNode (ResEnum typename enum) unionSel@UnionSelection {} =
           encodeNode (unionDrv (typename <> "EnumObject")) unionSel
           where
@@ -431,7 +432,7 @@ runDataResolver = withResolver getState . __encode
               ResUnion name
                 $ pure
                 $ ResObject
-                $ ObjectResModel name [("enum", pure $ ResScalar $ String enum)]
+                $ ObjectResModel name [("enum", pure $ ResScalar $ String $ readTypeName enum)]
         encodeNode ResEnum {} _ =
           failure ("wrong selection on enum value" :: Message)
         -- UNION
@@ -440,7 +441,7 @@ runDataResolver = withResolver getState . __encode
           where
             currentSelection = pickSelection typename selections
         encodeNode (ResUnion name _) _ =
-          failure ("union Resolver \"" <> name <> "\" should only recieve UnionSelection" :: Message)
+          failure ("union Resolver " <> msg name <> " should only recieve UnionSelection")
         -- SCALARS
         encodeNode ResNull _ = pure Null
         encodeNode (ResScalar x) SelectionField = pure $ Scalar x
@@ -468,10 +469,10 @@ runResolver (ResolverS resT) sel = ResultT $ do
 
 -- Resolver Models -------------------------------------------------------------------
 type FieldResModel o e m =
-  (Name, Resolver o e m (ResModel o e m))
+  (FieldName, Resolver o e m (ResModel o e m))
 
 data ObjectResModel o e m = ObjectResModel
-  { __typename :: Name,
+  { __typename :: TypeName,
     objectFields ::
       [FieldResModel o e m]
   }
@@ -484,10 +485,10 @@ instance Merge (ObjectResModel o e m) where
 data ResModel (o :: OperationType) e (m :: * -> *)
   = ResNull
   | ResScalar ScalarValue
-  | ResEnum Name Name
+  | ResEnum TypeName TypeName
   | ResList [ResModel o e m]
   | ResObject (ObjectResModel o e m)
-  | ResUnion Name (Resolver o e m (ResModel o e m))
+  | ResUnion TypeName (Resolver o e m (ResModel o e m))
   deriving (Show)
 
 instance Merge (ResModel o e m) where
@@ -571,5 +572,5 @@ mapObjectDeriving (ObjectResModel tyname x) =
   ObjectResModel tyname $
     map (mapEntry mapStrategy) x
 
-mapEntry :: (a -> b) -> (Name, a) -> (Name, b)
+mapEntry :: (a -> b) -> (k, a) -> (k, b)
 mapEntry f (name, value) = (name, f value)

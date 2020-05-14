@@ -5,12 +5,11 @@
 
 module Data.Morpheus.Types.Internal.AST
   ( -- BASE
-    Key,
     Ref (..),
     Position (..),
     Message,
     anonymousRef,
-    Name,
+    FieldName (..),
     Description,
     Stage,
     RESOLVED,
@@ -32,7 +31,6 @@ module Data.Morpheus.Types.Internal.AST
     ValidObject,
     ResolvedObject,
     ResolvedValue,
-    Named,
     splitDuplicates,
     removeDuplicates,
     -- Selection
@@ -77,10 +75,8 @@ module Data.Morpheus.Types.Internal.AST
     TypeUpdater,
     TypeD (..),
     ConsD (..),
-    ClientQuery (..),
     GQLTypeD (..),
     TypeCategory,
-    ClientType (..),
     DataInputUnion,
     VariableContent (..),
     TypeLib,
@@ -99,9 +95,7 @@ module Data.Morpheus.Types.Internal.AST
     isSubscription,
     isOutputObject,
     sysTypes,
-    isDefaultTypeName,
-    isSchemaTypeName,
-    isPrimitiveTypeName,
+    isSystemTypeName,
     isEntNode,
     createField,
     createArgument,
@@ -143,6 +137,12 @@ module Data.Morpheus.Types.Internal.AST
     ToAny (..),
     TRUE,
     FALSE,
+    TypeName (..),
+    Token,
+    Msg (..),
+    intercalateName,
+    toFieldName,
+    TypeNameRef (..),
   )
 where
 
@@ -155,11 +155,11 @@ import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Value
 import Language.Haskell.TH.Syntax (Lift)
 
-type Variables = HashMap Key ResolvedValue
+type Variables = HashMap FieldName ResolvedValue
 
 data GQLQuery = GQLQuery
   { fragments :: Fragments,
     operation :: Operation RAW,
-    inputVariables :: [(Key, ResolvedValue)]
+    inputVariables :: [(FieldName, ResolvedValue)]
   }
   deriving (Show, Lift)

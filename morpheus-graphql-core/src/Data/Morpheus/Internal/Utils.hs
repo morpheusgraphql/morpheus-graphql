@@ -1,9 +1,10 @@
 module Data.Morpheus.Internal.Utils
   ( capital,
     nonCapital,
-    nameSpaceWith,
+    nameSpaceField,
     nameSpaceType,
     isEnum,
+    capitalTypeName,
   )
 where
 
@@ -13,34 +14,40 @@ import Data.Char
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
+    FieldName (..),
+    Token,
+    TypeName (..),
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( Text,
+import qualified Data.Text as T
+  ( concat,
     pack,
     unpack,
   )
-import qualified Data.Text as T
-  ( concat,
-  )
 
-nameSpaceType :: [Text] -> Text -> Text
-nameSpaceType list name = T.concat $ map capital (list <> [name])
+mapText :: (String -> String) -> Token -> Token
+mapText f = T.pack . f . T.unpack
 
-nameSpaceWith :: Text -> Text -> Text
-nameSpaceWith nSpace name = nonCapital nSpace <> capital name
+nameSpaceType :: [FieldName] -> TypeName -> TypeName
+nameSpaceType list (TypeName name) = TypeName . T.concat $ map capital (map readName list <> [name])
 
-nonCapital :: Text -> Text
-nonCapital = pack . __nonCapital . unpack
+nameSpaceField :: TypeName -> FieldName -> FieldName
+nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capital name)
+
+nonCapital :: TypeName -> Token
+nonCapital = mapText __nonCapital . readTypeName
   where
     __nonCapital [] = []
     __nonCapital (x : xs) = toLower x : xs
 
-capital :: Text -> Text
-capital = pack . __capital . unpack
+capital :: Token -> Token
+capital = mapText __capital
   where
     __capital [] = []
     __capital (x : xs) = toUpper x : xs
 
 isEnum :: [ConsD] -> Bool
 isEnum = all (null . cFields)
+
+capitalTypeName :: FieldName -> TypeName
+capitalTypeName = TypeName . capital . readName

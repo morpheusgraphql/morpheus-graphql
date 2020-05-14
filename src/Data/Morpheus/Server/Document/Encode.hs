@@ -15,6 +15,9 @@ import Data.Morpheus.Internal.TH
   ( applyT,
     destructRecord,
     instanceHeadMultiT,
+    makeName,
+    nameStringE,
+    nameVarT,
     typeT,
   )
 import Data.Morpheus.Server.Deriving.Encode
@@ -25,12 +28,12 @@ import Data.Morpheus.Server.Types.GQLType (TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
-    GQLTypeD (..),
-    Key,
     QUERY,
     SUBSCRIPTION,
     TypeD (..),
+    TypeName (..),
     isSubscription,
+    readName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( LiftOperation,
@@ -40,44 +43,43 @@ import Data.Morpheus.Types.Internal.Resolving
     Resolver,
   )
 import Data.Semigroup ((<>))
-import Data.Text (unpack)
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
-m_ :: Key
+m_ :: TypeName
 m_ = "m"
 
-fo_ :: Key
+fo_ :: TypeName
 fo_ = "fieldOperationKind"
 
-po_ :: Key
+po_ :: TypeName
 po_ = "parentOparation"
 
-e_ :: Key
+e_ :: TypeName
 e_ = "encodeEvent"
 
-encodeVars :: [Key]
+encodeVars :: [TypeName]
 encodeVars = [e_, m_]
 
 encodeVarsT :: [TypeQ]
-encodeVarsT = map (varT . mkName . unpack) encodeVars
+encodeVarsT = map nameVarT encodeVars
 
-deriveEncode :: GQLTypeD -> Q [Dec]
-deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}]}} =
+deriveEncode :: TypeD -> Q [Dec]
+deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
   pure <$> instanceD (cxt constrains) appHead methods
   where
     subARgs = conT ''SUBSCRIPTION : encodeVarsT
     instanceArgs
-      | isSubscription typeKindD = subARgs
-      | otherwise = map (varT . mkName . unpack) (po_ : encodeVars)
-    mainType = applyT (mkName $ unpack tName) [mainTypeArg]
+      | isSubscription tKind = subARgs
+      | otherwise = map nameVarT (po_ : encodeVars)
+    mainType = applyT (makeName tName) [mainTypeArg]
       where
         mainTypeArg
-          | isSubscription typeKindD = applyT ''Resolver subARgs
+          | isSubscription tKind = applyT ''Resolver subARgs
           | otherwise = typeT ''Resolver (fo_ : encodeVars)
     -----------------------------------------------------------------------------------------
     typeables
-      | isSubscription typeKindD =
+      | isSubscription tKind =
         [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
       | otherwise =
         [ iLiftOp po_,
@@ -87,7 +89,7 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
           iTypeable po_
         ]
     -------------------------
-    iLiftOp op = applyT ''LiftOperation [varT $ mkName $ unpack op]
+    iLiftOp op = applyT ''LiftOperation [nameVarT op]
     -------------------------
     iTypeable name = typeT ''Typeable [name]
     -------------------------------------------
@@ -118,11 +120,11 @@ deriveEncode GQLTypeD {typeKindD, typeD = TypeD {tName, tCons = [ConsD {cFields}
             $ appE
               ( appE
                   (conE 'ObjectResModel)
-                  (stringE (unpack tName))
+                  (nameStringE tName)
               )
-              (listE $ map (decodeVar . unpack) varNames)
+              (listE $ map (decodeVar . TypeName . readName) varNames)
         decodeVar name = [|(name, encode $(varName))|]
           where
-            varName = varE $ mkName name
+            varName = varE $ makeName name
         varNames = map fieldName cFields
 deriveEncode _ = pure []

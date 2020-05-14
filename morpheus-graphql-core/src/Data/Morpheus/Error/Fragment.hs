@@ -9,17 +9,16 @@ where
 -- MORPHEUS
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( FieldName,
+    GQLError (..),
     GQLErrors,
     Position,
     Ref (..),
+    TypeName,
+    msg,
+    msgSepBy,
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( Text,
-    intercalate,
-  )
-import qualified Data.Text as T
 
 {-
   FRAGMENT:
@@ -37,26 +36,26 @@ cannotSpreadWithinItself :: [Ref] -> GQLErrors
 cannotSpreadWithinItself fragments = [GQLError {message = text, locations = map refPosition fragments}]
   where
     text =
-      "Cannot spread fragment \""
-        <> refName (head fragments)
-        <> "\" within itself via "
-        <> T.intercalate ", " (map refName fragments)
+      "Cannot spread fragment "
+        <> msg (refName $ head fragments)
+        <> " within itself via "
+        <> msgSepBy ", " (map refName fragments)
         <> "."
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-cannotBeSpreadOnType :: Maybe Text -> Text -> Position -> [Text] -> GQLErrors
+cannotBeSpreadOnType :: Maybe FieldName -> TypeName -> Position -> [TypeName] -> GQLErrors
 cannotBeSpreadOnType key fragmentType position typeMembers =
   errorMessage
     position
-    msg
+    text
   where
-    msg =
+    text =
       "Fragment "
         <> getName key
-        <> "cannot be spread here as objects of type \""
-        <> intercalate ", " typeMembers
-        <> "\" can never be of type \""
-        <> fragmentType
-        <> "\"."
-    getName (Just x) = "\"" <> x <> "\" "
+        <> "cannot be spread here as objects of type "
+        <> msgSepBy ", " typeMembers
+        <> " can never be of type "
+        <> msg fragmentType
+        <> "."
+    getName (Just x) = msg x <> " "
     getName Nothing = ""

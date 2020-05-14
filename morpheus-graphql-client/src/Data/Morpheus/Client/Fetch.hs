@@ -26,16 +26,19 @@ import Data.ByteString.Lazy (ByteString)
 
 import Data.Morpheus.Internal.TH
   ( instanceHeadT,
+    makeName,
     typeInstanceDec,
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     JSONResponse (..),
   )
+import Data.Morpheus.Types.Internal.AST
+  ( FieldName,
+    TypeName,
+  )
 import Data.Text
-  ( Text,
-    pack,
-    unpack,
+  ( pack,
   )
 import Language.Haskell.TH
 
@@ -49,7 +52,7 @@ class Fetch a where
   __fetch ::
     (Monad m, Show a, ToJSON (Args a), FromJSON a) =>
     String ->
-    Text ->
+    FieldName ->
     (ByteString -> m ByteString) ->
     Args a ->
     m (Either String a)
@@ -61,12 +64,12 @@ class Fetch a where
       processResponse invalidResponse = Left (show invalidResponse)
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
 
-deriveFetch :: Type -> Text -> String -> Q [Dec]
+deriveFetch :: Type -> TypeName -> String -> Q [Dec]
 deriveFetch resultType typeName queryString =
   pure <$> instanceD (cxt []) iHead methods
   where
     iHead = instanceHeadT ''Fetch typeName []
     methods =
       [ funD 'fetch [clause [] (normalB [|__fetch queryString typeName|]) []],
-        pure $ typeInstanceDec ''Args (ConT $ mkName $ unpack typeName) resultType
+        pure $ typeInstanceDec ''Args (ConT $ makeName typeName) resultType
       ]

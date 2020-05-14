@@ -2,18 +2,18 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
-  ( Key,
-    Ref (..),
+  ( Ref (..),
     Position (..),
-    Message,
-    Name,
-    Named,
+    Message (..),
+    FieldName (..),
     Description,
     VALID,
     RAW,
@@ -29,6 +29,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     DataTypeKind (..),
     DataFingerprint (..),
     DataTypeWrapper (..),
+    Token,
     anonymousRef,
     toHSWrappers,
     toGQLWrapper,
@@ -37,9 +38,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     isWeaker,
     isSubscription,
     isOutputObject,
-    isDefaultTypeName,
-    isSchemaTypeName,
-    isPrimitiveTypeName,
+    isSystemTypeName,
     isObject,
     isInput,
     isNullableWrapper,
@@ -54,30 +53,106 @@ module Data.Morpheus.Types.Internal.AST.Base
     internalFingerprint,
     TRUE,
     FALSE,
+    TypeName (..),
+    Msg (..),
+    intercalateName,
+    toFieldName,
+    TypeNameRef (..),
   )
 where
 
 import Data.Aeson
   ( FromJSON,
     ToJSON,
+    Value,
+    encode,
   )
-import Data.Semigroup ((<>))
-import Data.Text (Text)
+import Data.ByteString.Lazy.Char8 (ByteString, unpack)
+import Data.Hashable (Hashable)
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
+import Data.Semigroup (Semigroup (..))
+import Data.String (IsString)
+import Data.Text (Text, intercalate, pack)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Instances.TH.Lift ()
+import Language.Haskell.TH (stringE)
 import Language.Haskell.TH.Syntax (Lift (..))
 
 type TRUE = 'True
 
 type FALSE = 'False
 
-type Key = Text
+-- Strings
+type Token = Text
 
-type Message = Text
+-- Error / Warning Messages
+newtype Message = Message {readMessage :: Text}
+  deriving
+    (Generic)
+  deriving newtype
+    (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
 
-type Name = Key
+instance Lift Message where
+  lift = stringE . T.unpack . readMessage
 
-type Description = Key
+class Msg a where
+  msg :: a -> Message
+  msgSepBy :: Text -> [a] -> Message
+  msgSepBy t = Message . intercalate t . map (readMessage . msg)
+
+instance Msg String where
+  msg = Message . pack
+
+instance Msg ByteString where
+  msg = msg . unpack
+
+instance Msg Text where
+  msg = Message
+
+instance Msg Value where
+  msg = msg . encode
+
+-- FieldName : lower case names
+newtype FieldName = FieldName {readName :: Text}
+  deriving
+    (Generic)
+  deriving newtype
+    (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
+
+instance Lift FieldName where
+  lift = stringE . T.unpack . readName
+
+instance Msg FieldName where
+  msg FieldName {readName} = Message $ "\"" <> readName <> "\""
+
+instance RenderGQL FieldName where
+  render = readName
+
+intercalateName :: FieldName -> [FieldName] -> FieldName
+intercalateName (FieldName x) = FieldName . intercalate x . map readName
+
+toFieldName :: TypeName -> FieldName
+toFieldName = FieldName . readTypeName
+
+-- TypeName
+newtype TypeName = TypeName {readTypeName :: Text}
+  deriving
+    (Generic)
+  deriving newtype
+    (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
+
+instance Lift TypeName where
+  lift = stringE . T.unpack . readTypeName
+
+instance Msg TypeName where
+  msg TypeName {readTypeName} = Message $ "\"" <> readTypeName <> "\""
+
+instance RenderGQL TypeName where
+  render = readTypeName
+
+-- Description
+type Description = Text
 
 data Stage = RAW | RESOLVED | VALID
 
@@ -111,9 +186,9 @@ data VALIDATION_MODE
   | FULL_VALIDATION
   deriving (Eq, Show)
 
-data DataFingerprint = DataFingerprint Name [String] deriving (Show, Eq, Ord, Lift)
+data DataFingerprint = DataFingerprint TypeName [String] deriving (Show, Eq, Ord, Lift)
 
-internalFingerprint :: Name -> [String] -> DataFingerprint
+internalFingerprint :: TypeName -> [String] -> DataFingerprint
 internalFingerprint name = DataFingerprint ("SYSTEM.INTERNAL." <> name)
 
 data OperationType
@@ -128,14 +203,18 @@ type MUTATION = 'Mutation
 
 type SUBSCRIPTION = 'Subscription
 
-type Named a = (Name, a)
+data TypeNameRef = TypeNameRef
+  { typeNameRef :: TypeName,
+    typeNamePosition :: Position
+  }
+  deriving (Show, Lift, Eq)
 
 -- Refference with Position information
 --
 -- includes position for debugging, where Ref "a" 1 === Ref "a" 3
 --
 data Ref = Ref
-  { refName :: Key,
+  { refName :: FieldName,
     refPosition :: Position
   }
   deriving (Show, Lift, Eq)
@@ -143,20 +222,26 @@ data Ref = Ref
 instance Ord Ref where
   compare (Ref x _) (Ref y _) = compare x y
 
-anonymousRef :: Key -> Ref
+anonymousRef :: FieldName -> Ref
 anonymousRef refName = Ref {refName, refPosition = Position 0 0}
 
 -- TypeRef
 -------------------------------------------------------------------
 data TypeRef = TypeRef
-  { typeConName :: Name,
-    typeArgs :: Maybe Name,
+  { typeConName :: TypeName,
+    typeArgs :: Maybe TypeName,
     typeWrappers :: [TypeWrapper]
   }
   deriving (Show, Eq, Lift)
 
 isNullable :: TypeRef -> Bool
 isNullable TypeRef {typeWrappers = typeWrappers} = isNullableWrapper typeWrappers
+
+instance RenderGQL TypeRef where
+  render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
+
+instance Msg TypeRef where
+  msg = msg . FieldName . render
 
 -- Kind
 -----------------------------------------------------------------------------------
@@ -228,16 +313,17 @@ toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers [] = [TypeMaybe]
 toHSWrappers [NonNullType] = []
 
-isDefaultTypeName :: Key -> Bool
-isDefaultTypeName x = isSchemaTypeName x || isPrimitiveTypeName x
+renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Token
+renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
+  where
+    showGQLWrapper [] = render x
+    showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
+    showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
-isSchemaTypeName :: Key -> Bool
-isSchemaTypeName = (`elem` sysTypes)
+isSystemTypeName :: TypeName -> Bool
+isSystemTypeName = (`elem` sysTypes)
 
-isPrimitiveTypeName :: Key -> Bool
-isPrimitiveTypeName = (`elem` ["String", "Float", "Int", "Boolean", "ID"])
-
-sysTypes :: [Key]
+sysTypes :: [TypeName]
 sysTypes =
   [ "__Schema",
     "__Type",
@@ -246,13 +332,18 @@ sysTypes =
     "__Field",
     "__DirectiveLocation",
     "__InputValue",
-    "__EnumValue"
+    "__EnumValue",
+    "String",
+    "Float",
+    "Int",
+    "Boolean",
+    "ID"
   ]
 
-sysFields :: [Key]
+sysFields :: [FieldName]
 sysFields = ["__typename", "__schema", "__type"]
 
-typeFromScalar :: Name -> Name
+typeFromScalar :: TypeName -> TypeName
 typeFromScalar "Boolean" = "Bool"
 typeFromScalar "Int" = "Int"
 typeFromScalar "Float" = "Float"
@@ -260,13 +351,12 @@ typeFromScalar "String" = "Text"
 typeFromScalar "ID" = "ID"
 typeFromScalar _ = "ScalarValue"
 
-hsTypeName :: Key -> Key
+hsTypeName :: TypeName -> TypeName
 hsTypeName "String" = "Text"
 hsTypeName "Boolean" = "Bool"
-hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name = name
 
-toOperationType :: Name -> Maybe OperationType
+toOperationType :: TypeName -> Maybe OperationType
 toOperationType "Subscription" = Just Subscription
 toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query

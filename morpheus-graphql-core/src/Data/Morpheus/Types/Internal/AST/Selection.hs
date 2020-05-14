@@ -36,17 +36,20 @@ import Data.Morpheus.Error.Operation
     subscriptionIsNotDefined,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( FieldName,
+    GQLError (..),
     GQLErrors,
-    Key,
     Message,
-    Name,
     OperationType (..),
     Position,
     RAW,
     Ref (..),
     Stage,
+    TypeName (..),
     VALID,
+    intercalateName,
+    msg,
+    readName,
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
@@ -71,12 +74,11 @@ import Data.Morpheus.Types.Internal.Operation
     Merge (..),
   )
 import Data.Semigroup ((<>))
-import qualified Data.Text as T
 import Language.Haskell.TH.Syntax (Lift (..))
 
 data Fragment = Fragment
-  { fragmentName :: Name,
-    fragmentType :: Name,
+  { fragmentName :: FieldName,
+    fragmentType :: TypeName,
     fragmentPosition :: Position,
     fragmentSelection :: SelectionSet RAW
   }
@@ -86,14 +88,14 @@ data Fragment = Fragment
 instance NameCollision Fragment where
   nameCollision _ Fragment {fragmentName, fragmentPosition} =
     GQLError
-      { message = "There can be only one fragment named \"" <> fragmentName <> "\".",
+      { message = "There can be only one fragment named " <> msg fragmentName <> ".",
         locations = [fragmentPosition]
       }
 
 instance KeyOf Fragment where
   keyOf = fragmentName
 
-type Fragments = OrderedMap Fragment
+type Fragments = OrderedMap FieldName Fragment
 
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
@@ -108,7 +110,7 @@ instance Merge (SelectionContent s) where
     | otherwise =
       failure
         [ GQLError
-            { message = T.concat $ map refName path,
+            { message = msg (intercalateName "." $ map refName path),
               locations = map refPosition path
             }
         ]
@@ -120,7 +122,7 @@ deriving instance Eq (SelectionContent a)
 deriving instance Lift (SelectionContent a)
 
 data UnionTag = UnionTag
-  { unionTagName :: Name,
+  { unionTagName :: TypeName,
     unionTagSelection :: SelectionSet VALID
   }
   deriving (Show, Eq, Lift)
@@ -134,7 +136,7 @@ mergeConflict refs@(rootField : xs) err =
       }
   ]
   where
-    fieldConflicts ref = "\"" <> refName ref <> "\" conflict because "
+    fieldConflicts ref = msg (refName ref) <> " conflict because "
     renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
     renderStart = "Fields " <> fieldConflicts rootField
     renderSubfields =
@@ -148,6 +150,7 @@ instance Merge UnionTag where
     UnionTag oldTag <$> merge path oldSel currentSel
 
 instance KeyOf UnionTag where
+  type KEY UnionTag = TypeName
   keyOf = unionTagName
 
 type UnionSelection = MergeSet UnionTag
@@ -156,8 +159,8 @@ type SelectionSet s = MergeSet (Selection s)
 
 data Selection (s :: Stage) where
   Selection ::
-    { selectionName :: Name,
-      selectionAlias :: Maybe Name,
+    { selectionName :: FieldName,
+      selectionAlias :: Maybe FieldName,
       selectionPosition :: Position,
       selectionArguments :: Arguments s,
       selectionContent :: SelectionContent s
@@ -206,8 +209,8 @@ instance Merge (Selection a) where
           failure $ mergeConflict path $
             GQLError
               { message =
-                  "\"" <> selectionName old <> "\" and \"" <> selectionName current
-                    <> "\" are different fields. "
+                  "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
+                    <> " are different fields. "
                     <> useDufferentAliases,
                 locations = [pos1, pos2]
               }
@@ -245,7 +248,7 @@ deriving instance Eq (Selection a)
 type DefaultValue = Maybe ResolvedValue
 
 data Operation (s :: Stage) = Operation
-  { operationName :: Maybe Key,
+  { operationName :: Maybe FieldName,
     operationType :: OperationType,
     operationArguments :: VariableDefinitions s,
     operationSelection :: SelectionSet s,
@@ -253,8 +256,8 @@ data Operation (s :: Stage) = Operation
   }
   deriving (Show, Lift)
 
-getOperationName :: Maybe Key -> Key
-getOperationName = fromMaybe "AnonymousOperation"
+getOperationName :: Maybe FieldName -> TypeName
+getOperationName = maybe "AnonymousOperation" (TypeName . readName)
 
 getOperationDataType :: Failure GQLErrors m => Operation a -> Schema -> m (TypeDefinition OUT)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)

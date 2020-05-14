@@ -15,17 +15,15 @@ import Data.Morpheus.Error.Document.Interface
     partialImplements,
     unknownInterface,
   )
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
+    FieldName (..),
     FieldsDefinition (..),
-    Name,
     Schema,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     TypeRef (..),
     isWeaker,
     lookupWith,
@@ -53,10 +51,10 @@ validatePartialDocument lib = traverse validateType lib
         errors -> failure $ partialImplements typeName errors
     validateType x = pure x
     mustBeSubset ::
-      FieldsDefinition -> (Name, FieldsDefinition) -> [(Name, Name, ImplementsError)]
+      FieldsDefinition -> (TypeName, FieldsDefinition) -> [(TypeName, FieldName, ImplementsError)]
     mustBeSubset objFields (typeName, fields) = concatMap checkField (toList fields)
       where
-        checkField :: FieldDefinition -> [(Name, Name, ImplementsError)]
+        checkField :: FieldDefinition -> [(TypeName, FieldName, ImplementsError)]
         checkField FieldDefinition {fieldName, fieldType = interfaceT@TypeRef {typeConName = interfaceTypeName, typeWrappers = interfaceWrappers}} =
           selectOr err checkTypeEq fieldName objFields
           where
@@ -68,13 +66,13 @@ validatePartialDocument lib = traverse validateType lib
                 [ ( typeName,
                     fieldName,
                     UnexpectedType
-                      { expectedType = render interfaceT,
-                        foundType = render objT
+                      { expectedType = interfaceT,
+                        foundType = objT
                       }
                   )
                 ]
     -------------------------------
-    getInterfaceByKey :: Name -> Eventless (Name, FieldsDefinition)
+    getInterfaceByKey :: TypeName -> Eventless (TypeName, FieldsDefinition)
     getInterfaceByKey interfaceName = case lookupWith typeName interfaceName lib of
       Just TypeDefinition {typeContent = DataInterface {interfaceFields}} -> pure (interfaceName, interfaceFields)
       _ -> failure $ unknownInterface interfaceName

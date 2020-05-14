@@ -18,7 +18,6 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     InputFieldsDefinition (..),
     Message,
-    Name,
     ObjectEntry (..),
     RESOLVED,
     Ref (..),
@@ -27,6 +26,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName (..),
     TypeRef (..),
     TypeRef (..),
     TypeWrapper (..),
@@ -38,6 +38,8 @@ import Data.Morpheus.Types.Internal.AST
     VariableContent (..),
     isNullableWrapper,
     isWeaker,
+    msg,
+    toFieldName,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( unsafeFromValues,
@@ -69,7 +71,7 @@ castFailure expected message value = do
     $ prefix <> typeViolation expected value <> maybe "" (" " <>) message
 
 checkTypeEquality ::
-  (Name, [TypeWrapper]) ->
+  (TypeName, [TypeWrapper]) ->
   Ref ->
   Variable VALID ->
   InputValidator ValidValue
@@ -158,8 +160,8 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
                 validateInput
                   [TypeMaybe]
                   inputDef
-                  (ObjectEntry name value)
-              return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry name validValue])
+                  (ObjectEntry (toFieldName name) value)
+              return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry (toFieldName name) validValue])
         {-- VALIDATE ENUM --}
         validate (DataEnum tags) ObjectEntry {entryValue} =
           validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
@@ -180,7 +182,7 @@ validateScalar ScalarDefinition {validateValue} value err = do
   case validateValue scalarValue of
     Right _ -> return scalarValue
     Left "" -> err Nothing value
-    Left message -> err (Just message) value
+    Left message -> err (Just $ msg message) value
   where
     toScalar :: ResolvedValue -> InputValidator ValidValue
     toScalar (Scalar x) = pure (Scalar x)

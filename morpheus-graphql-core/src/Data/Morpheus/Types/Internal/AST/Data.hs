@@ -36,10 +36,8 @@ module Data.Morpheus.Types.Internal.AST.Data
     TypeUpdater,
     TypeD (..),
     ConsD (..),
-    ClientQuery (..),
     GQLTypeD (..),
     TypeCategory,
-    ClientType (..),
     DataInputUnion,
     Argument (..),
     createField,
@@ -91,22 +89,32 @@ import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
 import Data.Morpheus.Error.Schema (nameCollisionError)
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+    renderIndent,
+    renderObject,
+  )
 import Data.Morpheus.Types.Internal.AST.Base
   ( DataFingerprint (..),
     DataTypeKind (..),
     Description,
+    FieldName,
+    FieldName (..),
     GQLError (..),
-    Key,
-    Name,
     Position,
     Stage,
     TRUE,
+    Token,
+    TypeName,
     TypeRef (..),
     TypeWrapper (..),
     VALID,
     hsTypeName,
     isNullable,
+    isSystemTypeName,
+    msg,
     sysFields,
+    toFieldName,
     toOperationType,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
@@ -117,6 +125,7 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
     ValidValue,
     Value (..),
+    convertToJSONName,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Empty (..),
@@ -132,19 +141,20 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     resolveUpdates,
   )
 import Data.Semigroup ((<>), Semigroup (..))
+import Data.Text (intercalate)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 
 type DataEnum = [DataEnumValue]
 
-type DataUnion = [Key]
+type DataUnion = [TypeName]
 
-type DataInputUnion = [(Key, Bool)]
+type DataInputUnion = [(TypeName, Bool)]
 
 -- scalar
 ------------------------------------------------------------------
 newtype ScalarDefinition = ScalarDefinition
-  {validateValue :: ValidValue -> Either Key ValidValue}
+  {validateValue :: ValidValue -> Either Token ValidValue}
 
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
@@ -153,7 +163,7 @@ instance Lift ScalarDefinition where
   lift _ = [|ScalarDefinition pure|]
 
 data Argument (valid :: Stage) = Argument
-  { argumentName :: Name,
+  { argumentName :: FieldName,
     argumentValue :: Value valid,
     argumentPosition :: Position
   }
@@ -165,17 +175,17 @@ instance KeyOf (Argument stage) where
 instance NameCollision (Argument s) where
   nameCollision _ Argument {argumentName, argumentPosition} =
     GQLError
-      { message = "There can Be only One Argument Named \"" <> argumentName <> "\"",
+      { message = "There can Be only One Argument Named " <> msg argumentName,
         locations = [argumentPosition]
       }
 
-type Arguments s = OrderedMap (Argument s)
+type Arguments s = OrderedMap FieldName (Argument s)
 
 -- directive
 ------------------------------------------------------------------
 data Directive = Directive
-  { directiveName :: Name,
-    directiveArgs :: OrderedMap (Argument VALID)
+  { directiveName :: FieldName,
+    directiveArgs :: OrderedMap FieldName (Argument VALID)
   }
   deriving (Show, Lift)
 
@@ -185,11 +195,11 @@ lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives
     isDeprecation Directive {directiveName = "deprecated"} = True
     isDeprecation _ = False
 
-lookupDeprecatedReason :: Directive -> Maybe Key
+lookupDeprecatedReason :: Directive -> Maybe Description
 lookupDeprecatedReason Directive {directiveArgs} =
   selectOr Nothing (Just . maybeString) "reason" directiveArgs
   where
-    maybeString :: Argument VALID -> Name
+    maybeString :: Argument VALID -> Description
     maybeString Argument {argumentValue = (Scalar (String x))} = x
     maybeString _ = "can't read deprecated Reason Value"
 
@@ -202,7 +212,7 @@ data Meta = Meta
 
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue
-  { enumName :: Name,
+  { enumName :: TypeName,
     enumMeta :: Maybe Meta
   }
   deriving (Show, Lift)
@@ -223,7 +233,7 @@ data Schema = Schema
   }
   deriving (Show)
 
-type TypeLib = HashMap Key (TypeDefinition ANY)
+type TypeLib = HashMap TypeName (TypeDefinition ANY)
 
 instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
@@ -252,10 +262,10 @@ typeRegister Schema {types, query, mutation, subscription} =
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
-lookupDataType :: Key -> Schema -> Maybe (TypeDefinition ANY)
+lookupDataType :: TypeName -> Schema -> Maybe (TypeDefinition ANY)
 lookupDataType name = HM.lookup name . typeRegister
 
-isTypeDefined :: Key -> Schema -> Maybe DataFingerprint
+isTypeDefined :: TypeName -> Schema -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
@@ -269,7 +279,7 @@ isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 --   InputObjectTypeDefinition
 
 data TypeDefinition (a :: TypeCategory) = TypeDefinition
-  { typeName :: Key,
+  { typeName :: TypeName,
     typeFingerprint :: DataFingerprint,
     typeMeta :: Maybe Meta,
     typeContent :: TypeContent TRUE a
@@ -277,6 +287,7 @@ data TypeDefinition (a :: TypeCategory) = TypeDefinition
   deriving (Show, Lift)
 
 instance KeyOf (TypeDefinition a) where
+  type KEY (TypeDefinition a) = TypeName
   keyOf = typeName
 
 data TypeCategory = In | Out | Any
@@ -351,11 +362,11 @@ data TypeContent (b :: Bool) (a :: TypeCategory) where
     } ->
     TypeContent (IsSelected a IN) a
   DataInputUnion ::
-    { inputUnionMembers :: [(Key, Bool)]
+    { inputUnionMembers :: DataInputUnion
     } ->
     TypeContent (IsSelected a IN) a
   DataObject ::
-    { objectImplements :: [Name],
+    { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition
     } ->
     TypeContent (IsSelected a OUT) a
@@ -372,7 +383,7 @@ deriving instance Show (TypeContent a b)
 
 deriving instance Lift (TypeContent a b)
 
-createType :: Key -> TypeContent TRUE a -> TypeDefinition a
+createType :: TypeName -> TypeContent TRUE a -> TypeDefinition a
 createType typeName typeContent =
   TypeDefinition
     { typeName,
@@ -381,18 +392,18 @@ createType typeName typeContent =
       typeContent
     }
 
-createScalarType :: Name -> TypeDefinition a
+createScalarType :: TypeName -> TypeDefinition a
 createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
 
-createEnumType :: Name -> [Key] -> TypeDefinition a
+createEnumType :: TypeName -> [TypeName] -> TypeDefinition a
 createEnumType typeName typeData = createType typeName (DataEnum enumValues)
   where
     enumValues = map createEnumValue typeData
 
-createEnumValue :: Name -> DataEnumValue
+createEnumValue :: TypeName -> DataEnumValue
 createEnumValue enumName = DataEnumValue {enumName, enumMeta = Nothing}
 
-createUnionType :: Key -> [Key] -> TypeDefinition OUT
+createUnionType :: TypeName -> [TypeName] -> TypeDefinition OUT
 createUnionType typeName typeData = createType typeName (DataUnion typeData)
 
 isEntNode :: TypeContent TRUE a -> Bool
@@ -411,7 +422,7 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
 
-fromOperation :: Maybe (TypeDefinition OUT) -> [(Name, TypeDefinition ANY)]
+fromOperation :: Maybe (TypeDefinition OUT) -> [(TypeName, TypeDefinition ANY)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
@@ -441,7 +452,7 @@ insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName 
     | otherwise -> failure $ nameCollisionError typeName
 
 updateSchema ::
-  Name ->
+  TypeName ->
   DataFingerprint ->
   [TypeUpdater] ->
   (a -> TypeDefinition cat) ->
@@ -461,7 +472,7 @@ lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
 -- lookups and removes TypeDefinition from hashmap
-popByKey :: Name -> [TypeDefinition ANY] -> (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+popByKey :: TypeName -> [TypeDefinition ANY] -> (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
 popByKey name types = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     (fromAny dt, filter ((/= name) . typeName) types)
@@ -480,7 +491,7 @@ popByKey name types = case lookupWith typeName name types of
 --    { FieldDefinition(list) }
 --
 newtype FieldsDefinition = FieldsDefinition
-  {unFieldsDefinition :: OrderedMap FieldDefinition}
+  {unFieldsDefinition :: OrderedMap FieldName FieldDefinition}
   deriving (Show, Empty, Lift)
 
 unsafeFromFields :: [FieldDefinition] -> FieldsDefinition
@@ -503,7 +514,7 @@ instance Listable FieldsDefinition FieldDefinition where
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 data FieldDefinition = FieldDefinition
-  { fieldName :: Key,
+  { fieldName :: FieldName,
     fieldArgs :: ArgumentsDefinition,
     fieldType :: TypeRef,
     fieldMeta :: Maybe Meta
@@ -519,9 +530,12 @@ instance Selectable FieldDefinition ArgumentDefinition where
 instance NameCollision FieldDefinition where
   nameCollision name _ =
     GQLError
-      { message = "There can Be only One field Named \"" <> name <> "\"",
+      { message = "There can Be only One field Named " <> msg name,
         locations = []
       }
+
+instance RenderGQL FieldsDefinition where
+  render = renderObject render . ignoreHidden . toList
 
 fieldVisibility :: FieldDefinition -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
@@ -529,7 +543,7 @@ fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 isFieldNullable :: FieldDefinition -> Bool
 isFieldNullable = isNullable . fieldType
 
-createField :: ArgumentsDefinition -> Key -> ([TypeWrapper], Key) -> FieldDefinition
+createField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition
 createField dataArguments fieldName (typeWrappers, typeConName) =
   FieldDefinition
     { fieldArgs = dataArguments,
@@ -567,7 +581,7 @@ toListField dataField = dataField {fieldType = listW (fieldType dataField)}
 -- { InputValueDefinition(list) }
 
 newtype InputFieldsDefinition = InputFieldsDefinition
-  {unInputFieldsDefinition :: OrderedMap FieldDefinition}
+  {unInputFieldsDefinition :: OrderedMap FieldName FieldDefinition}
   deriving (Show, Empty, Lift)
 
 unsafeFromInputFields :: [FieldDefinition] -> InputFieldsDefinition
@@ -593,8 +607,8 @@ instance Listable InputFieldsDefinition FieldDefinition where
 
 data ArgumentsDefinition
   = ArgumentsDefinition
-      { argumentsTypename :: Maybe Name,
-        arguments :: OrderedMap ArgumentDefinition
+      { argumentsTypename :: Maybe TypeName,
+        arguments :: OrderedMap FieldName ArgumentDefinition
       }
   | NoArguments
   deriving (Show, Lift)
@@ -614,7 +628,7 @@ instance Listable ArgumentsDefinition ArgumentDefinition where
   fromAssoc [] = pure NoArguments
   fromAssoc args = ArgumentsDefinition Nothing <$> fromAssoc args
 
-createArgument :: Key -> ([TypeWrapper], Key) -> FieldDefinition
+createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition
 createArgument = createField NoArguments
 
 hasArguments :: ArgumentsDefinition -> Bool
@@ -627,15 +641,15 @@ hasArguments _ = True
 -- TODO: implement inputValue
 
 -- data InputValueDefinition = InputValueDefinition
---   { inputValueName  :: Key
+--   { inputValueName  :: FieldName
 --   , inputValueType  :: TypeRef
 --   , inputValueMeta  :: Maybe Meta
 --   } deriving (Show,Lift)
 
-__inputname :: Name
+__inputname :: FieldName
 __inputname = "inputname"
 
-createInputUnionFields :: Key -> [Key] -> [FieldDefinition]
+createInputUnionFields :: TypeName -> [TypeName] -> [FieldDefinition]
 createInputUnionFields name members = fieldTag : map unionField members
   where
     fieldTag =
@@ -648,7 +662,7 @@ createInputUnionFields name members = fieldTag : map unionField members
     unionField memberName =
       FieldDefinition
         { fieldArgs = NoArguments,
-          fieldName = memberName,
+          fieldName = toFieldName memberName,
           fieldType =
             TypeRef
               { typeConName = memberName,
@@ -662,45 +676,76 @@ createInputUnionFields name members = fieldTag : map unionField members
 -- OTHER
 --------------------------------------------------------------------------------------------------
 
-createAlias :: Key -> TypeRef
+createAlias :: TypeName -> TypeRef
 createAlias typeConName =
   TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
 
 type TypeUpdater = LibUpdater Schema
 
--- TEMPLATE HASKELL DATA TYPES
-data ClientQuery = ClientQuery
-  { queryText :: String,
-    queryTypes :: [ClientType],
-    queryArgsType :: Maybe TypeD
-  }
-  deriving (Show)
-
-data ClientType = ClientType
-  { clientType :: TypeD,
-    clientKind :: DataTypeKind
-  }
-  deriving (Show)
-
+-- Template Haskell Types
 -- Document
 data GQLTypeD = GQLTypeD
   { typeD :: TypeD,
-    typeKindD :: DataTypeKind,
     typeArgD :: [TypeD],
     typeOriginal :: TypeDefinition ANY
   }
   deriving (Show)
 
+--- Core
 data TypeD = TypeD
-  { tName :: Name,
-    tNamespace :: [Name],
+  { tName :: TypeName,
+    tNamespace :: [FieldName],
     tCons :: [ConsD],
+    tKind :: DataTypeKind,
     tMeta :: Maybe Meta
   }
   deriving (Show)
 
 data ConsD = ConsD
-  { cName :: Name,
+  { cName :: TypeName,
     cFields :: [FieldDefinition]
   }
   deriving (Show)
+
+instance RenderGQL Schema where
+  render schema = intercalate "\n\n" $ map render visibleTypes
+    where
+      visibleTypes = filter (not . isSystemTypeName . typeName) (toList schema)
+
+instance RenderGQL (TypeDefinition a) where
+  render TypeDefinition {typeName, typeContent} = __render typeContent
+    where
+      __render DataInterface {interfaceFields} = "interface " <> render typeName <> render interfaceFields
+      __render DataScalar {} = "scalar " <> render typeName
+      __render (DataEnum tags) = "enum " <> render typeName <> renderObject render tags
+      __render (DataUnion members) =
+        "union "
+          <> render typeName
+          <> " =\n    "
+          <> intercalate ("\n" <> renderIndent <> "| ") (map render members)
+      __render (DataInputObject fields) = "input " <> render typeName <> render fields
+      __render (DataInputUnion members) = "input " <> render typeName <> render fieldsDef
+        where
+          fieldsDef = unsafeFromFields fields
+          fields :: [FieldDefinition]
+          fields = createInputUnionFields typeName (fst <$> members :: [TypeName])
+      __render DataObject {objectFields} = "type " <> render typeName <> render objectFields
+
+ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
+ignoreHidden = filter fieldVisibility
+
+-- OBJECT
+
+instance RenderGQL InputFieldsDefinition where
+  render = renderObject render . ignoreHidden . toList
+
+instance RenderGQL FieldDefinition where
+  render FieldDefinition {fieldName, fieldType, fieldArgs} =
+    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
+
+instance RenderGQL ArgumentsDefinition where
+  render NoArguments = ""
+  render arguments = "(" <> intercalate ", " (map render $ toList arguments) <> ")"
+
+instance RenderGQL DataEnumValue where
+  render DataEnumValue {enumName} = render enumName

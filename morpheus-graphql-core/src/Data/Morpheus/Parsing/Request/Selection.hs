@@ -27,12 +27,11 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseTypeCondition,
     setOf,
     spreadLiteral,
-    token,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
+    FieldName,
     Fragment (..),
-    Name,
     Position,
     RAW,
     Ref (..),
@@ -81,7 +80,7 @@ parseSelectionField = label "SelectionField" $ do
   selSet selectionName selectionAlias selectionArguments <|> pure Selection {selectionContent = SelectionField, ..}
   where
     -----------------------------------------
-    selSet :: Name -> Maybe Name -> Arguments RAW -> Parser (Selection RAW)
+    selSet :: FieldName -> Maybe FieldName -> Arguments RAW -> Parser (Selection RAW)
     selSet selectionName selectionAlias selectionArguments = label "body" $ do
       selectionPosition <- getLocation
       selectionSet <- parseSelectionSet
@@ -99,7 +98,7 @@ parseSelectionField = label "SelectionField" $ do
 spread :: Parser (Selection RAW)
 spread = label "FragmentSpread" $ do
   refPosition <- spreadLiteral
-  refName <- token
+  refName <- parseName
   -- TODO: handle Directives
   _directives <- optionalDirectives
   pure $ Spread Ref {..}
@@ -126,7 +125,7 @@ inlineFragment = label "InlineFragment" $ do
   fragmentPosition <- spreadLiteral
   InlineFragment <$> fragmentBody "INLINE_FRAGMENT" fragmentPosition
 
-fragmentBody :: Name -> Position -> Parser Fragment
+fragmentBody :: FieldName -> Position -> Parser Fragment
 fragmentBody fragmentName fragmentPosition = label "FragmentBody" $ do
   fragmentType <- parseTypeCondition
   -- TODO: handle Directives

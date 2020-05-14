@@ -10,7 +10,6 @@ where
 
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
-import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
@@ -18,10 +17,11 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Name,
+  ( FieldName,
     Schema,
     VALID,
     Value (..),
+    msg,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( fromList,
@@ -120,7 +120,7 @@ main =
       ]
       <> [testSchema]
 
-basicTest :: String -> Name -> TestTree
+basicTest :: String -> FieldName -> TestTree
 basicTest description path = testCase description $ do
   actual <- simpleTest <$> getRequest path
   expected <- expectedResponse path
@@ -131,18 +131,17 @@ simpleTest request = do
   schema <- getSchema
   runApi schema resolver request
 
-expectedResponse :: Name -> IO A.Value
+expectedResponse :: FieldName -> IO A.Value
 expectedResponse = getResponseBody
 
 assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
 assertion expected (ResultT (Identity Success {result}))
   | Just expected == decode (encode result) = return ()
   | otherwise =
-    assertFailure $
-      LB.unpack ("expected: \n " <> encode expected <> " \n but got: \n " <> encode result)
+    assertFailure $ show ("expected: \n " <> msg expected <> " \n but got: \n " <> msg result)
 assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 
-getRequest :: Name -> IO GQLRequest
+getRequest :: FieldName -> IO GQLRequest
 getRequest path = do
   queryBS <- LT.toStrict . decodeUtf8 <$> getGQLBody path
   variables <- maybeVariables path

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2f8c62f4347bac5a71e9ccb5716e5b696919b354acc101755ed29f8e65face3d
+-- hash: 04ae4fbb24da17e5e7c58e7efa6e91c56d6e6b1427c0d82d00440e6675ffb084
 
 name:           morpheus-graphql-client
 version:        0.12.0
@@ -34,7 +34,9 @@ library
       Data.Morpheus.Client.Aeson
       Data.Morpheus.Client.Build
       Data.Morpheus.Client.Fetch
-      Data.Morpheus.Client.Selection
+      Data.Morpheus.Client.Transform.Core
+      Data.Morpheus.Client.Transform.Inputs
+      Data.Morpheus.Client.Transform.Selection
       Paths_morpheus_graphql_client
   hs-source-dirs:
       src
@@ -44,7 +46,9 @@ library
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , morpheus-graphql-core >=0.12.0
+    , mtl >=2.0 && <=2.3
     , template-haskell >=2.0 && <=2.16
     , text >=1.2.3.0 && <1.3
+    , transformers >=0.3.0.0 && <0.6
     , unordered-containers >=0.2.8.0 && <0.3
   default-language: Haskell2010

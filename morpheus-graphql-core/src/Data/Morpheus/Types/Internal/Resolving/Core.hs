@@ -35,15 +35,12 @@ import Data.Function ((&))
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
+    Message,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( Text,
-    pack,
-  )
 
 type Eventless = Result ()
 
@@ -104,7 +101,7 @@ instance Monad (Result e) where
 instance Failure [GQLError] (Result ev) where
   failure = Failure
 
-instance Failure Text (Result e) where
+instance Failure Message (Result e) where
   failure text =
     Failure [GQLError {message = "INTERNAL: " <> text, locations = []}]
 
@@ -149,14 +146,14 @@ instance Monad m => Monad (ResultT event m) where
 instance MonadTrans (ResultT event) where
   lift = ResultT . fmap pure
 
-instance Applicative m => Failure String (ResultT event m) where
-  failure x =
-    ResultT $ pure $ Failure [GQLError {message = pack x, locations = []}]
+-- instance Applicative m => Failure String (ResultT event m) where
+--   failure x =
+--     ResultT $ pure $ Failure [GQLError {message = pack x, locations = []}]
 
 instance Monad m => Failure GQLErrors (ResultT event m) where
   failure = ResultT . pure . failure
 
-instance Applicative m => Failure Text (ResultT event m) where
+instance Applicative m => Failure Message (ResultT event m) where
   failure = ResultT . pure . failure
 
 instance Applicative m => PushEvents event (ResultT event m) where
@@ -185,5 +182,5 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
 -- Helper Functions
 type LibUpdater lib = lib -> Eventless lib
 
-resolveUpdates :: lib -> [LibUpdater lib] -> Eventless lib
+resolveUpdates :: Monad m => lib -> [lib -> m lib] -> m lib
 resolveUpdates = foldM (&)
