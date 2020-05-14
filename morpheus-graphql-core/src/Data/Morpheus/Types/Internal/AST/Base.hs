@@ -361,7 +361,6 @@ typeFromScalar _ = "ScalarValue"
 hsTypeName :: TypeName -> TypeName
 hsTypeName "String" = "Text"
 hsTypeName "Boolean" = "Bool"
-hsTypeName name | name `elem` sysTypes = "S" <> name
 hsTypeName name = name
 
 toOperationType :: TypeName -> Maybe OperationType

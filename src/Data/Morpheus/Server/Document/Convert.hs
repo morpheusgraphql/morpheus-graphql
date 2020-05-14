@@ -17,7 +17,7 @@ import Data.Morpheus.Internal.TH
     makeName,
   )
 import Data.Morpheus.Internal.Utils
-  ( capital,
+  ( capitalTypeName,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -26,18 +26,20 @@ import Data.Morpheus.Types.Internal.AST
     DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
+    FieldName,
     GQLTypeD (..),
     InputFieldsDefinition (..),
-    Key,
     TRUE,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeName,
     TypeRef (..),
     hasArguments,
     hsTypeName,
     kindOf,
     lookupWith,
+    toFieldName,
     toHSFieldDefinition,
   )
 import Data.Morpheus.Types.Internal.Operation
@@ -46,10 +48,10 @@ import Data.Morpheus.Types.Internal.Operation
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
-m_ :: Key
+m_ :: TypeName
 m_ = "m"
 
-getTypeArgs :: Key -> [TypeDefinition ANY] -> Q (Maybe Key)
+getTypeArgs :: TypeName -> [TypeDefinition ANY] -> Q (Maybe TypeName)
 getTypeArgs "__TypeKind" _ = pure Nothing
 getTypeArgs "Boolean" _ = pure Nothing
 getTypeArgs "String" _ = pure Nothing
@@ -59,12 +61,12 @@ getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
   Just x -> pure (kindToTyArgs x)
   Nothing -> getTyArgs <$> reify (makeName key)
 
-getTyArgs :: Info -> Maybe Key
+getTyArgs :: Info -> Maybe TypeName
 getTyArgs x
   | null (infoTyVars x) = Nothing
   | otherwise = Just m_
 
-kindToTyArgs :: TypeContent TRUE ANY -> Maybe Key
+kindToTyArgs :: TypeContent TRUE ANY -> Maybe TypeName
 kindToTyArgs DataObject {} = Just m_
 kindToTyArgs DataUnion {} = Just m_
 kindToTyArgs DataInterface {} = Just m_
@@ -76,12 +78,12 @@ toTHDefinitions namespace lib = traverse renderTHType lib
     renderTHType :: TypeDefinition ANY -> Q GQLTypeD
     renderTHType x = generateType x
       where
-        genArgsTypeName :: Key -> Key
+        genArgsTypeName :: FieldName -> TypeName
         genArgsTypeName fieldName
           | namespace = hsTypeName (typeName x) <> argTName
           | otherwise = argTName
           where
-            argTName = capital fieldName <> "Args"
+            argTName = capitalTypeName (fieldName <> "Args")
         ---------------------------------------------------------------------------------------------
         genResField :: FieldDefinition -> Q FieldDefinition
         genResField field@FieldDefinition {fieldName, fieldArgs, fieldType = typeRef@TypeRef {typeConName}} =
@@ -177,7 +179,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                     { cName,
                       cFields =
                         [ FieldDefinition
-                            { fieldName = "un" <> cName,
+                            { fieldName = "un" <> toFieldName cName,
                               fieldType =
                                 TypeRef
                                   { typeConName = utName,
@@ -193,7 +195,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                     cName = hsTypeName typeName <> utName
                     utName = hsTypeName memberName
 
-genArgumentType :: (Key -> Key) -> FieldDefinition -> Q [TypeD]
+genArgumentType :: (FieldName -> TypeName) -> FieldDefinition -> Q [TypeD]
 genArgumentType _ FieldDefinition {fieldArgs = NoArguments} = pure []
 genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
   pure
@@ -202,7 +204,7 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
           tNamespace = [],
           tCons =
             [ ConsD
-                { cName = hsTypeName tName,
+                { cName = tName,
                   cFields = genArguments fieldArgs
                 }
             ],
@@ -211,7 +213,7 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
         }
     ]
   where
-    tName = namespaceWith (hsTypeName fieldName)
+    tName = hsTypeName (namespaceWith fieldName)
 
 genArguments :: ArgumentsDefinition -> [FieldDefinition]
 genArguments = genInputFields . InputFieldsDefinition . arguments

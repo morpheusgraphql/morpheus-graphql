@@ -4,6 +4,7 @@ module Data.Morpheus.Internal.Utils
     nameSpaceField,
     nameSpaceType,
     isEnum,
+    capitalTypeName,
   )
 where
 
@@ -48,3 +49,6 @@ capital = mapText __capital
 
 isEnum :: [ConsD] -> Bool
 isEnum = all (null . cFields)
+
+capitalTypeName :: FieldName -> TypeName
+capitalTypeName = TypeName . capital . readName
