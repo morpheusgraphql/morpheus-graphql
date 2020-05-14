@@ -28,12 +28,12 @@ import Data.Morpheus.Server.Types.GQLType (TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
-    Key,
     QUERY,
     SUBSCRIPTION,
     TypeD (..),
-    TypeName,
+    TypeName (..),
     isSubscription,
+    readName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( LiftOperation,
@@ -43,7 +43,6 @@ import Data.Morpheus.Types.Internal.Resolving
     Resolver,
   )
 import Data.Semigroup ((<>))
-import Data.Text (unpack)
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
@@ -59,7 +58,7 @@ po_ = "parentOparation"
 e_ :: TypeName
 e_ = "encodeEvent"
 
-encodeVars :: [Key]
+encodeVars :: [TypeName]
 encodeVars = [e_, m_]
 
 encodeVarsT :: [TypeQ]
@@ -123,7 +122,7 @@ deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
                   (conE 'ObjectResModel)
                   (nameStringE tName)
               )
-              (listE $ map decodeVar varNames)
+              (listE $ map (decodeVar . TypeName . readName) varNames)
         decodeVar name = [|(name, encode $(varName))|]
           where
             varName = varE $ makeName name

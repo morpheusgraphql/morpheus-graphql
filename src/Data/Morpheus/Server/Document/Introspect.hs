@@ -39,7 +39,6 @@ import Data.Morpheus.Types.Internal.AST
     ConsD (..),
     DataTypeKind (..),
     FieldDefinition (..),
-    Key,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
@@ -105,7 +104,7 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
         proxy = [|(Proxy :: Proxy $(mainTypeName))|]
 deriveObjectRep _ = pure []
 
-interfaceNames :: GQLType a => Proxy a -> [Key]
+interfaceNames :: GQLType a => Proxy a -> [TypeName]
 interfaceNames = map fst . implements
 
 interfaceTypes :: GQLType a => Proxy a -> TypeUpdater

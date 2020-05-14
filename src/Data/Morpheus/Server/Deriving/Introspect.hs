@@ -48,7 +48,7 @@ import Data.Morpheus.Kind
 import Data.Morpheus.Server.Deriving.Utils
   ( EnumRep (..),
     conNameProxy,
-    datatypeNameProxy,
+    isRecordProxy,
     selNameProxy,
   )
 import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
@@ -535,7 +535,7 @@ instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
     [ ConsRep
         { consName = conNameProxy (Proxy @c),
           consFields = conRep (Proxy @f),
-          consIsRecord = conIsRecord (undefined :: (M1 C c f a))
+          consIsRecord = isRecordProxy (Proxy @c)
         }
     ]
 

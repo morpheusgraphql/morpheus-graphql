@@ -84,6 +84,7 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
+    TypeName,
     TypeUpdater,
     msg,
   )
@@ -210,5 +211,5 @@ data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> 
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
 
-interface :: (GQLType a, Introspect a) => Proxy a -> (Name, TypeUpdater)
+interface :: (GQLType a, Introspect a) => Proxy a -> (TypeName, TypeUpdater)
 interface x = (__typeName x, introspect x)

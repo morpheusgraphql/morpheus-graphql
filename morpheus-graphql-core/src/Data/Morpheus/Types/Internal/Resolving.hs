@@ -69,7 +69,7 @@ mkInt = ResScalar . Int
 mkBoolean :: Bool -> ResModel o e m
 mkBoolean = ResScalar . Boolean
 
-mkEnum :: TypeName -> Name -> ResModel o e m
+mkEnum :: TypeName -> TypeName -> ResModel o e m
 mkEnum = ResEnum
 
 mkList :: [ResModel o e m] -> ResModel o e m

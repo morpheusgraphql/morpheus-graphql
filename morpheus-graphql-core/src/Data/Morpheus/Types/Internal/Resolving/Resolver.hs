@@ -426,7 +426,7 @@ runDataResolver = withResolver getState . __encode
         -- Object -----------------
         encodeNode objDrv@ResObject {} _ = withObject (`resolveObject` objDrv) sel
         -- ENUM
-        encodeNode (ResEnum _ enum) SelectionField = pure $ gqlString $ readName enum
+        encodeNode (ResEnum _ enum) SelectionField = pure $ gqlString $ readTypeName enum
         encodeNode (ResEnum typename enum) unionSel@UnionSelection {} =
           encodeNode (unionDrv (typename <> "EnumObject")) unionSel
           where
@@ -434,7 +434,7 @@ runDataResolver = withResolver getState . __encode
               ResUnion name
                 $ pure
                 $ ResObject
-                $ ObjectResModel name [("enum", pure $ ResScalar $ String $ readName enum)]
+                $ ObjectResModel name [("enum", pure $ ResScalar $ String $ readTypeName enum)]
         encodeNode ResEnum {} _ =
           failure ("wrong selection on enum value" :: Message)
         -- UNION
@@ -487,7 +487,7 @@ instance Merge (ObjectResModel o e m) where
 data ResModel (o :: OperationType) e (m :: * -> *)
   = ResNull
   | ResScalar ScalarValue
-  | ResEnum TypeName Name
+  | ResEnum TypeName TypeName
   | ResList [ResModel o e m]
   | ResObject (ObjectResModel o e m)
   | ResUnion TypeName (Resolver o e m (ResModel o e m))

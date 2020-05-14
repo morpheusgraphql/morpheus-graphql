@@ -37,7 +37,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataTypeKind (..),
     GQLTypeD (..),
-    Key,
     Meta (..),
     QUERY,
     TypeContent (..),
@@ -45,7 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     isObject,
-    isSchemaTypeName,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -55,7 +53,7 @@ import Language.Haskell.TH
 interfaceF :: Name -> ExpQ
 interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () Maybe))))|]
 
-introspectInterface :: Key -> ExpQ
+introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . makeName
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
@@ -107,6 +105,6 @@ kindName KindNonNull = ''WRAPPER
 kindName KindInputUnion = ''INPUT
 kindName KindInterface = ''INTERFACE
 
-interfacesFrom :: Maybe (TypeDefinition ANY) -> [Key]
+interfacesFrom :: Maybe (TypeDefinition ANY) -> [TypeName]
 interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
 interfacesFrom _ = []
