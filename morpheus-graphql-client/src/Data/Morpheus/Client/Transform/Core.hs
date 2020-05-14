@@ -33,10 +33,10 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    FieldName,
     GQLErrors,
     Message,
     Meta,
-    Name,
     RAW,
     Ref (..),
     Schema (..),
@@ -90,7 +90,7 @@ leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
     fromKind DataScalar {} = pure ([], [])
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
-typeFrom :: [Name] -> TypeDefinition a -> Name
+typeFrom :: [FieldName] -> TypeDefinition a -> TypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
   where
     __typeFrom DataScalar {} = typeFromScalar typeName
@@ -98,7 +98,7 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
     __typeFrom DataUnion {} = nameSpaceType path typeName
     __typeFrom _ = typeName
 
-deprecationWarning :: Maybe Meta -> (Name, Ref) -> Converter ()
+deprecationWarning :: Maybe Meta -> (FieldName, Ref) -> Converter ()
 deprecationWarning meta (typename, ref) = case meta >>= lookupDeprecated of
   Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
     where

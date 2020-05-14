@@ -45,7 +45,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 
-renderArguments :: VariableDefinitions RAW -> FieldName -> Maybe TypeD
+renderArguments :: VariableDefinitions RAW -> TypeName -> Maybe TypeD
 renderArguments variables argsName
   | null variables = Nothing
   | otherwise = Just rootArgumentsType

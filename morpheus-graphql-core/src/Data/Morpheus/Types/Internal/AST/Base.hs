@@ -350,7 +350,7 @@ sysTypes =
 sysFields :: [Key]
 sysFields = ["__typename", "__schema", "__type"]
 
-typeFromScalar :: Name -> Name
+typeFromScalar :: TypeName -> TypeName
 typeFromScalar "Boolean" = "Bool"
 typeFromScalar "Int" = "Int"
 typeFromScalar "Float" = "Float"

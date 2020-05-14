@@ -43,6 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     getOperationName,
     msg,
     toAny,
+    toFieldName,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
@@ -199,6 +200,6 @@ getFieldType
           checkDeprecated =
             deprecationWarning
               fieldMeta
-              (typeName, Ref {refName = selectionName, refPosition = selectionPosition})
+              (toFieldName typeName, Ref {refName = selectionName, refPosition = selectionPosition})
 getFieldType _ dt _ =
   failure (compileError $ "Type should be output Object \"" <> msg (show dt))

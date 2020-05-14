@@ -46,9 +46,10 @@ import Data.Morpheus.Types.Internal.AST.Base
     RAW,
     Ref (..),
     Stage,
-    TypeName,
+    TypeName (..),
     VALID,
     msg,
+    readName,
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
@@ -255,8 +256,8 @@ data Operation (s :: Stage) = Operation
   }
   deriving (Show, Lift)
 
-getOperationName :: Maybe Key -> Key
-getOperationName = fromMaybe "AnonymousOperation"
+getOperationName :: Maybe FieldName -> TypeName
+getOperationName = maybe "AnonymousOperation" (TypeName . readName)
 
 getOperationDataType :: Failure GQLErrors m => Operation a -> Schema -> m (TypeDefinition OUT)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)
