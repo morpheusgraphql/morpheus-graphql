@@ -132,6 +132,10 @@ instance RenderGQL FieldName where
 intercalateName :: FieldName -> [FieldName] -> FieldName
 intercalateName (FieldName x) = FieldName . intercalate x . map readName
 
+toFieldName :: TypeName -> FieldName
+toFieldName = FieldName . readTypeName
+
+-- TypeName
 newtype TypeName = TypeName {readTypeName :: Text}
   deriving
     (Generic)
@@ -147,9 +151,7 @@ instance Msg TypeName where
 instance RenderGQL TypeName where
   render = readTypeName
 
-toFieldName :: TypeName -> FieldName
-toFieldName = FieldName . readTypeName
-
+-- Description
 type Description = Text
 
 data Stage = RAW | RESOLVED | VALID
