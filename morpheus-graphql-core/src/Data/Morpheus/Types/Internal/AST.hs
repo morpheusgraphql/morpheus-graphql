@@ -121,7 +121,6 @@ module Data.Morpheus.Types.Internal.AST
     Variables,
     isNullableWrapper,
     unsafeFromFields,
-    unsafeFromInputFields,
     OrderedMap,
     GQLError (..),
     GQLErrors,
@@ -144,6 +143,7 @@ module Data.Morpheus.Types.Internal.AST
     toFieldName,
     TypeNameRef (..),
     isEnum,
+    Fields (..),
   )
 where
 

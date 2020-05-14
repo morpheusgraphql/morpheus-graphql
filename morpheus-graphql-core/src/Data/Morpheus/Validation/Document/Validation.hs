@@ -51,7 +51,7 @@ validatePartialDocument lib = traverse validateType lib
         errors -> failure $ partialImplements typeName errors
     validateType x = pure x
     mustBeSubset ::
-      FieldsDefinition -> (TypeName, FieldsDefinition) -> [(TypeName, FieldName, ImplementsError)]
+      FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> [(TypeName, FieldName, ImplementsError)]
     mustBeSubset objFields (typeName, fields) = concatMap checkField (elems fields)
       where
         checkField :: FieldDefinition -> [(TypeName, FieldName, ImplementsError)]

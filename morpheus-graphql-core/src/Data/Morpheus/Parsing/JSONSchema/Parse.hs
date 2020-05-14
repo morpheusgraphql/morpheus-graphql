@@ -75,11 +75,11 @@ instance ParseJSONSchema Type [TypeDefinition ANY] where
     case traverse name unions of
       Nothing -> internalError "ERROR: GQL ERROR"
       Just uni -> pure [toAny $ createUnionType typeName uni]
-  parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
-    do
-      (fields :: [FieldDefinition]) <- traverse parse iFields
-      fs <- fromElems fields
-      pure [createType typeName $ DataInputObject fs]
+  -- parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
+  --   do
+  --     (fields :: [FieldDefinition]) <- traverse parse iFields
+  --     fs <- fromElems fields
+  --     pure [createType typeName $ DataInputObject fs]
   parse Type {name = Just typeName, kind = OBJECT, fields = Just oFields} =
     do
       (fields :: [FieldDefinition]) <- traverse parse oFields

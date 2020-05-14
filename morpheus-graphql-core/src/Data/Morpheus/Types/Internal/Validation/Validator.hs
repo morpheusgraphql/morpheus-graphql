@@ -138,7 +138,7 @@ data Constraint (a :: Target) where
 
 type family Resolution (a :: Target)
 
-type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition)
+type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT)
 
 type instance Resolution 'TARGET_INPUT = TypeDefinition IN
 

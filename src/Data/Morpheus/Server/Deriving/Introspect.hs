@@ -70,6 +70,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldName (..),
+    Fields (..),
     FieldsDefinition (..),
     IN,
     InputFieldsDefinition (..),
@@ -164,7 +165,7 @@ instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a 
     where
       fieldObj = field (Proxy @b) name
       fieldArgs =
-        ArgumentsDefinition Nothing $ unFieldsDefinition $ fst $
+        ArgumentsDefinition Nothing $ unFields $ fst $
           introspectObjectFields
             (Proxy :: Proxy 'False)
             (__typeName (Proxy @b), OutputType, Proxy @a)
@@ -234,10 +235,10 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
 type GQL_TYPE a = (Generic a, GQLType a)
 
 fromInput :: InputFieldsDefinition -> FieldsDefinition
-fromInput = FieldsDefinition . unInputFieldsDefinition
+fromInput = Fields . unInputFieldsDefinition
 
 toInput :: FieldsDefinition -> InputFieldsDefinition
-toInput = InputFieldsDefinition . unFieldsDefinition
+toInput = InputFieldsDefinition . unFields
 
 deriveCustomInputObjectType ::
   DeriveTypeContent TRUE a =>
