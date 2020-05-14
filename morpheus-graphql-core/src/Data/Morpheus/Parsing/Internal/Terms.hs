@@ -251,7 +251,7 @@ parseTypeCondition :: Parser TypeName
 parseTypeCondition = do
   _ <- string "on"
   space1
-  TypeName . readName <$> token
+  parseTypeName
 
 spreadLiteral :: Parser Position
 spreadLiteral = do
@@ -264,7 +264,7 @@ parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
   where
     unwrapped :: Parser ([DataTypeWrapper], TypeName)
-    unwrapped = ([],) . TypeName . readName <$> token <* spaceAndComments
+    unwrapped = ([],) <$> parseTypeName <* spaceAndComments
     ----------------------------------------------
     wrapped :: Parser ([DataTypeWrapper], TypeName)
     wrapped =
@@ -283,7 +283,7 @@ parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
 parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
-    alias = label "alias" $ token <* char ':' <* spaceAndComments
+    alias = label "alias" $ parseName <* char ':' <* spaceAndComments
 
 parseType :: Parser TypeRef
 parseType = do

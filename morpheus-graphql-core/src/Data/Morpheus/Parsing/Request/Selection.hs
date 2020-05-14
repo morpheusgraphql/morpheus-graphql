@@ -27,7 +27,6 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseTypeCondition,
     setOf,
     spreadLiteral,
-    token,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
@@ -99,7 +98,7 @@ parseSelectionField = label "SelectionField" $ do
 spread :: Parser (Selection RAW)
 spread = label "FragmentSpread" $ do
   refPosition <- spreadLiteral
-  refName <- token
+  refName <- parseName
   -- TODO: handle Directives
   _directives <- optionalDirectives
   pure $ Spread Ref {..}

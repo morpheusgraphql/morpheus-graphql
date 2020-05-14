@@ -19,11 +19,11 @@ import Data.Morpheus.Parsing.Internal.Internal
 import Data.Morpheus.Parsing.Internal.Terms
   ( litEquals,
     parseAssignment,
+    parseName,
     parseNegativeSign,
     parseTypeName,
     setOf,
     spaceAndComments,
-    token,
     variable,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -107,7 +107,7 @@ listValue parser =
 
 objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
 objectEntry parser = label "ObjectEntry" $ do
-  (entryName, entryValue) <- parseAssignment token parser
+  (entryName, entryValue) <- parseAssignment parseName parser
   pure ObjectEntry {entryName, entryValue}
 
 objectValue :: Parser (Value a) -> Parser (OrderedMap FieldName (ObjectEntry a))
