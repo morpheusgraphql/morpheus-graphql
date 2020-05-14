@@ -25,7 +25,7 @@ import Data.Morpheus.Error
     internalTypeMismatch,
   )
 import Data.Morpheus.Internal.Utils
-  ( Listable (..),
+  ( elems,
   )
 import Data.Morpheus.Kind
   ( ENUM,
@@ -173,7 +173,7 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
         (x, y {typeName = datatypeNameProxy (Proxy @d)})
 
 getEnumTag :: ValidObject -> Eventless TypeName
-getEnumTag x = case toList x of
+getEnumTag x = case elems x of
   [ObjectEntry "enum" (Enum value)] -> pure value
   _ -> internalError "bad union enum object"
 

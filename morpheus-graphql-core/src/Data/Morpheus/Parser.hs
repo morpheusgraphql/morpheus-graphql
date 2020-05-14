@@ -8,7 +8,7 @@ where
 
 import Control.Monad ((>=>))
 import Data.Morpheus.Internal.Utils
-  ( fromList,
+  ( fromElems,
   )
 import Data.Morpheus.Parsing.Document.TypeSystem (parseSchema)
 import Data.Morpheus.Parsing.Request.Parser (parseGQL)
@@ -38,7 +38,7 @@ import Data.Text (Text)
 parseTypeSystemDefinition ::
   Text -> Eventless Schema
 parseTypeSystemDefinition =
-  parseSchema >=> fromList
+  parseSchema >=> fromElems
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition ANY]

@@ -14,9 +14,9 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( Merge (..),
+    elems,
     empty,
     selectOr,
-    toList,
   )
 import Data.Morpheus.Rendering.RenderIntrospection
   ( createObjectType,
@@ -48,7 +48,7 @@ import Data.Morpheus.Types.Internal.Resolving
 
 resolveTypes ::
   Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
-resolveTypes schema = mkList <$> traverse (`render` schema) (toList schema)
+resolveTypes schema = mkList <$> traverse (`render` schema) (elems schema)
 
 buildSchemaLinkType ::
   Monad m => Maybe (TypeDefinition OUT) -> Schema -> ResModel QUERY e m

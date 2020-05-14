@@ -16,7 +16,7 @@ import Data.Maybe (maybe)
 import Data.Morpheus.Error.Variable (uninitializedVariable)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    Listable (..),
+    elems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -114,7 +114,7 @@ resolveOperationVariables
       checkUnusedVariables :: BaseValidator ()
       checkUnusedVariables = do
         uses <- allVariableRefs [operationSelection]
-        checkUnused uses (toList operationArguments)
+        checkUnused uses (elems operationArguments)
 
 lookupAndValidateValueOnBody ::
   Variables ->

@@ -13,7 +13,7 @@ import Data.Aeson (decode, encode)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.Internal.Utils
-  ( fromList,
+  ( fromElems,
   )
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO
@@ -62,7 +62,7 @@ import Test.Tasty.HUnit
 
 getSchema :: Monad m => ResponseStream e m Schema
 getSchema =
-  fromList
+  fromElems
     [dsl|
   
   type Query {

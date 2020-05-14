@@ -29,10 +29,8 @@ import Data.Morpheus.Error
     globalErrorMessage,
   )
 import Data.Morpheus.Internal.Utils
-  ( nameSpaceType,
-  )
-import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    nameSpaceType,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
