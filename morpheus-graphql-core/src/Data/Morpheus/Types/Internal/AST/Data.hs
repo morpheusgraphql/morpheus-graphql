@@ -239,7 +239,7 @@ type TypeLib = HashMap TypeName (TypeDefinition ANY)
 instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-instance Listable Schema (TypeDefinition ANY) where
+instance Listable (TypeDefinition ANY) Schema where
   elems = HM.elems . typeRegister
   fromElems types = case popByKey "Query" types of
     (Nothing, _) -> failure (globalErrorMessage "INTERNAL: Query Not Defined")
@@ -508,7 +508,7 @@ instance Merge FieldsDefinition where
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
-instance Listable FieldsDefinition FieldDefinition where
+instance Listable FieldDefinition FieldsDefinition where
   fromElems = fmap FieldsDefinition . fromElems
   elems = elems . unFieldsDefinition
 
@@ -595,7 +595,7 @@ instance Merge InputFieldsDefinition where
 instance Selectable InputFieldsDefinition FieldDefinition where
   selectOr fb f name (InputFieldsDefinition lib) = selectOr fb f name lib
 
-instance Listable InputFieldsDefinition FieldDefinition where
+instance Listable FieldDefinition InputFieldsDefinition where
   fromElems = fmap InputFieldsDefinition . fromElems
   elems = elems . unInputFieldsDefinition
 
@@ -622,7 +622,7 @@ instance Collection ArgumentDefinition ArgumentsDefinition where
   empty = ArgumentsDefinition Nothing empty
   singleton = ArgumentsDefinition Nothing . singleton
 
-instance Listable ArgumentsDefinition ArgumentDefinition where
+instance Listable ArgumentDefinition ArgumentsDefinition where
   elems NoArguments = []
   elems (ArgumentsDefinition _ args) = elems args
   fromElems [] = pure NoArguments

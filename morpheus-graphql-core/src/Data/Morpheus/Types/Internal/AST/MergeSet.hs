@@ -101,7 +101,7 @@ instance (KeyOf a, k ~ KEY a, IsString k) => Selectable (MergeSet a) a where
 instance (KeyOf a, IsString (KEY a), Merge a, Eq a) => Merge (MergeSet a) where
   merge = safeJoin
 
-instance (KeyOf a, Merge a, IsString (KEY a), Eq a) => Listable (MergeSet a) a where
+instance (KeyOf a, Merge a, IsString (KEY a), Eq a) => Listable a (MergeSet a) where
   fromElems = safeFromList
   elems = unpack
 

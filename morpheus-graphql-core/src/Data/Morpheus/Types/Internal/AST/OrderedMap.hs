@@ -64,7 +64,7 @@ instance (Eq k, Hashable k, k ~ KEY a) => Selectable (OrderedMap k a) a where
 instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (OrderedMap k a) where
   merge _ (OrderedMap k1 x) (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
 
-instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable (OrderedMap k a) a where
+instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable a (OrderedMap k a) where
   fromElems = safeFromList
   elems OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
     where

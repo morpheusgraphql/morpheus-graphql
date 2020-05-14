@@ -124,14 +124,14 @@ toPair :: KeyOf a => a -> (KEY a, a)
 toPair x = (keyOf x, x)
 
 -- list Like Collections
-class Listable c a | c -> a where
-  elems :: Listable c a => c -> [a]
-  fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m c
+class Listable a coll | coll -> a where
+  elems :: coll -> [a]
+  fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m coll
 
-keys :: (KeyOf a, Listable c a) => c -> [KEY a]
+keys :: (KeyOf a, Listable a coll) => coll -> [KEY a]
 keys = map keyOf . elems
 
-size :: Listable c a => c -> Int
+size :: Listable a coll => coll -> Int
 size = length . elems
 
 -- Merge Object with of Failure as an Option
