@@ -57,7 +57,7 @@ import Text.Megaparsec
 enumValueDefinition :: Parser DataEnumValue
 enumValueDefinition = label "EnumValueDefinition" $ do
   metaDescription <- optDescription
-  enumName <- parseName
+  enumName <- parseTypeName
   metaDirectives <- optionalDirectives
   return $
     DataEnumValue

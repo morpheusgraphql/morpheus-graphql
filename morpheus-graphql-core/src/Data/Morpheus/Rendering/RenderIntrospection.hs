@@ -124,7 +124,7 @@ interfacePossibleTypes schema interfaceName = sequence $ concatMap implements (t
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
 createEnumValue DataEnumValue {enumName, enumMeta} =
   mkObject "__Field" $
-    [ renderFieldName enumName,
+    [ renderName enumName,
       description enumMeta
     ]
       <> renderDeprecated enumMeta

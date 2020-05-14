@@ -76,7 +76,7 @@ instance FromJSON InputValue where
 
 -- ENUM
 newtype EnumValue = EnumValue
-  { enumName :: FieldName
+  { enumName :: TypeName
   }
   deriving (Generic, Show)
 

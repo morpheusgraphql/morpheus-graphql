@@ -194,8 +194,8 @@ validateEnum ::
   [DataEnumValue] ->
   ResolvedValue ->
   InputValidator ValidValue
-validateEnum err enumValues value@(Enum enumValue)
-  | enumValue `elem` tags = pure (Enum enumValue)
+validateEnum err enumValues value@(Enum (Name enumValue))
+  | TypeName enumValue `elem` tags = pure (Enum (Name enumValue))
   | otherwise = err value
   where
     tags = map enumName enumValues

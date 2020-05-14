@@ -212,7 +212,7 @@ data Meta = Meta
 
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue
-  { enumName :: Name,
+  { enumName :: TypeName,
     enumMeta :: Maybe Meta
   }
   deriving (Show, Lift)
@@ -395,12 +395,12 @@ createType typeName typeContent =
 createScalarType :: TypeName -> TypeDefinition a
 createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
 
-createEnumType :: TypeName -> [FieldName] -> TypeDefinition a
+createEnumType :: TypeName -> [TypeName] -> TypeDefinition a
 createEnumType typeName typeData = createType typeName (DataEnum enumValues)
   where
     enumValues = map createEnumValue typeData
 
-createEnumValue :: Name -> DataEnumValue
+createEnumValue :: TypeName -> DataEnumValue
 createEnumValue enumName = DataEnumValue {enumName, enumMeta = Nothing}
 
 createUnionType :: TypeName -> [TypeName] -> TypeDefinition OUT
@@ -436,7 +436,7 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
         { typeName = name,
           typeFingerprint,
           typeMeta = Nothing,
-          typeContent = DataEnum $ map (createEnumValue . toFieldName . fst) enumKeys
+          typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
         }
 defineType datatype lib =
   lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
