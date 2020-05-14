@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -47,7 +48,14 @@ import Language.Haskell.TH.Syntax (Lift (..))
 newtype MergeSet a = MergeSet
   { unpack :: [a]
   }
-  deriving (Show, Eq, Functor, Foldable, Lift)
+  deriving
+    ( Show,
+      Eq,
+      Functor,
+      Foldable,
+      Lift,
+      Traversable
+    )
 
 concatTraverse ::
   ( KeyOf a,
@@ -84,9 +92,6 @@ join = __join empty
 
 toOrderedMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet a -> OrderedMap FieldName a
 toOrderedMap = OM.unsafeFromValues . unpack
-
-instance Traversable MergeSet where
-  traverse f = fmap MergeSet . traverse f . unpack
 
 instance Empty (MergeSet a) where
   empty = MergeSet []
