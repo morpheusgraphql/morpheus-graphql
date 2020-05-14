@@ -27,6 +27,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     TypeName,
+    toFieldName,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( Failure (..),
