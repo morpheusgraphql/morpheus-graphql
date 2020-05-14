@@ -24,13 +24,14 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
-    FieldName (..),
+    FieldName,
     Message,
     ObjectEntry (..),
     TypeName (..),
     ValidObject,
     ValidValue,
     Value (..),
+    toFieldName,
   )
 import Data.Morpheus.Types.Internal.Operation
   ( empty,
@@ -78,7 +79,7 @@ withList :: (ValidValue -> Eventless a) -> ValidValue -> Eventless [a]
 withList decode (List li) = traverse decode li
 withList _ isType = internalTypeMismatch "List" isType
 
-withEnum :: (FieldName -> Eventless a) -> ValidValue -> Eventless a
+withEnum :: (TypeName -> Eventless a) -> ValidValue -> Eventless a
 withEnum decode (Enum value) = decode value
 withEnum _ isType = internalTypeMismatch "Enum" isType
 
@@ -86,7 +87,7 @@ withUnion :: (TypeName -> ValidObject -> ValidObject -> Eventless a) -> ValidObj
 withUnion decoder unions = do
   (enum :: ValidValue) <- entryValue <$> selectBy ("__typename not found on Input Union" :: Message) "__typename" unions
   case enum of
-    (Enum key) -> selectOr notfound onFound key unions
+    (Enum key) -> selectOr notfound onFound (toFieldName key) unions
       where
         notfound = withObject (decoder key unions) (Object empty)
         onFound = withObject (decoder key unions) . entryValue

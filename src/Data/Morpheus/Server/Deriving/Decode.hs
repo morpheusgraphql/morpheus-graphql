@@ -123,9 +123,9 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeType a whe
 --     deriving (Generic, GQLType)
 
 decideUnion ::
-  ([Name], value -> Eventless (f1 a)) ->
-  ([Name], value -> Eventless (f2 a)) ->
-  Name ->
+  ([TypeName], value -> Eventless (f1 a)) ->
+  ([TypeName], value -> Eventless (f2 a)) ->
+  TypeName ->
   value ->
   Eventless ((:+:) f1 f2 a)
 decideUnion (left, f1) (right, f2) name value
@@ -170,7 +170,7 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
       <$> decodeRep
         (x, y {typeName = datatypeNameProxy (Proxy @d)})
 
-getEnumTag :: ValidObject -> Eventless Name
+getEnumTag :: ValidObject -> Eventless TypeName
 getEnumTag x = case toList x of
   [ObjectEntry "enum" (Enum value)] -> pure value
   _ -> internalError "bad union enum object"
@@ -216,12 +216,6 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
       ----------
       isUnionRef x = baseName <> x == consName
 
-datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
-datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))
-
-conNameProxy :: forall f (c :: Meta). Constructor c => f c -> TypeName
-conNameProxy _ = TypeName $ pack $ conName (undefined :: M1 C c U1 a)
-
 class DecodeFields f where
   refType :: Proxy f -> Maybe TypeName
   decodeFields :: (ValidValue, Cont) -> Eventless (f a)
@@ -237,7 +231,7 @@ instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) whe
     | otherwise = __decode value
     where
       __decode = fmap (M1 . K1) . decodeRec
-      fieldName = Name $ pack $ selName (undefined :: M1 S s f a)
+      fieldName = selNameProxy (Proxy @s)
       decodeRec = withObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where

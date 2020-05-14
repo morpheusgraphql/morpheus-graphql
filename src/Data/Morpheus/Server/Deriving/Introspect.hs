@@ -45,7 +45,7 @@ import Data.Morpheus.Kind
     OUTPUT,
     SCALAR,
   )
-import Data.Morpheus.Server.Deriving.Generics.EnumRep
+import Data.Morpheus.Server.Deriving.Utils
   ( EnumRep (..),
   )
 import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
@@ -68,13 +68,13 @@ import Data.Morpheus.Types.Internal.AST
     Key,
     Message,
     Meta (..),
-    Name,
     Name (..),
     OUT,
     TRUE,
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName (..),
     TypeRef (..),
     TypeUpdater,
     createAlias,
@@ -197,7 +197,7 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
     where
       enumType =
-        buildType $ DataEnum $ map (createEnumValue . Name) $ enumTags (Proxy @(Rep a))
+        buildType $ DataEnum $ map (createEnumValue . TypeName) $ enumTags (Proxy @(Rep a))
 
 instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INPUT a where
   introspectKind _ = derivingData (Proxy @a) InputType
@@ -239,7 +239,7 @@ toInput = InputFieldsDefinition . unFieldsDefinition
 
 deriveCustomInputObjectType ::
   DeriveTypeContent TRUE a =>
-  (Name, proxy a) ->
+  (TypeName, proxy a) ->
   TypeUpdater
 deriveCustomInputObjectType (name, proxy) =
   flip
@@ -248,14 +248,14 @@ deriveCustomInputObjectType (name, proxy) =
 
 deriveCustomObjectType ::
   DeriveTypeContent TRUE a =>
-  (Name, TypeScope cat, proxy a) ->
+  (TypeName, TypeScope cat, proxy a) ->
   [TypeUpdater]
 deriveCustomObjectType = snd . introspectObjectFields (Proxy :: Proxy TRUE)
 
 introspectObjectFields ::
   DeriveTypeContent custom a =>
   proxy1 (custom :: Bool) ->
-  (Name, TypeScope cat, proxy2 a) ->
+  (TypeName, TypeScope cat, proxy2 a) ->
   (FieldsDefinition, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) =
   withObject
@@ -316,21 +316,21 @@ updateLib f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint pro
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
 data ConsRep = ConsRep
-  { consName :: Key,
+  { consName :: TypeName,
     consIsRecord :: Bool,
     consFields :: [FieldRep]
   }
 
 data FieldRep = FieldRep
-  { fieldTypeName :: Name,
+  { fieldTypeName :: TypeName,
     fieldData :: FieldDefinition,
     fieldTypeUpdater :: TypeUpdater,
     fieldIsObject :: Bool
   }
 
 data ResRep = ResRep
-  { enumCons :: [Name],
-    unionRef :: [Name],
+  { enumCons :: [TypeName],
+    unionRef :: [TypeName],
     unionRecordRep :: [ConsRep]
   }
 
@@ -338,7 +338,7 @@ isEmpty :: ConsRep -> Bool
 isEmpty ConsRep {consFields = []} = True
 isEmpty _ = False
 
-isUnionRef :: Name -> ConsRep -> Bool
+isUnionRef :: TypeName -> ConsRep -> Bool
 isUnionRef baseName ConsRep {consName, consFields = [FieldRep {fieldIsObject = True, fieldTypeName}]} =
   consName == baseName <> fieldTypeName
 isUnionRef _ _ = False
@@ -353,7 +353,7 @@ setFieldNames cons@ConsRep {consFields} =
       where
         fieldName = Name ("_" <> pack (show i))
 
-analyseRep :: Name -> [ConsRep] -> ResRep
+analyseRep :: TypeName -> [ConsRep] -> ResRep
 analyseRep baseName cons =
   ResRep
     { enumCons = map consName enumRep,
@@ -366,7 +366,7 @@ analyseRep baseName cons =
     (unionRecordRep, anyonimousUnionRep) = partition consIsRecord left2
 
 buildInputUnion ::
-  (Name, DataFingerprint) -> [ConsRep] -> (TypeContent TRUE IN, [TypeUpdater])
+  (TypeName, DataFingerprint) -> [ConsRep] -> (TypeContent TRUE IN, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons =
   datatype
     (analyseRep baseName cons)
@@ -377,7 +377,7 @@ buildInputUnion (baseName, baseFingerprint) cons =
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (DataInputUnion typeMembers, types <> unionTypes)
       where
-        typeMembers :: [(Name, Bool)]
+        typeMembers :: [(TypeName, Bool)]
         typeMembers =
           map (,True) (unionRef <> unionMembers) <> map (,False) enumCons
         (unionMembers, unionTypes) =
@@ -387,7 +387,7 @@ buildInputUnion (baseName, baseFingerprint) cons =
     wrapInputObject = DataInputObject . toInput
 
 buildUnionType ::
-  (Name, DataFingerprint) ->
+  (TypeName, DataFingerprint) ->
   (DataUnion -> TypeContent TRUE cat) ->
   (FieldsDefinition -> TypeContent TRUE cat) ->
   [ConsRep] ->
@@ -473,7 +473,7 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
           buildEnum enumTypeName baseFingerprint enums
         ]
 
-buildEnum :: Name -> DataFingerprint -> [Name] -> TypeUpdater
+buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> TypeUpdater
 buildEnum typeName typeFingerprint tags =
   pure
     . defineType
@@ -485,9 +485,9 @@ buildEnum typeName typeFingerprint tags =
 
 buildEnumObject ::
   (FieldsDefinition -> TypeContent TRUE cat) ->
-  Name ->
+  TypeName ->
   DataFingerprint ->
-  Name ->
+  TypeName ->
   TypeUpdater
 buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
   pure
@@ -531,7 +531,7 @@ instance (TypeRep a, TypeRep b) => TypeRep (a :+: b) where
 instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
   typeRep _ =
     [ ConsRep
-        { consName = Name $ pack $ conName (undefined :: (M1 C c f a)),
+        { consName = TypeName $ pack $ conName (undefined :: (M1 C c f a)),
           consFields = conRep (Proxy @f),
           consIsRecord = conIsRecord (undefined :: (M1 C c f a))
         }

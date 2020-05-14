@@ -26,8 +26,8 @@ import Data.Morpheus.Server.Internal.TH.Decode
     withObject,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( TypeD (..),
-    TypeName,
+  ( FieldName,
+    TypeD (..),
     ValidValue,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -35,7 +35,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Language.Haskell.TH
 
-(.:) :: Decode a => ValidValue -> TypeName -> Eventless a
+(.:) :: Decode a => ValidValue -> FieldName -> Eventless a
 value .: selectorName = withObject (decodeFieldWith decode selectorName) value
 
 deriveDecode :: TypeD -> Q [Dec]
