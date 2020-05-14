@@ -91,12 +91,11 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Error.Schema (nameCollisionError)
 import Data.Morpheus.Internal.Utils
-  ( Empty (..),
+  ( Collection (..),
     KeyOf (..),
     Listable (..),
     Merge (..),
     Selectable (..),
-    Singleton (..),
     elems,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -494,7 +493,7 @@ popByKey name types = case lookupWith typeName name types of
 --
 newtype FieldsDefinition = FieldsDefinition
   {unFieldsDefinition :: OrderedMap FieldName FieldDefinition}
-  deriving (Show, Empty, Lift)
+  deriving (Show, Lift)
 
 unsafeFromFields :: [FieldDefinition] -> FieldsDefinition
 unsafeFromFields = FieldsDefinition . unsafeFromValues
@@ -505,7 +504,8 @@ instance Merge FieldsDefinition where
 instance Selectable FieldsDefinition FieldDefinition where
   selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
 
-instance Singleton FieldsDefinition FieldDefinition where
+instance Collection FieldDefinition FieldsDefinition where
+  empty = FieldsDefinition empty
   singleton = FieldsDefinition . singleton
 
 instance Listable FieldsDefinition FieldDefinition where
@@ -584,7 +584,7 @@ toListField dataField = dataField {fieldType = listW (fieldType dataField)}
 
 newtype InputFieldsDefinition = InputFieldsDefinition
   {unInputFieldsDefinition :: OrderedMap FieldName FieldDefinition}
-  deriving (Show, Empty, Lift)
+  deriving (Show, Lift)
 
 unsafeFromInputFields :: [FieldDefinition] -> InputFieldsDefinition
 unsafeFromInputFields = InputFieldsDefinition . unsafeFromValues
@@ -595,7 +595,7 @@ instance Merge InputFieldsDefinition where
 instance Selectable InputFieldsDefinition FieldDefinition where
   selectOr fb f name (InputFieldsDefinition lib) = selectOr fb f name lib
 
-instance Singleton InputFieldsDefinition FieldDefinition where
+instance Collection FieldDefinition InputFieldsDefinition where
   singleton = InputFieldsDefinition . singleton
 
 instance Listable InputFieldsDefinition FieldDefinition where
@@ -621,7 +621,7 @@ instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb _ _ NoArguments = fb
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
-instance Singleton ArgumentsDefinition ArgumentDefinition where
+instance Collection ArgumentDefinition ArgumentsDefinition where
   singleton = ArgumentsDefinition Nothing . singleton
 
 instance Listable ArgumentsDefinition ArgumentDefinition where

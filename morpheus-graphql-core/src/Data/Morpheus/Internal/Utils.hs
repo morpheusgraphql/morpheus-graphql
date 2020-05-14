@@ -12,9 +12,8 @@ module Data.Morpheus.Internal.Utils
     nameSpaceField,
     nameSpaceType,
     capitalTypeName,
-    Empty (..),
+    Collection (..),
     Selectable (..),
-    Singleton (..),
     Listable (..),
     Merge (..),
     Failure (..),
@@ -78,14 +77,18 @@ capital = mapText __capital
 capitalTypeName :: FieldName -> TypeName
 capitalTypeName = TypeName . capital . readName
 
-class Empty a where
-  empty :: a
+--(KEY v ~ k) =>
+class Collection a coll | coll -> a where
+  empty :: coll
+  singleton :: a -> coll
 
-instance Empty (HashMap k v) where
-  empty = HM.empty
-
-instance Empty [a] where
+instance Collection a [a] where
   empty = []
+  singleton x = [x]
+
+instance (Hashable k, KeyOf v, k ~ KEY v) => Collection v (HashMap k v) where
+  empty = HM.empty
+  singleton x = HM.singleton (keyOf x) x
 
 class Selectable c a | c -> a where
   selectOr :: d -> (a -> d) -> KEY a -> c -> d
@@ -104,9 +107,6 @@ member = selectOr False toTrue
   where
     toTrue :: a -> Bool
     toTrue _ = True
-
-class KeyOf a => Singleton c a | c -> a where
-  singleton :: a -> c
 
 class Eq (KEY a) => KeyOf a where
   type KEY a :: *

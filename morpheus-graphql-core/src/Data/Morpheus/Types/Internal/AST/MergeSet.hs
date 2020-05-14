@@ -22,13 +22,12 @@ import Data.Maybe (maybe)
 -- MORPHEUS
 
 import Data.Morpheus.Internal.Utils
-  ( Empty (..),
+  ( Collection (..),
     Failure (..),
     KeyOf (..),
     Listable (..),
     Merge (..),
     Selectable (..),
-    Singleton (..),
     elems,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -54,8 +53,7 @@ newtype MergeSet a = MergeSet
       Functor,
       Foldable,
       Lift,
-      Traversable,
-      Empty
+      Traversable
     )
 
 concatTraverse ::
@@ -94,8 +92,9 @@ join = __join empty
 toOrderedMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet a -> OrderedMap FieldName a
 toOrderedMap = OM.unsafeFromValues . unpack
 
-instance (KeyOf a) => Singleton (MergeSet a) a where
-  singleton x = MergeSet [x]
+instance Collection a (MergeSet a) where
+  empty = MergeSet empty
+  singleton = MergeSet . singleton
 
 instance (KeyOf a, k ~ KEY a, IsString k) => Selectable (MergeSet a) a where
   selectOr fb _ "" _ = fb

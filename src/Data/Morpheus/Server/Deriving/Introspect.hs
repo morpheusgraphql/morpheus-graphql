@@ -37,8 +37,8 @@ import Data.Map (Map)
 
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
-  ( Empty (..),
-    Singleton (..),
+  ( empty,
+    singleton,
   )
 import Data.Morpheus.Kind
   ( Context (..),
