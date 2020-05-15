@@ -215,6 +215,9 @@ data DataEnumValue = DataEnumValue
   }
   deriving (Show, Lift)
 
+instance RenderGQL DataEnumValue where
+  render DataEnumValue {enumName} = render enumName
+
 -- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
 ---------------------------------------------------------------------------
 -- SchemaDefinition :
@@ -545,6 +548,10 @@ instance NameCollision (FieldDefinition cat) where
         locations = []
       }
 
+instance RenderGQL (FieldDefinition cat) where
+  render FieldDefinition {fieldName, fieldType, fieldArgs} =
+    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
+
 instance RenderGQL (FieldsDefinition OUT) where
   render = renderObject render . ignoreHidden . elems
 
@@ -604,6 +611,10 @@ data ArgumentsDefinition
       }
   | NoArguments
   deriving (Show, Lift)
+
+instance RenderGQL ArgumentsDefinition where
+  render NoArguments = ""
+  render arguments = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
 
 type ArgumentDefinition = FieldDefinition IN
 
@@ -701,19 +712,3 @@ instance RenderGQL (TypeDefinition a) where
 
 ignoreHidden :: [FieldDefinition cat] -> [FieldDefinition cat]
 ignoreHidden = filter fieldVisibility
-
--- OBJECT
-
-instance RenderGQL (FieldsDefinition cat) where
-  render = renderObject render . ignoreHidden . elems
-
-instance RenderGQL (FieldDefinition OUT) where
-  render FieldDefinition {fieldName, fieldType, fieldArgs} =
-    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
-
-instance RenderGQL ArgumentsDefinition where
-  render NoArguments = ""
-  render arguments = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
-
-instance RenderGQL DataEnumValue where
-  render DataEnumValue {enumName} = render enumName
