@@ -704,8 +704,8 @@ ignoreHidden = filter fieldVisibility
 
 -- OBJECT
 
-instance RenderGQL (FieldDefinition IN) where
-  render = undefined -- renderObject render . ignoreHidden . elems
+instance RenderGQL (FieldsDefinition cat) where
+  render = renderObject render . ignoreHidden . elems
 
 instance RenderGQL (FieldDefinition OUT) where
   render FieldDefinition {fieldName, fieldType, fieldArgs} =
