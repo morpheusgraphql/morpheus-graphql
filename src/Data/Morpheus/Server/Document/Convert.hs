@@ -28,7 +28,6 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeKind (..),
     FieldDefinition (..),
     FieldName,
-    Fields (..),
     FieldsDefinition,
     GQLTypeD (..),
     OUT,
@@ -38,6 +37,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeRef (..),
+    argumentsToFields,
     hasArguments,
     hsTypeName,
     kindOf,
@@ -216,10 +216,10 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
     tName = hsTypeName (namespaceWith fieldName)
 
 genArguments :: ArgumentsDefinition -> [FieldDefinition cat]
-genArguments = getFields . Fields . arguments
+genArguments = getFields . argumentsToFields
 
 getFields :: FieldsDefinition k -> [FieldDefinition cat]
-getFields = elems . mockFieldsDefinition
+getFields = map toHSFieldDefinition . elems . mockFieldsDefinition
 
 mockFieldsDefinition :: FieldsDefinition a -> FieldsDefinition b
 mockFieldsDefinition = fmap mockFieldDefinition

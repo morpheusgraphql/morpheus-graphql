@@ -86,6 +86,7 @@ import Data.Morpheus.Types.Internal.AST
     createAlias,
     createEnumValue,
     defineType,
+    fieldsToArguments,
     msg,
     toAny,
     toAny,
@@ -165,7 +166,7 @@ instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a 
     where
       fieldObj = field (Proxy @b) name
       fieldArgs =
-        ArgumentsDefinition Nothing $ unFields $ mockFieldsDefinition $ fst $
+        fieldsToArguments $ mockFieldsDefinition $ fst $
           introspectObjectFields
             (Proxy :: Proxy 'False)
             (__typeName (Proxy @b), InputType, Proxy @a)

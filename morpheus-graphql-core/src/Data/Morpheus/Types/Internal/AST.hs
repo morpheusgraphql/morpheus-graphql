@@ -143,7 +143,9 @@ module Data.Morpheus.Types.Internal.AST
     toFieldName,
     TypeNameRef (..),
     isEnum,
-    Fields (..),
+    Fields,
+    argumentsToFields,
+    fieldsToArguments,
   )
 where
 

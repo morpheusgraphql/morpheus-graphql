@@ -41,7 +41,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     TypeCategory,
     DataInputUnion,
     Argument (..),
-    Fields (..),
+    Fields,
     createField,
     createArgument,
     createEnumType,
@@ -75,6 +75,8 @@ module Data.Morpheus.Types.Internal.AST.Data
     FromAny (..),
     ToAny (..),
     isEnum,
+    argumentsToFields,
+    fieldsToArguments,
   )
 where
 
@@ -500,6 +502,12 @@ instance Selectable (Fields (FieldDefinition cat)) (FieldDefinition cat) where
 
 unsafeFromFields :: [FieldDefinition cat] -> FieldsDefinition cat
 unsafeFromFields = Fields . unsafeFromValues
+
+argumentsToFields :: ArgumentsDefinition -> FieldsDefinition IN
+argumentsToFields = Fields . arguments
+
+fieldsToArguments :: FieldsDefinition IN -> ArgumentsDefinition
+fieldsToArguments = ArgumentsDefinition Nothing . unFields
 
 instance (KEY def ~ FieldName, KeyOf def, NameCollision def) => Listable def (Fields def) where
   fromElems = fmap Fields . fromElems
