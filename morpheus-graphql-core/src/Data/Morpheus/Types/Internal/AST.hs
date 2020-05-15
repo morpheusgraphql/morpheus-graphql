@@ -51,12 +51,12 @@ module Data.Morpheus.Types.Internal.AST
     -- DSL
     ScalarDefinition (..),
     DataEnum,
-    FieldsDefinition (..),
+    FieldsDefinition,
     ArgumentDefinition,
     DataUnion,
     ArgumentsDefinition (..),
     FieldDefinition (..),
-    InputFieldsDefinition (..),
+    InputFieldsDefinition,
     TypeContent (..),
     TypeDefinition (..),
     Schema (..),
@@ -146,6 +146,7 @@ module Data.Morpheus.Types.Internal.AST
     Fields,
     argumentsToFields,
     fieldsToArguments,
+    mkCons,
   )
 where
 

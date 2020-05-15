@@ -37,6 +37,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     TypeUpdater,
     TypeD (..),
     ConsD (..),
+    mkCons,
     GQLTypeD (..),
     TypeCategory,
     DataInputUnion,
@@ -711,6 +712,16 @@ data ConsD = ConsD
     cFields :: [FieldDefinition ANY]
   }
   deriving (Show)
+
+mkCons :: TypeName -> FieldsDefinition cat -> ConsD
+mkCons typename fields =
+  ConsD
+    { cName = hsTypeName typename,
+      cFields = map (toHSFieldDefinition . mockFieldDefinition) (elems fields)
+    }
+
+mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
+mockFieldDefinition FieldDefinition {..} = FieldDefinition {..}
 
 isEnum :: [ConsD] -> Bool
 isEnum = all (null . cFields)

@@ -19,11 +19,13 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
     elems,
+    empty,
+    singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
-    ConsD (..),
+    ConsD,
     DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
@@ -42,8 +44,8 @@ import Data.Morpheus.Types.Internal.AST
     hsTypeName,
     kindOf,
     lookupWith,
+    mkCons,
     toFieldName,
-    toHSFieldDefinition,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
@@ -114,12 +116,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   tKind
                 }
             buildObjectCons :: FieldsDefinition cat -> [ConsD]
-            buildObjectCons fields =
-              [ ConsD
-                  { cName = hsTypeName typeName,
-                    cFields = elems (mockFieldsDefinition fields)
-                  }
-              ]
+            buildObjectCons fields = [mkCons typeName fields]
             tKind = kindOf typeOriginal
             genType :: TypeContent TRUE ANY -> Q GQLTypeD
             genType (DataEnum tags) =
@@ -137,8 +134,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                     ..
                   }
               where
-                enumOption DataEnumValue {enumName} =
-                  ConsD {cName = hsTypeName enumName, cFields = []}
+                enumOption DataEnumValue {enumName} = mkCons enumName empty
             genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
             genType DataInputUnion {} = fail "Input Unions not Supported"
             genType DataInterface {interfaceFields} = do
@@ -175,22 +171,21 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   }
               where
                 unionCon memberName =
-                  ConsD
-                    { cName,
-                      cFields =
-                        [ FieldDefinition
-                            { fieldName = "un" <> toFieldName cName,
-                              fieldType =
-                                TypeRef
-                                  { typeConName = utName,
-                                    typeArgs = Just m_,
-                                    typeWrappers = []
-                                  },
-                              fieldMeta = Nothing,
-                              fieldArgs = NoArguments
-                            }
-                        ]
-                    }
+                  mkCons
+                    cName
+                    ( singleton
+                        FieldDefinition
+                          { fieldName = "un" <> toFieldName cName,
+                            fieldType =
+                              TypeRef
+                                { typeConName = utName,
+                                  typeArgs = Just m_,
+                                  typeWrappers = []
+                                },
+                            fieldMeta = Nothing,
+                            fieldArgs = NoArguments
+                          }
+                    )
                   where
                     cName = hsTypeName typeName <> utName
                     utName = hsTypeName memberName
@@ -203,10 +198,7 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
         { tName,
           tNamespace = [],
           tCons =
-            [ ConsD
-                { cName = tName,
-                  cFields = genArguments fieldArgs
-                }
+            [ mkCons tName (argumentsToFields fieldArgs)
             ],
           tMeta = Nothing,
           tKind = KindInputObject
@@ -214,15 +206,3 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
     ]
   where
     tName = hsTypeName (namespaceWith fieldName)
-
-genArguments :: ArgumentsDefinition -> [FieldDefinition cat]
-genArguments = getFields . argumentsToFields
-
-getFields :: FieldsDefinition k -> [FieldDefinition cat]
-getFields = map toHSFieldDefinition . elems . mockFieldsDefinition
-
-mockFieldsDefinition :: FieldsDefinition a -> FieldsDefinition b
-mockFieldsDefinition = fmap mockFieldDefinition
-
-mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
-mockFieldDefinition FieldDefinition {..} = FieldDefinition {..}
