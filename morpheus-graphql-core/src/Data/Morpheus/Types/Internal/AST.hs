@@ -114,7 +114,6 @@ module Data.Morpheus.Types.Internal.AST
     lookupWith,
     typeFromScalar,
     -- Temaplate Haskell
-    toHSFieldDefinition,
     hsTypeName,
     -- LOCAL
     GQLQuery (..),
@@ -156,6 +155,7 @@ import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.Data
 import Data.Morpheus.Types.Internal.AST.OrderedMap
 import Data.Morpheus.Types.Internal.AST.Selection
+import Data.Morpheus.Types.Internal.AST.TH
 import Data.Morpheus.Types.Internal.AST.Value
 import Language.Haskell.TH.Syntax (Lift)
 

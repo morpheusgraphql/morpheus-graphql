@@ -35,10 +35,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     Meta (..),
     Directive (..),
     TypeUpdater,
-    TypeD (..),
-    ConsD (..),
-    mkCons,
-    GQLTypeD (..),
     TypeCategory,
     DataInputUnion,
     Argument (..),
@@ -61,7 +57,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     kindOf,
     toNullableField,
     toListField,
-    toHSFieldDefinition,
     isEntNode,
     lookupDeprecated,
     lookupDeprecatedReason,
@@ -75,7 +70,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     ANY,
     FromAny (..),
     ToAny (..),
-    isEnum,
     argumentsToFields,
     fieldsToArguments,
   )
@@ -122,7 +116,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeRef (..),
     TypeWrapper (..),
     VALID,
-    hsTypeName,
     isNullable,
     isSystemTypeName,
     msg,
@@ -573,12 +566,6 @@ createField dataArguments fieldName (typeWrappers, typeConName) =
       fieldMeta = Nothing
     }
 
-toHSFieldDefinition :: FieldDefinition cat -> FieldDefinition cat
-toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConName}} =
-  field
-    { fieldType = tyRef {typeConName = hsTypeName typeConName}
-    }
-
 toNullableField :: FieldDefinition cat -> FieldDefinition cat
 toNullableField dataField
   | isNullable (fieldType dataField) = dataField
@@ -687,44 +674,6 @@ createAlias typeConName =
   TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
 
 type TypeUpdater = LibUpdater Schema
-
--- Template Haskell Types
--- Document
-data GQLTypeD = GQLTypeD
-  { typeD :: TypeD,
-    typeArgD :: [TypeD],
-    typeOriginal :: TypeDefinition ANY
-  }
-  deriving (Show)
-
---- Core
-data TypeD = TypeD
-  { tName :: TypeName,
-    tNamespace :: [FieldName],
-    tCons :: [ConsD],
-    tKind :: DataTypeKind,
-    tMeta :: Maybe Meta
-  }
-  deriving (Show)
-
-data ConsD = ConsD
-  { cName :: TypeName,
-    cFields :: [FieldDefinition ANY]
-  }
-  deriving (Show)
-
-mkCons :: TypeName -> FieldsDefinition cat -> ConsD
-mkCons typename fields =
-  ConsD
-    { cName = hsTypeName typename,
-      cFields = map (toHSFieldDefinition . mockFieldDefinition) (elems fields)
-    }
-
-mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
-mockFieldDefinition FieldDefinition {..} = FieldDefinition {..}
-
-isEnum :: [ConsD] -> Bool
-isEnum = all (null . cFields)
 
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes
