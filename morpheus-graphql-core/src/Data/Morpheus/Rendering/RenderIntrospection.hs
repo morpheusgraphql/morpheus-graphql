@@ -84,9 +84,9 @@ instance RenderSchema (TypeDefinition a) where
       __render (DataEnum enums) =
         constRes $
           createLeafType ENUM typeName typeMeta (Just $ map createEnumValue enums)
-      -- __render (DataInputObject fields) = \lib ->
-      --   createInputObject typeName typeMeta
-      --     <$> traverse (`renderinputValue` lib) (elems fields)
+      __render (DataInputObject fields) = \lib ->
+        createInputObject typeName typeMeta
+          <$> traverse (`renderinputValue` lib) (elems fields)
       __render DataObject {objectImplements, objectFields} =
         pure . createObjectType typeName typeMeta objectImplements objectFields
       __render (DataUnion union) = \schema ->
