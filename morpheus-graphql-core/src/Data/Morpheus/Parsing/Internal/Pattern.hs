@@ -38,9 +38,11 @@ import Data.Morpheus.Types.Internal.AST
     Directive (..),
     FieldDefinition (..),
     FieldName,
-    FieldsDefinition (..),
-    InputFieldsDefinition (..),
+    FieldsDefinition,
+    IN,
+    InputFieldsDefinition,
     Meta (..),
+    OUT,
     TypeName,
   )
 import Text.Megaparsec

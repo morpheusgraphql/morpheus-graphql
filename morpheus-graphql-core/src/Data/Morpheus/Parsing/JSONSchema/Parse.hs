@@ -34,6 +34,8 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition (..),
     DataTypeWrapper (..),
     FieldDefinition,
+    IN,
+    OUT,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -75,19 +77,19 @@ instance ParseJSONSchema Type [TypeDefinition ANY] where
     case traverse name unions of
       Nothing -> internalError "ERROR: GQL ERROR"
       Just uni -> pure [toAny $ createUnionType typeName uni]
-  -- parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
-  --   do
-  --     (fields :: [FieldDefinition]) <- traverse parse iFields
-  --     fs <- fromElems fields
-  --     pure [createType typeName $ DataInputObject fs]
+  parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
+    do
+      (fields :: [FieldDefinition IN]) <- traverse parse iFields
+      fs <- fromElems fields
+      pure [createType typeName $ DataInputObject fs]
   parse Type {name = Just typeName, kind = OBJECT, fields = Just oFields} =
     do
-      (fields :: [FieldDefinition]) <- traverse parse oFields
+      (fields :: [FieldDefinition OUT]) <- traverse parse oFields
       fs <- fromElems fields
       pure [createType typeName $ DataObject [] fs]
   parse _ = pure []
 
-instance ParseJSONSchema Field FieldDefinition where
+instance ParseJSONSchema Field (FieldDefinition OUT) where
   parse Field {fieldName, fieldArgs, fieldType} = do
     fType <- fieldTypeFromJSON fieldType
     args <- traverse genArg fieldArgs >>= fromElems
@@ -96,7 +98,7 @@ instance ParseJSONSchema Field FieldDefinition where
       genArg InputValue {inputName = argName, inputType = argType} =
         createArgument argName <$> fieldTypeFromJSON argType
 
-instance ParseJSONSchema InputValue FieldDefinition where
+instance ParseJSONSchema InputValue (FieldDefinition IN) where
   parse InputValue {inputName, inputType} = createField NoArguments inputName <$> fieldTypeFromJSON inputType
 
 fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], TypeName)

@@ -65,7 +65,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
     FieldName,
-    FieldsDefinition (..),
+    FieldsDefinition,
     Fragments,
     IN,
     Message,
@@ -163,7 +163,7 @@ selectWithDefaultValue ::
     KEY value ~ FieldName
   ) =>
   value ->
-  FieldDefinition ->
+  FieldDefinition IN ->
   values ->
   Validator ctx value
 selectWithDefaultValue
@@ -204,7 +204,7 @@ selectKnown selector lib =
       lib
 
 askFieldType ::
-  FieldDefinition ->
+  FieldDefinition OUT ->
   SelectionValidator (TypeDefinition OUT)
 askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   do
@@ -224,7 +224,7 @@ askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
 
 askTypeMember ::
   TypeName ->
-  SelectionValidator (TypeName, FieldsDefinition)
+  SelectionValidator (TypeName, FieldsDefinition OUT)
 askTypeMember name =
   askSchema
     >>= selectOr notFound pure name
@@ -239,7 +239,7 @@ askTypeMember name =
           <> msg scopeType
           <> "\" can't found in Schema."
     --------------------------------------
-    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (TypeName, FieldsDefinition)
+    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (TypeName, FieldsDefinition OUT)
     constraintOBJECT TypeDefinition {typeName, typeContent} = con typeContent
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
@@ -252,7 +252,7 @@ askTypeMember name =
               <> "\" must be an OBJECT."
 
 askInputFieldType ::
-  FieldDefinition ->
+  FieldDefinition IN ->
   InputValidator (TypeDefinition IN)
 askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}} =
   askSchema

@@ -17,7 +17,6 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( (<:>),
-    Merge (..),
     singleton,
   )
 import Data.Morpheus.QuasiQuoter (dsl)
@@ -27,6 +26,7 @@ import Data.Morpheus.Types.Internal.AST
     DataFingerprint (..),
     FieldsDefinition,
     Message,
+    OUT,
     Schema (..),
     TypeContent (..),
     TypeDefinition (..),
@@ -52,7 +52,7 @@ withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject int
     >>= (`resolveUpdates` map (insertType . internalType) schemaTypes)
 withSystemTypes _ = failure ("Query must be an Object Type" :: Message)
 
-hiddenFields :: FieldsDefinition
+hiddenFields :: FieldsDefinition OUT
 hiddenFields =
   unsafeFromFields
     [ createField

@@ -29,6 +29,7 @@ import Data.Morpheus.Types.Internal.AST
     GQLError (..),
     GQLErrors,
     InputFieldsDefinition,
+    OUT,
     Object,
     ObjectEntry (..),
     RESOLVED,
@@ -52,7 +53,7 @@ import Data.Semigroup ((<>))
 class InternalError a where
   internalError :: a -> GQLError
 
-instance InternalError FieldDefinition where
+instance InternalError (FieldDefinition cat) where
   internalError
     FieldDefinition
       { fieldName,
@@ -162,8 +163,8 @@ instance Unknown Schema ctx where
   unknown _ _ _ TypeNameRef {typeNameRef, typeNamePosition} =
     errorMessage typeNamePosition ("Unknown type " <> msg typeNameRef <> ".")
 
-instance Unknown FieldDefinition ctx where
-  type UnknownSelector FieldDefinition = Argument RESOLVED
+instance Unknown (FieldDefinition OUT) ctx where
+  type UnknownSelector (FieldDefinition OUT) = Argument RESOLVED
   unknown _ _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
@@ -178,8 +179,8 @@ instance Unknown InputFieldsDefinition InputContext where
         }
     ]
 
-instance Unknown FieldsDefinition ctx where
-  type UnknownSelector FieldsDefinition = Ref
+instance Unknown (FieldsDefinition OUT) ctx where
+  type UnknownSelector (FieldsDefinition OUT) = Ref
   unknown Context {scopeTypeName} _ _ =
     unknownSelectionField scopeTypeName
 

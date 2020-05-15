@@ -25,8 +25,9 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataUnion,
-    FieldsDefinition (..),
+    FieldsDefinition,
     Fragment (..),
+    OUT,
     RAW,
     Ref (..),
     Selection (..),
@@ -50,7 +51,7 @@ import Data.Morpheus.Validation.Query.Fragment
     resolveSpread,
   )
 
-type TypeDef = (TypeName, FieldsDefinition)
+type TypeDef = (TypeName, FieldsDefinition OUT)
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
@@ -83,7 +84,7 @@ tagUnionFragments types fragments =
     map categorizeType types
   where
     notEmpty = not . null . snd
-    categorizeType :: (TypeName, FieldsDefinition) -> (TypeDef, [Fragment])
+    categorizeType :: (TypeName, FieldsDefinition OUT) -> (TypeDef, [Fragment])
     categorizeType datatype = (datatype, filter matches fragments)
       where
         matches fragment = fragmentType fragment == fst datatype

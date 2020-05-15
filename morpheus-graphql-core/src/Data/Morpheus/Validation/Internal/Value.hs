@@ -14,12 +14,12 @@ import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    elems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataEnumValue (..),
     FieldDefinition (..),
     IN,
-    InputFieldsDefinition (..),
     Message,
     ObjectEntry (..),
     RESOLVED,
@@ -129,10 +129,10 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validate ::
           TypeContent TRUE IN -> ObjectEntry RESOLVED -> InputValidator ValidValue
         validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} = do
-          traverse_ requiredFieldsDefined (unInputFieldsDefinition parentFields)
+          traverse_ requiredFieldsDefined (elems parentFields)
           Object <$> traverse validateField fields
           where
-            requiredFieldsDefined :: FieldDefinition -> InputValidator (ObjectEntry RESOLVED)
+            requiredFieldsDefined :: FieldDefinition IN -> InputValidator (ObjectEntry RESOLVED)
             requiredFieldsDefined fieldDef@FieldDefinition {fieldName} =
               selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields
             validateField ::
