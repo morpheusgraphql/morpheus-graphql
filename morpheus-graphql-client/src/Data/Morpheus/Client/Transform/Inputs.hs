@@ -22,7 +22,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD (..),
-    DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
     IN,
@@ -38,6 +37,7 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableDefinitions,
     getOperationName,
+    mkConsEnum,
     removeDuplicates,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -122,7 +122,7 @@ buildInputType name = getType name >>= generateTypes
             [ mkInputType
                 typeName
                 KindEnum
-                (map enumOption enumTags)
+                (map mkConsEnum enumTags)
             ]
         subTypes _ = pure []
 
@@ -135,10 +135,6 @@ mkInputType tName tKind tCons =
       tKind,
       tMeta = Nothing
     }
-
-enumOption :: DataEnumValue -> ConsD
-enumOption DataEnumValue {enumName} =
-  ConsD {cName = enumName, cFields = []}
 
 toFieldD :: FieldDefinition cat -> Converter (FieldDefinition ANY)
 toFieldD field@FieldDefinition {fieldType} = do

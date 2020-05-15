@@ -146,6 +146,7 @@ module Data.Morpheus.Types.Internal.AST
     argumentsToFields,
     fieldsToArguments,
     mkCons,
+    mkConsEnum,
   )
 where
 

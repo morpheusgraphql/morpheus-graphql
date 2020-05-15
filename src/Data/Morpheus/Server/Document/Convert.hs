@@ -19,14 +19,12 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
     elems,
-    empty,
     singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD,
-    DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
     FieldName,
@@ -45,6 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     kindOf,
     lookupWith,
     mkCons,
+    mkConsEnum,
     toFieldName,
   )
 import Data.Semigroup ((<>))
@@ -126,15 +125,13 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                       TypeD
                         { tName = hsTypeName typeName,
                           tNamespace = [],
-                          tCons = map enumOption tags,
+                          tCons = map mkConsEnum tags,
                           tMeta = typeMeta,
                           tKind
                         },
                     typeArgD = [],
                     ..
                   }
-              where
-                enumOption DataEnumValue {enumName} = mkCons enumName empty
             genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
             genType DataInputUnion {} = fail "Input Unions not Supported"
             genType DataInterface {interfaceFields} = do

@@ -7,6 +7,7 @@ module Data.Morpheus.Types.Internal.AST.TH
     mkCons,
     GQLTypeD (..),
     isEnum,
+    mkConsEnum,
   )
 where
 
@@ -20,6 +21,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( ANY,
+    DataEnumValue (..),
     FieldDefinition (..),
     FieldsDefinition,
     Meta,
@@ -69,3 +71,6 @@ isEnum = all (null . cFields)
 
 mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
 mockFieldDefinition FieldDefinition {..} = FieldDefinition {..}
+
+mkConsEnum :: DataEnumValue -> ConsD
+mkConsEnum DataEnumValue {enumName} = ConsD {cName = hsTypeName enumName, cFields = []}
