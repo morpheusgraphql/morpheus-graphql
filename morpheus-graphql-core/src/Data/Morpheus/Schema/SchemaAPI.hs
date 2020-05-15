@@ -14,7 +14,6 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( (<:>),
-    Merge (..),
     elems,
     empty,
     selectOr,

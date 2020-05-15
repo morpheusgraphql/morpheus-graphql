@@ -18,7 +18,6 @@ import Data.Morpheus.Types.Internal.AST
     Arguments,
     ArgumentsDefinition (..),
     FieldDefinition (..),
-    IN,
     OUT,
     ObjectEntry (..),
     RAW,

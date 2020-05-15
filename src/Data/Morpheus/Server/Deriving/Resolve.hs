@@ -42,7 +42,7 @@ import Data.Morpheus.Types.IO
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataFingerprint (..),
-    FieldsDefinition (..),
+    FieldsDefinition,
     MUTATION,
     OUT,
     QUERY,

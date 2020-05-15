@@ -70,7 +70,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldName (..),
-    Fields (..),
     FieldsDefinition,
     IN,
     Message,
