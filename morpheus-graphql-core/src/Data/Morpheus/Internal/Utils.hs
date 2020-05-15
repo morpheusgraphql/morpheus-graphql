@@ -26,6 +26,7 @@ module Data.Morpheus.Internal.Utils
     (<:>),
     mapFst,
     mapSnd,
+    mapTuple,
   )
 where
 
@@ -159,3 +160,6 @@ mapFst f (a, b) = (f a, b)
 
 mapSnd :: (b -> b') -> (a, b) -> (a, b')
 mapSnd f (a, b) = (a, f b)
+
+mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
+mapTuple f1 f2 (a, b) = (f1 a, f2 b)
