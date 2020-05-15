@@ -51,6 +51,7 @@ import Data.Morpheus.Error.NameCollision
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
     elems,
+    mapTuple,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
@@ -294,10 +295,11 @@ replaceValue :: A.Value -> Value a
 replaceValue (A.Bool v) = gqlBoolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = gqlString v
-replaceValue (A.Object v) = gqlObject $ map replace (M.toList v)
-  where
-    --replace :: (a, A.Value) -> (a, Value a)
-    replace (key, val) = (FieldName key, replaceValue val)
+replaceValue (A.Object v) =
+  gqlObject $
+    map
+      (mapTuple FieldName replaceValue)
+      (M.toList v)
 replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
 replaceValue A.Null = gqlNull
 
