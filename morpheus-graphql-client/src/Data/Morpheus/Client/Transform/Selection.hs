@@ -121,7 +121,7 @@ genConsD path cName datatype selSet = do
   where
     genField ::
       Selection VALID ->
-      Converter (FieldDefinition, [TypeD], [TypeName])
+      Converter (FieldDefinition ANY, [TypeD], [TypeName])
     genField sel =
       do
         (fieldDataType, fieldType) <-

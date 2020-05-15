@@ -12,9 +12,8 @@ module Data.Morpheus.Internal.Utils
     nameSpaceField,
     nameSpaceType,
     capitalTypeName,
-    Empty (..),
+    Collection (..),
     Selectable (..),
-    Singleton (..),
     Listable (..),
     Merge (..),
     Failure (..),
@@ -24,6 +23,10 @@ module Data.Morpheus.Internal.Utils
     member,
     keys,
     size,
+    (<:>),
+    mapFst,
+    mapSnd,
+    mapTuple,
   )
 where
 
@@ -78,14 +81,18 @@ capital = mapText __capital
 capitalTypeName :: FieldName -> TypeName
 capitalTypeName = TypeName . capital . readName
 
-class Empty a where
-  empty :: a
+--(KEY v ~ k) =>
+class Collection a coll | coll -> a where
+  empty :: coll
+  singleton :: a -> coll
 
-instance Empty (HashMap k v) where
-  empty = HM.empty
-
-instance Empty [a] where
+instance Collection a [a] where
   empty = []
+  singleton x = [x]
+
+instance (Hashable k, KeyOf v, k ~ KEY v) => Collection v (HashMap k v) where
+  empty = HM.empty
+  singleton x = HM.singleton (keyOf x) x
 
 class Selectable c a | c -> a where
   selectOr :: d -> (a -> d) -> KEY a -> c -> d
@@ -105,9 +112,6 @@ member = selectOr False toTrue
     toTrue :: a -> Bool
     toTrue _ = True
 
-class KeyOf a => Singleton c a | c -> a where
-  singleton :: a -> c
-
 class Eq (KEY a) => KeyOf a where
   type KEY a :: *
   type KEY a = FieldName
@@ -124,21 +128,22 @@ toPair :: KeyOf a => a -> (KEY a, a)
 toPair x = (keyOf x, x)
 
 -- list Like Collections
-class Listable c a | c -> a where
-  elems :: Listable c a => c -> [a]
-  fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m c
+class Listable a coll | coll -> a where
+  elems :: coll -> [a]
+  fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m coll
 
-keys :: (KeyOf a, Listable c a) => c -> [KEY a]
+keys :: (KeyOf a, Listable a coll) => coll -> [KEY a]
 keys = map keyOf . elems
 
-size :: Listable c a => c -> Int
+size :: Listable a coll => coll -> Int
 size = length . elems
 
 -- Merge Object with of Failure as an Option
 class Merge a where
-  (<:>) :: (Monad m, Failure GQLErrors m) => a -> a -> m a
-  (<:>) = merge []
   merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
+
+(<:>) :: (Monad m, Merge a, Failure GQLErrors m) => a -> a -> m a
+(<:>) = merge []
 
 -- Failure: for custome Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where
@@ -149,3 +154,12 @@ instance Failure error (Either error) where
 
 instance (Stream s, Ord e, Failure [a] m) => Failure [a] (ParsecT e s m) where
   failure x = ParsecT $ \_ _ _ _ _ -> failure x
+
+mapFst :: (a -> a') -> (a, b) -> (a', b)
+mapFst f (a, b) = (f a, b)
+
+mapSnd :: (b -> b') -> (a, b) -> (a, b')
+mapSnd f (a, b) = (a, f b)
+
+mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
+mapTuple f1 f2 (a, b) = (f1 a, f2 b)

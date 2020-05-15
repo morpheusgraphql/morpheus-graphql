@@ -37,8 +37,8 @@ import Data.Map (Map)
 
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
-  ( Empty (..),
-    Singleton (..),
+  ( empty,
+    singleton,
   )
 import Data.Morpheus.Kind
   ( Context (..),
@@ -70,9 +70,8 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldName (..),
-    FieldsDefinition (..),
+    FieldsDefinition,
     IN,
-    InputFieldsDefinition (..),
     Message,
     Meta (..),
     OUT,
@@ -86,7 +85,9 @@ import Data.Morpheus.Types.Internal.AST
     createAlias,
     createEnumValue,
     defineType,
+    fieldsToArguments,
     msg,
+    toAny,
     toAny,
     toListField,
     toNullableField,
@@ -113,7 +114,7 @@ class Introspect a where
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> FieldName -> FieldDefinition
+  field :: proxy a -> FieldName -> FieldDefinition cat
   introspect :: proxy a -> TypeUpdater
 
   -----------------------------------------------
@@ -121,7 +122,7 @@ class Introspect a where
     GQLType a =>
     proxy a ->
     FieldName ->
-    FieldDefinition
+    FieldDefinition cat
   field _ = buildField (Proxy @a) NoArguments
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
@@ -164,10 +165,10 @@ instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a 
     where
       fieldObj = field (Proxy @b) name
       fieldArgs =
-        ArgumentsDefinition Nothing $ unFieldsDefinition $ fst $
+        fieldsToArguments $ mockFieldsDefinition $ fst $
           introspectObjectFields
             (Proxy :: Proxy 'False)
-            (__typeName (Proxy @b), OutputType, Proxy @a)
+            (__typeName (Proxy @b), InputType, Proxy @a)
   introspect _ typeLib =
     resolveUpdates
       typeLib
@@ -208,7 +209,7 @@ instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind OUTPUT a
   introspectKind _ = derivingData (Proxy @a) OutputType
 
 instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INTERFACE a where
-  introspectKind _ = updateLib (buildType (DataInterface fields :: TypeContent TRUE OUT)) types (Proxy @a)
+  introspectKind _ = updateLib (buildType (DataInterface (mockFieldsDefinition fields) :: TypeContent TRUE OUT)) types (Proxy @a)
     where
       (fields, types) =
         introspectObjectFields
@@ -233,12 +234,6 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-fromInput :: InputFieldsDefinition -> FieldsDefinition
-fromInput = FieldsDefinition . unInputFieldsDefinition
-
-toInput :: FieldsDefinition -> InputFieldsDefinition
-toInput = InputFieldsDefinition . unFieldsDefinition
-
 deriveCustomInputObjectType ::
   DeriveTypeContent TRUE a =>
   (TypeName, proxy a) ->
@@ -258,14 +253,14 @@ introspectObjectFields ::
   DeriveTypeContent custom a =>
   proxy1 (custom :: Bool) ->
   (TypeName, TypeScope cat, proxy2 a) ->
-  (FieldsDefinition, [TypeUpdater])
+  (FieldsDefinition cat, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) =
-  withObject
-    (deriveTypeContent p1 (proxy, ([], []), scope, "", DataFingerprint "" []))
-  where
-    withObject (DataObject {objectFields}, ts) = (objectFields, ts)
-    withObject (DataInputObject x, ts) = (fromInput x, ts)
-    withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
+  withObject name (deriveTypeContent p1 (proxy, ([], []), scope, "", DataFingerprint "" []))
+
+withObject :: TypeName -> (TypeContent TRUE (cat :: TypeCategory), [TypeUpdater]) -> (FieldsDefinition cat2, [TypeUpdater])
+withObject _ (DataObject {objectFields}, ts) = (mockFieldsDefinition objectFields, ts)
+withObject _ (DataInputObject {inputObjectFields}, ts) = (mockFieldsDefinition inputObjectFields, ts)
+withObject name _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
@@ -285,7 +280,7 @@ instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
           genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
           genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
-buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> FieldName -> FieldDefinition
+buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> FieldName -> FieldDefinition cat
 buildField proxy fieldArgs fieldName =
   FieldDefinition
     { fieldType = createAlias $ __typeName proxy,
@@ -325,7 +320,7 @@ data ConsRep = ConsRep
 
 data FieldRep = FieldRep
   { fieldTypeName :: TypeName,
-    fieldData :: FieldDefinition,
+    fieldData :: FieldDefinition ANY,
     fieldTypeUpdater :: TypeUpdater,
     fieldIsObject :: Bool
   }
@@ -385,13 +380,13 @@ buildInputUnion (baseName, baseFingerprint) cons =
         (unionMembers, unionTypes) =
           buildUnions wrapInputObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
-    wrapInputObject :: (FieldsDefinition -> TypeContent TRUE IN)
-    wrapInputObject = DataInputObject . toInput
+    wrapInputObject :: (FieldsDefinition IN -> TypeContent TRUE IN)
+    wrapInputObject = DataInputObject
 
 buildUnionType ::
   (TypeName, DataFingerprint) ->
   (DataUnion -> TypeContent TRUE cat) ->
-  (FieldsDefinition -> TypeContent TRUE cat) ->
+  (FieldsDefinition cat -> TypeContent TRUE cat) ->
   [ConsRep] ->
   (TypeContent TRUE cat, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
@@ -412,21 +407,25 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
     types = map fieldTypeUpdater $ concatMap consFields cons
 
 buildObject :: ([TypeName], [TypeUpdater]) -> TypeScope cat -> [FieldRep] -> (TypeContent TRUE cat, [TypeUpdater])
-buildObject (interfaces, interfaceTypes) scope consFields = (wrapWith scope, types <> interfaceTypes)
+buildObject (interfaces, interfaceTypes) scope consFields =
+  ( wrapWith scope (mockFieldsDefinition fields),
+    types <> interfaceTypes
+  )
   where
     (fields, types) = buildDataObject consFields
-    wrapWith :: TypeScope cat -> TypeContent TRUE cat
-    wrapWith InputType = DataInputObject (toInput fields)
-    wrapWith OutputType = DataObject interfaces fields
+    --- wrap with
+    wrapWith :: TypeScope cat -> FieldsDefinition cat -> TypeContent TRUE cat
+    wrapWith InputType = DataInputObject
+    wrapWith OutputType = DataObject interfaces
 
-buildDataObject :: [FieldRep] -> (FieldsDefinition, [TypeUpdater])
+buildDataObject :: [FieldRep] -> (FieldsDefinition ANY, [TypeUpdater])
 buildDataObject consFields = (fields, types)
   where
     fields = unsafeFromFields $ map fieldData consFields
     types = map fieldTypeUpdater consFields
 
 buildUnions ::
-  (FieldsDefinition -> TypeContent TRUE cat) ->
+  (FieldsDefinition cat -> TypeContent TRUE cat) ->
   DataFingerprint ->
   [ConsRep] ->
   ([TypeName], [TypeUpdater])
@@ -438,18 +437,28 @@ buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
           (buildUnionRecord wrapObject baseFingerprint consRep)
     members = map consName cons
 
+mockFieldsDefinition :: FieldsDefinition a -> FieldsDefinition b
+mockFieldsDefinition = fmap mockFieldDefinition
+
+mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
+mockFieldDefinition FieldDefinition {..} = FieldDefinition {..}
+
 buildUnionRecord ::
-  (FieldsDefinition -> TypeContent TRUE cat) -> DataFingerprint -> ConsRep -> TypeDefinition cat
+  (FieldsDefinition cat -> TypeContent TRUE cat) -> DataFingerprint -> ConsRep -> TypeDefinition cat
 buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
   TypeDefinition
     { typeName = consName,
       typeFingerprint,
       typeMeta = Nothing,
-      typeContent = wrapObject $ unsafeFromFields $ map fieldData consFields
+      typeContent =
+        wrapObject
+          $ mockFieldsDefinition
+          $ unsafeFromFields
+          $ map fieldData consFields
     }
 
 buildUnionEnum ::
-  (FieldsDefinition -> TypeContent TRUE cat) ->
+  (FieldsDefinition cat -> TypeContent TRUE cat) ->
   TypeName ->
   DataFingerprint ->
   [TypeName] ->
@@ -486,7 +495,7 @@ buildEnum typeName typeFingerprint tags =
         }
 
 buildEnumObject ::
-  (FieldsDefinition -> TypeContent TRUE cat) ->
+  (FieldsDefinition cat -> TypeContent TRUE cat) ->
   TypeName ->
   DataFingerprint ->
   TypeName ->

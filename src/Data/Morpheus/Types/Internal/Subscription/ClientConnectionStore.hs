@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ID,
@@ -37,7 +38,8 @@ import Data.List (intersect)
 -- MORPHEUS
 
 import Data.Morpheus.Internal.Utils
-  ( Empty (..),
+  ( Collection (..),
+    KeyOf (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Event (..),
@@ -147,8 +149,13 @@ elems = HM.elems . unpackStore
 toList :: ClientConnectionStore e m -> [(UUID, ClientConnection e m)]
 toList = HM.toList . unpackStore
 
-instance Empty (ClientConnectionStore e m) where
-  empty = ClientConnectionStore HM.empty
+instance KeyOf (ClientConnection e m) where
+  type KEY (ClientConnection e m) = ID
+  keyOf = connectionId
+
+instance Collection (ClientConnection e m) (ClientConnectionStore e m) where
+  empty = ClientConnectionStore empty
+  singleton = ClientConnectionStore . singleton
 
 -- returns original store, if connection with same id already exist
 insert ::

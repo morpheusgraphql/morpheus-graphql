@@ -208,7 +208,7 @@ sepByAnd entry = entry `sepBy` (optional (char '&') *> spaceAndComments)
 collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
 
-setOf :: (Listable c a, KeyOf a) => Parser a -> Parser c
+setOf :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 setOf = collection >=> fromElems
 
 parseNonNull :: Parser [DataTypeWrapper]
@@ -229,10 +229,10 @@ parseTuple parser =
       ( parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!"
       )
 
-uniqTuple :: (Listable c a, KeyOf a) => Parser a -> Parser c
+uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 uniqTuple = parseTuple >=> fromElems
 
-uniqTupleOpt :: (Listable c a, KeyOf a) => Parser a -> Parser c
+uniqTupleOpt :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 uniqTupleOpt = optionalList . parseTuple >=> fromElems
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)

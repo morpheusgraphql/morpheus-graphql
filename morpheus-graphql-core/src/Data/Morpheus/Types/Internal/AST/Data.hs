@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -20,12 +21,12 @@ module Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
     ScalarDefinition (..),
     DataEnum,
-    FieldsDefinition (..),
+    FieldsDefinition,
     ArgumentDefinition,
     DataUnion,
     ArgumentsDefinition (..),
     FieldDefinition (..),
-    InputFieldsDefinition (..),
+    InputFieldsDefinition,
     TypeContent (..),
     TypeDefinition (..),
     Schema (..),
@@ -34,12 +35,10 @@ module Data.Morpheus.Types.Internal.AST.Data
     Meta (..),
     Directive (..),
     TypeUpdater,
-    TypeD (..),
-    ConsD (..),
-    GQLTypeD (..),
     TypeCategory,
     DataInputUnion,
     Argument (..),
+    Fields,
     createField,
     createArgument,
     createEnumType,
@@ -58,14 +57,12 @@ module Data.Morpheus.Types.Internal.AST.Data
     kindOf,
     toNullableField,
     toListField,
-    toHSFieldDefinition,
     isEntNode,
     lookupDeprecated,
     lookupDeprecatedReason,
     lookupWith,
     hasArguments,
     unsafeFromFields,
-    unsafeFromInputFields,
     __inputname,
     updateSchema,
     OUT,
@@ -73,7 +70,8 @@ module Data.Morpheus.Types.Internal.AST.Data
     ANY,
     FromAny (..),
     ToAny (..),
-    isEnum,
+    argumentsToFields,
+    fieldsToArguments,
   )
 where
 
@@ -91,12 +89,11 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Error.Schema (nameCollisionError)
 import Data.Morpheus.Internal.Utils
-  ( Empty (..),
+  ( Collection (..),
     KeyOf (..),
     Listable (..),
     Merge (..),
     Selectable (..),
-    Singleton (..),
     elems,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -119,7 +116,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeRef (..),
     TypeWrapper (..),
     VALID,
-    hsTypeName,
     isNullable,
     isSystemTypeName,
     msg,
@@ -219,6 +215,9 @@ data DataEnumValue = DataEnumValue
   }
   deriving (Show, Lift)
 
+instance RenderGQL DataEnumValue where
+  render DataEnumValue {enumName} = render enumName
+
 -- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
 ---------------------------------------------------------------------------
 -- SchemaDefinition :
@@ -240,7 +239,7 @@ type TypeLib = HashMap TypeName (TypeDefinition ANY)
 instance Selectable Schema (TypeDefinition ANY) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-instance Listable Schema (TypeDefinition ANY) where
+instance Listable (TypeDefinition ANY) Schema where
   elems = HM.elems . typeRegister
   fromElems types = case popByKey "Query" types of
     (Nothing, _) -> failure (globalErrorMessage "INTERNAL: Query Not Defined")
@@ -360,7 +359,7 @@ data TypeContent (b :: Bool) (a :: TypeCategory) where
     } ->
     TypeContent TRUE a
   DataInputObject ::
-    { inputObjectFields :: InputFieldsDefinition
+    { inputObjectFields :: FieldsDefinition IN
     } ->
     TypeContent (IsSelected a IN) a
   DataInputUnion ::
@@ -369,7 +368,7 @@ data TypeContent (b :: Bool) (a :: TypeCategory) where
     TypeContent (IsSelected a IN) a
   DataObject ::
     { objectImplements :: [TypeName],
-      objectFields :: FieldsDefinition
+      objectFields :: FieldsDefinition OUT
     } ->
     TypeContent (IsSelected a OUT) a
   DataUnion ::
@@ -377,7 +376,7 @@ data TypeContent (b :: Bool) (a :: TypeCategory) where
     } ->
     TypeContent (IsSelected a OUT) a
   DataInterface ::
-    { interfaceFields :: FieldsDefinition
+    { interfaceFields :: FieldsDefinition OUT
     } ->
     TypeContent (IsSelected a OUT) a
 
@@ -480,6 +479,37 @@ popByKey name types = case lookupWith typeName name types of
     (fromAny dt, filter ((/= name) . typeName) types)
   _ -> (Nothing, types)
 
+newtype Fields def = Fields
+  {unFields :: OrderedMap FieldName def}
+  deriving
+    ( Show,
+      Lift,
+      Functor,
+      Foldable,
+      Traversable
+    )
+
+deriving instance (KEY def ~ FieldName, KeyOf def) => Collection def (Fields def)
+
+instance Merge (FieldsDefinition cat) where
+  merge path (Fields x) (Fields y) = Fields <$> merge path x y
+
+instance Selectable (Fields (FieldDefinition cat)) (FieldDefinition cat) where
+  selectOr fb f name (Fields lib) = selectOr fb f name lib
+
+unsafeFromFields :: [FieldDefinition cat] -> FieldsDefinition cat
+unsafeFromFields = Fields . unsafeFromValues
+
+argumentsToFields :: ArgumentsDefinition -> FieldsDefinition IN
+argumentsToFields = Fields . arguments
+
+fieldsToArguments :: FieldsDefinition IN -> ArgumentsDefinition
+fieldsToArguments = ArgumentsDefinition Nothing . unFields
+
+instance (KEY def ~ FieldName, KeyOf def, NameCollision def) => Listable def (Fields def) where
+  fromElems = fmap Fields . fromElems
+  elems = elems . unFields
+
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
 --  ObjectTypeDefinition:
@@ -492,30 +522,12 @@ popByKey name types = case lookupWith typeName name types of
 --  FieldsDefinition
 --    { FieldDefinition(list) }
 --
-newtype FieldsDefinition = FieldsDefinition
-  {unFieldsDefinition :: OrderedMap FieldName FieldDefinition}
-  deriving (Show, Empty, Lift)
-
-unsafeFromFields :: [FieldDefinition] -> FieldsDefinition
-unsafeFromFields = FieldsDefinition . unsafeFromValues
-
-instance Merge FieldsDefinition where
-  merge path (FieldsDefinition x) (FieldsDefinition y) = FieldsDefinition <$> merge path x y
-
-instance Selectable FieldsDefinition FieldDefinition where
-  selectOr fb f name (FieldsDefinition lib) = selectOr fb f name lib
-
-instance Singleton FieldsDefinition FieldDefinition where
-  singleton = FieldsDefinition . singleton
-
-instance Listable FieldsDefinition FieldDefinition where
-  fromElems = fmap FieldsDefinition . fromElems
-  elems = elems . unFieldsDefinition
+type FieldsDefinition cat = Fields (FieldDefinition cat)
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-data FieldDefinition = FieldDefinition
+data FieldDefinition (cat :: TypeCategory) = FieldDefinition
   { fieldName :: FieldName,
     fieldArgs :: ArgumentsDefinition,
     fieldType :: TypeRef,
@@ -523,29 +535,36 @@ data FieldDefinition = FieldDefinition
   }
   deriving (Show, Lift)
 
-instance KeyOf FieldDefinition where
+instance KeyOf (FieldDefinition cat) where
   keyOf = fieldName
 
-instance Selectable FieldDefinition ArgumentDefinition where
+instance Selectable (FieldDefinition OUT) ArgumentDefinition where
   selectOr fb f key FieldDefinition {fieldArgs} = selectOr fb f key fieldArgs
 
-instance NameCollision FieldDefinition where
+instance NameCollision (FieldDefinition cat) where
   nameCollision name _ =
     GQLError
       { message = "There can Be only One field Named " <> msg name,
         locations = []
       }
 
-instance RenderGQL FieldsDefinition where
+instance RenderGQL (FieldDefinition cat) where
+  render FieldDefinition {fieldName, fieldType, fieldArgs} =
+    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
+
+instance RenderGQL (FieldsDefinition OUT) where
   render = renderObject render . ignoreHidden . elems
 
-fieldVisibility :: FieldDefinition -> Bool
+instance RenderGQL (FieldsDefinition IN) where
+  render = renderObject render . ignoreHidden . elems
+
+fieldVisibility :: FieldDefinition cat -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 
-isFieldNullable :: FieldDefinition -> Bool
+isFieldNullable :: FieldDefinition cat -> Bool
 isFieldNullable = isNullable . fieldType
 
-createField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition
+createField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
 createField dataArguments fieldName (typeWrappers, typeConName) =
   FieldDefinition
     { fieldArgs = dataArguments,
@@ -554,13 +573,7 @@ createField dataArguments fieldName (typeWrappers, typeConName) =
       fieldMeta = Nothing
     }
 
-toHSFieldDefinition :: FieldDefinition -> FieldDefinition
-toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConName}} =
-  field
-    { fieldType = tyRef {typeConName = hsTypeName typeConName}
-    }
-
-toNullableField :: FieldDefinition -> FieldDefinition
+toNullableField :: FieldDefinition cat -> FieldDefinition cat
 toNullableField dataField
   | isNullable (fieldType dataField) = dataField
   | otherwise = dataField {fieldType = nullable (fieldType dataField)}
@@ -568,7 +581,7 @@ toNullableField dataField
     nullable alias@TypeRef {typeWrappers} =
       alias {typeWrappers = TypeMaybe : typeWrappers}
 
-toListField :: FieldDefinition -> FieldDefinition
+toListField :: FieldDefinition cat -> FieldDefinition cat
 toListField dataField = dataField {fieldType = listW (fieldType dataField)}
   where
     listW alias@TypeRef {typeWrappers} =
@@ -582,25 +595,9 @@ toListField dataField = dataField {fieldType = listW (fieldType dataField)}
 --- InputFieldsDefinition
 -- { InputValueDefinition(list) }
 
-newtype InputFieldsDefinition = InputFieldsDefinition
-  {unInputFieldsDefinition :: OrderedMap FieldName FieldDefinition}
-  deriving (Show, Empty, Lift)
+type InputFieldsDefinition = Fields InputValueDefinition
 
-unsafeFromInputFields :: [FieldDefinition] -> InputFieldsDefinition
-unsafeFromInputFields = InputFieldsDefinition . unsafeFromValues
-
-instance Merge InputFieldsDefinition where
-  merge path (InputFieldsDefinition x) (InputFieldsDefinition y) = InputFieldsDefinition <$> merge path x y
-
-instance Selectable InputFieldsDefinition FieldDefinition where
-  selectOr fb f name (InputFieldsDefinition lib) = selectOr fb f name lib
-
-instance Singleton InputFieldsDefinition FieldDefinition where
-  singleton = InputFieldsDefinition . singleton
-
-instance Listable InputFieldsDefinition FieldDefinition where
-  fromElems = fmap InputFieldsDefinition . fromElems
-  elems = elems . unInputFieldsDefinition
+type InputValueDefinition = FieldDefinition IN
 
 -- 3.6.1 Field Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 -----------------------------------------------------------------------------------------------
@@ -615,22 +612,27 @@ data ArgumentsDefinition
   | NoArguments
   deriving (Show, Lift)
 
-type ArgumentDefinition = FieldDefinition
+instance RenderGQL ArgumentsDefinition where
+  render NoArguments = ""
+  render arguments = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
+
+type ArgumentDefinition = FieldDefinition IN
 
 instance Selectable ArgumentsDefinition ArgumentDefinition where
   selectOr fb _ _ NoArguments = fb
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
-instance Singleton ArgumentsDefinition ArgumentDefinition where
+instance Collection ArgumentDefinition ArgumentsDefinition where
+  empty = ArgumentsDefinition Nothing empty
   singleton = ArgumentsDefinition Nothing . singleton
 
-instance Listable ArgumentsDefinition ArgumentDefinition where
+instance Listable ArgumentDefinition ArgumentsDefinition where
   elems NoArguments = []
   elems (ArgumentsDefinition _ args) = elems args
   fromElems [] = pure NoArguments
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args
 
-createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition
+createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition IN
 createArgument = createField NoArguments
 
 hasArguments :: ArgumentsDefinition -> Bool
@@ -651,7 +653,7 @@ hasArguments _ = True
 __inputname :: FieldName
 __inputname = "inputname"
 
-createInputUnionFields :: TypeName -> [TypeName] -> [FieldDefinition]
+createInputUnionFields :: TypeName -> [TypeName] -> [FieldDefinition IN]
 createInputUnionFields name members = fieldTag : map unionField members
   where
     fieldTag =
@@ -684,34 +686,6 @@ createAlias typeConName =
 
 type TypeUpdater = LibUpdater Schema
 
--- Template Haskell Types
--- Document
-data GQLTypeD = GQLTypeD
-  { typeD :: TypeD,
-    typeArgD :: [TypeD],
-    typeOriginal :: TypeDefinition ANY
-  }
-  deriving (Show)
-
---- Core
-data TypeD = TypeD
-  { tName :: TypeName,
-    tNamespace :: [FieldName],
-    tCons :: [ConsD],
-    tKind :: DataTypeKind,
-    tMeta :: Maybe Meta
-  }
-  deriving (Show)
-
-data ConsD = ConsD
-  { cName :: TypeName,
-    cFields :: [FieldDefinition]
-  }
-  deriving (Show)
-
-isEnum :: [ConsD] -> Bool
-isEnum = all (null . cFields)
-
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes
     where
@@ -732,25 +706,9 @@ instance RenderGQL (TypeDefinition a) where
       __render (DataInputUnion members) = "input " <> render typeName <> render fieldsDef
         where
           fieldsDef = unsafeFromFields fields
-          fields :: [FieldDefinition]
+          fields :: [FieldDefinition IN]
           fields = createInputUnionFields typeName (fst <$> members :: [TypeName])
       __render DataObject {objectFields} = "type " <> render typeName <> render objectFields
 
-ignoreHidden :: [FieldDefinition] -> [FieldDefinition]
+ignoreHidden :: [FieldDefinition cat] -> [FieldDefinition cat]
 ignoreHidden = filter fieldVisibility
-
--- OBJECT
-
-instance RenderGQL InputFieldsDefinition where
-  render = renderObject render . ignoreHidden . elems
-
-instance RenderGQL FieldDefinition where
-  render FieldDefinition {fieldName, fieldType, fieldArgs} =
-    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
-
-instance RenderGQL ArgumentsDefinition where
-  render NoArguments = ""
-  render arguments = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
-
-instance RenderGQL DataEnumValue where
-  render DataEnumValue {enumName} = render enumName

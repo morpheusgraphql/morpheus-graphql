@@ -47,7 +47,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeUpdater,
     insertType,
     unsafeFromFields,
-    unsafeFromInputFields,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
@@ -86,7 +85,7 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
           | tKind == Just KindInputObject || null tKind =
             [|
               ( DataInputObject
-                  (unsafeFromInputFields $(buildFields cFields)),
+                  (unsafeFromFields $(buildFields cFields)),
                 $(typeUpdates)
               )
               |]
@@ -110,10 +109,10 @@ interfaceNames = map fst . implements
 interfaceTypes :: GQLType a => Proxy a -> TypeUpdater
 interfaceTypes = flip resolveUpdates . map snd . implements
 
-buildTypes :: [FieldDefinition] -> ExpQ
+buildTypes :: [FieldDefinition cat] -> ExpQ
 buildTypes = listE . concatMap introspectField
 
-introspectField :: FieldDefinition -> [ExpQ]
+introspectField :: FieldDefinition cat -> [ExpQ]
 introspectField FieldDefinition {fieldType, fieldArgs} =
   [|introspect $(proxyT fieldType)|] : inputTypes fieldArgs
   where
@@ -130,7 +129,7 @@ proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
     genSig (Just m) = appT (nameConT typeConName) (nameVarT m)
     genSig _ = nameConT typeConName
 
-buildFields :: [FieldDefinition] -> ExpQ
+buildFields :: [FieldDefinition cat] -> ExpQ
 buildFields = listE . map buildField
   where
     buildField f@FieldDefinition {fieldType} = [|f {fieldType = fieldType {typeConName = __typeName $(proxyT fieldType)}}|]

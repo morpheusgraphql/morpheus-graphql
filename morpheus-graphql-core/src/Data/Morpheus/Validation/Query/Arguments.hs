@@ -18,6 +18,7 @@ import Data.Morpheus.Types.Internal.AST
     Arguments,
     ArgumentsDefinition (..),
     FieldDefinition (..),
+    OUT,
     ObjectEntry (..),
     RAW,
     RESOLVED,
@@ -107,7 +108,7 @@ validateArgument
             pure Argument {argumentValue, ..}
 
 validateArguments ::
-  FieldDefinition ->
+  FieldDefinition OUT ->
   Arguments RAW ->
   SelectionValidator (Arguments VALID)
 validateArguments

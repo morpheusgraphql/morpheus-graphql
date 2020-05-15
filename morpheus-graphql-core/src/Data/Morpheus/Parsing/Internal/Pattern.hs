@@ -38,9 +38,11 @@ import Data.Morpheus.Types.Internal.AST
     Directive (..),
     FieldDefinition (..),
     FieldName,
-    FieldsDefinition (..),
-    InputFieldsDefinition (..),
+    FieldsDefinition,
+    IN,
+    InputFieldsDefinition,
     Meta (..),
+    OUT,
     TypeName,
   )
 import Text.Megaparsec
@@ -70,7 +72,7 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 -- InputValueDefinition
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
-inputValueDefinition :: Parser FieldDefinition
+inputValueDefinition :: Parser (FieldDefinition IN)
 inputValueDefinition = label "InputValueDefinition" $ do
   metaDescription <- optDescription
   fieldName <- parseName
@@ -102,13 +104,13 @@ argumentsDefinition =
 --  FieldsDefinition :
 --    { FieldDefinition(list) }
 --
-fieldsDefinition :: Parser FieldsDefinition
+fieldsDefinition :: Parser (FieldsDefinition OUT)
 fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parser FieldDefinition
+fieldDefinition :: Parser (FieldDefinition OUT)
 fieldDefinition = label "FieldDefinition" $ do
   metaDescription <- optDescription
   fieldName <- parseName

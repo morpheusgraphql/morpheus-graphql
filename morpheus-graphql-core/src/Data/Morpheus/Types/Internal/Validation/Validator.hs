@@ -52,12 +52,13 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     FieldName,
-    FieldsDefinition (..),
+    FieldsDefinition,
     Fragments,
     GQLError (..),
     GQLErrors,
     IN,
     Message,
+    OUT,
     Position,
     RAW,
     RESOLVED,
@@ -138,7 +139,7 @@ data Constraint (a :: Target) where
 
 type family Resolution (a :: Target)
 
-type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition)
+type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT)
 
 type instance Resolution 'TARGET_INPUT = TypeDefinition IN
 

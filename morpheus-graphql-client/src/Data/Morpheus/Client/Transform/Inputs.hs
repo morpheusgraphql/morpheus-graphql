@@ -22,9 +22,9 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD (..),
-    DataEnumValue (..),
     DataTypeKind (..),
     FieldDefinition (..),
+    IN,
     Operation (..),
     RAW,
     TRUE,
@@ -37,6 +37,7 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableDefinitions,
     getOperationName,
+    mkConsEnum,
     removeDuplicates,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -59,7 +60,7 @@ renderArguments variables argsName
           tKind = KindInputObject
         }
       where
-        fieldD :: Variable RAW -> FieldDefinition
+        fieldD :: Variable RAW -> FieldDefinition ANY
         fieldD Variable {variableName, variableType} =
           FieldDefinition
             { fieldName = variableName,
@@ -92,7 +93,7 @@ exploreInputTypeNames name collected
             (name : collected)
             (map toInputTypeD $ elems fields)
           where
-            toInputTypeD :: FieldDefinition -> [TypeName] -> Converter [TypeName]
+            toInputTypeD :: FieldDefinition IN -> [TypeName] -> Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
               exploreInputTypeNames typeConName
         scanType (DataEnum _) = pure (collected <> [typeName])
@@ -121,7 +122,7 @@ buildInputType name = getType name >>= generateTypes
             [ mkInputType
                 typeName
                 KindEnum
-                (map enumOption enumTags)
+                (map mkConsEnum enumTags)
             ]
         subTypes _ = pure []
 
@@ -135,11 +136,7 @@ mkInputType tName tKind tCons =
       tMeta = Nothing
     }
 
-enumOption :: DataEnumValue -> ConsD
-enumOption DataEnumValue {enumName} =
-  ConsD {cName = enumName, cFields = []}
-
-toFieldD :: FieldDefinition -> Converter FieldDefinition
+toFieldD :: FieldDefinition cat -> Converter (FieldDefinition ANY)
 toFieldD field@FieldDefinition {fieldType} = do
   typeConName <- typeFrom [] <$> getType (typeConName fieldType)
   pure $ field {fieldType = fieldType {typeConName}}

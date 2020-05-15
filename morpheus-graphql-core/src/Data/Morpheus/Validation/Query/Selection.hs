@@ -26,9 +26,9 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
-    FieldDefinition (..),
+    FieldDefinition,
     FieldName,
-    FieldsDefinition (..),
+    FieldsDefinition,
     Fragment (..),
     GQLError (..),
     OUT,
@@ -70,10 +70,10 @@ import Data.Morpheus.Validation.Query.UnionSelection
   )
 import Data.Semigroup ((<>))
 
-type TypeDef = (TypeName, FieldsDefinition)
+type TypeDef = (TypeName, FieldsDefinition OUT)
 
 getOperationObject ::
-  Operation a -> SelectionValidator (TypeName, FieldsDefinition)
+  Operation a -> SelectionValidator (TypeName, FieldsDefinition OUT)
 getOperationObject operation = do
   dt <- askSchema >>= getOperationDataType operation
   case dt of
@@ -152,7 +152,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
           currentSelectionRef = Ref selectionName selectionPosition
           commonValidation :: SelectionValidator (TypeDefinition OUT, Arguments VALID)
           commonValidation = do
-            (fieldDef :: FieldDefinition) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
+            (fieldDef :: FieldDefinition OUT) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             -- validate field Argument -----
             arguments <-
               validateArguments

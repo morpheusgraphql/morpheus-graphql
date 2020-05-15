@@ -22,13 +22,12 @@ import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
-  ( Empty (..),
+  ( Collection (..),
     Failure (..),
     KeyOf (..),
     Listable (..),
     Merge (..),
     Selectable (..),
-    Singleton (..),
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -55,10 +54,8 @@ instance Foldable (OrderedMap k) where
 instance Traversable (OrderedMap k) where
   traverse f (OrderedMap names values) = OrderedMap names <$> traverse f values
 
-instance Empty (OrderedMap k a) where
+instance (KeyOf a, Hashable k, KEY a ~ k) => Collection a (OrderedMap k a) where
   empty = OrderedMap [] HM.empty
-
-instance (KeyOf a, Hashable k, KEY a ~ k) => Singleton (OrderedMap k a) a where
   singleton x = OrderedMap [keyOf x] $ HM.singleton (keyOf x) x
 
 instance (Eq k, Hashable k, k ~ KEY a) => Selectable (OrderedMap k a) a where
@@ -67,7 +64,7 @@ instance (Eq k, Hashable k, k ~ KEY a) => Selectable (OrderedMap k a) a where
 instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (OrderedMap k a) where
   merge _ (OrderedMap k1 x) (OrderedMap k2 y) = OrderedMap (k1 <> k2) <$> safeJoin x y
 
-instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable (OrderedMap k a) a where
+instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable a (OrderedMap k a) where
   fromElems = safeFromList
   elems OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
     where

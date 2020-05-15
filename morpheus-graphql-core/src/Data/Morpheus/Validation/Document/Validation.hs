@@ -23,7 +23,8 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
     FieldName (..),
-    FieldsDefinition (..),
+    FieldsDefinition,
+    OUT,
     Schema,
     TypeContent (..),
     TypeDefinition (..),
@@ -51,10 +52,10 @@ validatePartialDocument lib = traverse validateType lib
         errors -> failure $ partialImplements typeName errors
     validateType x = pure x
     mustBeSubset ::
-      FieldsDefinition -> (TypeName, FieldsDefinition) -> [(TypeName, FieldName, ImplementsError)]
+      FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> [(TypeName, FieldName, ImplementsError)]
     mustBeSubset objFields (typeName, fields) = concatMap checkField (elems fields)
       where
-        checkField :: FieldDefinition -> [(TypeName, FieldName, ImplementsError)]
+        checkField :: FieldDefinition OUT -> [(TypeName, FieldName, ImplementsError)]
         checkField FieldDefinition {fieldName, fieldType = interfaceT@TypeRef {typeConName = interfaceTypeName, typeWrappers = interfaceWrappers}} =
           selectOr err checkTypeEq fieldName objFields
           where
@@ -72,7 +73,7 @@ validatePartialDocument lib = traverse validateType lib
                   )
                 ]
     -------------------------------
-    getInterfaceByKey :: TypeName -> Eventless (TypeName, FieldsDefinition)
+    getInterfaceByKey :: TypeName -> Eventless (TypeName, FieldsDefinition OUT)
     getInterfaceByKey interfaceName = case lookupWith typeName interfaceName lib of
       Just TypeDefinition {typeContent = DataInterface {interfaceFields}} -> pure (interfaceName, interfaceFields)
       _ -> failure $ unknownInterface interfaceName

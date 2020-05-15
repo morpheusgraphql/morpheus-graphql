@@ -19,29 +19,32 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
     elems,
+    singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
-    ConsD (..),
-    DataEnumValue (..),
+    ConsD,
     DataTypeKind (..),
     FieldDefinition (..),
     FieldName,
+    FieldsDefinition,
     GQLTypeD (..),
-    InputFieldsDefinition (..),
+    OUT,
     TRUE,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
     TypeName,
     TypeRef (..),
+    argumentsToFields,
     hasArguments,
     hsTypeName,
     kindOf,
     lookupWith,
+    mkCons,
+    mkConsEnum,
     toFieldName,
-    toHSFieldDefinition,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
@@ -83,7 +86,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
           where
             argTName = capitalTypeName (fieldName <> "Args")
         ---------------------------------------------------------------------------------------------
-        genResField :: FieldDefinition -> Q FieldDefinition
+        genResField :: FieldDefinition OUT -> Q (FieldDefinition OUT)
         genResField field@FieldDefinition {fieldName, fieldArgs, fieldType = typeRef@TypeRef {typeConName}} =
           do
             typeArgs <- getTypeArgs typeConName lib
@@ -111,13 +114,8 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   tCons,
                   tKind
                 }
-            buildObjectCons :: [FieldDefinition] -> [ConsD]
-            buildObjectCons cFields =
-              [ ConsD
-                  { cName = hsTypeName typeName,
-                    cFields
-                  }
-              ]
+            buildObjectCons :: FieldsDefinition cat -> [ConsD]
+            buildObjectCons fields = [mkCons typeName fields]
             tKind = kindOf typeOriginal
             genType :: TypeContent TRUE ANY -> Q GQLTypeD
             genType (DataEnum tags) =
@@ -127,21 +125,18 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                       TypeD
                         { tName = hsTypeName typeName,
                           tNamespace = [],
-                          tCons = map enumOption tags,
+                          tCons = map mkConsEnum tags,
                           tMeta = typeMeta,
                           tKind
                         },
                     typeArgD = [],
                     ..
                   }
-              where
-                enumOption DataEnumValue {enumName} =
-                  ConsD {cName = hsTypeName enumName, cFields = []}
             genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
             genType DataInputUnion {} = fail "Input Unions not Supported"
             genType DataInterface {interfaceFields} = do
               typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems interfaceFields)
-              objCons <- buildObjectCons <$> traverse genResField (elems interfaceFields)
+              objCons <- buildObjectCons <$> traverse genResField interfaceFields
               pure
                 GQLTypeD
                   { typeD = buildType objCons,
@@ -151,13 +146,13 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             genType (DataInputObject fields) =
               pure
                 GQLTypeD
-                  { typeD = buildType $ buildObjectCons $ genInputFields fields,
+                  { typeD = buildType $ buildObjectCons fields,
                     typeArgD = [],
                     ..
                   }
             genType DataObject {objectFields} = do
               typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems objectFields)
-              objCons <- buildObjectCons <$> traverse genResField (elems objectFields)
+              objCons <- buildObjectCons <$> traverse genResField objectFields
               pure
                 GQLTypeD
                   { typeD = buildType objCons,
@@ -173,27 +168,26 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   }
               where
                 unionCon memberName =
-                  ConsD
-                    { cName,
-                      cFields =
-                        [ FieldDefinition
-                            { fieldName = "un" <> toFieldName cName,
-                              fieldType =
-                                TypeRef
-                                  { typeConName = utName,
-                                    typeArgs = Just m_,
-                                    typeWrappers = []
-                                  },
-                              fieldMeta = Nothing,
-                              fieldArgs = NoArguments
-                            }
-                        ]
-                    }
+                  mkCons
+                    cName
+                    ( singleton
+                        FieldDefinition
+                          { fieldName = "un" <> toFieldName cName,
+                            fieldType =
+                              TypeRef
+                                { typeConName = utName,
+                                  typeArgs = Just m_,
+                                  typeWrappers = []
+                                },
+                            fieldMeta = Nothing,
+                            fieldArgs = NoArguments
+                          }
+                    )
                   where
                     cName = hsTypeName typeName <> utName
                     utName = hsTypeName memberName
 
-genArgumentType :: (FieldName -> TypeName) -> FieldDefinition -> Q [TypeD]
+genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [TypeD]
 genArgumentType _ FieldDefinition {fieldArgs = NoArguments} = pure []
 genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
   pure
@@ -201,10 +195,7 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
         { tName,
           tNamespace = [],
           tCons =
-            [ ConsD
-                { cName = tName,
-                  cFields = genArguments fieldArgs
-                }
+            [ mkCons tName (argumentsToFields fieldArgs)
             ],
           tMeta = Nothing,
           tKind = KindInputObject
@@ -212,9 +203,3 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
     ]
   where
     tName = hsTypeName (namespaceWith fieldName)
-
-genArguments :: ArgumentsDefinition -> [FieldDefinition]
-genArguments = genInputFields . InputFieldsDefinition . arguments
-
-genInputFields :: InputFieldsDefinition -> [FieldDefinition]
-genInputFields = map toHSFieldDefinition . elems

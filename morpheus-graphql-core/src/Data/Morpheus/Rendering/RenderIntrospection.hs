@@ -35,8 +35,10 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
+    IN,
     Message,
     Meta (..),
+    OUT,
     QUERY,
     Schema,
     TypeContent (..),
@@ -94,11 +96,11 @@ instance RenderSchema (TypeDefinition a) where
       __render (DataInterface fields) =
         renderInterface typeName Nothing fields
 
-renderFields :: Monad m => Schema -> FieldsDefinition -> Resolver QUERY e m [ResModel QUERY e m]
+renderFields :: Monad m => Schema -> FieldsDefinition cat -> Resolver QUERY e m [ResModel QUERY e m]
 renderFields schema = traverse (`render` schema) . filter fieldVisibility . elems
 
 renderInterface ::
-  Monad m => TypeName -> Maybe Meta -> FieldsDefinition -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+  Monad m => TypeName -> Maybe Meta -> FieldsDefinition OUT -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
 renderInterface name meta fields schema =
   pure $
     mkObject
@@ -145,7 +147,7 @@ renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY 
 renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ elems arguments
 renderArguments NoArguments _ = pure []
 
-instance RenderSchema FieldDefinition where
+instance RenderSchema (FieldDefinition cat) where
   render field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}, fieldArgs, fieldMeta} lib =
     do
       kind <- renderTypeKind <$> lookupKind typeConName lib
@@ -174,12 +176,12 @@ lookupKind name schema = kindOf <$> selectBy ("Kind Not Found: " <> msg name) na
 
 renderinputValue ::
   (Monad m) =>
-  FieldDefinition ->
+  FieldDefinition IN ->
   Result e m (ResModel QUERY e m)
 renderinputValue input = fmap (createInputValueWith (fieldName input) (fieldMeta input)) . createInputObjectType input
 
 createInputObjectType ::
-  (Monad m) => FieldDefinition -> Result e m (ResModel QUERY e m)
+  (Monad m) => FieldDefinition IN -> Result e m (ResModel QUERY e m)
 createInputObjectType field@FieldDefinition {fieldType = TypeRef {typeConName}} lib =
   do
     kind <- renderTypeKind <$> lookupKind typeConName lib
@@ -230,7 +232,7 @@ unionPossibleType schema name =
     >>= (`render` schema)
 
 createObjectType ::
-  Monad m => TypeName -> Maybe Meta -> [TypeName] -> FieldsDefinition -> Schema -> ResModel QUERY e m
+  Monad m => TypeName -> Maybe Meta -> [TypeName] -> FieldsDefinition OUT -> Schema -> ResModel QUERY e m
 createObjectType name meta interfaces fields schema =
   mkObject
     "__Type"
@@ -297,7 +299,7 @@ renderFieldName = ("name",) . pure . mkString . convertToJSONName
 renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 renderKind = ("kind",) . pure . mkString . pack . show
 
-withTypeWrapper :: Monad m => FieldDefinition -> ResModel QUERY e m -> ResModel QUERY e m
+withTypeWrapper :: Monad m => FieldDefinition cat -> ResModel QUERY e m -> ResModel QUERY e m
 withTypeWrapper FieldDefinition {fieldType = TypeRef {typeWrappers}} typ =
   foldr wrapAs typ (toGQLWrapper typeWrappers)
 
