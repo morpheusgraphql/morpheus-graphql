@@ -28,8 +28,10 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeKind (..),
     FieldDefinition (..),
     FieldName,
+    Fields (..),
+    FieldsDefinition,
     GQLTypeD (..),
-    InputFieldsDefinition (..),
+    OUT,
     TRUE,
     TypeContent (..),
     TypeD (..),
@@ -83,7 +85,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
           where
             argTName = capitalTypeName (fieldName <> "Args")
         ---------------------------------------------------------------------------------------------
-        genResField :: FieldDefinition -> Q FieldDefinition
+        genResField :: FieldDefinition OUT -> Q (FieldDefinition OUT)
         genResField field@FieldDefinition {fieldName, fieldArgs, fieldType = typeRef@TypeRef {typeConName}} =
           do
             typeArgs <- getTypeArgs typeConName lib
@@ -111,11 +113,11 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   tCons,
                   tKind
                 }
-            buildObjectCons :: [FieldDefinition] -> [ConsD]
-            buildObjectCons cFields =
+            buildObjectCons :: FieldsDefinition cat -> [ConsD]
+            buildObjectCons fields =
               [ ConsD
                   { cName = hsTypeName typeName,
-                    cFields
+                    cFields = elems (mockFieldsDefinition fields)
                   }
               ]
             tKind = kindOf typeOriginal
@@ -141,7 +143,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             genType DataInputUnion {} = fail "Input Unions not Supported"
             genType DataInterface {interfaceFields} = do
               typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems interfaceFields)
-              objCons <- buildObjectCons <$> traverse genResField (elems interfaceFields)
+              objCons <- buildObjectCons <$> traverse genResField interfaceFields
               pure
                 GQLTypeD
                   { typeD = buildType objCons,
@@ -151,13 +153,13 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             genType (DataInputObject fields) =
               pure
                 GQLTypeD
-                  { typeD = buildType $ buildObjectCons $ genInputFields fields,
+                  { typeD = buildType $ buildObjectCons fields,
                     typeArgD = [],
                     ..
                   }
             genType DataObject {objectFields} = do
               typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems objectFields)
-              objCons <- buildObjectCons <$> traverse genResField (elems objectFields)
+              objCons <- buildObjectCons <$> traverse genResField objectFields
               pure
                 GQLTypeD
                   { typeD = buildType objCons,
@@ -193,7 +195,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                     cName = hsTypeName typeName <> utName
                     utName = hsTypeName memberName
 
-genArgumentType :: (FieldName -> TypeName) -> FieldDefinition -> Q [TypeD]
+genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [TypeD]
 genArgumentType _ FieldDefinition {fieldArgs = NoArguments} = pure []
 genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
   pure
@@ -213,8 +215,14 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
   where
     tName = hsTypeName (namespaceWith fieldName)
 
-genArguments :: ArgumentsDefinition -> [FieldDefinition]
-genArguments = genInputFields . InputFieldsDefinition . arguments
+genArguments :: ArgumentsDefinition -> [FieldDefinition cat]
+genArguments = getFields . Fields . arguments
 
-genInputFields :: InputFieldsDefinition -> [FieldDefinition]
-genInputFields = map toHSFieldDefinition . elems
+getFields :: FieldsDefinition k -> [FieldDefinition cat]
+getFields = elems . mockFieldsDefinition
+
+mockFieldsDefinition :: FieldsDefinition a -> FieldsDefinition b
+mockFieldsDefinition = fmap mockFieldDefinition
+
+mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
+mockFieldDefinition FieldDefinition {..} = FieldDefinition {..}

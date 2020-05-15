@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -25,7 +26,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     DataUnion,
     ArgumentsDefinition (..),
     FieldDefinition (..),
-    InputFieldsDefinition (..),
+    InputFieldsDefinition,
     TypeContent (..),
     TypeDefinition (..),
     Schema (..),
@@ -483,7 +484,10 @@ newtype Fields def = Fields
   {unFields :: OrderedMap FieldName def}
   deriving
     ( Show,
-      Lift
+      Lift,
+      Functor,
+      Foldable,
+      Traversable
     )
 
 deriving instance (KEY def ~ FieldName, KeyOf def) => Collection def (Fields def)

@@ -24,6 +24,8 @@ module Data.Morpheus.Internal.Utils
     keys,
     size,
     (<:>),
+    mapFst,
+    mapSnd,
   )
 where
 
@@ -151,3 +153,9 @@ instance Failure error (Either error) where
 
 instance (Stream s, Ord e, Failure [a] m) => Failure [a] (ParsecT e s m) where
   failure x = ParsecT $ \_ _ _ _ _ -> failure x
+
+mapFst :: (a -> a') -> (a, b) -> (a', b)
+mapFst f (a, b) = (f a, b)
+
+mapSnd :: (b -> b') -> (a, b) -> (a, b')
+mapSnd f (a, b) = (a, f b)
