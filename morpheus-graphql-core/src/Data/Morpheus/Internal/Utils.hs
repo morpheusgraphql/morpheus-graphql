@@ -35,7 +35,6 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Foldable (toList)
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
