@@ -35,15 +35,16 @@ import Data.Char
   ( toLower,
     toUpper,
   )
+import Data.Foldable (toList)
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
+import Data.Maybe (maybe)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
     GQLErrors,
-    Message,
     Ref (..),
     Token,
     TypeName (..),
@@ -166,23 +167,62 @@ mapSnd f (a, b) = (a, f b)
 mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
 mapTuple f1 f2 (a, b) = (f1 a, f2 b)
 
-data Disjunktive a
+data Disjunktive t a
   = Disjunktive
-      { getDisunktive :: a
+      { getDisunktive :: t a
       }
-  | NonDisunktive Message
+  | NonDisunktive [a]
   deriving (Functor)
 
 instance
-  ( Foldable t, -- for toList,
+  ( Foldable t,
+    KeyOf a,
+    Insert t a
+  ) =>
+  Semigroup (Disjunktive t a)
+  where
+  (Disjunktive _) <> (NonDisunktive dups) = NonDisunktive dups
+  (NonDisunktive dups) <> (Disjunktive _) = NonDisunktive dups
+  (NonDisunktive dups) <> (NonDisunktive dups') = NonDisunktive (dups <> dups')
+  (Disjunktive x) <> (Disjunktive y) = case insertWithoutDups x (toList y) of
+    (ta, []) -> Disjunktive ta
+    (_, dups) -> NonDisunktive dups
+
+class Insert t a where
+  insert ::
+    -- handle (value that stays, value that is stored as duplicate)
+    (a -> a -> (a, [a])) ->
+    -- value
+    a ->
+    -- collection
+    t a ->
+    -- result
+    (t a, [a])
+
+instance
+  ( Eq k,
+    Hashable k,
+    KEY a ~ k,
     KeyOf a
   ) =>
-  Semigroup (Disjunktive (t a))
+  Insert (HashMap k) a
   where
-  (Disjunktive x) <> (Disjunktive y) = Disjunktive undefined
+  insert f el coll =
+    maybe
+      (HM.insert key el coll, [])
+      (mapFst (flip (HM.insert key) coll) . f el)
+      (key `HM.lookup` coll)
+    where
+      key = keyOf el
 
--- insertNoDups :: (Eq k, Hashable k) => coll -> [k]
--- insertNoDups collected [] = collected
--- insertNoDups (coll, errors) (pair@(name, value) : xs)
---   | isJust (name `HM.lookup` coll) = insertNoDups (coll, errors <> [pair]) xs
---   | otherwise = insertNoDups (HM.insert name value coll, errors) xs
+insertWithoutDups ::
+  ( Insert t a
+  ) =>
+  t a ->
+  [a] ->
+  (t a, [a])
+insertWithoutDups t = foldr myInsert (t, [])
+  where
+    myInsert x (coll, dups) =
+      mapSnd (<> dups) $
+        insert (\a b -> (a, [b])) x coll
