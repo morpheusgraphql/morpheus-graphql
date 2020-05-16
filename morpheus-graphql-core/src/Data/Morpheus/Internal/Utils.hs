@@ -166,11 +166,10 @@ mapSnd f (a, b) = (a, f b)
 mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
 mapTuple f1 f2 (a, b) = (f1 a, f2 b)
 
-data Disjunktive t a
-  = Disjunktive
-      { getDisunktive :: t a
-      }
-  | NonDisunktive [a]
+data Stategy t a = Disjunktive
+  { disjunktiveCollection :: t a,
+    nonDisjunktiveElems :: [a]
+  }
   deriving (Functor)
 
 instance
@@ -178,19 +177,15 @@ instance
     KeyOf a,
     Insert t a
   ) =>
-  Semigroup (Disjunktive t a)
+  Semigroup (Stategy t a)
   where
-  (Disjunktive _) <> (NonDisunktive dups) = NonDisunktive dups
-  (NonDisunktive dups) <> (Disjunktive _) = NonDisunktive dups
-  (NonDisunktive dups) <> (NonDisunktive dups') = NonDisunktive (dups <> dups')
-  (Disjunktive x) <> (Disjunktive y) = case insertElemsWith insert x y of
-    (ta, []) -> Disjunktive ta
-    (_, dups) -> NonDisunktive dups
+  (Disjunktive x dupsX) <> (Disjunktive y dupsY) = case insertElemsWith insert x y of
+    (ta, dups) -> Disjunktive ta (dupsX <> dupsY <> dups)
 
 class Insert t a where
   insert ::
     -- handle (value that stays, value that is stored as duplicate)
-    (a -> a -> (a, [a])) ->
+    (a -> a -> (Maybe a, [a])) ->
     -- value
     a ->
     -- collection
@@ -209,7 +204,10 @@ instance
   insert f el coll =
     maybe
       (HM.insert key el coll, [])
-      (mapFst (flip (HM.insert key) coll) . f el)
+      ( mapFst
+          (maybe coll (flip (HM.insert key) coll))
+          . f el
+      )
       (key `HM.lookup` coll)
     where
       key = keyOf el
@@ -218,7 +216,7 @@ insertElemsWith ::
   Foldable t' =>
   ( ( a ->
       a ->
-      (a, [a])
+      (Maybe a, [a])
     ) ->
     -- value
     a ->
@@ -235,5 +233,9 @@ insertElemsWith insertElem t = foldr myInsert (t, [])
     myInsert x (coll, dups) =
       mapSnd (<> dups) $
         insertElem noUpdates x coll
-    --------
-    noUpdates a b = (a, [b])
+
+noUpdates :: a -> a -> (Maybe a, [a])
+noUpdates _ newElem = (Nothing, [newElem])
+
+mergeElems :: (Foldable t, KeyOf a, Insert t a) => t a -> t a -> (Maybe (Stategy t a), [t a])
+mergeElems old new = (Just (Disjunktive old [] <> Disjunktive new []), [])
