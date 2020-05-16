@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -42,6 +43,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
     GQLErrors,
+    Message,
     Ref (..),
     Token,
     TypeName (..),
@@ -163,3 +165,24 @@ mapSnd f (a, b) = (a, f b)
 
 mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
 mapTuple f1 f2 (a, b) = (f1 a, f2 b)
+
+data Disjunktive a
+  = Disjunktive
+      { getDisunktive :: a
+      }
+  | NonDisunktive Message
+  deriving (Functor)
+
+instance
+  ( Foldable t, -- for toList,
+    KeyOf a
+  ) =>
+  Semigroup (Disjunktive (t a))
+  where
+  (Disjunktive x) <> (Disjunktive y) = Disjunktive undefined
+
+-- insertNoDups :: (Eq k, Hashable k) => coll -> [k]
+-- insertNoDups collected [] = collected
+-- insertNoDups (coll, errors) (pair@(name, value) : xs)
+--   | isJust (name `HM.lookup` coll) = insertNoDups (coll, errors <> [pair]) xs
+--   | otherwise = insertNoDups (HM.insert name value coll, errors) xs
