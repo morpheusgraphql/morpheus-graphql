@@ -217,7 +217,10 @@ instance
 
 insertElemsFrom ::
   Foldable t' =>
-  ( (a -> a -> (a, [a])) ->
+  ( ( a ->
+      a ->
+      (a, [a])
+    ) ->
     -- value
     a ->
     -- collection
