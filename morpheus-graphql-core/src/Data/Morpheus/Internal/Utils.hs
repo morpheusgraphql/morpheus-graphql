@@ -184,7 +184,7 @@ instance
   (Disjunktive _) <> (NonDisunktive dups) = NonDisunktive dups
   (NonDisunktive dups) <> (Disjunktive _) = NonDisunktive dups
   (NonDisunktive dups) <> (NonDisunktive dups') = NonDisunktive (dups <> dups')
-  (Disjunktive x) <> (Disjunktive y) = case insertFromList insert x (toList y) of
+  (Disjunktive x) <> (Disjunktive y) = case insertElemsFrom insert x y of
     (ta, []) -> Disjunktive ta
     (_, dups) -> NonDisunktive dups
 
@@ -215,7 +215,8 @@ instance
     where
       key = keyOf el
 
-insertFromList ::
+insertElemsFrom ::
+  Foldable t' =>
   ( (a -> a -> (a, [a])) ->
     -- value
     a ->
@@ -225,9 +226,9 @@ insertFromList ::
     (t a, [a])
   ) ->
   t a ->
-  [a] ->
+  t' a ->
   (t a, [a])
-insertFromList fInsert t = foldr myInsert (t, [])
+insertElemsFrom fInsert t = foldr myInsert (t, [])
   where
     myInsert x (coll, dups) =
       mapSnd (<> dups) $
