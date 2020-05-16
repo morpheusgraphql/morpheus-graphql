@@ -175,15 +175,15 @@ data Stategy t a = Disjunktive
 instance
   ( Foldable t,
     KeyOf a,
-    Insert t a
+    Upsert t a
   ) =>
   Semigroup (Stategy t a)
   where
-  (Disjunktive x dupsX) <> (Disjunktive y dupsY) = case insertElemsWith insert x y of
+  (Disjunktive x dupsX) <> (Disjunktive y dupsY) = case insertElemsWith upsert x y of
     (ta, dups) -> Disjunktive ta (dupsX <> dupsY <> dups)
 
-class Insert t a where
-  insert ::
+class Upsert t a where
+  upsert ::
     -- handle (value that stays, value that is stored as duplicate)
     (a -> a -> (Maybe a, [a])) ->
     -- value
@@ -199,9 +199,9 @@ instance
     KEY a ~ k,
     KeyOf a
   ) =>
-  Insert (HashMap k) a
+  Upsert (HashMap k) a
   where
-  insert f el coll =
+  upsert f el coll =
     maybe
       (HM.insert key el coll, [])
       ( mapFst
@@ -237,5 +237,5 @@ insertElemsWith insertElem t = foldr myInsert (t, [])
 noUpdates :: a -> a -> (Maybe a, [a])
 noUpdates _ newElem = (Nothing, [newElem])
 
-mergeElems :: (Foldable t, KeyOf a, Insert t a) => t a -> t a -> (Maybe (Stategy t a), [t a])
+mergeElems :: (Foldable t, KeyOf a, Upsert t a) => t a -> t a -> (Maybe (Stategy t a), [t a])
 mergeElems old new = (Just (Disjunktive old [] <> Disjunktive new []), [])
