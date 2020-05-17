@@ -77,7 +77,7 @@ parseSelectionField = label "SelectionField" $ do
   selectionName <- parseName
   selectionArguments <- maybeArguments
   selectionDirectives <- optionalDirectives
-  selSet selectionName selectionAlias selectionArguments <|> pure Selection {selectionContent = SelectionField, ..}
+  selSet selectionName selectionAlias selectionArguments selectionDirectives <|> pure Selection {selectionContent = SelectionField, ..}
   where
     -----------------------------------------
     selSet :: FieldName -> Maybe FieldName -> Arguments RAW -> Directives -> Parser (Selection RAW)
