@@ -58,6 +58,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
+    Directives,
     OUT,
     Schema (..),
     TypeDefinition (..),
@@ -163,6 +164,7 @@ data Selection (s :: Stage) where
       selectionAlias :: Maybe FieldName,
       selectionPosition :: Position,
       selectionArguments :: Arguments s,
+      selectionDirectives :: Directives,
       selectionContent :: SelectionContent s
     } ->
     Selection s

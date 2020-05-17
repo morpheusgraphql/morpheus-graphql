@@ -70,6 +70,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     ANY,
     FromAny (..),
     ToAny (..),
+    Directives,
     argumentsToFields,
     fieldsToArguments,
   )
@@ -186,6 +187,8 @@ data Directive = Directive
     directiveArgs :: OrderedMap FieldName (Argument VALID)
   }
   deriving (Show, Lift)
+
+type Directives = [Directive]
 
 lookupDeprecated :: Meta -> Maybe Directive
 lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives

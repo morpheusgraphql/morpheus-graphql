@@ -76,7 +76,7 @@ parseSelectionField = label "SelectionField" $ do
   selectionName <- parseName
   selectionArguments <- maybeArguments
   -- TODO: handle Directives
-  _directives <- optionalDirectives
+  directives <- optionalDirectives
   selSet selectionName selectionAlias selectionArguments <|> pure Selection {selectionContent = SelectionField, ..}
   where
     -----------------------------------------
