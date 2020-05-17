@@ -147,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
     fieldsToArguments,
     mkCons,
     mkConsEnum,
+    Directives,
   )
 where
 

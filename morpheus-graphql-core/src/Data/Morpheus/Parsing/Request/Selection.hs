@@ -30,6 +30,7 @@ import Data.Morpheus.Parsing.Internal.Terms
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
+    Directives,
     FieldName,
     Fragment (..),
     Position,
@@ -75,13 +76,12 @@ parseSelectionField = label "SelectionField" $ do
   selectionAlias <- parseAlias
   selectionName <- parseName
   selectionArguments <- maybeArguments
-  -- TODO: handle Directives
-  directives <- optionalDirectives
+  selectionDirectives <- optionalDirectives
   selSet selectionName selectionAlias selectionArguments <|> pure Selection {selectionContent = SelectionField, ..}
   where
     -----------------------------------------
-    selSet :: FieldName -> Maybe FieldName -> Arguments RAW -> Parser (Selection RAW)
-    selSet selectionName selectionAlias selectionArguments = label "body" $ do
+    selSet :: FieldName -> Maybe FieldName -> Arguments RAW -> Directives -> Parser (Selection RAW)
+    selSet selectionName selectionAlias selectionArguments selectionDirectives = label "body" $ do
       selectionPosition <- getLocation
       selectionSet <- parseSelectionSet
       pure Selection {selectionContent = SelectionSet selectionSet, ..}
