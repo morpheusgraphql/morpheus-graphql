@@ -184,7 +184,7 @@ type Arguments s = OrderedMap FieldName (Argument s)
 ------------------------------------------------------------------
 data Directive = Directive
   { directiveName :: FieldName,
-    directiveArgs :: OrderedMap FieldName (Argument VALID)
+    directiveArgs :: Arguments VALID
   }
   deriving (Show, Lift, Eq)
 

@@ -22,10 +22,12 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     keyOf,
+    selectOr,
     singleton,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Arguments,
+  ( Argument (..),
+    Arguments,
     Directive (..),
     Directives,
     FieldDefinition,
@@ -132,8 +134,15 @@ validateOperation
           }
 
 shouldSkip :: Directives -> Bool
-shouldSkip [Directive {directiveName = "skip", directiveArgs}] = True
+shouldSkip [Directive {directiveName = "skip", directiveArgs}]
+  | conditionFulfilled directiveArgs = True
 shouldSkip _ = False
+
+conditionFulfilled :: Arguments VALID -> Bool
+conditionFulfilled = selectOr False isTrue "if"
+
+isTrue :: Argument VALID -> Bool
+isTrue _ = True
 
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
