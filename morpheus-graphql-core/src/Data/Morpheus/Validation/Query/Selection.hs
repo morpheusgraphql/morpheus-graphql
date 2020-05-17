@@ -137,12 +137,13 @@ validateOperation
           }
 
 shouldSkip :: Directives -> Bool
-shouldSkip [Directive {directiveName = "skip", directiveArgs}]
-  | conditionFulfilled directiveArgs = True
-shouldSkip _ = False
+shouldSkip = checkConditionOn "skip"
 
-conditionFulfilled :: Arguments VALID -> Bool
-conditionFulfilled = selectOr False isArgumentValueTrue "if'"
+checkConditionOn :: FieldName -> Directives -> Bool
+checkConditionOn = selectOr False conditionResult
+
+conditionResult :: Directive -> Bool
+conditionResult Directive {directiveArgs} = selectOr False isArgumentValueTrue "if'" directiveArgs
 
 isArgumentValueTrue :: Argument VALID -> Bool
 isArgumentValueTrue Argument {argumentValue = Scalar (Boolean True)} = True

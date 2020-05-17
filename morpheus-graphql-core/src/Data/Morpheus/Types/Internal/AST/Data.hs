@@ -188,6 +188,9 @@ data Directive = Directive
   }
   deriving (Show, Lift, Eq)
 
+instance KeyOf Directive where
+  keyOf = directiveName
+
 type Directives = [Directive]
 
 lookupDeprecated :: Meta -> Maybe Directive
