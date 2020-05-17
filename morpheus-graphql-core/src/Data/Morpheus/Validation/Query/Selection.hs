@@ -40,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     OperationType (..),
     RAW,
     Ref (..),
+    ScalarValue (..),
     Selection (..),
     SelectionContent (..),
     SelectionSet,
@@ -48,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     VALID,
+    Value (..),
     getOperationDataType,
     isEntNode,
     msg,
@@ -73,6 +75,7 @@ import Data.Morpheus.Validation.Query.UnionSelection
   ( validateUnionSelection,
   )
 import Data.Semigroup ((<>))
+import Debug.Trace
 
 type TypeDef = (TypeName, FieldsDefinition OUT)
 
@@ -139,10 +142,11 @@ shouldSkip [Directive {directiveName = "skip", directiveArgs}]
 shouldSkip _ = False
 
 conditionFulfilled :: Arguments VALID -> Bool
-conditionFulfilled = selectOr False isTrue "if"
+conditionFulfilled = selectOr False isArgumentValueTrue "if'"
 
-isTrue :: Argument VALID -> Bool
-isTrue _ = True
+isArgumentValueTrue :: Argument VALID -> Bool
+isArgumentValueTrue Argument {argumentValue = Scalar (Boolean True)} = True
+isArgumentValueTrue _ = False
 
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
