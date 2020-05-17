@@ -3,31 +3,6 @@
     "__schema": {
       "directives": [
         {
-          "name": "cacheControl",
-          "description": "",
-          "locations": ["FIELD_DEFINITION", "OBJECT", "INTERFACE"],
-          "args": [
-            {
-              "name": "maxAge",
-              "type": {
-                "kind": "SCALAR",
-                "name": "Int",
-                "ofType": null
-              },
-              "defaultValue": null
-            },
-            {
-              "name": "scope",
-              "type": {
-                "kind": "ENUM",
-                "name": "CacheControlScope",
-                "ofType": null
-              },
-              "defaultValue": null
-            }
-          ]
-        },
-        {
           "name": "skip",
           "description": "Directs the executor to skip this field or fragment when the `if` argument is true.",
           "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],

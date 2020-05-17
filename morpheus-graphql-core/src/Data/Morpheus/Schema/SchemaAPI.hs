@@ -27,14 +27,20 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    ArgumentsDefinition (..),
     DirectiveDefinition (..),
+    DirectiveLocation (..),
+    FieldDefinition (..),
+    IN,
     OUT,
     QUERY,
     ScalarValue (..),
     Schema (..),
     TypeDefinition (..),
     TypeName (..),
+    TypeWrapper (..),
     Value (..),
+    createField,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResModel,
@@ -73,11 +79,31 @@ renderDirectives schema =
       (`render` schema)
       [ DirectiveDefinition
           { directiveDefinitionName = "skip",
-            directiveDefinitionDescription = Nothing,
-            directiveDefinitionLocations = [],
-            directiveDefinitionArgs = []
+            directiveDefinitionDescription = Just "Directs the executor to skip this field or fragment when the `if` argument is true.",
+            directiveDefinitionLocations = [FIELD, FRAGMENT_SPREAD, INLINE_FRAGMENT],
+            directiveDefinitionArgs = [argumentIf]
+          },
+        DirectiveDefinition
+          { directiveDefinitionName = "include",
+            directiveDefinitionDescription = Just "Directs the executor to include this field or fragment only when the `if` argument is true.",
+            directiveDefinitionLocations = [FIELD, FRAGMENT_SPREAD, INLINE_FRAGMENT],
+            directiveDefinitionArgs = [argumentIf]
+          },
+        DirectiveDefinition
+          { directiveDefinitionName = "deprecated",
+            directiveDefinitionDescription = Just "Marks an element of a GraphQL schema as no longer supported.",
+            directiveDefinitionLocations = [FIELD_DEFINITION, ENUM_VALUE],
+            directiveDefinitionArgs =
+              [ createField
+                  NoArguments
+                  "reason"
+                  ([TypeMaybe], "String")
+              ]
           }
       ]
+
+argumentIf :: FieldDefinition IN
+argumentIf = createField NoArguments "if" ([], "Boolean")
 
 schemaResolver ::
   Monad m =>

@@ -5,20 +5,20 @@ query Get__Type {
       name
       description
       locations
-      args {
-        ...InputValue
-      }
+      #      args {
+      #       ...InputValue
+      #     }
     }
   }
 }
 
-fragment InputValue on __InputValue {
-  name
-  type {
-    ...TypeRef
-  }
-  defaultValue
-}
+# fragment InputValue on __InputValue {
+#   name
+#   type {
+#     ...TypeRef
+#   }
+#   defaultValue
+# }
 
 fragment TypeRef on __Type {
   kind

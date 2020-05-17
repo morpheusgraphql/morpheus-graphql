@@ -75,6 +75,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     Directives,
     argumentsToFields,
     fieldsToArguments,
+    DirectiveLocation (..),
   )
 where
 
