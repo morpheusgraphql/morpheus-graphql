@@ -132,7 +132,7 @@ validateOperation
           }
 
 shouldSkip :: Directives -> Bool
-shouldSkip [Directive {direciveName = "skip"}] = True
+shouldSkip [Directive {directiveName = "skip", directiveArgs}] = True
 shouldSkip _ = False
 
 validateSelectionSet ::
