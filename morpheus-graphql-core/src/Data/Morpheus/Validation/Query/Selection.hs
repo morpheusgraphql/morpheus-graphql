@@ -75,7 +75,6 @@ import Data.Morpheus.Validation.Query.UnionSelection
   ( validateUnionSelection,
   )
 import Data.Semigroup ((<>))
-import Debug.Trace
 
 type TypeDef = (TypeName, FieldsDefinition OUT)
 
@@ -137,10 +136,12 @@ validateOperation
           }
 
 shouldSkip :: Directives -> Bool
-shouldSkip = checkConditionOn "skip"
+shouldSkip directives =
+  directiveFulfilled "skip" directives
+    && not (directiveFulfilled "include" directives)
 
-checkConditionOn :: FieldName -> Directives -> Bool
-checkConditionOn = selectOr False conditionResult
+directiveFulfilled :: FieldName -> Directives -> Bool
+directiveFulfilled = selectOr False conditionResult
 
 conditionResult :: Directive -> Bool
 conditionResult Directive {directiveArgs} = selectOr False isArgumentValueTrue "if'" directiveArgs
