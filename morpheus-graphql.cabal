@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 06416e9c6365009112d214d2fce21df335f7c531bd7af9536102d70e2dc0cfc4
+-- hash: d6068a99f7f6b1c03ae9cedb508b4f906dbaf98ed9b97dbe513a8ffec6a7fb16
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -47,6 +47,7 @@ data-files:
     test/Feature/Holistic/introspection/description/inputObject/query.gql
     test/Feature/Holistic/introspection/description/object/query.gql
     test/Feature/Holistic/introspection/description/union/query.gql
+    test/Feature/Holistic/introspection/directives/default/query.gql
     test/Feature/Holistic/introspection/interface/query.gql
     test/Feature/Holistic/introspection/kinds/ENUM/query.gql
     test/Feature/Holistic/introspection/kinds/INPUT_OBJECT/query.gql
@@ -184,6 +185,7 @@ data-files:
     test/Feature/Holistic/introspection/description/inputObject/response.json
     test/Feature/Holistic/introspection/description/object/response.json
     test/Feature/Holistic/introspection/description/union/response.json
+    test/Feature/Holistic/introspection/directives/default/response.json
     test/Feature/Holistic/introspection/interface/response.json
     test/Feature/Holistic/introspection/kinds/ENUM/response.json
     test/Feature/Holistic/introspection/kinds/INPUT_OBJECT/response.json

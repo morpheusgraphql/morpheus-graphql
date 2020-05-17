@@ -248,6 +248,10 @@
     "description": "check if deprecated works with enumValue"
   },
   {
+    "path": "introspection/directives/default",
+    "description": "default directives must be defined"
+  },
+  {
     "path": "introspection/deprecated/field",
     "description": "check if deprecated works with object fields"
   },
