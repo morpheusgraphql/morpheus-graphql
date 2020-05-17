@@ -26,6 +26,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
+    Directive (..),
     Directives,
     FieldDefinition,
     FieldName,
@@ -131,7 +132,7 @@ validateOperation
           }
 
 shouldSkip :: Directives -> Bool
-shouldSkip [x] = True
+shouldSkip [Directive {direciveName = "skip"}] = True
 shouldSkip _ = False
 
 validateSelectionSet ::
