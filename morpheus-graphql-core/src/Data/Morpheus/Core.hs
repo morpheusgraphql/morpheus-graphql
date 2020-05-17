@@ -112,7 +112,8 @@ runApi inputSchema resModel request = do
                   selectionArguments = empty,
                   selectionPosition = operationPosition operation,
                   selectionAlias = Nothing,
-                  selectionContent = SelectionSet (operationSelection operation)
+                  selectionContent = SelectionSet (operationSelection operation),
+                  selectionDirectives = []
                 }
           }
 

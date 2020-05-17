@@ -181,6 +181,10 @@ useDufferentAliases =
   "Use different aliases on the "
     <> "fields to fetch both if this was intentional."
 
+-- TODO: validate directives
+instance (Merge Directives) where
+  merge path x y = pure (x <> y)
+
 instance Merge (Selection a) where
   merge path old@Selection {selectionPosition = pos1} current@Selection {selectionPosition = pos2} =
     do
@@ -188,13 +192,15 @@ instance Merge (Selection a) where
       let currentPath = path <> [Ref selectionName pos1]
       selectionArguments <- mergeArguments currentPath
       selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
+      selectionDirectives <- merge currentPath (selectionDirectives old) (selectionDirectives current)
       pure $
         Selection
           { selectionName,
             selectionAlias = mergeAlias,
             selectionPosition = pos1,
             selectionArguments,
-            selectionContent
+            selectionContent,
+            selectionDirectives
           }
     where
       -- passes if:

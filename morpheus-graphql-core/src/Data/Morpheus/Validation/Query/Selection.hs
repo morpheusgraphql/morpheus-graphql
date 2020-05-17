@@ -26,6 +26,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
+    Directives,
     FieldDefinition,
     FieldName,
     FieldsDefinition,
@@ -129,6 +130,10 @@ validateOperation
             operationPosition
           }
 
+shouldSkip :: Directives -> Bool
+shouldSkip [x] = True
+shouldSkip _ = False
+
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
 validateSelectionSet dataType@(typeName, fieldsDef) =
@@ -141,13 +146,16 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
         { selectionName,
           selectionArguments,
           selectionContent,
-          selectionPosition
-        } =
-        withScope
-          typeName
-          currentSelectionRef
-          $ validateSelectionContent
-            selectionContent
+          selectionPosition,
+          selectionDirectives
+        }
+        | shouldSkip selectionDirectives = pure empty
+        | otherwise =
+          withScope
+            typeName
+            currentSelectionRef
+            $ validateSelectionContent
+              selectionContent
         where
           currentSelectionRef = Ref selectionName selectionPosition
           commonValidation :: SelectionValidator (TypeDefinition OUT, Arguments VALID)
