@@ -32,6 +32,8 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeKind (..),
     DataTypeWrapper (..),
     DataUnion,
+    Description,
+    DirectiveDefinition (..),
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
@@ -73,6 +75,22 @@ type Result e m a = Schema -> Resolver QUERY e m a
 
 class RenderSchema a where
   render :: (Monad m) => a -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+
+instance RenderSchema DirectiveDefinition where
+  render
+    DirectiveDefinition
+      { directiveDefinitionName,
+        directiveDefinitionDescription
+      }
+    _ =
+      pure $
+        mkObject
+          "__Directive"
+          [ renderFieldName directiveDefinitionName,
+            renderDescription directiveDefinitionDescription
+            -- directiveLocations :: [DirectiveLocation],
+            -- directiveArgs :: [FieldDefinition IN]
+          ]
 
 instance RenderSchema (TypeDefinition a) where
   render TypeDefinition {typeName, typeMeta, typeContent} = __render typeContent
@@ -141,7 +159,10 @@ renderDeprecated meta =
   ]
 
 description :: Monad m => Maybe Meta -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-description enumMeta = ("description", opt (pure . mkString) (enumMeta >>= metaDescription))
+description enumMeta = renderDescription (enumMeta >>= metaDescription)
+
+renderDescription :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+renderDescription desc = ("description", opt (pure . mkString) desc)
 
 renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
 renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ elems arguments

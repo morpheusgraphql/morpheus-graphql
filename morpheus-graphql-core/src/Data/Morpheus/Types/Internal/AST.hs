@@ -148,6 +148,8 @@ module Data.Morpheus.Types.Internal.AST
     mkCons,
     mkConsEnum,
     Directives,
+    DirectiveDefinitions,
+    DirectiveDefinition (..),
   )
 where
 

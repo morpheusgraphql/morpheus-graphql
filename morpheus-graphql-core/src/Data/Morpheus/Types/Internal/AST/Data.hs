@@ -70,6 +70,8 @@ module Data.Morpheus.Types.Internal.AST.Data
     ANY,
     FromAny (..),
     ToAny (..),
+    DirectiveDefinitions,
+    DirectiveDefinition (..),
     Directives,
     argumentsToFields,
     fieldsToArguments,
@@ -192,6 +194,37 @@ instance KeyOf Directive where
   keyOf = directiveName
 
 type Directives = [Directive]
+
+data DirectiveDefinition = DirectiveDefinition
+  { directiveDefinitionName :: FieldName,
+    directiveDefinitionDescription :: Maybe Description,
+    directiveDefinitionLocations :: [DirectiveLocation],
+    directiveDefinitionArgs :: [FieldDefinition IN]
+  }
+  deriving (Show, Lift)
+
+type DirectiveDefinitions = [DirectiveDefinition]
+
+data DirectiveLocation
+  = QUERY
+  | MUTATION
+  | SUBSCRIPTION
+  | FIELD
+  | FRAGMENT_DEFINITION
+  | FRAGMENT_SPREAD
+  | INLINE_FRAGMENT
+  | SCHEMA
+  | SCALAR
+  | OBJECT
+  | FIELD_DEFINITION
+  | ARGUMENT_DEFINITION
+  | INTERFACE
+  | UNION
+  | ENUM
+  | ENUM_VALUE
+  | INPUT_OBJECT
+  | INPUT_FIELD_DEFINITION
+  deriving (Show, Lift)
 
 lookupDeprecated :: Meta -> Maybe Directive
 lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives

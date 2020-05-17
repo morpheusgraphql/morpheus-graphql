@@ -27,6 +27,7 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    DirectiveDefinition (..),
     OUT,
     QUERY,
     ScalarValue (..),
@@ -62,6 +63,22 @@ findType ::
   Resolver QUERY e m (ResModel QUERY e m)
 findType name schema = selectOr (pure mkNull) (`render` schema) name schema
 
+renderDirectives ::
+  Monad m =>
+  Schema ->
+  Resolver QUERY e m (ResModel QUERY e m)
+renderDirectives schema =
+  mkList
+    <$> traverse
+      (`render` schema)
+      [ DirectiveDefinition
+          { directiveDefinitionName = "skip",
+            directiveDefinitionDescription = Nothing,
+            directiveDefinitionLocations = [],
+            directiveDefinitionArgs = []
+          }
+      ]
+
 schemaResolver ::
   Monad m =>
   Schema ->
@@ -74,7 +91,7 @@ schemaResolver schema@Schema {query, mutation, subscription} =
         ("queryType", pure $ buildSchemaLinkType (Just query) schema),
         ("mutationType", pure $ buildSchemaLinkType mutation schema),
         ("subscriptionType", pure $ buildSchemaLinkType subscription schema),
-        ("directives", pure $ mkList [])
+        ("directives", renderDirectives schema)
       ]
 
 schemaAPI :: Monad m => Schema -> ResModel QUERY e m
