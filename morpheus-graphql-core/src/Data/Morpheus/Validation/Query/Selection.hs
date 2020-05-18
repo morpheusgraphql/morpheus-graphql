@@ -139,26 +139,26 @@ validateOperation
 
 shouldInlude :: Directives -> SelectionSet VALID -> SelectionValidator (SelectionSet VALID)
 shouldInlude directives selection = do
-  skip <- directiveFulfilled False "skip" directives
+  dontSkip <- directiveFulfilled False "skip" directives
   include <- directiveFulfilled True "include" directives
   pure $
-    if not skip && include
+    if dontSkip && include
       then selection
       else empty
 
 directiveFulfilled :: Bool -> FieldName -> Directives -> SelectionValidator Bool
-directiveFulfilled fallback = selectOr (pure fallback) (conditionResult fallback)
+directiveFulfilled target = selectOr (pure True) (argumentIf target)
 
-conditionResult :: Bool -> Directive -> SelectionValidator Bool
-conditionResult target Directive {directiveName, directiveArgs} =
+argumentIf :: Bool -> Directive -> SelectionValidator Bool
+argumentIf target Directive {directiveName, directiveArgs} =
   selectBy err "if'" directiveArgs
-    >>= fmap (target ==) . isArgumentValueTrue
+    >>= assertArgument target
   where
     err = globalErrorMessage $ "Directive \"@" <> msg directiveName <> "\" argument \"if\" of type \"Boolean!\" is required but not provided."
 
-isArgumentValueTrue :: Argument VALID -> SelectionValidator Bool
-isArgumentValueTrue Argument {argumentValue = Scalar (Boolean True)} = pure True
-isArgumentValueTrue _ = pure False
+assertArgument :: Bool -> Argument VALID -> SelectionValidator Bool
+assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
+assertArgument _ Argument {argumentValue} = failure $ "Expected type Boolean!, found " <> msg argumentValue <> "."
 
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
