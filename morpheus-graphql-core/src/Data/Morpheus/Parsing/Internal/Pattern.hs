@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Parsing.Internal.Pattern
   ( inputValueDefinition,
@@ -18,6 +19,10 @@ import Data.Morpheus.Parsing.Internal.Arguments
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
+  )
+import Data.Morpheus.Parsing.Internal.Internal
+  ( Position,
+    getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( keyword,
@@ -151,10 +156,11 @@ optionalDirectives = label "Directives" $ many directive
 -- @ Name Arguments[Const](opt)
 directive :: Parse (Value s) => Parser (Directive s)
 directive = label "Directive" $ do
+  directivePosition <- getLocation
   operator '@'
   directiveName <- parseName
   directiveArgs <- maybeArguments
-  pure Directive {directiveName, directiveArgs}
+  pure Directive {..}
 
 -- typDeclaration : Not in spec ,start part of type definitions
 --

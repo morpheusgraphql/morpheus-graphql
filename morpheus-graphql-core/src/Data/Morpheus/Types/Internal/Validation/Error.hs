@@ -192,9 +192,9 @@ instance Unknown DirectiveDefinition ctx where
 
 instance Unknown DirectiveDefinitions ctx where
   type UnknownSelector DirectiveDefinitions = Directive RAW
-  unknown _ _ _ Directive {directiveName} =
+  unknown _ _ _ Directive {directiveName, directivePosition} =
     errorMessage
-      (undefined) -- TODO: real
+      directivePosition
       ("Unknown Directive " <> msg directiveName <> ".")
 
 instance Unknown (FieldsDefinition OUT) ctx where

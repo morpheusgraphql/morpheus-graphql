@@ -187,6 +187,7 @@ type Arguments s = OrderedMap FieldName (Argument s)
 ------------------------------------------------------------------
 data Directive (s :: Stage) = Directive
   { directiveName :: FieldName,
+    directivePosition :: Position,
     directiveArgs :: Arguments s
   }
   deriving (Show, Lift, Eq)
