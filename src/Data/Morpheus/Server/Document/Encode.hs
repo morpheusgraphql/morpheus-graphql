@@ -15,8 +15,10 @@ import Data.Morpheus.Internal.TH
   ( applyT,
     destructRecord,
     instanceHeadMultiT,
-    makeName,
+    mkTypeName,
     nameStringE,
+    nameVarE,
+    nameVarP,
     nameVarT,
     typeT,
   )
@@ -33,7 +35,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeD (..),
     TypeName (..),
     isSubscription,
-    readName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( LiftOperation,
@@ -72,7 +73,7 @@ deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
     instanceArgs
       | isSubscription tKind = subARgs
       | otherwise = map nameVarT (po_ : encodeVars)
-    mainType = applyT (makeName tName) [mainTypeArg]
+    mainType = applyT (mkTypeName tName) [mainTypeArg]
       where
         mainTypeArg
           | isSubscription tKind = applyT ''Resolver subARgs
@@ -112,7 +113,7 @@ deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
     -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
     methods = [funD 'exploreResolvers [clause argsE (normalB body) []]]
       where
-        argsE = [varP (mkName "_"), destructRecord tName varNames]
+        argsE = [nameVarP "_", destructRecord tName varNames]
         body =
           appE (varE 'pure)
             $ appE
@@ -122,9 +123,9 @@ deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
                   (conE 'ObjectResModel)
                   (nameStringE tName)
               )
-              (listE $ map (decodeVar . TypeName . readName) varNames)
+              (listE $ map decodeVar varNames)
         decodeVar name = [|(name, encode $(varName))|]
           where
-            varName = varE $ makeName name
+            varName = nameVarE name
         varNames = map fieldName cFields
 deriveEncode _ = pure []

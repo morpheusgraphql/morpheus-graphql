@@ -24,12 +24,16 @@ module Data.Morpheus.Internal.TH
     typeInstanceDec,
     infoTyVars,
     decArgs,
-    makeName,
     nameLitP,
     nameStringE,
     nameStringL,
     nameConT,
+    nameVarE,
     nameVarT,
+    nameConType,
+    nameConE,
+    nameVarP,
+    mkTypeName,
   )
 where
 
@@ -50,6 +54,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
+    convertToHaskellName,
     isEnum,
     isOutputObject,
     isSubscription,
@@ -66,7 +71,7 @@ import Language.Haskell.TH
 type Arrow = (->)
 
 m' :: Type
-m' = VarT $ makeName m_
+m' = VarT $ mkTypeName m_
 
 m_ :: TypeName
 m_ = "m"
@@ -81,12 +86,12 @@ declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT [] = decType typeArgs
     ------------------------------------------------------
-    typeName = ConT (makeName typeConName)
+    typeName = nameConType typeConName
     --------------------------------------------
     decType _
       | isSub =
         AppT typeName (AppT (ConT ''UnSubResolver) m')
-    decType (Just par) = AppT typeName (VarT $ makeName par)
+    decType (Just par) = AppT typeName (VarT $ mkTypeName par)
     decType _ = typeName
 
 tyConArgs :: DataTypeKind -> [TypeName]
@@ -102,10 +107,10 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
   DataD [] (genName tName) tVars Nothing cons $
     map derive (''Generic : derivingList)
   where
-    genName = makeName . nameSpaceType tNamespace
+    genName = mkTypeName . nameSpaceType tNamespace
     tVars = maybe [] (declareTyVar . tyConArgs) kindD
       where
-        declareTyVar = map (PlainTV . makeName)
+        declareTyVar = map (PlainTV . mkTypeName)
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
     derive className = DerivClause Nothing [ConT className]
     cons
@@ -131,19 +136,13 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
                     (AppT arrowType argType)
                     (AppT m' result)
                   where
-                    argType = ConT $ makeName argsTypename
+                    argType = ConT $ mkTypeName argsTypename
                     arrowType = ConT ''Arrow
                 genFieldT _
                   | (isOutputObject <$> kindD) == Just True = AppT m' result
                   | otherwise = result
                 ------------------------------------------------
                 result = declareTypeRef (maybe False isSubscription kindD) fieldType
-
-makeName :: TypeName -> Name
-makeName = mkName . unpack . readTypeName
-
-mkFieldName :: FieldName -> Name
-mkFieldName = mkName . unpack . readName
 
 apply :: Name -> [Q Exp] -> Q Exp
 apply n = foldl appE (conE n)
@@ -152,23 +151,23 @@ applyT :: Name -> [Q Type] -> Q Type
 applyT name = foldl appT (conT name)
 
 typeT :: Name -> [TypeName] -> Q Type
-typeT name li = applyT name (map (varT . makeName) li)
+typeT name li = applyT name (map (varT . mkTypeName) li)
 
 instanceHeadT :: Name -> TypeName -> [TypeName] -> Q Type
-instanceHeadT cName iType tArgs = applyT cName [applyT (makeName iType) (map (varT . makeName) tArgs)]
+instanceHeadT cName iType tArgs = applyT cName [applyT (mkTypeName iType) (map (varT . mkTypeName) tArgs)]
 
 instanceProxyFunD :: (Name, ExpQ) -> DecQ
 instanceProxyFunD (name, body) = instanceFunD name ["_"] body
 
 instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
-instanceFunD name args body = funD name [clause (map (varP . makeName) args) (normalB body) []]
+instanceFunD name args body = funD name [clause (map (varP . mkTypeName) args) (normalB body) []]
 
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
 instanceHeadMultiT className iType li = applyT className (iType : li)
 
 -- "User" -> ["name","id"] -> (User name id)
 destructRecord :: TypeName -> [FieldName] -> PatQ
-destructRecord conName fields = conP (makeName conName) (map (varP . mkFieldName) fields)
+destructRecord conName fields = conP (mkTypeName conName) (map (varP . mkFieldName) fields)
 
 typeInstanceDec :: Name -> Type -> Type -> Dec
 
@@ -199,8 +198,26 @@ decArgs (NewtypeD _ _ args _ _ _) = args
 decArgs (TySynD _ args _) = args
 decArgs _ = []
 
+mkTypeName :: TypeName -> Name
+mkTypeName = mkName . unpack . readTypeName
+
+mkFieldName :: FieldName -> Name
+mkFieldName = mkName . unpack . readName . convertToHaskellName
+
 nameConT :: TypeName -> Q Type
-nameConT = conT . makeName
+nameConT = conT . mkTypeName
+
+nameConType :: TypeName -> Type
+nameConType = ConT . mkTypeName
 
 nameVarT :: TypeName -> Q Type
-nameVarT = varT . makeName
+nameVarT = varT . mkTypeName
+
+nameVarE :: FieldName -> ExpQ
+nameVarE = varE . mkFieldName
+
+nameConE :: TypeName -> ExpQ
+nameConE = conE . mkTypeName
+
+nameVarP :: FieldName -> PatQ
+nameVarP = varP . mkFieldName

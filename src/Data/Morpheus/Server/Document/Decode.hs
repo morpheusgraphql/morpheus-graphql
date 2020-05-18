@@ -15,6 +15,7 @@ where
 
 import Data.Morpheus.Internal.TH
   ( instanceHeadT,
+    nameVarP,
   )
 import Data.Morpheus.Server.Deriving.Decode
   ( Decode (..),
@@ -45,6 +46,6 @@ deriveDecode TypeD {tName, tCons = [cons]} =
     appHead = instanceHeadT ''DecodeType tName []
     methods = [funD 'decodeType [clause argsE (normalB body) []]]
       where
-        argsE = map (varP . mkName) ["o"]
+        argsE = map nameVarP ["o"]
         body = decodeObjectExpQ [|(.:)|] cons
 deriveDecode _ = pure []

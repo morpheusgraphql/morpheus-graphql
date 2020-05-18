@@ -18,7 +18,7 @@ import Data.Morpheus.Internal.TH
     instanceHeadMultiT,
     instanceHeadT,
     instanceProxyFunD,
-    makeName,
+    mkTypeName,
     nameConT,
     nameVarT,
     tyConArgs,
@@ -72,7 +72,7 @@ deriveObjectRep :: (TypeD, Maybe (TypeDefinition ANY), Maybe DataTypeKind) -> Q 
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
-    mainTypeName = typeT (makeName tName) typeArgs
+    mainTypeName = typeT (mkTypeName tName) typeArgs
     typeArgs = concatMap tyConArgs (maybeToList tKind)
     constrains = map conTypeable typeArgs
       where

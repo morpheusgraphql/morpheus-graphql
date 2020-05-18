@@ -280,11 +280,15 @@
     "description": "test skip include resolving"
   },
   {
-    "path": "selection/directives/default/required_argument",
+    "path": "selection/directives/default/requiredArgument",
     "description": "fail: if skip include does not have argument \"if\""
   },
   {
-    "path": "selection/directives/default/wrong_argument_type",
+    "path": "selection/directives/default/wrongArgumentType",
     "description": "fail: if skip include has argument \"if\", but with wrong value"
+  },
+  {
+    "path": "selection/directives/default/withVariable",
+    "description": "api allowes use of variable inside directives"
   }
 ]

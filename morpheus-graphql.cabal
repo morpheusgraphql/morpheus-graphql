@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3eff061355b0b3dc1d87d2ba2b763994a0e0bebe86a6131389cddb3d9e1ced3a
+-- hash: b2df2607c68fae951567497c6006d44fd33c82cca3aa9fe3327185dbe86ad226
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -84,9 +84,10 @@ data-files:
     test/Feature/Holistic/selection/__typename/query.gql
     test/Feature/Holistic/selection/AliasResolve/query.gql
     test/Feature/Holistic/selection/AliasUnknownField/query.gql
-    test/Feature/Holistic/selection/directives/default/required_argument/query.gql
+    test/Feature/Holistic/selection/directives/default/requiredArgument/query.gql
     test/Feature/Holistic/selection/directives/default/resolve/query.gql
-    test/Feature/Holistic/selection/directives/default/wrong_argument_type/query.gql
+    test/Feature/Holistic/selection/directives/default/withVariable/query.gql
+    test/Feature/Holistic/selection/directives/default/wrongArgumentType/query.gql
     test/Feature/Holistic/selection/hasNoSubFields/query.gql
     test/Feature/Holistic/selection/mergeConflict/alias/query.gql
     test/Feature/Holistic/selection/mergeConflict/arguments/query.gql
@@ -226,9 +227,10 @@ data-files:
     test/Feature/Holistic/selection/__typename/response.json
     test/Feature/Holistic/selection/AliasResolve/response.json
     test/Feature/Holistic/selection/AliasUnknownField/response.json
-    test/Feature/Holistic/selection/directives/default/required_argument/response.json
+    test/Feature/Holistic/selection/directives/default/requiredArgument/response.json
     test/Feature/Holistic/selection/directives/default/resolve/response.json
-    test/Feature/Holistic/selection/directives/default/wrong_argument_type/response.json
+    test/Feature/Holistic/selection/directives/default/withVariable/response.json
+    test/Feature/Holistic/selection/directives/default/wrongArgumentType/response.json
     test/Feature/Holistic/selection/hasNoSubFields/response.json
     test/Feature/Holistic/selection/mergeConflict/alias/response.json
     test/Feature/Holistic/selection/mergeConflict/arguments/response.json

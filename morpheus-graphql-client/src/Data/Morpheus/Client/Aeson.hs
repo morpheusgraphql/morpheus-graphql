@@ -26,9 +26,12 @@ import Data.Morpheus.Internal.TH
   ( destructRecord,
     instanceFunD,
     instanceHeadT,
-    makeName,
+    mkTypeName,
+    nameConE,
     nameLitP,
     nameStringL,
+    nameVarE,
+    nameVarP,
   )
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
@@ -43,7 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     isEnum,
     isFieldNullable,
     msg,
-    readName,
     toFieldName,
   )
 import Data.Semigroup ((<>))
@@ -76,14 +78,14 @@ aesonObject :: [FieldName] -> ConsD -> ExpQ
 aesonObject tNamespace con@ConsD {cName} =
   appE
     [|withObject name|]
-    (lamE [varP (mkName "o")] (aesonObjectBody tNamespace con))
+    (lamE [nameVarP "o"] (aesonObjectBody tNamespace con))
   where
     name = nameSpaceType tNamespace cName
 
 aesonObjectBody :: [FieldName] -> ConsD -> ExpQ
 aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
   where
-    consName = makeName $ nameSpaceType namespace cName
+    consName = nameConE (nameSpaceType namespace cName)
     ----------------------------------------------------------
     handleFields [] =
       failure $
@@ -100,7 +102,7 @@ aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
         --------------------------------------------------------
         startExp fNames =
           uInfixE
-            (conE consName)
+            consName
             (varE '(<$>))
             (applyFields fNames)
           where
@@ -117,7 +119,7 @@ aesonUnionObject namespace TypeD {tCons} =
   where
     buildMatch cons@ConsD {cName} = match objectPattern body []
       where
-        objectPattern = tupP [nameLitP cName, varP $ mkName "o"]
+        objectPattern = tupP [nameLitP cName, nameVarP "o"]
         body = normalB $ aesonObjectBody namespace cons
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
@@ -147,18 +149,18 @@ aesonFromJSONEnumBody tName cons = lamCaseE handlers
               normalB $
                 appE
                   (varE 'pure)
-                  (conE $ makeName $ nameSpaceType [toFieldName tName] cName)
+                  (nameConE $ nameSpaceType [toFieldName tName] cName)
 
 elseCaseEXP :: MatchQ
-elseCaseEXP = match (varP varName) body []
+elseCaseEXP = match (nameVarP varName) body []
   where
-    varName = mkName "invalidValue"
+    varName = "invalidValue"
     body =
       normalB $
         appE
-          (varE $ mkName "fail")
+          (nameVarE "fail")
           ( uInfixE
-              (appE (varE 'show) (varE varName))
+              (appE (varE 'show) (nameVarE varName))
               (varE '(<>))
               (stringE " is Not Valid Union Constructor")
           )
@@ -170,7 +172,7 @@ aesonToJSONEnumBody tName cons = lamCaseE handlers
       where
         buildMatch ConsD {cName} = match enumPat body []
           where
-            enumPat = conP (makeName $ nameSpaceType [toFieldName tName] cName) []
+            enumPat = conP (mkTypeName $ nameSpaceType [toFieldName tName] cName) []
             body = normalB $ litE (nameStringL cName)
 
 -- ToJSON
@@ -186,8 +188,8 @@ deriveToJSON TypeD {tName, tCons = [ConsD {cFields}]} =
     methods = [funD 'toJSON [clause argsE (normalB body) []]]
       where
         argsE = [destructRecord tName varNames]
-        body = appE (varE 'object) (listE $ map (decodeVar . TypeName . readName) varNames)
-        decodeVar name = [|name .= $(varName)|] where varName = varE $ makeName name
+        body = appE (varE 'object) (listE $ map decodeVar varNames)
+        decodeVar name = [|name .= $(varName)|] where varName = nameVarE name
         varNames = map fieldName cFields
 deriveToJSON TypeD {tName, tCons}
   | isEnum tCons =

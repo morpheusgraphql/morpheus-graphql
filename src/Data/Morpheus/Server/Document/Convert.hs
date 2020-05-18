@@ -14,7 +14,7 @@ where
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
   ( infoTyVars,
-    makeName,
+    mkTypeName,
   )
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
@@ -60,7 +60,7 @@ getTypeArgs "Int" _ = pure Nothing
 getTypeArgs "Float" _ = pure Nothing
 getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
   Just x -> pure (kindToTyArgs x)
-  Nothing -> getTyArgs <$> reify (makeName key)
+  Nothing -> getTyArgs <$> reify (mkTypeName key)
 
 getTyArgs :: Info -> Maybe TypeName
 getTyArgs x
