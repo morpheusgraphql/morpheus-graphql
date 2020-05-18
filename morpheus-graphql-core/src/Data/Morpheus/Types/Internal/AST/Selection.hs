@@ -164,7 +164,7 @@ data Selection (s :: Stage) where
       selectionAlias :: Maybe FieldName,
       selectionPosition :: Position,
       selectionArguments :: Arguments s,
-      selectionDirectives :: Directives,
+      selectionDirectives :: Directives s,
       selectionContent :: SelectionContent s
     } ->
     Selection s
@@ -182,7 +182,7 @@ useDufferentAliases =
     <> "fields to fetch both if this was intentional."
 
 -- TODO: validate directives
-instance (Merge Directives) where
+instance Merge (Directives s) where
   merge path x y = pure (x <> y)
 
 instance Merge (Selection a) where

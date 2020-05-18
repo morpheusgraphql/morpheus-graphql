@@ -140,13 +140,13 @@ inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefiniti
 -- Directives[Const]
 -- Directive[Const](list)
 --
-optionalDirectives :: Parser [Directive]
+optionalDirectives :: Parser [Directive s]
 optionalDirectives = label "Directives" $ many directive
 
 -- Directive[Const]
 --
 -- @ Name Arguments[Const](opt)
-directive :: Parser Directive
+directive :: Parser (Directive s)
 directive = label "Directive" $ do
   operator '@'
   directiveName <- parseName

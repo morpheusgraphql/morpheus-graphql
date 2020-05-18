@@ -185,16 +185,16 @@ type Arguments s = OrderedMap FieldName (Argument s)
 
 -- directive
 ------------------------------------------------------------------
-data Directive = Directive
+data Directive (s :: Stage) = Directive
   { directiveName :: FieldName,
-    directiveArgs :: Arguments VALID
+    directiveArgs :: Arguments s
   }
   deriving (Show, Lift, Eq)
 
-instance KeyOf Directive where
+instance KeyOf (Directive s) where
   keyOf = directiveName
 
-type Directives = [Directive]
+type Directives s = [Directive s]
 
 data DirectiveDefinition = DirectiveDefinition
   { directiveDefinitionName :: FieldName,
@@ -227,13 +227,13 @@ data DirectiveLocation
   | INPUT_FIELD_DEFINITION
   deriving (Show, Lift)
 
-lookupDeprecated :: Meta -> Maybe Directive
+lookupDeprecated :: Meta -> Maybe (Directive VALID)
 lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives
   where
     isDeprecation Directive {directiveName = "deprecated"} = True
     isDeprecation _ = False
 
-lookupDeprecatedReason :: Directive -> Maybe Description
+lookupDeprecatedReason :: Directive VALID -> Maybe Description
 lookupDeprecatedReason Directive {directiveArgs} =
   selectOr Nothing (Just . maybeString) "reason" directiveArgs
   where
@@ -244,7 +244,7 @@ lookupDeprecatedReason Directive {directiveArgs} =
 -- META
 data Meta = Meta
   { metaDescription :: Maybe Description,
-    metaDirectives :: [Directive]
+    metaDirectives :: [Directive VALID]
   }
   deriving (Show, Lift)
 
