@@ -1,8 +1,12 @@
 {
-  "data": {
-    "user": {
-      "name": "testName",
-      "email": ""
+  "errors": [
+    {
+      "message": "Unknown Directive \"do\".",
+      "locations": [{ "line": 3, "column": 39 }]
+    },
+    {
+      "message": "Unknown Directive \"someDir\".",
+      "locations": [{ "line": 4, "column": 11 }]
     }
-  }
+  ]
 }
