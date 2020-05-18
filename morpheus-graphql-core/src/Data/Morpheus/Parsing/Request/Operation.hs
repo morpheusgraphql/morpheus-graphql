@@ -76,8 +76,7 @@ parseOperationDefinition = label "OperationDefinition" $ do
   operationType <- parseOperationType
   operationName <- optional parseName
   operationArguments <- uniqTupleOpt variableDefinition
-  -- TODO: handle directives
-  _directives <- optionalDirectives
+  operationDirectives <- optionalDirectives
   operationSelection <- parseSelectionSet
   pure Operation {..}
 
@@ -99,6 +98,7 @@ parseAnonymousQuery = label "AnonymousQuery" $ do
         { operationName = Nothing,
           operationType = Query,
           operationArguments = empty,
+          operationDirectives = empty,
           ..
         }
     )

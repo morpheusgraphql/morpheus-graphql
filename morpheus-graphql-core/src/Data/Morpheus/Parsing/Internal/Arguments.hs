@@ -1,10 +1,7 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Data.Morpheus.Parsing.Internal.Arguments
-  ( maybeArguments,
-    parseArgumentsOpt,
-  )
-where
+module Data.Morpheus.Parsing.Internal.Arguments (maybeArguments) where
 
 -- MORPHEUS
 import Data.Morpheus.Parsing.Internal.Internal
@@ -17,14 +14,12 @@ import Data.Morpheus.Parsing.Internal.Terms
     uniqTupleOpt,
   )
 import Data.Morpheus.Parsing.Internal.Value
-  ( parseRawValue,
-    parseValue,
+  ( Parse (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
-    RAW,
-    VALID,
+    Value,
   )
 import Text.Megaparsec (label)
 
@@ -35,26 +30,14 @@ import Text.Megaparsec (label)
 --
 -- Argument[Const]
 --  Name : Value[Const]
-valueArgument :: Parser (Argument RAW)
+valueArgument :: Parse (Value s) => Parser (Argument s)
 valueArgument =
   label "Argument" $ do
     argumentPosition <- getLocation
-    (argumentName, argumentValue) <- parseAssignment parseName parseRawValue
+    (argumentName, argumentValue) <- parseAssignment parseName parse
     pure $ Argument {argumentName, argumentValue, argumentPosition}
 
-parseArgument :: Parser (Argument VALID)
-parseArgument =
-  label "Argument" $ do
-    argumentPosition <- getLocation
-    (argumentName, argumentValue) <- parseAssignment parseName parseValue
-    pure $ Argument {argumentName, argumentValue, argumentPosition}
-
-parseArgumentsOpt :: Parser (Arguments VALID)
-parseArgumentsOpt =
-  label "Arguments" $
-    uniqTupleOpt parseArgument
-
-maybeArguments :: Parser (Arguments RAW)
+maybeArguments :: Parse (Value s) => Parser (Arguments s)
 maybeArguments =
   label "Arguments" $
     uniqTupleOpt valueArgument

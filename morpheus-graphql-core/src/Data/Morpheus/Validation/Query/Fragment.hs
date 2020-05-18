@@ -80,7 +80,7 @@ usedFragments fragments = concatMap findAllUses
       concatMap findAllUses selectionSet
     findAllUses (InlineFragment Fragment {fragmentSelection}) =
       concatMap findAllUses fragmentSelection
-    findAllUses (Spread Ref {refName, refPosition}) =
+    findAllUses (Spread _ Ref {refName, refPosition}) =
       [Ref refName refPosition] <> searchInFragment
       where
         searchInFragment =
@@ -118,7 +118,7 @@ scanForSpread Selection {selectionContent = SelectionSet selectionSet} =
   concatMap scanForSpread selectionSet
 scanForSpread (InlineFragment Fragment {fragmentSelection}) =
   concatMap scanForSpread fragmentSelection
-scanForSpread (Spread Ref {refName, refPosition}) =
+scanForSpread (Spread _ Ref {refName, refPosition}) =
   [Ref refName refPosition]
 
 type Node = Ref

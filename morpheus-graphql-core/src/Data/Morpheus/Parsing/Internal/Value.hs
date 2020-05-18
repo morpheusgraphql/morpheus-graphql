@@ -1,12 +1,12 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Parsing.Internal.Value
-  ( parseValue,
-    enumValue,
+  ( enumValue,
     parseDefaultValue,
-    parseRawValue,
+    Parse (..),
   )
 where
 
@@ -30,11 +30,10 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     ObjectEntry (..),
     OrderedMap,
-    RawValue,
+    RAW,
     ResolvedValue,
     ScalarValue (..),
-    ValidValue,
-    Value (..),
+    VALID,
     Value (..),
     decodeScientific,
   )
@@ -113,15 +112,6 @@ objectEntry parser = label "ObjectEntry" $ do
 objectValue :: Parser (Value a) -> Parser (OrderedMap FieldName (ObjectEntry a))
 objectValue = label "ObjectValue" . setOf . objectEntry
 
-structValue :: Parser (Value a) -> Parser (Value a)
-structValue parser =
-  label "Value" $
-    ( parsePrimitives
-        <|> (Object <$> objectValue parser)
-        <|> (List <$> listValue parser)
-    )
-      <* spaceAndComments
-
 parsePrimitives :: Parser (Value a)
 parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
@@ -134,8 +124,20 @@ parseDefaultValue = optional $ do
     parseV :: Parser ResolvedValue
     parseV = structValue parseV
 
-parseValue :: Parser ValidValue
-parseValue = structValue parseValue
+class Parse a where
+  parse :: Parser a
 
-parseRawValue :: Parser RawValue
-parseRawValue = (VariableValue <$> variable) <|> structValue parseRawValue
+instance Parse (Value RAW) where
+  parse = (VariableValue <$> variable) <|> structValue parse
+
+instance Parse (Value VALID) where
+  parse = structValue parse
+
+structValue :: Parser (Value a) -> Parser (Value a)
+structValue parser =
+  label "Value" $
+    ( parsePrimitives
+        <|> (Object <$> objectValue parser)
+        <|> (List <$> listValue parser)
+    )
+      <* spaceAndComments

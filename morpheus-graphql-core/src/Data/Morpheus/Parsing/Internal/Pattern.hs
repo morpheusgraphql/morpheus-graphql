@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Parsing.Internal.Pattern
@@ -13,7 +14,7 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Parsing.Internal.Arguments
-  ( parseArgumentsOpt,
+  ( maybeArguments,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -30,7 +31,8 @@ import Data.Morpheus.Parsing.Internal.Terms
     uniqTuple,
   )
 import Data.Morpheus.Parsing.Internal.Value
-  ( parseDefaultValue,
+  ( Parse (..),
+    parseDefaultValue,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -44,6 +46,7 @@ import Data.Morpheus.Types.Internal.AST
     Meta (..),
     OUT,
     TypeName,
+    Value,
   )
 import Text.Megaparsec
   ( (<|>),
@@ -140,17 +143,17 @@ inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefiniti
 -- Directives[Const]
 -- Directive[Const](list)
 --
-optionalDirectives :: Parser [Directive s]
+optionalDirectives :: Parse (Value s) => Parser [Directive s]
 optionalDirectives = label "Directives" $ many directive
 
 -- Directive[Const]
 --
 -- @ Name Arguments[Const](opt)
-directive :: Parser (Directive s)
+directive :: Parse (Value s) => Parser (Directive s)
 directive = label "Directive" $ do
   operator '@'
   directiveName <- parseName
-  directiveArgs <- parseArgumentsOpt
+  directiveArgs <- maybeArguments
   pure Directive {directiveName, directiveArgs}
 
 -- typDeclaration : Not in spec ,start part of type definitions

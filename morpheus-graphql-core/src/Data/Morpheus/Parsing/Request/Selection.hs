@@ -80,7 +80,7 @@ parseSelectionField = label "SelectionField" $ do
   selSet selectionName selectionAlias selectionArguments selectionDirectives <|> pure Selection {selectionContent = SelectionField, ..}
   where
     -----------------------------------------
-    selSet :: FieldName -> Maybe FieldName -> Arguments RAW -> Directives -> Parser (Selection RAW)
+    selSet :: FieldName -> Maybe FieldName -> Arguments RAW -> Directives RAW -> Parser (Selection RAW)
     selSet selectionName selectionAlias selectionArguments selectionDirectives = label "body" $ do
       selectionPosition <- getLocation
       selectionSet <- parseSelectionSet
@@ -99,9 +99,8 @@ spread :: Parser (Selection RAW)
 spread = label "FragmentSpread" $ do
   refPosition <- spreadLiteral
   refName <- parseName
-  -- TODO: handle Directives
-  _directives <- optionalDirectives
-  pure $ Spread Ref {..}
+  directives <- optionalDirectives
+  pure $ Spread directives Ref {..}
 
 -- FragmentDefinition : https://graphql.github.io/graphql-spec/June2018/#FragmentDefinition
 --
@@ -128,7 +127,6 @@ inlineFragment = label "InlineFragment" $ do
 fragmentBody :: FieldName -> Position -> Parser Fragment
 fragmentBody fragmentName fragmentPosition = label "FragmentBody" $ do
   fragmentType <- parseTypeCondition
-  -- TODO: handle Directives
-  _directives <- optionalDirectives
+  fragmentDirectives <- optionalDirectives
   fragmentSelection <- parseSelectionSet
   pure $ Fragment {..}

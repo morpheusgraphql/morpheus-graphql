@@ -90,7 +90,7 @@ allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
         getArgs x = concatMap exploreRefs selectionArguments <> x
     searchRefs (InlineFragment Fragment {fragmentSelection}) =
       mapSelection searchRefs fragmentSelection
-    searchRefs (Spread reference) =
+    searchRefs (Spread _ reference) =
       askFragments
         >>= selectKnown reference
         >>= mapSelection searchRefs

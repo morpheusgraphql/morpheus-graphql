@@ -137,26 +137,23 @@ validateOperation
             operationPosition
           }
 
-shouldInlude :: Directives -> SelectionSet VALID -> SelectionValidator (SelectionSet VALID)
-shouldInlude directives selection = do
+validateDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
+validateDirectives directives = do
   dontSkip <- directiveFulfilled False "skip" directives
   include <- directiveFulfilled True "include" directives
-  pure $
-    if dontSkip && include
-      then selection
-      else empty
+  pure (dontSkip && include, empty)
 
-directiveFulfilled :: Bool -> FieldName -> Directives -> SelectionValidator Bool
+directiveFulfilled :: Bool -> FieldName -> Directives s -> SelectionValidator Bool
 directiveFulfilled target = selectOr (pure True) (argumentIf target)
 
-argumentIf :: Bool -> Directive -> SelectionValidator Bool
+argumentIf :: Bool -> Directive s -> SelectionValidator Bool
 argumentIf target Directive {directiveName, directiveArgs} =
   selectBy err "if'" directiveArgs
     >>= assertArgument target
   where
     err = globalErrorMessage $ "Directive " <> msg ("@" <> directiveName) <> " argument \"if\" of type \"Boolean!\" is required but not provided."
 
-assertArgument :: Bool -> Argument VALID -> SelectionValidator Bool
+assertArgument :: Bool -> Argument s -> SelectionValidator Bool
 assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
 assertArgument _ Argument {argumentValue} = failure $ "Expected type Boolean!, found " <> msg argumentValue <> "."
 
@@ -178,10 +175,13 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
         withScope
           typeName
           currentSelectionRef
-          ( validateSelectionContent
-              selectionContent
-          )
-          >>= shouldInlude selectionDirectives
+          $ do
+            (include, directives) <- validateDirectives selectionDirectives
+            selection <- validateSelectionContent directives selectionContent
+            pure $
+              if include
+                then selection
+                else empty
         where
           currentSelectionRef = Ref selectionName selectionPosition
           commonValidation :: SelectionValidator (TypeDefinition OUT, Arguments VALID)
@@ -196,14 +196,24 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
             (typeDef :: TypeDefinition OUT) <- askFieldType fieldDef
             pure (typeDef, arguments)
           -----------------------------------------------------------------------------------
-          validateSelectionContent :: SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
-          validateSelectionContent SelectionField
+          validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
+          validateSelectionContent directives SelectionField
             | null selectionArguments && selectionName == "__typename" =
-              pure $ singleton $ sel {selectionArguments = empty, selectionContent = SelectionField}
+              pure $ singleton $
+                sel
+                  { selectionArguments = empty,
+                    selectionDirectives = directives,
+                    selectionContent = SelectionField
+                  }
             | otherwise = do
               (datatype, validArgs) <- commonValidation
               isLeaf datatype
-              pure $ singleton $ sel {selectionArguments = validArgs, selectionContent = SelectionField}
+              pure $ singleton $
+                sel
+                  { selectionArguments = validArgs,
+                    selectionDirectives = directives,
+                    selectionContent = SelectionField
+                  }
             where
               ------------------------------------------------------------
               isLeaf :: TypeDefinition OUT -> SelectionValidator ()
@@ -213,11 +223,16 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                   failure $
                     subfieldsNotSelected selectionName typename selectionPosition
           ----- SelectionSet
-          validateSelectionContent (SelectionSet rawSelectionSet) =
+          validateSelectionContent directives (SelectionSet rawSelectionSet) =
             do
               (TypeDefinition {typeName = name, typeContent}, validArgs) <- commonValidation
               selContent <- withScope name currentSelectionRef $ validateByTypeContent name typeContent
-              pure $ singleton $ sel {selectionArguments = validArgs, selectionContent = selContent}
+              pure $ singleton $
+                sel
+                  { selectionArguments = validArgs,
+                    selectionDirectives = directives,
+                    selectionContent = selContent
+                  }
             where
               validateByTypeContent :: TypeName -> TypeContent TRUE OUT -> SelectionValidator (SelectionContent VALID)
               -- Validate UnionSelection
@@ -242,7 +257,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                   hasNoSubfields
                     (Ref selectionName selectionPosition)
                     typename
-    validateSelection (Spread ref) =
+    validateSelection (Spread _ ref) =
       resolveSpread [typeName] ref
         >>= validateFragment
     validateSelection (InlineFragment fragment') =

@@ -81,7 +81,8 @@ data Fragment = Fragment
   { fragmentName :: FieldName,
     fragmentType :: TypeName,
     fragmentPosition :: Position,
-    fragmentSelection :: SelectionSet RAW
+    fragmentSelection :: SelectionSet RAW,
+    fragmentDirectives :: Directives RAW
   }
   deriving (Show, Eq, Lift)
 
@@ -169,7 +170,7 @@ data Selection (s :: Stage) where
     } ->
     Selection s
   InlineFragment :: Fragment -> Selection RAW
-  Spread :: Ref -> Selection RAW
+  Spread :: Directives RAW -> Ref -> Selection RAW
 
 instance KeyOf (Selection s) where
   keyOf Selection {selectionName, selectionAlias} = fromMaybe selectionName selectionAlias
@@ -260,7 +261,8 @@ data Operation (s :: Stage) = Operation
     operationType :: OperationType,
     operationArguments :: VariableDefinitions s,
     operationSelection :: SelectionSet s,
-    operationPosition :: Position
+    operationPosition :: Position,
+    operationDirectives :: Directives s
   }
   deriving (Show, Lift)
 
