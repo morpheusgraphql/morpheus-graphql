@@ -58,6 +58,8 @@ module Data.Morpheus.Types.Internal.AST.Base
     intercalateName,
     toFieldName,
     TypeNameRef (..),
+    convertToJSONName,
+    convertToHaskellName,
   )
 where
 
@@ -374,3 +376,43 @@ splitDuplicates = collectElems ([], [])
     collectElems (collected, errors) (x : xs)
       | x `elem` collected = collectElems (collected, errors <> [x]) xs
       | otherwise = collectElems (collected <> [x], errors) xs
+
+-- handle reserved Names
+isReserved :: FieldName -> Bool
+isReserved "case" = True
+isReserved "class" = True
+isReserved "data" = True
+isReserved "default" = True
+isReserved "deriving" = True
+isReserved "do" = True
+isReserved "else" = True
+isReserved "foreign" = True
+isReserved "if" = True
+isReserved "import" = True
+isReserved "in" = True
+isReserved "infix" = True
+isReserved "infixl" = True
+isReserved "infixr" = True
+isReserved "instance" = True
+isReserved "let" = True
+isReserved "module" = True
+isReserved "newtype" = True
+isReserved "of" = True
+isReserved "then" = True
+isReserved "type" = True
+isReserved "where" = True
+isReserved "_" = True
+isReserved _ = False
+{-# INLINE isReserved #-}
+
+convertToJSONName :: FieldName -> Text
+convertToJSONName (FieldName hsName)
+  | not (T.null hsName) && isReserved (FieldName name) && (T.last hsName == '\'') = name
+  | otherwise = hsName
+  where
+    name = T.init hsName
+
+convertToHaskellName :: FieldName -> FieldName
+convertToHaskellName name
+  | isReserved name = name <> "'"
+  | otherwise = name

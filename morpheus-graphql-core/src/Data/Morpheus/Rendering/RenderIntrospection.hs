@@ -36,7 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition (..),
     DirectiveLocation,
     FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     FieldsDefinition,
     IN,
     Message,
@@ -48,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
-    convertToJSONName,
     createInputUnionFields,
     fieldVisibility,
     kindOf,
@@ -324,7 +323,7 @@ renderName :: Monad m => TypeName -> (FieldName, Resolver QUERY e m (ResModel QU
 renderName = ("name",) . pure . mkString . readTypeName
 
 renderFieldName :: Monad m => FieldName -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-renderFieldName = ("name",) . pure . mkString . convertToJSONName
+renderFieldName (FieldName name) = ("name", pure $ mkString name)
 
 renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 renderKind = ("kind",) . pure . mkString . pack . show

@@ -135,7 +135,6 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
     ValidValue,
     Value (..),
-    convertToJSONName,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Failure (..),
@@ -597,8 +596,8 @@ instance NameCollision (FieldDefinition cat) where
       }
 
 instance RenderGQL (FieldDefinition cat) where
-  render FieldDefinition {fieldName, fieldType, fieldArgs} =
-    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
+  render FieldDefinition {fieldName = FieldName name, fieldType, fieldArgs} =
+    name <> render fieldArgs <> ": " <> render fieldType
 
 instance RenderGQL (FieldsDefinition OUT) where
   render = renderObject render . ignoreHidden . elems

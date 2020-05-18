@@ -17,8 +17,6 @@ module Data.Morpheus.Types.Internal.AST.Value
     GQLValue (..),
     replaceValue,
     decodeScientific,
-    convertToJSONName,
-    convertToHaskellName,
     RawValue,
     ValidValue,
     RawObject,
@@ -88,45 +86,6 @@ import qualified Data.Vector as V
 import GHC.Generics (Generic)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
-
-isReserved :: FieldName -> Bool
-isReserved "case" = True
-isReserved "class" = True
-isReserved "data" = True
-isReserved "default" = True
-isReserved "deriving" = True
-isReserved "do" = True
-isReserved "else" = True
-isReserved "foreign" = True
-isReserved "if" = True
-isReserved "import" = True
-isReserved "in" = True
-isReserved "infix" = True
-isReserved "infixl" = True
-isReserved "infixr" = True
-isReserved "instance" = True
-isReserved "let" = True
-isReserved "module" = True
-isReserved "newtype" = True
-isReserved "of" = True
-isReserved "then" = True
-isReserved "type" = True
-isReserved "where" = True
-isReserved "_" = True
-isReserved _ = False
-{-# INLINE isReserved #-}
-
-convertToJSONName :: FieldName -> Text
-convertToJSONName (FieldName hsName)
-  | not (T.null hsName) && isReserved (FieldName name) && (T.last hsName == '\'') = name
-  | otherwise = hsName
-  where
-    name = T.init hsName
-
-convertToHaskellName :: FieldName -> FieldName
-convertToHaskellName name
-  | isReserved name = name <> "'"
-  | otherwise = name
 
 -- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
 -- for performance reason type 'Text' represents GraphQl 'String' value
@@ -284,7 +243,7 @@ instance A.ToJSON (Value a) where
     | null ordmap = A.toEncoding $ A.object []
     | otherwise = A.pairs $ foldl1 (<>) $ map encodeField (elems ordmap)
     where
-      encodeField (ObjectEntry key value) = convertToJSONName key A..= value
+      encodeField (ObjectEntry (FieldName key) value) = key A..= value
 
 decodeScientific :: Scientific -> ScalarValue
 decodeScientific v = case floatingOrInteger v of
