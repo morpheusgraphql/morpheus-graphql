@@ -139,20 +139,20 @@ validateOperation
 
 shouldInlude :: Directives -> SelectionSet VALID -> SelectionValidator (SelectionSet VALID)
 shouldInlude directives selection = do
-  skip <- directiveFulfilled "skip" directives
-  include <- directiveFulfilled "include" directives
+  skip <- directiveFulfilled False "skip" directives
+  include <- directiveFulfilled True "include" directives
   pure $
     if not skip && include
       then selection
       else empty
 
-directiveFulfilled :: FieldName -> Directives -> SelectionValidator Bool
-directiveFulfilled = selectOr (pure False) conditionResult
+directiveFulfilled :: Bool -> FieldName -> Directives -> SelectionValidator Bool
+directiveFulfilled fallback = selectOr (pure fallback) (conditionResult fallback)
 
-conditionResult :: Directive -> SelectionValidator Bool
-conditionResult Directive {directiveName, directiveArgs} =
+conditionResult :: Bool -> Directive -> SelectionValidator Bool
+conditionResult target Directive {directiveName, directiveArgs} =
   selectBy err "if'" directiveArgs
-    >>= isArgumentValueTrue
+    >>= fmap (target ==) . isArgumentValueTrue
   where
     err = globalErrorMessage $ "Directive \"@" <> msg directiveName <> "\" argument \"if\" of type \"Boolean!\" is required but not provided."
 

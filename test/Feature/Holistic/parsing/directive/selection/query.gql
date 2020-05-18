@@ -1,6 +1,6 @@
 query Foo {
-    user {
-      name @skip(name:"") @deprecated
-      email @someDir
-    }
+  user {
+    name @skip(if: "") @deprecated
+    email @someDir
+  }
 }
