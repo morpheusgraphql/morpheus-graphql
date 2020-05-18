@@ -159,7 +159,7 @@ directiveFulfilled target = selectOr (pure True) (argumentIf target)
 
 argumentIf :: Bool -> Directive s -> SelectionValidator Bool
 argumentIf target Directive {directiveName, directiveArgs} =
-  selectBy err "if'" directiveArgs
+  selectBy err "if" directiveArgs
     >>= assertArgument target
   where
     err = globalErrorMessage $ "Directive " <> msg ("@" <> directiveName) <> " argument \"if\" of type \"Boolean!\" is required but not provided."
