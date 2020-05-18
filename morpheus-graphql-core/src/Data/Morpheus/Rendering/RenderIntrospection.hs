@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     DataUnion,
     Description,
     DirectiveDefinition (..),
+    DirectiveLocation,
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
@@ -80,17 +81,25 @@ instance RenderSchema DirectiveDefinition where
   render
     DirectiveDefinition
       { directiveDefinitionName,
-        directiveDefinitionDescription
+        directiveDefinitionDescription,
+        directiveDefinitionLocations,
+        directiveDefinitionArgs
       }
-    _ =
+    schema =
       pure $
         mkObject
           "__Directive"
           [ renderFieldName directiveDefinitionName,
-            renderDescription directiveDefinitionDescription
-            -- directiveLocations :: [DirectiveLocation],
-            -- directiveArgs :: [FieldDefinition IN]
+            renderDescription directiveDefinitionDescription,
+            ("locations", render directiveDefinitionLocations schema),
+            ("args", mkList <$> renderArguments directiveDefinitionArgs schema)
           ]
+
+instance RenderSchema a => RenderSchema [a] where
+  render ls schema = mkList <$> traverse (`render` schema) ls
+
+instance RenderSchema DirectiveLocation where
+  render locations _ = pure $ mkString (pack $ show locations)
 
 instance RenderSchema (TypeDefinition a) where
   render TypeDefinition {typeName, typeMeta, typeContent} = __render typeContent
