@@ -154,7 +154,7 @@ argumentIf target Directive {directiveName, directiveArgs} =
   selectBy err "if'" directiveArgs
     >>= assertArgument target
   where
-    err = globalErrorMessage $ "Directive \"@" <> msg directiveName <> "\" argument \"if\" of type \"Boolean!\" is required but not provided."
+    err = globalErrorMessage $ "Directive " <> msg ("@" <> directiveName) <> " argument \"if\" of type \"Boolean!\" is required but not provided."
 
 assertArgument :: Bool -> Argument VALID -> SelectionValidator Bool
 assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
