@@ -185,7 +185,7 @@ instance RenderSchema (FieldDefinition cat) where
         $ [ renderFieldName fieldName,
             description fieldMeta,
             ("args", mkList <$> renderArguments fieldArgs lib),
-            ("type'", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
+            ("type", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
           ]
           <> renderDeprecated fieldMeta
 
@@ -350,5 +350,5 @@ createInputValueWith name meta ivType =
     "__InputValue"
     [ renderFieldName name,
       description meta,
-      ("type'", pure ivType)
+      ("type", pure ivType)
     ]
