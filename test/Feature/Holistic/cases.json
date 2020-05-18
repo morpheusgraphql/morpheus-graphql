@@ -274,5 +274,9 @@
   {
     "path": "selection/subscription/singleTopLevelField/failAnonymous",
     "description": "fail if subscription selects more then one top level field. (for anonymous subscription)"
+  },
+  {
+    "path": "selection/directives/skip_include",
+    "description": "test skip include variations"
   }
 ]
