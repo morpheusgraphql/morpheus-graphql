@@ -21,6 +21,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     DefaultValue,
+    Directive (..),
     Fragment (..),
     IN,
     ObjectEntry (..),
@@ -71,6 +72,9 @@ instance ExploreRefs RawValue where
   exploreRefs (List ls) = concatMap exploreRefs ls
   exploreRefs _ = []
 
+instance ExploreRefs (Directive RAW) where
+  exploreRefs Directive {directiveArgs} = concatMap exploreRefs directiveArgs
+
 instance ExploreRefs (Argument RAW) where
   exploreRefs = exploreRefs . argumentValue
 
@@ -81,8 +85,10 @@ allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref]
 allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
   where
     searchRefs :: Selection RAW -> BaseValidator [Ref]
-    searchRefs Selection {selectionArguments, selectionContent = SelectionField} =
-      return $ concatMap exploreRefs selectionArguments
+    searchRefs Selection {selectionArguments, selectionDirectives, selectionContent = SelectionField} =
+      pure $
+        concatMap exploreRefs selectionArguments
+          <> concatMap exploreRefs selectionDirectives
     searchRefs Selection {selectionArguments, selectionContent = SelectionSet selSet} =
       getArgs <$> mapSelection searchRefs selSet
       where
