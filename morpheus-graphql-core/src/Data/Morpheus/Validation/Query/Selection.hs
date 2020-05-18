@@ -13,6 +13,7 @@ module Data.Morpheus.Validation.Query.Selection
 where
 
 -- MORPHEUS
+import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
@@ -22,6 +23,7 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     keyOf,
+    selectBy,
     selectOr,
     singleton,
   )
@@ -135,20 +137,28 @@ validateOperation
             operationPosition
           }
 
-shouldSkip :: Directives -> Bool
-shouldSkip directives =
-  directiveFulfilled "skip" directives
-    && not (directiveFulfilled "include" directives)
+shouldInlude :: Directives -> SelectionSet VALID -> SelectionValidator (SelectionSet VALID)
+shouldInlude directives selection = do
+  skip <- directiveFulfilled "skip" directives
+  include <- directiveFulfilled "include" directives
+  pure $
+    if not skip && include
+      then selection
+      else empty
 
-directiveFulfilled :: FieldName -> Directives -> Bool
-directiveFulfilled = selectOr False conditionResult
+directiveFulfilled :: FieldName -> Directives -> SelectionValidator Bool
+directiveFulfilled = selectOr (pure False) conditionResult
 
-conditionResult :: Directive -> Bool
-conditionResult Directive {directiveArgs} = selectOr False isArgumentValueTrue "if'" directiveArgs
+conditionResult :: Directive -> SelectionValidator Bool
+conditionResult Directive {directiveName, directiveArgs} =
+  selectBy err "if'" directiveArgs
+    >>= isArgumentValueTrue
+  where
+    err = globalErrorMessage $ "Directive \"@" <> msg directiveName <> "\" argument \"if\" of type \"Boolean!\" is required but not provided."
 
-isArgumentValueTrue :: Argument VALID -> Bool
-isArgumentValueTrue Argument {argumentValue = Scalar (Boolean True)} = True
-isArgumentValueTrue _ = False
+isArgumentValueTrue :: Argument VALID -> SelectionValidator Bool
+isArgumentValueTrue Argument {argumentValue = Scalar (Boolean True)} = pure True
+isArgumentValueTrue _ = pure False
 
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
@@ -164,14 +174,14 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
           selectionContent,
           selectionPosition,
           selectionDirectives
-        }
-        | shouldSkip selectionDirectives = pure empty
-        | otherwise =
-          withScope
-            typeName
-            currentSelectionRef
-            $ validateSelectionContent
+        } =
+        withScope
+          typeName
+          currentSelectionRef
+          ( validateSelectionContent
               selectionContent
+          )
+          >>= shouldInlude selectionDirectives
         where
           currentSelectionRef = Ref selectionName selectionPosition
           commonValidation :: SelectionValidator (TypeDefinition OUT, Arguments VALID)
