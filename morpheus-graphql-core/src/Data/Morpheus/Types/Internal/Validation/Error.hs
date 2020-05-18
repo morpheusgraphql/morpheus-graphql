@@ -22,16 +22,20 @@ import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
+    Directive (..),
+    DirectiveDefinition (..),
+    DirectiveDefinitions,
     FieldDefinition (..),
     FieldsDefinition,
     Fragment (..),
     Fragments,
     GQLError (..),
     GQLErrors,
-    InputFieldsDefinition,
+    IN,
     OUT,
     Object,
     ObjectEntry (..),
+    RAW,
     RESOLVED,
     Ref (..),
     Schema,
@@ -170,14 +174,28 @@ instance Unknown (FieldDefinition OUT) ctx where
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown InputFieldsDefinition InputContext where
-  type UnknownSelector InputFieldsDefinition = ObjectEntry RESOLVED
+instance Unknown (FieldsDefinition IN) InputContext where
+  type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
   unknown Context {scopePosition} ctx _ ObjectEntry {entryName} =
     [ GQLError
         { message = renderInputPrefix ctx <> "Unknown Field " <> msg entryName <> ".",
           locations = [scopePosition]
         }
     ]
+
+instance Unknown DirectiveDefinition ctx where
+  type UnknownSelector DirectiveDefinition = Argument RESOLVED
+  unknown _ _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
+    errorMessage
+      argumentPosition
+      ("Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".")
+
+instance Unknown DirectiveDefinitions ctx where
+  type UnknownSelector DirectiveDefinitions = Directive RAW
+  unknown _ _ _ Directive {directiveName} =
+    errorMessage
+      (undefined)
+      ("Unknown Directive " <> msg directiveName <> ".")
 
 instance Unknown (FieldsDefinition OUT) ctx where
   type UnknownSelector (FieldsDefinition OUT) = Ref

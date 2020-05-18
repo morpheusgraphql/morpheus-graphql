@@ -206,6 +206,10 @@ data DirectiveDefinition = DirectiveDefinition
 
 type DirectiveDefinitions = [DirectiveDefinition]
 
+instance Selectable DirectiveDefinition ArgumentDefinition where
+  selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
+    selectOr fb f key directiveDefinitionArgs
+
 data DirectiveLocation
   = QUERY
   | MUTATION

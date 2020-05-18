@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -27,10 +28,12 @@ import Data.Morpheus.Internal.Utils
     selectOr,
     singleton,
   )
+import Data.Morpheus.Schema.Directives (defaultDirectives)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
     Directive (..),
+    DirectiveDefinition (..),
     Directives,
     FieldDefinition,
     FieldName,
@@ -67,7 +70,8 @@ import Data.Morpheus.Types.Internal.Validation
     withScope,
   )
 import Data.Morpheus.Validation.Query.Arguments
-  ( validateArguments,
+  ( validateDirectiveArguments,
+    validateFieldArguments,
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
@@ -122,7 +126,8 @@ validateOperation
     { operationName,
       operationType,
       operationSelection,
-      operationPosition
+      operationDirectives,
+      ..
     } =
     do
       typeDef <- getOperationObject rawOperation
@@ -133,15 +138,21 @@ validateOperation
           { operationName,
             operationType,
             operationArguments = empty,
-            operationSelection = selection,
-            operationPosition
+            operationSelection = selection
           }
 
+validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
+validateDirective directiveDefs Directive {directiveName, directiveArgs} = do
+  directiveDef <- selectKnown directiveName directiveDefs
+  args <- validateDirectiveArguments directiveDef directiveArgs
+  pure Directive {directiveName, directiveArgs = args}
+
 validateDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
-validateDirectives directives = do
+validateDirectives rawDirectives = do
+  directives <- traverse (validateDirective defaultDirectives) rawDirectives
   dontSkip <- directiveFulfilled False "skip" directives
   include <- directiveFulfilled True "include" directives
-  pure (dontSkip && include, empty)
+  pure (dontSkip && include, directives)
 
 directiveFulfilled :: Bool -> FieldName -> Directives s -> SelectionValidator Bool
 directiveFulfilled target = selectOr (pure True) (argumentIf target)
@@ -190,7 +201,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
             -- validate field Argument -----
             arguments <-
               validateArguments
-                fieldDef
+                (fieldArgs fieldDef)
                 selectionArguments
             -- check field Type existence  -----
             (typeDef :: TypeDefinition OUT) <- askFieldType fieldDef
