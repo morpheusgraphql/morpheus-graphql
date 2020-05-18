@@ -17,7 +17,7 @@ fragment InputValue on __InputValue {
   type {
     ...TypeRef
   }
-  # defaultValue
+  defaultValue
 }
 
 fragment TypeRef on __Type {

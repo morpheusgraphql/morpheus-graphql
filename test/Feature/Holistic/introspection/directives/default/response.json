@@ -49,12 +49,8 @@
           "args": [
             {
               "name": "reason",
-              "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              },
-              "defaultValue": "\"No longer supported\""
+              "type": { "kind": "SCALAR", "name": "String", "ofType": null },
+              "defaultValue": null
             }
           ]
         }
