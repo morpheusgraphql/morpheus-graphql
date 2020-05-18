@@ -21,8 +21,7 @@ import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
   )
 import Data.Morpheus.Parsing.Internal.Internal
-  ( Position,
-    getLocation,
+  ( getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( keyword,
