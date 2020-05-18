@@ -206,6 +206,9 @@ data DirectiveDefinition = DirectiveDefinition
 
 type DirectiveDefinitions = [DirectiveDefinition]
 
+instance KeyOf DirectiveDefinition where
+  keyOf = directiveDefinitionName
+
 instance Selectable DirectiveDefinition ArgumentDefinition where
   selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
     selectOr fb f key directiveDefinitionArgs

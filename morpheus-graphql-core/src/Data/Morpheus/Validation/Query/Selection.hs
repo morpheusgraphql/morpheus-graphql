@@ -142,8 +142,8 @@ validateOperation
           }
 
 validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
-validateDirective directiveDefs Directive {directiveName, directiveArgs} = do
-  directiveDef <- selectKnown directiveName directiveDefs
+validateDirective directiveDefs directive@Directive {directiveName, directiveArgs} = do
+  directiveDef <- selectKnown directive directiveDefs
   args <- validateDirectiveArguments directiveDef directiveArgs
   pure Directive {directiveName, directiveArgs = args}
 
@@ -200,8 +200,8 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
             (fieldDef :: FieldDefinition OUT) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             -- validate field Argument -----
             arguments <-
-              validateArguments
-                (fieldArgs fieldDef)
+              validateFieldArguments
+                fieldDef
                 selectionArguments
             -- check field Type existence  -----
             (typeDef :: TypeDefinition OUT) <- askFieldType fieldDef
