@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Expected type Boolean!, found 232.",
+      "locations": [
+        {
+          "line": 3,
+          "column": 29
+        }
+      ]
+    }
+  ]
+}

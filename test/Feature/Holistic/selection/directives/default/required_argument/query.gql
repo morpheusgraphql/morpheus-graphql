@@ -1,0 +1,6 @@
+{
+  user {
+    name @include
+    name2: name @skip
+  }
+}

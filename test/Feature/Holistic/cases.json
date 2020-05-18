@@ -276,7 +276,15 @@
     "description": "fail if subscription selects more then one top level field. (for anonymous subscription)"
   },
   {
-    "path": "selection/directives/skip_include",
-    "description": "test skip include variations"
+    "path": "selection/directives/default/resolve",
+    "description": "test skip include resolving"
+  },
+  {
+    "path": "selection/directives/default/required_argument",
+    "description": "fail: if skip include does not have argument \"if\""
+  },
+  {
+    "path": "selection/directives/default/wrong_argument_type",
+    "description": "fail: if skip include has argument \"if\", but with wrong value"
   }
 ]
