@@ -192,7 +192,7 @@ validateScalar typeName ScalarDefinition {validateValue} value err = do
     isValidDefault :: TypeName -> ScalarValue -> Bool
     isValidDefault "Boolean" = isBoolean
     isValidDefault "String" = isString
-    isValidDefault "Float" = \x -> isFloat x && isInt x
+    isValidDefault "Float" = \x -> isFloat x || isInt x
     isValidDefault "Int" = isInt
     isValidDefault _ = const True
 
