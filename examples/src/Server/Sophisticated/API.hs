@@ -124,7 +124,7 @@ gqlRoot =
       Query
         { queryUser = resolveUser,
           queryAnimal = resolveAnimal,
-          querySet = pure $ S.fromList [1, 2],
+          querySet = const $ pure $ S.fromList [1, 2, 4],
           querySomeMap = pure $ M.fromList [("robin", 1), ("carl", 2)],
           queryWrapped1 = constRes $ A (0, "some value"),
           queryWrapped2 = pure $ A "",
