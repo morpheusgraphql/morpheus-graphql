@@ -187,13 +187,30 @@ validateScalar typeName ScalarDefinition {validateValue} value err = do
     Left message -> err (Just $ msg message) value
   where
     toScalar :: ResolvedValue -> InputValidator ValidValue
-    toScalar (Scalar x) | isValidDefault x = pure (Scalar x)
+    toScalar (Scalar x) | isValidDefault typeName x = pure (Scalar x)
     toScalar _ = err Nothing value
-    isValidDefault :: ScalarValue -> Bool
-    isValidDefault Boolean {} = typeName == "Boolean"
-    isValidDefault String {} = typeName == "String"
-    isValidDefault Float {} = typeName == "Float"
-    isValidDefault Int {} = typeName `elem` ["Int", "Float"]
+    isValidDefault :: TypeName -> ScalarValue -> Bool
+    isValidDefault "Boolean" = isBoolean
+    isValidDefault "String" = isString
+    isValidDefault "Float" = \x -> isFloat x && isInt x
+    isValidDefault "Int" = isInt
+    isValidDefault _ = const True
+
+isBoolean :: ScalarValue -> Bool
+isBoolean Boolean {} = True
+isBoolean _ = False
+
+isString :: ScalarValue -> Bool
+isString String {} = True
+isString _ = False
+
+isFloat :: ScalarValue -> Bool
+isFloat Float {} = True
+isFloat _ = False
+
+isInt :: ScalarValue -> Bool
+isInt Int {} = True
+isInt _ = False
 
 validateEnum ::
   (ResolvedValue -> InputValidator ValidValue) ->

@@ -1,16 +1,8 @@
 {
   "errors": [
     {
-      "message": "Argument \"coordinates\" got invalid value. in field \"latitude\": Expected type \"TestScalar!\" found \"\".",
-      "locations": [{ "line": 8, "column": 23 }]
-    },
-    {
       "message": "Argument \"coordinates\" got invalid value. in field \"longitude\": Expected type \"Int!\" found [null,[[],[{\"uid\":\"1\"}]]].",
       "locations": [{ "line": 8, "column": 23 }]
-    },
-    {
-      "message": "Argument \"coordinates\" got invalid value. in field \"latitude\": Expected type \"TestScalar!\" found \"\".",
-      "locations": [{ "line": 11, "column": 23 }]
     },
     {
       "message": "Argument \"coordinates\" got invalid value. in field \"longitude\": Expected type \"Int!\" found [].",
