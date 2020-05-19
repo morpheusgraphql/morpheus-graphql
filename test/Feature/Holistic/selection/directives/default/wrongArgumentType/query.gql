@@ -1,5 +1,12 @@
 {
   user {
-    name @include(if: 232)
+    testNull: name @include(if: null)
+    testNoolean: name @include(if: true)
+    testInt: name @include(if: 232)
+    tetsFloat: name @include(if: 232.1324)
+    testString: name @include(if: "some string")
+    testEnum: name @include(if: SomeEnum)
+    testObject: name @include(if: {})
+    testList: name @include(if: [])
   }
 }

@@ -1,13 +1,32 @@
 {
   "errors": [
     {
-      "message": "Expected type Boolean!, found 232.",
-      "locations": [
-        {
-          "line": 3,
-          "column": 29
-        }
-      ]
+      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found null.",
+      "locations": [{ "line": 3, "column": 29 }]
+    },
+    {
+      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found 232.",
+      "locations": [{ "line": 5, "column": 28 }]
+    },
+    {
+      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found 232.1324.",
+      "locations": [{ "line": 6, "column": 30 }]
+    },
+    {
+      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found \"some string\".",
+      "locations": [{ "line": 7, "column": 31 }]
+    },
+    {
+      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found \"SomeEnum\".",
+      "locations": [{ "line": 8, "column": 29 }]
+    },
+    {
+      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found {}.",
+      "locations": [{ "line": 9, "column": 31 }]
+    },
+    {
+      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found [].",
+      "locations": [{ "line": 10, "column": 29 }]
     }
   ]
 }

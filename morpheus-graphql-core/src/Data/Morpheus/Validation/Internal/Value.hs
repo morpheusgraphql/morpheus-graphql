@@ -26,6 +26,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     ResolvedValue,
     ScalarDefinition (..),
+    ScalarValue (..),
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
@@ -167,26 +168,32 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
           validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
         {-- VALIDATE SCALAR --}
         validate (DataScalar dataScalar) ObjectEntry {entryValue} =
-          validateScalar dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
+          validateScalar typeName dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
         validate _ ObjectEntry {entryValue} = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers entryValue
 
 validateScalar ::
+  TypeName ->
   ScalarDefinition ->
   ResolvedValue ->
   (Maybe Message -> ResolvedValue -> InputValidator ValidValue) ->
   InputValidator ValidValue
-validateScalar ScalarDefinition {validateValue} value err = do
+validateScalar typeName ScalarDefinition {validateValue} value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
-    Right _ -> return scalarValue
+    Right _ -> pure scalarValue
     Left "" -> err Nothing value
     Left message -> err (Just $ msg message) value
   where
     toScalar :: ResolvedValue -> InputValidator ValidValue
-    toScalar (Scalar x) = pure (Scalar x)
-    toScalar scValue = err Nothing scValue
+    toScalar (Scalar x) | isValidDefault x = pure (Scalar x)
+    toScalar _ = err Nothing value
+    isValidDefault :: ScalarValue -> Bool
+    isValidDefault Boolean {} = typeName == "Boolean"
+    isValidDefault String {} = typeName == "String"
+    isValidDefault Float {} = typeName == "Float"
+    isValidDefault Int {} = typeName `elem` ["Int", "Float"]
 
 validateEnum ::
   (ResolvedValue -> InputValidator ValidValue) ->

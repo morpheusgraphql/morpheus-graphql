@@ -142,10 +142,10 @@ validateOperation
           }
 
 validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
-validateDirective directiveDefs directive@Directive {directiveName, directiveArgs} = do
+validateDirective directiveDefs directive@Directive {directiveArgs, ..} = do
   directiveDef <- selectKnown directive directiveDefs
   args <- validateDirectiveArguments directiveDef directiveArgs
-  pure Directive {directiveName, directiveArgs = args}
+  pure Directive {directiveArgs = args, ..}
 
 validateDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
 validateDirectives rawDirectives = do
