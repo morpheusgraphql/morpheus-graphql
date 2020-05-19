@@ -1,67 +1,40 @@
 {
   "errors": [
     {
+      "message": "Argument \"coordinates\" got invalid value. in field \"latitude\": Expected type \"TestScalar!\" found \"\".",
+      "locations": [{ "line": 8, "column": 23 }]
+    },
+    {
       "message": "Argument \"coordinates\" got invalid value. in field \"longitude\": Expected type \"Int!\" found [null,[[],[{\"uid\":\"1\"}]]].",
-      "locations": [
-        {
-          "line": 8,
-          "column": 23
-        }
-      ]
+      "locations": [{ "line": 8, "column": 23 }]
+    },
+    {
+      "message": "Argument \"coordinates\" got invalid value. in field \"latitude\": Expected type \"TestScalar!\" found \"\".",
+      "locations": [{ "line": 11, "column": 23 }]
     },
     {
       "message": "Argument \"coordinates\" got invalid value. in field \"longitude\": Expected type \"Int!\" found [].",
-      "locations": [
-        {
-          "line": 11,
-          "column": 23
-        }
-      ]
+      "locations": [{ "line": 11, "column": 23 }]
     },
     {
       "message": "Argument \"cityID\" got invalid value. Expected type \"TestEnum!\" found \"HH\".",
-      "locations": [
-        {
-          "line": 15,
-          "column": 25
-        }
-      ]
+      "locations": [{ "line": 15, "column": 25 }]
     },
     {
       "message": "Variable \"$v\" of type \"[[[ID!]]!]\" used in position expecting type \"[Int!]\".",
-      "locations": [
-        {
-          "line": 15,
-          "column": 21
-        }
-      ]
+      "locations": [{ "line": 15, "column": 21 }]
     },
     {
       "message": "Cannot query field \"home\" on type \"User\".",
-      "locations": [
-        {
-          "line": 25,
-          "column": 5
-        }
-      ]
+      "locations": [{ "line": 25, "column": 5 }]
     },
     {
       "message": "Cannot query field \"myUnion\" on type \"User\".",
-      "locations": [
-        {
-          "line": 26,
-          "column": 18
-        }
-      ]
+      "locations": [{ "line": 26, "column": 18 }]
     },
     {
       "message": "Cannot query field \"myUnion\" on type \"User\".",
-      "locations": [
-        {
-          "line": 32,
-          "column": 18
-        }
-      ]
+      "locations": [{ "line": 32, "column": 18 }]
     }
   ]
 }
