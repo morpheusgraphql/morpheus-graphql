@@ -49,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( Context (..),
     InputContext (..),
+    ScopeKind (..),
     Target (..),
     renderInputPrefix,
   )
@@ -105,19 +106,21 @@ class MissingRequired c ctx where
 
 instance MissingRequired (Arguments s) ctx where
   missingRequired
-    Context {scopePosition, scopeSelectionName}
+    Context {scopePosition, scopeSelectionName, scopeKind}
     _
     Ref {refName}
     _ =
       GQLError
         { message =
-            "Field "
-              <> msg scopeSelectionName
+            inScope scopeKind
               <> " argument "
               <> msg refName
               <> " is required but not provided.",
           locations = [scopePosition]
         }
+      where
+        inScope SELECTION = "Field " <> msg scopeSelectionName
+        inScope DIRECTIVE = "Directive" <> msg ("@" <> scopeSelectionName)
 
 instance MissingRequired (Object s) InputContext where
   missingRequired

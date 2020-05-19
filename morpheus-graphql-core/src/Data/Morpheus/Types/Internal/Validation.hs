@@ -42,6 +42,8 @@ module Data.Morpheus.Types.Internal.Validation
     checkUnused,
     Prop (..),
     constraintInputUnion,
+    ScopeKind (..),
+    withDirective,
   )
 where
 
@@ -63,6 +65,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    Directive (..),
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
@@ -105,6 +108,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     InputValidator,
     Prop (..),
     Resolution,
+    ScopeKind (..),
     SelectionContext (..),
     SelectionValidator,
     Target (..),
@@ -310,6 +314,20 @@ startInput inputSource =
         { inputSource,
           inputPath = []
         }
+
+withDirective :: Directive s -> Validator ctx a -> Validator ctx a
+withDirective
+  Directive
+    { directiveName,
+      directivePosition
+    } = setGlobalContext update
+    where
+      update ctx =
+        ctx
+          { scopePosition = directivePosition,
+            scopeSelectionName = directiveName,
+            scopeKind = DIRECTIVE
+          }
 
 withInputScope :: Prop -> InputValidator a -> InputValidator a
 withInputScope prop = setContext update
