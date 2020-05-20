@@ -30,6 +30,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Selection (..),
     SelectionContent (..),
+    SelectionDefinition (..),
     SelectionSet,
     TypeName,
     TypeNameRef (..),
@@ -74,10 +75,12 @@ resolveSpread allowedTargets ref@Ref {refName, refPosition} =
 usedFragments :: Fragments -> [Selection RAW] -> [Node]
 usedFragments fragments = concatMap findAllUses
   where
-    findAllUses :: Selection RAW -> [Node]
-    findAllUses Selection {selectionContent = SelectionField} = []
-    findAllUses Selection {selectionContent = SelectionSet selectionSet} =
+    findUsesSelectionDef :: SelectionDefinition RAW -> [Node]
+    findUsesSelectionDef SelectionDefinition {selectionContent = SelectionSet selectionSet} =
       concatMap findAllUses selectionSet
+    findUsesSelectionDef SelectionDefinition {selectionContent = SelectionField} = []
+    findAllUses :: Selection RAW -> [Node]
+    findAllUses (Selection selection) = findUsesSelectionDef selection
     findAllUses (InlineFragment Fragment {fragmentSelection}) =
       concatMap findAllUses fragmentSelection
     findAllUses (Spread _ Ref {refName, refPosition}) =
@@ -112,10 +115,13 @@ exploreFragmentSpreads :: Fragment -> NodeEdges
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =
   (Ref fragmentName fragmentPosition, concatMap scanForSpread fragmentSelection)
 
-scanForSpread :: Selection RAW -> [Node]
-scanForSpread Selection {selectionContent = SelectionField} = []
-scanForSpread Selection {selectionContent = SelectionSet selectionSet} =
+scanForSpreadSelDef :: SelectionDefinition RAW -> [Node]
+scanForSpreadSelDef SelectionDefinition {selectionContent = SelectionField} = []
+scanForSpreadSelDef SelectionDefinition {selectionContent = SelectionSet selectionSet} =
   concatMap scanForSpread selectionSet
+
+scanForSpread :: Selection RAW -> [Node]
+scanForSpread (Selection selection) = scanForSpreadSelDef selection
 scanForSpread (InlineFragment Fragment {fragmentSelection}) =
   concatMap scanForSpread fragmentSelection
 scanForSpread (Spread _ Ref {refName, refPosition}) =

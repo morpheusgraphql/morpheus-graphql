@@ -89,6 +89,7 @@ import Data.Morpheus.Types.Internal.AST.Selection
   ( Operation (..),
     Selection (..),
     SelectionContent (..),
+    SelectionDefinition (..),
     SelectionSet,
     UnionSelection,
     UnionTag (..),
@@ -131,7 +132,7 @@ type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
 -- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
 data Context = Context
-  { currentSelection :: Selection VALID,
+  { currentSelection :: SelectionDefinition VALID,
     schema :: Schema,
     operation :: Operation VALID,
     currentTypeName :: TypeName
@@ -170,7 +171,7 @@ mapResolverState ::
   ResolverState e' m' a'
 mapResolverState f (ResolverState x) = ResolverState (f x)
 
-getState :: (Monad m) => ResolverState e m (Selection VALID)
+getState :: (Monad m) => ResolverState e m (SelectionDefinition VALID)
 getState = ResolverState $ currentSelection <$> ask
 
 mapState :: (Context -> Context) -> ResolverState e m a -> ResolverState e m a
@@ -181,8 +182,8 @@ mapState f = mapResolverState (withReaderT f)
 clearStateResolverEvents :: (Functor m) => ResolverState e m a -> ResolverState e' m a
 clearStateResolverEvents = mapResolverState (mapReaderT cleanEvents)
 
-resolverFailureMessage :: Selection VALID -> Message -> GQLError
-resolverFailureMessage Selection {selectionName, selectionPosition} message =
+resolverFailureMessage :: SelectionDefinition VALID -> Message -> GQLError
+resolverFailureMessage SelectionDefinition {selectionName, selectionPosition} message =
   GQLError
     { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
       locations = [selectionPosition]
@@ -286,7 +287,7 @@ mapResolverContext f (ResolverS resM) = ResolverS $ do
   res <- resM
   pure $ ReaderT $ \e -> ResolverQ $ mapState f (runResolverQ (runReaderT res e))
 
-setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m a
+setSelection :: Monad m => SelectionDefinition VALID -> Resolver o e m a -> Resolver o e m a
 setSelection currentSelection =
   mapResolverContext (\ctx -> ctx {currentSelection})
 
@@ -370,19 +371,19 @@ pickSelection = selectOr empty unionTagSelection
 withObject ::
   (LiftOperation o, Monad m) =>
   (SelectionSet VALID -> Resolver o e m value) ->
-  Selection VALID ->
+  SelectionDefinition VALID ->
   Resolver o e m value
-withObject f Selection {selectionName, selectionContent, selectionPosition} = checkContent selectionContent
+withObject f SelectionDefinition {selectionName, selectionContent, selectionPosition} = checkContent selectionContent
   where
     checkContent (SelectionSet selection) = f selection
     checkContent _ = failure (subfieldsNotSelected selectionName "" selectionPosition)
 
 lookupRes ::
   (LiftOperation o, Monad m) =>
-  Selection VALID ->
+  SelectionDefinition VALID ->
   ObjectResModel o e m ->
   Resolver o e m ValidValue
-lookupRes Selection {selectionName}
+lookupRes SelectionDefinition {selectionName}
   | selectionName == "__typename" =
     pure . Scalar . String . readTypeName . __typename
   | otherwise =
@@ -402,7 +403,7 @@ resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
   Object . toOrderedMap <$> traverse resolver selectionSet
   where
     resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
-    resolver sel =
+    resolver (Selection sel) =
       setSelection sel
         $ setTypeName __typename
         $ ObjectEntry (keyOf sel) <$> lookupRes sel drv
@@ -417,7 +418,7 @@ toEventResolver (ReaderT subRes) sel event = do
 runDataResolver :: (Monad m, LiftOperation o) => ResModel o e m -> Resolver o e m ValidValue
 runDataResolver = withResolver getState . __encode
   where
-    __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
+    __encode obj sel@SelectionDefinition {selectionContent} = encodeNode obj selectionContent
       where
         -- LIST
         encodeNode (ResList x) _ = List <$> traverse runDataResolver x

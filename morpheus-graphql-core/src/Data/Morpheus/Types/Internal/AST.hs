@@ -151,6 +151,7 @@ module Data.Morpheus.Types.Internal.AST
     DirectiveDefinitions,
     DirectiveDefinition (..),
     DirectiveLocation (..),
+    SelectionDefinition (..),
   )
 where
 

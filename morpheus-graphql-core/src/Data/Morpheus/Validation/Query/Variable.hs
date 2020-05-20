@@ -32,6 +32,7 @@ import Data.Morpheus.Types.Internal.AST
     ResolvedValue,
     Selection (..),
     SelectionContent (..),
+    SelectionDefinition (..),
     SelectionSet,
     TypeDefinition,
     TypeNameRef (..),
@@ -85,11 +86,11 @@ allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref]
 allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
   where
     searchRefs :: Selection RAW -> BaseValidator [Ref]
-    searchRefs Selection {selectionArguments, selectionDirectives, selectionContent = SelectionField} =
+    searchRefs (Selection SelectionDefinition {selectionArguments, selectionDirectives, selectionContent = SelectionField}) =
       pure $
         concatMap exploreRefs selectionArguments
           <> concatMap exploreRefs selectionDirectives
-    searchRefs Selection {selectionArguments, selectionContent = SelectionSet selSet} =
+    searchRefs (Selection SelectionDefinition {selectionArguments, selectionContent = SelectionSet selSet}) =
       getArgs <$> mapSelection searchRefs selSet
       where
         getArgs :: [Ref] -> [Ref]

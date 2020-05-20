@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Parsing.Request.Selection
   ( parseSelectionSet,
@@ -29,15 +30,14 @@ import Data.Morpheus.Parsing.Internal.Terms
     spreadLiteral,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Arguments,
-    Directives,
-    FieldName,
+  ( FieldName,
     Fragment (..),
     Position,
     RAW,
     Ref (..),
     Selection (..),
     SelectionContent (..),
+    SelectionDefinition (..),
     SelectionSet,
   )
 import Text.Megaparsec
@@ -71,20 +71,22 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
 -- Alias(opt) Name Arguments(opt) Directives(opt) SelectionSet(opt)
 --
 parseSelectionField :: Parser (Selection RAW)
-parseSelectionField = label "SelectionField" $ do
-  selectionPosition <- getLocation
-  selectionAlias <- parseAlias
-  selectionName <- parseName
-  selectionArguments <- maybeArguments
-  selectionDirectives <- optionalDirectives
-  selSet selectionName selectionAlias selectionArguments selectionDirectives <|> pure Selection {selectionContent = SelectionField, ..}
-  where
-    -----------------------------------------
-    selSet :: FieldName -> Maybe FieldName -> Arguments RAW -> Directives RAW -> Parser (Selection RAW)
-    selSet selectionName selectionAlias selectionArguments selectionDirectives = label "body" $ do
+parseSelectionField =
+  label "SelectionField" $
+    do
       selectionPosition <- getLocation
-      selectionSet <- parseSelectionSet
-      pure Selection {selectionContent = SelectionSet selectionSet, ..}
+      selectionAlias <- parseAlias
+      selectionName <- parseName
+      selectionArguments <- maybeArguments
+      selectionDirectives <- optionalDirectives
+      selectionContent <- parseSelectionContent
+      pure $ Selection (SelectionDefinition {..} :: SelectionDefinition RAW)
+
+parseSelectionContent :: Parser (SelectionContent RAW)
+parseSelectionContent =
+  label "SelectionContent" $
+    SelectionSet <$> parseSelectionSet
+      <|> pure SelectionField
 
 --
 -- Fragments: https://graphql.github.io/graphql-spec/June2018/#sec-Language.Fragments

@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -22,6 +23,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
     DefaultValue,
     getOperationName,
     getOperationDataType,
+    SelectionDefinition (..),
   )
 where
 
@@ -159,21 +161,28 @@ type UnionSelection = MergeSet UnionTag
 
 type SelectionSet s = MergeSet (Selection s)
 
+data SelectionDefinition (s :: Stage) = SelectionDefinition
+  { selectionName :: FieldName,
+    selectionAlias :: Maybe FieldName,
+    selectionPosition :: Position,
+    selectionArguments :: Arguments s,
+    selectionContent :: SelectionContent s,
+    selectionDirectives :: Directives s
+  }
+  deriving (Show, Lift, Eq)
+
+instance KeyOf (SelectionDefinition s) where
+  keyOf SelectionDefinition {selectionName, selectionAlias} = fromMaybe selectionName selectionAlias
+
 data Selection (s :: Stage) where
-  Selection ::
-    { selectionName :: FieldName,
-      selectionAlias :: Maybe FieldName,
-      selectionPosition :: Position,
-      selectionArguments :: Arguments s,
-      selectionDirectives :: Directives s,
-      selectionContent :: SelectionContent s
-    } ->
-    Selection s
+  Selection :: {unpackSelection :: SelectionDefinition s} -> Selection s
+  --  SelectionConditions :: SelectionDefinition RAW -> [SelectionContent RAW] -> Selection RAW
   InlineFragment :: Fragment -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
 
 instance KeyOf (Selection s) where
-  keyOf Selection {selectionName, selectionAlias} = fromMaybe selectionName selectionAlias
+  keyOf (Selection selection) = keyOf selection
+  -- keyOf (SelectionConditions selection _) = keyOf selection
   keyOf InlineFragment {} = ""
   keyOf Spread {} = ""
 
@@ -187,66 +196,68 @@ instance Merge (Directives s) where
   merge path x y = pure (x <> y)
 
 instance Merge (Selection a) where
-  merge path old@Selection {selectionPosition = pos1} current@Selection {selectionPosition = pos2} =
-    do
-      selectionName <- mergeName
-      let currentPath = path <> [Ref selectionName pos1]
-      selectionArguments <- mergeArguments currentPath
-      selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
-      selectionDirectives <- merge currentPath (selectionDirectives old) (selectionDirectives current)
-      pure $
-        Selection
-          { selectionName,
-            selectionAlias = mergeAlias,
-            selectionPosition = pos1,
-            selectionArguments,
-            selectionContent,
-            selectionDirectives
-          }
-    where
-      -- passes if:
-
-      --     user1: user
-      --   }
-      -- fails if:
-
-      --     user1: product
-      --   }
-      mergeName
-        | selectionName old == selectionName current = pure $ selectionName current
-        | otherwise =
-          failure $ mergeConflict path $
-            GQLError
-              { message =
-                  "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
-                    <> " are different fields. "
-                    <> useDufferentAliases,
-                locations = [pos1, pos2]
-              }
-      ---------------------
-      -- allias name is relevant only if they collide by allias like:
-      --   { user1: user
-      --     user1: user
-      --   }
-      mergeAlias
-        | all (isJust . selectionAlias) [old, current] = selectionAlias old
-        | otherwise = Nothing
-      --- arguments must be equal
-      mergeArguments currentPath
-        | selectionArguments old == selectionArguments current = pure $ selectionArguments current
-        | otherwise =
-          failure $ mergeConflict currentPath $
-            GQLError
-              { message = "they have differing arguments. " <> useDufferentAliases,
-                locations = [pos1, pos2]
-              }
-  -- TODO:
+  merge path (Selection x) (Selection y) = Selection <$> merge path x y
   merge path old current =
     failure $ mergeConflict path $
       GQLError
         { message = "can't merge. " <> useDufferentAliases,
-          locations = map selectionPosition [old, current]
+          locations = [] --TODO: map selectionPosition [old, current]
         }
+
+instance Merge (SelectionDefinition a) where
+  merge
+    path
+    old@SelectionDefinition {selectionPosition = pos1}
+    current@SelectionDefinition {selectionPosition = pos2} =
+      do
+        selectionName <- mergeName
+        let currentPath = path <> [Ref selectionName pos1]
+        selectionArguments <- mergeArguments currentPath
+        selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
+        selectionDirectives <- merge currentPath (selectionDirectives old) (selectionDirectives current)
+        pure $
+          SelectionDefinition
+            { selectionAlias = mergeAlias,
+              selectionPosition = pos1,
+              ..
+            }
+      where
+        -- passes if:
+
+        --     user1: user
+        --   }
+        -- fails if:
+
+        --     user1: product
+        --   }
+        mergeName
+          | selectionName old == selectionName current = pure $ selectionName current
+          | otherwise =
+            failure $ mergeConflict path $
+              GQLError
+                { message =
+                    "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
+                      <> " are different fields. "
+                      <> useDufferentAliases,
+                  locations = [pos1, pos2]
+                }
+        ---------------------
+        -- allias name is relevant only if they collide by allias like:
+        --   { user1: user
+        --     user1: user
+        --   }
+        mergeAlias
+          | all (isJust . selectionAlias) [old, current] = selectionAlias old
+          | otherwise = Nothing
+        --- arguments must be equal
+        mergeArguments currentPath
+          | selectionArguments old == selectionArguments current = pure $ selectionArguments current
+          | otherwise =
+            failure $ mergeConflict currentPath $
+              GQLError
+                { message = "they have differing arguments. " <> useDufferentAliases,
+                  locations = [pos1, pos2]
+                }
 
 deriving instance Show (Selection a)
 

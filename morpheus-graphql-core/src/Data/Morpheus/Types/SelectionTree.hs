@@ -9,8 +9,9 @@ module Data.Morpheus.Types.SelectionTree where
 import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Types.Internal.AST.Base (FieldName, VALID)
 import Data.Morpheus.Types.Internal.AST.Selection
-  ( Selection (selectionContent, selectionName),
+  ( Selection (..),
     SelectionContent (SelectionField, SelectionSet),
+    SelectionDefinition (selectionContent, selectionName),
   )
 
 -- | The 'SelectionTree' instance is a simple interface for interacting
@@ -28,10 +29,10 @@ class SelectionTree nodeType where
   getName :: nodeType -> FieldName
 
 instance SelectionTree (Selection VALID) where
-  isLeaf node = case selectionContent node of
+  isLeaf (Selection node) = case selectionContent node of
     SelectionField -> True
     _ -> False
-  getChildrenList node = case selectionContent node of
+  getChildrenList (Selection node) = case selectionContent node of
     SelectionField -> mempty
     (SelectionSet deeperSel) -> elems deeperSel
-  getName = selectionName
+  getName = selectionName . unpackSelection
