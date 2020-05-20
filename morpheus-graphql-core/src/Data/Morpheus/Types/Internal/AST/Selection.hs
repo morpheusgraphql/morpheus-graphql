@@ -175,8 +175,7 @@ instance KeyOf (SelectionDefinition s) where
   keyOf SelectionDefinition {selectionName, selectionAlias} = fromMaybe selectionName selectionAlias
 
 data Selection (s :: Stage) where
-  Selection :: {unpackSelection :: SelectionDefinition s} -> Selection s
-  --  SelectionConditions :: SelectionDefinition RAW -> [SelectionContent RAW] -> Selection RAW
+  Selection :: {unSelection :: SelectionDefinition s} -> Selection s
   InlineFragment :: Fragment -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
 

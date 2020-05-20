@@ -32,7 +32,9 @@ instance SelectionTree (Selection VALID) where
   isLeaf (Selection node) = case selectionContent node of
     SelectionField -> True
     _ -> False
+
   getChildrenList (Selection node) = case selectionContent node of
     SelectionField -> mempty
     (SelectionSet deeperSel) -> elems deeperSel
-  getName = selectionName . unpackSelection
+
+  getName = selectionName . unSelection
