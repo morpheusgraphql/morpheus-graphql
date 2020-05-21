@@ -1,14 +1,18 @@
 {
-  user {
-    type(data: "some data")
-  }
+  type(in: { data: "some data" })
 
-  __type(name: "Query") {
+  query: __type(name: "Query") {
     fields {
       name
       args {
         name
       }
+    }
+  }
+
+  input: __type(name: "TypeInput") {
+    inputFields {
+      name
     }
   }
 }

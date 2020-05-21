@@ -93,13 +93,17 @@ type User implements Person {
   friend: User
 }
 
+input TypeInput {
+  data: String!
+}
+
 type Query {
   user: User!
   testUnion: TestUnion
   fail1: String!
   fail2: Int!
   person: Person!
-  type(data: String!): String!
+  type(in: TypeInput!): String!
 }
 
 type Mutation {

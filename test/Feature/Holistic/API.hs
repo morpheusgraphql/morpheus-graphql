@@ -68,7 +68,7 @@ rootResolver =
             fail1 = liftEither alwaysFail,
             fail2 = fail "fail with MonadFail",
             person = pure Person {name = pure (Just "test Person Name")},
-            type' = \TypeArgs {data'} -> pure data'
+            type' = \TypeArgs {in' = TypeInput {data'}} -> pure data'
           },
       mutationResolver = Mutation {createUser = const user},
       subscriptionResolver =

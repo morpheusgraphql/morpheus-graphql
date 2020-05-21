@@ -405,10 +405,10 @@ isReserved "_" = True
 isReserved _ = False
 {-# INLINE isReserved #-}
 
-convertToJSONName :: FieldName -> Text
+convertToJSONName :: FieldName -> FieldName
 convertToJSONName (FieldName hsName)
-  | not (T.null hsName) && isReserved (FieldName name) && (T.last hsName == '\'') = name
-  | otherwise = hsName
+  | not (T.null hsName) && isReserved (FieldName name) && (T.last hsName == '\'') = FieldName name
+  | otherwise = FieldName hsName
   where
     name = T.init hsName
 
