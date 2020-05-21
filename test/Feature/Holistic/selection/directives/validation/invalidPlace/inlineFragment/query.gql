@@ -1,0 +1,7 @@
+query {
+  user {
+    ... on User @deprecated @include(if: false) @skip(if: true) {
+      name
+    }
+  }
+}

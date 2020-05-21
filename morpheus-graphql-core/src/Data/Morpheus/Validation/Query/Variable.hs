@@ -21,6 +21,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     DefaultValue,
+    Directive (..),
     Fragment (..),
     IN,
     ObjectEntry (..),
@@ -71,6 +72,9 @@ instance ExploreRefs RawValue where
   exploreRefs (List ls) = concatMap exploreRefs ls
   exploreRefs _ = []
 
+instance ExploreRefs (Directive RAW) where
+  exploreRefs Directive {directiveArgs} = concatMap exploreRefs directiveArgs
+
 instance ExploreRefs (Argument RAW) where
   exploreRefs = exploreRefs . argumentValue
 
@@ -80,21 +84,25 @@ mapSelection f = fmap concat . traverse f
 allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref]
 allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
   where
+    exploreSelectionContent :: SelectionContent RAW -> BaseValidator [Ref]
+    exploreSelectionContent SelectionField = pure []
+    exploreSelectionContent (SelectionSet selSet) = mapSelection searchRefs selSet
+    ---------------------------------------
     searchRefs :: Selection RAW -> BaseValidator [Ref]
-    searchRefs Selection {selectionArguments, selectionContent = SelectionField} =
-      return $ concatMap exploreRefs selectionArguments
-    searchRefs Selection {selectionArguments, selectionContent = SelectionSet selSet} =
-      getArgs <$> mapSelection searchRefs selSet
-      where
-        getArgs :: [Ref] -> [Ref]
-        getArgs x = concatMap exploreRefs selectionArguments <> x
-    searchRefs (InlineFragment Fragment {fragmentSelection}) =
-      mapSelection searchRefs fragmentSelection
-    searchRefs (Spread reference) =
-      askFragments
-        >>= selectKnown reference
-        >>= mapSelection searchRefs
-        . fragmentSelection
+    searchRefs Selection {selectionArguments, selectionDirectives, selectionContent} = do
+      let directiveRefs = concatMap exploreRefs selectionDirectives
+      contentRefs <- exploreSelectionContent selectionContent
+      pure $ directiveRefs <> contentRefs <> concatMap exploreRefs selectionArguments
+    searchRefs (InlineFragment Fragment {fragmentSelection, fragmentDirectives}) =
+      (concatMap exploreRefs fragmentDirectives <>)
+        <$> mapSelection searchRefs fragmentSelection
+    searchRefs (Spread directives reference) =
+      (concatMap exploreRefs directives <>)
+        <$> ( askFragments
+                >>= selectKnown reference
+                >>= mapSelection searchRefs
+                . fragmentSelection
+            )
 
 resolveOperationVariables ::
   Variables ->

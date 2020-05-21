@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -26,6 +27,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
+    DirectiveLocation (FIELD, FRAGMENT_SPREAD, INLINE_FRAGMENT, MUTATION, QUERY, SUBSCRIPTION),
+    Directives,
     FieldDefinition,
     FieldName,
     FieldsDefinition,
@@ -58,8 +61,12 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
     withScope,
   )
+import Data.Morpheus.Validation.Internal.Directive
+  ( shouldIncludeSelection,
+    validateDirectives,
+  )
 import Data.Morpheus.Validation.Query.Arguments
-  ( validateArguments,
+  ( validateFieldArguments,
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
@@ -114,20 +121,45 @@ validateOperation
     { operationName,
       operationType,
       operationSelection,
-      operationPosition
+      operationDirectives,
+      ..
     } =
     do
       typeDef <- getOperationObject rawOperation
       selection <- validateSelectionSet typeDef operationSelection
       singleTopLevelSelection rawOperation selection
+      directives <-
+        validateDirectives
+          (toDirectiveLocation operationType)
+          operationDirectives
       pure $
         Operation
           { operationName,
             operationType,
             operationArguments = empty,
             operationSelection = selection,
-            operationPosition
+            operationDirectives = directives,
+            ..
           }
+
+toDirectiveLocation :: OperationType -> DirectiveLocation
+toDirectiveLocation Subscription = SUBSCRIPTION
+toDirectiveLocation Mutation = MUTATION
+toDirectiveLocation Query = QUERY
+
+processSelectionDirectives ::
+  DirectiveLocation ->
+  Directives RAW ->
+  (Directives VALID -> SelectionValidator (SelectionSet VALID)) ->
+  SelectionValidator (SelectionSet VALID)
+processSelectionDirectives location rawDirectives sel = do
+  directives <- validateDirectives location rawDirectives
+  include <- shouldIncludeSelection directives
+  selection <- sel directives
+  pure $
+    if include
+      then selection
+      else empty
 
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
@@ -141,13 +173,16 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
         { selectionName,
           selectionArguments,
           selectionContent,
-          selectionPosition
+          selectionPosition,
+          selectionDirectives
         } =
         withScope
           typeName
           currentSelectionRef
-          $ validateSelectionContent
-            selectionContent
+          $ processSelectionDirectives
+            FIELD
+            selectionDirectives
+            (`validateSelectionContent` selectionContent)
         where
           currentSelectionRef = Ref selectionName selectionPosition
           commonValidation :: SelectionValidator (TypeDefinition OUT, Arguments VALID)
@@ -155,21 +190,31 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
             (fieldDef :: FieldDefinition OUT) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             -- validate field Argument -----
             arguments <-
-              validateArguments
+              validateFieldArguments
                 fieldDef
                 selectionArguments
             -- check field Type existence  -----
             (typeDef :: TypeDefinition OUT) <- askFieldType fieldDef
             pure (typeDef, arguments)
           -----------------------------------------------------------------------------------
-          validateSelectionContent :: SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
-          validateSelectionContent SelectionField
+          validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
+          validateSelectionContent directives SelectionField
             | null selectionArguments && selectionName == "__typename" =
-              pure $ singleton $ sel {selectionArguments = empty, selectionContent = SelectionField}
+              pure $ singleton $
+                sel
+                  { selectionArguments = empty,
+                    selectionDirectives = directives,
+                    selectionContent = SelectionField
+                  }
             | otherwise = do
               (datatype, validArgs) <- commonValidation
               isLeaf datatype
-              pure $ singleton $ sel {selectionArguments = validArgs, selectionContent = SelectionField}
+              pure $ singleton $
+                sel
+                  { selectionArguments = validArgs,
+                    selectionDirectives = directives,
+                    selectionContent = SelectionField
+                  }
             where
               ------------------------------------------------------------
               isLeaf :: TypeDefinition OUT -> SelectionValidator ()
@@ -179,11 +224,16 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                   failure $
                     subfieldsNotSelected selectionName typename selectionPosition
           ----- SelectionSet
-          validateSelectionContent (SelectionSet rawSelectionSet) =
+          validateSelectionContent directives (SelectionSet rawSelectionSet) =
             do
               (TypeDefinition {typeName = name, typeContent}, validArgs) <- commonValidation
               selContent <- withScope name currentSelectionRef $ validateByTypeContent name typeContent
-              pure $ singleton $ sel {selectionArguments = validArgs, selectionContent = selContent}
+              pure $ singleton $
+                sel
+                  { selectionArguments = validArgs,
+                    selectionDirectives = directives,
+                    selectionContent = selContent
+                  }
             where
               validateByTypeContent :: TypeName -> TypeContent TRUE OUT -> SelectionValidator (SelectionContent VALID)
               -- Validate UnionSelection
@@ -208,11 +258,23 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                   hasNoSubfields
                     (Ref selectionName selectionPosition)
                     typename
-    validateSelection (Spread ref) =
-      resolveSpread [typeName] ref
-        >>= validateFragment
-    validateSelection (InlineFragment fragment') =
-      castFragmentType Nothing (fragmentPosition fragment') [typeName] fragment'
-        >>= validateFragment
+    validateSelection (Spread dirs ref) =
+      processSelectionDirectives FRAGMENT_SPREAD dirs
+        $ const
+        -- TODO: add directives to selection
+        $ resolveSpread [typeName] ref
+          >>= validateFragment
+    validateSelection
+      ( InlineFragment
+          fragment@Fragment
+            { fragmentDirectives,
+              fragmentPosition
+            }
+        ) =
+        processSelectionDirectives INLINE_FRAGMENT fragmentDirectives
+          $ const
+          -- TODO: add directives to selection
+          $ castFragmentType Nothing fragmentPosition [typeName] fragment
+            >>= validateFragment
     --------------------------------------------------------------------------------
     validateFragment Fragment {fragmentSelection} = validateSelectionSet dataType fragmentSelection

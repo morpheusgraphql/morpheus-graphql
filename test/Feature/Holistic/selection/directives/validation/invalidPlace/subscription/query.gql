@@ -1,0 +1,5 @@
+subscription SomeSubscription @deprecated @skip(if: true) @include(if: true) {
+  newUser {
+    name
+  }
+}

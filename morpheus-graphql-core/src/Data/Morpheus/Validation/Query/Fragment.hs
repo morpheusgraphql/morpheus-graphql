@@ -74,13 +74,16 @@ resolveSpread allowedTargets ref@Ref {refName, refPosition} =
 usedFragments :: Fragments -> [Selection RAW] -> [Node]
 usedFragments fragments = concatMap findAllUses
   where
-    findAllUses :: Selection RAW -> [Node]
-    findAllUses Selection {selectionContent = SelectionField} = []
-    findAllUses Selection {selectionContent = SelectionSet selectionSet} =
+    findUsesSelectionContent :: SelectionContent RAW -> [Node]
+    findUsesSelectionContent (SelectionSet selectionSet) =
       concatMap findAllUses selectionSet
+    findUsesSelectionContent SelectionField = []
+    findAllUses :: Selection RAW -> [Node]
+    findAllUses Selection {selectionContent} =
+      findUsesSelectionContent selectionContent
     findAllUses (InlineFragment Fragment {fragmentSelection}) =
       concatMap findAllUses fragmentSelection
-    findAllUses (Spread Ref {refName, refPosition}) =
+    findAllUses (Spread _ Ref {refName, refPosition}) =
       [Ref refName refPosition] <> searchInFragment
       where
         searchInFragment =
@@ -112,13 +115,17 @@ exploreFragmentSpreads :: Fragment -> NodeEdges
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =
   (Ref fragmentName fragmentPosition, concatMap scanForSpread fragmentSelection)
 
-scanForSpread :: Selection RAW -> [Node]
-scanForSpread Selection {selectionContent = SelectionField} = []
-scanForSpread Selection {selectionContent = SelectionSet selectionSet} =
+scanForSpreadContent :: SelectionContent RAW -> [Node]
+scanForSpreadContent SelectionField = []
+scanForSpreadContent (SelectionSet selectionSet) =
   concatMap scanForSpread selectionSet
+
+scanForSpread :: Selection RAW -> [Node]
+scanForSpread Selection {selectionContent} =
+  scanForSpreadContent selectionContent
 scanForSpread (InlineFragment Fragment {fragmentSelection}) =
   concatMap scanForSpread fragmentSelection
-scanForSpread (Spread Ref {refName, refPosition}) =
+scanForSpread (Spread _ Ref {refName, refPosition}) =
   [Ref refName refPosition]
 
 type Node = Ref

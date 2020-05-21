@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 06416e9c6365009112d214d2fce21df335f7c531bd7af9536102d70e2dc0cfc4
+-- hash: e82e068bd4d9cc31a59b855a0f9ffd3c0ca580f98f818d517c5ea730f34b8437
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -47,6 +47,7 @@ data-files:
     test/Feature/Holistic/introspection/description/inputObject/query.gql
     test/Feature/Holistic/introspection/description/object/query.gql
     test/Feature/Holistic/introspection/description/union/query.gql
+    test/Feature/Holistic/introspection/directives/default/query.gql
     test/Feature/Holistic/introspection/interface/query.gql
     test/Feature/Holistic/introspection/kinds/ENUM/query.gql
     test/Feature/Holistic/introspection/kinds/INPUT_OBJECT/query.gql
@@ -79,10 +80,24 @@ data-files:
     test/Feature/Holistic/parsing/notNullSpacing/query.gql
     test/Feature/Holistic/parsing/numbers/query.gql
     test/Feature/Holistic/parsing/singleLineComments/query.gql
+    test/Feature/Holistic/reservedNames/query.gql
     test/Feature/Holistic/schema.gql
     test/Feature/Holistic/selection/__typename/query.gql
     test/Feature/Holistic/selection/AliasResolve/query.gql
     test/Feature/Holistic/selection/AliasUnknownField/query.gql
+    test/Feature/Holistic/selection/directives/default/requiredArgument/query.gql
+    test/Feature/Holistic/selection/directives/default/resolve/query.gql
+    test/Feature/Holistic/selection/directives/default/resolve_and_merge/query.gql
+    test/Feature/Holistic/selection/directives/default/variablesOnFragment/query.gql
+    test/Feature/Holistic/selection/directives/default/withMerge/query.gql
+    test/Feature/Holistic/selection/directives/default/withVariable/query.gql
+    test/Feature/Holistic/selection/directives/default/wrongArgumentType/query.gql
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/field/query.gql
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/fragmentSpread/query.gql
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/inlineFragment/query.gql
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/mutation/query.gql
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/query/query.gql
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/subscription/query.gql
     test/Feature/Holistic/selection/hasNoSubFields/query.gql
     test/Feature/Holistic/selection/mergeConflict/alias/query.gql
     test/Feature/Holistic/selection/mergeConflict/arguments/query.gql
@@ -184,6 +199,7 @@ data-files:
     test/Feature/Holistic/introspection/description/inputObject/response.json
     test/Feature/Holistic/introspection/description/object/response.json
     test/Feature/Holistic/introspection/description/union/response.json
+    test/Feature/Holistic/introspection/directives/default/response.json
     test/Feature/Holistic/introspection/interface/response.json
     test/Feature/Holistic/introspection/kinds/ENUM/response.json
     test/Feature/Holistic/introspection/kinds/INPUT_OBJECT/response.json
@@ -218,9 +234,23 @@ data-files:
     test/Feature/Holistic/parsing/notNullSpacing/variables.json
     test/Feature/Holistic/parsing/numbers/response.json
     test/Feature/Holistic/parsing/singleLineComments/response.json
+    test/Feature/Holistic/reservedNames/response.json
     test/Feature/Holistic/selection/__typename/response.json
     test/Feature/Holistic/selection/AliasResolve/response.json
     test/Feature/Holistic/selection/AliasUnknownField/response.json
+    test/Feature/Holistic/selection/directives/default/requiredArgument/response.json
+    test/Feature/Holistic/selection/directives/default/resolve/response.json
+    test/Feature/Holistic/selection/directives/default/resolve_and_merge/response.json
+    test/Feature/Holistic/selection/directives/default/variablesOnFragment/response.json
+    test/Feature/Holistic/selection/directives/default/withMerge/response.json
+    test/Feature/Holistic/selection/directives/default/withVariable/response.json
+    test/Feature/Holistic/selection/directives/default/wrongArgumentType/response.json
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/field/response.json
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/fragmentSpread/response.json
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/inlineFragment/response.json
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/mutation/response.json
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/query/response.json
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/subscription/response.json
     test/Feature/Holistic/selection/hasNoSubFields/response.json
     test/Feature/Holistic/selection/mergeConflict/alias/response.json
     test/Feature/Holistic/selection/mergeConflict/arguments/response.json

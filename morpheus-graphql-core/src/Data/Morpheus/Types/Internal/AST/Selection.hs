@@ -5,8 +5,10 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (..),
@@ -58,6 +60,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( Arguments,
+    Directives,
     OUT,
     Schema (..),
     TypeDefinition (..),
@@ -80,7 +83,8 @@ data Fragment = Fragment
   { fragmentName :: FieldName,
     fragmentType :: TypeName,
     fragmentPosition :: Position,
-    fragmentSelection :: SelectionSet RAW
+    fragmentSelection :: SelectionSet RAW,
+    fragmentDirectives :: Directives RAW
   }
   deriving (Show, Eq, Lift)
 
@@ -100,9 +104,12 @@ type Fragments = OrderedMap FieldName Fragment
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
   SelectionSet :: SelectionSet s -> SelectionContent s
-  UnionSelection :: UnionSelection -> SelectionContent VALID
+  UnionSelection :: UnionSelection VALID -> SelectionContent VALID
 
-instance Merge (SelectionContent s) where
+instance
+  Merge (SelectionSet s) =>
+  Merge (SelectionContent s)
+  where
   merge path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> merge path s1 s2
   merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
   merge path oldC currC
@@ -153,9 +160,9 @@ instance KeyOf UnionTag where
   type KEY UnionTag = TypeName
   keyOf = unionTagName
 
-type UnionSelection = MergeSet UnionTag
+type UnionSelection (s :: Stage) = MergeSet s UnionTag
 
-type SelectionSet s = MergeSet (Selection s)
+type SelectionSet (s :: Stage) = MergeSet s (Selection s)
 
 data Selection (s :: Stage) where
   Selection ::
@@ -163,80 +170,88 @@ data Selection (s :: Stage) where
       selectionAlias :: Maybe FieldName,
       selectionPosition :: Position,
       selectionArguments :: Arguments s,
-      selectionContent :: SelectionContent s
+      selectionContent :: SelectionContent s,
+      selectionDirectives :: Directives s
     } ->
     Selection s
   InlineFragment :: Fragment -> Selection RAW
-  Spread :: Ref -> Selection RAW
+  Spread :: Directives RAW -> Ref -> Selection RAW
 
 instance KeyOf (Selection s) where
-  keyOf Selection {selectionName, selectionAlias} = fromMaybe selectionName selectionAlias
-  keyOf InlineFragment {} = ""
-  keyOf Spread {} = ""
+  keyOf
+    Selection
+      { selectionName,
+        selectionAlias
+      } = fromMaybe selectionName selectionAlias
+  keyOf _ = ""
 
 useDufferentAliases :: Message
 useDufferentAliases =
   "Use different aliases on the "
     <> "fields to fetch both if this was intentional."
 
-instance Merge (Selection a) where
-  merge path old@Selection {selectionPosition = pos1} current@Selection {selectionPosition = pos2} =
-    do
-      selectionName <- mergeName
-      let currentPath = path <> [Ref selectionName pos1]
-      selectionArguments <- mergeArguments currentPath
-      selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
-      pure $
-        Selection
-          { selectionName,
-            selectionAlias = mergeAlias,
-            selectionPosition = pos1,
-            selectionArguments,
-            selectionContent
-          }
-    where
-      -- passes if:
+instance
+  Merge (SelectionSet a) =>
+  Merge (Selection a)
+  where
+  merge
+    path
+    old@Selection {selectionPosition = pos1}
+    current@Selection {selectionPosition = pos2} =
+      do
+        selectionName <- mergeName
+        let currentPath = path <> [Ref selectionName pos1]
+        selectionArguments <- mergeArguments currentPath
+        selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
+        pure $
+          Selection
+            { selectionAlias = mergeAlias,
+              selectionPosition = pos1,
+              selectionDirectives = selectionDirectives old <> selectionDirectives current,
+              ..
+            }
+      where
+        -- passes if:
 
-      --     user1: user
-      --   }
-      -- fails if:
+        --     user1: user
+        --   }
+        -- fails if:
 
-      --     user1: product
-      --   }
-      mergeName
-        | selectionName old == selectionName current = pure $ selectionName current
-        | otherwise =
-          failure $ mergeConflict path $
-            GQLError
-              { message =
-                  "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
-                    <> " are different fields. "
-                    <> useDufferentAliases,
-                locations = [pos1, pos2]
-              }
-      ---------------------
-      -- allias name is relevant only if they collide by allias like:
-      --   { user1: user
-      --     user1: user
-      --   }
-      mergeAlias
-        | all (isJust . selectionAlias) [old, current] = selectionAlias old
-        | otherwise = Nothing
-      --- arguments must be equal
-      mergeArguments currentPath
-        | selectionArguments old == selectionArguments current = pure $ selectionArguments current
-        | otherwise =
-          failure $ mergeConflict currentPath $
-            GQLError
-              { message = "they have differing arguments. " <> useDufferentAliases,
-                locations = [pos1, pos2]
-              }
-  -- TODO:
-  merge path old current =
+        --     user1: product
+        --   }
+        mergeName
+          | selectionName old == selectionName current = pure $ selectionName current
+          | otherwise =
+            failure $ mergeConflict path $
+              GQLError
+                { message =
+                    "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
+                      <> " are different fields. "
+                      <> useDufferentAliases,
+                  locations = [pos1, pos2]
+                }
+        ---------------------
+        -- allias name is relevant only if they collide by allias like:
+        --   { user1: user
+        --     user1: user
+        --   }
+        mergeAlias
+          | all (isJust . selectionAlias) [old, current] = selectionAlias old
+          | otherwise = Nothing
+        --- arguments must be equal
+        mergeArguments currentPath
+          | selectionArguments old == selectionArguments current = pure $ selectionArguments current
+          | otherwise =
+            failure $ mergeConflict currentPath $
+              GQLError
+                { message = "they have differing arguments. " <> useDufferentAliases,
+                  locations = [pos1, pos2]
+                }
+  merge path _ _ =
     failure $ mergeConflict path $
       GQLError
-        { message = "can't merge. " <> useDufferentAliases,
-          locations = map selectionPosition [old, current]
+        { message = "INTERNAL: can't merge. " <> useDufferentAliases,
+          locations = []
         }
 
 deriving instance Show (Selection a)
@@ -252,7 +267,8 @@ data Operation (s :: Stage) = Operation
     operationType :: OperationType,
     operationArguments :: VariableDefinitions s,
     operationSelection :: SelectionSet s,
-    operationPosition :: Position
+    operationPosition :: Position,
+    operationDirectives :: Directives s
   }
   deriving (Show, Lift)
 

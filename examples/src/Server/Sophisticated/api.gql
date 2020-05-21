@@ -88,7 +88,7 @@ type Query {
   animal(animal: Animal): String!
   wrapped1(type: UniqueID): AIntText!
   wrapped2: AText!
-  set: SetInt!
+  set(if: Boolean!): SetInt!
   someMap: MapTextInt!
   fail1: Int!
   fail2: Int!

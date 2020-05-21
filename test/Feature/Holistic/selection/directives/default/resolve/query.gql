@@ -1,0 +1,17 @@
+{
+  user {
+    no_directives: name
+
+    include_false: name @include(if: false)
+    include_true: name @include(if: true)
+
+    skip_false: name @skip(if: false)
+    skip_true: name @skip(if: true)
+
+    skip_true_include_true: name @skip(if: true) @include(if: true)
+    skip_true_include_false: name @skip(if: true) @include(if: false)
+
+    skip_false_include_true: name @skip(if: false) @include(if: true)
+    skip_false_include_false: name @skip(if: false) @include(if: false)
+  }
+}

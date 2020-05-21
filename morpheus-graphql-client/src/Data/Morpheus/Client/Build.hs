@@ -33,7 +33,8 @@ import Data.Morpheus.Error
 import Data.Morpheus.Internal.TH
   ( Scope (..),
     declareType,
-    makeName,
+    nameConType,
+    nameConType,
   )
 import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
@@ -96,9 +97,9 @@ withToJSON f datatype = do
   pure (toJson : dec)
 
 queryArgumentType :: Maybe TypeD -> (Type, Q [Dec])
-queryArgumentType Nothing = (ConT $ mkName "()", pure [])
+queryArgumentType Nothing = (nameConType "()", pure [])
 queryArgumentType (Just rootType@TypeD {tName}) =
-  (ConT $ makeName tName, declareInputType rootType)
+  (nameConType tName, declareInputType rootType)
 
 defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
 defineOperationType (argType, argumentTypes) query clientType =

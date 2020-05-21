@@ -70,8 +70,12 @@ module Data.Morpheus.Types.Internal.AST.Data
     ANY,
     FromAny (..),
     ToAny (..),
+    DirectiveDefinitions,
+    DirectiveDefinition (..),
+    Directives,
     argumentsToFields,
     fieldsToArguments,
+    DirectiveLocation (..),
   )
 where
 
@@ -108,6 +112,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     FieldName,
     FieldName (..),
     GQLError (..),
+    Msg (..),
     Position,
     Stage,
     TRUE,
@@ -131,7 +136,6 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
     ValidValue,
     Value (..),
-    convertToJSONName,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Failure (..),
@@ -181,19 +185,66 @@ type Arguments s = OrderedMap FieldName (Argument s)
 
 -- directive
 ------------------------------------------------------------------
-data Directive = Directive
+data Directive (s :: Stage) = Directive
   { directiveName :: FieldName,
-    directiveArgs :: OrderedMap FieldName (Argument VALID)
+    directivePosition :: Position,
+    directiveArgs :: Arguments s
+  }
+  deriving (Show, Lift, Eq)
+
+instance KeyOf (Directive s) where
+  keyOf = directiveName
+
+type Directives s = [Directive s]
+
+data DirectiveDefinition = DirectiveDefinition
+  { directiveDefinitionName :: FieldName,
+    directiveDefinitionDescription :: Maybe Description,
+    directiveDefinitionLocations :: [DirectiveLocation],
+    directiveDefinitionArgs :: ArgumentsDefinition
   }
   deriving (Show, Lift)
 
-lookupDeprecated :: Meta -> Maybe Directive
+type DirectiveDefinitions = [DirectiveDefinition]
+
+instance KeyOf DirectiveDefinition where
+  keyOf = directiveDefinitionName
+
+instance Selectable DirectiveDefinition ArgumentDefinition where
+  selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
+    selectOr fb f key directiveDefinitionArgs
+
+data DirectiveLocation
+  = QUERY
+  | MUTATION
+  | SUBSCRIPTION
+  | FIELD
+  | FRAGMENT_DEFINITION
+  | FRAGMENT_SPREAD
+  | INLINE_FRAGMENT
+  | SCHEMA
+  | SCALAR
+  | OBJECT
+  | FIELD_DEFINITION
+  | ARGUMENT_DEFINITION
+  | INTERFACE
+  | UNION
+  | ENUM
+  | ENUM_VALUE
+  | INPUT_OBJECT
+  | INPUT_FIELD_DEFINITION
+  deriving (Show, Eq, Lift)
+
+instance Msg DirectiveLocation where
+  msg = msg . show
+
+lookupDeprecated :: Meta -> Maybe (Directive VALID)
 lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives
   where
     isDeprecation Directive {directiveName = "deprecated"} = True
     isDeprecation _ = False
 
-lookupDeprecatedReason :: Directive -> Maybe Description
+lookupDeprecatedReason :: Directive VALID -> Maybe Description
 lookupDeprecatedReason Directive {directiveArgs} =
   selectOr Nothing (Just . maybeString) "reason" directiveArgs
   where
@@ -204,7 +255,7 @@ lookupDeprecatedReason Directive {directiveArgs} =
 -- META
 data Meta = Meta
   { metaDescription :: Maybe Description,
-    metaDirectives :: [Directive]
+    metaDirectives :: [Directive VALID]
   }
   deriving (Show, Lift)
 
@@ -549,8 +600,8 @@ instance NameCollision (FieldDefinition cat) where
       }
 
 instance RenderGQL (FieldDefinition cat) where
-  render FieldDefinition {fieldName, fieldType, fieldArgs} =
-    convertToJSONName fieldName <> render fieldArgs <> ": " <> render fieldType
+  render FieldDefinition {fieldName = FieldName name, fieldType, fieldArgs} =
+    name <> render fieldArgs <> ": " <> render fieldType
 
 instance RenderGQL (FieldsDefinition OUT) where
   render = renderObject render . ignoreHidden . elems

@@ -22,6 +22,9 @@ import Data.Morpheus.Rendering.RenderIntrospection
   ( createObjectType,
     render,
   )
+import Data.Morpheus.Schema.Directives
+  ( defaultDirectives,
+  )
 import Data.Morpheus.Schema.Schema
   (
   )
@@ -62,6 +65,16 @@ findType ::
   Resolver QUERY e m (ResModel QUERY e m)
 findType name schema = selectOr (pure mkNull) (`render` schema) name schema
 
+renderDirectives ::
+  Monad m =>
+  Schema ->
+  Resolver QUERY e m (ResModel QUERY e m)
+renderDirectives schema =
+  mkList
+    <$> traverse
+      (`render` schema)
+      defaultDirectives
+
 schemaResolver ::
   Monad m =>
   Schema ->
@@ -74,7 +87,7 @@ schemaResolver schema@Schema {query, mutation, subscription} =
         ("queryType", pure $ buildSchemaLinkType (Just query) schema),
         ("mutationType", pure $ buildSchemaLinkType mutation schema),
         ("subscriptionType", pure $ buildSchemaLinkType subscription schema),
-        ("directives", pure $ mkList [])
+        ("directives", renderDirectives schema)
       ]
 
 schemaAPI :: Monad m => Schema -> ResModel QUERY e m

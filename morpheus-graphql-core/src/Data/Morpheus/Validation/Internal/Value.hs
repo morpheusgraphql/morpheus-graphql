@@ -26,6 +26,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     ResolvedValue,
     ScalarDefinition (..),
+    ScalarValue (..),
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
@@ -167,26 +168,49 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
           validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
         {-- VALIDATE SCALAR --}
         validate (DataScalar dataScalar) ObjectEntry {entryValue} =
-          validateScalar dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
+          validateScalar typeName dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
         validate _ ObjectEntry {entryValue} = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers entryValue
 
 validateScalar ::
+  TypeName ->
   ScalarDefinition ->
   ResolvedValue ->
   (Maybe Message -> ResolvedValue -> InputValidator ValidValue) ->
   InputValidator ValidValue
-validateScalar ScalarDefinition {validateValue} value err = do
+validateScalar typeName ScalarDefinition {validateValue} value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
-    Right _ -> return scalarValue
+    Right _ -> pure scalarValue
     Left "" -> err Nothing value
     Left message -> err (Just $ msg message) value
   where
     toScalar :: ResolvedValue -> InputValidator ValidValue
-    toScalar (Scalar x) = pure (Scalar x)
-    toScalar scValue = err Nothing scValue
+    toScalar (Scalar x) | isValidDefault typeName x = pure (Scalar x)
+    toScalar _ = err Nothing value
+    isValidDefault :: TypeName -> ScalarValue -> Bool
+    isValidDefault "Boolean" = isBoolean
+    isValidDefault "String" = isString
+    isValidDefault "Float" = \x -> isFloat x || isInt x
+    isValidDefault "Int" = isInt
+    isValidDefault _ = const True
+
+isBoolean :: ScalarValue -> Bool
+isBoolean Boolean {} = True
+isBoolean _ = False
+
+isString :: ScalarValue -> Bool
+isString String {} = True
+isString _ = False
+
+isFloat :: ScalarValue -> Bool
+isFloat Float {} = True
+isFloat _ = False
+
+isInt :: ScalarValue -> Bool
+isInt Int {} = True
+isInt _ = False
 
 validateEnum ::
   (ResolvedValue -> InputValidator ValidValue) ->

@@ -32,8 +32,11 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeKind (..),
     DataTypeWrapper (..),
     DataUnion,
+    Description,
+    DirectiveDefinition (..),
+    DirectiveLocation,
     FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     FieldsDefinition,
     IN,
     Message,
@@ -45,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
-    convertToJSONName,
     createInputUnionFields,
     fieldVisibility,
     kindOf,
@@ -73,6 +75,30 @@ type Result e m a = Schema -> Resolver QUERY e m a
 
 class RenderSchema a where
   render :: (Monad m) => a -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+
+instance RenderSchema DirectiveDefinition where
+  render
+    DirectiveDefinition
+      { directiveDefinitionName,
+        directiveDefinitionDescription,
+        directiveDefinitionLocations,
+        directiveDefinitionArgs
+      }
+    schema =
+      pure $
+        mkObject
+          "__Directive"
+          [ renderFieldName directiveDefinitionName,
+            renderDescription directiveDefinitionDescription,
+            ("locations", render directiveDefinitionLocations schema),
+            ("args", mkList <$> renderArguments directiveDefinitionArgs schema)
+          ]
+
+instance RenderSchema a => RenderSchema [a] where
+  render ls schema = mkList <$> traverse (`render` schema) ls
+
+instance RenderSchema DirectiveLocation where
+  render locations _ = pure $ mkString (pack $ show locations)
 
 instance RenderSchema (TypeDefinition a) where
   render TypeDefinition {typeName, typeMeta, typeContent} = __render typeContent
@@ -141,7 +167,10 @@ renderDeprecated meta =
   ]
 
 description :: Monad m => Maybe Meta -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-description enumMeta = ("description", opt (pure . mkString) (enumMeta >>= metaDescription))
+description enumMeta = renderDescription (enumMeta >>= metaDescription)
+
+renderDescription :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+renderDescription desc = ("description", opt (pure . mkString) desc)
 
 renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
 renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ elems arguments
@@ -156,7 +185,7 @@ instance RenderSchema (FieldDefinition cat) where
         $ [ renderFieldName fieldName,
             description fieldMeta,
             ("args", mkList <$> renderArguments fieldArgs lib),
-            ("type'", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
+            ("type", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
           ]
           <> renderDeprecated fieldMeta
 
@@ -294,7 +323,7 @@ renderName :: Monad m => TypeName -> (FieldName, Resolver QUERY e m (ResModel QU
 renderName = ("name",) . pure . mkString . readTypeName
 
 renderFieldName :: Monad m => FieldName -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-renderFieldName = ("name",) . pure . mkString . convertToJSONName
+renderFieldName (FieldName name) = ("name", pure $ mkString name)
 
 renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 renderKind = ("kind",) . pure . mkString . pack . show
@@ -321,5 +350,5 @@ createInputValueWith name meta ivType =
     "__InputValue"
     [ renderFieldName name,
       description meta,
-      ("type'", pure ivType)
+      ("type", pure ivType)
     ]

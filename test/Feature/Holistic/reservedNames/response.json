@@ -1,0 +1,16 @@
+{
+  "data": {
+    "type": "some data",
+    "query": {
+      "fields": [
+        { "name": "user", "args": [] },
+        { "name": "testUnion", "args": [] },
+        { "name": "fail1", "args": [] },
+        { "name": "fail2", "args": [] },
+        { "name": "person", "args": [] },
+        { "name": "type", "args": [{ "name": "in" }] }
+      ]
+    },
+    "input": { "inputFields": [{ "name": "data" }] }
+  }
+}

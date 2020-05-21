@@ -57,7 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     Token,
     TypeName (..),
     TypeRef (..),
-    convertToHaskellName,
     toHSWrappers,
   )
 import Data.Text
@@ -99,7 +98,7 @@ parseNegativeSign :: Parser Bool
 parseNegativeSign = (char '-' $> True <* spaceAndComments) <|> pure False
 
 parseName :: Parser FieldName
-parseName = convertToHaskellName . FieldName <$> token
+parseName = FieldName <$> token
 
 parseTypeName :: Parser TypeName
 parseTypeName = TypeName <$> token

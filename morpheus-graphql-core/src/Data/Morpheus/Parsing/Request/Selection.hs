@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Parsing.Request.Selection
   ( parseSelectionSet,
@@ -29,8 +30,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     spreadLiteral,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Arguments,
-    FieldName,
+  ( FieldName,
     Fragment (..),
     Position,
     RAW,
@@ -70,21 +70,22 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
 -- Alias(opt) Name Arguments(opt) Directives(opt) SelectionSet(opt)
 --
 parseSelectionField :: Parser (Selection RAW)
-parseSelectionField = label "SelectionField" $ do
-  selectionPosition <- getLocation
-  selectionAlias <- parseAlias
-  selectionName <- parseName
-  selectionArguments <- maybeArguments
-  -- TODO: handle Directives
-  _directives <- optionalDirectives
-  selSet selectionName selectionAlias selectionArguments <|> pure Selection {selectionContent = SelectionField, ..}
-  where
-    -----------------------------------------
-    selSet :: FieldName -> Maybe FieldName -> Arguments RAW -> Parser (Selection RAW)
-    selSet selectionName selectionAlias selectionArguments = label "body" $ do
+parseSelectionField =
+  label "SelectionField" $
+    do
       selectionPosition <- getLocation
-      selectionSet <- parseSelectionSet
-      pure Selection {selectionContent = SelectionSet selectionSet, ..}
+      selectionAlias <- parseAlias
+      selectionName <- parseName
+      selectionArguments <- maybeArguments
+      selectionDirectives <- optionalDirectives
+      selectionContent <- parseSelectionContent
+      pure Selection {..}
+
+parseSelectionContent :: Parser (SelectionContent RAW)
+parseSelectionContent =
+  label "SelectionContent" $
+    SelectionSet <$> parseSelectionSet
+      <|> pure SelectionField
 
 --
 -- Fragments: https://graphql.github.io/graphql-spec/June2018/#sec-Language.Fragments
@@ -99,9 +100,8 @@ spread :: Parser (Selection RAW)
 spread = label "FragmentSpread" $ do
   refPosition <- spreadLiteral
   refName <- parseName
-  -- TODO: handle Directives
-  _directives <- optionalDirectives
-  pure $ Spread Ref {..}
+  directives <- optionalDirectives
+  pure $ Spread directives Ref {..}
 
 -- FragmentDefinition : https://graphql.github.io/graphql-spec/June2018/#FragmentDefinition
 --
@@ -128,7 +128,6 @@ inlineFragment = label "InlineFragment" $ do
 fragmentBody :: FieldName -> Position -> Parser Fragment
 fragmentBody fragmentName fragmentPosition = label "FragmentBody" $ do
   fragmentType <- parseTypeCondition
-  -- TODO: handle Directives
-  _directives <- optionalDirectives
+  fragmentDirectives <- optionalDirectives
   fragmentSelection <- parseSelectionSet
   pure $ Fragment {..}

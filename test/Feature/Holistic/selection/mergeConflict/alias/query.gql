@@ -3,17 +3,15 @@
     bla: email
     email
     bla: email
-    address(coordinates: {latitude:"", longitude: []}) {
+    address(coordinates: { latitude: "", longitude: 1 }) {
       city
-			bla : city
+      bla: city
     }
   }
   user {
-    address(coordinates: {latitude:"", longitude: []}) {
-      street
+    address(coordinates: { latitude: "", longitude: 1 }) {
       bla: houseNumber
     }
-    city
     bla: email
   }
 }

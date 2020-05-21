@@ -63,7 +63,7 @@ exploreUnionFragments unionTags = splitFrag
     packFragment fragment = [fragment]
     splitFrag ::
       Selection RAW -> SelectionValidator [Fragment]
-    splitFrag (Spread ref) = packFragment <$> resolveSpread unionTags ref
+    splitFrag (Spread _ ref) = packFragment <$> resolveSpread unionTags ref
     splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
     splitFrag Selection {selectionName, selectionPosition} = do
       typeName <- askScopeTypeName

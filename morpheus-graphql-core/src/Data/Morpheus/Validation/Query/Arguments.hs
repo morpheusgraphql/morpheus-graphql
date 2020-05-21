@@ -3,7 +3,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Validation.Query.Arguments
-  ( validateArguments,
+  ( validateDirectiveArguments,
+    validateFieldArguments,
   )
 where
 
@@ -17,6 +18,8 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentDefinition,
     Arguments,
     ArgumentsDefinition (..),
+    DirectiveDefinition,
+    DirectiveDefinition (..),
     FieldDefinition (..),
     OUT,
     ObjectEntry (..),
@@ -107,11 +110,11 @@ validateArgument
                 (ObjectEntry fieldName value)
             pure Argument {argumentValue, ..}
 
-validateArguments ::
+validateFieldArguments ::
   FieldDefinition OUT ->
   Arguments RAW ->
   SelectionValidator (Arguments VALID)
-validateArguments
+validateFieldArguments
   fieldDef@FieldDefinition {fieldArgs}
   rawArgs =
     do
@@ -125,3 +128,22 @@ validateArguments
       -------------------------------------------------
       checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
       checkUnknown = (`selectKnown` fieldDef)
+
+validateDirectiveArguments ::
+  DirectiveDefinition ->
+  Arguments RAW ->
+  SelectionValidator (Arguments VALID)
+validateDirectiveArguments
+  directiveDef@DirectiveDefinition {directiveDefinitionArgs}
+  rawArgs =
+    do
+      args <- resolveArgumentVariables rawArgs
+      traverse_ checkUnknown (elems args)
+      traverse (validateArgument args) argsDef
+    where
+      argsDef = case directiveDefinitionArgs of
+        (ArgumentsDefinition _ argsD) -> argsD
+        NoArguments -> empty
+      -------------------------------------------------
+      checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
+      checkUnknown = (`selectKnown` directiveDef)
