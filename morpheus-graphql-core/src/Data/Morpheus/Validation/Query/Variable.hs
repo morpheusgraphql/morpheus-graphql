@@ -90,7 +90,7 @@ allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
     ---------------------------------------
     searchRefs :: Selection RAW -> BaseValidator [Ref]
     searchRefs Selection {selectionArguments, selectionDirectives, selectionContent} = do
-      let directiveRefs = concat $ traverse exploreRefs selectionDirectives
+      let directiveRefs = concatMap exploreRefs selectionDirectives
       contentRefs <- exploreSelectionContent selectionContent
       pure $ directiveRefs <> contentRefs <> concatMap exploreRefs selectionArguments
     searchRefs (InlineFragment Fragment {fragmentSelection}) =
