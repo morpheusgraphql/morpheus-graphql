@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f0f228cc43ae292e8391f706826e1d5bbc37a1a860d64f2d277709422599bda2
+-- hash: 985ceac35e7274e8ba1c81f6aacbf9fea79efacec5a303d92fa891c373ddce1f
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -87,6 +87,7 @@ data-files:
     test/Feature/Holistic/selection/directives/default/requiredArgument/query.gql
     test/Feature/Holistic/selection/directives/default/resolve/query.gql
     test/Feature/Holistic/selection/directives/default/resolve_and_merge/query.gql
+    test/Feature/Holistic/selection/directives/default/withMerge/query.gql
     test/Feature/Holistic/selection/directives/default/withVariable/query.gql
     test/Feature/Holistic/selection/directives/default/wrongArgumentType/query.gql
     test/Feature/Holistic/selection/hasNoSubFields/query.gql
@@ -231,6 +232,7 @@ data-files:
     test/Feature/Holistic/selection/directives/default/requiredArgument/response.json
     test/Feature/Holistic/selection/directives/default/resolve/response.json
     test/Feature/Holistic/selection/directives/default/resolve_and_merge/response.json
+    test/Feature/Holistic/selection/directives/default/withMerge/response.json
     test/Feature/Holistic/selection/directives/default/withVariable/response.json
     test/Feature/Holistic/selection/directives/default/wrongArgumentType/response.json
     test/Feature/Holistic/selection/hasNoSubFields/response.json
