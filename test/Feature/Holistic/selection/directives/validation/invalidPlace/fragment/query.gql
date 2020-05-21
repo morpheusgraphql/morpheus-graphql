@@ -1,9 +1,0 @@
-query bla($x: Boolean! = false) {
-  user {
-    ...UserName
-  }
-}
-
-fragment UserName on User @deprecated @include(if: $y) @skip(if: $x) {
-  name
-}

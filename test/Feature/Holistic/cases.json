@@ -316,7 +316,7 @@
     "description": "directive on invalid place must be rejected"
   },
   {
-    "path": "selection/directives/validation/invalidPlace/fragment",
+    "path": "selection/directives/validation/invalidPlace/fragmentSpread",
     "description": "directive on invalid place must be rejected"
   },
   {

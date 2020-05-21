@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Directive \"deprecated\" may not to be used on INLINE_FRAGMENT",
+      "message": "Directive \"deprecated\" may not to be used on FRAGMENT_SPREAD",
       "locations": [{ "line": 3, "column": 17 }]
     }
   ]

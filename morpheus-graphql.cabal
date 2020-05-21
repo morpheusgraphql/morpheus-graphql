@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d991f2bcdc7da4c408b49197e2cd9f86fcc4537298227cd2fbbe3b1dc3707f32
+-- hash: 180bc77df9800b99a8f34916322a9ff72d9e4f1aad5e4bdbab0d01a316870be5
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -92,7 +92,7 @@ data-files:
     test/Feature/Holistic/selection/directives/default/withVariable/query.gql
     test/Feature/Holistic/selection/directives/default/wrongArgumentType/query.gql
     test/Feature/Holistic/selection/directives/validation/invalidPlace/field/query.gql
-    test/Feature/Holistic/selection/directives/validation/invalidPlace/fragment/query.gql
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/fragmentSpread/query.gql
     test/Feature/Holistic/selection/directives/validation/invalidPlace/inlineFragment/query.gql
     test/Feature/Holistic/selection/directives/validation/invalidPlace/mutation/query.gql
     test/Feature/Holistic/selection/directives/validation/invalidPlace/query/query.gql
@@ -244,7 +244,7 @@ data-files:
     test/Feature/Holistic/selection/directives/default/withVariable/response.json
     test/Feature/Holistic/selection/directives/default/wrongArgumentType/response.json
     test/Feature/Holistic/selection/directives/validation/invalidPlace/field/response.json
-    test/Feature/Holistic/selection/directives/validation/invalidPlace/fragment/response.json
+    test/Feature/Holistic/selection/directives/validation/invalidPlace/fragmentSpread/response.json
     test/Feature/Holistic/selection/directives/validation/invalidPlace/inlineFragment/response.json
     test/Feature/Holistic/selection/directives/validation/invalidPlace/mutation/response.json
     test/Feature/Holistic/selection/directives/validation/invalidPlace/query/response.json
