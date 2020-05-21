@@ -67,6 +67,7 @@ import Data.Morpheus.Types.Internal.Validation
     askFieldType,
     askSchema,
     selectKnown,
+    withDirective,
     withScope,
   )
 import Data.Morpheus.Validation.Query.Arguments
@@ -142,10 +143,11 @@ validateOperation
           }
 
 validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
-validateDirective directiveDefs directive@Directive {directiveArgs, ..} = do
-  directiveDef <- selectKnown directive directiveDefs
-  args <- validateDirectiveArguments directiveDef directiveArgs
-  pure Directive {directiveArgs = args, ..}
+validateDirective directiveDefs directive@Directive {directiveArgs, ..} =
+  withDirective directive $ do
+    directiveDef <- selectKnown directive directiveDefs
+    args <- validateDirectiveArguments directiveDef directiveArgs
+    pure Directive {directiveArgs = args, ..}
 
 validateDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
 validateDirectives rawDirectives = do

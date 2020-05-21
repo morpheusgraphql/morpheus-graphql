@@ -35,6 +35,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     Target (..),
     Prop (..),
     Resolution,
+    ScopeKind (..),
   )
 where
 
@@ -101,13 +102,19 @@ renderSource (SourceArgument Argument {argumentName}) =
 renderSource (SourceVariable Variable {variableName}) =
   "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
 
+data ScopeKind
+  = DIRECTIVE
+  | SELECTION
+  deriving (Show)
+
 data Context = Context
   { schema :: Schema,
     fragments :: Fragments,
     scopePosition :: Position,
     scopeTypeName :: TypeName,
     operationName :: Maybe FieldName,
-    scopeSelectionName :: FieldName
+    scopeSelectionName :: FieldName,
+    scopeKind :: ScopeKind
   }
   deriving (Show)
 

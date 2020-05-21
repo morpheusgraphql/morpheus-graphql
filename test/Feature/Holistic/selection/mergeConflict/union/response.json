@@ -1,16 +1,11 @@
 {
   "errors": [
     {
-      "message": "\"name\" and \"email\" are different fields. Use different aliases on the fields to fetch both if this was intentional.",
+      "message": "Fields \"testUnion\" conflict because \"name\" and \"email\" are different fields. Use different aliases on the fields to fetch both if this was intentional.",
       "locations": [
-        {
-          "line": 4,
-          "column": 7
-        },
-        {
-          "line": 14,
-          "column": 7
-        }
+        { "line": 2, "column": 3 },
+        { "line": 4, "column": 7 },
+        { "line": 14, "column": 7 }
       ]
     }
   ]

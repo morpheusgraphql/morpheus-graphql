@@ -290,5 +290,9 @@
   {
     "path": "selection/directives/default/withVariable",
     "description": "api allowes use of variable inside directives"
+  },
+  {
+    "path": "selection/directives/default/withMerge",
+    "description": "@skip and @include are evaluated before selection is merged"
   }
 ]
