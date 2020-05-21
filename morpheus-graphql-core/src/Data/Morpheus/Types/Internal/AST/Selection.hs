@@ -251,11 +251,11 @@ instance
                 { message = "they have differing arguments. " <> useDufferentAliases,
                   locations = [pos1, pos2]
                 }
-  merge path old current =
+  merge path _ _ =
     failure $ mergeConflict path $
       GQLError
-        { message = "can't merge. " <> useDufferentAliases,
-          locations = [] --TODO: map selectionPosition [old, current]
+        { message = "INTERNAL: can't merge. " <> useDufferentAliases,
+          locations = []
         }
 
 deriving instance Show (Selection a)
