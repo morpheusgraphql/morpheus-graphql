@@ -192,7 +192,7 @@ useDufferentAliases =
 
 -- TODO: validate directives
 instance Merge (Directives s) where
-  merge path x y = pure (x <> y)
+  merge path old current = pure (old <> current)
 
 instance
   Merge (SelectionSet a) =>

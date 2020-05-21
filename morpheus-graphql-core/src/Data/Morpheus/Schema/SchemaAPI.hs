@@ -17,7 +17,6 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     selectOr,
-    singleton,
   )
 import Data.Morpheus.Rendering.RenderIntrospection
   ( createObjectType,
@@ -31,18 +30,13 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
-    ArgumentsDefinition (..),
-    DirectiveDefinition (..),
-    DirectiveLocation (..),
     OUT,
     QUERY,
     ScalarValue (..),
     Schema (..),
     TypeDefinition (..),
     TypeName (..),
-    TypeWrapper (..),
     Value (..),
-    createField,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResModel,
