@@ -183,11 +183,9 @@ data Selection (s :: Stage) where
   InlineFragment :: Fragment -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
 
-instance KeyOf (Selection VALID) where
+instance KeyOf (Selection s) where
   keyOf (Selection selection) = keyOf selection
-
-instance KeyOf (Selection RAW) where
-  keyOf = const ""
+  keyOf _ = ""
 
 useDufferentAliases :: Message
 useDufferentAliases =
