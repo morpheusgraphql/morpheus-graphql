@@ -8,6 +8,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (..),
@@ -104,9 +105,12 @@ type Fragments = OrderedMap FieldName Fragment
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
   SelectionSet :: SelectionSet s -> SelectionContent s
-  UnionSelection :: UnionSelection -> SelectionContent VALID
+  UnionSelection :: UnionSelection VALID -> SelectionContent VALID
 
-instance Merge (SelectionContent s) where
+instance
+  Merge (SelectionSet s) =>
+  Merge (SelectionContent s)
+  where
   merge path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> merge path s1 s2
   merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
   merge path oldC currC
@@ -157,9 +161,9 @@ instance KeyOf UnionTag where
   type KEY UnionTag = TypeName
   keyOf = unionTagName
 
-type UnionSelection = MergeSet UnionTag
+type UnionSelection (s :: Stage) = MergeSet s UnionTag
 
-type SelectionSet s = MergeSet (Selection s)
+type SelectionSet (s :: Stage) = MergeSet s (Selection s)
 
 data SelectionDefinition (s :: Stage) = SelectionDefinition
   { selectionName :: FieldName,
@@ -179,11 +183,11 @@ data Selection (s :: Stage) where
   InlineFragment :: Fragment -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
 
-instance KeyOf (Selection s) where
+instance KeyOf (Selection VALID) where
   keyOf (Selection selection) = keyOf selection
-  -- keyOf (SelectionConditions selection _) = keyOf selection
-  keyOf InlineFragment {} = ""
-  keyOf Spread {} = ""
+
+instance KeyOf (Selection RAW) where
+  keyOf = const ""
 
 useDufferentAliases :: Message
 useDufferentAliases =
@@ -194,7 +198,10 @@ useDufferentAliases =
 instance Merge (Directives s) where
   merge path x y = pure (x <> y)
 
-instance Merge (Selection a) where
+instance
+  Merge (SelectionSet a) =>
+  Merge (Selection a)
+  where
   merge path (Selection x) (Selection y) = Selection <$> merge path x y
   merge path old current =
     failure $ mergeConflict path $
@@ -203,7 +210,10 @@ instance Merge (Selection a) where
           locations = [] --TODO: map selectionPosition [old, current]
         }
 
-instance Merge (SelectionDefinition a) where
+instance
+  Merge (SelectionSet a) =>
+  Merge (SelectionDefinition a)
+  where
   merge
     path
     old@SelectionDefinition {selectionPosition = pos1}
