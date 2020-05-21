@@ -22,11 +22,11 @@
     },
     {
       "message": "Cannot query field \"myUnion\" on type \"User\".",
-      "locations": [{ "line": 26, "column": 18 }]
+      "locations": [{ "line": 26, "column": 5 }]
     },
     {
       "message": "Cannot query field \"myUnion\" on type \"User\".",
-      "locations": [{ "line": 32, "column": 18 }]
+      "locations": [{ "line": 32, "column": 5 }]
     }
   ]
 }
