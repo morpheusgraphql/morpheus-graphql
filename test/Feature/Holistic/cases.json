@@ -296,6 +296,10 @@
     "description": "@skip and @include are evaluated before selection is merged"
   },
   {
+    "path": "selection/directives/default/variablesOnFragment",
+    "description": "@skip and @include are evaluated before selection is merged"
+  },
+  {
     "path": "selection/directives/validation/invalidPlace/query",
     "description": "directive on invalid place must be rejected"
   },
@@ -309,6 +313,14 @@
   },
   {
     "path": "selection/directives/validation/invalidPlace/field",
+    "description": "directive on invalid place must be rejected"
+  },
+  {
+    "path": "selection/directives/validation/invalidPlace/fragment",
+    "description": "directive on invalid place must be rejected"
+  },
+  {
+    "path": "selection/directives/validation/invalidPlace/inlineFragment",
     "description": "directive on invalid place must be rejected"
   }
 ]

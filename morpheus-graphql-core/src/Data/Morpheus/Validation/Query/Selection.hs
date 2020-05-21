@@ -25,12 +25,9 @@ import Data.Morpheus.Internal.Utils
     keyOf,
     singleton,
   )
-import Data.Morpheus.Schema.Directives (defaultDirectives)
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
-    Directive (..),
-    DirectiveDefinition (..),
-    DirectiveLocation (..),
+    DirectiveLocation (FIELD, FRAGMENT_SPREAD, INLINE_FRAGMENT, MUTATION, QUERY, SUBSCRIPTION),
     Directives,
     FieldDefinition,
     FieldName,
@@ -62,16 +59,14 @@ import Data.Morpheus.Types.Internal.Validation
     askFieldType,
     askSchema,
     selectKnown,
-    withDirective,
     withScope,
   )
 import Data.Morpheus.Validation.Internal.Directive
-  ( shouldSkipSelection,
+  ( shouldIncludeSelection,
     validateDirectives,
   )
 import Data.Morpheus.Validation.Query.Arguments
-  ( validateDirectiveArguments,
-    validateFieldArguments,
+  ( validateFieldArguments,
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
@@ -133,7 +128,6 @@ validateOperation
       typeDef <- getOperationObject rawOperation
       selection <- validateSelectionSet typeDef operationSelection
       singleTopLevelSelection rawOperation selection
-      -- TODO:  MUTATION | SUBSCRIPTION
       directives <-
         validateDirectives
           (toDirectiveLocation operationType)
@@ -153,11 +147,19 @@ toDirectiveLocation Subscription = SUBSCRIPTION
 toDirectiveLocation Mutation = MUTATION
 toDirectiveLocation Query = QUERY
 
-processFieldDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
-processFieldDirectives rawDirectives = do
-  directives <- validateDirectives FIELD rawDirectives
-  skip <- shouldSkipSelection directives
-  pure (skip, directives)
+processSelectionDirectives ::
+  DirectiveLocation ->
+  Directives RAW ->
+  (Directives VALID -> SelectionValidator (SelectionSet VALID)) ->
+  SelectionValidator (SelectionSet VALID)
+processSelectionDirectives location rawDirectives sel = do
+  directives <- validateDirectives location rawDirectives
+  include <- shouldIncludeSelection directives
+  selection <- sel directives
+  pure $
+    if include
+      then selection
+      else empty
 
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
@@ -177,13 +179,10 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
         withScope
           typeName
           currentSelectionRef
-          $ do
-            (include, directives) <- processFieldDirectives selectionDirectives
-            selection <- validateSelectionContent directives selectionContent
-            pure $
-              if include
-                then selection
-                else empty
+          $ processSelectionDirectives
+            FIELD
+            selectionDirectives
+            (`validateSelectionContent` selectionContent)
         where
           currentSelectionRef = Ref selectionName selectionPosition
           commonValidation :: SelectionValidator (TypeDefinition OUT, Arguments VALID)
@@ -259,11 +258,23 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                   hasNoSubfields
                     (Ref selectionName selectionPosition)
                     typename
-    validateSelection (Spread _ ref) =
-      resolveSpread [typeName] ref
-        >>= validateFragment
-    validateSelection (InlineFragment fragment') =
-      castFragmentType Nothing (fragmentPosition fragment') [typeName] fragment'
-        >>= validateFragment
+    validateSelection (Spread dirs ref) =
+      processSelectionDirectives FRAGMENT_SPREAD dirs
+        $ const
+        -- TODO: add directives to selection
+        $ resolveSpread [typeName] ref
+          >>= validateFragment
+    validateSelection
+      ( InlineFragment
+          fragment@Fragment
+            { fragmentDirectives,
+              fragmentPosition
+            }
+        ) =
+        processSelectionDirectives INLINE_FRAGMENT fragmentDirectives
+          $ const
+          -- TODO: add directives to selection
+          $ castFragmentType Nothing fragmentPosition [typeName] fragment
+            >>= validateFragment
     --------------------------------------------------------------------------------
     validateFragment Fragment {fragmentSelection} = validateSelectionSet dataType fragmentSelection

@@ -1,0 +1,16 @@
+query TestFragments($x: Boolean! = false, $y: Boolean! = false) {
+  user {
+    name1: name
+    ...UserName @skip(if: $x)
+  }
+
+  user2: user {
+    ... on User @include(if: $y) {
+      name
+    }
+  }
+}
+
+fragment UserName on User {
+  name
+}

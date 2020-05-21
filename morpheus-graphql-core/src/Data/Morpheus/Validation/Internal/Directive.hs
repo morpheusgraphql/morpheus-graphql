@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Validation.Internal.Directive
-  ( shouldSkipSelection,
+  ( shouldIncludeSelection,
     validateDirectives,
   )
 where
@@ -75,8 +75,8 @@ validateDirectives location = traverse (validateDirective location defaultDirect
 directiveFulfilled :: Bool -> FieldName -> Directives s -> SelectionValidator Bool
 directiveFulfilled target = selectOr (pure True) (argumentIf target)
 
-shouldSkipSelection :: Directives VALID -> SelectionValidator Bool
-shouldSkipSelection directives = do
+shouldIncludeSelection :: Directives VALID -> SelectionValidator Bool
+shouldIncludeSelection directives = do
   dontSkip <- directiveFulfilled False "skip" directives
   include <- directiveFulfilled True "include" directives
   pure (dontSkip && include)
