@@ -15,7 +15,7 @@ module Data.Morpheus.Validation.Internal.Directive
 where
 
 -- MORPHEUS
-import Data.Morpheus.Error (globalErrorMessage)
+import Data.Morpheus.Error (errorMessage, globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectBy,
@@ -60,10 +60,14 @@ validateDirectiveLocation ::
   SelectionValidator ()
 validateDirectiveLocation
   loc
-  Directive {directiveName}
+  Directive {directiveName, directivePosition}
   DirectiveDefinition {directiveDefinitionLocations}
     | loc `elem` directiveDefinitionLocations = pure ()
-    | otherwise = failure ("Directive " <> msg directiveName <> " may not to be used on" <> msg loc)
+    | otherwise =
+      failure $
+        errorMessage
+          directivePosition
+          ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
 
 validateDirectives :: DirectiveLocation -> Directives RAW -> SelectionValidator (Directives VALID)
 validateDirectives location = traverse (validateDirective location defaultDirectives)

@@ -153,16 +153,9 @@ toDirectiveLocation Subscription = SUBSCRIPTION
 toDirectiveLocation Mutation = MUTATION
 toDirectiveLocation Query = QUERY
 
-validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
-validateDirective directiveDefs directive@Directive {directiveArgs, ..} =
-  withDirective directive $ do
-    directiveDef <- selectKnown directive directiveDefs
-    args <- validateDirectiveArguments directiveDef directiveArgs
-    pure Directive {directiveArgs = args, ..}
-
 processFieldDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
 processFieldDirectives rawDirectives = do
-  directives <- traverse (validateDirective defaultDirectives) rawDirectives
+  directives <- validateDirectives FIELD rawDirectives
   skip <- shouldSkipSelection directives
   pure (skip, directives)
 

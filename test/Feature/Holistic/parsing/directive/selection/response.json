@@ -1,6 +1,10 @@
 {
   "errors": [
     {
+      "message": "Directive \"deprecated\" may not to be used on FIELD",
+      "locations": [{ "line": 3, "column": 27 }]
+    },
+    {
       "message": "Unknown Directive \"do\".",
       "locations": [{ "line": 3, "column": 39 }]
     },
