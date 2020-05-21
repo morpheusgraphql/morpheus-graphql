@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "message": "Directive \"deprecated\" may not to be used on QUERY",
+      "locations": [{ "line": 2, "column": 3 }]
+    }
+  ]
+}

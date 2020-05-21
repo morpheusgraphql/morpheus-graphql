@@ -1,0 +1,16 @@
+{
+  "errors": [
+    {
+      "message": "Directive \"deprecated\" may not to be used on QUERY",
+      "locations": [{ "line": 1, "column": 17 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on QUERY",
+      "locations": [{ "line": 1, "column": 29 }]
+    },
+    {
+      "message": "Directive \"include\" may not to be used on QUERY",
+      "locations": [{ "line": 1, "column": 45 }]
+    }
+  ]
+}
