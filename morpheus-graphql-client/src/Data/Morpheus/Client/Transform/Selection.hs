@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     Selection (..),
     SelectionContent (..),
-    SelectionDefinition (..),
     SelectionSet,
     TypeContent (..),
     TypeD (..),
@@ -152,11 +151,11 @@ subTypesBySelection ::
   TypeDefinition ANY ->
   Selection VALID ->
   Converter ([TypeD], [TypeName])
-subTypesBySelection _ dType (Selection SelectionDefinition {selectionContent = SelectionField}) =
+subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
-subTypesBySelection path dType (Selection SelectionDefinition {selectionContent = SelectionSet selectionSet}) =
+subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
   genRecordType path (typeFrom [] dType) dType selectionSet
-subTypesBySelection path dType (Selection SelectionDefinition {selectionContent = UnionSelection unionSelections}) =
+subTypesBySelection path dType Selection {selectionContent = UnionSelection unionSelections} =
   do
     (tCons, subTypes, requests) <-
       unzip3 <$> traverse getUnionType (elems unionSelections)
@@ -184,12 +183,10 @@ getFieldType ::
 getFieldType
   path
   TypeDefinition {typeContent = DataObject {objectFields}, typeName}
-  ( Selection
-      SelectionDefinition
-        { selectionName,
-          selectionPosition
-        }
-    ) =
+  Selection
+    { selectionName,
+      selectionPosition
+    } =
     selectBy selError selectionName objectFields >>= processDeprecation
     where
       selError = compileError $ "cant find field " <> msg (show objectFields)

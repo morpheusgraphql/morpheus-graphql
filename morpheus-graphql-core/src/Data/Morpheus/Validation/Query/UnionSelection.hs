@@ -32,7 +32,6 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Selection (..),
     SelectionContent (..),
-    SelectionDefinition (..),
     SelectionSet,
     SelectionSet,
     TypeName,
@@ -65,8 +64,8 @@ exploreUnionFragments unionTags = splitFrag
     splitFrag ::
       Selection RAW -> SelectionValidator [Fragment]
     splitFrag (Spread _ ref) = packFragment <$> resolveSpread unionTags ref
-    splitFrag (Selection SelectionDefinition {selectionName = "__typename", selectionContent = SelectionField}) = pure []
-    splitFrag (Selection SelectionDefinition {selectionName, selectionPosition}) = do
+    splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
+    splitFrag Selection {selectionName, selectionPosition} = do
       typeName <- askScopeTypeName
       failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
     splitFrag (InlineFragment fragment) =

@@ -48,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     ScalarValue (..),
     Selection (..),
     SelectionContent (..),
-    SelectionDefinition (..),
     SelectionSet,
     TRUE,
     TypeContent (..),
@@ -109,7 +108,7 @@ singleTopLevelSelection Operation {operationType = Subscription, operationName} 
 singleTopLevelSelection _ _ = pure ()
 
 singleTopLevelSelectionError :: Maybe FieldName -> Selection VALID -> GQLError
-singleTopLevelSelectionError name (Selection SelectionDefinition {selectionPosition}) =
+singleTopLevelSelectionError name Selection {selectionPosition} =
   GQLError
     { message =
         subscriptionName
@@ -179,15 +178,13 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     validateSelection :: Selection RAW -> SelectionValidator (SelectionSet VALID)
     validateSelection
-      ( Selection
-          sel@SelectionDefinition
-            { selectionName,
-              selectionArguments,
-              selectionContent,
-              selectionPosition,
-              selectionDirectives
-            }
-        ) =
+      sel@Selection
+        { selectionName,
+          selectionArguments,
+          selectionContent,
+          selectionPosition,
+          selectionDirectives
+        } =
         withScope
           typeName
           currentSelectionRef
@@ -215,7 +212,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
           validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
           validateSelectionContent directives SelectionField
             | null selectionArguments && selectionName == "__typename" =
-              pure $ singleton $ Selection $
+              pure $ singleton $
                 sel
                   { selectionArguments = empty,
                     selectionDirectives = directives,
@@ -224,7 +221,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
             | otherwise = do
               (datatype, validArgs) <- commonValidation
               isLeaf datatype
-              pure $ singleton $ Selection $
+              pure $ singleton $
                 sel
                   { selectionArguments = validArgs,
                     selectionDirectives = directives,
@@ -243,7 +240,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
             do
               (TypeDefinition {typeName = name, typeContent}, validArgs) <- commonValidation
               selContent <- withScope name currentSelectionRef $ validateByTypeContent name typeContent
-              pure $ singleton $ Selection $
+              pure $ singleton $
                 sel
                   { selectionArguments = validArgs,
                     selectionDirectives = directives,

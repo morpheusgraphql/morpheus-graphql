@@ -37,7 +37,6 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Selection (..),
     SelectionContent (..),
-    SelectionDefinition (..),
     SelectionSet,
   )
 import Text.Megaparsec
@@ -80,7 +79,7 @@ parseSelectionField =
       selectionArguments <- maybeArguments
       selectionDirectives <- optionalDirectives
       selectionContent <- parseSelectionContent
-      pure $ Selection (SelectionDefinition {..} :: SelectionDefinition RAW)
+      pure Selection {..}
 
 parseSelectionContent :: Parser (SelectionContent RAW)
 parseSelectionContent =

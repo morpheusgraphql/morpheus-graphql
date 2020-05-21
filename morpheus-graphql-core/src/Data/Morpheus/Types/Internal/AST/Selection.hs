@@ -24,7 +24,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
     DefaultValue,
     getOperationName,
     getOperationDataType,
-    SelectionDefinition (..),
   )
 where
 
@@ -165,26 +164,25 @@ type UnionSelection (s :: Stage) = MergeSet s UnionTag
 
 type SelectionSet (s :: Stage) = MergeSet s (Selection s)
 
-data SelectionDefinition (s :: Stage) = SelectionDefinition
-  { selectionName :: FieldName,
-    selectionAlias :: Maybe FieldName,
-    selectionPosition :: Position,
-    selectionArguments :: Arguments s,
-    selectionContent :: SelectionContent s,
-    selectionDirectives :: Directives s
-  }
-  deriving (Show, Lift, Eq)
-
-instance KeyOf (SelectionDefinition s) where
-  keyOf SelectionDefinition {selectionName, selectionAlias} = fromMaybe selectionName selectionAlias
-
 data Selection (s :: Stage) where
-  Selection :: {unSelection :: SelectionDefinition s} -> Selection s
+  Selection ::
+    { selectionName :: FieldName,
+      selectionAlias :: Maybe FieldName,
+      selectionPosition :: Position,
+      selectionArguments :: Arguments s,
+      selectionContent :: SelectionContent s,
+      selectionDirectives :: Directives s
+    } ->
+    Selection s
   InlineFragment :: Fragment -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
 
 instance KeyOf (Selection s) where
-  keyOf (Selection selection) = keyOf selection
+  keyOf
+    Selection
+      { selectionName,
+        selectionAlias
+      } = fromMaybe selectionName selectionAlias
   keyOf _ = ""
 
 useDufferentAliases :: Message
@@ -200,22 +198,10 @@ instance
   Merge (SelectionSet a) =>
   Merge (Selection a)
   where
-  merge path (Selection x) (Selection y) = Selection <$> merge path x y
-  merge path old current =
-    failure $ mergeConflict path $
-      GQLError
-        { message = "can't merge. " <> useDufferentAliases,
-          locations = [] --TODO: map selectionPosition [old, current]
-        }
-
-instance
-  Merge (SelectionSet a) =>
-  Merge (SelectionDefinition a)
-  where
   merge
     path
-    old@SelectionDefinition {selectionPosition = pos1}
-    current@SelectionDefinition {selectionPosition = pos2} =
+    old@Selection {selectionPosition = pos1}
+    current@Selection {selectionPosition = pos2} =
       do
         selectionName <- mergeName
         let currentPath = path <> [Ref selectionName pos1]
@@ -223,7 +209,7 @@ instance
         selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
         selectionDirectives <- merge currentPath (selectionDirectives old) (selectionDirectives current)
         pure $
-          SelectionDefinition
+          Selection
             { selectionAlias = mergeAlias,
               selectionPosition = pos1,
               ..
@@ -265,6 +251,12 @@ instance
                 { message = "they have differing arguments. " <> useDufferentAliases,
                   locations = [pos1, pos2]
                 }
+  merge path old current =
+    failure $ mergeConflict path $
+      GQLError
+        { message = "can't merge. " <> useDufferentAliases,
+          locations = [] --TODO: map selectionPosition [old, current]
+        }
 
 deriving instance Show (Selection a)
 

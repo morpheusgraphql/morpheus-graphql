@@ -55,7 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     Selection (..),
     SelectionContent (..),
-    SelectionDefinition (..),
     VALID,
     Value,
   )
@@ -108,7 +107,7 @@ runApi inputSchema resModel request = do
             operation,
             currentTypeName = "Root",
             currentSelection =
-              SelectionDefinition
+              Selection
                 { selectionName = "Root",
                   selectionArguments = empty,
                   selectionPosition = operationPosition operation,

@@ -6,12 +6,12 @@
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
-import Data.Morpheus.Internal.Utils (elems)
+import Data.Morpheus.Internal.Utils (elems, keyOf)
 import Data.Morpheus.Types.Internal.AST.Base (FieldName, VALID)
 import Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (..),
+    Selection (selectionContent),
     SelectionContent (SelectionField, SelectionSet),
-    SelectionDefinition (selectionContent, selectionName),
   )
 
 -- | The 'SelectionTree' instance is a simple interface for interacting
@@ -29,12 +29,12 @@ class SelectionTree nodeType where
   getName :: nodeType -> FieldName
 
 instance SelectionTree (Selection VALID) where
-  isLeaf (Selection node) = case selectionContent node of
+  isLeaf node = case selectionContent node of
     SelectionField -> True
     _ -> False
 
-  getChildrenList (Selection node) = case selectionContent node of
+  getChildrenList node = case selectionContent node of
     SelectionField -> mempty
     (SelectionSet deeperSel) -> elems deeperSel
 
-  getName = selectionName . unSelection
+  getName = keyOf
