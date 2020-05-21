@@ -1,11 +1,11 @@
 {
   "errors": [
     {
-      "message": "Directive\"@include\" argument \"if\" is required but not provided.",
+      "message": "Directive \"@include\" argument \"if\" is required but not provided.",
       "locations": [{ "line": 3, "column": 10 }]
     },
     {
-      "message": "Directive\"@skip\" argument \"if\" is required but not provided.",
+      "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
       "locations": [{ "line": 4, "column": 17 }]
     }
   ]
