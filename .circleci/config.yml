@@ -84,17 +84,17 @@ jobs:
       - restore_cache:
           name: restore cached stack
           keys:
-            - stack-vesrion-{{ checksum "stack.yaml" }}
+            - stack-vesrion-{{ checksum "stack-14.14.yaml" }}
       - restore_cache:
           name: restore cached dependencies
           keys:
-            - stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
+            - stack-dependencies-{{ checksum "stack-14.14.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
       - run:
           name: setup stack
           command: stack --no-terminal setup
       - save_cache:
           name: cache stack
-          key: stack-vesrion-{{ checksum "stack.yaml" }}
+          key: stack-vesrion-{{ checksum "stack-14.14.yaml" }}
           paths:
             - /root/.stack
       - run:
@@ -102,7 +102,7 @@ jobs:
           command: stack build --skip-ghc-check --no-terminal --test --only-dependencies
       - save_cache:
           name: cache dependencies
-          key: stack-dependencies-{{ checksum "stack.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
+          key: stack-dependencies-{{ checksum "stack-14.14.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
           paths:
             - ".stack-work"
             - "/root/.stack"
