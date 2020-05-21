@@ -306,5 +306,9 @@
   {
     "path": "selection/directives/validation/invalidPlace/subscription",
     "description": "directive on invalid place must be rejected"
+  },
+  {
+    "path": "selection/directives/validation/invalidPlace/field",
+    "description": "directive on invalid place must be rejected"
   }
 ]
