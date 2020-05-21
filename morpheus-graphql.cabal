@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e82e068bd4d9cc31a59b855a0f9ffd3c0ca580f98f818d517c5ea730f34b8437
+-- hash: c98d51df8567b3a33a0b9f3dcf93217534d9f3a1d666f1ac2ab69b5ce6cfe0b6
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -394,16 +394,16 @@ library
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql-core >=0.12.0
-    , mtl >=2.0 && <=2.3
+    , mtl >=2.0 && <=3.0
     , scientific >=0.3.6.2 && <0.4
-    , template-haskell >=2.0 && <=2.16
+    , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , transformers >=0.3.0.0 && <0.6
-    , unliftio-core >=0.0.1 && <=0.3
+    , unliftio-core >=0.0.1 && <=0.4
     , unordered-containers >=0.2.8.0 && <0.3
     , uuid >=1.0 && <=1.4
     , vector >=0.12.0.1 && <0.13
-    , websockets >=0.11.0 && <=0.13
+    , websockets >=0.11.0 && <=1.0
   default-language: Haskell2010
 
 test-suite morpheus-test
@@ -442,16 +442,16 @@ test-suite morpheus-test
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql
     , morpheus-graphql-core >=0.12.0
-    , mtl >=2.0 && <=2.3
+    , mtl >=2.0 && <=3.0
     , scientific >=0.3.6.2 && <0.4
     , tasty
     , tasty-hunit
-    , template-haskell >=2.0 && <=2.16
+    , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , transformers >=0.3.0.0 && <0.6
-    , unliftio-core >=0.0.1 && <=0.3
+    , unliftio-core >=0.0.1 && <=0.4
     , unordered-containers >=0.2.8.0 && <0.3
     , uuid >=1.0 && <=1.4
     , vector >=0.12.0.1 && <0.13
-    , websockets >=0.11.0 && <=0.13
+    , websockets >=0.11.0 && <=1.0
   default-language: Haskell2010
