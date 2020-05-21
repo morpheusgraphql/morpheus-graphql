@@ -26,6 +26,7 @@ import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Directive (..),
     DirectiveDefinition (..),
+    DirectiveLocation (..),
     Directives,
     FieldName,
     RAW,
@@ -44,15 +45,15 @@ import Data.Morpheus.Validation.Query.Arguments
   )
 import Data.Semigroup ((<>))
 
-validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
-validateDirective directiveDefs directive@Directive {directiveArgs, ..} =
+validateDirective :: DirectiveLocation -> [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
+validateDirective location directiveDefs directive@Directive {directiveArgs, ..} =
   withDirective directive $ do
     directiveDef <- selectKnown directive directiveDefs
     args <- validateDirectiveArguments directiveDef directiveArgs
     pure Directive {directiveArgs = args, ..}
 
-validateDirectives :: Directives RAW -> SelectionValidator (Directives VALID)
-validateDirectives = traverse (validateDirective defaultDirectives)
+validateDirectives :: DirectiveLocation -> Directives RAW -> SelectionValidator (Directives VALID)
+validateDirectives location = traverse (validateDirective location defaultDirectives)
 
 directiveFulfilled :: Bool -> FieldName -> Directives s -> SelectionValidator Bool
 directiveFulfilled target = selectOr (pure True) (argumentIf target)

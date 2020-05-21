@@ -30,6 +30,7 @@ import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     Directive (..),
     DirectiveDefinition (..),
+    DirectiveLocation (..),
     Directives,
     FieldDefinition,
     FieldName,
@@ -132,7 +133,11 @@ validateOperation
       typeDef <- getOperationObject rawOperation
       selection <- validateSelectionSet typeDef operationSelection
       singleTopLevelSelection rawOperation selection
-      directives <- validateDirectives operationDirectives
+      -- TODO:  MUTATION | SUBSCRIPTION
+      directives <-
+        validateDirectives
+          (toDirectiveLocation operationType)
+          operationDirectives
       pure $
         Operation
           { operationName,
@@ -142,6 +147,11 @@ validateOperation
             operationDirectives = directives,
             ..
           }
+
+toDirectiveLocation :: OperationType -> DirectiveLocation
+toDirectiveLocation Subscription = SUBSCRIPTION
+toDirectiveLocation Mutation = MUTATION
+toDirectiveLocation Query = QUERY
 
 validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
 validateDirective directiveDefs directive@Directive {directiveArgs, ..} =
