@@ -112,6 +112,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     FieldName,
     FieldName (..),
     GQLError (..),
+    Msg (..),
     Position,
     Stage,
     TRUE,
@@ -232,7 +233,10 @@ data DirectiveLocation
   | ENUM_VALUE
   | INPUT_OBJECT
   | INPUT_FIELD_DEFINITION
-  deriving (Show, Lift)
+  deriving (Show, Eq, Lift)
+
+instance Msg DirectiveLocation where
+  msg = msg . show
 
 lookupDeprecated :: Meta -> Maybe (Directive VALID)
 lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives

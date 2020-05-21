@@ -50,7 +50,20 @@ validateDirective location directiveDefs directive@Directive {directiveArgs, ..}
   withDirective directive $ do
     directiveDef <- selectKnown directive directiveDefs
     args <- validateDirectiveArguments directiveDef directiveArgs
+    validateDirectiveLocation location directive directiveDef
     pure Directive {directiveArgs = args, ..}
+
+validateDirectiveLocation ::
+  DirectiveLocation ->
+  Directive s ->
+  DirectiveDefinition ->
+  SelectionValidator ()
+validateDirectiveLocation
+  loc
+  Directive {directiveName}
+  DirectiveDefinition {directiveDefinitionLocations}
+    | loc `elem` directiveDefinitionLocations = pure ()
+    | otherwise = failure ("Directive " <> msg directiveName <> " may not to be used on" <> msg loc)
 
 validateDirectives :: DirectiveLocation -> Directives RAW -> SelectionValidator (Directives VALID)
 validateDirectives location = traverse (validateDirective location defaultDirectives)
