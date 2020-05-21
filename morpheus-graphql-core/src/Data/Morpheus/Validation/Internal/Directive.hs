@@ -1,0 +1,75 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
+
+module Data.Morpheus.Validation.Internal.Directive
+  ( shouldSkipSelection,
+    validateDirectives,
+  )
+where
+
+-- MORPHEUS
+import Data.Morpheus.Error (globalErrorMessage)
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    selectBy,
+    selectOr,
+  )
+import Data.Morpheus.Schema.Directives (defaultDirectives)
+import Data.Morpheus.Types.Internal.AST
+  ( Argument (..),
+    Directive (..),
+    DirectiveDefinition (..),
+    Directives,
+    FieldName,
+    RAW,
+    ScalarValue (..),
+    VALID,
+    Value (..),
+    msg,
+  )
+import Data.Morpheus.Types.Internal.Validation
+  ( SelectionValidator,
+    selectKnown,
+    withDirective,
+  )
+import Data.Morpheus.Validation.Query.Arguments
+  ( validateDirectiveArguments,
+  )
+import Data.Semigroup ((<>))
+
+validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
+validateDirective directiveDefs directive@Directive {directiveArgs, ..} =
+  withDirective directive $ do
+    directiveDef <- selectKnown directive directiveDefs
+    args <- validateDirectiveArguments directiveDef directiveArgs
+    pure Directive {directiveArgs = args, ..}
+
+validateDirectives :: Directives RAW -> SelectionValidator (Directives VALID)
+validateDirectives = traverse (validateDirective defaultDirectives)
+
+directiveFulfilled :: Bool -> FieldName -> Directives s -> SelectionValidator Bool
+directiveFulfilled target = selectOr (pure True) (argumentIf target)
+
+shouldSkipSelection :: Directives VALID -> SelectionValidator Bool
+shouldSkipSelection directives = do
+  dontSkip <- directiveFulfilled False "skip" directives
+  include <- directiveFulfilled True "include" directives
+  pure (dontSkip && include)
+
+argumentIf :: Bool -> Directive s -> SelectionValidator Bool
+argumentIf target Directive {directiveName, directiveArgs} =
+  selectBy err "if" directiveArgs
+    >>= assertArgument target
+  where
+    err = globalErrorMessage $ "Directive " <> msg ("@" <> directiveName) <> " argument \"if\" of type \"Boolean!\" is required but not provided."
+
+assertArgument :: Bool -> Argument s -> SelectionValidator Bool
+assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
+assertArgument _ Argument {argumentValue} = failure $ "Expected type Boolean!, found " <> msg argumentValue <> "."

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c5e01bd599750c5119f756849804a1ed33ef442c27821d45de47ca32035f8672
+-- hash: c7c5117b4e595a6e3e329fefdd2b1fe469ae6b558d72a979beb9a4031362b2d4
 
 name:           morpheus-graphql-core
 version:        0.12.0
@@ -90,6 +90,7 @@ library
       Data.Morpheus.Types.Internal.Validation.Validator
       Data.Morpheus.Types.SelectionTree
       Data.Morpheus.Validation.Document.Validation
+      Data.Morpheus.Validation.Internal.Directive
       Data.Morpheus.Validation.Internal.Value
       Data.Morpheus.Validation.Query.Arguments
       Data.Morpheus.Validation.Query.Fragment

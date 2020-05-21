@@ -14,7 +14,6 @@ module Data.Morpheus.Validation.Query.Selection
 where
 
 -- MORPHEUS
-import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
@@ -24,14 +23,11 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     keyOf,
-    selectBy,
-    selectOr,
     singleton,
   )
 import Data.Morpheus.Schema.Directives (defaultDirectives)
 import Data.Morpheus.Types.Internal.AST
-  ( Argument (..),
-    Arguments,
+  ( Arguments,
     Directive (..),
     DirectiveDefinition (..),
     Directives,
@@ -45,7 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     OperationType (..),
     RAW,
     Ref (..),
-    ScalarValue (..),
     Selection (..),
     SelectionContent (..),
     SelectionSet,
@@ -54,7 +49,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     VALID,
-    Value (..),
     getOperationDataType,
     isEntNode,
     msg,
@@ -69,6 +63,10 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
     withDirective,
     withScope,
+  )
+import Data.Morpheus.Validation.Internal.Directive
+  ( shouldSkipSelection,
+    validateDirectives,
   )
 import Data.Morpheus.Validation.Query.Arguments
   ( validateDirectiveArguments,
@@ -134,12 +132,15 @@ validateOperation
       typeDef <- getOperationObject rawOperation
       selection <- validateSelectionSet typeDef operationSelection
       singleTopLevelSelection rawOperation selection
+      directives <- validateDirectives operationDirectives
       pure $
         Operation
           { operationName,
             operationType,
             operationArguments = empty,
-            operationSelection = selection
+            operationSelection = selection,
+            operationDirectives = directives,
+            ..
           }
 
 validateDirective :: [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
@@ -149,34 +150,11 @@ validateDirective directiveDefs directive@Directive {directiveArgs, ..} =
     args <- validateDirectiveArguments directiveDef directiveArgs
     pure Directive {directiveArgs = args, ..}
 
-validateDirectives :: Directives RAW -> SelectionValidator (Directives VALID)
-validateDirectives = traverse (validateDirective defaultDirectives)
-
-executeFieldDirectives :: Directives VALID -> SelectionValidator Bool
-executeFieldDirectives directives = do
-  dontSkip <- directiveFulfilled False "skip" directives
-  include <- directiveFulfilled True "include" directives
-  pure (dontSkip && include)
-
 processFieldDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
 processFieldDirectives rawDirectives = do
-  directives <- validateDirectives rawDirectives
-  skip <- executeFieldDirectives directives
+  directives <- traverse (validateDirective defaultDirectives) rawDirectives
+  skip <- shouldSkipSelection directives
   pure (skip, directives)
-
-directiveFulfilled :: Bool -> FieldName -> Directives s -> SelectionValidator Bool
-directiveFulfilled target = selectOr (pure True) (argumentIf target)
-
-argumentIf :: Bool -> Directive s -> SelectionValidator Bool
-argumentIf target Directive {directiveName, directiveArgs} =
-  selectBy err "if" directiveArgs
-    >>= assertArgument target
-  where
-    err = globalErrorMessage $ "Directive " <> msg ("@" <> directiveName) <> " argument \"if\" of type \"Boolean!\" is required but not provided."
-
-assertArgument :: Bool -> Argument s -> SelectionValidator Bool
-assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
-assertArgument _ Argument {argumentValue} = failure $ "Expected type Boolean!, found " <> msg argumentValue <> "."
 
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
