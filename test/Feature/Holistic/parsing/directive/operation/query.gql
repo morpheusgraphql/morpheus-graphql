@@ -1,5 +1,5 @@
-query Foo @someDirective (name: "testName" ) {
-    user {
-      name
-    }
+query Foo @someDirective(name: "testName") @test2 {
+  user {
+    name
+  }
 }
