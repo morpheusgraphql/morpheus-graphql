@@ -149,12 +149,20 @@ validateDirective directiveDefs directive@Directive {directiveArgs, ..} =
     args <- validateDirectiveArguments directiveDef directiveArgs
     pure Directive {directiveArgs = args, ..}
 
-validateDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
-validateDirectives rawDirectives = do
-  directives <- traverse (validateDirective defaultDirectives) rawDirectives
+validateDirectives :: Directives RAW -> SelectionValidator (Directives VALID)
+validateDirectives = traverse (validateDirective defaultDirectives)
+
+executeFieldDirectives :: Directives VALID -> SelectionValidator Bool
+executeFieldDirectives directives = do
   dontSkip <- directiveFulfilled False "skip" directives
   include <- directiveFulfilled True "include" directives
-  pure (dontSkip && include, directives)
+  pure (dontSkip && include)
+
+processFieldDirectives :: Directives RAW -> SelectionValidator (Bool, Directives VALID)
+processFieldDirectives rawDirectives = do
+  directives <- validateDirectives rawDirectives
+  skip <- executeFieldDirectives directives
+  pure (skip, directives)
 
 directiveFulfilled :: Bool -> FieldName -> Directives s -> SelectionValidator Bool
 directiveFulfilled target = selectOr (pure True) (argumentIf target)
@@ -189,7 +197,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
           typeName
           currentSelectionRef
           $ do
-            (include, directives) <- validateDirectives selectionDirectives
+            (include, directives) <- processFieldDirectives selectionDirectives
             selection <- validateSelectionContent directives selectionContent
             pure $
               if include
