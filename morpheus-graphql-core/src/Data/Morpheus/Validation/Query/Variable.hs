@@ -84,16 +84,15 @@ mapSelection f = fmap concat . traverse f
 allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref]
 allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
   where
+    exploreSelectionContent :: SelectionContent RAW -> BaseValidator [Ref]
+    exploreSelectionContent SelectionField = pure []
+    exploreSelectionContent (SelectionSet selSet) = mapSelection searchRefs selSet
+    ---------------------------------------
     searchRefs :: Selection RAW -> BaseValidator [Ref]
-    searchRefs Selection {selectionArguments, selectionDirectives, selectionContent = SelectionField} =
-      pure $
-        concatMap exploreRefs selectionArguments
-          <> concatMap exploreRefs selectionDirectives
-    searchRefs Selection {selectionArguments, selectionContent = SelectionSet selSet} =
-      getArgs <$> mapSelection searchRefs selSet
-      where
-        getArgs :: [Ref] -> [Ref]
-        getArgs x = concatMap exploreRefs selectionArguments <> x
+    searchRefs Selection {selectionArguments, selectionDirectives, selectionContent} = do
+      let directiveRefs = concat $ traverse exploreRefs selectionDirectives
+      contentRefs <- exploreSelectionContent selectionContent
+      pure $ directiveRefs <> contentRefs <> concatMap exploreRefs selectionArguments
     searchRefs (InlineFragment Fragment {fragmentSelection}) =
       mapSelection searchRefs fragmentSelection
     searchRefs (Spread _ reference) =
