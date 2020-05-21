@@ -316,7 +316,6 @@ data NonWrapped
 
 You will get the following schema:
 
-
 ```gql
 
 # has wrapper types
@@ -491,6 +490,35 @@ rootResolver = GQLRootResolver
     deityByEvent (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
     deityByEvent _ = fetchDeity -- Resolve Old State
 ```
+
+### Interface
+  
+1. defining interface with Haskell Types (runtime validation):
+  
+    ```hs
+      -- interface is just regular type derived as interface
+    newtype Person m = Person {name ::  m Text}
+      deriving (Generic)
+
+    instance GQLType (Person m) where
+      type KIND (Person m) = INTERFACE
+
+    -- with GQLType user can links interfaces to implementing object
+    instance GQLType Deity where
+      implements _ = [interface (Proxy @Person)]
+    ```
+
+2. defining with `importGQLDocument` and `DSL` (compile time validation):
+
+    ```gql
+      interface Account {
+        name: String!
+      }
+
+      type User implements Account {
+        name: String!
+      }
+    ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
 
