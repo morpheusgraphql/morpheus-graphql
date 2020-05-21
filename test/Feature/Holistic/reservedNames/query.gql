@@ -1,0 +1,14 @@
+{
+  user {
+    type(data: "some data")
+  }
+
+  __type(name: "Query") {
+    fields {
+      name
+      args {
+        name
+      }
+    }
+  }
+}

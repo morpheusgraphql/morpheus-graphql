@@ -99,6 +99,7 @@ type Query {
   fail1: String!
   fail2: Int!
   person: Person!
+  type(data: String!): String!
 }
 
 type Mutation {

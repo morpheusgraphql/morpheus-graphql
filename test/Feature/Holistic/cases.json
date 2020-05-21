@@ -322,5 +322,9 @@
   {
     "path": "selection/directives/validation/invalidPlace/inlineFragment",
     "description": "directive on invalid place must be rejected"
+  },
+  {
+    "path": "reservedNames",
+    "description": "morpheus should handle reserved names"
   }
 ]
