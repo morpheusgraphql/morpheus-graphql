@@ -190,10 +190,6 @@ useDufferentAliases =
   "Use different aliases on the "
     <> "fields to fetch both if this was intentional."
 
--- TODO: validate directives
-instance Merge (Directives s) where
-  merge path old current = pure (old <> current)
-
 instance
   Merge (SelectionSet a) =>
   Merge (Selection a)
@@ -207,11 +203,11 @@ instance
         let currentPath = path <> [Ref selectionName pos1]
         selectionArguments <- mergeArguments currentPath
         selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
-        selectionDirectives <- merge currentPath (selectionDirectives old) (selectionDirectives current)
         pure $
           Selection
             { selectionAlias = mergeAlias,
               selectionPosition = pos1,
+              selectionDirectives = selectionDirectives old <> selectionDirectives current,
               ..
             }
       where
