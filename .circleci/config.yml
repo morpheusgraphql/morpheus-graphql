@@ -84,6 +84,44 @@ jobs:
       - restore_cache:
           name: restore cached stack
           keys:
+            - stack-vesrion-{{ checksum "stack-14.14.yaml" }}
+      - restore_cache:
+          name: restore cached dependencies
+          keys:
+            - stack-dependencies-{{ checksum "stack-14.14.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
+      - run:
+          name: setup stack
+          command: stack --no-terminal setup
+      - save_cache:
+          name: cache stack
+          key: stack-vesrion-{{ checksum "stack-14.14.yaml" }}
+          paths:
+            - /root/.stack
+      - run:
+          name: install dependencies
+          command: stack build --skip-ghc-check --no-terminal --test --only-dependencies
+      - save_cache:
+          name: cache dependencies
+          key: stack-dependencies-{{ checksum "stack-14.14.yaml" }}-{{ checksum "package.yaml" }}-{{ checksum "examples/package.yaml" }}
+          paths:
+            - ".stack-work"
+            - "/root/.stack"
+      - run:
+          name: Run tests
+          command: stack test --haddock --no-haddock-deps
+      - run:
+          name: Install executables
+          command: stack install
+
+  ## GHC 8.8.3
+  ghc_8_8_3:
+    docker:
+      - image: fpco/stack-build:lts-15.13
+    steps:
+      - checkout
+      - restore_cache:
+          name: restore cached stack
+          keys:
             - stack-vesrion-{{ checksum "stack.yaml" }}
       - restore_cache:
           name: restore cached dependencies
@@ -112,7 +150,7 @@ jobs:
       - run:
           name: Install executables
           command: stack install
-  
+
   ## GHC Nightly
   ghc_nightly:
     docker:

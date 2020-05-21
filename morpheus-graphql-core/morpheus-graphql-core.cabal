@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c7c5117b4e595a6e3e329fefdd2b1fe469ae6b558d72a979beb9a4031362b2d4
+-- hash: 4a337fa1d88f2e1ca1eb76ec72c4bd0e5e91ef67626a02682384994f6731d446
 
 name:           morpheus-graphql-core
 version:        0.12.0
@@ -109,9 +109,9 @@ library
     , hashable >=1.0.0
     , megaparsec >=7.0.0 && <9.0.0
     , scientific >=0.3.6.2 && <0.4
-    , template-haskell >=2.0 && <=2.16
+    , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
-    , th-lift-instances >=0.1.1 && <=0.2.0
+    , th-lift-instances >=0.1.1 && <=0.3
     , transformers >=0.3.0.0 && <0.6
     , unordered-containers >=0.2.8.0 && <0.3
     , vector >=0.12.0.1 && <0.13
@@ -137,9 +137,9 @@ test-suite morpheus-test
     , scientific >=0.3.6.2 && <0.4
     , tasty
     , tasty-hunit
-    , template-haskell >=2.0 && <=2.16
+    , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
-    , th-lift-instances >=0.1.1 && <=0.2.0
+    , th-lift-instances >=0.1.1 && <=0.3
     , transformers >=0.3.0.0 && <0.6
     , unordered-containers >=0.2.8.0 && <0.3
     , vector >=0.12.0.1 && <0.13

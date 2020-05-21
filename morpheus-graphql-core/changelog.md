@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.12.0 Unreleased Changes
+## 0.12.0 - 21.05.2020
 
 ## New features
 
