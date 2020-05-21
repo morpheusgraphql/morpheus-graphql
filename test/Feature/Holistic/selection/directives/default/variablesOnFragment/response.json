@@ -1,3 +1,1 @@
-{
-  "data": { "user1": { "case2": "testName" }, "user2": { "case1": "testName" } }
-}
+{ "data": { "user": { "name": "testName", "name1": "testName" } } }

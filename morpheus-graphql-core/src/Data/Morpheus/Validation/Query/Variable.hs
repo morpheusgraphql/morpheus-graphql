@@ -93,13 +93,16 @@ allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
       let directiveRefs = concatMap exploreRefs selectionDirectives
       contentRefs <- exploreSelectionContent selectionContent
       pure $ directiveRefs <> contentRefs <> concatMap exploreRefs selectionArguments
-    searchRefs (InlineFragment Fragment {fragmentSelection}) =
-      mapSelection searchRefs fragmentSelection
-    searchRefs (Spread _ reference) =
-      askFragments
-        >>= selectKnown reference
-        >>= mapSelection searchRefs
-        . fragmentSelection
+    searchRefs (InlineFragment Fragment {fragmentSelection, fragmentDirectives}) =
+      (concatMap exploreRefs fragmentDirectives <>)
+        <$> mapSelection searchRefs fragmentSelection
+    searchRefs (Spread directives reference) =
+      (concatMap exploreRefs directives <>)
+        <$> ( askFragments
+                >>= selectKnown reference
+                >>= mapSelection searchRefs
+                . fragmentSelection
+            )
 
 resolveOperationVariables ::
   Variables ->

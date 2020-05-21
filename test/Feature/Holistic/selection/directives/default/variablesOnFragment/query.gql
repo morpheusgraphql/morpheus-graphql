@@ -1,16 +1,13 @@
 query TestFragments($x: Boolean! = false, $y: Boolean! = false) {
   user {
-    name1: name
+    name
     ...UserName @skip(if: $x)
-  }
-
-  user2: user {
     ... on User @include(if: $y) {
-      name
+      name2: name
     }
   }
 }
 
 fragment UserName on User {
-  name
+  name1: name
 }
