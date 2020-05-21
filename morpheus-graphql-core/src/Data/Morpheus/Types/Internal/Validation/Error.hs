@@ -120,7 +120,7 @@ instance MissingRequired (Arguments s) ctx where
         }
       where
         inScope SELECTION = "Field " <> msg scopeSelectionName
-        inScope DIRECTIVE = "Directive" <> msg ("@" <> scopeSelectionName)
+        inScope DIRECTIVE = "Directive " <> msg ("@" <> scopeSelectionName)
 
 instance MissingRequired (Object s) InputContext where
   missingRequired
