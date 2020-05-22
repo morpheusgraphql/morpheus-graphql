@@ -20,7 +20,6 @@ import Data.Morpheus.Client
     ID (..),
     ScalarValue (..),
     defineByDocumentFile,
-    defineByIntrospectionFile,
     gql,
   )
 import Data.Text (Text)
@@ -42,7 +41,7 @@ instance GQLScalar Power where
   serialize (Power x) = Int x
 
 defineByDocumentFile
-  "examples-client/assets/mythology.gql"
+  "assets/mythology.gql"
   [gql|
     # Query Hero with Compile time Validation
     query GetHero ($god: Realm, $someID: ID!)
