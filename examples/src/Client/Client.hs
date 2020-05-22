@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,8 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Client.Client
-  ( fetchHero,
-    fetUser,
+  ( fetchUser,
   )
 where
 
@@ -21,7 +21,7 @@ import Data.Morpheus.Client
     defineByIntrospectionFile,
     gql,
   )
-import Data.Morpheus.Types (ScalarValue (..))
+import Data.Morpheus.Types (GQLScalar (..), ScalarValue (..))
 import Data.Text (Text)
 
 defineByDocumentFile
@@ -35,21 +35,20 @@ defineByDocumentFile
     }
   |]
 
-defineByIntrospectionFile
-  "./assets/introspection.json"
+defineByDocumentFile
+  "src/Server/Sophisticated/api.gql"
   [gql|
-   
     # Query Hero with Compile time Validation
     query GetUser ($coordinates: Coordinates!)
       {
         myUser: user {
-           boo3: name
-           myUserEmail: email
+           name
+           aliasEmail: email
            address (coordinates: $coordinates ){
              city
            }
-           customAdress: address (coordinates: $coordinates ){
-               customCity: city
+           aliasAdress: address (coordinates: $coordinates ){
+              city
            }
         }
         user {
@@ -58,65 +57,11 @@ defineByIntrospectionFile
       }
   |]
 
-defineByDocumentFile
-  "./assets/simple.gql"
-  [gql|
-    # Query Hero with Compile time Validation
-    query GetHero ($god: Realm, $someID: String!)
-      {
-        deity (mythology:$god) {
-          power
-          fullName
-        }
-        character(characterID: $someID ) {
-          ...on Creature {
-            name
-            immortality
-          }
-          ...on Human {
-            lifetime
-            profession
-          }
-        }
-        char2: character(characterID: $someID ) {
-          ...on Creature {
-              cName: name
-          }
-          ...on Human {
-              lTime: lifetime
-              prof: profession
-          }
-        }
-      }
-  |]
-
-ioRes :: ByteString -> IO ByteString
-ioRes req = do
-  print req
-  return
-    "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" } ,  \"char2\":{ \"__typename\":\"Human\", \"lTime\": \"time\", \"prof\": \"Artist\" }  }}"
-
-fetchHero :: IO (Either String GetHero)
-fetchHero =
-  fetch
-    ioRes
-    GetHeroArgs
-      { getHeroArgsGod =
-          Just
-            Realm
-              { realmOwner = "Zeus",
-                realmAge = Just 10,
-                realmRealm = Nothing,
-                realmProfession = Just ProfessionArtist
-              },
-        getHeroArgsSomeID = "Hercules"
-      }
-
-fetUser :: (ByteString -> IO ByteString) -> IO (Either String GetUser)
-fetUser api = fetch api userArgs
+fetchUser :: (ByteString -> IO ByteString) -> IO (Either String GetUser)
+fetchUser = flip fetch args
   where
-    userArgs :: Args GetUser
-    userArgs =
+    args :: Args GetUser
+    args =
       GetUserArgs
         { getUserArgsCoordinates =
             Coordinates

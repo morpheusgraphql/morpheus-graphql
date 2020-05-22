@@ -10,8 +10,7 @@ where
 
 -- examples
 import Client.Client
-  ( fetUser,
-    fetchHero,
+  ( fetchUser,
   )
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor.Identity (Identity (..))
@@ -44,8 +43,7 @@ scottyServer :: IO ()
 scottyServer = do
   (wsApp, publish) <- webSocketsApp api
   httpApp <- httpServer publish
-  fetchHero >>= print
-  fetUser (httpPubApp api publish) >>= print
+  fetchUser (httpPubApp api publish) >>= print
   Warp.runSettings settings $
     WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
   where

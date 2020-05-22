@@ -1,5 +1,7 @@
 # for Input Union
 
+scalar Euro
+
 input Cat @testDir {
   name: String!
 }
