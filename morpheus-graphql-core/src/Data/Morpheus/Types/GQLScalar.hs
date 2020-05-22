@@ -11,6 +11,7 @@ module Data.Morpheus.Types.GQLScalar
   )
 where
 
+import Control.Monad.Fail (MonadFail)
 import qualified Data.Aeson as A
 import Data.Morpheus.Types.Internal.AST
   ( ScalarDefinition (..),
