@@ -18,7 +18,6 @@ import Data.Morpheus.Client
   ( Fetch (..),
     GQLScalar (..),
     ScalarValue (..),
-    defineByDocumentFile,
     defineByIntrospectionFile,
     gql,
   )
@@ -35,7 +34,7 @@ instance GQLScalar Euro where
   serialize (Euro x y) = Int (x * 101 + y)
 
 defineByIntrospectionFile
-  "./assets/introspection.json"
+  "assets/introspection.json"
   [gql|
    
     # Query Hero with Compile time Validation

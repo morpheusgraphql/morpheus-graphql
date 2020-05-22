@@ -3,7 +3,7 @@ my interface description
 """
 type Query {
   deity(name: [[[[[String!]]!]]], mythology: Realm): Deity!
-  character(characterID: String!, age: Int): Character!
+  character(characterID: ID!, age: Int): Character!
   hero: Human!
 }
 

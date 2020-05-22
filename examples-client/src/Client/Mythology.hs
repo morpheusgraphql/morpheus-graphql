@@ -17,9 +17,9 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
     GQLScalar (..),
+    ID (..),
     ScalarValue (..),
     defineByDocumentFile,
-    defineByIntrospectionFile,
     gql,
   )
 import Data.Text (Text)
@@ -41,10 +41,10 @@ instance GQLScalar Power where
   serialize (Power x) = Int x
 
 defineByDocumentFile
-  "./assets/mythology.gql"
+  "assets/mythology.gql"
   [gql|
     # Query Hero with Compile time Validation
-    query GetHero ($god: Realm, $someID: String!)
+    query GetHero ($god: Realm, $someID: ID!)
       {
         deity (mythology:$god) {
           power
@@ -92,5 +92,5 @@ fetchHero =
                 realmRealm = Nothing,
                 realmProfession = Just ProfessionArtist
               },
-        getHeroArgsSomeID = "Hercules"
+        getHeroArgsSomeID = ID "Hercules"
       }

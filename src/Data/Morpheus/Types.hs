@@ -64,7 +64,6 @@ import Data.Either (either)
 
 import Data.Morpheus.Server.Deriving.Introspect (Introspect (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
-import Data.Morpheus.Server.Types.ID (ID (..))
 import Data.Morpheus.Server.Types.Types (Undefined (..))
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar
@@ -72,6 +71,7 @@ import Data.Morpheus.Types.GQLScalar
         serialize
       ),
   )
+import Data.Morpheus.Types.ID (ID (..))
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),

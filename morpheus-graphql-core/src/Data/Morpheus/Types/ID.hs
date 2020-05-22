@@ -2,18 +2,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Morpheus.Server.Types.ID
+module Data.Morpheus.Types.ID
   ( ID (..),
   )
 where
 
-import qualified Data.Aeson as A
-import Data.Morpheus.Kind (SCALAR)
-import Data.Morpheus.Server.Types.GQLType (GQLType (..))
-import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
+import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Morpheus.Types.GQLScalar
+  ( GQLScalar (..),
+    scalarFromJSON,
+    scalarToJSON,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ScalarValue (..),
-    internalFingerprint,
   )
 import Data.Text
   ( Text,
@@ -29,18 +30,14 @@ newtype ID = ID
   }
   deriving (Show, Generic)
 
-instance GQLType ID where
-  type KIND ID = SCALAR
-  __typeFingerprint _ = internalFingerprint "ID" []
-
-instance A.ToJSON ID where
-  toJSON = A.toJSON . unpackID
-
-instance A.FromJSON ID where
-  parseJSON = fmap ID . A.parseJSON
-
 instance GQLScalar ID where
   parseValue (Int x) = return (ID $ pack $ show x)
   parseValue (String x) = return (ID x)
   parseValue _ = Left ""
   serialize (ID x) = String x
+
+instance ToJSON ID where
+  toJSON = scalarToJSON
+
+instance FromJSON ID where
+  parseJSON = scalarFromJSON
