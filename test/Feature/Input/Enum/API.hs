@@ -11,7 +11,7 @@ where
 
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Kind (ENUM)
-import Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), Undefined (..))
+import Data.Morpheus.Types (GQLRequest, GQLResponse, GQLType (..), RootResolver (..), Undefined (..))
 import GHC.Generics (Generic)
 
 data TwoCon
@@ -62,9 +62,9 @@ data Query m = Query
   }
   deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {test = testRes, test2 = testRes, test3 = testRes},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined

@@ -15,8 +15,8 @@ import Data.Morpheus.Types
     Event,
     GQLRequest,
     GQLResponse,
-    GQLRootResolver (..),
     GQLType (..),
+    RootResolver (..),
     constRes,
     subscribe,
   )
@@ -66,9 +66,9 @@ data Subscription (m :: * -> *) = Subscription
   }
   deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
+rootResolver :: RootResolver IO EVENT Query Mutation Subscription
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {a1 = WA {aText = const $ pure "test1", aInt = 0}, a2 = Nothing, a3 = Nothing},
       mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing},
       subscriptionResolver =
