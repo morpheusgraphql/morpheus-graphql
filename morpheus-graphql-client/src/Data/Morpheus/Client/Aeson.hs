@@ -18,7 +18,7 @@ where
 
 --
 -- MORPHEUS
-import Control.Monad.Fail (MonadFail (..))
+import Control.Monad.Fail (MonadFail)
 import Data.Aeson
 import Data.Aeson.Types
 import qualified Data.HashMap.Lazy as H
