@@ -55,12 +55,12 @@ import Data.Morpheus.Server.Deriving.Utils
     isRecordProxy,
     selNameProxy,
   )
-import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
     Pair,
   )
+import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),

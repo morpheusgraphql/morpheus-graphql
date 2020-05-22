@@ -14,6 +14,7 @@ module Data.Morpheus.Client.Transform.Core
     leafType,
     typeFrom,
     deprecationWarning,
+    customScalarTypes,
   )
 where
 
@@ -48,10 +49,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     VariableDefinitions,
+    hsTypeName,
+    isSystemTypeName,
     lookupDeprecated,
     lookupDeprecatedReason,
     msg,
-    typeFromScalar,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -80,18 +82,23 @@ compileError x =
 getType :: TypeName -> Converter (TypeDefinition ANY)
 getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> msg typename) typename
 
+customScalarTypes :: TypeName -> [TypeName]
+customScalarTypes typeName
+  | not (isSystemTypeName typeName) = [typeName]
+  | otherwise = []
+
 leafType :: TypeDefinition a -> Converter ([TypeD], [TypeName])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
     fromKind :: TypeContent TRUE a -> Converter ([TypeD], [TypeName])
     fromKind DataEnum {} = pure ([], [typeName])
-    fromKind DataScalar {} = pure ([], [])
+    fromKind DataScalar {} = pure ([], customScalarTypes typeName)
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
 typeFrom :: [FieldName] -> TypeDefinition a -> TypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
   where
-    __typeFrom DataScalar {} = typeFromScalar typeName
+    __typeFrom DataScalar {} = hsTypeName typeName
     __typeFrom DataObject {} = nameSpaceType path typeName
     __typeFrom DataUnion {} = nameSpaceType path typeName
     __typeFrom _ = typeName

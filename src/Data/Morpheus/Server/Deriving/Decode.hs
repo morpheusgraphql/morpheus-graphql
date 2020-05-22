@@ -46,11 +46,11 @@ import Data.Morpheus.Server.Internal.TH.Decode
     withObject,
     withUnion,
   )
-import Data.Morpheus.Server.Types.GQLScalar
+import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
+import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
     toScalar,
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,

@@ -14,6 +14,7 @@ where
 
 import Data.Morpheus.Client.Aeson
   ( deriveFromJSON,
+    deriveScalarJSON,
     deriveToJSON,
   )
 import Data.Morpheus.Client.Fetch
@@ -80,6 +81,7 @@ defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : sub
           declareOutputType
           clientType
       | tKind == KindEnum = withToJSON declareInputType clientType
+      | tKind == KindScalar = deriveScalarJSON clientType
       | otherwise = declareInputType clientType
 
 declareOutputType :: TypeD -> Q [Dec]

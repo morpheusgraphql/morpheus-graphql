@@ -44,7 +44,6 @@ import Data.Morpheus.Server.Deriving.Utils
     datatypeNameProxy,
     isRecordProxy,
   )
-import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
@@ -54,6 +53,7 @@ import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Types
   ( GQLRootResolver (..),
   )
+import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     FieldName (..),

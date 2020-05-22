@@ -16,12 +16,23 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
+    GQLScalar (..),
     ScalarValue (..),
     defineByDocumentFile,
     defineByIntrospectionFile,
     gql,
   )
 import Data.Text (Text)
+
+data Euro
+  = Euro
+      Int
+      Int
+  deriving (Show)
+
+instance GQLScalar Euro where
+  parseValue _ = pure (Euro 1 0)
+  serialize (Euro x y) = Int (x * 101 + y)
 
 defineByIntrospectionFile
   "./assets/introspection.json"
@@ -70,6 +81,6 @@ fetchUsers = fetch usersApi userArgs
         { getUserArgsCoordinates =
             Coordinates
               { coordinatesLongitude = [],
-                coordinatesLatitude = String "1"
+                coordinatesLatitude = Euro 1 25
               }
         }

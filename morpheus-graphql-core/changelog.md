@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.0 - Unreleased Changes
+
+
+- exposed `Data.Morpheus.Types.GQLScalar`
+
 ## 0.12.0 - 21.05.2020
 
 ## New features

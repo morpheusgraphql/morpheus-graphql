@@ -112,7 +112,6 @@ module Data.Morpheus.Types.Internal.AST
     lookupDeprecatedReason,
     hasArguments,
     lookupWith,
-    typeFromScalar,
     -- Temaplate Haskell
     hsTypeName,
     -- LOCAL

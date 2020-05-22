@@ -44,6 +44,7 @@ library:
     - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.IO
     - Data.Morpheus.Types.Internal.Resolving
+    - Data.Morpheus.Types.GQLScalar
 
   ghc-options: -Wall
 

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Data.Morpheus.Server.Types.GQLScalar
+module Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
     toScalar,
   )

@@ -9,6 +9,7 @@ module Data.Morpheus.Client
     defineByIntrospection,
     defineByIntrospectionFile,
     ScalarValue (..),
+    GQLScalar (..),
   )
 where
 
@@ -29,6 +30,7 @@ import Data.Morpheus.Core
     parseFullGQLDocument,
   )
 import Data.Morpheus.QuasiQuoter (gql)
+import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery,
     ScalarValue (..),

@@ -9,8 +9,8 @@ where
 
 import qualified Data.Aeson as A
 import Data.Morpheus.Kind (SCALAR)
-import Data.Morpheus.Server.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
+import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ScalarValue (..),
     internalFingerprint,

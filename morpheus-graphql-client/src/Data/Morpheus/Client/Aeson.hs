@@ -12,16 +12,18 @@ module Data.Morpheus.Client.Aeson
   ( deriveFromJSON,
     deriveToJSON,
     takeValueType,
+    deriveScalarJSON,
   )
 where
 
+--
+-- MORPHEUS
+import Control.Monad.Fail (MonadFail)
 import Data.Aeson
 import Data.Aeson.Types
 import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
---
--- MORPHEUS
 import Data.Morpheus.Internal.TH
   ( destructRecord,
     instanceFunD,
@@ -36,6 +38,8 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
   )
+import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
+import qualified Data.Morpheus.Types.Internal.AST as M
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
@@ -46,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     isEnum,
     isFieldNullable,
     msg,
+    replaceValue,
     toFieldName,
   )
 import Data.Semigroup ((<>))
@@ -56,6 +61,33 @@ import Language.Haskell.TH
 
 failure :: Message -> Q a
 failure = fail . show
+
+deriveScalarJSON :: TypeD -> Q [Dec]
+deriveScalarJSON typeDef = do
+  from <- deriveScalarFromJSON typeDef
+  to <- deriveScalarToJSON typeDef
+  pure [from, to]
+
+deriveScalarFromJSON :: TypeD -> Q Dec
+deriveScalarFromJSON TypeD {tName} =
+  defineFromJSON
+    tName
+    (const $ varE 'saclarFromJSON)
+    tName
+
+deriveScalarToJSON :: TypeD -> Q Dec
+deriveScalarToJSON TypeD {tName} =
+  let methods = [funD 'toJSON clauses]
+      clauses = [clause [] (normalB $ varE 'scalarToJSON) []]
+   in instanceD (cxt []) (instanceHeadT ''ToJSON tName []) methods
+
+scalarToJSON :: GQLScalar a => a -> Value
+scalarToJSON = toJSON . serialize
+
+saclarFromJSON :: (Monad m, MonadFail m) => GQLScalar a => Value -> m a
+saclarFromJSON x = case replaceValue x of
+  M.Scalar value -> either (fail . unpack) pure (parseValue value)
+  _ -> fail "input must be scalar value"
 
 -- FromJSON
 deriveFromJSON :: TypeD -> Q Dec
