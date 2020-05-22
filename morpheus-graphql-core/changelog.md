@@ -2,8 +2,9 @@
 
 ## 0.13.0 - Unreleased Changes
 
+- exposed: `Data.Morpheus.Types.GQLScalar`
+- exposed: `Data.Morpheus.Types.ID`
 
-- exposed `Data.Morpheus.Types.GQLScalar`
 
 ## 0.12.0 - 21.05.2020
 
