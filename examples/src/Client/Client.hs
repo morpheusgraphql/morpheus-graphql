@@ -32,7 +32,7 @@ data Euro
 
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
-  serialize (Euro x y) = Int (x * 100 + y)
+  serialize (Euro x y) = Int (x * 101 + y)
 
 defineByDocumentFile
   "src/Server/Sophisticated/api.gql"
