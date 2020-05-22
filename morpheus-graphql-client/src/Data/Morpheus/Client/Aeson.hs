@@ -16,14 +16,14 @@ module Data.Morpheus.Client.Aeson
   )
 where
 
+--
+-- MORPHEUS
+import Control.Monad.Fail (MonadFail (..))
 import Data.Aeson
 import Data.Aeson.Types
 import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
---
--- MORPHEUS
-
 import Data.Morpheus.Internal.TH
   ( destructRecord,
     instanceFunD,
