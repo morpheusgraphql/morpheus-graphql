@@ -13,9 +13,9 @@ where
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
-  ( GQLRootResolver (..),
-    GQLType,
+  ( GQLType,
     ResolverQ,
+    RootResolver (..),
     Undefined (..),
     liftEither,
   )
@@ -77,9 +77,9 @@ resolveCharacter =
     Cronus
   ]
 
-mythologyRoot :: GQLRootResolver IO () Query Undefined Undefined
+mythologyRoot :: RootResolver IO () Query Undefined Undefined
 mythologyRoot =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {deity = resolveDeity, character = resolveCharacter},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined

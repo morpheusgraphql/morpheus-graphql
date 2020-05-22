@@ -16,7 +16,7 @@ module Data.Morpheus.Types
     GQLResponse (..),
     ID (..),
     ScalarValue (..),
-    GQLRootResolver (..),
+    RootResolver (..),
     constRes,
     constMutRes,
     Undefined (..),
@@ -203,7 +203,7 @@ liftEither x = lift x >>= either (failure . msg) pure
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you can use __()__ for it.
-data GQLRootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) -> *) (sub :: (* -> *) -> *) = GQLRootResolver
+data RootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) -> *) (sub :: (* -> *) -> *) = RootResolver
   { queryResolver :: query (Resolver QUERY event m),
     mutationResolver :: mut (Resolver MUTATION event m),
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)

@@ -51,7 +51,7 @@ import Data.Morpheus.Server.Types.Types
     mapKindFromList,
   )
 import Data.Morpheus.Types
-  ( GQLRootResolver (..),
+  ( RootResolver (..),
   )
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
@@ -238,10 +238,10 @@ deriveModel ::
     Applicative m,
     Monad m
   ) =>
-  GQLRootResolver m e query mut sub ->
+  RootResolver m e query mut sub ->
   RootResModel e m
 deriveModel
-  GQLRootResolver
+  RootResolver
     { queryResolver,
       mutationResolver,
       subscriptionResolver
