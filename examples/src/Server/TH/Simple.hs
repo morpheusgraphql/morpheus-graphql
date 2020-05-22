@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -13,26 +14,28 @@ module Server.TH.Simple
   )
 where
 
-import qualified Data.ByteString.Lazy.Char8 as B
+import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus (interpreter)
-import Data.Morpheus.Document (importGQLDocumentWithNamespace)
+import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types (GQLRootResolver (..), Undefined (..))
 import Data.Text (Text)
 
-importGQLDocumentWithNamespace "src/Server/TH/simple.gql"
+importGQLDocument "src/Server/TH/simple.gql"
 
 rootResolver :: GQLRootResolver IO () Query Undefined Undefined
 rootResolver =
   GQLRootResolver
-    { queryResolver = Query {queryDeity},
+    { queryResolver = Query {deity},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
   where
-    queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity {deityName, deityPower}
-      where
-        deityName = pure queryDeityArgsName
-        deityPower = pure (Just "Shapeshifting")
+    deity DeityArgs {name} =
+      pure
+        Deity
+          { name = pure name,
+            power = pure (Just "Shapeshifting")
+          }
 
-thSimpleApi :: B.ByteString -> IO B.ByteString
+thSimpleApi :: ByteString -> IO ByteString
 thSimpleApi = interpreter rootResolver
