@@ -6,17 +6,21 @@
 module Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
     toScalar,
+    scalarToJSON,
+    scalarFromJSON,
   )
 where
 
+import qualified Data.Aeson as A
 import Data.Morpheus.Types.Internal.AST
   ( ScalarDefinition (..),
     ScalarValue (..),
     ValidValue,
     Value (..),
+    replaceValue,
   )
 import Data.Proxy (Proxy (..))
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 
 toScalar :: ValidValue -> Either Text ScalarValue
 toScalar (Scalar x) = pure x
@@ -70,3 +74,11 @@ instance GQLScalar Float where
   parseValue (Int x) = pure $ fromInteger $ toInteger x
   parseValue _ = Left ""
   serialize = Float
+
+scalarToJSON :: GQLScalar a => a -> A.Value
+scalarToJSON = A.toJSON . serialize
+
+scalarFromJSON :: (Monad m, MonadFail m) => GQLScalar a => A.Value -> m a
+scalarFromJSON x = case replaceValue x of
+  Scalar value -> either (fail . unpack) pure (parseValue value)
+  _ -> fail "input must be scalar value"

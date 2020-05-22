@@ -7,8 +7,11 @@ module Data.Morpheus.Types.ID
   )
 where
 
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
+    scalarFromJSON,
+    scalarToJSON,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ScalarValue (..),
@@ -32,3 +35,9 @@ instance GQLScalar ID where
   parseValue (String x) = return (ID x)
   parseValue _ = Left ""
   serialize (ID x) = String x
+
+instance ToJSON ID where
+  toJSON = scalarToJSON
+
+instance FromJSON ID where
+  parseJSON = scalarFromJSON
