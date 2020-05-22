@@ -16,11 +16,11 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
+    ScalarValue (..),
     defineByDocumentFile,
     defineByIntrospectionFile,
     gql,
   )
-import Data.Morpheus.Types.Internal.AST (ScalarValue (..))
 import Data.Text (Text)
 
 defineByIntrospectionFile
