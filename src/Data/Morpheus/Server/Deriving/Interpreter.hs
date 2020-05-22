@@ -16,7 +16,7 @@ import Data.Morpheus.Server.Deriving.Resolve
     statelessResolver,
   )
 import Data.Morpheus.Types
-  ( GQLRootResolver (..),
+  ( RootResolver (..),
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest,
@@ -50,7 +50,7 @@ class Interpreter e m a b where
   interpreter ::
     Monad m =>
     (RootResCon m e query mut sub) =>
-    GQLRootResolver m e query mut sub ->
+    RootResolver m e query mut sub ->
     a ->
     b
 

@@ -16,8 +16,8 @@ import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
   ( Event (..),
-    GQLRootResolver (..),
     Input,
+    RootResolver (..),
     Stream,
     subscribe,
   )
@@ -49,9 +49,9 @@ characterSub (Event _ Info {name, age}) =
         age = pure age
       }
 
-rootResolver :: GQLRootResolver (SubM EVENT) EVENT Query Mutation Subscription
+rootResolver :: RootResolver (SubM EVENT) EVENT Query Mutation Subscription
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver =
         Query
           { queryField = pure ""

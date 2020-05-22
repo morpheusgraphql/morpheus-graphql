@@ -10,7 +10,7 @@ module Feature.Schema.API
 where
 
 import Data.Morpheus (interpreter)
-import Data.Morpheus.Types (GQLRequest, GQLResponse, GQLRootResolver (..), GQLType (..), Undefined (..))
+import Data.Morpheus.Types (GQLRequest, GQLResponse, GQLType (..), RootResolver (..), Undefined (..))
 import Data.Text (Text)
 import qualified Feature.Schema.A2 as A2 (A (..))
 import GHC.Generics (Generic)
@@ -27,9 +27,9 @@ data Query (m :: * -> *) = Query
   }
   deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {a1 = A "" 0, a2 = A2.A 0},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined

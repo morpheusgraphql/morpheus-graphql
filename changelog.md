@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.0 - Unreleased Changes
+
+- renamed `GQLRootResolver` -> `RootResolver`
+
 ## 0.12.0 - 21.05.2020
 
 ### Breaking Changes

@@ -23,7 +23,7 @@ import Data.Morpheus.Server.Document.Compile
   ( compileDocument,
     gqlDocument,
   )
-import Data.Morpheus.Types (GQLRootResolver)
+import Data.Morpheus.Types (RootResolver)
 import Data.Morpheus.Types.Internal.Resolving
   ( resultOr,
   )
@@ -40,10 +40,10 @@ importGQLDocumentWithNamespace :: String -> Q [Dec]
 importGQLDocumentWithNamespace src =
   runIO (readFile src) >>= compileDocument True
 
--- | Generates schema.gql file from 'GQLRootResolver'
+-- | Generates schema.gql file from 'RootResolver'
 toGraphQLDocument ::
   RootResCon m event query mut sub =>
-  proxy (GQLRootResolver m event query mut sub) ->
+  proxy (RootResolver m event query mut sub) ->
   ByteString
 toGraphQLDocument =
   resultOr (pack . show) (encodeUtf8 . LT.fromStrict . render)

@@ -13,9 +13,9 @@ import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
-    GQLRootResolver (..),
     GQLType (..),
     ResolverQ,
+    RootResolver (..),
     Undefined (..),
   )
 import Data.Text (Text)
@@ -54,9 +54,9 @@ resolveUnion :: () -> ResolverQ () IO [Sum]
 resolveUnion _ =
   return [SumA A {aText = "at", aInt = 1}, SumB B {bText = "bt", bInt = 2}]
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver =
         Query
           { union = resolveUnion,

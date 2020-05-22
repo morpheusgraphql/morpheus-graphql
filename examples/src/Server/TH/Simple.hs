@@ -17,14 +17,14 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
-import Data.Morpheus.Types (GQLRootResolver (..), Undefined (..))
+import Data.Morpheus.Types (RootResolver (..), Undefined (..))
 import Data.Text (Text)
 
 importGQLDocument "src/Server/TH/simple.gql"
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {deity},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined

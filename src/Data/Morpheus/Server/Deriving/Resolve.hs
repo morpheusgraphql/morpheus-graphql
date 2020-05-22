@@ -33,7 +33,7 @@ import Data.Morpheus.Server.Deriving.Introspect
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (CUSTOM))
 import Data.Morpheus.Types
-  ( GQLRootResolver (..),
+  ( RootResolver (..),
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -90,7 +90,7 @@ type RootResCon m event query mutation subscription =
 
 statelessResolver ::
   (Monad m, RootResCon m event query mut sub) =>
-  GQLRootResolver m event query mut sub ->
+  RootResolver m event query mut sub ->
   GQLRequest ->
   m GQLResponse
 statelessResolver root req =
@@ -99,7 +99,7 @@ statelessResolver root req =
 coreResolver ::
   forall event m query mut sub.
   (Monad m, RootResCon m event query mut sub) =>
-  GQLRootResolver m event query mut sub ->
+  RootResolver m event query mut sub ->
   GQLRequest ->
   ResponseStream event m ValidValue
 coreResolver root request =
@@ -115,7 +115,7 @@ coreResolver root request =
 fullSchema ::
   forall proxy m event query mutation subscription.
   (IntrospectConstraint m event query mutation subscription) =>
-  proxy (GQLRootResolver m event query mutation subscription) ->
+  proxy (RootResolver m event query mutation subscription) ->
   Eventless Schema
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where

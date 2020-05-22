@@ -18,10 +18,10 @@ where
 import Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
-  ( GQLRootResolver (..),
-    GQLScalar (..),
+  ( GQLScalar (..),
     GQLType (..),
     ID (..),
+    RootResolver (..),
     ScalarValue (..),
     Undefined (..),
   )
@@ -42,5 +42,5 @@ instance GQLScalar TestScalar where
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
-schemaProxy :: Proxy (GQLRootResolver IO () Query Undefined Undefined)
-schemaProxy = Proxy @(GQLRootResolver IO () Query Undefined Undefined)
+schemaProxy :: Proxy (RootResolver IO () Query Undefined Undefined)
+schemaProxy = Proxy @(RootResolver IO () Query Undefined Undefined)

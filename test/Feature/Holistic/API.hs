@@ -23,10 +23,10 @@ import Data.Morpheus.Types
   ( Event,
     GQLRequest,
     GQLResponse,
-    GQLRootResolver (..),
     GQLScalar (..),
     GQLType (..),
     ID (..),
+    RootResolver (..),
     ScalarValue (..),
     liftEither,
     subscribe,
@@ -58,9 +58,9 @@ importGQLDocument "test/Feature/Holistic/schema.gql"
 alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail with Either"
 
-rootResolver :: GQLRootResolver IO EVENT Query Mutation Subscription
+rootResolver :: RootResolver IO EVENT Query Mutation Subscription
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver =
         Query
           { user,

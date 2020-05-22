@@ -151,9 +151,9 @@ requireAuthorized = do
     _ -> fail "Unauthorized"
 
 -------------------------------------------------------------------------------
-rootResolver :: GQLRootResolver Web () Query Mutation Undefined
+rootResolver :: RootResolver Web () Query Mutation Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver =
         Query
           { login = loginResolver,

@@ -34,7 +34,6 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.Types
   ( Event (..),
-    GQLRootResolver (..),
     GQLScalar (..),
     GQLType (..),
     ID,
@@ -45,6 +44,7 @@ import Data.Morpheus.Types
     ResolverM,
     ResolverQ,
     ResolverS,
+    RootResolver (..),
     ScalarValue (..),
     Stream,
     WithOperation,
@@ -112,9 +112,9 @@ type EVENT = Event Channel Content
 api :: Input api -> Stream api EVENT IO
 api = interpreter gqlRoot
 
-gqlRoot :: GQLRootResolver IO EVENT Query Mutation Subscription
+gqlRoot :: RootResolver IO EVENT Query Mutation Subscription
 gqlRoot =
-  GQLRootResolver
+  RootResolver
     { queryResolver,
       mutationResolver,
       subscriptionResolver

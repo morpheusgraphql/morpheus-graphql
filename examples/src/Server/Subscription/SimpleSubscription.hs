@@ -8,8 +8,8 @@ module Server.Subscription.SimpleSubscription where
 
 import Data.Morpheus.Types
   ( Event (..),
-    GQLRootResolver (..),
     Resolver,
+    RootResolver (..),
     WithOperation,
     publish,
     subscribe,
@@ -50,9 +50,9 @@ newtype Subscription (m :: * -> *) = Subscription
 
 type APIEvent = Event Channel Content
 
-rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
+rootResolver :: RootResolver IO APIEvent Query Mutation Subscription
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {deity = fetchDeity},
       mutationResolver = Mutation {createDeity},
       subscriptionResolver = Subscription {newDeity}

@@ -14,8 +14,8 @@ import Data.Morpheus.Kind (INPUT)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
-    GQLRootResolver (..),
     GQLType (..),
+    RootResolver (..),
     Undefined (..),
   )
 import Data.Text
@@ -50,9 +50,9 @@ newtype Query m = Query
   }
   deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {input = testRes},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
