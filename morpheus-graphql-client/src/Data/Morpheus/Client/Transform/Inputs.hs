@@ -14,7 +14,12 @@ where
 --
 -- MORPHEUS
 import Control.Monad.Reader (asks)
-import Data.Morpheus.Client.Transform.Core (Converter (..), getType, typeFrom)
+import Data.Morpheus.Client.Transform.Core
+  ( Converter (..),
+    customScalarTypes,
+    getType,
+    typeFrom,
+  )
 import Data.Morpheus.Internal.Utils
   ( elems,
   )
@@ -76,10 +81,10 @@ renderOperationArguments Operation {operationName} = do
 
 -- INPUTS
 renderNonOutputTypes :: [TypeName] -> Converter [TypeD]
-renderNonOutputTypes enums = do
+renderNonOutputTypes leafTypes = do
   variables <- elems <$> asks snd
   inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
-  concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> enums)
+  concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> leafTypes)
 
 exploreInputTypeNames :: TypeName -> [TypeName] -> Converter [TypeName]
 exploreInputTypeNames name collected
@@ -97,6 +102,7 @@ exploreInputTypeNames name collected
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
               exploreInputTypeNames typeConName
         scanType (DataEnum _) = pure (collected <> [typeName])
+        scanType (DataScalar _) = pure (collected <> customScalarTypes typeName)
         scanType _ = pure collected
 
 buildInputType :: TypeName -> Converter [TypeD]
@@ -123,6 +129,13 @@ buildInputType name = getType name >>= generateTypes
                 typeName
                 KindEnum
                 (map mkConsEnum enumTags)
+            ]
+        subTypes DataScalar {} =
+          pure
+            [ mkInputType
+                typeName
+                KindScalar
+                []
             ]
         subTypes _ = pure []
 

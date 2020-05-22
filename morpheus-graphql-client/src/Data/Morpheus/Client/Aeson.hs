@@ -12,6 +12,7 @@ module Data.Morpheus.Client.Aeson
   ( deriveFromJSON,
     deriveToJSON,
     takeValueType,
+    deriveScalarJSON,
   )
 where
 
@@ -36,6 +37,7 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
   )
+import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
@@ -56,6 +58,34 @@ import Language.Haskell.TH
 
 failure :: Message -> Q a
 failure = fail . show
+
+deriveScalarJSON :: TypeD -> Q [Dec]
+deriveScalarJSON typeDef = do
+  from <- deriveScalarFromJSON typeDef
+  to <- deriveScalarToJSON typeDef
+  pure [from, to]
+
+deriveScalarFromJSON :: TypeD -> Q Dec
+deriveScalarFromJSON TypeD {tName} =
+  defineFromJSON
+    tName
+    aesonScalar
+    tName
+
+deriveScalarToJSON :: TypeD -> Q Dec
+deriveScalarToJSON TypeD {tName, tCons} =
+  let methods = [funD 'toJSON clauses]
+      clauses = [clause [] (normalB $ varE 'toScalar) []]
+   in instanceD (cxt []) (instanceHeadT ''ToJSON tName []) methods
+
+aesonScalar :: TypeName -> ExpQ
+aesonScalar _ = varE 'fromSaclar
+
+toScalar :: GQLScalar a => Value -> a
+toScalar = undefined
+
+fromSaclar :: GQLScalar a => Value -> a
+fromSaclar = undefined
 
 -- FromJSON
 deriveFromJSON :: TypeD -> Q Dec

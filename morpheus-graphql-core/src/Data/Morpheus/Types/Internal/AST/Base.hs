@@ -43,7 +43,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     isInput,
     isNullableWrapper,
     sysFields,
-    typeFromScalar,
     hsTypeName,
     toOperationType,
     splitDuplicates,
@@ -344,14 +343,6 @@ sysTypes =
 
 sysFields :: [FieldName]
 sysFields = ["__typename", "__schema", "__type"]
-
-typeFromScalar :: TypeName -> TypeName
-typeFromScalar "Boolean" = "Bool"
-typeFromScalar "Int" = "Int"
-typeFromScalar "Float" = "Float"
-typeFromScalar "String" = "Text"
-typeFromScalar "ID" = "ID"
-typeFromScalar _ = "ScalarValue"
 
 hsTypeName :: TypeName -> TypeName
 hsTypeName "String" = "Text"

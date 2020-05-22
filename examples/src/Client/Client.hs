@@ -24,6 +24,16 @@ import Data.Morpheus.Client
 import Data.Morpheus.Types (GQLScalar (..), ScalarValue (..))
 import Data.Text (Text)
 
+data Euro
+  = Euro
+      Int
+      Int
+  deriving (Show)
+
+instance GQLScalar Euro where
+  parseValue _ = pure (Euro 1 0)
+  serialize (Euro x y) = Int (x * 100 + y)
+
 defineByDocumentFile
   "src/Server/Sophisticated/api.gql"
   [gql|
@@ -66,6 +76,6 @@ fetchUser = flip fetch args
         { getUserArgsCoordinates =
             Coordinates
               { coordinatesLongitude = [],
-                coordinatesLatitude = String "1"
+                coordinatesLatitude = Euro 1 2
               }
         }
