@@ -134,11 +134,11 @@ toTHDefinitions namespace lib = catMaybes <$> traverse renderTHType lib
             genType (DataInputObject fields) = defType [] $ buildObjectCons fields
             genType DataInputUnion {} = fail "Input Unions not Supported"
             genType DataInterface {interfaceFields} = do
-              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems interfaceFields)
+              typeArgD <- genArgumentTypes genArgsTypeName interfaceFields
               objCons <- buildObjectCons <$> traverse genResField interfaceFields
               defType typeArgD objCons
             genType DataObject {objectFields} = do
-              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems objectFields)
+              typeArgD <- genArgumentTypes genArgsTypeName objectFields
               objCons <- buildObjectCons <$> traverse genResField objectFields
               defType typeArgD objCons
             genType (DataUnion members) = defType [] $ map unionCon members
@@ -162,6 +162,10 @@ toTHDefinitions namespace lib = catMaybes <$> traverse renderTHType lib
                   where
                     cName = hsTypeName typeName <> utName
                     utName = hsTypeName memberName
+
+genArgumentTypes :: (FieldName -> TypeName) -> FieldsDefinition OUT -> Q [TypeD]
+genArgumentTypes genArgsTypeName fields =
+  concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
 genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [TypeD]
 genArgumentType _ FieldDefinition {fieldArgs = NoArguments} = pure []
