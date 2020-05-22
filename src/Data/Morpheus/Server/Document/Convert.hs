@@ -12,6 +12,8 @@ module Data.Morpheus.Server.Document.Convert
 where
 
 -- MORPHEUS
+
+import Data.Maybe (catMaybes)
 import Data.Morpheus.Internal.TH
   ( infoTyVars,
     mkTypeName,
@@ -74,36 +76,17 @@ kindToTyArgs DataInterface {} = Just m_
 kindToTyArgs _ = Nothing
 
 toTHDefinitions :: Bool -> [TypeDefinition ANY] -> Q [GQLTypeD]
-toTHDefinitions namespace lib = traverse renderTHType lib
+toTHDefinitions namespace schema = catMaybes <$> traverse renderTHType schema
   where
-    renderTHType :: TypeDefinition ANY -> Q GQLTypeD
+    renderTHType :: TypeDefinition ANY -> Q (Maybe GQLTypeD)
     renderTHType x = generateType x
       where
-        genArgsTypeName :: FieldName -> TypeName
-        genArgsTypeName fieldName
-          | namespace = hsTypeName (typeName x) <> argTName
-          | otherwise = argTName
-          where
-            argTName = capitalTypeName (fieldName <> "Args")
-        ---------------------------------------------------------------------------------------------
-        genResField :: FieldDefinition OUT -> Q (FieldDefinition OUT)
-        genResField field@FieldDefinition {fieldName, fieldArgs, fieldType = typeRef@TypeRef {typeConName}} =
-          do
-            typeArgs <- getTypeArgs typeConName lib
-            pure $
-              field
-                { fieldType = typeRef {typeConName = hsTypeName typeConName, typeArgs},
-                  fieldArgs = fieldArguments
-                }
-          where
-            fieldArguments
-              | hasArguments fieldArgs = fieldArgs {argumentsTypename = Just $ genArgsTypeName fieldName}
-              | otherwise = fieldArgs
+        toArgsTypeName :: FieldName -> TypeName
+        toArgsTypeName = mkArgsTypeName namespace (typeName x)
         --------------------------------------------
-        generateType :: TypeDefinition ANY -> Q GQLTypeD
+        generateType :: TypeDefinition ANY -> Q (Maybe GQLTypeD)
         generateType typeOriginal@TypeDefinition {typeName, typeContent, typeMeta} =
-          genType
-            typeContent
+          fmap defType <$> genTypeContent schema toArgsTypeName typeName typeContent
           where
             buildType :: [ConsD] -> TypeD
             buildType tCons =
@@ -112,80 +95,83 @@ toTHDefinitions namespace lib = traverse renderTHType lib
                   tMeta = typeMeta,
                   tNamespace = [],
                   tCons,
-                  tKind
+                  tKind = kindOf typeOriginal
                 }
-            buildObjectCons :: FieldsDefinition cat -> [ConsD]
-            buildObjectCons fields = [mkCons typeName fields]
-            tKind = kindOf typeOriginal
-            genType :: TypeContent TRUE ANY -> Q GQLTypeD
-            genType (DataEnum tags) =
-              pure
-                GQLTypeD
-                  { typeD =
-                      TypeD
-                        { tName = hsTypeName typeName,
-                          tNamespace = [],
-                          tCons = map mkConsEnum tags,
-                          tMeta = typeMeta,
-                          tKind
-                        },
-                    typeArgD = [],
-                    ..
-                  }
-            genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
-            genType DataInputUnion {} = fail "Input Unions not Supported"
-            genType DataInterface {interfaceFields} = do
-              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems interfaceFields)
-              objCons <- buildObjectCons <$> traverse genResField interfaceFields
-              pure
-                GQLTypeD
-                  { typeD = buildType objCons,
-                    typeArgD,
-                    ..
-                  }
-            genType (DataInputObject fields) =
-              pure
-                GQLTypeD
-                  { typeD = buildType $ buildObjectCons fields,
-                    typeArgD = [],
-                    ..
-                  }
-            genType DataObject {objectFields} = do
-              typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems objectFields)
-              objCons <- buildObjectCons <$> traverse genResField objectFields
-              pure
-                GQLTypeD
-                  { typeD = buildType objCons,
-                    typeArgD,
-                    ..
-                  }
-            genType (DataUnion members) =
-              pure
-                GQLTypeD
-                  { typeD = buildType (map unionCon members),
-                    typeArgD = [],
-                    ..
-                  }
-              where
-                unionCon memberName =
-                  mkCons
-                    cName
-                    ( singleton
-                        FieldDefinition
-                          { fieldName = "un" <> toFieldName cName,
-                            fieldType =
-                              TypeRef
-                                { typeConName = utName,
-                                  typeArgs = Just m_,
-                                  typeWrappers = []
-                                },
-                            fieldMeta = Nothing,
-                            fieldArgs = NoArguments
-                          }
-                    )
-                  where
-                    cName = hsTypeName typeName <> utName
-                    utName = hsTypeName memberName
+            -----------------------
+            defType (typeArgD, cons) =
+              GQLTypeD
+                { typeD = buildType cons,
+                  typeArgD,
+                  ..
+                }
+
+mkObjectCons :: TypeName -> FieldsDefinition cat -> [ConsD]
+mkObjectCons typeName fields = [mkCons typeName fields]
+
+mkArgsTypeName :: Bool -> TypeName -> FieldName -> TypeName
+mkArgsTypeName namespace typeName fieldName
+  | namespace = hsTypeName typeName <> argTName
+  | otherwise = argTName
+  where
+    argTName = capitalTypeName (fieldName <> "Args")
+
+mkField :: [TypeDefinition ANY] -> (FieldName -> TypeName) -> FieldDefinition OUT -> Q (FieldDefinition OUT)
+mkField schema genArgsTypeName field@FieldDefinition {fieldName, fieldArgs, fieldType = typeRef@TypeRef {typeConName}} =
+  do
+    typeArgs <- getTypeArgs typeConName schema
+    pure $
+      field
+        { fieldType = typeRef {typeConName = hsTypeName typeConName, typeArgs},
+          fieldArgs = fieldArguments
+        }
+  where
+    fieldArguments
+      | hasArguments fieldArgs = fieldArgs {argumentsTypename = Just $ genArgsTypeName fieldName}
+      | otherwise = fieldArgs
+
+genTypeContent ::
+  [TypeDefinition ANY] ->
+  (FieldName -> TypeName) ->
+  TypeName ->
+  TypeContent TRUE ANY ->
+  Q (Maybe ([TypeD], [ConsD]))
+genTypeContent _ _ _ DataScalar {} = pure Nothing
+genTypeContent _ _ _ (DataEnum tags) = pure $ Just ([], map mkConsEnum tags)
+genTypeContent _ _ typeName (DataInputObject fields) = pure $ Just ([], mkObjectCons typeName fields)
+genTypeContent _ _ _ DataInputUnion {} = fail "Input Unions not Supported"
+genTypeContent schema toArgsTyName typeName DataInterface {interfaceFields} = do
+  typeArgD <- genArgumentTypes toArgsTyName interfaceFields
+  objCons <- mkObjectCons typeName <$> traverse (mkField schema toArgsTyName) interfaceFields
+  pure $ Just (typeArgD, objCons)
+genTypeContent schema toArgsTyName typeName DataObject {objectFields} = do
+  typeArgD <- genArgumentTypes toArgsTyName objectFields
+  objCons <- mkObjectCons typeName <$> traverse (mkField schema toArgsTyName) objectFields
+  pure $ Just (typeArgD, objCons)
+genTypeContent _ _ typeName (DataUnion members) = pure $ Just ([], map unionCon members)
+  where
+    unionCon memberName =
+      mkCons
+        cName
+        ( singleton
+            FieldDefinition
+              { fieldName = "un" <> toFieldName cName,
+                fieldType =
+                  TypeRef
+                    { typeConName = utName,
+                      typeArgs = Just m_,
+                      typeWrappers = []
+                    },
+                fieldMeta = Nothing,
+                fieldArgs = NoArguments
+              }
+        )
+      where
+        cName = hsTypeName typeName <> utName
+        utName = hsTypeName memberName
+
+genArgumentTypes :: (FieldName -> TypeName) -> FieldsDefinition OUT -> Q [TypeD]
+genArgumentTypes genArgsTypeName fields =
+  concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
 genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [TypeD]
 genArgumentType _ FieldDefinition {fieldArgs = NoArguments} = pure []
