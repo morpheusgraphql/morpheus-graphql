@@ -4,7 +4,7 @@
 
 ### breaking changes
 
-- from now you should provide for every custom graohql scalar definition coresponoding haskell type definition and `GQLScalar` implementation fot it. for details see [`examples-client`](https://github.com/morpheusgraphql/morpheus-graphql/tree/master/examples-client)
+- from now you should provide for every custom graphql scalar definition coresponoding haskell type definition and `GQLScalar` implementation fot it. for details see [`examples-client`](https://github.com/morpheusgraphql/morpheus-graphql/tree/master/examples-client)
 
 ### new features
 
