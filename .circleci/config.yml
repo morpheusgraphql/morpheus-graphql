@@ -196,4 +196,5 @@ workflows:
       - ghc_8_2_2
       - ghc_8_4_4
       - ghc_8_6_5
+      - ghc_8_8_3
       - ghc_nightly
