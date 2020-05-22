@@ -42,7 +42,7 @@ defineByIntrospectionFile
     query GetUser ($coordinates: Coordinates!)
       {
         myUser: user {
-           boo3: nam
+           boo3: name
            myUserEmail: email
            address (coordinates: $coordinates ){
              city
@@ -81,6 +81,6 @@ fetchUsers = fetch usersApi userArgs
         { getUserArgsCoordinates =
             Coordinates
               { coordinatesLongitude = [],
-                coordinatesLatitude = String "1"
+                coordinatesLatitude = Euro 1 25
               }
         }
