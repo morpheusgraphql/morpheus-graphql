@@ -12,6 +12,8 @@ module Data.Morpheus.Server.Document.Convert
 where
 
 -- MORPHEUS
+
+import Data.Maybe (catMaybes)
 import Data.Morpheus.Internal.TH
   ( infoTyVars,
     mkTypeName,
@@ -74,9 +76,9 @@ kindToTyArgs DataInterface {} = Just m_
 kindToTyArgs _ = Nothing
 
 toTHDefinitions :: Bool -> [TypeDefinition ANY] -> Q [GQLTypeD]
-toTHDefinitions namespace lib = traverse renderTHType lib
+toTHDefinitions namespace lib = catMaybes <$> traverse renderTHType lib
   where
-    renderTHType :: TypeDefinition ANY -> Q GQLTypeD
+    renderTHType :: TypeDefinition ANY -> Q (Maybe GQLTypeD)
     renderTHType x = generateType x
       where
         genArgsTypeName :: FieldName -> TypeName
@@ -100,7 +102,7 @@ toTHDefinitions namespace lib = traverse renderTHType lib
               | hasArguments fieldArgs = fieldArgs {argumentsTypename = Just $ genArgsTypeName fieldName}
               | otherwise = fieldArgs
         --------------------------------------------
-        generateType :: TypeDefinition ANY -> Q GQLTypeD
+        generateType :: TypeDefinition ANY -> Q (Maybe GQLTypeD)
         generateType typeOriginal@TypeDefinition {typeName, typeContent, typeMeta} =
           genType
             typeContent
@@ -117,55 +119,29 @@ toTHDefinitions namespace lib = traverse renderTHType lib
             buildObjectCons :: FieldsDefinition cat -> [ConsD]
             buildObjectCons fields = [mkCons typeName fields]
             tKind = kindOf typeOriginal
-            genType :: TypeContent TRUE ANY -> Q GQLTypeD
-            genType (DataEnum tags) =
-              pure
-                GQLTypeD
-                  { typeD =
-                      TypeD
-                        { tName = hsTypeName typeName,
-                          tNamespace = [],
-                          tCons = map mkConsEnum tags,
-                          tMeta = typeMeta,
-                          tKind
-                        },
-                    typeArgD = [],
-                    ..
-                  }
-            genType DataScalar {} = fail "Scalar Types should defined By Native Haskell Types"
+            -----------------------
+            defType typeArgD cons =
+              pure $
+                Just
+                  GQLTypeD
+                    { typeD = buildType cons,
+                      typeArgD,
+                      ..
+                    }
+            genType :: TypeContent TRUE ANY -> Q (Maybe GQLTypeD)
+            genType DataScalar {} = pure Nothing
+            genType (DataEnum tags) = defType [] $ map mkConsEnum tags
+            genType (DataInputObject fields) = defType [] $ buildObjectCons fields
             genType DataInputUnion {} = fail "Input Unions not Supported"
             genType DataInterface {interfaceFields} = do
               typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems interfaceFields)
               objCons <- buildObjectCons <$> traverse genResField interfaceFields
-              pure
-                GQLTypeD
-                  { typeD = buildType objCons,
-                    typeArgD,
-                    ..
-                  }
-            genType (DataInputObject fields) =
-              pure
-                GQLTypeD
-                  { typeD = buildType $ buildObjectCons fields,
-                    typeArgD = [],
-                    ..
-                  }
+              defType typeArgD objCons
             genType DataObject {objectFields} = do
               typeArgD <- concat <$> traverse (genArgumentType genArgsTypeName) (elems objectFields)
               objCons <- buildObjectCons <$> traverse genResField objectFields
-              pure
-                GQLTypeD
-                  { typeD = buildType objCons,
-                    typeArgD,
-                    ..
-                  }
-            genType (DataUnion members) =
-              pure
-                GQLTypeD
-                  { typeD = buildType (map unionCon members),
-                    typeArgD = [],
-                    ..
-                  }
+              defType typeArgD objCons
+            genType (DataUnion members) = defType [] $ map unionCon members
               where
                 unionCon memberName =
                   mkCons
