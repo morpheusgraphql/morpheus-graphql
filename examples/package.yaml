@@ -32,7 +32,6 @@ dependencies:
   - servant-server
 
 data-files:
-  - assets/**/*.gql
   - assets/**/*.json
   - assets/**/*.html
 
