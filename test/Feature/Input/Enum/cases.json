@@ -40,7 +40,11 @@
     "description": "fail on invalid enum value"
   },
   {
-    "path": "StringInput",
+    "path": "invalidStringInput",
+    "description": "fail on String inputs for Enum Values"
+  },
+  {
+    "path": "invalidStringDefaultValue",
     "description": "fail on String inputs for Enum Values"
   },
   {
