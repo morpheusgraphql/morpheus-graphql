@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -49,13 +50,15 @@ import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( InputValidator,
+  ( InputSource (..),
+    InputValidator,
     Prop (..),
     askInputFieldType,
     askInputMember,
     askScopePosition,
     constraintInputUnion,
     inputMessagePrefix,
+    inputValueSource,
     selectKnown,
     selectWithDefaultValue,
     withInputScope,
@@ -212,11 +215,26 @@ isInt :: ScalarValue -> Bool
 isInt Int {} = True
 isInt _ = False
 
+isVariableValue :: InputValidator Bool
+isVariableValue =
+  \case
+    SourceVariable {isDefaultValue} -> not isDefaultValue
+    _ -> False
+    <$> inputValueSource
+
 validateEnum ::
   (ResolvedValue -> InputValidator ValidValue) ->
   [DataEnumValue] ->
   ResolvedValue ->
   InputValidator ValidValue
+validateEnum err enumValues value@(Scalar (String enumValue))
+  | TypeName enumValue `elem` tags = do
+    isFromVariable <- isVariableValue
+    if isFromVariable
+      then pure (Enum (TypeName enumValue))
+      else err value
+  where
+    tags = map enumName enumValues
 validateEnum err enumValues value@(Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise = err value

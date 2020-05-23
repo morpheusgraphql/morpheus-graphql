@@ -36,7 +36,23 @@
     "description": "decode string to correct Haskell Enum Representation"
   },
   {
-    "path":"decodeInvalidValue",
-    "description":"fail on invalid enum value"
+    "path": "decodeInvalidValue",
+    "description": "fail on invalid enum value"
+  },
+  {
+    "path": "invalidStringInput",
+    "description": "fail on String inputs for Enum Values"
+  },
+  {
+    "path": "invalidStringDefaultValue",
+    "description": "fail on String inputs for Enum Values"
+  },
+  {
+    "path": "validEnumFromJSONVariable",
+    "description": "accept strings as enum if it is received from json variable"
+  },
+  {
+    "path": "invalidEnumFromJSONVariable",
+    "description": "reject invalid strings as enum from json variable"
   }
 ]
