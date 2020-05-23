@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0625b93b8b6733d3c95c7053cc7f0e06e28315f55b139c1150144913051d0048
+-- hash: f93829aec87111281a7a362c417e0df68b87e3adc2b8cd8e0625b7ad002261ec
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -118,7 +118,9 @@ data-files:
     test/Feature/Input/Enum/decodeMany/con4/query.gql
     test/Feature/Input/Enum/decodeMany/con5/query.gql
     test/Feature/Input/Enum/decodeMany/con6/query.gql
+    test/Feature/Input/Enum/invalidEnumFromJSONVariable/query.gql
     test/Feature/Input/Enum/StringInput/query.gql
+    test/Feature/Input/Enum/validEnumFromJSONVariable/query.gql
     test/Feature/Input/Object/nullableUndefinedField/query.gql
     test/Feature/Input/Object/resolveObject/query.gql
     test/Feature/Input/Object/resolveVariable/query.gql
@@ -273,7 +275,11 @@ data-files:
     test/Feature/Input/Enum/decodeMany/con4/response.json
     test/Feature/Input/Enum/decodeMany/con5/response.json
     test/Feature/Input/Enum/decodeMany/con6/response.json
+    test/Feature/Input/Enum/invalidEnumFromJSONVariable/response.json
+    test/Feature/Input/Enum/invalidEnumFromJSONVariable/variables.json
     test/Feature/Input/Enum/StringInput/response.json
+    test/Feature/Input/Enum/validEnumFromJSONVariable/response.json
+    test/Feature/Input/Enum/validEnumFromJSONVariable/variables.json
     test/Feature/Input/Object/cases.json
     test/Feature/Input/Object/nullableUndefinedField/response.json
     test/Feature/Input/Object/resolveObject/response.json
