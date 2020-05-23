@@ -156,10 +156,10 @@ lookupAndValidateValueOnBody
         DefaultValue ->
         TypeDefinition IN ->
         BaseValidator ValidValue
-      checkType (Just variable) Nothing varType = validator varType variable
+      checkType (Just variable) Nothing varType = validator varType False variable
       checkType (Just variable) (Just defValue) varType =
-        validator varType defValue >> validator varType variable
-      checkType Nothing (Just defValue) varType = validator varType defValue
+        validator varType True defValue >> validator varType False variable
+      checkType Nothing (Just defValue) varType = validator varType True defValue
       checkType Nothing Nothing varType
         | validationMode /= WITHOUT_VARIABLES && not (isNullable variableType) =
           failure $ uninitializedVariable var
@@ -167,11 +167,11 @@ lookupAndValidateValueOnBody
           returnNull
         where
           returnNull =
-            maybe (pure Null) (validator varType) (M.lookup variableName bodyVariables)
+            maybe (pure Null) (validator varType False) (M.lookup variableName bodyVariables)
       -----------------------------------------------------------------------------------------------
-      validator :: TypeDefinition IN -> ResolvedValue -> BaseValidator ValidValue
-      validator varType varValue =
-        startInput (SourceVariable var) $
+      validator :: TypeDefinition IN -> Bool -> ResolvedValue -> BaseValidator ValidValue
+      validator varType isDefaultValue varValue =
+        startInput (SourceVariable var isDefaultValue) $
           validateInput
             (typeWrappers variableType)
             varType

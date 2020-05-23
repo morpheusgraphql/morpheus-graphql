@@ -44,6 +44,7 @@ module Data.Morpheus.Types.Internal.Validation
     constraintInputUnion,
     ScopeKind (..),
     withDirective,
+    inputValueSource,
   )
 where
 
@@ -113,6 +114,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     SelectionValidator,
     Target (..),
     Validator (..),
+    inputValueSource,
     renderInputPrefix,
   )
 import Data.Semigroup

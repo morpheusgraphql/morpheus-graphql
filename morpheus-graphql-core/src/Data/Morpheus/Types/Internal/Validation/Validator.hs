@@ -36,6 +36,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     Prop (..),
     Resolution,
     ScopeKind (..),
+    inputValueSource,
   )
 where
 
@@ -99,7 +100,7 @@ renderInputPrefix InputContext {inputPath, inputSource} =
 renderSource :: InputSource -> Message
 renderSource (SourceArgument Argument {argumentName}) =
   "Argument " <> msg argumentName <> " got invalid value. "
-renderSource (SourceVariable Variable {variableName}) =
+renderSource (SourceVariable Variable {variableName} _) =
   "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
 
 data ScopeKind
@@ -126,7 +127,10 @@ data InputContext = InputContext
 
 data InputSource
   = SourceArgument (Argument RESOLVED)
-  | SourceVariable (Variable RAW)
+  | SourceVariable
+      { sourceVariable :: Variable RAW,
+        isDefaultValue :: Bool
+      }
   deriving (Show)
 
 newtype SelectionContext = SelectionContext
@@ -157,6 +161,9 @@ withInputScope prop = setContext update
   where
     update ctx@InputContext {inputPath = old} =
       ctx {inputPath = old <> [prop]}
+
+inputValueSource :: InputValidator InputSource
+inputValueSource = inputSource . snd <$> Validator ask
 
 askContext :: Validator ctx ctx
 askContext = snd <$> Validator ask
