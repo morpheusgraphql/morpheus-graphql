@@ -36,7 +36,11 @@
     "description": "decode string to correct Haskell Enum Representation"
   },
   {
-    "path":"decodeInvalidValue",
-    "description":"fail on invalid enum value"
+    "path": "decodeInvalidValue",
+    "description": "fail on invalid enum value"
+  },
+  {
+    "path": "StringInput",
+    "description": "fail on String inputs for Enum Values"
   }
 ]
