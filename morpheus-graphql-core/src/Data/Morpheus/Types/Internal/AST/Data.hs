@@ -107,7 +107,6 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( DataFingerprint (..),
-    DataTypeKind (..),
     Description,
     FieldName,
     FieldName (..),
@@ -117,6 +116,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Stage,
     TRUE,
     Token,
+    TypeKind (..),
     TypeName,
     TypeRef (..),
     TypeWrapper (..),
@@ -463,7 +463,7 @@ isEntNode DataScalar {} = True
 isEntNode DataEnum {} = True
 isEntNode _ = False
 
-kindOf :: TypeDefinition a -> DataTypeKind
+kindOf :: TypeDefinition a -> TypeKind
 kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
   where
     __kind DataScalar {} = KindScalar

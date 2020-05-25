@@ -11,7 +11,6 @@ module Data.Morpheus.Schema.SchemaAPI
 where
 
 -- MORPHEUS
-
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     elems,

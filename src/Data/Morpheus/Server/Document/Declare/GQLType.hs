@@ -35,13 +35,13 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    DataTypeKind (..),
     GQLTypeD (..),
     Meta (..),
     QUERY,
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName,
     isObject,
   )
@@ -94,7 +94,7 @@ deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta, tKind}, typeOriginal} =
           typeN <- headSig
           pure $ typeInstanceDec insName typeN (ConT tyName)
 
-kindName :: DataTypeKind -> Name
+kindName :: TypeKind -> Name
 kindName KindObject {} = ''OUTPUT
 kindName KindScalar = ''SCALAR
 kindName KindEnum = ''ENUM

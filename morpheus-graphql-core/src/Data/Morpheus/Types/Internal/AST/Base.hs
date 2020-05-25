@@ -26,7 +26,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     QUERY,
     MUTATION,
     SUBSCRIPTION,
-    DataTypeKind (..),
+    TypeKind (..),
     DataFingerprint (..),
     DataTypeWrapper (..),
     Token,
@@ -246,7 +246,7 @@ instance Msg TypeRef where
 
 -- Kind
 -----------------------------------------------------------------------------------
-data DataTypeKind
+data TypeKind
   = KindScalar
   | KindObject (Maybe OperationType)
   | KindUnion
@@ -258,22 +258,22 @@ data DataTypeKind
   | KindInterface
   deriving (Eq, Show, Lift)
 
-isSubscription :: DataTypeKind -> Bool
+isSubscription :: TypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
 isSubscription _ = False
 
-isOutputObject :: DataTypeKind -> Bool
+isOutputObject :: TypeKind -> Bool
 isOutputObject (KindObject _) = True
 isOutputObject KindInterface = True
 isOutputObject _ = False
 
-isObject :: DataTypeKind -> Bool
+isObject :: TypeKind -> Bool
 isObject (KindObject _) = True
 isObject KindInputObject = True
 isObject KindInterface = True
 isObject _ = False
 
-isInput :: DataTypeKind -> Bool
+isInput :: TypeKind -> Bool
 isInput KindInputObject = True
 isInput _ = False
 

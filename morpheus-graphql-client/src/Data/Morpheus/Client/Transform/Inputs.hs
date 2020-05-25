@@ -27,7 +27,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD (..),
-    DataTypeKind (..),
     FieldDefinition (..),
     IN,
     Operation (..),
@@ -36,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName,
     TypeRef (..),
     VALID,
@@ -139,7 +139,7 @@ buildInputType name = getType name >>= generateTypes
             ]
         subTypes _ = pure []
 
-mkInputType :: TypeName -> DataTypeKind -> [ConsD] -> TypeD
+mkInputType :: TypeName -> TypeKind -> [ConsD] -> TypeD
 mkInputType tName tKind tCons =
   TypeD
     { tName,

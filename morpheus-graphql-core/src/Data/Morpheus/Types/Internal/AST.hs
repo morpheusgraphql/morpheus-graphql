@@ -61,7 +61,7 @@ module Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     Schema (..),
     DataTypeWrapper (..),
-    DataTypeKind (..),
+    TypeKind (..),
     DataFingerprint (..),
     TypeWrapper (..),
     TypeRef (..),

@@ -13,8 +13,8 @@ where
 
 import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( DataTypeKind,
-    FieldName,
+  ( FieldName,
+    TypeKind,
     TypeName,
     TypeRef (..),
     hsTypeName,
@@ -48,7 +48,7 @@ data TypeD = TypeD
   { tName :: TypeName,
     tNamespace :: [FieldName],
     tCons :: [ConsD],
-    tKind :: DataTypeKind,
+    tKind :: TypeKind,
     tMeta :: Maybe Meta
   }
   deriving (Show)

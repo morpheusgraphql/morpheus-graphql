@@ -37,11 +37,11 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD (..),
-    DataTypeKind (..),
     FieldDefinition (..),
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName,
     TypeRef (..),
     TypeUpdater,
@@ -68,7 +68,7 @@ instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
-deriveObjectRep :: (TypeD, Maybe (TypeDefinition ANY), Maybe DataTypeKind) -> Q [Dec]
+deriveObjectRep :: (TypeD, Maybe (TypeDefinition ANY), Maybe TypeKind) -> Q [Dec]
 deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
