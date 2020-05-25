@@ -57,16 +57,27 @@ validateType ::
   TypeDefinition ANY ->
   Eventless (TypeDefinition ANY)
 validateType
-  schema
+  ctx
   dt@TypeDefinition
     { typeName,
       typeContent = DataObject {objectImplements, objectFields}
     } = do
-    interface <- traverse (getInterfaceByKey schema) objectImplements
-    case concatMap (mustBeSubset objectFields) interface of
-      [] -> pure dt
-      errors -> failure $ partialImplements typeName errors
+    validateImplements ctx typeName objectImplements objectFields
+    pure dt
 validateType _ x = pure x
+
+validateImplements ::
+  CTX ->
+  TypeName ->
+  [TypeName] ->
+  FieldsDefinition OUT ->
+  Eventless ()
+validateImplements ctx typeName objectImplements objectFields = do
+  interface <- traverse (getInterfaceByKey ctx) objectImplements
+  case concatMap (mustBeSubset objectFields) interface of
+    [] -> pure ()
+    errors -> failure $ partialImplements typeName errors
+validateImplements _ _ _ _ = pure ()
 
 mustBeSubset ::
   FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> [(TypeName, FieldName, ImplementsError)]
