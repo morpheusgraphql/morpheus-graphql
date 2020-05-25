@@ -11,11 +11,13 @@ where
 import Data.Functor (($>))
 --
 -- Morpheus
+
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     partialImplements,
     unknownInterface,
   )
+import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Selectable (..),
     elems,
@@ -42,14 +44,16 @@ import Data.Morpheus.Types.Internal.Resolving
     Failure (..),
   )
 
-validateSchema :: Schema -> Eventless Schema
-validateSchema schema = validatePartialDocument schema (elems schema) $> schema
+type CTX = [TypeDefinition ANY]
 
-validatePartialDocument :: Schema -> [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
-validatePartialDocument schema = traverse (validateType schema)
+validateSchema :: Schema -> Eventless Schema
+validateSchema schema = validatePartialDocument (elems schema) $> schema
+
+validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
+validatePartialDocument schema = traverse (validateType schema) schema
 
 validateType ::
-  Schema ->
+  CTX ->
   TypeDefinition ANY ->
   Eventless (TypeDefinition ANY)
 validateType
@@ -58,7 +62,7 @@ validateType
     { typeName,
       typeContent = DataObject {objectImplements, objectFields}
     } = do
-    interface <- traverse getInterfaceByKey objectImplements
+    interface <- traverse (getInterfaceByKey schema) objectImplements
     case concatMap (mustBeSubset objectFields) interface of
       [] -> pure dt
       errors -> failure $ partialImplements typeName errors
@@ -87,11 +91,11 @@ mustBeSubset objFields (typeName, fields) = concatMap checkField (elems fields)
             ]
 
 -------------------------------
-getInterfaceByKey :: Schema -> TypeName -> Eventless (TypeName, FieldsDefinition OUT)
+getInterfaceByKey :: CTX -> TypeName -> Eventless (TypeName, FieldsDefinition OUT)
 getInterfaceByKey schema interfaceName =
   selectBy err interfaceName schema
     >>= constraintInterface
   where
-    err = failure $ unknownInterface interfaceName
+    err = unknownInterface interfaceName
     constraintInterface TypeDefinition {typeContent = DataInterface {interfaceFields}} = pure (interfaceName, interfaceFields)
-    constraintInterface _ = failure ("type " <> msg interfaceName <> " must be an interface" :: Message)
+    constraintInterface _ = failure $ globalErrorMessage $ "type " <> msg interfaceName <> " must be an interface"
