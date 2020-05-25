@@ -8,7 +8,7 @@
 
 ### minor changes
 
-- `importGQLDocument` defines `GQLType` instances for scalar definitions
+- `importGQLDocument` automatically defines `GQLType` instances for scalar definitions
 
 ## 0.12.0 - 21.05.2020
 
