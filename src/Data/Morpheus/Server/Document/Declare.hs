@@ -79,10 +79,13 @@ instance Declare GQLTypeD where
 
 instance Declare TypeD where
   type DeclareCtx TypeD = (Bool, TypeKind)
+
+  -- scalar types are defined from user
   declare (_, KindScalar) _ = pure []
   declare (namespace, tKind) typeD =
     pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
     where
+      -- input types can support show
       derivingClasses
         | isInput tKind = [''Show]
         | otherwise = []
