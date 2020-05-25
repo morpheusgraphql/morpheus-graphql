@@ -95,7 +95,13 @@ data Euro
   deriving (Show, Generic)
 
 instance GQLScalar Euro where
-  parseValue _ = pure (Euro 1 0)
+  parseValue (Int x) =
+    pure
+      ( Euro
+          (round (fromIntegral x / 100 :: Double))
+          (mod x 1)
+      )
+  parseValue _ = Left ""
   serialize (Euro x y) = Int (x * 100 + y)
 
 data Channel = USER | ADDRESS
