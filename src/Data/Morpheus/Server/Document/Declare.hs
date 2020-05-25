@@ -30,7 +30,7 @@ import Data.Morpheus.Server.Document.Declare.Introspect
 import Data.Morpheus.Types.Internal.AST
   ( GQLTypeD (..),
     TypeD (..),
-    TypeKind,
+    TypeKind (..),
     isInput,
     isObject,
   )
@@ -79,6 +79,7 @@ instance Declare GQLTypeD where
 
 instance Declare TypeD where
   type DeclareCtx TypeD = (Bool, TypeKind)
+  declare (_, KindScalar) _ = pure []
   declare (namespace, tKind) typeD =
     pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
     where

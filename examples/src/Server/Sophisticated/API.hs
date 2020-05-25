@@ -30,7 +30,6 @@ import Data.Morpheus.Document
   )
 import Data.Morpheus.Kind
   ( INPUT,
-    SCALAR,
   )
 import Data.Morpheus.Types
   ( Event (..),
@@ -94,9 +93,6 @@ data Euro
       Int
       Int
   deriving (Show, Generic)
-
-instance GQLType Euro where
-  type KIND Euro = SCALAR
 
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)
