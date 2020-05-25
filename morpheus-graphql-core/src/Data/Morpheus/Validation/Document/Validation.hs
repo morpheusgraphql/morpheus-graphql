@@ -80,25 +80,39 @@ validateImplements ctx typeName objectImplements objectFields = do
 
 mustBeSubset ::
   FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> [(TypeName, FieldName, ImplementsError)]
-mustBeSubset objFields (typeName, fields) = concatMap checkField (elems fields)
-  where
-    checkField :: FieldDefinition OUT -> [(TypeName, FieldName, ImplementsError)]
-    checkField FieldDefinition {fieldName, fieldType = interfaceT@TypeRef {typeConName = interfaceTypeName, typeWrappers = interfaceWrappers}} =
-      selectOr err checkTypeEq fieldName objFields
-      where
-        err = [(typeName, fieldName, UndefinedField)]
-        checkTypeEq FieldDefinition {fieldType = objT@TypeRef {typeConName, typeWrappers}}
-          | typeConName == interfaceTypeName && not (isWeaker typeWrappers interfaceWrappers) =
-            []
-          | otherwise =
-            [ ( typeName,
-                fieldName,
-                UnexpectedType
-                  { expectedType = interfaceT,
-                    foundType = objT
-                  }
-              )
-            ]
+mustBeSubset objFields (typeName, fields) = concatMap (checkInterfaceField typeName objFields) (elems fields)
+
+checkInterfaceField ::
+  TypeName ->
+  FieldsDefinition OUT ->
+  FieldDefinition OUT ->
+  [(TypeName, FieldName, ImplementsError)]
+checkInterfaceField
+  typeName
+  objFields
+  FieldDefinition
+    { fieldName,
+      fieldType =
+        interfaceT@TypeRef
+          { typeConName = interfaceTypeName,
+            typeWrappers = interfaceWrappers
+          }
+    } =
+    selectOr err checkTypeEq fieldName objFields
+    where
+      err = [(typeName, fieldName, UndefinedField)]
+      checkTypeEq FieldDefinition {fieldType = objT@TypeRef {typeConName, typeWrappers}}
+        | typeConName == interfaceTypeName && not (isWeaker typeWrappers interfaceWrappers) =
+          []
+        | otherwise =
+          [ ( typeName,
+              fieldName,
+              UnexpectedType
+                { expectedType = interfaceT,
+                  foundType = objT
+                }
+            )
+          ]
 
 -------------------------------
 getInterfaceByKey :: CTX -> TypeName -> Eventless (TypeName, FieldsDefinition OUT)
