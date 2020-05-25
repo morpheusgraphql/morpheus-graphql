@@ -14,16 +14,16 @@ import Data.Morpheus.Internal.TH
   ( Scope (..),
     declareType,
   )
-import Data.Morpheus.Server.Document.Decode
+import Data.Morpheus.Server.Document.Declare.Decode
   ( deriveDecode,
   )
-import Data.Morpheus.Server.Document.Encode
+import Data.Morpheus.Server.Document.Declare.Encode
   ( deriveEncode,
   )
-import Data.Morpheus.Server.Document.GQLType
+import Data.Morpheus.Server.Document.Declare.GQLType
   ( deriveGQLType,
   )
-import Data.Morpheus.Server.Document.Introspect
+import Data.Morpheus.Server.Document.Declare.Introspect
   ( deriveObjectRep,
     instanceIntrospect,
   )

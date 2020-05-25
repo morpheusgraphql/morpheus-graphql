@@ -17,11 +17,11 @@ import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
-import Data.Morpheus.Server.Document.Convert
-  ( toTHDefinitions,
-  )
 import Data.Morpheus.Server.Document.Declare
   ( declare,
+  )
+import Data.Morpheus.Server.Document.Transform
+  ( toTHDefinitions,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Result (..),

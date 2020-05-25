@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Server.Document.Introspect
+module Data.Morpheus.Server.Document.Declare.Introspect
   ( deriveObjectRep,
     instanceIntrospect,
   )
