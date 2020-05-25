@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -34,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeRef (..),
+    TypeWrapper,
     isWeaker,
     msg,
   )
@@ -92,18 +94,14 @@ checkInterfaceField
   objFields
   FieldDefinition
     { fieldName,
-      fieldType =
-        interfaceT@TypeRef
-          { typeConName = interfaceTypeName,
-            typeWrappers = interfaceWrappers
-          }
+      fieldType = interfaceT
     } =
     selectOr err checkTypeEq fieldName objFields
     where
       err = [(typeName, fieldName, UndefinedField)]
-      checkTypeEq FieldDefinition {fieldType = objT@TypeRef {typeConName, typeWrappers}}
-        | typeConName == interfaceTypeName && not (isWeaker typeWrappers interfaceWrappers) =
-          []
+      -----
+      checkTypeEq FieldDefinition {fieldType = objT}
+        | interfaceT << objT = []
         | otherwise =
           [ ( typeName,
               fieldName,
@@ -113,6 +111,16 @@ checkInterfaceField
                 }
             )
           ]
+
+class TypeEq a where
+  (<<) :: a -> a -> Bool
+
+instance TypeEq TypeRef where
+  TypeRef {typeConName, typeWrappers} << TypeRef {typeConName = name', typeWrappers = typeWrappers'} =
+    typeConName == name' && typeWrappers << typeWrappers'
+
+instance TypeEq [TypeWrapper] where
+  w1 << w2 = not (isWeaker w1 w2)
 
 -------------------------------
 getInterfaceByKey :: CTX -> TypeName -> Eventless (TypeName, FieldsDefinition OUT)
