@@ -99,7 +99,7 @@ instance GQLScalar Euro where
     pure
       ( Euro
           (round (fromIntegral x / 100 :: Double))
-          (mod x 1)
+          (mod x 100)
       )
   parseValue _ = Left ""
   serialize (Euro x y) = Int (x * 100 + y)
