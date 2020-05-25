@@ -1,7 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument,
@@ -26,6 +28,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    ArgumentsDefinition,
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
@@ -92,35 +95,45 @@ checkInterfaceField ::
 checkInterfaceField
   typeName
   objFields
-  FieldDefinition
-    { fieldName,
-      fieldType = interfaceT
+  interfaceField@FieldDefinition
+    { fieldName
     } =
-    selectOr err checkTypeEq fieldName objFields
+    selectOr err checkEq fieldName objFields
     where
       err = [(typeName, fieldName, UndefinedField)]
       -----
-      checkTypeEq FieldDefinition {fieldType = objT}
-        | interfaceT << objT = []
-        | otherwise =
-          [ ( typeName,
-              fieldName,
-              UnexpectedType
-                { expectedType = interfaceT,
-                  foundType = objT
-                }
-            )
-          ]
+      checkEq field = map (typeName,fieldName,) (interfaceField << field)
 
-class TypeEq a where
-  (<<) :: a -> a -> Bool
+class TypeEq a e where
+  (<<) :: a -> a -> e
 
-instance TypeEq TypeRef where
-  TypeRef {typeConName, typeWrappers} << TypeRef {typeConName = name', typeWrappers = typeWrappers'} =
-    typeConName == name' && typeWrappers << typeWrappers'
+instance TypeEq (FieldDefinition OUT) [ImplementsError] where
+  FieldDefinition
+    { fieldType,
+      fieldArgs
+    }
+    << FieldDefinition
+      { fieldType = fieldType',
+        fieldArgs = fieldArgs'
+      } = (fieldType << fieldType') <> (fieldArgs << fieldArgs')
 
-instance TypeEq [TypeWrapper] where
-  w1 << w2 = not (isWeaker w1 w2)
+instance TypeEq TypeRef [ImplementsError] where
+  t1@TypeRef
+    { typeConName,
+      typeWrappers
+    }
+    << t2@TypeRef
+      { typeConName = name',
+        typeWrappers = typeWrappers'
+      }
+      | typeConName == name' && typeWrappers << typeWrappers' = []
+      | otherwise = [UnexpectedType {expectedType = t1, foundType = t2}]
+
+instance TypeEq [TypeWrapper] Bool where
+  w1 << w2 = not $ isWeaker w2 w1
+
+instance TypeEq ArgumentsDefinition [ImplementsError] where
+  args1 << args2 = [] -- TODO: real errors
 
 -------------------------------
 getInterfaceByKey :: CTX -> TypeName -> Eventless (TypeName, FieldsDefinition OUT)
