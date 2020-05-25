@@ -77,7 +77,6 @@ validateImplements ctx typeName objectImplements objectFields = do
   case concatMap (mustBeSubset objectFields) interface of
     [] -> pure ()
     errors -> failure $ partialImplements typeName errors
-validateImplements _ _ _ _ = pure ()
 
 mustBeSubset ::
   FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> [(TypeName, FieldName, ImplementsError)]
