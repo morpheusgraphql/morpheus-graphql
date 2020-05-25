@@ -23,7 +23,8 @@ import Data.Morpheus.Internal.Utils
     failure,
     selectBy,
   )
-import qualified Data.Morpheus.Schema.TypeKind as TK (TypeKind (..))
+import Data.Morpheus.Schema.TypeKind (TypeKind (..))
+import qualified Data.Morpheus.Types.Internal.AST as AST (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DataEnumValue (..),
@@ -45,7 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     Schema,
     TypeContent (..),
     TypeDefinition (..),
-    TypeKind (..),
     TypeName (..),
     TypeRef (..),
     createInputUnionFields,
@@ -190,7 +190,18 @@ instance RenderSchema (FieldDefinition cat) where
           <> renderDeprecated fieldMeta
 
 lookupKind :: (Monad m) => TypeName -> Result e m TypeKind
-lookupKind name schema = kindOf <$> selectBy ("Kind Not Found: " <> msg name) name schema
+lookupKind name schema = renderTypeKind . kindOf <$> selectBy ("Kind Not Found: " <> msg name) name schema
+
+renderTypeKind :: AST.TypeKind -> TypeKind
+renderTypeKind AST.KindScalar = SCALAR
+renderTypeKind (AST.KindObject _) = OBJECT
+renderTypeKind AST.KindUnion = UNION
+renderTypeKind AST.KindInputUnion = INPUT_OBJECT
+renderTypeKind AST.KindEnum = ENUM
+renderTypeKind AST.KindInputObject = INPUT_OBJECT
+renderTypeKind AST.KindList = LIST
+renderTypeKind AST.KindNonNull = NON_NULL
+renderTypeKind AST.KindInterface = INTERFACE
 
 renderinputValue ::
   (Monad m) =>
