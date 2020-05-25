@@ -30,6 +30,7 @@ import Data.Morpheus.Server.Document.Declare.Introspect
 import Data.Morpheus.Types.Internal.AST
   ( GQLTypeD (..),
     TypeD (..),
+    TypeKind,
     isInput,
     isObject,
   )
@@ -74,10 +75,13 @@ instance Declare GQLTypeD where
           ----------------------------------------------------
           argsTypeDecs = map (declareType SERVER namespace Nothing []) typeArgD
       --------------------------------------------------
-      declareMainType = declareT
-        where
-          declareT =
-            pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
-          derivingClasses
-            | isInput tKind = [''Show]
-            | otherwise = []
+      declareMainType = declare (namespace, tKind) typeD
+
+instance Declare TypeD where
+  type DeclareCtx TypeD = (Bool, TypeKind)
+  declare (namespace, tKind) typeD =
+    pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
+    where
+      derivingClasses
+        | isInput tKind = [''Show]
+        | otherwise = []
