@@ -61,7 +61,7 @@ module Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     Schema (..),
     DataTypeWrapper (..),
-    DataTypeKind (..),
+    TypeKind (..),
     DataFingerprint (..),
     TypeWrapper (..),
     TypeRef (..),
@@ -157,6 +157,7 @@ import Data.HashMap.Lazy (HashMap)
 -- Morpheus
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.Data
+import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.OrderedMap
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.TH

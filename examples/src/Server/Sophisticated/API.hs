@@ -30,7 +30,6 @@ import Data.Morpheus.Document
   )
 import Data.Morpheus.Kind
   ( INPUT,
-    SCALAR,
   )
 import Data.Morpheus.Types
   ( Event (..),
@@ -95,11 +94,14 @@ data Euro
       Int
   deriving (Show, Generic)
 
-instance GQLType Euro where
-  type KIND Euro = SCALAR
-
 instance GQLScalar Euro where
-  parseValue _ = pure (Euro 1 0)
+  parseValue (Int x) =
+    pure
+      ( Euro
+          (round (fromIntegral x / 100 :: Double))
+          (mod x 100)
+      )
+  parseValue _ = Left ""
   serialize (Euro x y) = Int (x * 100 + y)
 
 data Channel = USER | ADDRESS

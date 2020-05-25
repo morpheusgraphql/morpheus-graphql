@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Server.Document.Convert
+module Data.Morpheus.Server.Document.Transform
   ( toTHDefinitions,
   )
 where
@@ -27,7 +27,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD,
-    DataTypeKind (..),
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
@@ -37,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeD (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName,
     TypeRef (..),
     argumentsToFields,
@@ -88,19 +88,17 @@ toTHDefinitions namespace schema = catMaybes <$> traverse renderTHType schema
         generateType typeOriginal@TypeDefinition {typeName, typeContent, typeMeta} =
           fmap defType <$> genTypeContent schema toArgsTypeName typeName typeContent
           where
-            buildType :: [ConsD] -> TypeD
-            buildType tCons =
-              TypeD
-                { tName = hsTypeName typeName,
-                  tMeta = typeMeta,
-                  tNamespace = [],
-                  tCons,
-                  tKind = kindOf typeOriginal
-                }
             -----------------------
-            defType (typeArgD, cons) =
+            defType (typeArgD, tCons) =
               GQLTypeD
-                { typeD = buildType cons,
+                { typeD =
+                    TypeD
+                      { tName = hsTypeName typeName,
+                        tMeta = typeMeta,
+                        tNamespace = [],
+                        tCons,
+                        tKind = kindOf typeOriginal
+                      },
                   typeArgD,
                   ..
                 }
@@ -135,7 +133,7 @@ genTypeContent ::
   TypeName ->
   TypeContent TRUE ANY ->
   Q (Maybe ([TypeD], [ConsD]))
-genTypeContent _ _ _ DataScalar {} = pure Nothing
+genTypeContent _ _ _ DataScalar {} = pure $ Just ([], [])
 genTypeContent _ _ _ (DataEnum tags) = pure $ Just ([], map mkConsEnum tags)
 genTypeContent _ _ typeName (DataInputObject fields) = pure $ Just ([], mkObjectCons typeName fields)
 genTypeContent _ _ _ DataInputUnion {} = fail "Input Unions not Supported"

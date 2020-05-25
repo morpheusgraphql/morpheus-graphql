@@ -41,11 +41,11 @@ import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( DataTypeKind (..),
-    GQLQuery (..),
+  ( GQLQuery (..),
     Schema,
     TypeD (..),
     TypeD (..),
+    TypeKind (..),
     VALIDATION_MODE (..),
     isOutputObject,
   )

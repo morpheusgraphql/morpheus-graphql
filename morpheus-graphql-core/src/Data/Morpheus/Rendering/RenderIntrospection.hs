@@ -24,12 +24,12 @@ import Data.Morpheus.Internal.Utils
     selectBy,
   )
 import Data.Morpheus.Schema.TypeKind (TypeKind (..))
+import qualified Data.Morpheus.Types.Internal.AST as AST (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DataEnumValue (..),
     DataInputUnion,
     DataInputUnion,
-    DataTypeKind (..),
     DataTypeWrapper (..),
     DataUnion,
     Description,
@@ -179,7 +179,7 @@ renderArguments NoArguments _ = pure []
 instance RenderSchema (FieldDefinition cat) where
   render field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}, fieldArgs, fieldMeta} lib =
     do
-      kind <- renderTypeKind <$> lookupKind typeConName lib
+      kind <- lookupKind typeConName lib
       pure
         $ mkObject "__Field"
         $ [ renderFieldName fieldName,
@@ -189,19 +189,19 @@ instance RenderSchema (FieldDefinition cat) where
           ]
           <> renderDeprecated fieldMeta
 
-renderTypeKind :: DataTypeKind -> TypeKind
-renderTypeKind KindScalar = SCALAR
-renderTypeKind (KindObject _) = OBJECT
-renderTypeKind KindUnion = UNION
-renderTypeKind KindInputUnion = INPUT_OBJECT
-renderTypeKind KindEnum = ENUM
-renderTypeKind KindInputObject = INPUT_OBJECT
-renderTypeKind KindList = LIST
-renderTypeKind KindNonNull = NON_NULL
-renderTypeKind KindInterface = INTERFACE
+lookupKind :: (Monad m) => TypeName -> Result e m TypeKind
+lookupKind name schema = renderTypeKind . kindOf <$> selectBy ("Kind Not Found: " <> msg name) name schema
 
-lookupKind :: (Monad m) => TypeName -> Result e m DataTypeKind
-lookupKind name schema = kindOf <$> selectBy ("Kind Not Found: " <> msg name) name schema
+renderTypeKind :: AST.TypeKind -> TypeKind
+renderTypeKind AST.KindScalar = SCALAR
+renderTypeKind (AST.KindObject _) = OBJECT
+renderTypeKind AST.KindUnion = UNION
+renderTypeKind AST.KindInputUnion = INPUT_OBJECT
+renderTypeKind AST.KindEnum = ENUM
+renderTypeKind AST.KindInputObject = INPUT_OBJECT
+renderTypeKind AST.KindList = LIST
+renderTypeKind AST.KindNonNull = NON_NULL
+renderTypeKind AST.KindInterface = INTERFACE
 
 renderinputValue ::
   (Monad m) =>
@@ -213,7 +213,7 @@ createInputObjectType ::
   (Monad m) => FieldDefinition IN -> Result e m (ResModel QUERY e m)
 createInputObjectType field@FieldDefinition {fieldType = TypeRef {typeConName}} lib =
   do
-    kind <- renderTypeKind <$> lookupKind typeConName lib
+    kind <- lookupKind typeConName lib
     pure $ withTypeWrapper field $ createType kind typeConName Nothing $ Just []
 
 renderInputUnion ::

@@ -46,11 +46,11 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     ConsD (..),
-    DataTypeKind (..),
-    DataTypeKind (..),
     FieldDefinition (..),
     FieldName,
     TypeD (..),
+    TypeKind (..),
+    TypeKind (..),
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
@@ -94,7 +94,7 @@ declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
     decType (Just par) = AppT typeName (VarT $ mkTypeName par)
     decType _ = typeName
 
-tyConArgs :: DataTypeKind -> [TypeName]
+tyConArgs :: TypeKind -> [TypeName]
 tyConArgs kindD
   | isOutputObject kindD || kindD == KindUnion = [m_]
   | otherwise = []
@@ -102,7 +102,7 @@ tyConArgs kindD
 data Scope = CLIENT | SERVER
   deriving (Eq)
 
-declareType :: Scope -> Bool -> Maybe DataTypeKind -> [Name] -> TypeD -> Dec
+declareType :: Scope -> Bool -> Maybe TypeKind -> [Name] -> TypeD -> Dec
 declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
   DataD [] (genName tName) tVars Nothing cons $
     map derive (''Generic : derivingList)

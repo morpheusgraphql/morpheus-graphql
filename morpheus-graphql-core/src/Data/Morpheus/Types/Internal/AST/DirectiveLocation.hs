@@ -1,0 +1,30 @@
+{-# LANGUAGE DeriveLift #-}
+
+module Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..)) where
+
+import Data.Morpheus.Types.Internal.AST.Base (Msg (..))
+import Language.Haskell.TH.Syntax (Lift)
+
+data DirectiveLocation
+  = QUERY
+  | MUTATION
+  | SUBSCRIPTION
+  | FIELD
+  | FRAGMENT_DEFINITION
+  | FRAGMENT_SPREAD
+  | INLINE_FRAGMENT
+  | SCHEMA
+  | SCALAR
+  | OBJECT
+  | FIELD_DEFINITION
+  | ARGUMENT_DEFINITION
+  | INTERFACE
+  | UNION
+  | ENUM
+  | ENUM_VALUE
+  | INPUT_OBJECT
+  | INPUT_FIELD_DEFINITION
+  deriving (Show, Eq, Lift)
+
+instance Msg DirectiveLocation where
+  msg = msg . show

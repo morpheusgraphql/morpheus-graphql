@@ -1,5 +1,8 @@
 # for Input Union
-
+"""
+official currency of most member states of the European Union.
+https://en.wikipedia.org/wiki/Euro
+"""
 scalar Euro
 
 input Cat @testDir {

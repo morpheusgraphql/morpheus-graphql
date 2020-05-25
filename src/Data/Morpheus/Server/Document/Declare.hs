@@ -14,22 +14,23 @@ import Data.Morpheus.Internal.TH
   ( Scope (..),
     declareType,
   )
-import Data.Morpheus.Server.Document.Decode
+import Data.Morpheus.Server.Document.Declare.Decode
   ( deriveDecode,
   )
-import Data.Morpheus.Server.Document.Encode
+import Data.Morpheus.Server.Document.Declare.Encode
   ( deriveEncode,
   )
-import Data.Morpheus.Server.Document.GQLType
+import Data.Morpheus.Server.Document.Declare.GQLType
   ( deriveGQLType,
   )
-import Data.Morpheus.Server.Document.Introspect
+import Data.Morpheus.Server.Document.Declare.Introspect
   ( deriveObjectRep,
     instanceIntrospect,
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLTypeD (..),
     TypeD (..),
+    TypeKind (..),
     isInput,
     isObject,
   )
@@ -74,10 +75,17 @@ instance Declare GQLTypeD where
           ----------------------------------------------------
           argsTypeDecs = map (declareType SERVER namespace Nothing []) typeArgD
       --------------------------------------------------
-      declareMainType = declareT
-        where
-          declareT =
-            pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
-          derivingClasses
-            | isInput tKind = [''Show]
-            | otherwise = []
+      declareMainType = declare (namespace, tKind) typeD
+
+instance Declare TypeD where
+  type DeclareCtx TypeD = (Bool, TypeKind)
+
+  -- scalar types are defined from user
+  declare (_, KindScalar) _ = pure []
+  declare (namespace, tKind) typeD =
+    pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
+    where
+      -- input types support show
+      derivingClasses
+        | isInput tKind = [''Show]
+        | otherwise = []
