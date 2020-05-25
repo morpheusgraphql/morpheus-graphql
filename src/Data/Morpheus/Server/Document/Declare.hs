@@ -85,7 +85,7 @@ instance Declare TypeD where
   declare (namespace, tKind) typeD =
     pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
     where
-      -- input types can support show
+      -- input types support show
       derivingClasses
         | isInput tKind = [''Show]
         | otherwise = []
