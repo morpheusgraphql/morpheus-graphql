@@ -75,7 +75,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     Directives,
     argumentsToFields,
     fieldsToArguments,
-    DirectiveLocation (..),
   )
 where
 
@@ -128,6 +127,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     toFieldName,
     toOperationType,
   )
+import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,
     unsafeFromValues,
@@ -213,30 +213,6 @@ instance KeyOf DirectiveDefinition where
 instance Selectable DirectiveDefinition ArgumentDefinition where
   selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
     selectOr fb f key directiveDefinitionArgs
-
-data DirectiveLocation
-  = QUERY
-  | MUTATION
-  | SUBSCRIPTION
-  | FIELD
-  | FRAGMENT_DEFINITION
-  | FRAGMENT_SPREAD
-  | INLINE_FRAGMENT
-  | SCHEMA
-  | SCALAR
-  | OBJECT
-  | FIELD_DEFINITION
-  | ARGUMENT_DEFINITION
-  | INTERFACE
-  | UNION
-  | ENUM
-  | ENUM_VALUE
-  | INPUT_OBJECT
-  | INPUT_FIELD_DEFINITION
-  deriving (Show, Eq, Lift)
-
-instance Msg DirectiveLocation where
-  msg = msg . show
 
 lookupDeprecated :: Meta -> Maybe (Directive VALID)
 lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives
