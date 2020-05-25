@@ -28,7 +28,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
-    Message,
     OUT,
     Schema,
     TypeContent (..),
@@ -36,7 +35,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeRef (..),
     isWeaker,
-    lookupWith,
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -66,6 +64,8 @@ validateType
     pure dt
 validateType _ x = pure x
 
+-- INETRFACE
+----------------------------
 validateImplements ::
   CTX ->
   TypeName ->
