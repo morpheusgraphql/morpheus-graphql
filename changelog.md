@@ -2,7 +2,13 @@
 
 ## 0.13.0 - Unreleased Changes
 
+### breaking changes
+
 - renamed `GQLRootResolver` -> `RootResolver`
+
+### minor changes
+
+- `importGQLDocument` defines `GQLType` instances for scalar definitions
 
 ## 0.12.0 - 21.05.2020
 
@@ -11,6 +17,7 @@
 Package was extracted as:
 
 - `morpheus-graphql-core`: core components like: parser, validator, executor, utils.
+
   - Data.Morpheus.Core
   - Data.Morpheus.QuasiQuoter
   - Data.Morpheus.Error
@@ -22,6 +29,7 @@ Package was extracted as:
   - Data.Morpheus.Types.IO
 
 - `morpheus-graphql-client`: lightweight version of morpheus client without server implementation
+
   - Data.Morpheus.Client
 
 - `morpheus-graphql`: morpheus graphql server
@@ -64,11 +72,11 @@ deprecated:
 
 - flexible compsed Resolver Type alias: `ComposedResolver`. extends `ResolverO` with
   parameter `(f :: * -> *)`. so that you can compose Resolvers e.g:
-  
+
   ```hs
   resolveList :: ComposedResolver o EVENT IO [] Object
   -- is alias to: Resolver o () IO [Object (Resolver o () IO))]
-  
+
   resolveList :: ComposedResolver o EVENT IO Maybe Int
   -- is alias to: Resolver o () IO (Maybe Int)
   ```
@@ -94,22 +102,24 @@ deprecated:
 - Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
 - for Variant selection inputUnion uses `inputname` insead of `__typename`
 
-- in `Data.Morpheus.Server`  
+- in `Data.Morpheus.Server`
+
   - `gqlSocketApp` and `gqlSocketMonadIOApp` are replaced with `webSocketsApp`
   - removed `initGQLState`, `GQLState`
 
 - for better control of subscriptions
-  - replaced instance  `interpreter gqlRoot state` with
+
+  - replaced instance `interpreter gqlRoot state` with
     `interpreter gqlRoot`.
   - added: `Input`, `Stream`, `httpPubApp`
-  
+
   from now on you can define API that can be
   used in websockets as well as in http servers
 
   ```hs
   api :: Input api -> Stream api EVENT IO
   api = interpreter gqlRoot
-  
+
   server :: IO ()
   server = do
     (wsApp, publish) <- webSocketsApp api
@@ -117,10 +127,10 @@ deprecated:
     ...
     runBoth wsApp httpApp
   ```
-  
+
   where `publish :: e -> m ()`
 
-  websockets and http app do not have to be on the same server. 
+  websockets and http app do not have to be on the same server.
   e.g. you can pass events between servers with webhooks.
 
 - subscription can select only one top level field (based on the GraphQL specification).
@@ -135,7 +145,7 @@ deprecated:
 ### minor
 
 - changes to internal types
-- fixed validation of apollo websockets requests  
+- fixed validation of apollo websockets requests
 
 ## 0.10.0 - 07.01.2020
 
