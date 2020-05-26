@@ -149,12 +149,7 @@ instance TypeEq ArgumentsDefinition [ImplementsError] where
   args1 << args2 = concatMap (`elemIn` args1) (elems args2)
 
 instance TypeEq ArgumentDefinition [ImplementsError] where
-  arg1 << arg2 = []
-
--- where
---   findArg =
-
--- TODO: real errors
+  arg1 << arg2 = fieldType arg1 << fieldType arg2
 
 -------------------------------
 getInterfaceByKey :: CTX -> TypeName -> Eventless (TypeName, FieldsDefinition OUT)
