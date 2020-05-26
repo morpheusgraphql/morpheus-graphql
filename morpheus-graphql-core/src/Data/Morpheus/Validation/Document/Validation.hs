@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -22,12 +23,14 @@ import Data.Morpheus.Error.Document.Interface
   )
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
-  ( Selectable (..),
+  ( KeyOf (..),
+    Selectable (..),
     elems,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    ArgumentDefinition,
     ArgumentsDefinition,
     FieldDefinition (..),
     FieldName (..),
@@ -132,8 +135,26 @@ instance TypeEq TypeRef [ImplementsError] where
 instance TypeEq [TypeWrapper] Bool where
   w1 << w2 = not $ isWeaker w2 w1
 
+elemIn ::
+  ( KeyOf a,
+    Selectable c a,
+    TypeEq a [ImplementsError]
+  ) =>
+  a ->
+  c ->
+  [ImplementsError]
+elemIn el = selectOr [UndefinedField] (<< el) (keyOf el)
+
 instance TypeEq ArgumentsDefinition [ImplementsError] where
-  args1 << args2 = [] -- TODO: real errors
+  args1 << args2 = concatMap (`elemIn` args1) (elems args2)
+
+instance TypeEq ArgumentDefinition [ImplementsError] where
+  arg1 << arg2 = []
+
+-- where
+--   findArg =
+
+-- TODO: real errors
 
 -------------------------------
 getInterfaceByKey :: CTX -> TypeName -> Eventless (TypeName, FieldsDefinition OUT)
