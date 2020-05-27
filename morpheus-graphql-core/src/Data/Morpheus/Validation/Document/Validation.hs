@@ -49,39 +49,47 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Failure (..),
   )
-
-type CTX = [TypeDefinition ANY]
+import Data.Morpheus.Types.Internal.Validation.SchemaValidator
+  ( Context (..),
+    SchemaValidator,
+    runSchemaValidator,
+    selectType,
+  )
 
 validateSchema :: Schema -> Eventless Schema
 validateSchema schema = validatePartialDocument (elems schema) $> schema
 
 validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
-validatePartialDocument schema = traverse (validateType schema) schema
+validatePartialDocument types =
+  runSchemaValidator
+    (traverse validateType types)
+    Context
+      { types,
+        currentTypeName = "",
+        currentField = []
+      }
 
 validateType ::
-  CTX ->
   TypeDefinition ANY ->
-  Eventless (TypeDefinition ANY)
+  SchemaValidator (TypeDefinition ANY)
 validateType
-  ctx
   dt@TypeDefinition
     { typeName,
       typeContent = DataObject {objectImplements, objectFields}
     } = do
-    validateImplements ctx typeName objectImplements objectFields
+    validateImplements typeName objectImplements objectFields
     pure dt
-validateType _ x = pure x
+validateType x = pure x
 
 -- INETRFACE
 ----------------------------
 validateImplements ::
-  CTX ->
   TypeName ->
   [TypeName] ->
   FieldsDefinition OUT ->
-  Eventless ()
-validateImplements ctx typeName objectImplements objectFields = do
-  interface <- traverse (getInterfaceByKey ctx) objectImplements
+  SchemaValidator ()
+validateImplements typeName objectImplements objectFields = do
+  interface <- traverse getInterfaceByKey objectImplements
   case concatMap (mustBeSubset objectFields) interface of
     [] -> pure ()
     errors -> failure $ partialImplements typeName errors
@@ -152,11 +160,12 @@ instance TypeEq ArgumentDefinition [ImplementsError] where
   arg1 << arg2 = fieldType arg1 << fieldType arg2
 
 -------------------------------
-getInterfaceByKey :: CTX -> TypeName -> Eventless (TypeName, FieldsDefinition OUT)
-getInterfaceByKey schema interfaceName =
-  selectBy err interfaceName schema
+getInterfaceByKey ::
+  TypeName ->
+  SchemaValidator (TypeName, FieldsDefinition OUT)
+getInterfaceByKey interfaceName =
+  selectType interfaceName
     >>= constraintInterface
   where
-    err = unknownInterface interfaceName
     constraintInterface TypeDefinition {typeContent = DataInterface {interfaceFields}} = pure (interfaceName, interfaceFields)
     constraintInterface _ = failure $ globalErrorMessage $ "type " <> msg interfaceName <> " must be an interface"
