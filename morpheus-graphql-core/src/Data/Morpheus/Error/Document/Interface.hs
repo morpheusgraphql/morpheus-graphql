@@ -12,10 +12,11 @@ where
 
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
+  ( FieldName (..),
     GQLError (..),
     GQLErrors,
-    TypeName,
+    Message,
+    TypeName (..),
     TypeRef,
     msg,
   )
@@ -75,21 +76,37 @@ instance PartialImplements (TypeName, TypeName, FieldName, FieldName) where
         }
     ]
     where
+      --
       message =
-        "type "
-          <> msg typename
-          <> " implements Interface "
-          <> msg interfaceName
-          <> " Partially,"
-          <> " on field "
-          <> msg fieldname
+        "Interface field argument "
+          <> renderArg interfaceName fieldname argName
           <> detailedMessage errorType
       detailedMessage UnexpectedType {expectedType, foundType} =
-        " on argument "
-          <> msg argName
-          <> " expected type "
+        "expects type"
           <> msg expectedType
-          <> " found "
+          <> " but "
+          <> renderArg typename fieldname argName
+          <> "is type "
           <> msg foundType
           <> "."
-      detailedMessage Missing = " argument " <> msg argName <> " not found ."
+      detailedMessage Missing =
+        "expected but "
+          <> renderField typename fieldname
+          <> " does not provide it."
+
+renderField :: TypeName -> FieldName -> Message
+renderField (TypeName tname) (FieldName fname) =
+  msg $ tname <> "." <> fname
+
+renderArg :: TypeName -> FieldName -> FieldName -> Message
+renderArg tname fname (FieldName argName) =
+  renderField tname fname
+    <> msg
+      ( "("
+          <> argName
+          <> ":)"
+          <> " "
+      )
+
+-- Interface field argument TestInterface.name(id:) expected but User.name does not provide it.
+-- Interface field argument TestInterface.name(id:) expects type ID but User.name(id:) is type String.
