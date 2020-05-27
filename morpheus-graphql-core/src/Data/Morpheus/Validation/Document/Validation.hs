@@ -152,12 +152,12 @@ elemIn ::
   a ->
   c ->
   SchemaValidator ctx ()
-elemIn el = selectOr (failImplements Missing) (<< el) (keyOf el)
+elemIn el = selectOr (failImplements Missing) (el <<) (keyOf el)
 
 instance TypeEq ArgumentsDefinition (TypeName, TypeName, FieldName) where
-  args1 << args2 = traverse_ validateArg (elems args2)
+  args1 << args2 = traverse_ validateArg (elems args1)
     where
-      validateArg arg = inArgument (keyOf arg) $ elemIn arg args1
+      validateArg arg = inArgument (keyOf arg) $ elemIn arg args2
 
 instance TypeEq ArgumentDefinition (TypeName, TypeName, FieldName, FieldName) where
   arg1 << arg2 = fieldType arg1 << fieldType arg2

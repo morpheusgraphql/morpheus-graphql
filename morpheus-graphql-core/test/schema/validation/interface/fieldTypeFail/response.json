@@ -1,15 +1,15 @@
 {
   "errors": [
     {
-      "message": "type \"Deity\" implements Interface \"Character\" Partially, on key \"name\" expected type \"String\" found \"Int\".",
+      "message": "type \"Deity\" implements Interface \"Character\" Partially, on field \"name\" expected type \"String\" found \"Int\".",
       "locations": []
     },
     {
-      "message": "type \"Deity\" implements Interface \"Supernatural\" Partially, on key \"power\" expected type \"[String!]!\" found \"[String!]\".",
+      "message": "type \"Deity\" implements Interface \"Supernatural\" Partially, on field \"power\" expected type \"[String!]!\" found \"[String!]\".",
       "locations": []
     },
     {
-      "message": "type \"Hero\" implements Interface \"Character\" Partially, key \"name\" not found .",
+      "message": "type \"Hero\" implements Interface \"Character\" Partially, field \"name\" not found .",
       "locations": []
     }
   ]
