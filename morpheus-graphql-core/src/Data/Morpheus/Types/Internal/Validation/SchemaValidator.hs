@@ -23,12 +23,12 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inType,
     inArgument,
     inInterface,
-    FieldArg (..),
+    Field (..),
     Interface (..),
   )
 where
 
-import Control.Monad.Reader (MonadReader, asks, runReaderT)
+import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -103,18 +103,18 @@ inField fname = withContext (,fname)
 
 inArgument ::
   FieldName ->
-  SchemaValidator (t, FieldArg) v ->
+  SchemaValidator (t, Field) v ->
   SchemaValidator (t, FieldName) v
-inArgument aname = withContext (\(t1, f1) -> (t1, FieldArg f1 aname))
+inArgument aname = withContext (\(t1, f1) -> (t1, Field f1 aname))
 
 data Interface = Interface
   { interfaceName :: TypeName,
     typeName :: TypeName
   }
 
-data FieldArg = FieldArg
+data Field = Field
   { fieldName :: FieldName,
-    fieldArg :: FieldName
+    fieldArgument :: FieldName
   }
 
 updateLocal :: (a -> b) -> Context a -> Context b
