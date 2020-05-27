@@ -5,6 +5,7 @@ module Data.Morpheus.Error.Document.Interface
   ( unknownInterface,
     partialImplements,
     ImplementsError (..),
+    Place (..),
   )
 where
 
@@ -29,12 +30,18 @@ data ImplementsError
       { expectedType :: TypeRef,
         foundType :: TypeRef
       }
-  | UndefinedField
+  | Missing
 
-partialImplements :: TypeName -> [(TypeName, FieldName, ImplementsError)] -> GQLErrors
+data Place = Place
+  { fieldname :: TypeName,
+    typename :: FieldName,
+    fieldArg :: Maybe (FieldName, TypeName)
+  }
+
+partialImplements :: TypeName -> [(Place, ImplementsError)] -> GQLErrors
 partialImplements name = map impError
   where
-    impError (interfaceName, key, errorType) =
+    impError (Place interfaceName key _, errorType) =
       GQLError
         { message = message,
           locations = []
@@ -55,4 +62,4 @@ partialImplements name = map impError
             <> " found "
             <> msg foundType
             <> "."
-        detailedMessage UndefinedField = " key " <> msg key <> " not found ."
+        detailedMessage Missing = " key " <> msg key <> " not found ."

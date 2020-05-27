@@ -4,7 +4,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument,
@@ -13,11 +12,13 @@ module Data.Morpheus.Validation.Document.Validation
 where
 
 import Control.Monad ((>=>))
+import Data.Foldable (traverse_)
 import Data.Functor (($>))
 --
 -- Morpheus
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
+    Place (..),
     partialImplements,
   )
 import Data.Morpheus.Error.Utils (globalErrorMessage)
@@ -46,12 +47,13 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    Failure (..),
   )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Context (..),
     SchemaValidator,
     constraintInterface,
+    inField,
+    inType,
     runSchemaValidator,
     selectType,
   )
@@ -65,60 +67,58 @@ validatePartialDocument types =
     (traverse validateType types)
     Context
       { types,
-        currentTypeName = "",
-        currentField = []
+        local = ()
       }
 
 validateType ::
   TypeDefinition ANY ->
-  SchemaValidator (TypeDefinition ANY)
+  SchemaValidator () (TypeDefinition ANY)
 validateType
   dt@TypeDefinition
     { typeName,
       typeContent = DataObject {objectImplements, objectFields}
-    } = do
-    validateImplements typeName objectImplements objectFields
+    } = inType typeName $ do
+    validateImplements objectImplements objectFields
     pure dt
 validateType x = pure x
 
 -- INETRFACE
 ----------------------------
 validateImplements ::
-  TypeName ->
   [TypeName] ->
   FieldsDefinition OUT ->
-  SchemaValidator ()
-validateImplements typeName objectImplements objectFields = do
+  SchemaValidator TypeName ()
+validateImplements objectImplements objectFields = do
   interface <- traverse selectInterface objectImplements
-  case concatMap (mustBeSubset objectFields) interface of
-    [] -> pure ()
-    errors -> failure $ partialImplements typeName errors
+  traverse_ (mustBeSubset objectFields) interface
 
 mustBeSubset ::
-  FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> [(TypeName, FieldName, ImplementsError)]
-mustBeSubset objFields (typeName, fields) = concatMap (checkInterfaceField typeName objFields) (elems fields)
+  FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> SchemaValidator TypeName ()
+mustBeSubset objFields (typeName, fields) =
+  traverse_ (checkInterfaceField typeName objFields) (elems fields)
 
 checkInterfaceField ::
   TypeName ->
   FieldsDefinition OUT ->
   FieldDefinition OUT ->
-  [(TypeName, FieldName, ImplementsError)]
+  SchemaValidator TypeName ()
 checkInterfaceField
   typeName
   objFields
   interfaceField@FieldDefinition
     { fieldName
     } =
-    selectOr err checkEq fieldName objFields
+    inField fieldName $
+      selectOr err checkEq fieldName objFields
     where
-      err = [(typeName, fieldName, UndefinedField)]
+      err = [(Place typeName fieldName, Nothing, UndefinedField)]
       -----
-      checkEq field = map (typeName,fieldName,) (interfaceField << field)
+      checkEq field = interfaceField << field
 
-class TypeEq a e where
-  (<<) :: a -> a -> e
+class TypeEq a ctx where
+  (<<) :: a -> a -> SchemaValidator ctx ()
 
-instance TypeEq (FieldDefinition OUT) [ImplementsError] where
+instance TypeEq (FieldDefinition OUT) (TypeName, FieldName) where
   FieldDefinition
     { fieldType,
       fieldArgs
@@ -128,39 +128,36 @@ instance TypeEq (FieldDefinition OUT) [ImplementsError] where
         fieldArgs = fieldArgs'
       } = (fieldType << fieldType') <> (fieldArgs << fieldArgs')
 
-instance TypeEq TypeRef [ImplementsError] where
+instance TypeEq TypeRef ctx where
   t1@TypeRef
     { typeConName,
-      typeWrappers
+      typeWrappers = w1
     }
     << t2@TypeRef
       { typeConName = name',
-        typeWrappers = typeWrappers'
+        typeWrappers = w2
       }
-      | typeConName == name' && typeWrappers << typeWrappers' = []
+      | typeConName == name' && not (isWeaker w2 w1) = pure ()
       | otherwise = [UnexpectedType {expectedType = t1, foundType = t2}]
-
-instance TypeEq [TypeWrapper] Bool where
-  w1 << w2 = not $ isWeaker w2 w1
 
 elemIn ::
   ( KeyOf a,
     Selectable c a,
-    TypeEq a [ImplementsError]
+    TypeEq a ctx
   ) =>
   a ->
   c ->
-  [ImplementsError]
+  SchemaValidator ctx ()
 elemIn el = selectOr [UndefinedField] (<< el) (keyOf el)
 
-instance TypeEq ArgumentsDefinition [ImplementsError] where
-  args1 << args2 = concatMap (`elemIn` args1) (elems args2)
+instance TypeEq ArgumentsDefinition (TypeName, FieldName) where
+  args1 << args2 = traverse_ (`elemIn` args1) (elems args2)
 
-instance TypeEq ArgumentDefinition [ImplementsError] where
+instance TypeEq ArgumentDefinition (TypeName, FieldName, FieldName) where
   arg1 << arg2 = fieldType arg1 << fieldType arg2
 
 -------------------------------
 selectInterface ::
   TypeName ->
-  SchemaValidator (TypeName, FieldsDefinition OUT)
+  SchemaValidator ctx (TypeName, FieldsDefinition OUT)
 selectInterface = selectType >=> constraintInterface
