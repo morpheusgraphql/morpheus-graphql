@@ -12,10 +12,10 @@ module Data.Morpheus.Validation.Document.Validation
   )
 where
 
+import Control.Monad ((>=>))
 import Data.Functor (($>))
 --
 -- Morpheus
-
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     partialImplements,
@@ -163,6 +163,4 @@ instance TypeEq ArgumentDefinition [ImplementsError] where
 selectInterface ::
   TypeName ->
   SchemaValidator (TypeName, FieldsDefinition OUT)
-selectInterface interfaceName =
-  selectType interfaceName
-    >>= constraintInterface
+selectInterface = selectType >=> constraintInterface
