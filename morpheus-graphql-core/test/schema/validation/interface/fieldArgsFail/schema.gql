@@ -11,7 +11,7 @@ interface Supernatural {
 }
 
 type Deity implements Character & Supernatural {
-  # undefined args (id: String)
+  # TODO: find out if it is allowed: undefined args (id: String)
   name: String!
   # arg: id has different type
   power(id: String!): [String!]!
