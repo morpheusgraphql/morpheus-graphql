@@ -6,9 +6,11 @@
 
 - exposed: `Data.Morpheus.Types.GQLScalar`
 - exposed: `Data.Morpheus.Types.ID`
+- fulfilled implements interface validation
 
 ## minor changes
 
+- added dependency `mtl`
 - validates strings as enum from JSON value
 
 ## 0.12.0 - 21.05.2020

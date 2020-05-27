@@ -1,21 +1,28 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Error.Document.Interface
   ( unknownInterface,
-    partialImplements,
+    PartialImplements (..),
     ImplementsError (..),
+    Place (..),
   )
 where
 
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
+  ( FieldName (..),
     GQLError (..),
     GQLErrors,
-    TypeName,
+    Message,
+    TypeName (..),
     TypeRef,
     msg,
+  )
+import Data.Morpheus.Types.Internal.Validation.SchemaValidator
+  ( Field (..),
+    Interface (..),
   )
 import Data.Semigroup ((<>))
 
@@ -29,30 +36,84 @@ data ImplementsError
       { expectedType :: TypeRef,
         foundType :: TypeRef
       }
-  | UndefinedField
+  | Missing
 
-partialImplements :: TypeName -> [(TypeName, FieldName, ImplementsError)] -> GQLErrors
-partialImplements name = map impError
-  where
-    impError (interfaceName, key, errorType) =
-      GQLError
+data Place = Place
+  { fieldname :: TypeName,
+    typename :: FieldName,
+    fieldArg :: Maybe (FieldName, TypeName)
+  }
+
+class PartialImplements ctx where
+  partialImplements :: ctx -> ImplementsError -> GQLErrors
+
+instance PartialImplements (Interface, FieldName) where
+  partialImplements (Interface interfaceName typename, fieldname) errorType =
+    [ GQLError
         { message = message,
           locations = []
         }
-      where
-        message =
-          "type "
-            <> msg name
-            <> " implements Interface "
-            <> msg interfaceName
-            <> " Partially,"
-            <> detailedMessage errorType
-        detailedMessage UnexpectedType {expectedType, foundType} =
-          " on key "
-            <> msg key
-            <> " expected type "
-            <> msg expectedType
-            <> " found "
-            <> msg foundType
-            <> "."
-        detailedMessage UndefinedField = " key " <> msg key <> " not found ."
+    ]
+    where
+      message =
+        "Interface field "
+          <> renderField interfaceName fieldname
+          <> detailedMessage errorType
+      detailedMessage UnexpectedType {expectedType, foundType} =
+        " expects type "
+          <> msg expectedType
+          <> " but "
+          <> renderField typename fieldname
+          <> " is type "
+          <> msg foundType
+          <> "."
+      detailedMessage Missing =
+        " expected but "
+          <> msg typename
+          <> " does not provide it."
+
+-- Interface field TestInterface.name expected but User does not provide it.
+-- Interface field TestInterface.name expects type String! but User.name is type Int!.
+
+instance PartialImplements (Interface, Field) where
+  partialImplements (Interface interfaceName typename, Field fieldname argName) errorType =
+    [ GQLError
+        { message = message,
+          locations = []
+        }
+    ]
+    where
+      --
+      message =
+        "Interface field argument "
+          <> renderArg interfaceName fieldname argName
+          <> detailedMessage errorType
+      detailedMessage UnexpectedType {expectedType, foundType} =
+        "expects type"
+          <> msg expectedType
+          <> " but "
+          <> renderArg typename fieldname argName
+          <> "is type "
+          <> msg foundType
+          <> "."
+      detailedMessage Missing =
+        "expected but "
+          <> renderField typename fieldname
+          <> " does not provide it."
+
+renderField :: TypeName -> FieldName -> Message
+renderField (TypeName tname) (FieldName fname) =
+  msg $ tname <> "." <> fname
+
+renderArg :: TypeName -> FieldName -> FieldName -> Message
+renderArg tname fname (FieldName argName) =
+  renderField tname fname
+    <> msg
+      ( "("
+          <> argName
+          <> ":)"
+          <> " "
+      )
+
+-- Interface field argument TestInterface.name(id:) expected but User.name does not provide it.
+-- Interface field argument TestInterface.name(id:) expects type ID but User.name(id:) is type String.

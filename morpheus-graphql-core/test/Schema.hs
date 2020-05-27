@@ -60,8 +60,10 @@ testSchema =
         "Validation"
         $ map
           (uncurry schemaCase)
-          [ ("validation/interface/ok", "interface validation success"),
-            ("validation/interface/fail", "interface validation fails")
+          [ ("validation/interface/fieldTypeOk", "interface field type validation success"),
+            ("validation/interface/fieldTypeFail", "interface field type validation fails"),
+            ("validation/interface/fieldArgsOk", "interface field args type validation success"),
+            ("validation/interface/fieldArgsFail", "interface field args type validation fails")
           ]
     ]
 

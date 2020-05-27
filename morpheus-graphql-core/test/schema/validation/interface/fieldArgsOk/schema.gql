@@ -1,0 +1,18 @@
+type Query {
+  deity(name: String): Deity!
+}
+
+interface Character {
+  name(id: ID): String!
+}
+
+interface Supernatural {
+  power(id: ID!): [String!]!
+}
+
+type Deity implements Character & Supernatural {
+  # arg id has stronger type
+  name(id: ID!): String!
+  # arg: has same type
+  power(id: ID!, age: Int!): [String!]!
+}

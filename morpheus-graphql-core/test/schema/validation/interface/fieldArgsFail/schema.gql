@@ -1,0 +1,23 @@
+type Query {
+  deity(name: String): Deity!
+}
+
+interface Character {
+  name(id: ID): String!
+}
+
+interface Supernatural {
+  power(id: ID!): [String!]!
+}
+
+type Deity implements Character & Supernatural {
+  # undefined args (id: String)
+  name: String!
+  # arg: id has different type
+  power(id: String!): [String!]!
+}
+
+type Hero implements Supernatural {
+  # arg: id has weeker type
+  power(id: ID): String!
+}

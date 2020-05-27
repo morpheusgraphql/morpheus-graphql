@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bcefe8bf5d8b819b9dd0047c3482b142b0d9f18c5067fc8f915745bdd54bcf00
+-- hash: 28c84ac2f3632a1ab1c2d3eecefb1acd238d57565269c450ba87b6f059fe25f5
 
 name:           morpheus-graphql-core
 version:        0.12.0
@@ -24,12 +24,16 @@ extra-source-files:
     README.md
 data-files:
     test/interface/query.gql
-    test/schema/validation/interface/fail/schema.gql
-    test/schema/validation/interface/ok/schema.gql
+    test/schema/validation/interface/fieldArgsFail/schema.gql
+    test/schema/validation/interface/fieldArgsOk/schema.gql
+    test/schema/validation/interface/fieldTypeFail/schema.gql
+    test/schema/validation/interface/fieldTypeOk/schema.gql
     test/simple/query.gql
     test/interface/response.json
-    test/schema/validation/interface/fail/response.json
-    test/schema/validation/interface/ok/response.json
+    test/schema/validation/interface/fieldArgsFail/response.json
+    test/schema/validation/interface/fieldArgsOk/response.json
+    test/schema/validation/interface/fieldTypeFail/response.json
+    test/schema/validation/interface/fieldTypeOk/response.json
     test/simple/response.json
 
 source-repository head
@@ -90,6 +94,7 @@ library
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error
+      Data.Morpheus.Types.Internal.Validation.SchemaValidator
       Data.Morpheus.Types.Internal.Validation.Validator
       Data.Morpheus.Types.SelectionTree
       Data.Morpheus.Validation.Document.Validation
@@ -111,6 +116,7 @@ library
     , bytestring >=0.10.4 && <0.11
     , hashable >=1.0.0
     , megaparsec >=7.0.0 && <9.0.0
+    , mtl >=2.0 && <=3.0
     , scientific >=0.3.6.2 && <0.4
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
@@ -137,6 +143,7 @@ test-suite morpheus-test
     , hashable >=1.0.0
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql-core
+    , mtl >=2.0 && <=3.0
     , scientific >=0.3.6.2 && <0.4
     , tasty
     , tasty-hunit
