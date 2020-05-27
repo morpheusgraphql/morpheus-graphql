@@ -12,7 +12,7 @@ module Data.Morpheus.Validation.Document.Validation
 where
 
 import Control.Monad ((>=>))
-import Control.Monad.Reader (MonadReader, asks, runReaderT)
+import Control.Monad.Reader (asks)
 import Data.Foldable (traverse_)
 import Data.Functor (($>))
 --
@@ -20,15 +20,12 @@ import Data.Functor (($>))
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     PartialImplements (..),
-    Place (..),
   )
-import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
     Selectable (..),
     elems,
     failure,
-    selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -43,16 +40,14 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeRef (..),
-    TypeWrapper,
     isWeaker,
-    msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Context (..),
-    FieldArg (..),
+    Field (..),
     Interface (..),
     SchemaValidator,
     constraintInterface,
@@ -161,7 +156,7 @@ instance TypeEq ArgumentsDefinition (Interface, FieldName) where
     where
       validateArg arg = inArgument (keyOf arg) $ elemIn arg args2
 
-instance TypeEq ArgumentDefinition (Interface, FieldArg) where
+instance TypeEq ArgumentDefinition (Interface, Field) where
   arg1 << arg2 = fieldType arg1 << fieldType arg2
 
 -------------------------------
