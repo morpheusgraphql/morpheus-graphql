@@ -52,21 +52,24 @@ instance PartialImplements (TypeName, TypeName, FieldName) where
     ]
     where
       message =
-        "type "
-          <> msg typename
-          <> " implements Interface "
-          <> msg interfaceName
-          <> " Partially,"
+        "Interface field "
+          <> renderField interfaceName fieldname
           <> detailedMessage errorType
       detailedMessage UnexpectedType {expectedType, foundType} =
-        " on field "
-          <> msg fieldname
-          <> " expected type "
+        " expects type "
           <> msg expectedType
-          <> " found "
+          <> " but "
+          <> renderField typename fieldname
+          <> " is type "
           <> msg foundType
           <> "."
-      detailedMessage Missing = " field " <> msg fieldname <> " not found ."
+      detailedMessage Missing =
+        " expected but "
+          <> msg typename
+          <> " does not provide it."
+
+-- Interface field TestInterface.name expected but User does not provide it.
+-- Interface field TestInterface.name expects type String! but User.name is type Int!.
 
 instance PartialImplements (TypeName, TypeName, FieldName, FieldName) where
   partialImplements (typename, interfaceName, fieldname, argName) errorType =
