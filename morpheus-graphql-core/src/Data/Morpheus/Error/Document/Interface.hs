@@ -4,7 +4,7 @@
 
 module Data.Morpheus.Error.Document.Interface
   ( unknownInterface,
-    partialImplements,
+    PartialImplements (..),
     ImplementsError (..),
     Place (..),
   )
@@ -66,3 +66,30 @@ instance PartialImplements (TypeName, TypeName, FieldName) where
           <> msg foundType
           <> "."
       detailedMessage Missing = " field " <> msg fieldname <> " not found ."
+
+instance PartialImplements (TypeName, TypeName, FieldName, FieldName) where
+  partialImplements (typename, interfaceName, fieldname, argName) errorType =
+    [ GQLError
+        { message = message,
+          locations = []
+        }
+    ]
+    where
+      message =
+        "type "
+          <> msg typename
+          <> " implements Interface "
+          <> msg interfaceName
+          <> " Partially,"
+          <> " on field "
+          <> msg fieldname
+          <> detailedMessage errorType
+      detailedMessage UnexpectedType {expectedType, foundType} =
+        " on argument "
+          <> msg argName
+          <> " expected type "
+          <> msg expectedType
+          <> " found "
+          <> msg foundType
+          <> "."
+      detailedMessage Missing = " argument " <> msg argName <> " not found ."

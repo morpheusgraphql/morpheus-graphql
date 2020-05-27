@@ -20,6 +20,8 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     constraintInterface,
     inField,
     inType,
+    inArgument,
+    inInterface,
   )
 where
 
@@ -84,11 +86,23 @@ inType ::
   SchemaValidator () v
 inType name = withContext (const name)
 
+inInterface ::
+  TypeName ->
+  SchemaValidator (TypeName, TypeName) v ->
+  SchemaValidator TypeName v
+inInterface name = withContext (,name)
+
 inField ::
   FieldName ->
-  SchemaValidator (TypeName, FieldName) v ->
-  SchemaValidator TypeName v
-inField fname = withContext (,fname)
+  SchemaValidator (TypeName, TypeName, FieldName) v ->
+  SchemaValidator (TypeName, TypeName) v
+inField fname = withContext (\(t1, t2) -> (t1, t2, fname))
+
+inArgument ::
+  FieldName ->
+  SchemaValidator (TypeName, TypeName, FieldName, FieldName) v ->
+  SchemaValidator (TypeName, TypeName, FieldName) v
+inArgument aname = withContext (\(t1, t2, f1) -> (t1, t2, f1, aname))
 
 updateLocal :: (a -> b) -> Context a -> Context b
 updateLocal f ctx = ctx {local = f (local ctx)}
@@ -130,16 +144,6 @@ constraintInterface
     } = pure (typeName, fields)
 constraintInterface TypeDefinition {typeName} =
   failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
-
--- can be only used for internal errors
--- instance Failure Message (SchemaValidator ctx) where
---   failure inputMessage =
---     failure
---       [ GQLError
---           { message = "INTERNAL: " <> inputMessage,
---             locations = []
---           }
---       ]
 
 instance Failure GQLErrors (SchemaValidator ctx) where
   failure = SchemaValidator . lift . failure

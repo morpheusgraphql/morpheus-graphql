@@ -12,20 +12,22 @@ module Data.Morpheus.Validation.Document.Validation
 where
 
 import Control.Monad ((>=>))
+import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Data.Foldable (traverse_)
 import Data.Functor (($>))
 --
 -- Morpheus
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
+    PartialImplements (..),
     Place (..),
-    partialImplements,
   )
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
     Selectable (..),
     elems,
+    failure,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -52,7 +54,9 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Context (..),
     SchemaValidator,
     constraintInterface,
+    inArgument,
     inField,
+    inInterface,
     inType,
     runSchemaValidator,
     selectType,
@@ -95,15 +99,14 @@ validateImplements objectImplements objectFields = do
 mustBeSubset ::
   FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> SchemaValidator TypeName ()
 mustBeSubset objFields (typeName, fields) =
-  traverse_ (checkInterfaceField typeName objFields) (elems fields)
+  inInterface typeName $
+    traverse_ (checkInterfaceField objFields) (elems fields)
 
 checkInterfaceField ::
-  TypeName ->
   FieldsDefinition OUT ->
   FieldDefinition OUT ->
-  SchemaValidator TypeName ()
+  SchemaValidator (TypeName, TypeName) ()
 checkInterfaceField
-  typeName
   objFields
   interfaceField@FieldDefinition
     { fieldName
@@ -111,14 +114,14 @@ checkInterfaceField
     inField fieldName $
       selectOr err checkEq fieldName objFields
     where
-      err = [(Place typeName fieldName, Nothing, UndefinedField)]
+      err = failImplements Missing
       -----
       checkEq field = interfaceField << field
 
-class TypeEq a ctx where
+class PartialImplements ctx => TypeEq a ctx where
   (<<) :: a -> a -> SchemaValidator ctx ()
 
-instance TypeEq (FieldDefinition OUT) (TypeName, FieldName) where
+instance TypeEq (FieldDefinition OUT) (TypeName, TypeName, FieldName) where
   FieldDefinition
     { fieldType,
       fieldArgs
@@ -126,9 +129,9 @@ instance TypeEq (FieldDefinition OUT) (TypeName, FieldName) where
     << FieldDefinition
       { fieldType = fieldType',
         fieldArgs = fieldArgs'
-      } = (fieldType << fieldType') <> (fieldArgs << fieldArgs')
+      } = (fieldType << fieldType') *> (fieldArgs << fieldArgs')
 
-instance TypeEq TypeRef ctx where
+instance (PartialImplements ctx) => TypeEq TypeRef ctx where
   t1@TypeRef
     { typeConName,
       typeWrappers = w1
@@ -138,7 +141,8 @@ instance TypeEq TypeRef ctx where
         typeWrappers = w2
       }
       | typeConName == name' && not (isWeaker w2 w1) = pure ()
-      | otherwise = [UnexpectedType {expectedType = t1, foundType = t2}]
+      | otherwise =
+        failImplements UnexpectedType {expectedType = t1, foundType = t2}
 
 elemIn ::
   ( KeyOf a,
@@ -148,12 +152,14 @@ elemIn ::
   a ->
   c ->
   SchemaValidator ctx ()
-elemIn el = selectOr [UndefinedField] (<< el) (keyOf el)
+elemIn el = selectOr (failImplements Missing) (<< el) (keyOf el)
 
-instance TypeEq ArgumentsDefinition (TypeName, FieldName) where
-  args1 << args2 = traverse_ (`elemIn` args1) (elems args2)
+instance TypeEq ArgumentsDefinition (TypeName, TypeName, FieldName) where
+  args1 << args2 = traverse_ validateArg (elems args2)
+    where
+      validateArg arg = inArgument (keyOf arg) $ elemIn arg args1
 
-instance TypeEq ArgumentDefinition (TypeName, FieldName, FieldName) where
+instance TypeEq ArgumentDefinition (TypeName, TypeName, FieldName, FieldName) where
   arg1 << arg2 = fieldType arg1 << fieldType arg2
 
 -------------------------------
@@ -161,3 +167,11 @@ selectInterface ::
   TypeName ->
   SchemaValidator ctx (TypeName, FieldsDefinition OUT)
 selectInterface = selectType >=> constraintInterface
+
+failImplements ::
+  PartialImplements ctx =>
+  ImplementsError ->
+  SchemaValidator ctx a
+failImplements err = do
+  x <- asks local
+  failure $ partialImplements x err
