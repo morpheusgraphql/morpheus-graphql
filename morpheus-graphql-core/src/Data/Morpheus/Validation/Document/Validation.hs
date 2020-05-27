@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -52,6 +53,8 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Context (..),
+    FieldArg (..),
+    Interface (..),
     SchemaValidator,
     constraintInterface,
     inArgument,
@@ -105,7 +108,7 @@ mustBeSubset objFields (typeName, fields) =
 checkInterfaceField ::
   FieldsDefinition OUT ->
   FieldDefinition OUT ->
-  SchemaValidator (TypeName, TypeName) ()
+  SchemaValidator Interface ()
 checkInterfaceField
   objFields
   interfaceField@FieldDefinition
@@ -154,12 +157,12 @@ elemIn ::
   SchemaValidator ctx ()
 elemIn el = selectOr (failImplements Missing) (el <<) (keyOf el)
 
-instance TypeEq ArgumentsDefinition (TypeName, TypeName, FieldName) where
+instance TypeEq ArgumentsDefinition (Interface, FieldName) where
   args1 << args2 = traverse_ validateArg (elems args1)
     where
       validateArg arg = inArgument (keyOf arg) $ elemIn arg args2
 
-instance TypeEq ArgumentDefinition (TypeName, TypeName, FieldName, FieldName) where
+instance TypeEq ArgumentDefinition (Interface, FieldArg) where
   arg1 << arg2 = fieldType arg1 << fieldType arg2
 
 -------------------------------

@@ -20,6 +20,10 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeRef,
     msg,
   )
+import Data.Morpheus.Types.Internal.Validation.SchemaValidator
+  ( FieldArg (..),
+    Interface (..),
+  )
 import Data.Semigroup ((<>))
 
 unknownInterface :: TypeName -> GQLErrors
@@ -43,8 +47,8 @@ data Place = Place
 class PartialImplements ctx where
   partialImplements :: ctx -> ImplementsError -> GQLErrors
 
-instance PartialImplements (TypeName, TypeName, FieldName) where
-  partialImplements (typename, interfaceName, fieldname) errorType =
+instance PartialImplements (Interface, FieldName) where
+  partialImplements (Interface interfaceName typename, fieldname) errorType =
     [ GQLError
         { message = message,
           locations = []
@@ -71,8 +75,8 @@ instance PartialImplements (TypeName, TypeName, FieldName) where
 -- Interface field TestInterface.name expected but User does not provide it.
 -- Interface field TestInterface.name expects type String! but User.name is type Int!.
 
-instance PartialImplements (TypeName, TypeName, FieldName, FieldName) where
-  partialImplements (typename, interfaceName, fieldname, argName) errorType =
+instance PartialImplements (Interface, FieldArg) where
+  partialImplements (Interface interfaceName typename, FieldArg fieldname argName) errorType =
     [ GQLError
         { message = message,
           locations = []

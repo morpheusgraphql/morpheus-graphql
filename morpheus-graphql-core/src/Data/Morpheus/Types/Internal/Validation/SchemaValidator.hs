@@ -22,6 +22,8 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inType,
     inArgument,
     inInterface,
+    FieldArg (..),
+    Interface (..),
   )
 where
 
@@ -88,21 +90,31 @@ inType name = withContext (const name)
 
 inInterface ::
   TypeName ->
-  SchemaValidator (TypeName, TypeName) v ->
+  SchemaValidator Interface v ->
   SchemaValidator TypeName v
-inInterface name = withContext (,name)
+inInterface interfaceName = withContext (Interface interfaceName)
 
 inField ::
   FieldName ->
-  SchemaValidator (TypeName, TypeName, FieldName) v ->
-  SchemaValidator (TypeName, TypeName) v
-inField fname = withContext (\(t1, t2) -> (t1, t2, fname))
+  SchemaValidator (t, FieldName) v ->
+  SchemaValidator t v
+inField fname = withContext (,fname)
 
 inArgument ::
   FieldName ->
-  SchemaValidator (TypeName, TypeName, FieldName, FieldName) v ->
-  SchemaValidator (TypeName, TypeName, FieldName) v
-inArgument aname = withContext (\(t1, t2, f1) -> (t1, t2, f1, aname))
+  SchemaValidator (t, FieldArg) v ->
+  SchemaValidator (t, FieldName) v
+inArgument aname = withContext (\(t1, f1) -> (t1, FieldArg f1 aname))
+
+data Interface = Interface
+  { interfacename :: TypeName,
+    typename :: TypeName
+  }
+
+data FieldArg = FieldArg
+  { fieldName :: FieldName,
+    fieldArg :: FieldName
+  }
 
 updateLocal :: (a -> b) -> Context a -> Context b
 updateLocal f ctx = ctx {local = f (local ctx)}
