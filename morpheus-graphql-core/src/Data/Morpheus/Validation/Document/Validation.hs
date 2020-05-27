@@ -19,7 +19,6 @@ import Data.Functor (($>))
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     partialImplements,
-    unknownInterface,
   )
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
@@ -52,6 +51,7 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Context (..),
     SchemaValidator,
+    constraintInterface,
     runSchemaValidator,
     selectType,
   )
@@ -89,7 +89,7 @@ validateImplements ::
   FieldsDefinition OUT ->
   SchemaValidator ()
 validateImplements typeName objectImplements objectFields = do
-  interface <- traverse getInterfaceByKey objectImplements
+  interface <- traverse selectInterface objectImplements
   case concatMap (mustBeSubset objectFields) interface of
     [] -> pure ()
     errors -> failure $ partialImplements typeName errors
@@ -160,12 +160,9 @@ instance TypeEq ArgumentDefinition [ImplementsError] where
   arg1 << arg2 = fieldType arg1 << fieldType arg2
 
 -------------------------------
-getInterfaceByKey ::
+selectInterface ::
   TypeName ->
   SchemaValidator (TypeName, FieldsDefinition OUT)
-getInterfaceByKey interfaceName =
+selectInterface interfaceName =
   selectType interfaceName
     >>= constraintInterface
-  where
-    constraintInterface TypeDefinition {typeContent = DataInterface {interfaceFields}} = pure (interfaceName, interfaceFields)
-    constraintInterface _ = failure $ globalErrorMessage $ "type " <> msg interfaceName <> " must be an interface"

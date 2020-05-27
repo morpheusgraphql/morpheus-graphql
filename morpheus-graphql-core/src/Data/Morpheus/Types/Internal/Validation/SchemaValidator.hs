@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -15,6 +16,7 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     withContext,
     selectType,
     Context (..),
+    constraintInterface,
   )
 where
 
@@ -35,9 +37,12 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldName,
+    FieldsDefinition,
     GQLError (..),
     GQLErrors,
     Message,
+    OUT,
+    TypeContent (..),
     TypeDefinition (..),
     TypeName,
     msg,
@@ -93,6 +98,15 @@ newtype SchemaValidator a = Validator
       MonadReader Context,
       Monad
     )
+
+constraintInterface :: TypeDefinition ANY -> SchemaValidator (TypeName, FieldsDefinition OUT)
+constraintInterface
+  TypeDefinition
+    { typeName,
+      typeContent = DataInterface fields
+    } = pure (typeName, fields)
+constraintInterface TypeDefinition {typeName} =
+  failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
 
 -- can be only used for internal errors
 instance Failure Message SchemaValidator where
