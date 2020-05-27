@@ -6,6 +6,7 @@
 
 - exposed: `Data.Morpheus.Types.GQLScalar`
 - exposed: `Data.Morpheus.Types.ID`
+- fulfilled implements interface validation
 
 ## minor changes
 
