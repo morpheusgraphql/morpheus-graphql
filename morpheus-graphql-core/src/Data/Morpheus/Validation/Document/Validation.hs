@@ -124,7 +124,7 @@ checkInterfaceField
 class PartialImplements ctx => TypeEq a ctx where
   (<<) :: a -> a -> SchemaValidator ctx ()
 
-instance TypeEq (FieldDefinition OUT) (TypeName, TypeName, FieldName) where
+instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
   FieldDefinition
     { fieldType,
       fieldArgs

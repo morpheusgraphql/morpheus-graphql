@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -107,8 +108,8 @@ inArgument ::
 inArgument aname = withContext (\(t1, f1) -> (t1, FieldArg f1 aname))
 
 data Interface = Interface
-  { interfacename :: TypeName,
-    typename :: TypeName
+  { interfaceName :: TypeName,
+    typeName :: TypeName
   }
 
 data FieldArg = FieldArg
