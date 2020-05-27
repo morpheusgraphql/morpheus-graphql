@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -38,28 +39,30 @@ data Place = Place
     fieldArg :: Maybe (FieldName, TypeName)
   }
 
-partialImplements :: TypeName -> [(Place, ImplementsError)] -> GQLErrors
-partialImplements name = map impError
-  where
-    impError (Place interfaceName key _, errorType) =
-      GQLError
+class PartialImplements ctx where
+  partialImplements :: ctx -> ImplementsError -> GQLErrors
+
+instance PartialImplements (TypeName, TypeName, FieldName) where
+  partialImplements (typename, interfaceName, fieldname) errorType =
+    [ GQLError
         { message = message,
           locations = []
         }
-      where
-        message =
-          "type "
-            <> msg name
-            <> " implements Interface "
-            <> msg interfaceName
-            <> " Partially,"
-            <> detailedMessage errorType
-        detailedMessage UnexpectedType {expectedType, foundType} =
-          " on key "
-            <> msg key
-            <> " expected type "
-            <> msg expectedType
-            <> " found "
-            <> msg foundType
-            <> "."
-        detailedMessage Missing = " key " <> msg key <> " not found ."
+    ]
+    where
+      message =
+        "type "
+          <> msg typename
+          <> " implements Interface "
+          <> msg interfaceName
+          <> " Partially,"
+          <> detailedMessage errorType
+      detailedMessage UnexpectedType {expectedType, foundType} =
+        " on field "
+          <> msg fieldname
+          <> " expected type "
+          <> msg expectedType
+          <> " found "
+          <> msg foundType
+          <> "."
+      detailedMessage Missing = " field " <> msg fieldname <> " not found ."
