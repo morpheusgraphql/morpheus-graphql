@@ -9,6 +9,7 @@
 
 ## minor changes
 
+- added dependency `mtl`
 - validates strings as enum from JSON value
 
 ## 0.12.0 - 21.05.2020
