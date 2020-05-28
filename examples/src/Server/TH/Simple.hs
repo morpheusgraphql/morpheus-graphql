@@ -32,12 +32,6 @@ instance
   fieldResolver _ Rest {url = "assets/deity-1"} = Deity {name = pure "", power = pure $ Just ""}
   fieldResolver _ Rest {} = Deity {name = pure "", power = pure $ Just ""}
 
--- instance SchemaDirectiveVisitor RestDirective where
---   visitFieldDefinition _ field = field
-
---   const { url } = this.args;
---   field.resolve = () => fetch(url);
-
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
