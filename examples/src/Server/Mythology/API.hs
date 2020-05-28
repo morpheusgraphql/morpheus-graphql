@@ -30,7 +30,6 @@ import Data.Morpheus.Types
 import Data.Morpheus.Types.Directive (FieldDirective (..), ResolverDirective (..))
 import Data.Proxy (Proxy (..))
 import Data.Text (Text, pack)
-import GHC.Exts
 import GHC.Generics (Generic)
 import GHC.TypeLits
 import Server.Mythology.Character
@@ -58,10 +57,16 @@ data Character m
   | Cronus
   deriving (Generic, GQLType)
 
+data Arg (name :: Symbol) (value :: Symbol)
+
+data Dir (name :: Symbol) (args :: [*])
+
+type REST (url :: Symbol) = Dir "REST" '[Arg "url" url]
+
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
     character :: [Character m],
-    restDeity :: m (FieldDirective (Rest "http/some url") Deity)
+    restDeity :: m (FieldDirective (REST "http/some-url") Deity)
   }
   deriving (Generic, GQLType)
 
@@ -75,9 +80,7 @@ resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
   liftEither $ dbDeity name bornPlace
 
-data Rest (a :: Symbol) = Rest
-
-instance (KnownSymbol a, Monad m) => ResolverDirective (Rest a) m Deity where
+instance (KnownSymbol a, Monad m) => ResolverDirective (REST a) m Deity where
   resolverDirective _ = case symbolVal (Proxy :: Proxy a) of
     "so" ->
       pure
