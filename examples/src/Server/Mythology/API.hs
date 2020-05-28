@@ -75,24 +75,26 @@ resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
   liftEither $ dbDeity name bornPlace
 
-newtype Rest (a :: Symbol) = Rest {x :: String}
+data Rest (a :: Symbol) = Rest
 
-instance (KnownSymbol a) => ResolverDirective (Rest a) Deity where
+instance (KnownSymbol a, Monad m) => ResolverDirective (Rest a) m Deity where
   resolverDirective _ = case symbolVal (Proxy :: Proxy a) of
     "so" ->
-      Deity
-        { name = "so",
-          power = Just "so",
-          realm = Sky,
-          bornAt = Nothing
-        }
+      pure
+        Deity
+          { name = "so",
+            power = Just "so",
+            realm = Sky,
+            bornAt = Nothing
+          }
     val ->
-      Deity
-        { name = pack val,
-          power = Just "",
-          realm = Sky,
-          bornAt = Nothing
-        }
+      pure
+        Deity
+          { name = pack val,
+            power = Just "",
+            realm = Sky,
+            bornAt = Nothing
+          }
 
 resolveCharacter :: Applicative m => [Character m]
 resolveCharacter =
