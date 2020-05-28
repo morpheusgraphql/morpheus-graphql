@@ -23,14 +23,14 @@ import Data.Text (Text)
 
 importGQLDocument "src/Server/TH/simple.gql"
 
-newtype Rest = Rest {url :: Text}
+-- newtype Rest = Rest {url :: Text}
 
-instance
-  Monad m =>
-  ResolverDirective Rest (Deity m)
-  where
-  fieldResolver _ Rest {url = "assets/deity-1"} = Deity {name = pure "", power = pure $ Just ""}
-  fieldResolver _ Rest {} = Deity {name = pure "", power = pure $ Just ""}
+-- instance
+--   Monad m =>
+--   ResolverDirective Rest (Deity m)
+--   where
+--   fieldResolver _ Rest {url = "assets/deity-1"} = Deity {name = pure "", power = pure $ Just ""}
+--   fieldResolver _ Rest {} = Deity {name = pure "", power = pure $ Just ""}
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =

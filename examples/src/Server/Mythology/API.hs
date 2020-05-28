@@ -1,6 +1,8 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -19,16 +21,17 @@ import Data.Morpheus.Types
     Undefined (..),
     liftEither,
   )
+import Data.Morpheus.Types.Directive (FieldDirective (..), ResolverDirective (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Server.Mythology.Character
-  ( Deity,
+  ( Deity (..),
     Human,
     dbDeity,
     someDeity,
     someHuman,
   )
-import Server.Mythology.Place (City)
+import Server.Mythology.Place (City (..), Realm (..))
 
 data Character m
   = CharacterHuman (Human m) -- Only <tyconName><conName> should generate direct link
@@ -48,7 +51,8 @@ data Character m
 
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
-    character :: [Character m]
+    character :: [Character m],
+    restDeity :: FieldDirective Rest Deity
   }
   deriving (Generic, GQLType)
 
@@ -61,6 +65,24 @@ data DeityArgs = DeityArgs
 resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
   liftEither $ dbDeity name bornPlace
+
+newtype Rest = Rest {url :: Text}
+
+instance ResolverDirective Rest Deity where
+  resolverDirective Rest {url = "assets/deity-1"} =
+    Deity
+      { name = "",
+        power = Just "",
+        realm = Sky,
+        bornAt = Nothing
+      }
+  resolverDirective Rest {} =
+    Deity
+      { name = "",
+        power = Just "",
+        realm = Sky,
+        bornAt = Nothing
+      }
 
 resolveCharacter :: Applicative m => [Character m]
 resolveCharacter =
@@ -80,7 +102,12 @@ resolveCharacter =
 mythologyRoot :: RootResolver IO () Query Undefined Undefined
 mythologyRoot =
   RootResolver
-    { queryResolver = Query {deity = resolveDeity, character = resolveCharacter},
+    { queryResolver =
+        Query
+          { deity = resolveDeity,
+            character = resolveCharacter,
+            restDeity = FieldDirective
+          },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }

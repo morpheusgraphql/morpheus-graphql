@@ -1,12 +1,19 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Data.Morpheus.Types.Directive
   ( SchemaDirectiveVisitor (..),
     ResolverDirective (..),
+    FieldDirective (..),
   )
 where
 
 import Data.Morpheus.Types.Internal.AST
+
+data FieldDirective d a = FieldDirective
 
 data DirectiveKind = SCHEMA | RESOLVER
 
@@ -23,7 +30,7 @@ data DirectiveKind = SCHEMA | RESOLVER
 -- visitInputFieldDefinition(field: GraphQLInputField)
 
 class ResolverDirective dir a where
-  fieldResolver :: FieldDefinition ANY -> dir -> a
+  resolverDirective :: dir -> a
 
 class SchemaDirectiveVisitor a where
   visitFieldDefinition :: a -> FieldDefinition cat -> FieldDefinition cat
