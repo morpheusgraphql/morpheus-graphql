@@ -2,9 +2,15 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Server.Mythology.API
   ( mythologyApi,
@@ -22,8 +28,11 @@ import Data.Morpheus.Types
     liftEither,
   )
 import Data.Morpheus.Types.Directive (FieldDirective (..), ResolverDirective (..))
-import Data.Text (Text)
+import Data.Proxy (Proxy (..))
+import Data.Text (Text, pack)
+import GHC.Exts
 import GHC.Generics (Generic)
+import GHC.TypeLits
 import Server.Mythology.Character
   ( Deity (..),
     Human,
@@ -52,7 +61,7 @@ data Character m
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
     character :: [Character m],
-    restDeity :: FieldDirective Rest Deity
+    restDeity :: FieldDirective (Rest "http/some url") Deity
   }
   deriving (Generic, GQLType)
 
@@ -66,23 +75,24 @@ resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
   liftEither $ dbDeity name bornPlace
 
-newtype Rest = Rest {url :: Text}
+newtype Rest (a :: Symbol) = Rest {x :: String}
 
-instance ResolverDirective Rest Deity where
-  resolverDirective Rest {url = "assets/deity-1"} =
-    Deity
-      { name = "",
-        power = Just "",
-        realm = Sky,
-        bornAt = Nothing
-      }
-  resolverDirective Rest {} =
-    Deity
-      { name = "",
-        power = Just "",
-        realm = Sky,
-        bornAt = Nothing
-      }
+instance (KnownSymbol a) => ResolverDirective (Rest a) Deity where
+  resolverDirective _ = case symbolVal (Proxy :: Proxy a) of
+    "so" ->
+      Deity
+        { name = "so",
+          power = Just "so",
+          realm = Sky,
+          bornAt = Nothing
+        }
+    val ->
+      Deity
+        { name = pack val,
+          power = Just "",
+          realm = Sky,
+          bornAt = Nothing
+        }
 
 resolveCharacter :: Applicative m => [Character m]
 resolveCharacter =
