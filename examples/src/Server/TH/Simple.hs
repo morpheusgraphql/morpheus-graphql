@@ -23,7 +23,7 @@ import Data.Text (Text)
 
 importGQLDocument "src/Server/TH/simple.gql"
 
-newtype Rest = Rest {url :: ByteString}
+newtype Rest = Rest {url :: Text}
 
 instance
   Monad m =>
