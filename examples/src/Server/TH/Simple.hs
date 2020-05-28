@@ -18,9 +18,22 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types (RootResolver (..), Undefined (..))
+import Data.Morpheus.Types.Directive (ResolverDirective)
 import Data.Text (Text)
 
 importGQLDocument "src/Server/TH/simple.gql"
+
+data RestDirective = RestDirective {}
+
+instance SchemaDirectiveVisitor ResolverDirective where
+  field 
+
+
+-- instance SchemaDirectiveVisitor RestDirective where
+--   visitFieldDefinition _ field = field
+
+--   const { url } = this.args;
+--   field.resolve = () => fetch(url);
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
