@@ -23,13 +23,14 @@ import Data.Text (Text)
 
 importGQLDocument "src/Server/TH/simple.gql"
 
-data Rest = Rest {}
+newtype Rest = Rest {url :: ByteString}
 
 instance
   Monad m =>
   ResolverDirective Rest (Deity m)
   where
-  fieldResolver _ _ = Deity {name = pure "", power = pure $ Just ""}
+  fieldResolver _ Rest {url = "assets/deity-1"} = Deity {name = pure "", power = pure $ Just ""}
+  fieldResolver _ Rest {} = Deity {name = pure "", power = pure $ Just ""}
 
 -- instance SchemaDirectiveVisitor RestDirective where
 --   visitFieldDefinition _ field = field
