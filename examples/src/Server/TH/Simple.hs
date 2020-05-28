@@ -18,16 +18,18 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types (RootResolver (..), Undefined (..))
-import Data.Morpheus.Types.Directive (ResolverDirective)
+import Data.Morpheus.Types.Directive (ResolverDirective (..))
 import Data.Text (Text)
 
 importGQLDocument "src/Server/TH/simple.gql"
 
-data RestDirective = RestDirective {}
+data Rest = Rest {}
 
-instance SchemaDirectiveVisitor ResolverDirective where
-  field 
-
+instance
+  Monad m =>
+  ResolverDirective Rest (Deity m)
+  where
+  fieldResolver _ _ = Deity {name = pure "", power = pure $ Just ""}
 
 -- instance SchemaDirectiveVisitor RestDirective where
 --   visitFieldDefinition _ field = field

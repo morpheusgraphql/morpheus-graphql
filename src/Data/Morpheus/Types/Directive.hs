@@ -23,7 +23,7 @@ data DirectiveKind = SCHEMA | RESOLVER
 -- visitInputFieldDefinition(field: GraphQLInputField)
 
 class ResolverDirective dir a where
-  resolveField :: FieldDefinition ANY -> dir -> a
+  fieldResolver :: FieldDefinition ANY -> dir -> a
 
 class SchemaDirectiveVisitor a where
   visitFieldDefinition :: a -> FieldDefinition cat -> FieldDefinition cat
