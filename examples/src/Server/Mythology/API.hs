@@ -61,7 +61,7 @@ data Character m
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
     character :: [Character m],
-    restDeity :: FieldDirective (Rest "http/some url") Deity
+    restDeity :: m (FieldDirective (Rest "http/some url") Deity)
   }
   deriving (Generic, GQLType)
 
@@ -118,7 +118,7 @@ mythologyRoot =
         Query
           { deity = resolveDeity,
             character = resolveCharacter,
-            restDeity = FieldDirective
+            restDeity = pure FieldDirective
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
