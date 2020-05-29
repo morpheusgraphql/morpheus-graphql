@@ -27,6 +27,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD (..),
+    FieldContent (..),
     FieldDefinition (..),
     IN,
     Operation (..),
@@ -61,7 +62,8 @@ renderArguments variables argsName
         { tName = argsName,
           tNamespace = [],
           tCons = [ConsD {cName = argsName, cFields = map fieldD (elems variables)}],
-          tMeta = Nothing,
+          tDescription = Nothing,
+          tDirectives = [],
           tKind = KindInputObject
         }
       where
@@ -69,9 +71,10 @@ renderArguments variables argsName
         fieldD Variable {variableName, variableType} =
           FieldDefinition
             { fieldName = variableName,
-              fieldArgs = NoArguments,
+              fieldContent = NoContent,
               fieldType = variableType,
-              fieldMeta = Nothing
+              fieldDescription = Nothing,
+              fieldDirectives = empty
             }
 
 renderOperationArguments :: Operation VALID -> Converter (Maybe TypeD)
@@ -146,7 +149,8 @@ mkInputType tName tKind tCons =
       tNamespace = [],
       tCons,
       tKind,
-      tMeta = Nothing
+      tDescription = Nothing,
+      tDirectives = empty
     }
 
 toFieldD :: FieldDefinition cat -> Converter (FieldDefinition ANY)

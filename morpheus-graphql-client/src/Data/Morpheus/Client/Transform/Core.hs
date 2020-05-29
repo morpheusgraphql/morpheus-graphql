@@ -36,10 +36,10 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    Directives,
     FieldName,
     GQLErrors,
     Message,
-    Meta,
     RAW,
     Ref (..),
     Schema (..),
@@ -48,6 +48,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeD,
     TypeDefinition (..),
     TypeName,
+    VALID,
     VariableDefinitions,
     hsTypeName,
     isSystemTypeName,
@@ -103,8 +104,8 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
     __typeFrom DataUnion {} = nameSpaceType path typeName
     __typeFrom _ = typeName
 
-deprecationWarning :: Maybe Meta -> (FieldName, Ref) -> Converter ()
-deprecationWarning meta (typename, ref) = case meta >>= lookupDeprecated of
+deprecationWarning :: Directives VALID -> (FieldName, Ref) -> Converter ()
+deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
   Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
     where
       warnings =

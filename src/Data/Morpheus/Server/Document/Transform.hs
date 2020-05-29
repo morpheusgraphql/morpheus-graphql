@@ -21,12 +21,14 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
     elems,
+    empty,
     singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD,
+    FieldContent (..),
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
@@ -85,23 +87,30 @@ toTHDefinitions namespace schema = catMaybes <$> traverse renderTHType schema
         toArgsTypeName = mkArgsTypeName namespace (typeName x)
         --------------------------------------------
         generateType :: TypeDefinition ANY -> Q (Maybe GQLTypeD)
-        generateType typeOriginal@TypeDefinition {typeName, typeContent, typeMeta} =
-          fmap defType <$> genTypeContent schema toArgsTypeName typeName typeContent
-          where
-            -----------------------
-            defType (typeArgD, tCons) =
-              GQLTypeD
-                { typeD =
-                    TypeD
-                      { tName = hsTypeName typeName,
-                        tMeta = typeMeta,
-                        tNamespace = [],
-                        tCons,
-                        tKind = kindOf typeOriginal
-                      },
-                  typeArgD,
-                  ..
-                }
+        generateType
+          typeOriginal@TypeDefinition
+            { typeName,
+              typeContent,
+              typeDescription,
+              typeDirectives
+            } =
+            fmap defType <$> genTypeContent schema toArgsTypeName typeName typeContent
+            where
+              -----------------------
+              defType (typeArgD, tCons) =
+                GQLTypeD
+                  { typeD =
+                      TypeD
+                        { tName = hsTypeName typeName,
+                          tDescription = typeDescription,
+                          tNamespace = [],
+                          tCons,
+                          tKind = kindOf typeOriginal,
+                          tDirectives = typeDirectives
+                        },
+                    typeArgD,
+                    ..
+                  }
 
 mkObjectCons :: TypeName -> FieldsDefinition cat -> [ConsD]
 mkObjectCons typeName fields = [mkCons typeName fields]
@@ -114,18 +123,19 @@ mkArgsTypeName namespace typeName fieldName
     argTName = capitalTypeName (fieldName <> "Args")
 
 mkField :: [TypeDefinition ANY] -> (FieldName -> TypeName) -> FieldDefinition OUT -> Q (FieldDefinition OUT)
-mkField schema genArgsTypeName field@FieldDefinition {fieldName, fieldArgs, fieldType = typeRef@TypeRef {typeConName}} =
+mkField schema genArgsTypeName field@FieldDefinition {fieldName, fieldContent = cont, fieldType = typeRef@TypeRef {typeConName}} =
   do
     typeArgs <- getTypeArgs typeConName schema
     pure $
       field
         { fieldType = typeRef {typeConName = hsTypeName typeConName, typeArgs},
-          fieldArgs = fieldArguments
+          fieldContent = fieldCont cont
         }
   where
-    fieldArguments
-      | hasArguments fieldArgs = fieldArgs {argumentsTypename = Just $ genArgsTypeName fieldName}
-      | otherwise = fieldArgs
+    fieldCont (FieldArgs args)
+      | hasArguments args = FieldArgs $ args {argumentsTypename = Just $ genArgsTypeName fieldName}
+      | otherwise = cont
+    fieldCont _ = cont
 
 genTypeContent ::
   [TypeDefinition ANY] ->
@@ -159,8 +169,9 @@ genTypeContent _ _ typeName (DataUnion members) = pure $ Just ([], map unionCon 
                       typeArgs = Just m_,
                       typeWrappers = []
                     },
-                fieldMeta = Nothing,
-                fieldArgs = NoArguments
+                fieldDescription = Nothing,
+                fieldDirectives = empty,
+                fieldContent = NoContent
               }
         )
       where
@@ -172,18 +183,19 @@ genArgumentTypes genArgsTypeName fields =
   concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
 genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [TypeD]
-genArgumentType _ FieldDefinition {fieldArgs = NoArguments} = pure []
-genArgumentType namespaceWith FieldDefinition {fieldName, fieldArgs} =
+genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = FieldArgs args} =
   pure
     [ TypeD
         { tName,
-          tNamespace = [],
+          tNamespace = empty,
           tCons =
-            [ mkCons tName (argumentsToFields fieldArgs)
+            [ mkCons tName (argumentsToFields args)
             ],
-          tMeta = Nothing,
+          tDescription = Nothing,
+          tDirectives = empty,
           tKind = KindInputObject
         }
     ]
   where
     tName = hsTypeName (namespaceWith fieldName)
+genArgumentType _ _ = pure []
