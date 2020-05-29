@@ -9,6 +9,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DirectiveDefinition (..),
     DirectiveLocation (..),
+    FieldContent (..),
     TypeWrapper (..),
     createField,
   )
@@ -34,11 +35,11 @@ defaultDirectives =
         directiveDefinitionArgs =
           singleton $
             createField
-              NoArguments
+              NoContent
               "reason"
               ([TypeMaybe], "String")
       }
   ]
 
 argumentsIf :: ArgumentsDefinition
-argumentsIf = singleton $ createField NoArguments "if" ([], "Boolean")
+argumentsIf = singleton $ createField NoContent "if" ([], "Boolean")

@@ -70,7 +70,6 @@ module Data.Morpheus.Types.Internal.AST
     QUERY,
     MUTATION,
     SUBSCRIPTION,
-    Meta (..),
     Directive (..),
     TypeUpdater,
     TypeD (..),
@@ -150,6 +149,8 @@ module Data.Morpheus.Types.Internal.AST
     DirectiveDefinitions,
     DirectiveDefinition (..),
     DirectiveLocation (..),
+    FieldContent (..),
+    fieldContentArgs,
   )
 where
 

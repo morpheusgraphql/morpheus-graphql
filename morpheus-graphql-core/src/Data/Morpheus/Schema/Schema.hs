@@ -24,6 +24,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     DataFingerprint (..),
+    FieldContent (..),
     FieldsDefinition,
     Message,
     OUT,
@@ -56,11 +57,11 @@ hiddenFields :: FieldsDefinition OUT
 hiddenFields =
   unsafeFromFields
     [ createField
-        (singleton (createArgument "name" ([], "String")))
+        (FieldArgs $ singleton (createArgument "name" ([], "String")))
         "__type"
         ([TypeMaybe], "__Type"),
       createField
-        NoArguments
+        NoContent
         "__schema"
         ([], "__Schema")
     ]

@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Parsing.Document.TypeSystem
   ( parseSchema,
@@ -33,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
     DataFingerprint (..),
     Description,
     IN,
-    Meta (..),
     OUT,
     ScalarDefinition (..),
     TypeContent (..),
@@ -59,15 +59,14 @@ import Text.Megaparsec
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
 scalarTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
-scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
+scalarTypeDefinition typeDescription = label "ScalarTypeDefinition" $ do
   typeName <- typeDeclaration "scalar"
-  metaDirectives <- optionalDirectives
+  typeDirectives <- optionalDirectives
   pure
     TypeDefinition
-      { typeName,
-        typeMeta = Just Meta {metaDescription, metaDirectives},
-        typeFingerprint = DataFingerprint typeName [],
-        typeContent = DataScalar $ ScalarDefinition pure
+      { typeFingerprint = DataFingerprint typeName [],
+        typeContent = DataScalar $ ScalarDefinition pure,
+        ..
       }
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
@@ -86,18 +85,17 @@ scalarTypeDefinition metaDescription = label "ScalarTypeDefinition" $ do
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 objectTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
-objectTypeDefinition metaDescription = label "ObjectTypeDefinition" $ do
+objectTypeDefinition typeDescription = label "ObjectTypeDefinition" $ do
   typeName <- typeDeclaration "type"
   objectImplements <- optionalImplementsInterfaces
-  metaDirectives <- optionalDirectives
+  typeDirectives <- optionalDirectives
   objectFields <- fieldsDefinition
   -- build object
   pure
     TypeDefinition
-      { typeName,
-        typeMeta = Just Meta {metaDescription, metaDirectives},
-        typeFingerprint = DataFingerprint typeName [],
-        typeContent = DataObject {objectImplements, objectFields}
+      { typeFingerprint = DataFingerprint typeName [],
+        typeContent = DataObject {objectImplements, objectFields},
+        ..
       }
 
 optionalImplementsInterfaces :: Parser [TypeName]
@@ -112,17 +110,14 @@ optionalImplementsInterfaces = implements <|> pure []
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
 interfaceTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
-interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
+interfaceTypeDefinition typeDescription = label "InterfaceTypeDefinition" $ do
   typeName <- typeDeclaration "interface"
-  metaDirectives <- optionalDirectives
-  fields <- fieldsDefinition
-  -- build interface
+  typeDirectives <- optionalDirectives
+  typeContent <- DataInterface <$> fieldsDefinition
   pure
     TypeDefinition
-      { typeName,
-        typeMeta = Just Meta {metaDescription, metaDirectives},
-        typeFingerprint = DataFingerprint typeName [],
-        typeContent = DataInterface fields
+      { typeFingerprint = DataFingerprint typeName [],
+        ..
       }
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
@@ -135,17 +130,14 @@ interfaceTypeDefinition metaDescription = label "InterfaceTypeDefinition" $ do
 --      UnionMemberTypes | NamedType
 --
 unionTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
-unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
+unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
   typeName <- typeDeclaration "union"
-  metaDirectives <- optionalDirectives
-  memberTypes <- unionMemberTypes
-  -- build union
+  typeDirectives <- optionalDirectives
+  typeContent <- DataUnion <$> unionMemberTypes
   pure
     TypeDefinition
-      { typeName,
-        typeMeta = Just Meta {metaDescription, metaDirectives},
-        typeFingerprint = DataFingerprint typeName [],
-        typeContent = DataUnion memberTypes
+      { typeFingerprint = DataFingerprint typeName [],
+        ..
       }
   where
     unionMemberTypes = operator '=' *> parseTypeName `sepBy1` pipeLiteral
@@ -162,17 +154,14 @@ unionTypeDefinition metaDescription = label "UnionTypeDefinition" $ do
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
 enumTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
-enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
+enumTypeDefinition typeDescription = label "EnumTypeDefinition" $ do
   typeName <- typeDeclaration "enum"
-  metaDirectives <- optionalDirectives
-  enumValuesDefinitions <- collection enumValueDefinition
-  -- build enum
+  typeDirectives <- optionalDirectives
+  typeContent <- DataEnum <$> collection enumValueDefinition
   pure
     TypeDefinition
-      { typeName,
-        typeContent = DataEnum enumValuesDefinitions,
-        typeFingerprint = DataFingerprint typeName [],
-        typeMeta = Just Meta {metaDescription, metaDirectives}
+      { typeFingerprint = DataFingerprint typeName [],
+        ..
       }
 
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
@@ -184,18 +173,16 @@ enumTypeDefinition metaDescription = label "EnumTypeDefinition" $ do
 --     { InputValueDefinition(list) }
 --
 inputObjectTypeDefinition :: Maybe Description -> Parser (TypeDefinition IN)
-inputObjectTypeDefinition metaDescription =
+inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $ do
     typeName <- typeDeclaration "input"
-    metaDirectives <- optionalDirectives
-    fields <- inputFieldsDefinition
+    typeDirectives <- optionalDirectives
+    typeContent <- DataInputObject <$> inputFieldsDefinition
     -- build input
     pure
       TypeDefinition
-        { typeName,
-          typeContent = DataInputObject fields,
-          typeFingerprint = DataFingerprint typeName [],
-          typeMeta = Just Meta {metaDescription, metaDirectives}
+        { typeFingerprint = DataFingerprint typeName [],
+          ..
         }
 
 parseDataType :: Parser (TypeDefinition ANY)

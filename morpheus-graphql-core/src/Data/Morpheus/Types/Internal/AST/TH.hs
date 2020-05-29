@@ -13,19 +13,22 @@ where
 
 import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
+  ( Description,
+    FieldName,
     TypeKind,
     TypeName,
     TypeRef (..),
+    VALID,
     hsTypeName,
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( ANY,
     DataEnumValue (..),
+    Directives,
     FieldDefinition (..),
     FieldsDefinition,
-    Meta,
     TypeDefinition,
+    mockFieldDefinition,
   )
 
 toHSFieldDefinition :: FieldDefinition cat -> FieldDefinition cat
@@ -49,7 +52,8 @@ data TypeD = TypeD
     tNamespace :: [FieldName],
     tCons :: [ConsD],
     tKind :: TypeKind,
-    tMeta :: Maybe Meta
+    tDescription :: Maybe Description,
+    tDirectives :: Directives VALID
   }
   deriving (Show)
 
@@ -68,9 +72,6 @@ mkCons typename fields =
 
 isEnum :: [ConsD] -> Bool
 isEnum = all (null . cFields)
-
-mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
-mockFieldDefinition FieldDefinition {..} = FieldDefinition {..}
 
 mkConsEnum :: DataEnumValue -> ConsD
 mkConsEnum DataEnumValue {enumName} = ConsD {cName = hsTypeName enumName, cFields = []}

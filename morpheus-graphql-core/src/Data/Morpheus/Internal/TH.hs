@@ -46,6 +46,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     ConsD (..),
+    FieldContent (..),
     FieldDefinition (..),
     FieldName,
     TypeD (..),
@@ -122,16 +123,16 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
         (genName cName)
         (map declareField cFields)
       where
-        declareField FieldDefinition {fieldName, fieldArgs, fieldType} =
+        declareField FieldDefinition {fieldName, fieldContent, fieldType} =
           (mkFieldName fName, defBang, fiType)
           where
             fName
               | namespace = nameSpaceField tName fieldName
               | otherwise = fieldName
-            fiType = genFieldT fieldArgs
+            fiType = genFieldT fieldContent
               where
                 ---------------------------
-                genFieldT ArgumentsDefinition {argumentsTypename = Just argsTypename} =
+                genFieldT (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}) =
                   AppT
                     (AppT arrowType argType)
                     (AppT m' result)

@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Parsing.Internal.Pattern
@@ -19,9 +18,7 @@ import Data.Morpheus.Parsing.Internal.Arguments
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
-  )
-import Data.Morpheus.Parsing.Internal.Internal
-  ( getLocation,
+    getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( keyword,
@@ -42,12 +39,12 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DataEnumValue (..),
     Directive (..),
+    FieldContent (..),
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
     IN,
     InputFieldsDefinition,
-    Meta (..),
     OUT,
     TypeName,
     Value,
@@ -65,14 +62,10 @@ import Text.Megaparsec
 --
 enumValueDefinition :: Parser DataEnumValue
 enumValueDefinition = label "EnumValueDefinition" $ do
-  metaDescription <- optDescription
+  enumDescription <- optDescription
   enumName <- parseTypeName
-  metaDirectives <- optionalDirectives
-  return $
-    DataEnumValue
-      { enumName,
-        enumMeta = Just Meta {metaDescription, metaDirectives}
-      }
+  enumDirectives <- optionalDirectives
+  return DataEnumValue {..}
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
 --
@@ -81,19 +74,13 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 --
 inputValueDefinition :: Parser (FieldDefinition IN)
 inputValueDefinition = label "InputValueDefinition" $ do
-  metaDescription <- optDescription
+  fieldDescription <- optDescription
   fieldName <- parseName
   litAssignment -- ':'
   fieldType <- parseType
-  _ <- parseDefaultValue
-  metaDirectives <- optionalDirectives
-  pure
-    FieldDefinition
-      { fieldArgs = NoArguments,
-        fieldName,
-        fieldType,
-        fieldMeta = Just Meta {metaDescription, metaDirectives}
-      }
+  fieldContent <- maybe NoContent DefaultInputValue <$> parseDefaultValue
+  fieldDirectives <- optionalDirectives
+  pure FieldDefinition {..}
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 --
@@ -119,19 +106,13 @@ fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 --
 fieldDefinition :: Parser (FieldDefinition OUT)
 fieldDefinition = label "FieldDefinition" $ do
-  metaDescription <- optDescription
+  fieldDescription <- optDescription
   fieldName <- parseName
-  fieldArgs <- argumentsDefinition
+  fieldContent <- FieldArgs <$> argumentsDefinition
   litAssignment -- ':'
   fieldType <- parseType
-  metaDirectives <- optionalDirectives
-  pure
-    FieldDefinition
-      { fieldName,
-        fieldArgs,
-        fieldType,
-        fieldMeta = Just Meta {metaDescription, metaDirectives}
-      }
+  fieldDirectives <- optionalDirectives
+  pure FieldDefinition {..}
 
 -- InputFieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --   InputFieldsDefinition:

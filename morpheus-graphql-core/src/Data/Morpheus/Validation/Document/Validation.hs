@@ -25,12 +25,14 @@ import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
     Selectable (..),
     elems,
+    empty,
     failure,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition,
     ArgumentsDefinition,
+    FieldContent (..),
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
@@ -121,12 +123,19 @@ class PartialImplements ctx => TypeEq a ctx where
 instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
   FieldDefinition
     { fieldType,
-      fieldArgs
+      fieldContent = args1
     }
     << FieldDefinition
       { fieldType = fieldType',
-        fieldArgs = fieldArgs'
-      } = (fieldType << fieldType') *> (fieldArgs << fieldArgs')
+        fieldContent = args2
+      } = (fieldType << fieldType') *> (args1 << args2)
+
+instance TypeEq (FieldContent OUT) (Interface, FieldName) where
+  f1 << f2 = toARgs f1 << toARgs f2
+    where
+      toARgs :: FieldContent OUT -> ArgumentsDefinition
+      toARgs NoContent = empty
+      toARgs (FieldArgs args) = args
 
 instance (PartialImplements ctx) => TypeEq TypeRef ctx where
   t1@TypeRef
