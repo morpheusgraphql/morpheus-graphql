@@ -31,6 +31,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
+    Fields (..),
     FieldsDefinition,
     GQLTypeD (..),
     OUT,
@@ -41,7 +42,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName,
     TypeRef (..),
-    argumentsToFields,
     hasArguments,
     hsTypeName,
     kindOf,
@@ -183,14 +183,12 @@ genArgumentTypes genArgsTypeName fields =
   concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
 genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [TypeD]
-genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = FieldArgs args} =
+genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = FieldArgs ArgumentsDefinition {arguments}} =
   pure
     [ TypeD
         { tName,
           tNamespace = empty,
-          tCons =
-            [ mkCons tName (argumentsToFields args)
-            ],
+          tCons = [mkCons tName (Fields arguments)],
           tDescription = Nothing,
           tDirectives = empty,
           tKind = KindInputObject

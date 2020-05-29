@@ -37,7 +37,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     TypeCategory,
     DataInputUnion,
     Argument (..),
-    Fields,
+    Fields (..),
     createField,
     createArgument,
     createEnumType,
@@ -72,7 +72,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     DirectiveDefinitions,
     DirectiveDefinition (..),
     Directives,
-    argumentsToFields,
     fieldsToArguments,
     mockFieldDefinition,
     FieldContent (..),
@@ -533,10 +532,6 @@ instance Selectable (Fields (FieldDefinition cat)) (FieldDefinition cat) where
 
 unsafeFromFields :: [FieldDefinition cat] -> FieldsDefinition cat
 unsafeFromFields = Fields . unsafeFromValues
-
-argumentsToFields :: ArgumentsDefinition -> FieldsDefinition IN
-argumentsToFields NoArguments = empty
-argumentsToFields ArgumentsDefinition {arguments} = Fields arguments
 
 fieldsToArguments :: FieldsDefinition IN -> ArgumentsDefinition
 fieldsToArguments = ArgumentsDefinition Nothing . unFields
