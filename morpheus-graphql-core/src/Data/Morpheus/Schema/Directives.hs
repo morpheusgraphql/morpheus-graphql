@@ -3,13 +3,13 @@
 module Data.Morpheus.Schema.Directives (defaultDirectives) where
 
 import Data.Morpheus.Internal.Utils
-  ( singleton,
+  ( empty,
+    singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DirectiveDefinition (..),
     DirectiveLocation (..),
-    FieldContent (..),
     TypeWrapper (..),
     createField,
   )
@@ -35,11 +35,11 @@ defaultDirectives =
         directiveDefinitionArgs =
           singleton $
             createField
-              NoContent
+              empty
               "reason"
               ([TypeMaybe], "String")
       }
   ]
 
 argumentsIf :: ArgumentsDefinition
-argumentsIf = singleton $ createField NoContent "if" ([], "Boolean")
+argumentsIf = singleton $ createField empty "if" ([], "Boolean")

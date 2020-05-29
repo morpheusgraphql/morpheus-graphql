@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -11,7 +12,7 @@ module Data.Morpheus.Types.Internal.AST.TH
   )
 where
 
-import Data.Morpheus.Internal.Utils (elems)
+import Data.Morpheus.Internal.Utils (Collection, elems)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
     FieldName,
@@ -23,8 +24,10 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.Data
   ( ANY,
+    ANY,
     DataEnumValue (..),
     Directives,
+    FieldContent,
     FieldDefinition (..),
     FieldsDefinition,
     TypeDefinition,
@@ -63,7 +66,7 @@ data ConsD = ConsD
   }
   deriving (Show)
 
-mkCons :: TypeName -> FieldsDefinition cat -> ConsD
+mkCons :: Collection x (FieldContent ANY) => TypeName -> FieldsDefinition cat -> ConsD
 mkCons typename fields =
   ConsD
     { cName = hsTypeName typename,

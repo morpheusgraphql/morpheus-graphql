@@ -575,19 +575,18 @@ data FieldDefinition (cat :: TypeCategory) = FieldDefinition
   deriving (Show, Lift)
 
 data FieldContent (cat :: TypeCategory) where
-  NoContent :: FieldContent cat
-  DefaultInputValue :: Value RESOLVED -> FieldContent IN
+  DefaultInputValue :: Maybe (Value RESOLVED) -> FieldContent IN
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition
     } ->
     FieldContent OUT
 
 instance Collection (Value RESOLVED) (FieldContent IN) where
-  empty = NoContent
-  singleton = DefaultInputValue
+  empty = DefaultInputValue Nothing
+  singleton = DefaultInputValue . Just
 
 instance Collection ArgumentDefinition (FieldContent OUT) where
-  empty = NoContent
+  empty = FieldArgs empty
   singleton = FieldArgs . singleton
 
 fieldContentArgs :: FieldContent cat -> OrderedMap FieldName ArgumentDefinition
@@ -602,7 +601,6 @@ instance KeyOf (FieldDefinition cat) where
   keyOf = fieldName
 
 instance Selectable (FieldDefinition OUT) ArgumentDefinition where
-  selectOr fb _ _ FieldDefinition {fieldContent = NoContent} = fb
   selectOr fb f key FieldDefinition {fieldContent = FieldArgs args} = selectOr fb f key args
 
 instance NameCollision (FieldDefinition cat) where
@@ -624,15 +622,18 @@ instance RenderGQL (FieldsDefinition OUT) where
 instance RenderGQL (FieldsDefinition IN) where
   render = renderObject render . ignoreHidden . elems
 
-mockFieldsDefinition :: FieldsDefinition a -> FieldsDefinition b
+mockFieldsDefinition ::
+  Collection x (FieldContent b) => FieldsDefinition a -> FieldsDefinition b
 mockFieldsDefinition = fmap mockFieldDefinition
 
-mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
+mockFieldDefinition ::
+  Collection x (FieldContent b) => FieldDefinition a -> FieldDefinition b
 mockFieldDefinition FieldDefinition {fieldContent = c, ..} =
   FieldDefinition {fieldContent = mockFieldContent c, ..}
 
-mockFieldContent :: FieldContent a -> FieldContent b
-mockFieldContent _ = NoContent
+mockFieldContent ::
+  Collection x (FieldContent b) => FieldContent a -> FieldContent b
+mockFieldContent _ = empty
 
 fieldVisibility :: FieldDefinition cat -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
@@ -710,7 +711,7 @@ instance Listable ArgumentDefinition ArgumentsDefinition where
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args
 
 createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition IN
-createArgument = createField NoContent
+createArgument = createField empty
 
 hasArguments :: ArgumentsDefinition -> Bool
 hasArguments NoArguments = False
@@ -737,7 +738,7 @@ createInputUnionFields name members = fieldTag : map unionField members
       FieldDefinition
         { fieldName = __inputname,
           fieldDescription = Nothing,
-          fieldContent = NoContent,
+          fieldContent = empty,
           fieldType = createAlias (name <> "Tags"),
           fieldDirectives = []
         }
@@ -745,7 +746,7 @@ createInputUnionFields name members = fieldTag : map unionField members
       FieldDefinition
         { fieldName = toFieldName memberName,
           fieldDescription = Nothing,
-          fieldContent = NoContent,
+          fieldContent = empty,
           fieldType =
             TypeRef
               { typeConName = memberName,
