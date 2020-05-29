@@ -112,65 +112,69 @@ import GHC.Generics
 
 type IntroCon a = (GQLType a, DeriveTypeContent (CUSTOM a) a)
 
+data TypeK
+  = InK (FieldsDefinition IN)
+  | OutK (FieldsDefinition OUT)
+
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
-class Introspect a where
+class Introspect (cat :: TypeCategory) a where
+  introspect :: proxy a -> TypeUpdater
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> FieldName -> FieldDefinition ANY
-  introspect :: proxy a -> TypeUpdater
-
+  field :: proxy a -> FieldName -> FieldDefinition cat
   -----------------------------------------------
   default field ::
     GQLType a =>
     proxy a ->
     FieldName ->
-    FieldDefinition ANY
+    FieldDefinition cat
   field _ = buildField (Proxy @a) NoContent
 
-instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
+instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect cat a where
   introspect _ = introspectKind (Context :: Context (KIND a) a)
 
 -- Maybe
-instance Introspect a => Introspect (Maybe a) where
+instance Introspect cat a => Introspect cat (Maybe a) where
   isObject _ = False
   field _ = toNullableField . field (Proxy @a)
   introspect _ = introspect (Proxy @a)
 
 -- List
-instance Introspect a => Introspect [a] where
+instance Introspect cat a => Introspect cat [a] where
   isObject _ = False
   field _ = toListField . field (Proxy @a)
   introspect _ = introspect (Proxy @a)
 
 -- Tuple
-instance Introspect (Pair k v) => Introspect (k, v) where
+instance Introspect cat (Pair k v) => Introspect cat (k, v) where
   isObject _ = True
   field _ = field (Proxy @(Pair k v))
   introspect _ = introspect (Proxy @(Pair k v))
 
 -- Set
-instance Introspect [a] => Introspect (Set a) where
+instance Introspect cat [a] => Introspect cat (Set a) where
   isObject _ = False
   field _ = field (Proxy @[a])
   introspect _ = introspect (Proxy @[a])
 
 -- Map
-instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
+instance Introspect cat (MapKind k v Maybe) => Introspect cat (Map k v) where
   isObject _ = True
   field _ = field (Proxy @(MapKind k v Maybe))
   introspect _ = introspect (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
-instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a -> m b) where
+instance (GQLType b, DeriveTypeContent 'False a, Introspect cat b) => Introspect cat (a -> m b) where
   isObject _ = False
   field _ name = toAny (fieldObj {fieldContent = FieldArgs fieldArgs} :: FieldDefinition OUT)
     where
       fieldObj = field (Proxy @b) name
       fieldArgs :: ArgumentsDefinition
       fieldArgs =
-        fieldsToArguments $ mockFieldsDefinition $ fst $
-          introspectObjectFields
+        fieldsToArguments
+          $ fst
+          $ introspectObjectFields
             (Proxy :: Proxy 'False)
             (__typeName (Proxy @b), InputType, Proxy @a)
   introspect _ typeLib =
@@ -184,7 +188,7 @@ instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a 
         snd $ introspectObjectFields (Proxy :: Proxy 'False) (name, InputType, Proxy @a)
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (GQLType b, Introspect b) => Introspect (Resolver fo e m b) where
+instance (GQLType b, Introspect cat b) => Introspect cat (Resolver fo e m b) where
   isObject _ = False
   field _ = field (Proxy @b)
   introspect _ = introspect (Proxy @b)
@@ -213,7 +217,7 @@ instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind OUTPUT a
   introspectKind _ = derivingData (Proxy @a) OutputType
 
 instance (GQL_TYPE a, DeriveTypeContent (CUSTOM a) a) => IntrospectKind INTERFACE a where
-  introspectKind _ = updateLib (buildType (DataInterface (mockFieldsDefinition fields) :: TypeContent TRUE OUT)) types (Proxy @a)
+  introspectKind _ = updateLib (buildType (DataInterface fields)) types (Proxy @a)
     where
       (fields, types) =
         introspectObjectFields
@@ -257,13 +261,13 @@ introspectObjectFields ::
   DeriveTypeContent custom a =>
   proxy1 (custom :: Bool) ->
   (TypeName, TypeScope cat, proxy2 a) ->
-  (FieldsDefinition cat, [TypeUpdater])
+  (TypeK, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) =
   withObject name (deriveTypeContent p1 (proxy, ([], []), scope, "", DataFingerprint "" []))
 
-withObject :: TypeName -> (TypeContent TRUE (cat :: TypeCategory), [TypeUpdater]) -> (FieldsDefinition cat2, [TypeUpdater])
-withObject _ (DataObject {objectFields}, ts) = (mockFieldsDefinition objectFields, ts)
-withObject _ (DataInputObject {inputObjectFields}, ts) = (mockFieldsDefinition inputObjectFields, ts)
+withObject :: TypeName -> (TypeContent TRUE (cat :: TypeCategory), [TypeUpdater]) -> (TypeK, [TypeUpdater])
+withObject _ (DataObject {objectFields}, ts) = (OutK objectFields, ts)
+withObject _ (DataInputObject {inputObjectFields}, ts) = (InK inputObjectFields, ts)
 withObject name _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
@@ -529,10 +533,10 @@ instance TypeRep f => TypeRep (M1 D d f) where
   typeRep _ = typeRep (Proxy @f)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (TypeRep a, TypeRep b) => TypeRep (a :+: b) where
+instance (TypeRep cat a, TypeRep cat b) => TypeRep cat (a :+: b) where
   typeRep _ = typeRep (Proxy @a) <> typeRep (Proxy @b)
 
-instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
+instance (ConRep cat f, Constructor c) => TypeRep (M1 C c f) where
   typeRep _ =
     [ ConsRep
         { consName = conNameProxy (Proxy @c),
@@ -541,14 +545,14 @@ instance (ConRep f, Constructor c) => TypeRep (M1 C c f) where
         }
     ]
 
-class ConRep f where
+class ConRep cat f where
   conRep :: Proxy f -> [FieldRep]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (ConRep a, ConRep b) => ConRep (a :*: b) where
+instance (ConRep cat a, ConRep cat b) => ConRep cat (a :*: b) where
   conRep _ = conRep (Proxy @a) <> conRep (Proxy @b)
 
-instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
+instance (Selector s, Introspect cat a) => ConRep cat (M1 S s (Rec0 a)) where
   conRep _ =
     [ FieldRep
         { fieldTypeName = typeConName $ fieldType fieldData,
@@ -561,5 +565,5 @@ instance (Selector s, Introspect a) => ConRep (M1 S s (Rec0 a)) where
       name = selNameProxy (Proxy @s)
       fieldData = field (Proxy @a) name
 
-instance ConRep U1 where
+instance ConRep cat U1 where
   conRep _ = []
