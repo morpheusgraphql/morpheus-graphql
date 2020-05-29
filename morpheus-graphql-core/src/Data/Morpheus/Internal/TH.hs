@@ -11,7 +11,6 @@
 
 module Data.Morpheus.Internal.TH
   ( tyConArgs,
-    Scope (..),
     apply,
     applyT,
     typeT,
@@ -67,10 +66,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
-import GHC.Generics (Generic)
 import Language.Haskell.TH
-
-type Arrow = (->)
 
 m' :: Type
 m' = VarT $ mkTypeName m_
@@ -100,9 +96,6 @@ tyConArgs :: TypeKind -> [TypeName]
 tyConArgs kindD
   | isOutputObject kindD || kindD == KindUnion = [m_]
   | otherwise = []
-
-data Scope = CLIENT | SERVER
-  deriving (Eq)
 
 apply :: Name -> [Q Exp] -> Q Exp
 apply n = foldl appE (conE n)

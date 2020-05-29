@@ -11,9 +11,6 @@ where
 
 -- MORPHEUS
 
-import Data.Morpheus.Internal.TH
-  ( Scope (..),
-  )
 import Data.Morpheus.Server.Document.Declare.Decode
   ( deriveDecode,
   )
