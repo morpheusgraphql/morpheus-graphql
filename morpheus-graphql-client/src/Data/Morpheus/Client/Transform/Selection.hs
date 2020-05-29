@@ -28,6 +28,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD (..),
+    FieldContent (..),
     FieldDefinition (..),
     FieldName,
     IN,
@@ -138,7 +139,7 @@ genConsD path cName datatype selSet = do
               ( FieldDefinition
                   { fieldName,
                     fieldType,
-                    fieldContent = empty,
+                    fieldContent = NoContent,
                     fieldDescription = Nothing,
                     fieldDirectives = empty
                   } ::

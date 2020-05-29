@@ -3,15 +3,14 @@
 module Data.Morpheus.Schema.Directives (defaultDirectives) where
 
 import Data.Morpheus.Internal.Utils
-  ( empty,
-    singleton,
+  ( singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DirectiveDefinition (..),
     DirectiveLocation (..),
     TypeWrapper (..),
-    createField,
+    mkField,
   )
 
 defaultDirectives :: [DirectiveDefinition]
@@ -34,12 +33,11 @@ defaultDirectives =
         directiveDefinitionLocations = [FIELD_DEFINITION, ENUM_VALUE],
         directiveDefinitionArgs =
           singleton $
-            createField
-              empty
+            mkField
               "reason"
               ([TypeMaybe], "String")
       }
   ]
 
 argumentsIf :: ArgumentsDefinition
-argumentsIf = singleton $ createField empty "if" ([], "Boolean")
+argumentsIf = singleton $ mkField "if" ([], "Boolean")

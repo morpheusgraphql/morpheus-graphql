@@ -78,7 +78,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
   fieldName <- parseName
   litAssignment -- ':'
   fieldType <- parseType
-  fieldContent <- maybe NoContent DefaultInputValue <$> parseDefaultValue
+  fieldContent <- DefaultInputValue <$> parseDefaultValue
   fieldDirectives <- optionalDirectives
   pure FieldDefinition {..}
 

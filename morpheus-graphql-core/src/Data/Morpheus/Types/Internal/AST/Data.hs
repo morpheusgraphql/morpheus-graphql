@@ -78,6 +78,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     FieldContent (..),
     fieldContentArgs,
     mockFieldsDefinition,
+    mkField,
   )
 where
 
@@ -575,19 +576,12 @@ data FieldDefinition (cat :: TypeCategory) = FieldDefinition
   deriving (Show, Lift)
 
 data FieldContent (cat :: TypeCategory) where
+  NoContent :: FieldContent cat
   DefaultInputValue :: Maybe (Value RESOLVED) -> FieldContent IN
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition
     } ->
     FieldContent OUT
-
-instance Collection (Value RESOLVED) (FieldContent IN) where
-  empty = DefaultInputValue Nothing
-  singleton = DefaultInputValue . Just
-
-instance Collection ArgumentDefinition (FieldContent OUT) where
-  empty = FieldArgs empty
-  singleton = FieldArgs . singleton
 
 fieldContentArgs :: FieldContent cat -> OrderedMap FieldName ArgumentDefinition
 fieldContentArgs (FieldArgs (ArgumentsDefinition _ argsD)) = argsD
@@ -622,18 +616,15 @@ instance RenderGQL (FieldsDefinition OUT) where
 instance RenderGQL (FieldsDefinition IN) where
   render = renderObject render . ignoreHidden . elems
 
-mockFieldsDefinition ::
-  Collection x (FieldContent b) => FieldsDefinition a -> FieldsDefinition b
+mockFieldsDefinition :: FieldsDefinition a -> FieldsDefinition b
 mockFieldsDefinition = fmap mockFieldDefinition
 
-mockFieldDefinition ::
-  Collection x (FieldContent b) => FieldDefinition a -> FieldDefinition b
+mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
 mockFieldDefinition FieldDefinition {fieldContent = c, ..} =
   FieldDefinition {fieldContent = mockFieldContent c, ..}
 
-mockFieldContent ::
-  Collection x (FieldContent b) => FieldContent a -> FieldContent b
-mockFieldContent _ = empty
+mockFieldContent :: FieldContent a -> FieldContent b
+mockFieldContent _ = NoContent
 
 fieldVisibility :: FieldDefinition cat -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
@@ -650,6 +641,9 @@ createField fieldContent fieldName (typeWrappers, typeConName) =
       fieldType = TypeRef {typeConName, typeWrappers, typeArgs = Nothing},
       fieldDirectives = []
     }
+
+mkField :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
+mkField = createField NoContent
 
 toNullableField :: FieldDefinition cat -> FieldDefinition cat
 toNullableField dataField
@@ -711,7 +705,7 @@ instance Listable ArgumentDefinition ArgumentsDefinition where
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args
 
 createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition IN
-createArgument = createField empty
+createArgument = createField NoContent
 
 hasArguments :: ArgumentsDefinition -> Bool
 hasArguments NoArguments = False
@@ -738,7 +732,7 @@ createInputUnionFields name members = fieldTag : map unionField members
       FieldDefinition
         { fieldName = __inputname,
           fieldDescription = Nothing,
-          fieldContent = empty,
+          fieldContent = NoContent,
           fieldType = createAlias (name <> "Tags"),
           fieldDirectives = []
         }
@@ -746,7 +740,7 @@ createInputUnionFields name members = fieldTag : map unionField members
       FieldDefinition
         { fieldName = toFieldName memberName,
           fieldDescription = Nothing,
-          fieldContent = empty,
+          fieldContent = NoContent,
           fieldType =
             TypeRef
               { typeConName = memberName,

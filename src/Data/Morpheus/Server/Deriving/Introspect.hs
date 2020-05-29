@@ -86,6 +86,7 @@ import Data.Morpheus.Types.Internal.AST
     createEnumValue,
     defineType,
     fieldsToArguments,
+    mkField,
     mockFieldDefinition,
     mockFieldsDefinition,
     msg,
@@ -504,18 +505,9 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
           typeDescription = Nothing,
           typeDirectives = empty,
           typeContent =
-            wrapObject
-              $ singleton
-              $ mockFieldDefinition
-                ( FieldDefinition
-                    { fieldName = "enum",
-                      fieldContent = empty,
-                      fieldType = createAlias enumTypeName,
-                      fieldDescription = Nothing,
-                      fieldDirectives = empty
-                    } ::
-                    FieldDefinition IN
-                )
+            wrapObject $
+              singleton
+                (mkField "enum" ([], enumTypeName))
         }
 
 data TypeScope (cat :: TypeCategory) where

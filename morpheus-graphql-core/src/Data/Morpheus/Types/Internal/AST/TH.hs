@@ -66,7 +66,7 @@ data ConsD = ConsD
   }
   deriving (Show)
 
-mkCons :: Collection x (FieldContent ANY) => TypeName -> FieldsDefinition cat -> ConsD
+mkCons :: TypeName -> FieldsDefinition cat -> ConsD
 mkCons typename fields =
   ConsD
     { cName = hsTypeName typename,
