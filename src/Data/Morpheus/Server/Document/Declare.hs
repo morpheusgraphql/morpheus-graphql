@@ -13,7 +13,6 @@ where
 
 import Data.Morpheus.Internal.TH
   ( Scope (..),
-    declareType,
   )
 import Data.Morpheus.Server.Document.Declare.Decode
   ( deriveDecode,
@@ -29,7 +28,10 @@ import Data.Morpheus.Server.Document.Declare.Introspect
     instanceIntrospect,
   )
 import Data.Morpheus.Server.Document.Transform
-import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
+import Data.Morpheus.Server.Internal.TH.Types
+  ( TypeD (..),
+    declareType,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( IN,
     OUT,
@@ -82,12 +84,12 @@ declareArgTypes namespace types = do
   where
     deriveArgsRep args = deriveObjectRep (args, Nothing, Nothing)
     ----------------------------------------------------
-    argsTypeDecs = map (declareType SERVER namespace Nothing []) types
+    argsTypeDecs = map (declareType namespace Nothing []) types
 
 declareMainType :: (Bool, TypeKind) -> TypeD cat -> [Dec]
 declareMainType (_, KindScalar) _ = []
 declareMainType (namespace, tKind) typeD =
-  [declareType SERVER namespace (Just tKind) derivingClasses typeD]
+  [declareType namespace (Just tKind) derivingClasses typeD]
   where
     -- input types support show
     derivingClasses
