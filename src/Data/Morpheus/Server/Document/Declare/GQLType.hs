@@ -36,7 +36,6 @@ import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     GQLTypeD (..),
-    Meta (..),
     QUERY,
     TypeContent (..),
     TypeD (..),
@@ -57,42 +56,44 @@ introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . mkTypeName
 
 deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta, tKind}, typeOriginal} =
-  pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
-  where
-    functions =
-      map
-        instanceProxyFunD
-        [ ('__typeName, [|tName|]),
-          ('description, descriptionValue),
-          ('implements, implementsFunc)
-        ]
-      where
-        implementsFunc = listE $ map introspectInterface (interfacesFrom (Just typeOriginal))
-        descriptionValue = case tMeta >>= metaDescription of
-          Nothing -> [|Nothing|]
-          Just desc -> [|Just desc|]
-    --------------------------------
-    typeArgs = tyConArgs tKind
-    --------------------------------
-    iHead = instanceHeadT ''GQLType tName typeArgs
-    headSig = typeT (mkTypeName tName) typeArgs
-    ---------------------------------------------------
-    constrains = map conTypeable typeArgs
-      where
-        conTypeable name = typeT ''Typeable [name]
-    -------------------------------------------------
-    typeFamilies
-      | isObject tKind = [deriveKIND, deriveCUSTOM]
-      | otherwise = [deriveKIND]
-      where
-        deriveCUSTOM = deriveInstance ''CUSTOM ''TRUE
-        deriveKIND = deriveInstance ''KIND (kindName tKind)
-        -------------------------------------------------------
-        deriveInstance :: Name -> Name -> Q Dec
-        deriveInstance insName tyName = do
-          typeN <- headSig
-          pure $ typeInstanceDec insName typeN (ConT tyName)
+deriveGQLType
+  GQLTypeD
+    { typeD =
+        TypeD {tName, tDescription, tKind},
+      typeOriginal
+    } =
+    pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
+    where
+      functions =
+        map
+          instanceProxyFunD
+          [ ('__typeName, [|tName|]),
+            ('description, [|tDescription|]),
+            ('implements, implementsFunc)
+          ]
+        where
+          implementsFunc = listE $ map introspectInterface (interfacesFrom (Just typeOriginal))
+      --------------------------------
+      typeArgs = tyConArgs tKind
+      --------------------------------
+      iHead = instanceHeadT ''GQLType tName typeArgs
+      headSig = typeT (mkTypeName tName) typeArgs
+      ---------------------------------------------------
+      constrains = map conTypeable typeArgs
+        where
+          conTypeable name = typeT ''Typeable [name]
+      -------------------------------------------------
+      typeFamilies
+        | isObject tKind = [deriveKIND, deriveCUSTOM]
+        | otherwise = [deriveKIND]
+        where
+          deriveCUSTOM = deriveInstance ''CUSTOM ''TRUE
+          deriveKIND = deriveInstance ''KIND (kindName tKind)
+          -------------------------------------------------------
+          deriveInstance :: Name -> Name -> Q Dec
+          deriveInstance insName tyName = do
+            typeN <- headSig
+            pure $ typeInstanceDec insName typeN (ConT tyName)
 
 kindName :: TypeKind -> Name
 kindName KindObject {} = ''OUTPUT

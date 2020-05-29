@@ -37,6 +37,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     ConsD (..),
+    FieldContent (..),
     FieldDefinition (..),
     TypeContent (..),
     TypeD (..),
@@ -113,11 +114,11 @@ buildTypes :: [FieldDefinition cat] -> ExpQ
 buildTypes = listE . concatMap introspectField
 
 introspectField :: FieldDefinition cat -> [ExpQ]
-introspectField FieldDefinition {fieldType, fieldArgs} =
-  [|introspect $(proxyT fieldType)|] : inputTypes fieldArgs
+introspectField FieldDefinition {fieldType, fieldContent} =
+  [|introspect $(proxyT fieldType)|] : inputTypes fieldContent
   where
-    inputTypes :: ArgumentsDefinition -> [ExpQ]
-    inputTypes ArgumentsDefinition {argumentsTypename = Just argsTypeName}
+    inputTypes :: FieldContent cat -> [ExpQ]
+    inputTypes (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypeName})
       | argsTypeName /= "()" = [[|deriveCustomInputObjectType (argsTypeName, $(proxyT tAlias))|]]
       where
         tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}

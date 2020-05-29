@@ -22,6 +22,9 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( runApi,
   )
+import Data.Morpheus.Internal.Utils
+  ( empty,
+  )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
     deriveModel,
@@ -163,5 +166,6 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
         { typeContent = DataObject [] fields,
           typeName,
           typeFingerprint = DataFingerprint typeName [],
-          typeMeta = Nothing
+          typeDescription = Nothing,
+          typeDirectives = empty
         }

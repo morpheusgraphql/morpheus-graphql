@@ -77,6 +77,7 @@ module Data.Morpheus.Types.Internal.AST.Data
     mockFieldDefinition,
     FieldContent (..),
     fieldContentArgs,
+    mockFieldsDefinition,
   )
 where
 
@@ -621,6 +622,9 @@ instance RenderGQL (FieldsDefinition OUT) where
 
 instance RenderGQL (FieldsDefinition IN) where
   render = renderObject render . ignoreHidden . elems
+
+mockFieldsDefinition :: FieldsDefinition a -> FieldsDefinition b
+mockFieldsDefinition = fmap mockFieldDefinition
 
 mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
 mockFieldDefinition FieldDefinition {fieldContent = c, ..} =

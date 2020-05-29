@@ -67,13 +67,13 @@ import Data.Morpheus.Types.Internal.AST
     DataFingerprint (..),
     DataUnion,
     FALSE,
+    FieldContent (..),
     FieldDefinition (..),
     FieldName,
     FieldName (..),
     FieldsDefinition,
     IN,
     Message,
-    Meta (..),
     OUT,
     TRUE,
     TypeCategory,
@@ -86,6 +86,8 @@ import Data.Morpheus.Types.Internal.AST
     createEnumValue,
     defineType,
     fieldsToArguments,
+    mockFieldDefinition,
+    mockFieldsDefinition,
     msg,
     toAny,
     toAny,
@@ -161,7 +163,7 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
 -- Resolver : a -> Resolver b
 instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
-  field _ name = fieldObj {fieldArgs}
+  field _ name = mockFieldDefinition $ fieldObj {fieldContent = FieldArgs fieldArgs}
     where
       fieldObj = field (Proxy @b) name
       fieldArgs =
@@ -283,8 +285,8 @@ instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
 buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> FieldName -> FieldDefinition cat
 buildField proxy fieldArgs fieldName =
   FieldDefinition
-    { fieldType = createAlias $ __typeName proxy,
-      fieldMeta = Nothing,
+    { fieldType = createAlias (__typeName proxy),
+      fieldDescription = Nothing,
       ..
     }
 
@@ -293,12 +295,8 @@ buildType typeContent proxy =
   TypeDefinition
     { typeName = __typeName proxy,
       typeFingerprint = __typeFingerprint proxy,
-      typeMeta =
-        Just
-          Meta
-            { metaDescription = description proxy,
-              metaDirectives = []
-            },
+      typeDescription = description proxy,
+      typeDirectives = [],
       typeContent
     }
 
@@ -437,19 +435,14 @@ buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
           (buildUnionRecord wrapObject baseFingerprint consRep)
     members = map consName cons
 
-mockFieldsDefinition :: FieldsDefinition a -> FieldsDefinition b
-mockFieldsDefinition = fmap mockFieldDefinition
-
-mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
-mockFieldDefinition FieldDefinition {..} = FieldDefinition {..}
-
 buildUnionRecord ::
   (FieldsDefinition cat -> TypeContent TRUE cat) -> DataFingerprint -> ConsRep -> TypeDefinition cat
 buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
   TypeDefinition
     { typeName = consName,
       typeFingerprint,
-      typeMeta = Nothing,
+      typeDescription = Nothing,
+      typeDirectives = empty,
       typeContent =
         wrapObject
           $ mockFieldsDefinition
@@ -489,7 +482,8 @@ buildEnum typeName typeFingerprint tags =
   pure
     . defineType
       TypeDefinition
-        { typeMeta = Nothing,
+        { typeDescription = Nothing,
+          typeDirectives = empty,
           typeContent = DataEnum $ map createEnumValue tags,
           ..
         }
@@ -506,16 +500,21 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
       TypeDefinition
         { typeName,
           typeFingerprint,
-          typeMeta = Nothing,
+          typeDescription = Nothing,
+          typeDirectives = empty,
           typeContent =
-            wrapObject $
-              singleton
-                FieldDefinition
-                  { fieldName = "enum",
-                    fieldArgs = NoArguments,
-                    fieldType = createAlias enumTypeName,
-                    fieldMeta = Nothing
-                  }
+            wrapObject
+              $ singleton
+              $ mockFieldDefinition
+                ( FieldDefinition
+                    { fieldName = "enum",
+                      fieldContent = empty,
+                      fieldType = createAlias enumTypeName,
+                      fieldDescription = Nothing,
+                      fieldDirectives = empty
+                    } ::
+                    FieldDefinition IN
+                )
         }
 
 data TypeScope (cat :: TypeCategory) where
