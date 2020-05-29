@@ -125,7 +125,7 @@ class Introspect a where
     proxy a ->
     FieldName ->
     FieldDefinition cat
-  field _ = buildField (Proxy @a) NoArguments
+  field _ = buildField (Proxy @a) NoContent
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
   introspect _ = introspectKind (Context :: Context (KIND a) a)
