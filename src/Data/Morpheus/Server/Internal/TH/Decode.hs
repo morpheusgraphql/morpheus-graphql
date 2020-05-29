@@ -32,11 +32,13 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     Message,
+    Message,
     ObjectEntry (..),
     TypeName (..),
     ValidObject,
     ValidValue,
     Value (..),
+    msg,
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -56,7 +58,7 @@ decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
     ----------------------------------------------------------------------------------
     handleFields fNames = uInfixE consName (varE '(<$>)) (applyFields fNames)
       where
-        applyFields [] = fail "No Empty fields"
+        applyFields [] = fail $ show ("No Empty fields on " <> msg cName :: Message)
         applyFields [x] = defField x
         applyFields (x : xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
         ------------------------------------------------------------------------

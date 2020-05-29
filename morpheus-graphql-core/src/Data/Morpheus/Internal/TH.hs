@@ -129,21 +129,23 @@ declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} 
             fName
               | namespace = nameSpaceField tName fieldName
               | otherwise = fieldName
-            fiType = genFieldT fieldContent
+            fiType = genFieldT result kindD fieldContent
               where
                 ---------------------------
-                genFieldT (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}) =
-                  AppT
-                    (AppT arrowType argType)
-                    (AppT m' result)
-                  where
-                    argType = ConT $ mkTypeName argsTypename
-                    arrowType = ConT ''Arrow
-                genFieldT _
-                  | (isOutputObject <$> kindD) == Just True = AppT m' result
-                  | otherwise = result
-                ------------------------------------------------
                 result = declareTypeRef (maybe False isSubscription kindD) fieldType
+
+------------------------------------------------
+genFieldT :: Type -> Maybe TypeKind -> FieldContent cat -> Type
+genFieldT result _ (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}) =
+  AppT
+    (AppT arrowType argType)
+    (AppT m' result)
+  where
+    argType = ConT $ mkTypeName argsTypename
+    arrowType = ConT ''Arrow
+genFieldT result kind _
+  | (isOutputObject <$> kind) == Just True = AppT m' result
+  | otherwise = result
 
 apply :: Name -> [Q Exp] -> Q Exp
 apply n = foldl appE (conE n)
