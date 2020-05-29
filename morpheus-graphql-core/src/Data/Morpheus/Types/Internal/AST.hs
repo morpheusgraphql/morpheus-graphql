@@ -151,6 +151,7 @@ module Data.Morpheus.Types.Internal.AST
     DirectiveLocation (..),
     FieldContent (..),
     fieldContentArgs,
+    mockFieldDefinition,
   )
 where
 

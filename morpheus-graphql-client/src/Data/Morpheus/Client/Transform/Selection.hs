@@ -20,6 +20,7 @@ import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperat
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
+    empty,
     keyOf,
     selectBy,
   )
@@ -29,6 +30,7 @@ import Data.Morpheus.Types.Internal.AST
     ConsD (..),
     FieldDefinition (..),
     FieldName,
+    IN,
     Operation (..),
     RAW,
     Ref (..),
@@ -47,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationDataType,
     getOperationName,
+    mockFieldDefinition,
     msg,
     toAny,
     toFieldName,
@@ -103,7 +106,7 @@ genRecordType path tName dataType recordSelSet = do
           tNamespace = path,
           tCons = [con],
           tKind = KindObject Nothing,
-          tMeta = Nothing
+          tDescription = Nothing
         }
         : subTypes,
       requests
@@ -131,12 +134,16 @@ genConsD path cName datatype selSet = do
             sel
         (subTypes, requests) <- subTypesBySelection fieldPath fieldDataType sel
         pure
-          ( FieldDefinition
-              { fieldName,
-                fieldType,
-                fieldArgs = NoArguments,
-                fieldMeta = Nothing
-              },
+          ( mockFieldDefinition
+              ( FieldDefinition
+                  { fieldName,
+                    fieldType,
+                    fieldContent = empty,
+                    fieldDescription = Nothing,
+                    fieldDirectives = empty
+                  } ::
+                  FieldDefinition IN
+              ),
             subTypes,
             requests
           )
@@ -165,7 +172,8 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection unio
             tName = typeFrom [] dType,
             tCons,
             tKind = KindUnion,
-            tMeta = Nothing
+            tDescription = Nothing,
+            tDirectives = empty
           }
           : concat subTypes,
         concat requests
@@ -190,16 +198,20 @@ getFieldType
     selectBy selError selectionName objectFields >>= processDeprecation
     where
       selError = compileError $ "cant find field " <> msg (show objectFields)
-      processDeprecation FieldDefinition {fieldType = alias@TypeRef {typeConName}, fieldMeta} =
-        checkDeprecated >> (trans <$> getType typeConName)
-        where
-          trans x =
-            (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})
-          ------------------------------------------------------------------
-          checkDeprecated :: Converter ()
-          checkDeprecated =
-            deprecationWarning
-              fieldMeta
-              (toFieldName typeName, Ref {refName = selectionName, refPosition = selectionPosition})
+      processDeprecation
+        FieldDefinition
+          { fieldType = alias@TypeRef {typeConName},
+            fieldDirectives
+          } =
+          checkDeprecated >> (trans <$> getType typeConName)
+          where
+            trans x =
+              (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})
+            ------------------------------------------------------------------
+            checkDeprecated :: Converter ()
+            checkDeprecated =
+              deprecationWarning
+                fieldDirectives
+                (toFieldName typeName, Ref {refName = selectionName, refPosition = selectionPosition})
 getFieldType _ dt _ =
   failure (compileError $ "Type should be output Object \"" <> msg (show dt))

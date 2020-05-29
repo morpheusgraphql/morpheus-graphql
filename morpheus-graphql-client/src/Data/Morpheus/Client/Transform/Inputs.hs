@@ -22,10 +22,10 @@ import Data.Morpheus.Client.Transform.Core
   )
 import Data.Morpheus.Internal.Utils
   ( elems,
+    empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ArgumentsDefinition (..),
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -44,6 +44,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationName,
     mkConsEnum,
+    mockFieldDefinition,
     removeDuplicates,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -156,4 +157,4 @@ mkInputType tName tKind tCons =
 toFieldD :: FieldDefinition cat -> Converter (FieldDefinition ANY)
 toFieldD field@FieldDefinition {fieldType} = do
   typeConName <- typeFrom [] <$> getType (typeConName fieldType)
-  pure $ field {fieldType = fieldType {typeConName}}
+  pure $ mockFieldDefinition $ field {fieldType = fieldType {typeConName}}

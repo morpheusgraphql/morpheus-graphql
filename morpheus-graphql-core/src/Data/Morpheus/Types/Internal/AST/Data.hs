@@ -580,6 +580,14 @@ data FieldContent (cat :: TypeCategory) where
     } ->
     FieldContent OUT
 
+instance Collection (Value RESOLVED) (FieldContent IN) where
+  empty = NoContent
+  singleton = DefaultInputValue
+
+instance Collection ArgumentDefinition (FieldContent OUT) where
+  empty = NoContent
+  singleton = FieldArgs . singleton
+
 fieldContentArgs :: FieldContent cat -> OrderedMap FieldName ArgumentDefinition
 fieldContentArgs (FieldArgs (ArgumentsDefinition _ argsD)) = argsD
 fieldContentArgs _ = empty
