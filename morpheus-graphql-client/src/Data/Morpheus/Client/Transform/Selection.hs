@@ -26,7 +26,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ArgumentsDefinition (..),
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -107,7 +106,8 @@ genRecordType path tName dataType recordSelSet = do
           tNamespace = path,
           tCons = [con],
           tKind = KindObject Nothing,
-          tDescription = Nothing
+          tDescription = Nothing,
+          tDirectives = empty
         }
         : subTypes,
       requests
