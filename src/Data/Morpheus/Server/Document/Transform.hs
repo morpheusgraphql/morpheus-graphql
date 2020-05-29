@@ -145,7 +145,7 @@ mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = 
           ..
         }
   where
-    fieldCont :: FieldContent OUT -> FieldContent OUT
+    fieldCont :: FieldContent TRUE OUT -> FieldContent TRUE OUT
     fieldCont (FieldArgs ArgumentsDefinition {arguments}) =
       FieldArgs $
         ArgumentsDefinition

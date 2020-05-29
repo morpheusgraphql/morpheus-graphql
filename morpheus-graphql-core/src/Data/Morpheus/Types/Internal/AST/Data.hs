@@ -339,6 +339,14 @@ instance ToAny (TypeContent TRUE) where
   toAny DataUnion {..} = DataUnion {..}
   toAny DataInterface {..} = DataInterface {..}
 
+instance ToAny FieldDefinition where
+  toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny fieldContent, ..}
+
+instance ToAny (FieldContent TRUE) where
+  toAny NoContent = NoContent
+  toAny (FieldArgs x) = FieldArgs x
+  toAny (DefaultInputValue x) = DefaultInputValue x
+
 class FromAny a (k :: TypeCategory) where
   fromAny :: a ANY -> Maybe (a k)
 
@@ -564,26 +572,29 @@ data FieldDefinition (cat :: TypeCategory) = FieldDefinition
   { fieldName :: FieldName,
     fieldDescription :: Maybe Description,
     fieldType :: TypeRef,
-    fieldContent :: FieldContent cat,
+    fieldContent :: FieldContent TRUE cat,
     fieldDirectives :: [Directive VALID]
   }
   deriving (Show, Lift)
 
-data FieldContent (cat :: TypeCategory) where
-  NoContent :: FieldContent cat
-  DefaultInputValue :: Maybe (Value RESOLVED) -> FieldContent IN
+data FieldContent (bool :: Bool) (cat :: TypeCategory) where
+  NoContent :: FieldContent bool cat
+  DefaultInputValue ::
+    { defaultInputValue :: Maybe (Value RESOLVED)
+    } ->
+    FieldContent (IsSelected a IN) a
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition
     } ->
-    FieldContent OUT
+    FieldContent (IsSelected a OUT) a
 
-fieldContentArgs :: FieldContent cat -> OrderedMap FieldName ArgumentDefinition
+fieldContentArgs :: FieldContent b cat -> OrderedMap FieldName ArgumentDefinition
 fieldContentArgs (FieldArgs (ArgumentsDefinition _ argsD)) = argsD
 fieldContentArgs _ = empty
 
-deriving instance Show (FieldContent cat)
+deriving instance Show (FieldContent bool cat)
 
-deriving instance Lift (FieldContent cat)
+deriving instance Lift (FieldContent bool cat)
 
 instance KeyOf (FieldDefinition cat) where
   keyOf = fieldName
@@ -618,7 +629,7 @@ mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
 mockFieldDefinition FieldDefinition {fieldContent = c, ..} =
   FieldDefinition {fieldContent = mockFieldContent c, ..}
 
-mockFieldContent :: FieldContent a -> FieldContent b
+mockFieldContent :: FieldContent TRUE a -> FieldContent TRUE b
 mockFieldContent _ = NoContent
 
 fieldVisibility :: FieldDefinition cat -> Bool
@@ -627,7 +638,7 @@ fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 isFieldNullable :: FieldDefinition cat -> Bool
 isFieldNullable = isNullable . fieldType
 
-createField :: FieldContent cat -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
+createField :: FieldContent TRUE cat -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
 createField fieldContent fieldName (typeWrappers, typeConName) =
   FieldDefinition
     { fieldName,

@@ -117,7 +117,7 @@ introspectField :: FieldDefinition cat -> [ExpQ]
 introspectField FieldDefinition {fieldType, fieldContent} =
   [|introspect $(proxyT fieldType)|] : inputTypes fieldContent
   where
-    inputTypes :: FieldContent cat -> [ExpQ]
+    inputTypes :: FieldContent TRUE cat -> [ExpQ]
     inputTypes (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypeName})
       | argsTypeName /= "()" = [[|deriveCustomInputObjectType (argsTypeName, $(proxyT tAlias))|]]
       where

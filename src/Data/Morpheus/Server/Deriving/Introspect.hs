@@ -117,7 +117,7 @@ class Introspect a where
   isObject :: proxy a -> Bool
   default isObject :: GQLType a => proxy a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> FieldName -> FieldDefinition cat
+  field :: proxy a -> FieldName -> FieldDefinition ANY
   introspect :: proxy a -> TypeUpdater
 
   -----------------------------------------------
@@ -125,7 +125,7 @@ class Introspect a where
     GQLType a =>
     proxy a ->
     FieldName ->
-    FieldDefinition cat
+    FieldDefinition ANY
   field _ = buildField (Proxy @a) NoContent
 
 instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect a where
@@ -164,9 +164,10 @@ instance Introspect (MapKind k v Maybe) => Introspect (Map k v) where
 -- Resolver : a -> Resolver b
 instance (GQLType b, DeriveTypeContent 'False a, Introspect b) => Introspect (a -> m b) where
   isObject _ = False
-  field _ name = mockFieldDefinition $ fieldObj {fieldContent = FieldArgs fieldArgs}
+  field _ name = toAny (fieldObj {fieldContent = FieldArgs fieldArgs} :: FieldDefinition OUT)
     where
       fieldObj = field (Proxy @b) name
+      fieldArgs :: ArgumentsDefinition
       fieldArgs =
         fieldsToArguments $ mockFieldsDefinition $ fst $
           introspectObjectFields
@@ -283,7 +284,7 @@ instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
           genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
           genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
-buildField :: GQLType a => Proxy a -> FieldContent cat -> FieldName -> FieldDefinition cat
+buildField :: GQLType a => Proxy a -> FieldContent TRUE cat -> FieldName -> FieldDefinition cat
 buildField proxy fieldContent fieldName =
   FieldDefinition
     { fieldType = createAlias (__typeName proxy),

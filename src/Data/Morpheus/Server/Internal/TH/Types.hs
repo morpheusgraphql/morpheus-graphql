@@ -24,6 +24,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     FieldsDefinition,
     IN,
+    TRUE,
     TypeDefinition,
     TypeKind,
     TypeName,
@@ -99,7 +100,7 @@ declareType namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
                 result = declareTypeRef (maybe False isSubscription kindD) fieldType
 
 ------------------------------------------------
-genFieldT :: Type -> Maybe TypeKind -> FieldContent cat -> Type
+genFieldT :: Type -> Maybe TypeKind -> FieldContent TRUE cat -> Type
 genFieldT result _ (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}) =
   AppT
     (AppT arrowType argType)

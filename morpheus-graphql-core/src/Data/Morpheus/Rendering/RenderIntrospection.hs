@@ -45,6 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     QUERY,
     Schema,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
@@ -196,7 +197,7 @@ instance RenderSchema (FieldDefinition cat) where
             ]
             <> renderDeprecated fieldDirectives
 
-renderFieldArgs :: (Monad m) => FieldContent cat -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
+renderFieldArgs :: (Monad m) => FieldContent TRUE cat -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
 renderFieldArgs (FieldArgs args) lib = renderArguments args lib
 renderFieldArgs _ _ = pure []
 

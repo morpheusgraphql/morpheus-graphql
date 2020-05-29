@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     OUT,
     Schema,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -130,10 +131,10 @@ instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
         fieldContent = args2
       } = (fieldType << fieldType') *> (args1 << args2)
 
-instance TypeEq (FieldContent OUT) (Interface, FieldName) where
+instance TypeEq (FieldContent TRUE OUT) (Interface, FieldName) where
   f1 << f2 = toARgs f1 << toARgs f2
     where
-      toARgs :: FieldContent OUT -> ArgumentsDefinition
+      toARgs :: FieldContent TRUE OUT -> ArgumentsDefinition
       toARgs NoContent = empty
       toARgs (FieldArgs args) = args
 
