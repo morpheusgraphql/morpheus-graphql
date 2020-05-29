@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -27,8 +28,10 @@ import Data.Morpheus.Server.Document.Declare.Introspect
   ( deriveObjectRep,
     instanceIntrospect,
   )
+import Data.Morpheus.Server.Document.Transform
 import Data.Morpheus.Types.Internal.AST
-  ( GQLTypeD (..),
+  ( IN,
+    OUT,
     TypeD (..),
     TypeKind (..),
     isInput,
@@ -45,14 +48,19 @@ instance Declare a => Declare [a] where
   type DeclareCtx [a] = DeclareCtx a
   declare namespace = fmap concat . traverse (declare namespace)
 
-instance Declare GQLTypeD where
-  type DeclareCtx GQLTypeD = Bool
-  declare namespace gqlType@GQLTypeD {typeD = typeD@TypeD {tKind}, typeArgD, typeOriginal} =
+instance Declare TypeDec where
+  type DeclareCtx TypeDec = Bool
+  declare namespace (InputType typeD) = declare namespace typeD
+  declare namespace (OutputType typeD) = declare namespace typeD
+
+instance Declare (TypeD cat) where
+  type DeclareCtx (TypeD cat) = Bool
+  declare namespace typeD@TypeD {tKind, typeArgD, typeOriginal} =
     do
-      mainType <- declareMainType
-      argTypes <- declareArgTypes
+      let mainType = declareMainType (namespace, tKind) typeD
+      argTypes <- declareArgTypes namespace typeArgD
       gqlInstances <- deriveGQLInstances
-      typeClasses <- deriveGQLType gqlType
+      typeClasses <- deriveGQLType typeD
       introspectEnum <- instanceIntrospect typeOriginal
       pure $ mainType <> typeClasses <> argTypes <> gqlInstances <> introspectEnum
     where
@@ -65,27 +73,23 @@ instance Declare GQLTypeD where
               [deriveObjectRep (typeD, Just typeOriginal, Just tKind), deriveEncode typeD]
             | otherwise =
               []
-      --------------------------------------------------
-      declareArgTypes = do
-        introspectArgs <- concat <$> traverse deriveArgsRep typeArgD
-        decodeArgs <- concat <$> traverse deriveDecode typeArgD
-        return $ argsTypeDecs <> decodeArgs <> introspectArgs
-        where
-          deriveArgsRep args = deriveObjectRep (args, Nothing, Nothing)
-          ----------------------------------------------------
-          argsTypeDecs = map (declareType SERVER namespace Nothing []) typeArgD
-      --------------------------------------------------
-      declareMainType = declare (namespace, tKind) typeD
 
-instance Declare TypeD where
-  type DeclareCtx TypeD = (Bool, TypeKind)
+declareArgTypes :: Bool -> [TypeD IN] -> Q [Dec]
+declareArgTypes namespace types = do
+  introspectArgs <- concat <$> traverse deriveArgsRep types
+  decodeArgs <- concat <$> traverse deriveDecode types
+  return $ argsTypeDecs <> decodeArgs <> introspectArgs
+  where
+    deriveArgsRep args = deriveObjectRep (args, Nothing, Nothing)
+    ----------------------------------------------------
+    argsTypeDecs = map (declareType SERVER namespace Nothing []) types
 
-  -- scalar types are defined from user
-  declare (_, KindScalar) _ = pure []
-  declare (namespace, tKind) typeD =
-    pure [declareType SERVER namespace (Just tKind) derivingClasses typeD]
-    where
-      -- input types support show
-      derivingClasses
-        | isInput tKind = [''Show]
-        | otherwise = []
+declareMainType :: (Bool, TypeKind) -> TypeD cat -> [Dec]
+declareMainType (_, KindScalar) _ = []
+declareMainType (namespace, tKind) typeD =
+  [declareType SERVER namespace (Just tKind) derivingClasses typeD]
+  where
+    -- input types support show
+    derivingClasses
+      | isInput tKind = [''Show]
+      | otherwise = []

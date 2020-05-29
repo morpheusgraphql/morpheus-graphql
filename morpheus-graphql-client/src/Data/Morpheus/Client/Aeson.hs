@@ -65,27 +65,27 @@ import Language.Haskell.TH
 failure :: Message -> Q a
 failure = fail . show
 
-deriveScalarJSON :: TypeD -> Q [Dec]
+deriveScalarJSON :: TypeD cat -> Q [Dec]
 deriveScalarJSON typeDef = do
   from <- deriveScalarFromJSON typeDef
   to <- deriveScalarToJSON typeDef
   pure [from, to]
 
-deriveScalarFromJSON :: TypeD -> Q Dec
+deriveScalarFromJSON :: TypeD cat -> Q Dec
 deriveScalarFromJSON TypeD {tName} =
   defineFromJSON
     tName
     (const $ varE 'scalarFromJSON)
     tName
 
-deriveScalarToJSON :: TypeD -> Q Dec
+deriveScalarToJSON :: TypeD cat -> Q Dec
 deriveScalarToJSON TypeD {tName} =
   let methods = [funD 'toJSON clauses]
       clauses = [clause [] (normalB $ varE 'scalarToJSON) []]
    in instanceD (cxt []) (instanceHeadT ''ToJSON tName []) methods
 
 -- FromJSON
-deriveFromJSON :: TypeD -> Q Dec
+deriveFromJSON :: TypeD cat -> Q Dec
 deriveFromJSON TypeD {tCons = [], tName} =
   failure $ "Type " <> msg tName <> " Should Have at least one Constructor"
 deriveFromJSON TypeD {tName, tNamespace, tCons = [cons]} =
@@ -101,7 +101,7 @@ deriveFromJSON typeD@TypeD {tName, tCons, tNamespace}
   where
     name = nameSpaceType tNamespace tName
 
-aesonObject :: [FieldName] -> ConsD -> ExpQ
+aesonObject :: [FieldName] -> ConsD cat -> ExpQ
 aesonObject tNamespace con@ConsD {cName} =
   appE
     [|withObject name|]
@@ -109,7 +109,7 @@ aesonObject tNamespace con@ConsD {cName} =
   where
     name = nameSpaceType tNamespace cName
 
-aesonObjectBody :: [FieldName] -> ConsD -> ExpQ
+aesonObjectBody :: [FieldName] -> ConsD cat -> ExpQ
 aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
   where
     consName = nameConE (nameSpaceType namespace cName)
@@ -138,7 +138,7 @@ aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
             applyFields (x : xs) =
               uInfixE (defField x) (varE '(<*>)) (applyFields xs)
 
-aesonUnionObject :: [FieldName] -> TypeD -> ExpQ
+aesonUnionObject :: [FieldName] -> TypeD cat -> ExpQ
 aesonUnionObject namespace TypeD {tCons} =
   appE
     (varE 'takeValueType)
@@ -164,7 +164,7 @@ defineFromJSON tName parseJ cFields = instanceD (cxt []) iHead [method]
     -----------------------------------------
     method = instanceFunD 'parseJSON [] (parseJ cFields)
 
-aesonFromJSONEnumBody :: TypeName -> [ConsD] -> ExpQ
+aesonFromJSONEnumBody :: TypeName -> [ConsD cat] -> ExpQ
 aesonFromJSONEnumBody tName cons = lamCaseE handlers
   where
     handlers = map buildMatch cons <> [elseCaseEXP]
@@ -192,7 +192,7 @@ elseCaseEXP = match (nameVarP varName) body []
               (stringE " is Not Valid Union Constructor")
           )
 
-aesonToJSONEnumBody :: TypeName -> [ConsD] -> ExpQ
+aesonToJSONEnumBody :: TypeName -> [ConsD cat] -> ExpQ
 aesonToJSONEnumBody tName cons = lamCaseE handlers
   where
     handlers = map buildMatch cons
@@ -203,7 +203,7 @@ aesonToJSONEnumBody tName cons = lamCaseE handlers
             body = normalB $ litE (nameStringL cName)
 
 -- ToJSON
-deriveToJSON :: TypeD -> Q [Dec]
+deriveToJSON :: TypeD cat -> Q [Dec]
 deriveToJSON TypeD {tCons = []} =
   fail "Type Should Have at least one Constructor"
 deriveToJSON TypeD {tName, tCons = [ConsD {cFields}]} =

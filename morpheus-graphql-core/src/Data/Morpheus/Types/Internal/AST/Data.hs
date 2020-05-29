@@ -60,7 +60,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     lookupDeprecated,
     lookupDeprecatedReason,
     lookupWith,
-    hasArguments,
     unsafeFromFields,
     __inputname,
     updateSchema,
@@ -591,6 +590,7 @@ instance KeyOf (FieldDefinition cat) where
 
 instance Selectable (FieldDefinition OUT) ArgumentDefinition where
   selectOr fb f key FieldDefinition {fieldContent = FieldArgs args} = selectOr fb f key args
+  selectOr fb _ _ _ = fb
 
 instance NameCollision (FieldDefinition cat) where
   nameCollision name _ =
@@ -701,10 +701,6 @@ instance Listable ArgumentDefinition ArgumentsDefinition where
 
 createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition IN
 createArgument = createField NoContent
-
-hasArguments :: ArgumentsDefinition -> Bool
-hasArguments NoArguments = False
-hasArguments _ = True
 
 -- https://spec.graphql.org/June2018/#InputValueDefinition
 -- InputValueDefinition

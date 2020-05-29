@@ -44,7 +44,8 @@ import Data.Morpheus.Internal.Utils
     nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ANY,
+    ArgumentsDefinition (..),
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -103,7 +104,7 @@ tyConArgs kindD
 data Scope = CLIENT | SERVER
   deriving (Eq)
 
-declareType :: Scope -> Bool -> Maybe TypeKind -> [Name] -> TypeD -> Dec
+declareType :: Scope -> Bool -> Maybe TypeKind -> [Name] -> TypeD cat -> Dec
 declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
   DataD [] (genName tName) tVars Nothing cons $
     map derive (''Generic : derivingList)

@@ -65,7 +65,7 @@ encodeVars = [e_, m_]
 encodeVarsT :: [TypeQ]
 encodeVarsT = map nameVarT encodeVars
 
-deriveEncode :: TypeD -> Q [Dec]
+deriveEncode :: TypeD cat -> Q [Dec]
 deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
   pure <$> instanceD (cxt constrains) appHead methods
   where

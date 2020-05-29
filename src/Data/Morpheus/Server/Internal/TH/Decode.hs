@@ -51,7 +51,7 @@ import Language.Haskell.TH
     varE,
   )
 
-decodeObjectExpQ :: ExpQ -> ConsD -> ExpQ
+decodeObjectExpQ :: ExpQ -> ConsD cat -> ExpQ
 decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
   where
     consName = nameConE cName

@@ -28,6 +28,7 @@ import Data.Morpheus.Server.Internal.TH.Decode
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
+    IN,
     TypeD (..),
     ValidValue,
   )
@@ -39,7 +40,7 @@ import Language.Haskell.TH
 (.:) :: Decode a => ValidValue -> FieldName -> Eventless a
 value .: selectorName = withObject (decodeFieldWith decode selectorName) value
 
-deriveDecode :: TypeD -> Q [Dec]
+deriveDecode :: TypeD cat -> Q [Dec]
 deriveDecode TypeD {tName, tCons = [cons]} =
   pure <$> instanceD (cxt []) appHead methods
   where

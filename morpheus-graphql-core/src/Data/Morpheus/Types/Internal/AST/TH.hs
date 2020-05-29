@@ -6,7 +6,6 @@ module Data.Morpheus.Types.Internal.AST.TH
   ( TypeD (..),
     ConsD (..),
     mkCons,
-    GQLTypeD (..),
     isEnum,
     mkConsEnum,
   )
@@ -30,6 +29,7 @@ import Data.Morpheus.Types.Internal.AST.Data
     FieldContent,
     FieldDefinition (..),
     FieldsDefinition,
+    IN,
     TypeDefinition,
     mockFieldDefinition,
   )
@@ -40,41 +40,46 @@ toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConNam
     { fieldType = tyRef {typeConName = hsTypeName typeConName}
     }
 
+data ClientTypeDefinition = ClientTypeDefinition
+  { clientTypeName :: NameTH,
+    clientArgTypes :: [ClientTypeDefinition],
+    clientOriginalType :: TypeDefinition ANY,
+    clientCons :: [ConsD IN]
+  }
+  deriving (Show)
+
+data NameTH = NameTH [FieldName] TypeName
+  deriving (Show)
+
 -- Template Haskell Types
--- Document
-data GQLTypeD = GQLTypeD
-  { typeD :: TypeD,
-    typeArgD :: [TypeD],
+
+--- Core
+data TypeD cat = TypeD
+  { tName :: TypeName,
+    tNamespace :: [FieldName],
+    typeArgD :: [TypeD IN],
+    tCons :: [ConsD cat],
+    tKind :: TypeKind,
+    tDescription :: Maybe Description,
     typeOriginal :: TypeDefinition ANY
   }
   deriving (Show)
 
---- Core
-data TypeD = TypeD
-  { tName :: TypeName,
-    tNamespace :: [FieldName],
-    tCons :: [ConsD],
-    tKind :: TypeKind,
-    tDescription :: Maybe Description,
-    tDirectives :: Directives VALID
-  }
-  deriving (Show)
-
-data ConsD = ConsD
+data ConsD cat = ConsD
   { cName :: TypeName,
-    cFields :: [FieldDefinition ANY]
+    cFields :: [FieldDefinition cat]
   }
   deriving (Show)
 
-mkCons :: TypeName -> FieldsDefinition cat -> ConsD
+mkCons :: TypeName -> FieldsDefinition cat -> ConsD cat
 mkCons typename fields =
   ConsD
     { cName = hsTypeName typename,
-      cFields = map (toHSFieldDefinition . mockFieldDefinition) (elems fields)
+      cFields = map toHSFieldDefinition (elems fields)
     }
 
-isEnum :: [ConsD] -> Bool
+isEnum :: [ConsD cat] -> Bool
 isEnum = all (null . cFields)
 
-mkConsEnum :: DataEnumValue -> ConsD
+mkConsEnum :: DataEnumValue -> ConsD cat
 mkConsEnum DataEnumValue {enumName} = ConsD {cName = hsTypeName enumName, cFields = []}

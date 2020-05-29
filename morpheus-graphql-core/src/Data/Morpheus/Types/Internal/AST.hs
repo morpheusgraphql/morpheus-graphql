@@ -74,7 +74,6 @@ module Data.Morpheus.Types.Internal.AST
     TypeUpdater,
     TypeD (..),
     ConsD (..),
-    GQLTypeD (..),
     TypeCategory,
     DataInputUnion,
     VariableContent (..),
@@ -109,7 +108,6 @@ module Data.Morpheus.Types.Internal.AST
     insertType,
     lookupDeprecated,
     lookupDeprecatedReason,
-    hasArguments,
     lookupWith,
     -- Temaplate Haskell
     hsTypeName,
