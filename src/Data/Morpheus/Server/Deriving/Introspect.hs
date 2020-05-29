@@ -112,21 +112,20 @@ import GHC.Generics
 
 type IntroCon a = (GQLType a, DeriveTypeContent (CUSTOM a) a)
 
-data TypeK
-  = InK (FieldsDefinition IN)
-  | OutK (FieldsDefinition OUT)
+data ProxyRep (cat :: TypeCategory) a
+  = ProxyRep
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect (cat :: TypeCategory) a where
-  introspect :: proxy a -> TypeUpdater
-  isObject :: proxy a -> Bool
-  default isObject :: GQLType a => proxy a -> Bool
+  introspect :: proxy cat a -> TypeUpdater
+  isObject :: proxy cat a -> Bool
+  default isObject :: GQLType a => proxy cat a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy a -> FieldName -> FieldDefinition cat
+  field :: proxy cat a -> FieldName -> FieldDefinition cat
   -----------------------------------------------
   default field ::
     GQLType a =>
-    proxy a ->
+    proxy cat a ->
     FieldName ->
     FieldDefinition cat
   field _ = buildField (Proxy @a) NoContent
@@ -261,13 +260,13 @@ introspectObjectFields ::
   DeriveTypeContent custom a =>
   proxy1 (custom :: Bool) ->
   (TypeName, TypeScope cat, proxy2 a) ->
-  (TypeK, [TypeUpdater])
+  (FieldsDefinition cat, [TypeUpdater])
 introspectObjectFields p1 (name, scope, proxy) =
   withObject name (deriveTypeContent p1 (proxy, ([], []), scope, "", DataFingerprint "" []))
 
-withObject :: TypeName -> (TypeContent TRUE (cat :: TypeCategory), [TypeUpdater]) -> (TypeK, [TypeUpdater])
-withObject _ (DataObject {objectFields}, ts) = (OutK objectFields, ts)
-withObject _ (DataInputObject {inputObjectFields}, ts) = (InK inputObjectFields, ts)
+withObject :: TypeName -> (TypeContent TRUE (cat :: TypeCategory), [TypeUpdater]) -> (FieldsDefinition cat, [TypeUpdater])
+withObject _ (DataObject {objectFields}, ts) = (objectFields, ts)
+withObject _ (DataInputObject {inputObjectFields}, ts) = (inputObjectFields, ts)
 withObject name _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
@@ -277,7 +276,7 @@ introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <
 class DeriveTypeContent (custom :: Bool) a where
   deriveTypeContent :: proxy1 custom -> (proxy2 a, ([TypeName], [TypeUpdater]), TypeScope cat, TypeName, DataFingerprint) -> (TypeContent TRUE ANY, [TypeUpdater])
 
-instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
+instance (TypeRep cat (Rep a), Generic a) => DeriveTypeContent FALSE a where
   deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
     fa $ builder $ typeRep $ Proxy @(Rep a)
     where
@@ -526,17 +525,17 @@ deriving instance Eq (TypeScope cat)
 deriving instance Ord (TypeScope cat)
 
 --  GENERIC UNION
-class TypeRep f where
-  typeRep :: Proxy f -> [ConsRep]
+class TypeRep (cat :: TypeCategory) f where
+  typeRep :: proxy cat f -> [ConsRep]
 
-instance TypeRep f => TypeRep (M1 D d f) where
+instance TypeRep cat f => TypeRep cat (M1 D d f) where
   typeRep _ = typeRep (Proxy @f)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (TypeRep cat a, TypeRep cat b) => TypeRep cat (a :+: b) where
   typeRep _ = typeRep (Proxy @a) <> typeRep (Proxy @b)
 
-instance (ConRep cat f, Constructor c) => TypeRep (M1 C c f) where
+instance (ConRep cat f, Constructor c) => TypeRep cat (M1 C c f) where
   typeRep _ =
     [ ConsRep
         { consName = conNameProxy (Proxy @c),
