@@ -28,6 +28,7 @@ import Data.Morpheus.Kind
     SCALAR,
     WRAPPER,
   )
+import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
@@ -37,7 +38,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     QUERY,
     TypeContent (..),
-    TypeD (..),
     TypeDefinition (..),
     TypeKind (..),
     TypeName,

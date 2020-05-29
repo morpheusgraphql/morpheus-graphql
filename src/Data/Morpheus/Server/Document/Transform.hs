@@ -25,6 +25,7 @@ import Data.Morpheus.Internal.Utils
     empty,
     singleton,
   )
+import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -38,7 +39,6 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     TRUE,
     TypeContent (..),
-    TypeD (..),
     TypeDefinition (..),
     TypeKind (..),
     TypeName,

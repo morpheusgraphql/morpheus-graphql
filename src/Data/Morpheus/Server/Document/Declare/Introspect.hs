@@ -29,6 +29,7 @@ import Data.Morpheus.Server.Deriving.Introspect
     Introspect (..),
     deriveCustomInputObjectType,
   )
+import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__typeName, implements),
     TRUE,
@@ -40,7 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     TypeContent (..),
-    TypeD (..),
     TypeDefinition (..),
     TypeKind (..),
     TypeName,

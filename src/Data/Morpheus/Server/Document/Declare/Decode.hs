@@ -26,10 +26,9 @@ import Data.Morpheus.Server.Internal.TH.Decode
     decodeObjectExpQ,
     withObject,
   )
+import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    IN,
-    TypeD (..),
     ValidValue,
   )
 import Data.Morpheus.Types.Internal.Resolving

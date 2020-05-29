@@ -3,8 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Types.Internal.AST.TH
-  ( TypeD (..),
-    ConsD (..),
+  ( ConsD (..),
     mkCons,
     isEnum,
     mkConsEnum,
@@ -52,18 +51,6 @@ data NameTH = NameTH [FieldName] TypeName
   deriving (Show)
 
 -- Template Haskell Types
-
---- Core
-data TypeD cat = TypeD
-  { tName :: TypeName,
-    tNamespace :: [FieldName],
-    typeArgD :: [TypeD IN],
-    tCons :: [ConsD cat],
-    tKind :: TypeKind,
-    tDescription :: Maybe Description,
-    typeOriginal :: TypeDefinition ANY
-  }
-  deriving (Show)
 
 data ConsD cat = ConsD
   { cName :: TypeName,

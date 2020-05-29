@@ -29,10 +29,10 @@ import Data.Morpheus.Server.Document.Declare.Introspect
     instanceIntrospect,
   )
 import Data.Morpheus.Server.Document.Transform
+import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
 import Data.Morpheus.Types.Internal.AST
   ( IN,
     OUT,
-    TypeD (..),
     TypeKind (..),
     isInput,
     isObject,

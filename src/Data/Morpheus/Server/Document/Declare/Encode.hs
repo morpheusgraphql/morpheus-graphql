@@ -26,13 +26,13 @@ import Data.Morpheus.Server.Deriving.Encode
   ( Encode (..),
     ExploreResolvers (..),
   )
+import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
 import Data.Morpheus.Server.Types.GQLType (TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
     QUERY,
     SUBSCRIPTION,
-    TypeD (..),
     TypeName (..),
     isSubscription,
   )

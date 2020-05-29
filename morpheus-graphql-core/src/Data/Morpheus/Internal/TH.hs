@@ -10,8 +10,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Data.Morpheus.Internal.TH
-  ( declareType,
-    tyConArgs,
+  ( tyConArgs,
     Scope (..),
     apply,
     applyT,
@@ -34,6 +33,8 @@ module Data.Morpheus.Internal.TH
     nameConE,
     nameVarP,
     mkTypeName,
+    mkFieldName,
+    declareTypeRef,
   )
 where
 
@@ -50,7 +51,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
-    TypeD (..),
     TypeKind (..),
     TypeKind (..),
     TypeName (..),
@@ -103,50 +103,6 @@ tyConArgs kindD
 
 data Scope = CLIENT | SERVER
   deriving (Eq)
-
-declareType :: Scope -> Bool -> Maybe TypeKind -> [Name] -> TypeD cat -> Dec
-declareType scope namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
-  DataD [] (genName tName) tVars Nothing cons $
-    map derive (''Generic : derivingList)
-  where
-    genName = mkTypeName . nameSpaceType tNamespace
-    tVars = maybe [] (declareTyVar . tyConArgs) kindD
-      where
-        declareTyVar = map (PlainTV . mkTypeName)
-    defBang = Bang NoSourceUnpackedness NoSourceStrictness
-    derive className = DerivClause Nothing [ConT className]
-    cons
-      | scope == CLIENT && isEnum tCons = map consE tCons
-      | otherwise = map consR tCons
-    consE ConsD {cName} = NormalC (genName $ tName <> cName) []
-    consR ConsD {cName, cFields} =
-      RecC
-        (genName cName)
-        (map declareField cFields)
-      where
-        declareField FieldDefinition {fieldName, fieldContent, fieldType} =
-          (mkFieldName fName, defBang, fiType)
-          where
-            fName
-              | namespace = nameSpaceField tName fieldName
-              | otherwise = fieldName
-            fiType = genFieldT result kindD fieldContent
-              where
-                ---------------------------
-                result = declareTypeRef (maybe False isSubscription kindD) fieldType
-
-------------------------------------------------
-genFieldT :: Type -> Maybe TypeKind -> FieldContent cat -> Type
-genFieldT result _ (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}) =
-  AppT
-    (AppT arrowType argType)
-    (AppT m' result)
-  where
-    argType = ConT $ mkTypeName argsTypename
-    arrowType = ConT ''Arrow
-genFieldT result kind _
-  | (isOutputObject <$> kind) == Just True = AppT m' result
-  | otherwise = result
 
 apply :: Name -> [Q Exp] -> Q Exp
 apply n = foldl appE (conE n)
