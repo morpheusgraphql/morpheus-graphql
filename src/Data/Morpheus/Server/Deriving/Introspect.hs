@@ -282,11 +282,12 @@ instance (TypeRep (Rep a), Generic a) => DeriveTypeContent FALSE a where
           genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
           genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
-buildField :: GQLType a => Proxy a -> ArgumentsDefinition -> FieldName -> FieldDefinition cat
-buildField proxy fieldArgs fieldName =
+buildField :: GQLType a => Proxy a -> FieldContent cat -> FieldName -> FieldDefinition cat
+buildField proxy fieldContent fieldName =
   FieldDefinition
     { fieldType = createAlias (__typeName proxy),
       fieldDescription = Nothing,
+      fieldDirectives = empty,
       ..
     }
 

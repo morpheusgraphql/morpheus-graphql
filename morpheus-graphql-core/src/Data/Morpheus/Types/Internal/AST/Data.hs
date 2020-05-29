@@ -534,7 +534,8 @@ unsafeFromFields :: [FieldDefinition cat] -> FieldsDefinition cat
 unsafeFromFields = Fields . unsafeFromValues
 
 argumentsToFields :: ArgumentsDefinition -> FieldsDefinition IN
-argumentsToFields = Fields . arguments
+argumentsToFields NoArguments = empty
+argumentsToFields ArgumentsDefinition {arguments} = Fields arguments
 
 fieldsToArguments :: FieldsDefinition IN -> ArgumentsDefinition
 fieldsToArguments = ArgumentsDefinition Nothing . unFields
