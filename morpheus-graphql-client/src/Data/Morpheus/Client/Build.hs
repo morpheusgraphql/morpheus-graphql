@@ -37,6 +37,7 @@ import Data.Morpheus.Error
   )
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
+    isEnum,
     m',
     mkFieldName,
     mkTypeName,
@@ -115,8 +116,13 @@ declareType
     { clientTypeName = TypeNameTH {namespace, typename},
       clientCons
     } =
-    DataD [] (genName typename) tVars Nothing cons $
-      map derive (''Generic : derivingList)
+    DataD
+      []
+      (genName typename)
+      tVars
+      Nothing
+      cons
+      (map derive (''Generic : derivingList))
     where
       genName = mkTypeName . nameSpaceType namespace
       tVars = maybe [] (declareTyVar . tyConArgs) kindD
@@ -124,7 +130,9 @@ declareType
           declareTyVar = map (PlainTV . mkTypeName)
       defBang = Bang NoSourceUnpackedness NoSourceStrictness
       derive className = DerivClause Nothing [ConT className]
-      cons = map consE clientCons
+      cons
+        | isEnum clientCons = map consE clientCons
+        | otherwise = map consR clientCons
       consE ConsD {cName} = NormalC (genName $ typename <> cName) []
       consR ConsD {cName, cFields} =
         RecC

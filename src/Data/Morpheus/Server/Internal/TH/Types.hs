@@ -112,9 +112,3 @@ genFieldT result kind _
   | otherwise = result
 
 type Arrow = (->)
-
-m' :: Type
-m' = VarT $ mkTypeName m_
-
-m_ :: TypeName
-m_ = "m"

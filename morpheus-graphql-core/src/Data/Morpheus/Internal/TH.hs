@@ -38,6 +38,7 @@ module Data.Morpheus.Internal.TH
     nameSpaceType,
     m_,
     m',
+    isEnum,
   )
 where
 

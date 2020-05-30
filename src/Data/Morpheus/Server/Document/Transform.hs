@@ -97,7 +97,6 @@ toTHDefinitions namespace schema = catMaybes <$> traverse renderTHType schema
             } =
             withType <$> genTypeContent schema toArgsTypeName typeName typeContent
             where
-              withType NoBuilds = Nothing
               withType (ConsIN tCons) =
                 Just $
                   InputType
@@ -154,8 +153,7 @@ mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = 
     fieldCont _ = NoContent
 
 data BuildPlan
-  = NoBuilds
-  | ConsIN [ConsD IN]
+  = ConsIN [ConsD IN]
   | ConsOUT [TypeD IN] [ConsD OUT]
 
 genTypeContent ::
@@ -164,7 +162,7 @@ genTypeContent ::
   TypeName ->
   TypeContent TRUE ANY ->
   Q BuildPlan
-genTypeContent _ _ _ DataScalar {} = pure NoBuilds
+genTypeContent _ _ _ DataScalar {} = pure (ConsIN [])
 genTypeContent _ _ _ (DataEnum tags) = pure $ ConsIN (map mkConsEnum tags)
 genTypeContent _ _ typeName (DataInputObject fields) =
   pure $ ConsIN (mkObjectCons typeName fields)
