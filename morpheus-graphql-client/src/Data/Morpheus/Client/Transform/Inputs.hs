@@ -132,7 +132,7 @@ buildInputType name = getType name >>= generateTypes
       where
         subTypes :: TypeContent TRUE ANY -> Converter [ClientTypeDefinition]
         subTypes (DataInputObject inputFields) = do
-          fields <- traverse toFieldD (elems inputFields)
+          fields <- traverse toClientFieldDefinition (elems inputFields)
           pure
             [ mkInputType
                 typeName
@@ -168,16 +168,7 @@ mkInputType typename clientKind clientCons =
       clientArgTypes = []
     }
 
-toFieldD :: FieldDefinition cat -> Converter (FieldDefinition IN)
-toFieldD
-  FieldDefinition
-    { fieldType,
-      ..
-    } = do
-    typeConName <- typeFrom [] <$> getType (typeConName fieldType)
-    pure
-      FieldDefinition
-        { fieldType = fieldType {typeConName},
-          fieldContent = NoContent,
-          ..
-        }
+toClientFieldDefinition :: FieldDefinition IN -> Converter (FieldDefinition IN)
+toClientFieldDefinition FieldDefinition {fieldType, ..} = do
+  typeConName <- typeFrom [] <$> getType (typeConName fieldType)
+  pure FieldDefinition {fieldType = fieldType {typeConName}, ..}
