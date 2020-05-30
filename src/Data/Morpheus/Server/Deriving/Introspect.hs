@@ -29,6 +29,7 @@ module Data.Morpheus.Server.Deriving.Introspect
     introspectObjectFields,
     deriveCustomInputObjectType,
     TypeScope (..),
+    ProxyRep (..),
   )
 where
 

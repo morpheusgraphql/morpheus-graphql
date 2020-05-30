@@ -16,7 +16,6 @@ import Data.Maybe (maybeToList)
 import Data.Morpheus.Internal.TH
   ( instanceFunD,
     instanceHeadMultiT,
-    instanceHeadT,
     instanceProxyFunD,
     mkTypeName,
     nameConT,
@@ -27,6 +26,7 @@ import Data.Morpheus.Internal.TH
 import Data.Morpheus.Server.Deriving.Introspect
   ( DeriveTypeContent (..),
     Introspect (..),
+    ProxyRep (..),
     deriveCustomInputObjectType,
   )
 import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
@@ -58,13 +58,16 @@ import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
+cat_ :: TypeQ
+cat_ = varT (mkName "cat")
+
 instanceIntrospect :: TypeDefinition cat -> Q [Dec]
 instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..}
   -- FIXME: dirty fix for introspection
   | typeName `elem` ["__DirectiveLocation", "__TypeKind"] = pure []
   | otherwise = pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
-    iHead = instanceHeadMultiT ''Introspect (varT (mkName "cat")) [conT $ mkTypeName typeName]
+    iHead = instanceHeadMultiT ''Introspect cat_ [conT $ mkTypeName typeName]
     defineIntrospect = instanceProxyFunD ('introspect, body)
       where
         body = [|insertType TypeDefinition {typeContent = DataEnum enumType, ..}|]
@@ -81,7 +84,11 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
       where
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
-    iHead = instanceHeadMultiT ''DeriveTypeContent (varT (mkName "cat")) [conT ''TRUE, mainTypeName]
+    iHead = instanceHeadMultiT ''DeriveTypeContent instCat [conT ''TRUE, mainTypeName]
+    instCat
+      | tKind == Just KindInputObject || null tKind =
+        conT ''IN
+      | otherwise = conT ''OUT
     methods = [instanceFunD 'deriveTypeContent ["_proxy1", "_proxy2"] body]
       where
         body
@@ -89,17 +96,15 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
             [|
               deriveInputObject
                 $(buildFields cFields)
-                $(typeUpdates)
+                $(buildTypes instCat cFields)
               |]
           | otherwise =
             [|
               deriveOutputObject
-                $(buildFields cFields)
                 $(proxy)
-                $(typeUpdates)
+                $(buildFields cFields)
+                $(buildTypes instCat cFields)
               |]
-        -------------------------------------------------------------
-        typeUpdates = buildTypes cFields
         proxy = [|(Proxy :: Proxy $(mainTypeName))|]
 deriveObjectRep _ = pure []
 
@@ -133,12 +138,12 @@ interfaceNames = map fst . implements
 interfaceTypes :: GQLType a => Proxy a -> TypeUpdater
 interfaceTypes = flip resolveUpdates . map snd . implements
 
-buildTypes :: [FieldDefinition cat] -> ExpQ
-buildTypes = listE . concatMap introspectField
+buildTypes :: TypeQ -> [FieldDefinition cat] -> ExpQ
+buildTypes cat = listE . concatMap (introspectField cat)
 
-introspectField :: FieldDefinition cat -> [ExpQ]
-introspectField FieldDefinition {fieldType, fieldContent} =
-  [|introspect $(proxyT fieldType)|] : inputTypes fieldContent
+introspectField :: TypeQ -> FieldDefinition cat -> [ExpQ]
+introspectField cat FieldDefinition {fieldType, fieldContent} =
+  [|introspect $(proxyRepT cat fieldType)|] : inputTypes fieldContent
   where
     inputTypes :: FieldContent TRUE cat -> [ExpQ]
     inputTypes (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypeName})
@@ -146,6 +151,12 @@ introspectField FieldDefinition {fieldType, fieldContent} =
       where
         tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
     inputTypes _ = []
+
+proxyRepT :: TypeQ -> TypeRef -> Q Exp
+proxyRepT cat TypeRef {typeConName, typeArgs} = [|(ProxyRep :: ProxyRep $(cat) $(genSig typeArgs))|]
+  where
+    genSig (Just m) = appT (nameConT typeConName) (nameVarT m)
+    genSig _ = nameConT typeConName
 
 proxyT :: TypeRef -> Q Exp
 proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
