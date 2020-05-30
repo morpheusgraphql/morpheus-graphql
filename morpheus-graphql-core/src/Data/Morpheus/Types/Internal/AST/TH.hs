@@ -7,7 +7,7 @@ module Data.Morpheus.Types.Internal.AST.TH
     mkCons,
     isEnum,
     mkConsEnum,
-    NameTH (..),
+    TypeNameTH (..),
   )
 where
 
@@ -39,7 +39,10 @@ toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConNam
     { fieldType = tyRef {typeConName = hsTypeName typeConName}
     }
 
-data NameTH = NameTH [FieldName] TypeName
+data TypeNameTH = TypeNameTH
+  { namespace :: [FieldName],
+    typename :: TypeName
+  }
   deriving (Show)
 
 -- Template Haskell Types

@@ -15,6 +15,11 @@ where
 --
 -- MORPHEUS
 import Control.Monad.Reader (asks, runReaderT)
+import Data.Morpheus.Client.Internal.Types
+  ( ClientDefinition (..),
+    ClientTypeDefinition (..),
+    TypeNameTH (..),
+  )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
 import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
 import Data.Morpheus.Internal.Utils
@@ -39,7 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     TypeContent (..),
-    TypeD (..),
     TypeDefinition (..),
     TypeKind (..),
     TypeName,
@@ -59,12 +63,6 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 
-data ClientDefinition = ClientDefinition
-  { clientArguments :: Maybe TypeD,
-    clientTypes :: [TypeD]
-  }
-  deriving (Show)
-
 toClientDefinition ::
   Schema ->
   VariableDefinitions RAW ->
@@ -78,7 +76,13 @@ genOperation operation = do
   nonOutputTypes <- renderNonOutputTypes enums
   pure ClientDefinition {clientArguments, clientTypes = outputTypes <> nonOutputTypes}
 
-renderOperationType :: Operation VALID -> Converter (Maybe TypeD, [TypeD], [TypeName])
+renderOperationType ::
+  Operation VALID ->
+  Converter
+    ( Maybe ClientTypeDefinition,
+      [ClientTypeDefinition],
+      [TypeName]
+    )
 renderOperationType op@Operation {operationName, operationSelection} = do
   datatype <- asks fst >>= getOperationDataType op
   arguments <- renderOperationArguments op
@@ -97,17 +101,15 @@ genRecordType ::
   TypeName ->
   TypeDefinition ANY ->
   SelectionSet VALID ->
-  Converter ([TypeD], [TypeName])
+  Converter ([ClientTypeDefinition], [TypeName])
 genRecordType path tName dataType recordSelSet = do
   (con, subTypes, requests) <- genConsD path tName dataType recordSelSet
   pure
-    ( TypeD
-        { tName,
-          tNamespace = path,
-          tCons = [con],
-          tKind = KindObject Nothing,
-          tDescription = Nothing,
-          tDirectives = empty
+    ( ClientTypeDefinition
+        { clientTypeName = TypeNameTH path tName,
+          clientCons = [con],
+          clientKind = KindObject Nothing,
+          clientArgTypes = []
         }
         : subTypes,
       requests
@@ -118,14 +120,18 @@ genConsD ::
   TypeName ->
   TypeDefinition ANY ->
   SelectionSet VALID ->
-  Converter (ConsD, [TypeD], [TypeName])
+  Converter
+    ( ConsD ANY,
+      [ClientTypeDefinition],
+      [TypeName]
+    )
 genConsD path cName datatype selSet = do
   (cFields, subTypes, requests) <- unzip3 <$> traverse genField (elems selSet)
   pure (ConsD {cName, cFields}, concat subTypes, concat requests)
   where
     genField ::
       Selection VALID ->
-      Converter (FieldDefinition ANY, [TypeD], [TypeName])
+      Converter (FieldDefinition ANY, [ClientTypeDefinition], [TypeName])
     genField sel =
       do
         (fieldDataType, fieldType) <-
@@ -158,23 +164,24 @@ subTypesBySelection ::
   [FieldName] ->
   TypeDefinition ANY ->
   Selection VALID ->
-  Converter ([TypeD], [TypeName])
+  Converter
+    ( [ClientTypeDefinition],
+      [TypeName]
+    )
 subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
   genRecordType path (typeFrom [] dType) dType selectionSet
 subTypesBySelection path dType Selection {selectionContent = UnionSelection unionSelections} =
   do
-    (tCons, subTypes, requests) <-
+    (clientCons, subTypes, requests) <-
       unzip3 <$> traverse getUnionType (elems unionSelections)
     pure
-      ( TypeD
-          { tNamespace = path,
-            tName = typeFrom [] dType,
-            tCons,
-            tKind = KindUnion,
-            tDescription = Nothing,
-            tDirectives = empty
+      ( ClientTypeDefinition
+          { clientTypeName = TypeNameTH path (typeFrom [] dType),
+            clientCons,
+            clientKind = KindUnion,
+            clientArgTypes = []
           }
           : concat subTypes,
         concat requests

@@ -20,9 +20,13 @@ import Data.Morpheus.Client.Aeson
 import Data.Morpheus.Client.Fetch
   ( deriveFetch,
   )
-import Data.Morpheus.Client.Transform.Selection
+import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
-    toClientDefinition,
+    ClientTypeDefinition (..),
+    TypeNameTH (..),
+  )
+import Data.Morpheus.Client.Transform.Selection
+  ( toClientDefinition,
   )
 import Data.Morpheus.Core
   ( validateRequest,
@@ -32,9 +36,7 @@ import Data.Morpheus.Error
     renderGQLErrors,
   )
 import Data.Morpheus.Internal.TH
-  ( Scope (..),
-    declareType,
-    nameConType,
+  ( nameConType,
     nameConType,
   )
 import qualified Data.Morpheus.Types.Internal.AST as O
@@ -43,8 +45,6 @@ import qualified Data.Morpheus.Types.Internal.AST as O
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
     Schema,
-    TypeD (..),
-    TypeD (..),
     TypeKind (..),
     VALIDATION_MODE (..),
     isOutputObject,
@@ -75,41 +75,46 @@ defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : sub
     typeDeclarations <- concat <$> traverse declareT subTypes
     pure (rootDeclaration <> typeDeclarations)
   where
-    declareT clientType@TypeD {tKind}
-      | isOutputObject tKind || tKind == KindUnion =
+    declareT clientType@ClientTypeDefinition {clientKind}
+      | isOutputObject clientKind || clientKind == KindUnion =
         withToJSON
           declareOutputType
           clientType
-      | tKind == KindEnum = withToJSON declareInputType clientType
-      | tKind == KindScalar = deriveScalarJSON clientType
+      | clientKind == KindEnum = withToJSON declareInputType clientType
+      | clientKind == KindScalar = deriveScalarJSON clientType
       | otherwise = declareInputType clientType
 
-declareOutputType :: TypeD -> Q [Dec]
-declareOutputType typeD = pure [declareType CLIENT False Nothing [''Show] typeD]
+declareOutputType :: ClientTypeDefinition -> Q [Dec]
+declareOutputType typeD = pure [declareType False Nothing [''Show] typeD]
 
-declareInputType :: TypeD -> Q [Dec]
+declareInputType :: ClientTypeDefinition -> Q [Dec]
 declareInputType typeD = do
   toJSONDec <- deriveToJSON typeD
-  pure $ declareType CLIENT True Nothing [''Show] typeD : toJSONDec
+  pure $ declareType True Nothing [''Show] typeD : toJSONDec
 
-withToJSON :: (TypeD -> Q [Dec]) -> TypeD -> Q [Dec]
+withToJSON :: (ClientTypeDefinition -> Q [Dec]) -> ClientTypeDefinition -> Q [Dec]
 withToJSON f datatype = do
   toJson <- deriveFromJSON datatype
   dec <- f datatype
   pure (toJson : dec)
 
-queryArgumentType :: Maybe TypeD -> (Type, Q [Dec])
+queryArgumentType :: Maybe ClientTypeDefinition -> (Type, Q [Dec])
 queryArgumentType Nothing = (nameConType "()", pure [])
-queryArgumentType (Just rootType@TypeD {tName}) =
-  (nameConType tName, declareInputType rootType)
+queryArgumentType (Just rootType@ClientTypeDefinition {clientTypeName}) =
+  (nameConType (typename clientTypeName), declareInputType rootType)
 
-defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
-defineOperationType (argType, argumentTypes) query clientType =
-  do
-    rootType <- withToJSON declareOutputType clientType
-    typeClassFetch <- deriveFetch argType (tName clientType) query
-    argsT <- argumentTypes
-    pure $ rootType <> typeClassFetch <> argsT
+defineOperationType :: (Type, Q [Dec]) -> String -> ClientTypeDefinition -> Q [Dec]
+defineOperationType
+  (argType, argumentTypes)
+  query
+  clientType@ClientTypeDefinition
+    { clientTypeName = TypeNameTH {typename}
+    } =
+    do
+      rootType <- withToJSON declareOutputType clientType
+      typeClassFetch <- deriveFetch argType typename query
+      argsT <- argumentTypes
+      pure $ rootType <> typeClassFetch <> argsT
 
 validateWith :: Schema -> GQLQuery -> Eventless ClientDefinition
 validateWith schema rawRequest@GQLQuery {operation} = do
