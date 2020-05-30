@@ -80,46 +80,42 @@ kindToTyArgs _ = Nothing
 data TypeDec = InputType (TypeD IN) | OutputType (TypeD OUT)
 
 toTHDefinitions :: Bool -> [TypeDefinition ANY] -> Q [TypeDec]
-toTHDefinitions namespace schema = catMaybes <$> traverse renderTHType schema
+toTHDefinitions namespace schema = traverse generateType schema
   where
-    renderTHType :: TypeDefinition ANY -> Q (Maybe TypeDec)
-    renderTHType x = generateType x
-      where
-        toArgsTypeName :: FieldName -> TypeName
-        toArgsTypeName = mkArgsTypeName namespace (typeName x)
-        --------------------------------------------
-        generateType :: TypeDefinition ANY -> Q (Maybe TypeDec)
-        generateType
-          typeOriginal@TypeDefinition
-            { typeName,
-              typeContent,
-              typeDescription
-            } =
-            withType <$> genTypeContent schema toArgsTypeName typeName typeContent
-            where
-              withType (ConsIN tCons) =
-                Just $
-                  InputType
-                    TypeD
-                      { tName = hsTypeName typeName,
-                        tDescription = typeDescription,
-                        tNamespace = [],
-                        tCons,
-                        tKind = kindOf typeOriginal,
-                        typeArgD = empty,
-                        ..
-                      }
-              withType (ConsOUT typeArgD tCons) =
-                Just $
-                  OutputType
-                    TypeD
-                      { tName = hsTypeName typeName,
-                        tDescription = typeDescription,
-                        tNamespace = [],
-                        tCons,
-                        tKind = kindOf typeOriginal,
-                        ..
-                      }
+    --------------------------------------------
+    generateType :: TypeDefinition ANY -> Q TypeDec
+    generateType
+      typeOriginal@TypeDefinition
+        { typeName,
+          typeContent,
+          typeDescription
+        } =
+        withType <$> genTypeContent schema toArgsTypeName typeName typeContent
+        where
+          toArgsTypeName :: FieldName -> TypeName
+          toArgsTypeName = mkArgsTypeName namespace typeName
+          -------------------------
+          withType (ConsIN tCons) =
+            InputType
+              TypeD
+                { tName = hsTypeName typeName,
+                  tDescription = typeDescription,
+                  tNamespace = [],
+                  tCons,
+                  tKind = kindOf typeOriginal,
+                  typeArgD = empty,
+                  ..
+                }
+          withType (ConsOUT typeArgD tCons) =
+            OutputType
+              TypeD
+                { tName = hsTypeName typeName,
+                  tDescription = typeDescription,
+                  tNamespace = [],
+                  tCons,
+                  tKind = kindOf typeOriginal,
+                  ..
+                }
 
 mkObjectCons :: TypeName -> FieldsDefinition cat -> [ConsD cat]
 mkObjectCons typeName fields = [mkCons typeName fields]
