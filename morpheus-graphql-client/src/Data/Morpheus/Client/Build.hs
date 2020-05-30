@@ -43,7 +43,9 @@ import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLQuery (..),
+  ( ArgumentsDefinition (..),
+    FieldDefinition (..),
+    GQLQuery (..),
     Schema,
     TypeKind (..),
     VALIDATION_MODE (..),
@@ -83,6 +85,57 @@ defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : sub
       | clientKind == KindEnum = withToJSON declareInputType clientType
       | clientKind == KindScalar = deriveScalarJSON clientType
       | otherwise = declareInputType clientType
+
+declareType ::
+  Bool ->
+  Maybe TypeKind ->
+  [Name] ->
+  ClientTypeDefinition ->
+  Dec
+declareType
+  namespace
+  kindD
+  derivingList
+  ClientTypeDefinition {tName, tCons, tNamespace} =
+    DataD [] (genName tName) tVars Nothing cons $
+      map derive (''Generic : derivingList)
+    where
+      genName = mkTypeName . nameSpaceType tNamespace
+      tVars = maybe [] (declareTyVar . tyConArgs) kindD
+        where
+          declareTyVar = map (PlainTV . mkTypeName)
+      defBang = Bang NoSourceUnpackedness NoSourceStrictness
+      derive className = DerivClause Nothing [ConT className]
+      cons
+        | scope == CLIENT && isEnum tCons = map consE tCons
+        | otherwise = map consR tCons
+      consE ConsD {cName} = NormalC (genName $ tName <> cName) []
+      consR ConsD {cName, cFields} =
+        RecC
+          (genName cName)
+          (map declareField cFields)
+        where
+          declareField FieldDefinition {fieldName, fieldArgs, fieldType} =
+            (mkFieldName fName, defBang, fiType)
+            where
+              fName
+                | namespace = nameSpaceField tName fieldName
+                | otherwise = fieldName
+              fiType = genFieldT fieldArgs
+                where
+                  ---------------------------
+                  genFieldT ArgumentsDefinition {argumentsTypename = Just argsTypename} =
+                    AppT
+                      (AppT arrowType argType)
+                      (AppT m' result)
+                    where
+                      argType = ConT $ mkTypeName argsTypename
+                      arrowType = ConT ''Arrow
+                  genFieldT _
+                    | (isOutputObject <$> kindD) == Just True = AppT m' result
+                    | otherwise = result
+                  ------------------------------------------------
+                  result = declareTypeRef (maybe False isSubscription kindD) fieldType
 
 declareOutputType :: ClientTypeDefinition -> Q [Dec]
 declareOutputType typeD = pure [declareType False Nothing [''Show] typeD]
