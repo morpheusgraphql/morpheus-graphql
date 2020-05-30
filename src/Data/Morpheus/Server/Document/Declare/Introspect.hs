@@ -94,8 +94,8 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
           | otherwise =
             [|
               deriveOutputObject
-                $(proxy)
                 $(buildFields cFields)
+                $(proxy)
                 $(typeUpdates)
               |]
         -------------------------------------------------------------
