@@ -77,9 +77,9 @@ fetchUsers = fetch usersApi userArgs
     userArgs :: Args GetUser
     userArgs =
       GetUserArgs
-        { getUserArgsCoordinates =
+        { coordinates =
             Coordinates
-              { coordinatesLongitude = [],
-                coordinatesLatitude = Euro 1 25
+              { longitude = [],
+                latitude = Euro 1 25
               }
         }

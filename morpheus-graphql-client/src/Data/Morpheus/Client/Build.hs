@@ -43,7 +43,6 @@ import Data.Morpheus.Internal.TH
     mkTypeName,
     nameConType,
     nameConType,
-    nameSpaceField,
     nameSpaceType,
     tyConArgs,
   )
@@ -51,8 +50,7 @@ import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
-    ConsD (..),
+  ( ConsD (..),
     FieldDefinition (..),
     GQLQuery (..),
     Schema,
@@ -97,19 +95,12 @@ defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : sub
       | clientKind == KindScalar = deriveScalarJSON clientType
       | otherwise = declareInputType clientType
 
-mkTHTypeName :: TypeNameTH -> Name
-mkTHTypeName TypeNameTH {namespace, typename} =
-  mkTypeName $
-    nameSpaceType namespace typename
-
 declareType ::
-  Bool ->
   Maybe TypeKind ->
   [Name] ->
   ClientTypeDefinition ->
   Dec
 declareType
-  namespaceOpt
   kindD
   derivingList
   ClientTypeDefinition
@@ -140,11 +131,8 @@ declareType
           (map declareField cFields)
         where
           declareField FieldDefinition {fieldName, fieldContent = fieldArgs, fieldType} =
-            (mkFieldName fName, defBang, fiType)
+            (mkFieldName fieldName, defBang, fiType)
             where
-              fName
-                | namespaceOpt = nameSpaceField typename fieldName
-                | otherwise = fieldName
               fiType = genFieldT fieldArgs
                 where
                   ---------------------------
@@ -155,12 +143,12 @@ declareType
                   result = declareTypeRef (maybe False isSubscription kindD) fieldType
 
 declareOutputType :: ClientTypeDefinition -> Q [Dec]
-declareOutputType typeD = pure [declareType False Nothing [''Show] typeD]
+declareOutputType typeD = pure [declareType Nothing [''Show] typeD]
 
 declareInputType :: ClientTypeDefinition -> Q [Dec]
 declareInputType typeD = do
   toJSONDec <- deriveToJSON typeD
-  pure $ declareType True Nothing [''Show] typeD : toJSONDec
+  pure $ declareType Nothing [''Show] typeD : toJSONDec
 
 withToJSON :: (ClientTypeDefinition -> Q [Dec]) -> ClientTypeDefinition -> Q [Dec]
 withToJSON f datatype = do

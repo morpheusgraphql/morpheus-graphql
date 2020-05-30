@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -84,13 +85,13 @@ fetchHero =
   fetch
     mythologyApi
     GetHeroArgs
-      { getHeroArgsGod =
+      { god =
           Just
             Realm
-              { realmOwner = "Zeus",
-                realmAge = Just 10,
-                realmRealm = Nothing,
-                realmProfession = Just ProfessionArtist
+              { owner = "Zeus",
+                age = Just 10,
+                realm = Nothing,
+                profession = Just ProfessionArtist
               },
-        getHeroArgsSomeID = ID "Hercules"
+        someID = ID "Hercules"
       }

@@ -63,6 +63,7 @@ defineByDocumentFile
         }
         user {
           email
+          name
         }
       }
   |]
@@ -73,9 +74,9 @@ fetchUser = flip fetch args
     args :: Args GetUser
     args =
       GetUserArgs
-        { getUserArgsCoordinates =
+        { coordinates =
             Coordinates
-              { coordinatesLongitude = [],
-                coordinatesLatitude = Euro 1 2
+              { longitude = [],
+                latitude = Euro 1 2
               }
         }
