@@ -8,11 +8,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Morpheus.Client.Aeson
-  ( deriveFromJSON,
-    deriveToJSON,
-    takeValueType,
-    deriveScalarJSON,
+module Data.Morpheus.Client.Declare.Aeson
+  ( aesonDeclarations,
   )
 where
 
@@ -50,9 +47,11 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     Message,
+    TypeKind (..),
     TypeName (..),
     isEnum,
     isFieldNullable,
+    isOutputObject,
     msg,
     toFieldName,
   )
@@ -61,6 +60,13 @@ import Data.Text
   ( unpack,
   )
 import Language.Haskell.TH
+
+aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> Q Dec]
+aesonDeclarations KindEnum = [deriveFromJSON, deriveToJSON]
+aesonDeclarations KindScalar = deriveScalarJSON
+aesonDeclarations kind
+  | isOutputObject kind || kind == KindUnion = [deriveFromJSON]
+  | otherwise = [deriveToJSON]
 
 failure :: Message -> Q a
 failure = fail . show
