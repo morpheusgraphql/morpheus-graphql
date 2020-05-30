@@ -40,6 +40,8 @@ import Data.Morpheus.Types.Internal.AST
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
+    IN,
+    OUT,
     TypeContent (..),
     TypeDefinition (..),
     TypeKind (..),
@@ -62,7 +64,7 @@ instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..
   | typeName `elem` ["__DirectiveLocation", "__TypeKind"] = pure []
   | otherwise = pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
-    iHead = instanceHeadT ''Introspect typeName []
+    iHead = instanceHeadMultiT ''Introspect (varT (mkName "cat")) [conT $ mkTypeName typeName]
     defineIntrospect = instanceProxyFunD ('introspect, body)
       where
         body = [|insertType TypeDefinition {typeContent = DataEnum enumType, ..}|]
@@ -79,30 +81,51 @@ deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
       where
         conTypeable name = typeT ''Typeable [name]
     -----------------------------------------------
-    iHead = instanceHeadMultiT ''DeriveTypeContent (conT ''TRUE) [mainTypeName]
+    iHead = instanceHeadMultiT ''DeriveTypeContent (varT (mkName "cat")) [conT ''TRUE, mainTypeName]
     methods = [instanceFunD 'deriveTypeContent ["_proxy1", "_proxy2"] body]
       where
         body
           | tKind == Just KindInputObject || null tKind =
             [|
-              ( DataInputObject
-                  (unsafeFromFields $(buildFields cFields)),
+              deriveInputObject
+                $(buildFields cFields)
                 $(typeUpdates)
-              )
               |]
           | otherwise =
             [|
-              ( DataObject
-                  (interfaceNames $(proxy))
-                  (unsafeFromFields $(buildFields cFields)),
-                interfaceTypes $(proxy)
-                  : $(typeUpdates)
-              )
+              deriveOutputObject
+                $(proxy)
+                $(buildFields cFields)
+                $(typeUpdates)
               |]
         -------------------------------------------------------------
         typeUpdates = buildTypes cFields
         proxy = [|(Proxy :: Proxy $(mainTypeName))|]
 deriveObjectRep _ = pure []
+
+deriveInputObject ::
+  [FieldDefinition IN] ->
+  [TypeUpdater] ->
+  ( TypeContent TRUE IN,
+    [TypeUpdater]
+  )
+deriveInputObject fields typeUpdates =
+  (DataInputObject (unsafeFromFields fields), typeUpdates)
+
+deriveOutputObject ::
+  (GQLType a) =>
+  Proxy a ->
+  [FieldDefinition OUT] ->
+  [TypeUpdater] ->
+  ( TypeContent TRUE OUT,
+    [TypeUpdater]
+  )
+deriveOutputObject proxy fields typeUpdates =
+  ( DataObject
+      (interfaceNames proxy)
+      (unsafeFromFields fields),
+    interfaceTypes proxy : typeUpdates
+  )
 
 interfaceNames :: GQLType a => Proxy a -> [TypeName]
 interfaceNames = map fst . implements

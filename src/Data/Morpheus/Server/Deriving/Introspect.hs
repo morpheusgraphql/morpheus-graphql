@@ -22,6 +22,7 @@ module Data.Morpheus.Server.Deriving.Introspect
   ( TypeUpdater,
     Introspect (..),
     DeriveTypeContent (..),
+    introspectOUT,
     IntroCon,
     updateLib,
     buildType,
@@ -115,8 +116,11 @@ type IntroCon a = (GQLType a, DeriveTypeContent OUT (CUSTOM a) a)
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
 
-introspectOUT :: (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
+introspectOUT :: forall a. (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
 introspectOUT _ = introspect (ProxyRep :: ProxyRep OUT a)
+
+instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect cat a where
+  introspect _ = introspectKind (Context :: Context (KIND a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect (cat :: TypeCategory) a where
@@ -132,9 +136,6 @@ class Introspect (cat :: TypeCategory) a where
     FieldName ->
     FieldDefinition cat
   field _ = buildField (Proxy @a) NoContent
-
-instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect cat a where
-  introspect _ = introspectKind (Context :: Context (KIND a) a)
 
 -- Maybe
 instance Introspect cat a => Introspect cat (Maybe a) where
