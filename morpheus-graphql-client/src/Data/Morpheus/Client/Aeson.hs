@@ -42,11 +42,9 @@ import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
   )
 import Data.Morpheus.Types.GQLScalar
-  ( GQLScalar (..),
-    scalarFromJSON,
+  ( scalarFromJSON,
     scalarToJSON,
   )
-import qualified Data.Morpheus.Types.Internal.AST as M
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
@@ -56,7 +54,6 @@ import Data.Morpheus.Types.Internal.AST
     isEnum,
     isFieldNullable,
     msg,
-    replaceValue,
     toFieldName,
   )
 import Data.Semigroup ((<>))
@@ -68,11 +65,8 @@ import Language.Haskell.TH
 failure :: Message -> Q a
 failure = fail . show
 
-deriveScalarJSON :: ClientTypeDefinition -> Q [Dec]
-deriveScalarJSON typeDef = do
-  from <- deriveScalarFromJSON typeDef
-  to <- deriveScalarToJSON typeDef
-  pure [from, to]
+deriveScalarJSON :: [ClientTypeDefinition -> Q Dec]
+deriveScalarJSON = [deriveScalarFromJSON, deriveScalarToJSON]
 
 deriveScalarFromJSON :: ClientTypeDefinition -> Q Dec
 deriveScalarFromJSON ClientTypeDefinition {clientTypeName} =
@@ -182,7 +176,7 @@ namespaced :: TypeNameTH -> TypeName
 namespaced TypeNameTH {namespace, typename} =
   nameSpaceType namespace typename
 
-defineFromJSON :: TypeNameTH -> (t -> ExpQ) -> t -> DecQ
+defineFromJSON :: TypeNameTH -> (t -> ExpQ) -> t -> Q Dec
 defineFromJSON name parseJ cFields = instanceD (cxt []) iHead [method]
   where
     iHead = instanceHeadT ''FromJSON (namespaced name) []
@@ -228,7 +222,7 @@ aesonToJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
             body = normalB $ litE (nameStringL cName)
 
 -- ToJSON
-deriveToJSON :: ClientTypeDefinition -> Q [Dec]
+deriveToJSON :: ClientTypeDefinition -> Q Dec
 deriveToJSON
   ClientTypeDefinition
     { clientCons = []
@@ -239,7 +233,7 @@ deriveToJSON
     { clientTypeName = TypeNameTH {typename},
       clientCons = [ConsD {cFields}]
     } =
-    pure <$> instanceD (cxt []) appHead methods
+    instanceD (cxt []) appHead methods
     where
       appHead = instanceHeadT ''ToJSON typename []
       ------------------------------------------------------------------
@@ -263,6 +257,6 @@ deriveToJSON
                 (normalB $ aesonToJSONEnumBody clientTypeName clientCons)
                 []
             ]
-       in pure <$> instanceD (cxt []) (instanceHeadT ''ToJSON typename []) methods
+       in instanceD (cxt []) (instanceHeadT ''ToJSON typename []) methods
     | otherwise =
       fail "Input Unions are not yet supported"

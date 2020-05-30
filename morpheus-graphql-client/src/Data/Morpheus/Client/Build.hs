@@ -72,11 +72,11 @@ defineQuery ioSchema (query, src) = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` query) of
     Failure errors -> fail (renderGQLErrors errors)
-    Success {result, warnings} -> gqlWarnings warnings >> defineQueryD src result
+    Success {result, warnings} -> gqlWarnings warnings >> declareClient src result
 
-defineQueryD :: String -> ClientDefinition -> Q [Dec]
-defineQueryD _ ClientDefinition {clientTypes = []} = return []
-defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
+declareClient :: String -> ClientDefinition -> Q [Dec]
+declareClient _ ClientDefinition {clientTypes = []} = return []
+declareClient src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
   do
     rootDeclaration <-
       defineOperationType
@@ -86,14 +86,22 @@ defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : sub
     typeDeclarations <- concat <$> traverse declareT subTypes
     pure (rootDeclaration <> typeDeclarations)
   where
-    declareT clientType@ClientTypeDefinition {clientKind}
-      | isOutputObject clientKind || clientKind == KindUnion =
-        withToJSON
-          declareOutputType
-          clientType
-      | clientKind == KindEnum = withToJSON declareInputType clientType
-      | clientKind == KindScalar = deriveScalarJSON clientType
-      | otherwise = declareInputType clientType
+    declareT clientType@ClientTypeDefinition {clientKind} =
+      apply clientType (typeDeclarations clientKind <> aesonDeclarations clientKind)
+
+apply :: Applicative f => a -> [a -> f b] -> f [b]
+apply a = traverse (\f -> f a)
+
+aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> Q Dec]
+aesonDeclarations KindEnum = [deriveFromJSON, deriveToJSON]
+aesonDeclarations KindScalar = deriveScalarJSON
+aesonDeclarations kind
+  | isOutputObject kind || kind == KindUnion = [deriveFromJSON]
+  | otherwise = [deriveToJSON]
+
+typeDeclarations :: TypeKind -> [ClientTypeDefinition -> Q Dec]
+typeDeclarations KindScalar = []
+typeDeclarations _ = [pure . declareType]
 
 declareType :: ClientTypeDefinition -> Dec
 declareType
@@ -110,9 +118,6 @@ declareType
       (map derive [''Generic, ''Show])
     where
       derive className = DerivClause Nothing [ConT className]
-
-mkConName :: [FieldName] -> TypeName -> Name
-mkConName namespace = mkTypeName . nameSpaceType namespace
 
 declareCons :: TypeNameTH -> [ConsD ANY] -> [Con]
 declareCons TypeNameTH {namespace, typename} clientCons
@@ -132,24 +137,20 @@ declareField FieldDefinition {fieldName, fieldType} =
     declareTypeRef False fieldType
   )
 
-declareOutputType :: ClientTypeDefinition -> Q [Dec]
-declareOutputType typeD = pure [declareType typeD]
-
 declareInputType :: ClientTypeDefinition -> Q [Dec]
 declareInputType typeD = do
   toJSONDec <- deriveToJSON typeD
-  pure $ declareType typeD : toJSONDec
+  pure [declareType typeD, toJSONDec]
 
-withToJSON :: (ClientTypeDefinition -> Q [Dec]) -> ClientTypeDefinition -> Q [Dec]
-withToJSON f datatype = do
+declareOutputType :: ClientTypeDefinition -> Q [Dec]
+declareOutputType datatype = do
   toJson <- deriveFromJSON datatype
-  dec <- f datatype
-  pure (toJson : dec)
+  pure [toJson, declareType datatype]
 
 queryArgumentType :: Maybe ClientTypeDefinition -> (Type, Q [Dec])
 queryArgumentType Nothing = (nameConType "()", pure [])
-queryArgumentType (Just rootType@ClientTypeDefinition {clientTypeName}) =
-  (nameConType (typename clientTypeName), declareInputType rootType)
+queryArgumentType (Just client@ClientTypeDefinition {clientTypeName}) =
+  (nameConType (typename clientTypeName), declareInputType client)
 
 defineOperationType :: (Type, Q [Dec]) -> String -> ClientTypeDefinition -> Q [Dec]
 defineOperationType
@@ -159,7 +160,7 @@ defineOperationType
     { clientTypeName = TypeNameTH {typename}
     } =
     do
-      rootType <- withToJSON declareOutputType clientType
+      rootType <- declareOutputType clientType
       typeClassFetch <- deriveFetch argType typename query
       argsT <- argumentTypes
       pure $ rootType <> typeClassFetch <> argsT
@@ -171,3 +172,6 @@ validateWith schema rawRequest@GQLQuery {operation} = do
     schema
     (O.operationArguments operation)
     validOperation
+
+mkConName :: [FieldName] -> TypeName -> Name
+mkConName namespace = mkTypeName . nameSpaceType namespace
