@@ -25,6 +25,9 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
   )
+import Data.Morpheus.Client.Internal.Types
+  ( ClientTypeDefinition (..),
+  )
 import Data.Morpheus.Error
   ( deprecatedField,
     globalErrorMessage,
@@ -45,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TRUE,
     TypeContent (..),
-    TypeD,
     TypeDefinition (..),
     TypeName,
     VALID,
@@ -88,10 +90,10 @@ customScalarTypes typeName
   | not (isSystemTypeName typeName) = [typeName]
   | otherwise = []
 
-leafType :: TypeDefinition a -> Converter ([TypeD cat], [TypeName])
+leafType :: TypeDefinition a -> Converter ([ClientTypeDefinition], [TypeName])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
-    fromKind :: TypeContent TRUE a -> Converter ([TypeD cat], [TypeName])
+    fromKind :: TypeContent TRUE a -> Converter ([ClientTypeDefinition], [TypeName])
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], customScalarTypes typeName)
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"

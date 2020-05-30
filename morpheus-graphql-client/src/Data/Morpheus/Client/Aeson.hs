@@ -23,6 +23,7 @@ import Data.Aeson.Types
 import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
+import Data.Morpheus.Client.Internal.Types (ClientTypeDefinition (..))
 import Data.Morpheus.Internal.TH
   ( destructRecord,
     instanceFunD,
@@ -55,7 +56,6 @@ import Data.Morpheus.Types.Internal.AST
     replaceValue,
     toFieldName,
   )
-import Data.Morpheus.Types.Internal.AST.TH (ClientTypeDefinition (..))
 import Data.Semigroup ((<>))
 import Data.Text
   ( unpack,
