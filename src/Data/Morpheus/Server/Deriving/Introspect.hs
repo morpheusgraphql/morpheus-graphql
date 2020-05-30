@@ -115,6 +115,9 @@ type IntroCon a = (GQLType a, DeriveTypeContent OUT (CUSTOM a) a)
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
 
+introspectOUT :: (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
+introspectOUT _ = introspect (ProxyRep :: ProxyRep OUT a)
+
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect (cat :: TypeCategory) a where
   introspect :: proxy cat a -> TypeUpdater
@@ -216,7 +219,7 @@ instance (GQL_TYPE a, DeriveTypeContent OUT (CUSTOM a) a) => IntrospectKind OUTP
   introspectKind _ = derivingData (Proxy @a) OutputType
 
 instance (GQL_TYPE a, DeriveTypeContent OUT (CUSTOM a) a) => IntrospectKind INTERFACE a where
-  introspectKind _ = updateLib (buildType (DataInterface fields)) types (Proxy @a)
+  introspectKind _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
       (fields, types) =
         introspectObjectFields
@@ -315,6 +318,14 @@ updateLib ::
   Proxy a ->
   TypeUpdater
 updateLib f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
+
+updateLibOUT ::
+  GQLType a =>
+  (Proxy a -> TypeDefinition OUT) ->
+  [TypeUpdater] ->
+  Proxy a ->
+  TypeUpdater
+updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
