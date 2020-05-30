@@ -63,8 +63,7 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    ArgumentsDefinition (..),
+  ( ArgumentsDefinition (..),
     DataFingerprint (..),
     DataUnion,
     FALSE,
@@ -88,11 +87,7 @@ import Data.Morpheus.Types.Internal.AST
     defineType,
     fieldsToArguments,
     mkField,
-    mockFieldDefinition,
-    mockFieldsDefinition,
     msg,
-    toAny,
-    toAny,
     toListField,
     toNullableField,
     unsafeFromFields,
@@ -426,7 +421,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
 
 buildObject :: ([TypeName], [TypeUpdater]) -> TypeScope cat -> [FieldRep cat] -> (TypeContent TRUE cat, [TypeUpdater])
 buildObject (interfaces, interfaceTypes) scope consFields =
-  ( wrapWith scope (mockFieldsDefinition fields),
+  ( wrapWith scope fields,
     types <> interfaceTypes
   )
   where
@@ -465,7 +460,6 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
       typeDirectives = empty,
       typeContent =
         wrapObject
-          $ mockFieldsDefinition
           $ unsafeFromFields
           $ map fieldData consFields
     }
