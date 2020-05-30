@@ -44,6 +44,7 @@ import qualified Data.Morpheus.Types.Internal.AST as O
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
+    ConsD (..),
     FieldDefinition (..),
     GQLQuery (..),
     Schema,
@@ -56,6 +57,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
   )
 import Data.Semigroup ((<>))
+import GHC.Generics (Generic)
 import Language.Haskell.TH
 
 defineQuery :: IO (Eventless Schema) -> (GQLQuery, String) -> Q [Dec]
@@ -96,7 +98,10 @@ declareType
   namespace
   kindD
   derivingList
-  ClientTypeDefinition {tName, tCons, tNamespace} =
+  ClientTypeDefinition
+    { clientTypeName,
+      clientCons
+    } =
     DataD [] (genName tName) tVars Nothing cons $
       map derive (''Generic : derivingList)
     where
@@ -115,7 +120,7 @@ declareType
           (genName cName)
           (map declareField cFields)
         where
-          declareField FieldDefinition {fieldName, fieldArgs, fieldType} =
+          declareField FieldDefinition {fieldName, fieldContent = fieldArgs, fieldType} =
             (mkFieldName fName, defBang, fiType)
             where
               fName
@@ -124,13 +129,6 @@ declareType
               fiType = genFieldT fieldArgs
                 where
                   ---------------------------
-                  genFieldT ArgumentsDefinition {argumentsTypename = Just argsTypename} =
-                    AppT
-                      (AppT arrowType argType)
-                      (AppT m' result)
-                    where
-                      argType = ConT $ mkTypeName argsTypename
-                      arrowType = ConT ''Arrow
                   genFieldT _
                     | (isOutputObject <$> kindD) == Just True = AppT m' result
                     | otherwise = result
