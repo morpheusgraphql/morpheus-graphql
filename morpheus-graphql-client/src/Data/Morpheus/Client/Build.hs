@@ -36,8 +36,15 @@ import Data.Morpheus.Error
     renderGQLErrors,
   )
 import Data.Morpheus.Internal.TH
-  ( nameConType,
+  ( declareTypeRef,
+    m',
+    mkFieldName,
+    mkTypeName,
     nameConType,
+    nameConType,
+    nameSpaceField,
+    nameSpaceType,
+    tyConArgs,
   )
 import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
@@ -51,6 +58,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     VALIDATION_MODE (..),
     isOutputObject,
+    isSubscription,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -88,6 +96,11 @@ defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : sub
       | clientKind == KindScalar = deriveScalarJSON clientType
       | otherwise = declareInputType clientType
 
+mkTHTypeName :: TypeNameTH -> Name
+mkTHTypeName TypeNameTH {namespace, typename} =
+  mkTypeName $
+    nameSpaceType namespace typename
+
 declareType ::
   Bool ->
   Maybe TypeKind ->
@@ -95,26 +108,24 @@ declareType ::
   ClientTypeDefinition ->
   Dec
 declareType
-  namespace
+  namespaceOpt
   kindD
   derivingList
   ClientTypeDefinition
-    { clientTypeName,
+    { clientTypeName = TypeNameTH {namespace, typename},
       clientCons
     } =
-    DataD [] (genName tName) tVars Nothing cons $
+    DataD [] (genName typename) tVars Nothing cons $
       map derive (''Generic : derivingList)
     where
-      genName = mkTypeName . nameSpaceType tNamespace
+      genName = mkTypeName . nameSpaceType namespace
       tVars = maybe [] (declareTyVar . tyConArgs) kindD
         where
           declareTyVar = map (PlainTV . mkTypeName)
       defBang = Bang NoSourceUnpackedness NoSourceStrictness
       derive className = DerivClause Nothing [ConT className]
-      cons
-        | scope == CLIENT && isEnum tCons = map consE tCons
-        | otherwise = map consR tCons
-      consE ConsD {cName} = NormalC (genName $ tName <> cName) []
+      cons = map consE clientCons
+      consE ConsD {cName} = NormalC (genName $ typename <> cName) []
       consR ConsD {cName, cFields} =
         RecC
           (genName cName)
@@ -124,7 +135,7 @@ declareType
             (mkFieldName fName, defBang, fiType)
             where
               fName
-                | namespace = nameSpaceField tName fieldName
+                | namespaceOpt = nameSpaceField typename fieldName
                 | otherwise = fieldName
               fiType = genFieldT fieldArgs
                 where

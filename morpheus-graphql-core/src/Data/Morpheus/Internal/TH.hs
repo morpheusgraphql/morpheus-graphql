@@ -34,6 +34,10 @@ module Data.Morpheus.Internal.TH
     mkTypeName,
     mkFieldName,
     declareTypeRef,
+    nameSpaceField,
+    nameSpaceType,
+    m_,
+    m',
   )
 where
 
