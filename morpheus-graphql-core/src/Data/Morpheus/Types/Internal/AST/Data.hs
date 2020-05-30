@@ -72,7 +72,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     DirectiveDefinition (..),
     Directives,
     fieldsToArguments,
-    mockFieldDefinition,
     FieldContent (..),
     fieldContentArgs,
     mkField,
@@ -620,13 +619,6 @@ instance RenderGQL (FieldsDefinition OUT) where
 
 instance RenderGQL (FieldsDefinition IN) where
   render = renderObject render . ignoreHidden . elems
-
-mockFieldDefinition :: FieldDefinition a -> FieldDefinition b
-mockFieldDefinition FieldDefinition {fieldContent = c, ..} =
-  FieldDefinition {fieldContent = mockFieldContent c, ..}
-
-mockFieldContent :: FieldContent TRUE a -> FieldContent TRUE b
-mockFieldContent _ = NoContent
 
 fieldVisibility :: FieldDefinition cat -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields

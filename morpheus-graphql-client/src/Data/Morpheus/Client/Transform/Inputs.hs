@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -47,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationName,
     mkConsEnum,
-    mockFieldDefinition,
     removeDuplicates,
     toAny,
   )
@@ -169,6 +169,15 @@ mkInputType typename clientKind clientCons =
     }
 
 toFieldD :: FieldDefinition cat -> Converter (FieldDefinition IN)
-toFieldD field@FieldDefinition {fieldType} = do
-  typeConName <- typeFrom [] <$> getType (typeConName fieldType)
-  pure $ mockFieldDefinition $ field {fieldType = fieldType {typeConName}}
+toFieldD
+  FieldDefinition
+    { fieldType,
+      ..
+    } = do
+    typeConName <- typeFrom [] <$> getType (typeConName fieldType)
+    pure
+      FieldDefinition
+        { fieldType = fieldType {typeConName},
+          fieldContent = NoContent,
+          ..
+        }

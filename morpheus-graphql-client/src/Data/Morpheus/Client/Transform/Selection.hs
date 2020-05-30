@@ -35,7 +35,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
-    IN,
     Operation (..),
     RAW,
     Ref (..),
@@ -53,7 +52,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationDataType,
     getOperationName,
-    mockFieldDefinition,
     msg,
     toAny,
     toFieldName,
@@ -141,16 +139,13 @@ genConsD path cName datatype selSet = do
             sel
         (subTypes, requests) <- subTypesBySelection fieldPath fieldDataType sel
         pure
-          ( mockFieldDefinition
-              ( FieldDefinition
-                  { fieldName,
-                    fieldType,
-                    fieldContent = NoContent,
-                    fieldDescription = Nothing,
-                    fieldDirectives = empty
-                  } ::
-                  FieldDefinition IN
-              ),
+          ( FieldDefinition
+              { fieldName,
+                fieldType,
+                fieldContent = NoContent,
+                fieldDescription = Nothing,
+                fieldDirectives = empty
+              },
             subTypes,
             requests
           )
