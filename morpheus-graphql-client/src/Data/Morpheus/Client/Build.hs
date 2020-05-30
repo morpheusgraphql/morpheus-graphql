@@ -48,11 +48,14 @@ import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ConsD (..),
+  ( ANY,
+    ConsD (..),
     FieldDefinition (..),
+    FieldName,
     GQLQuery (..),
     Schema,
     TypeKind (..),
+    TypeName,
     VALIDATION_MODE (..),
     isOutputObject,
   )
@@ -95,48 +98,47 @@ defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : sub
 declareType :: ClientTypeDefinition -> Dec
 declareType
   ClientTypeDefinition
-    { clientTypeName = TypeNameTH {namespace, typename},
+    { clientTypeName = thName@TypeNameTH {namespace, typename},
       clientCons
     } =
     DataD
       []
-      (genName typename)
+      (mkConName namespace typename)
       []
       Nothing
-      cons
+      (declareCons thName clientCons)
       (map derive [''Generic, ''Show])
     where
-      genName = mkTypeName . nameSpaceType namespace
-      defBang = Bang NoSourceUnpackedness NoSourceStrictness
       derive className = DerivClause Nothing [ConT className]
-      cons
-        | isEnum clientCons = map consE clientCons
-        | otherwise = map consR clientCons
-      consE ConsD {cName} = NormalC (genName $ typename <> cName) []
-      consR ConsD {cName, cFields} =
-        RecC
-          (genName cName)
-          (map declareField cFields)
-        where
-          declareField FieldDefinition {fieldName, fieldType} =
-            ( mkFieldName fieldName,
-              defBang,
-              declareTypeRef False fieldType
-            )
 
-class RenderDec a where
-  renderDec :: a -> Dec
+mkConName :: [FieldName] -> TypeName -> Name
+mkConName namespace = mkTypeName . nameSpaceType namespace
 
-instance RenderDec ClientTypeDefinition where
-  renderDec = declareType
+declareCons :: TypeNameTH -> [ConsD ANY] -> [Con]
+declareCons TypeNameTH {namespace, typename} clientCons
+  | isEnum clientCons = map consE clientCons
+  | otherwise = map consR clientCons
+  where
+    consE ConsD {cName} = NormalC (mkConName namespace (typename <> cName)) []
+    consR ConsD {cName, cFields} =
+      RecC
+        (mkConName namespace cName)
+        (map declareField cFields)
+
+declareField :: FieldDefinition ANY -> (Name, Bang, Type)
+declareField FieldDefinition {fieldName, fieldType} =
+  ( mkFieldName fieldName,
+    Bang NoSourceUnpackedness NoSourceStrictness,
+    declareTypeRef False fieldType
+  )
 
 declareOutputType :: ClientTypeDefinition -> Q [Dec]
-declareOutputType typeD = pure [renderDec typeD]
+declareOutputType typeD = pure [declareType typeD]
 
 declareInputType :: ClientTypeDefinition -> Q [Dec]
 declareInputType typeD = do
   toJSONDec <- deriveToJSON typeD
-  pure $ renderDec typeD : toJSONDec
+  pure $ declareType typeD : toJSONDec
 
 withToJSON :: (ClientTypeDefinition -> Q [Dec]) -> ClientTypeDefinition -> Q [Dec]
 withToJSON f datatype = do
