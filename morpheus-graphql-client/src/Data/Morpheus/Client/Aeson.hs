@@ -48,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     Message,
-    TypeD (..),
     TypeName (..),
     isEnum,
     isFieldNullable,
@@ -56,6 +55,7 @@ import Data.Morpheus.Types.Internal.AST
     replaceValue,
     toFieldName,
   )
+import Data.Morpheus.Types.Internal.AST.TH (ClientTypeDefinition (..))
 import Data.Semigroup ((<>))
 import Data.Text
   ( unpack,
@@ -65,37 +65,37 @@ import Language.Haskell.TH
 failure :: Message -> Q a
 failure = fail . show
 
-deriveScalarJSON :: TypeD cat -> Q [Dec]
+deriveScalarJSON :: ClientTypeDefinition -> Q [Dec]
 deriveScalarJSON typeDef = do
   from <- deriveScalarFromJSON typeDef
   to <- deriveScalarToJSON typeDef
   pure [from, to]
 
-deriveScalarFromJSON :: TypeD cat -> Q Dec
-deriveScalarFromJSON TypeD {tName} =
+deriveScalarFromJSON :: ClientTypeDefinition -> Q Dec
+deriveScalarFromJSON ClientTypeDefinition {clientTypeName} =
   defineFromJSON
-    tName
+    clientTypeName
     (const $ varE 'scalarFromJSON)
-    tName
+    clientTypeName
 
-deriveScalarToJSON :: TypeD cat -> Q Dec
-deriveScalarToJSON TypeD {tName} =
+deriveScalarToJSON :: ClientTypeDefinition -> Q Dec
+deriveScalarToJSON ClientTypeDefinition {clientTypeName} =
   let methods = [funD 'toJSON clauses]
       clauses = [clause [] (normalB $ varE 'scalarToJSON) []]
-   in instanceD (cxt []) (instanceHeadT ''ToJSON tName []) methods
+   in instanceD (cxt []) (instanceHeadT ''ToJSON clientTypeName []) methods
 
 -- FromJSON
-deriveFromJSON :: TypeD cat -> Q Dec
-deriveFromJSON TypeD {tCons = [], tName} =
+deriveFromJSON :: ClientTypeDefinition -> Q Dec
+deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
   failure $ "Type " <> msg tName <> " Should Have at least one Constructor"
-deriveFromJSON TypeD {tName, tNamespace, tCons = [cons]} =
+deriveFromJSON ClientTypeDefinition {clientTypeName, clientCons = [cons]} =
   defineFromJSON
     name
     (aesonObject tNamespace)
     cons
   where
     name = nameSpaceType tNamespace tName
-deriveFromJSON typeD@TypeD {tName, tCons, tNamespace}
+deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
   | isEnum tCons = defineFromJSON name (aesonFromJSONEnumBody tName) tCons
   | otherwise = defineFromJSON name (aesonUnionObject tNamespace) typeD
   where
@@ -138,11 +138,11 @@ aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
             applyFields (x : xs) =
               uInfixE (defField x) (varE '(<*>)) (applyFields xs)
 
-aesonUnionObject :: [FieldName] -> TypeD cat -> ExpQ
-aesonUnionObject namespace TypeD {tCons} =
+aesonUnionObject :: [FieldName] -> ClientTypeDefinition -> ExpQ
+aesonUnionObject namespace ClientTypeDefinition {clientCons} =
   appE
     (varE 'takeValueType)
-    (lamCaseE (map buildMatch tCons <> [elseCaseEXP]))
+    (lamCaseE (map buildMatch clientCons <> [elseCaseEXP]))
   where
     buildMatch cons@ConsD {cName} = match objectPattern body []
       where
@@ -203,25 +203,25 @@ aesonToJSONEnumBody tName cons = lamCaseE handlers
             body = normalB $ litE (nameStringL cName)
 
 -- ToJSON
-deriveToJSON :: TypeD cat -> Q [Dec]
-deriveToJSON TypeD {tCons = []} =
+deriveToJSON :: ClientTypeDefinition -> Q [Dec]
+deriveToJSON ClientTypeDefinition {clientCons = []} =
   fail "Type Should Have at least one Constructor"
-deriveToJSON TypeD {tName, tCons = [ConsD {cFields}]} =
+deriveToJSON ClientTypeDefinition {clientTypeName, clientCons = [ConsD {cFields}]} =
   pure <$> instanceD (cxt []) appHead methods
   where
-    appHead = instanceHeadT ''ToJSON tName []
+    appHead = instanceHeadT ''ToJSON clientTypeName []
     ------------------------------------------------------------------
     -- defines: toJSON (User field1 field2 ...)= object ["name" .= name, "age" .= age, ...]
     methods = [funD 'toJSON [clause argsE (normalB body) []]]
       where
-        argsE = [destructRecord tName varNames]
+        argsE = [destructRecord clientTypeName varNames]
         body = appE (varE 'object) (listE $ map decodeVar varNames)
         decodeVar name = [|name .= $(varName)|] where varName = nameVarE name
         varNames = map fieldName cFields
-deriveToJSON TypeD {tName, tCons}
-  | isEnum tCons =
+deriveToJSON ClientTypeDefinition {clientTypeName, clientCons}
+  | isEnum clientCons =
     let methods = [funD 'toJSON clauses]
-        clauses = [clause [] (normalB $ aesonToJSONEnumBody tName tCons) []]
-     in pure <$> instanceD (cxt []) (instanceHeadT ''ToJSON tName []) methods
+        clauses = [clause [] (normalB $ aesonToJSONEnumBody clientTypeName tCons) []]
+     in pure <$> instanceD (cxt []) (instanceHeadT ''ToJSON clientTypeName []) methods
   | otherwise =
     fail "Input Unions are not yet supported"

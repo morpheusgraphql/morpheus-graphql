@@ -50,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     mkConsEnum,
     toFieldName,
   )
+import Data.Morpheus.Types.Internal.AST.TH (ClientTypeDefinition (..))
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
 

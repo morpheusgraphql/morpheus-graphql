@@ -7,6 +7,7 @@ module Data.Morpheus.Types.Internal.AST.TH
     mkCons,
     isEnum,
     mkConsEnum,
+    ClientTypeDefinition (..),
   )
 where
 
@@ -40,9 +41,9 @@ toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConNam
 
 data ClientTypeDefinition = ClientTypeDefinition
   { clientTypeName :: NameTH,
+    clientCons :: [ConsD IN],
     clientArgTypes :: [ClientTypeDefinition],
-    clientOriginalType :: TypeDefinition ANY,
-    clientCons :: [ConsD IN]
+    clientOriginalType :: TypeDefinition ANY
   }
   deriving (Show)
 
