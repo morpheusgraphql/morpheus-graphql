@@ -106,8 +106,7 @@ genRecordType path tName dataType recordSelSet = do
     ( ClientTypeDefinition
         { clientTypeName = TypeNameTH path tName,
           clientCons = [con],
-          clientKind = KindObject Nothing,
-          clientArgTypes = []
+          clientKind = KindObject Nothing
         }
         : subTypes,
       requests
@@ -175,8 +174,7 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection unio
       ( ClientTypeDefinition
           { clientTypeName = TypeNameTH path (typeFrom [] dType),
             clientCons,
-            clientKind = KindUnion,
-            clientArgTypes = []
+            clientKind = KindUnion
           }
           : concat subTypes,
         concat requests

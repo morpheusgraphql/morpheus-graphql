@@ -60,19 +60,18 @@ renderArguments ::
   VariableDefinitions RAW ->
   TypeName ->
   Maybe ClientTypeDefinition
-renderArguments variables argsName
+renderArguments variables cName
   | null variables = Nothing
   | otherwise = Just rootArgumentsType
   where
     rootArgumentsType :: ClientTypeDefinition
     rootArgumentsType =
       ClientTypeDefinition
-        { clientTypeName = TypeNameTH [] argsName,
-          clientArgTypes = [],
+        { clientTypeName = TypeNameTH [] cName,
           clientKind = KindInputObject,
           clientCons =
             [ ConsD
-                { cName = argsName,
+                { cName,
                   cFields = map fieldD (elems variables)
                 }
             ]
@@ -164,8 +163,7 @@ mkInputType typename clientKind clientCons =
   ClientTypeDefinition
     { clientTypeName = TypeNameTH [] typename,
       clientKind,
-      clientCons,
-      clientArgTypes = []
+      clientCons
     }
 
 toClientFieldDefinition :: FieldDefinition IN -> Converter (FieldDefinition IN)

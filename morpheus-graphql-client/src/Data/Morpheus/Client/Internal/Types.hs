@@ -17,7 +17,7 @@ import Data.Morpheus.Types.Internal.AST
 data ClientTypeDefinition = ClientTypeDefinition
   { clientTypeName :: TypeNameTH,
     clientCons :: [ConsD ANY],
-    clientArgTypes :: [ClientTypeDefinition],
+    --  clientArgTypes :: [ClientTypeDefinition],
     clientKind :: TypeKind
     --clientOriginalType :: TypeDefinition ANY
   }
