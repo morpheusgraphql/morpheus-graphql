@@ -30,7 +30,6 @@ import Data.Morpheus.Types.Internal.AST.Data
     FieldsDefinition,
     IN,
     TypeDefinition,
-    mockFieldDefinition,
   )
 
 toHSFieldDefinition :: FieldDefinition cat -> FieldDefinition cat

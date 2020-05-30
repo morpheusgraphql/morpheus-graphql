@@ -48,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     lookupWith,
     mkCons,
     mkConsEnum,
-    mockFieldsDefinition,
     toFieldName,
   )
 import Data.Semigroup ((<>))

@@ -149,7 +149,6 @@ module Data.Morpheus.Types.Internal.AST
     fieldContentArgs,
     mkField,
     mockFieldDefinition,
-    mockFieldsDefinition,
   )
 where
 

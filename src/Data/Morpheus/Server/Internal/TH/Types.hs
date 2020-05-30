@@ -31,7 +31,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     VALID,
     hsTypeName,
-    mockFieldDefinition,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
