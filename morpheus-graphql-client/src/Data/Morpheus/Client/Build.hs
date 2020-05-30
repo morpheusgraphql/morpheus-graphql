@@ -38,13 +38,11 @@ import Data.Morpheus.Error
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     isEnum,
-    m',
     mkFieldName,
     mkTypeName,
     nameConType,
     nameConType,
     nameSpaceType,
-    tyConArgs,
   )
 import qualified Data.Morpheus.Types.Internal.AST as O
   ( Operation (..),
@@ -57,7 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     VALIDATION_MODE (..),
     isOutputObject,
-    isSubscription,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -95,14 +92,8 @@ defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : sub
       | clientKind == KindScalar = deriveScalarJSON clientType
       | otherwise = declareInputType clientType
 
-declareType ::
-  Maybe TypeKind ->
-  [Name] ->
-  ClientTypeDefinition ->
-  Dec
+declareType :: ClientTypeDefinition -> Dec
 declareType
-  kindD
-  derivingList
   ClientTypeDefinition
     { clientTypeName = TypeNameTH {namespace, typename},
       clientCons
@@ -110,15 +101,12 @@ declareType
     DataD
       []
       (genName typename)
-      tVars
+      []
       Nothing
       cons
-      (map derive (''Generic : derivingList))
+      (map derive [''Generic, ''Show])
     where
       genName = mkTypeName . nameSpaceType namespace
-      tVars = maybe [] (declareTyVar . tyConArgs) kindD
-        where
-          declareTyVar = map (PlainTV . mkTypeName)
       defBang = Bang NoSourceUnpackedness NoSourceStrictness
       derive className = DerivClause Nothing [ConT className]
       cons
@@ -130,25 +118,25 @@ declareType
           (genName cName)
           (map declareField cFields)
         where
-          declareField FieldDefinition {fieldName, fieldContent = fieldArgs, fieldType} =
-            (mkFieldName fieldName, defBang, fiType)
-            where
-              fiType = genFieldT fieldArgs
-                where
-                  ---------------------------
-                  genFieldT _
-                    | (isOutputObject <$> kindD) == Just True = AppT m' result
-                    | otherwise = result
-                  ------------------------------------------------
-                  result = declareTypeRef (maybe False isSubscription kindD) fieldType
+          declareField FieldDefinition {fieldName, fieldType} =
+            ( mkFieldName fieldName,
+              defBang,
+              declareTypeRef False fieldType
+            )
+
+class RenderDec a where
+  renderDec :: a -> Dec
+
+instance RenderDec ClientTypeDefinition where
+  renderDec = declareType
 
 declareOutputType :: ClientTypeDefinition -> Q [Dec]
-declareOutputType typeD = pure [declareType Nothing [''Show] typeD]
+declareOutputType typeD = pure [renderDec typeD]
 
 declareInputType :: ClientTypeDefinition -> Q [Dec]
 declareInputType typeD = do
   toJSONDec <- deriveToJSON typeD
-  pure $ declareType Nothing [''Show] typeD : toJSONDec
+  pure $ renderDec typeD : toJSONDec
 
 withToJSON :: (ClientTypeDefinition -> Q [Dec]) -> ClientTypeDefinition -> Q [Dec]
 withToJSON f datatype = do
