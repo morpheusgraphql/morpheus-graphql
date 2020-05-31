@@ -23,8 +23,10 @@ import Data.Morpheus.Types.Internal.AST
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
+    FieldName,
     TRUE,
     TypeKind (..),
+    TypeName,
     isOutput,
     isOutputObject,
     isSubscription,
@@ -38,38 +40,70 @@ declareType _ ServerTypeDefinition {tKind = KindScalar} = []
 declareType namespace ServerTypeDefinition {tName, tCons, tKind, tNamespace} =
   [ DataD
       []
-      (genName tName)
+      (mkNamespace tNamespace tName)
       tVars
       Nothing
       cons
-      [derive (''Generic : derivingList)]
+      (derive tKind)
   ]
+  where
+    tVars = declareTyVar (tyConArgs tKind)
+      where
+        declareTyVar = map (PlainTV . mkTypeName)
+    cons = declareCons namespace tKind (tNamespace, tName) tCons
+
+derive :: TypeKind -> [DerivClause]
+derive tKind = [deriveClasses (''Generic : derivingList)]
   where
     derivingList
       | isOutput tKind = []
       | otherwise = [''Show]
-    genName = mkTypeName . nameSpaceType tNamespace
-    tVars = declareTyVar (tyConArgs tKind)
-      where
-        declareTyVar = map (PlainTV . mkTypeName)
-    defBang = Bang NoSourceUnpackedness NoSourceStrictness
-    derive classNames = DerivClause Nothing (map ConT classNames)
-    cons = map consR tCons
+
+deriveClasses :: [Name] -> DerivClause
+deriveClasses classNames = DerivClause Nothing (map ConT classNames)
+
+mkNamespace :: [FieldName] -> TypeName -> Name
+mkNamespace tNamespace = mkTypeName . nameSpaceType tNamespace
+
+declareCons ::
+  Bool ->
+  TypeKind ->
+  ([FieldName], TypeName) ->
+  [ConsD cat] ->
+  [Con]
+declareCons namespace tKind (tNamespace, tName) = map consR
+  where
     consR ConsD {cName, cFields} =
       RecC
-        (genName cName)
-        (map declareField cFields)
-      where
-        declareField FieldDefinition {fieldName, fieldContent, fieldType} =
-          (mkFieldName fName, defBang, fiType)
-          where
-            fName
-              | namespace = nameSpaceField tName fieldName
-              | otherwise = fieldName
-            fiType = genFieldT result tKind fieldContent
-              where
-                ---------------------------
-                result = declareTypeRef (isSubscription tKind) fieldType
+        (mkNamespace tNamespace cName)
+        (map (declareField namespace tKind tName) cFields)
+
+declareField ::
+  Bool ->
+  TypeKind ->
+  TypeName ->
+  FieldDefinition cat ->
+  (Name, Bang, Type)
+declareField namespace tKind tName field@FieldDefinition {fieldName} =
+  ( fieldTypeName namespace tName fieldName,
+    Bang NoSourceUnpackedness NoSourceStrictness,
+    renderFieldType tKind field
+  )
+
+renderFieldType ::
+  TypeKind ->
+  FieldDefinition cat ->
+  Type
+renderFieldType tKind FieldDefinition {fieldContent, fieldType} =
+  genFieldT
+    (declareTypeRef (isSubscription tKind) fieldType)
+    tKind
+    fieldContent
+
+fieldTypeName :: Bool -> TypeName -> FieldName -> Name
+fieldTypeName namespace tName fieldName
+  | namespace = mkFieldName (nameSpaceField tName fieldName)
+  | otherwise = mkFieldName fieldName
 
 ------------------------------------------------
 genFieldT :: Type -> TypeKind -> FieldContent TRUE cat -> Type
