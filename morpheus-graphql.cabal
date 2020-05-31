@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3f1653044e47efc0bccdb1fb3ae9fdfeaff88114495c1335127d802e93f1a1b0
+-- hash: b8762d27623602c2accafdc47de45134edf49cc1d2d29e1fbf395155c6f66903
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -108,6 +108,8 @@ data-files:
     test/Feature/Holistic/selection/subscription/singleTopLevelField/fail/query.gql
     test/Feature/Holistic/selection/subscription/singleTopLevelField/failAnonymous/query.gql
     test/Feature/Holistic/selection/unknownField/query.gql
+    test/Feature/Input/DefaultValue/resolveDefaultValue/query.gql
+    test/Feature/Input/DefaultValue/schema.gql
     test/Feature/Input/Enum/decode2Con/query.gql
     test/Feature/Input/Enum/decode3Con/query.gql
     test/Feature/Input/Enum/decodeInvalidValue/query.gql
@@ -265,6 +267,8 @@ data-files:
     test/Feature/Holistic/selection/subscription/singleTopLevelField/fail/response.json
     test/Feature/Holistic/selection/subscription/singleTopLevelField/failAnonymous/response.json
     test/Feature/Holistic/selection/unknownField/response.json
+    test/Feature/Input/DefaultValue/cases.json
+    test/Feature/Input/DefaultValue/resolveDefaultValue/response.json
     test/Feature/Input/Enum/cases.json
     test/Feature/Input/Enum/decode2Con/response.json
     test/Feature/Input/Enum/decode3Con/response.json
@@ -421,6 +425,7 @@ test-suite morpheus-test
   main-is: Spec.hs
   other-modules:
       Feature.Holistic.API
+      Feature.Input.DefaultValue.API
       Feature.Input.Enum.API
       Feature.Input.Object.API
       Feature.Input.Scalar.API
