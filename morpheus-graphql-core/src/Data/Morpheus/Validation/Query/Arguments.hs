@@ -11,6 +11,7 @@ where
 import Data.Foldable (traverse_)
 import Data.Morpheus.Internal.Utils
   ( elems,
+    empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -122,7 +123,7 @@ validateFieldArguments
       traverse_ checkUnknown (elems args)
       traverse (validateArgument args) argsDef
     where
-      argsDef = fieldContentArgs fieldContent
+      argsDef = maybe empty fieldContentArgs fieldContent
       -------------------------------------------------
       checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
       checkUnknown = (`selectKnown` fieldDef)

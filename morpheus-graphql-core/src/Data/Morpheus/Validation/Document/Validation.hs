@@ -131,12 +131,12 @@ instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
         fieldContent = args2
       } = (fieldType << fieldType') *> (args1 << args2)
 
-instance TypeEq (FieldContent TRUE OUT) (Interface, FieldName) where
+instance TypeEq (Maybe (FieldContent TRUE OUT)) (Interface, FieldName) where
   f1 << f2 = toARgs f1 << toARgs f2
     where
-      toARgs :: FieldContent TRUE OUT -> ArgumentsDefinition
-      toARgs NoContent = empty
-      toARgs (FieldArgs args) = args
+      toARgs :: Maybe (FieldContent TRUE OUT) -> ArgumentsDefinition
+      toARgs (Just (FieldArgs args)) = args
+      toARgs _ = empty
 
 instance (PartialImplements ctx) => TypeEq TypeRef ctx where
   t1@TypeRef

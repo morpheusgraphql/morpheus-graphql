@@ -60,7 +60,7 @@ variableDefinition = label "VariableDefinition" $ do
   (Ref variableName variablePosition) <- variable
   operator ':'
   variableType <- parseType
-  variableValue <- DefaultValue <$> parseDefaultValue
+  variableValue <- DefaultValue <$> optional parseDefaultValue
   pure Variable {..}
 
 -- Operations : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Operations

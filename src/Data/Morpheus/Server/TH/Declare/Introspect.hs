@@ -146,8 +146,8 @@ introspectField :: TypeQ -> FieldDefinition cat -> [ExpQ]
 introspectField cat FieldDefinition {fieldType, fieldContent} =
   [|introspect $(proxyRepT cat fieldType)|] : inputTypes fieldContent
   where
-    inputTypes :: FieldContent TRUE cat -> [ExpQ]
-    inputTypes (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypeName})
+    inputTypes :: Maybe (FieldContent TRUE cat) -> [ExpQ]
+    inputTypes (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypeName}))
       | argsTypeName /= "()" = [[|deriveCustomInputObjectType (argsTypeName, $(proxyT tAlias))|]]
       where
         tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}

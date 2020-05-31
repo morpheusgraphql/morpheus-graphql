@@ -131,7 +131,7 @@ class Introspect (cat :: TypeCategory) a where
     proxy cat a ->
     FieldName ->
     FieldDefinition cat
-  field _ = buildField (Proxy @a) NoContent
+  field _ = buildField (Proxy @a) Nothing
 
 -- Maybe
 instance Introspect cat a => Introspect cat (Maybe a) where
@@ -166,7 +166,7 @@ instance Introspect cat (MapKind k v Maybe) => Introspect cat (Map k v) where
 -- Resolver : a -> Resolver b
 instance (GQLType b, DeriveTypeContent IN 'False a, Introspect OUT b) => Introspect OUT (a -> m b) where
   isObject _ = False
-  field _ name = fieldObj {fieldContent = FieldArgs fieldArgs}
+  field _ name = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
     where
       fieldObj = field (ProxyRep :: ProxyRep OUT b) name
       fieldArgs :: ArgumentsDefinition
@@ -289,12 +289,18 @@ instance (TypeRep cat (Rep a), Generic a) => DeriveTypeContent cat FALSE a where
           genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
           genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
-buildField :: GQLType a => Proxy a -> FieldContent TRUE cat -> FieldName -> FieldDefinition cat
+buildField ::
+  GQLType a =>
+  Proxy a ->
+  Maybe (FieldContent TRUE cat) ->
+  FieldName ->
+  FieldDefinition cat
 buildField proxy fieldContent fieldName =
   FieldDefinition
     { fieldType = createAlias (__typeName proxy),
       fieldDescription = Nothing,
       fieldDirectives = empty,
+      fieldContent = fieldContent,
       ..
     }
 
