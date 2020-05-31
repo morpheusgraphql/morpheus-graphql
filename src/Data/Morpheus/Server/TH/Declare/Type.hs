@@ -25,7 +25,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     TRUE,
     TypeKind (..),
-    isInput,
     isOutput,
     isOutputObject,
     isSubscription,
