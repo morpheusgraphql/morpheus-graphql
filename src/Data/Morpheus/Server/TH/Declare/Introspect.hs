@@ -59,16 +59,14 @@ import Language.Haskell.TH
 cat_ :: TypeQ
 cat_ = varT (mkName "cat")
 
-instanceIntrospect :: TypeDefinition cat -> Q [Dec]
-instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..}
-  -- FIXME: dirty fix for introspection
-  | typeName `elem` ["__DirectiveLocation", "__TypeKind"] = pure []
-  | otherwise = pure <$> instanceD (cxt []) iHead [defineIntrospect]
+instanceIntrospect :: Maybe (TypeDefinition cat) -> Q [Dec]
+instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnum {}}) =
+  pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     iHead = instanceHeadMultiT ''Introspect cat_ [conT $ mkTypeName typeName]
     defineIntrospect = instanceProxyFunD ('introspect, body)
       where
-        body = [|insertType TypeDefinition {typeContent = DataEnum enumType, ..}|]
+        body = [|insertType typeDef|]
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]

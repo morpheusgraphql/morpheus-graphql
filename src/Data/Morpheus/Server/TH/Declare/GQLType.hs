@@ -55,7 +55,7 @@ introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . mkTypeName
 
 deriveGQLType :: ServerTypeDefinition cat -> Q [Dec]
-deriveGQLType ServerTypeDefinition {tName, tDescription, tKind, typeOriginal} =
+deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
   where
     functions =
@@ -66,7 +66,8 @@ deriveGQLType ServerTypeDefinition {tName, tDescription, tKind, typeOriginal} =
           ('implements, implementsFunc)
         ]
       where
-        implementsFunc = listE $ map introspectInterface (interfacesFrom (Just typeOriginal))
+        tDescription = typeOriginal >>= typeDescription
+        implementsFunc = listE $ map introspectInterface (interfacesFrom typeOriginal)
     --------------------------------
     typeArgs = tyConArgs tKind
     --------------------------------
