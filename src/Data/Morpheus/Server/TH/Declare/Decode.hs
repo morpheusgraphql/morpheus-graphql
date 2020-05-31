@@ -5,7 +5,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Server.Document.Declare.Decode
+module Data.Morpheus.Server.TH.Declare.Decode
   ( deriveDecode,
   )
 where

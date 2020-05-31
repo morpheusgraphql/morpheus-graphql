@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 84d4d094191ff0452e431c8860b5124e32233f0413abe8a8630be4168371d245
+-- hash: 2a79636d3675fcfd87cae4178ae6200ba600c5fd3c6a62b68b182062937bee84
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -378,15 +378,15 @@ library
       Data.Morpheus.Server.Deriving.Introspect
       Data.Morpheus.Server.Deriving.Resolve
       Data.Morpheus.Server.Deriving.Utils
-      Data.Morpheus.Server.Document.Compile
-      Data.Morpheus.Server.Document.Declare
-      Data.Morpheus.Server.Document.Declare.Decode
-      Data.Morpheus.Server.Document.Declare.Encode
-      Data.Morpheus.Server.Document.Declare.GQLType
-      Data.Morpheus.Server.Document.Declare.Introspect
-      Data.Morpheus.Server.Document.Transform
       Data.Morpheus.Server.Internal.TH.Decode
       Data.Morpheus.Server.Internal.TH.Types
+      Data.Morpheus.Server.TH.Compile
+      Data.Morpheus.Server.TH.Declare
+      Data.Morpheus.Server.TH.Declare.Decode
+      Data.Morpheus.Server.TH.Declare.Encode
+      Data.Morpheus.Server.TH.Declare.GQLType
+      Data.Morpheus.Server.TH.Declare.Introspect
+      Data.Morpheus.Server.TH.Transform
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.Types
       Data.Morpheus.Types.Internal.Subscription.Apollo

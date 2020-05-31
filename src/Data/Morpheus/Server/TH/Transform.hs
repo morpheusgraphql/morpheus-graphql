@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Morpheus.Server.Document.Transform
+module Data.Morpheus.Server.TH.Transform
   ( toTHDefinitions,
     TypeDec (..),
   )

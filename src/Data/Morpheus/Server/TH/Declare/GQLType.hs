@@ -5,7 +5,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Server.Document.Declare.GQLType
+module Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
   )
 where

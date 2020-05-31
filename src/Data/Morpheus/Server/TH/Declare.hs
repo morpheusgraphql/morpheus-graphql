@@ -4,31 +4,31 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Morpheus.Server.Document.Declare
+module Data.Morpheus.Server.TH.Declare
   ( declare,
   )
 where
 
 -- MORPHEUS
 
-import Data.Morpheus.Server.Document.Declare.Decode
-  ( deriveDecode,
-  )
-import Data.Morpheus.Server.Document.Declare.Encode
-  ( deriveEncode,
-  )
-import Data.Morpheus.Server.Document.Declare.GQLType
-  ( deriveGQLType,
-  )
-import Data.Morpheus.Server.Document.Declare.Introspect
-  ( deriveObjectRep,
-    instanceIntrospect,
-  )
-import Data.Morpheus.Server.Document.Transform
 import Data.Morpheus.Server.Internal.TH.Types
   ( TypeD (..),
     declareType,
   )
+import Data.Morpheus.Server.TH.Declare.Decode
+  ( deriveDecode,
+  )
+import Data.Morpheus.Server.TH.Declare.Encode
+  ( deriveEncode,
+  )
+import Data.Morpheus.Server.TH.Declare.GQLType
+  ( deriveGQLType,
+  )
+import Data.Morpheus.Server.TH.Declare.Introspect
+  ( deriveObjectRep,
+    instanceIntrospect,
+  )
+import Data.Morpheus.Server.TH.Transform
 import Data.Morpheus.Types.Internal.AST
   ( IN,
     OUT,

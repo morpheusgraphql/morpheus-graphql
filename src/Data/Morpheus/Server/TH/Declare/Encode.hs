@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Server.Document.Declare.Encode
+module Data.Morpheus.Server.TH.Declare.Encode
   ( deriveEncode,
   )
 where
