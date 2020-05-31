@@ -3,7 +3,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Server.TH.Declare.Type (declareType) where
+module Data.Morpheus.Server.TH.Declare.Type
+  ( declareType,
+  )
+where
 
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
@@ -21,7 +24,9 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     TRUE,
-    TypeKind,
+    TypeKind (..),
+    isInput,
+    isOutput,
     isOutputObject,
     isSubscription,
   )
@@ -29,17 +34,27 @@ import Data.Semigroup ((<>))
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
-declareType :: Bool -> Maybe TypeKind -> [Name] -> ServerTypeDefinition cat -> Dec
-declareType namespace kindD derivingList ServerTypeDefinition {tName, tCons, tNamespace} =
-  DataD [] (genName tName) tVars Nothing cons $
-    map derive (''Generic : derivingList)
+declareType :: Bool -> ServerTypeDefinition cat -> [Dec]
+declareType _ ServerTypeDefinition {tKind = KindScalar} = []
+declareType namespace ServerTypeDefinition {tName, tCons, tKind, tNamespace} =
+  [ DataD
+      []
+      (genName tName)
+      tVars
+      Nothing
+      cons
+      [derive (''Generic : derivingList)]
+  ]
   where
+    derivingList
+      | isOutput tKind = []
+      | otherwise = [''Show]
     genName = mkTypeName . nameSpaceType tNamespace
-    tVars = maybe [] (declareTyVar . tyConArgs) kindD
+    tVars = declareTyVar (tyConArgs tKind)
       where
         declareTyVar = map (PlainTV . mkTypeName)
     defBang = Bang NoSourceUnpackedness NoSourceStrictness
-    derive className = DerivClause Nothing [ConT className]
+    derive classNames = DerivClause Nothing (map ConT classNames)
     cons = map consR tCons
     consR ConsD {cName, cFields} =
       RecC
@@ -52,13 +67,13 @@ declareType namespace kindD derivingList ServerTypeDefinition {tName, tCons, tNa
             fName
               | namespace = nameSpaceField tName fieldName
               | otherwise = fieldName
-            fiType = genFieldT result kindD fieldContent
+            fiType = genFieldT result tKind fieldContent
               where
                 ---------------------------
-                result = declareTypeRef (maybe False isSubscription kindD) fieldType
+                result = declareTypeRef (isSubscription tKind) fieldType
 
 ------------------------------------------------
-genFieldT :: Type -> Maybe TypeKind -> FieldContent TRUE cat -> Type
+genFieldT :: Type -> TypeKind -> FieldContent TRUE cat -> Type
 genFieldT result _ (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}) =
   AppT
     (AppT arrowType argType)
@@ -67,7 +82,7 @@ genFieldT result _ (FieldArgs ArgumentsDefinition {argumentsTypename = Just args
     argType = ConT $ mkTypeName argsTypename
     arrowType = ConT ''Arrow
 genFieldT result kind _
-  | (isOutputObject <$> kind) == Just True = AppT m' result
+  | isOutputObject kind = AppT m' result
   | otherwise = result
 
 type Arrow = (->)

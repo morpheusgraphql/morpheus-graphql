@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Server.TH.Declare
@@ -33,7 +32,6 @@ import Data.Morpheus.Server.TH.Declare.Type
 import Data.Morpheus.Server.TH.Transform
 import Data.Morpheus.Types.Internal.AST
   ( IN,
-    TypeKind (..),
     isInput,
     isObject,
   )
@@ -57,7 +55,7 @@ instance Declare (ServerTypeDefinition cat) where
   type DeclareCtx (ServerTypeDefinition cat) = Bool
   declare namespace typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
     do
-      let mainType = declareMainType (namespace, tKind) typeD
+      let mainType = declareType namespace typeD
       argTypes <- declareArgTypes namespace typeArgD
       gqlInstances <- deriveGQLInstances
       typeClasses <- deriveGQLType typeD
@@ -81,14 +79,4 @@ declareArgTypes namespace types = do
   return $ argsTypeDecs <> decodeArgs <> introspectArgs
   where
     ----------------------------------------------------
-    argsTypeDecs = map (declareType namespace Nothing []) types
-
-declareMainType :: (Bool, TypeKind) -> ServerTypeDefinition cat -> [Dec]
-declareMainType (_, KindScalar) _ = []
-declareMainType (namespace, tKind) typeD =
-  [declareType namespace (Just tKind) derivingClasses typeD]
-  where
-    -- input types support show
-    derivingClasses
-      | isInput tKind = [''Show]
-      | otherwise = []
+    argsTypeDecs = concatMap (declareType namespace) types
