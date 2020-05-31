@@ -29,7 +29,7 @@ import Data.Morpheus.Server.Deriving.Introspect
     ProxyRep (..),
     deriveCustomInputObjectType,
   )
-import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
+import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__typeName, implements),
     TRUE,
@@ -74,8 +74,8 @@ instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
-deriveObjectRep :: (TypeD cat, Maybe (TypeDefinition ANY), Maybe TypeKind) -> Q [Dec]
-deriveObjectRep (TypeD {tName, tCons = [ConsD {cFields}]}, _, tKind) =
+deriveObjectRep :: (ServerTypeDefinition cat, Maybe (TypeDefinition ANY), Maybe TypeKind) -> Q [Dec]
+deriveObjectRep (ServerTypeDefinition {tName, tCons = [ConsD {cFields}]}, _, tKind) =
   pure <$> instanceD (cxt constrains) iHead methods
   where
     mainTypeName = typeT (mkTypeName tName) typeArgs

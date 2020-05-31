@@ -28,7 +28,7 @@ import Data.Morpheus.Kind
     SCALAR,
     WRAPPER,
   )
-import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
+import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
@@ -54,8 +54,8 @@ interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () 
 introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . mkTypeName
 
-deriveGQLType :: TypeD cat -> Q [Dec]
-deriveGQLType TypeD {tName, tDescription, tKind, typeOriginal} =
+deriveGQLType :: ServerTypeDefinition cat -> Q [Dec]
+deriveGQLType ServerTypeDefinition {tName, tDescription, tKind, typeOriginal} =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
   where
     functions =

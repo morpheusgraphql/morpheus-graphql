@@ -26,7 +26,7 @@ import Data.Morpheus.Server.Deriving.Encode
   ( Encode (..),
     ExploreResolvers (..),
   )
-import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
+import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Server.Types.GQLType (TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
@@ -65,8 +65,8 @@ encodeVars = [e_, m_]
 encodeVarsT :: [TypeQ]
 encodeVarsT = map nameVarT encodeVars
 
-deriveEncode :: TypeD cat -> Q [Dec]
-deriveEncode TypeD {tName, tCons = [ConsD {cFields}], tKind} =
+deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
+deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}], tKind} =
   pure <$> instanceD (cxt constrains) appHead methods
   where
     subARgs = conT ''SUBSCRIPTION : encodeVarsT

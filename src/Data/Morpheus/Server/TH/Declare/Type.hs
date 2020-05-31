@@ -14,7 +14,7 @@ import Data.Morpheus.Internal.TH
     nameSpaceType,
     tyConArgs,
   )
-import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
+import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     ConsD (..),
@@ -29,8 +29,8 @@ import Data.Semigroup ((<>))
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
-declareType :: Bool -> Maybe TypeKind -> [Name] -> TypeD cat -> Dec
-declareType namespace kindD derivingList TypeD {tName, tCons, tNamespace} =
+declareType :: Bool -> Maybe TypeKind -> [Name] -> ServerTypeDefinition cat -> Dec
+declareType namespace kindD derivingList ServerTypeDefinition {tName, tCons, tNamespace} =
   DataD [] (genName tName) tVars Nothing cons $
     map derive (''Generic : derivingList)
   where

@@ -1,5 +1,5 @@
 module Data.Morpheus.Server.Internal.TH.Types
-  ( TypeD (..),
+  ( ServerTypeDefinition (..),
   )
 where
 
@@ -15,10 +15,10 @@ import Data.Morpheus.Types.Internal.AST
   )
 
 --- Core
-data TypeD cat = TypeD
+data ServerTypeDefinition cat = ServerTypeDefinition
   { tName :: TypeName,
     tNamespace :: [FieldName],
-    typeArgD :: [TypeD IN],
+    typeArgD :: [ServerTypeDefinition IN],
     tCons :: [ConsD cat],
     tKind :: TypeKind,
     tDescription :: Maybe Description,

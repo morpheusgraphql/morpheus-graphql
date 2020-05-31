@@ -25,7 +25,7 @@ import Data.Morpheus.Internal.Utils
     empty,
     singleton,
   )
-import Data.Morpheus.Server.Internal.TH.Types (TypeD (..))
+import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -77,7 +77,7 @@ kindToTyArgs DataUnion {} = Just m_
 kindToTyArgs DataInterface {} = Just m_
 kindToTyArgs _ = Nothing
 
-data TypeDec = InputType (TypeD IN) | OutputType (TypeD OUT)
+data TypeDec = InputType (ServerTypeDefinition IN) | OutputType (ServerTypeDefinition OUT)
 
 toTHDefinitions :: Bool -> [TypeDefinition ANY] -> Q [TypeDec]
 toTHDefinitions namespace schema = traverse generateType schema
@@ -97,7 +97,7 @@ toTHDefinitions namespace schema = traverse generateType schema
           -------------------------
           withType (ConsIN tCons) =
             InputType
-              TypeD
+              ServerTypeDefinition
                 { tName = hsTypeName typeName,
                   tDescription = typeDescription,
                   tNamespace = [],
@@ -108,7 +108,7 @@ toTHDefinitions namespace schema = traverse generateType schema
                 }
           withType (ConsOUT typeArgD tCons) =
             OutputType
-              TypeD
+              ServerTypeDefinition
                 { tName = hsTypeName typeName,
                   tDescription = typeDescription,
                   tNamespace = [],
@@ -150,7 +150,7 @@ mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = 
 
 data BuildPlan
   = ConsIN [ConsD IN]
-  | ConsOUT [TypeD IN] [ConsD OUT]
+  | ConsOUT [ServerTypeDefinition IN] [ConsD OUT]
 
 genTypeContent ::
   [TypeDefinition ANY] ->
@@ -197,14 +197,14 @@ genTypeContent _ _ typeName (DataUnion members) =
         cName = hsTypeName typeName <> utName
         utName = hsTypeName memberName
 
-genArgumentTypes :: (FieldName -> TypeName) -> FieldsDefinition OUT -> Q [TypeD IN]
+genArgumentTypes :: (FieldName -> TypeName) -> FieldsDefinition OUT -> Q [ServerTypeDefinition IN]
 genArgumentTypes genArgsTypeName fields =
   concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
-genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [TypeD IN]
+genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [ServerTypeDefinition IN]
 genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = FieldArgs ArgumentsDefinition {arguments}} =
   pure
-    [ TypeD
+    [ ServerTypeDefinition
         { tName,
           tNamespace = empty,
           tCons = [mkCons tName (Fields arguments)],

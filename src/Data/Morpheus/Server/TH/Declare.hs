@@ -12,7 +12,7 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Server.Internal.TH.Types
-  ( TypeD (..),
+  ( ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.TH.Declare.Decode
   ( deriveDecode,
@@ -53,9 +53,9 @@ instance Declare TypeDec where
   declare namespace (InputType typeD) = declare namespace typeD
   declare namespace (OutputType typeD) = declare namespace typeD
 
-instance Declare (TypeD cat) where
-  type DeclareCtx (TypeD cat) = Bool
-  declare namespace typeD@TypeD {tKind, typeArgD, typeOriginal} =
+instance Declare (ServerTypeDefinition cat) where
+  type DeclareCtx (ServerTypeDefinition cat) = Bool
+  declare namespace typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
     do
       let mainType = declareMainType (namespace, tKind) typeD
       argTypes <- declareArgTypes namespace typeArgD
@@ -74,7 +74,7 @@ instance Declare (TypeD cat) where
             | otherwise =
               []
 
-declareArgTypes :: Bool -> [TypeD IN] -> Q [Dec]
+declareArgTypes :: Bool -> [ServerTypeDefinition IN] -> Q [Dec]
 declareArgTypes namespace types = do
   introspectArgs <- concat <$> traverse deriveArgsRep types
   decodeArgs <- concat <$> traverse deriveDecode types
@@ -84,7 +84,7 @@ declareArgTypes namespace types = do
     ----------------------------------------------------
     argsTypeDecs = map (declareType namespace Nothing []) types
 
-declareMainType :: (Bool, TypeKind) -> TypeD cat -> [Dec]
+declareMainType :: (Bool, TypeKind) -> ServerTypeDefinition cat -> [Dec]
 declareMainType (_, KindScalar) _ = []
 declareMainType (namespace, tKind) typeD =
   [declareType namespace (Just tKind) derivingClasses typeD]
