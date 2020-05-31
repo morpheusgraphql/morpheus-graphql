@@ -22,9 +22,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ArgumentsDefinition (..),
     DataFingerprint (..),
-    FieldContent (..),
     FieldsDefinition,
     Message,
     OUT,
@@ -34,9 +32,10 @@ import Data.Morpheus.Types.Internal.AST
     TypeUpdater,
     TypeWrapper (..),
     createArgument,
-    createField,
     insertType,
     internalFingerprint,
+    mkField,
+    mkObjectField,
     unsafeFromFields,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -56,12 +55,11 @@ withSystemTypes _ = failure ("Query must be an Object Type" :: Message)
 hiddenFields :: FieldsDefinition OUT
 hiddenFields =
   unsafeFromFields
-    [ createField
-        (FieldArgs $ singleton (createArgument "name" ([], "String")))
+    [ mkObjectField
+        (singleton (createArgument "name" ([], "String")))
         "__type"
         ([TypeMaybe], "__Type"),
-      createField
-        NoContent
+      mkField
         "__schema"
         ([], "__Schema")
     ]

@@ -75,6 +75,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     FieldContent (..),
     fieldContentArgs,
     mkField,
+    mkObjectField,
   )
 where
 
@@ -638,6 +639,9 @@ createField fieldContent fieldName (typeWrappers, typeConName) =
 
 mkField :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
 mkField = createField NoContent
+
+mkObjectField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition OUT
+mkObjectField args = createField (FieldArgs args)
 
 toNullableField :: FieldDefinition cat -> FieldDefinition cat
 toNullableField dataField

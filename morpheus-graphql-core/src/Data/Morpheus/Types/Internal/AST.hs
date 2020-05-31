@@ -150,6 +150,7 @@ module Data.Morpheus.Types.Internal.AST
     mkField,
     TypeNameTH (..),
     isOutput,
+    mkObjectField,
   )
 where
 
