@@ -116,8 +116,8 @@ parsePrimitives :: Parser (Value a)
 parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
 
-parseDefaultValue :: Parser (Maybe ResolvedValue)
-parseDefaultValue = optional $ do
+parseDefaultValue :: Parser ResolvedValue
+parseDefaultValue = do
   litEquals
   parseV
   where

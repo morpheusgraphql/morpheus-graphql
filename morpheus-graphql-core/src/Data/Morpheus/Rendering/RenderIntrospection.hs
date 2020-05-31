@@ -196,8 +196,8 @@ instance RenderSchema (FieldDefinition cat) where
             ]
             <> renderDeprecated fieldDirectives
 
-renderFieldArgs :: (Monad m) => FieldContent TRUE cat -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
-renderFieldArgs (FieldArgs args) lib = renderArguments args lib
+renderFieldArgs :: (Monad m) => Maybe (FieldContent TRUE cat) -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
+renderFieldArgs (Just (FieldArgs args)) lib = renderArguments args lib
 renderFieldArgs _ _ = pure []
 
 lookupKind :: (Monad m) => TypeName -> Result e m TypeKind
