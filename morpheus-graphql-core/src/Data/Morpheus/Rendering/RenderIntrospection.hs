@@ -35,19 +35,22 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     DirectiveDefinition (..),
     DirectiveLocation,
+    Directives,
+    FieldContent (..),
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
     IN,
     Message,
-    Meta (..),
     OUT,
     QUERY,
     Schema,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
+    VALID,
     createInputUnionFields,
     fieldVisibility,
     kindOf,
@@ -89,7 +92,7 @@ instance RenderSchema DirectiveDefinition where
         mkObject
           "__Directive"
           [ renderFieldName directiveDefinitionName,
-            renderDescription directiveDefinitionDescription,
+            description directiveDefinitionDescription,
             ("locations", render directiveDefinitionLocations schema),
             ("args", mkList <$> renderArguments directiveDefinitionArgs schema)
           ]
@@ -101,24 +104,24 @@ instance RenderSchema DirectiveLocation where
   render locations _ = pure $ mkString (pack $ show locations)
 
 instance RenderSchema (TypeDefinition a) where
-  render TypeDefinition {typeName, typeMeta, typeContent} = __render typeContent
+  render TypeDefinition {typeName, typeDescription, typeContent} = __render typeContent
     where
       __render ::
         (Monad m) => TypeContent bool a -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
       __render DataScalar {} =
-        constRes $ createLeafType SCALAR typeName typeMeta Nothing
+        constRes $ createLeafType SCALAR typeName typeDescription Nothing
       __render (DataEnum enums) =
         constRes $
-          createLeafType ENUM typeName typeMeta (Just $ map createEnumValue enums)
+          createLeafType ENUM typeName typeDescription (Just $ map createEnumValue enums)
       __render (DataInputObject fields) = \lib ->
-        createInputObject typeName typeMeta
+        createInputObject typeName typeDescription
           <$> traverse (`renderinputValue` lib) (elems fields)
       __render DataObject {objectImplements, objectFields} =
-        pure . createObjectType typeName typeMeta objectImplements objectFields
+        pure . createObjectType typeName typeDescription objectImplements objectFields
       __render (DataUnion union) = \schema ->
-        pure $ typeFromUnion schema (typeName, typeMeta, union)
+        pure $ typeFromUnion schema (typeName, typeDescription, union)
       __render (DataInputUnion members) =
-        renderInputUnion (typeName, typeMeta, members)
+        renderInputUnion (typeName, typeDescription, members)
       __render (DataInterface fields) =
         renderInterface typeName Nothing fields
 
@@ -126,14 +129,14 @@ renderFields :: Monad m => Schema -> FieldsDefinition cat -> Resolver QUERY e m 
 renderFields schema = traverse (`render` schema) . filter fieldVisibility . elems
 
 renderInterface ::
-  Monad m => TypeName -> Maybe Meta -> FieldsDefinition OUT -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
-renderInterface name meta fields schema =
+  Monad m => TypeName -> Maybe Description -> FieldsDefinition OUT -> Schema -> Resolver QUERY e m (ResModel QUERY e m)
+renderInterface name desc fields schema =
   pure $
     mkObject
       "__Type"
       [ renderKind INTERFACE,
         renderName name,
-        description meta,
+        description desc,
         ("fields", mkList <$> renderFields schema fields),
         ("possibleTypes", mkList <$> interfacePossibleTypes schema name)
       ]
@@ -150,44 +153,52 @@ interfacePossibleTypes schema interfaceName = sequence $ concatMap implements (e
     implements _ = []
 
 createEnumValue :: Monad m => DataEnumValue -> ResModel QUERY e m
-createEnumValue DataEnumValue {enumName, enumMeta} =
+createEnumValue DataEnumValue {enumName, enumDescription, enumDirectives} =
   mkObject "__Field" $
     [ renderName enumName,
-      description enumMeta
+      description enumDescription
     ]
-      <> renderDeprecated enumMeta
+      <> renderDeprecated enumDirectives
 
 renderDeprecated ::
   (Monad m) =>
-  Maybe Meta ->
+  Directives VALID ->
   [(FieldName, Resolver QUERY e m (ResModel QUERY e m))]
-renderDeprecated meta =
-  [ ("isDeprecated", pure $ mkBoolean (isJust $ meta >>= lookupDeprecated)),
-    ("deprecationReason", opt (pure . mkString) (meta >>= lookupDeprecated >>= lookupDeprecatedReason))
+renderDeprecated dirs =
+  [ ("isDeprecated", pure $ mkBoolean (isJust $ lookupDeprecated dirs)),
+    ("deprecationReason", opt (pure . mkString) (lookupDeprecated dirs >>= lookupDeprecatedReason))
   ]
 
-description :: Monad m => Maybe Meta -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-description enumMeta = renderDescription (enumMeta >>= metaDescription)
-
-renderDescription :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-renderDescription desc = ("description", opt (pure . mkString) desc)
+description :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+description desc = ("description", opt (pure . mkString) desc)
 
 renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
 renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ elems arguments
-renderArguments NoArguments _ = pure []
 
 instance RenderSchema (FieldDefinition cat) where
-  render field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}, fieldArgs, fieldMeta} lib =
-    do
-      kind <- lookupKind typeConName lib
-      pure
-        $ mkObject "__Field"
-        $ [ renderFieldName fieldName,
-            description fieldMeta,
-            ("args", mkList <$> renderArguments fieldArgs lib),
-            ("type", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
-          ]
-          <> renderDeprecated fieldMeta
+  render
+    field@FieldDefinition
+      { fieldName,
+        fieldType = TypeRef {typeConName},
+        fieldContent,
+        fieldDescription,
+        fieldDirectives
+      }
+    lib =
+      do
+        kind <- lookupKind typeConName lib
+        pure
+          $ mkObject "__Field"
+          $ [ renderFieldName fieldName,
+              description fieldDescription,
+              ("args", mkList <$> renderFieldArgs fieldContent lib),
+              ("type", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
+            ]
+            <> renderDeprecated fieldDirectives
+
+renderFieldArgs :: (Monad m) => FieldContent TRUE cat -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
+renderFieldArgs (FieldArgs args) lib = renderArguments args lib
+renderFieldArgs _ _ = pure []
 
 lookupKind :: (Monad m) => TypeName -> Result e m TypeKind
 lookupKind name schema = renderTypeKind . kindOf <$> selectBy ("Kind Not Found: " <> msg name) name schema
@@ -207,7 +218,7 @@ renderinputValue ::
   (Monad m) =>
   FieldDefinition IN ->
   Result e m (ResModel QUERY e m)
-renderinputValue input = fmap (createInputValueWith (fieldName input) (fieldMeta input)) . createInputObjectType input
+renderinputValue input = fmap (createInputValueWith (fieldName input) (fieldDescription input)) . createInputObjectType input
 
 createInputObjectType ::
   (Monad m) => FieldDefinition IN -> Result e m (ResModel QUERY e m)
@@ -218,7 +229,7 @@ createInputObjectType field@FieldDefinition {fieldType = TypeRef {typeConName}} 
 
 renderInputUnion ::
   (Monad m) =>
-  (TypeName, Maybe Meta, DataInputUnion) ->
+  (TypeName, Maybe Description, DataInputUnion) ->
   Result e m (ResModel QUERY e m)
 renderInputUnion (key, meta, fields) lib =
   createInputObject key meta
@@ -233,25 +244,25 @@ createLeafType ::
   Monad m =>
   TypeKind ->
   TypeName ->
-  Maybe Meta ->
+  Maybe Description ->
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
-createLeafType kind name meta enums =
+createLeafType kind name desc enums =
   mkObject
     "__Type"
     [ renderKind kind,
       renderName name,
-      description meta,
+      description desc,
       ("enumValues", optList enums)
     ]
 
-typeFromUnion :: Monad m => Schema -> (TypeName, Maybe Meta, DataUnion) -> ResModel QUERY e m
-typeFromUnion schema (name, typeMeta, typeContent) =
+typeFromUnion :: Monad m => Schema -> (TypeName, Maybe Description, DataUnion) -> ResModel QUERY e m
+typeFromUnion schema (name, desc, typeContent) =
   mkObject
     "__Type"
     [ renderKind UNION,
       renderName name,
-      description typeMeta,
+      description desc,
       ("possibleTypes", mkList <$> traverse (unionPossibleType schema) typeContent)
     ]
 
@@ -261,13 +272,13 @@ unionPossibleType schema name =
     >>= (`render` schema)
 
 createObjectType ::
-  Monad m => TypeName -> Maybe Meta -> [TypeName] -> FieldsDefinition OUT -> Schema -> ResModel QUERY e m
-createObjectType name meta interfaces fields schema =
+  Monad m => TypeName -> Maybe Description -> [TypeName] -> FieldsDefinition OUT -> Schema -> ResModel QUERY e m
+createObjectType name desc interfaces fields schema =
   mkObject
     "__Type"
     [ renderKind OBJECT,
       renderName name,
-      description meta,
+      description desc,
       ("fields", mkList <$> renderFields schema fields),
       ("interfaces", mkList <$> traverse (implementedInterface schema) interfaces)
     ]
@@ -288,13 +299,13 @@ optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel
 optList = pure . maybe mkNull mkList
 
 createInputObject ::
-  Monad m => TypeName -> Maybe Meta -> [ResModel QUERY e m] -> ResModel QUERY e m
-createInputObject name meta fields =
+  Monad m => TypeName -> Maybe Description -> [ResModel QUERY e m] -> ResModel QUERY e m
+createInputObject name desc fields =
   mkObject
     "__Type"
     [ renderKind INPUT_OBJECT,
       renderName name,
-      description meta,
+      description desc,
       ("inputFields", pure $ mkList fields)
     ]
 
@@ -302,7 +313,7 @@ createType ::
   Monad m =>
   TypeKind ->
   TypeName ->
-  Maybe Meta ->
+  Maybe Description ->
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
 createType kind name desc fields =
@@ -344,11 +355,11 @@ wrapAs wrapper contentType =
     kind NonNullType = NON_NULL
 
 createInputValueWith ::
-  Monad m => FieldName -> Maybe Meta -> ResModel QUERY e m -> ResModel QUERY e m
-createInputValueWith name meta ivType =
+  Monad m => FieldName -> Maybe Description -> ResModel QUERY e m -> ResModel QUERY e m
+createInputValueWith name desc ivType =
   mkObject
     "__InputValue"
     [ renderFieldName name,
-      description meta,
+      description desc,
       ("type", pure ivType)
     ]

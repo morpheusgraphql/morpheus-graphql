@@ -5,7 +5,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Server.Document.Declare.Decode
+module Data.Morpheus.Server.TH.Declare.Decode
   ( deriveDecode,
   )
 where
@@ -26,21 +26,22 @@ import Data.Morpheus.Server.Internal.TH.Decode
     decodeObjectExpQ,
     withObject,
   )
+import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    TypeD (..),
     ValidValue,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
+import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
 (.:) :: Decode a => ValidValue -> FieldName -> Eventless a
 value .: selectorName = withObject (decodeFieldWith decode selectorName) value
 
-deriveDecode :: TypeD -> Q [Dec]
-deriveDecode TypeD {tName, tCons = [cons]} =
+deriveDecode :: ServerTypeDefinition cat -> Q [Dec]
+deriveDecode ServerTypeDefinition {tName, tCons = [cons]} =
   pure <$> instanceD (cxt []) appHead methods
   where
     appHead = instanceHeadT ''DecodeType tName []

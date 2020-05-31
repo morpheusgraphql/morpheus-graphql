@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -14,6 +15,10 @@ where
 --
 -- MORPHEUS
 import Control.Monad.Reader (asks)
+import Data.Morpheus.Client.Internal.Types
+  ( ClientTypeDefinition (..),
+    TypeNameTH (..),
+  )
 import Data.Morpheus.Client.Transform.Core
   ( Converter (..),
     customScalarTypes,
@@ -22,18 +27,18 @@ import Data.Morpheus.Client.Transform.Core
   )
 import Data.Morpheus.Internal.Utils
   ( elems,
+    empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ArgumentsDefinition (..),
     ConsD (..),
+    FieldContent (..),
     FieldDefinition (..),
     IN,
     Operation (..),
     RAW,
     TRUE,
     TypeContent (..),
-    TypeD (..),
     TypeDefinition (..),
     TypeKind (..),
     TypeName,
@@ -44,43 +49,55 @@ import Data.Morpheus.Types.Internal.AST
     getOperationName,
     mkConsEnum,
     removeDuplicates,
+    toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( resolveUpdates,
   )
 import Data.Semigroup ((<>))
 
-renderArguments :: VariableDefinitions RAW -> TypeName -> Maybe TypeD
-renderArguments variables argsName
+renderArguments ::
+  VariableDefinitions RAW ->
+  TypeName ->
+  Maybe ClientTypeDefinition
+renderArguments variables cName
   | null variables = Nothing
   | otherwise = Just rootArgumentsType
   where
-    rootArgumentsType :: TypeD
+    rootArgumentsType :: ClientTypeDefinition
     rootArgumentsType =
-      TypeD
-        { tName = argsName,
-          tNamespace = [],
-          tCons = [ConsD {cName = argsName, cFields = map fieldD (elems variables)}],
-          tMeta = Nothing,
-          tKind = KindInputObject
+      ClientTypeDefinition
+        { clientTypeName = TypeNameTH [] cName,
+          clientKind = KindInputObject,
+          clientCons =
+            [ ConsD
+                { cName,
+                  cFields = map fieldD (elems variables)
+                }
+            ]
         }
       where
         fieldD :: Variable RAW -> FieldDefinition ANY
         fieldD Variable {variableName, variableType} =
           FieldDefinition
             { fieldName = variableName,
-              fieldArgs = NoArguments,
+              fieldContent = NoContent,
               fieldType = variableType,
-              fieldMeta = Nothing
+              fieldDescription = Nothing,
+              fieldDirectives = empty
             }
 
-renderOperationArguments :: Operation VALID -> Converter (Maybe TypeD)
+renderOperationArguments ::
+  Operation VALID ->
+  Converter (Maybe ClientTypeDefinition)
 renderOperationArguments Operation {operationName} = do
   variables <- asks snd
   pure $ renderArguments variables (getOperationName operationName <> "Args")
 
 -- INPUTS
-renderNonOutputTypes :: [TypeName] -> Converter [TypeD]
+renderNonOutputTypes ::
+  [TypeName] ->
+  Converter [ClientTypeDefinition]
 renderNonOutputTypes leafTypes = do
   variables <- elems <$> asks snd
   inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
@@ -105,21 +122,23 @@ exploreInputTypeNames name collected
         scanType (DataScalar _) = pure (collected <> customScalarTypes typeName)
         scanType _ = pure collected
 
-buildInputType :: TypeName -> Converter [TypeD]
+buildInputType ::
+  TypeName ->
+  Converter [ClientTypeDefinition]
 buildInputType name = getType name >>= generateTypes
   where
     generateTypes TypeDefinition {typeName, typeContent} = subTypes typeContent
       where
-        subTypes :: TypeContent TRUE ANY -> Converter [TypeD]
+        subTypes :: TypeContent TRUE ANY -> Converter [ClientTypeDefinition]
         subTypes (DataInputObject inputFields) = do
-          fields <- traverse toFieldD (elems inputFields)
+          fields <- traverse toClientFieldDefinition (elems inputFields)
           pure
             [ mkInputType
                 typeName
                 KindInputObject
                 [ ConsD
                     { cName = typeName,
-                      cFields = fields
+                      cFields = fmap toAny fields
                     }
                 ]
             ]
@@ -139,17 +158,15 @@ buildInputType name = getType name >>= generateTypes
             ]
         subTypes _ = pure []
 
-mkInputType :: TypeName -> TypeKind -> [ConsD] -> TypeD
-mkInputType tName tKind tCons =
-  TypeD
-    { tName,
-      tNamespace = [],
-      tCons,
-      tKind,
-      tMeta = Nothing
+mkInputType :: TypeName -> TypeKind -> [ConsD ANY] -> ClientTypeDefinition
+mkInputType typename clientKind clientCons =
+  ClientTypeDefinition
+    { clientTypeName = TypeNameTH [] typename,
+      clientKind,
+      clientCons
     }
 
-toFieldD :: FieldDefinition cat -> Converter (FieldDefinition ANY)
-toFieldD field@FieldDefinition {fieldType} = do
+toClientFieldDefinition :: FieldDefinition IN -> Converter (FieldDefinition IN)
+toClientFieldDefinition FieldDefinition {fieldType, ..} = do
   typeConName <- typeFrom [] <$> getType (typeConName fieldType)
-  pure $ field {fieldType = fieldType {typeConName}}
+  pure FieldDefinition {fieldType = fieldType {typeConName}, ..}

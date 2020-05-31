@@ -10,7 +10,7 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition (..),
     DirectiveLocation (..),
     TypeWrapper (..),
-    createField,
+    mkField,
   )
 
 defaultDirectives :: [DirectiveDefinition]
@@ -33,12 +33,11 @@ defaultDirectives =
         directiveDefinitionLocations = [FIELD_DEFINITION, ENUM_VALUE],
         directiveDefinitionArgs =
           singleton $
-            createField
-              NoArguments
+            mkField
               "reason"
               ([TypeMaybe], "String")
       }
   ]
 
 argumentsIf :: ArgumentsDefinition
-argumentsIf = singleton $ createField NoArguments "if" ([], "Boolean")
+argumentsIf = singleton $ mkField "if" ([], "Boolean")

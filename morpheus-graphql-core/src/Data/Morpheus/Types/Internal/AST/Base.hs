@@ -59,6 +59,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     TypeNameRef (..),
     convertToJSONName,
     convertToHaskellName,
+    isOutput,
   )
 where
 
@@ -266,6 +267,12 @@ isOutputObject :: TypeKind -> Bool
 isOutputObject (KindObject _) = True
 isOutputObject KindInterface = True
 isOutputObject _ = False
+
+isOutput :: TypeKind -> Bool
+isOutput (KindObject _) = True
+isOutput KindUnion = True
+isOutput KindInterface = True
+isOutput _ = False
 
 isObject :: TypeKind -> Bool
 isObject (KindObject _) = True

@@ -17,7 +17,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Morpheus.Types.Internal.AST.Data
+module Data.Morpheus.Types.Internal.AST.TypeSystem
   ( Arguments,
     ScalarDefinition (..),
     DataEnum,
@@ -32,13 +32,12 @@ module Data.Morpheus.Types.Internal.AST.Data
     Schema (..),
     DataEnumValue (..),
     TypeLib,
-    Meta (..),
     Directive (..),
     TypeUpdater,
     TypeCategory,
     DataInputUnion,
     Argument (..),
-    Fields,
+    Fields (..),
     createField,
     createArgument,
     createEnumType,
@@ -61,7 +60,6 @@ module Data.Morpheus.Types.Internal.AST.Data
     lookupDeprecated,
     lookupDeprecatedReason,
     lookupWith,
-    hasArguments,
     unsafeFromFields,
     __inputname,
     updateSchema,
@@ -73,8 +71,11 @@ module Data.Morpheus.Types.Internal.AST.Data
     DirectiveDefinitions,
     DirectiveDefinition (..),
     Directives,
-    argumentsToFields,
     fieldsToArguments,
+    FieldContent (..),
+    fieldContentArgs,
+    mkField,
+    mkObjectField,
   )
 where
 
@@ -112,6 +113,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLError (..),
     Msg (..),
     Position,
+    RESOLVED,
     Stage,
     TRUE,
     Token,
@@ -214,8 +216,8 @@ instance Selectable DirectiveDefinition ArgumentDefinition where
   selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
     selectOr fb f key directiveDefinitionArgs
 
-lookupDeprecated :: Meta -> Maybe (Directive VALID)
-lookupDeprecated Meta {metaDirectives} = find isDeprecation metaDirectives
+lookupDeprecated :: [Directive VALID] -> Maybe (Directive VALID)
+lookupDeprecated = find isDeprecation
   where
     isDeprecation Directive {directiveName = "deprecated"} = True
     isDeprecation _ = False
@@ -228,17 +230,11 @@ lookupDeprecatedReason Directive {directiveArgs} =
     maybeString Argument {argumentValue = (Scalar (String x))} = x
     maybeString _ = "can't read deprecated Reason Value"
 
--- META
-data Meta = Meta
-  { metaDescription :: Maybe Description,
-    metaDirectives :: [Directive VALID]
-  }
-  deriving (Show, Lift)
-
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue
   { enumName :: TypeName,
-    enumMeta :: Maybe Meta
+    enumDescription :: Maybe Description,
+    enumDirectives :: [Directive VALID]
   }
   deriving (Show, Lift)
 
@@ -309,7 +305,8 @@ isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 data TypeDefinition (a :: TypeCategory) = TypeDefinition
   { typeName :: TypeName,
     typeFingerprint :: DataFingerprint,
-    typeMeta :: Maybe Meta,
+    typeDescription :: Maybe Description,
+    typeDirectives :: Directives VALID,
     typeContent :: TypeContent TRUE a
   }
   deriving (Show, Lift)
@@ -340,6 +337,14 @@ instance ToAny (TypeContent TRUE) where
   toAny DataObject {..} = DataObject {..}
   toAny DataUnion {..} = DataUnion {..}
   toAny DataInterface {..} = DataInterface {..}
+
+instance ToAny FieldDefinition where
+  toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny fieldContent, ..}
+
+instance ToAny (FieldContent TRUE) where
+  toAny NoContent = NoContent
+  toAny (FieldArgs x) = FieldArgs x
+  toAny (DefaultInputValue x) = DefaultInputValue x
 
 class FromAny a (k :: TypeCategory) where
   fromAny :: a ANY -> Maybe (a k)
@@ -415,8 +420,9 @@ createType :: TypeName -> TypeContent TRUE a -> TypeDefinition a
 createType typeName typeContent =
   TypeDefinition
     { typeName,
-      typeMeta = Nothing,
+      typeDescription = Nothing,
       typeFingerprint = DataFingerprint typeName [],
+      typeDirectives = [],
       typeContent
     }
 
@@ -429,7 +435,12 @@ createEnumType typeName typeData = createType typeName (DataEnum enumValues)
     enumValues = map createEnumValue typeData
 
 createEnumValue :: TypeName -> DataEnumValue
-createEnumValue enumName = DataEnumValue {enumName, enumMeta = Nothing}
+createEnumValue enumName =
+  DataEnumValue
+    { enumName,
+      enumDescription = Nothing,
+      enumDirectives = []
+    }
 
 createUnionType :: TypeName -> [TypeName] -> TypeDefinition OUT
 createUnionType typeName typeData = createType typeName (DataUnion typeData)
@@ -463,7 +474,8 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
       TypeDefinition
         { typeName = name,
           typeFingerprint,
-          typeMeta = Nothing,
+          typeDescription = Nothing,
+          typeDirectives = [],
           typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
         }
 defineType datatype lib =
@@ -527,9 +539,6 @@ instance Selectable (Fields (FieldDefinition cat)) (FieldDefinition cat) where
 unsafeFromFields :: [FieldDefinition cat] -> FieldsDefinition cat
 unsafeFromFields = Fields . unsafeFromValues
 
-argumentsToFields :: ArgumentsDefinition -> FieldsDefinition IN
-argumentsToFields = Fields . arguments
-
 fieldsToArguments :: FieldsDefinition IN -> ArgumentsDefinition
 fieldsToArguments = ArgumentsDefinition Nothing . unFields
 
@@ -554,19 +563,44 @@ type FieldsDefinition cat = Fields (FieldDefinition cat)
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
+-- https://spec.graphql.org/June2018/#InputValueDefinition
+-- InputValueDefinition
+--   Description(opt) Name: Type DefaultValue(opt) Directives[Const](opt)
+
 data FieldDefinition (cat :: TypeCategory) = FieldDefinition
   { fieldName :: FieldName,
-    fieldArgs :: ArgumentsDefinition,
+    fieldDescription :: Maybe Description,
     fieldType :: TypeRef,
-    fieldMeta :: Maybe Meta
+    fieldContent :: FieldContent TRUE cat,
+    fieldDirectives :: [Directive VALID]
   }
   deriving (Show, Lift)
+
+data FieldContent (bool :: Bool) (cat :: TypeCategory) where
+  NoContent :: FieldContent bool cat
+  DefaultInputValue ::
+    { defaultInputValue :: Maybe (Value RESOLVED)
+    } ->
+    FieldContent (IsSelected a IN) a
+  FieldArgs ::
+    { fieldArgsDef :: ArgumentsDefinition
+    } ->
+    FieldContent (IsSelected a OUT) a
+
+fieldContentArgs :: FieldContent b cat -> OrderedMap FieldName ArgumentDefinition
+fieldContentArgs (FieldArgs (ArgumentsDefinition _ argsD)) = argsD
+fieldContentArgs _ = empty
+
+deriving instance Show (FieldContent bool cat)
+
+deriving instance Lift (FieldContent bool cat)
 
 instance KeyOf (FieldDefinition cat) where
   keyOf = fieldName
 
 instance Selectable (FieldDefinition OUT) ArgumentDefinition where
-  selectOr fb f key FieldDefinition {fieldArgs} = selectOr fb f key fieldArgs
+  selectOr fb f key FieldDefinition {fieldContent = FieldArgs args} = selectOr fb f key args
+  selectOr fb _ _ _ = fb
 
 instance NameCollision (FieldDefinition cat) where
   nameCollision name _ =
@@ -576,8 +610,10 @@ instance NameCollision (FieldDefinition cat) where
       }
 
 instance RenderGQL (FieldDefinition cat) where
-  render FieldDefinition {fieldName = FieldName name, fieldType, fieldArgs} =
-    name <> render fieldArgs <> ": " <> render fieldType
+  render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = FieldArgs args} =
+    name <> render args <> ": " <> render fieldType
+  render FieldDefinition {fieldName = FieldName name, fieldType} =
+    name <> ": " <> render fieldType
 
 instance RenderGQL (FieldsDefinition OUT) where
   render = renderObject render . ignoreHidden . elems
@@ -591,14 +627,21 @@ fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 isFieldNullable :: FieldDefinition cat -> Bool
 isFieldNullable = isNullable . fieldType
 
-createField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
-createField dataArguments fieldName (typeWrappers, typeConName) =
+createField :: FieldContent TRUE cat -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
+createField fieldContent fieldName (typeWrappers, typeConName) =
   FieldDefinition
-    { fieldArgs = dataArguments,
-      fieldName,
+    { fieldName,
+      fieldContent,
+      fieldDescription = Nothing,
       fieldType = TypeRef {typeConName, typeWrappers, typeArgs = Nothing},
-      fieldMeta = Nothing
+      fieldDirectives = []
     }
+
+mkField :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
+mkField = createField NoContent
+
+mkObjectField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition OUT
+mkObjectField args = createField (FieldArgs args)
 
 toNullableField :: FieldDefinition cat -> FieldDefinition cat
 toNullableField dataField
@@ -631,22 +674,21 @@ type InputValueDefinition = FieldDefinition IN
 -- ArgumentsDefinition:
 --   (InputValueDefinition(list))
 
-data ArgumentsDefinition
-  = ArgumentsDefinition
-      { argumentsTypename :: Maybe TypeName,
-        arguments :: OrderedMap FieldName ArgumentDefinition
-      }
-  | NoArguments
+data ArgumentsDefinition = ArgumentsDefinition
+  { argumentsTypename :: Maybe TypeName,
+    arguments :: OrderedMap FieldName ArgumentDefinition
+  }
   deriving (Show, Lift)
 
 instance RenderGQL ArgumentsDefinition where
-  render NoArguments = ""
-  render arguments = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
+  render ArgumentsDefinition {arguments}
+    | null arguments =
+      ""
+    | otherwise = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
 
 type ArgumentDefinition = FieldDefinition IN
 
 instance Selectable ArgumentsDefinition ArgumentDefinition where
-  selectOr fb _ _ NoArguments = fb
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
 instance Collection ArgumentDefinition ArgumentsDefinition where
@@ -654,17 +696,11 @@ instance Collection ArgumentDefinition ArgumentsDefinition where
   singleton = ArgumentsDefinition Nothing . singleton
 
 instance Listable ArgumentDefinition ArgumentsDefinition where
-  elems NoArguments = []
   elems (ArgumentsDefinition _ args) = elems args
-  fromElems [] = pure NoArguments
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args
 
 createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition IN
-createArgument = createField NoArguments
-
-hasArguments :: ArgumentsDefinition -> Bool
-hasArguments NoArguments = False
-hasArguments _ = True
+createArgument = createField NoContent
 
 -- https://spec.graphql.org/June2018/#InputValueDefinition
 -- InputValueDefinition
@@ -686,21 +722,23 @@ createInputUnionFields name members = fieldTag : map unionField members
     fieldTag =
       FieldDefinition
         { fieldName = __inputname,
-          fieldArgs = NoArguments,
+          fieldDescription = Nothing,
+          fieldContent = NoContent,
           fieldType = createAlias (name <> "Tags"),
-          fieldMeta = Nothing
+          fieldDirectives = []
         }
     unionField memberName =
       FieldDefinition
-        { fieldArgs = NoArguments,
-          fieldName = toFieldName memberName,
+        { fieldName = toFieldName memberName,
+          fieldDescription = Nothing,
+          fieldContent = NoContent,
           fieldType =
             TypeRef
               { typeConName = memberName,
                 typeWrappers = [TypeMaybe],
                 typeArgs = Nothing
               },
-          fieldMeta = Nothing
+          fieldDirectives = []
         }
 
 --

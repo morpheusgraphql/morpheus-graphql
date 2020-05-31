@@ -19,7 +19,7 @@ import Data.Morpheus.Server.Deriving.Resolve
   ( RootResCon,
     fullSchema,
   )
-import Data.Morpheus.Server.Document.Compile
+import Data.Morpheus.Server.TH.Compile
   ( compileDocument,
     gqlDocument,
   )

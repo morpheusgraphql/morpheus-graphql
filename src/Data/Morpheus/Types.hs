@@ -62,7 +62,7 @@ import Control.Monad.Trans.Class (MonadTrans (..))
 import Data.Either (either)
 -- MORPHEUS
 
-import Data.Morpheus.Server.Deriving.Introspect (Introspect (..))
+import Data.Morpheus.Server.Deriving.Introspect (Introspect (..), introspectOUT)
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types (Undefined (..))
 import Data.Morpheus.Types.GQLScalar
@@ -79,6 +79,7 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Message,
+    OUT,
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
@@ -209,5 +210,5 @@ data RootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) 
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
 
-interface :: (GQLType a, Introspect a) => Proxy a -> (TypeName, TypeUpdater)
-interface x = (__typeName x, introspect x)
+interface :: (GQLType a, Introspect OUT a) => Proxy a -> (TypeName, TypeUpdater)
+interface x = (__typeName x, introspectOUT x)

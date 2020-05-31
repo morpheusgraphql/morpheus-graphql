@@ -25,6 +25,9 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
   )
+import Data.Morpheus.Client.Internal.Types
+  ( ClientTypeDefinition (..),
+  )
 import Data.Morpheus.Error
   ( deprecatedField,
     globalErrorMessage,
@@ -36,18 +39,18 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    Directives,
     FieldName,
     GQLErrors,
     Message,
-    Meta,
     RAW,
     Ref (..),
     Schema (..),
     TRUE,
     TypeContent (..),
-    TypeD,
     TypeDefinition (..),
     TypeName,
+    VALID,
     VariableDefinitions,
     hsTypeName,
     isSystemTypeName,
@@ -87,10 +90,10 @@ customScalarTypes typeName
   | not (isSystemTypeName typeName) = [typeName]
   | otherwise = []
 
-leafType :: TypeDefinition a -> Converter ([TypeD], [TypeName])
+leafType :: TypeDefinition a -> Converter ([ClientTypeDefinition], [TypeName])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
-    fromKind :: TypeContent TRUE a -> Converter ([TypeD], [TypeName])
+    fromKind :: TypeContent TRUE a -> Converter ([ClientTypeDefinition], [TypeName])
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], customScalarTypes typeName)
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
@@ -103,8 +106,8 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
     __typeFrom DataUnion {} = nameSpaceType path typeName
     __typeFrom _ = typeName
 
-deprecationWarning :: Maybe Meta -> (FieldName, Ref) -> Converter ()
-deprecationWarning meta (typename, ref) = case meta >>= lookupDeprecated of
+deprecationWarning :: Directives VALID -> (FieldName, Ref) -> Converter ()
+deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
   Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
     where
       warnings =

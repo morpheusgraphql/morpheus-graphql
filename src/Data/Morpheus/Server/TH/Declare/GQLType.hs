@@ -5,7 +5,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Data.Morpheus.Server.Document.Declare.GQLType
+module Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
   )
 where
@@ -28,6 +28,7 @@ import Data.Morpheus.Kind
     SCALAR,
     WRAPPER,
   )
+import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TRUE,
@@ -35,11 +36,8 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    GQLTypeD (..),
-    Meta (..),
     QUERY,
     TypeContent (..),
-    TypeD (..),
     TypeDefinition (..),
     TypeKind (..),
     TypeName,
@@ -56,22 +54,20 @@ interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () 
 introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . mkTypeName
 
-deriveGQLType :: GQLTypeD -> Q [Dec]
-deriveGQLType GQLTypeD {typeD = TypeD {tName, tMeta, tKind}, typeOriginal} =
+deriveGQLType :: ServerTypeDefinition cat -> Q [Dec]
+deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
   where
     functions =
       map
         instanceProxyFunD
         [ ('__typeName, [|tName|]),
-          ('description, descriptionValue),
+          ('description, [|tDescription|]),
           ('implements, implementsFunc)
         ]
       where
-        implementsFunc = listE $ map introspectInterface (interfacesFrom (Just typeOriginal))
-        descriptionValue = case tMeta >>= metaDescription of
-          Nothing -> [|Nothing|]
-          Just desc -> [|Just desc|]
+        tDescription = typeOriginal >>= typeDescription
+        implementsFunc = listE $ map introspectInterface (interfacesFrom typeOriginal)
     --------------------------------
     typeArgs = tyConArgs tKind
     --------------------------------

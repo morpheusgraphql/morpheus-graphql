@@ -22,13 +22,15 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( runApi,
   )
+import Data.Morpheus.Internal.Utils
+  ( empty,
+  )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
     deriveModel,
   )
 import Data.Morpheus.Server.Deriving.Introspect
   ( IntroCon,
-    TypeScope (..),
     introspectObjectFields,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (CUSTOM))
@@ -125,7 +127,7 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
         (fields, types) =
           introspectObjectFields
             (Proxy @(CUSTOM (query (Resolver QUERY event m))))
-            ("type for query", OutputType, Proxy @(query (Resolver QUERY event m)))
+            ("type for query", Proxy @(query (Resolver QUERY event m)))
     ------------------------------
     mutationSchema lib =
       resolveUpdates
@@ -136,7 +138,6 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
           introspectObjectFields
             (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
             ( "type for mutation",
-              OutputType,
               Proxy @(mutation (Resolver MUTATION event m))
             )
     ------------------------------
@@ -149,7 +150,6 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
           introspectObjectFields
             (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
             ( "type for subscription",
-              OutputType,
               Proxy @(subscription (Resolver SUBSCRIPTION event m))
             )
     maybeOperator :: FieldsDefinition OUT -> TypeName -> Maybe (TypeDefinition OUT)
@@ -163,5 +163,6 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
         { typeContent = DataObject [] fields,
           typeName,
           typeFingerprint = DataFingerprint typeName [],
-          typeMeta = Nothing
+          typeDescription = Nothing,
+          typeDirectives = empty
         }

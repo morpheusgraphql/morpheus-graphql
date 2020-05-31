@@ -1,8 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Client.Build
   ( defineQuery,
@@ -12,17 +10,14 @@ where
 --
 -- MORPHEUS
 
-import Data.Morpheus.Client.Aeson
-  ( deriveFromJSON,
-    deriveScalarJSON,
-    deriveToJSON,
+import Data.Morpheus.Client.Declare.Client
+  ( declareClient,
   )
-import Data.Morpheus.Client.Fetch
-  ( deriveFetch,
+import Data.Morpheus.Client.Internal.Types
+  ( ClientDefinition (..),
   )
 import Data.Morpheus.Client.Transform.Selection
-  ( ClientDefinition (..),
-    toClientDefinition,
+  ( toClientDefinition,
   )
 import Data.Morpheus.Core
   ( validateRequest,
@@ -31,23 +26,11 @@ import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
-import Data.Morpheus.Internal.TH
-  ( Scope (..),
-    declareType,
-    nameConType,
-    nameConType,
-  )
-import qualified Data.Morpheus.Types.Internal.AST as O
-  ( Operation (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
+    Operation (..),
     Schema,
-    TypeD (..),
-    TypeD (..),
-    TypeKind (..),
     VALIDATION_MODE (..),
-    isOutputObject,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -61,60 +44,19 @@ defineQuery ioSchema (query, src) = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` query) of
     Failure errors -> fail (renderGQLErrors errors)
-    Success {result, warnings} -> gqlWarnings warnings >> defineQueryD src result
-
-defineQueryD :: String -> ClientDefinition -> Q [Dec]
-defineQueryD _ ClientDefinition {clientTypes = []} = return []
-defineQueryD src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
-  do
-    rootDeclaration <-
-      defineOperationType
-        (queryArgumentType clientArguments)
-        src
-        rootType
-    typeDeclarations <- concat <$> traverse declareT subTypes
-    pure (rootDeclaration <> typeDeclarations)
-  where
-    declareT clientType@TypeD {tKind}
-      | isOutputObject tKind || tKind == KindUnion =
-        withToJSON
-          declareOutputType
-          clientType
-      | tKind == KindEnum = withToJSON declareInputType clientType
-      | tKind == KindScalar = deriveScalarJSON clientType
-      | otherwise = declareInputType clientType
-
-declareOutputType :: TypeD -> Q [Dec]
-declareOutputType typeD = pure [declareType CLIENT False Nothing [''Show] typeD]
-
-declareInputType :: TypeD -> Q [Dec]
-declareInputType typeD = do
-  toJSONDec <- deriveToJSON typeD
-  pure $ declareType CLIENT True Nothing [''Show] typeD : toJSONDec
-
-withToJSON :: (TypeD -> Q [Dec]) -> TypeD -> Q [Dec]
-withToJSON f datatype = do
-  toJson <- deriveFromJSON datatype
-  dec <- f datatype
-  pure (toJson : dec)
-
-queryArgumentType :: Maybe TypeD -> (Type, Q [Dec])
-queryArgumentType Nothing = (nameConType "()", pure [])
-queryArgumentType (Just rootType@TypeD {tName}) =
-  (nameConType tName, declareInputType rootType)
-
-defineOperationType :: (Type, Q [Dec]) -> String -> TypeD -> Q [Dec]
-defineOperationType (argType, argumentTypes) query clientType =
-  do
-    rootType <- withToJSON declareOutputType clientType
-    typeClassFetch <- deriveFetch argType (tName clientType) query
-    argsT <- argumentTypes
-    pure $ rootType <> typeClassFetch <> argsT
+    Success
+      { result,
+        warnings
+      } -> gqlWarnings warnings >> declareClient src result
 
 validateWith :: Schema -> GQLQuery -> Eventless ClientDefinition
-validateWith schema rawRequest@GQLQuery {operation} = do
-  validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
-  toClientDefinition
-    schema
-    (O.operationArguments operation)
-    validOperation
+validateWith
+  schema
+  rawRequest@GQLQuery
+    { operation = Operation {operationArguments}
+    } = do
+    validOperation <- validateRequest schema WITHOUT_VARIABLES rawRequest
+    toClientDefinition
+      schema
+      operationArguments
+      validOperation

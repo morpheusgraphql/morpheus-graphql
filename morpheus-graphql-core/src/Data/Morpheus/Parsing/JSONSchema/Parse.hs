@@ -33,6 +33,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
     DataTypeWrapper (..),
+    FieldContent (..),
     FieldDefinition,
     IN,
     OUT,
@@ -93,13 +94,13 @@ instance ParseJSONSchema Field (FieldDefinition OUT) where
   parse Field {fieldName, fieldArgs, fieldType} = do
     fType <- fieldTypeFromJSON fieldType
     args <- traverse genArg fieldArgs >>= fromElems
-    pure $ createField (ArgumentsDefinition Nothing args) fieldName fType
+    pure $ createField (FieldArgs $ ArgumentsDefinition Nothing args) fieldName fType
     where
       genArg InputValue {inputName = argName, inputType = argType} =
         createArgument argName <$> fieldTypeFromJSON argType
 
 instance ParseJSONSchema InputValue (FieldDefinition IN) where
-  parse InputValue {inputName, inputType} = createField NoArguments inputName <$> fieldTypeFromJSON inputType
+  parse InputValue {inputName, inputType} = createField NoContent inputName <$> fieldTypeFromJSON inputType
 
 fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], TypeName)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []

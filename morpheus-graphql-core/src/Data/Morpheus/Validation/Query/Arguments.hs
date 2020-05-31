@@ -11,7 +11,6 @@ where
 import Data.Foldable (traverse_)
 import Data.Morpheus.Internal.Utils
   ( elems,
-    empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -30,6 +29,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     VALID,
     Value (..),
+    fieldContentArgs,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
@@ -115,16 +115,14 @@ validateFieldArguments ::
   Arguments RAW ->
   SelectionValidator (Arguments VALID)
 validateFieldArguments
-  fieldDef@FieldDefinition {fieldArgs}
+  fieldDef@FieldDefinition {fieldContent}
   rawArgs =
     do
       args <- resolveArgumentVariables rawArgs
       traverse_ checkUnknown (elems args)
       traverse (validateArgument args) argsDef
     where
-      argsDef = case fieldArgs of
-        (ArgumentsDefinition _ argsD) -> argsD
-        NoArguments -> empty
+      argsDef = fieldContentArgs fieldContent
       -------------------------------------------------
       checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
       checkUnknown = (`selectKnown` fieldDef)
@@ -134,16 +132,15 @@ validateDirectiveArguments ::
   Arguments RAW ->
   SelectionValidator (Arguments VALID)
 validateDirectiveArguments
-  directiveDef@DirectiveDefinition {directiveDefinitionArgs}
+  directiveDef@DirectiveDefinition
+    { directiveDefinitionArgs = ArgumentsDefinition _ argsDef
+    }
   rawArgs =
     do
       args <- resolveArgumentVariables rawArgs
       traverse_ checkUnknown (elems args)
       traverse (validateArgument args) argsDef
     where
-      argsDef = case directiveDefinitionArgs of
-        (ArgumentsDefinition _ argsD) -> argsD
-        NoArguments -> empty
       -------------------------------------------------
       checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
       checkUnknown = (`selectKnown` directiveDef)
