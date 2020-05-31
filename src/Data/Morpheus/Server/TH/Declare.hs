@@ -13,7 +13,6 @@ where
 
 import Data.Morpheus.Server.Internal.TH.Types
   ( TypeD (..),
-    declareType,
   )
 import Data.Morpheus.Server.TH.Declare.Decode
   ( deriveDecode,
@@ -28,10 +27,12 @@ import Data.Morpheus.Server.TH.Declare.Introspect
   ( deriveObjectRep,
     instanceIntrospect,
   )
+import Data.Morpheus.Server.TH.Declare.Type
+  ( declareType,
+  )
 import Data.Morpheus.Server.TH.Transform
 import Data.Morpheus.Types.Internal.AST
   ( IN,
-    OUT,
     TypeKind (..),
     isInput,
     isObject,
