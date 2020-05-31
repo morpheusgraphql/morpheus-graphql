@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
+import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
 (.:) :: Decode a => ValidValue -> FieldName -> Eventless a
