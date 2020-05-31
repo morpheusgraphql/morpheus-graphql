@@ -10,6 +10,7 @@
 
 ## minor changes
 
+- internal refactoring
 - added dependency `mtl`
 - validates strings as enum from JSON value
 
