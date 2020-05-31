@@ -8,6 +8,9 @@ where
 import qualified Feature.Holistic.API as Holistic
   ( api,
   )
+import qualified Feature.Input.DefaultValue.API as DefaultValue
+  ( api,
+  )
 import qualified Feature.Input.Enum.API as InputEnum
   ( api,
   )
@@ -50,6 +53,7 @@ main = do
   inputEnum <- testFeature InputEnum.api "Feature/Input/Enum"
   inputScalar <- testFeature InputScalar.api "Feature/Input/Scalar"
   inputObject <- testFeature InputObject.api "Feature/Input/Object"
+  defaultValue <- testFeature DefaultValue.api "Feature/Input/DefaultValue"
   inference <- testFeature Inference.api "Feature/TypeInference"
   subscription <- testSubsriptions
   defaultMain
@@ -65,6 +69,7 @@ main = do
           inputObject,
           testSchemaRendering,
           inference,
-          subscription
+          subscription,
+          defaultValue
         ]
     )
