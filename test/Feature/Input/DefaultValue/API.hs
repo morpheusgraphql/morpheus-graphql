@@ -18,66 +18,32 @@ where
 
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
-import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
-  ( Event,
-    GQLRequest,
+  ( GQLRequest,
     GQLResponse,
-    GQLScalar (..),
-    GQLType (..),
     ID (..),
     RootResolver (..),
-    ScalarValue (..),
-    liftEither,
-    subscribe,
+    Undefined (..),
   )
 import Data.Text (Text)
-import GHC.Generics (Generic)
 
 importGQLDocument "test/Feature/Input/DefaultValue/schema.gql"
 
-alwaysFail :: IO (Either String a)
-alwaysFail = pure $ Left "fail with Either"
-
-rootResolver :: RootResolver IO () Query Mutation Subscription
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
-    { queryResolver =
-        Query
-          { user,
-            testUnion = Just . TestUnionUser <$> user,
-            fail1 = liftEither alwaysFail,
-            fail2 = fail "fail with MonadFail",
-            person = pure Person {name = pure (Just "test Person Name")},
-            type' = \TypeArgs {in' = TypeInput {data'}} -> pure data'
-          },
-      mutationResolver = Mutation {createUser = const user},
-      subscriptionResolver =
-        Subscription
-          { newUser = subscribe [Channel] (pure $ const user),
-            newAddress = subscribe [Channel] (pure resolveAddress)
-          }
+    { queryResolver = Query {user},
+      mutationResolver = Undefined,
+      subscriptionResolver = Undefined
     }
   where
     user :: Applicative m => m (User m)
     user =
       pure
         User
-          { name = pure "testName",
-            email = pure "",
-            address = resolveAddress,
-            office = resolveAddress,
-            friend = pure Nothing
-          }
-    -----------------------------------------------------
-    resolveAddress :: Applicative m => a -> m (Address m)
-    resolveAddress _ =
-      pure
-        Address
-          { city = pure "",
-            houseNumber = pure 0,
-            street = const $ pure Nothing
+          { inputs = const (pure "input")
           }
 
+-----------------------------------
 api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver

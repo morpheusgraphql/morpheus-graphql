@@ -14,13 +14,12 @@ input InputCompound {
   inputField4: [InputSimple]! = [{ inputField1: "some input" }]
 }
 
-type User implements Person {
-  name: String!
-  address(input: Coordinates!, comment: String): String!
-}
-
-input TypeInput {
-  data: String!
+type User {
+  inputs(
+    inputCompound: InputCompound!
+    input: InputSimple
+    comment: String
+  ): String!
 }
 
 type Query {
