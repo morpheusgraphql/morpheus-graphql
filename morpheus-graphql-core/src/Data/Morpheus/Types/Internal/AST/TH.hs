@@ -21,7 +21,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     VALID,
     hsTypeName,
   )
-import Data.Morpheus.Types.Internal.AST.Data
+import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( ANY,
     ANY,
     DataEnumValue (..),

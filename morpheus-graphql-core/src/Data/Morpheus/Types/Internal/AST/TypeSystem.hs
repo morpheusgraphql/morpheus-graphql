@@ -17,7 +17,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Morpheus.Types.Internal.AST.Data
+module Data.Morpheus.Types.Internal.AST.TypeSystem
   ( Arguments,
     ScalarDefinition (..),
     DataEnum,

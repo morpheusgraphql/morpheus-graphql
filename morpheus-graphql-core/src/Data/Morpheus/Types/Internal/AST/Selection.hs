@@ -58,18 +58,18 @@ import Data.Morpheus.Types.Internal.AST.Base
     msg,
     readName,
   )
-import Data.Morpheus.Types.Internal.AST.Data
-  ( Arguments,
-    Directives,
-    OUT,
-    Schema (..),
-    TypeDefinition (..),
-  )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( MergeSet,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,
+  )
+import Data.Morpheus.Types.Internal.AST.TypeSystem
+  ( Arguments,
+    Directives,
+    OUT,
+    Schema (..),
+    TypeDefinition (..),
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ResolvedValue,

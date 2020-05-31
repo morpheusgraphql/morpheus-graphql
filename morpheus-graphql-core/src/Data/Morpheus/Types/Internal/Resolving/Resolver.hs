@@ -78,10 +78,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     VALID,
     msg,
   )
-import Data.Morpheus.Types.Internal.AST.Data
-  ( Arguments,
-    Schema,
-  )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( toOrderedMap,
   )
@@ -92,6 +88,10 @@ import Data.Morpheus.Types.Internal.AST.Selection
     SelectionSet,
     UnionSelection,
     UnionTag (..),
+  )
+import Data.Morpheus.Types.Internal.AST.TypeSystem
+  ( Arguments,
+    Schema,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( GQLValue (..),
