@@ -45,6 +45,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Failure (..),
   )
+import Data.Semigroup ((<>))
 import Language.Haskell.TH
   ( ExpQ,
     uInfixE,
