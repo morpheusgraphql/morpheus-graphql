@@ -174,7 +174,6 @@ description desc = ("description", opt (pure . mkString) desc)
 
 renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
 renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ elems arguments
-renderArguments NoArguments _ = pure []
 
 instance RenderSchema (FieldDefinition cat) where
   render

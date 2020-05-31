@@ -670,22 +670,21 @@ type InputValueDefinition = FieldDefinition IN
 -- ArgumentsDefinition:
 --   (InputValueDefinition(list))
 
-data ArgumentsDefinition
-  = ArgumentsDefinition
-      { argumentsTypename :: Maybe TypeName,
-        arguments :: OrderedMap FieldName ArgumentDefinition
-      }
-  | NoArguments
+data ArgumentsDefinition = ArgumentsDefinition
+  { argumentsTypename :: Maybe TypeName,
+    arguments :: OrderedMap FieldName ArgumentDefinition
+  }
   deriving (Show, Lift)
 
 instance RenderGQL ArgumentsDefinition where
-  render NoArguments = ""
-  render arguments = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
+  render ArgumentsDefinition {arguments}
+    | null arguments =
+      ""
+    | otherwise = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
 
 type ArgumentDefinition = FieldDefinition IN
 
 instance Selectable ArgumentsDefinition ArgumentDefinition where
-  selectOr fb _ _ NoArguments = fb
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
 instance Collection ArgumentDefinition ArgumentsDefinition where
@@ -693,9 +692,7 @@ instance Collection ArgumentDefinition ArgumentsDefinition where
   singleton = ArgumentsDefinition Nothing . singleton
 
 instance Listable ArgumentDefinition ArgumentsDefinition where
-  elems NoArguments = []
   elems (ArgumentsDefinition _ args) = elems args
-  fromElems [] = pure NoArguments
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args
 
 createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition IN

@@ -12,7 +12,9 @@ module Data.Morpheus.Parsing.Internal.Pattern
 where
 
 -- MORPHEUS
-
+import Data.Morpheus.Internal.Utils
+  ( empty,
+  )
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
   )
@@ -91,7 +93,7 @@ argumentsDefinition :: Parser ArgumentsDefinition
 argumentsDefinition =
   label "ArgumentsDefinition" $
     uniqTuple inputValueDefinition
-      <|> pure NoArguments
+      <|> pure empty
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --

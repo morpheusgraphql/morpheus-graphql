@@ -135,12 +135,13 @@ mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = 
         }
   where
     fieldCont :: FieldContent TRUE OUT -> FieldContent TRUE OUT
-    fieldCont (FieldArgs ArgumentsDefinition {arguments}) =
-      FieldArgs $
-        ArgumentsDefinition
-          { argumentsTypename = Just $ genArgsTypeName fieldName,
-            arguments = arguments
-          }
+    fieldCont (FieldArgs ArgumentsDefinition {arguments})
+      | not (null arguments) =
+        FieldArgs $
+          ArgumentsDefinition
+            { argumentsTypename = Just $ genArgsTypeName fieldName,
+              arguments = arguments
+            }
     fieldCont _ = NoContent
 
 data BuildPlan
@@ -197,17 +198,18 @@ genArgumentTypes genArgsTypeName fields =
   concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
 genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [ServerTypeDefinition IN]
-genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = FieldArgs ArgumentsDefinition {arguments}} =
-  pure
-    [ ServerTypeDefinition
-        { tName,
-          tNamespace = empty,
-          tCons = [mkCons tName (Fields arguments)],
-          tKind = KindInputObject,
-          typeArgD = [],
-          typeOriginal = Nothing
-        }
-    ]
+genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = FieldArgs ArgumentsDefinition {arguments}}
+  | not (null arguments) =
+    pure
+      [ ServerTypeDefinition
+          { tName,
+            tNamespace = empty,
+            tCons = [mkCons tName (Fields arguments)],
+            tKind = KindInputObject,
+            typeArgD = [],
+            typeOriginal = Nothing
+          }
+      ]
   where
     tName = hsTypeName (namespaceWith fieldName)
 genArgumentType _ _ = pure []
