@@ -144,7 +144,7 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     LibUpdater,
     resolveUpdates,
   )
-import Data.Semigroup ((<>), Semigroup (..))
+import Data.Semigroup (Semigroup (..))
 import Data.Text (intercalate)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
@@ -339,10 +339,9 @@ instance ToAny (TypeContent TRUE) where
   toAny DataInterface {..} = DataInterface {..}
 
 instance ToAny FieldDefinition where
-  toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny fieldContent, ..}
+  toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny <$> fieldContent, ..}
 
 instance ToAny (FieldContent TRUE) where
-  toAny NoContent = NoContent
   toAny (FieldArgs x) = FieldArgs x
   toAny (DefaultInputValue x) = DefaultInputValue x
 
@@ -571,15 +570,14 @@ data FieldDefinition (cat :: TypeCategory) = FieldDefinition
   { fieldName :: FieldName,
     fieldDescription :: Maybe Description,
     fieldType :: TypeRef,
-    fieldContent :: FieldContent TRUE cat,
+    fieldContent :: Maybe (FieldContent TRUE cat),
     fieldDirectives :: [Directive VALID]
   }
   deriving (Show, Lift)
 
 data FieldContent (bool :: Bool) (cat :: TypeCategory) where
-  NoContent :: FieldContent bool cat
   DefaultInputValue ::
-    { defaultInputValue :: Maybe (Value RESOLVED)
+    { defaultInputValue :: Value RESOLVED
     } ->
     FieldContent (IsSelected a IN) a
   FieldArgs ::
@@ -599,7 +597,7 @@ instance KeyOf (FieldDefinition cat) where
   keyOf = fieldName
 
 instance Selectable (FieldDefinition OUT) ArgumentDefinition where
-  selectOr fb f key FieldDefinition {fieldContent = FieldArgs args} = selectOr fb f key args
+  selectOr fb f key FieldDefinition {fieldContent = Just (FieldArgs args)} = selectOr fb f key args
   selectOr fb _ _ _ = fb
 
 instance NameCollision (FieldDefinition cat) where
@@ -610,7 +608,7 @@ instance NameCollision (FieldDefinition cat) where
       }
 
 instance RenderGQL (FieldDefinition cat) where
-  render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = FieldArgs args} =
+  render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = Just (FieldArgs args)} =
     name <> render args <> ": " <> render fieldType
   render FieldDefinition {fieldName = FieldName name, fieldType} =
     name <> ": " <> render fieldType
@@ -627,7 +625,7 @@ fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 isFieldNullable :: FieldDefinition cat -> Bool
 isFieldNullable = isNullable . fieldType
 
-createField :: FieldContent TRUE cat -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
+createField :: Maybe (FieldContent TRUE cat) -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
 createField fieldContent fieldName (typeWrappers, typeConName) =
   FieldDefinition
     { fieldName,
@@ -638,10 +636,10 @@ createField fieldContent fieldName (typeWrappers, typeConName) =
     }
 
 mkField :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
-mkField = createField NoContent
+mkField = createField Nothing
 
 mkObjectField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition OUT
-mkObjectField args = createField (FieldArgs args)
+mkObjectField args = createField (Just $ FieldArgs args)
 
 toNullableField :: FieldDefinition cat -> FieldDefinition cat
 toNullableField dataField
@@ -700,7 +698,7 @@ instance Listable ArgumentDefinition ArgumentsDefinition where
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args
 
 createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition IN
-createArgument = createField NoContent
+createArgument = mkField
 
 -- https://spec.graphql.org/June2018/#InputValueDefinition
 -- InputValueDefinition
@@ -723,7 +721,7 @@ createInputUnionFields name members = fieldTag : map unionField members
       FieldDefinition
         { fieldName = __inputname,
           fieldDescription = Nothing,
-          fieldContent = NoContent,
+          fieldContent = Nothing,
           fieldType = createAlias (name <> "Tags"),
           fieldDirectives = []
         }
@@ -731,7 +729,7 @@ createInputUnionFields name members = fieldTag : map unionField members
       FieldDefinition
         { fieldName = toFieldName memberName,
           fieldDescription = Nothing,
-          fieldContent = NoContent,
+          fieldContent = Nothing,
           fieldType =
             TypeRef
               { typeConName = memberName,
