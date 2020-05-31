@@ -11,7 +11,6 @@ module Data.Morpheus.Server.TH.Declare.Introspect
   )
 where
 
-import Data.Maybe (maybeToList)
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
   ( instanceFunD,
@@ -35,8 +34,7 @@ import Data.Morpheus.Server.Types.GQLType
     TRUE,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    ArgumentsDefinition (..),
+  ( ArgumentsDefinition (..),
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -74,38 +72,43 @@ instanceIntrospect TypeDefinition {typeName, typeContent = DataEnum enumType, ..
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
-deriveObjectRep :: (ServerTypeDefinition cat, Maybe (TypeDefinition ANY), Maybe TypeKind) -> Q [Dec]
-deriveObjectRep (ServerTypeDefinition {tName, tCons = [ConsD {cFields}]}, _, tKind) =
-  pure <$> instanceD (cxt constrains) iHead methods
-  where
-    mainTypeName = typeT (mkTypeName tName) typeArgs
-    typeArgs = concatMap tyConArgs (maybeToList tKind)
-    constrains = map conTypeable typeArgs
-      where
-        conTypeable name = typeT ''Typeable [name]
-    -----------------------------------------------
-    iHead = instanceHeadMultiT ''DeriveTypeContent instCat [conT ''TRUE, mainTypeName]
-    instCat
-      | tKind == Just KindInputObject || null tKind =
-        conT ''IN
-      | otherwise = conT ''OUT
-    methods = [instanceFunD 'deriveTypeContent ["_proxy1", "_proxy2"] body]
-      where
-        body
-          | tKind == Just KindInputObject || null tKind =
-            [|
-              deriveInputObject
-                $(buildFields cFields)
-                $(buildTypes instCat cFields)
-              |]
-          | otherwise =
-            [|
-              deriveOutputObject
-                $(proxy)
-                $(buildFields cFields)
-                $(buildTypes instCat cFields)
-              |]
-        proxy = [|(Proxy :: Proxy $(mainTypeName))|]
+deriveObjectRep :: ServerTypeDefinition cat -> Q [Dec]
+deriveObjectRep
+  ServerTypeDefinition
+    { tName,
+      tCons = [ConsD {cFields}],
+      tKind
+    } =
+    pure <$> instanceD (cxt constrains) iHead methods
+    where
+      mainTypeName = typeT (mkTypeName tName) typeArgs
+      typeArgs = tyConArgs tKind
+      constrains = map conTypeable typeArgs
+        where
+          conTypeable name = typeT ''Typeable [name]
+      -----------------------------------------------
+      iHead = instanceHeadMultiT ''DeriveTypeContent instCat [conT ''TRUE, mainTypeName]
+      instCat
+        | tKind == KindInputObject =
+          conT ''IN
+        | otherwise = conT ''OUT
+      methods = [instanceFunD 'deriveTypeContent ["_proxy1", "_proxy2"] body]
+        where
+          body
+            | tKind == KindInputObject =
+              [|
+                deriveInputObject
+                  $(buildFields cFields)
+                  $(buildTypes instCat cFields)
+                |]
+            | otherwise =
+              [|
+                deriveOutputObject
+                  $(proxy)
+                  $(buildFields cFields)
+                  $(buildTypes instCat cFields)
+                |]
+          proxy = [|(Proxy :: Proxy $(mainTypeName))|]
 deriveObjectRep _ = pure []
 
 deriveInputObject ::

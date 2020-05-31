@@ -6,7 +6,6 @@ where
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
-    Description,
     FieldName,
     IN,
     TypeDefinition,
@@ -21,7 +20,6 @@ data ServerTypeDefinition cat = ServerTypeDefinition
     typeArgD :: [ServerTypeDefinition IN],
     tCons :: [ConsD cat],
     tKind :: TypeKind,
-    tDescription :: Maybe Description,
-    typeOriginal :: TypeDefinition ANY
+    typeOriginal :: Maybe (TypeDefinition ANY)
   }
   deriving (Show)

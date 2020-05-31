@@ -68,19 +68,18 @@ instance Declare (ServerTypeDefinition cat) where
         where
           gqlInstances
             | isObject tKind && isInput tKind =
-              [deriveObjectRep (typeD, Just typeOriginal, Nothing), deriveDecode typeD]
+              [deriveObjectRep typeD, deriveDecode typeD]
             | isObject tKind =
-              [deriveObjectRep (typeD, Just typeOriginal, Just tKind), deriveEncode typeD]
+              [deriveObjectRep typeD, deriveEncode typeD]
             | otherwise =
               []
 
 declareArgTypes :: Bool -> [ServerTypeDefinition IN] -> Q [Dec]
 declareArgTypes namespace types = do
-  introspectArgs <- concat <$> traverse deriveArgsRep types
+  introspectArgs <- concat <$> traverse deriveObjectRep types
   decodeArgs <- concat <$> traverse deriveDecode types
   return $ argsTypeDecs <> decodeArgs <> introspectArgs
   where
-    deriveArgsRep args = deriveObjectRep (args, Nothing, Nothing)
     ----------------------------------------------------
     argsTypeDecs = map (declareType namespace Nothing []) types
 

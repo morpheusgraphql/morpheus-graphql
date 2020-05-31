@@ -13,8 +13,6 @@ module Data.Morpheus.Server.TH.Transform
 where
 
 -- MORPHEUS
-
-import Data.Maybe (catMaybes)
 import Data.Morpheus.Internal.TH
   ( infoTyVars,
     mkTypeName,
@@ -85,24 +83,23 @@ toTHDefinitions namespace schema = traverse generateType schema
     --------------------------------------------
     generateType :: TypeDefinition ANY -> Q TypeDec
     generateType
-      typeOriginal@TypeDefinition
+      typeDef@TypeDefinition
         { typeName,
-          typeContent,
-          typeDescription
+          typeContent
         } =
         withType <$> genTypeContent schema toArgsTypeName typeName typeContent
         where
           toArgsTypeName :: FieldName -> TypeName
           toArgsTypeName = mkArgsTypeName namespace typeName
+          tKind = kindOf typeDef
+          typeOriginal = Just typeDef
           -------------------------
           withType (ConsIN tCons) =
             InputType
               ServerTypeDefinition
                 { tName = hsTypeName typeName,
-                  tDescription = typeDescription,
                   tNamespace = [],
                   tCons,
-                  tKind = kindOf typeOriginal,
                   typeArgD = empty,
                   ..
                 }
@@ -110,10 +107,8 @@ toTHDefinitions namespace schema = traverse generateType schema
             OutputType
               ServerTypeDefinition
                 { tName = hsTypeName typeName,
-                  tDescription = typeDescription,
                   tNamespace = [],
                   tCons,
-                  tKind = kindOf typeOriginal,
                   ..
                 }
 
@@ -208,8 +203,9 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = FieldAr
         { tName,
           tNamespace = empty,
           tCons = [mkCons tName (Fields arguments)],
-          tDescription = Nothing,
-          tKind = KindInputObject
+          tKind = KindInputObject,
+          typeArgD = [],
+          typeOriginal = Nothing
         }
     ]
   where
