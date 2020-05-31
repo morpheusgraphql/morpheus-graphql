@@ -34,31 +34,12 @@ import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-data TestScalar
-  = TestScalar
-      Int
-      Int
-  deriving (Show, Generic)
-
-instance GQLType TestScalar where
-  type KIND TestScalar = SCALAR
-
-instance GQLScalar TestScalar where
-  parseValue _ = pure (TestScalar 1 0)
-  serialize (TestScalar x y) = Int (x * 100 + y)
-
-data Channel
-  = Channel
-  deriving (Show, Eq)
-
-type EVENT = Event Channel ()
-
 importGQLDocument "test/Feature/Input/DefaultValue/schema.gql"
 
 alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail with Either"
 
-rootResolver :: RootResolver IO EVENT Query Mutation Subscription
+rootResolver :: RootResolver IO () Query Mutation Subscription
 rootResolver =
   RootResolver
     { queryResolver =
