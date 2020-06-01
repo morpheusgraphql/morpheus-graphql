@@ -5,23 +5,28 @@ enum TestEnum {
 }
 
 input InputSimple {
-  inputField1: ID!
+  fieldWithDefault: ID! = "value from fieldWithDefault"
+  simpleField: TestEnum
 }
 
 input InputCompound {
-  inputField2: String! = "some value"
-  inputField3: [InputSimple]! = [{}]
-  inputField4: [InputSimple]! = [{ inputField1: "some input" }]
+  inputField2: String! = "value from inputField2"
+  inputField3: [InputSimple]! = [
+    { simpleField: EnumA, fieldWithDefault: "value2 from inputField3" }
+  ]
+  inputField4: [InputSimple]! = [{ simpleField: EnumB }]
 }
 
 type User {
   inputs(
-    inputCompound: InputCompound!
+    inputCompound: InputCompound! = {
+      inputField2: "value from argument inputCompound"
+    }
     input: InputSimple
-    comment: String
+    comment: String = "test string"
   ): String!
 }
 
 type Query {
-  user: User!
+  user: User
 }

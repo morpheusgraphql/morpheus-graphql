@@ -1,3 +1,0 @@
-query UnexpectedValue {
-  i1: input(value: "some text")
-}
