@@ -39,6 +39,7 @@ import qualified Data.Aeson as A
     object,
     pairs,
   )
+import qualified Data.ByteString.Lazy.Char8 as BS (unpack)
 import qualified Data.HashMap.Strict as M
   ( toList,
   )
@@ -51,6 +52,7 @@ import Data.Morpheus.Internal.Utils
     elems,
     mapTuple,
   )
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -77,6 +79,7 @@ import Data.Scientific
 import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
+    pack,
     unpack,
   )
 import qualified Data.Vector as V
@@ -212,6 +215,9 @@ instance Show (Value a) where
       toEntry :: String -> Value a -> String
       toEntry "" value = show value
       toEntry txt value = txt <> ", " <> show value
+
+instance RenderGQL (Value a) where
+  render = pack . BS.unpack . A.encode
 
 instance Msg (Value a) where
   msg = msg . A.encode

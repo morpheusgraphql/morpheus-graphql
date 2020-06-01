@@ -23,6 +23,7 @@ import Data.Morpheus.Internal.Utils
     failure,
     selectBy,
   )
+import qualified Data.Morpheus.Rendering.RenderGQL as GQL (RenderGQL (..))
 import Data.Morpheus.Schema.TypeKind (TypeKind (..))
 import qualified Data.Morpheus.Types.Internal.AST as AST (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
@@ -369,7 +370,7 @@ defaultValue ::
   (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 defaultValue desc =
   ( "defaultValue",
-    opt (pure . mkString . pack . show) desc
+    opt (pure . mkString . GQL.render) desc
   )
 
 createInputValueWith ::
