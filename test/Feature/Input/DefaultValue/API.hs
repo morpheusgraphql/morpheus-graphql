@@ -37,11 +37,12 @@ rootResolver =
       subscriptionResolver = Undefined
     }
   where
-    user :: Applicative m => m (User m)
+    user :: Applicative m => m (Maybe (User m))
     user =
       pure
-        User
-          { inputs = const (pure "input")
+        $ Just
+        $ User
+          { inputs = const (pure "some input")
           }
 
 -----------------------------------
