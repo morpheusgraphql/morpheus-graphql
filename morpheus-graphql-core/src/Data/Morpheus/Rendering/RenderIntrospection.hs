@@ -44,6 +44,7 @@ import Data.Morpheus.Types.Internal.AST
     Message,
     OUT,
     QUERY,
+    RESOLVED,
     Schema,
     TRUE,
     TypeContent (..),
@@ -51,6 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     VALID,
+    Value,
     createInputUnionFields,
     fieldVisibility,
     kindOf,
@@ -115,7 +117,7 @@ instance RenderSchema (TypeDefinition a) where
           createLeafType ENUM typeName typeDescription (Just $ map createEnumValue enums)
       __render (DataInputObject fields) = \lib ->
         createInputObject typeName typeDescription
-          <$> traverse (`renderinputValue` lib) (elems fields)
+          <$> traverse (`renderInputValue` lib) (elems fields)
       __render DataObject {objectImplements, objectFields} =
         pure . createObjectType typeName typeDescription objectImplements objectFields
       __render (DataUnion union) = \schema ->
@@ -173,7 +175,7 @@ description :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (R
 description desc = ("description", opt (pure . mkString) desc)
 
 renderArguments :: (Monad m) => ArgumentsDefinition -> Schema -> Resolver QUERY e m [ResModel QUERY e m]
-renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderinputValue` lib) $ elems arguments
+renderArguments ArgumentsDefinition {arguments} lib = traverse (`renderInputValue` lib) $ elems arguments
 
 instance RenderSchema (FieldDefinition cat) where
   render
@@ -214,11 +216,18 @@ renderTypeKind AST.KindList = LIST
 renderTypeKind AST.KindNonNull = NON_NULL
 renderTypeKind AST.KindInterface = INTERFACE
 
-renderinputValue ::
+renderInputValue ::
   (Monad m) =>
   FieldDefinition IN ->
   Result e m (ResModel QUERY e m)
-renderinputValue input = fmap (createInputValueWith (fieldName input) (fieldDescription input)) . createInputObjectType input
+renderInputValue input@FieldDefinition {fieldName, fieldDescription, fieldContent} =
+  fmap
+    ( createInputValueWith
+        fieldName
+        fieldDescription
+        (fmap defaultInputValue fieldContent)
+    )
+    . createInputObjectType input
 
 createInputObjectType ::
   (Monad m) => FieldDefinition IN -> Result e m (ResModel QUERY e m)
@@ -238,7 +247,7 @@ renderInputUnion (key, meta, fields) lib =
       (createInputUnionFields key $ map fst $ filter snd fields)
   where
     createField field =
-      createInputValueWith (fieldName field) Nothing <$> createInputObjectType field lib
+      createInputValueWith (fieldName field) Nothing Nothing <$> createInputObjectType field lib
 
 createLeafType ::
   Monad m =>
@@ -354,12 +363,27 @@ wrapAs wrapper contentType =
     kind ListType = LIST
     kind NonNullType = NON_NULL
 
+defaultValue ::
+  Monad m =>
+  Maybe (Value RESOLVED) ->
+  (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+defaultValue desc =
+  ( "defaultValue",
+    opt (pure . mkString . pack . show) desc
+  )
+
 createInputValueWith ::
-  Monad m => FieldName -> Maybe Description -> ResModel QUERY e m -> ResModel QUERY e m
-createInputValueWith name desc ivType =
+  Monad m =>
+  FieldName ->
+  Maybe Description ->
+  Maybe (Value RESOLVED) ->
+  ResModel QUERY e m ->
+  ResModel QUERY e m
+createInputValueWith name desc value ivType =
   mkObject
     "__InputValue"
     [ renderFieldName name,
       description desc,
-      ("type", pure ivType)
+      ("type", pure ivType),
+      defaultValue value
     ]
