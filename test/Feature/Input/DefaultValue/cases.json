@@ -1,14 +1,14 @@
 [
   {
-    "path": "intorspection/arguments",
-    "description": "test introspection of argument default values"
-  },
-  {
     "path": "intorspection/inputSimple",
     "description": "test introspection of input Object"
   },
   {
     "path": "intorspection/inputCompound",
     "description": "test introspection of input Object with inputObject as field"
+  },
+  {
+    "path": "intorspection/arguments",
+    "description": "test introspection of argument default values"
   }
 ]
