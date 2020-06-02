@@ -388,13 +388,17 @@ defaultValue ::
   Monad m =>
   TypeRef ->
   Maybe (Value RESOLVED) ->
-  (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+  ( FieldName,
+    Resolver QUERY e m (ResModel QUERY e m)
+  )
 defaultValue
   TypeRef {typeConName}
-  desc =
+  value =
     ( "defaultValue",
-      opt (pure . mkString . GQL.render) desc
+      opt (pure . mkString . renderValue) value
     )
+    where
+      renderValue = GQL.render
 
 createInputValueWith ::
   Monad m =>
