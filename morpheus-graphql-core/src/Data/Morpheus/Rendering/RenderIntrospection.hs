@@ -242,10 +242,10 @@ renderInputValue ::
   (Monad m) =>
   FieldDefinition IN ->
   Result e m (ResModel QUERY e m)
-renderInputValue input@FieldDefinition {fieldName, fieldDescription, fieldContent, fieldType = TypeRef {typeConName}} =
+renderInputValue input@FieldDefinition {fieldName, fieldDescription, fieldContent, fieldType} =
   createInputValueWith
     fieldName
-    typeConName
+    fieldType
     fieldDescription
     (fmap defaultInputValue fieldContent)
     <$> createInputObjectType input
@@ -267,8 +267,8 @@ renderInputUnion (key, meta, fields) =
       createField
       (createInputUnionFields key $ map fst $ filter snd fields)
   where
-    createField field@FieldDefinition {fieldType = TypeRef {typeConName}} =
-      createInputValueWith (fieldName field) typeConName Nothing Nothing <$> createInputObjectType field
+    createField field@FieldDefinition {fieldType} =
+      createInputValueWith (fieldName field) fieldType Nothing Nothing <$> createInputObjectType field
 
 createLeafType ::
   Monad m =>
@@ -386,11 +386,11 @@ wrapAs wrapper contentType =
 
 defaultValue ::
   Monad m =>
-  TypeName ->
+  TypeRef ->
   Maybe (Value RESOLVED) ->
   (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 defaultValue
-  typename
+  TypeRef {typeConName}
   desc =
     ( "defaultValue",
       opt (pure . mkString . GQL.render) desc
@@ -399,16 +399,16 @@ defaultValue
 createInputValueWith ::
   Monad m =>
   FieldName ->
-  TypeName ->
+  TypeRef ->
   Maybe Description ->
   Maybe (Value RESOLVED) ->
   ResModel QUERY e m ->
   ResModel QUERY e m
-createInputValueWith name typename desc value ivType =
+createInputValueWith name tyRef desc value ivType =
   mkObject
     "__InputValue"
     [ renderFieldName name,
       description desc,
       ("type", pure ivType),
-      defaultValue typename value
+      defaultValue tyRef value
     ]
