@@ -50,28 +50,27 @@ import Data.Morpheus.Types.Internal.Resolving
 
 resolveTypes ::
   Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
-resolveTypes schema = mkList <$> traverse (`render` schema) (elems schema)
+resolveTypes schema = mkList <$> traverse render (elems schema)
 
 buildSchemaLinkType ::
-  Monad m => Maybe (TypeDefinition OUT) -> Schema -> ResModel QUERY e m
+  Monad m => Maybe (TypeDefinition OUT) -> Resolver QUERY e m (ResModel QUERY e m)
 buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] empty
-buildSchemaLinkType Nothing = const mkNull
+buildSchemaLinkType Nothing = pure mkNull
 
 findType ::
   Monad m =>
   TypeName ->
   Schema ->
   Resolver QUERY e m (ResModel QUERY e m)
-findType name schema = selectOr (pure mkNull) (`render` schema) name schema
+findType = selectOr (pure mkNull) render
 
 renderDirectives ::
   Monad m =>
-  Schema ->
   Resolver QUERY e m (ResModel QUERY e m)
-renderDirectives schema =
+renderDirectives =
   mkList
     <$> traverse
-      (`render` schema)
+      render
       defaultDirectives
 
 schemaResolver ::
@@ -83,10 +82,10 @@ schemaResolver schema@Schema {query, mutation, subscription} =
     mkObject
       "__Schema"
       [ ("types", resolveTypes schema),
-        ("queryType", pure $ buildSchemaLinkType (Just query) schema),
-        ("mutationType", pure $ buildSchemaLinkType mutation schema),
-        ("subscriptionType", pure $ buildSchemaLinkType subscription schema),
-        ("directives", renderDirectives schema)
+        ("queryType", buildSchemaLinkType (Just query)),
+        ("mutationType", buildSchemaLinkType mutation),
+        ("subscriptionType", buildSchemaLinkType subscription),
+        ("directives", renderDirectives)
       ]
 
 schemaAPI :: Monad m => Schema -> ResModel QUERY e m
