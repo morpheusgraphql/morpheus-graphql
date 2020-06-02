@@ -52,10 +52,10 @@ resolveTypes ::
   Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
 resolveTypes schema = mkList <$> traverse render (elems schema)
 
-buildSchemaLinkType ::
+renderOperation ::
   Monad m => Maybe (TypeDefinition OUT) -> Resolver QUERY e m (ResModel QUERY e m)
-buildSchemaLinkType (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] empty
-buildSchemaLinkType Nothing = pure mkNull
+renderOperation (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] empty
+renderOperation Nothing = pure mkNull
 
 findType ::
   Monad m =>
@@ -82,9 +82,9 @@ schemaResolver schema@Schema {query, mutation, subscription} =
     mkObject
       "__Schema"
       [ ("types", resolveTypes schema),
-        ("queryType", buildSchemaLinkType (Just query)),
-        ("mutationType", buildSchemaLinkType mutation),
-        ("subscriptionType", buildSchemaLinkType subscription),
+        ("queryType", renderOperation (Just query)),
+        ("mutationType", renderOperation mutation),
+        ("subscriptionType", renderOperation subscription),
         ("directives", renderDirectives)
       ]
 
