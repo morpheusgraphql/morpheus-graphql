@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -54,7 +55,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     VALID,
-    Value,
+    Value (..),
     createInputUnionFields,
     fieldVisibility,
     kindOf,
@@ -392,13 +393,38 @@ defaultValue ::
     Resolver QUERY e m (ResModel QUERY e m)
   )
 defaultValue
-  TypeRef {typeConName}
+  typeRef
   value =
     ( "defaultValue",
-      opt (pure . mkString . renderValue) value
+      opt
+        ( pure
+            . mkString
+            . GQL.render
+            . fulfill typeRef
+        )
+        value
     )
     where
-      renderValue = GQL.render
+      fulfill TypeRef {typeConName} (Object fields) =
+        selectType typeConName
+          >>= \case
+            TypeDefinition
+              { typeContent =
+                  DataObject {objectFields}
+              } -> Object <$> fmap (handleField fields) objectFields
+      handleField
+        FieldDefinition
+          { fieldName,
+            fieldContent,
+            fieldType
+          }
+        valueFields =
+          selectOr
+            (" INTERNAL: fieldOnValue : \"" <> msg name <> "\"")
+            name
+            fieldName
+            fulfill
+            fieldType
 
 createInputValueWith ::
   Monad m =>

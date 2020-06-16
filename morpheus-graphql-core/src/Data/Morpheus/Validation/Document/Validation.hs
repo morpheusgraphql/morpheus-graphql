@@ -112,27 +112,25 @@ checkInterfaceField
     { fieldName
     } =
     inField fieldName $
-      selectOr err checkEq fieldName objFields
+      selectOr err (interfaceField <:) fieldName objFields
     where
       err = failImplements Missing
-      -----
-      checkEq field = interfaceField << field
 
 class PartialImplements ctx => TypeEq a ctx where
-  (<<) :: a -> a -> SchemaValidator ctx ()
+  (<:) :: a -> a -> SchemaValidator ctx ()
 
 instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
   FieldDefinition
     { fieldType,
       fieldContent = args1
     }
-    << FieldDefinition
+    <: FieldDefinition
       { fieldType = fieldType',
         fieldContent = args2
-      } = (fieldType << fieldType') *> (args1 << args2)
+      } = (fieldType <: fieldType') *> (args1 <: args2)
 
 instance TypeEq (Maybe (FieldContent TRUE OUT)) (Interface, FieldName) where
-  f1 << f2 = toARgs f1 << toARgs f2
+  f1 <: f2 = toARgs f1 <: toARgs f2
     where
       toARgs :: Maybe (FieldContent TRUE OUT) -> ArgumentsDefinition
       toARgs (Just (FieldArgs args)) = args
@@ -143,7 +141,7 @@ instance (PartialImplements ctx) => TypeEq TypeRef ctx where
     { typeConName,
       typeWrappers = w1
     }
-    << t2@TypeRef
+    <: t2@TypeRef
       { typeConName = name',
         typeWrappers = w2
       }
@@ -159,15 +157,15 @@ elemIn ::
   a ->
   c ->
   SchemaValidator ctx ()
-elemIn el = selectOr (failImplements Missing) (el <<) (keyOf el)
+elemIn el = selectOr (failImplements Missing) (el <:) (keyOf el)
 
 instance TypeEq ArgumentsDefinition (Interface, FieldName) where
-  args1 << args2 = traverse_ validateArg (elems args1)
+  args1 <: args2 = traverse_ validateArg (elems args1)
     where
       validateArg arg = inArgument (keyOf arg) $ elemIn arg args2
 
 instance TypeEq ArgumentDefinition (Interface, Field) where
-  arg1 << arg2 = fieldType arg1 << fieldType arg2
+  arg1 <: arg2 = fieldType arg1 <: fieldType arg2
 
 -------------------------------
 selectInterface ::
