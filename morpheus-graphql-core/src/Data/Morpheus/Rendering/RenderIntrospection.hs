@@ -22,7 +22,9 @@ import Data.Maybe (isJust)
 import Data.Morpheus.Internal.Utils
   ( elems,
     failure,
+    fromElems,
     selectBy,
+    selectOr,
   )
 import qualified Data.Morpheus.Rendering.RenderGQL as GQL (RenderGQL (..))
 import Data.Morpheus.Schema.TypeKind (TypeKind (..))
@@ -46,6 +48,8 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Message,
     OUT,
+    Object,
+    ObjectEntry (..),
     QUERY,
     RESOLVED,
     Schema,
@@ -397,34 +401,47 @@ defaultValue
   value =
     ( "defaultValue",
       opt
-        ( pure
-            . mkString
-            . GQL.render
+        ( fmap
+            ( mkString
+                . GQL.render
+            )
             . fulfill typeRef
         )
         value
     )
     where
+      fulfill :: Monad m => TypeRef -> Value RESOLVED -> Resolver QUERY e m (Value RESOLVED)
       fulfill TypeRef {typeConName} (Object fields) =
         selectType typeConName
           >>= \case
             TypeDefinition
               { typeContent =
-                  DataObject {objectFields}
-              } -> Object <$> fmap (handleField fields) objectFields
+                  DataInputObject {inputObjectFields}
+              } ->
+                Object
+                  <$> ( traverse (handleField fields) (elems inputObjectFields)
+                          >>= fromElems
+                      )
+            _ -> failure (msg typeConName <> "is not must be Object")
+      fulfill _ v = pure v
+      handleField ::
+        Monad m =>
+        Object RESOLVED ->
+        FieldDefinition IN ->
+        Resolver QUERY e m (ObjectEntry RESOLVED)
       handleField
+        fields
         FieldDefinition
           { fieldName,
-            fieldContent,
             fieldType
-          }
-        valueFields =
-          selectOr
-            (" INTERNAL: fieldOnValue : \"" <> msg name <> "\"")
-            name
-            fieldName
-            fulfill
-            fieldType
+          } =
+          ObjectEntry fieldName
+            <$> ( selectBy
+                    (" INTERNAL: fieldOnValue : \"" <> msg fieldName <> "\"")
+                    fieldName
+                    fields
+                    >>= fulfill fieldType . entryValue
+                )
 
 createInputValueWith ::
   Monad m =>
