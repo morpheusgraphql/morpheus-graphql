@@ -402,46 +402,50 @@ defaultValue
     ( "defaultValue",
       opt
         ( fmap
-            ( mkString
-                . GQL.render
-            )
+            (mkString . GQL.render)
             . fulfill typeRef
+            . Just
         )
         value
     )
-    where
-      fulfill :: Monad m => TypeRef -> Value RESOLVED -> Resolver QUERY e m (Value RESOLVED)
-      fulfill TypeRef {typeConName} (Object fields) =
-        selectType typeConName
-          >>= \case
-            TypeDefinition
-              { typeContent =
-                  DataInputObject {inputObjectFields}
-              } ->
-                Object
-                  <$> ( traverse (handleField fields) (elems inputObjectFields)
-                          >>= fromElems
-                      )
-            _ -> failure (msg typeConName <> "is not must be Object")
-      fulfill _ v = pure v
-      handleField ::
-        Monad m =>
-        Object RESOLVED ->
-        FieldDefinition IN ->
-        Resolver QUERY e m (ObjectEntry RESOLVED)
-      handleField
-        fields
-        FieldDefinition
-          { fieldName,
-            fieldType
-          } =
-          ObjectEntry fieldName
-            <$> ( selectBy
-                    (" INTERNAL: fieldOnValue : \"" <> msg fieldName <> "\"")
-                    fieldName
-                    fields
-                    >>= fulfill fieldType . entryValue
+
+fulfill :: Monad m => TypeRef -> Maybe (Value RESOLVED) -> Resolver QUERY e m (Value RESOLVED)
+fulfill TypeRef {typeConName} (Just (Object fields)) =
+  selectType typeConName
+    >>= \case
+      TypeDefinition
+        { typeContent =
+            DataInputObject {inputObjectFields}
+        } ->
+          Object
+            <$> ( traverse (handleField fields) (elems inputObjectFields)
+                    >>= fromElems
                 )
+      _ -> failure (msg typeConName <> "is not must be Object")
+fulfill _ (Just v) = pure v
+fulfill _ Nothing = pure Null
+
+handleField ::
+  Monad m =>
+  Object RESOLVED ->
+  FieldDefinition IN ->
+  Resolver QUERY e m (ObjectEntry RESOLVED)
+handleField
+  fields
+  FieldDefinition
+    { fieldName,
+      fieldType,
+      fieldContent = x
+    } =
+    ObjectEntry fieldName
+      <$> fulfill
+        fieldType
+        ( selectOr
+            (fmap defaultInputValue x)
+            (Just . entryValue)
+            fieldName
+            fields
+        )
 
 createInputValueWith ::
   Monad m =>
