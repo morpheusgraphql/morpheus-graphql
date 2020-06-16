@@ -52,7 +52,6 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     QUERY,
     RESOLVED,
-    ScalarValue (..),
     Schema,
     TRUE,
     TypeContent (..),
@@ -428,7 +427,7 @@ fulfill TypeRef {typeConName} (Just (Object fields)) =
 fulfill typeRef (Just (List values)) =
   List <$> traverse (fulfill typeRef . Just) values
 fulfill _ (Just v) = pure v
-fulfill _ Nothing = pure (Scalar (String "not found"))
+fulfill _ Nothing = pure Null
 
 handleField ::
   Monad m =>
