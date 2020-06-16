@@ -52,6 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     QUERY,
     RESOLVED,
+    ScalarValue (..),
     Schema,
     TRUE,
     TypeContent (..),
@@ -418,12 +419,16 @@ fulfill TypeRef {typeConName} (Just (Object fields)) =
             DataInputObject {inputObjectFields}
         } ->
           Object
-            <$> ( traverse (handleField fields) (elems inputObjectFields)
+            <$> ( traverse
+                    (handleField fields)
+                    (elems inputObjectFields)
                     >>= fromElems
                 )
       _ -> failure (msg typeConName <> "is not must be Object")
+fulfill typeRef (Just (List values)) =
+  List <$> traverse (fulfill typeRef . Just) values
 fulfill _ (Just v) = pure v
-fulfill _ Nothing = pure Null
+fulfill _ Nothing = pure (Scalar (String "not found"))
 
 handleField ::
   Monad m =>
