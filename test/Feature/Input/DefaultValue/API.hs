@@ -42,7 +42,7 @@ rootResolver =
       pure
         $ Just
         $ User
-          { inputs = const (pure "some input")
+          { inputs = const (pure "test input")
           }
 
 -----------------------------------

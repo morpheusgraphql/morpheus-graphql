@@ -33,7 +33,7 @@
               }
             }
           },
-          "defaultValue": "[{fieldWithDefault: \"value2 from inputField3\", simpleField: EnumA}]"
+          "defaultValue": "[{fieldWithDefault: \"value2 from inputField3\", simpleField: EnumA}, {fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumA}]"
         },
         {
           "name": "inputField4",

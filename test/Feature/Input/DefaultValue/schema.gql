@@ -13,6 +13,7 @@ input InputCompound {
   inputField2: String! = "value from inputField2"
   inputField3: [InputSimple]! = [
     { fieldWithDefault: "value2 from inputField3", simpleField: EnumA }
+    { simpleField: EnumA }
   ]
   inputField4: [InputSimple]! = [{ simpleField: EnumB }]
 }
