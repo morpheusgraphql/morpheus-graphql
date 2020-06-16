@@ -28,7 +28,7 @@ instance RenderGQL Float where
   render = pack . show
 
 instance RenderGQL Text where
-  render = id
+  render = pack . show
 
 instance RenderGQL Bool where
   render True = "true"
