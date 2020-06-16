@@ -98,6 +98,12 @@ data ScalarValue
   | Boolean Bool
   deriving (Show, Eq, Generic, Lift)
 
+instance RenderGQL ScalarValue where
+  render (Int x) = render x
+  render (Float x) = render x
+  render (String x) = render x
+  render (Boolean x) = render x
+
 instance A.ToJSON ScalarValue where
   toJSON (Float x) = A.toJSON x
   toJSON (Int x) = A.toJSON x
@@ -167,6 +173,9 @@ data ObjectEntry (s :: Stage) = ObjectEntry
   }
   deriving (Eq)
 
+instance RenderGQL (ObjectEntry a) where
+  render (ObjectEntry (FieldName name) value) = name <> ":" <> render value
+
 instance Show (ObjectEntry s) where
   show (ObjectEntry (FieldName name) value) = unpack name <> ":" <> show value
 
@@ -217,7 +226,26 @@ instance Show (Value a) where
       toEntry txt value = txt <> ", " <> show value
 
 instance RenderGQL (Value a) where
-  render = pack . BS.unpack . A.encode
+  -- TODO: fix
+  render (ResolvedVariable Ref {refName} _) =
+    "$" <> readName refName
+  render (VariableValue Ref {refName}) = "$" <> readName refName <> " "
+  -- TODO: fix
+  render Null = "null"
+  render (Enum x) = readTypeName x
+  render (Scalar x) = render x
+  render (Object keys) = "{" <> foldr toEntry "" keys <> "}"
+    where
+      toEntry :: ObjectEntry a -> Text -> Text
+      toEntry value "" = render value
+      toEntry value txt = txt <> ", " <> render value
+  render (List list) = "[" <> foldl toEntry "" list <> "]"
+    where
+      toEntry :: Text -> Value a -> Text
+      toEntry "" value = render value
+      toEntry txt value = txt <> ", " <> render value
+
+-- render = pack . BS.unpack . A.encode
 
 instance Msg (Value a) where
   msg = msg . A.encode
