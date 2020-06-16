@@ -174,10 +174,10 @@ data ObjectEntry (s :: Stage) = ObjectEntry
   deriving (Eq)
 
 instance RenderGQL (ObjectEntry a) where
-  render (ObjectEntry (FieldName name) value) = name <> ":" <> render value
+  render (ObjectEntry (FieldName name) value) = name <> ": " <> render value
 
 instance Show (ObjectEntry s) where
-  show (ObjectEntry (FieldName name) value) = unpack name <> ":" <> show value
+  show (ObjectEntry (FieldName name) value) = unpack name <> ": " <> show value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision _ ObjectEntry {entryName} =
