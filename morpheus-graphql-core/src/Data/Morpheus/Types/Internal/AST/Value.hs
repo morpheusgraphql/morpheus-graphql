@@ -234,11 +234,11 @@ instance RenderGQL (Value a) where
   render Null = "null"
   render (Enum x) = readTypeName x
   render (Scalar x) = render x
-  render (Object keys) = "{" <> foldr toEntry "" keys <> "}"
+  render (Object keys) = "{" <> foldl toEntry "" (elems keys) <> "}"
     where
-      toEntry :: ObjectEntry a -> Text -> Text
-      toEntry value "" = render value
-      toEntry value txt = txt <> ", " <> render value
+      toEntry :: Text -> ObjectEntry a -> Text
+      toEntry "" value = render value
+      toEntry txt value = txt <> ", " <> render value
   render (List list) = "[" <> foldl toEntry "" list <> "]"
     where
       toEntry :: Text -> Value a -> Text
