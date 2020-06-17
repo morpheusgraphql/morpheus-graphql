@@ -55,16 +55,27 @@ instance ToJSON Response where
 testSchema :: TestTree
 testSchema =
   testGroup
-    "Test Schema"
+    "schema"
     [ testGroup
-        "Validation"
-        $ map
-          (uncurry schemaCase)
-          [ ("validation/interface/field-type/ok", "interface field type validation success"),
-            ("validation/interface/field-type/fail", "interface field type validation fails"),
-            ("validation/interface/field-args/ok", "interface field args type validation success"),
-            ("validation/interface/field-args/fail", "interface field args type validation fails")
-          ]
+        "validation"
+        [ testGroup
+            "interface"
+            $ map
+              (uncurry schemaCase)
+              [ ("validation/interface/field-type/ok", "interface field type validation success"),
+                ("validation/interface/field-type/fail", "interface field type validation fails"),
+                ("validation/interface/field-args/ok", "interface field args type validation success"),
+                ("validation/interface/field-args/fail", "interface field args type validation fails")
+              ],
+          testGroup
+            "default value"
+            $ map
+              (uncurry schemaCase)
+              [ ("validation/default-value/compound-ok", "sophisticated default value validation success"),
+                ("validation/default-value/unexpected-value", "fail if: default value field receives wrong value"),
+                ("validation/default-value/unknown-field", "fail if: default value object contains unknown field")
+              ]
+        ]
     ]
 
 schemaCase :: FieldName -> String -> TestTree

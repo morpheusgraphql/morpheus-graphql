@@ -1,0 +1,10 @@
+enum TestEnum {
+  EnumA
+  EnumB
+  EnumC
+}
+
+input InputSimple {
+  fieldWithDefault: ID! = "value from fieldWithDefault"
+  simpleField: TestEnum = 
+}
