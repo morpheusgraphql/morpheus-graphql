@@ -20,7 +20,8 @@ import Data.Maybe (isJust)
 -- Morpheus
 
 import Data.Morpheus.Internal.Utils
-  ( elems,
+  ( Failure,
+    elems,
     failure,
     fromElems,
     selectBy,
@@ -45,6 +46,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
+    GQLErrors,
     IN,
     Message,
     OUT,
@@ -84,15 +86,22 @@ import Data.Text (pack)
 
 type Result e m a = Resolver QUERY e m a
 
-getSchema ::
-  Monad m =>
-  Resolver QUERY e m Schema
-getSchema = schema <$> unsafeInternalContext
+class
+  ( Monad m,
+    Failure Message m,
+    Failure GQLErrors m
+  ) =>
+  WithSchema m
+  where
+  getSchema :: m Schema
+
+instance Monad m => WithSchema (Resolver QUERY e m) where
+  getSchema = schema <$> unsafeInternalContext
 
 selectType ::
-  Monad m =>
+  WithSchema m =>
   TypeName ->
-  Resolver QUERY e m (TypeDefinition ANY)
+  m (TypeDefinition ANY)
 selectType name =
   getSchema
     >>= selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> msg name <> "\"") name
@@ -409,7 +418,11 @@ defaultValue
         value
     )
 
-fulfill :: Monad m => TypeRef -> Maybe (Value RESOLVED) -> Resolver QUERY e m (Value RESOLVED)
+fulfill ::
+  WithSchema m =>
+  TypeRef ->
+  Maybe (Value RESOLVED) ->
+  m (Value RESOLVED)
 fulfill TypeRef {typeConName} (Just (Object fields)) =
   selectType typeConName
     >>= \case
@@ -430,10 +443,10 @@ fulfill _ (Just v) = pure v
 fulfill _ Nothing = pure Null
 
 handleField ::
-  Monad m =>
+  WithSchema m =>
   Object RESOLVED ->
   FieldDefinition IN ->
-  Resolver QUERY e m (ObjectEntry RESOLVED)
+  m (ObjectEntry RESOLVED)
 handleField
   fields
   FieldDefinition
