@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7bd90f8983a08d5504d15ebdef28e4e304abbd991058002949ee8b5b7347f673
+-- hash: 2860a2af1281ff94d1b6256ea2302c971c095aae84593241926a4b9adfb4012b
 
 name:           morpheus-graphql-core
 version:        0.12.0
@@ -24,16 +24,16 @@ extra-source-files:
     README.md
 data-files:
     test/interface/query.gql
-    test/schema/validation/interface/fieldArgsFail/schema.gql
-    test/schema/validation/interface/fieldArgsOk/schema.gql
-    test/schema/validation/interface/fieldTypeFail/schema.gql
-    test/schema/validation/interface/fieldTypeOk/schema.gql
+    test/schema/validation/interface/field-args/fail/schema.gql
+    test/schema/validation/interface/field-args/ok/schema.gql
+    test/schema/validation/interface/field-type/fail/schema.gql
+    test/schema/validation/interface/field-type/ok/schema.gql
     test/simple/query.gql
     test/interface/response.json
-    test/schema/validation/interface/fieldArgsFail/response.json
-    test/schema/validation/interface/fieldArgsOk/response.json
-    test/schema/validation/interface/fieldTypeFail/response.json
-    test/schema/validation/interface/fieldTypeOk/response.json
+    test/schema/validation/interface/field-args/fail/response.json
+    test/schema/validation/interface/field-args/ok/response.json
+    test/schema/validation/interface/field-type/fail/response.json
+    test/schema/validation/interface/field-type/ok/response.json
     test/simple/response.json
 
 source-repository head
