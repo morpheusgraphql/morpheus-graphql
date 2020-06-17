@@ -36,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
+    IN,
     OUT,
     Schema,
     TRUE,
@@ -83,6 +84,12 @@ validateType
       typeContent = DataObject {objectImplements, objectFields}
     } = inType typeName $ do
     validateImplements objectImplements objectFields
+    pure dt
+validateType
+  dt@TypeDefinition
+    { typeContent = DataInputObject {inputObjectFields}
+    } = do
+    traverse_ validateDefaultValue inputObjectFields
     pure dt
 validateType x = pure x
 
@@ -180,3 +187,9 @@ failImplements ::
 failImplements err = do
   x <- asks local
   failure $ partialImplements x err
+
+-- DEFAULT VALUE
+
+-- TODO: implement default value validation
+validateDefaultValue :: FieldDefinition IN -> SchemaValidator () ()
+validateDefaultValue _ = pure ()
