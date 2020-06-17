@@ -1,10 +1,10 @@
 [
   {
-    "path": "intorspection/inputSimple",
+    "path": "intorspection/input-simple",
     "description": "test introspection of input Object"
   },
   {
-    "path": "intorspection/inputCompound",
+    "path": "intorspection/input-compound",
     "description": "test introspection of input Object with inputObject as field"
   },
   {
