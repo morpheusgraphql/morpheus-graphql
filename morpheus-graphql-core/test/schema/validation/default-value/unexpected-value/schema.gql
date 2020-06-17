@@ -4,14 +4,22 @@ enum TestEnum {
   EnumC
 }
 
-input InputSimple {
+input Input1 {
   field1: ID = EnumA
   field2: String = EnumA
   field3: TestEnum = UnknownEnum
   field4: TestEnum = 1
-  field5: TestEnum = "string"
+  field5: TestEnum = "some text"
+}
+
+input Input2 {
+  field1: Input1 = { field1: true }
+  field2: String
 }
 
 type Query {
-  field1(input: InputSimple): Int
+  field1(
+    input: Input2 = { field1: { field2: 1 }, field2: true }
+    e: TestEnum = EnumBB
+  ): Int
 }

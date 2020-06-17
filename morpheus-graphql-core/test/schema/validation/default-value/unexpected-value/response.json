@@ -1,7 +1,23 @@
 {
   "errors": [
     {
-      "message": "TODO:",
+      "message": "Input1.field1 provides invalid default value. Expected type \"ID\" found EnumA.",
+      "locations": []
+    },
+    {
+      "message": "Input1.field2 provides invalid default value. Expected type \"String\" found EnumA.",
+      "locations": []
+    },
+    {
+      "message": "Input1.field3 provides invalid default value. Expected type \"TestEnum\" found UnknownEnum.",
+      "locations": []
+    },
+    {
+      "message": "Input1.field4 provides invalid default value. Expected type \"TestEnum\" found 1.",
+      "locations": []
+    },
+    {
+      "message": "Input1.field5 provides invalid default value. Expected type \"TestEnum\" found \"some text\".",
       "locations": []
     }
   ]

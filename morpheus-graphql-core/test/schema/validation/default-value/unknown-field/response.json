@@ -13,11 +13,11 @@
       "locations": []
     },
     {
-      "message": "default value for Query.field provides unknown field \"field2\" on \"Input3\".",
+      "message": "default value for Query.field(i1:) provides unknown field \"field2\" on \"Input3\".",
       "locations": []
     },
     {
-      "message": "default value for Query.field provides unknown field \"field2\" on \"Input2\".",
+      "message": "default value for Query.field(i1:) provides unknown field \"field2\" on \"Input2\".",
       "locations": []
     }
   ]
