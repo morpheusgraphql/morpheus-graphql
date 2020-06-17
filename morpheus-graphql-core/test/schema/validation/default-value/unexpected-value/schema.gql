@@ -18,8 +18,8 @@ input Input2 {
 }
 
 type Query {
-  field1(
-    input: Input2 = { field1: { field2: 1 }, field2: true }
-    e: TestEnum = EnumBB
+  field(
+    i1: Input2 = { field1: { field2: 1 }, field2: true }
+    i2: TestEnum = EnumBB
   ): Int
 }
