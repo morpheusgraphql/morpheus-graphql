@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ecc2b2370186533766c21a2601bcdcda7c3cddf61158d479ae1165a891767104
+-- hash: acb47623fb3ecea854c4277a2e9f35a7e343689834d4ab740687892c57b9d141
 
 name:           morpheus-graphql
 version:        0.12.0
@@ -109,8 +109,8 @@ data-files:
     test/Feature/Holistic/selection/subscription/singleTopLevelField/failAnonymous/query.gql
     test/Feature/Holistic/selection/unknownField/query.gql
     test/Feature/Input/DefaultValue/intorspection/arguments/query.gql
-    test/Feature/Input/DefaultValue/intorspection/InputCompound/query.gql
-    test/Feature/Input/DefaultValue/intorspection/InputSimple/query.gql
+    test/Feature/Input/DefaultValue/intorspection/input-compound/query.gql
+    test/Feature/Input/DefaultValue/intorspection/input-simple/query.gql
     test/Feature/Input/DefaultValue/schema.gql
     test/Feature/Input/Enum/decode2Con/query.gql
     test/Feature/Input/Enum/decode3Con/query.gql
@@ -271,8 +271,8 @@ data-files:
     test/Feature/Holistic/selection/unknownField/response.json
     test/Feature/Input/DefaultValue/cases.json
     test/Feature/Input/DefaultValue/intorspection/arguments/response.json
-    test/Feature/Input/DefaultValue/intorspection/InputCompound/response.json
-    test/Feature/Input/DefaultValue/intorspection/InputSimple/response.json
+    test/Feature/Input/DefaultValue/intorspection/input-compound/response.json
+    test/Feature/Input/DefaultValue/intorspection/input-simple/response.json
     test/Feature/Input/Enum/cases.json
     test/Feature/Input/Enum/decode2Con/response.json
     test/Feature/Input/Enum/decode3Con/response.json
