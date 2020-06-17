@@ -1,7 +1,23 @@
 {
   "errors": [
     {
-      "message": "Interface field argument Character.name(id:) expected but Deity.name does not provide it.",
+      "message": "default value for Input3.field provides unknown field \"field2\" on \"Input2\".",
+      "locations": []
+    },
+    {
+      "message": "default value for Input3.field provides unknown field \"field2\" on \"Input1\".",
+      "locations": []
+    },
+    {
+      "message": "default value for Input3.field provides unknown field \"field3\" on \"Input1\".",
+      "locations": []
+    },
+    {
+      "message": "default value for Query.field provides unknown field \"field2\" on \"Input3\".",
+      "locations": []
+    },
+    {
+      "message": "default value for Query.field provides unknown field \"field2\" on \"Input2\".",
       "locations": []
     }
   ]

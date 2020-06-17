@@ -11,3 +11,7 @@ input InputSimple {
   field4: TestEnum = 1
   field5: TestEnum = "string"
 }
+
+type Query {
+  field1(input: InputSimple): Int
+}

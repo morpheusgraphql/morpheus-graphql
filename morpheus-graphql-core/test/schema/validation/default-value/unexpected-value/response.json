@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Interface field argument Character.name(id:) expected but Deity.name does not provide it.",
+      "message": "TODO:",
       "locations": []
     }
   ]
