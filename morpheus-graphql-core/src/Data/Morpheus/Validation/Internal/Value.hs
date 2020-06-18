@@ -19,6 +19,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( DataEnumValue (..),
     FieldDefinition (..),
+    FieldsDefinition,
     IN,
     Message,
     Object,
@@ -95,7 +96,7 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
             typeArgs = Nothing
           }
 
--- Validate Variable Argument or all Possible input Values
+-- Validate input Values
 validateInput ::
   [TypeWrapper] ->
   TypeDefinition IN ->
@@ -117,7 +118,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     validateWrapped wrappers _ ObjectEntry {entryValue = ResolvedVariable ref variable} =
       checkTypeEquality (typeName, wrappers) ref variable
     validateWrapped wrappers _ ObjectEntry {entryValue = Null}
-      | isNullableWrapper wrappers = return Null
+      | isNullableWrapper wrappers = pure Null
       | otherwise = mismatchError wrappers Null
     -- Validate LIST
     validateWrapped (TypeMaybe : wrappers) _ value =
@@ -135,36 +136,14 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
           Object
             <$> ( traverse_ (`requiredFieldIsDefined` fields) parentFields
-                    *> traverse validateField fields
+                    *> traverse (`validateField` parentFields) fields
                 )
-          where
-            validateField ::
-              ObjectEntry RESOLVED -> InputValidator (ObjectEntry VALID)
-            validateField entry@ObjectEntry {entryName} = do
-              inputField@FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}} <- getField
-              inputTypeDef <- askInputFieldType inputField
-              withInputScope (Prop entryName typeConName) $
-                ObjectEntry entryName
-                  <$> validateInput
-                    typeWrappers
-                    inputTypeDef
-                    entry
-              where
-                getField = selectKnown entry parentFields
         -- VALIDATE INPUT UNION
-        -- TODO: enhance input union Validation
         validate (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
           case constraintInputUnion inputUnion rawFields of
             Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields)
-            Right (name, Nothing) -> return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name)])
-            Right (name, Just value) -> do
-              inputDef <- askInputMember name
-              validValue <-
-                validateInput
-                  [TypeMaybe]
-                  inputDef
-                  (ObjectEntry (toFieldName name) value)
-              return (Object $ unsafeFromValues [ObjectEntry "__typename" (Enum name), ObjectEntry (toFieldName name) validValue])
+            Right (name, Nothing) -> pure (mkInputObject name [])
+            Right (name, Just value) -> validatInputUnionMember name value
         {-- VALIDATE ENUM --}
         validate (DataEnum tags) ObjectEntry {entryValue} =
           validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
@@ -175,10 +154,39 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers entryValue
 
+-- INPUT UNION
+validatInputUnionMember :: TypeName -> Value RESOLVED -> InputValidator (Value VALID)
+validatInputUnionMember name value = do
+  inputDef <- askInputMember name
+  validValue <-
+    validateInput
+      [TypeMaybe]
+      inputDef
+      (ObjectEntry (toFieldName name) value)
+  pure $ mkInputObject name [ObjectEntry (toFieldName name) validValue]
+
+mkInputObject :: TypeName -> [ObjectEntry s] -> Value s
+mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (Enum name) : xs
+
+-- INUT Fields
+validateField ::
+  ObjectEntry RESOLVED -> FieldsDefinition IN -> InputValidator (ObjectEntry VALID)
+validateField entry@ObjectEntry {entryName} parentFields = do
+  field@FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}} <-
+    selectKnown entry parentFields
+  inputTypeDef <- askInputFieldType field
+  withInputScope (Prop entryName typeConName) $
+    ObjectEntry entryName
+      <$> validateInput
+        typeWrappers
+        inputTypeDef
+        entry
+
 requiredFieldIsDefined :: FieldDefinition IN -> Object RESOLVED -> InputValidator (ObjectEntry RESOLVED)
 requiredFieldIsDefined fieldDef@FieldDefinition {fieldName} =
   selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef
 
+-- Leaf Validations
 validateScalar ::
   TypeName ->
   ScalarDefinition ->
