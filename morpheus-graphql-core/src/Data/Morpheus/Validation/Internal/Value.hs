@@ -18,6 +18,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataEnumValue (..),
+    DataInputUnion,
     FieldDefinition (..),
     FieldsDefinition,
     IN,
@@ -134,20 +135,11 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validate ::
           TypeContent TRUE IN -> ObjectEntry RESOLVED -> InputValidator ValidValue
         validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
-          Object
-            <$> ( traverse_ (`requiredFieldIsDefined` fields) parentFields
-                    *> traverse (`validateField` parentFields) fields
-                )
-        -- VALIDATE INPUT UNION
+          Object <$> validateInputObject parentFields fields
         validate (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
-          case constraintInputUnion inputUnion rawFields of
-            Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields)
-            Right (name, Nothing) -> pure (mkInputObject name [])
-            Right (name, Just value) -> validatInputUnionMember name value
-        {-- VALIDATE ENUM --}
+          validatInputUnion typeName inputUnion rawFields
         validate (DataEnum tags) ObjectEntry {entryValue} =
           validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
-        {-- VALIDATE SCALAR --}
         validate (DataScalar dataScalar) ObjectEntry {entryValue} =
           validateScalar typeName dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
         validate _ ObjectEntry {entryValue} = mismatchError [] entryValue
@@ -155,6 +147,17 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers entryValue
 
 -- INPUT UNION
+validatInputUnion ::
+  TypeName ->
+  DataInputUnion ->
+  Object RESOLVED ->
+  InputValidator (Value VALID)
+validatInputUnion typeName inputUnion rawFields =
+  case constraintInputUnion inputUnion rawFields of
+    Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields)
+    Right (name, Nothing) -> pure (mkInputObject name [])
+    Right (name, Just value) -> validatInputUnionMember name value
+
 validatInputUnionMember :: TypeName -> Value RESOLVED -> InputValidator (Value VALID)
 validatInputUnionMember name value = do
   inputDef <- askInputMember name
@@ -168,7 +171,12 @@ validatInputUnionMember name value = do
 mkInputObject :: TypeName -> [ObjectEntry s] -> Value s
 mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (Enum name) : xs
 
--- INUT Fields
+-- INUT Object
+validateInputObject :: FieldsDefinition IN -> Object RESOLVED -> InputValidator (Object VALID)
+validateInputObject parentFields fields =
+  traverse_ (`requiredFieldIsDefined` fields) parentFields
+    *> traverse (`validateField` parentFields) fields
+
 validateField ::
   ObjectEntry RESOLVED -> FieldsDefinition IN -> InputValidator (ObjectEntry VALID)
 validateField entry@ObjectEntry {entryName} parentFields = do
