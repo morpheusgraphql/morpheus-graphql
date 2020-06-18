@@ -47,9 +47,12 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( Context (..),
+  ( CTX (..),
+    Context (..),
     InputContext (..),
+    Scope (..),
     ScopeKind (..),
+    SelectionContext (..),
     Target (..),
     renderInputPrefix,
   )
@@ -102,45 +105,48 @@ instance Unused Fragment where
         }
 
 class MissingRequired c ctx where
-  missingRequired :: Context -> ctx -> Ref -> c -> GQLError
+  missingRequired :: ctx -> Ref -> c -> GQLError
 
-instance MissingRequired (Arguments s) ctx where
+instance MissingRequired (Arguments s) (CTX SelectionContext) where
   missingRequired
-    Context {scopePosition, scopeSelectionName, scopeKind}
-    _
+    CTX
+      { global =
+          Context
+            { scope = Scope {position, kind},
+              currentSelectionName
+            }
+      }
     Ref {refName}
     _ =
       GQLError
         { message =
-            inScope scopeKind
+            inScope kind
               <> " argument "
               <> msg refName
               <> " is required but not provided.",
-          locations = [scopePosition]
+          locations = [position]
         }
       where
-        inScope SELECTION = "Field " <> msg scopeSelectionName
-        inScope DIRECTIVE = "Directive " <> msg ("@" <> scopeSelectionName)
+        inScope SELECTION = "Field " <> msg currentSelectionName
+        inScope DIRECTIVE = "Directive " <> msg ("@" <> currentSelectionName)
 
-instance MissingRequired (Object s) InputContext where
+instance MissingRequired (Object s) (CTX InputContext) where
   missingRequired
-    Context {scopePosition}
-    inputCTX
+    CTX {global = Context {scope = Scope {position}}, local}
     Ref {refName}
     _ =
       GQLError
         { message =
-            renderInputPrefix inputCTX
+            renderInputPrefix local
               <> "Undefined Field "
               <> msg refName
               <> ".",
-          locations = [scopePosition]
+          locations = [position]
         }
 
-instance MissingRequired (VariableDefinitions s) ctx where
+instance MissingRequired (VariableDefinitions s) (CTX ctx) where
   missingRequired
-    Context {operationName}
-    _
+    CTX {global = Context {operationName}}
     Ref {refName, refPosition}
     _ =
       GQLError
@@ -179,10 +185,10 @@ instance Unknown (FieldDefinition OUT) ctx where
 
 instance Unknown (FieldsDefinition IN) InputContext where
   type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
-  unknown Context {scopePosition} ctx _ ObjectEntry {entryName} =
+  unknown Context {scope = Scope {position}} ctx _ ObjectEntry {entryName} =
     [ GQLError
         { message = renderInputPrefix ctx <> "Unknown Field " <> msg entryName <> ".",
-          locations = [scopePosition]
+          locations = [position]
         }
     ]
 
@@ -202,8 +208,8 @@ instance Unknown DirectiveDefinitions ctx where
 
 instance Unknown (FieldsDefinition OUT) ctx where
   type UnknownSelector (FieldsDefinition OUT) = Ref
-  unknown Context {scopeTypeName} _ _ =
-    unknownSelectionField scopeTypeName
+  unknown Context {scope = Scope {typename}} _ _ =
+    unknownSelectionField typename
 
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> GQLError

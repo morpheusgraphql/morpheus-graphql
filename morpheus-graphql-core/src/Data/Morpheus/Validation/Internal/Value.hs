@@ -57,7 +57,7 @@ import Data.Morpheus.Types.Internal.Validation
     Prop (..),
     askInputFieldType,
     askInputMember,
-    askScopePosition,
+    askPosition,
     constraintInputUnion,
     inputMessagePrefix,
     inputValueSource,
@@ -70,7 +70,7 @@ import Data.Semigroup ((<>))
 
 castFailure :: TypeRef -> Maybe Message -> ResolvedValue -> InputValidator a
 castFailure expected message value = do
-  pos <- askScopePosition
+  pos <- askPosition
   prefix <- inputMessagePrefix
   failure
     $ errorMessage pos

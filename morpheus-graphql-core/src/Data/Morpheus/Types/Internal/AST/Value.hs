@@ -39,7 +39,6 @@ import qualified Data.Aeson as A
     object,
     pairs,
   )
-import qualified Data.ByteString.Lazy.Char8 as BS (unpack)
 import qualified Data.HashMap.Strict as M
   ( toList,
   )
@@ -79,7 +78,6 @@ import Data.Scientific
 import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
-    pack,
     unpack,
   )
 import qualified Data.Vector as V

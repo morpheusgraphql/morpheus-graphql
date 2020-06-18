@@ -36,14 +36,14 @@ import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
     SelectionContext (..),
     SelectionValidator,
-    askContext,
     askInputFieldType,
-    askScopePosition,
+    askPosition,
+    askVariables,
     selectKnown,
     selectRequired,
     selectWithDefaultValue,
     startInput,
-    withScopePosition,
+    withPosition,
   )
 import Data.Morpheus.Validation.Internal.Value
   ( validateInput,
@@ -63,7 +63,7 @@ resolveObject = resolve
     resolve (List x) = List <$> traverse resolve x
     resolve (Object obj) = Object <$> traverse resolveEntry obj
     resolve (VariableValue ref) =
-      variables <$> askContext
+      askVariables
         >>= fmap (ResolvedVariable ref)
           . selectRequired ref
 
@@ -89,7 +89,7 @@ validateArgument
       fieldType = TypeRef {typeWrappers}
     } =
     do
-      argumentPosition <- askScopePosition
+      argumentPosition <- askPosition
       argument <-
         selectWithDefaultValue
           Argument {argumentName = fieldName, argumentValue = Null, argumentPosition}
@@ -100,7 +100,7 @@ validateArgument
       -------------------------------------------------------------------------
       validateArgumentValue :: Argument RESOLVED -> SelectionValidator (Argument VALID)
       validateArgumentValue arg@Argument {argumentValue = value, ..} =
-        withScopePosition argumentPosition
+        withPosition argumentPosition
           $ startInput (SourceArgument arg)
           $ do
             datatype <- askInputFieldType argumentDef

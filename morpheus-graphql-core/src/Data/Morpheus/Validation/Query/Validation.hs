@@ -23,6 +23,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Types.Internal.Validation
   ( Context (..),
+    Scope (..),
     ScopeKind (..),
     SelectionContext (..),
     runValidator,
@@ -68,11 +69,9 @@ validateRequest
         Context
           { schema,
             fragments,
-            scopeTypeName = "Root",
-            scopeSelectionName = "Root",
-            scopePosition = operationPosition,
-            operationName,
-            scopeKind = SELECTION
+            scope = Scope {typename = "Root", position = operationPosition, kind = SELECTION},
+            --   scopeSelectionName = "Root",
+            operationName
           }
       validateHelpers =
         validateFragments operationSelection

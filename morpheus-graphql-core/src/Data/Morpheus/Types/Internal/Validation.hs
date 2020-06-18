@@ -19,9 +19,6 @@ module Data.Morpheus.Types.Internal.Validation
     Context (..),
     SelectionContext (..),
     runValidator,
-    askSchema,
-    askContext,
-    askFragments,
     askFieldType,
     askTypeMember,
     selectRequired,
@@ -30,12 +27,13 @@ module Data.Morpheus.Types.Internal.Validation
     constraint,
     withScope,
     withScopeType,
-    withScopePosition,
+    withPosition,
     askScopeTypeName,
     selectWithDefaultValue,
-    askScopePosition,
+    askPosition,
     askInputFieldType,
     askInputMember,
+    askSchema,
     startInput,
     withInputScope,
     inputMessagePrefix,
@@ -45,6 +43,10 @@ module Data.Morpheus.Types.Internal.Validation
     ScopeKind (..),
     withDirective,
     inputValueSource,
+    askVariables,
+    askFragments,
+    CTX,
+    Scope (..),
   )
 where
 
@@ -66,18 +68,14 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    Directive (..),
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
-    Fragments,
     IN,
     Message,
     OUT,
     Object,
-    Position,
     Ref (..),
-    Schema,
     TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
@@ -90,9 +88,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toFieldName,
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-  )
 import Data.Morpheus.Types.Internal.Validation.Error
   ( InternalError (..),
     KindViolation (..),
@@ -102,20 +97,33 @@ import Data.Morpheus.Types.Internal.Validation.Error
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( BaseValidator,
+    CTX (..),
     Constraint (..),
     Context (..),
-    InputContext (..),
     InputSource (..),
     InputValidator,
     Prop (..),
     Resolution,
+    Scope (..),
     ScopeKind (..),
     SelectionContext (..),
     SelectionValidator,
     Target (..),
     Validator (..),
+    WithSchema (..),
+    WithSelection (..),
+    WithVariables (..),
+    askPosition,
+    askScopeTypeName,
+    inputMessagePrefix,
     inputValueSource,
-    renderInputPrefix,
+    runValidator,
+    startInput,
+    withDirective,
+    withInputScope,
+    withPosition,
+    withScope,
+    withScopeType,
   )
 import Data.Semigroup
   ( (<>),
@@ -125,14 +133,14 @@ import Data.Semigroup
 getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a) => ca -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
 
-failOnUnused :: Unused b => [b] -> Validator ctx ()
+failOnUnused :: Unused b => [b] -> Validator (CTX ctx) ()
 failOnUnused x
   | null x = return ()
   | otherwise = do
-    (gctx, _) <- Validator ask
-    failure $ map (unused gctx) x
+    ctx <- getContext
+    failure $ map (unused ctx) x
 
-checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused b) => ca -> [b] -> Validator ctx ()
+checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused b) => ca -> [b] -> Validator (CTX ctx) ()
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
@@ -157,21 +165,21 @@ selectRequired ::
   Validator ctx value
 selectRequired selector container =
   do
-    (gctx, ctx) <- Validator ask
+    ctx <- Validator ask
     selectBy
-      [missingRequired gctx ctx selector container]
+      [missingRequired ctx selector container]
       (keyOf selector)
       container
 
 selectWithDefaultValue ::
   ( Selectable values value,
-    MissingRequired values ctx,
+    MissingRequired values (CTX ctx),
     KEY value ~ FieldName
   ) =>
   value ->
   FieldDefinition IN ->
   values ->
-  Validator ctx value
+  Validator (CTX ctx) value
 selectWithDefaultValue
   fallbackValue
   field@FieldDefinition {fieldName}
@@ -188,8 +196,9 @@ selectWithDefaultValue
         | otherwise = failSelection
       -----------------
       failSelection = do
-        (gctx, ctx) <- Validator ask
-        failure [missingRequired gctx ctx (Ref fieldName (scopePosition gctx)) values]
+        ctx <- Validator ask
+        position <- askPosition
+        failure [missingRequired ctx (Ref fieldName position) values]
 
 selectKnown ::
   ( Selectable c a,
@@ -200,10 +209,10 @@ selectKnown ::
   ) =>
   sel ->
   c ->
-  Validator ctx a
+  Validator (CTX ctx) a
 selectKnown selector lib =
   do
-    (gctx, ctx) <- Validator ask
+    (CTX gctx ctx) <- Validator ask
     selectBy
       (unknown gctx ctx lib selector)
       (keyOf selector)
@@ -307,83 +316,6 @@ askInputMember name =
               <> "\""
               <> msg scopeType
               <> "\" must be an INPUT_OBJECT."
-
-startInput :: InputSource -> InputValidator a -> Validator ctx a
-startInput inputSource =
-  setContext $
-    const
-      InputContext
-        { inputSource,
-          inputPath = []
-        }
-
-withDirective :: Directive s -> Validator ctx a -> Validator ctx a
-withDirective
-  Directive
-    { directiveName,
-      directivePosition
-    } = setGlobalContext update
-    where
-      update ctx =
-        ctx
-          { scopePosition = directivePosition,
-            scopeSelectionName = directiveName,
-            scopeKind = DIRECTIVE
-          }
-
-withInputScope :: Prop -> InputValidator a -> InputValidator a
-withInputScope prop = setContext update
-  where
-    update ctx@InputContext {inputPath = old} =
-      ctx {inputPath = old <> [prop]}
-
-runValidator :: Validator ctx a -> Context -> ctx -> Eventless a
-runValidator (Validator x) globalCTX ctx = runReaderT x (globalCTX, ctx)
-
-askContext :: Validator ctx ctx
-askContext = snd <$> Validator ask
-
-askSchema :: Validator ctx Schema
-askSchema = schema . fst <$> Validator ask
-
-askFragments :: Validator ctx Fragments
-askFragments = fragments . fst <$> Validator ask
-
-askScopeTypeName :: Validator ctx TypeName
-askScopeTypeName = scopeTypeName . fst <$> Validator ask
-
-askScopePosition :: Validator ctx Position
-askScopePosition = scopePosition . fst <$> Validator ask
-
-setContext ::
-  (c' -> c) ->
-  Validator c a ->
-  Validator c' a
-setContext f = Validator . withReaderT (\(x, y) -> (x, f y)) . _runValidator
-
-setGlobalContext ::
-  (Context -> Context) ->
-  Validator c a ->
-  Validator c a
-setGlobalContext f = Validator . withReaderT (\(x, y) -> (f x, y)) . _runValidator
-
-withScope :: TypeName -> Ref -> Validator ctx a -> Validator ctx a
-withScope scopeTypeName (Ref scopeSelectionName scopePosition) = setGlobalContext update
-  where
-    update ctx = ctx {scopeTypeName, scopePosition, scopeSelectionName}
-
-withScopePosition :: Position -> Validator ctx a -> Validator ctx a
-withScopePosition scopePosition = setGlobalContext update
-  where
-    update ctx = ctx {scopePosition}
-
-withScopeType :: TypeName -> Validator ctx a -> Validator ctx a
-withScopeType scopeTypeName = setGlobalContext update
-  where
-    update ctx = ctx {scopeTypeName}
-
-inputMessagePrefix :: InputValidator Message
-inputMessagePrefix = renderInputPrefix <$> askContext
 
 constraintInputUnion ::
   forall stage.
