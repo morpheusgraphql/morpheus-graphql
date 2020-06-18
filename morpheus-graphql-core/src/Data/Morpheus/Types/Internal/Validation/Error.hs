@@ -108,8 +108,6 @@ instance Unused (OperationContext v) Fragment where
 class MissingRequired c ctx where
   missingRequired :: ctx -> Ref -> c -> GQLError
 
-instance MissingRequired (Object RESOLVED) (InputContext (TypeSystemContext ()))
-
 instance MissingRequired (Arguments s) (OperationContext v) where
   missingRequired
     OperationContext
@@ -147,6 +145,20 @@ instance MissingRequired (Object s) (InputContext (OperationContext v)) where
               <> msg refName
               <> ".",
           locations = [position]
+        }
+
+instance MissingRequired (Object RESOLVED) (InputContext (TypeSystemContext ())) where
+  missingRequired
+    input
+    Ref {refName}
+    _ =
+      GQLError
+        { message =
+            renderInputPrefix input
+              <> "Undefined Field "
+              <> msg refName
+              <> ".",
+          locations = []
         }
 
 instance MissingRequired (VariableDefinitions s) (OperationContext v) where

@@ -23,6 +23,7 @@ import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Field (..),
     Interface (..),
+    renderField,
   )
 import Data.Semigroup ((<>))
 
@@ -100,10 +101,6 @@ instance PartialImplements (Interface, Field) where
         "expected but "
           <> renderField typename fieldname
           <> " does not provide it."
-
-renderField :: TypeName -> FieldName -> Message
-renderField (TypeName tname) (FieldName fname) =
-  msg $ tname <> "." <> fname
 
 renderArg :: TypeName -> FieldName -> FieldName -> Message
 renderArg tname fname (FieldName argName) =

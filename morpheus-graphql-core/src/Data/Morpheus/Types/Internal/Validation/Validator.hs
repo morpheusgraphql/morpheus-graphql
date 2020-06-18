@@ -43,8 +43,10 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     WithSelection (..),
     WithVariables (..),
     WithScope (..),
+    WithScope' (..),
     WithInput,
     withContext,
+    renderField,
   )
 where
 
@@ -62,7 +64,8 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Directive (..),
-    FieldName,
+    FieldDefinition (..),
+    FieldName (..),
     FieldsDefinition,
     Fragments,
     GQLError (..),
@@ -76,7 +79,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Schema,
     TypeDefinition,
-    TypeName,
+    TypeName (..),
     VALID,
     Variable (..),
     VariableDefinitions,
@@ -111,10 +114,17 @@ renderSource (SourceArgument Argument {argumentName}) =
   "Argument " <> msg argumentName <> " got invalid value. "
 renderSource (SourceVariable Variable {variableName} _) =
   "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
+renderSource SourceInputField {sourceTypeName, sourceField = FieldDefinition {fieldName}} =
+  "Field " <> renderField sourceTypeName fieldName <> " got invalid value. "
+
+renderField :: TypeName -> FieldName -> Message
+renderField (TypeName tname) (FieldName fname) =
+  msg $ tname <> "." <> fname
 
 data ScopeKind
   = DIRECTIVE
   | SELECTION
+  | TYPE
   deriving (Show)
 
 data OperationContext vars = OperationContext
@@ -146,6 +156,10 @@ data InputSource
   | SourceVariable
       { sourceVariable :: Variable RAW,
         isDefaultValue :: Bool
+      }
+  | SourceInputField
+      { sourceTypeName :: TypeName,
+        sourceField :: FieldDefinition IN
       }
   deriving (Show)
 
@@ -343,8 +357,27 @@ instance WithScope (Validator (OperationContext v)) where
             ..
           }
 
-instance WithScope (Validator c) => WithScope (Validator (InputContext c)) where
-  getScope = toInput getScope
+class WithScope' (c :: *) where
+  getScope' :: c -> Scope
+  setScope' :: (Scope -> Scope) -> c -> c
+
+instance WithScope' (OperationContext v) where
+  getScope' = scope
+  setScope' f OperationContext {..} =
+    OperationContext
+      { scope = f scope,
+        ..
+      }
+
+instance WithScope' c => WithScope (Validator (InputContext c)) where
+  getScope = getScope' . sourceContext <$> Validator ask
+  setScope f = withContext update
+    where
+      update InputContext {..} =
+        InputContext
+          { sourceContext = setScope' f sourceContext,
+            ..
+          }
 
 -- can be only used for internal errors
 instance

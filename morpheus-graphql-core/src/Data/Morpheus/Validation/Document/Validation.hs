@@ -53,7 +53,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( askInputFieldType,
+  ( InputSource (..),
+    askInputFieldType,
     runValidator,
     startInput,
   )
@@ -95,9 +96,10 @@ validateType
     pure dt
 validateType
   dt@TypeDefinition
-    { typeContent = DataInputObject {inputObjectFields}
+    { typeContent = DataInputObject {inputObjectFields},
+      typeName
     } = do
-    traverse_ validateDefaultValue inputObjectFields
+    traverse_ (validateDefaultValue typeName) inputObjectFields
     pure dt
 validateType x = pure x
 
@@ -200,15 +202,17 @@ failImplements err = do
 
 -- TODO: implement default value validation
 validateDefaultValue ::
+  TypeName ->
   FieldDefinition IN ->
   SchemaValidator () ()
-validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure ()
+validateDefaultValue _ FieldDefinition {fieldContent = Nothing} = pure ()
 validateDefaultValue
+  typeName
   inputField@FieldDefinition
     { fieldName,
       fieldType = TypeRef {typeWrappers},
       fieldContent = Just DefaultInputValue {defaultInputValue}
-    } = startInput undefined $ do
+    } = startInput (SourceInputField typeName inputField) $ do
     datatype <- askInputFieldType inputField
     _ <- validateInput typeWrappers datatype (ObjectEntry fieldName defaultInputValue)
     pure ()

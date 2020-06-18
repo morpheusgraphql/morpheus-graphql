@@ -22,6 +22,8 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inInterface,
     Field (..),
     Interface (..),
+    WithScope' (..),
+    renderField,
   )
 where
 
@@ -48,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     GQLErrors,
     Message,
     OUT,
+    Position (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -58,10 +61,14 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( InputContext,
+    Scope (..),
+    ScopeKind (..),
     Validator (..),
     WithInput,
     WithSchema (..),
     WithScope,
+    WithScope' (..),
+    renderField,
     withContext,
   )
 import Data.Semigroup
@@ -81,10 +88,14 @@ data TypeSystemContext c = TypeSystemContext
   }
   deriving (Show)
 
-data TypeFieldContext = TypeFieldContext
-  { typename :: TypeName,
-    field :: FieldsDefinition ANY
-  }
+instance WithScope' (TypeSystemContext a) where
+  getScope' _ =
+    Scope
+      { position = Position {line = 0, column = 0},
+        typename = "TODO:",
+        kind = TYPE
+      }
+  setScope' _ = id --TODO:
 
 selectType :: TypeName -> SchemaValidator ctx (TypeDefinition ANY)
 selectType name =
@@ -144,8 +155,6 @@ constraintInterface
     } = pure (typeName, fields)
 constraintInterface TypeDefinition {typeName} =
   failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
-
-instance WithScope (Validator (TypeSystemContext ()))
 
 instance WithSchema (Validator (TypeSystemContext ())) where
   askSchema = asks types >>= fromElems
