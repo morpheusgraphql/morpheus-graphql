@@ -91,7 +91,7 @@ validateArgument
       argumentPosition <- askPosition
       argument <-
         selectWithDefaultValue
-          Argument {argumentName = fieldName, argumentValue = Null, argumentPosition}
+          (\argumentValue -> Argument {argumentName = fieldName, argumentValue, argumentPosition})
           argumentDef
           requestArgs
       validateArgumentValue argument

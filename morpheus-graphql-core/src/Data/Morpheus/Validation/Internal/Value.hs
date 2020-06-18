@@ -244,7 +244,7 @@ requiredFieldIsDefined ::
   Object RESOLVED ->
   InputValidator ctx (ObjectEntry RESOLVED)
 requiredFieldIsDefined fieldDef@FieldDefinition {fieldName} =
-  selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef
+  selectWithDefaultValue (ObjectEntry fieldName) fieldDef
 
 -- Leaf Validations
 validateScalar ::

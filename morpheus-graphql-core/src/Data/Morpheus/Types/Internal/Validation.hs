@@ -70,6 +70,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    FieldContent (..),
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
@@ -78,7 +79,10 @@ import Data.Morpheus.Types.Internal.AST
     Message,
     OUT,
     Object,
+    ObjectEntry (..),
+    RESOLVED,
     Ref (..),
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
@@ -175,28 +179,34 @@ selectRequired selector container =
       container
 
 selectWithDefaultValue ::
+  forall ctx values value.
   ( Selectable values value,
     MissingRequired values ctx,
     KEY value ~ FieldName,
     WithScope (Validator ctx)
   ) =>
-  value ->
+  (Value RESOLVED -> value) ->
   FieldDefinition IN ->
   values ->
   Validator ctx value
 selectWithDefaultValue
-  fallbackValue
-  field@FieldDefinition {fieldName}
+  f
+  field@FieldDefinition
+    { fieldName,
+      fieldContent
+    }
   values =
     selectOr
-      handleNullable
+      (handeNull fieldContent)
       pure
       fieldName
       values
     where
       ------------------
-      handleNullable
-        | isFieldNullable field = pure fallbackValue
+      handeNull :: Maybe (FieldContent TRUE IN) -> Validator ctx value
+      handeNull (Just (DefaultInputValue value)) = pure $ f value
+      handeNull Nothing
+        | isFieldNullable field = pure $ f Null
         | otherwise = failSelection
       -----------------
       failSelection = do
