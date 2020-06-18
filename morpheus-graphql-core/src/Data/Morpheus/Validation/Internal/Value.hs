@@ -133,9 +133,11 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
       where
         validate ::
           TypeContent TRUE IN -> ObjectEntry RESOLVED -> InputValidator ValidValue
-        validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} = do
-          traverse_ (`requiredFieldsDefined` fields) (elems parentFields)
-          Object <$> traverse validateField fields
+        validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
+          Object
+            <$> ( traverse_ (`requiredFieldsDefined` fields) (elems parentFields)
+                    *> traverse validateField fields
+                )
           where
             validateField ::
               ObjectEntry RESOLVED -> InputValidator (ObjectEntry VALID)
