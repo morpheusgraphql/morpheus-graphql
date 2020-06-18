@@ -115,7 +115,7 @@ renderSource (SourceArgument Argument {argumentName}) =
 renderSource (SourceVariable Variable {variableName} _) =
   "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
 renderSource SourceInputField {sourceTypeName, sourceField = FieldDefinition {fieldName}} =
-  "Field " <> renderField sourceTypeName fieldName <> " got invalid value. "
+  "Field " <> renderField sourceTypeName fieldName <> " got invalid default value. "
 
 renderField :: TypeName -> FieldName -> Message
 renderField (TypeName tname) (FieldName fname) =
