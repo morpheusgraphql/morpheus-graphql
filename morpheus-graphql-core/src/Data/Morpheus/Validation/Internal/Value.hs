@@ -130,19 +130,21 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validateElement = validateWrapped wrappers tyCont . ObjectEntry key
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
-    validateWrapped [] dt v = validate dt v
+    validateWrapped [] dt v = validateEntry dt v
       where
-        validate ::
-          TypeContent TRUE IN -> ObjectEntry RESOLVED -> InputValidator ValidValue
-        validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
+        validateEntry ::
+          TypeContent TRUE IN ->
+          ObjectEntry RESOLVED ->
+          InputValidator ValidValue
+        validateEntry (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
           Object <$> validateInputObject parentFields fields
-        validate (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
+        validateEntry (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
           validatInputUnion typeName inputUnion rawFields
-        validate (DataEnum tags) ObjectEntry {entryValue} =
+        validateEntry (DataEnum tags) ObjectEntry {entryValue} =
           validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
-        validate (DataScalar dataScalar) ObjectEntry {entryValue} =
+        validateEntry (DataScalar dataScalar) ObjectEntry {entryValue} =
           validateScalar typeName dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
-        validate _ ObjectEntry {entryValue} = mismatchError [] entryValue
+        validateEntry _ ObjectEntry {entryValue} = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers entryValue
 
