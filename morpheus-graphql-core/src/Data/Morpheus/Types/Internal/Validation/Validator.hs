@@ -27,10 +27,9 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     askPosition,
     withInputScope,
     inputMessagePrefix,
-    Context (..),
     InputSource (..),
     InputContext (..),
-    SelectionContext (..),
+    OperationContext (..),
     renderInputPrefix,
     Target (..),
     Prop (..),
@@ -40,7 +39,6 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     Scope (..),
     withDirective,
     startInput,
-    CTX (..),
     WithSchema (..),
     WithSelection (..),
     WithVariables (..),
@@ -87,7 +85,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup
-  ( Semigroup (..),
+  ( (<>),
   )
 
 data Prop = Prop
@@ -117,18 +115,14 @@ data ScopeKind
   | SELECTION
   deriving (Show)
 
-data Context = Context
+data OperationContext v i = OperationContext
   { schema :: Schema,
-    fragments :: Fragments,
     scope :: Scope,
+    fragments :: Fragments,
     operationName :: Maybe FieldName,
-    currentSelectionName :: FieldName
-  }
-  deriving (Show)
-
-data CTX c = CTX
-  { global :: Context,
-    local :: c
+    currentSelectionName :: FieldName,
+    variables :: v,
+    input :: i
   }
   deriving (Show)
 
@@ -153,11 +147,6 @@ data InputSource
       }
   deriving (Show)
 
-newtype SelectionContext = SelectionContext
-  { variables :: VariableDefinitions VALID
-  }
-  deriving (Show)
-
 data Target
   = TARGET_OBJECT
   | TARGET_INPUT
@@ -178,16 +167,16 @@ withInputScope :: Prop -> InputValidator a -> InputValidator a
 withInputScope prop = inContext update
   where
     update
-      CTX
-        { local =
+      OperationContext
+        { input =
             InputContext
               { inputPath = old,
                 ..
               },
           ..
         } =
-        CTX
-          { local =
+        OperationContext
+          { input =
               InputContext
                 { inputPath = old <> [prop],
                   ..
@@ -196,7 +185,7 @@ withInputScope prop = inContext update
           }
 
 inputValueSource :: InputValidator InputSource
-inputValueSource = inputSource . local <$> Validator ask
+inputValueSource = inputSource . input <$> Validator ask
 
 askContext :: Validator ctx ctx
 askContext = Validator ask
@@ -207,8 +196,8 @@ askScopeTypeName = typename <$> getScope
 askPosition :: WithScope m => m Position
 askPosition = position <$> getScope
 
-runValidator :: Validator (CTX ctx) a -> Context -> ctx -> Eventless a
-runValidator (Validator x) global local = runReaderT x CTX {global, local}
+runValidator :: Validator ctx a -> ctx -> Eventless a
+runValidator (Validator x) = runReaderT x
 
 inContext ::
   (c' -> c) ->
@@ -262,18 +251,22 @@ withScopeType name = setScope update
     update Scope {..} = Scope {typename = name, ..}
 
 inputMessagePrefix :: InputValidator Message
-inputMessagePrefix = renderInputPrefix . local <$> askContext
+inputMessagePrefix = renderInputPrefix . input <$> askContext
 
-startInput :: InputSource -> InputValidator a -> Validator (CTX ctx) a
+startInput ::
+  InputSource ->
+  InputValidator a ->
+  Validator (OperationContext v ()) a
 startInput inputSource = inContext update
   where
-    update CTX {..} =
-      CTX
-        { local =
+    update OperationContext {..} =
+      OperationContext
+        { input =
             InputContext
               { inputSource,
                 inputPath = []
               },
+          variables = (),
           ..
         }
 
@@ -290,51 +283,44 @@ newtype Validator ctx a = Validator
       Monad
     )
 
-type BaseValidator = Validator (CTX ())
+type BaseValidator = Validator (OperationContext () ())
 
-type SelectionValidator = Validator (CTX SelectionContext)
+type SelectionValidator = Validator (OperationContext (VariableDefinitions VALID) ())
 
-type InputValidator = Validator (CTX InputContext)
+type InputValidator = Validator (OperationContext () InputContext)
 
 -- Helpers
 class WithSchema (m :: * -> *) where
   askSchema :: m Schema
 
-instance WithSchema (Validator (CTX ctx)) where
-  askSchema = schema . global <$> Validator ask
+instance WithSchema (Validator (OperationContext v i)) where
+  askSchema = schema <$> Validator ask
 
 -- Variables
 class WithVariables (m :: * -> *) where
   askVariables :: m (VariableDefinitions VALID)
 
-instance WithVariables (Validator (CTX SelectionContext)) where
-  askVariables = variables . local <$> Validator ask
+instance WithVariables (Validator (OperationContext (VariableDefinitions VALID) i)) where
+  askVariables = variables <$> Validator ask
 
 -- Selection
 class
   Functor m =>
   WithSelection (m :: * -> *)
   where
-  getContext :: m Context
   setSelectionName :: FieldName -> m a -> m a
-
   getSelectionName :: m FieldName
-  getSelectionName = currentSelectionName <$> getContext
 
   askFragments :: m Fragments
-  askFragments = fragments <$> getContext
 
-instance WithSelection (Validator (CTX ctx)) where
-  getContext = global <$> Validator ask
+instance WithSelection (Validator (OperationContext v i)) where
+  askFragments = fragments <$> Validator ask
+  getSelectionName = currentSelectionName <$> Validator ask
   setSelectionName name = inContext update
     where
-      update CTX {global = Context {..}, ..} =
-        CTX
-          { global =
-              Context
-                { currentSelectionName = name,
-                  ..
-                },
+      update OperationContext {..} =
+        OperationContext
+          { currentSelectionName = name,
             ..
           }
 
@@ -345,17 +331,13 @@ class
   getScope :: m Scope
   setScope :: (Scope -> Scope) -> m a -> m a
 
-instance WithScope (Validator (CTX ctx)) where
-  getScope = scope . global <$> Validator ask
+instance WithScope (Validator (OperationContext v i)) where
+  getScope = scope <$> Validator ask
   setScope f = inContext update
     where
-      update CTX {global = Context {..}, ..} =
-        CTX
-          { global =
-              Context
-                { scope = f scope,
-                  ..
-                },
+      update OperationContext {..} =
+        OperationContext
+          { scope = f scope,
             ..
           }
 

@@ -47,12 +47,10 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( CTX (..),
-    Context (..),
-    InputContext (..),
+  ( InputContext (..),
+    OperationContext (..),
     Scope (..),
     ScopeKind (..),
-    SelectionContext (..),
     Target (..),
     renderInputPrefix,
   )
@@ -77,12 +75,12 @@ instance InternalError (FieldDefinition cat) where
         }
 
 class Unused c where
-  unused :: Context -> c -> GQLError
+  unused :: OperationContext i v -> c -> GQLError
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 instance Unused (Variable s) where
   unused
-    Context {operationName}
+    OperationContext {operationName}
     Variable {variableName, variablePosition} =
       GQLError
         { message =
@@ -107,14 +105,11 @@ instance Unused Fragment where
 class MissingRequired c ctx where
   missingRequired :: ctx -> Ref -> c -> GQLError
 
-instance MissingRequired (Arguments s) (CTX SelectionContext) where
+instance MissingRequired (Arguments s) (OperationContext i v) where
   missingRequired
-    CTX
-      { global =
-          Context
-            { scope = Scope {position, kind},
-              currentSelectionName
-            }
+    OperationContext
+      { scope = Scope {position, kind},
+        currentSelectionName
       }
     Ref {refName}
     _ =
@@ -130,23 +125,23 @@ instance MissingRequired (Arguments s) (CTX SelectionContext) where
         inScope SELECTION = "Field " <> msg currentSelectionName
         inScope DIRECTIVE = "Directive " <> msg ("@" <> currentSelectionName)
 
-instance MissingRequired (Object s) (CTX InputContext) where
+instance MissingRequired (Object s) (OperationContext v InputContext) where
   missingRequired
-    CTX {global = Context {scope = Scope {position}}, local}
+    OperationContext {scope = Scope {position}, input}
     Ref {refName}
     _ =
       GQLError
         { message =
-            renderInputPrefix local
+            renderInputPrefix input
               <> "Undefined Field "
               <> msg refName
               <> ".",
           locations = [position]
         }
 
-instance MissingRequired (VariableDefinitions s) (CTX ctx) where
+instance MissingRequired (VariableDefinitions s) (OperationContext v i) where
   missingRequired
-    CTX {global = Context {operationName}}
+    OperationContext {operationName}
     Ref {refName, refPosition}
     _ =
       GQLError
@@ -183,11 +178,11 @@ instance Unknown (FieldDefinition OUT) ctx where
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown (FieldsDefinition IN) (CTX InputContext) where
+instance Unknown (FieldsDefinition IN) (OperationContext v InputContext) where
   type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
-  unknown CTX {global = Context {scope = Scope {position}}, local} _ ObjectEntry {entryName} =
+  unknown OperationContext {scope = Scope {position}, input} _ ObjectEntry {entryName} =
     [ GQLError
-        { message = renderInputPrefix local <> "Unknown Field " <> msg entryName <> ".",
+        { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
           locations = [position]
         }
     ]
@@ -206,9 +201,9 @@ instance Unknown DirectiveDefinitions ctx where
       directivePosition
       ("Unknown Directive " <> msg directiveName <> ".")
 
-instance Unknown (FieldsDefinition OUT) (CTX ctx) where
+instance Unknown (FieldsDefinition OUT) (OperationContext v i) where
   type UnknownSelector (FieldsDefinition OUT) = Ref
-  unknown CTX {global = Context {scope = Scope {typename}}} _ =
+  unknown OperationContext {scope = Scope {typename}} _ =
     unknownSelectionField typename
 
 class KindViolation (t :: Target) ctx where

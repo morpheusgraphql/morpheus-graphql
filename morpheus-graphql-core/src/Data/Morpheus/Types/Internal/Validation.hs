@@ -16,8 +16,7 @@ module Data.Morpheus.Types.Internal.Validation
     InputValidator,
     BaseValidator,
     InputSource (..),
-    Context (..),
-    SelectionContext (..),
+    OperationContext (..),
     runValidator,
     askFieldType,
     askTypeMember,
@@ -45,7 +44,6 @@ module Data.Morpheus.Types.Internal.Validation
     inputValueSource,
     askVariables,
     askFragments,
-    CTX,
     Scope (..),
   )
 where
@@ -96,16 +94,14 @@ import Data.Morpheus.Types.Internal.Validation.Error
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( BaseValidator,
-    CTX (..),
     Constraint (..),
-    Context (..),
     InputSource (..),
     InputValidator,
+    OperationContext (..),
     Prop (..),
     Resolution,
     Scope (..),
     ScopeKind (..),
-    SelectionContext (..),
     SelectionValidator,
     Target (..),
     Validator (..),
@@ -126,20 +122,20 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     withScopeType,
   )
 import Data.Semigroup
-  ( Semigroup (..),
+  ( (<>),
   )
 
 getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a) => ca -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
 
-failOnUnused :: Unused b => [b] -> Validator (CTX ctx) ()
+failOnUnused :: Unused b => [b] -> Validator (OperationContext v i) ()
 failOnUnused x
   | null x = return ()
   | otherwise = do
-    ctx <- getContext
+    ctx <- Validator ask
     failure $ map (unused ctx) x
 
-checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused b) => ca -> [b] -> Validator (CTX ctx) ()
+checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused b) => ca -> [b] -> Validator (OperationContext v i) ()
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
@@ -172,13 +168,14 @@ selectRequired selector container =
 
 selectWithDefaultValue ::
   ( Selectable values value,
-    MissingRequired values (CTX ctx),
-    KEY value ~ FieldName
+    MissingRequired values ctx,
+    KEY value ~ FieldName,
+    WithScope (Validator ctx)
   ) =>
   value ->
   FieldDefinition IN ->
   values ->
-  Validator (CTX ctx) value
+  Validator ctx value
 selectWithDefaultValue
   fallbackValue
   field@FieldDefinition {fieldName}

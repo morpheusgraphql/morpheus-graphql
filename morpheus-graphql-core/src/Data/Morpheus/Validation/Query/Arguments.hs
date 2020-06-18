@@ -34,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
-    SelectionContext (..),
     SelectionValidator,
     askInputFieldType,
     askPosition,
