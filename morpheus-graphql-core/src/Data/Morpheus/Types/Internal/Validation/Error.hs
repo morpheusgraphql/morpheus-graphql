@@ -161,54 +161,54 @@ instance MissingRequired (VariableDefinitions s) (CTX ctx) where
 
 class Unknown c ctx where
   type UnknownSelector c
-  unknown :: Context -> ctx -> c -> UnknownSelector c -> GQLErrors
+  unknown :: ctx -> c -> UnknownSelector c -> GQLErrors
 
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown Fragments ctx where
   type UnknownSelector Fragments = Ref
-  unknown _ _ _ (Ref name pos) =
+  unknown _ _ (Ref name pos) =
     errorMessage
       pos
       ("Unknown Fragment " <> msg name <> ".")
 
 instance Unknown Schema ctx where
   type UnknownSelector Schema = TypeNameRef
-  unknown _ _ _ TypeNameRef {typeNameRef, typeNamePosition} =
+  unknown _ _ TypeNameRef {typeNameRef, typeNamePosition} =
     errorMessage typeNamePosition ("Unknown type " <> msg typeNameRef <> ".")
 
 instance Unknown (FieldDefinition OUT) ctx where
   type UnknownSelector (FieldDefinition OUT) = Argument RESOLVED
-  unknown _ _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
+  unknown _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown (FieldsDefinition IN) InputContext where
+instance Unknown (FieldsDefinition IN) (CTX InputContext) where
   type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
-  unknown Context {scope = Scope {position}} ctx _ ObjectEntry {entryName} =
+  unknown CTX {global = Context {scope = Scope {position}}, local} _ ObjectEntry {entryName} =
     [ GQLError
-        { message = renderInputPrefix ctx <> "Unknown Field " <> msg entryName <> ".",
+        { message = renderInputPrefix local <> "Unknown Field " <> msg entryName <> ".",
           locations = [position]
         }
     ]
 
 instance Unknown DirectiveDefinition ctx where
   type UnknownSelector DirectiveDefinition = Argument RESOLVED
-  unknown _ _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
+  unknown _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".")
 
 instance Unknown DirectiveDefinitions ctx where
   type UnknownSelector DirectiveDefinitions = Directive RAW
-  unknown _ _ _ Directive {directiveName, directivePosition} =
+  unknown _ _ Directive {directiveName, directivePosition} =
     errorMessage
       directivePosition
       ("Unknown Directive " <> msg directiveName <> ".")
 
-instance Unknown (FieldsDefinition OUT) ctx where
+instance Unknown (FieldsDefinition OUT) (CTX ctx) where
   type UnknownSelector (FieldsDefinition OUT) = Ref
-  unknown Context {scope = Scope {typename}} _ _ =
+  unknown CTX {global = Context {scope = Scope {typename}}} _ =
     unknownSelectionField typename
 
 class KindViolation (t :: Target) ctx where

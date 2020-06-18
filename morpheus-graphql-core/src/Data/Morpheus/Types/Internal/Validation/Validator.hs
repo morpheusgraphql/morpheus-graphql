@@ -39,11 +39,12 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     inputValueSource,
     Scope (..),
     withDirective,
-    WithSchema (..),
-    WithSelection (..),
     startInput,
     CTX (..),
+    WithSchema (..),
+    WithSelection (..),
     WithVariables (..),
+    WithScope (..),
   )
 where
 
