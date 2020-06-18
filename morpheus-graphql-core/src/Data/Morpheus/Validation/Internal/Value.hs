@@ -15,7 +15,6 @@ import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    elems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataEnumValue (..),
@@ -135,7 +134,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
           TypeContent TRUE IN -> ObjectEntry RESOLVED -> InputValidator ValidValue
         validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
           Object
-            <$> ( traverse_ (`requiredFieldsDefined` fields) (elems parentFields)
+            <$> ( traverse_ (`requiredFieldIsDefined` fields) parentFields
                     *> traverse validateField fields
                 )
           where
@@ -176,8 +175,8 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers entryValue
 
-requiredFieldsDefined :: FieldDefinition IN -> Object RESOLVED -> InputValidator (ObjectEntry RESOLVED)
-requiredFieldsDefined fieldDef@FieldDefinition {fieldName} =
+requiredFieldIsDefined :: FieldDefinition IN -> Object RESOLVED -> InputValidator (ObjectEntry RESOLVED)
+requiredFieldIsDefined fieldDef@FieldDefinition {fieldName} =
   selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef
 
 validateScalar ::
