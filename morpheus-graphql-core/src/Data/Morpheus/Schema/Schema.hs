@@ -10,6 +10,7 @@
 
 module Data.Morpheus.Schema.Schema
   ( withSystemTypes,
+    systemTypes,
   )
 where
 
@@ -19,7 +20,7 @@ import Data.Morpheus.Internal.Utils
   ( (<:>),
     singleton,
   )
-import Data.Morpheus.QuasiQuoter (dsl)
+import Data.Morpheus.Schema.DSL (dsl)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataFingerprint (..),
@@ -49,7 +50,7 @@ withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject int
       fs <- fields <:> hiddenFields
       pure $ s {query = q {typeContent = DataObject inter fs}}
   )
-    >>= (`resolveUpdates` map (insertType . internalType) schemaTypes)
+    >>= (`resolveUpdates` map (insertType . internalType) systemTypes)
 withSystemTypes _ = failure ("Query must be an Object Type" :: Message)
 
 hiddenFields :: FieldsDefinition OUT
@@ -71,8 +72,8 @@ internalType
     } =
     tyDef {typeFingerprint = internalFingerprint name xs}
 
-schemaTypes :: [TypeDefinition ANY]
-schemaTypes =
+systemTypes :: [TypeDefinition ANY]
+systemTypes =
   [dsl|
 
 # default scalars

@@ -17,6 +17,7 @@ import Data.Foldable (traverse_)
 import Data.Functor (($>))
 --
 -- Morpheus
+
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     PartialImplements (..),
@@ -28,6 +29,7 @@ import Data.Morpheus.Internal.Utils
     empty,
     failure,
   )
+import Data.Morpheus.Schema.Schema (systemTypes)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition,
@@ -38,9 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     IN,
     OUT,
-    Object,
     ObjectEntry (..),
-    RESOLVED,
     Schema,
     TRUE,
     TypeContent (..),
@@ -80,7 +80,7 @@ validatePartialDocument types =
   runValidator
     (traverse validateType types)
     TypeSystemContext
-      { types,
+      { types = systemTypes <> types,
         local = ()
       }
 
