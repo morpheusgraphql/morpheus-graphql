@@ -43,9 +43,11 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     WithSelection (..),
     WithVariables (..),
     WithScope (..),
+    withContext,
   )
 where
 
+import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -53,7 +55,6 @@ import Control.Monad.Trans.Reader
     withReaderT,
   )
 -- MORPHEUS
-
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -164,7 +165,7 @@ type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT)
 type instance Resolution 'TARGET_INPUT = TypeDefinition IN
 
 withInputScope :: Prop -> InputValidator a -> InputValidator a
-withInputScope prop = inContext update
+withInputScope prop = withContext update
   where
     update
       OperationContext
@@ -199,11 +200,11 @@ askPosition = position <$> getScope
 runValidator :: Validator ctx a -> ctx -> Eventless a
 runValidator (Validator x) = runReaderT x
 
-inContext ::
+withContext ::
   (c' -> c) ->
   Validator c a ->
   Validator c' a
-inContext f = Validator . withReaderT f . _runValidator
+withContext f = Validator . withReaderT f . _runValidator
 
 withDirective ::
   ( WithSelection m,
@@ -257,7 +258,7 @@ startInput ::
   InputSource ->
   InputValidator a ->
   Validator (OperationContext v ()) a
-startInput inputSource = inContext update
+startInput inputSource = withContext update
   where
     update OperationContext {..} =
       OperationContext
@@ -280,7 +281,8 @@ newtype Validator ctx a = Validator
   deriving newtype
     ( Functor,
       Applicative,
-      Monad
+      Monad,
+      MonadReader ctx
     )
 
 type BaseValidator = Validator (OperationContext () ())
@@ -316,7 +318,7 @@ class
 instance WithSelection (Validator (OperationContext v i)) where
   askFragments = fragments <$> Validator ask
   getSelectionName = currentSelectionName <$> Validator ask
-  setSelectionName name = inContext update
+  setSelectionName name = withContext update
     where
       update OperationContext {..} =
         OperationContext
@@ -333,7 +335,7 @@ class
 
 instance WithScope (Validator (OperationContext v i)) where
   getScope = scope <$> Validator ask
-  setScope f = inContext update
+  setScope f = withContext update
     where
       update OperationContext {..} =
         OperationContext

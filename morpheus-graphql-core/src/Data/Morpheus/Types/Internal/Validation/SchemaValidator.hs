@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -13,9 +12,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Types.Internal.Validation.SchemaValidator
-  ( SchemaValidator (..),
-    runSchemaValidator,
-    withContext,
+  ( SchemaValidator,
     selectType,
     Context (..),
     constraintInterface,
@@ -28,7 +25,7 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
   )
 where
 
-import Control.Monad.Reader (MonadReader, asks)
+import Control.Monad.Reader (asks)
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -57,6 +54,10 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
+  )
+import Data.Morpheus.Types.Internal.Validation.Validator
+  ( Validator (..),
+    withContext,
   )
 import Data.Semigroup
   ( (<>),
@@ -87,25 +88,25 @@ inType ::
   TypeName ->
   SchemaValidator TypeName v ->
   SchemaValidator () v
-inType name = withContext (const name)
+inType name = withLocalContext (const name)
 
 inInterface ::
   TypeName ->
   SchemaValidator Interface v ->
   SchemaValidator TypeName v
-inInterface interfaceName = withContext (Interface interfaceName)
+inInterface interfaceName = withLocalContext (Interface interfaceName)
 
 inField ::
   FieldName ->
   SchemaValidator (t, FieldName) v ->
   SchemaValidator t v
-inField fname = withContext (,fname)
+inField fname = withLocalContext (,fname)
 
 inArgument ::
   FieldName ->
   SchemaValidator (t, Field) v ->
   SchemaValidator (t, FieldName) v
-inArgument aname = withContext (\(t1, f1) -> (t1, Field f1 aname))
+inArgument aname = withLocalContext (\(t1, f1) -> (t1, Field f1 aname))
 
 data Interface = Interface
   { interfaceName :: TypeName,
@@ -117,37 +118,13 @@ data Field = Field
     fieldArgument :: FieldName
   }
 
+withLocalContext :: (a -> b) -> Validator (Context b) v -> Validator (Context a) v
+withLocalContext = withContext . updateLocal
+
 updateLocal :: (a -> b) -> Context a -> Context b
 updateLocal f ctx = ctx {local = f (local ctx)}
 
-withContext ::
-  (a -> b) ->
-  SchemaValidator b v ->
-  SchemaValidator a v
-withContext f =
-  SchemaValidator
-    . withReaderT
-      (updateLocal f)
-    . _runValidator
-
-runSchemaValidator :: SchemaValidator ctx a -> Context ctx -> Eventless a
-runSchemaValidator (SchemaValidator x) = runReaderT x
-
-newtype SchemaValidator c a = SchemaValidator
-  { _runValidator ::
-      ReaderT
-        ( Context
-            c
-        )
-        Eventless
-        a
-  }
-  deriving
-    ( Functor,
-      Applicative,
-      MonadReader (Context c),
-      Monad
-    )
+type SchemaValidator c = Validator (Context c)
 
 constraintInterface :: TypeDefinition ANY -> SchemaValidator ctx (TypeName, FieldsDefinition OUT)
 constraintInterface
@@ -157,6 +134,3 @@ constraintInterface
     } = pure (typeName, fields)
 constraintInterface TypeDefinition {typeName} =
   failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
-
-instance Failure GQLErrors (SchemaValidator ctx) where
-  failure = SchemaValidator . lift . failure

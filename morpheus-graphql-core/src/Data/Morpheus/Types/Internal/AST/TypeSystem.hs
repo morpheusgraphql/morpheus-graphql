@@ -108,6 +108,7 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Base
   ( DataFingerprint (..),
     Description,
+    FALSE,
     FieldName,
     FieldName (..),
     GQLError (..),
@@ -368,17 +369,19 @@ instance FromAny (TypeContent TRUE) OUT where
   fromAny DataInterface {..} = Just DataInterface {..}
   fromAny _ = Nothing
 
-class SelectType (c :: TypeCategory) (a :: TypeCategory) where
-  type IsSelected c a :: Bool
+type family IsSelected (c :: TypeCategory) (a :: TypeCategory) :: Bool
 
-instance SelectType ANY a where
-  type IsSelected ANY a = TRUE
+type instance IsSelected ANY a = TRUE
 
-instance SelectType OUT OUT where
-  type IsSelected OUT OUT = TRUE
+type instance IsSelected OUT OUT = TRUE
 
-instance SelectType IN IN where
-  type IsSelected IN IN = TRUE
+type instance IsSelected IN IN = TRUE
+
+type instance IsSelected IN OUT = FALSE
+
+type instance IsSelected OUT IN = FALSE
+
+type instance IsSelected a ANY = TRUE
 
 data TypeContent (b :: Bool) (a :: TypeCategory) where
   DataScalar ::
@@ -579,11 +582,11 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) where
   DefaultInputValue ::
     { defaultInputValue :: Value RESOLVED
     } ->
-    FieldContent (IsSelected a IN) a
+    FieldContent (IsSelected cat IN) cat
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition
     } ->
-    FieldContent (IsSelected a OUT) a
+    FieldContent (IsSelected cat OUT) cat
 
 fieldContentArgs :: FieldContent b cat -> OrderedMap FieldName ArgumentDefinition
 fieldContentArgs (FieldArgs (ArgumentsDefinition _ argsD)) = argsD

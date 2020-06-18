@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     IN,
     OUT,
+    ObjectEntry (..),
     Schema,
     TRUE,
     TypeContent (..),
@@ -49,6 +50,11 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
+import Data.Morpheus.Types.Internal.Validation
+  ( askInputFieldType,
+    runValidator,
+    startInput,
+  )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Context (..),
     Field (..),
@@ -59,16 +65,16 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inField,
     inInterface,
     inType,
-    runSchemaValidator,
     selectType,
   )
+import Data.Morpheus.Validation.Internal.Value (validateInput)
 
 validateSchema :: Schema -> Eventless Schema
 validateSchema schema = validatePartialDocument (elems schema) $> schema
 
 validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
 validatePartialDocument types =
-  runSchemaValidator
+  runValidator
     (traverse validateType types)
     Context
       { types,
@@ -192,4 +198,20 @@ failImplements err = do
 
 -- TODO: implement default value validation
 validateDefaultValue :: FieldDefinition IN -> SchemaValidator () ()
-validateDefaultValue _ = pure ()
+validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure ()
+validateDefaultValue
+  inputField@FieldDefinition
+    { fieldName,
+      fieldType = TypeRef {typeWrappers},
+      fieldContent = Just DefaultInputValue {defaultInputValue}
+    } = do
+    datatype <- askInputFieldType inputField
+    validateInput
+      typeWrappers
+      datatype
+      (ObjectEntry fieldName defaultInputValue)
+
+-- [TypeWrapper] ->
+-- TypeDefinition IN ->
+-- ObjectEntry RESOLVED ->
+-- InputValidator ValidValue
