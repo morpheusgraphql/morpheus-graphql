@@ -45,6 +45,12 @@ module Data.Morpheus.Types.Internal.Validation
     askVariables,
     askFragments,
     Scope (..),
+    MissingRequired (..),
+    InputContext,
+    WithScope,
+    WithSchema,
+    Unknown,
+    WithInput,
   )
 where
 
@@ -95,6 +101,7 @@ import Data.Morpheus.Types.Internal.Validation.Error
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( BaseValidator,
     Constraint (..),
+    InputContext,
     InputSource (..),
     InputValidator,
     OperationContext (..),
@@ -105,6 +112,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     SelectionValidator,
     Target (..),
     Validator (..),
+    WithInput,
     WithSchema (..),
     WithScope (..),
     WithSelection (..),
@@ -128,14 +136,14 @@ import Data.Semigroup
 getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a) => ca -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
 
-failOnUnused :: Unused b => [b] -> Validator (OperationContext v i) ()
+failOnUnused :: Unused ctx b => [b] -> Validator ctx ()
 failOnUnused x
   | null x = return ()
   | otherwise = do
     ctx <- Validator ask
     failure $ map (unused ctx) x
 
-checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused b) => ca -> [b] -> Validator (OperationContext v i) ()
+checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused ctx b) => ca -> [b] -> Validator ctx ()
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::

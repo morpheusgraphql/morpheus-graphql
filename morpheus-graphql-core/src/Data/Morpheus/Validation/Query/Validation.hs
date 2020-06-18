@@ -66,8 +66,7 @@ validateRequest
             scope = Scope {typename = "Root", position = operationPosition, kind = SELECTION},
             currentSelectionName = "Root",
             operationName,
-            variables,
-            input = ()
+            variables
           }
       validateHelpers =
         validateFragments operationSelection

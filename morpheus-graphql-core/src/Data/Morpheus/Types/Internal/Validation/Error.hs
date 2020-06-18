@@ -46,6 +46,9 @@ import Data.Morpheus.Types.Internal.AST
     getOperationName,
     msg,
   )
+import Data.Morpheus.Types.Internal.Validation.SchemaValidator
+  ( TypeSystemContext,
+  )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( InputContext (..),
     OperationContext (..),
@@ -74,11 +77,11 @@ instance InternalError (FieldDefinition cat) where
           locations = []
         }
 
-class Unused c where
-  unused :: OperationContext i v -> c -> GQLError
+class Unused ctx c where
+  unused :: ctx -> c -> GQLError
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-instance Unused (Variable s) where
+instance Unused (OperationContext v) (Variable s) where
   unused
     OperationContext {operationName}
     Variable {variableName, variablePosition} =
@@ -91,7 +94,7 @@ instance Unused (Variable s) where
           locations = [variablePosition]
         }
 
-instance Unused Fragment where
+instance Unused (OperationContext v) Fragment where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
@@ -105,7 +108,9 @@ instance Unused Fragment where
 class MissingRequired c ctx where
   missingRequired :: ctx -> Ref -> c -> GQLError
 
-instance MissingRequired (Arguments s) (OperationContext i v) where
+instance MissingRequired (Object RESOLVED) (InputContext (TypeSystemContext ()))
+
+instance MissingRequired (Arguments s) (OperationContext v) where
   missingRequired
     OperationContext
       { scope = Scope {position, kind},
@@ -125,9 +130,14 @@ instance MissingRequired (Arguments s) (OperationContext i v) where
         inScope SELECTION = "Field " <> msg currentSelectionName
         inScope DIRECTIVE = "Directive " <> msg ("@" <> currentSelectionName)
 
-instance MissingRequired (Object s) (OperationContext v InputContext) where
+instance MissingRequired (Object s) (InputContext (OperationContext v)) where
   missingRequired
-    OperationContext {scope = Scope {position}, input}
+    input@InputContext
+      { sourceContext =
+          OperationContext
+            { scope = Scope {position}
+            }
+      }
     Ref {refName}
     _ =
       GQLError
@@ -139,7 +149,7 @@ instance MissingRequired (Object s) (OperationContext v InputContext) where
           locations = [position]
         }
 
-instance MissingRequired (VariableDefinitions s) (OperationContext v i) where
+instance MissingRequired (VariableDefinitions s) (OperationContext v) where
   missingRequired
     OperationContext {operationName}
     Ref {refName, refPosition}
@@ -157,6 +167,8 @@ instance MissingRequired (VariableDefinitions s) (OperationContext v i) where
 class Unknown c ctx where
   type UnknownSelector c
   unknown :: ctx -> c -> UnknownSelector c -> GQLErrors
+
+instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ()))
 
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown Fragments ctx where
@@ -178,14 +190,17 @@ instance Unknown (FieldDefinition OUT) ctx where
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown (FieldsDefinition IN) (OperationContext v InputContext) where
+instance Unknown (FieldsDefinition IN) (InputContext (OperationContext v)) where
   type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
-  unknown OperationContext {scope = Scope {position}, input} _ ObjectEntry {entryName} =
-    [ GQLError
-        { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
-          locations = [position]
-        }
-    ]
+  unknown
+    input@InputContext {sourceContext = OperationContext {scope = Scope {position}}}
+    _
+    ObjectEntry {entryName} =
+      [ GQLError
+          { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
+            locations = [position]
+          }
+      ]
 
 instance Unknown DirectiveDefinition ctx where
   type UnknownSelector DirectiveDefinition = Argument RESOLVED
@@ -201,7 +216,7 @@ instance Unknown DirectiveDefinitions ctx where
       directivePosition
       ("Unknown Directive " <> msg directiveName <> ".")
 
-instance Unknown (FieldsDefinition OUT) (OperationContext v i) where
+instance Unknown (FieldsDefinition OUT) (OperationContext v) where
   type UnknownSelector (FieldsDefinition OUT) = Ref
   unknown OperationContext {scope = Scope {typename}} _ =
     unknownSelectionField typename

@@ -14,7 +14,7 @@
 module Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( SchemaValidator,
     selectType,
-    Context (..),
+    TypeSystemContext (..),
     constraintInterface,
     inField,
     inType,
@@ -37,6 +37,7 @@ import Data.Morpheus.Error.Utils (globalErrorMessage)
 
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    fromElems,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -56,7 +57,11 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( Validator (..),
+  ( InputContext,
+    Validator (..),
+    WithInput,
+    WithSchema (..),
+    WithScope,
     withContext,
   )
 import Data.Semigroup
@@ -70,11 +75,16 @@ data Prop = Prop
   }
   deriving (Show)
 
-data Context c = Context
+data TypeSystemContext c = TypeSystemContext
   { types :: [TypeDefinition ANY],
     local :: c
   }
   deriving (Show)
+
+data TypeFieldContext = TypeFieldContext
+  { typename :: TypeName,
+    field :: FieldsDefinition ANY
+  }
 
 selectType :: TypeName -> SchemaValidator ctx (TypeDefinition ANY)
 selectType name =
@@ -118,13 +128,13 @@ data Field = Field
     fieldArgument :: FieldName
   }
 
-withLocalContext :: (a -> b) -> Validator (Context b) v -> Validator (Context a) v
+withLocalContext :: (a -> b) -> Validator (TypeSystemContext b) v -> Validator (TypeSystemContext a) v
 withLocalContext = withContext . updateLocal
 
-updateLocal :: (a -> b) -> Context a -> Context b
+updateLocal :: (a -> b) -> TypeSystemContext a -> TypeSystemContext b
 updateLocal f ctx = ctx {local = f (local ctx)}
 
-type SchemaValidator c = Validator (Context c)
+type SchemaValidator c = Validator (TypeSystemContext c)
 
 constraintInterface :: TypeDefinition ANY -> SchemaValidator ctx (TypeName, FieldsDefinition OUT)
 constraintInterface
@@ -134,3 +144,8 @@ constraintInterface
     } = pure (typeName, fields)
 constraintInterface TypeDefinition {typeName} =
   failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
+
+instance WithScope (Validator (TypeSystemContext ()))
+
+instance WithSchema (Validator (TypeSystemContext ())) where
+  askSchema = asks types >>= fromElems

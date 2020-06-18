@@ -43,6 +43,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     WithSelection (..),
     WithVariables (..),
     WithScope (..),
+    WithInput,
     withContext,
   )
 where
@@ -101,7 +102,7 @@ renderPath :: Path -> Message
 renderPath [] = ""
 renderPath path = "in field " <> msg (intercalateName "." $ map propName path) <> ": "
 
-renderInputPrefix :: InputContext -> Message
+renderInputPrefix :: InputContext c -> Message
 renderInputPrefix InputContext {inputPath, inputSource} =
   renderSource inputSource <> renderPath inputPath
 
@@ -116,14 +117,13 @@ data ScopeKind
   | SELECTION
   deriving (Show)
 
-data OperationContext v i = OperationContext
+data OperationContext vars = OperationContext
   { schema :: Schema,
     scope :: Scope,
     fragments :: Fragments,
     operationName :: Maybe FieldName,
     currentSelectionName :: FieldName,
-    variables :: v,
-    input :: i
+    variables :: vars
   }
   deriving (Show)
 
@@ -134,9 +134,10 @@ data Scope = Scope
   }
   deriving (Show)
 
-data InputContext = InputContext
+data InputContext ctx = InputContext
   { inputSource :: InputSource,
-    inputPath :: [Prop]
+    inputPath :: [Prop],
+    sourceContext :: ctx
   }
   deriving (Show)
 
@@ -164,29 +165,21 @@ type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT)
 
 type instance Resolution 'TARGET_INPUT = TypeDefinition IN
 
-withInputScope :: Prop -> InputValidator a -> InputValidator a
+withInputScope :: Prop -> InputValidator c a -> InputValidator c a
 withInputScope prop = withContext update
   where
     update
-      OperationContext
-        { input =
-            InputContext
-              { inputPath = old,
-                ..
-              },
+      InputContext
+        { inputPath = old,
           ..
         } =
-        OperationContext
-          { input =
-              InputContext
-                { inputPath = old <> [prop],
-                  ..
-                },
+        InputContext
+          { inputPath = old <> [prop],
             ..
           }
 
-inputValueSource :: InputValidator InputSource
-inputValueSource = inputSource . input <$> Validator ask
+inputValueSource :: (WithInput m, Functor m) => m InputSource
+inputValueSource = inputSource <$> askInput
 
 askContext :: Validator ctx ctx
 askContext = Validator ask
@@ -251,24 +244,20 @@ withScopeType name = setScope update
   where
     update Scope {..} = Scope {typename = name, ..}
 
-inputMessagePrefix :: InputValidator Message
-inputMessagePrefix = renderInputPrefix . input <$> askContext
+inputMessagePrefix :: InputValidator ctx Message
+inputMessagePrefix = renderInputPrefix <$> askContext
 
 startInput ::
   InputSource ->
-  InputValidator a ->
-  Validator (OperationContext v ()) a
+  InputValidator ctx a ->
+  Validator ctx a
 startInput inputSource = withContext update
   where
-    update OperationContext {..} =
-      OperationContext
-        { input =
-            InputContext
-              { inputSource,
-                inputPath = []
-              },
-          variables = (),
-          ..
+    update sourceContext =
+      InputContext
+        { inputSource,
+          inputPath = [],
+          sourceContext
         }
 
 newtype Validator ctx a = Validator
@@ -285,24 +274,35 @@ newtype Validator ctx a = Validator
       MonadReader ctx
     )
 
-type BaseValidator = Validator (OperationContext () ())
+type BaseValidator = Validator (OperationContext ())
 
-type SelectionValidator = Validator (OperationContext (VariableDefinitions VALID) ())
+type SelectionValidator = Validator (OperationContext (VariableDefinitions VALID))
 
-type InputValidator = Validator (OperationContext () InputContext)
+type InputValidator ctx = Validator (InputContext ctx)
+
+toInput ::
+  Validator ctx a ->
+  InputValidator ctx a
+toInput = withContext sourceContext
 
 -- Helpers
 class WithSchema (m :: * -> *) where
   askSchema :: m Schema
 
-instance WithSchema (Validator (OperationContext v i)) where
+instance WithSchema (Validator (OperationContext v)) where
   askSchema = schema <$> Validator ask
+
+instance
+  WithSchema (Validator ctx) =>
+  WithSchema (Validator (InputContext ctx))
+  where
+  askSchema = toInput askSchema
 
 -- Variables
 class WithVariables (m :: * -> *) where
   askVariables :: m (VariableDefinitions VALID)
 
-instance WithVariables (Validator (OperationContext (VariableDefinitions VALID) i)) where
+instance WithVariables (Validator (OperationContext (VariableDefinitions VALID))) where
   askVariables = variables <$> Validator ask
 
 -- Selection
@@ -315,7 +315,7 @@ class
 
   askFragments :: m Fragments
 
-instance WithSelection (Validator (OperationContext v i)) where
+instance WithSelection (Validator (OperationContext v)) where
   askFragments = fragments <$> Validator ask
   getSelectionName = currentSelectionName <$> Validator ask
   setSelectionName name = withContext update
@@ -333,7 +333,7 @@ class
   getScope :: m Scope
   setScope :: (Scope -> Scope) -> m a -> m a
 
-instance WithScope (Validator (OperationContext v i)) where
+instance WithScope (Validator (OperationContext v)) where
   getScope = scope <$> Validator ask
   setScope f = withContext update
     where
@@ -342,6 +342,9 @@ instance WithScope (Validator (OperationContext v i)) where
           { scope = f scope,
             ..
           }
+
+instance WithScope (Validator c) => WithScope (Validator (InputContext c)) where
+  getScope = toInput getScope
 
 -- can be only used for internal errors
 instance
@@ -356,6 +359,15 @@ instance
             locations = [position]
           }
       ]
+
+class
+  Applicative m =>
+  WithInput (m :: * -> *)
+  where
+  askInput :: m (InputContext ())
+
+instance WithInput (Validator (InputContext ctx)) where
+  askInput = (\x -> x {sourceContext = ()}) <$> Validator ask
 
 instance Failure GQLErrors (Validator ctx) where
   failure = Validator . lift . failure

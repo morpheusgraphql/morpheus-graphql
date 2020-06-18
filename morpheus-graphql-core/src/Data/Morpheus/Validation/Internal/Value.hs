@@ -1,7 +1,10 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Validation.Internal.Value (validateInput) where
 
@@ -52,9 +55,16 @@ import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( InputSource (..),
+  ( InputContext,
+    InputSource (..),
     InputValidator,
+    MissingRequired,
     Prop (..),
+    Unknown,
+    Validator,
+    WithInput,
+    WithSchema,
+    WithScope,
     askInputFieldType,
     askInputMember,
     askPosition,
@@ -68,7 +78,14 @@ import Data.Morpheus.Types.Internal.Validation
   )
 import Data.Semigroup ((<>))
 
-castFailure :: TypeRef -> Maybe Message -> ResolvedValue -> InputValidator a
+castFailure ::
+  ( WithSchema (Validator (InputContext ctx)),
+    WithScope (Validator (InputContext ctx))
+  ) =>
+  TypeRef ->
+  Maybe Message ->
+  ResolvedValue ->
+  InputValidator ctx a
 castFailure expected message value = do
   pos <- askPosition
   prefix <- inputMessagePrefix
@@ -80,7 +97,7 @@ checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->
   Ref ->
   Variable VALID ->
-  InputValidator ValidValue
+  InputValidator ctx ValidValue
 checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = ValidVariableValue value, variableType}
   | typeConName variableType == tyConName
       && not
@@ -97,24 +114,35 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
             typeArgs = Nothing
           }
 
+type InputConstraints ctx =
+  ( WithSchema (Validator (InputContext ctx)),
+    WithScope (Validator (InputContext ctx)),
+    MissingRequired (Object RESOLVED) (InputContext ctx),
+    Unknown (FieldsDefinition IN) (InputContext ctx),
+    WithInput (Validator (InputContext ctx))
+  )
+
 -- Validate input Values
 validateInput ::
+  forall ctx.
+  ( InputConstraints ctx
+  ) =>
   [TypeWrapper] ->
   TypeDefinition IN ->
   ObjectEntry RESOLVED ->
-  InputValidator ValidValue
+  InputValidator ctx ValidValue
 validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
   withScopeType typeName
     . validateWrapped tyWrappers tyCont
   where
-    mismatchError :: [TypeWrapper] -> ResolvedValue -> InputValidator ValidValue
+    mismatchError :: [TypeWrapper] -> ResolvedValue -> InputValidator ctx ValidValue
     mismatchError wrappers = castFailure (TypeRef typeName Nothing wrappers) Nothing
     -- VALIDATION
     validateWrapped ::
       [TypeWrapper] ->
       TypeContent TRUE IN ->
       ObjectEntry RESOLVED ->
-      InputValidator ValidValue
+      InputValidator ctx ValidValue
     -- Validate Null. value = null ?
     validateWrapped wrappers _ ObjectEntry {entryValue = ResolvedVariable ref variable} =
       checkTypeEquality (typeName, wrappers) ref variable
@@ -135,7 +163,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validateEntry ::
           TypeContent TRUE IN ->
           ObjectEntry RESOLVED ->
-          InputValidator ValidValue
+          InputValidator ctx ValidValue
         validateEntry (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
           Object <$> validateInputObject parentFields fields
         validateEntry (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
@@ -150,17 +178,24 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 
 -- INPUT UNION
 validatInputUnion ::
+  ( InputConstraints ctx
+  ) =>
   TypeName ->
   DataInputUnion ->
   Object RESOLVED ->
-  InputValidator (Value VALID)
+  InputValidator ctx (Value VALID)
 validatInputUnion typeName inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields)
     Right (name, Nothing) -> pure (mkInputObject name [])
     Right (name, Just value) -> validatInputUnionMember name value
 
-validatInputUnionMember :: TypeName -> Value RESOLVED -> InputValidator (Value VALID)
+validatInputUnionMember ::
+  ( InputConstraints ctx
+  ) =>
+  TypeName ->
+  Value RESOLVED ->
+  InputValidator ctx (Value VALID)
 validatInputUnionMember name value = do
   inputDef <- askInputMember name
   validValue <-
@@ -174,13 +209,22 @@ mkInputObject :: TypeName -> [ObjectEntry s] -> Value s
 mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (Enum name) : xs
 
 -- INUT Object
-validateInputObject :: FieldsDefinition IN -> Object RESOLVED -> InputValidator (Object VALID)
+validateInputObject ::
+  ( InputConstraints ctx
+  ) =>
+  FieldsDefinition IN ->
+  Object RESOLVED ->
+  InputValidator ctx (Object VALID)
 validateInputObject parentFields fields =
   traverse_ (`requiredFieldIsDefined` fields) parentFields
     *> traverse (`validateField` parentFields) fields
 
 validateField ::
-  ObjectEntry RESOLVED -> FieldsDefinition IN -> InputValidator (ObjectEntry VALID)
+  ( InputConstraints ctx
+  ) =>
+  ObjectEntry RESOLVED ->
+  FieldsDefinition IN ->
+  InputValidator ctx (ObjectEntry VALID)
 validateField entry@ObjectEntry {entryName} parentFields = do
   field@FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}} <-
     selectKnown entry parentFields
@@ -192,17 +236,25 @@ validateField entry@ObjectEntry {entryName} parentFields = do
         inputTypeDef
         entry
 
-requiredFieldIsDefined :: FieldDefinition IN -> Object RESOLVED -> InputValidator (ObjectEntry RESOLVED)
+requiredFieldIsDefined ::
+  ( MissingRequired (Object RESOLVED) (InputContext ctx),
+    WithScope (Validator (InputContext ctx))
+  ) =>
+  FieldDefinition IN ->
+  Object RESOLVED ->
+  InputValidator ctx (ObjectEntry RESOLVED)
 requiredFieldIsDefined fieldDef@FieldDefinition {fieldName} =
   selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef
 
 -- Leaf Validations
 validateScalar ::
+  forall m.
+  (Monad m) =>
   TypeName ->
   ScalarDefinition ->
   ResolvedValue ->
-  (Maybe Message -> ResolvedValue -> InputValidator ValidValue) ->
-  InputValidator ValidValue
+  (Maybe Message -> ResolvedValue -> m ValidValue) ->
+  m ValidValue
 validateScalar typeName ScalarDefinition {validateValue} value err = do
   scalarValue <- toScalar value
   case validateValue scalarValue of
@@ -210,7 +262,7 @@ validateScalar typeName ScalarDefinition {validateValue} value err = do
     Left "" -> err Nothing value
     Left message -> err (Just $ msg message) value
   where
-    toScalar :: ResolvedValue -> InputValidator ValidValue
+    toScalar :: ResolvedValue -> m ValidValue
     toScalar (Scalar x) | isValidDefault typeName x = pure (Scalar x)
     toScalar _ = err Nothing value
     isValidDefault :: TypeName -> ScalarValue -> Bool
@@ -236,7 +288,7 @@ isInt :: ScalarValue -> Bool
 isInt Int {} = True
 isInt _ = False
 
-isVariableValue :: InputValidator Bool
+isVariableValue :: WithInput m => m Bool
 isVariableValue =
   \case
     SourceVariable {isDefaultValue} -> not isDefaultValue
@@ -244,10 +296,11 @@ isVariableValue =
     <$> inputValueSource
 
 validateEnum ::
-  (ResolvedValue -> InputValidator ValidValue) ->
+  (Monad m, WithInput m) =>
+  (ResolvedValue -> m ValidValue) ->
   [DataEnumValue] ->
   ResolvedValue ->
-  InputValidator ValidValue
+  m ValidValue
 validateEnum err enumValues value@(Scalar (String enumValue))
   | TypeName enumValue `elem` tags = do
     isFromVariable <- isVariableValue
