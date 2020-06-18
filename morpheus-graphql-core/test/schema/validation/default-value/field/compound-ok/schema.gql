@@ -1,0 +1,23 @@
+enum TestEnum {
+  EnumA
+  EnumB
+  EnumC
+}
+
+input InputSimple {
+  fieldWithDefault: ID! = "value from fieldWithDefault"
+  simpleField: TestEnum
+}
+
+input InputCompound {
+  inputField2: String! = "value from inputField2"
+  inputField3: [InputSimple]! = [
+    { fieldWithDefault: "value2 from inputField3", simpleField: EnumA }
+    { simpleField: EnumA }
+  ]
+  inputField4: [InputSimple]! = [{ simpleField: EnumB }]
+}
+
+type Query {
+  field: String!
+}

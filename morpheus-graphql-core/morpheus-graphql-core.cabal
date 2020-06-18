@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bec8724abbb3ddde88b2e5fc5e7df081cbfbf96f9ee667711c12ceca6ba08eb0
+-- hash: 5eb8650c0253fddaaba938d15fa407430938cda3000e06177cb2d5f25fb9ef46
 
 name:           morpheus-graphql-core
 version:        0.12.0
@@ -24,18 +24,24 @@ extra-source-files:
     README.md
 data-files:
     test/interface/query.gql
-    test/schema/validation/default-value/compound-ok/schema.gql
-    test/schema/validation/default-value/unexpected-value/schema.gql
-    test/schema/validation/default-value/unknown-field/schema.gql
+    test/schema/validation/default-value/argument/compound-ok/schema.gql
+    test/schema/validation/default-value/argument/unexpected-value/schema.gql
+    test/schema/validation/default-value/argument/unknown-field/schema.gql
+    test/schema/validation/default-value/field/compound-ok/schema.gql
+    test/schema/validation/default-value/field/unexpected-value/schema.gql
+    test/schema/validation/default-value/field/unknown-field/schema.gql
     test/schema/validation/interface/field-args/fail/schema.gql
     test/schema/validation/interface/field-args/ok/schema.gql
     test/schema/validation/interface/field-type/fail/schema.gql
     test/schema/validation/interface/field-type/ok/schema.gql
     test/simple/query.gql
     test/interface/response.json
-    test/schema/validation/default-value/compound-ok/response.json
-    test/schema/validation/default-value/unexpected-value/response.json
-    test/schema/validation/default-value/unknown-field/response.json
+    test/schema/validation/default-value/argument/compound-ok/response.json
+    test/schema/validation/default-value/argument/unexpected-value/response.json
+    test/schema/validation/default-value/argument/unknown-field/response.json
+    test/schema/validation/default-value/field/compound-ok/response.json
+    test/schema/validation/default-value/field/unexpected-value/response.json
+    test/schema/validation/default-value/field/unknown-field/response.json
     test/schema/validation/interface/field-args/fail/response.json
     test/schema/validation/interface/field-args/ok/response.json
     test/schema/validation/interface/field-type/fail/response.json

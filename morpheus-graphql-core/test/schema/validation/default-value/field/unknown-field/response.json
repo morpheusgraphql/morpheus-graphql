@@ -1,0 +1,24 @@
+{
+  "errors": [
+    {
+      "message": "default value for Input3.field provides unknown field \"field2\" on \"Input2\".",
+      "locations": []
+    },
+    {
+      "message": "default value for Input3.field provides unknown field \"field2\" on \"Input1\".",
+      "locations": []
+    },
+    {
+      "message": "default value for Input3.field provides unknown field \"field3\" on \"Input1\".",
+      "locations": []
+    },
+    {
+      "message": "default value for Query.field(i1:) provides unknown field \"field2\" on \"Input3\".",
+      "locations": []
+    },
+    {
+      "message": "default value for Query.field(i1:) provides unknown field \"field2\" on \"Input2\".",
+      "locations": []
+    }
+  ]
+}

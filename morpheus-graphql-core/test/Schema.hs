@@ -68,12 +68,20 @@ testSchema =
                 ("validation/interface/field-args/fail", "interface field args type validation fails")
               ],
           testGroup
-            "default value"
+            "default value/field"
             $ map
               (uncurry schemaCase)
-              [ ("validation/default-value/compound-ok", "sophisticated default value validation success"),
-                ("validation/default-value/unexpected-value", "fail if: default value field receives wrong value"),
-                ("validation/default-value/unknown-field", "fail if: default value object contains unknown field")
+              [ ("validation/default-value/field/compound-ok", "sophisticated default value validation success"),
+                ("validation/default-value/field/unexpected-value", "fail if: default value field receives wrong value"),
+                ("validation/default-value/field/unknown-field", "fail if: default value object contains unknown field")
+              ],
+          testGroup
+            "default value/argument"
+            $ map
+              (uncurry schemaCase)
+              [ ("validation/default-value/argument/compound-ok", "sophisticated default value validation success"),
+                ("validation/default-value/argument/unexpected-value", "fail if: default value field receives wrong value"),
+                ("validation/default-value/argument/unknown-field", "fail if: default value object contains unknown field")
               ]
         ]
     ]
