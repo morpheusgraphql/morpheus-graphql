@@ -22,6 +22,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     IN,
     Message,
+    Object,
     ObjectEntry (..),
     RESOLVED,
     Ref (..),
@@ -133,12 +134,9 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validate ::
           TypeContent TRUE IN -> ObjectEntry RESOLVED -> InputValidator ValidValue
         validate (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} = do
-          traverse_ requiredFieldsDefined (elems parentFields)
+          traverse_ (`requiredFieldsDefined` fields) (elems parentFields)
           Object <$> traverse validateField fields
           where
-            requiredFieldsDefined :: FieldDefinition IN -> InputValidator (ObjectEntry RESOLVED)
-            requiredFieldsDefined fieldDef@FieldDefinition {fieldName} =
-              selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef fields
             validateField ::
               ObjectEntry RESOLVED -> InputValidator (ObjectEntry VALID)
             validateField entry@ObjectEntry {entryName} = do
@@ -175,6 +173,10 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validate _ ObjectEntry {entryValue} = mismatchError [] entryValue
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers entryValue
+
+requiredFieldsDefined :: FieldDefinition IN -> Object RESOLVED -> InputValidator (ObjectEntry RESOLVED)
+requiredFieldsDefined fieldDef@FieldDefinition {fieldName} =
+  selectWithDefaultValue (ObjectEntry fieldName Null) fieldDef
 
 validateScalar ::
   TypeName ->
