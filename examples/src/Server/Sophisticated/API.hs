@@ -140,7 +140,7 @@ gqlRoot =
           queryTestInterface =
             pure
               Account
-                { accountName = pure "Value from Interface"
+                { accountName = pure "Value from Interface!"
                 },
           queryTestInput = pure . pack . show
         }
