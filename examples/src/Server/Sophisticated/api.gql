@@ -33,7 +33,7 @@ enum CityID @enumDir {
 }
 
 input Coordinates {
-  latitude: Euro! = "Default latitude Value" @customDirective(testName: "")
+  latitude: Euro! = 23423 @customDirective(testName: "")
   "temporary singleline Test for input object field descripions"
   longitude: [[[UniqueID!]!]]! = [[[{ id: "" }]]]
 }
