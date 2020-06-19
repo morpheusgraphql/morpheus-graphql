@@ -5,10 +5,10 @@ enum TestEnum {
 }
 
 input Input1 {
-  field1: ID = EnumA
-  field2: String = EnumA
+  field1: ID! = EnumA
+  field2: String! = EnumA
   field3: TestEnum = UnknownEnum
-  field4: TestEnum = 1
+  field4: TestEnum! = 1
   field5: TestEnum = "some text"
 }
 
