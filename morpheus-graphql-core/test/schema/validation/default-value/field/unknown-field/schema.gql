@@ -7,7 +7,7 @@ input Input2 {
 }
 
 input Input3 {
-  field: Int = {
+  field: Input2 = {
     field: { field: null, field2: null, field3: null }
     field2: null
   }

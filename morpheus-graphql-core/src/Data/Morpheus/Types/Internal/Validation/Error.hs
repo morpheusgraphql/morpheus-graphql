@@ -147,7 +147,7 @@ instance MissingRequired (Object s) (InputContext (OperationContext v)) where
           locations = [position]
         }
 
-instance MissingRequired (Object RESOLVED) (InputContext (TypeSystemContext ())) where
+instance MissingRequired (Object s) (InputContext (TypeSystemContext ())) where
   missingRequired
     input
     Ref {refName}
@@ -180,8 +180,6 @@ class Unknown c ctx where
   type UnknownSelector c
   unknown :: ctx -> c -> UnknownSelector c -> GQLErrors
 
-instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ()))
-
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown Fragments ctx where
   type UnknownSelector Fragments = Ref
@@ -211,6 +209,18 @@ instance Unknown (FieldsDefinition IN) (InputContext (OperationContext v)) where
       [ GQLError
           { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
             locations = [position]
+          }
+      ]
+
+instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ())) where
+  type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
+  unknown
+    input
+    _
+    ObjectEntry {entryName} =
+      [ GQLError
+          { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
+            locations = []
           }
       ]
 
