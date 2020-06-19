@@ -19,6 +19,8 @@ import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    elems,
+    fromElems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataEnumValue (..),
@@ -61,6 +63,8 @@ import Data.Morpheus.Types.Internal.Validation
     InputValidator,
     MissingRequired,
     Prop (..),
+    Scope (..),
+    ScopeKind (..),
     Unknown,
     Validator,
     WithInput,
@@ -70,6 +74,7 @@ import Data.Morpheus.Types.Internal.Validation
     askInputMember,
     askPosition,
     constraintInputUnion,
+    getScope,
     inputMessagePrefix,
     inputValueSource,
     selectKnown,
@@ -220,9 +225,16 @@ validateInputObject ::
   FieldsDefinition IN ->
   Object RESOLVED ->
   InputValidator ctx (Object VALID)
-validateInputObject parentFields fields =
-  traverse_ (`requiredFieldIsDefined` fields) parentFields
-    *> traverse (`validateField` parentFields) fields
+validateInputObject fieldsDef object =
+  do
+    Scope {kind} <- getScope
+    case kind of
+      TYPE ->
+        traverse_ (`requiredFieldIsDefined` object) fieldsDef
+          *> traverse (`validateField` fieldsDef) object
+      _ ->
+        traverse_ (`selectKnown` fieldsDef) object
+          *> validateObjectWithDefaultValue object fieldsDef
 
 validateField ::
   ( InputConstraints ctx
@@ -230,12 +242,37 @@ validateField ::
   ObjectEntry RESOLVED ->
   FieldsDefinition IN ->
   InputValidator ctx (ObjectEntry VALID)
-validateField entry@ObjectEntry {entryName} parentFields = do
-  field@FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}} <-
-    selectKnown entry parentFields
-  inputTypeDef <- askInputFieldType field
-  withInputScope (Prop entryName typeConName) $
-    ObjectEntry entryName
+validateField entry parentFields = do
+  field <- selectKnown entry parentFields
+  validateInputField field entry
+
+validateObjectWithDefaultValue ::
+  (InputConstraints c) =>
+  Object RESOLVED ->
+  FieldsDefinition IN ->
+  Validator (InputContext c) (Object VALID)
+validateObjectWithDefaultValue object fieldsDef =
+  traverse (validateFieldWithDefaultValue object) (elems fieldsDef)
+    >>= fromElems
+
+validateFieldWithDefaultValue ::
+  (InputConstraints c) =>
+  Object RESOLVED ->
+  FieldDefinition IN ->
+  Validator (InputContext c) (ObjectEntry VALID)
+validateFieldWithDefaultValue object fieldDef@FieldDefinition {fieldName} = do
+  entry <- selectWithDefaultValue (ObjectEntry fieldName) fieldDef object
+  validateInputField fieldDef entry
+
+validateInputField ::
+  (InputConstraints c) =>
+  FieldDefinition IN ->
+  ObjectEntry RESOLVED ->
+  Validator (InputContext c) (ObjectEntry VALID)
+validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
+  inputTypeDef <- askInputFieldType fieldDef
+  withInputScope (Prop fieldName typeConName) $
+    ObjectEntry fieldName
       <$> validateInput
         typeWrappers
         inputTypeDef

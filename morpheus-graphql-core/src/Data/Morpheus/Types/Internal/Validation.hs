@@ -51,6 +51,7 @@ module Data.Morpheus.Types.Internal.Validation
     WithSchema,
     Unknown,
     WithInput,
+    getScope,
   )
 where
 
