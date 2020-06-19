@@ -73,7 +73,8 @@ testSchema =
               (uncurry schemaCase)
               [ ("validation/default-value/field/compound-ok", "sophisticated default value validation success"),
                 ("validation/default-value/field/unexpected-value", "fail if: default value field receives wrong value"),
-                ("validation/default-value/field/unknown-field", "fail if: default value object contains unknown field")
+                ("validation/default-value/field/unknown-field", "fail if: default value object contains unknown field"),
+                ("validation/default-value/field/missing-field", "fail if: default value does not provides required field")
               ],
           testGroup
             "default value/argument"
@@ -81,7 +82,8 @@ testSchema =
               (uncurry schemaCase)
               [ ("validation/default-value/argument/compound-ok", "sophisticated default value validation success"),
                 ("validation/default-value/argument/unexpected-value", "fail if: default value field receives wrong value"),
-                ("validation/default-value/argument/unknown-field", "fail if: default value object contains unknown field")
+                ("validation/default-value/argument/unknown-field", "fail if: default value object contains unknown field"),
+                ("validation/default-value/argument/missing-field", "fail if: default value does not provides required field")
               ]
         ]
     ]

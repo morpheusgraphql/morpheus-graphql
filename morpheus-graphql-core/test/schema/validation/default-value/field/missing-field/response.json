@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "message": "Field Input3.field1 got invalid default value. Undefined Field \"field2\".",
+      "locations": []
+    },
+    {
+      "message": "Field Input3.field1 got invalid default value. in field \"field\": Undefined Field \"field\".",
+      "locations": []
+    }
+  ]
+}

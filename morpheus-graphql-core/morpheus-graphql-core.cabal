@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5eb8650c0253fddaaba938d15fa407430938cda3000e06177cb2d5f25fb9ef46
+-- hash: f1cd06c5ed71c92d50f97a798fefd97eaa2c6e520f0c01753bc2aaf9f35151ed
 
 name:           morpheus-graphql-core
 version:        0.12.0
@@ -25,9 +25,11 @@ extra-source-files:
 data-files:
     test/interface/query.gql
     test/schema/validation/default-value/argument/compound-ok/schema.gql
+    test/schema/validation/default-value/argument/missing-field/schema.gql
     test/schema/validation/default-value/argument/unexpected-value/schema.gql
     test/schema/validation/default-value/argument/unknown-field/schema.gql
     test/schema/validation/default-value/field/compound-ok/schema.gql
+    test/schema/validation/default-value/field/missing-field/schema.gql
     test/schema/validation/default-value/field/unexpected-value/schema.gql
     test/schema/validation/default-value/field/unknown-field/schema.gql
     test/schema/validation/interface/field-args/fail/schema.gql
@@ -37,9 +39,11 @@ data-files:
     test/simple/query.gql
     test/interface/response.json
     test/schema/validation/default-value/argument/compound-ok/response.json
+    test/schema/validation/default-value/argument/missing-field/response.json
     test/schema/validation/default-value/argument/unexpected-value/response.json
     test/schema/validation/default-value/argument/unknown-field/response.json
     test/schema/validation/default-value/field/compound-ok/response.json
+    test/schema/validation/default-value/field/missing-field/response.json
     test/schema/validation/default-value/field/unexpected-value/response.json
     test/schema/validation/default-value/field/unknown-field/response.json
     test/schema/validation/interface/field-args/fail/response.json
