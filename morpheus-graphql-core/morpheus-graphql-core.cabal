@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cda549e5b04e0deed9b3beedbd8563c979691e2cbcc8058414cca05c97423c2e
+-- hash: 5e00f4c83624e6ff628c2f79b0c912c88cd91c5716f2a54bf5d3f2d4ee103bb0
 
 name:           morpheus-graphql-core
 version:        0.12.0
@@ -23,7 +23,8 @@ extra-source-files:
     changelog.md
     README.md
 data-files:
-    test/interface/query.gql
+    test/api/interface/query.gql
+    test/api/simple/query.gql
     test/schema/validation/default-value/argument/compound-ok/schema.gql
     test/schema/validation/default-value/argument/missing-field/schema.gql
     test/schema/validation/default-value/argument/unexpected-value/schema.gql
@@ -36,8 +37,8 @@ data-files:
     test/schema/validation/interface/field-args/ok/schema.gql
     test/schema/validation/interface/field-type/fail/schema.gql
     test/schema/validation/interface/field-type/ok/schema.gql
-    test/simple/query.gql
-    test/interface/response.json
+    test/api/interface/response.json
+    test/api/simple/response.json
     test/schema/validation/default-value/argument/compound-ok/response.json
     test/schema/validation/default-value/argument/missing-field/response.json
     test/schema/validation/default-value/argument/unexpected-value/response.json
@@ -50,7 +51,6 @@ data-files:
     test/schema/validation/interface/field-args/ok/response.json
     test/schema/validation/interface/field-type/fail/response.json
     test/schema/validation/interface/field-type/ok/response.json
-    test/simple/response.json
 
 source-repository head
   type: git

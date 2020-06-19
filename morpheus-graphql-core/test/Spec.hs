@@ -116,8 +116,8 @@ main = do
       "core tests"
     $ map
       (uncurry basicTest)
-      [ ("basic Test", "simple"),
-        ("test interface", "interface")
+      [ ("basic Test", "api/simple"),
+        ("test interface", "api/interface")
       ]
       <> [schema]
 
