@@ -1,25 +1,25 @@
 enum TestEnum {
   EnumA
   EnumB
-  EnumC
 }
 
 input Input1 {
-  field1: ID = EnumA
-  field2: String = EnumA
-  field3: TestEnum = UnknownEnum
-  field4: TestEnum = 1
-  field5: TestEnum = "some text"
+  field1: ID = 1
+  field2: String = "some text"
+  field3: TestEnum = EnumB
 }
 
 input Input2 {
-  field1: Input1 = { field1: true }
+  field1: Input1
   field2: String
 }
 
 type Query {
   field(
     i1: Input2 = { field1: { field2: 1 }, field2: true }
-    i2: TestEnum = EnumBB
+    i2: Input1 = { field1: { field3: 2344 }, field2: 123 }
+    i3: TestEnum = EnumBB
+    i4: ID = true
+    i5: Int = "some text"
   ): Int
 }
