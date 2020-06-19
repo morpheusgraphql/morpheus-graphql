@@ -46,6 +46,7 @@ import Lib
   ( getGQLBody,
     getResponseBody,
     maybeVariables,
+    scanSchemaTests,
   )
 import Schema
   ( testSchema,
@@ -109,7 +110,8 @@ resolveDeity =
       ]
 
 main :: IO ()
-main =
+main = do
+  scanSchemaTests ["test/schema"] >>= print
   defaultMain
     $ testGroup
       "core tests"
