@@ -141,7 +141,8 @@ gqlRoot =
             pure
               Account
                 { accountName = pure "Value from Interface"
-                }
+                },
+          queryTestInput = pure . pack . show
         }
     -------------------------------------------------------------
     mutationResolver =

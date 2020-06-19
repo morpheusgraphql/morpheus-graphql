@@ -33,9 +33,9 @@ enum CityID @enumDir {
 }
 
 input Coordinates {
-  latitude: Euro! @customDirective(testName: "")
+  latitude: Euro! = "Default latitude Value" @customDirective(testName: "")
   "temporary singleline Test for input object field descripions"
-  longitude: [[[UniqueID!]!]]!
+  longitude: [[[UniqueID!]!]]! = [[[{ id: "" }]]]
 }
 
 input UniqueID {
@@ -99,6 +99,7 @@ type Query {
   fail2: Int!
   shared: SharedType!
   testInterface: Account!
+  testInput(i1: Coordinates, i2: String = "some value"): String!
 }
 
 type Mutation {
