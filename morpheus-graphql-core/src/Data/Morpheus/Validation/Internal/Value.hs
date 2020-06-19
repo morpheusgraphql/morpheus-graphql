@@ -9,6 +9,7 @@
 module Data.Morpheus.Validation.Internal.Value (validateInput) where
 
 import Data.Foldable (traverse_)
+import Data.Function ((&))
 import Data.List (elem)
 import Data.Maybe (maybe)
 -- MORPHEUS
@@ -150,7 +151,8 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
       | isNullableWrapper wrappers = pure Null
       | otherwise = mismatchError wrappers Nothing Null
     -- Validate LIST
-    validateWrapped [TypeMaybe] dt v = validateUnwrapped (mismatchError [TypeMaybe]) dt v
+    validateWrapped [TypeMaybe] dt ObjectEntry {entryValue} =
+      validateUnwrapped (mismatchError [TypeMaybe]) dt entryValue
     validateWrapped (TypeMaybe : wrappers) _ value =
       validateWrapped wrappers tyCont value
     validateWrapped (TypeList : wrappers) _ (ObjectEntry key (List list)) =
@@ -159,24 +161,25 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validateElement = validateWrapped wrappers tyCont . ObjectEntry key
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
-    validateWrapped [] dt v = validateUnwrapped (mismatchError []) dt v
+    validateWrapped [] dt ObjectEntry {entryValue} =
+      validateUnwrapped (mismatchError []) dt entryValue
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers Nothing entryValue
     validateUnwrapped ::
       -- error
       (Maybe Message -> ResolvedValue -> InputValidator ctx ValidValue) ->
       TypeContent TRUE IN ->
-      ObjectEntry RESOLVED ->
+      Value RESOLVED ->
       InputValidator ctx ValidValue
-    validateUnwrapped _ (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
+    validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
       Object <$> validateInputObject parentFields fields
-    validateUnwrapped _ (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
+    validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
       validatInputUnion typeName inputUnion rawFields
-    validateUnwrapped err (DataEnum tags) ObjectEntry {entryValue} =
-      validateEnum (err Nothing) tags entryValue
-    validateUnwrapped err (DataScalar dataScalar) ObjectEntry {entryValue} =
-      validateScalar typeName dataScalar entryValue err
-    validateUnwrapped err _ ObjectEntry {entryValue} = err Nothing entryValue
+    validateUnwrapped err (DataEnum tags) value =
+      validateEnum (err Nothing) tags value
+    validateUnwrapped err (DataScalar dataScalar) value =
+      validateScalar typeName dataScalar value err
+    validateUnwrapped err _ value = err Nothing value
 
 -- INPUT UNION
 validatInputUnion ::
@@ -270,9 +273,13 @@ validateScalar typeName ScalarDefinition {validateValue} value err = do
     isValidDefault :: TypeName -> ScalarValue -> Bool
     isValidDefault "Boolean" = isBoolean
     isValidDefault "String" = isString
-    isValidDefault "Float" = \x -> isFloat x || isInt x
+    isValidDefault "Float" = oneOf [isFloat, isInt]
     isValidDefault "Int" = isInt
+    isValidDefault "ID" = oneOf [isInt, isFloat, isString]
     isValidDefault _ = const True
+
+oneOf :: [a -> Bool] -> a -> Bool
+oneOf ls v = any (v &) ls
 
 isBoolean :: ScalarValue -> Bool
 isBoolean Boolean {} = True
