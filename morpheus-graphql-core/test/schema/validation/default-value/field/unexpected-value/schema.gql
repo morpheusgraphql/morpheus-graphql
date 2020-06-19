@@ -13,8 +13,8 @@ input Input1 {
 }
 
 input Input2 {
-  field1: Input1 = { field1: true }
-  field2: String
+  objectField: Input1 = { field1: true, field2: true }
+  fieldString: String
 }
 
 type Query {

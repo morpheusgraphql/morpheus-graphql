@@ -162,19 +162,18 @@ data Value (stage :: Stage) where
   Scalar :: ScalarValue -> Value stage
   Null :: Value stage
 
+deriving instance Show (Value a)
+
 deriving instance Eq (Value s)
 
 data ObjectEntry (s :: Stage) = ObjectEntry
   { entryName :: FieldName,
     entryValue :: Value s
   }
-  deriving (Eq)
+  deriving (Eq, Show)
 
 instance RenderGQL (ObjectEntry a) where
   render (ObjectEntry (FieldName name) value) = name <> ": " <> render value
-
-instance Show (ObjectEntry s) where
-  show (ObjectEntry (FieldName name) value) = unpack name <> ": " <> show value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision _ ObjectEntry {entryName} =
@@ -203,24 +202,6 @@ type ResolvedValue = Value RESOLVED
 deriving instance Lift (Value a)
 
 deriving instance Lift (ObjectEntry a)
-
-instance Show (Value a) where
-  show Null = "null"
-  show (Enum x) = unpack (readTypeName x)
-  show (Scalar x) = show x
-  show (ResolvedVariable Ref {refName} Variable {variableValue}) =
-    "($" <> unpack (readName refName) <> ": " <> show variableValue <> ") "
-  show (VariableValue Ref {refName}) = "$" <> unpack (readName refName) <> " "
-  show (Object keys) = "{" <> foldr toEntry "" keys <> "}"
-    where
-      toEntry :: ObjectEntry a -> String -> String
-      toEntry value "" = show value
-      toEntry value txt = txt <> ", " <> show value
-  show (List list) = "[" <> foldl toEntry "" list <> "]"
-    where
-      toEntry :: String -> Value a -> String
-      toEntry "" value = show value
-      toEntry txt value = txt <> ", " <> show value
 
 instance RenderGQL (Value a) where
   -- TODO: fix
