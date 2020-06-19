@@ -27,7 +27,7 @@ module Data.Morpheus.Types.Internal.Validation
     withScope,
     withScopeType,
     withPosition,
-    asksScope,
+    asks,
     selectWithDefaultValue,
     askInputFieldType,
     askInputMember,
@@ -124,7 +124,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     askFragments,
     askSchema,
     askVariables,
-    asksScope,
+    asks,
     inputMessagePrefix,
     inputValueSource,
     runValidator,
@@ -214,7 +214,7 @@ selectWithDefaultValue
       -----------------
       failSelection = do
         ctx <- Validator ask
-        position <- asksScope position
+        position <- asks position
         failure [missingRequired ctx (Ref fieldName position) values]
 
 selectKnown ::
@@ -263,7 +263,7 @@ askTypeMember name =
     >>= constraintOBJECT
   where
     notFound = do
-      scopeType <- asksScope typename
+      scopeType <- asks typename
       failure $
         "Type \""
           <> msg name
@@ -276,7 +276,7 @@ askTypeMember name =
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
         con _ = do
-          scopeType <- asksScope typename
+          scopeType <- asks typename
           failure $
             "Type \"" <> msg typeName
               <> "\" referenced by union \""
@@ -332,7 +332,7 @@ askInputMember name =
     typeInfo tName =
       "Type \"" <> msg tName <> "\" referenced by inputUnion "
     notFound = do
-      scopeType <- asksScope typename
+      scopeType <- asks typename
       failure $
         typeInfo name
           <> msg scopeType
@@ -358,7 +358,7 @@ askInputMember name =
           m c (TypeDefinition IN)
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
-          scopeType <- asksScope typename
+          scopeType <- asks typename
           failure $
             typeInfo typeName
               <> "\""

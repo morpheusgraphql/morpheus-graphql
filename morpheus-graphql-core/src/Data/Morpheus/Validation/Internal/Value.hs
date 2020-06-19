@@ -73,7 +73,7 @@ import Data.Morpheus.Types.Internal.Validation
     Validator,
     askInputFieldType,
     askInputMember,
-    asksScope,
+    asks,
     constraintInputUnion,
     inputMessagePrefix,
     inputValueSource,
@@ -93,7 +93,7 @@ castFailure ::
   ResolvedValue ->
   InputValidator ctx a
 castFailure expected message value = do
-  pos <- asksScope position
+  pos <- asks position
   prefix <- inputMessagePrefix
   failure
     $ errorMessage pos
@@ -228,7 +228,7 @@ validateInputObject ::
   InputValidator ctx (Object VALID)
 validateInputObject fieldsDef object =
   do
-    kind <- asksScope kind
+    kind <- asks kind
     case kind of
       TYPE ->
         traverse_ (`requiredFieldIsDefined` object) fieldsDef

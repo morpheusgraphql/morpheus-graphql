@@ -18,7 +18,6 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     InputValidator,
     BaseValidator,
     runValidator,
-    askContext,
     Constraint (..),
     withScope,
     withScopeType,
@@ -43,7 +42,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     MonadContext (..),
     withContext,
     renderField,
-    asksScope,
+    asks,
     askSchema,
     askVariables,
     askSelectionName,
@@ -213,13 +212,13 @@ inputValueSource = get
 askContext :: Validator ctx ctx
 askContext = Validator ask
 
-asksScope ::
+asks ::
   ( MonadContext m c,
     GetWith c Scope
   ) =>
   (Scope -> a) ->
   m c a
-asksScope f = f <$> get
+asks f = f <$> get
 
 askSelectionName ::
   forall m c.
@@ -444,7 +443,7 @@ instance
   Failure Message (Validator ctx)
   where
   failure inputMessage = do
-    position <- asksScope position
+    position <- asks position
     failure
       [ GQLError
           { message = "INTERNAL: " <> inputMessage,
