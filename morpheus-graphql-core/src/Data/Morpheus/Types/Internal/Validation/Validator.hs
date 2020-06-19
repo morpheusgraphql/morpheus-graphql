@@ -38,15 +38,14 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     withDirective,
     startInput,
     WithSelection (..),
-    WithVariables (..),
     GetWith (..),
     SetWith (..),
-    WithInput,
     withContext,
     renderField,
     asksScope,
     MonadContext (..),
     askSchema,
+    askVariables,
   )
 where
 
@@ -195,8 +194,13 @@ withInputScope prop = withContext update
             ..
           }
 
-inputValueSource :: (WithInput m, Functor m) => m InputSource
-inputValueSource = inputSource <$> askInput
+inputValueSource ::
+  forall m c.
+  ( GetWith c InputSource,
+    MonadContext m c
+  ) =>
+  m c InputSource
+inputValueSource = get
 
 askContext :: Validator ctx ctx
 askContext = Validator ask
@@ -215,6 +219,13 @@ askSchema ::
   ) =>
   m c Schema
 askSchema = get
+
+askVariables ::
+  ( MonadContext m c,
+    GetWith c (VariableDefinitions VALID)
+  ) =>
+  m c (VariableDefinitions VALID)
+askVariables = get
 
 runValidator :: Validator ctx a -> ctx -> Eventless a
 runValidator (Validator x) = runReaderT x
@@ -320,13 +331,6 @@ type InputValidator ctx = Validator (InputContext ctx)
 
 -- Helpers
 
--- Variables
-class WithVariables (m :: * -> *) where
-  askVariables :: m (VariableDefinitions VALID)
-
-instance WithVariables (Validator (OperationContext (VariableDefinitions VALID))) where
-  askVariables = variables <$> Validator ask
-
 -- Selection
 class
   Functor m =>
@@ -360,7 +364,7 @@ set ::
 set f = setContext (setWith f)
 
 class
-  Functor (m c) =>
+  Monad (m c) =>
   MonadContext m c
   where
   getContext :: (c -> a) -> m c a
@@ -387,6 +391,13 @@ instance GetWith (OperationContext c) Schema where
 instance GetWith c Schema => GetWith (InputContext c) Schema where
   getWith = getWith . sourceContext
 
+instance GetWith (OperationContext (VariableDefinitions VALID)) (VariableDefinitions VALID) where
+  getWith = variables
+
+instance GetWith (InputContext ctx) InputSource where
+  getWith = inputSource
+
+-- Setters
 class SetWith (c :: *) (v :: *) where
   setWith :: (v -> v) -> c -> c
 
@@ -419,15 +430,6 @@ instance
             locations = [position]
           }
       ]
-
-class
-  Applicative m =>
-  WithInput (m :: * -> *)
-  where
-  askInput :: m (InputContext ())
-
-instance WithInput (Validator (InputContext ctx)) where
-  askInput = (\x -> x {sourceContext = ()}) <$> Validator ask
 
 instance Failure GQLErrors (Validator ctx) where
   failure = Validator . lift . failure

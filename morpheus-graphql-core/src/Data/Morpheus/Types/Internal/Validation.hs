@@ -48,8 +48,8 @@ module Data.Morpheus.Types.Internal.Validation
     GetWith,
     SetWith,
     Unknown,
-    WithInput,
     askSchema,
+    MonadContext,
   )
 where
 
@@ -119,10 +119,9 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     SetWith (..),
     Target (..),
     Validator (..),
-    WithInput,
     WithSelection (..),
-    WithVariables (..),
     askSchema,
+    askVariables,
     asksScope,
     inputMessagePrefix,
     inputValueSource,

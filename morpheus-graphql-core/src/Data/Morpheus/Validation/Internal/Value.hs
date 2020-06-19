@@ -64,13 +64,13 @@ import Data.Morpheus.Types.Internal.Validation
     InputSource (..),
     InputValidator,
     MissingRequired,
+    MonadContext,
     Prop (..),
     Scope (..),
     ScopeKind (..),
     SetWith,
     Unknown,
     Validator,
-    WithInput,
     askInputFieldType,
     askInputMember,
     asksScope,
@@ -123,10 +123,10 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
 type InputConstraints ctx =
   ( GetWith ctx Schema,
     GetWith ctx Scope,
+    GetWith (InputContext ctx) InputSource,
     SetWith ctx Scope,
     MissingRequired (Object RESOLVED) (InputContext ctx),
-    Unknown (FieldsDefinition IN) (InputContext ctx),
-    WithInput (Validator (InputContext ctx))
+    Unknown (FieldsDefinition IN) (InputContext ctx)
   )
 
 -- Validate input Values
@@ -335,7 +335,7 @@ isInt :: ScalarValue -> Bool
 isInt Int {} = True
 isInt _ = False
 
-isVariableValue :: WithInput m => m Bool
+isVariableValue :: (MonadContext m c, GetWith c InputSource) => m c Bool
 isVariableValue =
   \case
     SourceVariable {isDefaultValue} -> not isDefaultValue
@@ -343,11 +343,11 @@ isVariableValue =
     <$> inputValueSource
 
 validateEnum ::
-  (Monad m, WithInput m) =>
-  (ResolvedValue -> m ValidValue) ->
+  (MonadContext m c, GetWith c InputSource) =>
+  (ResolvedValue -> m c ValidValue) ->
   [DataEnumValue] ->
   ResolvedValue ->
-  m ValidValue
+  m c ValidValue
 validateEnum err enumValues value@(Scalar (String enumValue))
   | TypeName enumValue `elem` tags = do
     isFromVariable <- isVariableValue
