@@ -9,6 +9,10 @@
       "locations": [{ "line": 0, "column": 0 }]
     },
     {
+      "message": "Field Input2.objectField got invalid default value. in field \"field3\": Expected type \"TestEnum\" found tre.",
+      "locations": [{ "line": 0, "column": 0 }]
+    },
+    {
       "message": "Field Input1.field1 got invalid default value. Expected type \"ID\" found EnumA.",
       "locations": [{ "line": 0, "column": 0 }]
     },
