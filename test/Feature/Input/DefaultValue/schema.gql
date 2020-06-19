@@ -30,4 +30,5 @@ type User {
 
 type Query {
   user: User
+  testSimple(i1: InputSimple, i2: String = "test string"): String!
 }

@@ -25,14 +25,14 @@ import Data.Morpheus.Types
     RootResolver (..),
     Undefined (..),
   )
-import Data.Text (Text)
+import Data.Text (Text, pack)
 
 importGQLDocument "test/Feature/Input/DefaultValue/schema.gql"
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
-    { queryResolver = Query {user},
+    { queryResolver = Query {user, testSimple},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
@@ -42,8 +42,9 @@ rootResolver =
       pure
         $ Just
         $ User
-          { inputs = const (pure "test input")
+          { inputs = pure . pack . show
           }
+    testSimple = pure . pack . show
 
 -----------------------------------
 api :: GQLRequest -> IO GQLResponse
