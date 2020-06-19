@@ -9,15 +9,15 @@
       "locations": [{ "line": 0, "column": 0 }]
     },
     {
-      "message": "Field Input2.objectField got invalid default value. in field \"field3\": Expected type \"TestEnum\" found tre.",
+      "message": "Field Input2.objectField got invalid default value. in field \"field3\": Expected type \"TestEnum\" found true.",
       "locations": [{ "line": 0, "column": 0 }]
     },
     {
-      "message": "Field Input1.field1 got invalid default value. Expected type \"ID\" found EnumA.",
+      "message": "Field Input1.field1 got invalid default value. Expected type \"ID!\" found EnumA.",
       "locations": [{ "line": 0, "column": 0 }]
     },
     {
-      "message": "Field Input1.field2 got invalid default value. Expected type \"String\" found EnumA.",
+      "message": "Field Input1.field2 got invalid default value. Expected type \"String!\" found EnumA.",
       "locations": [{ "line": 0, "column": 0 }]
     },
     {
@@ -25,7 +25,7 @@
       "locations": [{ "line": 0, "column": 0 }]
     },
     {
-      "message": "Field Input1.field4 got invalid default value. Expected type \"TestEnum\" found 1.",
+      "message": "Field Input1.field4 got invalid default value. Expected type \"TestEnum!\" found 1.",
       "locations": [{ "line": 0, "column": 0 }]
     },
     {

@@ -13,7 +13,7 @@ input Input1 {
 }
 
 input Input2 {
-  objectField: Input1 = { field1: true, field2: true, field3: tre }
+  objectField: Input1 = { field1: true, field2: true, field3: true }
   fieldString: String
 }
 
