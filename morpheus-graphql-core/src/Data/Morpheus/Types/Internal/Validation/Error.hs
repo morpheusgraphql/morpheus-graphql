@@ -50,7 +50,8 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( TypeSystemContext,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( InputContext (..),
+  ( CurrentSelection (..),
+    InputContext (..),
     OperationContext (..),
     Scope (..),
     ScopeKind (..),
@@ -83,7 +84,7 @@ class Unused ctx c where
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 instance Unused (OperationContext v) (Variable s) where
   unused
-    OperationContext {operationName}
+    OperationContext {selection = CurrentSelection {operationName}}
     Variable {variableName, variablePosition} =
       GQLError
         { message =
@@ -112,7 +113,7 @@ instance MissingRequired (Arguments s) (OperationContext v) where
   missingRequired
     OperationContext
       { scope = Scope {position, kind},
-        currentSelectionName
+        selection = CurrentSelection {selectionName}
       }
     Ref {refName}
     _ =
@@ -125,8 +126,8 @@ instance MissingRequired (Arguments s) (OperationContext v) where
           locations = [position]
         }
       where
-        inScope SELECTION = "Field " <> msg currentSelectionName
-        inScope DIRECTIVE = "Directive " <> msg ("@" <> currentSelectionName)
+        inScope SELECTION = "Field " <> msg selectionName
+        inScope DIRECTIVE = "Directive " <> msg ("@" <> selectionName)
 
 instance MissingRequired (Object s) (InputContext (OperationContext v)) where
   missingRequired
@@ -163,7 +164,9 @@ instance MissingRequired (Object s) (InputContext (TypeSystemContext ctx)) where
 
 instance MissingRequired (VariableDefinitions s) (OperationContext v) where
   missingRequired
-    OperationContext {operationName}
+    OperationContext
+      { selection = CurrentSelection {operationName}
+      }
     Ref {refName, refPosition}
     _ =
       GQLError

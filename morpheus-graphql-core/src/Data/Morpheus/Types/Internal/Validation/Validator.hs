@@ -28,6 +28,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     InputSource (..),
     InputContext (..),
     OperationContext (..),
+    CurrentSelection (..),
     renderInputPrefix,
     Target (..),
     Prop (..),
@@ -37,15 +38,17 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     Scope (..),
     withDirective,
     startInput,
-    WithSelection (..),
     GetWith (..),
     SetWith (..),
+    MonadContext (..),
     withContext,
     renderField,
     asksScope,
-    MonadContext (..),
     askSchema,
     askVariables,
+    askSelectionName,
+    askFragments,
+    setSelectionName,
   )
 where
 
@@ -132,9 +135,14 @@ data OperationContext vars = OperationContext
   { schema :: Schema,
     scope :: Scope,
     fragments :: Fragments,
-    operationName :: Maybe FieldName,
-    currentSelectionName :: FieldName,
+    selection :: CurrentSelection,
     variables :: vars
+  }
+  deriving (Show)
+
+data CurrentSelection = CurrentSelection
+  { operationName :: Maybe FieldName,
+    selectionName :: FieldName
   }
   deriving (Show)
 
@@ -213,6 +221,25 @@ asksScope ::
   m c a
 asksScope f = f <$> get
 
+askSelectionName ::
+  forall m c.
+  ( MonadContext m c,
+    GetWith c CurrentSelection
+  ) =>
+  m c FieldName
+askSelectionName = selectionName <$> get
+
+setSelectionName ::
+  ( MonadContext m c,
+    SetWith c CurrentSelection
+  ) =>
+  FieldName ->
+  m c a ->
+  m c a
+setSelectionName selectionName = set update
+  where
+    update ctx = ctx {selectionName}
+
 askSchema ::
   ( MonadContext m c,
     GetWith c Schema
@@ -227,6 +254,13 @@ askVariables ::
   m c (VariableDefinitions VALID)
 askVariables = get
 
+askFragments ::
+  ( MonadContext m c,
+    GetWith c Fragments
+  ) =>
+  m c Fragments
+askFragments = get
+
 runValidator :: Validator ctx a -> ctx -> Eventless a
 runValidator (Validator x) = runReaderT x
 
@@ -237,7 +271,7 @@ withContext ::
 withContext f = Validator . withReaderT f . _runValidator
 
 withDirective ::
-  ( WithSelection (m c),
+  ( SetWith c CurrentSelection,
     SetWith c Scope,
     MonadContext m c
   ) =>
@@ -258,7 +292,7 @@ withDirective
           }
 
 withScope ::
-  ( WithSelection (m c),
+  ( SetWith c CurrentSelection,
     MonadContext m c,
     SetWith c Scope
   ) =>
@@ -330,27 +364,6 @@ type SelectionValidator = Validator (OperationContext (VariableDefinitions VALID
 type InputValidator ctx = Validator (InputContext ctx)
 
 -- Helpers
-
--- Selection
-class
-  Functor m =>
-  WithSelection (m :: * -> *)
-  where
-  setSelectionName :: FieldName -> m a -> m a
-  getSelectionName :: m FieldName
-  askFragments :: m Fragments
-
-instance WithSelection (Validator (OperationContext v)) where
-  askFragments = fragments <$> Validator ask
-  getSelectionName = currentSelectionName <$> Validator ask
-  setSelectionName name = withContext update
-    where
-      update OperationContext {..} =
-        OperationContext
-          { currentSelectionName = name,
-            ..
-          }
-
 get :: (MonadContext m ctx, GetWith ctx a) => m ctx a
 get = getContext getWith
 
@@ -374,8 +387,6 @@ instance MonadContext Validator c where
   getContext f = f <$> Validator ask
   setContext = withContext
 
---instance (MonadContext Validator (OperationContext (VariableDefinitions VALID)))
-
 class GetWith (c :: *) (v :: *) where
   getWith :: c -> v
 
@@ -397,9 +408,19 @@ instance GetWith (OperationContext (VariableDefinitions VALID)) (VariableDefinit
 instance GetWith (InputContext ctx) InputSource where
   getWith = inputSource
 
+instance GetWith (OperationContext v) Fragments where
+  getWith = fragments
+
 -- Setters
 class SetWith (c :: *) (v :: *) where
   setWith :: (v -> v) -> c -> c
+
+instance SetWith (OperationContext v) CurrentSelection where
+  setWith f OperationContext {selection = selection, ..} =
+    OperationContext
+      { selection = f selection,
+        ..
+      }
 
 instance SetWith (OperationContext v) Scope where
   setWith f OperationContext {..} =

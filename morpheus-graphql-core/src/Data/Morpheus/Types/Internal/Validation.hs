@@ -41,7 +41,6 @@ module Data.Morpheus.Types.Internal.Validation
     withDirective,
     inputValueSource,
     askVariables,
-    askFragments,
     Scope (..),
     MissingRequired (..),
     InputContext,
@@ -49,7 +48,9 @@ module Data.Morpheus.Types.Internal.Validation
     SetWith,
     Unknown,
     askSchema,
+    askFragments,
     MonadContext,
+    CurrentSelection (..),
   )
 where
 
@@ -105,6 +106,7 @@ import Data.Morpheus.Types.Internal.Validation.Error
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( BaseValidator,
     Constraint (..),
+    CurrentSelection (..),
     GetWith (..),
     InputContext,
     InputSource (..),
@@ -119,7 +121,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     SetWith (..),
     Target (..),
     Validator (..),
-    WithSelection (..),
+    askFragments,
     askSchema,
     askVariables,
     asksScope,
