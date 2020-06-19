@@ -135,8 +135,8 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
   withScopeType typeName
     . validateWrapped tyWrappers tyCont
   where
-    mismatchError :: [TypeWrapper] -> ResolvedValue -> InputValidator ctx ValidValue
-    mismatchError wrappers = castFailure (TypeRef typeName Nothing wrappers) Nothing
+    mismatchError :: [TypeWrapper] -> Maybe Message -> ResolvedValue -> InputValidator ctx ValidValue
+    mismatchError wrappers = castFailure (TypeRef typeName Nothing wrappers)
     -- VALIDATION
     validateWrapped ::
       [TypeWrapper] ->
@@ -148,8 +148,9 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
       checkTypeEquality (typeName, wrappers) ref variable
     validateWrapped wrappers _ ObjectEntry {entryValue = Null}
       | isNullableWrapper wrappers = pure Null
-      | otherwise = mismatchError wrappers Null
+      | otherwise = mismatchError wrappers Nothing Null
     -- Validate LIST
+    validateWrapped [TypeMaybe] dt v = validateUnwrapped (mismatchError [TypeMaybe]) dt v
     validateWrapped (TypeMaybe : wrappers) _ value =
       validateWrapped wrappers tyCont value
     validateWrapped (TypeList : wrappers) _ (ObjectEntry key (List list)) =
@@ -158,23 +159,24 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
         validateElement = validateWrapped wrappers tyCont . ObjectEntry key
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
-    validateWrapped [] dt v = validateEntry dt v
-      where
-        validateEntry ::
-          TypeContent TRUE IN ->
-          ObjectEntry RESOLVED ->
-          InputValidator ctx ValidValue
-        validateEntry (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
-          Object <$> validateInputObject parentFields fields
-        validateEntry (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
-          validatInputUnion typeName inputUnion rawFields
-        validateEntry (DataEnum tags) ObjectEntry {entryValue} =
-          validateEnum (castFailure (TypeRef typeName Nothing []) Nothing) tags entryValue
-        validateEntry (DataScalar dataScalar) ObjectEntry {entryValue} =
-          validateScalar typeName dataScalar entryValue (castFailure (TypeRef typeName Nothing []))
-        validateEntry _ ObjectEntry {entryValue} = mismatchError [] entryValue
+    validateWrapped [] dt v = validateUnwrapped (mismatchError []) dt v
     {-- 3. THROW ERROR: on invalid values --}
-    validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers entryValue
+    validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers Nothing entryValue
+    validateUnwrapped ::
+      -- error
+      (Maybe Message -> ResolvedValue -> InputValidator ctx ValidValue) ->
+      TypeContent TRUE IN ->
+      ObjectEntry RESOLVED ->
+      InputValidator ctx ValidValue
+    validateUnwrapped _ (DataInputObject parentFields) ObjectEntry {entryValue = Object fields} =
+      Object <$> validateInputObject parentFields fields
+    validateUnwrapped _ (DataInputUnion inputUnion) ObjectEntry {entryValue = Object rawFields} =
+      validatInputUnion typeName inputUnion rawFields
+    validateUnwrapped err (DataEnum tags) ObjectEntry {entryValue} =
+      validateEnum (err Nothing) tags entryValue
+    validateUnwrapped err (DataScalar dataScalar) ObjectEntry {entryValue} =
+      validateScalar typeName dataScalar entryValue err
+    validateUnwrapped err _ ObjectEntry {entryValue} = err Nothing entryValue
 
 -- INPUT UNION
 validatInputUnion ::

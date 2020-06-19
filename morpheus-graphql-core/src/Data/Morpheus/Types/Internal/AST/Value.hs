@@ -35,7 +35,6 @@ import qualified Data.Aeson as A
     FromJSON (..),
     ToJSON (..),
     Value (..),
-    encode,
     object,
     pairs,
   )
@@ -207,7 +206,7 @@ deriving instance Lift (ObjectEntry a)
 
 instance Show (Value a) where
   show Null = "null"
-  show (Enum x) = "" <> unpack (readTypeName x)
+  show (Enum x) = unpack (readTypeName x)
   show (Scalar x) = show x
   show (ResolvedVariable Ref {refName} Variable {variableValue}) =
     "($" <> unpack (readName refName) <> ": " <> show variableValue <> ") "
@@ -246,7 +245,7 @@ instance RenderGQL (Value a) where
 -- render = pack . BS.unpack . A.encode
 
 instance Msg (Value a) where
-  msg = msg . A.encode
+  msg = msg . render
 
 instance A.ToJSON (Value a) where
   toJSON (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
