@@ -22,17 +22,11 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inInterface,
     Field (..),
     Interface (..),
-    WithScope' (..),
     renderField,
   )
 where
 
 import Control.Monad.Reader (asks)
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-    withReaderT,
-  )
 --import Data.Morpheus.Error.Document.Interface (unknownInterface)
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 -- MORPHEUS
@@ -46,28 +40,21 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldName,
     FieldsDefinition,
-    GQLError (..),
-    GQLErrors,
-    Message,
     OUT,
     Position (..),
+    Schema,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     msg,
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-  )
+import Data.Morpheus.Types.Internal.Resolving (Result (..))
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( InputContext,
+  ( GetWith (..),
     Scope (..),
     ScopeKind (..),
+    SetWith (..),
     Validator (..),
-    WithInput,
-    WithSchema (..),
-    WithScope,
-    WithScope' (..),
     renderField,
     withContext,
   )
@@ -88,14 +75,21 @@ data TypeSystemContext c = TypeSystemContext
   }
   deriving (Show)
 
-instance WithScope' (TypeSystemContext a) where
-  getScope' _ =
+instance GetWith (TypeSystemContext ctx) Schema where
+  getWith ctx = case fromElems (types ctx) of
+    Success {result} -> result
+    Failure {errors} -> error (show errors)
+
+instance GetWith (TypeSystemContext a) Scope where
+  getWith _ =
     Scope
       { position = Position {line = 0, column = 0},
         typename = "TODO:",
         kind = TYPE
       }
-  setScope' _ = id --TODO:
+
+instance SetWith (TypeSystemContext a) Scope where
+  setWith _ = id --TODO:
 
 selectType :: TypeName -> SchemaValidator ctx (TypeDefinition ANY)
 selectType name =
@@ -155,6 +149,3 @@ constraintInterface
     } = pure (typeName, fields)
 constraintInterface TypeDefinition {typeName} =
   failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
-
-instance WithSchema (Validator (TypeSystemContext ctx)) where
-  askSchema = asks types >>= fromElems

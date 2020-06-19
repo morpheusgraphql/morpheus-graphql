@@ -34,10 +34,11 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
+    Scope (..),
     SelectionValidator,
     askInputFieldType,
-    askPosition,
     askVariables,
+    asksScope,
     selectKnown,
     selectRequired,
     selectWithDefaultValue,
@@ -88,7 +89,7 @@ validateArgument
       fieldType = TypeRef {typeWrappers}
     } =
     do
-      argumentPosition <- askPosition
+      argumentPosition <- asksScope position
       argument <-
         selectWithDefaultValue
           (\argumentValue -> Argument {argumentName = fieldName, argumentValue, argumentPosition})

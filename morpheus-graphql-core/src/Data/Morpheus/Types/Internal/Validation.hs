@@ -27,12 +27,10 @@ module Data.Morpheus.Types.Internal.Validation
     withScope,
     withScopeType,
     withPosition,
-    askScopeTypeName,
+    asksScope,
     selectWithDefaultValue,
-    askPosition,
     askInputFieldType,
     askInputMember,
-    askSchema,
     startInput,
     withInputScope,
     inputMessagePrefix,
@@ -47,11 +45,11 @@ module Data.Morpheus.Types.Internal.Validation
     Scope (..),
     MissingRequired (..),
     InputContext,
-    WithScope,
-    WithSchema,
+    GetWith,
+    SetWith,
     Unknown,
     WithInput,
-    getScope,
+    askSchema,
   )
 where
 
@@ -83,6 +81,7 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     RESOLVED,
     Ref (..),
+    Schema,
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
@@ -106,24 +105,25 @@ import Data.Morpheus.Types.Internal.Validation.Error
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( BaseValidator,
     Constraint (..),
+    GetWith (..),
     InputContext,
     InputSource (..),
     InputValidator,
+    MonadContext (..),
     OperationContext (..),
     Prop (..),
     Resolution,
     Scope (..),
     ScopeKind (..),
     SelectionValidator,
+    SetWith (..),
     Target (..),
     Validator (..),
     WithInput,
-    WithSchema (..),
-    WithScope (..),
     WithSelection (..),
     WithVariables (..),
-    askPosition,
-    askScopeTypeName,
+    askSchema,
+    asksScope,
     inputMessagePrefix,
     inputValueSource,
     runValidator,
@@ -184,7 +184,8 @@ selectWithDefaultValue ::
   ( Selectable values value,
     MissingRequired values ctx,
     KEY value ~ FieldName,
-    WithScope (Validator ctx)
+    GetWith ctx Scope,
+    MonadContext Validator ctx
   ) =>
   (Value RESOLVED -> value) ->
   FieldDefinition IN ->
@@ -212,7 +213,7 @@ selectWithDefaultValue
       -----------------
       failSelection = do
         ctx <- Validator ask
-        position <- askPosition
+        position <- asksScope position
         failure [missingRequired ctx (Ref fieldName position) values]
 
 selectKnown ::
@@ -261,7 +262,7 @@ askTypeMember name =
     >>= constraintOBJECT
   where
     notFound = do
-      scopeType <- askScopeTypeName
+      scopeType <- asksScope typename
       failure $
         "Type \""
           <> msg name
@@ -274,7 +275,7 @@ askTypeMember name =
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
         con _ = do
-          scopeType <- askScopeTypeName
+          scopeType <- asksScope typename
           failure $
             "Type \"" <> msg typeName
               <> "\" referenced by union \""
@@ -282,13 +283,14 @@ askTypeMember name =
               <> "\" must be an OBJECT."
 
 askInputFieldType ::
-  ( Failure GQLErrors m,
-    Failure Message m,
-    Monad m,
-    WithSchema m
+  ( Failure GQLErrors (m c),
+    Failure Message (m c),
+    Monad (m c),
+    GetWith c Schema,
+    MonadContext m c
   ) =>
   FieldDefinition IN ->
-  m (TypeDefinition IN)
+  m c (TypeDefinition IN)
 askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}} =
   askSchema
     >>= selectBy
@@ -313,13 +315,14 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
             <> "\" must be an input type."
 
 askInputMember ::
-  ( WithSchema m,
-    WithScope m,
-    Failure Message m,
-    Monad m
+  ( GetWith c Schema,
+    GetWith c Scope,
+    Failure Message (m c),
+    Monad (m c),
+    MonadContext m c
   ) =>
   TypeName ->
-  m (TypeDefinition IN)
+  m c (TypeDefinition IN)
 askInputMember name =
   askSchema
     >>= selectOr notFound pure name
@@ -328,31 +331,33 @@ askInputMember name =
     typeInfo tName =
       "Type \"" <> msg tName <> "\" referenced by inputUnion "
     notFound = do
-      scopeType <- askScopeTypeName
+      scopeType <- asksScope typename
       failure $
         typeInfo name
           <> msg scopeType
           <> "\" can't found in Schema."
     --------------------------------------
     constraintINPUT_OBJECT ::
-      ( Monad m,
-        WithScope m,
-        Failure Message m
+      ( Monad (m c),
+        GetWith c Scope,
+        Failure Message (m c),
+        MonadContext m c
       ) =>
       TypeDefinition ANY ->
-      m (TypeDefinition IN)
+      m c (TypeDefinition IN)
     constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
       where
         con ::
-          ( Monad m,
-            WithScope m,
-            Failure Message m
+          ( Monad (m c),
+            GetWith c Scope,
+            Failure Message (m c),
+            MonadContext m c
           ) =>
           Maybe (TypeContent a IN) ->
-          m (TypeDefinition IN)
+          m c (TypeDefinition IN)
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
-          scopeType <- askScopeTypeName
+          scopeType <- asksScope typename
           failure $
             typeInfo typeName
               <> "\""

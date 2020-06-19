@@ -36,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     ResolvedValue,
     ScalarDefinition (..),
     ScalarValue (..),
+    Schema,
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
@@ -58,23 +59,22 @@ import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( InputContext,
+  ( GetWith,
+    InputContext,
     InputSource (..),
     InputValidator,
     MissingRequired,
     Prop (..),
     Scope (..),
     ScopeKind (..),
+    SetWith,
     Unknown,
     Validator,
     WithInput,
-    WithSchema,
-    WithScope,
     askInputFieldType,
     askInputMember,
-    askPosition,
+    asksScope,
     constraintInputUnion,
-    getScope,
     inputMessagePrefix,
     inputValueSource,
     selectKnown,
@@ -85,15 +85,15 @@ import Data.Morpheus.Types.Internal.Validation
 import Data.Semigroup ((<>))
 
 castFailure ::
-  ( WithSchema (Validator (InputContext ctx)),
-    WithScope (Validator (InputContext ctx))
+  ( GetWith ctx Schema,
+    GetWith ctx Scope
   ) =>
   TypeRef ->
   Maybe Message ->
   ResolvedValue ->
   InputValidator ctx a
 castFailure expected message value = do
-  pos <- askPosition
+  pos <- asksScope position
   prefix <- inputMessagePrefix
   failure
     $ errorMessage pos
@@ -121,8 +121,9 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
           }
 
 type InputConstraints ctx =
-  ( WithSchema (Validator (InputContext ctx)),
-    WithScope (Validator (InputContext ctx)),
+  ( GetWith ctx Schema,
+    GetWith ctx Scope,
+    SetWith ctx Scope,
     MissingRequired (Object RESOLVED) (InputContext ctx),
     Unknown (FieldsDefinition IN) (InputContext ctx),
     WithInput (Validator (InputContext ctx))
@@ -227,7 +228,7 @@ validateInputObject ::
   InputValidator ctx (Object VALID)
 validateInputObject fieldsDef object =
   do
-    Scope {kind} <- getScope
+    kind <- asksScope kind
     case kind of
       TYPE ->
         traverse_ (`requiredFieldIsDefined` object) fieldsDef
@@ -280,7 +281,7 @@ validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typ
 
 requiredFieldIsDefined ::
   ( MissingRequired (Object RESOLVED) (InputContext ctx),
-    WithScope (Validator (InputContext ctx))
+    GetWith ctx Scope
   ) =>
   FieldDefinition IN ->
   Object RESOLVED ->
