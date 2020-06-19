@@ -9,11 +9,13 @@ module Lib
     maybeVariables,
     readSource,
     scanSchemaTests,
+    FileUrl (..),
+    CaseTree (..),
+    toString,
   )
 where
 
 import Control.Applicative ((<|>))
-import Control.Monad ((<=<))
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
@@ -45,6 +47,12 @@ data FileUrl = FileUrl
   }
   deriving (Show)
 
+data CaseTree = CaseTree
+  { caseUrl :: FileUrl,
+    children :: Either [String] [CaseTree]
+  }
+  deriving (Show)
+
 prefix :: FileUrl -> FilePath -> FileUrl
 prefix FileUrl {..} x =
   FileUrl
@@ -55,29 +63,29 @@ prefix FileUrl {..} x =
 toString :: FileUrl -> FilePath
 toString FileUrl {..} = foldl (\y x -> x <> "/" <> y) fileName filePath
 
-scanSchemaTests :: [FilePath] -> IO [FileUrl]
-scanSchemaTests = fmap (concatMap selectTests) . deepScan
-  where
-    selectTests file
-      | fileName file == "schema.gql" = [file]
-      | otherwise = []
+scanSchemaTests :: FilePath -> IO CaseTree
+scanSchemaTests = deepScan
 
-deepScan :: [FilePath] -> IO [FileUrl]
-deepScan = fmap fst . shouldScan . ([],) . map (FileUrl [])
+deepScan :: FilePath -> IO CaseTree
+deepScan = shouldScan . FileUrl []
   where
-    shouldScan :: ([FileUrl], [FileUrl]) -> IO ([FileUrl], [FileUrl])
-    shouldScan (found, []) = pure (found, [])
-    shouldScan (found, xs) = findNext xs >>= \x -> shouldScan (found <> x, x)
-      where
-        findNext = fmap concat . traverse prefixed
+    shouldScan :: FileUrl -> IO CaseTree
+    shouldScan caseUrl@FileUrl {..} = do
+      children <- prefixed caseUrl
+      pure CaseTree {..}
     isDirectory :: FileUrl -> IO Bool
     isDirectory = fmap (fileTypeIsDirectory . fileTypeFromMetadata) . getFileMetadata . toString
-    prefixed :: FileUrl -> IO [FileUrl]
+    prefixed :: FileUrl -> IO (Either [String] [CaseTree])
     prefixed p = do
       dir <- isDirectory p
       if dir
-        then map (prefix p) <$> listDirectory (toString p)
-        else pure []
+        then do
+          list <- map (prefix p) <$> listDirectory (toString p)
+          areDirectories <- traverse isDirectory list
+          if and areDirectories
+            then Right <$> traverse shouldScan list
+            else pure $ Left []
+        else pure $ Left []
 
 maybeVariables :: FieldName -> IO (Maybe Value)
 maybeVariables (FieldName x) = decode <$> (L.readFile (path x ++ "/variables.json") <|> return "{}")

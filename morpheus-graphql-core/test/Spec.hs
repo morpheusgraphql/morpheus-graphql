@@ -46,7 +46,6 @@ import Lib
   ( getGQLBody,
     getResponseBody,
     maybeVariables,
-    scanSchemaTests,
   )
 import Schema
   ( testSchema,
@@ -111,7 +110,7 @@ resolveDeity =
 
 main :: IO ()
 main = do
-  scanSchemaTests ["test/schema"] >>= print
+  schema <- testSchema
   defaultMain
     $ testGroup
       "core tests"
@@ -120,7 +119,7 @@ main = do
       [ ("basic Test", "simple"),
         ("test interface", "interface")
       ]
-      <> [testSchema]
+      <> [schema]
 
 basicTest :: String -> FieldName -> TestTree
 basicTest description path = testCase description $ do
