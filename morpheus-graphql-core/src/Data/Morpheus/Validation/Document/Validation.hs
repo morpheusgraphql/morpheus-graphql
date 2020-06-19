@@ -33,7 +33,7 @@ import Data.Morpheus.Schema.Schema (systemTypes)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition,
-    ArgumentsDefinition,
+    ArgumentsDefinition (..),
     FieldContent (..),
     FieldDefinition (..),
     FieldName (..),
@@ -54,6 +54,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
+    InputValidator,
     askInputFieldType,
     runValidator,
     startInput,
@@ -90,16 +91,22 @@ validateType ::
 validateType
   dt@TypeDefinition
     { typeName,
-      typeContent = DataObject {objectImplements, objectFields}
-    } = inType typeName $ do
-    validateImplements objectImplements objectFields
-    pure dt
+      typeContent =
+        DataObject
+          { objectImplements,
+            objectFields
+          }
+    } = inType typeName $
+    do
+      validateImplements objectImplements objectFields
+      traverse_ checkFieldArgsuments objectFields
+      pure dt
 validateType
   dt@TypeDefinition
     { typeContent = DataInputObject {inputObjectFields},
       typeName
-    } = do
-    traverse_ (validateDefaultValue typeName) inputObjectFields
+    } = inType typeName $ do
+    traverse_ validateFieldDefaultValue inputObjectFields
     pure dt
 validateType x = pure x
 
@@ -198,21 +205,47 @@ failImplements err = do
   x <- asks local
   failure $ partialImplements x err
 
--- DEFAULT VALUE
+checkFieldArgsuments ::
+  FieldDefinition OUT ->
+  SchemaValidator TypeName ()
+checkFieldArgsuments FieldDefinition {fieldContent = Nothing} = pure ()
+checkFieldArgsuments FieldDefinition {fieldContent = Just (FieldArgs args), fieldName} = do
+  typeName <- asks local
+  traverse_ (validateArgumentDefaultValue typeName fieldName) (elems args)
 
--- TODO: implement default value validation
-validateDefaultValue ::
+validateArgumentDefaultValue ::
   TypeName ->
-  FieldDefinition IN ->
-  SchemaValidator () ()
-validateDefaultValue _ FieldDefinition {fieldContent = Nothing} = pure ()
-validateDefaultValue
+  FieldName ->
+  ArgumentDefinition ->
+  SchemaValidator TypeName ()
+validateArgumentDefaultValue _ _ FieldDefinition {fieldContent = Nothing} = pure ()
+validateArgumentDefaultValue
   typeName
+  fName
+  inputField@FieldDefinition {fieldName = argName} =
+    startInput (SourceInputField typeName fName (Just argName)) $
+      validateDefaultValue inputField
+
+-- DEFAULT VALUE
+-- TODO: implement default value validation
+validateFieldDefaultValue ::
+  FieldDefinition IN ->
+  SchemaValidator TypeName ()
+validateFieldDefaultValue inputField@FieldDefinition {fieldName} = do
+  typeName <- asks local
+  startInput (SourceInputField typeName fieldName Nothing) $
+    validateDefaultValue inputField
+
+validateDefaultValue ::
+  FieldDefinition IN ->
+  InputValidator (TypeSystemContext TypeName) ()
+validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure ()
+validateDefaultValue
   inputField@FieldDefinition
     { fieldName,
       fieldType = TypeRef {typeWrappers},
       fieldContent = Just DefaultInputValue {defaultInputValue}
-    } = startInput (SourceInputField typeName inputField) $ do
+    } = do
     datatype <- askInputFieldType inputField
     _ <- validateInput typeWrappers datatype (ObjectEntry fieldName defaultInputValue)
     pure ()

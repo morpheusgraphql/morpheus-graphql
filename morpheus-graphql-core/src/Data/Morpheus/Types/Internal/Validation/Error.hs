@@ -147,7 +147,7 @@ instance MissingRequired (Object s) (InputContext (OperationContext v)) where
           locations = [position]
         }
 
-instance MissingRequired (Object s) (InputContext (TypeSystemContext ())) where
+instance MissingRequired (Object s) (InputContext (TypeSystemContext ctx)) where
   missingRequired
     input
     Ref {refName}
@@ -212,7 +212,7 @@ instance Unknown (FieldsDefinition IN) (InputContext (OperationContext v)) where
           }
       ]
 
-instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ())) where
+instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ctx)) where
   type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
   unknown
     input

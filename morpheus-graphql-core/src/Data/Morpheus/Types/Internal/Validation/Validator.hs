@@ -114,12 +114,15 @@ renderSource (SourceArgument Argument {argumentName}) =
   "Argument " <> msg argumentName <> " got invalid value. "
 renderSource (SourceVariable Variable {variableName} _) =
   "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
-renderSource SourceInputField {sourceTypeName, sourceField = FieldDefinition {fieldName}} =
-  "Field " <> renderField sourceTypeName fieldName <> " got invalid default value. "
+renderSource SourceInputField {sourceTypeName, sourceFieldName, sourceArgumentName} =
+  "Field " <> renderField sourceTypeName sourceFieldName sourceArgumentName <> " got invalid default value. "
 
-renderField :: TypeName -> FieldName -> Message
-renderField (TypeName tname) (FieldName fname) =
-  msg $ tname <> "." <> fname
+renderField :: TypeName -> FieldName -> Maybe FieldName -> Message
+renderField (TypeName tname) (FieldName fname) arg =
+  msg (tname <> "." <> fname <> renderArg arg)
+  where
+    renderArg (Just (FieldName argName)) = "(" <> argName <> ":)"
+    renderArg Nothing = ""
 
 data ScopeKind
   = DIRECTIVE
@@ -159,7 +162,8 @@ data InputSource
       }
   | SourceInputField
       { sourceTypeName :: TypeName,
-        sourceField :: FieldDefinition IN
+        sourceFieldName :: FieldName,
+        sourceArgumentName :: Maybe FieldName
       }
   deriving (Show)
 

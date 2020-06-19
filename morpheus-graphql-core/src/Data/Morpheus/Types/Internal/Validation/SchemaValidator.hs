@@ -156,5 +156,5 @@ constraintInterface
 constraintInterface TypeDefinition {typeName} =
   failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
 
-instance WithSchema (Validator (TypeSystemContext ())) where
+instance WithSchema (Validator (TypeSystemContext ctx)) where
   askSchema = asks types >>= fromElems
