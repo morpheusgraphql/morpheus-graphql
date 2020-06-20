@@ -190,7 +190,7 @@ instance RenderSchema (FieldDefinition OUT) where
           $ [ renderName fieldName,
               description fieldDescription,
               ("args", maybe (pure $ mkList []) render fieldContent),
-              ("type", pure (withTypeWrapper field $ createType kind typeConName Nothing $ Just []))
+              ("type", pure (withTypeWrapper field $ mkType kind typeConName Nothing []))
             ]
             <> renderDeprecated fieldDirectives
 
@@ -202,12 +202,13 @@ instance RenderSchema ArgumentsDefinition where
 
 instance RenderSchema (FieldDefinition IN) where
   render input@FieldDefinition {..} =
-    createInputValueWith
-      fieldName
-      fieldType
-      fieldDescription
-      (fmap defaultInputValue fieldContent)
-      <$> createInputObjectType input
+    pure $
+      mkInputValue
+        fieldName
+        fieldType
+        fieldDescription
+        (fmap defaultInputValue fieldContent)
+        input
 
 instance RenderSchema DataEnumValue where
   render DataEnumValue {enumName, enumDescription, enumDirectives} =
@@ -257,25 +258,18 @@ renderTypeKind AST.KindList = LIST
 renderTypeKind AST.KindNonNull = NON_NULL
 renderTypeKind AST.KindInterface = INTERFACE
 
-createInputObjectType ::
-  (Monad m) => FieldDefinition IN -> Result e m (ResModel QUERY e m)
-createInputObjectType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
-  do
-    kind <- lookupKind typeConName
-    pure $ withTypeWrapper field $ createType kind typeConName Nothing $ Just []
-
 renderInputUnion ::
   (Monad m) =>
   (TypeName, Maybe Description, DataInputUnion) ->
   Result e m (ResModel QUERY e m)
 renderInputUnion (key, meta, fields) =
-  createInputObject key meta
-    <$> traverse
+  pure $ createInputObject key meta $
+    map
       createField
       (createInputUnionFields key $ map fst $ filter snd fields)
   where
     createField field@FieldDefinition {fieldType} =
-      createInputValueWith (fieldName field) fieldType Nothing Nothing <$> createInputObjectType field
+      mkInputValue (fieldName field) fieldType Nothing Nothing field
 
 mkType ::
   (Monad m, RenderSchema name) =>
@@ -316,16 +310,6 @@ implementedInterface name =
 createInputObject ::
   Monad m => TypeName -> Maybe Description -> [ResModel QUERY e m] -> ResModel QUERY e m
 createInputObject name desc fields = mkType INPUT_OBJECT name desc [("inputFields", pure $ mkList fields)]
-
-createType ::
-  Monad m =>
-  TypeKind ->
-  TypeName ->
-  Maybe Description ->
-  Maybe [ResModel QUERY e m] ->
-  ResModel QUERY e m
-createType kind name desc fields =
-  mkType kind name desc [("fields", pure $ maybe mkNull mkList fields), ("enumValues", pure $ mkList [])]
 
 opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> Resolver QUERY e m (ResModel QUERY e m)
 opt f (Just x) = f x
@@ -423,19 +407,26 @@ handleField
             fields
         )
 
-createInputValueWith ::
+mkInputValue ::
   Monad m =>
   FieldName ->
   TypeRef ->
   Maybe Description ->
   Maybe (Value RESOLVED) ->
-  ResModel QUERY e m ->
+  FieldDefinition IN ->
   ResModel QUERY e m
-createInputValueWith name tyRef desc value ivType =
+mkInputValue name tyRef desc value field =
   mkObject
     "__InputValue"
     [ renderName name,
       description desc,
-      ("type", pure ivType),
+      ("type", mkTypeRef field),
       defaultValue tyRef value
     ]
+
+mkTypeRef ::
+  (Monad m) => FieldDefinition IN -> Result e m (ResModel QUERY e m)
+mkTypeRef field@FieldDefinition {fieldType = TypeRef {typeConName}} =
+  do
+    kind <- lookupKind typeConName
+    pure $ withTypeWrapper field $ mkType kind typeConName Nothing []
