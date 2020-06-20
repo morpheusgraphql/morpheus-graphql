@@ -96,7 +96,6 @@ selectType name =
   asks types
     >>= selectBy err name
   where
-    -- TODO: use same types
     err = globalErrorMessage $ "Unknown Type " <> msg name <> "."
 
 inType ::

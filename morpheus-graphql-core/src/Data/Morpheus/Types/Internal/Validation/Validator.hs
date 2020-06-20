@@ -45,9 +45,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     asks,
     askSchema,
     askVariables,
-    askSelectionName,
     askFragments,
-    setSelectionName,
   )
 where
 
@@ -209,24 +207,13 @@ inputValueSource ::
   m c InputSource
 inputValueSource = get
 
-askContext :: Validator ctx ctx
-askContext = Validator ask
-
 asks ::
   ( MonadContext m c,
-    GetWith c Scope
+    GetWith c t
   ) =>
-  (Scope -> a) ->
+  (t -> a) ->
   m c a
 asks f = f <$> get
-
-askSelectionName ::
-  forall m c.
-  ( MonadContext m c,
-    GetWith c CurrentSelection
-  ) =>
-  m c FieldName
-askSelectionName = selectionName <$> get
 
 setSelectionName ::
   ( MonadContext m c,
@@ -327,7 +314,7 @@ withScopeType name = set update
     update Scope {..} = Scope {typename = name, ..}
 
 inputMessagePrefix :: InputValidator ctx Message
-inputMessagePrefix = renderInputPrefix <$> askContext
+inputMessagePrefix = renderInputPrefix <$> Validator ask
 
 startInput ::
   InputSource ->
