@@ -54,7 +54,7 @@ resolveTypes schema = mkList <$> traverse render (elems schema)
 
 renderOperation ::
   Monad m => Maybe (TypeDefinition OUT) -> Resolver QUERY e m (ResModel QUERY e m)
-renderOperation (Just TypeDefinition {typeName}) = createObjectType typeName Nothing [] empty
+renderOperation (Just TypeDefinition {typeName}) = pure $ createObjectType typeName Nothing [] empty
 renderOperation Nothing = pure mkNull
 
 findType ::
