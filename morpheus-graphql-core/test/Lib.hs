@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
 
 module Lib
   ( getGQLBody,
@@ -23,12 +22,7 @@ import Data.Maybe (fromMaybe)
 import Data.Morpheus.Types.Internal.AST (FieldName (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
-import System.Directory (listDirectory)
-import System.Directory.Internal
-  ( fileTypeFromMetadata,
-    fileTypeIsDirectory,
-    getFileMetadata,
-  )
+import System.Directory (doesDirectoryExist, listDirectory)
 
 readSource :: FieldName -> IO ByteString
 readSource = L.readFile . path . readName
@@ -75,7 +69,7 @@ deepScan = shouldScan . FileUrl []
       children <- prefixed caseUrl
       pure CaseTree {..}
     isDirectory :: FileUrl -> IO Bool
-    isDirectory = fmap (fileTypeIsDirectory . fileTypeFromMetadata) . getFileMetadata . toString
+    isDirectory = doesDirectoryExist . toString
     prefixed :: FileUrl -> IO (Either [String] [CaseTree])
     prefixed p = do
       dir <- isDirectory p
