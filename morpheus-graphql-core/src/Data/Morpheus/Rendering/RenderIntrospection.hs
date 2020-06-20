@@ -103,28 +103,28 @@ selectType name =
   getSchema
     >>= selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> msg name <> "\"") name
 
-class RenderSchema a where
+class RenderIntrospection a where
   render ::
     (Monad m) =>
     a ->
     Resolver QUERY e m (ResModel QUERY e m)
 
-instance RenderSchema TypeName where
+instance RenderIntrospection TypeName where
   render = pure . mkString . readTypeName
 
-instance RenderSchema FieldName where
+instance RenderIntrospection FieldName where
   render = pure . mkString . readName
 
-instance RenderSchema Description where
+instance RenderIntrospection Description where
   render = pure . mkString
 
-instance RenderSchema TypeKind where
+instance RenderIntrospection TypeKind where
   render = pure . mkString . pack . show
 
-instance RenderSchema a => RenderSchema [a] where
+instance RenderIntrospection a => RenderIntrospection [a] where
   render ls = mkList <$> traverse render ls
 
-instance RenderSchema DirectiveDefinition where
+instance RenderIntrospection DirectiveDefinition where
   render
     DirectiveDefinition
       { directiveDefinitionName,
@@ -141,10 +141,10 @@ instance RenderSchema DirectiveDefinition where
             ("args", render directiveDefinitionArgs)
           ]
 
-instance RenderSchema DirectiveLocation where
+instance RenderIntrospection DirectiveLocation where
   render locations = pure $ mkString (pack $ show locations)
 
-instance RenderSchema (TypeDefinition a) where
+instance RenderIntrospection (TypeDefinition a) where
   render
     TypeDefinition
       { typeName,
@@ -186,10 +186,10 @@ instance RenderSchema (TypeDefinition a) where
               ("possibleTypes", interfacePossibleTypes typeName)
             ]
 
-instance RenderSchema (FieldsDefinition OUT) where
+instance RenderIntrospection (FieldsDefinition OUT) where
   render = fmap mkList . traverse render . filter fieldVisibility . elems
 
-instance RenderSchema (FieldDefinition OUT) where
+instance RenderIntrospection (FieldDefinition OUT) where
   render
     field@FieldDefinition
       { fieldName,
@@ -206,17 +206,17 @@ instance RenderSchema (FieldDefinition OUT) where
           ]
           <> renderDeprecated fieldDirectives
 
-instance RenderSchema (FieldContent TRUE OUT) where
+instance RenderIntrospection (FieldContent TRUE OUT) where
   render (FieldArgs args) = render args
 
-instance RenderSchema ArgumentsDefinition where
+instance RenderIntrospection ArgumentsDefinition where
   render ArgumentsDefinition {arguments} = mkList <$> traverse render (elems arguments)
 
-instance RenderSchema (FieldDefinition IN) where
+instance RenderIntrospection (FieldDefinition IN) where
   render input@FieldDefinition {..} =
     pure $ mkInputValue input
 
-instance RenderSchema DataEnumValue where
+instance RenderIntrospection DataEnumValue where
   render DataEnumValue {enumName, enumDescription, enumDirectives} =
     pure $ mkObject "__Field" $
       [ renderName enumName,
@@ -267,7 +267,7 @@ renderTypeKind AST.KindNonNull = NON_NULL
 renderTypeKind AST.KindInterface = INTERFACE
 
 mkType ::
-  (Monad m, RenderSchema name) =>
+  (Monad m, RenderIntrospection name) =>
   TypeKind ->
   name ->
   Maybe Description ->
@@ -307,7 +307,7 @@ opt f (Just x) = f x
 opt _ Nothing = pure mkNull
 
 renderName ::
-  ( RenderSchema name,
+  ( RenderIntrospection name,
     Monad m
   ) =>
   name ->
