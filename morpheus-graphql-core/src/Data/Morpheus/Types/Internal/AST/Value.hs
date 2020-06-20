@@ -77,7 +77,6 @@ import Data.Scientific
 import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
-    unpack,
   )
 import qualified Data.Vector as V
   ( toList,

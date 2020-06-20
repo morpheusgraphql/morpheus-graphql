@@ -31,7 +31,6 @@ import Data.Morpheus.Types.Internal.AST
     isOutputObject,
     isSubscription,
   )
-import Data.Semigroup ((<>))
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 

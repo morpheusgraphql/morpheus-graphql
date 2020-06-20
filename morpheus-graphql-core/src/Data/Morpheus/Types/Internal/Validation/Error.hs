@@ -126,8 +126,8 @@ instance MissingRequired (Arguments s) (OperationContext v) where
           locations = [position]
         }
       where
-        inScope SELECTION = "Field " <> msg selectionName
         inScope DIRECTIVE = "Directive " <> msg ("@" <> selectionName)
+        inScope _ = "Field " <> msg selectionName
 
 instance MissingRequired (Object s) (InputContext (OperationContext v)) where
   missingRequired

@@ -45,7 +45,6 @@ import Text.Megaparsec
     choice,
     label,
     many,
-    optional,
     sepBy,
   )
 import Text.Megaparsec.Char

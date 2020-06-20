@@ -42,19 +42,13 @@ module Data.Morpheus.Internal.TH
   )
 where
 
-import Data.Maybe (maybe)
 -- MORPHEUS
 import Data.Morpheus.Internal.Utils
   ( nameSpaceField,
     nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    ArgumentsDefinition (..),
-    ConsD (..),
-    FieldContent (..),
-    FieldDefinition (..),
-    FieldName,
+  ( FieldName,
     TypeKind (..),
     TypeKind (..),
     TypeName (..),
@@ -63,13 +57,11 @@ import Data.Morpheus.Types.Internal.AST
     convertToHaskellName,
     isEnum,
     isOutputObject,
-    isSubscription,
     readName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( UnSubResolver,
   )
-import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Language.Haskell.TH
 

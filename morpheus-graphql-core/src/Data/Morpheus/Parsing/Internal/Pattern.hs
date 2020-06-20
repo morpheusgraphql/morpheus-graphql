@@ -12,9 +12,6 @@ module Data.Morpheus.Parsing.Internal.Pattern
 where
 
 -- MORPHEUS
-import Data.Morpheus.Internal.Utils
-  ( empty,
-  )
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
   )
@@ -52,8 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
   )
 import Text.Megaparsec
-  ( (<|>),
-    label,
+  ( label,
     many,
     optional,
   )

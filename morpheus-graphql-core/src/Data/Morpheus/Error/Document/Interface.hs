@@ -15,7 +15,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName (..),
     GQLError (..),
     GQLErrors,
-    Message,
     TypeName (..),
     TypeRef,
     msg,
