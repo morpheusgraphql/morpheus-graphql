@@ -178,21 +178,18 @@ instance RenderSchema (FieldDefinition OUT) where
   render
     field@FieldDefinition
       { fieldName,
-        fieldType = TypeRef {typeConName},
         fieldContent,
         fieldDescription,
         fieldDirectives
       } =
-      do
-        kind <- lookupKind typeConName
-        pure
-          $ mkObject "__Field"
-          $ [ renderName fieldName,
-              description fieldDescription,
-              ("args", maybe (pure $ mkList []) render fieldContent),
-              ("type", pure (withTypeWrapper field $ mkType kind typeConName Nothing []))
-            ]
-            <> renderDeprecated fieldDirectives
+      pure
+        $ mkObject "__Field"
+        $ [ renderName fieldName,
+            description fieldDescription,
+            ("args", maybe (pure $ mkList []) render fieldContent),
+            type' field
+          ]
+          <> renderDeprecated fieldDirectives
 
 instance RenderSchema (FieldContent TRUE OUT) where
   render (FieldArgs args) = render args
@@ -202,13 +199,7 @@ instance RenderSchema ArgumentsDefinition where
 
 instance RenderSchema (FieldDefinition IN) where
   render input@FieldDefinition {..} =
-    pure $
-      mkInputValue
-        fieldName
-        fieldType
-        fieldDescription
-        (fmap defaultInputValue fieldContent)
-        input
+    pure $ mkInputValue input
 
 instance RenderSchema DataEnumValue where
   render DataEnumValue {enumName, enumDescription, enumDirectives} =
@@ -265,11 +256,8 @@ renderInputUnion ::
 renderInputUnion (key, meta, fields) =
   pure $ createInputObject key meta $
     map
-      createField
+      mkInputValue
       (createInputUnionFields key $ map fst $ filter snd fields)
-  where
-    createField field@FieldDefinition {fieldType} =
-      mkInputValue (fieldName field) fieldType Nothing Nothing field
 
 mkType ::
   (Monad m, RenderSchema name) =>
@@ -325,6 +313,9 @@ renderName = ("name",) . render
 
 renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 renderKind = ("kind",) . render
+
+type' :: Monad m => FieldDefinition cat -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+type' = ("type",) . mkTypeRef
 
 withTypeWrapper :: Monad m => FieldDefinition cat -> ResModel QUERY e m -> ResModel QUERY e m
 withTypeWrapper FieldDefinition {fieldType = TypeRef {typeWrappers}} typ =
@@ -409,23 +400,19 @@ handleField
 
 mkInputValue ::
   Monad m =>
-  FieldName ->
-  TypeRef ->
-  Maybe Description ->
-  Maybe (Value RESOLVED) ->
   FieldDefinition IN ->
   ResModel QUERY e m
-mkInputValue name tyRef desc value field =
+mkInputValue field@FieldDefinition {..} =
   mkObject
     "__InputValue"
-    [ renderName name,
-      description desc,
-      ("type", mkTypeRef field),
-      defaultValue tyRef value
+    [ renderName fieldName,
+      description fieldDescription,
+      type' field,
+      defaultValue fieldType (fmap defaultInputValue fieldContent)
     ]
 
 mkTypeRef ::
-  (Monad m) => FieldDefinition IN -> Result e m (ResModel QUERY e m)
+  (Monad m) => FieldDefinition cat -> Result e m (ResModel QUERY e m)
 mkTypeRef field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   do
     kind <- lookupKind typeConName
