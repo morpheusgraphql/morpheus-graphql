@@ -150,60 +150,41 @@ instance RenderSchema (TypeDefinition a) where
       { typeName,
         typeDescription,
         typeContent
-      } = __render typeContent
+      } = pure $ renderContent typeContent
       where
-        __render ::
-          (Monad m) => TypeContent bool a -> Resolver QUERY e m (ResModel QUERY e m)
-        __render DataScalar {} =
-          pure $ mkType SCALAR typeName typeDescription []
-        __render (DataEnum enums) =
-          pure $
-            mkType
-              ENUM
-              typeName
-              typeDescription
-              [("enumValues", render enums)]
-        __render (DataInputObject fields) =
-          pure $
-            mkType
-              INPUT_OBJECT
-              typeName
-              typeDescription
-              [("inputFields", mkList <$> traverse render (elems fields))]
-        __render DataObject {objectImplements, objectFields} =
+        __type :: Monad m => TypeKind -> [(FieldName, Resolver QUERY e m (ResModel QUERY e m))] -> ResModel QUERY e m
+        __type kind = mkType kind typeName typeDescription
+        renderContent :: Monad m => TypeContent bool a -> ResModel QUERY e m
+        renderContent DataScalar {} = __type SCALAR []
+        renderContent (DataEnum enums) = __type ENUM [("enumValues", render enums)]
+        renderContent (DataInputObject fields) =
+          __type
+            INPUT_OBJECT
+            [("inputFields", mkList <$> traverse render (elems fields))]
+        renderContent DataObject {objectImplements, objectFields} =
           createObjectType typeName typeDescription objectImplements objectFields
-        __render (DataUnion union) =
-          pure $
-            mkType
-              UNION
-              typeName
-              typeDescription
-              [ ("possibleTypes", mkList <$> traverse unionPossibleType union)
-              ]
-        __render (DataInputUnion members) =
-          pure $
-            mkType
-              INPUT_OBJECT
-              typeName
-              typeDescription
-              [ ( "inputFields",
-                  pure
-                    $ mkList
-                    $ map mkInputValue
-                    $ createInputUnionFields typeName
-                    $ map fst
-                    $ filter snd members
-                )
-              ]
-        __render (DataInterface fields) =
-          pure $
-            mkType
-              INTERFACE
-              typeName
-              typeDescription
-              [ ("fields", render fields),
-                ("possibleTypes", mkList <$> interfacePossibleTypes typeName)
-              ]
+        renderContent (DataUnion union) =
+          __type
+            UNION
+            [("possibleTypes", mkList <$> traverse unionPossibleType union)]
+        renderContent (DataInputUnion members) =
+          __type
+            INPUT_OBJECT
+            [ ( "inputFields",
+                pure
+                  $ mkList
+                  $ map mkInputValue
+                  $ createInputUnionFields typeName
+                  $ map fst
+                  $ filter snd members
+              )
+            ]
+        renderContent (DataInterface fields) =
+          __type
+            INTERFACE
+            [ ("fields", render fields),
+              ("possibleTypes", interfacePossibleTypes typeName)
+            ]
 
 instance RenderSchema (FieldsDefinition OUT) where
   render = fmap mkList . traverse render . filter fieldVisibility . elems
@@ -246,12 +227,14 @@ instance RenderSchema DataEnumValue where
 interfacePossibleTypes ::
   (Monad m) =>
   TypeName ->
-  Resolver QUERY e m [ResModel QUERY e m]
+  Resolver QUERY e m (ResModel QUERY e m)
 interfacePossibleTypes interfaceName =
-  getSchema
-    >>= sequence
-      . concatMap implements
-      . elems
+  mkList
+    <$> ( getSchema
+            >>= sequence
+              . concatMap implements
+              . elems
+        )
   where
     implements typeDef@TypeDefinition {typeContent = DataObject {objectImplements}, ..}
       | interfaceName `elem` objectImplements = [render typeDef]
@@ -304,9 +287,9 @@ unionPossibleType :: Monad m => TypeName -> Resolver QUERY e m (ResModel QUERY e
 unionPossibleType name = selectType name >>= render
 
 createObjectType ::
-  Monad m => TypeName -> Maybe Description -> [TypeName] -> FieldsDefinition OUT -> Result e m (ResModel QUERY e m)
+  Monad m => TypeName -> Maybe Description -> [TypeName] -> FieldsDefinition OUT -> ResModel QUERY e m
 createObjectType name desc interfaces fields =
-  pure $ mkType OBJECT name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
+  mkType OBJECT name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
 
 implementedInterface ::
   (Monad m) =>
@@ -314,10 +297,10 @@ implementedInterface ::
   Resolver QUERY e m (ResModel QUERY e m)
 implementedInterface name =
   selectType name
-    >>= __render
+    >>= renderContent
   where
-    __render typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef
-    __render _ = failure ("Type " <> msg name <> " must be an Interface" :: Message)
+    renderContent typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef
+    renderContent _ = failure ("Type " <> msg name <> " must be an Interface" :: Message)
 
 opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> Resolver QUERY e m (ResModel QUERY e m)
 opt f (Just x) = f x
