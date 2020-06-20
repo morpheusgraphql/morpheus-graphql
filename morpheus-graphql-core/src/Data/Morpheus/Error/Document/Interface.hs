@@ -15,7 +15,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName (..),
     GQLError (..),
     GQLErrors,
-    Message,
     TypeName (..),
     TypeRef,
     msg,
@@ -23,6 +22,7 @@ import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Field (..),
     Interface (..),
+    renderField,
   )
 import Data.Semigroup ((<>))
 
@@ -57,13 +57,13 @@ instance PartialImplements (Interface, FieldName) where
     where
       message =
         "Interface field "
-          <> renderField interfaceName fieldname
+          <> renderField interfaceName fieldname Nothing
           <> detailedMessage errorType
       detailedMessage UnexpectedType {expectedType, foundType} =
         " expects type "
           <> msg expectedType
           <> " but "
-          <> renderField typename fieldname
+          <> renderField typename fieldname Nothing
           <> " is type "
           <> msg foundType
           <> "."
@@ -86,34 +86,20 @@ instance PartialImplements (Interface, Field) where
       --
       message =
         "Interface field argument "
-          <> renderArg interfaceName fieldname argName
+          <> renderField interfaceName fieldname (Just argName)
           <> detailedMessage errorType
       detailedMessage UnexpectedType {expectedType, foundType} =
-        "expects type"
+        " expects type"
           <> msg expectedType
           <> " but "
-          <> renderArg typename fieldname argName
-          <> "is type "
+          <> renderField typename fieldname (Just argName)
+          <> " is type "
           <> msg foundType
           <> "."
       detailedMessage Missing =
-        "expected but "
-          <> renderField typename fieldname
+        " expected but "
+          <> renderField typename fieldname Nothing
           <> " does not provide it."
-
-renderField :: TypeName -> FieldName -> Message
-renderField (TypeName tname) (FieldName fname) =
-  msg $ tname <> "." <> fname
-
-renderArg :: TypeName -> FieldName -> FieldName -> Message
-renderArg tname fname (FieldName argName) =
-  renderField tname fname
-    <> msg
-      ( "("
-          <> argName
-          <> ":)"
-          <> " "
-      )
 
 -- Interface field argument TestInterface.name(id:) expected but User.name does not provide it.
 -- Interface field argument TestInterface.name(id:) expects type ID but User.name(id:) is type String.

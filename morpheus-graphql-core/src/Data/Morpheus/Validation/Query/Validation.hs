@@ -22,9 +22,10 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( Context (..),
+  ( CurrentSelection (..),
+    OperationContext (..),
+    Scope (..),
     ScopeKind (..),
-    SelectionContext (..),
     runValidator,
   )
 import Data.Morpheus.Validation.Query.Fragment
@@ -56,23 +57,16 @@ validateRequest
           }
     } =
     do
-      variables <- runValidator validateHelpers ctx ()
-      runValidator
-        (validateOperation operation)
-        ctx
-        SelectionContext
-          { variables
-          }
+      variables <- runValidator validateHelpers (ctx ())
+      runValidator (validateOperation operation) (ctx variables)
     where
-      ctx =
-        Context
+      ctx variables =
+        OperationContext
           { schema,
             fragments,
-            scopeTypeName = "Root",
-            scopeSelectionName = "Root",
-            scopePosition = operationPosition,
-            operationName,
-            scopeKind = SELECTION
+            scope = Scope {typename = "Root", position = operationPosition, kind = SELECTION},
+            selection = CurrentSelection {operationName, selectionName = "Root"},
+            variables
           }
       validateHelpers =
         validateFragments operationSelection

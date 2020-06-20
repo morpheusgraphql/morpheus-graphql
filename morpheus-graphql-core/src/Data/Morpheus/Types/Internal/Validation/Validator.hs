@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -7,6 +8,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -16,30 +18,38 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     InputValidator,
     BaseValidator,
     runValidator,
-    askSchema,
-    askContext,
-    askFragments,
     Constraint (..),
     withScope,
     withScopeType,
-    withScopePosition,
-    askScopeTypeName,
-    askScopePosition,
+    withPosition,
     withInputScope,
     inputMessagePrefix,
-    Context (..),
     InputSource (..),
     InputContext (..),
-    SelectionContext (..),
+    OperationContext (..),
+    CurrentSelection (..),
     renderInputPrefix,
     Target (..),
     Prop (..),
     Resolution,
     ScopeKind (..),
     inputValueSource,
+    Scope (..),
+    withDirective,
+    startInput,
+    GetWith (..),
+    SetWith (..),
+    MonadContext (..),
+    withContext,
+    renderField,
+    asks,
+    askSchema,
+    askVariables,
+    askFragments,
   )
 where
 
+import Control.Monad.Reader (MonadReader)
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -47,13 +57,13 @@ import Control.Monad.Trans.Reader
     withReaderT,
   )
 -- MORPHEUS
-
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
-    FieldName,
+    Directive (..),
+    FieldName (..),
     FieldsDefinition,
     Fragments,
     GQLError (..),
@@ -64,9 +74,10 @@ import Data.Morpheus.Types.Internal.AST
     Position,
     RAW,
     RESOLVED,
+    Ref (..),
     Schema,
-    TypeDefinition (..),
-    TypeName,
+    TypeDefinition,
+    TypeName (..),
     VALID,
     Variable (..),
     VariableDefinitions,
@@ -78,7 +89,6 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup
   ( (<>),
-    Semigroup (..),
   )
 
 data Prop = Prop
@@ -93,7 +103,7 @@ renderPath :: Path -> Message
 renderPath [] = ""
 renderPath path = "in field " <> msg (intercalateName "." $ map propName path) <> ": "
 
-renderInputPrefix :: InputContext -> Message
+renderInputPrefix :: InputContext c -> Message
 renderInputPrefix InputContext {inputPath, inputSource} =
   renderSource inputSource <> renderPath inputPath
 
@@ -102,26 +112,48 @@ renderSource (SourceArgument Argument {argumentName}) =
   "Argument " <> msg argumentName <> " got invalid value. "
 renderSource (SourceVariable Variable {variableName} _) =
   "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
+renderSource SourceInputField {sourceTypeName, sourceFieldName, sourceArgumentName} =
+  "Field " <> renderField sourceTypeName sourceFieldName sourceArgumentName <> " got invalid default value. "
+
+renderField :: TypeName -> FieldName -> Maybe FieldName -> Message
+renderField (TypeName tname) (FieldName fname) arg =
+  msg (tname <> "." <> fname <> renderArg arg)
+  where
+    renderArg (Just (FieldName argName)) = "(" <> argName <> ":)"
+    renderArg Nothing = ""
 
 data ScopeKind
   = DIRECTIVE
   | SELECTION
+  | TYPE
   deriving (Show)
 
-data Context = Context
+data OperationContext vars = OperationContext
   { schema :: Schema,
+    scope :: Scope,
     fragments :: Fragments,
-    scopePosition :: Position,
-    scopeTypeName :: TypeName,
-    operationName :: Maybe FieldName,
-    scopeSelectionName :: FieldName,
-    scopeKind :: ScopeKind
+    selection :: CurrentSelection,
+    variables :: vars
   }
   deriving (Show)
 
-data InputContext = InputContext
+data CurrentSelection = CurrentSelection
+  { operationName :: Maybe FieldName,
+    selectionName :: FieldName
+  }
+  deriving (Show)
+
+data Scope = Scope
+  { position :: Position,
+    typename :: TypeName,
+    kind :: ScopeKind
+  }
+  deriving (Show)
+
+data InputContext ctx = InputContext
   { inputSource :: InputSource,
-    inputPath :: [Prop]
+    inputPath :: [Prop],
+    sourceContext :: ctx
   }
   deriving (Show)
 
@@ -131,11 +163,11 @@ data InputSource
       { sourceVariable :: Variable RAW,
         isDefaultValue :: Bool
       }
-  deriving (Show)
-
-newtype SelectionContext = SelectionContext
-  { variables :: VariableDefinitions VALID
-  }
+  | SourceInputField
+      { sourceTypeName :: TypeName,
+        sourceFieldName :: FieldName,
+        sourceArgumentName :: Maybe FieldName
+      }
   deriving (Show)
 
 data Target
@@ -154,88 +186,251 @@ type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT)
 
 type instance Resolution 'TARGET_INPUT = TypeDefinition IN
 
---type instance Resolution 'TARGET_UNION = DataUnion
-
-withInputScope :: Prop -> InputValidator a -> InputValidator a
-withInputScope prop = setContext update
+withInputScope :: Prop -> InputValidator c a -> InputValidator c a
+withInputScope prop = withContext update
   where
-    update ctx@InputContext {inputPath = old} =
-      ctx {inputPath = old <> [prop]}
+    update
+      InputContext
+        { inputPath = old,
+          ..
+        } =
+        InputContext
+          { inputPath = old <> [prop],
+            ..
+          }
 
-inputValueSource :: InputValidator InputSource
-inputValueSource = inputSource . snd <$> Validator ask
+inputValueSource ::
+  forall m c.
+  ( GetWith c InputSource,
+    MonadContext m c
+  ) =>
+  m c InputSource
+inputValueSource = get
 
-askContext :: Validator ctx ctx
-askContext = snd <$> Validator ask
+asks ::
+  ( MonadContext m c,
+    GetWith c t
+  ) =>
+  (t -> a) ->
+  m c a
+asks f = f <$> get
 
-askSchema :: Validator ctx Schema
-askSchema = schema . fst <$> Validator ask
+setSelectionName ::
+  ( MonadContext m c,
+    SetWith c CurrentSelection
+  ) =>
+  FieldName ->
+  m c a ->
+  m c a
+setSelectionName selectionName = set update
+  where
+    update ctx = ctx {selectionName}
 
-askFragments :: Validator ctx Fragments
-askFragments = fragments . fst <$> Validator ask
+askSchema ::
+  ( MonadContext m c,
+    GetWith c Schema
+  ) =>
+  m c Schema
+askSchema = get
 
-askScopeTypeName :: Validator ctx TypeName
-askScopeTypeName = scopeTypeName . fst <$> Validator ask
+askVariables ::
+  ( MonadContext m c,
+    GetWith c (VariableDefinitions VALID)
+  ) =>
+  m c (VariableDefinitions VALID)
+askVariables = get
 
-askScopePosition :: Validator ctx Position
-askScopePosition = scopePosition . fst <$> Validator ask
+askFragments ::
+  ( MonadContext m c,
+    GetWith c Fragments
+  ) =>
+  m c Fragments
+askFragments = get
 
-setContext ::
+runValidator :: Validator ctx a -> ctx -> Eventless a
+runValidator (Validator x) = runReaderT x
+
+withContext ::
   (c' -> c) ->
   Validator c a ->
   Validator c' a
-setContext f = Validator . withReaderT (\(x, y) -> (x, f y)) . _runValidator
+withContext f = Validator . withReaderT f . _runValidator
 
-setGlobalContext ::
-  (Context -> Context) ->
-  Validator c a ->
-  Validator c a
-setGlobalContext f = Validator . withReaderT (\(x, y) -> (f x, y)) . _runValidator
+withDirective ::
+  ( SetWith c CurrentSelection,
+    SetWith c Scope,
+    MonadContext m c
+  ) =>
+  Directive s ->
+  m c a ->
+  m c a
+withDirective
+  Directive
+    { directiveName,
+      directivePosition
+    } = setSelectionName directiveName . set update
+    where
+      update Scope {..} =
+        Scope
+          { position = directivePosition,
+            kind = DIRECTIVE,
+            ..
+          }
 
-withScope :: TypeName -> Position -> Validator ctx a -> Validator ctx a
-withScope scopeTypeName scopePosition = setGlobalContext update
+withScope ::
+  ( SetWith c CurrentSelection,
+    MonadContext m c,
+    SetWith c Scope
+  ) =>
+  TypeName ->
+  Ref ->
+  m c a ->
+  m c a
+withScope typeName (Ref selName pos) =
+  setSelectionName selName . set update
   where
-    update ctx = ctx {scopeTypeName, scopePosition}
+    update Scope {..} = Scope {typename = typeName, position = pos, ..}
 
-withScopePosition :: Position -> Validator ctx a -> Validator ctx a
-withScopePosition scopePosition = setGlobalContext update
+withPosition ::
+  ( MonadContext m c,
+    SetWith c Scope
+  ) =>
+  Position ->
+  m c a ->
+  m c a
+withPosition pos = set update
   where
-    update ctx = ctx {scopePosition}
+    update Scope {..} = Scope {position = pos, ..}
 
-withScopeType :: TypeName -> Validator ctx a -> Validator ctx a
-withScopeType scopeTypeName = setGlobalContext update
+withScopeType ::
+  ( MonadContext m c,
+    SetWith c Scope
+  ) =>
+  TypeName ->
+  m c a ->
+  m c a
+withScopeType name = set update
   where
-    update ctx = ctx {scopeTypeName}
+    update Scope {..} = Scope {typename = name, ..}
 
-inputMessagePrefix :: InputValidator Message
-inputMessagePrefix = renderInputPrefix <$> askContext
+inputMessagePrefix :: InputValidator ctx Message
+inputMessagePrefix = renderInputPrefix <$> Validator ask
 
-runValidator :: Validator ctx a -> Context -> ctx -> Eventless a
-runValidator (Validator x) globalCTX ctx = runReaderT x (globalCTX, ctx)
+startInput ::
+  InputSource ->
+  InputValidator ctx a ->
+  Validator ctx a
+startInput inputSource = withContext update
+  where
+    update sourceContext =
+      InputContext
+        { inputSource,
+          inputPath = [],
+          sourceContext
+        }
 
 newtype Validator ctx a = Validator
   { _runValidator ::
       ReaderT
-        (Context, ctx)
+        ctx
         Eventless
         a
   }
-  deriving
+  deriving newtype
     ( Functor,
       Applicative,
-      Monad
+      Monad,
+      MonadReader ctx
     )
 
-type BaseValidator = Validator ()
+type BaseValidator = Validator (OperationContext ())
 
-type SelectionValidator = Validator SelectionContext
+type SelectionValidator = Validator (OperationContext (VariableDefinitions VALID))
 
-type InputValidator = Validator InputContext
+type InputValidator ctx = Validator (InputContext ctx)
+
+-- Helpers
+get :: (MonadContext m ctx, GetWith ctx a) => m ctx a
+get = getContext getWith
+
+set ::
+  ( MonadContext m c,
+    SetWith c a
+  ) =>
+  (a -> a) ->
+  m c b ->
+  m c b
+set f = setContext (setWith f)
+
+class
+  Monad (m c) =>
+  MonadContext m c
+  where
+  getContext :: (c -> a) -> m c a
+  setContext :: (c -> c) -> m c b -> m c b
+
+instance MonadContext Validator c where
+  getContext f = f <$> Validator ask
+  setContext = withContext
+
+class GetWith (c :: *) (v :: *) where
+  getWith :: c -> v
+
+instance GetWith (OperationContext v) Scope where
+  getWith = scope
+
+instance GetWith c Scope => GetWith (InputContext c) Scope where
+  getWith = getWith . sourceContext
+
+instance GetWith (OperationContext c) Schema where
+  getWith = schema
+
+instance GetWith c Schema => GetWith (InputContext c) Schema where
+  getWith = getWith . sourceContext
+
+instance GetWith (OperationContext (VariableDefinitions VALID)) (VariableDefinitions VALID) where
+  getWith = variables
+
+instance GetWith (InputContext ctx) InputSource where
+  getWith = inputSource
+
+instance GetWith (OperationContext v) Fragments where
+  getWith = fragments
+
+-- Setters
+class SetWith (c :: *) (v :: *) where
+  setWith :: (v -> v) -> c -> c
+
+instance SetWith (OperationContext v) CurrentSelection where
+  setWith f OperationContext {selection = selection, ..} =
+    OperationContext
+      { selection = f selection,
+        ..
+      }
+
+instance SetWith (OperationContext v) Scope where
+  setWith f OperationContext {..} =
+    OperationContext
+      { scope = f scope,
+        ..
+      }
+
+instance SetWith c Scope => SetWith (InputContext c) Scope where
+  setWith f InputContext {..} =
+    InputContext
+      { sourceContext = setWith f sourceContext,
+        ..
+      }
 
 -- can be only used for internal errors
-instance Failure Message (Validator ctx) where
+instance
+  ( MonadContext Validator ctx,
+    GetWith ctx Scope
+  ) =>
+  Failure Message (Validator ctx)
+  where
   failure inputMessage = do
-    position <- askScopePosition
+    position <- asks position
     failure
       [ GQLError
           { message = "INTERNAL: " <> inputMessage,

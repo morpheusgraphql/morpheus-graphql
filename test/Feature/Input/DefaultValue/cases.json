@@ -1,0 +1,22 @@
+[
+  {
+    "path": "intorspection/input-simple",
+    "description": "test introspection of input Object"
+  },
+  {
+    "path": "intorspection/input-compound",
+    "description": "test introspection of input Object with inputObject as field"
+  },
+  {
+    "path": "intorspection/arguments",
+    "description": "test introspection of argument default values"
+  },
+  {
+    "path": "resolving/simple",
+    "description": "missing fields must be filled with default values"
+  },
+  {
+    "path": "resolving/compound",
+    "description": "missing fields must be filled with default values"
+  }
+]

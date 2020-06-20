@@ -35,7 +35,6 @@ import qualified Data.Aeson as A
     FromJSON (..),
     ToJSON (..),
     Value (..),
-    encode,
     object,
     pairs,
   )
@@ -51,6 +50,7 @@ import Data.Morpheus.Internal.Utils
     elems,
     mapTuple,
   )
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -77,7 +77,6 @@ import Data.Scientific
 import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
-    unpack,
   )
 import qualified Data.Vector as V
   ( toList,
@@ -94,6 +93,12 @@ data ScalarValue
   | String Text
   | Boolean Bool
   deriving (Show, Eq, Generic, Lift)
+
+instance RenderGQL ScalarValue where
+  render (Int x) = render x
+  render (Float x) = render x
+  render (String x) = render x
+  render (Boolean x) = render x
 
 instance A.ToJSON ScalarValue where
   toJSON (Float x) = A.toJSON x
@@ -156,16 +161,18 @@ data Value (stage :: Stage) where
   Scalar :: ScalarValue -> Value stage
   Null :: Value stage
 
+deriving instance Show (Value a)
+
 deriving instance Eq (Value s)
 
 data ObjectEntry (s :: Stage) = ObjectEntry
   { entryName :: FieldName,
     entryValue :: Value s
   }
-  deriving (Eq)
+  deriving (Eq, Show)
 
-instance Show (ObjectEntry s) where
-  show (ObjectEntry (FieldName name) value) = unpack name <> ":" <> show value
+instance RenderGQL (ObjectEntry a) where
+  render (ObjectEntry (FieldName name) value) = name <> ": " <> render value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision _ ObjectEntry {entryName} =
@@ -195,26 +202,30 @@ deriving instance Lift (Value a)
 
 deriving instance Lift (ObjectEntry a)
 
-instance Show (Value a) where
-  show Null = "null"
-  show (Enum x) = "" <> unpack (readTypeName x)
-  show (Scalar x) = show x
-  show (ResolvedVariable Ref {refName} Variable {variableValue}) =
-    "($" <> unpack (readName refName) <> ": " <> show variableValue <> ") "
-  show (VariableValue Ref {refName}) = "$" <> unpack (readName refName) <> " "
-  show (Object keys) = "{" <> foldr toEntry "" keys <> "}"
+instance RenderGQL (Value a) where
+  -- TODO: fix
+  render (ResolvedVariable Ref {refName} _) =
+    "$" <> readName refName
+  render (VariableValue Ref {refName}) = "$" <> readName refName <> " "
+  -- TODO: fix
+  render Null = "null"
+  render (Enum x) = readTypeName x
+  render (Scalar x) = render x
+  render (Object keys) = "{" <> foldl toEntry "" (elems keys) <> "}"
     where
-      toEntry :: ObjectEntry a -> String -> String
-      toEntry value "" = show value
-      toEntry value txt = txt <> ", " <> show value
-  show (List list) = "[" <> foldl toEntry "" list <> "]"
+      toEntry :: Text -> ObjectEntry a -> Text
+      toEntry "" value = render value
+      toEntry txt value = txt <> ", " <> render value
+  render (List list) = "[" <> foldl toEntry "" list <> "]"
     where
-      toEntry :: String -> Value a -> String
-      toEntry "" value = show value
-      toEntry txt value = txt <> ", " <> show value
+      toEntry :: Text -> Value a -> Text
+      toEntry "" value = render value
+      toEntry txt value = txt <> ", " <> render value
+
+-- render = pack . BS.unpack . A.encode
 
 instance Msg (Value a) where
-  msg = msg . A.encode
+  msg = msg . render
 
 instance A.ToJSON (Value a) where
   toJSON (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =

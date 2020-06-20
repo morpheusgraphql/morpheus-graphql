@@ -42,9 +42,10 @@ import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
   ( join,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( SelectionValidator,
-    askScopeTypeName,
+  ( Scope (..),
+    SelectionValidator,
     askTypeMember,
+    asks,
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
@@ -66,7 +67,7 @@ exploreUnionFragments unionTags = splitFrag
     splitFrag (Spread _ ref) = packFragment <$> resolveSpread unionTags ref
     splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
     splitFrag Selection {selectionName, selectionPosition} = do
-      typeName <- askScopeTypeName
+      typeName <- asks typename
       failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
     splitFrag (InlineFragment fragment) =
       packFragment

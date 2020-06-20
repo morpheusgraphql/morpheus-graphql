@@ -32,7 +32,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
-    FieldContent (..),
     FieldDefinition (..),
     IN,
     Operation (..),
@@ -81,7 +80,7 @@ renderArguments variables cName
         fieldD Variable {variableName, variableType} =
           FieldDefinition
             { fieldName = variableName,
-              fieldContent = NoContent,
+              fieldContent = Nothing,
               fieldType = variableType,
               fieldDescription = Nothing,
               fieldDirectives = empty

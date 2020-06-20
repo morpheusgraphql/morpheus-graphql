@@ -31,7 +31,6 @@ import Data.Morpheus.Types.Internal.AST
     isOutputObject,
     isSubscription,
   )
-import Data.Semigroup ((<>))
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
@@ -106,8 +105,8 @@ fieldTypeName namespace tName fieldName
   | otherwise = mkFieldName fieldName
 
 ------------------------------------------------
-genFieldT :: Type -> TypeKind -> FieldContent TRUE cat -> Type
-genFieldT result _ (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}) =
+genFieldT :: Type -> TypeKind -> Maybe (FieldContent TRUE cat) -> Type
+genFieldT result _ (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =
   AppT
     (AppT arrowType argType)
     (AppT m' result)

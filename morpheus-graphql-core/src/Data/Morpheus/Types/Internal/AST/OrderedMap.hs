@@ -48,10 +48,15 @@ instance (Lift a, Lift k) => Lift (OrderedMap k a) where
     where
       ls = HM.toList x
 
-instance Foldable (OrderedMap k) where
-  foldMap f OrderedMap {mapEntries} = foldMap f mapEntries
+instance (Eq k, Hashable k) => Foldable (OrderedMap k) where
+  foldMap f = foldMap f . getElements
 
-instance Traversable (OrderedMap k) where
+getElements :: (Eq k, Hashable k) => OrderedMap k b -> [b]
+getElements OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
+  where
+    takeValue key = fromMaybe (error "TODO: invalid Ordered Map") (key `HM.lookup` mapEntries)
+
+instance (Eq k, Hashable k) => Traversable (OrderedMap k) where
   traverse f (OrderedMap names values) = OrderedMap names <$> traverse f values
 
 instance (KeyOf a, Hashable k, KEY a ~ k) => Collection a (OrderedMap k a) where
@@ -66,9 +71,7 @@ instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (OrderedMap k a
 
 instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable a (OrderedMap k a) where
   fromElems = safeFromList
-  elems OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
-    where
-      takeValue key = fromMaybe (error "TODO: invalid Ordered Map") (key `HM.lookup` mapEntries)
+  elems = getElements
 
 safeFromList ::
   ( Failure GQLErrors m,

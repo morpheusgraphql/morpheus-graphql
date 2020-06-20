@@ -10,12 +10,13 @@ where
 
 import Control.Monad ((<=<))
 import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
+import qualified Data.ByteString.Lazy as L (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
+import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Either (either)
 import Data.Morpheus.Core (parseFullGQLDocument, validateSchema)
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    GQLErrors,
+  ( GQLErrors,
     Schema,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -25,15 +26,23 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Data.Text (pack)
 import GHC.Generics (Generic)
-import Lib (readSource)
+import Lib
+  ( CaseTree (..),
+    FileUrl (..),
+    scanSchemaTests,
+    toString,
+  )
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
 
-readSchema :: FieldName -> IO (Eventless Schema)
-readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . ("schema/" <>) . (<> "/schema.gql")
+readSource :: String -> IO ByteString
+readSource = L.readFile
 
-readResponse :: FieldName -> IO Response
-readResponse = fmap (either AesonError id . eitherDecode) . readSource . ("schema/" <>) . (<> "/response.json")
+readSchema :: String -> IO (Eventless Schema)
+readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . (<> "/schema.gql")
+
+readResponse :: String -> IO Response
+readResponse = fmap (either AesonError id . eitherDecode) . readSource . (<> "/response.json")
 
 data Response
   = OK
@@ -52,25 +61,20 @@ instance ToJSON Response where
   toJSON (Errors err) = object ["errors" .= toJSON err]
   toJSON (AesonError err) = String (pack err)
 
-testSchema :: TestTree
-testSchema =
+toTests :: CaseTree -> TestTree
+toTests CaseTree {caseUrl, children = Left {}} = schemaCase caseUrl
+toTests CaseTree {caseUrl = FileUrl {fileName}, children = Right children} =
   testGroup
-    "Test Schema"
-    [ testGroup
-        "Validation"
-        $ map
-          (uncurry schemaCase)
-          [ ("validation/interface/fieldTypeOk", "interface field type validation success"),
-            ("validation/interface/fieldTypeFail", "interface field type validation fails"),
-            ("validation/interface/fieldArgsOk", "interface field args type validation success"),
-            ("validation/interface/fieldArgsFail", "interface field args type validation fails")
-          ]
-    ]
+    fileName
+    (map toTests children)
 
-schemaCase :: FieldName -> String -> TestTree
-schemaCase path description = testCase description $ do
-  schema <- readSchema path
-  expected <- readResponse path
+testSchema :: IO TestTree
+testSchema = toTests <$> scanSchemaTests "test/schema"
+
+schemaCase :: FileUrl -> TestTree
+schemaCase url = testCase (fileName url) $ do
+  schema <- readSchema (toString url)
+  expected <- readResponse (toString url)
   assertion expected schema
 
 assertion :: Response -> Eventless Schema -> IO ()

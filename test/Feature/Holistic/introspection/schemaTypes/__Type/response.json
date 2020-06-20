@@ -51,7 +51,7 @@
                 "name": "Boolean",
                 "ofType": null
               },
-              "defaultValue": null
+              "defaultValue": "false"
             }
           ],
           "type": {
@@ -118,7 +118,7 @@
                 "name": "Boolean",
                 "ofType": null
               },
-              "defaultValue": null
+              "defaultValue": "false"
             }
           ],
           "type": {

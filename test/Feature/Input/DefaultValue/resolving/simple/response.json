@@ -1,0 +1,5 @@
+{
+  "data": {
+    "testSimple": "TestSimpleArgs {i1 = Just (InputSimple {fieldWithDefault = ID {unpackID = \"value from fieldWithDefault\"}, simpleField = Just EnumA}), i2 = Just \"test string\"}"
+  }
+}

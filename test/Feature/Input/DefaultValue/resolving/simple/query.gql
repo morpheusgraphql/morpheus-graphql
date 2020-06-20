@@ -1,0 +1,3 @@
+query Simple {
+  testSimple(i1: { simpleField: EnumA })
+}

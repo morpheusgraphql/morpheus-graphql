@@ -6,9 +6,10 @@
 
 - renamed `GQLRootResolver` -> `RootResolver`
 
-### minor changes
+### new features
 
 - `importGQLDocument` automatically defines `GQLType` instances for scalar definitions
+- supports default values
 
 ## 0.12.0 - 21.05.2020
 

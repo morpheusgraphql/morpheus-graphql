@@ -46,9 +46,14 @@ import Data.Morpheus.Types.Internal.AST
     getOperationName,
     msg,
   )
+import Data.Morpheus.Types.Internal.Validation.SchemaValidator
+  ( TypeSystemContext,
+  )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( Context (..),
+  ( CurrentSelection (..),
     InputContext (..),
+    OperationContext (..),
+    Scope (..),
     ScopeKind (..),
     Target (..),
     renderInputPrefix,
@@ -73,13 +78,13 @@ instance InternalError (FieldDefinition cat) where
           locations = []
         }
 
-class Unused c where
-  unused :: Context -> c -> GQLError
+class Unused ctx c where
+  unused :: ctx -> c -> GQLError
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-instance Unused (Variable s) where
+instance Unused (OperationContext v) (Variable s) where
   unused
-    Context {operationName}
+    OperationContext {selection = CurrentSelection {operationName}}
     Variable {variableName, variablePosition} =
       GQLError
         { message =
@@ -90,7 +95,7 @@ instance Unused (Variable s) where
           locations = [variablePosition]
         }
 
-instance Unused Fragment where
+instance Unused (OperationContext v) Fragment where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
@@ -102,45 +107,66 @@ instance Unused Fragment where
         }
 
 class MissingRequired c ctx where
-  missingRequired :: Context -> ctx -> Ref -> c -> GQLError
+  missingRequired :: ctx -> Ref -> c -> GQLError
 
-instance MissingRequired (Arguments s) ctx where
+instance MissingRequired (Arguments s) (OperationContext v) where
   missingRequired
-    Context {scopePosition, scopeSelectionName, scopeKind}
-    _
+    OperationContext
+      { scope = Scope {position, kind},
+        selection = CurrentSelection {selectionName}
+      }
     Ref {refName}
     _ =
       GQLError
         { message =
-            inScope scopeKind
+            inScope kind
               <> " argument "
               <> msg refName
               <> " is required but not provided.",
-          locations = [scopePosition]
+          locations = [position]
         }
       where
-        inScope SELECTION = "Field " <> msg scopeSelectionName
-        inScope DIRECTIVE = "Directive " <> msg ("@" <> scopeSelectionName)
+        inScope DIRECTIVE = "Directive " <> msg ("@" <> selectionName)
+        inScope _ = "Field " <> msg selectionName
 
-instance MissingRequired (Object s) InputContext where
+instance MissingRequired (Object s) (InputContext (OperationContext v)) where
   missingRequired
-    Context {scopePosition}
-    inputCTX
+    input@InputContext
+      { sourceContext =
+          OperationContext
+            { scope = Scope {position}
+            }
+      }
     Ref {refName}
     _ =
       GQLError
         { message =
-            renderInputPrefix inputCTX
+            renderInputPrefix input
               <> "Undefined Field "
               <> msg refName
               <> ".",
-          locations = [scopePosition]
+          locations = [position]
         }
 
-instance MissingRequired (VariableDefinitions s) ctx where
+instance MissingRequired (Object s) (InputContext (TypeSystemContext ctx)) where
   missingRequired
-    Context {operationName}
-    _
+    input
+    Ref {refName}
+    _ =
+      GQLError
+        { message =
+            renderInputPrefix input
+              <> "Undefined Field "
+              <> msg refName
+              <> ".",
+          locations = []
+        }
+
+instance MissingRequired (VariableDefinitions s) (OperationContext v) where
+  missingRequired
+    OperationContext
+      { selection = CurrentSelection {operationName}
+      }
     Ref {refName, refPosition}
     _ =
       GQLError
@@ -155,55 +181,70 @@ instance MissingRequired (VariableDefinitions s) ctx where
 
 class Unknown c ctx where
   type UnknownSelector c
-  unknown :: Context -> ctx -> c -> UnknownSelector c -> GQLErrors
+  unknown :: ctx -> c -> UnknownSelector c -> GQLErrors
 
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown Fragments ctx where
   type UnknownSelector Fragments = Ref
-  unknown _ _ _ (Ref name pos) =
+  unknown _ _ (Ref name pos) =
     errorMessage
       pos
       ("Unknown Fragment " <> msg name <> ".")
 
 instance Unknown Schema ctx where
   type UnknownSelector Schema = TypeNameRef
-  unknown _ _ _ TypeNameRef {typeNameRef, typeNamePosition} =
+  unknown _ _ TypeNameRef {typeNameRef, typeNamePosition} =
     errorMessage typeNamePosition ("Unknown type " <> msg typeNameRef <> ".")
 
 instance Unknown (FieldDefinition OUT) ctx where
   type UnknownSelector (FieldDefinition OUT) = Argument RESOLVED
-  unknown _ _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
+  unknown _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown (FieldsDefinition IN) InputContext where
+instance Unknown (FieldsDefinition IN) (InputContext (OperationContext v)) where
   type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
-  unknown Context {scopePosition} ctx _ ObjectEntry {entryName} =
-    [ GQLError
-        { message = renderInputPrefix ctx <> "Unknown Field " <> msg entryName <> ".",
-          locations = [scopePosition]
-        }
-    ]
+  unknown
+    input@InputContext {sourceContext = OperationContext {scope = Scope {position}}}
+    _
+    ObjectEntry {entryName} =
+      [ GQLError
+          { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
+            locations = [position]
+          }
+      ]
+
+instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ctx)) where
+  type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
+  unknown
+    input
+    _
+    ObjectEntry {entryName} =
+      [ GQLError
+          { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
+            locations = []
+          }
+      ]
 
 instance Unknown DirectiveDefinition ctx where
   type UnknownSelector DirectiveDefinition = Argument RESOLVED
-  unknown _ _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
+  unknown _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".")
 
 instance Unknown DirectiveDefinitions ctx where
   type UnknownSelector DirectiveDefinitions = Directive RAW
-  unknown _ _ _ Directive {directiveName, directivePosition} =
+  unknown _ _ Directive {directiveName, directivePosition} =
     errorMessage
       directivePosition
       ("Unknown Directive " <> msg directiveName <> ".")
 
-instance Unknown (FieldsDefinition OUT) ctx where
+instance Unknown (FieldsDefinition OUT) (OperationContext v) where
   type UnknownSelector (FieldsDefinition OUT) = Ref
-  unknown Context {scopeTypeName} _ _ =
-    unknownSelectionField scopeTypeName
+  unknown OperationContext {scope = Scope {typename}} _ =
+    unknownSelectionField typename
 
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> GQLError

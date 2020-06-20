@@ -109,16 +109,17 @@ resolveDeity =
       ]
 
 main :: IO ()
-main =
+main = do
+  schema <- testSchema
   defaultMain
     $ testGroup
       "core tests"
     $ map
       (uncurry basicTest)
-      [ ("basic Test", "simple"),
-        ("test interface", "interface")
+      [ ("basic Test", "api/simple"),
+        ("test interface", "api/interface")
       ]
-      <> [testSchema]
+      <> [schema]
 
 basicTest :: String -> FieldName -> TestTree
 basicTest description path = testCase description $ do

@@ -130,19 +130,19 @@ mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = 
       FieldDefinition
         { fieldName,
           fieldType = typeRef {typeConName = hsTypeName typeConName, typeArgs},
-          fieldContent = fieldCont cont,
+          fieldContent = cont >>= fieldCont,
           ..
         }
   where
-    fieldCont :: FieldContent TRUE OUT -> FieldContent TRUE OUT
+    fieldCont :: FieldContent TRUE OUT -> Maybe (FieldContent TRUE OUT)
     fieldCont (FieldArgs ArgumentsDefinition {arguments})
       | not (null arguments) =
-        FieldArgs $
+        Just $ FieldArgs $
           ArgumentsDefinition
             { argumentsTypename = Just $ genArgsTypeName fieldName,
               arguments = arguments
             }
-    fieldCont _ = NoContent
+    fieldCont _ = Nothing
 
 data BuildPlan
   = ConsIN [ConsD IN]
@@ -186,7 +186,7 @@ genTypeContent _ _ typeName (DataUnion members) =
                     },
                 fieldDescription = Nothing,
                 fieldDirectives = empty,
-                fieldContent = NoContent
+                fieldContent = Nothing
               }
         )
       where
@@ -198,7 +198,7 @@ genArgumentTypes genArgsTypeName fields =
   concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
 genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [ServerTypeDefinition IN]
-genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = FieldArgs ArgumentsDefinition {arguments}}
+genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (FieldArgs ArgumentsDefinition {arguments})}
   | not (null arguments) =
     pure
       [ ServerTypeDefinition

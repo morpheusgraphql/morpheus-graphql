@@ -12,9 +12,6 @@ module Data.Morpheus.Parsing.Internal.Pattern
 where
 
 -- MORPHEUS
-import Data.Morpheus.Internal.Utils
-  ( empty,
-  )
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
   )
@@ -52,9 +49,9 @@ import Data.Morpheus.Types.Internal.AST
     Value,
   )
 import Text.Megaparsec
-  ( (<|>),
-    label,
+  ( label,
     many,
+    optional,
   )
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
@@ -80,7 +77,7 @@ inputValueDefinition = label "InputValueDefinition" $ do
   fieldName <- parseName
   litAssignment -- ':'
   fieldType <- parseType
-  fieldContent <- DefaultInputValue <$> parseDefaultValue
+  fieldContent <- optional (DefaultInputValue <$> parseDefaultValue)
   fieldDirectives <- optionalDirectives
   pure FieldDefinition {..}
 
@@ -93,7 +90,6 @@ argumentsDefinition :: Parser ArgumentsDefinition
 argumentsDefinition =
   label "ArgumentsDefinition" $
     uniqTuple inputValueDefinition
-      <|> pure empty
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --
@@ -110,7 +106,7 @@ fieldDefinition :: Parser (FieldDefinition OUT)
 fieldDefinition = label "FieldDefinition" $ do
   fieldDescription <- optDescription
   fieldName <- parseName
-  fieldContent <- FieldArgs <$> argumentsDefinition
+  fieldContent <- optional (FieldArgs <$> argumentsDefinition)
   litAssignment -- ':'
   fieldType <- parseType
   fieldDirectives <- optionalDirectives

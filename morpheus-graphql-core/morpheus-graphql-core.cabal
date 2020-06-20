@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7bd90f8983a08d5504d15ebdef28e4e304abbd991058002949ee8b5b7347f673
+-- hash: 5e00f4c83624e6ff628c2f79b0c912c88cd91c5716f2a54bf5d3f2d4ee103bb0
 
 name:           morpheus-graphql-core
 version:        0.12.0
@@ -23,18 +23,34 @@ extra-source-files:
     changelog.md
     README.md
 data-files:
-    test/interface/query.gql
-    test/schema/validation/interface/fieldArgsFail/schema.gql
-    test/schema/validation/interface/fieldArgsOk/schema.gql
-    test/schema/validation/interface/fieldTypeFail/schema.gql
-    test/schema/validation/interface/fieldTypeOk/schema.gql
-    test/simple/query.gql
-    test/interface/response.json
-    test/schema/validation/interface/fieldArgsFail/response.json
-    test/schema/validation/interface/fieldArgsOk/response.json
-    test/schema/validation/interface/fieldTypeFail/response.json
-    test/schema/validation/interface/fieldTypeOk/response.json
-    test/simple/response.json
+    test/api/interface/query.gql
+    test/api/simple/query.gql
+    test/schema/validation/default-value/argument/compound-ok/schema.gql
+    test/schema/validation/default-value/argument/missing-field/schema.gql
+    test/schema/validation/default-value/argument/unexpected-value/schema.gql
+    test/schema/validation/default-value/argument/unknown-field/schema.gql
+    test/schema/validation/default-value/field/compound-ok/schema.gql
+    test/schema/validation/default-value/field/missing-field/schema.gql
+    test/schema/validation/default-value/field/unexpected-value/schema.gql
+    test/schema/validation/default-value/field/unknown-field/schema.gql
+    test/schema/validation/interface/field-args/fail/schema.gql
+    test/schema/validation/interface/field-args/ok/schema.gql
+    test/schema/validation/interface/field-type/fail/schema.gql
+    test/schema/validation/interface/field-type/ok/schema.gql
+    test/api/interface/response.json
+    test/api/simple/response.json
+    test/schema/validation/default-value/argument/compound-ok/response.json
+    test/schema/validation/default-value/argument/missing-field/response.json
+    test/schema/validation/default-value/argument/unexpected-value/response.json
+    test/schema/validation/default-value/argument/unknown-field/response.json
+    test/schema/validation/default-value/field/compound-ok/response.json
+    test/schema/validation/default-value/field/missing-field/response.json
+    test/schema/validation/default-value/field/unexpected-value/response.json
+    test/schema/validation/default-value/field/unknown-field/response.json
+    test/schema/validation/interface/field-args/fail/response.json
+    test/schema/validation/interface/field-args/ok/response.json
+    test/schema/validation/interface/field-type/fail/response.json
+    test/schema/validation/interface/field-type/ok/response.json
 
 source-repository head
   type: git
@@ -79,6 +95,7 @@ library
       Data.Morpheus.Rendering.RenderGQL
       Data.Morpheus.Rendering.RenderIntrospection
       Data.Morpheus.Schema.Directives
+      Data.Morpheus.Schema.DSL
       Data.Morpheus.Schema.Schema
       Data.Morpheus.Schema.SchemaAPI
       Data.Morpheus.Schema.TypeKind
@@ -140,6 +157,7 @@ test-suite morpheus-test
       aeson
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
+    , directory >=1.0
     , hashable >=1.0.0
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql-core

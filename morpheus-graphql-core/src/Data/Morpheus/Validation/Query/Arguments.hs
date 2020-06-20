@@ -11,6 +11,7 @@ where
 import Data.Foldable (traverse_)
 import Data.Morpheus.Internal.Utils
   ( elems,
+    empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -33,16 +34,16 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
-    SelectionContext (..),
+    Scope (..),
     SelectionValidator,
-    askContext,
     askInputFieldType,
-    askScopePosition,
+    askVariables,
+    asks,
     selectKnown,
     selectRequired,
     selectWithDefaultValue,
     startInput,
-    withScopePosition,
+    withPosition,
   )
 import Data.Morpheus.Validation.Internal.Value
   ( validateInput,
@@ -62,7 +63,7 @@ resolveObject = resolve
     resolve (List x) = List <$> traverse resolve x
     resolve (Object obj) = Object <$> traverse resolveEntry obj
     resolve (VariableValue ref) =
-      variables <$> askContext
+      askVariables
         >>= fmap (ResolvedVariable ref)
           . selectRequired ref
 
@@ -88,10 +89,10 @@ validateArgument
       fieldType = TypeRef {typeWrappers}
     } =
     do
-      argumentPosition <- askScopePosition
+      argumentPosition <- asks position
       argument <-
         selectWithDefaultValue
-          Argument {argumentName = fieldName, argumentValue = Null, argumentPosition}
+          (\argumentValue -> Argument {argumentName = fieldName, argumentValue, argumentPosition})
           argumentDef
           requestArgs
       validateArgumentValue argument
@@ -99,7 +100,7 @@ validateArgument
       -------------------------------------------------------------------------
       validateArgumentValue :: Argument RESOLVED -> SelectionValidator (Argument VALID)
       validateArgumentValue arg@Argument {argumentValue = value, ..} =
-        withScopePosition argumentPosition
+        withPosition argumentPosition
           $ startInput (SourceArgument arg)
           $ do
             datatype <- askInputFieldType argumentDef
@@ -122,7 +123,7 @@ validateFieldArguments
       traverse_ checkUnknown (elems args)
       traverse (validateArgument args) argsDef
     where
-      argsDef = fieldContentArgs fieldContent
+      argsDef = maybe empty fieldContentArgs fieldContent
       -------------------------------------------------
       checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
       checkUnknown = (`selectKnown` fieldDef)

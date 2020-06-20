@@ -1,0 +1,36 @@
+{
+  "errors": [
+    {
+      "message": "Field Input2.objectField got invalid default value. in field \"field1\": Expected type \"ID!\" found true.",
+      "locations": [{ "line": 0, "column": 0 }]
+    },
+    {
+      "message": "Field Input2.objectField got invalid default value. in field \"field2\": Expected type \"String!\" found true.",
+      "locations": [{ "line": 0, "column": 0 }]
+    },
+    {
+      "message": "Field Input2.objectField got invalid default value. in field \"field3\": Expected type \"TestEnum\" found true.",
+      "locations": [{ "line": 0, "column": 0 }]
+    },
+    {
+      "message": "Field Input1.field1 got invalid default value. Expected type \"ID!\" found EnumA.",
+      "locations": [{ "line": 0, "column": 0 }]
+    },
+    {
+      "message": "Field Input1.field2 got invalid default value. Expected type \"String!\" found EnumA.",
+      "locations": [{ "line": 0, "column": 0 }]
+    },
+    {
+      "message": "Field Input1.field3 got invalid default value. Expected type \"TestEnum\" found UnknownEnum.",
+      "locations": [{ "line": 0, "column": 0 }]
+    },
+    {
+      "message": "Field Input1.field4 got invalid default value. Expected type \"TestEnum!\" found 1.",
+      "locations": [{ "line": 0, "column": 0 }]
+    },
+    {
+      "message": "Field Input1.field5 got invalid default value. Expected type \"TestEnum\" found \"some text\".",
+      "locations": [{ "line": 0, "column": 0 }]
+    }
+  ]
+}

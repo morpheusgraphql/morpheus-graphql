@@ -13,12 +13,26 @@ import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
     intercalate,
+    pack,
   )
 
 type Rendering = Text
 
 class RenderGQL a where
   render :: a -> Rendering
+
+instance RenderGQL Int where
+  render = pack . show
+
+instance RenderGQL Float where
+  render = pack . show
+
+instance RenderGQL Text where
+  render = pack . show
+
+instance RenderGQL Bool where
+  render True = "true"
+  render False = "false"
 
 renderIndent :: Rendering
 renderIndent = "  "

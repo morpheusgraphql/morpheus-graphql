@@ -17,7 +17,7 @@
       "locations": [{ "line": 7, "column": 31 }]
     },
     {
-      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found \"SomeEnum\".",
+      "message": "Argument \"if\" got invalid value. Expected type \"Boolean!\" found SomeEnum.",
       "locations": [{ "line": 8, "column": 29 }]
     },
     {

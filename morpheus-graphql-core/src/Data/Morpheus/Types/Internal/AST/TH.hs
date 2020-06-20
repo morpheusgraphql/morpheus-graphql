@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Types.Internal.AST.TH
   ( ConsD (..),
@@ -11,26 +10,17 @@ module Data.Morpheus.Types.Internal.AST.TH
   )
 where
 
-import Data.Morpheus.Internal.Utils (Collection, elems)
+import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( Description,
-    FieldName,
-    TypeKind,
+  ( FieldName,
     TypeName,
     TypeRef (..),
-    VALID,
     hsTypeName,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
-  ( ANY,
-    ANY,
-    DataEnumValue (..),
-    Directives,
-    FieldContent,
+  ( DataEnumValue (..),
     FieldDefinition (..),
     FieldsDefinition,
-    IN,
-    TypeDefinition,
   )
 
 toHSFieldDefinition :: FieldDefinition cat -> FieldDefinition cat
