@@ -156,8 +156,7 @@ instance RenderSchema (TypeDefinition a) where
       where
         __render ::
           (Monad m) => TypeContent bool a -> Resolver QUERY e m (ResModel QUERY e m)
-        __render DataScalar {} =
-          pure $ mkType SCALAR typeName typeDescription [("enumValues", pure $ mkList [])]
+        __render DataScalar {} = pure $ mkType SCALAR typeName typeDescription []
         __render (DataEnum enums) =
           pure $ mkType ENUM typeName typeDescription [("enumValues", render enums)]
         __render (DataInputObject fields) =
