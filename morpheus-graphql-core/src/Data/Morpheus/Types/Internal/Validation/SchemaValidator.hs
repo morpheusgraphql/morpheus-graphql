@@ -63,12 +63,6 @@ import Data.Semigroup
     Semigroup (..),
   )
 
-data Prop = Prop
-  { propName :: FieldName,
-    propTypeName :: TypeName
-  }
-  deriving (Show)
-
 data TypeSystemContext c = TypeSystemContext
   { types :: [TypeDefinition ANY],
     local :: c
