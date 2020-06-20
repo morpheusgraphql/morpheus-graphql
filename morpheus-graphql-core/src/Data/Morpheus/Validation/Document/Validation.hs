@@ -72,6 +72,7 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     selectType,
   )
 import Data.Morpheus.Validation.Internal.Value (validateInput)
+import Data.Semigroup ((<>))
 
 validateSchema :: Schema -> Eventless Schema
 validateSchema schema = validatePartialDocument (elems schema) $> schema
