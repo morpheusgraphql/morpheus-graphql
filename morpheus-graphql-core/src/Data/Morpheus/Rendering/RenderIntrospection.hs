@@ -37,7 +37,6 @@ import Data.Morpheus.Types.Internal.AST
     DataInputUnion,
     DataInputUnion,
     DataTypeWrapper (..),
-    DataUnion,
     Description,
     DirectiveDefinition (..),
     DirectiveLocation,
@@ -158,21 +157,20 @@ instance RenderSchema (TypeDefinition a) where
         __render ::
           (Monad m) => TypeContent bool a -> Resolver QUERY e m (ResModel QUERY e m)
         __render DataScalar {} =
-          createLeafType SCALAR typeName typeDescription Nothing
+          pure $ mkType SCALAR typeName typeDescription [("enumValues", pure $ mkList [])]
         __render (DataEnum enums) =
-          traverse render enums
-            >>= createLeafType ENUM typeName typeDescription . Just
+          pure $ mkType ENUM typeName typeDescription [("enumValues", render enums)]
         __render (DataInputObject fields) =
           createInputObject typeName typeDescription
             <$> traverse render (elems fields)
         __render DataObject {objectImplements, objectFields} =
           createObjectType typeName typeDescription objectImplements objectFields
         __render (DataUnion union) =
-          typeFromUnion typeName typeDescription union
+          pure $ mkType UNION typeName typeDescription [("possibleTypes", mkList <$> traverse unionPossibleType union)]
         __render (DataInputUnion members) =
           renderInputUnion (typeName, typeDescription, members)
         __render (DataInterface fields) =
-          renderInterface typeName Nothing fields
+          pure $ mkType INTERFACE typeName typeDescription [("fields", render fields), ("possibleTypes", mkList <$> interfacePossibleTypes typeName)]
 
 instance RenderSchema (FieldsDefinition OUT) where
   render = fmap mkList . traverse render . filter fieldVisibility . elems
@@ -219,11 +217,6 @@ instance RenderSchema DataEnumValue where
         description enumDescription
       ]
         <> renderDeprecated enumDirectives
-
-renderInterface ::
-  Monad m => TypeName -> Maybe Description -> FieldsDefinition OUT -> Resolver QUERY e m (ResModel QUERY e m)
-renderInterface name desc fields =
-  pure $ mkType INTERFACE name desc [("fields", render fields), ("possibleTypes", mkList <$> interfacePossibleTypes name)]
 
 interfacePossibleTypes ::
   (Monad m) =>
@@ -302,19 +295,6 @@ mkType kind name desc etc =
         <> etc
     )
 
-createLeafType ::
-  Monad m =>
-  TypeKind ->
-  TypeName ->
-  Maybe Description ->
-  Maybe [ResModel QUERY e m] ->
-  Result e m (ResModel QUERY e m)
-createLeafType kind name desc enums = pure $ mkType kind name desc [("enumValues", optList enums)]
-
-typeFromUnion :: Monad m => TypeName -> Maybe Description -> DataUnion -> Result e m (ResModel QUERY e m)
-typeFromUnion name desc typeContent =
-  pure $ mkType UNION name desc [("possibleTypes", mkList <$> traverse unionPossibleType typeContent)]
-
 unionPossibleType :: Monad m => TypeName -> Resolver QUERY e m (ResModel QUERY e m)
 unionPossibleType name = selectType name >>= render
 
@@ -334,9 +314,6 @@ implementedInterface name =
     __render typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef
     __render _ = failure ("Type " <> msg name <> " must be an Interface" :: Message)
 
-optList :: Monad m => Maybe [ResModel QUERY e m] -> Resolver QUERY e m (ResModel QUERY e m)
-optList = pure . maybe mkNull mkList
-
 createInputObject ::
   Monad m => TypeName -> Maybe Description -> [ResModel QUERY e m] -> ResModel QUERY e m
 createInputObject name desc fields = mkType INPUT_OBJECT name desc [("inputFields", pure $ mkList fields)]
@@ -349,14 +326,7 @@ createType ::
   Maybe [ResModel QUERY e m] ->
   ResModel QUERY e m
 createType kind name desc fields =
-  mkObject
-    "__Type"
-    [ renderKind kind,
-      renderName name,
-      description desc,
-      ("fields", pure $ maybe mkNull mkList fields),
-      ("enumValues", pure $ mkList [])
-    ]
+  mkType kind name desc [("fields", pure $ maybe mkNull mkList fields), ("enumValues", pure $ mkList [])]
 
 opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> Resolver QUERY e m (ResModel QUERY e m)
 opt f (Just x) = f x
