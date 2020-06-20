@@ -21,6 +21,7 @@ import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Maybe (fromMaybe)
 import Data.Morpheus.Types.Internal.AST (FieldName (..))
+import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
 import System.Directory (listDirectory)
 import System.Directory.Internal
