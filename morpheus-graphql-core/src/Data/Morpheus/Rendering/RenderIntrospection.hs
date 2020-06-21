@@ -158,10 +158,10 @@ instance RenderIntrospection (TypeDefinition a) where
         renderContent :: Monad m => TypeContent bool a -> ResModel QUERY e m
         renderContent DataScalar {} = __type SCALAR []
         renderContent (DataEnum enums) = __type ENUM [("enumValues", render enums)]
-        renderContent (DataInputObject fields) =
+        renderContent (DataInputObject inputFiels) =
           __type
             INPUT_OBJECT
-            [("inputFields", mkList <$> traverse render (elems fields))]
+            [("inputFields", render inputFiels)]
         renderContent DataObject {objectImplements, objectFields} =
           createObjectType typeName typeDescription objectImplements objectFields
         renderContent (DataUnion union) =
@@ -172,9 +172,7 @@ instance RenderIntrospection (TypeDefinition a) where
           __type
             INPUT_OBJECT
             [ ( "inputFields",
-                pure
-                  $ mkList
-                  $ map mkInputValue
+                render
                   $ createInputUnionFields typeName
                   $ filter visibility members
               )
@@ -189,25 +187,19 @@ instance RenderIntrospection (TypeDefinition a) where
 instance RenderIntrospection (UnionMember OUT) where
   render UnionMember {memberName} = selectType memberName >>= render
 
-instance RenderIntrospection (FieldsDefinition OUT) where
-  render = fmap mkList . traverse render . filter fieldVisibility . elems
+instance RenderIntrospection (FieldDefinition cat) => RenderIntrospection (FieldsDefinition cat) where
+  render = render . filter fieldVisibility . elems
 
 instance RenderIntrospection (FieldDefinition OUT) where
-  render
-    field@FieldDefinition
-      { fieldName,
-        fieldContent,
-        fieldDescription,
-        fieldDirectives
-      } =
-      pure
-        $ mkObject "__Field"
-        $ [ renderName fieldName,
-            description fieldDescription,
-            ("args", maybe (pure $ mkList []) render fieldContent),
-            type' field
-          ]
-          <> renderDeprecated fieldDirectives
+  render field@FieldDefinition {..} =
+    pure
+      $ mkObject "__Field"
+      $ [ renderName fieldName,
+          description fieldDescription,
+          ("args", maybe (pure $ mkList []) render fieldContent),
+          type' field
+        ]
+        <> renderDeprecated fieldDirectives
 
 instance RenderIntrospection (FieldContent TRUE OUT) where
   render (FieldArgs args) = render args
@@ -217,7 +209,14 @@ instance RenderIntrospection ArgumentsDefinition where
 
 instance RenderIntrospection (FieldDefinition IN) where
   render input@FieldDefinition {..} =
-    pure $ mkInputValue input
+    pure $
+      mkObject
+        "__InputValue"
+        [ renderName fieldName,
+          description fieldDescription,
+          type' input,
+          defaultValue fieldType (fmap defaultInputValue fieldContent)
+        ]
 
 instance RenderIntrospection DataEnumValue where
   render DataEnumValue {enumName, enumDescription, enumDirectives} =
@@ -400,19 +399,6 @@ handleField
             fieldName
             fields
         )
-
-mkInputValue ::
-  Monad m =>
-  FieldDefinition IN ->
-  ResModel QUERY e m
-mkInputValue field@FieldDefinition {..} =
-  mkObject
-    "__InputValue"
-    [ renderName fieldName,
-      description fieldDescription,
-      type' field,
-      defaultValue fieldType (fmap defaultInputValue fieldContent)
-    ]
 
 mkTypeRef ::
   (Monad m) => FieldDefinition cat -> Result e m (ResModel QUERY e m)
