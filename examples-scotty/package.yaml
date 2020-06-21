@@ -36,7 +36,7 @@ data-files:
   - assets/**/*.html
 
 executables:
-  api:
+  scotty-server:
     main: Main.hs
     source-dirs: src
     ghc-options: -Wall

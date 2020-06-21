@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 478a1885172cc4ccce923489e519adcd79a5d8b06b6c93fe2710ea13d3af5ffd
+-- hash: 7fb7098ee8d89057e1c76e28c822d9219ccaeffbd0d145cd46be3aaddaf6f219
 
 name:           examples-scotty
 version:        0.1.0
@@ -28,7 +28,7 @@ source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql
 
-executable api
+executable scotty-server
   main-is: Main.hs
   other-modules:
       Client.Client
