@@ -151,6 +151,7 @@ module Data.Morpheus.Types.Internal.AST
     TypeNameTH (..),
     isOutput,
     mkObjectField,
+    UnionMember (..),
   )
 where
 

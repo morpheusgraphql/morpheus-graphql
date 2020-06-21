@@ -35,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionSet,
     SelectionSet,
     TypeName,
+    UnionMember,
     UnionTag (..),
     VALID,
   )
@@ -56,7 +57,7 @@ type TypeDef = (TypeName, FieldsDefinition OUT)
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
-  [TypeName] ->
+  [UnionMember] ->
   Selection RAW ->
   SelectionValidator [Fragment]
 exploreUnionFragments unionTags = splitFrag

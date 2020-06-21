@@ -57,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
+    UnionMember (..),
     VALID,
     Value (..),
     createInputUnionFields,
@@ -174,9 +175,7 @@ instance RenderIntrospection (TypeDefinition a) where
                 pure
                   $ mkList
                   $ map mkInputValue
-                  $ createInputUnionFields typeName
-                  $ map fst
-                  $ filter snd members
+                  $ createInputUnionFields typeName members
               )
             ]
         renderContent (DataInterface fields) =
@@ -283,8 +282,8 @@ mkType kind name desc etc =
         <> etc
     )
 
-unionPossibleType :: Monad m => TypeName -> Resolver QUERY e m (ResModel QUERY e m)
-unionPossibleType name = selectType name >>= render
+unionPossibleType :: Monad m => UnionMember -> Resolver QUERY e m (ResModel QUERY e m)
+unionPossibleType UnionMember {memberName} = selectType memberName >>= render
 
 createObjectType ::
   Monad m => TypeName -> Maybe Description -> [TypeName] -> FieldsDefinition OUT -> ResModel QUERY e m
