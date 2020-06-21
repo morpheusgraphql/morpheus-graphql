@@ -167,7 +167,7 @@ instance RenderIntrospection (TypeDefinition a) where
         renderContent (DataUnion union) =
           __type
             UNION
-            [("possibleTypes", mkList <$> traverse unionPossibleType union)]
+            [("possibleTypes", render union)]
         renderContent (DataInputUnion members) =
           __type
             INPUT_OBJECT
@@ -185,6 +185,9 @@ instance RenderIntrospection (TypeDefinition a) where
             [ ("fields", render fields),
               ("possibleTypes", interfacePossibleTypes typeName)
             ]
+
+instance RenderIntrospection UnionMember where
+  render UnionMember {memberName} = selectType memberName >>= render
 
 instance RenderIntrospection (FieldsDefinition OUT) where
   render = fmap mkList . traverse render . filter fieldVisibility . elems
@@ -282,9 +285,6 @@ mkType kind name desc etc =
       ]
         <> etc
     )
-
-unionPossibleType :: Monad m => UnionMember -> Resolver QUERY e m (ResModel QUERY e m)
-unionPossibleType UnionMember {memberName} = selectType memberName >>= render
 
 createObjectType ::
   Monad m => TypeName -> Maybe Description -> [TypeName] -> FieldsDefinition OUT -> ResModel QUERY e m
