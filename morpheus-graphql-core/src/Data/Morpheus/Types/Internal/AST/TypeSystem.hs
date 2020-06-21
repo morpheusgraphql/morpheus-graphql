@@ -77,6 +77,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     mkField,
     mkObjectField,
     UnionMember (..),
+    mkUnionMember,
   )
 where
 
@@ -153,8 +154,13 @@ import Language.Haskell.TH.Syntax (Lift (..))
 
 type DataEnum = [DataEnumValue]
 
-newtype UnionMember = UnionMember
-  {memberName :: TypeName}
+mkUnionMember :: TypeName -> UnionMember
+mkUnionMember name = UnionMember name True
+
+data UnionMember = UnionMember
+  { memberName :: TypeName,
+    visibility :: Bool
+  }
   deriving (Show, Lift, Eq)
 
 type DataUnion = [UnionMember]
@@ -453,7 +459,7 @@ createEnumValue enumName =
     }
 
 createUnionType :: TypeName -> [TypeName] -> TypeDefinition OUT
-createUnionType typeName typeData = createType typeName (DataUnion $ map UnionMember typeData)
+createUnionType typeName typeData = createType typeName (DataUnion $ map mkUnionMember typeData)
 
 isEntNode :: TypeContent TRUE a -> Bool
 isEntNode DataScalar {} = True

@@ -40,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     UnionMember (..),
+    mkUnionMember,
     toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -141,7 +142,7 @@ unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
         ..
       }
   where
-    unionMemberTypes = operator '=' *> (UnionMember <$> parseTypeName) `sepBy1` pipeLiteral
+    unionMemberTypes = operator '=' *> (mkUnionMember <$> parseTypeName) `sepBy1` pipeLiteral
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
 --

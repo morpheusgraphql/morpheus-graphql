@@ -35,7 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionSet,
     SelectionSet,
     TypeName,
-    UnionMember,
+    UnionMember (..),
     UnionTag (..),
     VALID,
   )
@@ -65,14 +65,14 @@ exploreUnionFragments unionTags = splitFrag
     packFragment fragment = [fragment]
     splitFrag ::
       Selection RAW -> SelectionValidator [Fragment]
-    splitFrag (Spread _ ref) = packFragment <$> resolveSpread unionTags ref
+    splitFrag (Spread _ ref) = packFragment <$> resolveSpread (map memberName unionTags) ref
     splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
     splitFrag Selection {selectionName, selectionPosition} = do
       typeName <- asks typename
       failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
     splitFrag (InlineFragment fragment) =
       packFragment
-        <$> castFragmentType Nothing (fragmentPosition fragment) unionTags fragment
+        <$> castFragmentType Nothing (fragmentPosition fragment) (map memberName unionTags) fragment
 
 -- sorts Fragment by contitional Types
 -- [

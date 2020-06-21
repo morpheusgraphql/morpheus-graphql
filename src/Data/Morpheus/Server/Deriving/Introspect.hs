@@ -83,11 +83,13 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeUpdater,
+    UnionMember (..),
     createAlias,
     createEnumValue,
     defineType,
     fieldsToArguments,
     mkField,
+    mkUnionMember,
     msg,
     toListField,
     toNullableField,
@@ -394,9 +396,8 @@ buildInputUnion (baseName, baseFingerprint) cons =
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (DataInputUnion typeMembers, types <> unionTypes)
       where
-        typeMembers :: [(TypeName, Bool)]
-        typeMembers =
-          map (,True) (unionRef <> unionMembers) <> map (,False) enumCons
+        typeMembers :: [UnionMember]
+        typeMembers = map mkUnionMember (unionRef <> unionMembers) <> map (`UnionMember` False) enumCons
         (unionMembers, unionTypes) =
           buildUnions wrapInputObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
@@ -417,7 +418,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
       (DataEnum (map createEnumValue enumCons), types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
-      (wrapUnion typeMembers, types <> enumTypes <> unionTypes)
+      (wrapUnion (map mkUnionMember typeMembers), types <> enumTypes <> unionTypes)
       where
         typeMembers = unionRef <> enumMembers <> unionMembers
         (enumMembers, enumTypes) =

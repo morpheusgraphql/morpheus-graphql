@@ -399,6 +399,6 @@ constraintInputUnion tags hm = do
 
 isPosibeInputUnion :: [UnionMember] -> Value stage -> Either Message TypeName
 isPosibeInputUnion tags (Enum name)
-  | UnionMember name `elem` tags = pure name
+  | name `elem` map memberName tags = pure name
   | otherwise = failure $ msg name <> " is not posible union type"
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
