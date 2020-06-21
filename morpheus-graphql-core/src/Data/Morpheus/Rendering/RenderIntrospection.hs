@@ -196,8 +196,8 @@ instance RenderIntrospection (FieldDefinition OUT) where
       $ mkObject "__Field"
       $ [ renderName fieldName,
           description fieldDescription,
-          ("args", maybe (pure $ mkList []) render fieldContent),
-          type' fieldType
+          type' fieldType,
+          ("args", maybe (pure $ mkList []) render fieldContent)
         ]
         <> renderDeprecated fieldDirectives
 
