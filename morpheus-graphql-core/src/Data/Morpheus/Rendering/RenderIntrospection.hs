@@ -191,13 +191,13 @@ instance RenderIntrospection (FieldDefinition cat) => RenderIntrospection (Field
   render = render . filter fieldVisibility . elems
 
 instance RenderIntrospection (FieldDefinition OUT) where
-  render field@FieldDefinition {..} =
+  render FieldDefinition {..} =
     pure
       $ mkObject "__Field"
       $ [ renderName fieldName,
           description fieldDescription,
           ("args", maybe (pure $ mkList []) render fieldContent),
-          type' field
+          type' fieldType
         ]
         <> renderDeprecated fieldDirectives
 
@@ -208,13 +208,13 @@ instance RenderIntrospection ArgumentsDefinition where
   render ArgumentsDefinition {arguments} = mkList <$> traverse render (elems arguments)
 
 instance RenderIntrospection (FieldDefinition IN) where
-  render input@FieldDefinition {..} =
+  render FieldDefinition {..} =
     pure $
       mkObject
         "__InputValue"
         [ renderName fieldName,
           description fieldDescription,
-          type' input,
+          type' fieldType,
           defaultValue fieldType (fmap defaultInputValue fieldContent)
         ]
 
@@ -225,6 +225,22 @@ instance RenderIntrospection DataEnumValue where
         description enumDescription
       ]
         <> renderDeprecated enumDirectives
+
+instance RenderIntrospection TypeRef where
+  render TypeRef {typeConName, typeWrappers} = do
+    kind <- lookupKind typeConName
+    let currentType = mkType kind typeConName Nothing []
+    pure $ foldr wrap currentType (toGQLWrapper typeWrappers)
+    where
+      wrap :: Monad m => DataTypeWrapper -> ResModel QUERY e m -> ResModel QUERY e m
+      wrap wrapper contentType =
+        mkObject
+          "__Type"
+          [ renderKind (wrapperKind wrapper),
+            ("ofType", pure contentType)
+          ]
+      wrapperKind ListType = LIST
+      wrapperKind NonNullType = NON_NULL
 
 interfacePossibleTypes ::
   (Monad m) =>
@@ -316,23 +332,8 @@ renderName = ("name",) . render
 renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 renderKind = ("kind",) . render
 
-type' :: Monad m => FieldDefinition cat -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-type' = ("type",) . mkTypeRef
-
-withTypeWrapper :: Monad m => FieldDefinition cat -> ResModel QUERY e m -> ResModel QUERY e m
-withTypeWrapper FieldDefinition {fieldType = TypeRef {typeWrappers}} typ =
-  foldr wrapAs typ (toGQLWrapper typeWrappers)
-
-wrapAs :: Monad m => DataTypeWrapper -> ResModel QUERY e m -> ResModel QUERY e m
-wrapAs wrapper contentType =
-  mkObject
-    "__Type"
-    [ renderKind (kind wrapper),
-      ("ofType", pure contentType)
-    ]
-  where
-    kind ListType = LIST
-    kind NonNullType = NON_NULL
+type' :: Monad m => TypeRef -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+type' ref = ("type", render ref)
 
 defaultValue ::
   Monad m =>
@@ -399,10 +400,3 @@ handleField
             fieldName
             fields
         )
-
-mkTypeRef ::
-  (Monad m) => FieldDefinition cat -> Result e m (ResModel QUERY e m)
-mkTypeRef field@FieldDefinition {fieldType = TypeRef {typeConName}} =
-  do
-    kind <- lookupKind typeConName
-    pure $ withTypeWrapper field $ mkType kind typeConName Nothing []
