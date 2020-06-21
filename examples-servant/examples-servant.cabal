@@ -4,9 +4,9 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 35f4bcc39b11bd9bd04026a4e0781e4e9c52dd0894d563cae9fd4d2767ce0401
+-- hash: 5086a8166b1ad0d6809d1cc66c43a4c838b24b03bffa840df6216359aae037e2
 
-name:           examples-scotty
+name:           examples-servant
 version:        0.1.0
 synopsis:       examples
 description:    examples of GraphQL APIs
@@ -19,16 +19,13 @@ copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
 build-type:     Simple
 data-files:
-    assets/db/deprecated/address.json
-    assets/db/deprecated/user.json
-    assets/db/mythology/greek.json
     assets/index.html
 
 source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql
 
-executable scotty-server
+executable servant-server
   main-is: Main.hs
   other-modules:
       Client.Client
@@ -37,11 +34,11 @@ executable scotty-server
       Server.Mythology.API
       Server.Mythology.Character
       Server.Mythology.Place
-      Server.Scotty
+      Server.Servant
       Server.Sophisticated.API
       Server.Subscription.SimpleSubscription
       Server.TH.Simple
-      Paths_examples_scotty
+      Paths_examples_servant
   hs-source-dirs:
       src
   ghc-options: -Wall
@@ -57,7 +54,6 @@ executable scotty-server
     , morpheus-graphql-core >=0.12.0
     , mtl >=2.0 && <=2.3
     , req
-    , scotty
     , servant
     , servant-server
     , stm

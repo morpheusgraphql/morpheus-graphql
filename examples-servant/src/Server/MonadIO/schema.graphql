@@ -1,0 +1,28 @@
+
+type Dog {
+    id: Int!
+    name: String!
+    owner: User!
+}
+
+type User {
+    id: Int!
+    name: String!
+    follows: [User!]!
+    favoriteDog: Dog
+}
+
+type Session {
+    token: String!
+    user: User!
+}
+
+type Query {
+    login(username: String!, password: String!): Session
+    getUser(id: Int!): User
+    dogs: [Dog!]!
+}
+
+type Mutation {
+    addDog(name: String!): Dog!
+}

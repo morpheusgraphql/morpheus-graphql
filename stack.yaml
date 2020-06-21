@@ -2,6 +2,7 @@
 resolver: lts-15.13
 packages:
   - examples-scotty
+  - examples-servant
   - examples-client
   - morpheus-graphql-client
   - morpheus-graphql-core

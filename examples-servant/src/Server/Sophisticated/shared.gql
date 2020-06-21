@@ -1,0 +1,4 @@
+
+type SharedType {
+  name: String!
+}
