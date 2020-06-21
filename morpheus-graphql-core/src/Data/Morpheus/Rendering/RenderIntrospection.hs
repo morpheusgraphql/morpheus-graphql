@@ -175,7 +175,8 @@ instance RenderIntrospection (TypeDefinition a) where
                 pure
                   $ mkList
                   $ map mkInputValue
-                  $ createInputUnionFields typeName members
+                  $ createInputUnionFields typeName
+                  $ filter visibility members
               )
             ]
         renderContent (DataInterface fields) =
