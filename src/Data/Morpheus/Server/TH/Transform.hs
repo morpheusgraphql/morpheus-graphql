@@ -41,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName,
     TypeRef (..),
+    UnionMember (..),
     hsTypeName,
     kindOf,
     lookupWith,
@@ -172,7 +173,7 @@ genTypeContent schema toArgsTyName typeName DataObject {objectFields} = do
 genTypeContent _ _ typeName (DataUnion members) =
   pure $ ConsOUT [] (map unionCon members)
   where
-    unionCon memberName =
+    unionCon UnionMember {memberName} =
       mkCons
         cName
         ( singleton

@@ -88,6 +88,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
+    UnionMember (..),
     Value (..),
     __inputname,
     entryValue,
@@ -255,18 +256,18 @@ askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
             <> "\" must be an OUTPUT_TYPE."
 
 askTypeMember ::
-  TypeName ->
+  UnionMember OUT ->
   SelectionValidator (TypeName, FieldsDefinition OUT)
-askTypeMember name =
+askTypeMember UnionMember {memberName} =
   askSchema
-    >>= selectOr notFound pure name
+    >>= selectOr notFound pure memberName
     >>= constraintOBJECT
   where
     notFound = do
       scopeType <- asks typename
       failure $
         "Type \""
-          <> msg name
+          <> msg memberName
           <> "\" referenced by union \""
           <> msg scopeType
           <> "\" can't found in Schema."
@@ -367,7 +368,7 @@ askInputMember name =
 
 constraintInputUnion ::
   forall stage.
-  [(TypeName, Bool)] ->
+  [UnionMember IN] ->
   Object stage ->
   Either Message (TypeName, Maybe (Value stage))
 constraintInputUnion tags hm = do
@@ -396,16 +397,8 @@ constraintInputUnion tags hm = do
       pure (tyName, Just value)
     _ -> failure ("input union can have only one variant." :: Message)
 
-isPosibeInputUnion :: [(TypeName, Bool)] -> Value stage -> Either Message TypeName
-isPosibeInputUnion tags (Enum name) = case lookup name tags of
-  Nothing ->
-    failure
-      ( msg name
-          <> " is not posible union type"
-      )
-  _ -> pure name
-isPosibeInputUnion _ _ =
-  failure $
-    "\""
-      <> msg __inputname
-      <> "\" must be Enum"
+isPosibeInputUnion :: [UnionMember IN] -> Value stage -> Either Message TypeName
+isPosibeInputUnion tags (Enum name)
+  | name `elem` map memberName tags = pure name
+  | otherwise = failure $ msg name <> " is not posible union type"
+isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
