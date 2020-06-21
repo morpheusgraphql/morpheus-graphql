@@ -154,20 +154,20 @@ import Language.Haskell.TH.Syntax (Lift (..))
 
 type DataEnum = [DataEnumValue]
 
-mkUnionMember :: TypeName -> UnionMember
+mkUnionMember :: TypeName -> UnionMember cat
 mkUnionMember name = UnionMember name True
 
-data UnionMember = UnionMember
+data UnionMember (cat :: TypeCategory) = UnionMember
   { memberName :: TypeName,
     visibility :: Bool
   }
   deriving (Show, Lift, Eq)
 
-type DataUnion = [UnionMember]
+type DataUnion = [UnionMember OUT]
 
-type DataInputUnion = [UnionMember]
+type DataInputUnion = [UnionMember IN]
 
-instance RenderGQL UnionMember where
+instance RenderGQL (UnionMember cat) where
   render = render . memberName
 
 -- scalar
@@ -725,7 +725,7 @@ createArgument = mkField
 __inputname :: FieldName
 __inputname = "inputname"
 
-createInputUnionFields :: TypeName -> [UnionMember] -> [FieldDefinition IN]
+createInputUnionFields :: TypeName -> [UnionMember IN] -> [FieldDefinition IN]
 createInputUnionFields name members = fieldTag : map unionField members
   where
     fieldTag =
@@ -737,7 +737,7 @@ createInputUnionFields name members = fieldTag : map unionField members
           fieldDirectives = []
         }
 
-unionField :: UnionMember -> FieldDefinition IN
+unionField :: UnionMember IN -> FieldDefinition IN
 unionField UnionMember {memberName} =
   FieldDefinition
     { fieldName = toFieldName memberName,

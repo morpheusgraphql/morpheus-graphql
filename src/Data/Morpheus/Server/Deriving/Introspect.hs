@@ -396,7 +396,7 @@ buildInputUnion (baseName, baseFingerprint) cons =
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (DataInputUnion typeMembers, types <> unionTypes)
       where
-        typeMembers :: [UnionMember]
+        typeMembers :: [UnionMember IN]
         typeMembers = map mkUnionMember (unionRef <> unionMembers) <> map (`UnionMember` False) enumCons
         (unionMembers, unionTypes) =
           buildUnions wrapInputObject baseFingerprint unionRecordRep

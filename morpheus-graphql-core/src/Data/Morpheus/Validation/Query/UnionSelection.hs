@@ -57,7 +57,7 @@ type TypeDef = (TypeName, FieldsDefinition OUT)
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
-  [UnionMember] ->
+  [UnionMember OUT] ->
   Selection RAW ->
   SelectionValidator [Fragment]
 exploreUnionFragments unionTags = splitFrag

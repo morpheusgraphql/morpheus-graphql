@@ -186,7 +186,7 @@ instance RenderIntrospection (TypeDefinition a) where
               ("possibleTypes", interfacePossibleTypes typeName)
             ]
 
-instance RenderIntrospection UnionMember where
+instance RenderIntrospection (UnionMember OUT) where
   render UnionMember {memberName} = selectType memberName >>= render
 
 instance RenderIntrospection (FieldsDefinition OUT) where
