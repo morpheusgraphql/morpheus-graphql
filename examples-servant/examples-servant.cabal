@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5086a8166b1ad0d6809d1cc66c43a4c838b24b03bffa840df6216359aae037e2
+-- hash: 8246a153adc29f15b46149e8bd3c66a2fab847ba11fb1667262df1d79eab93f1
 
 name:           examples-servant
 version:        0.1.0
@@ -30,7 +30,6 @@ executable servant-server
   other-modules:
       Client.Client
       Files
-      Server.MonadIO.API
       Server.Mythology.API
       Server.Mythology.Character
       Server.Mythology.Place
