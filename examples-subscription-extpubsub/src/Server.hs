@@ -28,14 +28,9 @@ import qualified Hasql.Connection as SQLC
 import Network.WebSockets (defaultConnectionOptions)
 import Web.Scotty
   ( body,
-    middleware,
     post,
     raw,
     scottyApp,
-    body,
-    header,
-    status,
-    param
   )
 import System.IO
   ( BufferMode (LineBuffering),
