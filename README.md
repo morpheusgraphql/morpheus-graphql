@@ -1,4 +1,4 @@
-# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) [![CircleCI](https://circleci.com/gh/morpheusgraphql/morpheus-graphql.svg?style=svg)](https://circleci.com/gh/morpheusgraphql/morpheus-graphql)
+# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CircleCI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 
 Build GraphQL APIs with your favourite functional language!
 
@@ -26,7 +26,7 @@ Additionally, you should tell stack which version to pick:
 _stack.yml_
 
 ```yaml
-resolver: lts-14.8
+resolver: lts-15.13
 
 extra-deps:
   - morpheus-graphql-0.13.0
