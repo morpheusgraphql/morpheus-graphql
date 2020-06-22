@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 16c8b86948b7571ea78ee00c3ed38a9fc41b2636dad9627ab868070b9428086f
+-- hash: 0d3afc9fba1227ae39547aa234b732358aea56e0e6b4f2c2bd2cef89954425f4
 
 name:           examples-servant
 version:        0.1.0
@@ -28,12 +28,12 @@ source-repository head
 executable servant-server
   main-is: Main.hs
   other-modules:
-      Client.Client
       Files
       Server.Mythology.API
       Server.Mythology.Character
       Server.Mythology.Place
       Server.Servant
+      Server.ServantGraphql
       Server.Sophisticated.API
       Server.Subscription.SimpleSubscription
       Server.TH.Simple
