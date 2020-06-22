@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.0 - Unreleased Changes
+## 0.13.0 - 22.07.2020
 
 ### breaking changes
 
