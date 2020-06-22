@@ -37,14 +37,14 @@ jobs:
           stack build --skip-ghc-check --no-terminal --test --only-dependencies
         env:
           # ARGS: ${{ matrix.plan.resolver }}
-          STACK_YAML: stack-${{ matrix.plan.resolver }}.yaml
+          STACK_YAML: stack-${{ matrix.plan.lts }}.yaml
       - name: Build
         run: |
           stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
         #  stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
         env:
           # ARGS: ${{ matrix.plan.resolver }}
-          STACK_YAML: stack-${{ matrix.plan.resolver }}.yaml
+          STACK_YAML: stack-${{ matrix.plan.lts }}.yaml
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:
