@@ -21,6 +21,7 @@ import Data.Morpheus.Client
     defineByIntrospectionFile,
     gql,
   )
+import Data.Semigroup ((<>))
 import Data.Text (Text)
 
 data Euro

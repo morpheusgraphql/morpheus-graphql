@@ -1,4 +1,4 @@
-name: examples
+name: morpheus-graphql-examples-scotty
 version: 0.1.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
@@ -28,15 +28,13 @@ dependencies:
   - extra
   - http-types
   - stm
-  - servant
-  - servant-server
 
 data-files:
   - assets/**/*.json
   - assets/**/*.html
 
 executables:
-  api:
+  scotty-server:
     main: Main.hs
     source-dirs: src
     ghc-options: -Wall

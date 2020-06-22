@@ -51,9 +51,9 @@ scottyServer = do
     httpServer :: (EVENT -> IO ()) -> IO Wai.Application
     httpServer publish = scottyApp $ do
       post "/" $ raw =<< (liftIO . httpPubApp api publish =<< body)
-      get "/" $ file "./examples/assets/index.html"
+      get "/" $ file "morpheus-graphql-examples-scotty/assets/index.html"
       get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
       post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
-      get "/mythology" $ file "./examples/assets/index.html"
+      get "/mythology" $ file "morpheus-graphql-examples-scotty/assets/index.html"
       post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
-      get "/th" $ file "./examples/assets/index.html"
+      get "/th" $ file "morpheus-graphql-examples-scotty/assets/index.html"

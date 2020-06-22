@@ -1,4 +1,4 @@
-name: examples-client
+name: morpheus-graphql-examples-servant
 version: 0.1.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
@@ -12,15 +12,17 @@ dependencies:
   - base                    >= 4.7       && <  5
   - bytestring              >= 0.10.4    && <  0.11
   - text                    >= 1.2.3.0   && <  1.3
-  - morpheus-graphql-client >= 0.12.0
-  - req
+  - mtl                     >= 2.0       && <= 2.3
+  - morpheus-graphql        >= 0.12.0
+  - warp
+  - servant-server
+  - http-media
 
 data-files:
-  - assets/**/*.gql
-  - assets/**/*.json
+  - assets/**/*.html
 
 executables:
-  morpheus-client-example:
+  servant-server:
     main: Main.hs
     source-dirs: src
     ghc-options: -Wall

@@ -1,29 +1,39 @@
-name: ci for cabal sdist
+name: CI
 
 on: [push]
 
-env:
-  DIST_PATH: "/home/runner/morpheus-graphql-dist"
 jobs:
   build:
+    strategy:
+      matrix:
+        plan:
+          - { lts: "-11.10" } # ghc-8.2.2
+          - { lts: "-12.16" } # ghc-8.4.4
+          - { lts: "-14.14" } # ghc-8.6.5
+          - { lts: "" }
+          - { lts: "-nightly" }
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-haskell@v1
+      - name: Prepare OS
+        uses: mstksg/get-package@v1
         with:
-          ghc-version: "8.6.5"
-          cabal-version: "3.0"
+          apt-get: ${{ matrix.apt-get }}
+          brew: ${{ matrix.brew }}
+      - uses: actions/checkout@v1
+
+      - name: Setup stack
+        uses: mstksg/setup-stack@v1
+
       - name: Install dependencies
         run: |
-          cabal update
-          cabal build --only-dependencies
+          stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+        env:
+          STACK_YAML: stack${{ matrix.plan.lts }}.yaml
       - name: Build
         run: |
-          cabal configure --enable-tests
-          cabal build
-      - name: Run tests
-        run: |
-          cabal test
+          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+        env:
+          STACK_YAML: stack${{ matrix.plan.lts }}.yaml
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:

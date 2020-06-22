@@ -1,7 +1,9 @@
 # ghc 8.6.5
 resolver: lts-14.14
 packages:
-  - examples
+  - morpheus-graphql-examples-scotty
+  - morpheus-graphql-examples-servant
+  - morpheus-graphql-examples-client
   - morpheus-graphql-client
   - morpheus-graphql-core
   - .

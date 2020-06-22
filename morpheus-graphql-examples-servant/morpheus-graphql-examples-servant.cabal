@@ -4,9 +4,9 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2b5f13b88098ba696eb43408232a5ad321ab905c298e1046d5acdc0b3d015dc4
+-- hash: 6a517c4167294bc108d2445a9f4aa851e28253fdea3fee1dc102859dce609564
 
-name:           examples-client
+name:           morpheus-graphql-examples-servant
 version:        0.1.0
 synopsis:       examples
 description:    examples of GraphQL APIs
@@ -19,27 +19,29 @@ copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
 build-type:     Simple
 data-files:
-    assets/mythology.gql
-    assets/introspection.json
+    assets/index.html
 
 source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql
 
-executable morpheus-client-example
+executable servant-server
   main-is: Main.hs
   other-modules:
-      Client.DefineByIntrospection
-      Client.Mythology
-      Client.StarWarsClient
-      Paths_examples_client
+      Server.API.Simple
+      Server.Servant
+      Server.ServantGQL
+      Paths_morpheus_graphql_examples_servant
   hs-source-dirs:
       src
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
-    , morpheus-graphql-client >=0.12.0
-    , req
+    , http-media
+    , morpheus-graphql >=0.12.0
+    , mtl >=2.0 && <=2.3
+    , servant-server
     , text >=1.2.3.0 && <1.3
+    , warp
   default-language: Haskell2010
