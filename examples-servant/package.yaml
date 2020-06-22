@@ -26,9 +26,8 @@ dependencies:
   - transformers
   - extra
   - http-types
-  - stm
-  - servant
   - servant-server
+  - http-media
 
 data-files:
   - assets/**/*.json
