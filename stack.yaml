@@ -1,8 +1,8 @@
 # ghc 8.8.3
 resolver: lts-15.13
 packages:
-  # - morpheus-graphql-examples-scotty
-  # - morpheus-graphql-examples-servant
+  - morpheus-graphql-examples-scotty
+  - morpheus-graphql-examples-servant
   - morpheus-graphql-examples-client
   - morpheus-graphql-client
   - morpheus-graphql-core

@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          stack build --skip-ghc-check --no-terminal --test --only-dependencies
+          stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
         env:
           STACK_YAML: stack${{ matrix.plan.lts }}.yaml
       - name: Build
