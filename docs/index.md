@@ -33,7 +33,7 @@ _stack.yml_
 resolver: lts-14.8
 
 extra-deps:
-  - morpheus-graphql-0.12.0
+  - morpheus-graphql-0.13.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
@@ -263,7 +263,6 @@ union Character =
   | CharacterInt
   | SomeMutli
   | CharacterEnumObject # no-argument constructors all wrapped into an enum
-
 type Creature {
   creatureName: String!
   creatureAge: Int!
@@ -317,7 +316,6 @@ data NonWrapped
 You will get the following schema:
 
 ```gql
-
 # has wrapper types
 union WrappedNode = WrappedSong | WrappedSkit
 
@@ -341,7 +339,6 @@ type Skit {
   skitDuration: Float!
   skitName: String!
 }
-
 ```
 
 - for all other unions will be generated new object type. for types without record syntax, fields will be automatally indexed.
@@ -492,33 +489,33 @@ rootResolver = GQLRootResolver
 ```
 
 ### Interface
-  
+
 1. defining interface with Haskell Types (runtime validation):
-  
-    ```hs
-      -- interface is just regular type derived as interface
-    newtype Person m = Person {name ::  m Text}
-      deriving (Generic)
 
-    instance GQLType (Person m) where
-      type KIND (Person m) = INTERFACE
+   ```hs
+     -- interface is just regular type derived as interface
+   newtype Person m = Person {name ::  m Text}
+     deriving (Generic)
 
-    -- with GQLType user can links interfaces to implementing object
-    instance GQLType Deity where
-      implements _ = [interface (Proxy @Person)]
-    ```
+   instance GQLType (Person m) where
+     type KIND (Person m) = INTERFACE
+
+   -- with GQLType user can links interfaces to implementing object
+   instance GQLType Deity where
+     implements _ = [interface (Proxy @Person)]
+   ```
 
 2. defining with `importGQLDocument` and `DSL` (compile time validation):
 
-    ```gql
-      interface Account {
-        name: String!
-      }
+   ```gql
+   interface Account {
+     name: String!
+   }
 
-      type User implements Account {
-        name: String!
-      }
-    ```
+   type User implements Account {
+     name: String!
+   }
+   ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
 
@@ -647,7 +644,7 @@ good templates to begin with.
 - https://github.com/dandoh/web-haskell
   - Modern webserver boilerplate in Haskell: Morpheus Graphql + Postgresql + Authentication + DB migration + Dotenv and more
 
-*Edit this section and send PR if you want to share your project*.
+_Edit this section and send PR if you want to share your project_.
 
 # About
 
