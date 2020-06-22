@@ -42,7 +42,7 @@ _schema.gql_
 
 ```gql
 type Query {
-  deity(name: String!): Deity!
+  deity(name: String! = "Morpheus"): Deity!
 }
 
 """
