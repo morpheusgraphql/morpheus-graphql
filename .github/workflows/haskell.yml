@@ -1,8 +1,7 @@
-name: ci for cabal sdist
+name: Stack CI
 
 on: [push]
 
-# thanks https://gist.github.com/mstksg/11f753d891cee5980326a8ea8c865233
 jobs:
   build:
     strategy:
