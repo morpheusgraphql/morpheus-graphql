@@ -2,6 +2,7 @@ name: ci for cabal sdist
 
 on: [push]
 
+# thanks https://gist.github.com/mstksg/11f753d891cee5980326a8ea8c865233
 jobs:
   build:
     strategy:
@@ -60,16 +61,9 @@ jobs:
 
       - name: Build
         run: |
-          set -ex
-          case "$BUILD" in
-            stack)
-              stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
-              ;;
-          esac
-          set +ex
+          stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
         env:
           ARGS: ${{ matrix.plan.resolver }}
-          BUILD: ${{ matrix.plan.build }}
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:
