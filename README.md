@@ -1,4 +1,4 @@
-# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CircleCI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
+# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 
 Build GraphQL APIs with your favourite functional language!
 
@@ -488,7 +488,7 @@ rootResolver = GQLRootResolver
 
 1. defining interface with Haskell Types (runtime validation):
 
-   ```hs
+   ```haskell
      -- interface is just regular type derived as interface
    newtype Person m = Person {name ::  m Text}
      deriving (Generic)
@@ -503,7 +503,7 @@ rootResolver = GQLRootResolver
 
 2. defining with `importGQLDocument` and `DSL` (compile time validation):
 
-   ```gql
+   ```graphql
    interface Account {
      name: String!
    }
