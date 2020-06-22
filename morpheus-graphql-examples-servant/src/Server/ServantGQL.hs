@@ -52,4 +52,4 @@ serveGQLEndpoint :: (GQLRequest -> IO GQLResponse) -> Server (GQLEndpoint name)
 serveGQLEndpoint app = (liftIO . app) :<|> gqlPlayground
 
 gqlPlayground :: (Monad m, MonadIO m) => m ByteString
-gqlPlayground = liftIO $ L.readFile "examples-servant/assets/index.html"
+gqlPlayground = liftIO $ L.readFile "morpheus-graphql-examples-servant/assets/index.html"
