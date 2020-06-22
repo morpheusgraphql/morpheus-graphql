@@ -14,7 +14,7 @@ jobs:
           - { lts: "-nightly" }
     runs-on: ubuntu-latest
     steps:
-      - name: Install OS Packages
+      - name: Prepare OS
         uses: mstksg/get-package@v1
         with:
           apt-get: ${{ matrix.apt-get }}
