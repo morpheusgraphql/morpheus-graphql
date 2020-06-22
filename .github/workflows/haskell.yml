@@ -9,10 +9,10 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         plan:
-          - { build: stack, lts: "11.0", resolver: "--resolver lts-11" } # ghc-8.2.2
-          - { build: stack, lts: "12.16", resolver: "--resolver lts-12" } # ghc-8.4.4
-          - { build: stack, lts: "14.14", resolver: "--resolver lts-14" } # ghc-8.6.5
-          - { build: stack, lts: "nightly", resolver: "--resolver nightly" }
+          - { build: stack, lts: "-11.0", resolver: "--resolver lts-11" } # ghc-8.2.2
+          - { build: stack, lts: "-12.16", resolver: "--resolver lts-12" } # ghc-8.4.4
+          - { build: stack, lts: "-14.14", resolver: "--resolver lts-14" } # ghc-8.6.5
+          - { build: stack, lts: "-nightly", resolver: "--resolver nightly" }
           - { build: stack, resolver: "" }
         include: []
         exclude:
@@ -44,7 +44,7 @@ jobs:
         #  stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
         env:
           # ARGS: ${{ matrix.plan.resolver }}
-          STACK_YAML: stack-${{ matrix.plan.lts }}.yaml
+          STACK_YAML: stack${{ matrix.plan.lts }}.yaml
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:
