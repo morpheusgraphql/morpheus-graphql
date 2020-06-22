@@ -37,7 +37,7 @@ jobs:
           stack build --skip-ghc-check --no-terminal --test --only-dependencies
         env:
           # ARGS: ${{ matrix.plan.resolver }}
-          STACK_YAML: stack-${{ matrix.plan.lts }}.yaml
+          STACK_YAML: stack${{ matrix.plan.lts }}.yaml
       - name: Build
         run: |
           stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
