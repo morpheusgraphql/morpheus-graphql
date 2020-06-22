@@ -1,0 +1,38 @@
+name: examples-subscription-extpubsub
+version: 0.1.0
+github: "nalchevanidze/morpheus-graphql"
+license: MIT
+author: "Théophile Batoz"
+category: web, graphql
+synopsis: examples of external pub-sub
+copyright: "(c) 2019 Théophile Batoz"
+description: examples of a GraphQL server using postgresql/rabbitmq as a pusub
+
+dependencies:
+- base >= 4.7 && < 5
+# http server :
+- warp
+- scotty >= 0.11
+- wai-websockets
+- websockets >= 0.12
+# pusub (Postgres) :
+- hasql
+- hasql-notifications
+# graphql :
+- morpheus-graphql        >= 0.12.0
+- morpheus-graphql-core   >= 0.12.0
+- text
+
+library:
+  source-dirs: src
+
+executables:
+  examples-subscription-extpubsub-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - examples-subscription-extpubsub
