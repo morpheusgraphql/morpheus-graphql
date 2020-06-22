@@ -7,14 +7,13 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest]
         plan:
           - { lts: "-11.10" } # ghc-8.2.2
           - { lts: "-12.16" } # ghc-8.4.4
           - { lts: "-14.14" } # ghc-8.6.5
           - { lts: "-nightly" }
           - { lts: "" }
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Install OS Packages
         uses: mstksg/get-package@v1
