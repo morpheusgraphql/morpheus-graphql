@@ -2,7 +2,7 @@
 layout: home
 ---
 
-# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) [![CircleCI](https://circleci.com/gh/morpheusgraphql/morpheus-graphql.svg?style=svg)](https://circleci.com/gh/morpheusgraphql/morpheus-graphql)
+# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 
 Build GraphQL APIs with your favourite functional language!
 
@@ -30,7 +30,7 @@ Additionally, you should tell stack which version to pick:
 _stack.yml_
 
 ```yaml
-resolver: lts-14.8
+resolver: lts-15.13
 
 extra-deps:
   - morpheus-graphql-0.13.0
@@ -46,7 +46,7 @@ _schema.gql_
 
 ```gql
 type Query {
-  deity(name: String!): Deity!
+  deity(name: String! = "Morpheus"): Deity!
 }
 
 """
@@ -492,7 +492,7 @@ rootResolver = RootResolver
 
 1. defining interface with Haskell Types (runtime validation):
 
-   ```hs
+   ```haskell
      -- interface is just regular type derived as interface
    newtype Person m = Person {name ::  m Text}
      deriving (Generic)
@@ -507,7 +507,7 @@ rootResolver = RootResolver
 
 2. defining with `importGQLDocument` and `DSL` (compile time validation):
 
-   ```gql
+   ```graphql
    interface Account {
      name: String!
    }
@@ -584,11 +584,11 @@ data Power =
   | PowerOmniscience
 
 data GetHeroArgs = GetHeroArgs {
-  getHeroArgsCharacter: Character
+  character: Character
 }
 
 data Character = Character {
-  characterName: Person
+  name: Person
 }
 ```
 
@@ -600,7 +600,7 @@ with `fetch` you can fetch well typed response `GetHero`.
   fetchHero :: Args GetHero -> m (Either String GetHero)
   fetchHero = fetch jsonRes args
       where
-        args = GetHeroArgs {getHeroArgsCharacter = Person {characterName = "Zeus"}}
+        args = GetHeroArgs {character = Person {name = "Zeus"}}
         jsonRes :: ByteString -> m ByteString
         jsonRes = <GraphQL APi>
 ```
