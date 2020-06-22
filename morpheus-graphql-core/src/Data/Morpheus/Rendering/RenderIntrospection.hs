@@ -57,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
+    UnionMember (..),
     VALID,
     Value (..),
     createInputUnionFields,
@@ -157,26 +158,23 @@ instance RenderIntrospection (TypeDefinition a) where
         renderContent :: Monad m => TypeContent bool a -> ResModel QUERY e m
         renderContent DataScalar {} = __type SCALAR []
         renderContent (DataEnum enums) = __type ENUM [("enumValues", render enums)]
-        renderContent (DataInputObject fields) =
+        renderContent (DataInputObject inputFiels) =
           __type
             INPUT_OBJECT
-            [("inputFields", mkList <$> traverse render (elems fields))]
+            [("inputFields", render inputFiels)]
         renderContent DataObject {objectImplements, objectFields} =
           createObjectType typeName typeDescription objectImplements objectFields
         renderContent (DataUnion union) =
           __type
             UNION
-            [("possibleTypes", mkList <$> traverse unionPossibleType union)]
+            [("possibleTypes", render union)]
         renderContent (DataInputUnion members) =
           __type
             INPUT_OBJECT
             [ ( "inputFields",
-                pure
-                  $ mkList
-                  $ map mkInputValue
+                render
                   $ createInputUnionFields typeName
-                  $ map fst
-                  $ filter snd members
+                  $ filter visibility members
               )
             ]
         renderContent (DataInterface fields) =
@@ -186,25 +184,22 @@ instance RenderIntrospection (TypeDefinition a) where
               ("possibleTypes", interfacePossibleTypes typeName)
             ]
 
-instance RenderIntrospection (FieldsDefinition OUT) where
-  render = fmap mkList . traverse render . filter fieldVisibility . elems
+instance RenderIntrospection (UnionMember OUT) where
+  render UnionMember {memberName} = selectType memberName >>= render
+
+instance RenderIntrospection (FieldDefinition cat) => RenderIntrospection (FieldsDefinition cat) where
+  render = render . filter fieldVisibility . elems
 
 instance RenderIntrospection (FieldDefinition OUT) where
-  render
-    field@FieldDefinition
-      { fieldName,
-        fieldContent,
-        fieldDescription,
-        fieldDirectives
-      } =
-      pure
-        $ mkObject "__Field"
-        $ [ renderName fieldName,
-            description fieldDescription,
-            ("args", maybe (pure $ mkList []) render fieldContent),
-            type' field
-          ]
-          <> renderDeprecated fieldDirectives
+  render FieldDefinition {..} =
+    pure
+      $ mkObject "__Field"
+      $ [ renderName fieldName,
+          description fieldDescription,
+          type' fieldType,
+          ("args", maybe (pure $ mkList []) render fieldContent)
+        ]
+        <> renderDeprecated fieldDirectives
 
 instance RenderIntrospection (FieldContent TRUE OUT) where
   render (FieldArgs args) = render args
@@ -213,8 +208,15 @@ instance RenderIntrospection ArgumentsDefinition where
   render ArgumentsDefinition {arguments} = mkList <$> traverse render (elems arguments)
 
 instance RenderIntrospection (FieldDefinition IN) where
-  render input@FieldDefinition {..} =
-    pure $ mkInputValue input
+  render FieldDefinition {..} =
+    pure $
+      mkObject
+        "__InputValue"
+        [ renderName fieldName,
+          description fieldDescription,
+          type' fieldType,
+          defaultValue fieldType (fmap defaultInputValue fieldContent)
+        ]
 
 instance RenderIntrospection DataEnumValue where
   render DataEnumValue {enumName, enumDescription, enumDirectives} =
@@ -223,6 +225,22 @@ instance RenderIntrospection DataEnumValue where
         description enumDescription
       ]
         <> renderDeprecated enumDirectives
+
+instance RenderIntrospection TypeRef where
+  render TypeRef {typeConName, typeWrappers} = do
+    kind <- lookupKind typeConName
+    let currentType = mkType kind typeConName Nothing []
+    pure $ foldr wrap currentType (toGQLWrapper typeWrappers)
+    where
+      wrap :: Monad m => DataTypeWrapper -> ResModel QUERY e m -> ResModel QUERY e m
+      wrap wrapper contentType =
+        mkObject
+          "__Type"
+          [ renderKind (wrapperKind wrapper),
+            ("ofType", pure contentType)
+          ]
+      wrapperKind ListType = LIST
+      wrapperKind NonNullType = NON_NULL
 
 interfacePossibleTypes ::
   (Monad m) =>
@@ -283,9 +301,6 @@ mkType kind name desc etc =
         <> etc
     )
 
-unionPossibleType :: Monad m => TypeName -> Resolver QUERY e m (ResModel QUERY e m)
-unionPossibleType name = selectType name >>= render
-
 createObjectType ::
   Monad m => TypeName -> Maybe Description -> [TypeName] -> FieldsDefinition OUT -> ResModel QUERY e m
 createObjectType name desc interfaces fields =
@@ -317,23 +332,8 @@ renderName = ("name",) . render
 renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 renderKind = ("kind",) . render
 
-type' :: Monad m => FieldDefinition cat -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-type' = ("type",) . mkTypeRef
-
-withTypeWrapper :: Monad m => FieldDefinition cat -> ResModel QUERY e m -> ResModel QUERY e m
-withTypeWrapper FieldDefinition {fieldType = TypeRef {typeWrappers}} typ =
-  foldr wrapAs typ (toGQLWrapper typeWrappers)
-
-wrapAs :: Monad m => DataTypeWrapper -> ResModel QUERY e m -> ResModel QUERY e m
-wrapAs wrapper contentType =
-  mkObject
-    "__Type"
-    [ renderKind (kind wrapper),
-      ("ofType", pure contentType)
-    ]
-  where
-    kind ListType = LIST
-    kind NonNullType = NON_NULL
+type' :: Monad m => TypeRef -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
+type' ref = ("type", render ref)
 
 defaultValue ::
   Monad m =>
@@ -400,23 +400,3 @@ handleField
             fieldName
             fields
         )
-
-mkInputValue ::
-  Monad m =>
-  FieldDefinition IN ->
-  ResModel QUERY e m
-mkInputValue field@FieldDefinition {..} =
-  mkObject
-    "__InputValue"
-    [ renderName fieldName,
-      description fieldDescription,
-      type' field,
-      defaultValue fieldType (fmap defaultInputValue fieldContent)
-    ]
-
-mkTypeRef ::
-  (Monad m) => FieldDefinition cat -> Result e m (ResModel QUERY e m)
-mkTypeRef field@FieldDefinition {fieldType = TypeRef {typeConName}} =
-  do
-    kind <- lookupKind typeConName
-    pure $ withTypeWrapper field $ mkType kind typeConName Nothing []

@@ -76,6 +76,8 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     fieldContentArgs,
     mkField,
     mkObjectField,
+    UnionMember (..),
+    mkUnionMember,
   )
 where
 
@@ -152,9 +154,21 @@ import Language.Haskell.TH.Syntax (Lift (..))
 
 type DataEnum = [DataEnumValue]
 
-type DataUnion = [TypeName]
+mkUnionMember :: TypeName -> UnionMember cat
+mkUnionMember name = UnionMember name True
 
-type DataInputUnion = [(TypeName, Bool)]
+data UnionMember (cat :: TypeCategory) = UnionMember
+  { memberName :: TypeName,
+    visibility :: Bool
+  }
+  deriving (Show, Lift, Eq)
+
+type DataUnion = [UnionMember OUT]
+
+type DataInputUnion = [UnionMember IN]
+
+instance RenderGQL (UnionMember cat) where
+  render = render . memberName
 
 -- scalar
 ------------------------------------------------------------------
@@ -445,7 +459,7 @@ createEnumValue enumName =
     }
 
 createUnionType :: TypeName -> [TypeName] -> TypeDefinition OUT
-createUnionType typeName typeData = createType typeName (DataUnion typeData)
+createUnionType typeName typeData = createType typeName (DataUnion $ map mkUnionMember typeData)
 
 isEntNode :: TypeContent TRUE a -> Bool
 isEntNode DataScalar {} = True
@@ -478,7 +492,7 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
           typeFingerprint,
           typeDescription = Nothing,
           typeDirectives = [],
-          typeContent = DataEnum $ map (createEnumValue . fst) enumKeys
+          typeContent = DataEnum $ map (createEnumValue . memberName) enumKeys
         }
 defineType datatype lib =
   lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
@@ -708,16 +722,10 @@ createArgument = mkField
 --   Description(opt) Name: TypeDefaultValue(opt) Directives[Const](opt)
 -- TODO: implement inputValue
 
--- data InputValueDefinition = InputValueDefinition
---   { inputValueName  :: FieldName
---   , inputValueType  :: TypeRef
---   , inputValueMeta  :: Maybe Meta
---   } deriving (Show,Lift)
-
 __inputname :: FieldName
 __inputname = "inputname"
 
-createInputUnionFields :: TypeName -> [TypeName] -> [FieldDefinition IN]
+createInputUnionFields :: TypeName -> [UnionMember IN] -> [FieldDefinition IN]
 createInputUnionFields name members = fieldTag : map unionField members
   where
     fieldTag =
@@ -728,19 +736,21 @@ createInputUnionFields name members = fieldTag : map unionField members
           fieldType = createAlias (name <> "Tags"),
           fieldDirectives = []
         }
-    unionField memberName =
-      FieldDefinition
-        { fieldName = toFieldName memberName,
-          fieldDescription = Nothing,
-          fieldContent = Nothing,
-          fieldType =
-            TypeRef
-              { typeConName = memberName,
-                typeWrappers = [TypeMaybe],
-                typeArgs = Nothing
-              },
-          fieldDirectives = []
-        }
+
+unionField :: UnionMember IN -> FieldDefinition IN
+unionField UnionMember {memberName} =
+  FieldDefinition
+    { fieldName = toFieldName memberName,
+      fieldDescription = Nothing,
+      fieldContent = Nothing,
+      fieldType =
+        TypeRef
+          { typeConName = memberName,
+            typeWrappers = [TypeMaybe],
+            typeArgs = Nothing
+          },
+      fieldDirectives = []
+    }
 
 --
 -- OTHER
@@ -773,7 +783,7 @@ instance RenderGQL (TypeDefinition a) where
         where
           fieldsDef = unsafeFromFields fields
           fields :: [FieldDefinition IN]
-          fields = createInputUnionFields typeName (fst <$> members :: [TypeName])
+          fields = createInputUnionFields typeName members
       __render DataObject {objectFields} = "type " <> render typeName <> render objectFields
 
 ignoreHidden :: [FieldDefinition cat] -> [FieldDefinition cat]
