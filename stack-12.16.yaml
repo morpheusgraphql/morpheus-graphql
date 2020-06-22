@@ -1,7 +1,9 @@
 # ghc 8.4.4
 resolver: lts-12.16
 packages:
-  - examples
+  - examples-scotty
+  - examples-servant
+  - examples-client
   - morpheus-graphql-client
   - morpheus-graphql-core
   - .
