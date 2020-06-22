@@ -12,7 +12,7 @@ dependencies:
   - base                    >= 4.7       && <  5
   - bytestring              >= 0.10.4    && <  0.11
   - text                    >= 1.2.3.0   && <  1.3
-  - morpheus-graphql-client >= 0.12.0
+  - morpheus-graphql-client >= 0.13.0
   - req
 
 data-files:

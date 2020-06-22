@@ -2,7 +2,7 @@
 layout: home
 ---
 
-# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) [![CircleCI](https://circleci.com/gh/morpheusgraphql/morpheus-graphql.svg?style=svg)](https://circleci.com/gh/morpheusgraphql/morpheus-graphql)
+# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 
 Build GraphQL APIs with your favourite functional language!
 
@@ -30,10 +30,10 @@ Additionally, you should tell stack which version to pick:
 _stack.yml_
 
 ```yaml
-resolver: lts-14.8
+resolver: lts-15.13
 
 extra-deps:
-  - morpheus-graphql-0.12.0
+  - morpheus-graphql-0.13.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
@@ -46,7 +46,7 @@ _schema.gql_
 
 ```gql
 type Query {
-  deity(name: String!): Deity!
+  deity(name: String! = "Morpheus"): Deity!
 }
 
 """
@@ -80,14 +80,14 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), ResolverQ, Undefined(..))
+import           Data.Morpheus.Types        (RootResolver (..), ResolverQ, Undefined(..))
 import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "schema.gql"
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     {
       queryResolver = Query {queryDeity},
       mutationResolver = Undefined,
@@ -154,12 +154,12 @@ askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
 ```
 
-To make this `Query` type available as an API, we define a `GQLRootResolver` and feed it to the Morpheus `interpreter`. A `GQLRootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
+To make this `Query` type available as an API, we define a `RootResolver` and feed it to the Morpheus `interpreter`. A `RootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
 ```haskell
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {deity = resolveDeity}
     , mutationResolver = Undefined
     , subscriptionResolver = Undefined
@@ -263,7 +263,6 @@ union Character =
   | CharacterInt
   | SomeMutli
   | CharacterEnumObject # no-argument constructors all wrapped into an enum
-
 type Creature {
   creatureName: String!
   creatureAge: Int!
@@ -317,7 +316,6 @@ data NonWrapped
 You will get the following schema:
 
 ```gql
-
 # has wrapper types
 union WrappedNode = WrappedSong | WrappedSkit
 
@@ -341,7 +339,6 @@ type Skit {
   skitDuration: Float!
   skitName: String!
 }
-
 ```
 
 - for all other unions will be generated new object type. for types without record syntax, fields will be automatally indexed.
@@ -421,9 +418,9 @@ newtype Mutation m = Mutation
   { createDeity :: MutArgs -> m Deity
   } deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO  () Query Mutation Undefined
+rootResolver :: RootResolver IO  () Query Mutation Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {...}
     , mutationResolver = Mutation { createDeity }
     , subscriptionResolver = Undefined
@@ -469,8 +466,8 @@ newtype Subscription (m ::  * -> * ) = Subscription
 
 type APIEvent = Event Channel Content
 
-rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
-rootResolver = GQLRootResolver
+rootResolver :: RootResolver IO APIEvent Query Mutation Subscription
+rootResolver = RootResolver
   { queryResolver        = Query { deity = fetchDeity }
   , mutationResolver     = Mutation { createDeity }
   , subscriptionResolver = Subscription { newDeity }
@@ -492,33 +489,33 @@ rootResolver = GQLRootResolver
 ```
 
 ### Interface
-  
+
 1. defining interface with Haskell Types (runtime validation):
-  
-    ```hs
-      -- interface is just regular type derived as interface
-    newtype Person m = Person {name ::  m Text}
-      deriving (Generic)
 
-    instance GQLType (Person m) where
-      type KIND (Person m) = INTERFACE
+   ```haskell
+     -- interface is just regular type derived as interface
+   newtype Person m = Person {name ::  m Text}
+     deriving (Generic)
 
-    -- with GQLType user can links interfaces to implementing object
-    instance GQLType Deity where
-      implements _ = [interface (Proxy @Person)]
-    ```
+   instance GQLType (Person m) where
+     type KIND (Person m) = INTERFACE
+
+   -- with GQLType user can links interfaces to implementing object
+   instance GQLType Deity where
+     implements _ = [interface (Proxy @Person)]
+   ```
 
 2. defining with `importGQLDocument` and `DSL` (compile time validation):
 
-    ```gql
-      interface Account {
-        name: String!
-      }
+   ```graphql
+   interface Account {
+     name: String!
+   }
 
-      type User implements Account {
-        name: String!
-      }
-    ```
+   type User implements Account {
+     name: String!
+   }
+   ```
 
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
 
@@ -587,11 +584,11 @@ data Power =
   | PowerOmniscience
 
 data GetHeroArgs = GetHeroArgs {
-  getHeroArgsCharacter: Character
+  character: Character
 }
 
 data Character = Character {
-  characterName: Person
+  name: Person
 }
 ```
 
@@ -603,7 +600,7 @@ with `fetch` you can fetch well typed response `GetHero`.
   fetchHero :: Args GetHero -> m (Either String GetHero)
   fetchHero = fetch jsonRes args
       where
-        args = GetHeroArgs {getHeroArgsCharacter = Person {characterName = "Zeus"}}
+        args = GetHeroArgs {character = Person {name = "Zeus"}}
         jsonRes :: ByteString -> m ByteString
         jsonRes = <GraphQL APi>
 ```
@@ -647,7 +644,7 @@ good templates to begin with.
 - https://github.com/dandoh/web-haskell
   - Modern webserver boilerplate in Haskell: Morpheus Graphql + Postgresql + Authentication + DB migration + Dotenv and more
 
-*Edit this section and send PR if you want to share your project*.
+_Edit this section and send PR if you want to share your project_.
 
 # About
 

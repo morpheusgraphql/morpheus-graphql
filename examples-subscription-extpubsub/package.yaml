@@ -9,30 +9,30 @@ copyright: "(c) 2019 Théophile Batoz"
 description: examples of a GraphQL server using postgresql/rabbitmq as a pusub
 
 dependencies:
-- base >= 4.7 && < 5
-# http server :
-- warp
-- scotty >= 0.11
-- wai-websockets
-- websockets >= 0.12
-# pusub (Postgres) :
-- hasql
-- hasql-notifications
-# graphql :
-- morpheus-graphql        >= 0.12.0
-- morpheus-graphql-core   >= 0.12.0
-- text
+  - base >= 4.7 && < 5
+  # http server :
+  - warp
+  - scotty >= 0.11
+  - wai-websockets
+  - websockets >= 0.12
+  # pusub (Postgres) :
+  - hasql
+  - hasql-notifications
+  # graphql :
+  - morpheus-graphql        >= 0.13.0
+  - morpheus-graphql-core   >= 0.13.0
+  - text
 
 library:
   source-dirs: src
 
 executables:
   examples-subscription-extpubsub-exe:
-    main:                Main.hs
-    source-dirs:         app
+    main: Main.hs
+    source-dirs: app
     ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
     dependencies:
-    - examples-subscription-extpubsub
+      - examples-subscription-extpubsub
