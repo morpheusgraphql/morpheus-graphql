@@ -80,14 +80,14 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (GQLRootResolver (..), ResolverQ, Undefined(..))
+import           Data.Morpheus.Types        (RootResolver (..), ResolverQ, Undefined(..))
 import           Data.Text                  (Text)
 
 importGQLDocumentWithNamespace "schema.gql"
 
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     {
       queryResolver = Query {queryDeity},
       mutationResolver = Undefined,
@@ -154,12 +154,12 @@ askDB :: Text -> Maybe Text -> IO (Either String Deity)
 askDB = ...
 ```
 
-To make this `Query` type available as an API, we define a `GQLRootResolver` and feed it to the Morpheus `interpreter`. A `GQLRootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
+To make this `Query` type available as an API, we define a `RootResolver` and feed it to the Morpheus `interpreter`. A `RootResolver` consists of `query`, `mutation` and `subscription` definitions, while we omit the latter for this example:
 
 ```haskell
-rootResolver :: GQLRootResolver IO () Query Undefined Undefined
+rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {deity = resolveDeity}
     , mutationResolver = Undefined
     , subscriptionResolver = Undefined
@@ -418,9 +418,9 @@ newtype Mutation m = Mutation
   { createDeity :: MutArgs -> m Deity
   } deriving (Generic, GQLType)
 
-rootResolver :: GQLRootResolver IO  () Query Mutation Undefined
+rootResolver :: RootResolver IO  () Query Mutation Undefined
 rootResolver =
-  GQLRootResolver
+  RootResolver
     { queryResolver = Query {...}
     , mutationResolver = Mutation { createDeity }
     , subscriptionResolver = Undefined
@@ -466,8 +466,8 @@ newtype Subscription (m ::  * -> * ) = Subscription
 
 type APIEvent = Event Channel Content
 
-rootResolver :: GQLRootResolver IO APIEvent Query Mutation Subscription
-rootResolver = GQLRootResolver
+rootResolver :: RootResolver IO APIEvent Query Mutation Subscription
+rootResolver = RootResolver
   { queryResolver        = Query { deity = fetchDeity }
   , mutationResolver     = Mutation { createDeity }
   , subscriptionResolver = Subscription { newDeity }
