@@ -67,11 +67,11 @@ data Power =
   | PowerOmniscience
 
 data GetHeroArgs = GetHeroArgs {
-  getHeroArgsCharacter: Character
+  character: Character
 }
 
 data Character = Character {
-  characterName: Person
+  name: Person
 }
 ```
 
@@ -83,7 +83,7 @@ with `fetch` you can fetch well typed response `GetHero`.
   fetchHero :: Args GetHero -> m (Either String GetHero)
   fetchHero = fetch jsonRes args
       where
-        args = GetHeroArgs {getHeroArgsCharacter = Person {characterName = "Zeus"}}
+        args = GetHeroArgs {character = Person {name = "Zeus"}}
         jsonRes :: ByteString -> m ByteString
         jsonRes = <GraphQL APi>
 ```
