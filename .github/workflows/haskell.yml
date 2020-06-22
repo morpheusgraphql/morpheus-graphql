@@ -11,16 +11,10 @@ jobs:
           - { build: stack, resolver: "--resolver lts-9" } # ghc-8.0.2
           - { build: stack, resolver: "--resolver lts-11" } # ghc-8.2.2
           - { build: stack, resolver: "--resolver lts-12" } # ghc-8.4.4
-          # - { build: stack, resolver: "--resolver lts-13"  }  redundant because lts-14 checks ghc-8.6 already
           - { build: stack, resolver: "--resolver lts-14" } # ghc-8.6.5
           - { build: stack, resolver: "--resolver nightly" }
           - { build: stack, resolver: "" }
         include: []
-        # - os: macOS-latest
-        #   brew: anybrewdeps
-        # - os: ubuntu-latest
-        #   apt-get: happy libblas-dev liblapack-dev
-
         exclude:
           - os: macOS-latest
             plan:
