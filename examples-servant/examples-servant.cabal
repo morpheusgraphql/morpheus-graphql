@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 43a141c0c0ba56b385409cbe6b35465624607901609d57cb8fe20a3683abc091
+-- hash: 7d52bdc664b09338e932602ab36b78c2eedf9ba1a5b1ddf7de58e3f2301d8a43
 
 name:           examples-servant
 version:        0.1.0
@@ -36,23 +36,12 @@ executable servant-server
       src
   ghc-options: -Wall
   build-depends:
-      aeson >=1.4.4.0 && <=1.6
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
-    , containers >=0.4.2.1 && <0.7
-    , extra
     , http-media
-    , http-types
     , morpheus-graphql >=0.12.0
-    , morpheus-graphql-client >=0.12.0
-    , morpheus-graphql-core >=0.12.0
     , mtl >=2.0 && <=2.3
-    , req
     , servant-server
     , text >=1.2.3.0 && <1.3
-    , transformers
-    , wai
-    , wai-websockets >=1.0 && <=3.5
     , warp
-    , websockets >=0.11.0 && <=0.13
   default-language: Haskell2010
