@@ -1,0 +1,15 @@
+version: "3.7"
+services:
+  postgres:
+    image: kartoza/postgis:12.1
+    network_mode: bridge
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=morpheus_user_test
+      - POSTGRES_PASS=p
+      - POSTGRES_DBNAME=morpheus_user_db
+      - EXTRA_CONF=log_statement = 'all'\nlog_min_duration_statement = 0
