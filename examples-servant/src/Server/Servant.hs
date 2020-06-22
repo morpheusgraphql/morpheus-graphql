@@ -14,18 +14,18 @@ import Servant
     Server,
     serve,
   )
-import Server.Mythology.API (mythologyRoot)
+import Server.API.Simple (simpleApi)
 import Server.ServantGQL (GQLEndpoint, serveGQLEndpoint)
 
 -- Server
 type API =
-  GQLEndpoint "/"
+  GQLEndpoint "gql"
     :<|> GQLEndpoint "mythology"
 
 handler :: Server API
 handler =
-  serveGQLEndpoint (interpreter mythologyRoot)
-    :<|> serveGQLEndpoint (interpreter mythologyRoot)
+  serveGQLEndpoint simpleApi
+    :<|> serveGQLEndpoint simpleApi
 
 api :: Proxy API
 api = Proxy

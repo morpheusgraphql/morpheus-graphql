@@ -9,18 +9,26 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Server.TH.Simple
-  ( thSimpleApi,
+module Server.API.Simple
+  ( simpleApi,
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Morpheus (interpreter)
-import Data.Morpheus.Document (importGQLDocument)
-import Data.Morpheus.Types (RootResolver (..), Undefined (..))
+import Data.Morpheus
+  ( interpreter,
+  )
+import Data.Morpheus.Document
+  ( importGQLDocument,
+  )
+import Data.Morpheus.Types
+  ( GQLRequest,
+    GQLResponse,
+    RootResolver (..),
+    Undefined (..),
+  )
 import Data.Text (Text)
 
-importGQLDocument "src/Server/TH/simple.gql"
+importGQLDocument "src/Server/API/simple.gql"
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
@@ -37,5 +45,5 @@ rootResolver =
             power = pure (Just "Shapeshifting")
           }
 
-thSimpleApi :: ByteString -> IO ByteString
-thSimpleApi = interpreter rootResolver
+simpleApi :: GQLRequest -> IO GQLResponse
+simpleApi = interpreter rootResolver
