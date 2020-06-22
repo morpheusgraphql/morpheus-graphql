@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 35f4bcc39b11bd9bd04026a4e0781e4e9c52dd0894d563cae9fd4d2767ce0401
+-- hash: d5e8393b1cfbf8b7cb83b68f8361a640a23e887de16c0bbe6008d9f4c6ba9e5a
 
 name:           examples-scotty
 version:        0.1.0
@@ -58,8 +58,6 @@ executable scotty-server
     , mtl >=2.0 && <=2.3
     , req
     , scotty
-    , servant
-    , servant-server
     , stm
     , text >=1.2.3.0 && <1.3
     , transformers
