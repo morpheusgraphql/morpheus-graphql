@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c9eac67f4813ef9bfa2216fef4aa7b2ff4e66a379ae576576bab660926dc577b
+-- hash: 97cd457caaf11093e15c1a3d5629aa43623b06bba073c66c5b4de307a4efcf7c
 
 name:           morpheus-graphql-examples-scotty
 version:        0.1.0
@@ -41,6 +41,7 @@ executable scotty-server
       Server.Sophisticated.API
       Server.Subscription.SimpleSubscription
       Server.TH.Simple
+      Server.Utils
       Paths_morpheus_graphql_examples_scotty
   hs-source-dirs:
       src
