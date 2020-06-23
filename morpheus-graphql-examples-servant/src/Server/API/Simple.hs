@@ -28,9 +28,13 @@ import Data.Morpheus.Types
     GQLRequest,
     GQLResponse,
     Input,
+    ResolverM,
+    ResolverS,
     RootResolver (..),
     Stream,
     Undefined (..),
+    publish,
+    subscribe,
   )
 import Data.Text (Text)
 
@@ -43,22 +47,48 @@ data Label
   | New
   deriving (Eq, Show)
 
-newtype Contet = Contet {id :: Text}
+data Contet = Contet
+  { deityName :: Text,
+    deityPower :: Maybe Text
+  }
 
-rootResolver :: RootResolver IO EVENT Query Undefined Undefined
+rootResolver :: RootResolver IO EVENT Query Mutation Subscription
 rootResolver =
   RootResolver
     { queryResolver = Query {deity},
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+      mutationResolver =
+        Mutation
+          { createDeity = resolveCreateDeity
+          },
+      subscriptionResolver =
+        Subscription
+          { newDeity
+          }
     }
   where
+    newDeity = subscribe [New] $ pure handler
+      where
+        handler (Event _ Contet {deityName, deityPower}) =
+          pure $
+            Deity
+              { name = pure deityName,
+                power = pure deityPower
+              }
     deity DeityArgs {name} =
       pure
         Deity
           { name = pure name,
             power = pure (Just "Shapeshifting")
           }
+
+resolveCreateDeity :: CreateDeityArgs -> ResolverM EVENT IO Deity
+resolveCreateDeity CreateDeityArgs {name, power} = do
+  publish [Event [New] Contet {deityName = name}]
+  pure
+    Deity
+      { name = pure name,
+        power = pure power
+      }
 
 api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver
