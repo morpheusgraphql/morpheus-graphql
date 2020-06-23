@@ -63,9 +63,13 @@ httpEndpoint route schema gqlApi = do
       <|> raw playground
   post route $ raw =<< (liftIO . gqlApi =<< body)
 
-warpServer :: ServerApp -> Application -> IO ()
-warpServer wsApp httpApp =
+warpServer :: ServerApp -> ScottyM () -> IO ()
+warpServer wsApp app = do
+  httpApp <- scottyApp app
   runSettings settings $
-    websocketsOr defaultConnectionOptions wsApp httpApp
+    websocketsOr
+      defaultConnectionOptions
+      wsApp
+      httpApp
   where
     settings = setPort 3000 defaultSettings

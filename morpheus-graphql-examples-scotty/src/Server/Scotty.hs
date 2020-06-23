@@ -18,36 +18,31 @@ import Data.Morpheus.Server
   ( httpPubApp,
     webSocketsApp,
   )
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
-import qualified Network.Wai.Handler.WebSockets as WaiWs
 import Network.WebSockets (defaultConnectionOptions)
-import Server.Mythology.API (mythologyApi)
+import qualified Server.Mythology.API as Mythology (api, rootResolver)
 import Server.Sophisticated.API
   ( EVENT,
     api,
     gqlRoot,
   )
-import Server.TH.Simple (thSimpleApi)
+import qualified Server.TH.Simple as TH (api, rootResolver)
 import Server.Utils
   ( httpEndpoint,
     warpServer,
   )
 import Web.Scotty
-  ( get,
-    raw,
+  ( ScottyM,
     scottyApp,
   )
 
 scottyServer :: IO ()
 scottyServer = do
   (wsApp, publish) <- webSocketsApp api
-  httpApp <- httpServer publish
   fetchUser (httpPubApp api publish) >>= print
-  warpServer wsApp httpApp
+  warpServer wsApp (httpServer publish)
   where
-    httpServer :: (EVENT -> IO ()) -> IO Wai.Application
-    httpServer publish = scottyApp $ do
+    httpServer :: (EVENT -> IO ()) -> ScottyM ()
+    httpServer publish = do
       httpEndpoint "/" (Just $ toGraphQLDocument $ Identity gqlRoot) (httpPubApp api publish)
-      httpEndpoint "/mythology" Nothing mythologyApi
-      httpEndpoint "/th" Nothing thSimpleApi
+      httpEndpoint "/mythology" Nothing Mythology.api
+      httpEndpoint "/th" Nothing TH.api
