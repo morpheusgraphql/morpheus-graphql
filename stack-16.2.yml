@@ -1,5 +1,5 @@
-# 8.10.1
-resolver: nightly-2020-06-21
+# ghc-8.8.3
+resolver: lts-16.2
 packages:
   - morpheus-graphql-examples-scotty
   - morpheus-graphql-examples-servant
@@ -7,8 +7,3 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql-core
   - .
-
-allow-newer: true
-extra-deps:
-  - servant-server-0.16.2
-  - servant-0.16.2
