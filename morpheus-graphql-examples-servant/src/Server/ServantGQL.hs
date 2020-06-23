@@ -75,19 +75,17 @@ playground =
                 ],
               tag "title" ["GraphQL Playground"],
               link "stylesheet" "//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",
-              link "shortcut icon" "//cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png"
+              link "shortcut icon" "//cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png",
+              "<script  src=\"//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js\"> </script>"
             ],
           tag
             "body"
-            [ "<script  \
-              \         src=\"//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js\"> \
-              \      </script> \
-              \    </head>"
-                <> "      <div id='root'></div> \
-                   \      <script> \
-                   \        window.addEventListener('load', (_) => \
-                   \          GraphQLPlayground.init(document.getElementById('root'), {}) \
-                   \        ); \
-                   \      </script>"
+            [ "<div id='root'></div>",
+              tag
+                "script"
+                [ "  window.addEventListener('load', (_) => \
+                  \    GraphQLPlayground.init(document.getElementById('root'), {}) \
+                  \  );"
+                ]
             ]
         ]
