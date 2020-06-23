@@ -6,7 +6,6 @@
 
 module Server.Servant (servantServer) where
 
-import Data.Morpheus (Interpreter (..))
 import Network.Wai.Handler.Warp
 import Servant
   ( (:<|>) (..),
@@ -15,9 +14,10 @@ import Servant
     serve,
   )
 import Server.API.Simple
-  ( simpleApi,
+  ( rootResolver,
+    simpleApi,
   )
-import Server.ServantGQL
+import Server.Utils
   ( Endpoint,
     serveEndpoint,
   )
@@ -29,8 +29,8 @@ type API =
 
 handler :: Server API
 handler =
-  serveEndpoint simpleApi
-    :<|> serveEndpoint simpleApi
+  serveEndpoint rootResolver simpleApi
+    :<|> serveEndpoint rootResolver simpleApi
 
 api :: Proxy API
 api = Proxy
