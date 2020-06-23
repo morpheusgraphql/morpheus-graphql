@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -72,21 +73,24 @@ decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
   Left (path, x) -> failure $ formatError path x
   Right value -> pure value
 
-class MapAPI a where
-  mapAPI :: Applicative m => (GQLRequest -> m GQLResponse) -> a -> m a
+class MapAPI a b where
+  mapAPI :: Applicative m => (GQLRequest -> m GQLResponse) -> a -> m b
 
-instance MapAPI LB.ByteString where
+instance MapAPI GQLRequest GQLResponse where
+  mapAPI f = f
+
+instance MapAPI LB.ByteString LB.ByteString where
   mapAPI api request = case decodeNoDup request of
     Left aesonError -> pure $ badRequestError aesonError
     Right req -> encode <$> api req
 
-instance MapAPI LT.Text where
+instance MapAPI LT.Text LT.Text where
   mapAPI api = fmap decodeUtf8 . mapAPI api . encodeUtf8
 
-instance MapAPI ByteString where
+instance MapAPI ByteString ByteString where
   mapAPI api = fmap LB.toStrict . mapAPI api . LB.fromStrict
 
-instance MapAPI Text where
+instance MapAPI Text Text where
   mapAPI api = fmap LT.toStrict . mapAPI api . LT.fromStrict
 
 renderResponse :: Result e ValidValue -> GQLResponse

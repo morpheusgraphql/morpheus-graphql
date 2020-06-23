@@ -79,18 +79,17 @@ defaultWSScope Store {writeStore} connection =
 
 httpPubApp ::
   ( MonadIO m,
-    MapAPI a
+    MapAPI a b
   ) =>
   (Input HTTP -> Stream HTTP e m) ->
   (e -> m ()) ->
   a ->
-  m a
+  m b
 httpPubApp api httpCallback =
-  mapAPI
-    ( runStreamHTTP ScopeHTTP {httpCallback}
-        . api
-        . Request
-    )
+  mapAPI $
+    runStreamHTTP ScopeHTTP {httpCallback}
+      . api
+      . Request
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 subscriptionApp ::

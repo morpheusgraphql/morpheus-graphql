@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Server.Utils
-  ( --startServer,
+  ( startServer,
     Endpoint,
     serveEndpoint,
   )
@@ -37,27 +37,29 @@ import Data.Morpheus.Types
     GQLResponse,
     RootResolver,
   )
+import Data.Proxy (Proxy)
 import Data.Text (Text, pack)
 import Data.Typeable (Typeable)
 import GHC.TypeLits
 import Network.HTTP.Media ((//), (/:))
--- import Network.Wai.Handler.Warp
---   ( defaultSettings,
---     runSettings,
---     setPort,
---   )
--- import Network.Wai.Handler.WebSockets
---   ( websocketsOr,
---   )
--- import Network.WebSockets
---   ( ServerApp,
---     defaultConnectionOptions,
---   )
+import Network.Wai.Handler.Warp
+  ( defaultSettings,
+    runSettings,
+    setPort,
+  )
+import Network.Wai.Handler.WebSockets
+  ( websocketsOr,
+  )
+import Network.WebSockets
+  ( ServerApp,
+    defaultConnectionOptions,
+  )
 import Servant
   ( (:<|>) (..),
     (:>),
     Accept (..),
     Get,
+    HasServer,
     JSON,
     MimeRender (..),
     PlainText,
@@ -66,19 +68,23 @@ import Servant
     ReqBody,
     Server,
     Strict,
+    serve,
   )
 
--- TODO:
--- startServer :: ServerApp -> ScottyM () -> IO ()
--- startServer wsApp app = do
---   httpApp <- scottyApp app
---   runSettings settings $
---     websocketsOr
---       defaultConnectionOptions
---       wsApp
---       httpApp
---   where
---     settings = setPort 3000 defaultSettings
+startServer ::
+  HasServer api '[] =>
+  ServerApp ->
+  Proxy api ->
+  Server api ->
+  IO ()
+startServer wsApp proxy api =
+  runSettings settings $
+    websocketsOr
+      defaultConnectionOptions
+      wsApp
+      (serve proxy api)
+  where
+    settings = setPort 3000 defaultSettings
 
 data HTML deriving (Typeable)
 

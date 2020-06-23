@@ -10,8 +10,10 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.API.Simple
-  ( simpleApi,
+  ( api,
+    apiPubSub,
     rootResolver,
+    EVENT,
   )
 where
 
@@ -22,16 +24,28 @@ import Data.Morpheus.Document
   ( importGQLDocument,
   )
 import Data.Morpheus.Types
-  ( GQLRequest,
+  ( Event (..),
+    GQLRequest,
     GQLResponse,
+    Input,
     RootResolver (..),
+    Stream,
     Undefined (..),
   )
 import Data.Text (Text)
 
 importGQLDocument "src/Server/API/simple.gql"
 
-rootResolver :: RootResolver IO () Query Undefined Undefined
+type EVENT = Event Label Contet
+
+data Label
+  = Update
+  | New
+  deriving (Eq, Show)
+
+newtype Contet = Contet {id :: Text}
+
+rootResolver :: RootResolver IO EVENT Query Undefined Undefined
 rootResolver =
   RootResolver
     { queryResolver = Query {deity},
@@ -46,5 +60,8 @@ rootResolver =
             power = pure (Just "Shapeshifting")
           }
 
-simpleApi :: GQLRequest -> IO GQLResponse
-simpleApi = interpreter rootResolver
+api :: GQLRequest -> IO GQLResponse
+api = interpreter rootResolver
+
+apiPubSub :: Input api -> Stream api EVENT IO
+apiPubSub = interpreter rootResolver

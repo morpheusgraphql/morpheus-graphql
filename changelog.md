@@ -6,6 +6,7 @@
 
 - `Data.Morpheus.Document` exposes `RootResolverConstraint`
 - `Data.Morpheus.Server` exposes `httpPlayground`
+- `httpPubApp` supports `GQLRequest -> GQLResponse`
 
 ## 0.13.0 - 22.06.2020
 
