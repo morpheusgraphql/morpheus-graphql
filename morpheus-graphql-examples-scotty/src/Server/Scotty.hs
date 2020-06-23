@@ -42,5 +42,5 @@ scottyServer = do
     httpApp :: (EVENT -> IO ()) -> ScottyM ()
     httpApp publish = do
       httpEndpoint "/" (Just $ toGraphQLDocument $ Identity gqlRoot) (httpPubApp api publish)
-      httpEndpoint "/mythology" Nothing Mythology.api
-      httpEndpoint "/th" Nothing TH.api
+      httpEndpoint "/mythology" (Just $ toGraphQLDocument $ Identity Mythology.rootResolver) Mythology.api
+      httpEndpoint "/th" (Just $ toGraphQLDocument $ Identity TH.rootResolver) TH.api
