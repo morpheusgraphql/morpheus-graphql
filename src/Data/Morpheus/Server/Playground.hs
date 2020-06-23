@@ -9,6 +9,7 @@ module Data.Morpheus.Server.Playground
   )
 where
 
+import Data.Semigroup (Semigroup)
 import Data.String (IsString)
 
 link :: (IsString a, Semigroup a) => a -> a -> a
