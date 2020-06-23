@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2b3c4322f5a9888a2adcac7cb1574484d0723971b92fff2b603842066a2f1d6e
+-- hash: 32bb8526d8e34d4f5ee3a989f89e72a4ea52ba7b305ed0c8f23342c168986cf9
 
 name:           morpheus-graphql-examples-servant
 version:        0.1.0
@@ -18,8 +18,6 @@ maintainer:     Daviti Nalchevanidze
 copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
 build-type:     Simple
-data-files:
-    assets/index.html
 
 source-repository head
   type: git
