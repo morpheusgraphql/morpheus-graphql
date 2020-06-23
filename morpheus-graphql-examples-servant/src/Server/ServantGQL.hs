@@ -53,12 +53,16 @@ link :: (IsString a, Semigroup a) => a -> a -> a
 link rel href = "<link rel=\"" <> rel <> "\"  href=\"" <> href <> "\" />"
 
 meta :: (IsString a, Monoid a) => [(a, a)] -> a
-meta attr = "<meta " <> mconcat (map renderAttr attr) <> " />"
-  where
-    renderAttr (name, value) = name <> "=\"" <> value <> "\" "
+meta attr = t "meta" attr []
 
 tag :: (Monoid a, IsString a) => a -> [a] -> a
-tag name children = "<" <> name <> ">" <> mconcat children <> "</" <> name <> ">"
+tag tagName = t tagName []
+
+t :: (Monoid a, IsString a) => a -> [(a, a)] -> [a] -> a
+t tagName attr children =
+  "<" <> tagName <> " " <> mconcat (map renderAttr attr) <> " >" <> mconcat children <> "</" <> tagName <> ">"
+  where
+    renderAttr (name, value) = name <> "=\"" <> value <> "\" "
 
 playground :: (Monad m, MonadIO m) => m ByteString
 playground =
@@ -76,11 +80,15 @@ playground =
               tag "title" ["GraphQL Playground"],
               link "stylesheet" "//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",
               link "shortcut icon" "//cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png",
-              "<script  src=\"//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js\"> </script>"
+              t
+                "script"
+                [ ("src", "//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js")
+                ]
+                []
             ],
           tag
             "body"
-            [ "<div id='root'></div>",
+            [ t "div" [("id", "root")] [],
               tag
                 "script"
                 [ "  window.addEventListener('load', (_) => \
