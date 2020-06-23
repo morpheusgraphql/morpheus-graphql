@@ -18,6 +18,9 @@ import Data.ByteString.Lazy.Char8
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (fromMaybe)
 import Data.Morpheus.Document (toGraphQLDocument)
+import Data.Morpheus.Types
+  ( RootResolver,
+  )
 import Network.Wai
   ( Application,
   )
@@ -51,14 +54,14 @@ isSchema = param "schema"
 
 httpEndpoint ::
   RoutePattern ->
-  Maybe ByteString ->
+  Maybe (RootResolver m o mu qu su) ->
   (ByteString -> IO ByteString) ->
   ScottyM ()
 httpEndpoint route schema gqlApi = do
   get route $
     ( do
         x <- isSchema
-        raw $ fromMaybe "# schema is not provided" schema
+        raw $ maybe "# schema is not provided" (toGraphQLDocument . Identity) schema
     )
       <|> raw playground
   post route $ raw =<< (liftIO . gqlApi =<< body)

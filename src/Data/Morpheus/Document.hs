@@ -5,6 +5,7 @@ module Data.Morpheus.Document
     gqlDocument,
     importGQLDocument,
     importGQLDocumentWithNamespace,
+    RootResolverConstraint,
   )
 where
 
@@ -16,7 +17,7 @@ import Data.Morpheus.Core
   ( render,
   )
 import Data.Morpheus.Server.Deriving.Resolve
-  ( RootResCon,
+  ( RootResolverConstraint,
     fullSchema,
   )
 import Data.Morpheus.Server.TH.Compile
@@ -42,7 +43,7 @@ importGQLDocumentWithNamespace src =
 
 -- | Generates schema.gql file from 'RootResolver'
 toGraphQLDocument ::
-  RootResCon m event query mut sub =>
+  RootResolverConstraint m event query mut sub =>
   proxy (RootResolver m event query mut sub) ->
   ByteString
 toGraphQLDocument =

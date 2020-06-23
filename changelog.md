@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.1 - Unreleased Changes
+
+### new features
+
+- `Data.Morpheus.Document` exposes `RootResolverConstraint`
+
 ## 0.13.0 - 22.06.2020
 
 ### breaking changes
