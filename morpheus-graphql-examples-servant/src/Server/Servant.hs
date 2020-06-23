@@ -14,18 +14,23 @@ import Servant
     Server,
     serve,
   )
-import Server.API.Simple (simpleApi)
-import Server.ServantGQL (GQLEndpoint, serveGQLEndpoint)
+import Server.API.Simple
+  ( simpleApi,
+  )
+import Server.ServantGQL
+  ( Endpoint,
+    serveEndpoint,
+  )
 
 -- Server
 type API =
-  GQLEndpoint "gql"
-    :<|> GQLEndpoint "mythology"
+  Endpoint "gql"
+    :<|> Endpoint "mythology"
 
 handler :: Server API
 handler =
-  serveGQLEndpoint simpleApi
-    :<|> serveGQLEndpoint simpleApi
+  serveEndpoint simpleApi
+    :<|> serveEndpoint simpleApi
 
 api :: Proxy API
 api = Proxy
