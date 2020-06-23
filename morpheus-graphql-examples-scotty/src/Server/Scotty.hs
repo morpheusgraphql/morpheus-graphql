@@ -66,8 +66,7 @@ scottyServer = do
     settings = Warp.setPort 3000 Warp.defaultSettings
     httpServer :: (EVENT -> IO ()) -> IO Wai.Application
     httpServer publish = scottyApp $ do
-      endpoint "/" (httpPubApp api publish)
       get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
-      post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
-      addPlayground "/mythology"
+      endpoint "/" (httpPubApp api publish)
+      endpoint "/mythology" mythologyApi
       endpoint "/th" thSimpleApi
