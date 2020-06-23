@@ -19,6 +19,16 @@ import Data.Morpheus.Client
   )
 import Data.Text (Text)
 import Network.HTTP.Req
+  ( POST (..),
+    ReqBodyLbs (..),
+    defaultHttpConfig,
+    header,
+    https,
+    lbsResponse,
+    req,
+    responseBody,
+    runReq,
+  )
 
 defineByDocumentFile
   "assets/starwars.graphql"

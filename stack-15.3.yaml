@@ -1,8 +1,8 @@
-# 8.10.1
-resolver: nightly-2020-06-21
+# ghc-8.8.2
+resolver: lts-15.3
 packages:
   - morpheus-graphql-examples-scotty
-  # TODO: restore when servant-server relaxes bounds - morpheus-graphql-examples-servant
+  - morpheus-graphql-examples-servant
   - morpheus-graphql-examples-client
   - morpheus-graphql-client
   - morpheus-graphql-core

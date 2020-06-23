@@ -15,6 +15,7 @@ module Data.Morpheus.Server
     httpPubApp,
     subscriptionApp,
     ServerConstraint,
+    httpPlayground,
   )
 where
 
@@ -24,7 +25,9 @@ import Control.Monad.IO.Unlift
     withRunInIO,
   )
 -- MORPHEUS
-
+import Data.Morpheus.Server.Playground
+  ( httpPlayground,
+  )
 import Data.Morpheus.Types.IO (MapAPI (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( GQLChannel (..),

@@ -12,48 +12,33 @@ where
 import Client.Client
   ( fetchUser,
   )
-import Control.Monad.IO.Class (liftIO)
-import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Document (toGraphQLDocument)
 import Data.Morpheus.Server
   ( httpPubApp,
     webSocketsApp,
   )
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
-import qualified Network.Wai.Handler.WebSockets as WaiWs
-import Network.WebSockets (defaultConnectionOptions)
-import Server.Mythology.API (mythologyApi)
+import qualified Server.Mythology.API as Mythology (api, rootResolver)
 import Server.Sophisticated.API
   ( EVENT,
     api,
     gqlRoot,
   )
-import Server.TH.Simple (thSimpleApi)
+import qualified Server.TH.Simple as TH (api, rootResolver)
+import Server.Utils
+  ( httpEndpoint,
+    startServer,
+  )
 import Web.Scotty
-  ( body,
-    file,
-    get,
-    post,
-    raw,
-    scottyApp,
+  ( ScottyM,
   )
 
 scottyServer :: IO ()
 scottyServer = do
   (wsApp, publish) <- webSocketsApp api
-  httpApp <- httpServer publish
   fetchUser (httpPubApp api publish) >>= print
-  Warp.runSettings settings $
-    WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
+  startServer wsApp (httpApp publish)
   where
-    settings = Warp.setPort 3000 Warp.defaultSettings
-    httpServer :: (EVENT -> IO ()) -> IO Wai.Application
-    httpServer publish = scottyApp $ do
-      post "/" $ raw =<< (liftIO . httpPubApp api publish =<< body)
-      get "/" $ file "morpheus-graphql-examples-scotty/assets/index.html"
-      get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
-      post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
-      get "/mythology" $ file "morpheus-graphql-examples-scotty/assets/index.html"
-      post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
-      get "/th" $ file "morpheus-graphql-examples-scotty/assets/index.html"
+    httpApp :: (EVENT -> IO ()) -> ScottyM ()
+    httpApp publish = do
+      httpEndpoint "/" gqlRoot (httpPubApp api publish)
+      httpEndpoint "/mythology" Mythology.rootResolver Mythology.api
+      httpEndpoint "/th" TH.rootResolver TH.api

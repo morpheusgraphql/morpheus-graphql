@@ -9,7 +9,7 @@
 
 module Data.Morpheus.Server.Deriving.Resolve
   ( statelessResolver,
-    RootResCon,
+    RootResolverConstraint,
     fullSchema,
     coreResolver,
     EventCon,
@@ -77,7 +77,7 @@ type IntrospectConstraint m event query mutation subscription =
     IntroCon (subscription (Resolver SUBSCRIPTION event m))
   )
 
-type RootResCon m event query mutation subscription =
+type RootResolverConstraint m event query mutation subscription =
   ( EventCon event,
     Typeable m,
     IntrospectConstraint m event query mutation subscription,
@@ -91,7 +91,7 @@ type RootResCon m event query mutation subscription =
   )
 
 statelessResolver ::
-  (Monad m, RootResCon m event query mut sub) =>
+  (Monad m, RootResolverConstraint m event query mut sub) =>
   RootResolver m event query mut sub ->
   GQLRequest ->
   m GQLResponse
@@ -100,7 +100,7 @@ statelessResolver root req =
 
 coreResolver ::
   forall event m query mut sub.
-  (Monad m, RootResCon m event query mut sub) =>
+  (Monad m, RootResolverConstraint m event query mut sub) =>
   RootResolver m event query mut sub ->
   GQLRequest ->
   ResponseStream event m ValidValue

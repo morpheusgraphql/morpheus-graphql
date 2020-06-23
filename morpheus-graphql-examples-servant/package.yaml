@@ -18,9 +18,6 @@ dependencies:
   - servant-server
   - http-media
 
-data-files:
-  - assets/**/*.html
-
 executables:
   servant-server:
     main: Main.hs

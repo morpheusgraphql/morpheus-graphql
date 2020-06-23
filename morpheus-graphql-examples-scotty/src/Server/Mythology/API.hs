@@ -5,8 +5,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Server.Mythology.API
-  ( mythologyApi,
-    mythologyRoot,
+  ( api,
+    rootResolver,
   )
 where
 
@@ -77,13 +77,13 @@ resolveCharacter =
     Cronus
   ]
 
-mythologyRoot :: RootResolver IO () Query Undefined Undefined
-mythologyRoot =
+rootResolver :: RootResolver IO () Query Undefined Undefined
+rootResolver =
   RootResolver
     { queryResolver = Query {deity = resolveDeity, character = resolveCharacter},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
 
-mythologyApi :: B.ByteString -> IO B.ByteString
-mythologyApi = interpreter mythologyRoot
+api :: B.ByteString -> IO B.ByteString
+api = interpreter rootResolver

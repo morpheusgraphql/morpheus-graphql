@@ -11,7 +11,7 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Server.Deriving.Resolve
-  ( RootResCon,
+  ( RootResolverConstraint,
     coreResolver,
     statelessResolver,
   )
@@ -49,7 +49,7 @@ import Data.Morpheus.Types.Internal.Subscription
 class Interpreter e m a b where
   interpreter ::
     Monad m =>
-    (RootResCon m e query mut sub) =>
+    (RootResolverConstraint m e query mut sub) =>
     RootResolver m e query mut sub ->
     a ->
     b

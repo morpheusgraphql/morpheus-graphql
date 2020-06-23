@@ -31,7 +31,6 @@ dependencies:
 
 data-files:
   - assets/**/*.json
-  - assets/**/*.html
 
 executables:
   scotty-server:

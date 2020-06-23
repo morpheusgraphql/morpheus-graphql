@@ -11,6 +11,7 @@
 
 module Server.API.Simple
   ( simpleApi,
+    rootResolver,
   )
 where
 

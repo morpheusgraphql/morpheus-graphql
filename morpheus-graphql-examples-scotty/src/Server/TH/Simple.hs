@@ -10,7 +10,8 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.TH.Simple
-  ( thSimpleApi,
+  ( api,
+    rootResolver,
   )
 where
 
@@ -37,5 +38,5 @@ rootResolver =
             power = pure (Just "Shapeshifting")
           }
 
-thSimpleApi :: ByteString -> IO ByteString
-thSimpleApi = interpreter rootResolver
+api :: ByteString -> IO ByteString
+api = interpreter rootResolver
