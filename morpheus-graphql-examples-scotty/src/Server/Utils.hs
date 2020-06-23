@@ -9,14 +9,17 @@ module Server.Utils
 where
 
 -- examples
+
 import Client.Client
   ( fetchUser,
   )
+import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.Functor.Identity (Identity (..))
+import Data.Maybe (fromMaybe)
 import Data.Morpheus.Document (toGraphQLDocument)
 import Data.Morpheus.Server
   ( httpPubApp,
@@ -35,38 +38,36 @@ import Server.Sophisticated.API
   )
 import Server.TH.Simple (thSimpleApi)
 import Web.Scotty
-  ( RoutePattern,
+  ( ActionM,
+    RoutePattern,
     ScottyM,
     body,
     get,
+    param,
     post,
     raw,
     scottyApp,
   )
 
-addPlayground :: RoutePattern -> ScottyM ()
-addPlayground route = get route (raw playground)
+isSchema :: ActionM String
+isSchema = param "schema"
 
 httpEndpoint ::
   RoutePattern ->
+  Maybe ByteString ->
   (ByteString -> IO ByteString) ->
   ScottyM ()
-httpEndpoint route gqlApi = do
-  addPlayground route
+httpEndpoint route schema gqlApi = do
+  get route $
+    ( do
+        x <- isSchema
+        raw $ fromMaybe "# schema is not provided" schema
+    )
+      <|> raw playground
   post route $ raw =<< (liftIO . gqlApi =<< body)
 
-scottyServer :: IO ()
-scottyServer = do
-  (wsApp, publish) <- webSocketsApp api
-  httpApp <- httpServer publish
-  fetchUser (httpPubApp api publish) >>= print
+warpServer wsApp httpApp =
   Warp.runSettings settings $
     WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
   where
     settings = Warp.setPort 3000 Warp.defaultSettings
-    httpServer :: (EVENT -> IO ()) -> IO Wai.Application
-    httpServer publish = scottyApp $ do
-      get "/schema" $ raw $ toGraphQLDocument $ Identity gqlRoot
-      httpEndpoint "/" (httpPubApp api publish)
-      httpEndpoint "/mythology" mythologyApi
-      httpEndpoint "/th" thSimpleApi
