@@ -5,14 +5,11 @@
 
 module Server.Utils
   ( httpEndpoint,
+    warpServer,
   )
 where
 
 -- examples
-
-import Client.Client
-  ( fetchUser,
-  )
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString.Lazy.Char8
@@ -21,22 +18,22 @@ import Data.ByteString.Lazy.Char8
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (fromMaybe)
 import Data.Morpheus.Document (toGraphQLDocument)
-import Data.Morpheus.Server
-  ( httpPubApp,
-    webSocketsApp,
+import Network.Wai
+  ( Application,
   )
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
-import qualified Network.Wai.Handler.WebSockets as WaiWs
-import Network.WebSockets (defaultConnectionOptions)
-import Server.Mythology.API (mythologyApi)
+import Network.Wai.Handler.Warp
+  ( defaultSettings,
+    runSettings,
+    setPort,
+  )
+import Network.Wai.Handler.WebSockets
+  ( websocketsOr,
+  )
+import Network.WebSockets
+  ( ServerApp,
+    defaultConnectionOptions,
+  )
 import Server.Playground (playground)
-import Server.Sophisticated.API
-  ( EVENT,
-    api,
-    gqlRoot,
-  )
-import Server.TH.Simple (thSimpleApi)
 import Web.Scotty
   ( ActionM,
     RoutePattern,
@@ -66,8 +63,9 @@ httpEndpoint route schema gqlApi = do
       <|> raw playground
   post route $ raw =<< (liftIO . gqlApi =<< body)
 
+warpServer :: ServerApp -> Application -> IO ()
 warpServer wsApp httpApp =
-  Warp.runSettings settings $
-    WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
+  runSettings settings $
+    websocketsOr defaultConnectionOptions wsApp httpApp
   where
-    settings = Warp.setPort 3000 Warp.defaultSettings
+    settings = setPort 3000 defaultSettings

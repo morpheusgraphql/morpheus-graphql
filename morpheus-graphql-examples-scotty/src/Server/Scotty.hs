@@ -29,7 +29,10 @@ import Server.Sophisticated.API
     gqlRoot,
   )
 import Server.TH.Simple (thSimpleApi)
-import Server.Utils (httpEndpoint)
+import Server.Utils
+  ( httpEndpoint,
+    warpServer,
+  )
 import Web.Scotty
   ( get,
     raw,
@@ -41,10 +44,8 @@ scottyServer = do
   (wsApp, publish) <- webSocketsApp api
   httpApp <- httpServer publish
   fetchUser (httpPubApp api publish) >>= print
-  Warp.runSettings settings $
-    WaiWs.websocketsOr defaultConnectionOptions wsApp httpApp
+  warpServer wsApp httpApp
   where
-    settings = Warp.setPort 3000 Warp.defaultSettings
     httpServer :: (EVENT -> IO ()) -> IO Wai.Application
     httpServer publish = scottyApp $ do
       httpEndpoint "/" (Just $ toGraphQLDocument $ Identity gqlRoot) (httpPubApp api publish)
