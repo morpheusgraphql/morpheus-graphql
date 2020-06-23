@@ -19,6 +19,8 @@ import Data.Morpheus.Client
   )
 import Data.Text (Text)
 import Network.HTTP.Req
+  ( defaultHttpConfig,
+  )
 
 defineByDocumentFile
   "assets/starwars.graphql"

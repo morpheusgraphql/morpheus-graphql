@@ -3,7 +3,7 @@ resolver: lts-11.10
 packages:
   - morpheus-graphql-examples-scotty
   - morpheus-graphql-examples-servant
-  # - morpheus-graphql-examples-client
+  - morpheus-graphql-examples-client
   - morpheus-graphql-client
   - morpheus-graphql-core
   - .
@@ -13,3 +13,7 @@ extra-deps:
   - megaparsec-7.0.5
   - aeson-1.4.4.0
   - time-compat-1.9.2.2
+  - base-orphans-0.8.1
+  - req-2.1.0
+  - modern-uri-0.3.0.0
+  - retry-0.8.1.0
