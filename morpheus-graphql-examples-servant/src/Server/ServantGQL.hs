@@ -64,6 +64,9 @@ t tagName attr children =
   where
     renderAttr (name, value) = name <> "=\"" <> value <> "\" "
 
+script :: (Monoid a, IsString a) => [(a, a)] -> [a] -> a
+script = t "script"
+
 playground :: (Monad m, MonadIO m) => m ByteString
 playground =
   pure $
@@ -80,17 +83,15 @@ playground =
               tag "title" ["GraphQL Playground"],
               link "stylesheet" "//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/css/index.css",
               link "shortcut icon" "//cdn.jsdelivr.net/npm/graphql-playground-react/build/favicon.png",
-              t
-                "script"
-                [ ("src", "//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js")
-                ]
+              script
+                [("src", "//cdn.jsdelivr.net/npm/graphql-playground-react/build/static/js/middleware.js")]
                 []
             ],
           tag
             "body"
             [ t "div" [("id", "root")] [],
-              tag
-                "script"
+              script
+                []
                 [ "  window.addEventListener('load', (_) => \
                   \    GraphQLPlayground.init(document.getElementById('root'), {}) \
                   \  );"
