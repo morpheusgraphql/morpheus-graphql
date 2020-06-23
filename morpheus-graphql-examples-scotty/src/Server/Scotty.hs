@@ -12,8 +12,6 @@ where
 import Client.Client
   ( fetchUser,
   )
-import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Document (toGraphQLDocument)
 import Data.Morpheus.Server
   ( httpPubApp,
     webSocketsApp,
@@ -41,6 +39,6 @@ scottyServer = do
   where
     httpApp :: (EVENT -> IO ()) -> ScottyM ()
     httpApp publish = do
-      httpEndpoint "/" (Just $ toGraphQLDocument $ Identity gqlRoot) (httpPubApp api publish)
-      httpEndpoint "/mythology" (Just $ toGraphQLDocument $ Identity Mythology.rootResolver) Mythology.api
-      httpEndpoint "/th" (Just $ toGraphQLDocument $ Identity TH.rootResolver) TH.api
+      httpEndpoint "/" gqlRoot (httpPubApp api publish)
+      httpEndpoint "/mythology" Mythology.rootResolver Mythology.api
+      httpEndpoint "/th" TH.rootResolver TH.api

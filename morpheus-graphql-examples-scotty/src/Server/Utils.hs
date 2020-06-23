@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -16,13 +17,9 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.Functor.Identity (Identity (..))
-import Data.Maybe (fromMaybe)
-import Data.Morpheus.Document (toGraphQLDocument)
+import Data.Morpheus.Document (RootResolverConstraint, toGraphQLDocument)
 import Data.Morpheus.Types
   ( RootResolver,
-  )
-import Network.Wai
-  ( Application,
   )
 import Network.Wai.Handler.Warp
   ( defaultSettings,
@@ -53,15 +50,16 @@ isSchema :: ActionM String
 isSchema = param "schema"
 
 httpEndpoint ::
+  (RootResolverConstraint m o mu qu su) =>
   RoutePattern ->
-  Maybe (RootResolver m o mu qu su) ->
+  RootResolver m o mu qu su ->
   (ByteString -> IO ByteString) ->
   ScottyM ()
 httpEndpoint route schema gqlApi = do
   get route $
     ( do
-        x <- isSchema
-        raw $ maybe "# schema is not provided" (toGraphQLDocument . Identity) schema
+        _ <- isSchema
+        raw $ toGraphQLDocument (Identity schema)
     )
       <|> raw playground
   post route $ raw =<< (liftIO . gqlApi =<< body)
