@@ -37,10 +37,10 @@ scottyServer :: IO ()
 scottyServer = do
   (wsApp, publish) <- webSocketsApp api
   fetchUser (httpPubApp api publish) >>= print
-  startServer wsApp (httpServer publish)
+  startServer wsApp (httpApp publish)
   where
-    httpServer :: (EVENT -> IO ()) -> ScottyM ()
-    httpServer publish = do
+    httpApp :: (EVENT -> IO ()) -> ScottyM ()
+    httpApp publish = do
       httpEndpoint "/" (Just $ toGraphQLDocument $ Identity gqlRoot) (httpPubApp api publish)
       httpEndpoint "/mythology" Nothing Mythology.api
       httpEndpoint "/th" Nothing TH.api
