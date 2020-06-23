@@ -47,4 +47,4 @@ type API = ReqBody '[JSON] GQLRequest :> Post '[JSON] GQLResponse
 type Endpoint (name :: Symbol) = name :> (API :<|> Get '[HTML] ByteString)
 
 serveEndpoint :: (GQLRequest -> IO GQLResponse) -> Server (Endpoint name)
-serveEndpoint app = (liftIO . app) :<|> playground
+serveEndpoint app = (liftIO . app) :<|> pure playground

@@ -24,6 +24,7 @@ import qualified Network.Wai.Handler.Warp as Warp
 import qualified Network.Wai.Handler.WebSockets as WaiWs
 import Network.WebSockets (defaultConnectionOptions)
 import Server.Mythology.API (mythologyApi)
+import Server.Playground (playground)
 import Server.Sophisticated.API
   ( EVENT,
     api,
@@ -31,13 +32,17 @@ import Server.Sophisticated.API
   )
 import Server.TH.Simple (thSimpleApi)
 import Web.Scotty
-  ( body,
-    file,
+  ( RoutePattern,
+    ScottyM,
+    body,
     get,
     post,
     raw,
     scottyApp,
   )
+
+addPlayground :: RoutePattern -> ScottyM ()
+addPlayground route = get route (raw playground)
 
 scottyServer :: IO ()
 scottyServer = do
@@ -51,9 +56,9 @@ scottyServer = do
     httpServer :: (EVENT -> IO ()) -> IO Wai.Application
     httpServer publish = scottyApp $ do
       post "/" $ raw =<< (liftIO . httpPubApp api publish =<< body)
-      get "/" $ file "morpheus-graphql-examples-scotty/assets/index.html"
+      addPlayground "/"
       get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
       post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
-      get "/mythology" $ file "morpheus-graphql-examples-scotty/assets/index.html"
+      addPlayground "/mythology"
       post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
-      get "/th" $ file "morpheus-graphql-examples-scotty/assets/index.html"
+      addPlayground "/th"
