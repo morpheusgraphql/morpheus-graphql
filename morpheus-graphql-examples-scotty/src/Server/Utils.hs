@@ -17,7 +17,13 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Document (RootResolverConstraint, toGraphQLDocument)
+import Data.Morpheus.Document
+  ( RootResolverConstraint,
+    toGraphQLDocument,
+  )
+import Data.Morpheus.Server
+  ( httpPlayground,
+  )
 import Data.Morpheus.Types
   ( RootResolver,
   )
@@ -33,7 +39,6 @@ import Network.WebSockets
   ( ServerApp,
     defaultConnectionOptions,
   )
-import Server.Playground (playground)
 import Web.Scotty
   ( ActionM,
     RoutePattern,
@@ -61,7 +66,7 @@ httpEndpoint route schema gqlApi = do
         _ <- isSchema
         raw $ toGraphQLDocument (Identity schema)
     )
-      <|> raw playground
+      <|> raw httpPlayground
   post route $ raw =<< (liftIO . gqlApi =<< body)
 
 startServer :: ServerApp -> ScottyM () -> IO ()

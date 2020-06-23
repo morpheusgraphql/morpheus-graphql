@@ -5,6 +5,7 @@
 ### new features
 
 - `Data.Morpheus.Document` exposes `RootResolverConstraint`
+- `Data.Morpheus.Server` exposes `httpPlayground`
 
 ## 0.13.0 - 22.06.2020
 

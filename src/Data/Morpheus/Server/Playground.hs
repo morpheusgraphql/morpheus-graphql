@@ -4,7 +4,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Server.Playground (playground) where
+module Data.Morpheus.Server.Playground
+  ( httpPlayground,
+  )
+where
 
 import Data.String (IsString)
 
@@ -29,8 +32,8 @@ script = t "script"
 html :: (Monoid a, IsString a) => [a] -> a
 html = ("<!DOCTYPE html>" <>) . t "html" []
 
-playground :: (Monoid a, IsString a) => a
-playground =
+httpPlayground :: (Monoid a, IsString a) => a
+httpPlayground =
   html
     [ tag
         "head"

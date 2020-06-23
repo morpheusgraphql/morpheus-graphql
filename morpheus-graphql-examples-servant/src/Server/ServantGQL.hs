@@ -17,6 +17,9 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Morpheus.Server
+  ( httpPlayground,
+  )
 import Data.Morpheus.Types (GQLRequest, GQLResponse)
 import Data.Typeable (Typeable)
 import GHC.TypeLits
@@ -32,7 +35,6 @@ import Servant
     ReqBody,
     Server,
   )
-import Server.Playground (playground)
 
 data HTML deriving (Typeable)
 
@@ -47,4 +49,4 @@ type API = ReqBody '[JSON] GQLRequest :> Post '[JSON] GQLResponse
 type Endpoint (name :: Symbol) = name :> (API :<|> Get '[HTML] ByteString)
 
 serveEndpoint :: (GQLRequest -> IO GQLResponse) -> Server (Endpoint name)
-serveEndpoint app = (liftIO . app) :<|> pure playground
+serveEndpoint app = (liftIO . app) :<|> pure httpPlayground
