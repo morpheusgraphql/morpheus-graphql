@@ -2,6 +2,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Server.Playground
@@ -9,31 +10,34 @@ module Data.Morpheus.Server.Playground
   )
 where
 
-import Data.Semigroup (Semigroup (..))
-import Data.String (IsString)
+import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Semigroup ((<>))
 
-link :: (IsString a, Semigroup a) => a -> a -> a
+link :: ByteString -> ByteString -> ByteString
 link rel href = "<link rel=\"" <> rel <> "\"  href=\"" <> href <> "\" />"
 
-meta :: (IsString a, Monoid a) => [(a, a)] -> a
+meta :: [(ByteString, ByteString)] -> ByteString
 meta attr = t "meta" attr []
 
-tag :: (Monoid a, IsString a) => a -> [a] -> a
+tag :: ByteString -> [ByteString] -> ByteString
 tag tagName = t tagName []
 
-t :: (Monoid a, IsString a) => a -> [(a, a)] -> [a] -> a
+t :: ByteString -> [(ByteString, ByteString)] -> [ByteString] -> ByteString
 t tagName attr children =
   "<" <> tagName <> " " <> mconcat (map renderAttr attr) <> " >" <> mconcat children <> "</" <> tagName <> ">"
   where
     renderAttr (name, value) = name <> "=\"" <> value <> "\" "
 
-script :: (Monoid a, IsString a) => [(a, a)] -> [a] -> a
+script :: [(ByteString, ByteString)] -> [ByteString] -> ByteString
 script = t "script"
 
-html :: (Monoid a, IsString a) => [a] -> a
-html = ("<!DOCTYPE html>" <>) . t "html" []
+html :: [ByteString] -> ByteString
+html = docType . t "html" []
 
-httpPlayground :: (Monoid a, IsString a) => a
+docType :: ByteString -> ByteString
+docType x = "<!DOCTYPE html>" <> x
+
+httpPlayground :: ByteString
 httpPlayground =
   html
     [ tag
