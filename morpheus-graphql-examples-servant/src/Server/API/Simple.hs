@@ -83,7 +83,7 @@ rootResolver =
 
 resolveCreateDeity :: CreateDeityArgs -> ResolverM EVENT IO Deity
 resolveCreateDeity CreateDeityArgs {name, power} = do
-  publish [Event [New] Contet {deityName = name}]
+  publish [Event [New] Contet {deityName = name, deityPower = power}]
   pure
     Deity
       { name = pure name,
