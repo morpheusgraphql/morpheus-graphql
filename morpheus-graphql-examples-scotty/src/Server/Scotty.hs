@@ -13,6 +13,9 @@ import Client.Client
   ( fetchUser,
   )
 import Control.Monad.IO.Class (liftIO)
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+  )
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Document (toGraphQLDocument)
 import Data.Morpheus.Server
@@ -44,6 +47,14 @@ import Web.Scotty
 addPlayground :: RoutePattern -> ScottyM ()
 addPlayground route = get route (raw playground)
 
+endpoint ::
+  RoutePattern ->
+  (ByteString -> IO ByteString) ->
+  ScottyM ()
+endpoint route gqlApi = do
+  addPlayground route
+  post route $ raw =<< (liftIO . gqlApi =<< body)
+
 scottyServer :: IO ()
 scottyServer = do
   (wsApp, publish) <- webSocketsApp api
@@ -55,10 +66,8 @@ scottyServer = do
     settings = Warp.setPort 3000 Warp.defaultSettings
     httpServer :: (EVENT -> IO ()) -> IO Wai.Application
     httpServer publish = scottyApp $ do
-      post "/" $ raw =<< (liftIO . httpPubApp api publish =<< body)
-      addPlayground "/"
+      endpoint "/" (httpPubApp api publish)
       get "/schema.gql" $ raw $ toGraphQLDocument $ Identity gqlRoot
       post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)
       addPlayground "/mythology"
-      post "/th" $ raw =<< (liftIO . thSimpleApi =<< body)
-      addPlayground "/th"
+      endpoint "/th" thSimpleApi
