@@ -5,7 +5,7 @@
 
 module Server.Utils
   ( httpEndpoint,
-    warpServer,
+    startServer,
   )
 where
 
@@ -63,8 +63,8 @@ httpEndpoint route schema gqlApi = do
       <|> raw playground
   post route $ raw =<< (liftIO . gqlApi =<< body)
 
-warpServer :: ServerApp -> ScottyM () -> IO ()
-warpServer wsApp app = do
+startServer :: ServerApp -> ScottyM () -> IO ()
+startServer wsApp app = do
   httpApp <- scottyApp app
   runSettings settings $
     websocketsOr

@@ -18,7 +18,6 @@ import Data.Morpheus.Server
   ( httpPubApp,
     webSocketsApp,
   )
-import Network.WebSockets (defaultConnectionOptions)
 import qualified Server.Mythology.API as Mythology (api, rootResolver)
 import Server.Sophisticated.API
   ( EVENT,
@@ -28,18 +27,17 @@ import Server.Sophisticated.API
 import qualified Server.TH.Simple as TH (api, rootResolver)
 import Server.Utils
   ( httpEndpoint,
-    warpServer,
+    startServer,
   )
 import Web.Scotty
   ( ScottyM,
-    scottyApp,
   )
 
 scottyServer :: IO ()
 scottyServer = do
   (wsApp, publish) <- webSocketsApp api
   fetchUser (httpPubApp api publish) >>= print
-  warpServer wsApp (httpServer publish)
+  startServer wsApp (httpServer publish)
   where
     httpServer :: (EVENT -> IO ()) -> ScottyM ()
     httpServer publish = do
