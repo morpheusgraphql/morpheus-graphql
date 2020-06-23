@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9889abc4a59a910f2df668f2702924a70870fab6a64bc0d0806ebe92c1a95bdb
+-- hash: de9a6fec90238d164b7d27b08e9d1dcbe56f5198bb0fdc69972303501b8b2dc3
 
 name:           morpheus-graphql-examples-servant
 version:        0.1.0
@@ -41,5 +41,7 @@ executable servant-server
     , mtl >=2.0 && <=2.3
     , servant-server
     , text >=1.2.3.0 && <1.3
+    , wai-websockets >=1.0 && <=3.5
     , warp
+    , websockets >=0.11.0 && <=0.13
   default-language: Haskell2010

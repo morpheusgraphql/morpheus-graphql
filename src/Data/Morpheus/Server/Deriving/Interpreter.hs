@@ -61,7 +61,7 @@ instance Interpreter e m (Input api) (Stream api e m) where
   interpreter root = toOutStream (coreResolver root)
 
 instance
-  (MapAPI a) =>
+  (MapAPI a a) =>
   Interpreter e m a (m a)
   where
   interpreter root = mapAPI (interpreter root)

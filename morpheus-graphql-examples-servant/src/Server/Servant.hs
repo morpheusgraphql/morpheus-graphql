@@ -6,7 +6,11 @@
 
 module Server.Servant (servantServer) where
 
-import Network.Wai.Handler.Warp
+import Data.Morpheus.Server
+  ( httpPubApp,
+    webSocketsApp,
+  )
+import Network.Wai.Handler.Warp (run)
 import Servant
   ( (:<|>) (..),
     Proxy (..),
@@ -14,12 +18,15 @@ import Servant
     serve,
   )
 import Server.API.Simple
-  ( rootResolver,
-    simpleApi,
+  ( EVENT,
+    api,
+    apiPubSub,
+    rootResolver,
   )
 import Server.Utils
   ( Endpoint,
     serveEndpoint,
+    startServer,
   )
 
 -- Server
@@ -27,13 +34,15 @@ type API =
   Endpoint "gql"
     :<|> Endpoint "mythology"
 
-handler :: Server API
-handler =
-  serveEndpoint rootResolver simpleApi
-    :<|> serveEndpoint rootResolver simpleApi
+proxyApi :: Proxy API
+proxyApi = Proxy
 
-api :: Proxy API
-api = Proxy
+handler :: (EVENT -> IO ()) -> Server API
+handler publish =
+  serveEndpoint rootResolver (httpPubApp apiPubSub publish)
+    :<|> serveEndpoint rootResolver api
 
 servantServer :: IO ()
-servantServer = run 3000 (serve api handler)
+servantServer = do
+  (wsApp, publish) <- webSocketsApp apiPubSub
+  startServer wsApp proxyApi (handler publish)

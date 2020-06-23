@@ -2,6 +2,14 @@ type Query {
   deity(name: String! = "Morpheus"): Deity!
 }
 
+type Subscription {
+  newDeity: Deity!
+}
+
+type Mutation {
+  createDeity(name: String!, power: String): Deity!
+}
+
 type Deity {
   name: String!
   power: String

@@ -10,8 +10,10 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.API.Simple
-  ( simpleApi,
+  ( api,
+    apiPubSub,
     rootResolver,
+    EVENT,
   )
 where
 
@@ -22,23 +24,56 @@ import Data.Morpheus.Document
   ( importGQLDocument,
   )
 import Data.Morpheus.Types
-  ( GQLRequest,
+  ( Event (..),
+    GQLRequest,
     GQLResponse,
+    Input,
+    ResolverM,
+    ResolverS,
     RootResolver (..),
+    Stream,
     Undefined (..),
+    publish,
+    subscribe,
   )
 import Data.Text (Text)
 
 importGQLDocument "src/Server/API/simple.gql"
 
-rootResolver :: RootResolver IO () Query Undefined Undefined
+type EVENT = Event Label Contet
+
+data Label
+  = Update
+  | New
+  deriving (Eq, Show)
+
+data Contet = Contet
+  { deityName :: Text,
+    deityPower :: Maybe Text
+  }
+
+rootResolver :: RootResolver IO EVENT Query Mutation Subscription
 rootResolver =
   RootResolver
     { queryResolver = Query {deity},
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+      mutationResolver =
+        Mutation
+          { createDeity = resolveCreateDeity
+          },
+      subscriptionResolver =
+        Subscription
+          { newDeity
+          }
     }
   where
+    newDeity = subscribe [New] $ pure handler
+      where
+        handler (Event _ Contet {deityName, deityPower}) =
+          pure $
+            Deity
+              { name = pure deityName,
+                power = pure deityPower
+              }
     deity DeityArgs {name} =
       pure
         Deity
@@ -46,5 +81,17 @@ rootResolver =
             power = pure (Just "Shapeshifting")
           }
 
-simpleApi :: GQLRequest -> IO GQLResponse
-simpleApi = interpreter rootResolver
+resolveCreateDeity :: CreateDeityArgs -> ResolverM EVENT IO Deity
+resolveCreateDeity CreateDeityArgs {name, power} = do
+  publish [Event [New] Contet {deityName = name, deityPower = power}]
+  pure
+    Deity
+      { name = pure name,
+        power = pure power
+      }
+
+api :: GQLRequest -> IO GQLResponse
+api = interpreter rootResolver
+
+apiPubSub :: Input api -> Stream api EVENT IO
+apiPubSub = interpreter rootResolver
