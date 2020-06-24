@@ -17,16 +17,19 @@ import Data.Morpheus.Parsing.Internal.Pattern
     fieldsDefinition,
     inputFieldsDefinition,
     optionalDirectives,
+    parseOperationType,
     typeDeclaration,
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( collection,
     keyword,
+    litAssignment,
     operator,
     optDescription,
     parseTypeName,
     pipeLiteral,
     sepByAnd,
+    setOf,
     spaceAndComments,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -35,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     IN,
     OUT,
+    OperationType,
     ScalarDefinition (..),
     SchemaDefinitionRaw (..),
     TypeContent (..),
@@ -201,7 +205,19 @@ inputObjectTypeDefinition typeDescription =
 --     subscription :: Maybe TypeName
 --   }
 
-SchemaDefinitionRaw
+parseSchemaDefinition :: Parser SchemaDefinitionRaw
+parseSchemaDefinition = label "TypeDefinition" $ do
+  keyword "schema"
+  schemaDirectives <- optionalDirectives
+  unSchemaDefinition <- setOf parseRootOperationTypeDefinition
+  pure SchemaDefinitionRaw {schemaDirectives, unSchemaDefinition}
+
+parseRootOperationTypeDefinition :: Parser (OperationType, TypeName)
+parseRootOperationTypeDefinition = do
+  operationType <- parseOperationType
+  litAssignment -- ':'
+  operationName <- parseTypeName
+  pure (operationType, operationName)
 
 parseDataType :: Parser (TypeDefinition ANY)
 parseDataType = label "TypeDefinition" $ do

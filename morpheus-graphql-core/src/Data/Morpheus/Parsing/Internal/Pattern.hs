@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Parsing.Internal.Pattern
@@ -8,9 +9,11 @@ module Data.Morpheus.Parsing.Internal.Pattern
     optionalDirectives,
     enumValueDefinition,
     inputFieldsDefinition,
+    parseOperationType,
   )
 where
 
+import Data.Functor (($>))
 -- MORPHEUS
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
@@ -28,6 +31,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseType,
     parseTypeName,
     setOf,
+    spaceAndComments1,
     uniqTuple,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -45,14 +49,17 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     InputFieldsDefinition,
     OUT,
+    OperationType (..),
     TypeName,
     Value,
   )
 import Text.Megaparsec
-  ( label,
+  ( (<|>),
+    label,
     many,
     optional,
   )
+import Text.Megaparsec.Char (string)
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
 --
@@ -149,3 +156,12 @@ typeDeclaration :: FieldName -> Parser TypeName
 typeDeclaration kind = do
   keyword kind
   parseTypeName
+
+parseOperationType :: Parser OperationType
+parseOperationType = label "OperationType" $ do
+  kind <-
+    (string "query" $> Query)
+      <|> (string "mutation" $> Mutation)
+      <|> (string "subscription" $> Subscription)
+  spaceAndComments1
+  return kind

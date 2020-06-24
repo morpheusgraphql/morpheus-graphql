@@ -6,10 +6,6 @@ module Data.Morpheus.Parsing.Request.Operation
   )
 where
 
-import Data.Functor (($>))
---
--- MORPHEUS
-
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -19,12 +15,12 @@ import Data.Morpheus.Parsing.Internal.Internal
   )
 import Data.Morpheus.Parsing.Internal.Pattern
   ( optionalDirectives,
+    parseOperationType,
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( operator,
     parseName,
     parseType,
-    spaceAndComments1,
     uniqTupleOpt,
     variable,
   )
@@ -48,7 +44,6 @@ import Text.Megaparsec
     label,
     optional,
   )
-import Text.Megaparsec.Char (string)
 
 -- Variables :  https://graphql.github.io/graphql-spec/June2018/#VariableDefinition
 --
@@ -79,15 +74,6 @@ parseOperationDefinition = label "OperationDefinition" $ do
   operationDirectives <- optionalDirectives
   operationSelection <- parseSelectionSet
   pure Operation {..}
-
-parseOperationType :: Parser OperationType
-parseOperationType = label "OperationType" $ do
-  kind <-
-    (string "query" $> Query)
-      <|> (string "mutation" $> Mutation)
-      <|> (string "subscription" $> Subscription)
-  spaceAndComments1
-  return kind
 
 parseAnonymousQuery :: Parser (Operation RAW)
 parseAnonymousQuery = label "AnonymousQuery" $ do

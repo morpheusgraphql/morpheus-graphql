@@ -274,8 +274,9 @@ data Schema = Schema
   }
   deriving (Show)
 
-newtype SchemaDefinitionRaw = SchemaDefinitionRaw
-  { unSchemaDefinition :: OrderedMap OperationType TypeName
+data SchemaDefinitionRaw = SchemaDefinitionRaw
+  { schemaDirectives :: Directives VALID,
+    unSchemaDefinition :: OrderedMap OperationType (OperationType, TypeName)
   }
   deriving (Show)
 

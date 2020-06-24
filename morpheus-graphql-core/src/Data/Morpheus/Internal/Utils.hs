@@ -117,6 +117,10 @@ class Eq (KEY a) => KeyOf a where
   type KEY a = FieldName
   keyOf :: a -> KEY a
 
+instance Eq a => KeyOf (a, b) where
+  type KEY (a, b) = a
+  keyOf = fst
+
 instance KeyOf Ref where
   keyOf = refName
 
