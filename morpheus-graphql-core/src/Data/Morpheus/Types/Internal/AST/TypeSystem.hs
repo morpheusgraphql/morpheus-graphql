@@ -602,8 +602,8 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) where
     } ->
     FieldContent (IsSelected cat OUT) cat
 
-fieldContentArgs :: FieldContent b cat -> OrderedMap FieldName ArgumentDefinition
-fieldContentArgs (FieldArgs (ArgumentsDefinition _ argsD)) = argsD
+fieldContentArgs :: FieldContent b cat -> ArgumentsDefinition
+fieldContentArgs (FieldArgs args) = args
 fieldContentArgs _ = empty
 
 deriving instance Show (FieldContent bool cat)

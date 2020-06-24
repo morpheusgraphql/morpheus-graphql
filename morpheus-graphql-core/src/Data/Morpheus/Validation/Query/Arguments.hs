@@ -10,8 +10,7 @@ where
 
 import Data.Foldable (traverse_)
 import Data.Morpheus.Internal.Utils
-  ( elems,
-    empty,
+  ( empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -115,18 +114,12 @@ validateFieldArguments ::
   FieldDefinition OUT ->
   Arguments RAW ->
   SelectionValidator (Arguments VALID)
-validateFieldArguments
-  fieldDef@FieldDefinition {fieldContent}
-  rawArgs =
-    do
-      args <- resolveArgumentVariables rawArgs
-      traverse_ checkUnknown (elems args)
-      traverse (validateArgument args) argsDef
-    where
-      argsDef = maybe empty fieldContentArgs fieldContent
-      -------------------------------------------------
-      checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
-      checkUnknown = (`selectKnown` fieldDef)
+validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
+  validateArgumengts (`selectKnown` fieldDef) argsDef
+  where
+    argsDef = maybe empty fieldContentArgs fieldContent
+
+-------------------------------------------------
 
 validateDirectiveArguments ::
   DirectiveDefinition ->
@@ -134,14 +127,19 @@ validateDirectiveArguments ::
   SelectionValidator (Arguments VALID)
 validateDirectiveArguments
   directiveDef@DirectiveDefinition
-    { directiveDefinitionArgs = ArgumentsDefinition _ argsDef
-    }
-  rawArgs =
-    do
-      args <- resolveArgumentVariables rawArgs
-      traverse_ checkUnknown (elems args)
-      traverse (validateArgument args) argsDef
-    where
-      -------------------------------------------------
-      checkUnknown :: Argument RESOLVED -> SelectionValidator ArgumentDefinition
-      checkUnknown = (`selectKnown` directiveDef)
+    { directiveDefinitionArgs
+    } =
+    validateArgumengts
+      (`selectKnown` directiveDef)
+      directiveDefinitionArgs
+
+validateArgumengts ::
+  (Argument RESOLVED -> SelectionValidator ArgumentDefinition) ->
+  ArgumentsDefinition ->
+  Arguments RAW ->
+  SelectionValidator (Arguments VALID)
+validateArgumengts checkUnknown argsDef rawArgs =
+  do
+    args <- resolveArgumentVariables rawArgs
+    traverse_ checkUnknown args
+    traverse (validateArgument args) (arguments argsDef)

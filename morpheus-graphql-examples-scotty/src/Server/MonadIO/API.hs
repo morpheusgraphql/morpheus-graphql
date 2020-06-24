@@ -137,7 +137,7 @@ type Composed (o :: OperationType) f (a :: k) = ComposedResolver o () Web f a
 getDB :: Value o Database
 getDB = do
   dbTVar <- lift $ asks database
-  liftIO . atomically $ readTVar dbTVar
+  liftIO (readTVarIO dbTVar)
 
 -------------------------------------------------------------------------------
 requireAuthorized :: Value o Int

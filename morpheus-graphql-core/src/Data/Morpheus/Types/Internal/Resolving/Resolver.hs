@@ -6,7 +6,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -15,7 +14,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
@@ -361,8 +359,12 @@ toResolver toArgs = withResolver args
   where
     args :: ResolverState e m a
     args =
-      ResultT . pure . toArgs . selectionArguments <$> getState
-        >>= ResolverState . lift . cleanEvents
+      getState
+        >>= (ResolverState . lift . cleanEvents)
+          . ResultT
+          . pure
+          . toArgs
+          . selectionArguments
 
 pickSelection :: TypeName -> UnionSelection VALID -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection

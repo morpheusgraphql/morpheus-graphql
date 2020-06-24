@@ -4,7 +4,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Client.Transform.Inputs
   ( renderNonOutputTypes,
@@ -98,7 +97,7 @@ renderNonOutputTypes ::
   [TypeName] ->
   Converter [ClientTypeDefinition]
 renderNonOutputTypes leafTypes = do
-  variables <- elems <$> asks snd
+  variables <- asks (elems . snd)
   inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
   concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> leafTypes)
 

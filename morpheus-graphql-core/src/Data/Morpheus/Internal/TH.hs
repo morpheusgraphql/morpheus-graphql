@@ -6,8 +6,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Data.Morpheus.Internal.TH
   ( tyConArgs,

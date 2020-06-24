@@ -8,7 +8,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Rendering.RenderIntrospection
   ( render,
