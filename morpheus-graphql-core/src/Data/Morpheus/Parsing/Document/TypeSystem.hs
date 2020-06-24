@@ -206,7 +206,7 @@ inputObjectTypeDefinition typeDescription =
 --   }
 
 parseSchemaDefinition :: Parser SchemaDefinitionRaw
-parseSchemaDefinition = label "TypeDefinition" $ do
+parseSchemaDefinition = label "SchemaDefinition" $ do
   keyword "schema"
   schemaDirectives <- optionalDirectives
   unSchemaDefinition <- setOf parseRootOperationTypeDefinition
