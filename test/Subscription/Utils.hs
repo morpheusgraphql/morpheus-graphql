@@ -112,7 +112,7 @@ simulate ::
   SimulationState e ->
   IO (SimulationState e)
 simulate _ _ s@SimulationState {inputs = []} = pure s
-simulate api input s = snd <$> runStateT (wsApp api input) s >>= simulate api input
+simulate api input s = runStateT (wsApp api input) s >>= simulate api input . snd
 
 testSimulation ::
   (Input WS -> SimulationState e -> TestTree) ->
