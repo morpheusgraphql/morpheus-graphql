@@ -43,12 +43,10 @@ jobs:
         with:
           ghc-version: "8.6.5"
           cabal-version: "3.0"
-      - name: Install
+      - name: install
         run: |
-          curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
-      - name: lint
-        run: |
-          hlint .
+          curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh 
+          sh -s .
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:
