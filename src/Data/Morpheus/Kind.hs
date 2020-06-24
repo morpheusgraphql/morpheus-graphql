@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 -- | associating types to GraphQL Kinds
 module Data.Morpheus.Kind
