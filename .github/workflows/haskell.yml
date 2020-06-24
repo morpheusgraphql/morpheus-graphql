@@ -49,7 +49,6 @@ jobs:
       - name: lint
         run: |
           hlint .
-          # ormolu --mode check $(find . -name '*.hs')
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:
