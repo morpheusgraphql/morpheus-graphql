@@ -76,7 +76,6 @@ systemTypes :: [TypeDefinition ANY]
 systemTypes =
   [dsl|
 
-# default scalars
 scalar Boolean
 scalar Int
 scalar Float

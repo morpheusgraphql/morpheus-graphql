@@ -99,7 +99,7 @@ rootResolver =
 
 -- | This part is irrelevant, we only care about showcasing subscriptions, but a
 -- Query instance is mandatory in 'RootResolver'.
-data Query m = Query
+newtype Query m = Query
   { someQuery :: m Int
   }
   deriving (Generic, GQLType)
@@ -107,7 +107,7 @@ data Query m = Query
 queryInstance = Query (pure 12) -- random stuff
 
 -- | We create a subscription which simply show an unstructured message.
-data Subscription m = Subscription
+newtype Subscription m = Subscription
   { listenToPostgres :: m Text
   }
   deriving (Generic, GQLType)

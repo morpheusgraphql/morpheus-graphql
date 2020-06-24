@@ -96,8 +96,7 @@ usedFragments fragments = concatMap findAllUses
 
 fragmentsConditionTypeChecking :: BaseValidator ()
 fragmentsConditionTypeChecking =
-  elems <$> askFragments
-    >>= traverse_ checkTypeExistence
+  askFragments >>= traverse_ checkTypeExistence
 
 checkTypeExistence :: Fragment -> BaseValidator ()
 checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =

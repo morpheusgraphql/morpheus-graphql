@@ -359,8 +359,12 @@ toResolver toArgs = withResolver args
   where
     args :: ResolverState e m a
     args =
-      ResultT . pure . toArgs . selectionArguments <$> getState
-        >>= ResolverState . lift . cleanEvents
+      getState
+        >>= (ResolverState . lift . cleanEvents)
+          . ResultT
+          . pure
+          . toArgs
+          . selectionArguments
 
 pickSelection :: TypeName -> UnionSelection VALID -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection

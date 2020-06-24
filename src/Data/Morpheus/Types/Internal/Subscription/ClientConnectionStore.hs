@@ -92,7 +92,7 @@ publish event = traverse_ sendMessage . elems
       | otherwise = traverse_ send (filterByChannels connectionSessions)
       where
         send (sid, Event {content = subscriptionRes}) =
-          toApolloResponse sid <$> subscriptionRes event >>= connectionCallback
+          subscriptionRes event >>= connectionCallback . toApolloResponse sid
         ---------------------------
         filterByChannels =
           filter
