@@ -45,8 +45,7 @@ jobs:
           cabal-version: "3.0"
       - name: install
         run: |
-          curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh 
-          sh -s .
+          curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
   # lint:
   #   runs-on: ubuntu-latest
   #   steps:
