@@ -10,8 +10,7 @@ where
 
 import Data.Foldable (traverse_)
 import Data.Morpheus.Internal.Utils
-  ( elems,
-    empty,
+  ( empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -120,7 +119,7 @@ validateFieldArguments
   rawArgs =
     do
       args <- resolveArgumentVariables rawArgs
-      traverse_ checkUnknown (elems args)
+      traverse_ checkUnknown args
       traverse (validateArgument args) argsDef
     where
       argsDef = maybe empty fieldContentArgs fieldContent
@@ -139,7 +138,7 @@ validateDirectiveArguments
   rawArgs =
     do
       args <- resolveArgumentVariables rawArgs
-      traverse_ checkUnknown (elems args)
+      traverse_ checkUnknown args
       traverse (validateArgument args) argsDef
     where
       -------------------------------------------------
