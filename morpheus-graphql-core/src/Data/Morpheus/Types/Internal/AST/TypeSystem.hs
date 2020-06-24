@@ -78,6 +78,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     mkObjectField,
     UnionMember (..),
     mkUnionMember,
+    SchemaDefinitionRaw (..),
   )
 where
 
@@ -115,6 +116,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     FieldName (..),
     GQLError (..),
     Msg (..),
+    OperationType,
     Position,
     RESOLVED,
     Stage,
@@ -269,6 +271,11 @@ data Schema = Schema
     query :: TypeDefinition 'Out,
     mutation :: Maybe (TypeDefinition 'Out),
     subscription :: Maybe (TypeDefinition 'Out)
+  }
+  deriving (Show)
+
+newtype SchemaDefinitionRaw = SchemaDefinitionRaw
+  { unSchemaDefinition :: OrderedMap OperationType TypeName
   }
   deriving (Show)
 

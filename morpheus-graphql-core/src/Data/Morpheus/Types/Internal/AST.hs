@@ -153,6 +153,7 @@ module Data.Morpheus.Types.Internal.AST
     mkObjectField,
     UnionMember (..),
     mkUnionMember,
+    SchemaDefinitionRaw (..),
   )
 where
 

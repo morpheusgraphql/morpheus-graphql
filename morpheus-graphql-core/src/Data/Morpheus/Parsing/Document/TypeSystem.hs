@@ -36,10 +36,10 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     OUT,
     ScalarDefinition (..),
+    SchemaDefinitionRaw (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
-    UnionMember (..),
     mkUnionMember,
     toAny,
   )
@@ -186,6 +186,22 @@ inputObjectTypeDefinition typeDescription =
         { typeFingerprint = DataFingerprint typeName [],
           ..
         }
+
+-- 3.2 Schema
+-- SchemaDefinition:
+--    schema Directives[Const,opt]
+--      { RootOperationTypeDefinitionlist }
+--
+--  RootOperationTypeDefinition:
+--    OperationType: NamedType
+
+-- data SchemaDefinition = SchemaDefinition
+--   { query :: TypeName,
+--     mutation :: Maybe TypeName,
+--     subscription :: Maybe TypeName
+--   }
+
+SchemaDefinitionRaw
 
 parseDataType :: Parser (TypeDefinition ANY)
 parseDataType = label "TypeDefinition" $ do
