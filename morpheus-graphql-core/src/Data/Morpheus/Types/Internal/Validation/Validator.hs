@@ -62,6 +62,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    CONST,
     Directive (..),
     FieldName (..),
     FieldsDefinition,
@@ -73,7 +74,6 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Position,
     RAW,
-    RESOLVED,
     Ref (..),
     Schema,
     TypeDefinition,
@@ -158,7 +158,7 @@ data InputContext ctx = InputContext
   deriving (Show)
 
 data InputSource
-  = SourceArgument (Argument RESOLVED)
+  = SourceArgument (Argument CONST)
   | SourceVariable
       { sourceVariable :: Variable RAW,
         isDefaultValue :: Bool

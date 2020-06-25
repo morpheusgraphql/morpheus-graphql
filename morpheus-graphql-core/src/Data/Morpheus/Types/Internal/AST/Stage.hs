@@ -1,17 +1,17 @@
 {-# LANGUAGE DataKinds #-}
 
 module Data.Morpheus.Types.Internal.AST.Stage
-  ( RESOLVED,
+  ( CONST,
     VALID,
     RAW,
     Stage (..),
   )
 where
 
-type RESOLVED = 'RESOLVED
+type CONST = 'CONST
 
 type VALID = 'VALID
 
 type RAW = 'RAW
 
-data Stage = RAW | RESOLVED | VALID
+data Stage = RAW | CONST | VALID

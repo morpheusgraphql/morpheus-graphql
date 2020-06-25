@@ -32,6 +32,7 @@ import qualified Data.Morpheus.Types.Internal.AST as AST (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
+    CONST,
     DataEnumValue (..),
     DataTypeWrapper (..),
     Description,
@@ -49,7 +50,6 @@ import Data.Morpheus.Types.Internal.AST
     Object,
     ObjectEntry (..),
     QUERY,
-    RESOLVED,
     Schema,
     TRUE,
     TypeContent (..),
@@ -337,7 +337,7 @@ type' ref = ("type", render ref)
 defaultValue ::
   Monad m =>
   TypeRef ->
-  Maybe (Value RESOLVED) ->
+  Maybe (Value CONST) ->
   ( FieldName,
     Resolver QUERY e m (ResModel QUERY e m)
   )
@@ -357,8 +357,8 @@ defaultValue
 fulfill ::
   WithSchema m =>
   TypeRef ->
-  Maybe (Value RESOLVED) ->
-  m (Value RESOLVED)
+  Maybe (Value CONST) ->
+  m (Value CONST)
 fulfill TypeRef {typeConName} (Just (Object fields)) =
   selectType typeConName
     >>= \case
@@ -380,9 +380,9 @@ fulfill _ Nothing = pure Null
 
 handleField ::
   WithSchema m =>
-  Object RESOLVED ->
+  Object CONST ->
   FieldDefinition IN ->
-  m (ObjectEntry RESOLVED)
+  m (ObjectEntry CONST)
 handleField
   fields
   FieldDefinition

@@ -67,8 +67,8 @@ import Data.Morpheus.Types.Internal.AST.OrderedMap
     unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
-  ( RAW,
-    RESOLVED,
+  ( CONST,
+    RAW,
     Stage,
     VALID,
   )
@@ -116,14 +116,14 @@ instance A.FromJSON ScalarValue where
 
 type family VAR (a :: Stage) :: Stage
 
-type instance VAR RAW = RESOLVED
+type instance VAR RAW = CONST
 
-type instance VAR RESOLVED = RESOLVED
+type instance VAR CONST = CONST
 
 type instance VAR VALID = VALID
 
 data VariableContent (stage :: Stage) where
-  DefaultValue :: Maybe ResolvedValue -> VariableContent RESOLVED
+  DefaultValue :: Maybe ResolvedValue -> VariableContent CONST
   ValidVariableValue :: {validVarContent :: ValidValue} -> VariableContent VALID
 
 instance Lift (VariableContent a) where
@@ -155,7 +155,7 @@ instance NameCollision (Variable s) where
 type VariableDefinitions s = OrderedMap FieldName (Variable s)
 
 data Value (stage :: Stage) where
-  ResolvedVariable :: Ref -> Variable VALID -> Value RESOLVED
+  ResolvedVariable :: Ref -> Variable VALID -> Value CONST
   VariableValue :: Ref -> Value RAW
   Object :: Object stage -> Value stage
   List :: [Value stage] -> Value stage
@@ -192,13 +192,13 @@ type ValidObject = Object VALID
 
 type RawObject = Object RAW
 
-type ResolvedObject = Object RESOLVED
+type ResolvedObject = Object CONST
 
 type RawValue = Value RAW
 
 type ValidValue = Value VALID
 
-type ResolvedValue = Value RESOLVED
+type ResolvedValue = Value CONST
 
 deriving instance Lift (Value a)
 

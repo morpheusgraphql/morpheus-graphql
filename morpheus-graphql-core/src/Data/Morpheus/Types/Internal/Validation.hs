@@ -70,6 +70,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    CONST,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
@@ -80,7 +81,6 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Object,
     ObjectEntry (..),
-    RESOLVED,
     Ref (..),
     Schema,
     TRUE,
@@ -189,7 +189,7 @@ selectWithDefaultValue ::
     GetWith ctx Scope,
     MonadContext Validator ctx
   ) =>
-  (Value RESOLVED -> value) ->
+  (Value CONST -> value) ->
   FieldDefinition IN ->
   values ->
   Validator ctx value

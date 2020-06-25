@@ -12,7 +12,7 @@ module Data.Morpheus.Types.Internal.AST
     FieldName (..),
     Description,
     Stage,
-    RESOLVED,
+    CONST,
     VALID,
     RAW,
     VALIDATION_MODE (..),

@@ -138,7 +138,7 @@ import Data.Morpheus.Types.Internal.AST.OrderedMap
     unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
-  ( RESOLVED,
+  ( CONST,
     Stage,
     VALID,
   )
@@ -622,7 +622,7 @@ data FieldDefinition (cat :: TypeCategory) = FieldDefinition
 
 data FieldContent (bool :: Bool) (cat :: TypeCategory) where
   DefaultInputValue ::
-    { defaultInputValue :: Value RESOLVED
+    { defaultInputValue :: Value CONST
     } ->
     FieldContent (IsSelected cat IN) cat
   FieldArgs ::
