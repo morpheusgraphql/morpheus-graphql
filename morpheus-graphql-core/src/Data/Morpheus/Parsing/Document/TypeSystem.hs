@@ -39,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     OUT,
     OperationType,
+    RootOperationTypeDefinition (..),
     ScalarDefinition (..),
     SchemaDefinitionRaw (..),
     TypeContent (..),
@@ -212,12 +213,11 @@ parseSchemaDefinition = label "SchemaDefinition" $ do
   unSchemaDefinition <- setOf parseRootOperationTypeDefinition
   pure SchemaDefinitionRaw {schemaDirectives, unSchemaDefinition}
 
-parseRootOperationTypeDefinition :: Parser (OperationType, TypeName)
+parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition = do
   operationType <- parseOperationType
   litAssignment -- ':'
-  operationName <- parseTypeName
-  pure (operationType, operationName)
+  RootOperationTypeDefinition operationType <$> parseTypeName
 
 parseDataType :: Parser (TypeDefinition ANY)
 parseDataType = label "TypeDefinition" $ do

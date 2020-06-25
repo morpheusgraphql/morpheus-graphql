@@ -15,11 +15,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     Message (..),
     FieldName (..),
     Description,
-    VALID,
-    RAW,
     TypeWrapper (..),
-    Stage (..),
-    RESOLVED,
     TypeRef (..),
     VALIDATION_MODE (..),
     OperationType (..),
@@ -156,8 +152,6 @@ instance RenderGQL TypeName where
 -- Description
 type Description = Text
 
-data Stage = RAW | RESOLVED | VALID
-
 data Position = Position
   { line :: Int,
     column :: Int
@@ -177,12 +171,6 @@ data GQLError = GQLError
 
 type GQLErrors = [GQLError]
 
-type RAW = 'RAW
-
-type RESOLVED = 'RESOLVED
-
-type VALID = 'VALID
-
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
   | FULL_VALIDATION
@@ -197,7 +185,12 @@ data OperationType
   = Query
   | Subscription
   | Mutation
-  deriving (Show, Eq, Lift)
+  deriving (Show, Eq, Lift, Generic, Hashable)
+
+instance Msg OperationType where
+  msg Query = msg ("query" :: TypeName)
+  msg Mutation = msg ("mutation" :: TypeName)
+  msg Subscription = msg ("subscription" :: TypeName)
 
 type QUERY = 'Query
 

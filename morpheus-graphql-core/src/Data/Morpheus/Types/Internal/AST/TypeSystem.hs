@@ -79,6 +79,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     UnionMember (..),
     mkUnionMember,
     SchemaDefinitionRaw (..),
+    RootOperationTypeDefinition (..),
   )
 where
 
@@ -118,15 +119,12 @@ import Data.Morpheus.Types.Internal.AST.Base
     Msg (..),
     OperationType,
     Position,
-    RESOLVED,
-    Stage,
     TRUE,
     Token,
     TypeKind (..),
     TypeName,
     TypeRef (..),
     TypeWrapper (..),
-    VALID,
     isNullable,
     isSystemTypeName,
     msg,
@@ -138,6 +136,11 @@ import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,
     unsafeFromValues,
+  )
+import Data.Morpheus.Types.Internal.AST.Stage
+  ( RESOLVED,
+    Stage,
+    VALID,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
@@ -276,9 +279,26 @@ data Schema = Schema
 
 data SchemaDefinitionRaw = SchemaDefinitionRaw
   { schemaDirectives :: Directives VALID,
-    unSchemaDefinition :: OrderedMap OperationType (OperationType, TypeName)
+    unSchemaDefinition :: OrderedMap OperationType RootOperationTypeDefinition
   }
   deriving (Show)
+
+data RootOperationTypeDefinition = RootOperationTypeDefinition
+  { rootOperationType :: OperationType,
+    rootOperationTypeDefinitionName :: TypeName
+  }
+  deriving (Show, Eq)
+
+instance NameCollision RootOperationTypeDefinition where
+  nameCollision name _ =
+    GQLError
+      { message = "There can Be only One TypeDefinition for " <> msg name,
+        locations = []
+      }
+
+instance KeyOf RootOperationTypeDefinition where
+  type KEY RootOperationTypeDefinition = OperationType
+  keyOf = rootOperationType
 
 type TypeLib = HashMap TypeName (TypeDefinition ANY)
 

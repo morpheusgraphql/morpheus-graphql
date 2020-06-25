@@ -34,15 +34,17 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     GQLErrors,
-    RAW,
     Ref,
-    Stage,
-    VALID,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap (..),
   )
 import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM
+import Data.Morpheus.Types.Internal.AST.Stage
+  ( RAW,
+    Stage,
+    VALID,
+  )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH.Syntax (Lift (..))
 

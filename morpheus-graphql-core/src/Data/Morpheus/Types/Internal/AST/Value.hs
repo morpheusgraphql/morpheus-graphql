@@ -57,18 +57,20 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLError (..),
     Msg (..),
     Position,
-    RAW,
-    RESOLVED,
     Ref (..),
-    Stage,
     TypeName (..),
     TypeRef,
     TypeRef (..),
-    VALID,
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,
     unsafeFromValues,
+  )
+import Data.Morpheus.Types.Internal.AST.Stage
+  ( RAW,
+    RESOLVED,
+    Stage,
+    VALID,
   )
 import Data.Scientific
   ( Scientific,

@@ -49,11 +49,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     Message,
     OperationType (..),
     Position,
-    RAW,
     Ref (..),
-    Stage,
     TypeName (..),
-    VALID,
     intercalateName,
     msg,
     readName,
@@ -63,6 +60,11 @@ import Data.Morpheus.Types.Internal.AST.MergeSet
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,
+  )
+import Data.Morpheus.Types.Internal.AST.Stage
+  ( RAW,
+    Stage,
+    VALID,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( Arguments,

@@ -73,7 +73,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     QUERY,
     SUBSCRIPTION,
     TypeName (..),
-    VALID,
     msg,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
@@ -86,6 +85,9 @@ import Data.Morpheus.Types.Internal.AST.Selection
     SelectionSet,
     UnionSelection,
     UnionTag (..),
+  )
+import Data.Morpheus.Types.Internal.AST.Stage
+  ( VALID,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( Arguments,
@@ -113,8 +115,7 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     statelessToResultT,
   )
 import Data.Semigroup
-  ( (<>),
-    Semigroup (..),
+  ( Semigroup (..),
   )
 
 type WithOperation (o :: OperationType) = LiftOperation o
