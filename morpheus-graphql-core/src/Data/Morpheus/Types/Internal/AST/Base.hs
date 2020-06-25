@@ -29,7 +29,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     anonymousRef,
     toHSWrappers,
     toGQLWrapper,
-    sysTypes,
     isNullable,
     isWeaker,
     isSubscription,
@@ -322,24 +321,23 @@ renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
 isSystemTypeName :: TypeName -> Bool
-isSystemTypeName = (`elem` sysTypes)
-
-sysTypes :: [TypeName]
-sysTypes =
-  [ "__Schema",
-    "__Type",
-    "__Directive",
-    "__TypeKind",
-    "__Field",
-    "__DirectiveLocation",
-    "__InputValue",
-    "__EnumValue",
-    "String",
-    "Float",
-    "Int",
-    "Boolean",
-    "ID"
-  ]
+isSystemTypeName =
+  ( `elem`
+      [ "__Schema",
+        "__Type",
+        "__Directive",
+        "__TypeKind",
+        "__Field",
+        "__DirectiveLocation",
+        "__InputValue",
+        "__EnumValue",
+        "String",
+        "Float",
+        "Int",
+        "Boolean",
+        "ID"
+      ]
+  )
 
 sysFields :: [FieldName]
 sysFields = ["__typename", "__schema", "__type"]
