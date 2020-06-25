@@ -38,7 +38,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     DataInputUnion,
     Argument (..),
     Fields (..),
-    createField,
     createArgument,
     createEnumType,
     createScalarType,

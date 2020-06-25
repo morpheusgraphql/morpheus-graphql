@@ -92,7 +92,6 @@ module Data.Morpheus.Types.Internal.AST
     isOutputObject,
     isNotSystemTypeName,
     isEntNode,
-    createField,
     createArgument,
     createEnumType,
     createScalarType,
