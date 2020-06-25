@@ -59,11 +59,11 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     Value (..),
-    createInputUnionFields,
     fieldVisibility,
     kindOf,
     lookupDeprecated,
     lookupDeprecatedReason,
+    mkInputUnionFields,
     msg,
     toGQLWrapper,
   )
@@ -172,7 +172,7 @@ instance RenderIntrospection (TypeDefinition a) where
             INPUT_OBJECT
             [ ( "inputFields",
                 render
-                  $ createInputUnionFields typeName
+                  $ mkInputUnionFields typeName
                   $ filter visibility members
               )
             ]

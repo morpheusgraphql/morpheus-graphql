@@ -87,7 +87,7 @@ import Data.Morpheus.Types.Internal.AST
     createEnumValue,
     defineType,
     fieldsToArguments,
-    mkField,
+    mkInputValue,
     mkUnionMember,
     msg,
     toListField,
@@ -524,9 +524,9 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
           typeDescription = Nothing,
           typeDirectives = empty,
           typeContent =
-            wrapObject $
-              singleton
-                (mkField "enum" ([], enumTypeName))
+            wrapObject
+              $ singleton
+              $ mkInputValue "enum" [] enumTypeName
         }
 
 data TypeScope (cat :: TypeCategory) where

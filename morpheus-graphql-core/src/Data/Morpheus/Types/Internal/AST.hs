@@ -97,7 +97,7 @@ module Data.Morpheus.Types.Internal.AST
     createType,
     createUnionType,
     createAlias,
-    createInputUnionFields,
+    mkInputUnionFields,
     fieldVisibility,
     createEnumValue,
     insertType,

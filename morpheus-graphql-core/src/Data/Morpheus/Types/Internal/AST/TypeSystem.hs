@@ -43,10 +43,9 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     createType,
     createUnionType,
     createAlias,
-    createInputUnionFields,
+    mkInputUnionFields,
     createEnumValue,
     defineType,
-    isTypeDefined,
     initTypeLib,
     insertType,
     fieldVisibility,
@@ -746,8 +745,8 @@ instance Listable ArgumentDefinition ArgumentsDefinition where
 __inputname :: FieldName
 __inputname = "inputname"
 
-createInputUnionFields :: TypeName -> [UnionMember IN] -> [FieldDefinition IN]
-createInputUnionFields name members = fieldTag : map unionField members
+mkInputUnionFields :: TypeName -> [UnionMember IN] -> FieldsDefinition IN
+mkInputUnionFields name members = unsafeFromFields $ fieldTag : map mkUnionField members
   where
     fieldTag =
       FieldDefinition
@@ -758,8 +757,8 @@ createInputUnionFields name members = fieldTag : map unionField members
           fieldDirectives = []
         }
 
-unionField :: UnionMember IN -> FieldDefinition IN
-unionField UnionMember {memberName} =
+mkUnionField :: UnionMember IN -> FieldDefinition IN
+mkUnionField UnionMember {memberName} =
   FieldDefinition
     { fieldName = toFieldName memberName,
       fieldDescription = Nothing,
@@ -800,11 +799,9 @@ instance RenderGQL (TypeDefinition a) where
           <> " =\n    "
           <> intercalate ("\n" <> renderIndent <> "| ") (map render members)
       __render (DataInputObject fields) = "input " <> render typeName <> render fields
-      __render (DataInputUnion members) = "input " <> render typeName <> render fieldsDef
+      __render (DataInputUnion members) = "input " <> render typeName <> render fields
         where
-          fieldsDef = unsafeFromFields fields
-          fields :: [FieldDefinition IN]
-          fields = createInputUnionFields typeName members
+          fields = mkInputUnionFields typeName members
       __render DataObject {objectFields} = "type " <> render typeName <> render objectFields
 
 ignoreHidden :: [FieldDefinition cat] -> [FieldDefinition cat]
