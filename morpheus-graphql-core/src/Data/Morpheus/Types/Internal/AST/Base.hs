@@ -8,6 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Ref (..),
@@ -29,7 +30,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     anonymousRef,
     toHSWrappers,
     toGQLWrapper,
-    Nullable (isNullable),
+    Nullable (..),
     isWeaker,
     isSubscription,
     isOutputObject,
@@ -111,6 +112,7 @@ instance Msg Value where
 
 class Nullable a where
   isNullable :: a -> Bool
+  toNullable :: a -> a
 
 -- FieldName : lower case names
 newtype FieldName = FieldName {readName :: Text}
@@ -231,7 +233,8 @@ data TypeRef = TypeRef
   deriving (Show, Eq, Lift)
 
 instance Nullable TypeRef where
-  isNullable TypeRef {typeWrappers} = isNullable typeWrappers
+  isNullable = isNullable . typeWrappers
+  toNullable TypeRef {..} = TypeRef {typeWrappers = toNullable typeWrappers, ..}
 
 instance RenderGQL TypeRef where
   render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
@@ -293,6 +296,8 @@ data DataTypeWrapper
 instance Nullable [TypeWrapper] where
   isNullable (TypeMaybe : _) = True
   isNullable _ = False
+  toNullable (TypeMaybe : xs) = TypeMaybe : xs
+  toNullable xs = TypeMaybe : xs
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
 isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2

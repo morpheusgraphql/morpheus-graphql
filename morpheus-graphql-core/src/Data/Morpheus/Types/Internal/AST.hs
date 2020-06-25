@@ -80,7 +80,7 @@ module Data.Morpheus.Types.Internal.AST
     initTypeLib,
     defineType,
     kindOf,
-    toNullableField,
+    toNullable,
     toListField,
     isObject,
     isInput,

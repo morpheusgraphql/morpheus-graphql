@@ -53,7 +53,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     insertType,
     fieldVisibility,
     kindOf,
-    toNullableField,
     toListField,
     isEntNode,
     lookupDeprecated,
@@ -665,6 +664,7 @@ instance RenderGQL (FieldsDefinition IN) where
 
 instance Nullable (FieldDefinition cat) where
   isNullable = isNullable . fieldType
+  toNullable field = field {fieldType = toNullable (fieldType field)}
 
 fieldVisibility :: FieldDefinition cat -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
@@ -684,14 +684,6 @@ mkField = createField Nothing
 
 mkObjectField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition OUT
 mkObjectField args = createField (Just $ FieldArgs args)
-
-toNullableField :: FieldDefinition cat -> FieldDefinition cat
-toNullableField dataField
-  | isNullable dataField = dataField
-  | otherwise = dataField {fieldType = nullable (fieldType dataField)}
-  where
-    nullable alias@TypeRef {typeWrappers} =
-      alias {typeWrappers = TypeMaybe : typeWrappers}
 
 toListField :: FieldDefinition cat -> FieldDefinition cat
 toListField dataField = dataField {fieldType = listW (fieldType dataField)}

@@ -91,7 +91,7 @@ import Data.Morpheus.Types.Internal.AST
     mkUnionMember,
     msg,
     toListField,
-    toNullableField,
+    toNullable,
     unsafeFromFields,
     updateSchema,
   )
@@ -137,7 +137,7 @@ class Introspect (cat :: TypeCategory) a where
 -- Maybe
 instance Introspect cat a => Introspect cat (Maybe a) where
   isObject _ = False
-  field _ = toNullableField . field (ProxyRep :: ProxyRep cat a)
+  field _ = toNullable . field (ProxyRep :: ProxyRep cat a)
   introspect _ = introspect (ProxyRep :: ProxyRep cat a)
 
 -- List
