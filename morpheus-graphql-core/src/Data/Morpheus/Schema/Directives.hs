@@ -10,7 +10,7 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition (..),
     DirectiveLocation (..),
     TypeWrapper (..),
-    mkField,
+    mkInputValue,
   )
 
 defaultDirectives :: [DirectiveDefinition]
@@ -32,12 +32,9 @@ defaultDirectives =
         directiveDefinitionDescription = Just "Marks an element of a GraphQL schema as no longer supported.",
         directiveDefinitionLocations = [FIELD_DEFINITION, ENUM_VALUE],
         directiveDefinitionArgs =
-          singleton $
-            mkField
-              "reason"
-              ([TypeMaybe], "String")
+          singleton $ mkInputValue "reason" [TypeMaybe] "String"
       }
   ]
 
 argumentsIf :: ArgumentsDefinition
-argumentsIf = singleton $ mkField "if" ([], "Boolean")
+argumentsIf = singleton $ mkInputValue "if" [] "Boolean"

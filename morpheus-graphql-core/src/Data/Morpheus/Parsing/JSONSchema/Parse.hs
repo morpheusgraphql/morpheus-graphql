@@ -39,12 +39,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeWrapper,
-    createArgument,
     createEnumType,
     createScalarType,
     createType,
     createUnionType,
-    mkField,
+    mkInputValue,
     mkObjectField,
     msg,
     toAny,
@@ -91,15 +90,15 @@ instance ParseJSONSchema Type [TypeDefinition ANY] where
 
 instance ParseJSONSchema Field (FieldDefinition OUT) where
   parse Field {fieldName, fieldArgs, fieldType} = do
-    fType <- fieldTypeFromJSON fieldType
+    (wrappers, typename) <- fieldTypeFromJSON fieldType
     args <- traverse genArg fieldArgs >>= fromElems
-    pure $ mkObjectField (ArgumentsDefinition Nothing args) fieldName fType
+    pure $ mkObjectField (ArgumentsDefinition Nothing args) fieldName wrappers typename
     where
       genArg InputValue {inputName = argName, inputType = argType} =
-        createArgument argName <$> fieldTypeFromJSON argType
+        uncurry (mkInputValue argName) <$> fieldTypeFromJSON argType
 
 instance ParseJSONSchema InputValue (FieldDefinition IN) where
-  parse InputValue {inputName, inputType} = mkField inputName <$> fieldTypeFromJSON inputType
+  parse InputValue {inputName, inputType} = uncurry (mkInputValue inputName) <$> fieldTypeFromJSON inputType
 
 fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], TypeName)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []

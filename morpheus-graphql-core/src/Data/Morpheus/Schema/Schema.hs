@@ -32,10 +32,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeUpdater,
     TypeWrapper (..),
-    createArgument,
     insertType,
     internalFingerprint,
-    mkField,
+    mkInputValue,
     mkObjectField,
     unsafeFromFields,
   )
@@ -57,12 +56,14 @@ hiddenFields :: FieldsDefinition OUT
 hiddenFields =
   unsafeFromFields
     [ mkObjectField
-        (singleton (createArgument "name" ([], "String")))
+        (singleton (mkInputValue "name" [] "String"))
         "__type"
-        ([TypeMaybe], "__Type"),
-      mkField
+        [TypeMaybe]
+        "__Type",
+      mkInputValue
         "__schema"
-        ([], "__Schema")
+        []
+        "__Schema"
     ]
 
 internalType :: TypeDefinition a -> TypeDefinition a

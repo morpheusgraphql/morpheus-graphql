@@ -38,7 +38,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     DataInputUnion,
     Argument (..),
     Fields (..),
-    createArgument,
     createEnumType,
     createScalarType,
     createType,
@@ -71,7 +70,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     fieldsToArguments,
     FieldContent (..),
     fieldContentArgs,
-    mkField,
+    mkInputValue,
     mkObjectField,
     UnionMember (..),
     mkUnionMember,
@@ -655,10 +654,7 @@ instance RenderGQL (FieldDefinition cat) where
   render FieldDefinition {fieldName = FieldName name, fieldType} =
     name <> ": " <> render fieldType
 
-instance RenderGQL (FieldsDefinition OUT) where
-  render = renderObject render . ignoreHidden . elems
-
-instance RenderGQL (FieldsDefinition IN) where
+instance RenderGQL (FieldsDefinition cat) where
   render = renderObject render . ignoreHidden . elems
 
 instance Nullable (FieldDefinition cat) where
@@ -668,8 +664,13 @@ instance Nullable (FieldDefinition cat) where
 fieldVisibility :: FieldDefinition cat -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 
-createField :: Maybe (FieldContent TRUE cat) -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
-createField fieldContent fieldName (typeWrappers, typeConName) =
+createField ::
+  Maybe (FieldContent TRUE cat) ->
+  FieldName ->
+  [TypeWrapper] ->
+  TypeName ->
+  FieldDefinition cat
+createField fieldContent fieldName typeWrappers typeConName =
   FieldDefinition
     { fieldName,
       fieldContent,
@@ -678,10 +679,15 @@ createField fieldContent fieldName (typeWrappers, typeConName) =
       fieldDirectives = []
     }
 
-mkField :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
-mkField = createField Nothing
+mkInputValue :: FieldName -> [TypeWrapper] -> TypeName -> FieldDefinition cat
+mkInputValue = createField Nothing
 
-mkObjectField :: ArgumentsDefinition -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition OUT
+mkObjectField ::
+  ArgumentsDefinition ->
+  FieldName ->
+  [TypeWrapper] ->
+  TypeName ->
+  FieldDefinition OUT
 mkObjectField args = createField (Just $ FieldArgs args)
 
 toListField :: FieldDefinition cat -> FieldDefinition cat
@@ -731,9 +737,6 @@ instance Collection ArgumentDefinition ArgumentsDefinition where
 instance Listable ArgumentDefinition ArgumentsDefinition where
   elems (ArgumentsDefinition _ args) = elems args
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args
-
-createArgument :: FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition IN
-createArgument = mkField
 
 -- https://spec.graphql.org/June2018/#InputValueDefinition
 -- InputValueDefinition
