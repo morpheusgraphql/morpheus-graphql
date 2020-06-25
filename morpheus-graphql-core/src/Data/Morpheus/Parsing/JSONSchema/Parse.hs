@@ -39,10 +39,10 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeWrapper,
-    createEnumType,
     createScalarType,
     createType,
     createUnionType,
+    mkEnumContent,
     mkInputValue,
     mkObjectField,
     msg,
@@ -71,7 +71,7 @@ instance ParseJSONSchema Type [TypeDefinition ANY] where
   parse Type {name = Just typeName, kind = SCALAR} =
     pure [createScalarType typeName]
   parse Type {name = Just typeName, kind = ENUM, enumValues = Just enums} =
-    pure [createEnumType typeName (map enumName enums)]
+    pure [createType typeName $ mkEnumContent (map enumName enums)]
   parse Type {name = Just typeName, kind = UNION, possibleTypes = Just unions} =
     case traverse name unions of
       Nothing -> internalError "ERROR: GQL ERROR"

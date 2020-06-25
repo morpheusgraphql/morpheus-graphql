@@ -84,9 +84,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeUpdater,
     UnionMember (..),
     createAlias,
-    createEnumValue,
     defineType,
     fieldsToArguments,
+    mkEnumContent,
     mkInputValue,
     mkUnionMember,
     msg,
@@ -207,8 +207,7 @@ instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
 instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
     where
-      enumType =
-        buildType $ DataEnum $ map (createEnumValue . TypeName) $ enumTags (Proxy @(Rep a))
+      enumType = buildType $ mkEnumContent $ enumTags (Proxy @(Rep a))
 
 instance (GQL_TYPE a, DeriveTypeContent IN (CUSTOM a) a) => IntrospectKind INPUT a where
   introspectKind _ = derivingData (Proxy @a) InputType
@@ -390,8 +389,7 @@ buildInputUnion (baseName, baseFingerprint) cons =
     (analyseRep baseName cons)
   where
     datatype :: ResRep IN -> (TypeContent TRUE IN, [TypeUpdater])
-    datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
-      (DataEnum (map createEnumValue enumCons), types)
+    datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (DataInputUnion typeMembers, types <> unionTypes)
       where
@@ -414,8 +412,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
     (analyseRep baseName cons)
   where
     --datatype :: ResRep -> (TypeContent TRUE cat, [TypeUpdater])
-    datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} =
-      (DataEnum (map createEnumValue enumCons), types)
+    datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (wrapUnion (map mkUnionMember typeMembers), types <> enumTypes <> unionTypes)
       where
@@ -505,7 +502,7 @@ buildEnum typeName typeFingerprint tags =
       TypeDefinition
         { typeDescription = Nothing,
           typeDirectives = empty,
-          typeContent = DataEnum $ map createEnumValue tags,
+          typeContent = mkEnumContent tags,
           ..
         }
 

@@ -38,13 +38,12 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     DataInputUnion,
     Argument (..),
     Fields (..),
-    createEnumType,
+    mkEnumContent,
     createScalarType,
     createType,
     createUnionType,
     createAlias,
     mkInputUnionFields,
-    createEnumValue,
     defineType,
     initTypeLib,
     insertType,
@@ -468,13 +467,11 @@ createType typeName typeContent =
 createScalarType :: TypeName -> TypeDefinition a
 createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
 
-createEnumType :: TypeName -> [TypeName] -> TypeDefinition a
-createEnumType typeName typeData = createType typeName (DataEnum enumValues)
-  where
-    enumValues = map createEnumValue typeData
+mkEnumContent :: [TypeName] -> TypeContent TRUE a
+mkEnumContent typeData = DataEnum (map mkEnumValue typeData)
 
-createEnumValue :: TypeName -> DataEnumValue
-createEnumValue enumName =
+mkEnumValue :: TypeName -> DataEnumValue
+mkEnumValue enumName =
   DataEnumValue
     { enumName,
       enumDescription = Nothing,
@@ -515,7 +512,7 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
           typeFingerprint,
           typeDescription = Nothing,
           typeDirectives = [],
-          typeContent = DataEnum $ map (createEnumValue . memberName) enumKeys
+          typeContent = mkEnumContent (map memberName enumKeys)
         }
 defineType datatype lib =
   lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
