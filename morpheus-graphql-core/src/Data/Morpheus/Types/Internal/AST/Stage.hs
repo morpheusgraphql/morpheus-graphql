@@ -14,4 +14,7 @@ type VALID = 'VALID
 
 type RAW = 'RAW
 
-data Stage = RAW | CONST | VALID
+data Stage
+  = RAW
+  | CONST
+  | VALID
