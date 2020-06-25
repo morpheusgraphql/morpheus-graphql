@@ -50,7 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     Variable (..),
     VariableContent (..),
-    isNullableWrapper,
+    isNullable,
     isWeaker,
     msg,
     toFieldName,
@@ -154,7 +154,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     validateWrapped wrappers _ ObjectEntry {entryValue = ResolvedVariable ref variable} =
       checkTypeEquality (typeName, wrappers) ref variable
     validateWrapped wrappers _ ObjectEntry {entryValue = Null}
-      | isNullableWrapper wrappers = pure Null
+      | isNullable wrappers = pure Null
       | otherwise = mismatchError wrappers Nothing Null
     -- Validate LIST
     validateWrapped [TypeMaybe] dt ObjectEntry {entryValue} =

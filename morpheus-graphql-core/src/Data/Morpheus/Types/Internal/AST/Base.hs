@@ -29,14 +29,13 @@ module Data.Morpheus.Types.Internal.AST.Base
     anonymousRef,
     toHSWrappers,
     toGQLWrapper,
-    isNullable,
+    Nullable (isNullable),
     isWeaker,
     isSubscription,
     isOutputObject,
-    isSystemTypeName,
+    isNotSystemTypeName,
     isObject,
     isInput,
-    isNullableWrapper,
     sysFields,
     hsTypeName,
     toOperationType,
@@ -109,6 +108,9 @@ instance Msg Text where
 
 instance Msg Value where
   msg = msg . encode
+
+class Nullable a where
+  isNullable :: a -> Bool
 
 -- FieldName : lower case names
 newtype FieldName = FieldName {readName :: Text}
@@ -228,8 +230,8 @@ data TypeRef = TypeRef
   }
   deriving (Show, Eq, Lift)
 
-isNullable :: TypeRef -> Bool
-isNullable TypeRef {typeWrappers = typeWrappers} = isNullableWrapper typeWrappers
+instance Nullable TypeRef where
+  isNullable TypeRef {typeWrappers} = isNullable typeWrappers
 
 instance RenderGQL TypeRef where
   render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
@@ -288,9 +290,9 @@ data DataTypeWrapper
   | NonNullType
   deriving (Show, Lift)
 
-isNullableWrapper :: [TypeWrapper] -> Bool
-isNullableWrapper (TypeMaybe : _) = True
-isNullableWrapper _ = False
+instance Nullable [TypeWrapper] where
+  isNullable (TypeMaybe : _) = True
+  isNullable _ = False
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
 isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
@@ -320,9 +322,9 @@ renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
     showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
-isSystemTypeName :: TypeName -> Bool
-isSystemTypeName =
-  ( `elem`
+isNotSystemTypeName :: TypeName -> Bool
+isNotSystemTypeName =
+  ( `notElem`
       [ "__Schema",
         "__Type",
         "__Directive",

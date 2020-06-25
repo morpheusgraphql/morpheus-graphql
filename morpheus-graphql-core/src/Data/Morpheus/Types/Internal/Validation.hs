@@ -93,7 +93,7 @@ import Data.Morpheus.Types.Internal.AST
     __inputname,
     entryValue,
     fromAny,
-    isFieldNullable,
+    isNullable,
     msg,
     toFieldName,
   )
@@ -210,7 +210,7 @@ selectWithDefaultValue
       handeNull :: Maybe (FieldContent TRUE IN) -> Validator ctx value
       handeNull (Just (DefaultInputValue value)) = pure $ f value
       handeNull Nothing
-        | isFieldNullable field = pure $ f Null
+        | isNullable field = pure $ f Null
         | otherwise = failSelection
       -----------------
       failSelection = do

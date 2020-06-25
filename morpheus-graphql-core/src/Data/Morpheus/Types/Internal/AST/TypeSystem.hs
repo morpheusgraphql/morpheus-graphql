@@ -50,7 +50,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     defineType,
     isTypeDefined,
     initTypeLib,
-    isFieldNullable,
     insertType,
     fieldVisibility,
     kindOf,
@@ -117,6 +116,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     FieldName (..),
     GQLError (..),
     Msg (..),
+    Nullable (..),
     OperationType,
     Position,
     TRUE,
@@ -125,8 +125,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeName,
     TypeRef (..),
     TypeWrapper (..),
-    isNullable,
-    isSystemTypeName,
+    isNotSystemTypeName,
     msg,
     sysFields,
     toFieldName,
@@ -664,11 +663,11 @@ instance RenderGQL (FieldsDefinition OUT) where
 instance RenderGQL (FieldsDefinition IN) where
   render = renderObject render . ignoreHidden . elems
 
+instance Nullable (FieldDefinition cat) where
+  isNullable = isNullable . fieldType
+
 fieldVisibility :: FieldDefinition cat -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
-
-isFieldNullable :: FieldDefinition cat -> Bool
-isFieldNullable = isNullable . fieldType
 
 createField :: Maybe (FieldContent TRUE cat) -> FieldName -> ([TypeWrapper], TypeName) -> FieldDefinition cat
 createField fieldContent fieldName (typeWrappers, typeConName) =
@@ -688,7 +687,7 @@ mkObjectField args = createField (Just $ FieldArgs args)
 
 toNullableField :: FieldDefinition cat -> FieldDefinition cat
 toNullableField dataField
-  | isNullable (fieldType dataField) = dataField
+  | isNullable dataField = dataField
   | otherwise = dataField {fieldType = nullable (fieldType dataField)}
   where
     nullable alias@TypeRef {typeWrappers} =
@@ -793,7 +792,7 @@ type TypeUpdater = LibUpdater Schema
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes
     where
-      visibleTypes = filter (not . isSystemTypeName . typeName) (elems schema)
+      visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
 
 instance RenderGQL (TypeDefinition a) where
   render TypeDefinition {typeName, typeContent} = __render typeContent

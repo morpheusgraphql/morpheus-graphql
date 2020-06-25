@@ -52,7 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     VariableDefinitions,
     hsTypeName,
-    isSystemTypeName,
+    isNotSystemTypeName,
     lookupDeprecated,
     lookupDeprecatedReason,
     msg,
@@ -86,7 +86,7 @@ getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> ms
 
 customScalarTypes :: TypeName -> [TypeName]
 customScalarTypes typeName
-  | not (isSystemTypeName typeName) = [typeName]
+  | isNotSystemTypeName typeName = [typeName]
   | otherwise = []
 
 leafType :: TypeDefinition a -> Converter ([ClientTypeDefinition], [TypeName])

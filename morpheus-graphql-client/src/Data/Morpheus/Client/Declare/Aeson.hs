@@ -50,7 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName (..),
     isEnum,
-    isFieldNullable,
+    isNullable,
     isOutputObject,
     msg,
     toFieldName,
@@ -141,7 +141,7 @@ aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
         ----------------------------------------------------------
 
         defField field@FieldDefinition {fieldName}
-          | isFieldNullable field = [|o .:? fieldName|]
+          | isNullable field = [|o .:? fieldName|]
           | otherwise = [|o .: fieldName|]
         --------------------------------------------------------
         startExp fNames =
