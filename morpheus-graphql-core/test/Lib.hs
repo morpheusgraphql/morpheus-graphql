@@ -65,7 +65,7 @@ deepScan :: FilePath -> IO CaseTree
 deepScan = shouldScan . FileUrl []
   where
     shouldScan :: FileUrl -> IO CaseTree
-    shouldScan caseUrl@FileUrl {..} = do
+    shouldScan caseUrl = do
       children <- prefixed caseUrl
       pure CaseTree {..}
     isDirectory :: FileUrl -> IO Bool

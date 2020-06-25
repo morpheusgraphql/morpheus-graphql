@@ -40,7 +40,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     Fields (..),
     mkEnumContent,
     createScalarType,
-    createType,
+    mkType,
     createUnionType,
     createAlias,
     mkInputUnionFields,
@@ -454,8 +454,8 @@ deriving instance Show (TypeContent a b)
 
 deriving instance Lift (TypeContent a b)
 
-createType :: TypeName -> TypeContent TRUE a -> TypeDefinition a
-createType typeName typeContent =
+mkType :: TypeName -> TypeContent TRUE a -> TypeDefinition a
+mkType typeName typeContent =
   TypeDefinition
     { typeName,
       typeDescription = Nothing,
@@ -465,7 +465,7 @@ createType typeName typeContent =
     }
 
 createScalarType :: TypeName -> TypeDefinition a
-createScalarType typeName = createType typeName $ DataScalar (ScalarDefinition pure)
+createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
 mkEnumContent :: [TypeName] -> TypeContent TRUE a
 mkEnumContent typeData = DataEnum (map mkEnumValue typeData)
@@ -479,7 +479,7 @@ mkEnumValue enumName =
     }
 
 createUnionType :: TypeName -> [TypeName] -> TypeDefinition OUT
-createUnionType typeName typeData = createType typeName (DataUnion $ map mkUnionMember typeData)
+createUnionType typeName typeData = mkType typeName (DataUnion $ map mkUnionMember typeData)
 
 isEntNode :: TypeContent TRUE a -> Bool
 isEntNode DataScalar {} = True
