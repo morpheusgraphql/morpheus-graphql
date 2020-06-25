@@ -654,7 +654,7 @@ instance RenderGQL (FieldDefinition cat) where
     name <> ": " <> render fieldType
 
 instance RenderGQL (FieldsDefinition cat) where
-  render = renderObject render . ignoreHidden . elems
+  render = renderObject render . filter fieldVisibility . elems
 
 instance Nullable (FieldDefinition cat) where
   isNullable = isNullable . fieldType
@@ -803,6 +803,3 @@ instance RenderGQL (TypeDefinition a) where
         where
           fields = mkInputUnionFields typeName members
       __render DataObject {objectFields} = "type " <> render typeName <> render objectFields
-
-ignoreHidden :: [FieldDefinition cat] -> [FieldDefinition cat]
-ignoreHidden = filter fieldVisibility
