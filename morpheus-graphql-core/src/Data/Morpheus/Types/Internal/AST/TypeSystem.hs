@@ -65,6 +65,7 @@ import Data.Morpheus.Error.NameCollision
 import Data.Morpheus.Error.Schema (nameCollisionError)
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
+    Failure (..),
     KeyOf (..),
     Listable (..),
     Selectable (..),
@@ -120,8 +121,7 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Failure (..),
-    LibUpdater,
+  ( LibUpdater,
     resolveUpdates,
   )
 import Data.Semigroup (Semigroup (..))
