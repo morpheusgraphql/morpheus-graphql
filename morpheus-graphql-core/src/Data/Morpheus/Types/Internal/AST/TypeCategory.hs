@@ -9,6 +9,7 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
     ANY,
     FromAny (..),
     ToAny (..),
+    IsSelected,
   )
 where
 

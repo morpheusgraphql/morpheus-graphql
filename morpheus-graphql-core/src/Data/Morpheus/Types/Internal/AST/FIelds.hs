@@ -25,12 +25,6 @@ module Data.Morpheus.Types.Internal.AST.Fields
     Fields (..),
     FieldContent (..),
     InputFieldsDefinition,
-    TypeCategory,
-    OUT,
-    IN,
-    ANY,
-    FromAny (..),
-    ToAny (..),
     DirectiveDefinitions,
     DirectiveDefinition (..),
     Directives,
@@ -65,7 +59,6 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    FALSE,
     FieldName,
     FieldName (..),
     GQLError (..),
@@ -89,6 +82,7 @@ import Data.Morpheus.Types.Internal.AST.Stage
     Stage,
     VALID,
   )
+import Data.Morpheus.Types.Internal.AST.TypeCategory
 import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
     Value (..),
@@ -164,40 +158,12 @@ lookupDeprecatedReason Directive {directiveArgs} =
     maybeString Argument {argumentValue = (Scalar (String x))} = x
     maybeString _ = "can't read deprecated Reason Value"
 
-data TypeCategory = In | Out | Any
-
-type IN = 'In
-
-type OUT = 'Out
-
-type ANY = 'Any
-
-class ToAny a where
-  toAny :: a (k :: TypeCategory) -> a ANY
-
 instance ToAny FieldDefinition where
   toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny <$> fieldContent, ..}
 
 instance ToAny (FieldContent TRUE) where
   toAny (FieldArgs x) = FieldArgs x
   toAny (DefaultInputValue x) = DefaultInputValue x
-
-class FromAny a (k :: TypeCategory) where
-  fromAny :: a ANY -> Maybe (a k)
-
-type family IsSelected (c :: TypeCategory) (a :: TypeCategory) :: Bool
-
-type instance IsSelected ANY a = TRUE
-
-type instance IsSelected OUT OUT = TRUE
-
-type instance IsSelected IN IN = TRUE
-
-type instance IsSelected IN OUT = FALSE
-
-type instance IsSelected OUT IN = FALSE
-
-type instance IsSelected a ANY = TRUE
 
 newtype Fields def = Fields
   {unFields :: OrderedMap FieldName def}
