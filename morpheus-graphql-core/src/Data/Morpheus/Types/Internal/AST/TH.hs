@@ -17,10 +17,12 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeRef (..),
     hsTypeName,
   )
+import Data.Morpheus.Types.Internal.AST.Fields
+  ( FieldDefinition (..),
+    FieldsDefinition,
+  )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( DataEnumValue (..),
-    FieldDefinition (..),
-    FieldsDefinition,
   )
 
 toHSFieldDefinition :: FieldDefinition cat -> FieldDefinition cat

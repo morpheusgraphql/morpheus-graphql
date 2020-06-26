@@ -28,6 +28,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
     DirectiveDefinitions,
     DirectiveDefinition (..),
     Directives,
+    Directive (..),
     fieldVisibility,
     toListField,
     lookupDeprecated,

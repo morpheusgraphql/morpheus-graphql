@@ -55,6 +55,10 @@ import Data.Morpheus.Types.Internal.AST.Base
     msg,
     readName,
   )
+import Data.Morpheus.Types.Internal.AST.Fields
+  ( Arguments,
+    Directives,
+  )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( MergeSet,
   )
@@ -70,9 +74,7 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( OUT,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
-  ( Arguments,
-    Directives,
-    Schema (..),
+  ( Schema (..),
     TypeDefinition (..),
   )
 import Data.Morpheus.Types.Internal.AST.Value
