@@ -83,6 +83,12 @@ import Data.Morpheus.Types.Internal.AST.Stage
     VALID,
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
+  ( IN,
+    IsSelected,
+    OUT,
+    ToAny (..),
+    TypeCategory,
+  )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
     Value (..),

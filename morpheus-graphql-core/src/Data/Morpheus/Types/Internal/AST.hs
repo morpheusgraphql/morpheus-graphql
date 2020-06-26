@@ -161,6 +161,7 @@ import Data.Morpheus.Types.Internal.AST.OrderedMap
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH
+import Data.Morpheus.Types.Internal.AST.TypeCategory
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.AST.Value
 import Language.Haskell.TH.Syntax (Lift)

@@ -66,10 +66,12 @@ import Data.Morpheus.Types.Internal.AST.Stage
     Stage,
     VALID,
   )
+import Data.Morpheus.Types.Internal.AST.TypeCategory
+  ( OUT,
+  )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( Arguments,
     Directives,
-    OUT,
     Schema (..),
     TypeDefinition (..),
   )

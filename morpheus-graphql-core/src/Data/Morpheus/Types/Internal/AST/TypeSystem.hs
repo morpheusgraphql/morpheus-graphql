@@ -57,11 +57,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     unsafeFromFields,
     __inputname,
     updateSchema,
-    OUT,
-    IN,
-    ANY,
-    FromAny (..),
-    ToAny (..),
     DirectiveDefinitions,
     DirectiveDefinition (..),
     Directives,
@@ -106,7 +101,6 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Base
   ( DataFingerprint (..),
     Description,
-    FALSE,
     FieldName,
     FieldName (..),
     GQLError (..),
@@ -135,6 +129,15 @@ import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
     Stage,
     VALID,
+  )
+import Data.Morpheus.Types.Internal.AST.TypeCategory
+  ( ANY,
+    FromAny (..),
+    IN,
+    IsSelected,
+    OUT,
+    ToAny (..),
+    TypeCategory,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
@@ -265,9 +268,9 @@ instance RenderGQL DataEnumValue where
 
 data Schema = Schema
   { types :: TypeLib,
-    query :: TypeDefinition 'Out,
-    mutation :: Maybe (TypeDefinition 'Out),
-    subscription :: Maybe (TypeDefinition 'Out)
+    query :: TypeDefinition OUT,
+    mutation :: Maybe (TypeDefinition OUT),
+    subscription :: Maybe (TypeDefinition OUT)
   }
   deriving (Show)
 
@@ -308,7 +311,7 @@ instance Listable (TypeDefinition ANY) Schema where
       let (subscription, lib3) = popByKey "Subscription" lib2
       pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
 
-initTypeLib :: TypeDefinition 'Out -> Schema
+initTypeLib :: TypeDefinition OUT -> Schema
 initTypeLib query =
   Schema
     { types = empty,
@@ -352,17 +355,6 @@ instance KeyOf (TypeDefinition a) where
   type KEY (TypeDefinition a) = TypeName
   keyOf = typeName
 
-data TypeCategory = In | Out | Any
-
-type IN = 'In
-
-type OUT = 'Out
-
-type ANY = 'Any
-
-class ToAny a where
-  toAny :: a (k :: TypeCategory) -> a ANY
-
 instance ToAny TypeDefinition where
   toAny TypeDefinition {typeContent, ..} = TypeDefinition {typeContent = toAny typeContent, ..}
 
@@ -381,9 +373,6 @@ instance ToAny FieldDefinition where
 instance ToAny (FieldContent TRUE) where
   toAny (FieldArgs x) = FieldArgs x
   toAny (DefaultInputValue x) = DefaultInputValue x
-
-class FromAny a (k :: TypeCategory) where
-  fromAny :: a ANY -> Maybe (a k)
 
 instance (FromAny (TypeContent TRUE) a) => FromAny TypeDefinition a where
   fromAny TypeDefinition {typeContent, ..} = bla <$> fromAny typeContent
@@ -404,20 +393,6 @@ instance FromAny (TypeContent TRUE) OUT where
   fromAny DataUnion {..} = Just DataUnion {..}
   fromAny DataInterface {..} = Just DataInterface {..}
   fromAny _ = Nothing
-
-type family IsSelected (c :: TypeCategory) (a :: TypeCategory) :: Bool
-
-type instance IsSelected ANY a = TRUE
-
-type instance IsSelected OUT OUT = TRUE
-
-type instance IsSelected IN IN = TRUE
-
-type instance IsSelected IN OUT = FALSE
-
-type instance IsSelected OUT IN = FALSE
-
-type instance IsSelected a ANY = TRUE
 
 data TypeContent (b :: Bool) (a :: TypeCategory) where
   DataScalar ::
