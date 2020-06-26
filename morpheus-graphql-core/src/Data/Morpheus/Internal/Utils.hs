@@ -27,13 +27,17 @@ module Data.Morpheus.Internal.Utils
     mapFst,
     mapSnd,
     mapTuple,
+    Updater,
+    resolveUpdates,
   )
 where
 
+import Control.Monad (foldM)
 import Data.Char
   ( toLower,
     toUpper,
   )
+import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
@@ -167,3 +171,9 @@ mapSnd f (a, b) = (a, f b)
 
 mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
 mapTuple f1 f2 (a, b) = (f1 a, f2 b)
+
+-- Helper Functions
+type Updater m lib = lib -> m lib
+
+resolveUpdates :: Monad m => lib -> [lib -> m lib] -> m lib
+resolveUpdates = foldM (&)

@@ -69,7 +69,9 @@ import Data.Morpheus.Internal.Utils
     KeyOf (..),
     Listable (..),
     Selectable (..),
+    Updater,
     elems,
+    resolveUpdates,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -82,6 +84,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     FieldName,
     FieldName (..),
     GQLError (..),
+    GQLErrors,
     Msg (..),
     OperationType,
     TRUE,
@@ -119,10 +122,6 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( LibUpdater,
-    resolveUpdates,
   )
 import Data.Semigroup (Semigroup (..))
 import Data.Text (intercalate)
@@ -397,8 +396,9 @@ defineType datatype lib =
   lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
 
 insertType ::
+  (Monad m, Failure GQLErrors m) =>
   TypeDefinition ANY ->
-  TypeUpdater
+  TypeUpdater m
 insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName lib of
   Nothing -> resolveUpdates (defineType datatype lib) []
   Just fingerprint
@@ -407,12 +407,13 @@ insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName 
     | otherwise -> failure $ nameCollisionError typeName
 
 updateSchema ::
+  (Monad m, Failure GQLErrors m) =>
   TypeName ->
   DataFingerprint ->
-  [TypeUpdater] ->
+  [TypeUpdater m] ->
   (a -> TypeDefinition cat) ->
   a ->
-  TypeUpdater
+  TypeUpdater m
 updateSchema name fingerprint stack f x lib =
   case isTypeDefined name lib of
     Nothing ->
@@ -471,7 +472,7 @@ createAlias :: TypeName -> TypeRef
 createAlias typeConName =
   TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
 
-type TypeUpdater = LibUpdater Schema
+type TypeUpdater m = Updater m Schema
 
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes

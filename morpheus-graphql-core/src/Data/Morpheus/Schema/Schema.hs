@@ -18,6 +18,8 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( (<:>),
+    Failure (..),
+    resolveUpdates,
     singleton,
   )
 import Data.Morpheus.Schema.DSL (dsl)
@@ -25,6 +27,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataFingerprint (..),
     FieldsDefinition,
+    GQLErrors,
     Message,
     OUT,
     Schema (..),
@@ -38,12 +41,8 @@ import Data.Morpheus.Types.Internal.AST
     mkObjectField,
     unsafeFromFields,
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( failure,
-    resolveUpdates,
-  )
 
-withSystemTypes :: TypeUpdater
+withSystemTypes :: (Monad m, Failure GQLErrors m, Failure Message m) => TypeUpdater m
 withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject inter fields}} =
   ( do
       fs <- fields <:> hiddenFields

@@ -19,8 +19,6 @@ module Data.Morpheus.Types.Internal.Resolving
     Result (..),
     ResultT (..),
     unpackEvents,
-    LibUpdater,
-    resolveUpdates,
     setTypeName,
     ObjectResModel (..),
     ResModel (..),

@@ -15,8 +15,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
     Failure (..),
     ResultT (..),
     unpackEvents,
-    LibUpdater,
-    resolveUpdates,
     mapEvent,
     cleanEvents,
     Event (..),
@@ -29,9 +27,7 @@ module Data.Morpheus.Types.Internal.Resolving.Core
 where
 
 import Control.Applicative (liftA2)
-import Control.Monad (foldM)
 import Control.Monad.Trans.Class (MonadTrans (..))
-import Data.Function ((&))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -178,9 +174,3 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
     mapEv Success {result, warnings, events} =
       Success {result, warnings, events = map func events}
     mapEv (Failure err) = Failure err
-
--- Helper Functions
-type LibUpdater lib = lib -> Eventless lib
-
-resolveUpdates :: Monad m => lib -> [lib -> m lib] -> m lib
-resolveUpdates = foldM (&)
