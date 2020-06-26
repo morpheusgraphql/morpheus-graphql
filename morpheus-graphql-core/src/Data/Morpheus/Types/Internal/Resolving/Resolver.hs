@@ -62,43 +62,35 @@ import Data.Morpheus.Types.IO
   ( GQLResponse,
     renderResponse,
   )
-import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
+import Data.Morpheus.Types.Internal.AST
+  ( Arguments,
+    FieldName,
     GQLError (..),
     GQLErrors,
+    GQLValue (..),
     MUTATION,
     Message,
+    ObjectEntry (..),
+    Operation (..),
     OperationType,
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
+    ScalarValue (..),
+    Schema,
+    Selection (..),
+    SelectionContent (..),
+    SelectionSet,
     TypeName (..),
+    UnionSelection,
+    UnionTag (..),
+    VALID,
+    ValidValue,
+    Value (..),
     msg,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( toOrderedMap,
-  )
-import Data.Morpheus.Types.Internal.AST.Selection
-  ( Operation (..),
-    Selection (..),
-    SelectionContent (..),
-    SelectionSet,
-    UnionSelection,
-    UnionTag (..),
-  )
-import Data.Morpheus.Types.Internal.AST.Stage
-  ( VALID,
-  )
-import Data.Morpheus.Types.Internal.AST.TypeSystem
-  ( Arguments,
-    Schema,
-  )
-import Data.Morpheus.Types.Internal.AST.Value
-  ( GQLValue (..),
-    ObjectEntry (..),
-    ScalarValue (..),
-    ValidValue,
-    Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Channel (..),

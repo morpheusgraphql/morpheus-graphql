@@ -149,6 +149,7 @@ module Data.Morpheus.Types.Internal.AST
     mkUnionMember,
     SchemaDefinitionRaw (..),
     RootOperationTypeDefinition (..),
+    UnionSelection,
   )
 where
 
