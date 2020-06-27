@@ -33,7 +33,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     mkType,
     createScalarType,
     mkInputUnionFields,
-    defineType,
     initTypeLib,
     insertType,
     kindOf,
@@ -218,7 +217,7 @@ instance Listable (TypeDefinition ANY) Schema where
     (Just query, lib1) -> do
       let (mutation, lib2) = popByKey "Mutation" lib1
       let (subscription, lib3) = popByKey "Subscription" lib2
-      pure $ (foldr defineType (initTypeLib query) lib3) {mutation, subscription}
+      pure $ (foldr unsafeDefineType (initTypeLib query) lib3) {mutation, subscription}
 
 initTypeLib :: TypeDefinition OUT -> Schema
 initTypeLib query =
@@ -378,8 +377,8 @@ fromOperation :: Maybe (TypeDefinition OUT) -> [(TypeName, TypeDefinition ANY)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
-defineType :: TypeDefinition cat -> Schema -> Schema
-defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
+unsafeDefineType :: TypeDefinition cat -> Schema -> Schema
+unsafeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
   lib {types = HM.insert name unionTags (HM.insert typeName (toAny dt) (types lib))}
   where
     name = typeName <> "Tags"
@@ -391,7 +390,7 @@ defineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, t
           typeDirectives = [],
           typeContent = mkEnumContent (map memberName enumKeys)
         }
-defineType datatype lib =
+unsafeDefineType datatype lib =
   lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
 
 insertType ::
@@ -400,7 +399,7 @@ insertType ::
   UpdateT m Schema
 insertType datatype@TypeDefinition {typeName} = UpdateT $ \lib ->
   case isTypeDefined typeName lib of
-    Nothing -> resolveUpdates (defineType datatype lib) []
+    Nothing -> resolveUpdates (unsafeDefineType datatype lib) []
     Just fingerprint
       | fingerprint == typeFingerprint datatype -> return lib
       -- throw error if 2 different types has same name
@@ -418,7 +417,7 @@ updateSchema name fingerprint stack f x = UpdateT $ \lib ->
   case isTypeDefined name lib of
     Nothing ->
       resolveUpdates
-        (defineType (f x) lib)
+        (unsafeDefineType (f x) lib)
         stack
     Just fingerprint' | fingerprint' == fingerprint -> return lib
     -- throw error if 2 different types has same name
