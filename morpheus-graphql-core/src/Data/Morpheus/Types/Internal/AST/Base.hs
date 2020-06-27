@@ -9,6 +9,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Ref (..),
@@ -76,6 +77,24 @@ import GHC.Generics (Generic)
 -- import Instances.TH.Lift ()
 import Language.Haskell.TH (stringE)
 import Language.Haskell.TH.Syntax (Lift (..))
+import Prelude
+  ( ($),
+    (&&),
+    (.),
+    Bool (..),
+    Eq (..),
+    Functor (..),
+    Int,
+    Maybe (..),
+    Ord (..),
+    Show,
+    String,
+    elem,
+    fst,
+    not,
+    notElem,
+    otherwise,
+  )
 
 type TRUE = 'True
 
@@ -97,7 +116,7 @@ instance Lift Message where
 class Msg a where
   msg :: a -> Message
   msgSepBy :: Text -> [a] -> Message
-  msgSepBy t = Message . intercalate t . map (readMessage . msg)
+  msgSepBy t = Message . intercalate t . fmap (readMessage . msg)
 
 instance Msg String where
   msg = Message . pack
@@ -132,7 +151,7 @@ instance RenderGQL FieldName where
   render = readName
 
 intercalateName :: FieldName -> [FieldName] -> FieldName
-intercalateName (FieldName x) = FieldName . intercalate x . map readName
+intercalateName (FieldName x) = FieldName . intercalate x . fmap readName
 
 toFieldName :: TypeName -> FieldName
 toFieldName = FieldName . readTypeName

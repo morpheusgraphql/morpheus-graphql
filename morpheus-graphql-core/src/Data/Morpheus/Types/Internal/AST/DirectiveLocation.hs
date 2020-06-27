@@ -1,6 +1,9 @@
 {-# LANGUAGE DeriveLift #-}
 
-module Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..)) where
+module Data.Morpheus.Types.Internal.AST.DirectiveLocation
+  ( DirectiveLocation (..),
+  )
+where
 
 import Data.Morpheus.Types.Internal.AST.Base (Msg (..))
 import Language.Haskell.TH.Syntax (Lift)

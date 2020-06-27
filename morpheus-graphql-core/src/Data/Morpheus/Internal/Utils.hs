@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
   ( capital,
@@ -42,6 +43,7 @@ import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
+import Data.Maybe (maybe)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -60,12 +62,27 @@ import qualified Data.Text as T
 import Instances.TH.Lift ()
 import Text.Megaparsec.Internal (ParsecT (..))
 import Text.Megaparsec.Stream (Stream)
+import Prelude
+  ( ($),
+    (.),
+    Applicative (..),
+    Bool (..),
+    Either (..),
+    Eq (..),
+    Int,
+    Monad,
+    Ord,
+    String,
+    fmap,
+    fst,
+    length,
+  )
 
 mapText :: (String -> String) -> Token -> Token
 mapText f = T.pack . f . T.unpack
 
 nameSpaceType :: [FieldName] -> TypeName -> TypeName
-nameSpaceType list (TypeName name) = TypeName . T.concat $ map capital (map readName list <> [name])
+nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capital (fmap readName list <> [name])
 
 nameSpaceField :: TypeName -> FieldName -> FieldName
 nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capital name)
@@ -141,7 +158,7 @@ class Listable a coll | coll -> a where
   fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m coll
 
 keys :: (KeyOf a, Listable a coll) => coll -> [KEY a]
-keys = map keyOf . elems
+keys = fmap keyOf . elems
 
 size :: Listable a coll => coll -> Int
 size = length . elems
