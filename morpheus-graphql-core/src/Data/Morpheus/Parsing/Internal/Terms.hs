@@ -101,7 +101,7 @@ parseName :: Parser FieldName
 parseName = FieldName <$> token
 
 parseTypeName :: Parser TypeName
-parseTypeName = TypeName <$> token
+parseTypeName = label "TypeName" $ TypeName <$> token
 
 keyword :: FieldName -> Parser ()
 keyword (FieldName word) = string word *> space1 *> ignoredTokens
@@ -190,9 +190,14 @@ parseDescription =
 -- TODO: implement as in specification
 ignoredTokens :: Parser ()
 ignoredTokens =
-  label "IgnoredTokens" $ space *> skipMany inlineComment *> space
+  label "IgnoredTokens" $
+    space
+      *> skipMany inlineComment
+      *> space
   where
-    inlineComment = char '#' *> skipManyTill printChar newline *> space
+    inlineComment =
+      label "Comment" $
+        char '#' *> skipManyTill printChar newline *> space
 
 ------------------------------------------------------------------------
 
