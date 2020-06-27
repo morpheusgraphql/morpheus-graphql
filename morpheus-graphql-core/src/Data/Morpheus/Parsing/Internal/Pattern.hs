@@ -26,12 +26,12 @@ import Data.Morpheus.Parsing.Internal.Terms
   ( ignoredTokens,
     keyword,
     litAssignment,
-    operator,
     optDescription,
     parseName,
     parseType,
     parseTypeName,
     setOf,
+    symbol,
     uniqTuple,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -142,7 +142,7 @@ optionalDirectives = label "Directives" $ many directive
 directive :: Parse (Value s) => Parser (Directive s)
 directive = label "Directive" $ do
   directivePosition <- getLocation
-  operator '@'
+  symbol '@'
   directiveName <- parseName
   directiveArgs <- maybeArguments
   pure Directive {..}
