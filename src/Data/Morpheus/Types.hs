@@ -62,7 +62,11 @@ import Control.Monad.Trans.Class (MonadTrans (..))
 import Data.Either (either)
 -- MORPHEUS
 
-import Data.Morpheus.Server.Deriving.Introspect (Introspect (..), introspectOUT)
+import Data.Morpheus.Server.Deriving.Introspect
+  ( Introspect (..),
+    TypeUpdater,
+    introspectOUT,
+  )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types (Undefined (..))
 import Data.Morpheus.Types.GQLScalar
@@ -84,7 +88,6 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     ScalarValue (..),
     TypeName,
-    TypeUpdater,
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -96,7 +99,6 @@ import Data.Morpheus.Types.Internal.Resolving
     UnSubResolver,
     WithOperation,
     failure,
-    lift,
     pushEvents,
     subscribe,
     unsafeInternalContext,
