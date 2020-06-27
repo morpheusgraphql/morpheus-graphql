@@ -43,7 +43,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     updateSchema,
     UnionMember (..),
     mkUnionMember,
-    SchemaDefinitionRaw (..),
+    RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
   )
 where
@@ -196,10 +196,12 @@ data Schema = Schema
   }
   deriving (Show)
 
-data SchemaDefinitionRaw = SchemaDefinitionRaw
-  { schemaDirectives :: Directives VALID,
-    unSchemaDefinition :: OrderedMap OperationType RootOperationTypeDefinition
-  }
+data RawTypeDefinition
+  = RawSchemaDefinition
+      { schemaDirectives :: Directives VALID,
+        unSchemaDefinition :: OrderedMap OperationType RootOperationTypeDefinition
+      }
+  | RawTypeDefinition (TypeDefinition ANY)
   deriving (Show)
 
 data RootOperationTypeDefinition = RootOperationTypeDefinition

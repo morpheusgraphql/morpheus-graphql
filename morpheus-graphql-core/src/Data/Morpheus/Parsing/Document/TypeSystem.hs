@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Document.TypeSystem
   ( parseSchema,
@@ -8,6 +9,10 @@ module Data.Morpheus.Parsing.Document.TypeSystem
 where
 
 -- MORPHEUS
+
+import Control.Applicative ((*>), pure)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe (..), mapMaybe)
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
@@ -38,10 +43,9 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     IN,
     OUT,
-    OperationType,
+    RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     ScalarDefinition (..),
-    SchemaDefinitionRaw (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -58,6 +62,9 @@ import Text.Megaparsec
     label,
     manyTill,
     sepBy1,
+  )
+import Prelude
+  ( ($),
   )
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
@@ -206,12 +213,12 @@ inputObjectTypeDefinition typeDescription =
 --     subscription :: Maybe TypeName
 --   }
 
-parseSchemaDefinition :: Parser SchemaDefinitionRaw
+parseSchemaDefinition :: Parser RawTypeDefinition
 parseSchemaDefinition = label "SchemaDefinition" $ do
   keyword "schema"
   schemaDirectives <- optionalDirectives
   unSchemaDefinition <- setOf parseRootOperationTypeDefinition
-  pure SchemaDefinitionRaw {schemaDirectives, unSchemaDefinition}
+  pure RawSchemaDefinition {schemaDirectives, unSchemaDefinition}
 
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition = do
@@ -230,9 +237,22 @@ parseDataType = label "TypeDefinition" $ do
     <|> (toAny <$> objectTypeDefinition description)
     <|> (toAny <$> interfaceTypeDefinition description)
 
-parseSchema :: Text -> Eventless [TypeDefinition ANY]
-parseSchema = processParser request
+parseRawTypeDefinition :: Parser RawTypeDefinition
+parseRawTypeDefinition =
+  label "TypeSystemDefinitions" $
+    RawTypeDefinition <$> parseDataType
+      <|> parseSchemaDefinition
+
+filterOutSchema :: [RawTypeDefinition] -> [TypeDefinition ANY]
+filterOutSchema = mapMaybe onlyTypes
   where
-    request = label "DocumentTypes" $ do
-      spaceAndComments
-      manyTill parseDataType eof
+    onlyTypes (RawTypeDefinition x) = Just x
+    onlyTypes _ = Nothing
+
+parseTypeSystemDefinition :: Parser [RawTypeDefinition]
+parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
+  spaceAndComments
+  manyTill parseRawTypeDefinition eof
+
+parseSchema :: Text -> Eventless [TypeDefinition ANY]
+parseSchema = processParser (filterOutSchema <$> parseTypeSystemDefinition)
