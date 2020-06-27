@@ -11,8 +11,11 @@ where
 -- MORPHEUS
 
 import Control.Applicative ((*>), pure)
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..), mapMaybe)
+import Control.Monad ((>=>))
+import Data.Either (Either (..), partitionEithers)
+import Data.Functor ((<$>), fmap)
+import Data.Maybe (Maybe (..))
+import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
@@ -44,6 +47,7 @@ import Data.Morpheus.Types.Internal.AST
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     ScalarDefinition (..),
+    SchemaDefinition (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -52,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
+    failure,
   )
 import Data.Text (Text)
 import Text.Megaparsec
@@ -63,6 +68,8 @@ import Text.Megaparsec
   )
 import Prelude
   ( ($),
+    (.),
+    snd,
   )
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
@@ -216,7 +223,7 @@ parseSchemaDefinition = label "SchemaDefinition" $ do
   keyword "schema"
   schemaDirectives <- optionalDirectives
   unSchemaDefinition <- setOf parseRootOperationTypeDefinition
-  pure RawSchemaDefinition {schemaDirectives, unSchemaDefinition}
+  pure $ RawSchemaDefinition $ SchemaDefinition {schemaDirectives, unSchemaDefinition}
 
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition = do
@@ -241,16 +248,28 @@ parseRawTypeDefinition =
     RawTypeDefinition <$> parseDataType
       <|> parseSchemaDefinition
 
-filterOutSchema :: [RawTypeDefinition] -> [TypeDefinition ANY]
-filterOutSchema = mapMaybe onlyTypes
+splitSchema :: [RawTypeDefinition] -> ([SchemaDefinition], [TypeDefinition ANY])
+splitSchema = partitionEithers . fmap split
   where
-    onlyTypes (RawTypeDefinition x) = Just x
-    onlyTypes _ = Nothing
+    split (RawTypeDefinition x) = Right x
+    split (RawSchemaDefinition y) = Left y
+
+withSchemaDefinition ::
+  ([SchemaDefinition], [TypeDefinition ANY]) ->
+  Eventless
+    (Maybe SchemaDefinition, [TypeDefinition ANY])
+withSchemaDefinition ([], t) = pure (Nothing, t)
+withSchemaDefinition ([x], t) = pure (Just x, t)
+withSchemaDefinition (_ : xs, _) = failure (fmap (nameCollision "schema") xs)
 
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
 parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
   ignoredTokens
   manyTill parseRawTypeDefinition eof
 
-parseSchema :: Text -> Eventless [TypeDefinition ANY]
-parseSchema = processParser (filterOutSchema <$> parseTypeSystemDefinition)
+parseSchema :: Text -> Eventless (Maybe SchemaDefinition, [TypeDefinition ANY])
+parseSchema =
+  fmap snd
+    . ( processParser parseTypeSystemDefinition
+          >=> withSchemaDefinition . splitSchema
+      )

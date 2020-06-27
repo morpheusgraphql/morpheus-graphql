@@ -45,6 +45,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     mkUnionMember,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
+    SchemaDefinition (..),
   )
 where
 
@@ -196,11 +197,24 @@ data Schema = Schema
   }
   deriving (Show)
 
-data RawTypeDefinition
-  = RawSchemaDefinition
-      { schemaDirectives :: Directives VALID,
-        unSchemaDefinition :: OrdMap OperationType RootOperationTypeDefinition
+data SchemaDefinition = SchemaDefinition
+  { schemaDirectives :: Directives VALID,
+    unSchemaDefinition :: OrdMap OperationType RootOperationTypeDefinition
+  }
+  deriving (Show)
+
+instance NameCollision SchemaDefinition where
+  nameCollision _ _ =
+    GQLError
+      { message = "There can Be only One SchemaDefinition for Document.",
+        locations = []
       }
+
+instance KeyOf SchemaDefinition where
+  keyOf _ = "schema"
+
+data RawTypeDefinition
+  = RawSchemaDefinition SchemaDefinition
   | RawTypeDefinition (TypeDefinition ANY)
   deriving (Show)
 
