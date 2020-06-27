@@ -192,29 +192,31 @@ ignoredTokens :: Parser ()
 ignoredTokens =
   label "IgnoredTokens" $
     space
-      *> skipMany ignored
+      *> many ignored
       *> space
 
 ignored :: Parser ()
-ignored = label "Ignored" $ parseComment
+ignored =
+  label "Ignored" $
+    comment
+      <|> comma
 
-parseComment :: Parser ()
-parseComment =
+comment :: Parser ()
+comment =
   label "Comment" $
     char '#' *> skipManyTill printChar newline *> space
 
-parseComma :: Parser ()
-parseComma = label "Comma" $ char ',' *> space
+comma :: Parser ()
+comma = label "Comma" $ char ',' *> space
 
 ------------------------------------------------------------------------
-
 -- COMPLEX
 sepByAnd :: Parser a -> Parser [a]
 sepByAnd entry = entry `sepBy` (optional (char '&') *> ignoredTokens)
 
 -----------------------------
 collection :: Parser a -> Parser [a]
-collection entry = braces (entry `sepEndBy` many (char ',' *> ignoredTokens))
+collection entry = braces (entry `sepEndBy` ignoredTokens)
 
 setOf :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 setOf = collection >=> fromElems
