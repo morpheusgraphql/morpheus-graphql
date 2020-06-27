@@ -206,7 +206,7 @@ data SchemaDefinition = SchemaDefinition
 instance NameCollision SchemaDefinition where
   nameCollision _ _ =
     GQLError
-      { message = "There can Be only One SchemaDefinition for Document.",
+      { message = "There can Be only One SchemaDefinition.",
         locations = []
       }
 
