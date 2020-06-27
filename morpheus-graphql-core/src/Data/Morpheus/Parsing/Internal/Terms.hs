@@ -16,7 +16,6 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseNonNull,
     parseAssignment,
     parseWrappedType,
-    litAssignment,
     parseAlias,
     sepByAnd,
     parseName,
@@ -106,9 +105,6 @@ braces =
     (char '{' *> ignoredTokens)
     (char '}' *> ignoredTokens)
 
-litAssignment :: Parser ()
-litAssignment = char ':' *> ignoredTokens
-
 -- PRIMITIVE
 ------------------------------------
 
@@ -118,7 +114,7 @@ litAssignment = char ':' *> ignoredTokens
 --  NameStart NameContinue[list,opt]
 --
 name :: Parser Token
-name = label "token" $ do
+name = label "Name" $ do
   start <- nameStart
   continue <- nameContinue
   ignoredTokens
@@ -238,7 +234,7 @@ uniqTupleOpt x = uniqTuple x <|> pure empty
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser = label "assignment" $ do
   name' <- nameParser
-  litAssignment
+  symbol ':'
   value' <- valueParser
   pure (name', value')
 
@@ -259,23 +255,6 @@ spreadLiteral = do
   space
   return index
 
-parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
-parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
-  where
-    unwrapped :: Parser ([DataTypeWrapper], TypeName)
-    unwrapped = ([],) <$> parseTypeName <* ignoredTokens
-    ----------------------------------------------
-    wrapped :: Parser ([DataTypeWrapper], TypeName)
-    wrapped =
-      between
-        (char '[' *> ignoredTokens)
-        (char ']' *> ignoredTokens)
-        ( do
-            (wrappers, name) <- unwrapped <|> wrapped
-            nonNull' <- parseNonNull
-            return ((ListType : nonNull') ++ wrappers, name)
-        )
-
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
 --  Name:
@@ -294,3 +273,20 @@ parseType = do
         typeArgs = Nothing,
         typeWrappers = toHSWrappers $ nonNull ++ wrappers
       }
+
+parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
+parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
+  where
+    unwrapped :: Parser ([DataTypeWrapper], TypeName)
+    unwrapped = ([],) <$> parseTypeName <* ignoredTokens
+    ----------------------------------------------
+    wrapped :: Parser ([DataTypeWrapper], TypeName)
+    wrapped =
+      between
+        (char '[' *> ignoredTokens)
+        (char ']' *> ignoredTokens)
+        ( do
+            (wrappers, name) <- unwrapped <|> wrapped
+            nonNull' <- parseNonNull
+            return ((ListType : nonNull') ++ wrappers, name)
+        )

@@ -29,12 +29,10 @@ import Data.Morpheus.Parsing.Internal.Terms
   ( collection,
     ignoredTokens,
     keyword,
-    litAssignment,
     optDescription,
     parseTypeName,
     sepByAnd,
     setOf,
-    symbol,
     symbol,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -223,7 +221,7 @@ parseSchemaDefinition = label "SchemaDefinition" $ do
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition = do
   operationType <- parseOperationType
-  litAssignment -- ':'
+  symbol ':'
   RootOperationTypeDefinition operationType <$> parseTypeName
 
 parseDataType :: Parser (TypeDefinition ANY)

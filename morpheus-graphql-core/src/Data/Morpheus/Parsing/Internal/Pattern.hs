@@ -25,7 +25,6 @@ import Data.Morpheus.Parsing.Internal.Internal
 import Data.Morpheus.Parsing.Internal.Terms
   ( ignoredTokens,
     keyword,
-    litAssignment,
     optDescription,
     parseName,
     parseType,
@@ -82,7 +81,7 @@ inputValueDefinition :: Parser (FieldDefinition IN)
 inputValueDefinition = label "InputValueDefinition" $ do
   fieldDescription <- optDescription
   fieldName <- parseName
-  litAssignment -- ':'
+  symbol ':'
   fieldType <- parseType
   fieldContent <- optional (DefaultInputValue <$> parseDefaultValue)
   fieldDirectives <- optionalDirectives
@@ -114,7 +113,7 @@ fieldDefinition = label "FieldDefinition" $ do
   fieldDescription <- optDescription
   fieldName <- parseName
   fieldContent <- optional (FieldArgs <$> argumentsDefinition)
-  litAssignment -- ':'
+  symbol ':'
   fieldType <- parseType
   fieldDirectives <- optionalDirectives
   pure FieldDefinition {..}
