@@ -27,6 +27,7 @@ import Data.Morpheus.Client.Transform.Core
 import Data.Morpheus.Internal.Utils
   ( elems,
     empty,
+    resolveUpdates,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -48,9 +49,6 @@ import Data.Morpheus.Types.Internal.AST
     mkConsEnum,
     removeDuplicates,
     toAny,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( resolveUpdates,
   )
 import Data.Semigroup ((<>))
 
