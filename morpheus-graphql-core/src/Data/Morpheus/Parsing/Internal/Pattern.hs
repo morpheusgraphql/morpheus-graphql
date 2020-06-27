@@ -23,7 +23,8 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( keyword,
+  ( ignoredTokens,
+    keyword,
     litAssignment,
     operator,
     optDescription,
@@ -31,7 +32,6 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseType,
     parseTypeName,
     setOf,
-    spaceAndComments1,
     uniqTuple,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -163,5 +163,5 @@ parseOperationType = label "OperationType" $ do
     (string "query" $> Query)
       <|> (string "mutation" $> Mutation)
       <|> (string "subscription" $> Subscription)
-  spaceAndComments1
+  ignoredTokens
   return kind
