@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Variable
   ( uninitializedVariable,
@@ -16,6 +17,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Semigroup ((<>))
+import Prelude (($))
 
 -- query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 incompatibleVariableType :: Ref -> Variable s -> TypeRef -> GQLErrors

@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Document.Interface
   ( unknownInterface,
@@ -10,6 +11,7 @@ module Data.Morpheus.Error.Document.Interface
   )
 where
 
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName (..),

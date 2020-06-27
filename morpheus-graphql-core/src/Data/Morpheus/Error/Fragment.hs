@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself,
@@ -7,6 +8,8 @@ module Data.Morpheus.Error.Fragment
 where
 
 -- MORPHEUS
+
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
@@ -19,6 +22,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     msgSepBy,
   )
 import Data.Semigroup ((<>))
+import Prelude (($), fmap, head)
 
 {-
   FRAGMENT:
@@ -33,13 +37,13 @@ import Data.Semigroup ((<>))
 -}
 
 cannotSpreadWithinItself :: [Ref] -> GQLErrors
-cannotSpreadWithinItself fragments = [GQLError {message = text, locations = map refPosition fragments}]
+cannotSpreadWithinItself fragments = [GQLError {message = text, locations = fmap refPosition fragments}]
   where
     text =
       "Cannot spread fragment "
         <> msg (refName $ head fragments)
         <> " within itself via "
-        <> msgSepBy ", " (map refName fragments)
+        <> msgSepBy ", " (fmap refName fragments)
         <> "."
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."

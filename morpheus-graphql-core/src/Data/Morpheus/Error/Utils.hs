@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Utils
   ( errorMessage,
@@ -19,6 +20,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Position (..),
   )
 import Data.Semigroup ((<>))
+import Prelude ((.), String)
 
 errorMessage :: Position -> Message -> GQLErrors
 errorMessage position message = [GQLError {message, locations = [position]}]

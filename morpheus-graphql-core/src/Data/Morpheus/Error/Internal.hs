@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Internal
   ( internalTypeMismatch,
@@ -22,6 +23,7 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     Failure (..),
   )
 import Data.Semigroup ((<>))
+import Prelude (($), (.))
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- all kind internal error in development
