@@ -27,12 +27,12 @@ import Data.Morpheus.Server.Deriving.Encode
     ExploreResolvers (..),
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
-import Data.Morpheus.Server.Types.GQLType (TRUE)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
     QUERY,
     SUBSCRIPTION,
+    TRUE,
     TypeName (..),
     isSubscription,
   )

@@ -31,12 +31,12 @@ import Data.Morpheus.Kind
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    TRUE,
   )
 import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     QUERY,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeKind (..),

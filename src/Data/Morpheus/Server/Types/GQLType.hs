@@ -10,13 +10,14 @@
 
 module Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    TRUE,
-    FALSE,
+    TypeUpdater,
   )
 where
 
 import Data.Map (Map)
 -- MORPHEUS
+
+import Data.Morpheus.Internal.Utils (UpdateT)
 import Data.Morpheus.Kind
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
@@ -26,13 +27,15 @@ import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
   ( DataFingerprint (..),
+    FALSE,
     QUERY,
+    Schema,
     TypeName (..),
-    TypeUpdater,
     internalFingerprint,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
+  ( Eventless,
+    Resolver,
   )
 import Data.Proxy (Proxy (..))
 import Data.Set (Set)
@@ -52,9 +55,7 @@ import Data.Typeable
     typeRepTyCon,
   )
 
-type TRUE = 'True
-
-type FALSE = 'False
+type TypeUpdater = UpdateT Eventless Schema
 
 resolverCon :: TyCon
 resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)
@@ -115,7 +116,7 @@ class IsObject (KIND a) => GQLType a where
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
 
-  implements :: Proxy a -> [(TypeName, TypeUpdater m)]
+  implements :: Proxy a -> [(TypeName, TypeUpdater)]
   implements _ = []
 
   description :: Proxy a -> Maybe Text

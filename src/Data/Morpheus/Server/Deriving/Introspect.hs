@@ -18,8 +18,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Server.Deriving.Introspect
-  ( TypeUpdater,
-    Introspect (..),
+  ( Introspect (..),
     DeriveTypeContent (..),
     introspectOUT,
     IntroCon,
@@ -29,6 +28,7 @@ module Data.Morpheus.Server.Deriving.Introspect
     deriveCustomInputObjectType,
     TypeScope (..),
     ProxyRep (..),
+    TypeUpdater,
   )
 where
 
@@ -38,8 +38,9 @@ import Data.Map (Map)
 
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
-  ( empty,
-    resolveUpdates,
+  ( concatUpdates,
+    empty,
+    failUpdates,
     singleton,
   )
 import Data.Morpheus.Kind
@@ -57,7 +58,10 @@ import Data.Morpheus.Server.Deriving.Utils
     isRecordProxy,
     selNameProxy,
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType (..),
+    TypeUpdater,
+  )
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
     Pair,
@@ -82,10 +86,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
-    TypeUpdater,
     UnionMember (..),
-    defineType,
     fieldsToArguments,
+    insertType,
     mkEnumContent,
     mkInputValue,
     mkTypeRef,
@@ -97,8 +100,7 @@ import Data.Morpheus.Types.Internal.AST
     updateSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Failure (..),
-    Resolver,
+  ( Resolver,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -177,10 +179,7 @@ instance (GQLType b, DeriveTypeContent IN 'False a, Introspect OUT b) => Introsp
           $ introspectInputObjectFields
             (Proxy :: Proxy 'False)
             (__typeName (Proxy @b), Proxy @a)
-  introspect _ typeLib =
-    resolveUpdates
-      typeLib
-      (introspect (ProxyRep :: ProxyRep OUT b) : inputs)
+  introspect _ = concatUpdates (introspect (ProxyRep :: ProxyRep OUT b) : inputs)
     where
       name = "Arguments for " <> __typeName (Proxy @b)
       inputs :: [TypeUpdater]
@@ -246,9 +245,7 @@ deriveCustomInputObjectType ::
   (TypeName, proxy a) ->
   TypeUpdater
 deriveCustomInputObjectType (name, proxy) =
-  flip
-    resolveUpdates
-    (snd $ introspectInputObjectFields (Proxy :: Proxy TRUE) (name, proxy))
+  concatUpdates (snd $ introspectInputObjectFields (Proxy :: Proxy TRUE) (name, proxy))
 
 introspectInputObjectFields ::
   DeriveTypeContent IN custom a =>
@@ -273,7 +270,7 @@ introspectObjectFields p1 (name, proxy) =
     withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
-introspectFailure = const . failure . globalErrorMessage . ("invalid schema: " <>)
+introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
 class DeriveTypeContent cat (custom :: Bool) a where
@@ -448,10 +445,7 @@ buildUnions ::
   ([TypeName], [TypeUpdater])
 buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
   where
-    buildURecType consRep =
-      pure
-        . defineType
-          (buildUnionRecord wrapObject baseFingerprint consRep)
+    buildURecType = insertType . buildUnionRecord wrapObject baseFingerprint
     members = map consName cons
 
 buildUnionRecord ::
@@ -497,14 +491,13 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
 
 buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> TypeUpdater
 buildEnum typeName typeFingerprint tags =
-  pure
-    . defineType
-      TypeDefinition
-        { typeDescription = Nothing,
-          typeDirectives = empty,
-          typeContent = mkEnumContent tags,
-          ..
-        }
+  insertType
+    TypeDefinition
+      { typeDescription = Nothing,
+        typeDirectives = empty,
+        typeContent = mkEnumContent tags,
+        ..
+      }
 
 buildEnumObject ::
   (FieldsDefinition cat -> TypeContent TRUE cat) ->
@@ -513,18 +506,17 @@ buildEnumObject ::
   TypeName ->
   TypeUpdater
 buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
-  pure
-    . defineType
-      TypeDefinition
-        { typeName,
-          typeFingerprint,
-          typeDescription = Nothing,
-          typeDirectives = empty,
-          typeContent =
-            wrapObject
-              $ singleton
-              $ mkInputValue "enum" [] enumTypeName
-        }
+  insertType
+    TypeDefinition
+      { typeName,
+        typeFingerprint,
+        typeDescription = Nothing,
+        typeDirectives = empty,
+        typeContent =
+          wrapObject
+            $ singleton
+            $ mkInputValue "enum" [] enumTypeName
+      }
 
 data TypeScope (cat :: TypeCategory) where
   InputType :: TypeScope IN
