@@ -9,6 +9,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (..),
@@ -27,9 +28,12 @@ module Data.Morpheus.Types.Internal.AST.Selection
   )
 where
 
-import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
 
+import Control.Applicative (pure)
+import Data.Foldable (all, foldr)
+import Data.Functor ((<$>), fmap)
+import Data.Maybe (Maybe (..), fromMaybe, isJust, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -84,6 +88,13 @@ import Data.Morpheus.Types.Internal.AST.Value
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH.Syntax (Lift (..))
+import Prelude
+  ( ($),
+    (.),
+    Eq (..),
+    Show (..),
+    otherwise,
+  )
 
 data Fragment = Fragment
   { fragmentName :: FieldName,
@@ -123,8 +134,8 @@ instance
     | otherwise =
       failure
         [ GQLError
-            { message = msg (intercalateName "." $ map refName path),
-              locations = map refPosition path
+            { message = msg (intercalateName "." $ fmap refName path),
+              locations = fmap refPosition path
             }
         ]
 
@@ -145,7 +156,7 @@ mergeConflict [] err = [err]
 mergeConflict refs@(rootField : xs) err =
   [ GQLError
       { message = renderSubfields <> message err,
-        locations = map refPosition refs <> locations err
+        locations = fmap refPosition refs <> locations err
       }
   ]
   where

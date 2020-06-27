@@ -9,6 +9,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
@@ -30,6 +31,10 @@ module Data.Morpheus.Types.Internal.AST.Value
   )
 where
 
+-- MORPHEUS
+
+import Control.Applicative (pure)
+import Control.Monad.Fail (MonadFail (fail))
 import qualified Data.Aeson as A
   ( (.=),
     FromJSON (..),
@@ -38,10 +43,13 @@ import qualified Data.Aeson as A
     object,
     pairs,
   )
+import Data.Either (Either (..))
+import Data.Foldable (foldl, foldl1, null)
+import Data.Functor (fmap)
 import qualified Data.HashMap.Strict as M
   ( toList,
   )
--- MORPHEUS
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -85,6 +93,16 @@ import qualified Data.Vector as V
 import GHC.Generics (Generic)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
+import Prelude
+  ( ($),
+    (.),
+    Bool,
+    Eq,
+    Float,
+    Int,
+    Show (..),
+    otherwise,
+  )
 
 -- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
 -- for performance reason type 'Text' represents GraphQl 'String' value
@@ -237,7 +255,7 @@ instance A.ToJSON (Value a) where
   toJSON (Enum (TypeName x)) = A.String x
   toJSON (Scalar x) = A.toJSON x
   toJSON (List x) = A.toJSON x
-  toJSON (Object fields) = A.object $ map toEntry (elems fields)
+  toJSON (Object fields) = A.object $ fmap toEntry (elems fields)
     where
       toEntry (ObjectEntry (FieldName name) value) = name A..= A.toJSON value
 
@@ -252,7 +270,7 @@ instance A.ToJSON (Value a) where
   toEncoding (List x) = A.toEncoding x
   toEncoding (Object ordmap)
     | null ordmap = A.toEncoding $ A.object []
-    | otherwise = A.pairs $ foldl1 (<>) $ map encodeField (elems ordmap)
+    | otherwise = A.pairs $ foldl1 (<>) $ fmap encodeField (elems ordmap)
     where
       encodeField (ObjectEntry (FieldName key) value) = key A..= value
 
@@ -267,10 +285,10 @@ replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = gqlString v
 replaceValue (A.Object v) =
   gqlObject $
-    map
+    fmap
       (mapTuple FieldName replaceValue)
       (M.toList v)
-replaceValue (A.Array li) = gqlList (map replaceValue (V.toList li))
+replaceValue (A.Array li) = gqlList (fmap replaceValue (V.toList li))
 replaceValue A.Null = gqlNull
 
 instance A.FromJSON (Value a) where
@@ -292,6 +310,6 @@ instance GQLValue (Value a) where
   gqlBoolean = Scalar . Boolean
   gqlString = Scalar . String
   gqlList = List
-  gqlObject = Object . unsafeFromValues . map toEntry
+  gqlObject = Object . unsafeFromValues . fmap toEntry
     where
       toEntry (key, value) = ObjectEntry key value

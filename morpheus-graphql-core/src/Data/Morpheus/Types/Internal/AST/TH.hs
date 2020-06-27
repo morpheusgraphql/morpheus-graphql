@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TH
   ( ConsD (..),
@@ -23,6 +24,14 @@ import Data.Morpheus.Types.Internal.AST.Fields
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( DataEnumValue (..),
+  )
+import Prelude
+  ( (.),
+    Bool (..),
+    Show,
+    all,
+    fmap,
+    null,
   )
 
 toHSFieldDefinition :: FieldDefinition cat -> FieldDefinition cat
@@ -49,7 +58,7 @@ mkCons :: TypeName -> FieldsDefinition cat -> ConsD cat
 mkCons typename fields =
   ConsD
     { cName = hsTypeName typename,
-      cFields = map toHSFieldDefinition (elems fields)
+      cFields = fmap toHSFieldDefinition (elems fields)
     }
 
 isEnum :: [ConsD cat] -> Bool

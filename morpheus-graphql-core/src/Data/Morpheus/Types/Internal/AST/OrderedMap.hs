@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap (..),
@@ -15,11 +16,15 @@ module Data.Morpheus.Types.Internal.AST.OrderedMap
   )
 where
 
+-- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Data.Foldable (Foldable (..))
+import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
-import Data.Maybe (fromMaybe, isJust)
--- MORPHEUS
+import Data.Maybe (fromMaybe, isJust, maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
@@ -34,7 +39,17 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
+import Prelude
+  ( ($),
+    (.),
+    Eq,
+    Show,
+    error,
+    otherwise,
+    uncurry,
+  )
 
 -- OrderedMap
 data OrderedMap k a = OrderedMap
@@ -52,7 +67,7 @@ instance (Eq k, Hashable k) => Foldable (OrderedMap k) where
   foldMap f = foldMap f . getElements
 
 getElements :: (Eq k, Hashable k) => OrderedMap k b -> [b]
-getElements OrderedMap {mapKeys, mapEntries} = map takeValue mapKeys
+getElements OrderedMap {mapKeys, mapEntries} = fmap takeValue mapKeys
   where
     takeValue key = fromMaybe (error "TODO: invalid Ordered Map") (key `HM.lookup` mapEntries)
 
@@ -83,7 +98,7 @@ safeFromList ::
   ) =>
   [a] ->
   m (OrderedMap (KEY a) a)
-safeFromList values = OrderedMap (map keyOf values) <$> safeUnionWith HM.empty (map toPair values)
+safeFromList values = OrderedMap (fmap keyOf values) <$> safeUnionWith HM.empty (fmap toPair values)
 
 unsafeFromValues ::
   ( KeyOf a,
@@ -92,7 +107,7 @@ unsafeFromValues ::
   ) =>
   [a] ->
   OrderedMap (KEY a) a
-unsafeFromValues x = OrderedMap (map keyOf x) $ HM.fromList $ fmap toPair x
+unsafeFromValues x = OrderedMap (fmap keyOf x) $ HM.fromList $ fmap toPair x
 
 safeJoin :: (Failure GQLErrors m, Eq k, Hashable k, KEY a ~ k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
 safeJoin hm newls = safeUnionWith hm (HM.toList newls)
@@ -111,7 +126,7 @@ safeUnionWith ::
 safeUnionWith hm names = case insertNoDups (hm, []) names of
   (res, dupps)
     | null dupps -> pure res
-    | otherwise -> failure $ map (uncurry nameCollision) dupps
+    | otherwise -> failure $ fmap (uncurry nameCollision) dupps
 
 type NoDupHashMap k a = (HashMap k a, [(k, a)])
 

@@ -14,6 +14,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Fields
   ( Arguments,
@@ -41,8 +42,12 @@ module Data.Morpheus.Types.Internal.AST.Fields
   )
 where
 
-import Data.List (find)
 -- MORPHEUS
+
+import Data.Foldable (Foldable, null)
+import Data.Functor ((<$>), Functor (..))
+import Data.List (find)
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -96,8 +101,19 @@ import Data.Morpheus.Types.Internal.AST.Value
   )
 import Data.Semigroup (Semigroup ((<>)))
 import Data.Text (intercalate)
+import Data.Traversable (Traversable)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Eq,
+    Show,
+    filter,
+    notElem,
+    otherwise,
+  )
 
 -- scalar
 ------------------------------------------------------------------
@@ -333,7 +349,7 @@ instance RenderGQL ArgumentsDefinition where
   render ArgumentsDefinition {arguments}
     | null arguments =
       ""
-    | otherwise = "(" <> intercalate ", " (map render $ elems arguments) <> ")"
+    | otherwise = "(" <> intercalate ", " (render <$> elems arguments) <> ")"
 
 type ArgumentDefinition = FieldDefinition IN
 

@@ -16,6 +16,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeSystem
   ( ScalarDefinition (..),
@@ -47,14 +48,19 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
   )
 where
 
+-- MORPHEUS
+import Control.Applicative (pure)
+import Control.Monad (Monad)
+import Data.Either (Either (..))
+import Data.Foldable (concatMap, foldr)
+import Data.Functor ((<$>), fmap)
 import Data.HashMap.Lazy
   ( HashMap,
     union,
   )
 import qualified Data.HashMap.Lazy as HM
-import Data.List (find)
--- MORPHEUS
-
+import Data.List (filter, find)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -125,6 +131,14 @@ import Data.Semigroup (Semigroup (..))
 import Data.Text (intercalate)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Eq (..),
+    Show (..),
+    otherwise,
+  )
 
 type DataEnum = [DataEnumValue]
 
@@ -344,10 +358,10 @@ createScalarType :: TypeName -> TypeDefinition a
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
 mkEnumContent :: [TypeName] -> TypeContent TRUE a
-mkEnumContent typeData = DataEnum (map mkEnumValue typeData)
+mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT
-mkUnionContent typeData = DataUnion $ map mkUnionMember typeData
+mkUnionContent typeData = DataUnion $ fmap mkUnionMember typeData
 
 mkEnumValue :: TypeName -> DataEnumValue
 mkEnumValue enumName =
@@ -388,7 +402,7 @@ unsafeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumK
           typeFingerprint,
           typeDescription = Nothing,
           typeDirectives = [],
-          typeContent = mkEnumContent (map memberName enumKeys)
+          typeContent = mkEnumContent (fmap memberName enumKeys)
         }
 unsafeDefineType datatype lib =
   lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
@@ -401,7 +415,7 @@ insertType datatype@TypeDefinition {typeName} = UpdateT $ \lib ->
   case isTypeDefined typeName lib of
     Nothing -> resolveUpdates (unsafeDefineType datatype lib) []
     Just fingerprint
-      | fingerprint == typeFingerprint datatype -> return lib
+      | fingerprint == typeFingerprint datatype -> pure lib
       -- throw error if 2 different types has same name
       | otherwise -> failure $ nameCollisionError typeName
 
@@ -419,7 +433,7 @@ updateSchema name fingerprint stack f x = UpdateT $ \lib ->
       resolveUpdates
         (unsafeDefineType (f x) lib)
         stack
-    Just fingerprint' | fingerprint' == fingerprint -> return lib
+    Just fingerprint' | fingerprint' == fingerprint -> pure lib
     -- throw error if 2 different types has same name
     Just _ -> failure $ nameCollisionError name
 
@@ -437,7 +451,7 @@ __inputname :: FieldName
 __inputname = "inputname"
 
 mkInputUnionFields :: TypeName -> [UnionMember IN] -> FieldsDefinition IN
-mkInputUnionFields name members = unsafeFromFields $ fieldTag : map mkUnionField members
+mkInputUnionFields name members = unsafeFromFields $ fieldTag : fmap mkUnionField members
   where
     fieldTag =
       FieldDefinition
@@ -468,7 +482,7 @@ mkUnionField UnionMember {memberName} =
 --------------------------------------------------------------------------------------------------
 
 instance RenderGQL Schema where
-  render schema = intercalate "\n\n" $ map render visibleTypes
+  render schema = intercalate "\n\n" $ fmap render visibleTypes
     where
       visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
 
@@ -482,7 +496,7 @@ instance RenderGQL (TypeDefinition a) where
         "union "
           <> render typeName
           <> " =\n    "
-          <> intercalate ("\n" <> renderIndent <> "| ") (map render members)
+          <> intercalate ("\n" <> renderIndent <> "| ") (fmap render members)
       __render (DataInputObject fields) = "input " <> render typeName <> render fields
       __render (DataInputUnion members) = "input " <> render typeName <> render fields
         where

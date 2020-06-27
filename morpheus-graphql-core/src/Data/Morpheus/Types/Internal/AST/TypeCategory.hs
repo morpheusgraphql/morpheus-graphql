@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
   ( TypeCategory,
@@ -13,10 +14,12 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
   )
 where
 
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FALSE,
     TRUE,
   )
+import Prelude (Bool (..))
 
 data TypeCategory = In | Out | Any
 
