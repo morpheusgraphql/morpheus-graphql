@@ -236,8 +236,7 @@ parseTuple parser =
     between
       (char '(' *> ignoredTokens)
       (char ')' *> ignoredTokens)
-      ( parser `sepBy` (many (char ',') *> ignoredTokens) <?> "empty Tuple value!"
-      )
+      (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
 
 uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 uniqTuple = parseTuple >=> fromElems
