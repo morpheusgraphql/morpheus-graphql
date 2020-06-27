@@ -42,7 +42,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
-    TypeRef (..),
     TypeWrapper (..),
     VALID,
     ValidValue,
@@ -52,6 +51,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableContent (..),
     isNullable,
     isWeaker,
+    mkTypeRef,
     msg,
     toFieldName,
   )
@@ -197,7 +197,7 @@ validatInputUnion ::
   InputValidator ctx (Value VALID)
 validatInputUnion typeName inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
-    Left message -> castFailure (TypeRef typeName Nothing []) (Just message) (Object rawFields)
+    Left message -> castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
     Right (name, Nothing) -> pure (mkInputObject name [])
     Right (name, Just value) -> validatInputUnionMember name value
 

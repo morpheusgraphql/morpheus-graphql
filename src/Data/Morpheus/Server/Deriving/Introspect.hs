@@ -83,11 +83,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeUpdater,
     UnionMember (..),
-    createAlias,
     defineType,
     fieldsToArguments,
     mkEnumContent,
     mkInputValue,
+    mkTypeRef,
     mkUnionMember,
     msg,
     toListField,
@@ -297,7 +297,7 @@ buildField ::
   FieldDefinition cat
 buildField proxy fieldContent fieldName =
   FieldDefinition
-    { fieldType = createAlias (__typeName proxy),
+    { fieldType = mkTypeRef (__typeName proxy),
       fieldDescription = Nothing,
       fieldDirectives = empty,
       fieldContent = fieldContent,

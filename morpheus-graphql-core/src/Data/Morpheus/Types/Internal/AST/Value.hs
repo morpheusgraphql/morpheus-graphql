@@ -60,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     Ref (..),
     TypeName (..),
     TypeRef,
-    TypeRef (..),
   )
 import Data.Morpheus.Types.Internal.AST.OrderedMap
   ( OrderedMap,

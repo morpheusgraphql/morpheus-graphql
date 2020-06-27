@@ -33,7 +33,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     createScalarType,
     mkType,
     createUnionType,
-    createAlias,
+    mkTypeRef,
     mkInputUnionFields,
     defineType,
     initTypeLib,
@@ -445,7 +445,7 @@ mkInputUnionFields name members = unsafeFromFields $ fieldTag : map mkUnionField
         { fieldName = __inputname,
           fieldDescription = Nothing,
           fieldContent = Nothing,
-          fieldType = createAlias (name <> "Tags"),
+          fieldType = mkTypeRef (name <> "Tags"),
           fieldDirectives = []
         }
 
@@ -468,8 +468,8 @@ mkUnionField UnionMember {memberName} =
 -- OTHER
 --------------------------------------------------------------------------------------------------
 
-createAlias :: TypeName -> TypeRef
-createAlias typeConName =
+mkTypeRef :: TypeName -> TypeRef
+mkTypeRef typeConName =
   TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
 
 type TypeUpdater m = Updater m Schema
