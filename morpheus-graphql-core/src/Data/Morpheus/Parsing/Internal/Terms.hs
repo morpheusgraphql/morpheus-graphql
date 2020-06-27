@@ -3,12 +3,9 @@
 {-# LANGUAGE TupleSections #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
-  ( token,
-    qualifier,
+  ( name,
     variable,
-    spaceAndComments,
-    spaceAndComments1,
-    pipeLiteral,
+    ignoredTokens,
     -------------
     collection,
     setOf,
@@ -19,15 +16,12 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseNonNull,
     parseAssignment,
     parseWrappedType,
-    litEquals,
-    litAssignment,
-    parseTuple,
     parseAlias,
     sepByAnd,
     parseName,
     parseType,
     keyword,
-    operator,
+    symbol,
     optDescription,
     optionalList,
     parseNegativeSign,
@@ -40,8 +34,10 @@ import Data.Functor (($>))
 -- MORPHEUS
 
 import Data.Morpheus.Internal.Utils
-  ( KeyOf,
+  ( Collection,
+    KeyOf,
     Listable (..),
+    empty,
     fromElems,
   )
 import Data.Morpheus.Parsing.Internal.Internal
@@ -73,9 +69,7 @@ import Text.Megaparsec
     optional,
     sepBy,
     sepEndBy,
-    skipMany,
     skipManyTill,
-    try,
     try,
   )
 import Text.Megaparsec.Char
@@ -89,56 +83,54 @@ import Text.Megaparsec.Char
     string,
   )
 
--- Name : https://graphql.github.io/graphql-spec/June2018/#sec-Names
---
--- Name :: /[_A-Za-z][_0-9A-Za-z]*/
---
-
 parseNegativeSign :: Parser Bool
-parseNegativeSign = (char '-' $> True <* spaceAndComments) <|> pure False
+parseNegativeSign = (char '-' $> True <* ignoredTokens) <|> pure False
 
 parseName :: Parser FieldName
-parseName = FieldName <$> token
+parseName = FieldName <$> name
 
 parseTypeName :: Parser TypeName
-parseTypeName = TypeName <$> token
+parseTypeName = label "TypeName" $ TypeName <$> name
 
 keyword :: FieldName -> Parser ()
-keyword (FieldName word) = string word *> space1 *> spaceAndComments
+keyword (FieldName word) = string word *> space1 *> ignoredTokens
 
-operator :: Char -> Parser ()
-operator x = char x *> spaceAndComments
+symbol :: Char -> Parser ()
+symbol x = char x *> ignoredTokens
 
 -- LITERALS
 braces :: Parser [a] -> Parser [a]
 braces =
   between
-    (char '{' *> spaceAndComments)
-    (char '}' *> spaceAndComments)
-
-pipeLiteral :: Parser ()
-pipeLiteral = char '|' *> spaceAndComments
-
-litEquals :: Parser ()
-litEquals = char '=' *> spaceAndComments
-
-litAssignment :: Parser ()
-litAssignment = char ':' *> spaceAndComments
+    (char '{' *> ignoredTokens)
+    (char '}' *> ignoredTokens)
 
 -- PRIMITIVE
 ------------------------------------
-token :: Parser Token
-token = label "token" $ do
-  firstChar <- letterChar <|> char '_'
-  restToken <- many $ letterChar <|> char '_' <|> digitChar
-  spaceAndComments
-  return $ pack $ firstChar : restToken
 
-qualifier :: Parser (FieldName, Position)
-qualifier = label "qualifier" $ do
-  position <- getLocation
-  value <- parseName
-  return (value, position)
+-- 2.1.9 Names
+-- https://spec.graphql.org/draft/#Name
+-- Name ::
+--  NameStart NameContinue[list,opt]
+--
+name :: Parser Token
+name = label "Name" $ do
+  start <- nameStart
+  continue <- nameContinue
+  ignoredTokens
+  pure $ pack (start : continue)
+
+-- NameStart::
+--   Letter
+--   _
+nameStart :: Parser Char
+nameStart = letterChar <|> char '_'
+
+--  NameContinue::
+--   Letter
+--   Digit
+nameContinue :: Parser String
+nameContinue = many (letterChar <|> char '_' <|> digitChar)
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
 --
@@ -149,11 +141,8 @@ variable = label "variable" $ do
   refPosition <- getLocation
   _ <- char '$'
   refName <- parseName
-  spaceAndComments
+  ignoredTokens
   pure $ Ref {refName, refPosition}
-
-spaceAndComments1 :: Parser ()
-spaceAndComments1 = space1 *> spaceAndComments
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
 --
@@ -166,17 +155,17 @@ optDescription = optional parseDescription
 
 parseDescription :: Parser Description
 parseDescription =
-  strip . pack <$> (blockDescription <|> singleLine) <* spaceAndComments
+  strip . pack <$> (blockDescription <|> singleLine) <* ignoredTokens
   where
     blockDescription =
       blockQuotes
         *> manyTill (printChar <|> newline) blockQuotes
-        <* spaceAndComments
+        <* ignoredTokens
       where
         blockQuotes = string "\"\"\""
     ----------------------------
     singleLine =
-      stringQuote *> manyTill printChar stringQuote <* spaceAndComments
+      stringQuote *> manyTill printChar stringQuote <* ignoredTokens
       where
         stringQuote = char '"'
 
@@ -188,24 +177,35 @@ parseDescription =
 --    Comment
 --    Comma
 -- TODO: implement as in specification
-spaceAndComments :: Parser ()
-spaceAndComments = ignoredTokens
-
 ignoredTokens :: Parser ()
 ignoredTokens =
-  label "IgnoredTokens" $ space *> skipMany inlineComment *> space
-  where
-    inlineComment = char '#' *> skipManyTill printChar newline *> space
+  label "IgnoredTokens" $
+    space
+      *> many ignored
+      *> space
+
+ignored :: Parser ()
+ignored =
+  label "Ignored" $
+    comment
+      <|> comma
+
+comment :: Parser ()
+comment =
+  label "Comment" $
+    char '#' *> skipManyTill printChar newline *> space
+
+comma :: Parser ()
+comma = label "Comma" $ char ',' *> space
 
 ------------------------------------------------------------------------
-
 -- COMPLEX
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (optional (char '&') *> spaceAndComments)
+sepByAnd entry = entry `sepBy` (optional (char '&') *> ignoredTokens)
 
 -----------------------------
 collection :: Parser a -> Parser [a]
-collection entry = braces (entry `sepEndBy` many (char ',' *> spaceAndComments))
+collection entry = braces (entry `sepEndBy` ignoredTokens)
 
 setOf :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 setOf = collection >=> fromElems
@@ -213,31 +213,28 @@ setOf = collection >=> fromElems
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []
-  spaceAndComments
+  ignoredTokens
   return wrapper
 
 optionalList :: Parser [a] -> Parser [a]
 optionalList x = x <|> pure []
 
-parseTuple :: Parser a -> Parser [a]
-parseTuple parser =
+uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
+uniqTuple parser =
   label "Tuple" $
     between
-      (char '(' *> spaceAndComments)
-      (char ')' *> spaceAndComments)
-      ( parser `sepBy` (many (char ',') *> spaceAndComments) <?> "empty Tuple value!"
-      )
+      (char '(' *> ignoredTokens)
+      (char ')' *> ignoredTokens)
+      (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
+      >>= fromElems
 
-uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
-uniqTuple = parseTuple >=> fromElems
-
-uniqTupleOpt :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
-uniqTupleOpt = optionalList . parseTuple >=> fromElems
+uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf a) => Parser a -> Parser coll
+uniqTupleOpt x = uniqTuple x <|> pure empty
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser = label "assignment" $ do
   name' <- nameParser
-  litAssignment
+  symbol ':'
   value' <- valueParser
   pure (name', value')
 
@@ -248,8 +245,7 @@ parseAssignment nameParser valueParser = label "assignment" $ do
 --
 parseTypeCondition :: Parser TypeName
 parseTypeCondition = do
-  _ <- string "on"
-  space1
+  keyword "on"
   parseTypeName
 
 spreadLiteral :: Parser Position
@@ -259,30 +255,13 @@ spreadLiteral = do
   space
   return index
 
-parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
-parseWrappedType = (unwrapped <|> wrapped) <* spaceAndComments
-  where
-    unwrapped :: Parser ([DataTypeWrapper], TypeName)
-    unwrapped = ([],) <$> parseTypeName <* spaceAndComments
-    ----------------------------------------------
-    wrapped :: Parser ([DataTypeWrapper], TypeName)
-    wrapped =
-      between
-        (char '[' *> spaceAndComments)
-        (char ']' *> spaceAndComments)
-        ( do
-            (wrappers, name) <- unwrapped <|> wrapped
-            nonNull' <- parseNonNull
-            return ((ListType : nonNull') ++ wrappers, name)
-        )
-
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
 --  Name:
 parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
-    alias = label "alias" $ parseName <* char ':' <* spaceAndComments
+    alias = label "alias" $ parseName <* char ':' <* ignoredTokens
 
 parseType :: Parser TypeRef
 parseType = do
@@ -294,3 +273,20 @@ parseType = do
         typeArgs = Nothing,
         typeWrappers = toHSWrappers $ nonNull ++ wrappers
       }
+
+parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
+parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
+  where
+    unwrapped :: Parser ([DataTypeWrapper], TypeName)
+    unwrapped = ([],) <$> parseTypeName <* ignoredTokens
+    ----------------------------------------------
+    wrapped :: Parser ([DataTypeWrapper], TypeName)
+    wrapped =
+      between
+        (char '[' *> ignoredTokens)
+        (char ']' *> ignoredTokens)
+        ( do
+            (wrappers, name) <- unwrapped <|> wrapped
+            nonNull' <- parseNonNull
+            return ((ListType : nonNull') ++ wrappers, name)
+        )

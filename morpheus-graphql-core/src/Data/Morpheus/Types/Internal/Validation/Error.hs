@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation.Error
   ( MissingRequired (..),
@@ -22,6 +23,7 @@ import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
+    CONST,
     Directive (..),
     DirectiveDefinition (..),
     DirectiveDefinitions,
@@ -36,7 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     Object,
     ObjectEntry (..),
     RAW,
-    RESOLVED,
     Ref (..),
     Schema,
     TypeNameRef (..),
@@ -197,14 +198,14 @@ instance Unknown Schema ctx where
     errorMessage typeNamePosition ("Unknown type " <> msg typeNameRef <> ".")
 
 instance Unknown (FieldDefinition OUT) ctx where
-  type UnknownSelector (FieldDefinition OUT) = Argument RESOLVED
+  type UnknownSelector (FieldDefinition OUT) = Argument CONST
   unknown _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
 instance Unknown (FieldsDefinition IN) (InputContext (OperationContext v)) where
-  type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
+  type UnknownSelector (FieldsDefinition IN) = ObjectEntry CONST
   unknown
     input@InputContext {sourceContext = OperationContext {scope = Scope {position}}}
     _
@@ -216,7 +217,7 @@ instance Unknown (FieldsDefinition IN) (InputContext (OperationContext v)) where
       ]
 
 instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ctx)) where
-  type UnknownSelector (FieldsDefinition IN) = ObjectEntry RESOLVED
+  type UnknownSelector (FieldsDefinition IN) = ObjectEntry CONST
   unknown
     input
     _
@@ -228,7 +229,7 @@ instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ctx)) wh
       ]
 
 instance Unknown DirectiveDefinition ctx where
-  type UnknownSelector DirectiveDefinition = Argument RESOLVED
+  type UnknownSelector DirectiveDefinition = Argument CONST
   unknown _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition

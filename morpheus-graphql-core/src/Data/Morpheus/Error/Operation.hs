@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Operation
   ( mutationIsNotDefined,

@@ -39,13 +39,12 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeWrapper,
-    createArgument,
-    createEnumType,
     createScalarType,
-    createType,
-    createUnionType,
-    mkField,
+    mkEnumContent,
+    mkInputValue,
     mkObjectField,
+    mkType,
+    mkUnionContent,
     msg,
     toAny,
     toHSWrappers,
@@ -72,34 +71,34 @@ instance ParseJSONSchema Type [TypeDefinition ANY] where
   parse Type {name = Just typeName, kind = SCALAR} =
     pure [createScalarType typeName]
   parse Type {name = Just typeName, kind = ENUM, enumValues = Just enums} =
-    pure [createEnumType typeName (map enumName enums)]
+    pure [mkType typeName $ mkEnumContent (map enumName enums)]
   parse Type {name = Just typeName, kind = UNION, possibleTypes = Just unions} =
     case traverse name unions of
       Nothing -> internalError "ERROR: GQL ERROR"
-      Just uni -> pure [toAny $ createUnionType typeName uni]
+      Just uni -> pure [toAny $ mkType typeName $ mkUnionContent uni]
   parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
     do
       (fields :: [FieldDefinition IN]) <- traverse parse iFields
       fs <- fromElems fields
-      pure [createType typeName $ DataInputObject fs]
+      pure [mkType typeName $ DataInputObject fs]
   parse Type {name = Just typeName, kind = OBJECT, fields = Just oFields} =
     do
       (fields :: [FieldDefinition OUT]) <- traverse parse oFields
       fs <- fromElems fields
-      pure [createType typeName $ DataObject [] fs]
+      pure [mkType typeName $ DataObject [] fs]
   parse _ = pure []
 
 instance ParseJSONSchema Field (FieldDefinition OUT) where
   parse Field {fieldName, fieldArgs, fieldType} = do
-    fType <- fieldTypeFromJSON fieldType
+    (wrappers, typename) <- fieldTypeFromJSON fieldType
     args <- traverse genArg fieldArgs >>= fromElems
-    pure $ mkObjectField (ArgumentsDefinition Nothing args) fieldName fType
+    pure $ mkObjectField (ArgumentsDefinition Nothing args) fieldName wrappers typename
     where
       genArg InputValue {inputName = argName, inputType = argType} =
-        createArgument argName <$> fieldTypeFromJSON argType
+        uncurry (mkInputValue argName) <$> fieldTypeFromJSON argType
 
 instance ParseJSONSchema InputValue (FieldDefinition IN) where
-  parse InputValue {inputName, inputType} = mkField inputName <$> fieldTypeFromJSON inputType
+  parse InputValue {inputName, inputType} = uncurry (mkInputValue inputName) <$> fieldTypeFromJSON inputType
 
 fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], TypeName)
 fieldTypeFromJSON = fmap toHs . fieldTypeRec []

@@ -10,6 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( SchemaValidator,
@@ -26,11 +27,14 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
   )
 where
 
-import Control.Monad.Reader (asks)
 --import Data.Morpheus.Error.Document.Interface (unknownInterface)
-import Data.Morpheus.Error.Utils (globalErrorMessage)
+
 -- MORPHEUS
 
+import Control.Applicative (pure)
+import Control.Monad ((>>=))
+import Control.Monad.Reader (asks)
+import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     fromElems,
@@ -62,6 +66,14 @@ import Data.Semigroup
   ( (<>),
     Semigroup (..),
   )
+import Prelude
+  ( ($),
+    (.),
+    Show (..),
+    const,
+    error,
+    id,
+  )
 
 data TypeSystemContext c = TypeSystemContext
   { types :: [TypeDefinition ANY],
@@ -72,7 +84,7 @@ data TypeSystemContext c = TypeSystemContext
 instance GetWith (TypeSystemContext ctx) Schema where
   getWith ctx = case fromElems (types ctx) of
     Success {result} -> result
-    Failure {errors} -> error (show errors)
+    Failure {errors} -> error (show errors) --TODO: fix
 
 instance GetWith (TypeSystemContext a) Scope where
   getWith _ =

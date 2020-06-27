@@ -17,19 +17,19 @@ import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( litEquals,
+  ( ignoredTokens,
     parseAssignment,
     parseName,
     parseNegativeSign,
     parseTypeName,
     setOf,
-    spaceAndComments,
+    symbol,
     variable,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     ObjectEntry (..),
-    OrderedMap,
+    OrdMap,
     RAW,
     ResolvedValue,
     ScalarValue (..),
@@ -74,7 +74,7 @@ valueNumber = do
 enumValue :: Parser (Value a)
 enumValue = do
   enum <- Enum <$> parseTypeName
-  spaceAndComments
+  ignoredTokens
   return enum
 
 escaped :: Parser Char
@@ -99,16 +99,16 @@ listValue :: Parser a -> Parser [a]
 listValue parser =
   label "ListValue" $
     between
-      (char '[' *> spaceAndComments)
-      (char ']' *> spaceAndComments)
-      (parser `sepBy` (many (char ',') *> spaceAndComments))
+      (char '[' *> ignoredTokens)
+      (char ']' *> ignoredTokens)
+      (parser `sepBy` (many (char ',') *> ignoredTokens))
 
 objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
 objectEntry parser = label "ObjectEntry" $ do
   (entryName, entryValue) <- parseAssignment parseName parser
   pure ObjectEntry {entryName, entryValue}
 
-objectValue :: Parser (Value a) -> Parser (OrderedMap FieldName (ObjectEntry a))
+objectValue :: Parser (Value a) -> Parser (OrdMap FieldName (ObjectEntry a))
 objectValue = label "ObjectValue" . setOf . objectEntry
 
 parsePrimitives :: Parser (Value a)
@@ -117,7 +117,7 @@ parsePrimitives =
 
 parseDefaultValue :: Parser ResolvedValue
 parseDefaultValue = do
-  litEquals
+  symbol '='
   parseV
   where
     parseV :: Parser ResolvedValue
@@ -139,4 +139,4 @@ structValue parser =
         <|> (Object <$> objectValue parser)
         <|> (List <$> listValue parser)
     )
-      <* spaceAndComments
+      <* ignoredTokens

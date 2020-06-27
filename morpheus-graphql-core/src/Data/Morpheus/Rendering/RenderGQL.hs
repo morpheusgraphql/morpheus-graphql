@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -14,6 +15,14 @@ import Data.Text
   ( Text,
     intercalate,
     pack,
+  )
+import Prelude
+  ( (.),
+    Bool (..),
+    Float,
+    Int,
+    fmap,
+    show,
   )
 
 type Rendering = Text
@@ -39,4 +48,4 @@ renderIndent = "  "
 
 renderObject :: (a -> Rendering) -> [a] -> Rendering
 renderObject f list =
-  " { \n  " <> intercalate ("\n" <> renderIndent) (map f list) <> "\n}"
+  " { \n  " <> intercalate ("\n" <> renderIndent) (fmap f list) <> "\n}"

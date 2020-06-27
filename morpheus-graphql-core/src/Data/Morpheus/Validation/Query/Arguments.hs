@@ -17,13 +17,13 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentDefinition,
     Arguments,
     ArgumentsDefinition (..),
+    CONST,
     DirectiveDefinition,
     DirectiveDefinition (..),
     FieldDefinition (..),
     OUT,
     ObjectEntry (..),
     RAW,
-    RESOLVED,
     RawValue,
     ResolvedValue,
     TypeRef (..),
@@ -52,7 +52,7 @@ import Data.Morpheus.Validation.Internal.Value
 resolveObject :: RawValue -> SelectionValidator ResolvedValue
 resolveObject = resolve
   where
-    resolveEntry :: ObjectEntry RAW -> SelectionValidator (ObjectEntry RESOLVED)
+    resolveEntry :: ObjectEntry RAW -> SelectionValidator (ObjectEntry CONST)
     resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
     ------------------------------------------------
     resolve :: RawValue -> SelectionValidator ResolvedValue
@@ -68,17 +68,17 @@ resolveObject = resolve
 
 resolveArgumentVariables ::
   Arguments RAW ->
-  SelectionValidator (Arguments RESOLVED)
+  SelectionValidator (Arguments CONST)
 resolveArgumentVariables =
   traverse resolveVariable
   where
-    resolveVariable :: Argument RAW -> SelectionValidator (Argument RESOLVED)
+    resolveVariable :: Argument RAW -> SelectionValidator (Argument CONST)
     resolveVariable (Argument key val position) = do
       constValue <- resolveObject val
       pure $ Argument key constValue position
 
 validateArgument ::
-  Arguments RESOLVED ->
+  Arguments CONST ->
   ArgumentDefinition ->
   SelectionValidator (Argument VALID)
 validateArgument
@@ -97,7 +97,7 @@ validateArgument
       validateArgumentValue argument
     where
       -------------------------------------------------------------------------
-      validateArgumentValue :: Argument RESOLVED -> SelectionValidator (Argument VALID)
+      validateArgumentValue :: Argument CONST -> SelectionValidator (Argument VALID)
       validateArgumentValue arg@Argument {argumentValue = value, ..} =
         withPosition argumentPosition
           $ startInput (SourceArgument arg)
@@ -134,7 +134,7 @@ validateDirectiveArguments
       directiveDefinitionArgs
 
 validateArgumengts ::
-  (Argument RESOLVED -> SelectionValidator ArgumentDefinition) ->
+  (Argument CONST -> SelectionValidator ArgumentDefinition) ->
   ArgumentsDefinition ->
   Arguments RAW ->
   SelectionValidator (Arguments VALID)

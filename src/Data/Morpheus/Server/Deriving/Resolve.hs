@@ -1,7 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -22,9 +21,7 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( runApi,
   )
-import Data.Morpheus.Internal.Utils
-  ( empty,
-  )
+import Data.Morpheus.Internal.Utils (resolveUpdates)
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
     deriveModel,
@@ -43,18 +40,18 @@ import Data.Morpheus.Types.IO
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( DataFingerprint (..),
-    FieldsDefinition,
+  ( FieldsDefinition,
     MUTATION,
     OUT,
     QUERY,
     SUBSCRIPTION,
     Schema (..),
     TypeContent (..),
-    TypeDefinition (..),
+    TypeDefinition,
     TypeName,
     ValidValue,
     initTypeLib,
+    mkType,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -63,7 +60,6 @@ import Data.Morpheus.Types.Internal.Resolving
     ResponseStream,
     ResultT (..),
     cleanEvents,
-    resolveUpdates,
   )
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
@@ -158,11 +154,4 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
       | otherwise = Just . operatorType fields
     -------------------------------------------------
     operatorType :: FieldsDefinition OUT -> TypeName -> TypeDefinition OUT
-    operatorType fields typeName =
-      TypeDefinition
-        { typeContent = DataObject [] fields,
-          typeName,
-          typeFingerprint = DataFingerprint typeName [],
-          typeDescription = Nothing,
-          typeDirectives = empty
-        }
+    operatorType fields typeName = mkType typeName (DataObject [] fields)

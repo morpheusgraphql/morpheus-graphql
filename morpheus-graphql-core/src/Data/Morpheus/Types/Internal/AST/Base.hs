@@ -8,6 +8,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Ref (..),
@@ -15,11 +17,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     Message (..),
     FieldName (..),
     Description,
-    VALID,
-    RAW,
     TypeWrapper (..),
-    Stage (..),
-    RESOLVED,
     TypeRef (..),
     VALIDATION_MODE (..),
     OperationType (..),
@@ -33,15 +31,13 @@ module Data.Morpheus.Types.Internal.AST.Base
     anonymousRef,
     toHSWrappers,
     toGQLWrapper,
-    sysTypes,
-    isNullable,
+    Nullable (..),
     isWeaker,
     isSubscription,
     isOutputObject,
-    isSystemTypeName,
+    isNotSystemTypeName,
     isObject,
     isInput,
-    isNullableWrapper,
     sysFields,
     hsTypeName,
     toOperationType,
@@ -60,6 +56,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     convertToJSONName,
     convertToHaskellName,
     isOutput,
+    mkTypeRef,
   )
 where
 
@@ -80,6 +77,24 @@ import GHC.Generics (Generic)
 -- import Instances.TH.Lift ()
 import Language.Haskell.TH (stringE)
 import Language.Haskell.TH.Syntax (Lift (..))
+import Prelude
+  ( ($),
+    (&&),
+    (.),
+    Bool (..),
+    Eq (..),
+    Functor (..),
+    Int,
+    Maybe (..),
+    Ord (..),
+    Show,
+    String,
+    elem,
+    fst,
+    not,
+    notElem,
+    otherwise,
+  )
 
 type TRUE = 'True
 
@@ -101,7 +116,7 @@ instance Lift Message where
 class Msg a where
   msg :: a -> Message
   msgSepBy :: Text -> [a] -> Message
-  msgSepBy t = Message . intercalate t . map (readMessage . msg)
+  msgSepBy t = Message . intercalate t . fmap (readMessage . msg)
 
 instance Msg String where
   msg = Message . pack
@@ -114,6 +129,10 @@ instance Msg Text where
 
 instance Msg Value where
   msg = msg . encode
+
+class Nullable a where
+  isNullable :: a -> Bool
+  toNullable :: a -> a
 
 -- FieldName : lower case names
 newtype FieldName = FieldName {readName :: Text}
@@ -132,7 +151,7 @@ instance RenderGQL FieldName where
   render = readName
 
 intercalateName :: FieldName -> [FieldName] -> FieldName
-intercalateName (FieldName x) = FieldName . intercalate x . map readName
+intercalateName (FieldName x) = FieldName . intercalate x . fmap readName
 
 toFieldName :: TypeName -> FieldName
 toFieldName = FieldName . readTypeName
@@ -156,8 +175,6 @@ instance RenderGQL TypeName where
 -- Description
 type Description = Text
 
-data Stage = RAW | RESOLVED | VALID
-
 data Position = Position
   { line :: Int,
     column :: Int
@@ -177,12 +194,6 @@ data GQLError = GQLError
 
 type GQLErrors = [GQLError]
 
-type RAW = 'RAW
-
-type RESOLVED = 'RESOLVED
-
-type VALID = 'VALID
-
 data VALIDATION_MODE
   = WITHOUT_VARIABLES
   | FULL_VALIDATION
@@ -197,7 +208,12 @@ data OperationType
   = Query
   | Subscription
   | Mutation
-  deriving (Show, Eq, Lift)
+  deriving (Show, Eq, Lift, Generic, Hashable)
+
+instance Msg OperationType where
+  msg Query = msg ("query" :: TypeName)
+  msg Mutation = msg ("mutation" :: TypeName)
+  msg Subscription = msg ("subscription" :: TypeName)
 
 type QUERY = 'Query
 
@@ -236,8 +252,13 @@ data TypeRef = TypeRef
   }
   deriving (Show, Eq, Lift)
 
-isNullable :: TypeRef -> Bool
-isNullable TypeRef {typeWrappers = typeWrappers} = isNullableWrapper typeWrappers
+mkTypeRef :: TypeName -> TypeRef
+mkTypeRef typeConName =
+  TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
+
+instance Nullable TypeRef where
+  isNullable = isNullable . typeWrappers
+  toNullable TypeRef {..} = TypeRef {typeWrappers = toNullable typeWrappers, ..}
 
 instance RenderGQL TypeRef where
   render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
@@ -296,9 +317,11 @@ data DataTypeWrapper
   | NonNullType
   deriving (Show, Lift)
 
-isNullableWrapper :: [TypeWrapper] -> Bool
-isNullableWrapper (TypeMaybe : _) = True
-isNullableWrapper _ = False
+instance Nullable [TypeWrapper] where
+  isNullable (TypeMaybe : _) = True
+  isNullable _ = False
+  toNullable (TypeMaybe : xs) = TypeMaybe : xs
+  toNullable xs = TypeMaybe : xs
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
 isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
@@ -328,25 +351,24 @@ renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
     showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
-isSystemTypeName :: TypeName -> Bool
-isSystemTypeName = (`elem` sysTypes)
-
-sysTypes :: [TypeName]
-sysTypes =
-  [ "__Schema",
-    "__Type",
-    "__Directive",
-    "__TypeKind",
-    "__Field",
-    "__DirectiveLocation",
-    "__InputValue",
-    "__EnumValue",
-    "String",
-    "Float",
-    "Int",
-    "Boolean",
-    "ID"
-  ]
+isNotSystemTypeName :: TypeName -> Bool
+isNotSystemTypeName =
+  ( `notElem`
+      [ "__Schema",
+        "__Type",
+        "__Directive",
+        "__TypeKind",
+        "__Field",
+        "__DirectiveLocation",
+        "__InputValue",
+        "__EnumValue",
+        "String",
+        "Float",
+        "Int",
+        "Boolean",
+        "ID"
+      ]
+  )
 
 sysFields :: [FieldName]
 sysFields = ["__typename", "__schema", "__type"]

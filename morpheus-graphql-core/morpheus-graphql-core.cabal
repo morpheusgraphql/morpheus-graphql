@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b13e1668b9269ab28dfdd66f04b342a5bdbec82e6ba59c98c0467604df7270a6
+-- hash: 9daf6fb4b051366e570442072704e51c700ee323c3158cd97d30f9437c60185e
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -25,6 +25,14 @@ extra-source-files:
 data-files:
     test/api/interface/query.gql
     test/api/simple/query.gql
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query/schema.gql
+    test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/schema.gql
+    test/schema/parsing/schema-definition/fail/unknown-fields/bla/schema.gql
+    test/schema/parsing/schema-definition/fail/unknown-fields/uppercase/schema.gql
+    test/schema/parsing/schema-definition/ok/query-mutation-subscription/schema.gql
+    test/schema/parsing/schema-definition/ok/query-mutation/schema.gql
+    test/schema/parsing/schema-definition/ok/query/schema.gql
     test/schema/validation/default-value/argument/compound-ok/schema.gql
     test/schema/validation/default-value/argument/missing-field/schema.gql
     test/schema/validation/default-value/argument/unexpected-value/schema.gql
@@ -39,6 +47,14 @@ data-files:
     test/schema/validation/interface/field-type/ok/schema.gql
     test/api/interface/response.json
     test/api/simple/response.json
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query/response.json
+    test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/response.json
+    test/schema/parsing/schema-definition/fail/unknown-fields/bla/response.json
+    test/schema/parsing/schema-definition/fail/unknown-fields/uppercase/response.json
+    test/schema/parsing/schema-definition/ok/query-mutation-subscription/response.json
+    test/schema/parsing/schema-definition/ok/query-mutation/response.json
+    test/schema/parsing/schema-definition/ok/query/response.json
     test/schema/validation/default-value/argument/compound-ok/response.json
     test/schema/validation/default-value/argument/missing-field/response.json
     test/schema/validation/default-value/argument/unexpected-value/response.json
@@ -101,10 +117,13 @@ library
       Data.Morpheus.Schema.TypeKind
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.DirectiveLocation
+      Data.Morpheus.Types.Internal.AST.Fields
       Data.Morpheus.Types.Internal.AST.MergeSet
-      Data.Morpheus.Types.Internal.AST.OrderedMap
+      Data.Morpheus.Types.Internal.AST.OrdMap
       Data.Morpheus.Types.Internal.AST.Selection
+      Data.Morpheus.Types.Internal.AST.Stage
       Data.Morpheus.Types.Internal.AST.TH
+      Data.Morpheus.Types.Internal.AST.TypeCategory
       Data.Morpheus.Types.Internal.AST.TypeSystem
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Resolving.Core

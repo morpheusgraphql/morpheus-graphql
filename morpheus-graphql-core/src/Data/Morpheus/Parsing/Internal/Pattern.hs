@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Parsing.Internal.Pattern
@@ -8,9 +9,11 @@ module Data.Morpheus.Parsing.Internal.Pattern
     optionalDirectives,
     enumValueDefinition,
     inputFieldsDefinition,
+    parseOperationType,
   )
 where
 
+import Data.Functor (($>))
 -- MORPHEUS
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
@@ -20,14 +23,14 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( keyword,
-    litAssignment,
-    operator,
+  ( ignoredTokens,
+    keyword,
     optDescription,
     parseName,
     parseType,
     parseTypeName,
     setOf,
+    symbol,
     uniqTuple,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -45,14 +48,17 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     InputFieldsDefinition,
     OUT,
+    OperationType (..),
     TypeName,
     Value,
   )
 import Text.Megaparsec
-  ( label,
+  ( (<|>),
+    label,
     many,
     optional,
   )
+import Text.Megaparsec.Char (string)
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
 --
@@ -75,7 +81,7 @@ inputValueDefinition :: Parser (FieldDefinition IN)
 inputValueDefinition = label "InputValueDefinition" $ do
   fieldDescription <- optDescription
   fieldName <- parseName
-  litAssignment -- ':'
+  symbol ':'
   fieldType <- parseType
   fieldContent <- optional (DefaultInputValue <$> parseDefaultValue)
   fieldDirectives <- optionalDirectives
@@ -107,7 +113,7 @@ fieldDefinition = label "FieldDefinition" $ do
   fieldDescription <- optDescription
   fieldName <- parseName
   fieldContent <- optional (FieldArgs <$> argumentsDefinition)
-  litAssignment -- ':'
+  symbol ':'
   fieldType <- parseType
   fieldDirectives <- optionalDirectives
   pure FieldDefinition {..}
@@ -135,7 +141,7 @@ optionalDirectives = label "Directives" $ many directive
 directive :: Parse (Value s) => Parser (Directive s)
 directive = label "Directive" $ do
   directivePosition <- getLocation
-  operator '@'
+  symbol '@'
   directiveName <- parseName
   directiveArgs <- maybeArguments
   pure Directive {..}
@@ -149,3 +155,12 @@ typeDeclaration :: FieldName -> Parser TypeName
 typeDeclaration kind = do
   keyword kind
   parseTypeName
+
+parseOperationType :: Parser OperationType
+parseOperationType = label "OperationType" $ do
+  kind <-
+    (string "query" $> Query)
+      <|> (string "mutation" $> Mutation)
+      <|> (string "subscription" $> Subscription)
+  ignoredTokens
+  return kind

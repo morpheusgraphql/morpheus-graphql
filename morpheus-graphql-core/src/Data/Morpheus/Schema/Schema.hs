@@ -18,6 +18,8 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( (<:>),
+    Failure (..),
+    resolveUpdates,
     singleton,
   )
 import Data.Morpheus.Schema.DSL (dsl)
@@ -25,26 +27,21 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataFingerprint (..),
     FieldsDefinition,
+    GQLErrors,
     Message,
     OUT,
     Schema (..),
     TypeContent (..),
     TypeDefinition (..),
-    TypeUpdater,
     TypeWrapper (..),
-    createArgument,
     insertType,
     internalFingerprint,
-    mkField,
+    mkInputValue,
     mkObjectField,
     unsafeFromFields,
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( failure,
-    resolveUpdates,
-  )
 
-withSystemTypes :: TypeUpdater
+withSystemTypes :: (Monad m, Failure GQLErrors m, Failure Message m) => Schema -> m Schema
 withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject inter fields}} =
   ( do
       fs <- fields <:> hiddenFields
@@ -57,12 +54,14 @@ hiddenFields :: FieldsDefinition OUT
 hiddenFields =
   unsafeFromFields
     [ mkObjectField
-        (singleton (createArgument "name" ([], "String")))
+        (singleton (mkInputValue "name" [] "String"))
         "__type"
-        ([TypeMaybe], "__Type"),
-      mkField
+        [TypeMaybe]
+        "__Type",
+      mkInputValue
         "__schema"
-        ([], "__Schema")
+        []
+        "__Schema"
     ]
 
 internalType :: TypeDefinition a -> TypeDefinition a

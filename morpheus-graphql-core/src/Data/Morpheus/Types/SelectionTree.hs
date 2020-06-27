@@ -7,11 +7,12 @@
 module Data.Morpheus.Types.SelectionTree where
 
 import Data.Morpheus.Internal.Utils (elems, keyOf)
-import Data.Morpheus.Types.Internal.AST.Base (FieldName, VALID)
-import Data.Morpheus.Types.Internal.AST.Selection
-  ( Selection (..),
+import Data.Morpheus.Types.Internal.AST
+  ( FieldName,
+    Selection (..),
     Selection (selectionContent),
     SelectionContent (SelectionField, SelectionSet),
+    VALID,
   )
 
 -- | The 'SelectionTree' instance is a simple interface for interacting

@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
   ( capital,
@@ -27,17 +28,24 @@ module Data.Morpheus.Internal.Utils
     mapFst,
     mapSnd,
     mapTuple,
+    UpdateT (..),
+    resolveUpdates,
+    concatUpdates,
+    failUpdates,
   )
 where
 
+import Control.Monad (foldM)
 import Data.Char
   ( toLower,
     toUpper,
   )
+import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
+import Data.Maybe (maybe)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -56,12 +64,28 @@ import qualified Data.Text as T
 import Instances.TH.Lift ()
 import Text.Megaparsec.Internal (ParsecT (..))
 import Text.Megaparsec.Stream (Stream)
+import Prelude
+  ( ($),
+    (.),
+    Applicative (..),
+    Bool (..),
+    Either (..),
+    Eq (..),
+    Functor (..),
+    Int,
+    Monad,
+    Ord,
+    String,
+    const,
+    fst,
+    length,
+  )
 
 mapText :: (String -> String) -> Token -> Token
 mapText f = T.pack . f . T.unpack
 
 nameSpaceType :: [FieldName] -> TypeName -> TypeName
-nameSpaceType list (TypeName name) = TypeName . T.concat $ map capital (map readName list <> [name])
+nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capital (fmap readName list <> [name])
 
 nameSpaceField :: TypeName -> FieldName -> FieldName
 nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capital name)
@@ -117,6 +141,10 @@ class Eq (KEY a) => KeyOf a where
   type KEY a = FieldName
   keyOf :: a -> KEY a
 
+instance Eq a => KeyOf (a, b) where
+  type KEY (a, b) = a
+  keyOf = fst
+
 instance KeyOf Ref where
   keyOf = refName
 
@@ -133,7 +161,7 @@ class Listable a coll | coll -> a where
   fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m coll
 
 keys :: (KeyOf a, Listable a coll) => coll -> [KEY a]
-keys = map keyOf . elems
+keys = fmap keyOf . elems
 
 size :: Listable a coll => coll -> Int
 size = length . elems
@@ -163,3 +191,15 @@ mapSnd f (a, b) = (a, f b)
 
 mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
 mapTuple f1 f2 (a, b) = (f1 a, f2 b)
+
+-- Helper Functions
+newtype UpdateT m a = UpdateT {updateTState :: a -> m a}
+
+failUpdates :: (Failure e m) => e -> UpdateT m a
+failUpdates = UpdateT . const . failure
+
+concatUpdates :: Monad m => [UpdateT m a] -> UpdateT m a
+concatUpdates x = UpdateT (`resolveUpdates` x)
+
+resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
+resolveUpdates a = foldM (&) a . fmap updateTState

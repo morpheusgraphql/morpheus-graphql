@@ -22,6 +22,9 @@ import Data.Morpheus.Internal.TH
     tyConArgs,
     typeT,
   )
+import Data.Morpheus.Internal.Utils
+  ( concatUpdates,
+  )
 import Data.Morpheus.Server.Deriving.Introspect
   ( DeriveTypeContent (..),
     Introspect (..),
@@ -31,7 +34,7 @@ import Data.Morpheus.Server.Deriving.Introspect
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__typeName, implements),
-    TRUE,
+    TypeUpdater,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -40,17 +43,14 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     IN,
     OUT,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeKind (..),
     TypeName,
     TypeRef (..),
-    TypeUpdater,
     insertType,
     unsafeFromFields,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( resolveUpdates,
   )
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
@@ -137,7 +137,7 @@ interfaceNames :: GQLType a => Proxy a -> [TypeName]
 interfaceNames = map fst . implements
 
 interfaceTypes :: GQLType a => Proxy a -> TypeUpdater
-interfaceTypes = flip resolveUpdates . map snd . implements
+interfaceTypes = concatUpdates . map snd . implements
 
 buildTypes :: TypeQ -> [FieldDefinition cat] -> ExpQ
 buildTypes cat = listE . concatMap (introspectField cat)

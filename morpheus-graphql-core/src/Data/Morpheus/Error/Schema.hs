@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Schema
   ( nameCollisionError,
@@ -14,6 +15,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     msg,
   )
 import Data.Semigroup ((<>))
+import Prelude (($))
 
 schemaValidationError :: Message -> GQLErrors
 schemaValidationError error' =

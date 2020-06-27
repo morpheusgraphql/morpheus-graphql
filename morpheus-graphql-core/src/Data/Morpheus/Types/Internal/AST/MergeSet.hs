@@ -8,19 +8,24 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.MergeSet
   ( MergeSet,
-    toOrderedMap,
+    toOrdMap,
     concatTraverse,
     join,
   )
 where
 
-import Data.List ((\\), find)
-import Data.Maybe (maybe)
 -- MORPHEUS
 
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad (..))
+import Data.Foldable (Foldable (..))
+import Data.Functor ((<$>), Functor (..))
+import Data.List ((\\), find)
+import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Collection (..),
@@ -34,17 +39,28 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     GQLErrors,
-    RAW,
     Ref,
+  )
+import Data.Morpheus.Types.Internal.AST.OrdMap
+  ( OrdMap (..),
+  )
+import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM
+import Data.Morpheus.Types.Internal.AST.Stage
+  ( RAW,
     Stage,
     VALID,
   )
-import Data.Morpheus.Types.Internal.AST.OrderedMap
-  ( OrderedMap (..),
-  )
-import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM
 import Data.Semigroup ((<>))
+import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
+import Prelude
+  ( ($),
+    (.),
+    Eq (..),
+    Show,
+    flip,
+    otherwise,
+  )
 
 -- set with mergeable components
 newtype MergeSet (dups :: Stage) a = MergeSet
@@ -92,8 +108,8 @@ join = __join empty
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
-toOrderedMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet opt a -> OrderedMap FieldName a
-toOrderedMap = OM.unsafeFromValues . unpack
+toOrdMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet opt a -> OrdMap FieldName a
+toOrdMap = OM.unsafeFromValues . unpack
 
 instance (KeyOf a, k ~ KEY a) => Selectable (MergeSet opt a) a where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)

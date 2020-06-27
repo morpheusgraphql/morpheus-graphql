@@ -18,7 +18,7 @@ import Data.Morpheus.Parsing.Internal.Internal
     processParser,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( spaceAndComments,
+  ( ignoredTokens,
   )
 import Data.Morpheus.Parsing.Request.Operation
   ( parseOperation,
@@ -44,7 +44,7 @@ import Text.Megaparsec
 
 request :: Parser GQLQuery
 request = label "GQLQuery" $ do
-  spaceAndComments
+  ignoredTokens
   operation <- parseOperation
   fragments <- manyTill parseFragmentDefinition eof >>= fromElems
   pure GQLQuery {operation, fragments, inputVariables = []}

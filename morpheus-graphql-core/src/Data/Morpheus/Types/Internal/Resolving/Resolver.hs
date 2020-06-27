@@ -15,6 +15,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event (..),
@@ -44,10 +45,13 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   )
 where
 
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad (..))
 import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader (ReaderT (..), ask, mapReaderT, withReaderT)
+import Data.Functor ((<$>), Functor (..))
 import Data.Maybe (maybe)
 -- MORPHEUS
 import Data.Morpheus.Error.Internal (internalResolvingError)
@@ -62,41 +66,35 @@ import Data.Morpheus.Types.IO
   ( GQLResponse,
     renderResponse,
   )
-import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
+import Data.Morpheus.Types.Internal.AST
+  ( Arguments,
+    FieldName,
     GQLError (..),
     GQLErrors,
+    GQLValue (..),
     MUTATION,
     Message,
+    ObjectEntry (..),
+    Operation (..),
     OperationType,
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
-    TypeName (..),
-    VALID,
-    msg,
-  )
-import Data.Morpheus.Types.Internal.AST.MergeSet
-  ( toOrderedMap,
-  )
-import Data.Morpheus.Types.Internal.AST.Selection
-  ( Operation (..),
+    ScalarValue (..),
+    Schema,
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    TypeName (..),
     UnionSelection,
     UnionTag (..),
-  )
-import Data.Morpheus.Types.Internal.AST.TypeSystem
-  ( Arguments,
-    Schema,
-  )
-import Data.Morpheus.Types.Internal.AST.Value
-  ( GQLValue (..),
-    ObjectEntry (..),
-    ScalarValue (..),
+    VALID,
     ValidValue,
     Value (..),
+    msg,
+  )
+import Data.Morpheus.Types.Internal.AST.MergeSet
+  ( toOrdMap,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Channel (..),
@@ -113,8 +111,18 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     statelessToResultT,
   )
 import Data.Semigroup
-  ( (<>),
-    Semigroup (..),
+  ( Semigroup (..),
+  )
+import Data.Traversable (traverse)
+import Prelude
+  ( ($),
+    (.),
+    Eq (..),
+    Show (..),
+    const,
+    id,
+    lookup,
+    otherwise,
   )
 
 type WithOperation (o :: OperationType) = LiftOperation o
@@ -321,7 +329,7 @@ subscribe ::
   Resolver QUERY e m (e -> Resolver QUERY e m a) ->
   Resolver SUBSCRIPTION e m a
 subscribe ch res = ResolverS $ do
-  pushEvents (map Channel ch :: [Channel e])
+  pushEvents (fmap Channel ch :: [Channel e])
   (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
   pure $ ReaderT eventRes
 
@@ -401,7 +409,7 @@ resolveObject ::
   ResModel o e m ->
   Resolver o e m ValidValue
 resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
-  Object . toOrderedMap <$> traverse resolver selectionSet
+  Object . toOrdMap <$> traverse resolver selectionSet
   where
     resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
     resolver sel =
@@ -560,7 +568,7 @@ mapDeriving ::
 mapDeriving ResNull = ResNull
 mapDeriving (ResScalar x) = ResScalar x
 mapDeriving (ResEnum typeName enum) = ResEnum typeName enum
-mapDeriving (ResList x) = ResList $ map mapDeriving x
+mapDeriving (ResList x) = ResList $ fmap mapDeriving x
 mapDeriving (ResObject x) = ResObject (mapObjectDeriving x)
 mapDeriving (ResUnion name x) = ResUnion name (mapStrategy x)
 
@@ -572,7 +580,7 @@ mapObjectDeriving ::
   ObjectResModel o' e m
 mapObjectDeriving (ObjectResModel tyname x) =
   ObjectResModel tyname $
-    map (mapEntry mapStrategy) x
+    fmap (mapEntry mapStrategy) x
 
 mapEntry :: (a -> b) -> (k, a) -> (k, b)
 mapEntry f (name, value) = (name, f value)

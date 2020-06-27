@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Warning
   ( renderGQLErrors,
@@ -13,6 +14,8 @@ import Data.Aeson (encode)
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.Foldable (traverse_)
 -- MORPHEUS
+
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
@@ -25,6 +28,12 @@ import Data.Semigroup ((<>))
 import Language.Haskell.TH
   ( Q,
     reportWarning,
+  )
+import Prelude
+  ( ($),
+    (.),
+    String,
+    pure,
   )
 
 renderGQLErrors :: GQLErrors -> String

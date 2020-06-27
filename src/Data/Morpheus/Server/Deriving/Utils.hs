@@ -22,20 +22,19 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Proxy (Proxy (..))
 import Data.Text
-  ( Text,
-    pack,
+  ( pack,
   )
 import GHC.Generics
 
 -- MORPHEUS
 class EnumRep (f :: * -> *) where
-  enumTags :: Proxy f -> [Text]
+  enumTags :: Proxy f -> [TypeName]
 
 instance EnumRep f => EnumRep (M1 D c f) where
   enumTags _ = enumTags (Proxy @f)
 
 instance (Constructor c) => EnumRep (M1 C c U1) where
-  enumTags _ = [pack $ conName (undefined :: (M1 C c U1 x))]
+  enumTags _ = [conNameProxy (Proxy @c)]
 
 instance (EnumRep a, EnumRep b) => EnumRep (a :+: b) where
   enumTags _ = enumTags (Proxy @a) ++ enumTags (Proxy @b)
