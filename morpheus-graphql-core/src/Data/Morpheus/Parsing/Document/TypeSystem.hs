@@ -267,7 +267,7 @@ parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
   ignoredTokens
   manyTill parseRawTypeDefinition eof
 
-parseSchema :: Text -> Eventless (Maybe SchemaDefinition, [TypeDefinition ANY])
+parseSchema :: Text -> Eventless [TypeDefinition ANY]
 parseSchema =
   fmap snd
     . ( processParser parseTypeSystemDefinition
