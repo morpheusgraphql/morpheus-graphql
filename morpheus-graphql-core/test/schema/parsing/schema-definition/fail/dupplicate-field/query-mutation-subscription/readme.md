@@ -1,1 +1,1 @@
-fail on `schema` with multiople opreation definitions
+fail on `schema` with multiple opreation definitions

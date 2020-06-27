@@ -1,1 +1,1 @@
-fail on `schema` with multiople query definitions
+fail on `schema` with multiple query definitions
