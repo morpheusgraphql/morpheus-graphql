@@ -77,7 +77,6 @@ module Data.Morpheus.Types.Internal.AST
     VariableContent (..),
     TypeLib,
     initTypeLib,
-    defineType,
     kindOf,
     toNullable,
     toListField,
