@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 80cd0ea1a1796c11ea9a18942d7b405a18ba36e4a982f021313ccf31748fb2cf
+-- hash: 1353a47701d506dfdbb10539a454ce7a0effcde6a633ef41de8e0d2fbcaf608c
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -29,6 +29,7 @@ data-files:
     test/schema/parsing/schema-definition/fail/dupplicate-field/query/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/schema.gql
     test/schema/parsing/schema-definition/fail/unknown-fields/bla/schema.gql
+    test/schema/parsing/schema-definition/fail/unknown-fields/uppercase/schema.gql
     test/schema/parsing/schema-definition/ok/query-mutation-subscription/schema.gql
     test/schema/parsing/schema-definition/ok/query-mutation/schema.gql
     test/schema/parsing/schema-definition/ok/query/schema.gql
@@ -50,6 +51,7 @@ data-files:
     test/schema/parsing/schema-definition/fail/dupplicate-field/query/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/response.json
     test/schema/parsing/schema-definition/fail/unknown-fields/bla/response.json
+    test/schema/parsing/schema-definition/fail/unknown-fields/uppercase/response.json
     test/schema/parsing/schema-definition/ok/query-mutation-subscription/response.json
     test/schema/parsing/schema-definition/ok/query-mutation/response.json
     test/schema/parsing/schema-definition/ok/query/response.json

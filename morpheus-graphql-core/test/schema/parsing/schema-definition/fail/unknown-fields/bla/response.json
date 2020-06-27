@@ -1,20 +1,8 @@
 {
   "errors": [
     {
-      "message": "There can Be only One TypeDefinition for schema.\"query\"",
-      "locations": []
-    },
-    {
-      "message": "There can Be only One TypeDefinition for schema.\"mutation\"",
-      "locations": []
-    },
-    {
-      "message": "There can Be only One TypeDefinition for schema.\"subscription\"",
-      "locations": []
-    },
-    {
-      "message": "There can Be only One TypeDefinition for schema.\"subscription\"",
-      "locations": []
+      "message": "offset=78:\nunexpected 'b'\nexpecting '}', Ignored, IgnoredTokens, OperationType, or white space\n",
+      "locations": [{ "line": 8, "column": 3 }]
     }
   ]
 }
