@@ -3,12 +3,11 @@
 {-# LANGUAGE TupleSections #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
-  ( token,
+  ( name,
     qualifier,
     variable,
     ignoredTokens,
-    spaceAndComments1,
-    pipeLiteral,
+    pipe,
     -------------
     collection,
     setOf,
@@ -27,7 +26,7 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseName,
     parseType,
     keyword,
-    operator,
+    symbol,
     optDescription,
     optionalList,
     parseNegativeSign,
@@ -73,9 +72,7 @@ import Text.Megaparsec
     optional,
     sepBy,
     sepEndBy,
-    skipMany,
     skipManyTill,
-    try,
     try,
   )
 import Text.Megaparsec.Char
@@ -89,25 +86,20 @@ import Text.Megaparsec.Char
     string,
   )
 
--- Name : https://graphql.github.io/graphql-spec/June2018/#sec-Names
---
--- Name :: /[_A-Za-z][_0-9A-Za-z]*/
---
-
 parseNegativeSign :: Parser Bool
 parseNegativeSign = (char '-' $> True <* ignoredTokens) <|> pure False
 
 parseName :: Parser FieldName
-parseName = FieldName <$> token
+parseName = FieldName <$> name
 
 parseTypeName :: Parser TypeName
-parseTypeName = label "TypeName" $ TypeName <$> token
+parseTypeName = label "TypeName" $ TypeName <$> name
 
 keyword :: FieldName -> Parser ()
 keyword (FieldName word) = string word *> space1 *> ignoredTokens
 
-operator :: Char -> Parser ()
-operator x = char x *> ignoredTokens
+symbol :: Char -> Parser ()
+symbol x = char x *> ignoredTokens
 
 -- LITERALS
 braces :: Parser [a] -> Parser [a]
@@ -116,8 +108,8 @@ braces =
     (char '{' *> ignoredTokens)
     (char '}' *> ignoredTokens)
 
-pipeLiteral :: Parser ()
-pipeLiteral = char '|' *> ignoredTokens
+pipe :: Parser ()
+pipe = char '|' *> ignoredTokens
 
 litEquals :: Parser ()
 litEquals = char '=' *> ignoredTokens
@@ -127,12 +119,30 @@ litAssignment = char ':' *> ignoredTokens
 
 -- PRIMITIVE
 ------------------------------------
-token :: Parser Token
-token = label "token" $ do
-  firstChar <- letterChar <|> char '_'
-  restToken <- many $ letterChar <|> char '_' <|> digitChar
+
+-- 2.1.9 Names
+-- https://spec.graphql.org/draft/#Name
+-- Name ::
+--  NameStart NameContinue[list,opt]
+--
+name :: Parser Token
+name = label "token" $ do
+  start <- nameStart
+  continue <- nameContinue
   ignoredTokens
-  return $ pack $ firstChar : restToken
+  pure $ pack (start : continue)
+
+-- NameStart::
+--   Letter
+--   _
+nameStart :: Parser Char
+nameStart = letterChar <|> char '_'
+
+--  NameContinue::
+--   Letter
+--   Digit
+nameContinue :: Parser String
+nameContinue = many (letterChar <|> char '_' <|> digitChar)
 
 qualifier :: Parser (FieldName, Position)
 qualifier = label "qualifier" $ do
@@ -151,9 +161,6 @@ variable = label "variable" $ do
   refName <- parseName
   ignoredTokens
   pure $ Ref {refName, refPosition}
-
-spaceAndComments1 :: Parser ()
-spaceAndComments1 = space1 *> ignoredTokens
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
 --
@@ -258,8 +265,7 @@ parseAssignment nameParser valueParser = label "assignment" $ do
 --
 parseTypeCondition :: Parser TypeName
 parseTypeCondition = do
-  _ <- string "on"
-  space1
+  keyword "on"
   parseTypeName
 
 spreadLiteral :: Parser Position
