@@ -55,6 +55,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     convertToJSONName,
     convertToHaskellName,
     isOutput,
+    mkTypeRef,
   )
 where
 
@@ -231,6 +232,10 @@ data TypeRef = TypeRef
     typeWrappers :: [TypeWrapper]
   }
   deriving (Show, Eq, Lift)
+
+mkTypeRef :: TypeName -> TypeRef
+mkTypeRef typeConName =
+  TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
 
 instance Nullable TypeRef where
   isNullable = isNullable . typeWrappers

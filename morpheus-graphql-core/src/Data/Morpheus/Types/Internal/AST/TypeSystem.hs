@@ -33,7 +33,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     createScalarType,
     mkType,
     createUnionType,
-    mkTypeRef,
     mkInputUnionFields,
     defineType,
     initTypeLib,
@@ -94,6 +93,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeRef (..),
     TypeWrapper (..),
     isNotSystemTypeName,
+    mkTypeRef,
     msg,
     toFieldName,
     toOperationType,
@@ -467,10 +467,6 @@ mkUnionField UnionMember {memberName} =
 --
 -- OTHER
 --------------------------------------------------------------------------------------------------
-
-mkTypeRef :: TypeName -> TypeRef
-mkTypeRef typeConName =
-  TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
 
 type TypeUpdater m = Updater m Schema
 

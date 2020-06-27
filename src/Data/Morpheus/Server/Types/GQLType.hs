@@ -115,7 +115,7 @@ class IsObject (KIND a) => GQLType a where
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
 
-  implements :: Proxy a -> [(TypeName, TypeUpdater)]
+  implements :: Proxy a -> [(TypeName, TypeUpdater m)]
   implements _ = []
 
   description :: Proxy a -> Maybe Text

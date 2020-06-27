@@ -39,6 +39,7 @@ import Data.Map (Map)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( empty,
+    resolveUpdates,
     singleton,
   )
 import Data.Morpheus.Kind
@@ -98,7 +99,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
     Resolver,
-    resolveUpdates,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
