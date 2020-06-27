@@ -33,7 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TypeContent (..),
     TypeDefinition (..),
-    TypeUpdater,
     TypeWrapper (..),
     insertType,
     internalFingerprint,
@@ -42,7 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     unsafeFromFields,
   )
 
-withSystemTypes :: (Monad m, Failure GQLErrors m, Failure Message m) => TypeUpdater m
+withSystemTypes :: (Monad m, Failure GQLErrors m, Failure Message m) => Schema -> m Schema
 withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject inter fields}} =
   ( do
       fs <- fields <:> hiddenFields

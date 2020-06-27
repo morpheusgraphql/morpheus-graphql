@@ -25,7 +25,8 @@ import Data.Morpheus.Client.Transform.Core
     typeFrom,
   )
 import Data.Morpheus.Internal.Utils
-  ( elems,
+  ( UpdateT (..),
+    elems,
     empty,
     resolveUpdates,
   )
@@ -96,7 +97,7 @@ renderNonOutputTypes ::
   Converter [ClientTypeDefinition]
 renderNonOutputTypes leafTypes = do
   variables <- asks (elems . snd)
-  inputTypeRequests <- resolveUpdates [] $ map (exploreInputTypeNames . typeConName . variableType) variables
+  inputTypeRequests <- resolveUpdates [] $ map (UpdateT . exploreInputTypeNames . typeConName . variableType) variables
   concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> leafTypes)
 
 exploreInputTypeNames :: TypeName -> [TypeName] -> Converter [TypeName]
@@ -111,9 +112,9 @@ exploreInputTypeNames name collected
             (name : collected)
             (map toInputTypeD $ elems fields)
           where
-            toInputTypeD :: FieldDefinition IN -> [TypeName] -> Converter [TypeName]
+            toInputTypeD :: FieldDefinition IN -> UpdateT Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
-              exploreInputTypeNames typeConName
+              UpdateT (exploreInputTypeNames typeConName)
         scanType (DataEnum _) = pure (collected <> [typeName])
         scanType (DataScalar _) = pure (collected <> customScalarTypes typeName)
         scanType _ = pure collected

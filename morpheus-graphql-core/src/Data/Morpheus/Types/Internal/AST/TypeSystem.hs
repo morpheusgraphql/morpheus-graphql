@@ -26,7 +26,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     Schema (..),
     DataEnumValue (..),
     TypeLib,
-    TypeUpdater,
     TypeCategory,
     DataInputUnion,
     mkEnumContent,
@@ -68,7 +67,7 @@ import Data.Morpheus.Internal.Utils
     KeyOf (..),
     Listable (..),
     Selectable (..),
-    Updater,
+    UpdateT (..),
     elems,
     resolveUpdates,
   )
@@ -397,24 +396,25 @@ defineType datatype lib =
 
 insertType ::
   (Monad m, Failure GQLErrors m) =>
-  TypeDefinition ANY ->
-  TypeUpdater m
-insertType datatype@TypeDefinition {typeName} lib = case isTypeDefined typeName lib of
-  Nothing -> resolveUpdates (defineType datatype lib) []
-  Just fingerprint
-    | fingerprint == typeFingerprint datatype -> return lib
-    -- throw error if 2 different types has same name
-    | otherwise -> failure $ nameCollisionError typeName
+  TypeDefinition cat ->
+  UpdateT m Schema
+insertType datatype@TypeDefinition {typeName} = UpdateT $ \lib ->
+  case isTypeDefined typeName lib of
+    Nothing -> resolveUpdates (defineType datatype lib) []
+    Just fingerprint
+      | fingerprint == typeFingerprint datatype -> return lib
+      -- throw error if 2 different types has same name
+      | otherwise -> failure $ nameCollisionError typeName
 
 updateSchema ::
   (Monad m, Failure GQLErrors m) =>
   TypeName ->
   DataFingerprint ->
-  [TypeUpdater m] ->
+  [UpdateT m Schema] ->
   (a -> TypeDefinition cat) ->
   a ->
-  TypeUpdater m
-updateSchema name fingerprint stack f x lib =
+  UpdateT m Schema
+updateSchema name fingerprint stack f x = UpdateT $ \lib ->
   case isTypeDefined name lib of
     Nothing ->
       resolveUpdates
@@ -467,8 +467,6 @@ mkUnionField UnionMember {memberName} =
 --
 -- OTHER
 --------------------------------------------------------------------------------------------------
-
-type TypeUpdater m = Updater m Schema
 
 instance RenderGQL Schema where
   render schema = intercalate "\n\n" $ map render visibleTypes

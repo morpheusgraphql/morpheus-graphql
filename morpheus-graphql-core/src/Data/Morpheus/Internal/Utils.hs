@@ -28,8 +28,10 @@ module Data.Morpheus.Internal.Utils
     mapFst,
     mapSnd,
     mapTuple,
-    Updater,
+    UpdateT (..),
     resolveUpdates,
+    concatUpdates,
+    failUpdates,
   )
 where
 
@@ -69,11 +71,12 @@ import Prelude
     Bool (..),
     Either (..),
     Eq (..),
+    Functor (..),
     Int,
     Monad,
     Ord,
     String,
-    fmap,
+    const,
     fst,
     length,
   )
@@ -190,7 +193,13 @@ mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
 mapTuple f1 f2 (a, b) = (f1 a, f2 b)
 
 -- Helper Functions
-type Updater m lib = lib -> m lib
+newtype UpdateT m a = UpdateT {updateTState :: a -> m a}
 
-resolveUpdates :: Monad m => lib -> [lib -> m lib] -> m lib
-resolveUpdates = foldM (&)
+failUpdates :: (Failure e m) => e -> UpdateT m a
+failUpdates = UpdateT . const . failure
+
+concatUpdates :: Monad m => [UpdateT m a] -> UpdateT m a
+concatUpdates x = UpdateT (`resolveUpdates` x)
+
+resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
+resolveUpdates a = foldM (&) a . fmap updateTState
