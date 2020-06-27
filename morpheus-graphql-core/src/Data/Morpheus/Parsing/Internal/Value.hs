@@ -29,7 +29,7 @@ import Data.Morpheus.Parsing.Internal.Terms
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     ObjectEntry (..),
-    OrderedMap,
+    OrdMap,
     RAW,
     ResolvedValue,
     ScalarValue (..),
@@ -108,7 +108,7 @@ objectEntry parser = label "ObjectEntry" $ do
   (entryName, entryValue) <- parseAssignment parseName parser
   pure ObjectEntry {entryName, entryValue}
 
-objectValue :: Parser (Value a) -> Parser (OrderedMap FieldName (ObjectEntry a))
+objectValue :: Parser (Value a) -> Parser (OrdMap FieldName (ObjectEntry a))
 objectValue = label "ObjectValue" . setOf . objectEntry
 
 parsePrimitives :: Parser (Value a)

@@ -66,8 +66,8 @@ import Data.Morpheus.Types.Internal.AST.Fields
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( MergeSet,
   )
-import Data.Morpheus.Types.Internal.AST.OrderedMap
-  ( OrderedMap,
+import Data.Morpheus.Types.Internal.AST.OrdMap
+  ( OrdMap,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,
@@ -116,7 +116,7 @@ instance NameCollision Fragment where
 instance KeyOf Fragment where
   keyOf = fragmentName
 
-type Fragments = OrderedMap FieldName Fragment
+type Fragments = OrdMap FieldName Fragment
 
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s

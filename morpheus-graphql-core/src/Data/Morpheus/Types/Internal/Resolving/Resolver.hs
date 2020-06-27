@@ -94,7 +94,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
-  ( toOrderedMap,
+  ( toOrdMap,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Channel (..),
@@ -409,7 +409,7 @@ resolveObject ::
   ResModel o e m ->
   Resolver o e m ValidValue
 resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
-  Object . toOrderedMap <$> traverse resolver selectionSet
+  Object . toOrdMap <$> traverse resolver selectionSet
   where
     resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
     resolver sel =

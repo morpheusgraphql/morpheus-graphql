@@ -69,8 +69,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeName (..),
     TypeRef,
   )
-import Data.Morpheus.Types.Internal.AST.OrderedMap
-  ( OrderedMap,
+import Data.Morpheus.Types.Internal.AST.OrdMap
+  ( OrdMap,
     unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
@@ -169,7 +169,7 @@ instance NameCollision (Variable s) where
         locations = [variablePosition]
       }
 
-type VariableDefinitions s = OrderedMap FieldName (Variable s)
+type VariableDefinitions s = OrdMap FieldName (Variable s)
 
 data Value (stage :: Stage) where
   ResolvedVariable :: Ref -> Variable VALID -> Value CONST
@@ -203,7 +203,7 @@ instance NameCollision (ObjectEntry s) where
 instance KeyOf (ObjectEntry s) where
   keyOf = entryName
 
-type Object a = OrderedMap FieldName (ObjectEntry a)
+type Object a = OrdMap FieldName (ObjectEntry a)
 
 type ValidObject = Object VALID
 

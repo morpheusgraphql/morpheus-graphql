@@ -55,7 +55,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toFieldName,
   )
-import Data.Morpheus.Types.Internal.AST.OrderedMap
+import Data.Morpheus.Types.Internal.AST.OrdMap
   ( unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.Validation

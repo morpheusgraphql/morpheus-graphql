@@ -109,8 +109,8 @@ import Data.Morpheus.Types.Internal.AST.Fields
     FieldsDefinition,
     unsafeFromFields,
   )
-import Data.Morpheus.Types.Internal.AST.OrderedMap
-  ( OrderedMap,
+import Data.Morpheus.Types.Internal.AST.OrdMap
+  ( OrdMap,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( VALID,
@@ -199,7 +199,7 @@ data Schema = Schema
 data RawTypeDefinition
   = RawSchemaDefinition
       { schemaDirectives :: Directives VALID,
-        unSchemaDefinition :: OrderedMap OperationType RootOperationTypeDefinition
+        unSchemaDefinition :: OrdMap OperationType RootOperationTypeDefinition
       }
   | RawTypeDefinition (TypeDefinition ANY)
   deriving (Show)

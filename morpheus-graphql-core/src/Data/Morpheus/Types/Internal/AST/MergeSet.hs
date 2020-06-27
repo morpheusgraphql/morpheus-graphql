@@ -12,7 +12,7 @@
 
 module Data.Morpheus.Types.Internal.AST.MergeSet
   ( MergeSet,
-    toOrderedMap,
+    toOrdMap,
     concatTraverse,
     join,
   )
@@ -41,10 +41,10 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLErrors,
     Ref,
   )
-import Data.Morpheus.Types.Internal.AST.OrderedMap
-  ( OrderedMap (..),
+import Data.Morpheus.Types.Internal.AST.OrdMap
+  ( OrdMap (..),
   )
-import qualified Data.Morpheus.Types.Internal.AST.OrderedMap as OM
+import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,
     Stage,
@@ -108,8 +108,8 @@ join = __join empty
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
-toOrderedMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet opt a -> OrderedMap FieldName a
-toOrderedMap = OM.unsafeFromValues . unpack
+toOrdMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet opt a -> OrdMap FieldName a
+toOrdMap = OM.unsafeFromValues . unpack
 
 instance (KeyOf a, k ~ KEY a) => Selectable (MergeSet opt a) a where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)

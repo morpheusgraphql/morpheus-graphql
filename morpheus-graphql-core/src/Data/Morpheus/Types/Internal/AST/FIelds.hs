@@ -79,8 +79,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     sysFields,
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
-import Data.Morpheus.Types.Internal.AST.OrderedMap
-  ( OrderedMap,
+import Data.Morpheus.Types.Internal.AST.OrdMap
+  ( OrdMap,
     unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
@@ -134,7 +134,7 @@ instance NameCollision (Argument s) where
         locations = [argumentPosition]
       }
 
-type Arguments s = OrderedMap FieldName (Argument s)
+type Arguments s = OrdMap FieldName (Argument s)
 
 -- directive
 ------------------------------------------------------------------
@@ -189,7 +189,7 @@ instance ToAny (FieldContent TRUE) where
   toAny (DefaultInputValue x) = DefaultInputValue x
 
 newtype Fields def = Fields
-  {unFields :: OrderedMap FieldName def}
+  {unFields :: OrdMap FieldName def}
   deriving
     ( Show,
       Lift,
@@ -341,7 +341,7 @@ type InputValueDefinition = FieldDefinition IN
 
 data ArgumentsDefinition = ArgumentsDefinition
   { argumentsTypename :: Maybe TypeName,
-    arguments :: OrderedMap FieldName ArgumentDefinition
+    arguments :: OrdMap FieldName ArgumentDefinition
   }
   deriving (Show, Lift)
 

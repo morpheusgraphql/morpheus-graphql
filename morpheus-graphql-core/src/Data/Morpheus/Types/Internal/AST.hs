@@ -107,7 +107,7 @@ module Data.Morpheus.Types.Internal.AST
     GQLQuery (..),
     Variables,
     unsafeFromFields,
-    OrderedMap,
+    OrdMap,
     GQLError (..),
     GQLErrors,
     ObjectEntry (..),
@@ -158,7 +158,7 @@ import Data.HashMap.Lazy (HashMap)
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Fields
-import Data.Morpheus.Types.Internal.AST.OrderedMap
+import Data.Morpheus.Types.Internal.AST.OrdMap
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH
