@@ -21,6 +21,7 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( runApi,
   )
+import Data.Morpheus.Internal.Utils (resolveUpdates)
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
     deriveModel,
@@ -59,7 +60,6 @@ import Data.Morpheus.Types.Internal.Resolving
     ResponseStream,
     ResultT (..),
     cleanEvents,
-    resolveUpdates,
   )
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
