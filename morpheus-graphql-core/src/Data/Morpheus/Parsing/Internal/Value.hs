@@ -18,12 +18,12 @@ import Data.Morpheus.Parsing.Internal.Internal
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( ignoredTokens,
-    litEquals,
     parseAssignment,
     parseName,
     parseNegativeSign,
     parseTypeName,
     setOf,
+    symbol,
     variable,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -117,7 +117,7 @@ parsePrimitives =
 
 parseDefaultValue :: Parser ResolvedValue
 parseDefaultValue = do
-  litEquals
+  symbol '='
   parseV
   where
     parseV :: Parser ResolvedValue

@@ -4,10 +4,8 @@
 
 module Data.Morpheus.Parsing.Internal.Terms
   ( name,
-    qualifier,
     variable,
     ignoredTokens,
-    pipe,
     -------------
     collection,
     setOf,
@@ -18,9 +16,7 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseNonNull,
     parseAssignment,
     parseWrappedType,
-    litEquals,
     litAssignment,
-    parseTuple,
     parseAlias,
     sepByAnd,
     parseName,
@@ -39,8 +35,10 @@ import Data.Functor (($>))
 -- MORPHEUS
 
 import Data.Morpheus.Internal.Utils
-  ( KeyOf,
+  ( Collection,
+    KeyOf,
     Listable (..),
+    empty,
     fromElems,
   )
 import Data.Morpheus.Parsing.Internal.Internal
@@ -108,12 +106,6 @@ braces =
     (char '{' *> ignoredTokens)
     (char '}' *> ignoredTokens)
 
-pipe :: Parser ()
-pipe = char '|' *> ignoredTokens
-
-litEquals :: Parser ()
-litEquals = char '=' *> ignoredTokens
-
 litAssignment :: Parser ()
 litAssignment = char ':' *> ignoredTokens
 
@@ -143,12 +135,6 @@ nameStart = letterChar <|> char '_'
 --   Digit
 nameContinue :: Parser String
 nameContinue = many (letterChar <|> char '_' <|> digitChar)
-
-qualifier :: Parser (FieldName, Position)
-qualifier = label "qualifier" $ do
-  position <- getLocation
-  value <- parseName
-  return (value, position)
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
 --
@@ -237,19 +223,17 @@ parseNonNull = do
 optionalList :: Parser [a] -> Parser [a]
 optionalList x = x <|> pure []
 
-parseTuple :: Parser a -> Parser [a]
-parseTuple parser =
+uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
+uniqTuple parser =
   label "Tuple" $
     between
       (char '(' *> ignoredTokens)
       (char ')' *> ignoredTokens)
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
+      >>= fromElems
 
-uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
-uniqTuple = parseTuple >=> fromElems
-
-uniqTupleOpt :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
-uniqTupleOpt = optionalList . parseTuple >=> fromElems
+uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf a) => Parser a -> Parser coll
+uniqTupleOpt x = uniqTuple x <|> pure empty
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
 parseAssignment nameParser valueParser = label "assignment" $ do
