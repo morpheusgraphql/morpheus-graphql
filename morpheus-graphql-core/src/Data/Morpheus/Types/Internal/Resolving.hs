@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving
   ( Event (..),
@@ -54,6 +55,12 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Resolver
+import Prelude
+  ( (.),
+    Bool,
+    Float,
+    Int,
+  )
 
 mkString :: Token -> ResModel o e m
 mkString = ResScalar . String

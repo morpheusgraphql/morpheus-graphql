@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
@@ -11,8 +12,9 @@ module Data.Morpheus.Types.GQLScalar
   )
 where
 
-import Control.Monad.Fail (MonadFail)
+import Control.Monad.Fail (MonadFail (..))
 import qualified Data.Aeson as A
+import Data.Either (Either (..), either)
 import Data.Morpheus.Types.Internal.AST
   ( ScalarDefinition (..),
     ScalarValue (..),
@@ -22,6 +24,17 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Proxy (Proxy (..))
 import Data.Text (Text, unpack)
+import Prelude
+  ( ($),
+    (.),
+    Bool,
+    Float,
+    Int,
+    Monad,
+    fromInteger,
+    pure,
+    toInteger,
+  )
 
 toScalar :: ValidValue -> Either Text ScalarValue
 toScalar (Scalar x) = pure x
@@ -53,7 +66,7 @@ class GQLScalar a where
       validator value = do
         scalarValue' <- toScalar value
         (_ :: a) <- parseValue scalarValue'
-        return value
+        pure value
 
 instance GQLScalar Text where
   parseValue (String x) = pure x

@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.ID
   ( ID (..),
@@ -21,6 +22,12 @@ import Data.Text
     pack,
   )
 import GHC.Generics (Generic)
+import Prelude
+  ( ($),
+    Either (..),
+    Show (..),
+    pure,
+  )
 
 -- | default GraphQL type,
 -- parses only 'String' and 'Int' values,
@@ -31,8 +38,8 @@ newtype ID = ID
   deriving (Show, Generic)
 
 instance GQLScalar ID where
-  parseValue (Int x) = return (ID $ pack $ show x)
-  parseValue (String x) = return (ID x)
+  parseValue (Int x) = pure (ID $ pack $ show x)
+  parseValue (String x) = pure (ID x)
   parseValue _ = Left ""
   serialize (ID x) = String x
 

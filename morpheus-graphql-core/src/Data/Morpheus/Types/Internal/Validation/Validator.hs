@@ -11,6 +11,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation.Validator
   ( Validator (..),
@@ -49,6 +50,10 @@ module Data.Morpheus.Types.Internal.Validation.Validator
   )
 where
 
+-- MORPHEUS
+
+import Control.Applicative (Applicative)
+import Control.Monad (Monad)
 import Control.Monad.Reader (MonadReader)
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
@@ -56,7 +61,8 @@ import Control.Monad.Trans.Reader
     ask,
     withReaderT,
   )
--- MORPHEUS
+import Data.Functor ((<$>), Functor (..))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -90,6 +96,12 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup
   ( (<>),
   )
+import Prelude
+  ( ($),
+    (.),
+    Bool,
+    Show,
+  )
 
 data Prop = Prop
   { propName :: FieldName,
@@ -101,7 +113,7 @@ type Path = [Prop]
 
 renderPath :: Path -> Message
 renderPath [] = ""
-renderPath path = "in field " <> msg (intercalateName "." $ map propName path) <> ": "
+renderPath path = "in field " <> msg (intercalateName "." $ fmap propName path) <> ": "
 
 renderInputPrefix :: InputContext c -> Message
 renderInputPrefix InputContext {inputPath, inputSource} =

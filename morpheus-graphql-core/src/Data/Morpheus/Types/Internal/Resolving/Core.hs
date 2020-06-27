@@ -8,6 +8,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
@@ -26,8 +27,10 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   )
 where
 
-import Control.Applicative (liftA2)
+import Control.Applicative (Applicative (..), liftA2)
+import Control.Monad (Monad (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
+import Data.Functor ((<$>), Functor (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -37,6 +40,11 @@ import Data.Morpheus.Types.Internal.AST.Base
     Message,
   )
 import Data.Semigroup ((<>))
+import Prelude
+  ( ($),
+    (.),
+    Eq (..),
+  )
 
 type Eventless = Result ()
 
@@ -62,7 +70,7 @@ instance GQLChannel () where
 
 instance GQLChannel (Event channel content) where
   type StreamChannel (Event channel content) = channel
-  streamChannels Event {channels} = map Channel channels
+  streamChannels Event {channels} = fmap Channel channels
 
 data Event e c = Event
   {channels :: [e], content :: c}
@@ -172,5 +180,5 @@ mapEvent ::
 mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
   where
     mapEv Success {result, warnings, events} =
-      Success {result, warnings, events = map func events}
+      Success {result, warnings, events = fmap func events}
     mapEv (Failure err) = Failure err

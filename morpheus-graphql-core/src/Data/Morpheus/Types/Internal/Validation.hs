@@ -9,6 +9,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation
   ( Validator,
@@ -54,11 +55,18 @@ module Data.Morpheus.Types.Internal.Validation
   )
 where
 
+-- MORPHEUS
+
+import Control.Applicative (pure)
+import Control.Monad (Monad ((>>=)))
 import Control.Monad.Trans.Reader
   ( ask,
   )
--- MORPHEUS
-
+import Data.Either (Either)
+import Data.Foldable (null)
+import Data.Functor ((<$>), fmap)
+import Data.List (elem, filter)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
@@ -139,16 +147,22 @@ import Data.Morpheus.Types.Internal.Validation.Validator
 import Data.Semigroup
   ( (<>),
   )
+import Prelude
+  ( ($),
+    (.),
+    not,
+    otherwise,
+  )
 
 getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a) => ca -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
 
 failOnUnused :: Unused ctx b => [b] -> Validator ctx ()
 failOnUnused x
-  | null x = return ()
+  | null x = pure ()
   | otherwise = do
     ctx <- Validator ask
-    failure $ map (unused ctx) x
+    failure $ fmap (unused ctx) x
 
 checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused ctx b) => ca -> [b] -> Validator ctx ()
 checkUnused uses = failOnUnused . getUnused uses
@@ -399,6 +413,6 @@ constraintInputUnion tags hm = do
 
 isPosibeInputUnion :: [UnionMember IN] -> Value stage -> Either Message TypeName
 isPosibeInputUnion tags (Enum name)
-  | name `elem` map memberName tags = pure name
+  | name `elem` fmap memberName tags = pure name
   | otherwise = failure $ msg name <> " is not posible union type"
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
