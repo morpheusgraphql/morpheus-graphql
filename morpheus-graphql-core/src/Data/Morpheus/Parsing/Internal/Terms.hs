@@ -192,12 +192,19 @@ ignoredTokens :: Parser ()
 ignoredTokens =
   label "IgnoredTokens" $
     space
-      *> skipMany inlineComment
+      *> skipMany ignored
       *> space
-  where
-    inlineComment =
-      label "Comment" $
-        char '#' *> skipManyTill printChar newline *> space
+
+ignored :: Parser ()
+ignored = label "Ignored" $ parseComment
+
+parseComment :: Parser ()
+parseComment =
+  label "Comment" $
+    char '#' *> skipManyTill printChar newline *> space
+
+parseComma :: Parser ()
+parseComma = label "Comma" $ char ',' *> space
 
 ------------------------------------------------------------------------
 
