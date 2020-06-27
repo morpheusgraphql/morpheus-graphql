@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6e337ba0381bc7a30b65c5236ebc8074aa0f6a80997a3905898821bb5fc581b6
+-- hash: 48a2d3e61cfc37463eab6cb3dd89d07211e1c767887704c7cebe10780f8f379d
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -25,8 +25,9 @@ extra-source-files:
 data-files:
     test/api/interface/query.gql
     test/api/simple/query.gql
-    test/schema/parsing/schema-definition/dupplicate-field/query-mutation-subscription/schema.gql
-    test/schema/parsing/schema-definition/dupplicate-field/query/schema.gql
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query/schema.gql
+    test/schema/parsing/schema-definition/fail/query-mutation-subscription/schema.gql
     test/schema/parsing/schema-definition/ok/query-mutation-subscription/schema.gql
     test/schema/parsing/schema-definition/ok/query-mutation/schema.gql
     test/schema/parsing/schema-definition/ok/query/schema.gql
@@ -44,8 +45,9 @@ data-files:
     test/schema/validation/interface/field-type/ok/schema.gql
     test/api/interface/response.json
     test/api/simple/response.json
-    test/schema/parsing/schema-definition/dupplicate-field/query-mutation-subscription/response.json
-    test/schema/parsing/schema-definition/dupplicate-field/query/response.json
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query/response.json
+    test/schema/parsing/schema-definition/fail/query-mutation-subscription/response.json
     test/schema/parsing/schema-definition/ok/query-mutation-subscription/response.json
     test/schema/parsing/schema-definition/ok/query-mutation/response.json
     test/schema/parsing/schema-definition/ok/query/response.json

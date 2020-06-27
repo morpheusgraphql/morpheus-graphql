@@ -213,7 +213,7 @@ data RootOperationTypeDefinition = RootOperationTypeDefinition
 instance NameCollision RootOperationTypeDefinition where
   nameCollision name _ =
     GQLError
-      { message = "There can Be only One TypeDefinition for " <> msg name,
+      { message = "There can Be only One TypeDefinition for schema." <> msg name,
         locations = []
       }
 
