@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 990e421ef9d95fafd1a68119e9eb0175eb07aa2dc055ea3afa8f24473ac13a55
+-- hash: 7027d6a065a840544f45eda7b2cc263d1388d03719deb578613fac17aca283f2
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -25,6 +25,7 @@ extra-source-files:
 data-files:
     test/api/interface/query.gql
     test/api/simple/query.gql
+    test/schema/parsing/schema-definition/compound-ok/schema.gql
     test/schema/validation/default-value/argument/compound-ok/schema.gql
     test/schema/validation/default-value/argument/missing-field/schema.gql
     test/schema/validation/default-value/argument/unexpected-value/schema.gql
@@ -39,6 +40,7 @@ data-files:
     test/schema/validation/interface/field-type/ok/schema.gql
     test/api/interface/response.json
     test/api/simple/response.json
+    test/schema/parsing/schema-definition/compound-ok/response.json
     test/schema/validation/default-value/argument/compound-ok/response.json
     test/schema/validation/default-value/argument/missing-field/response.json
     test/schema/validation/default-value/argument/unexpected-value/response.json

@@ -1,0 +1,11 @@
+type User {
+  inputs: String!
+}
+
+type Query {
+  user: User
+}
+
+schema {
+  query: Query
+}

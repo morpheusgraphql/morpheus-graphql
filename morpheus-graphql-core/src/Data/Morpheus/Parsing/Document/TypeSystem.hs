@@ -27,6 +27,7 @@ import Data.Morpheus.Parsing.Internal.Pattern
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( collection,
+    ignoredTokens,
     keyword,
     litAssignment,
     operator,
@@ -35,7 +36,6 @@ import Data.Morpheus.Parsing.Internal.Terms
     pipeLiteral,
     sepByAnd,
     setOf,
-    spaceAndComments,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -251,7 +251,7 @@ filterOutSchema = mapMaybe onlyTypes
 
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
 parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
-  spaceAndComments
+  ignoredTokens
   manyTill parseRawTypeDefinition eof
 
 parseSchema :: Text -> Eventless [TypeDefinition ANY]

@@ -17,13 +17,13 @@ import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( litEquals,
+  ( ignoredTokens,
+    litEquals,
     parseAssignment,
     parseName,
     parseNegativeSign,
     parseTypeName,
     setOf,
-    spaceAndComments,
     variable,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -74,7 +74,7 @@ valueNumber = do
 enumValue :: Parser (Value a)
 enumValue = do
   enum <- Enum <$> parseTypeName
-  spaceAndComments
+  ignoredTokens
   return enum
 
 escaped :: Parser Char
@@ -99,9 +99,9 @@ listValue :: Parser a -> Parser [a]
 listValue parser =
   label "ListValue" $
     between
-      (char '[' *> spaceAndComments)
-      (char ']' *> spaceAndComments)
-      (parser `sepBy` (many (char ',') *> spaceAndComments))
+      (char '[' *> ignoredTokens)
+      (char ']' *> ignoredTokens)
+      (parser `sepBy` (many (char ',') *> ignoredTokens))
 
 objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
 objectEntry parser = label "ObjectEntry" $ do
@@ -139,4 +139,4 @@ structValue parser =
         <|> (Object <$> objectValue parser)
         <|> (List <$> listValue parser)
     )
-      <* spaceAndComments
+      <* ignoredTokens
