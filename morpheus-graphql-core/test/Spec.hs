@@ -96,7 +96,8 @@ resolver =
             "Query"
             [("deity", resolveDeity)],
       mutation = pure mkNull,
-      subscription = pure mkNull
+      subscription = pure mkNull,
+      channelMap = []
     }
 
 resolveDeity :: (WithOperation o, Monad m) => Resolver o e m (ResModel o e m)
