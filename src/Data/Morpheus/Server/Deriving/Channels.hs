@@ -110,24 +110,23 @@ data WithChannel e m a = WithChannel
     resolver :: e -> m a
   }
 
--- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class GetChannel a where
   getChannel :: FieldName -> a -> FieldChannel
 
 instance {-# OVERLAPPABLE #-} (EnumRep (Rep a)) => GetChannel a where
-  getChannel name = Object (from @(Rep a))
+  getChannel name = Object $ typeRep (from @(Rep a))
 
 instance GetChannel (WithChannel e m a) where
   getChannel name WithChannel {channel} = FieldChannel name channel
 
 class TypeRep f where
-  typeResolvers :: f a -> [(String, FieldChannel)]
+  typeRep :: f a -> [(String, FieldChannel)]
 
 instance TypeRep f => TypeRep (M1 D d f) where
-  typeResolvers (M1 src) = typeResolvers src
+  typeRep (M1 src) = typeRep src
 
 instance (Constructor c) => TypeRep (M1 C c f) where
-  typeResolvers context (M1 src) = fieldRep src
+  typeRep context (M1 src) = fieldRep src
 
 --- FIELDS
 class FieldRep f where
