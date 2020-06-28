@@ -61,8 +61,8 @@ import Data.HashMap.Lazy
     union,
   )
 import qualified Data.HashMap.Lazy as HM
-import Data.List (filter, find)
-import Data.Maybe (Maybe (..), maybe)
+import Data.List (filter, find, notElem)
+import Data.Maybe (Maybe (..), catMaybes, mapMaybe, maybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -248,10 +248,10 @@ instance Selectable Schema (TypeDefinition ANY) where
 instance Listable (TypeDefinition ANY) Schema where
   elems = HM.elems . typeRegister
   fromElems types = do
-    (query, lib1) <- popByKey "Query" types
-    (mutation, lib2) <- popByKey "Mutation" lib1
-    (subscription, lib3) <- popByKey "Subscription" lib2
-    buildWith query mutation subscription lib3
+    query <- popByKey "Query" types
+    mutation <- popByKey "Mutation" types
+    subscription <- popByKey "Subscription" types
+    buildWith query mutation subscription types
 
 buildWith ::
   ( Applicative f,
@@ -262,9 +262,16 @@ buildWith ::
   Maybe (TypeDefinition OUT) ->
   [TypeDefinition cat] ->
   f Schema
-buildWith (Just query) mutation subscription types =
+buildWith (Just query) mutation subscription otypes = do
+  let types = excludeTypes [Just query, mutation, subscription] otypes
   pure $ (foldr unsafeDefineType (initTypeLib query) types) {mutation, subscription}
 buildWith Nothing _ _ _ = failure $ globalErrorMessage "INTERNAL: Query Not Defined"
+
+excludeTypes :: [Maybe (TypeDefinition c1)] -> [TypeDefinition c2] -> [TypeDefinition c2]
+excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
+  where
+    blacklist :: [TypeName]
+    blacklist = fmap typeName (catMaybes excusionTypes)
 
 buildSchema ::
   (Monad m, Failure GQLErrors m) =>
@@ -273,22 +280,22 @@ buildSchema ::
   ) ->
   m Schema
 buildSchema (Nothing, types) = fromElems types
-buildSchema (Just schemaDef, types0) = do
-  (query, types1) <- selectOperation Query schemaDef types0
-  (mutation, types2) <- selectOperation Mutation schemaDef types1
-  (subscription, types3) <- selectOperation Subscription schemaDef types2
-  buildWith query mutation subscription types3
+buildSchema (Just schemaDef, types) = do
+  query <- selectOperation Query schemaDef types
+  mutation <- selectOperation Mutation schemaDef types
+  subscription <- selectOperation Subscription schemaDef types
+  buildWith query mutation subscription types
 
 typeReference ::
   (Monad m, Failure GQLErrors m) =>
   TypeName ->
   [TypeDefinition ANY] ->
-  m (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
-typeReference name types = do
-  a <- popByKey name types
-  case a of
-    (Nothing, _) -> failure (globalErrorMessage $ "Unknown type " <> msg name <> ".")
-    (Just query, lib1) -> pure (Just query, lib1)
+  m (Maybe (TypeDefinition OUT))
+typeReference name types =
+  popByKey name types
+    >>= maybe
+      (failure (globalErrorMessage $ "Unknown type " <> msg name <> "."))
+      (pure . Just)
 
 selectOperation ::
   ( Monad f,
@@ -297,14 +304,14 @@ selectOperation ::
   OperationType ->
   SchemaDefinition ->
   [TypeDefinition ANY] ->
-  f (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+  f (Maybe (TypeDefinition OUT))
 selectOperation operationType schemaDef lib =
-  selectOr (pure (Nothing, lib)) selectOp operationType schemaDef
+  selectOr (pure Nothing) selectOp operationType schemaDef
   where
     selectOp ::
       (Monad m, Failure GQLErrors m) =>
       RootOperationTypeDefinition ->
-      m (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+      m (Maybe (TypeDefinition OUT))
     selectOp RootOperationTypeDefinition {rootOperationTypeDefinitionName} =
       typeReference rootOperationTypeDefinitionName lib
 
@@ -519,12 +526,12 @@ popByKey ::
   (Applicative m, Failure GQLErrors m) =>
   TypeName ->
   [TypeDefinition ANY] ->
-  m (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+  m (Maybe (TypeDefinition OUT))
 popByKey name types = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
-    pure (fromAny dt, filter ((/= name) . typeName) types)
+    pure (fromAny dt)
   Just {} -> failure (globalErrorMessage $ msg name <> " must be an OBJECT")
-  _ -> pure (Nothing, types)
+  _ -> pure Nothing
 
 __inputname :: FieldName
 __inputname = "inputname"
