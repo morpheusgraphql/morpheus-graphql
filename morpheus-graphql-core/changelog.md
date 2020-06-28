@@ -4,7 +4,7 @@
 
 ### new features
 
-- support of `SchemaDefinition`
+- support of `schema` . issue #412
 
   ```graphql
   schema {

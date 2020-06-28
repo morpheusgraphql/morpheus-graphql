@@ -7,7 +7,7 @@
 - `Data.Morpheus.Document` exposes `RootResolverConstraint`
 - `Data.Morpheus.Server` exposes `httpPlayground`
 - `httpPubApp` supports `GQLRequest -> GQLResponse`
-- `morpheus-graphql-core` support of `schema`
+- `morpheus-graphql-core` support of `schema`. issue #412
 
   ```graphql
   schema {
