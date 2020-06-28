@@ -76,7 +76,7 @@ union Character = Creature | Deity | Human
 """
 my interface description
 """
-type Query {
+type MyQuery {
   deity(name: [[[[[String!]]!]]], mythology: Realm): Deity!
   character(characterID: ID!, age: Int): Character!
   hero: Human!
@@ -87,5 +87,7 @@ type Mutation {
   createCharacter(realm: Realm!, id: String!): Character!
 }
 
-
-schema {}
+schema {
+  query: MyQuery
+  mutation: Mutation
+}
