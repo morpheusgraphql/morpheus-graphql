@@ -1,0 +1,13 @@
+type MyType1 {
+  name: String
+}
+
+input Query {
+  name: String
+}
+
+union Mutation = MyType1
+
+enum Subscription {
+  Enum1
+}
