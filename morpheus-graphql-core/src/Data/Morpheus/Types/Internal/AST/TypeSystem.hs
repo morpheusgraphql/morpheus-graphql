@@ -46,12 +46,13 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     SchemaDefinition (..),
+    buildSchema,
   )
 where
 
 -- MORPHEUS
-import Control.Applicative (pure)
-import Control.Monad (Monad)
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad (..))
 import Data.Either (Either (..))
 import Data.Foldable (concatMap, foldr)
 import Data.Functor ((<$>), fmap)
@@ -90,7 +91,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLError (..),
     GQLErrors,
     Msg (..),
-    OperationType,
+    OperationType (..),
     TRUE,
     Token,
     TypeKind (..),
@@ -203,6 +204,10 @@ data SchemaDefinition = SchemaDefinition
   }
   deriving (Show)
 
+instance Selectable SchemaDefinition RootOperationTypeDefinition where
+  selectOr fallback f key SchemaDefinition {unSchemaDefinition} =
+    selectOr fallback f key unSchemaDefinition
+
 instance NameCollision SchemaDefinition where
   nameCollision _ _ =
     GQLError
@@ -242,12 +247,66 @@ instance Selectable Schema (TypeDefinition ANY) where
 
 instance Listable (TypeDefinition ANY) Schema where
   elems = HM.elems . typeRegister
-  fromElems types = case popByKey "Query" types of
-    (Nothing, _) -> failure (globalErrorMessage "INTERNAL: Query Not Defined")
-    (Just query, lib1) -> do
-      let (mutation, lib2) = popByKey "Mutation" lib1
-      let (subscription, lib3) = popByKey "Subscription" lib2
-      pure $ (foldr unsafeDefineType (initTypeLib query) lib3) {mutation, subscription}
+  fromElems types = do
+    (query, lib1) <- popByKey "Query" types
+    (mutation, lib2) <- popByKey "Mutation" lib1
+    (subscription, lib3) <- popByKey "Subscription" lib2
+    buildWith query mutation subscription lib3
+
+buildWith ::
+  ( Applicative f,
+    Failure GQLErrors f
+  ) =>
+  Maybe (TypeDefinition OUT) ->
+  Maybe (TypeDefinition OUT) ->
+  Maybe (TypeDefinition OUT) ->
+  [TypeDefinition cat] ->
+  f Schema
+buildWith (Just query) mutation subscription types =
+  pure $ (foldr unsafeDefineType (initTypeLib query) types) {mutation, subscription}
+buildWith Nothing _ _ _ = failure $ globalErrorMessage "INTERNAL: Query Not Defined"
+
+buildSchema ::
+  (Monad m, Failure GQLErrors m) =>
+  ( Maybe SchemaDefinition,
+    [TypeDefinition ANY]
+  ) ->
+  m Schema
+buildSchema (Nothing, types) = fromElems types
+buildSchema (Just schemaDef, types0) = do
+  (query, types1) <- selectOperation Query schemaDef types0
+  (mutation, types2) <- selectOperation Mutation schemaDef types1
+  (subscription, types3) <- selectOperation Subscription schemaDef types2
+  buildWith query mutation subscription types3
+
+typeReference ::
+  (Monad m, Failure GQLErrors m) =>
+  TypeName ->
+  [TypeDefinition ANY] ->
+  m (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+typeReference name types = do
+  a <- popByKey name types
+  case a of
+    (Nothing, _) -> failure (globalErrorMessage $ "unknown Type " <> msg name <> ".")
+    (Just query, lib1) -> pure (Just query, lib1)
+
+selectOperation ::
+  ( Monad f,
+    Failure GQLErrors f
+  ) =>
+  OperationType ->
+  SchemaDefinition ->
+  [TypeDefinition ANY] ->
+  f (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+selectOperation operationType schemaDef lib =
+  selectOr (pure (Nothing, lib)) selectOp operationType schemaDef
+  where
+    selectOp ::
+      (Monad m, Failure GQLErrors m) =>
+      RootOperationTypeDefinition ->
+      m (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+    selectOp RootOperationTypeDefinition {rootOperationTypeDefinitionName} =
+      typeReference rootOperationTypeDefinitionName lib
 
 initTypeLib :: TypeDefinition OUT -> Schema
 initTypeLib query =
@@ -456,12 +515,16 @@ updateSchema name fingerprint stack f x = UpdateT $ \lib ->
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
--- lookups and removes TypeDefinition from hashmap
-popByKey :: TypeName -> [TypeDefinition ANY] -> (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
+popByKey ::
+  (Applicative m, Failure GQLErrors m) =>
+  TypeName ->
+  [TypeDefinition ANY] ->
+  m (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
 popByKey name types = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
-    (fromAny dt, filter ((/= name) . typeName) types)
-  _ -> (Nothing, types)
+    pure (fromAny dt, filter ((/= name) . typeName) types)
+  Just {} -> failure (globalErrorMessage $ msg name <> " must be an OBJECT")
+  _ -> pure (Nothing, types)
 
 __inputname :: FieldName
 __inputname = "inputname"

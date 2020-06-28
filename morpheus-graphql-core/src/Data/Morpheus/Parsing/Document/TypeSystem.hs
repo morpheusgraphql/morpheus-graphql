@@ -5,6 +5,7 @@
 
 module Data.Morpheus.Parsing.Document.TypeSystem
   ( parseSchema,
+    parseTypeDefinitions,
   )
 where
 
@@ -267,9 +268,10 @@ parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
   ignoredTokens
   manyTill parseRawTypeDefinition eof
 
-parseSchema :: Text -> Eventless [TypeDefinition ANY]
+parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY]
+parseTypeDefinitions = fmap snd . parseSchema
+
+parseSchema :: Text -> Eventless (Maybe SchemaDefinition, [TypeDefinition ANY])
 parseSchema =
-  fmap snd
-    . ( processParser parseTypeSystemDefinition
-          >=> withSchemaDefinition . splitSchema
-      )
+  processParser parseTypeSystemDefinition
+    >=> withSchemaDefinition . splitSchema
