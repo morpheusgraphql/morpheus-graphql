@@ -10,6 +10,7 @@ import Data.Morpheus.Types
   ( Event (..),
     Resolver,
     RootResolver (..),
+    SubscriptionField,
     WithOperation,
     publish,
     subscribe,
@@ -21,8 +22,6 @@ import Server.Mythology.Character
     someDeity,
   )
 
--- TODO: importGQLDocument "examples/Subscription/api.gql"
---
 data Channel
   = ChannelA
   | ChannelB
@@ -44,7 +43,7 @@ newtype Mutation m = Mutation
   deriving (Generic)
 
 newtype Subscription (m :: * -> *) = Subscription
-  { newDeity :: m Deity
+  { newDeity :: SubscriptionField (m Deity)
   }
   deriving (Generic)
 

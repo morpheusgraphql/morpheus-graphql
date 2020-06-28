@@ -46,6 +46,7 @@ import Data.Morpheus.Types
     RootResolver (..),
     ScalarValue (..),
     Stream,
+    SubscriptionField,
     WithOperation,
     constRes,
     liftEither,
@@ -190,14 +191,14 @@ resolveSetAdress :: ResolverM EVENT IO Address
 resolveSetAdress = lift setDBAddress
 
 -- Resolve SUBSCRIPTION
-resolveNewUser :: ResolverS EVENT IO User
+resolveNewUser :: SubscriptionField (ResolverS EVENT IO User)
 resolveNewUser = subscribe [USER] $ do
   requireAuthorized
   pure subResolver
   where
     subResolver (Event _ content) = liftEither (getDBUser content)
 
-resolveNewAdress :: ResolverS EVENT IO Address
+resolveNewAdress :: SubscriptionField (ResolverS EVENT IO Address)
 resolveNewAdress = subscribe [ADDRESS] $ do
   requireAuthorized
   pure subResolver
