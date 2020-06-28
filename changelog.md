@@ -7,6 +7,20 @@
 - `Data.Morpheus.Document` exposes `RootResolverConstraint`
 - `Data.Morpheus.Server` exposes `httpPlayground`
 - `httpPubApp` supports `GQLRequest -> GQLResponse`
+- `morpheus-graphql-core` support of `schema`
+
+  ```graphql
+  schema {
+    query: MyQuery
+  }
+  ```
+
+  note that this does not affect `morpheus-graphql-server' at all. since it has its own schema derivation. you still need to provide:
+
+  ```haskell
+  rootResolver :: RootResolver () IO MyQuery Undefined Undefined
+  rootResolver = RootResolver <resolvers ...>
+  ```
 
 ## 0.13.0 - 22.06.2020
 
@@ -27,26 +41,26 @@ Package was extracted as:
 
 - `morpheus-graphql-core`: core components like: parser, validator, executor, utils.
 
-  - Data.Morpheus.Core
-  - Data.Morpheus.QuasiQuoter
-  - Data.Morpheus.Error
-  - Data.Morpheus.Internal.TH
-  - Data.Morpheus.Internal.Utils
-  - Data.Morpheus.Types.Internal.Resolving
-  - Data.Morpheus.Types.Internal.Operation
-  - Data.Morpheus.Types.Internal.AST
-  - Data.Morpheus.Types.IO
+- Data.Morpheus.Core
+- Data.Morpheus.QuasiQuoter
+- Data.Morpheus.Error
+- Data.Morpheus.Internal.TH
+- Data.Morpheus.Internal.Utils
+- Data.Morpheus.Types.Internal.Resolving
+- Data.Morpheus.Types.Internal.Operation
+- Data.Morpheus.Types.Internal.AST
+- Data.Morpheus.Types.IO
 
 - `morpheus-graphql-client`: lightweight version of morpheus client without server implementation
 
-  - Data.Morpheus.Client
+- Data.Morpheus.Client
 
 - `morpheus-graphql`: morpheus graphql server
-  - Data.Morpheus
-  - Data.Morpheus.Kind
-  - Data.Morpheus.Types
-  - Data.Morpheus.Server
-  - Data.Morpheus.Document
+- Data.Morpheus
+- Data.Morpheus.Kind
+- Data.Morpheus.Types
+- Data.Morpheus.Server
+- Data.Morpheus.Document
 
 deprecated:
 
@@ -62,22 +76,22 @@ deprecated:
 - flexible resolvers: `ResolverO`, `ResolverQ` , `RwsolverM`, `ResolverS`
   they can handle object and scalar types:
 
-  ```hs
-  -- if we have record and regular Int
-  data Object m = Object { field :: m Int }
+```hs
+-- if we have record and regular Int
+data Object m = Object { field :: m Int }
 
-  -- we canwrite
-  -- handes kind : (* -> *) -> *
-  resolveObject :: ResolverO o EVENT IO Object
-  -- is alias to: Resolver o () IO (Object (Resolver o () IO))
-  -- or
-  -- handes kind : *
-  resolveInt :: ResolverO o EVENT IO Int
-  -- is alias to: Resolver o () IO Int
-  ```
+-- we canwrite
+-- handes kind : (* -> *) -> *
+resolveObject :: ResolverO o EVENT IO Object
+-- is alias to: Resolver o () IO (Object (Resolver o () IO))
+-- or
+-- handes kind : *
+resolveInt :: ResolverO o EVENT IO Int
+-- is alias to: Resolver o () IO Int
+```
 
-  the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
-  `ResolverO` but with `QUERY` , `MUTATION` and `SUBSCRIPTION` as argument.
+the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
+`ResolverO` but with `QUERY` , `MUTATION` and `SUBSCRIPTION` as argument.
 
 - flexible compsed Resolver Type alias: `ComposedResolver`. extends `ResolverO` with
   parameter `(f :: * -> *)`. so that you can compose Resolvers e.g:
