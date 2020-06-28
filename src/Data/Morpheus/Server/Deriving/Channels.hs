@@ -10,7 +10,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Server.Deriving.Channels
-  ( GetChannel (..),
+  ( GetChannels (..),
   )
 where
 
@@ -24,24 +24,25 @@ import Data.Text
   )
 import GHC.Generics
 
-data FieldChannel = FieldChannel String | Object [(FieldName, FieldChannel)]
-
 data WithChannel e m a = WithChannel
   { channel :: String,
     resolver :: e -> m a
   }
 
-class GetChannel a where
-  getChannel :: a -> FieldChannel
+class (Generic a, TypeRep (Rep a)) => GetChannels a where
+  getChannels :: a -> [(FieldName, String)]
 
-instance {-# OVERLAPPABLE #-} (Generic a, TypeRep (Rep a)) => GetChannel a where
-  getChannel = Object . typeRep . from
+instance {-# OVERLAPPABLE #-} (Generic a, TypeRep (Rep a)) => GetChannels a where
+  getChannels = typeRep . from
+
+class GetChannel a where
+  getChannel :: a -> String
 
 instance GetChannel (WithChannel e m a) where
-  getChannel WithChannel {channel} = FieldChannel channel
+  getChannel WithChannel {channel} = channel
 
 class TypeRep f where
-  typeRep :: f a -> [(FieldName, FieldChannel)]
+  typeRep :: f a -> [(FieldName, String)]
 
 instance TypeRep f => TypeRep (M1 D d f) where
   typeRep (M1 src) = typeRep src
@@ -51,7 +52,7 @@ instance FieldRep f => TypeRep (M1 C c f) where
 
 --- FIELDS
 class FieldRep f where
-  fieldRep :: f a -> [(FieldName, FieldChannel)]
+  fieldRep :: f a -> [(FieldName, String)]
 
 instance (FieldRep f, FieldRep g) => FieldRep (f :*: g) where
   fieldRep (a :*: b) = fieldRep a <> fieldRep b

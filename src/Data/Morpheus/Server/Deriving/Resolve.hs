@@ -22,9 +22,7 @@ import Data.Morpheus.Core
   ( runApi,
   )
 import Data.Morpheus.Internal.Utils (resolveUpdates)
-import Data.Morpheus.Server.Deriving.Channels
-  ( getChannels,
-  )
+import Data.Morpheus.Server.Deriving.Channels (GetChannels (..))
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
     deriveModel,
@@ -76,21 +74,23 @@ type IntrospectConstraint m event query mutation subscription =
     IntroCon (subscription (Resolver SUBSCRIPTION event m))
   )
 
+type OperationConstraint operation event m a =
+  ( EncodeCon operation event m (a (Resolver operation event m)),
+    IntroCon (a (Resolver operation event m))
+  )
+
 type RootResolverConstraint m event query mutation subscription =
   ( EventCon event,
     Typeable m,
-    IntrospectConstraint m event query mutation subscription,
-    EncodeCon QUERY event m (query (Resolver QUERY event m)),
-    EncodeCon MUTATION event m (mutation (Resolver MUTATION event m)),
-    EncodeCon
-      SUBSCRIPTION
-      event
-      m
-      (subscription (Resolver SUBSCRIPTION event m))
+    Monad m,
+    OperationConstraint QUERY event m query,
+    OperationConstraint MUTATION event m mutation,
+    OperationConstraint SUBSCRIPTION event m subscription,
+    GetChannels (subscription (Resolver SUBSCRIPTION event m))
   )
 
 statelessResolver ::
-  (Monad m, RootResolverConstraint m event query mut sub) =>
+  RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
   GQLRequest ->
   m GQLResponse
@@ -98,8 +98,7 @@ statelessResolver root req =
   renderResponse <$> runResultT (coreResolver root req)
 
 coreResolver ::
-  forall event m query mut sub.
-  (Monad m, RootResolverConstraint m event query mut sub) =>
+  RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
   GQLRequest ->
   ResponseStream event m ValidValue

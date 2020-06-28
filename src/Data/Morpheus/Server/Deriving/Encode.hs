@@ -35,6 +35,7 @@ import Data.Morpheus.Kind
     SCALAR,
     VContext (..),
   )
+import Data.Morpheus.Server.Deriving.Channels (GetChannels (..))
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
@@ -235,6 +236,7 @@ deriveModel ::
   ( Con QUERY e m query,
     Con MUTATION e m mut,
     Con SUBSCRIPTION e m sub,
+    GetChannels (sub (Resolver SUBSCRIPTION e m)),
     Applicative m,
     Monad m
   ) =>
@@ -249,7 +251,8 @@ deriveModel
     RootResModel
       { query = objectResolvers queryResolver,
         mutation = objectResolvers mutationResolver,
-        subscription = objectResolvers subscriptionResolver
+        subscription = objectResolvers subscriptionResolver,
+        channelMap = getChannels subscriptionResolver
       }
 
 toFieldRes :: FieldNode o e m -> FieldResModel o e m

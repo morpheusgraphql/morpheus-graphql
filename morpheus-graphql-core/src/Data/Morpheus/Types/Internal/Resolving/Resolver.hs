@@ -119,6 +119,7 @@ import Prelude
     (.),
     Eq (..),
     Show (..),
+    String,
     const,
     id,
     lookup,
@@ -134,6 +135,8 @@ data ResponseEvent event (m :: * -> *)
   | Subscribe (SubEvent event m)
 
 type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
+
+data SubscriptionField e a = SubscriptionField {channel :: String, unSubscribe :: a}
 
 -- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
 data Context = Context
@@ -327,11 +330,14 @@ subscribe ::
   ) =>
   [StreamChannel e] ->
   Resolver QUERY e m (e -> Resolver QUERY e m a) ->
-  Resolver SUBSCRIPTION e m a
-subscribe ch res = ResolverS $ do
-  pushEvents (fmap Channel ch :: [Channel e])
-  (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
-  pure $ ReaderT eventRes
+  SubscriptionField e (Resolver SUBSCRIPTION e m a)
+subscribe ch res =
+  SubscriptionField ("show ch")
+    $ ResolverS
+    $ do
+      pushEvents (fmap Channel ch :: [Channel e])
+      (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
+      pure $ ReaderT eventRes
 
 -- | A function to return the internal 'Context' within a resolver's monad.
 -- Using the 'Context' itself is unsafe because it expposes internal structures
@@ -510,7 +516,8 @@ instance Merge (ResModel o e m) where
 data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),
     mutation :: Eventless (ResModel MUTATION e m),
-    subscription :: Eventless (ResModel SUBSCRIPTION e m)
+    subscription :: Eventless (ResModel SUBSCRIPTION e m),
+    channelMap :: [(FieldName, String)]
   }
 
 runRootDataResolver ::
