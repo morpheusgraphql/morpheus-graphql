@@ -1,17 +1,11 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -132,45 +126,29 @@ class GetChannel a where
   getChannel :: FieldName -> a -> FieldChannel
 
 instance {-# OVERLAPPABLE #-} (EnumRep (Rep a)) => GetChannel a where
-  getChannel name = dericeChannelRep (Context :: Context (KIND a) a)
+  getChannel name = Object (from @(Rep a))
 
 instance GetChannel (WithChannel e m a) where
   getChannel name WithChannel {channel} = FieldChannel name channel
 
-class DericeChannelRep f where
-  dericeChannelRep :: f -> [(String, FieldChannel)]
+class TypeRep f where
+  typeResolvers :: f a -> [(String, FieldChannel)]
 
-instance DericeChannelRep U1 where
-  dericeChannelRep _ = []
+instance TypeRep f => TypeRep (M1 D d f) where
+  typeResolvers (M1 src) = typeResolvers src
 
-instance DericeChannelRep cat f => DericeChannelRep cat (M1 D d f) where
-  dericeChannelRep _ = typeRep (ProxyRep :: ProxyRep cat f)
+instance (Constructor c) => TypeRep (M1 C c f) where
+  typeResolvers context (M1 src) = fieldRep src
 
-instance (ConRep cat f, Constructor c) => TypeRep cat (M1 C c f) where
-  typeRep _ =
-    [ ConsRep
-        { consName = conNameProxy (Proxy @c),
-          consFields = conRep (ProxyRep :: ProxyRep cat f),
-          consIsRecord = isRecordProxy (Proxy @c)
-        }
-    ]
+--- FIELDS
+class FieldRep f where
+  fieldRep :: f a -> [(String, FieldChannel)]
 
--- class ConRep cat f where
---   conRep :: ProxyRep cat f -> [FieldRep cat]
+instance (FieldRep f, FieldRep g) => FieldRep (f :*: g) where
+  fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
 
--- -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
--- instance (ConRep cat a, ConRep cat b) => ConRep cat (a :*: b) where
---   conRep _ = conRep (ProxyRep :: ProxyRep cat a) <> conRep (ProxyRep :: ProxyRep cat b)
+instance (Selector s, GQLType a, GetChannel a) => FieldRep (M1 S s (K1 s2 a)) where
+  fieldRep _ m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
 
--- instance (Selector s, Introspect cat a) => ConRep cat (M1 S s (Rec0 a)) where
---   conRep _ =
---     [ FieldRep
---         { fieldTypeName = typeConName $ fieldType fieldData,
---           fieldData = fieldData,
---           fieldTypeUpdater = introspect (ProxyRep :: ProxyRep cat a),
---           fieldIsObject = isObject (ProxyRep :: ProxyRep cat a)
---         }
---     ]
---     where
---       name = selNameProxy (Proxy @s)
---       fieldData = field (ProxyRep :: ProxyRep cat a) name
+instance FieldRep U1 where
+  fieldRep _ _ = []
