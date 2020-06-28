@@ -1,16 +1,20 @@
 # Changelog
 
-## 0.13.0 - 22.06.2020
+## 0.13.1 - Unreleased Changes
 
 ### new features
 
-- support of `schema` . issue #412
+- support of `schema`. issue #412
 
   ```graphql
   schema {
     query: MyQuery
   }
   ```
+
+## 0.13.0 - 22.06.2020
+
+### new features
 
 - exposed: `Data.Morpheus.Types.GQLScalar`
 - exposed: `Data.Morpheus.Types.ID`

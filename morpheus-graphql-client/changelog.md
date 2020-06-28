@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.13.0 - 22.06.2020
+## 0.13.1 - Unreleased Changes
 
-### breaking changes
+### new features
 
 - support of `schema`. issue #412
 
@@ -11,6 +11,10 @@
     query: MyQuery
   }
   ```
+
+## 0.13.0 - 22.06.2020
+
+### breaking changes
 
 - from now you should provide for every custom graphql scalar definition coresponoding haskell type definition and `GQLScalar` implementation fot it. for details see [`examples-client`](https://github.com/morpheusgraphql/morpheus-graphql/tree/master/examples-client)
 
