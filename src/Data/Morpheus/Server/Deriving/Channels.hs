@@ -103,17 +103,6 @@ import Data.Text
   )
 import GHC.Generics
 
--- type IntroCon a = (GQLType a, DeriveTypeContent OUT (CUSTOM a) a)
-
--- data ProxyRep (cat :: TypeCategory) a
---   = ProxyRep
-
--- introspectOUT :: forall a. (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
--- introspectOUT _ = introspect (ProxyRep :: ProxyRep OUT a)
-
--- instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect cat a where
---   introspect _ = introspectKind (Context :: Context (KIND a) a)
-
 data FieldChannel = FieldChannel FieldName String | Object [(String, FieldChannel)]
 
 data WithChannel e m a = WithChannel
