@@ -1,10 +1,34 @@
 """
-my interface description
+lifespan of mortal creatures
 """
-type Query {
-  deity(name: [[[[[String!]]!]]], mythology: Realm): Deity!
-  character(characterID: ID!, age: Int): Character!
-  hero: Human!
+scalar Lifetime
+
+scalar Power
+
+enum Profession {
+  Priest
+  Farmer
+  Artist
+}
+
+"ancient city"
+enum City {
+  Athens
+  Ithaca
+  Sparta
+  Troy
+}
+
+"""
+human
+ew jso
+ewrw
+"""
+input Realm {
+  owner: String!
+  age: Int
+  realm: Realm
+  profession: Profession
 }
 
 """
@@ -16,16 +40,6 @@ interface MyInterface {
   """
   name: String
 }
-
-type Mutation {
-  createDeity(name: [[[[[String!]]!]]], mythology: String): Deity!
-  createCharacter(realm: Realm!, id: String!): Character!
-}
-
-"""
-my unon description
-"""
-union Character = Creature | Deity | Human
 
 "my mutation description"
 type Deity {
@@ -54,35 +68,21 @@ type Human {
   profession: Profession
 }
 
-enum Profession {
-  Priest
-  Farmer
-  Artist
+"""
+my unon description
+"""
+union Character = Creature | Deity | Human
+
+"""
+my interface description
+"""
+type Query {
+  deity(name: [[[[[String!]]!]]], mythology: Realm): Deity!
+  character(characterID: ID!, age: Int): Character!
+  hero: Human!
 }
 
-"""
-human
-ew jso
-ewrw
-"""
-input Realm {
-  owner: String!
-  age: Int
-  realm: Realm
-  profession: Profession
+type Mutation {
+  createDeity(name: [[[[[String!]]!]]], mythology: String): Deity!
+  createCharacter(realm: Realm!, id: String!): Character!
 }
-
-"ancient city"
-enum City {
-  Athens
-  Ithaca
-  Sparta
-  Troy
-}
-
-"""
-lifespan of mortal creatures
-"""
-scalar Lifetime
-
-scalar Power
