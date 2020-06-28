@@ -102,7 +102,7 @@ import Data.Text
   )
 import GHC.Generics
 
-data FieldChannel = FieldChannel FieldName String | Object [(String, FieldChannel)]
+data FieldChannel = FieldChannel String | Object [(FieldName, FieldChannel)]
 
 data WithChannel e m a = WithChannel
   { channel :: String,
@@ -110,16 +110,16 @@ data WithChannel e m a = WithChannel
   }
 
 class GetChannel a where
-  getChannel :: FieldName -> a -> FieldChannel
+  getChannel :: a -> FieldChannel
 
 instance {-# OVERLAPPABLE #-} (EnumRep (Rep a)) => GetChannel a where
-  getChannel name = Object $ typeRep (from @(Rep a))
+  getChannel = Object $ typeRep (from @(Rep a))
 
 instance GetChannel (WithChannel e m a) where
-  getChannel name WithChannel {channel} = FieldChannel name channel
+  getChannel WithChannel {channel} = FieldChannel channel
 
 class TypeRep f where
-  typeRep :: f a -> [(String, FieldChannel)]
+  typeRep :: f a -> [(FieldName, FieldChannel)]
 
 instance TypeRep f => TypeRep (M1 D d f) where
   typeRep (M1 src) = typeRep src
@@ -129,10 +129,10 @@ instance (Constructor c) => TypeRep (M1 C c f) where
 
 --- FIELDS
 class FieldRep f where
-  fieldRep :: f a -> [(String, FieldChannel)]
+  fieldRep :: f a -> [(FieldName, FieldChannel)]
 
 instance (FieldRep f, FieldRep g) => FieldRep (f :*: g) where
-  fieldRep (a :*: b) = fieldRep context a <> fieldRep context b
+  fieldRep (a :*: b) = fieldRep a <> fieldRep b
 
 instance (Selector s, GQLType a, GetChannel a) => FieldRep (M1 S s (K1 s2 a)) where
   fieldRep m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
