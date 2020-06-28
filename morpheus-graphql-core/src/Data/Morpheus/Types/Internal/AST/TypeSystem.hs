@@ -248,23 +248,24 @@ instance Selectable Schema (TypeDefinition ANY) where
 
 instance Listable (TypeDefinition ANY) Schema where
   elems = HM.elems . typeRegister
-  fromElems types = do
-    (query, mutation, subscription) <- traverse3 (popByKey types) ("Query", "Mutation", "Subscription")
-    buildWith query mutation subscription types
+  fromElems types =
+    traverse3 (popByKey types) ("Query", "Mutation", "Subscription")
+      >>= buildWith types
 
 buildWith ::
   ( Applicative f,
     Failure GQLErrors f
   ) =>
-  Maybe (TypeDefinition OUT) ->
-  Maybe (TypeDefinition OUT) ->
-  Maybe (TypeDefinition OUT) ->
   [TypeDefinition cat] ->
+  ( Maybe (TypeDefinition OUT),
+    Maybe (TypeDefinition OUT),
+    Maybe (TypeDefinition OUT)
+  ) ->
   f Schema
-buildWith (Just query) mutation subscription otypes = do
+buildWith otypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] otypes
   pure $ (foldr unsafeDefineType (initTypeLib query) types) {mutation, subscription}
-buildWith Nothing _ _ _ = failure $ globalErrorMessage "INTERNAL: Query Not Defined"
+buildWith _ (Nothing, _, _) = failure $ globalErrorMessage "INTERNAL: Query Not Defined"
 
 excludeTypes :: [Maybe (TypeDefinition c1)] -> [TypeDefinition c2] -> [TypeDefinition c2]
 excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
@@ -279,11 +280,11 @@ buildSchema ::
   ) ->
   m Schema
 buildSchema (Nothing, types) = fromElems types
-buildSchema (Just schemaDef, types) = do
-  (query, mutation, subscription) <- traverse3 selectOp (Query, Mutation, Subscription)
-  buildWith query mutation subscription types
+buildSchema (Just schemaDef, types) =
+  traverse3 selectOp (Query, Mutation, Subscription)
+    >>= buildWith types
   where
-    selectOp op = selectOperation op schemaDef types
+    selectOp op = selectOperation schemaDef op types
 
 traverse3 :: Applicative t => (a -> t b) -> (a, a, a) -> t (b, b, b)
 traverse3 f (a1, a2, a3) = (,,) <$> f a1 <*> f a2 <*> f a3
@@ -303,11 +304,11 @@ selectOperation ::
   ( Monad f,
     Failure GQLErrors f
   ) =>
-  OperationType ->
   SchemaDefinition ->
+  OperationType ->
   [TypeDefinition ANY] ->
   f (Maybe (TypeDefinition OUT))
-selectOperation operationType schemaDef lib =
+selectOperation schemaDef operationType lib =
   selectOr (pure Nothing) (typeReference lib . rootOperationTypeDefinitionName) operationType schemaDef
 
 initTypeLib :: TypeDefinition OUT -> Schema
