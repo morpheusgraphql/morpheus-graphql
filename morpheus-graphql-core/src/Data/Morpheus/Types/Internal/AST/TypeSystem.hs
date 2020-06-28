@@ -46,12 +46,13 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     SchemaDefinition (..),
+    buildSchema,
   )
 where
 
 -- MORPHEUS
-import Control.Applicative (pure)
-import Control.Monad (Monad)
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad (..))
 import Data.Either (Either (..))
 import Data.Foldable (concatMap, foldr)
 import Data.Functor ((<$>), fmap)
@@ -60,8 +61,8 @@ import Data.HashMap.Lazy
     union,
   )
 import qualified Data.HashMap.Lazy as HM
-import Data.List (filter, find)
-import Data.Maybe (Maybe (..), maybe)
+import Data.List (filter, find, notElem)
+import Data.Maybe (Maybe (..), catMaybes, maybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -90,7 +91,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLError (..),
     GQLErrors,
     Msg (..),
-    OperationType,
+    OperationType (..),
     TRUE,
     Token,
     TypeKind (..),
@@ -203,6 +204,10 @@ data SchemaDefinition = SchemaDefinition
   }
   deriving (Show)
 
+instance Selectable SchemaDefinition RootOperationTypeDefinition where
+  selectOr fallback f key SchemaDefinition {unSchemaDefinition} =
+    selectOr fallback f key unSchemaDefinition
+
 instance NameCollision SchemaDefinition where
   nameCollision _ _ =
     GQLError
@@ -242,12 +247,73 @@ instance Selectable Schema (TypeDefinition ANY) where
 
 instance Listable (TypeDefinition ANY) Schema where
   elems = HM.elems . typeRegister
-  fromElems types = case popByKey "Query" types of
-    (Nothing, _) -> failure (globalErrorMessage "INTERNAL: Query Not Defined")
-    (Just query, lib1) -> do
-      let (mutation, lib2) = popByKey "Mutation" lib1
-      let (subscription, lib3) = popByKey "Subscription" lib2
-      pure $ (foldr unsafeDefineType (initTypeLib query) lib3) {mutation, subscription}
+  fromElems types =
+    traverse3
+      (popByKey types)
+      ( RootOperationTypeDefinition Query "Query",
+        RootOperationTypeDefinition Mutation "Mutation",
+        RootOperationTypeDefinition Subscription "Subscription"
+      )
+      >>= buildWith types
+
+buildWith ::
+  ( Applicative f,
+    Failure GQLErrors f
+  ) =>
+  [TypeDefinition cat] ->
+  ( Maybe (TypeDefinition OUT),
+    Maybe (TypeDefinition OUT),
+    Maybe (TypeDefinition OUT)
+  ) ->
+  f Schema
+buildWith otypes (Just query, mutation, subscription) = do
+  let types = excludeTypes [Just query, mutation, subscription] otypes
+  pure $ (foldr unsafeDefineType (initTypeLib query) types) {mutation, subscription}
+buildWith _ (Nothing, _, _) = failure $ globalErrorMessage "Query root type must be provided."
+
+excludeTypes :: [Maybe (TypeDefinition c1)] -> [TypeDefinition c2] -> [TypeDefinition c2]
+excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
+  where
+    blacklist :: [TypeName]
+    blacklist = fmap typeName (catMaybes excusionTypes)
+
+buildSchema ::
+  (Monad m, Failure GQLErrors m) =>
+  ( Maybe SchemaDefinition,
+    [TypeDefinition ANY]
+  ) ->
+  m Schema
+buildSchema (Nothing, types) = fromElems types
+buildSchema (Just schemaDef, types) =
+  traverse3 selectOp (Query, Mutation, Subscription)
+    >>= buildWith types
+  where
+    selectOp op = selectOperation schemaDef op types
+
+traverse3 :: Applicative t => (a -> t b) -> (a, a, a) -> t (b, b, b)
+traverse3 f (a1, a2, a3) = (,,) <$> f a1 <*> f a2 <*> f a3
+
+typeReference ::
+  (Monad m, Failure GQLErrors m) =>
+  [TypeDefinition ANY] ->
+  RootOperationTypeDefinition ->
+  m (Maybe (TypeDefinition OUT))
+typeReference types rootOperation =
+  popByKey types rootOperation
+    >>= maybe
+      (failure (globalErrorMessage $ "Unknown type " <> msg (rootOperationTypeDefinitionName rootOperation) <> "."))
+      (pure . Just)
+
+selectOperation ::
+  ( Monad f,
+    Failure GQLErrors f
+  ) =>
+  SchemaDefinition ->
+  OperationType ->
+  [TypeDefinition ANY] ->
+  f (Maybe (TypeDefinition OUT))
+selectOperation schemaDef operationType lib =
+  selectOr (pure Nothing) (typeReference lib) operationType schemaDef
 
 initTypeLib :: TypeDefinition OUT -> Schema
 initTypeLib query =
@@ -456,12 +522,16 @@ updateSchema name fingerprint stack f x = UpdateT $ \lib ->
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
--- lookups and removes TypeDefinition from hashmap
-popByKey :: TypeName -> [TypeDefinition ANY] -> (Maybe (TypeDefinition OUT), [TypeDefinition ANY])
-popByKey name types = case lookupWith typeName name types of
+popByKey ::
+  (Applicative m, Failure GQLErrors m) =>
+  [TypeDefinition ANY] ->
+  RootOperationTypeDefinition ->
+  m (Maybe (TypeDefinition OUT))
+popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
-    (fromAny dt, filter ((/= name) . typeName) types)
-  _ -> (Nothing, types)
+    pure (fromAny dt)
+  Just {} -> failure $ globalErrorMessage $ msg (show opType) <> " root type must be Object type if provided, it cannot be " <> msg name
+  _ -> pure Nothing
 
 __inputname :: FieldName
 __inputname = "inputname"

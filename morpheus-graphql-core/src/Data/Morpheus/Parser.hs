@@ -7,10 +7,10 @@ module Data.Morpheus.Parser
 where
 
 import Control.Monad ((>=>))
-import Data.Morpheus.Internal.Utils
-  ( fromElems,
+import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
+  ( parseSchema,
+    parseTypeDefinitions,
   )
-import Data.Morpheus.Parsing.Document.TypeSystem (parseSchema)
 import Data.Morpheus.Parsing.Request.Parser (parseGQL)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -23,6 +23,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     VALID,
     VALIDATION_MODE (..),
+    buildSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -38,12 +39,12 @@ import Data.Text (Text)
 parseTypeSystemDefinition ::
   Text -> Eventless Schema
 parseTypeSystemDefinition =
-  parseSchema >=> fromElems
+  P.parseSchema >=> buildSchema
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition ANY]
 parseTypeDefinitions =
-  parseSchema >=> validatePartialDocument
+  P.parseTypeDefinitions >=> validatePartialDocument
 
 parseRequest :: GQLRequest -> Eventless GQLQuery
 parseRequest = parseGQL

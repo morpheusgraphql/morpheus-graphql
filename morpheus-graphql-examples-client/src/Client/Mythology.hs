@@ -44,7 +44,7 @@ instance GQLScalar Power where
 defineByDocumentFile
   "assets/mythology.gql"
   [gql|
-    # Query Hero with Compile time Validation
+    # Query Hero with Compile time Validatio!
     query GetHero ($god: Realm, $someID: ID!)
       {
         deity (mythology:$god) {

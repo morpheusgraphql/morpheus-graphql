@@ -1,0 +1,19 @@
+input MyType {
+  name: String
+}
+
+type MyType1 {
+  name: String
+}
+
+enum MyEnum {
+  Enum1
+}
+
+union MyUnion = MyType1
+
+schema {
+  query: MyType
+  mutation: MyUnion
+  subscription: MyEnum
+}

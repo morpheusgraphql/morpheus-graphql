@@ -4,6 +4,14 @@
 
 ### new features
 
+- support of `schema` . issue #412
+
+  ```graphql
+  schema {
+    query: MyQuery
+  }
+  ```
+
 - exposed: `Data.Morpheus.Types.GQLScalar`
 - exposed: `Data.Morpheus.Types.ID`
 - finished interface validation

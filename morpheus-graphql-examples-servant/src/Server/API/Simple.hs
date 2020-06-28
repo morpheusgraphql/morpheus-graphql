@@ -29,10 +29,8 @@ import Data.Morpheus.Types
     GQLResponse,
     Input,
     ResolverM,
-    ResolverS,
     RootResolver (..),
     Stream,
-    Undefined (..),
     publish,
     subscribe,
   )

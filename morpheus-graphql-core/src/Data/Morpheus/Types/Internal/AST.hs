@@ -150,6 +150,7 @@ module Data.Morpheus.Types.Internal.AST
     RootOperationTypeDefinition (..),
     UnionSelection,
     SchemaDefinition (..),
+    buildSchema,
   )
 where
 

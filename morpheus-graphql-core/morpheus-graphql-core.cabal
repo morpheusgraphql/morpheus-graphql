@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9daf6fb4b051366e570442072704e51c700ee323c3158cd97d30f9437c60185e
+-- hash: 9ac2fd92445d6148ff155f68ca90d7f3f7449f9a695dc95a5d4fb62fbaf9065a
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -45,6 +45,14 @@ data-files:
     test/schema/validation/interface/field-args/ok/schema.gql
     test/schema/validation/interface/field-type/fail/schema.gql
     test/schema/validation/interface/field-type/ok/schema.gql
+    test/schema/validation/schema-definition/fail/non-object-kind/from-schema/schema.gql
+    test/schema/validation/schema-definition/fail/non-object-kind/without-schema/schema.gql
+    "test/schema/validation/schema-definition/fail/required query/empty/schema.gql"
+    "test/schema/validation/schema-definition/fail/required query/no-query/schema.gql"
+    "test/schema/validation/schema-definition/fail/required query/no-schema-no-query/schema.gql"
+    "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
+    test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
+    test/schema/validation/schema-definition/ok/full/schema.gql
     test/api/interface/response.json
     test/api/simple/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
@@ -67,6 +75,14 @@ data-files:
     test/schema/validation/interface/field-args/ok/response.json
     test/schema/validation/interface/field-type/fail/response.json
     test/schema/validation/interface/field-type/ok/response.json
+    test/schema/validation/schema-definition/fail/non-object-kind/from-schema/response.json
+    test/schema/validation/schema-definition/fail/non-object-kind/without-schema/response.json
+    "test/schema/validation/schema-definition/fail/required query/empty/response.json"
+    "test/schema/validation/schema-definition/fail/required query/no-query/response.json"
+    "test/schema/validation/schema-definition/fail/required query/no-schema-no-query/response.json"
+    "test/schema/validation/schema-definition/fail/required query/schema-with-query/response.json"
+    test/schema/validation/schema-definition/fail/unknown-type/unknown/response.json
+    test/schema/validation/schema-definition/ok/full/response.json
 
 source-repository head
   type: git

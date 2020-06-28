@@ -11,7 +11,9 @@ import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
-import Data.Morpheus.Parsing.Document.TypeSystem (parseSchema)
+import Data.Morpheus.Parsing.Document.TypeSystem
+  ( parseTypeDefinitions,
+  )
 import Data.Morpheus.Types.Internal.AST (ANY, TypeDefinition)
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -37,7 +39,7 @@ dsl =
       error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
 dslExpression :: Text -> Q Exp
-dslExpression doc = case (parseSchema doc :: Eventless [TypeDefinition ANY]) of
+dslExpression doc = case parseTypeDefinitions doc of
   Failure errors -> fail (renderGQLErrors errors)
   Success {result, warnings} ->
     gqlWarnings warnings >> [|result|]

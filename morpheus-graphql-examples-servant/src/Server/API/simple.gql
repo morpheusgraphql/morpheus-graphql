@@ -14,3 +14,9 @@ type Deity {
   name: String!
   power: String
 }
+
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
