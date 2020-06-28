@@ -15,19 +15,18 @@ module Data.Morpheus.Server.Deriving.Channels
 where
 
 -- MORPHEUS
+
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
+  )
+import Data.Morpheus.Types.Internal.Resolving
+  ( SubscriptionField (..),
   )
 import Data.Semigroup ((<>))
 import Data.Text
   ( pack,
   )
 import GHC.Generics
-
-data WithChannel e m a = WithChannel
-  { channel :: String,
-    resolver :: e -> m a
-  }
 
 class (Generic a, TypeRep (Rep a)) => GetChannels a where
   getChannels :: a -> [(FieldName, String)]
@@ -38,8 +37,8 @@ instance {-# OVERLAPPABLE #-} (Generic a, TypeRep (Rep a)) => GetChannels a wher
 class GetChannel a where
   getChannel :: a -> String
 
-instance GetChannel (WithChannel e m a) where
-  getChannel WithChannel {channel} = channel
+instance GetChannel (SubscriptionField a) where
+  getChannel SubscriptionField {channel} = channel
 
 class TypeRep f where
   typeRep :: f a -> [(FieldName, String)]

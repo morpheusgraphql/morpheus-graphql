@@ -74,6 +74,7 @@ import Data.Morpheus.Types.Internal.Resolving
     ResModel (..),
     Resolver,
     RootResModel (..),
+    SubscriptionField (..),
     failure,
     liftStateless,
     toResolver,
@@ -97,6 +98,10 @@ instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => 
 -- MAYBE
 instance (Monad m, LiftOperation o, Encode a o e m) => Encode (Maybe a) o e m where
   encode = maybe (pure ResNull) encode
+
+-- MAYBE
+instance (Monad m, LiftOperation o, Encode a o e m) => Encode (SubscriptionField a) o e m where
+  encode (SubscriptionField _ res) = encode res
 
 -- LIST []
 instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where

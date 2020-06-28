@@ -137,7 +137,7 @@ data ResponseEvent event (m :: * -> *)
 
 type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
-data SubscriptionField e a = SubscriptionField {channel :: String, unSubscribe :: a}
+data SubscriptionField a = SubscriptionField {channel :: String, unSubscribe :: a}
 
 -- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
 data Context = Context
@@ -331,7 +331,7 @@ subscribe ::
   ) =>
   [StreamChannel e] ->
   Resolver QUERY e m (e -> Resolver QUERY e m a) ->
-  SubscriptionField e (Resolver SUBSCRIPTION e m a)
+  SubscriptionField (Resolver SUBSCRIPTION e m a)
 subscribe ch res =
   SubscriptionField ("show ch")
     $ ResolverS

@@ -55,6 +55,7 @@ module Data.Morpheus.Types
     IOMutRes,
     IOSubRes,
     interface,
+    SubscriptionField,
   )
 where
 
@@ -96,6 +97,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Failure,
     PushEvents (..),
     Resolver,
+    SubscriptionField,
     UnSubResolver,
     WithOperation,
     failure,

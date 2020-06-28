@@ -187,7 +187,7 @@ instance (GQLType b, DeriveTypeContent IN 'False a, Introspect OUT b) => Introsp
       inputs =
         snd $ introspectInputObjectFields (Proxy :: Proxy 'False) (name, Proxy @a)
 
-instance (Introspect OUT a) => Introspect OUT (SubscriptionField e a) where
+instance (Introspect OUT a) => Introspect OUT (SubscriptionField a) where
   isObject _ = isObject (ProxyRep :: ProxyRep OUT a)
   field _ = field (ProxyRep :: ProxyRep OUT a)
   introspect _ = introspect (ProxyRep :: ProxyRep OUT a)

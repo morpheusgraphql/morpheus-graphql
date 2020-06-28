@@ -58,7 +58,8 @@ import Data.Morpheus.Types.Internal.AST
     readName,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( UnSubResolver,
+  ( SubscriptionField,
+    UnSubResolver,
   )
 import Data.Text (unpack)
 import Language.Haskell.TH
@@ -82,8 +83,7 @@ declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
     typeName = nameConType typeConName
     --------------------------------------------
     decType _
-      | isSub =
-        AppT typeName (AppT (ConT ''UnSubResolver) m')
+      | isSub = AppT typeName (AppT (ConT ''UnSubResolver) m')
     decType (Just par) = AppT typeName (VarT $ mkTypeName par)
     decType _ = typeName
 

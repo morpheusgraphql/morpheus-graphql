@@ -31,6 +31,9 @@ import Data.Morpheus.Types.Internal.AST
     isOutputObject,
     isSubscription,
   )
+import Data.Morpheus.Types.Internal.Resolving
+  ( SubscriptionField,
+  )
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
@@ -106,6 +109,17 @@ fieldTypeName namespace tName fieldName
 
 ------------------------------------------------
 genFieldT :: Type -> TypeKind -> Maybe (FieldContent TRUE cat) -> Type
+genFieldT result tKind (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}))
+  | isSubscription tKind =
+    AppT
+      (ConT ''SubscriptionField)
+      ( AppT
+          (AppT arrowType argType)
+          (AppT m' result)
+      )
+  where
+    argType = ConT $ mkTypeName argsTypename
+    arrowType = ConT ''Arrow
 genFieldT result _ (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =
   AppT
     (AppT arrowType argType)
@@ -113,6 +127,8 @@ genFieldT result _ (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Jus
   where
     argType = ConT $ mkTypeName argsTypename
     arrowType = ConT ''Arrow
+genFieldT result tKind _
+  | isSubscription tKind = AppT (ConT ''SubscriptionField) (AppT m' result)
 genFieldT result kind _
   | isOutputObject kind = AppT m' result
   | otherwise = result
