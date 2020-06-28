@@ -62,7 +62,7 @@ import Data.HashMap.Lazy
   )
 import qualified Data.HashMap.Lazy as HM
 import Data.List (filter, find, notElem)
-import Data.Maybe (Maybe (..), catMaybes, mapMaybe, maybe)
+import Data.Maybe (Maybe (..), catMaybes, maybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -131,6 +131,7 @@ import Data.Morpheus.Types.Internal.AST.Value
   )
 import Data.Semigroup (Semigroup (..))
 import Data.Text (intercalate)
+import Data.Traversable (Traversable (..))
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
@@ -248,9 +249,7 @@ instance Selectable Schema (TypeDefinition ANY) where
 instance Listable (TypeDefinition ANY) Schema where
   elems = HM.elems . typeRegister
   fromElems types = do
-    query <- popByKey "Query" types
-    mutation <- popByKey "Mutation" types
-    subscription <- popByKey "Subscription" types
+    (query, mutation, subscription) <- traverse3 (popByKey types) ("Query", "Mutation", "Subscription")
     buildWith query mutation subscription types
 
 buildWith ::
@@ -281,18 +280,21 @@ buildSchema ::
   m Schema
 buildSchema (Nothing, types) = fromElems types
 buildSchema (Just schemaDef, types) = do
-  query <- selectOperation Query schemaDef types
-  mutation <- selectOperation Mutation schemaDef types
-  subscription <- selectOperation Subscription schemaDef types
+  (query, mutation, subscription) <- traverse3 selectOp (Query, Mutation, Subscription)
   buildWith query mutation subscription types
+  where
+    selectOp op = selectOperation op schemaDef types
+
+traverse3 :: Applicative t => (a -> t b) -> (a, a, a) -> t (b, b, b)
+traverse3 f (a1, a2, a3) = (,,) <$> f a1 <*> f a2 <*> f a3
 
 typeReference ::
   (Monad m, Failure GQLErrors m) =>
-  TypeName ->
   [TypeDefinition ANY] ->
+  TypeName ->
   m (Maybe (TypeDefinition OUT))
-typeReference name types =
-  popByKey name types
+typeReference types name =
+  popByKey types name
     >>= maybe
       (failure (globalErrorMessage $ "Unknown type " <> msg name <> "."))
       (pure . Just)
@@ -306,14 +308,7 @@ selectOperation ::
   [TypeDefinition ANY] ->
   f (Maybe (TypeDefinition OUT))
 selectOperation operationType schemaDef lib =
-  selectOr (pure Nothing) selectOp operationType schemaDef
-  where
-    selectOp ::
-      (Monad m, Failure GQLErrors m) =>
-      RootOperationTypeDefinition ->
-      m (Maybe (TypeDefinition OUT))
-    selectOp RootOperationTypeDefinition {rootOperationTypeDefinitionName} =
-      typeReference rootOperationTypeDefinitionName lib
+  selectOr (pure Nothing) (typeReference lib . rootOperationTypeDefinitionName) operationType schemaDef
 
 initTypeLib :: TypeDefinition OUT -> Schema
 initTypeLib query =
@@ -524,10 +519,10 @@ lookupWith f key = find ((== key) . f)
 
 popByKey ::
   (Applicative m, Failure GQLErrors m) =>
-  TypeName ->
   [TypeDefinition ANY] ->
+  TypeName ->
   m (Maybe (TypeDefinition OUT))
-popByKey name types = case lookupWith typeName name types of
+popByKey types name = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     pure (fromAny dt)
   Just {} -> failure (globalErrorMessage $ msg name <> " must be an OBJECT")
