@@ -131,7 +131,6 @@ import Data.Morpheus.Types.Internal.AST.Value
   )
 import Data.Semigroup (Semigroup (..))
 import Data.Text (intercalate)
-import Data.Traversable (Traversable (..))
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
