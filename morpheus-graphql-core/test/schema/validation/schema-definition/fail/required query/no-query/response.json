@@ -1,8 +1,8 @@
 {
   "errors": [
     {
-      "message": "offset=43:\nunexpected 'Q'\nexpecting '}', Ignored, OperationType, or white space\n",
-      "locations": [{ "line": 6, "column": 3 }]
+      "message": "Query root type must be provided.",
+      "locations": []
     }
   ]
 }

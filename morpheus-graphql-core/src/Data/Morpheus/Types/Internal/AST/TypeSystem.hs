@@ -265,7 +265,7 @@ buildWith ::
 buildWith otypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] otypes
   pure $ (foldr unsafeDefineType (initTypeLib query) types) {mutation, subscription}
-buildWith _ (Nothing, _, _) = failure $ globalErrorMessage "INTERNAL: Query Not Defined"
+buildWith _ (Nothing, _, _) = failure $ globalErrorMessage "Query root type must be provided."
 
 excludeTypes :: [Maybe (TypeDefinition c1)] -> [TypeDefinition c2] -> [TypeDefinition c2]
 excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
