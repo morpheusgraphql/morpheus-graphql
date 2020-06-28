@@ -6,9 +6,14 @@ type MyType1 {
   name: String
 }
 
+enum MyEnum {
+  Enum1
+}
+
 union MyUnion = MyType1
 
 schema {
   query: MyType
-  mutation: String
+  mutation: MyUnion
+  subscription: MyEnum
 }

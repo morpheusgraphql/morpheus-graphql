@@ -249,7 +249,12 @@ instance Selectable Schema (TypeDefinition ANY) where
 instance Listable (TypeDefinition ANY) Schema where
   elems = HM.elems . typeRegister
   fromElems types =
-    traverse3 (popByKey types) ("Query", "Mutation", "Subscription")
+    traverse3
+      (popByKey types)
+      ( RootOperationTypeDefinition Query "Query",
+        RootOperationTypeDefinition Mutation "Mutation",
+        RootOperationTypeDefinition Subscription "Subscription"
+      )
       >>= buildWith types
 
 buildWith ::
@@ -292,12 +297,12 @@ traverse3 f (a1, a2, a3) = (,,) <$> f a1 <*> f a2 <*> f a3
 typeReference ::
   (Monad m, Failure GQLErrors m) =>
   [TypeDefinition ANY] ->
-  TypeName ->
+  RootOperationTypeDefinition ->
   m (Maybe (TypeDefinition OUT))
-typeReference types name =
-  popByKey types name
+typeReference types rootOperation =
+  popByKey types rootOperation
     >>= maybe
-      (failure (globalErrorMessage $ "Unknown type " <> msg name <> "."))
+      (failure (globalErrorMessage $ "Unknown type " <> msg (rootOperationTypeDefinitionName rootOperation) <> "."))
       (pure . Just)
 
 selectOperation ::
@@ -309,7 +314,7 @@ selectOperation ::
   [TypeDefinition ANY] ->
   f (Maybe (TypeDefinition OUT))
 selectOperation schemaDef operationType lib =
-  selectOr (pure Nothing) (typeReference lib . rootOperationTypeDefinitionName) operationType schemaDef
+  selectOr (pure Nothing) (typeReference lib) operationType schemaDef
 
 initTypeLib :: TypeDefinition OUT -> Schema
 initTypeLib query =
@@ -521,12 +526,12 @@ lookupWith f key = find ((== key) . f)
 popByKey ::
   (Applicative m, Failure GQLErrors m) =>
   [TypeDefinition ANY] ->
-  TypeName ->
+  RootOperationTypeDefinition ->
   m (Maybe (TypeDefinition OUT))
-popByKey types name = case lookupWith typeName name types of
+popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     pure (fromAny dt)
-  Just {} -> failure (globalErrorMessage $ msg name <> " must be an OBJECT")
+  Just {} -> failure $ globalErrorMessage $ msg (show opType) <> " root type must be Object type if provided, it cannot be " <> msg name
   _ -> pure Nothing
 
 __inputname :: FieldName

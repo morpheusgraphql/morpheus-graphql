@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3529aed98616673d466648b3b220bf4a149354451c9af9853b2f44c8b543531c
+-- hash: 898d91b0441fd42426b272ba6806fb9790bdd9273b3b5eb6fcb4fd04a2abd1f4
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -49,6 +49,7 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/empty/schema.gql"
     "test/schema/validation/schema-definition/fail/required query/no-query/schema.gql"
     "test/schema/validation/schema-definition/fail/required query/no-schema-no-query/schema.gql"
+    "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
     test/api/interface/response.json
@@ -77,6 +78,7 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/empty/response.json"
     "test/schema/validation/schema-definition/fail/required query/no-query/response.json"
     "test/schema/validation/schema-definition/fail/required query/no-schema-no-query/response.json"
+    "test/schema/validation/schema-definition/fail/required query/schema-with-query/response.json"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/response.json
     test/schema/validation/schema-definition/ok/full/response.json
 
