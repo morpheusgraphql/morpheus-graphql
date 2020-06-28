@@ -132,10 +132,10 @@ class FieldRep f where
   fieldRep :: f a -> [(String, FieldChannel)]
 
 instance (FieldRep f, FieldRep g) => FieldRep (f :*: g) where
-  fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
+  fieldRep (a :*: b) = fieldRep context a <> fieldRep context b
 
 instance (Selector s, GQLType a, GetChannel a) => FieldRep (M1 S s (K1 s2 a)) where
-  fieldRep _ m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
+  fieldRep m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
 
 instance FieldRep U1 where
-  fieldRep _ _ = []
+  fieldRep _ = []
