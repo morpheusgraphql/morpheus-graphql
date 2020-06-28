@@ -5,7 +5,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -112,8 +111,8 @@ data WithChannel e m a = WithChannel
 class GetChannel a where
   getChannel :: a -> FieldChannel
 
-instance {-# OVERLAPPABLE #-} (EnumRep (Rep a)) => GetChannel a where
-  getChannel = Object $ typeRep (from @(Rep a))
+instance {-# OVERLAPPABLE #-} (TypeRep (Rep a)) => GetChannel a where
+  getChannel = Object . typeRep . from
 
 instance GetChannel (WithChannel e m a) where
   getChannel WithChannel {channel} = FieldChannel channel
@@ -125,7 +124,7 @@ instance TypeRep f => TypeRep (M1 D d f) where
   typeRep (M1 src) = typeRep src
 
 instance (Constructor c) => TypeRep (M1 C c f) where
-  typeRep context (M1 src) = fieldRep src
+  typeRep (M1 src) = fieldRep src
 
 --- FIELDS
 class FieldRep f where
