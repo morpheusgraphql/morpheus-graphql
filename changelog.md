@@ -11,14 +11,14 @@
 
   ```graphql
   schema {
-    query: MyQuery
+    query: Query
   }
   ```
 
   note that this does not affect `morpheus-graphql-server` at all. since it has its own schema derivation. you still need to provide:
 
   ```haskell
-  rootResolver :: RootResolver () IO MyQuery Undefined Undefined
+  rootResolver :: RootResolver () IO Query Undefined Undefined
   rootResolver = RootResolver <resolvers ...>
   ```
 
