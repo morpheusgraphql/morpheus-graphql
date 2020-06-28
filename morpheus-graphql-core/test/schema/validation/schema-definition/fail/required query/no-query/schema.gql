@@ -1,0 +1,7 @@
+type MyType {
+  name: String
+}
+
+schema {
+  mutation: MyType
+}

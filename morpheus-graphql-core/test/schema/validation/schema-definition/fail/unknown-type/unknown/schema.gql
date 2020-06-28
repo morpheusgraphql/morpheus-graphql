@@ -1,0 +1,9 @@
+type MyType {
+  name: String
+}
+
+schema {
+  query: MyType1
+  mutation: Asfwe
+  subscription: GjsO
+}

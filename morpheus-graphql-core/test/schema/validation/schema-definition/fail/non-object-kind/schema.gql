@@ -1,0 +1,14 @@
+input MyType {
+  name: String
+}
+
+type MyType1 {
+  name: String
+}
+
+union MyUnion = MyType1
+
+schema {
+  query: MyType
+  mutation: String
+}

@@ -86,3 +86,6 @@ type Mutation {
   createDeity(name: [[[[[String!]]!]]], mythology: String): Deity!
   createCharacter(realm: Realm!, id: String!): Character!
 }
+
+
+schema {}

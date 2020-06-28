@@ -287,7 +287,7 @@ typeReference ::
 typeReference name types = do
   a <- popByKey name types
   case a of
-    (Nothing, _) -> failure (globalErrorMessage $ "unknown Type " <> msg name <> ".")
+    (Nothing, _) -> failure (globalErrorMessage $ "Unknown type " <> msg name <> ".")
     (Just query, lib1) -> pure (Just query, lib1)
 
 selectOperation ::
