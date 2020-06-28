@@ -101,6 +101,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
+    SubscriptionField (..),
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -185,6 +186,11 @@ instance (GQLType b, DeriveTypeContent IN 'False a, Introspect OUT b) => Introsp
       inputs :: [TypeUpdater]
       inputs =
         snd $ introspectInputObjectFields (Proxy :: Proxy 'False) (name, Proxy @a)
+
+instance (Introspect OUT a) => Introspect OUT (SubscriptionField e a) where
+  isObject _ = isObject (ProxyRep :: ProxyRep OUT a)
+  field _ = field (ProxyRep :: ProxyRep OUT a)
+  introspect _ = introspect (ProxyRep :: ProxyRep OUT a)
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (GQLType b, Introspect cat b) => Introspect cat (Resolver fo e m b) where

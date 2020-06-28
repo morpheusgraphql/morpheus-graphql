@@ -44,6 +44,7 @@ module Data.Morpheus.Types.Internal.Resolving
     mkObject,
     mkNull,
     mkString,
+    SubscriptionField (..),
   )
 where
 

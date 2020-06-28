@@ -42,6 +42,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     RootResModel (..),
     liftStateless,
     withArguments,
+    SubscriptionField (..),
   )
 where
 
