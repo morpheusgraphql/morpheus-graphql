@@ -22,6 +22,9 @@ import Data.Morpheus.Core
   ( runApi,
   )
 import Data.Morpheus.Internal.Utils (resolveUpdates)
+import Data.Morpheus.Server.Deriving.Channels
+  ( getChannels,
+  )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
     deriveModel,

@@ -10,92 +10,15 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Server.Deriving.Channels
-  ( --  Introspect (..),
-    --   DeriveTypeContent (..),
-    --   introspectOUT,
-    --   IntroCon,
-    --   updateLib,
-    --   buildType,
-    --   introspectObjectFields,
-    --   deriveCustomInputObjectType,
-    -- TypeUpdater,
-    GetChannel (..),
+  ( GetChannel (..),
   )
 where
 
-import Data.List (partition)
-import Data.Map (Map)
 -- MORPHEUS
-
-import Data.Morpheus.Error (globalErrorMessage)
-import Data.Morpheus.Internal.Utils
-  ( concatUpdates,
-    empty,
-    failUpdates,
-    singleton,
-  )
-import Data.Morpheus.Kind
-  ( Context (..),
-    ENUM,
-    GQL_KIND,
-    INPUT,
-    INTERFACE,
-    OUTPUT,
-    SCALAR,
-  )
-import Data.Morpheus.Server.Deriving.Utils
-  ( EnumRep (..),
-    conNameProxy,
-    isRecordProxy,
-    selNameProxy,
-  )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
-    TypeUpdater,
-  )
-import Data.Morpheus.Server.Types.Types
-  ( MapKind,
-    Pair,
-  )
-import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
-    DataFingerprint (..),
-    DataUnion,
-    FALSE,
-    FieldContent (..),
-    FieldDefinition (..),
-    FieldName,
-    FieldName (..),
-    FieldsDefinition,
-    IN,
-    Message,
-    OUT,
-    TRUE,
-    TypeCategory,
-    TypeContent (..),
-    TypeDefinition (..),
-    TypeName (..),
-    TypeRef (..),
-    UnionMember (..),
-    fieldsToArguments,
-    insertType,
-    mkEnumContent,
-    mkInputValue,
-    mkTypeRef,
-    mkUnionMember,
-    msg,
-    toListField,
-    toNullable,
-    unsafeFromFields,
-    updateSchema,
+  ( FieldName (..),
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-  )
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
-import Data.Set (Set)
 import Data.Text
   ( pack,
   )
@@ -111,7 +34,7 @@ data WithChannel e m a = WithChannel
 class GetChannel a where
   getChannel :: a -> FieldChannel
 
-instance {-# OVERLAPPABLE #-} (TypeRep (Rep a)) => GetChannel a where
+instance {-# OVERLAPPABLE #-} (Generic a, TypeRep (Rep a)) => GetChannel a where
   getChannel = Object . typeRep . from
 
 instance GetChannel (WithChannel e m a) where
@@ -123,7 +46,7 @@ class TypeRep f where
 instance TypeRep f => TypeRep (M1 D d f) where
   typeRep (M1 src) = typeRep src
 
-instance (Constructor c) => TypeRep (M1 C c f) where
+instance FieldRep f => TypeRep (M1 C c f) where
   typeRep (M1 src) = fieldRep src
 
 --- FIELDS
@@ -133,7 +56,7 @@ class FieldRep f where
 instance (FieldRep f, FieldRep g) => FieldRep (f :*: g) where
   fieldRep (a :*: b) = fieldRep a <> fieldRep b
 
-instance (Selector s, GQLType a, GetChannel a) => FieldRep (M1 S s (K1 s2 a)) where
+instance (Selector s, GetChannel a) => FieldRep (M1 S s (K1 s2 a)) where
   fieldRep m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
 
 instance FieldRep U1 where
