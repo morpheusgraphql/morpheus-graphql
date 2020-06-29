@@ -109,6 +109,6 @@ type Mutation {
 }
 
 type Subscription {
-  newAddress: Address!
+  newAddress(address: String = "some adress"): Address!
   newUser: User!
 }

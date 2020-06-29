@@ -155,7 +155,7 @@ gqlRoot =
     subscriptionResolver =
       Subscription
         { subscriptionNewUser = resolveNewUser,
-          subscriptionNewAddress = resolveNewAdress
+          subscriptionNewAddress = const resolveNewAdress
         }
 
 -- Resolve QUERY
