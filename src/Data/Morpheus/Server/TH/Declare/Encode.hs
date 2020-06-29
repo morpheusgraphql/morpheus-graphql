@@ -47,7 +47,7 @@ m_ :: TypeName
 m_ = "m"
 
 po_ :: TypeName
-po_ = "parentOparation"
+po_ = "oparation"
 
 e_ :: TypeName
 e_ = "encodeEvent"
