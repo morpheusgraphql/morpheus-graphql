@@ -26,16 +26,18 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Channel,
+    Eventless,
     Resolver,
     SubscriptionField (..),
   )
+import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Text
   ( pack,
   )
 import GHC.Generics
 
-newtype Proxy e = Proxy (Selection VALID)
+--newtype Proxy e = Proxy (Selection VALID)
 
 type ChannelCon e m a =
   ( TypeRep e (Rep (a (Resolver SUBSCRIPTION e m))),
@@ -43,23 +45,36 @@ type ChannelCon e m a =
   )
 
 class GetChannels (e :: *) a | a -> e where
-  getChannels :: Selection VALID -> a -> [(FieldName, Channel e)]
+  getChannels :: Selection VALID -> a -> Eventless (Channel e)
 
 instance
   {-# OVERLAPPABLE #-}
   ChannelCon e m subs =>
   GetChannels e (subs (Resolver SUBSCRIPTION e m))
   where
-  getChannels sel = typeRep (Proxy sel :: Proxy e) . from
+  getChannels sel = selectBy sel . typeRep (Proxy @e) . from
+
+selectBy ::
+  Selection VALID ->
+  [ ( FieldName,
+      Selection VALID -> Eventless (Channel e)
+    )
+  ] ->
+  Eventless (Channel e)
+selectBy = undefined
 
 class GetChannel e a | a -> e where
-  getChannel :: Selection VALID -> a -> Channel e
+  getChannel :: a -> Selection VALID -> Eventless (Channel e)
 
 instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
-  getChannel _ SubscriptionField {channel} = channel
+  getChannel SubscriptionField {channel} = const (pure channel)
 
+instance GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a)) where
+  getChannel = undefined --TODO:
+
+------------------------------------------------------
 class TypeRep e f where
-  typeRep :: Proxy e -> f a -> [(FieldName, Channel e)]
+  typeRep :: Proxy e -> f a -> [(FieldName, Selection VALID -> Eventless (Channel e))]
 
 instance TypeRep e f => TypeRep e (M1 D d f) where
   typeRep c (M1 src) = typeRep c src
@@ -69,20 +84,13 @@ instance FieldRep e f => TypeRep e (M1 C c f) where
 
 --- FIELDS
 class FieldRep e f where
-  fieldRep :: Proxy e -> f a -> [(FieldName, Channel e)]
+  fieldRep :: Proxy e -> f a -> [(FieldName, Selection VALID -> Eventless (Channel e))]
 
 instance (FieldRep e f, FieldRep e g) => FieldRep e (f :*: g) where
   fieldRep e (a :*: b) = fieldRep e a <> fieldRep e b
 
 instance (Selector s, GetChannel e a) => FieldRep e (M1 S s (K1 s2 a)) where
-  fieldRep (Proxy sel) m@(M1 (K1 src)) = case selectBy name sel of
-    Just sel' -> [(name, getChannel sel' src)]
-    Nothing -> []
-    where
-      name = FieldName $ pack (selName m)
-
-selectBy :: FieldName -> Selection VALID -> Maybe (Selection VALID)
-selectBy = undefined
+  fieldRep _ m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
 
 instance FieldRep e U1 where
   fieldRep _ _ = []
