@@ -138,7 +138,7 @@ data ResponseEvent event (m :: * -> *)
 
 type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
-data SubscriptionField a where
+data SubscriptionField (a :: *) where
   SubscriptionField ::
     { channel :: forall e m v. (a ~ (Resolver SUBSCRIPTION e m v)) => StreamChannel e,
       unSubscribe :: a
