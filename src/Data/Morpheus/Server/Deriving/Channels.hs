@@ -67,10 +67,10 @@ selectBy ::
 selectBy Selection {selectionContent = SelectionSet selSet} ch =
   case elems selSet of
     [sel@Selection {selectionName}] -> case lookup selectionName ch of
-      Nothing -> internalError "subscription does not sccesed as long there are no any channel selected"
+      Nothing -> internalError "invalid subscription: no channel is selected."
       Just f -> f sel
-    _ -> internalError "subscription selection can select one top level field"
-selectBy _ _ = internalError "subscription can be only selectionSet"
+    _ -> internalError "invalid subscription: there can be only one top level selection"
+selectBy _ _ = internalError "invalid subscription: expected selectionSet"
 
 class GetChannel e a | a -> e where
   getChannel :: a -> Selection VALID -> Eventless (Channel e)
