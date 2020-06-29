@@ -47,7 +47,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..))
+import Control.Monad (Monad (..), join)
 import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
@@ -216,7 +216,9 @@ resolverFailureMessage Selection {selectionName, selectionPosition} message =
 data Resolver (o :: OperationType) event (m :: * -> *) value where
   ResolverQ :: {runResolverQ :: ResolverState () m value} -> Resolver QUERY event m value
   ResolverM :: {runResolverM :: ResolverState event m value} -> Resolver MUTATION event m value
-  ResolverS :: {runResolverS :: ResolverState () m (ReaderT event (Resolver QUERY event m) value)} -> Resolver SUBSCRIPTION event m value
+  ResolverS :: {runResolverS :: ResolverState () m (SubEventRes event m value)} -> Resolver SUBSCRIPTION event m value
+
+type SubEventRes event m value = ReaderT event (ResolverState () m) value
 
 instance Show (Resolver o e m value) where
   show ResolverQ {} = "Resolver QUERY e m a"
@@ -295,7 +297,7 @@ instance LiftOperation MUTATION where
   withResolver ctxRes toRes = ResolverM $ ctxRes >>= runResolverM . toRes
 
 instance LiftOperation SUBSCRIPTION where
-  packResolver = ResolverS . pure . lift . packResolver
+  packResolver = ResolverS . pure . lift . clearStateResolverEvents
   withResolver ctxRes toRes = ResolverS $ do
     value <- clearStateResolverEvents ctxRes
     runResolverS $ toRes value
@@ -303,9 +305,13 @@ instance LiftOperation SUBSCRIPTION where
 mapResolverContext :: Monad m => (Context -> Context) -> Resolver o e m a -> Resolver o e m a
 mapResolverContext f (ResolverQ res) = ResolverQ (mapState f res)
 mapResolverContext f (ResolverM res) = ResolverM (mapState f res)
-mapResolverContext f (ResolverS resM) = ResolverS $ do
-  res <- resM
-  pure $ ReaderT $ \e -> ResolverQ $ mapState f (runResolverQ (runReaderT res e))
+mapResolverContext f (ResolverS resM) = ResolverS $ replace f <$> resM
+
+replace ::
+  (Context -> Context) ->
+  ReaderT r (ResolverState e m) a ->
+  ReaderT r (ResolverState e m) a
+replace f = mapReaderT (mapState f)
 
 setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m a
 setSelection currentSelection =
@@ -324,11 +330,11 @@ monadBind ::
 monadBind (ResolverQ x) m2 = ResolverQ (x >>= runResolverQ . m2)
 monadBind (ResolverM x) m2 = ResolverM (x >>= runResolverM . m2)
 monadBind (ResolverS res) m2 = ResolverS $ do
-  (readResA :: ReaderT e (Resolver QUERY e m) a) <- res
-  pure $ ReaderT $ \e -> ResolverQ $ do
-    (a :: a) <- runResolverQ (runReaderT readResA e)
-    (readResB :: ReaderT e (Resolver QUERY e m) b) <- runResolverS (m2 a)
-    runResolverQ $ runReaderT readResB e
+  (readResA :: ReaderT e (ResolverState () m) a) <- res
+  pure $ ReaderT $ \e -> do
+    (a :: a) <- runReaderT readResA e
+    (readResB :: ReaderT e (ResolverState () m) b) <- runResolverS (m2 a)
+    runReaderT readResB e
 
 subscribe ::
   forall e m a.
@@ -336,12 +342,15 @@ subscribe ::
     Monad m
   ) =>
   StreamChannel e ->
-  Resolver QUERY e m (e -> Resolver QUERY e m a) ->
+  Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
 subscribe ch res =
   SubscriptionField ch
     $ ResolverS
-    $ ReaderT <$> runResolverQ res
+    $ fixSub <$> runResolverQ res
+  where
+    fixSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverState () m) a
+    fixSub f = join (ReaderT $ \e -> runResolverS (f e))
 
 -- | A function to return the internal 'Context' within a resolver's monad.
 -- Using the 'Context' itself is unsafe because it expposes internal structures
@@ -353,7 +362,7 @@ unsafeInternalContext = packResolver $ ResolverState ask
 -- Converts Subscription Resolver Type to Query Resolver
 type family UnSubResolver (a :: * -> *) :: (* -> *)
 
-type instance UnSubResolver (Resolver SUBSCRIPTION e m) = Resolver QUERY e m
+type instance UnSubResolver (Resolver SUBSCRIPTION e m) = Resolver SUBSCRIPTION e m
 
 withArguments ::
   forall o e m a.
@@ -429,10 +438,10 @@ resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
-toEventResolver :: Monad m => ReaderT event (Resolver QUERY event m) ValidValue -> Context -> event -> m GQLResponse
-toEventResolver (ReaderT subRes) sel event = do
-  value <- runResultT $ runReaderT (runResolverState $ runResolverQ (subRes event)) sel
-  pure $ renderResponse value
+toEventResolver :: Monad m => SubEventRes event m ValidValue -> Context -> event -> m GQLResponse
+toEventResolver (ReaderT subRes) sel event =
+  renderResponse
+    <$> runResultT (runReaderT (runResolverState $ subRes event) sel)
 
 runDataResolver :: (Monad m, LiftOperation o) => ResModel o e m -> Resolver o e m ValidValue
 runDataResolver = withResolver getState . __encode
@@ -587,7 +596,7 @@ instance MapStrategy o o where
   mapStrategy = id
 
 instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy = ResolverS . pure . lift . fmap mapDeriving
+  mapStrategy (ResolverQ x) = ResolverS $ pure . mapDeriving <$> x
 
 mapDeriving ::
   ( MapStrategy o o',
