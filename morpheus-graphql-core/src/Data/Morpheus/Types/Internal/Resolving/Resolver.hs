@@ -23,7 +23,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     Resolver,
     MapStrategy (..),
     LiftOperation,
-    unsafeBind,
     toResolver,
     lift,
     subscribe,
@@ -237,7 +236,7 @@ instance (LiftOperation o, Monad m) => Applicative (Resolver o e m) where
 -- Monad
 instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   return = pure
-  (>>=) = unsafeBind
+  (>>=) = monadBind
 
 #if __GLASGOW_HASKELL__ < 808
   fail = failure . msg
@@ -317,24 +316,19 @@ setTypeName :: Monad m => TypeName -> Resolver o e m a -> Resolver o e m a
 setTypeName currentTypeName =
   mapResolverContext (\ctx -> ctx {currentTypeName})
 
--- unsafe variant of >>= , not for public api. user can be confused:
---  ignores `channels` on second Subsciption, only returns events from first Subscription monad.
---    reason: second monad is waiting for `event` until he does not have some event can't tell which
---            channel does it have to listen
-unsafeBind ::
+monadBind ::
   forall o e m a b.
   Monad m =>
   Resolver o e m a ->
   (a -> Resolver o e m b) ->
   Resolver o e m b
-unsafeBind (ResolverQ x) m2 = ResolverQ (x >>= runResolverQ . m2)
-unsafeBind (ResolverM x) m2 = ResolverM (x >>= runResolverM . m2)
-unsafeBind (ResolverS res) m2 = ResolverS $ do
+monadBind (ResolverQ x) m2 = ResolverQ (x >>= runResolverQ . m2)
+monadBind (ResolverM x) m2 = ResolverM (x >>= runResolverM . m2)
+monadBind (ResolverS res) m2 = ResolverS $ do
   (readResA :: ReaderT e (Resolver QUERY e m) a) <- res
   pure $ ReaderT $ \e -> ResolverQ $ do
-    let (resA :: Resolver QUERY e m a) = runReaderT readResA e
-    (valA :: a) <- runResolverQ resA
-    (readResB :: ReaderT e (Resolver QUERY e m) b) <- clearStateResolverEvents $ runResolverS (m2 valA)
+    (a :: a) <- runResolverQ (runReaderT readResA e)
+    (readResB :: ReaderT e (Resolver QUERY e m) b) <- runResolverS (m2 a)
     runResolverQ $ runReaderT readResB e
 
 subscribe ::
@@ -415,7 +409,7 @@ lookupRes Selection {selectionName}
   | otherwise =
     maybe
       (pure gqlNull)
-      (`unsafeBind` runDataResolver)
+      (>>= runDataResolver)
       . lookup selectionName
       . objectFields
 
