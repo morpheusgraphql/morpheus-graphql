@@ -20,6 +20,10 @@ where
 -- MORPHEUS
 import Data.Morpheus.Error (internalError)
 import Data.Morpheus.Internal.Utils (elems, failure)
+import Data.Morpheus.Server.Deriving.Decode
+  ( DecodeType,
+    decodeArguments,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     SUBSCRIPTION,
@@ -78,8 +82,12 @@ class GetChannel e a | a -> e where
 instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel SubscriptionField {channel} = const (pure channel)
 
-instance GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a)) where
-  getChannel = undefined --TODO:
+instance
+  (Generic arg, DecodeType arg) =>
+  GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a))
+  where
+  getChannel f sel@Selection {selectionArguments} =
+    decodeArguments selectionArguments >>= (`getChannel` sel) . f
 
 ------------------------------------------------------
 class TypeRep e f where
