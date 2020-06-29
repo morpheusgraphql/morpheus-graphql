@@ -54,12 +54,14 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader (ReaderT (..), ask, mapReaderT, withReaderT)
 import Data.Functor ((<$>), Functor (..))
+import Data.Maybe (Maybe (..))
 import Data.Maybe (maybe)
 -- MORPHEUS
 import Data.Morpheus.Error.Internal (internalResolvingError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
   ( Merge (..),
+    elems,
     empty,
     keyOf,
     selectOr,
@@ -121,6 +123,7 @@ import Prelude
     (.),
     Eq (..),
     Show (..),
+    concatMap,
     const,
     id,
     lookup,
@@ -477,22 +480,32 @@ runDataResolver = withResolver getState . __encode
 
 runResolver ::
   Monad m =>
+  [(FieldName, StreamChannel event)] ->
   Resolver o event m ValidValue ->
   Context ->
   ResponseStream event m ValidValue
-runResolver (ResolverQ resT) sel = cleanEvents $ runReaderT (runResolverState resT) sel
-runResolver (ResolverM resT) sel = mapEvent Publish $ runReaderT (runResolverState resT) sel
-runResolver (ResolverS resT) sel = ResultT $ do
-  readResValue <- runResultT $ runReaderT (runResolverState resT) sel
+runResolver _ (ResolverQ resT) sel = cleanEvents $ runReaderT (runResolverState resT) sel
+runResolver _ (ResolverM resT) sel = mapEvent Publish $ runReaderT (runResolverState resT) sel
+runResolver channels (ResolverS resT) ctx = ResultT $ do
+  readResValue <- runResultT $ runReaderT (runResolverState resT) ctx
   pure $ case readResValue of
     Failure x -> Failure x
-    Success {warnings, result, events = channels} -> do
-      let eventRes = toEventResolver result sel
+    Success {warnings, result} -> do
+      let eventRes = toEventResolver result ctx
       Success
-        { events = [Subscribe $ Event channels eventRes],
+        { events = [Subscribe $ Event (channelBySelection ctx channels) eventRes],
           warnings,
           result = gqlNull
         }
+
+channelBySelection :: Context -> [(FieldName, StreamChannel e)] -> [Channel e]
+channelBySelection Context {currentSelection = Selection {selectionContent = SelectionSet selSet}} ch =
+  concatMap getChannelFor (elems selSet)
+  where
+    getChannelFor Selection {selectionName} = case lookup selectionName ch of
+      Nothing -> []
+      Just x -> [Channel x]
+channelBySelection _ _ = []
 
 -- Resolver Models -------------------------------------------------------------------
 type FieldResModel o e m =
@@ -533,32 +546,35 @@ data RootResModel e m = RootResModel
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
+  [(FieldName, StreamChannel e)] ->
   Eventless (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)
 runRootDataResolver
+  channels
   res
   ctx@Context {operation = Operation {operationSelection}} =
     do
       root <- statelessToResultT res
-      runResolver (resolveObject operationSelection root) ctx
+      runResolver channels (resolveObject operationSelection root) ctx
 
 runRootResModel :: Monad m => RootResModel e m -> Context -> ResponseStream e m (Value VALID)
 runRootResModel
   RootResModel
     { query,
       mutation,
-      subscription
+      subscription,
+      channelMap
     }
   ctx@Context {operation = Operation {operationType}} =
     selectByOperation operationType
     where
       selectByOperation Query =
-        runRootDataResolver query ctx
+        runRootDataResolver [] query ctx
       selectByOperation Mutation =
-        runRootDataResolver mutation ctx
+        runRootDataResolver [] mutation ctx
       selectByOperation Subscription =
-        runRootDataResolver subscription ctx
+        runRootDataResolver channelMap subscription ctx
 
 -- map Resolving strategies
 class

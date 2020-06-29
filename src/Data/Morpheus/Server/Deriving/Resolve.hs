@@ -60,10 +60,12 @@ import Data.Morpheus.Types.Internal.Resolving
     Resolver,
     ResponseStream,
     ResultT (..),
+    RootResModel (channelMap),
     cleanEvents,
   )
 import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
+import Debug.Trace
 
 type EventCon event =
   (Eq (StreamChannel event), Typeable event, GQLChannel event)
@@ -83,6 +85,7 @@ type RootResolverConstraint m event query mutation subscription =
   ( EventCon event,
     Typeable m,
     Monad m,
+    Show (StreamChannel event),
     OperationConstraint QUERY event m query,
     OperationConstraint MUTATION event m mutation,
     OperationConstraint SUBSCRIPTION event m subscription,
@@ -110,7 +113,7 @@ coreResolver root request =
       Monad m => ResponseStream event m Schema
     validRequest = cleanEvents $ ResultT $ pure $ fullSchema $ Identity root
     --------------------------------------
-    execOperator schema = runApi schema (deriveModel root) request
+    execOperator schema = runApi schema (traceShow (channelMap (deriveModel root)) (deriveModel root)) request
 
 fullSchema ::
   forall proxy m event query mutation subscription.
