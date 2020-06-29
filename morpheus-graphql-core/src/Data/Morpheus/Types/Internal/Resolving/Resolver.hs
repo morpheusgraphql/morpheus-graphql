@@ -326,14 +326,12 @@ subscribe ch res =
     fromSub f = join (ReaderT $ \e -> runResolverS (f e))
 
 withArguments ::
-  forall o e m a.
   (LiftOperation o, Monad m) =>
   (Arguments VALID -> Resolver o e m a) ->
   Resolver o e m a
 withArguments = (getArguments >>=)
 
 getArguments ::
-  forall o e m a.
   (LiftOperation o, Monad m) =>
   Resolver o e m (Arguments VALID)
 getArguments = selectionArguments . currentSelection <$> unsafeInternalContext
