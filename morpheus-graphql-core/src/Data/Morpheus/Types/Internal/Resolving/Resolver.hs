@@ -305,9 +305,7 @@ instance LiftOperation SUBSCRIPTION where
 
 subscribe ::
   forall e m a.
-  ( PushEvents (Channel e) (ResolverState (Channel e) m),
-    Monad m
-  ) =>
+  (Monad m) =>
   StreamChannel e ->
   Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
