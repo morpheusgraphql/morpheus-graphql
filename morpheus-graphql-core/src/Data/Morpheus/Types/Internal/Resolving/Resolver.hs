@@ -490,13 +490,19 @@ runResolver channels (ResolverS resT) ctx = ResultT $ do
   readResValue <- runResultT $ runReaderT (runResolverState resT) ctx
   pure $ case readResValue of
     Failure x -> Failure x
-    Success {warnings, result} -> do
-      let eventRes = toEventResolver result ctx
+    Success {warnings, result} ->
       Success
-        { events = [Subscribe $ Event (channelBySelection ctx channels) eventRes],
+        { events = subscriptionResopnseBySelection (toEventResolver result ctx) ctx channels,
           warnings,
           result = gqlNull
         }
+
+subscriptionResopnseBySelection ::
+  (e -> m GQLResponse) ->
+  Context ->
+  [(FieldName, StreamChannel e)] ->
+  [ResponseEvent e m]
+subscriptionResopnseBySelection res ctx channels = [Subscribe (Event (channelBySelection ctx channels) res)]
 
 channelBySelection :: Context -> [(FieldName, StreamChannel e)] -> [Channel e]
 channelBySelection Context {currentSelection = Selection {selectionContent = SelectionSet selSet}} ch =
