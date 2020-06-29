@@ -99,9 +99,7 @@ import Data.Morpheus.Types.Internal.AST.MergeSet
   ( toOrdMap,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Channel (..),
-    Event (..),
-    Eventless,
+  ( Eventless,
     Failure (..),
     PushEvents (..),
     Result (..),
@@ -109,6 +107,10 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     cleanEvents,
     mapEvent,
     statelessToResultT,
+  )
+import Data.Morpheus.Types.Internal.Resolving.Event
+  ( Channel (..),
+    Event (..),
   )
 import Data.Semigroup
   ( Semigroup (..),

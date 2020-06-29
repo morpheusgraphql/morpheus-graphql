@@ -18,8 +18,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
     unpackEvents,
     mapEvent,
     cleanEvents,
-    Event (..),
-    Channel (..),
     PushEvents (..),
     statelessToResultT,
     resultOr,
@@ -37,10 +35,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
     Message,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Event
-  ( Channel (..),
-    Event (..),
   )
 import Data.Semigroup ((<>))
 import Prelude
