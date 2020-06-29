@@ -121,12 +121,10 @@ import Prelude
     (.),
     Eq (..),
     Show (..),
-    String,
     const,
     id,
     lookup,
     otherwise,
-    undefined,
   )
 
 type WithOperation (o :: OperationType) = LiftOperation o
@@ -341,17 +339,16 @@ subscribe ::
   ( PushEvents (Channel e) (ResolverState (Channel e) m),
     Monad m
   ) =>
-  [StreamChannel e] ->
+  StreamChannel e ->
   Resolver QUERY e m (e -> Resolver QUERY e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
-subscribe ch@(x : _) res =
-  SubscriptionField x
+subscribe ch res =
+  SubscriptionField ch
     $ ResolverS
     $ do
-      pushEvents (fmap Channel ch :: [Channel e])
+      pushEvents ([Channel ch] :: [Channel e])
       (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
       pure $ ReaderT eventRes
-subscribe _ _ = undefined
 
 -- | A function to return the internal 'Context' within a resolver's monad.
 -- Using the 'Context' itself is unsafe because it expposes internal structures
