@@ -30,15 +30,11 @@ import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
-    QUERY,
-    SUBSCRIPTION,
     TRUE,
     TypeName (..),
-    isSubscription,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( LiftOperation,
-    MapStrategy (..),
     ObjectResModel (..),
     ResModel (..),
     Resolver,
