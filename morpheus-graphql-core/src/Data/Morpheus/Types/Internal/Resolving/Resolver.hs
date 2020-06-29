@@ -234,7 +234,14 @@ instance (LiftOperation o, Monad m) => Applicative (Resolver o e m) where
 -- Monad
 instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   return = pure
-  (>>=) = monadBind
+  (ResolverQ x) >>= m2 = ResolverQ (x >>= runResolverQ . m2)
+  (ResolverM x) >>= m2 = ResolverM (x >>= runResolverM . m2)
+  (ResolverS res) >>= m2 = ResolverS $ do
+    (readResA :: ReaderT e (ResolverState () m) a) <- res
+    pure $ ReaderT $ \e -> do
+      (a :: a) <- runReaderT readResA e
+      (readResB :: ReaderT e (ResolverState () m) b) <- runResolverS (m2 a)
+      runReaderT readResB e
 
 #if __GLASGOW_HASKELL__ < 808
   fail = failure . msg
@@ -308,21 +315,6 @@ setSelection currentSelection = local (\ctx -> ctx {currentSelection})
 
 setTypeName :: (Monad m, LiftOperation o) => TypeName -> Resolver o e m a -> Resolver o e m a
 setTypeName currentTypeName = local (\ctx -> ctx {currentTypeName})
-
-monadBind ::
-  forall o e m a b.
-  Monad m =>
-  Resolver o e m a ->
-  (a -> Resolver o e m b) ->
-  Resolver o e m b
-monadBind (ResolverQ x) m2 = ResolverQ (x >>= runResolverQ . m2)
-monadBind (ResolverM x) m2 = ResolverM (x >>= runResolverM . m2)
-monadBind (ResolverS res) m2 = ResolverS $ do
-  (readResA :: ReaderT e (ResolverState () m) a) <- res
-  pure $ ReaderT $ \e -> do
-    (a :: a) <- runReaderT readResA e
-    (readResB :: ReaderT e (ResolverState () m) b) <- runResolverS (m2 a)
-    runReaderT readResB e
 
 subscribe ::
   forall e m a.
