@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -17,11 +18,13 @@ module Data.Morpheus.Server.Deriving.Channels
 where
 
 -- MORPHEUS
-
+import Data.Morpheus.Error (internalError)
+import Data.Morpheus.Internal.Utils (elems, failure)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     SUBSCRIPTION,
-    Selection,
+    Selection (..),
+    SelectionContent (..),
     VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -45,14 +48,14 @@ type ChannelCon e m a =
   )
 
 class GetChannels (e :: *) a | a -> e where
-  getChannels :: Selection VALID -> a -> Eventless (Channel e)
+  getChannels :: a -> Selection VALID -> Eventless (Channel e)
 
 instance
   {-# OVERLAPPABLE #-}
   ChannelCon e m subs =>
   GetChannels e (subs (Resolver SUBSCRIPTION e m))
   where
-  getChannels sel = selectBy sel . typeRep (Proxy @e) . from
+  getChannels value sel = selectBy sel $ typeRep (Proxy @e) $ from value
 
 selectBy ::
   Selection VALID ->
@@ -61,7 +64,13 @@ selectBy ::
     )
   ] ->
   Eventless (Channel e)
-selectBy = undefined
+selectBy Selection {selectionContent = SelectionSet selSet} ch =
+  case elems selSet of
+    [sel@Selection {selectionName}] -> case lookup selectionName ch of
+      Nothing -> internalError "no channel found"
+      Just f -> f sel
+    _ -> internalError "subscription mus select only one field"
+selectBy _ _ = internalError "expected selectionSet on subscription"
 
 class GetChannel e a | a -> e where
   getChannel :: a -> Selection VALID -> Eventless (Channel e)

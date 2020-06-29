@@ -121,7 +121,6 @@ import Prelude
     (.),
     Eq (..),
     Show (..),
-    concatMap,
     const,
     lookup,
     otherwise,
@@ -371,11 +370,6 @@ resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 
-toEventResolver :: Monad m => SubEventRes event m ValidValue -> Context -> event -> m GQLResponse
-toEventResolver (ReaderT subRes) sel event =
-  renderResponse
-    <$> runResultT (runReaderT (runResolverState $ subRes event) sel)
-
 runDataResolver :: (Monad m, LiftOperation o) => ResModel o e m -> Resolver o e m ValidValue
 runDataResolver res = asks currentSelection >>= __encode res
   where
@@ -412,38 +406,36 @@ runDataResolver res = asks currentSelection >>= __encode res
 
 runResolver ::
   Monad m =>
-  [(FieldName, Channel event)] ->
+  (Selection VALID -> Eventless (Channel event)) ->
   Resolver o event m ValidValue ->
   Context ->
   ResponseStream event m ValidValue
 runResolver _ (ResolverQ resT) sel = cleanEvents $ runReaderT (runResolverState resT) sel
 runResolver _ (ResolverM resT) sel = mapEvent Publish $ runReaderT (runResolverState resT) sel
-runResolver channels (ResolverS resT) ctx = ResultT $ do
+runResolver toChannel (ResolverS resT) ctx = ResultT $ do
   readResValue <- runResultT $ runReaderT (runResolverState resT) ctx
-  pure $ case readResValue of
+  pure $ case readResValue >>= subscriptionEvents ctx toChannel . toEventResolver ctx of
     Failure x -> Failure x
     Success {warnings, result} ->
       Success
-        { events = subscriptionEvents (toEventResolver result ctx) ctx channels,
+        { events = [result],
           warnings,
           result = gqlNull
         }
 
-subscriptionEvents ::
-  (e -> m GQLResponse) ->
-  Context ->
-  [(FieldName, Channel e)] ->
-  [ResponseEvent e m]
-subscriptionEvents res ctx channels = [Subscribe (Event (channelBySelection ctx channels) res)]
+toEventResolver :: Monad m => Context -> SubEventRes event m ValidValue -> (event -> m GQLResponse)
+toEventResolver sel (ReaderT subRes) event =
+  renderResponse
+    <$> runResultT (runReaderT (runResolverState $ subRes event) sel)
 
-channelBySelection :: Context -> [(FieldName, Channel e)] -> [Channel e]
-channelBySelection Context {currentSelection = Selection {selectionContent = SelectionSet selSet}} ch =
-  concatMap getChannelFor (elems selSet)
-  where
-    getChannelFor Selection {selectionName} = case lookup selectionName ch of
-      Nothing -> []
-      Just x -> [x]
-channelBySelection _ _ = []
+subscriptionEvents ::
+  Context ->
+  (Selection VALID -> Eventless (Channel e)) ->
+  (e -> m GQLResponse) ->
+  Eventless (ResponseEvent e m)
+subscriptionEvents Context {currentSelection} channelGenerator res = do
+  channel <- channelGenerator currentSelection
+  pure $ Subscribe (Event [channel] res)
 
 -- Resolver Models -------------------------------------------------------------------
 type FieldResModel o e m =
@@ -479,12 +471,12 @@ data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),
     mutation :: Eventless (ResModel MUTATION e m),
     subscription :: Eventless (ResModel SUBSCRIPTION e m),
-    channelMap :: [(FieldName, Channel e)]
+    channelMap :: Selection VALID -> Eventless (Channel e)
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
-  [(FieldName, Channel e)] ->
+  (Selection VALID -> Eventless (Channel e)) ->
   Eventless (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)
@@ -508,8 +500,8 @@ runRootResModel
     selectByOperation operationType
     where
       selectByOperation Query =
-        runRootDataResolver [] query ctx
+        runRootDataResolver channelMap query ctx
       selectByOperation Mutation =
-        runRootDataResolver [] mutation ctx
+        runRootDataResolver channelMap mutation ctx
       selectByOperation Subscription =
         runRootDataResolver channelMap subscription ctx
