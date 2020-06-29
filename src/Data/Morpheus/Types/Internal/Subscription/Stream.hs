@@ -42,8 +42,7 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( GQLChannel (..),
-    ResponseEvent (..),
+  ( ResponseEvent (..),
     ResponseStream,
     Result (..),
     ResultT (..),
@@ -108,8 +107,7 @@ data
     Stream HTTP e m
 
 handleResponseStream ::
-  ( GQLChannel e,
-    Monad m
+  ( Monad m
   ) =>
   Session ->
   ResponseStream e m (Value VALID) ->
@@ -128,7 +126,6 @@ handleResponseStream session (ResultT res) =
 
 handleWSRequest ::
   ( Monad m,
-    GQLChannel e,
     Functor m
   ) =>
   ( GQLRequest ->
@@ -174,10 +171,7 @@ runStreamHTTP scope StreamHTTP {streamHTTP} =
   streamHTTP scope
 
 toOutStream ::
-  ( Monad m,
-    GQLChannel e,
-    Functor m
-  ) =>
+  (Monad m) =>
   ( GQLRequest ->
     ResponseStream e m (Value VALID)
   ) ->
@@ -193,8 +187,7 @@ toOutStream app (Init clienId) =
 toOutStream app (Request req) = StreamHTTP $ handleResponseHTTP (app req)
 
 handleResponseHTTP ::
-  ( GQLChannel e,
-    Monad m
+  ( Monad m
   ) =>
   ResponseStream e m (Value VALID) ->
   Scope HTTP e m ->
@@ -213,9 +206,7 @@ handleResponseHTTP
       execute Subscribe {} = failure ("http can't handle subscription" :: Message)
 
 handleRes ::
-  ( GQLChannel e,
-    Monad m
-  ) =>
+  (Monad m) =>
   ResponseStream e m a ->
   (ResponseEvent e m -> ResultT e' m e') ->
   ResultT e' m a

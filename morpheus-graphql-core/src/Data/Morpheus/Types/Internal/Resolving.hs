@@ -10,7 +10,6 @@ module Data.Morpheus.Types.Internal.Resolving
     SubEvent,
     Eventless,
     Failure (..),
-    GQLChannel (..),
     eventChannels,
     ResponseEvent (..),
     ResponseStream,
