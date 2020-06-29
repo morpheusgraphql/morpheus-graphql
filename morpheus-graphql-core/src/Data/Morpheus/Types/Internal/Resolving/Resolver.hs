@@ -59,7 +59,6 @@ import Data.Morpheus.Error.Internal (internalResolvingError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
   ( Merge (..),
-    elems,
     empty,
     keyOf,
     selectOr,
