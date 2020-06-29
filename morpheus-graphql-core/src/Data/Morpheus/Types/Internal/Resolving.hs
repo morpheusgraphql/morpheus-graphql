@@ -30,7 +30,6 @@ module Data.Morpheus.Types.Internal.Resolving
     Context (..),
     unsafeInternalContext,
     RootResModel (..),
-    unsafeBind,
     liftStateless,
     resultOr,
     withArguments,
