@@ -20,7 +20,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
     cleanEvents,
     Event (..),
     Channel (..),
-    GQLChannel (..),
     PushEvents (..),
     statelessToResultT,
     resultOr,
@@ -54,18 +53,6 @@ type Eventless = Result ()
 -- EVENTS
 class PushEvents e m where
   pushEvents :: [e] -> m ()
-
-class GQLChannel e where
-  -- type StreamChannel a :: *
-  streamChannels :: e -> [Channel e]
-
-instance GQLChannel () where
-  --  type StreamChannel () = ()
-  streamChannels _ = []
-
-instance GQLChannel (Event channel content) where
-  --  type StreamChannel (Event channel content) = channel
-  streamChannels Event {channels} = fmap Channel channels
 
 unpackEvents :: Result event a -> [event]
 unpackEvents Success {events} = events

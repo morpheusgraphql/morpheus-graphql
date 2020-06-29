@@ -11,6 +11,7 @@ module Data.Morpheus.Types.Internal.Resolving
     Eventless,
     Failure (..),
     GQLChannel (..),
+    eventChannels,
     ResponseEvent (..),
     ResponseStream,
     cleanEvents,
@@ -52,6 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
+import Data.Morpheus.Types.Internal.Resolving.Event
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 import Prelude
   ( (.),

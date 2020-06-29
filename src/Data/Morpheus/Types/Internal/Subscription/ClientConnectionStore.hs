@@ -43,8 +43,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Event (..),
-    GQLChannel (..),
     SubEvent,
+    eventChannels,
   )
 import Data.Morpheus.Types.Internal.Subscription.Apollo
   ( toApolloResponse,
@@ -97,7 +97,7 @@ publish event = traverse_ sendMessage . elems
           filter
             ( not
                 . null
-                . intersect (streamChannels event)
+                . intersect (eventChannels event)
                 . channels
                 . snd
             )

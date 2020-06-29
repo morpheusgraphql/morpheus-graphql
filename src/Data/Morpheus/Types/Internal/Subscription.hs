@@ -25,7 +25,6 @@ module Data.Morpheus.Types.Internal.Subscription
     Store (..),
     initDefaultStore,
     publishEventWith,
-    GQLChannel (..),
     ClientConnectionStore,
     empty,
     toList,
@@ -53,7 +52,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Event,
-    GQLChannel (..),
   )
 import Data.Morpheus.Types.Internal.Subscription.Apollo
   ( acceptApolloRequest,
