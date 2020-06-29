@@ -11,7 +11,6 @@ module Data.Morpheus.Server.Deriving.Resolve
     RootResolverConstraint,
     fullSchema,
     coreResolver,
-    EventCon,
   )
 where
 
@@ -56,17 +55,12 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    GQLChannel (..),
     Resolver,
     ResponseStream,
     ResultT (..),
     cleanEvents,
   )
 import Data.Proxy (Proxy (..))
-import Data.Typeable (Typeable)
-
-type EventCon event =
-  (Typeable event, GQLChannel event)
 
 type IntrospectConstraint m event query mutation subscription =
   ( IntroCon (query (Resolver QUERY event m)),
@@ -80,9 +74,7 @@ type OperationConstraint operation event m a =
   )
 
 type RootResolverConstraint m event query mutation subscription =
-  ( EventCon event,
-    Typeable m,
-    Monad m,
+  ( Monad m,
     OperationConstraint QUERY event m query,
     OperationConstraint MUTATION event m mutation,
     OperationConstraint SUBSCRIPTION event m subscription,

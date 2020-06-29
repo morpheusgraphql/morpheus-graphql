@@ -16,7 +16,8 @@ import Data.Morpheus.Server.Deriving.Resolve
     statelessResolver,
   )
 import Data.Morpheus.Types
-  ( RootResolver (..),
+  ( Event,
+    RootResolver (..),
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest,
@@ -57,7 +58,7 @@ class Interpreter e m a b where
 instance Interpreter e m GQLRequest (m GQLResponse) where
   interpreter = statelessResolver
 
-instance Interpreter e m (Input api) (Stream api e m) where
+instance Interpreter (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
   interpreter root = toOutStream (coreResolver root)
 
 instance
