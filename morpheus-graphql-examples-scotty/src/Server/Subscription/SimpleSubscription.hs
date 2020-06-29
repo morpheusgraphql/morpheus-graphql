@@ -61,7 +61,7 @@ rootResolver =
       requireAuthorized
       publish [Event {channels = [ChannelA], content = ContentA 1}]
       pure someDeity
-    newDeity = subscribe [ChannelA] $ do
+    newDeity = subscribe ChannelA $ do
       requireAuthorized
       pure subResolver
       where

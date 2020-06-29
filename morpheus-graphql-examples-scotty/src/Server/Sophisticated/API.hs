@@ -192,14 +192,14 @@ resolveSetAdress = lift setDBAddress
 
 -- Resolve SUBSCRIPTION
 resolveNewUser :: SubscriptionField (ResolverS EVENT IO User)
-resolveNewUser = subscribe [USER] $ do
+resolveNewUser = subscribe USER $ do
   requireAuthorized
   pure subResolver
   where
     subResolver (Event _ content) = liftEither (getDBUser content)
 
 resolveNewAdress :: SubscriptionField (ResolverS EVENT IO Address)
-resolveNewAdress = subscribe [ADDRESS] $ do
+resolveNewAdress = subscribe ADDRESS $ do
   requireAuthorized
   pure subResolver
   where

@@ -64,7 +64,7 @@ rootResolver =
           }
     }
   where
-    newDeity = subscribe [New] $ pure handler
+    newDeity = subscribe New $ pure handler
       where
         handler (Event _ Contet {deityName, deityPower}) =
           pure $
