@@ -39,11 +39,14 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLErrors,
     Message,
   )
+import Data.Morpheus.Types.Internal.Resolving.Event
+  ( Channel (..),
+    Event (..),
+  )
 import Data.Semigroup ((<>))
 import Prelude
   ( ($),
     (.),
-    Eq (..),
   )
 
 type Eventless = Result ()
@@ -52,28 +55,17 @@ type Eventless = Result ()
 class PushEvents e m where
   pushEvents :: [e] -> m ()
 
--- Channel
-newtype Channel event = Channel
-  { _unChannel :: StreamChannel event
-  }
-
-instance (Eq (StreamChannel event)) => Eq (Channel event) where
-  Channel x == Channel y = x == y
-
-class GQLChannel a where
-  type StreamChannel a :: *
-  streamChannels :: a -> [Channel a]
+class GQLChannel e where
+  -- type StreamChannel a :: *
+  streamChannels :: e -> [Channel e]
 
 instance GQLChannel () where
-  type StreamChannel () = ()
+  --  type StreamChannel () = ()
   streamChannels _ = []
 
 instance GQLChannel (Event channel content) where
-  type StreamChannel (Event channel content) = channel
+  --  type StreamChannel (Event channel content) = channel
   streamChannels Event {channels} = fmap Channel channels
-
-data Event e c = Event
-  {channels :: [e], content :: c}
 
 unpackEvents :: Result event a -> [event]
 unpackEvents Success {events} = events

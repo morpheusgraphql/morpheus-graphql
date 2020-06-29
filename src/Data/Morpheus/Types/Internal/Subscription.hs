@@ -52,7 +52,8 @@ import Data.Morpheus.Internal.Utils
   ( empty,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( GQLChannel (..),
+  ( Event,
+    GQLChannel (..),
   )
 import Data.Morpheus.Types.Internal.Subscription.Apollo
   ( acceptApolloRequest,
@@ -95,21 +96,16 @@ data Store e m = Store
   }
 
 publishEventWith ::
-  ( MonadIO m,
-    (Eq (StreamChannel event)),
-    (GQLChannel event)
-  ) =>
-  Store event m ->
-  event ->
+  (MonadIO m, Eq channel) =>
+  Store (Event channel cont) m ->
+  Event channel cont ->
   m ()
 publishEventWith store event = readStore store >>= publish event
 
 -- | initializes empty GraphQL state
 initDefaultStore ::
   ( MonadIO m,
-    MonadIO m2,
-    (Eq (StreamChannel event)),
-    (GQLChannel event)
+    MonadIO m2
   ) =>
   m2 (Store event m)
 initDefaultStore = do

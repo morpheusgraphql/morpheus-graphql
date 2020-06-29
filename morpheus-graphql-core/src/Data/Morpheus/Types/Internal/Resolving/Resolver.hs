@@ -108,7 +108,6 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     PushEvents (..),
     Result (..),
     ResultT (..),
-    StreamChannel,
     cleanEvents,
     mapEvent,
     statelessToResultT,
@@ -140,7 +139,7 @@ type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
 data SubscriptionField (a :: *) where
   SubscriptionField ::
-    { channel :: forall e m v. (a ~ (Resolver SUBSCRIPTION e m v)) => StreamChannel e,
+    { channel :: forall e m v. (a ~ (Resolver SUBSCRIPTION e m v)) => Channel e,
       unSubscribe :: a
     } ->
     SubscriptionField a
@@ -304,13 +303,13 @@ instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
 
 subscribe ::
-  forall e m a.
-  (Monad m) =>
-  StreamChannel e ->
+  forall e channel cont m a.
+  (Monad m, Event channel cont ~ e) =>
+  channel ->
   Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
 subscribe ch res =
-  SubscriptionField ch
+  SubscriptionField (Channel ch)
     $ ResolverS
     $ fromSub <$> runResolverQ res
   where
@@ -413,7 +412,7 @@ runDataResolver res = asks currentSelection >>= __encode res
 
 runResolver ::
   Monad m =>
-  [(FieldName, StreamChannel event)] ->
+  [(FieldName, Channel event)] ->
   Resolver o event m ValidValue ->
   Context ->
   ResponseStream event m ValidValue
@@ -433,17 +432,17 @@ runResolver channels (ResolverS resT) ctx = ResultT $ do
 subscriptionEvents ::
   (e -> m GQLResponse) ->
   Context ->
-  [(FieldName, StreamChannel e)] ->
+  [(FieldName, Channel e)] ->
   [ResponseEvent e m]
 subscriptionEvents res ctx channels = [Subscribe (Event (channelBySelection ctx channels) res)]
 
-channelBySelection :: Context -> [(FieldName, StreamChannel e)] -> [Channel e]
+channelBySelection :: Context -> [(FieldName, Channel e)] -> [Channel e]
 channelBySelection Context {currentSelection = Selection {selectionContent = SelectionSet selSet}} ch =
   concatMap getChannelFor (elems selSet)
   where
     getChannelFor Selection {selectionName} = case lookup selectionName ch of
       Nothing -> []
-      Just x -> [Channel x]
+      Just x -> [x]
 channelBySelection _ _ = []
 
 -- Resolver Models -------------------------------------------------------------------
@@ -480,12 +479,12 @@ data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),
     mutation :: Eventless (ResModel MUTATION e m),
     subscription :: Eventless (ResModel SUBSCRIPTION e m),
-    channelMap :: [(FieldName, StreamChannel e)]
+    channelMap :: [(FieldName, Channel e)]
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
-  [(FieldName, StreamChannel e)] ->
+  [(FieldName, Channel e)] ->
   Eventless (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)

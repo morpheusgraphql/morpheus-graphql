@@ -23,8 +23,8 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-    StreamChannel,
+  ( Channel,
+    Resolver,
     SubscriptionField (..),
   )
 import Data.Proxy
@@ -40,7 +40,7 @@ type ChannelCon e m a =
   )
 
 class GetChannels (e :: *) a | a -> e where
-  getChannels :: a -> [(FieldName, StreamChannel e)]
+  getChannels :: a -> [(FieldName, Channel e)]
 
 instance
   {-# OVERLAPPABLE #-}
@@ -50,13 +50,13 @@ instance
   getChannels = typeRep (Proxy @e) . from
 
 class GetChannel e a | a -> e where
-  getChannel :: a -> StreamChannel e
+  getChannel :: a -> Channel e
 
 instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel SubscriptionField {channel} = channel
 
 class TypeRep e f where
-  typeRep :: Proxy e -> f a -> [(FieldName, StreamChannel e)]
+  typeRep :: Proxy e -> f a -> [(FieldName, Channel e)]
 
 instance TypeRep e f => TypeRep e (M1 D d f) where
   typeRep c (M1 src) = typeRep c src
@@ -66,7 +66,7 @@ instance FieldRep e f => TypeRep e (M1 C c f) where
 
 --- FIELDS
 class FieldRep e f where
-  fieldRep :: Proxy e -> f a -> [(FieldName, StreamChannel e)]
+  fieldRep :: Proxy e -> f a -> [(FieldName, Channel e)]
 
 instance (FieldRep e f, FieldRep e g) => FieldRep e (f :*: g) where
   fieldRep e (a :*: b) = fieldRep e a <> fieldRep e b

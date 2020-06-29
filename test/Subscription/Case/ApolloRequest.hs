@@ -10,12 +10,12 @@ where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Types
-  ( Input,
+  ( Event,
+    Input,
     Stream,
   )
 import Data.Morpheus.Types.Internal.Subscription
-  ( GQLChannel (..),
-    WS,
+  ( WS,
   )
 import Subscription.Utils
   ( SimulationState (..),
@@ -37,10 +37,8 @@ import Test.Tasty
   )
 
 testUnknownType ::
-  ( Eq (StreamChannel e),
-    GQLChannel e
-  ) =>
-  (Input WS -> Stream WS e (SubM e)) ->
+  (Eq ch) =>
+  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
   IO TestTree
 testUnknownType =
   testSimulation
@@ -58,10 +56,8 @@ testUnknownType =
         ]
 
 testConnectionInit ::
-  ( Eq (StreamChannel e),
-    GQLChannel e
-  ) =>
-  (Input WS -> Stream WS e (SubM e)) ->
+  (Eq ch) =>
+  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
   IO TestTree
 testConnectionInit = testSimulation test [apolloInit]
   where
@@ -80,10 +76,8 @@ startSub :: ByteString -> ByteString
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
 testSubscriptionStart ::
-  ( Eq (StreamChannel e),
-    GQLChannel e
-  ) =>
-  (Input WS -> Stream WS e (SubM e)) ->
+  (Eq ch) =>
+  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
   IO TestTree
 testSubscriptionStart =
   testSimulation
@@ -107,10 +101,8 @@ testSubscriptionStart =
         ]
 
 testSubscriptionStop ::
-  ( Eq (StreamChannel e),
-    GQLChannel e
-  ) =>
-  (Input WS -> Stream WS e (SubM e)) ->
+  (Eq ch) =>
+  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
   IO TestTree
 testSubscriptionStop =
   testSimulation
@@ -135,10 +127,8 @@ testSubscriptionStop =
         ]
 
 testApolloRequest ::
-  ( Eq (StreamChannel e),
-    GQLChannel e
-  ) =>
-  (Input WS -> Stream WS e (SubM e)) ->
+  (Eq ch) =>
+  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
   IO TestTree
 testApolloRequest api = do
   unknownType <- testUnknownType api

@@ -37,12 +37,12 @@ import Data.Maybe
   ( isJust,
   )
 import Data.Morpheus.Types
-  ( Input,
+  ( Event,
+    Input,
     Stream,
   )
 import Data.Morpheus.Types.Internal.Subscription
   ( ClientConnectionStore,
-    GQLChannel (..),
     Input (..),
     Scope (..),
     SessionID,
@@ -100,10 +100,10 @@ wsApp api input =
     (api input)
 
 simulatePublish ::
-  (GQLChannel e, Eq (StreamChannel e)) =>
-  e ->
-  SimulationState e ->
-  IO (SimulationState e)
+  Eq ch =>
+  Event ch con ->
+  SimulationState (Event ch con) ->
+  IO (SimulationState (Event ch con))
 simulatePublish event s = snd <$> runStateT (publish event (store s)) s
 
 simulate ::

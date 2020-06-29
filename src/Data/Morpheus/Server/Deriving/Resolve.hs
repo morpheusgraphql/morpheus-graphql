@@ -66,7 +66,7 @@ import Data.Proxy (Proxy (..))
 import Data.Typeable (Typeable)
 
 type EventCon event =
-  (Eq (StreamChannel event), Typeable event, GQLChannel event)
+  (Typeable event, GQLChannel event)
 
 type IntrospectConstraint m event query mutation subscription =
   ( IntroCon (query (Resolver QUERY event m)),

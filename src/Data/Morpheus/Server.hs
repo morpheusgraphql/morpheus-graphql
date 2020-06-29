@@ -30,7 +30,8 @@ import Data.Morpheus.Server.Playground
   )
 import Data.Morpheus.Types.IO (MapAPI (..))
 import Data.Morpheus.Types.Internal.Resolving
-  ( GQLChannel (..),
+  ( Event,
+    GQLChannel (..),
   )
 import Data.Morpheus.Types.Internal.Subscription
   ( HTTP,
@@ -56,7 +57,6 @@ import qualified Network.WebSockets as WS
 type ServerConstraint e m =
   ( MonadIO m,
     MonadUnliftIO m,
-    Eq (StreamChannel e),
     GQLChannel e
   )
 
@@ -94,8 +94,9 @@ httpPubApp api httpCallback =
 -- | Wai WebSocket Server App for GraphQL subscriptions
 subscriptionApp ::
   ( MonadUnliftIO m,
-    (Eq (StreamChannel e)),
-    (GQLChannel e)
+    (GQLChannel e),
+    e ~ Event channel cont,
+    Eq channel
   ) =>
   ( Store e m ->
     (Scope WS e m -> m ()) ->
@@ -131,8 +132,9 @@ webSocketsWrapper store handler =
 webSocketsApp ::
   ( MonadIO m,
     MonadUnliftIO m,
-    (Eq (StreamChannel e)),
-    (GQLChannel e)
+    (GQLChannel e),
+    e ~ Event channel content,
+    Eq channel
   ) =>
   (Input WS -> Stream WS e m) ->
   m (ServerApp, e -> m ())

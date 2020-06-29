@@ -78,12 +78,11 @@ instance Show (ClientConnection e m) where
       <> " }"
 
 publish ::
-  ( Eq (StreamChannel event),
-    GQLChannel event,
-    Monad m
+  ( Monad m,
+    Eq channel
   ) =>
-  event ->
-  ClientConnectionStore event m ->
+  Event channel content ->
+  ClientConnectionStore (Event channel content) m ->
   m ()
 publish event = traverse_ sendMessage . elems
   where

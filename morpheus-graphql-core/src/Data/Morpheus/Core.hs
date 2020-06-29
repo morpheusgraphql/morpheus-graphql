@@ -9,7 +9,6 @@
 
 module Data.Morpheus.Core
   ( runApi,
-    EventCon,
     parseDSL,
     parseFullGQLDocument,
     parseGQLDocument,
@@ -61,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Context (..),
     Eventless,
-    GQLChannel (..),
     ResponseStream,
     ResultT (..),
     RootResModel,
@@ -78,10 +76,6 @@ import qualified Data.Text.Lazy as LT
   ( toStrict,
   )
 import Data.Text.Lazy.Encoding (decodeUtf8)
-import Data.Typeable (Typeable)
-
-type EventCon event =
-  (Eq (StreamChannel event), Typeable event, GQLChannel event)
 
 runApi ::
   forall event m.

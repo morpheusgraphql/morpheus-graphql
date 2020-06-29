@@ -108,8 +108,7 @@ data
     Stream HTTP e m
 
 handleResponseStream ::
-  ( Eq (StreamChannel e),
-    GQLChannel e,
+  ( GQLChannel e,
     Monad m
   ) =>
   Session ->
@@ -129,7 +128,6 @@ handleResponseStream session (ResultT res) =
 
 handleWSRequest ::
   ( Monad m,
-    Eq (StreamChannel e),
     GQLChannel e,
     Functor m
   ) =>
@@ -177,7 +175,6 @@ runStreamHTTP scope StreamHTTP {streamHTTP} =
 
 toOutStream ::
   ( Monad m,
-    Eq (StreamChannel e),
     GQLChannel e,
     Functor m
   ) =>
@@ -196,8 +193,7 @@ toOutStream app (Init clienId) =
 toOutStream app (Request req) = StreamHTTP $ handleResponseHTTP (app req)
 
 handleResponseHTTP ::
-  ( Eq (StreamChannel e),
-    GQLChannel e,
+  ( GQLChannel e,
     Monad m
   ) =>
   ResponseStream e m (Value VALID) ->
@@ -217,8 +213,7 @@ handleResponseHTTP
       execute Subscribe {} = failure ("http can't handle subscription" :: Message)
 
 handleRes ::
-  ( Eq (StreamChannel e),
-    GQLChannel e,
+  ( GQLChannel e,
     Monad m
   ) =>
   ResponseStream e m a ->
