@@ -48,11 +48,16 @@ import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..), join)
 import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.IO.Class (MonadIO (..))
+-- MORPHEUS
+
+import Control.Monad.Reader (MonadReader (..), asks)
 import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader (ReaderT (..), ask, mapReaderT, withReaderT)
+import Control.Monad.Trans.Reader
+  ( ReaderT (..),
+    mapReaderT,
+  )
 import Data.Functor ((<$>), Functor (..))
 import Data.Maybe (Maybe (..), maybe)
--- MORPHEUS
 import Data.Morpheus.Error.Internal (internalResolvingError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
@@ -163,7 +168,8 @@ newtype ResolverState event m a = ResolverState
   deriving
     ( Functor,
       Applicative,
-      Monad
+      Monad,
+      MonadReader Context
     )
 
 instance MonadTrans (ResolverState e) where
@@ -171,7 +177,7 @@ instance MonadTrans (ResolverState e) where
 
 instance (Monad m) => Failure Message (ResolverState e m) where
   failure message = ResolverState $ do
-    selection <- currentSelection <$> ask
+    selection <- asks currentSelection
     lift $ failure [resolverFailureMessage selection message]
 
 instance (Monad m) => Failure GQLErrors (ResolverState e m) where
@@ -181,23 +187,17 @@ instance (Monad m) => PushEvents e (ResolverState e m) where
   pushEvents = ResolverState . lift . pushEvents
 
 mapResolverState ::
-  ( ReaderT Context (ResultT e m) a ->
-    ReaderT Context (ResultT e' m') a'
+  ( ResultT e m a ->
+    ResultT e' m' a'
   ) ->
   ResolverState e m a ->
   ResolverState e' m' a'
-mapResolverState f (ResolverState x) = ResolverState (f x)
-
-getState :: (Monad m) => ResolverState e m (Selection VALID)
-getState = ResolverState $ currentSelection <$> ask
-
-mapState :: (Context -> Context) -> ResolverState e m a -> ResolverState e m a
-mapState f = mapResolverState (withReaderT f)
+mapResolverState f (ResolverState x) = ResolverState (mapReaderT f x)
 
 -- clear evets and starts new resolver with diferenct type of events but with same value
 -- use properly. only if you know what you are doing
 clearStateResolverEvents :: (Functor m) => ResolverState e m a -> ResolverState e' m a
-clearStateResolverEvents = mapResolverState (mapReaderT cleanEvents)
+clearStateResolverEvents = mapResolverState cleanEvents
 
 resolverFailureMessage :: Selection VALID -> Message -> GQLError
 resolverFailureMessage Selection {selectionName, selectionPosition} message =
@@ -265,6 +265,19 @@ instance (Monad m) => PushEvents e (Resolver MUTATION e m) where
 instance (Monad m, Semigroup a, LiftOperation o) => Semigroup (Resolver o e m a) where
   x <> y = fmap (<>) x <*> y
 
+instance (LiftOperation o, Monad m) => MonadReader Context (Resolver o e m) where
+  ask = packResolver ask
+  local f (ResolverQ res) = ResolverQ (local f res)
+  local f (ResolverM res) = ResolverM (local f res)
+  local f (ResolverS resM) = ResolverS $ mapReaderT (local f) <$> resM
+
+-- | A function to return the internal 'Context' within a resolver's monad.
+-- Using the 'Context' itself is unsafe because it expposes internal structures
+-- of the AST, but you can use the "Data.Morpheus.Types.SelectionTree" typeclass to manipulate
+-- the internal AST with a safe interface.
+unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
+unsafeInternalContext = ask
+
 liftStateless ::
   ( LiftOperation o,
     Monad m
@@ -280,43 +293,21 @@ liftStateless =
 
 class LiftOperation (o :: OperationType) where
   packResolver :: Monad m => ResolverState e m a -> Resolver o e m a
-  withResolver :: Monad m => ResolverState e m a -> (a -> Resolver o e m b) -> Resolver o e m b
 
--- packResolver
 instance LiftOperation QUERY where
   packResolver = ResolverQ . clearStateResolverEvents
-  withResolver ctxRes toRes = ResolverQ $ do
-    v <- clearStateResolverEvents ctxRes
-    runResolverQ $ toRes v
 
 instance LiftOperation MUTATION where
   packResolver = ResolverM
-  withResolver ctxRes toRes = ResolverM $ ctxRes >>= runResolverM . toRes
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
-  withResolver ctxRes toRes = ResolverS $ do
-    value <- clearStateResolverEvents ctxRes
-    runResolverS $ toRes value
 
-mapResolverContext :: Monad m => (Context -> Context) -> Resolver o e m a -> Resolver o e m a
-mapResolverContext f (ResolverQ res) = ResolverQ (mapState f res)
-mapResolverContext f (ResolverM res) = ResolverM (mapState f res)
-mapResolverContext f (ResolverS resM) = ResolverS $ replace f <$> resM
+setSelection :: (Monad m, LiftOperation o) => Selection VALID -> Resolver o e m a -> Resolver o e m a
+setSelection currentSelection = local (\ctx -> ctx {currentSelection})
 
-replace ::
-  (Context -> Context) ->
-  ReaderT r (ResolverState e m) a ->
-  ReaderT r (ResolverState e m) a
-replace f = mapReaderT (mapState f)
-
-setSelection :: Monad m => Selection VALID -> Resolver o e m a -> Resolver o e m a
-setSelection currentSelection =
-  mapResolverContext (\ctx -> ctx {currentSelection})
-
-setTypeName :: Monad m => TypeName -> Resolver o e m a -> Resolver o e m a
-setTypeName currentTypeName =
-  mapResolverContext (\ctx -> ctx {currentTypeName})
+setTypeName :: (Monad m, LiftOperation o) => TypeName -> Resolver o e m a -> Resolver o e m a
+setTypeName currentTypeName = local (\ctx -> ctx {currentTypeName})
 
 monadBind ::
   forall o e m a b.
@@ -349,24 +340,19 @@ subscribe ch res =
     fixSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverState () m) a
     fixSub f = join (ReaderT $ \e -> runResolverS (f e))
 
--- | A function to return the internal 'Context' within a resolver's monad.
--- Using the 'Context' itself is unsafe because it expposes internal structures
--- of the AST, but you can use the "Data.Morpheus.Types.SelectionTree" typeclass to manipulate
--- the internal AST with a safe interface.
-unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
-unsafeInternalContext = packResolver $ ResolverState ask
-
 withArguments ::
   forall o e m a.
   (LiftOperation o, Monad m) =>
   (Arguments VALID -> Resolver o e m a) ->
   Resolver o e m a
-withArguments = withResolver args
-  where
-    args :: ResolverState e m (Arguments VALID)
-    args = selectionArguments <$> getState
+withArguments = (getArguments >>=)
 
---
+getArguments ::
+  forall o e m a.
+  (LiftOperation o, Monad m) =>
+  Resolver o e m (Arguments VALID)
+getArguments = selectionArguments . currentSelection <$> unsafeInternalContext
+
 -- Selection Processing
 toResolver ::
   forall o e m a b.
@@ -374,16 +360,8 @@ toResolver ::
   (Arguments VALID -> Eventless a) ->
   (a -> Resolver o e m b) ->
   Resolver o e m b
-toResolver toArgs = withResolver args
-  where
-    args :: ResolverState e m a
-    args =
-      getState
-        >>= (ResolverState . lift . cleanEvents)
-          . ResultT
-          . pure
-          . toArgs
-          . selectionArguments
+toResolver toArgs resolver =
+  getArguments >>= liftStateless . toArgs >>= resolver
 
 pickSelection :: TypeName -> UnionSelection VALID -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
@@ -436,7 +414,7 @@ toEventResolver (ReaderT subRes) sel event =
     <$> runResultT (runReaderT (runResolverState $ subRes event) sel)
 
 runDataResolver :: (Monad m, LiftOperation o) => ResModel o e m -> Resolver o e m ValidValue
-runDataResolver = withResolver getState . __encode
+runDataResolver res = asks currentSelection >>= __encode res
   where
     __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
       where
