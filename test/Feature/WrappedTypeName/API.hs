@@ -73,9 +73,9 @@ rootResolver =
       mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing},
       subscriptionResolver =
         Subscription
-          { sub1 = subscribe [Channel] (pure $ constRes Nothing),
-            sub2 = subscribe [Channel] (pure $ constRes Nothing),
-            sub3 = subscribe [Channel] (pure $ constRes Nothing)
+          { sub1 = subscribe Channel (pure $ constRes Nothing),
+            sub2 = subscribe Channel (pure $ constRes Nothing),
+            sub3 = subscribe Channel (pure $ constRes Nothing)
           }
     }
 

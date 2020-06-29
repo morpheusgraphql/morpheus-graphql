@@ -73,8 +73,8 @@ rootResolver =
       mutationResolver = Mutation {createUser = const user},
       subscriptionResolver =
         Subscription
-          { newUser = subscribe [Channel] (pure $ const user),
-            newAddress = subscribe [Channel] (pure resolveAddress)
+          { newUser = subscribe Channel (pure $ const user),
+            newAddress = subscribe Channel (pure resolveAddress)
           }
     }
   where
