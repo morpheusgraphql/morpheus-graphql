@@ -21,18 +21,21 @@ where
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     SUBSCRIPTION,
+    Selection,
+    VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Channel,
     Resolver,
     SubscriptionField (..),
   )
-import Data.Proxy
 import Data.Semigroup ((<>))
 import Data.Text
   ( pack,
   )
 import GHC.Generics
+
+newtype Proxy e = Proxy (Selection VALID)
 
 type ChannelCon e m a =
   ( TypeRep e (Rep (a (Resolver SUBSCRIPTION e m))),
@@ -40,20 +43,20 @@ type ChannelCon e m a =
   )
 
 class GetChannels (e :: *) a | a -> e where
-  getChannels :: a -> [(FieldName, Channel e)]
+  getChannels :: Selection VALID -> a -> [(FieldName, Channel e)]
 
 instance
   {-# OVERLAPPABLE #-}
   ChannelCon e m subs =>
   GetChannels e (subs (Resolver SUBSCRIPTION e m))
   where
-  getChannels = typeRep (Proxy @e) . from
+  getChannels sel = typeRep (Proxy sel :: Proxy e) . from
 
 class GetChannel e a | a -> e where
-  getChannel :: a -> Channel e
+  getChannel :: Selection VALID -> a -> Channel e
 
 instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
-  getChannel SubscriptionField {channel} = channel
+  getChannel _ SubscriptionField {channel} = channel
 
 class TypeRep e f where
   typeRep :: Proxy e -> f a -> [(FieldName, Channel e)]
@@ -72,7 +75,14 @@ instance (FieldRep e f, FieldRep e g) => FieldRep e (f :*: g) where
   fieldRep e (a :*: b) = fieldRep e a <> fieldRep e b
 
 instance (Selector s, GetChannel e a) => FieldRep e (M1 S s (K1 s2 a)) where
-  fieldRep _ m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
+  fieldRep (Proxy sel) m@(M1 (K1 src)) = case selectBy name sel of
+    Just sel' -> [(name, getChannel sel' src)]
+    Nothing -> []
+    where
+      name = FieldName $ pack (selName m)
+
+selectBy :: FieldName -> Selection VALID -> Maybe (Selection VALID)
+selectBy = undefined
 
 instance FieldRep e U1 where
   fieldRep _ _ = []
