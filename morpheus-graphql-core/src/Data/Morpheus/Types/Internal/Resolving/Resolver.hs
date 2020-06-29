@@ -19,7 +19,6 @@
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event (..),
-    UnSubResolver,
     Resolver,
     MapStrategy (..),
     LiftOperation,
@@ -358,11 +357,6 @@ subscribe ch res =
 -- the internal AST with a safe interface.
 unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
 unsafeInternalContext = packResolver $ ResolverState ask
-
--- Converts Subscription Resolver Type to Query Resolver
-type family UnSubResolver (a :: * -> *) :: (* -> *)
-
-type instance UnSubResolver (Resolver SUBSCRIPTION e m) = Resolver SUBSCRIPTION e m
 
 withArguments ::
   forall o e m a.

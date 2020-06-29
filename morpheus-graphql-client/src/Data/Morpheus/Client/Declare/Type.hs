@@ -69,7 +69,7 @@ declareField :: FieldDefinition ANY -> (Name, Bang, Type)
 declareField FieldDefinition {fieldName, fieldType} =
   ( mkFieldName fieldName,
     Bang NoSourceUnpackedness NoSourceStrictness,
-    declareTypeRef False fieldType
+    declareTypeRef fieldType
   )
 
 mkConName :: [FieldName] -> TypeName -> Name

@@ -3,7 +3,6 @@
 
 module Data.Morpheus.Types.Internal.Resolving
   ( Event (..),
-    UnSubResolver,
     Resolver,
     MapStrategy (..),
     LiftOperation,

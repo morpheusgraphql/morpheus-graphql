@@ -57,10 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     isOutputObject,
     readName,
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( SubscriptionField,
-    UnSubResolver,
-  )
 import Data.Text (unpack)
 import Language.Haskell.TH
 
@@ -70,8 +66,8 @@ m' = VarT $ mkTypeName m_
 m_ :: TypeName
 m_ = "m"
 
-declareTypeRef :: Bool -> TypeRef -> Type
-declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
+declareTypeRef :: TypeRef -> Type
+declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
   wrappedT
     typeWrappers
   where
@@ -82,8 +78,6 @@ declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
     ------------------------------------------------------
     typeName = nameConType typeConName
     --------------------------------------------
-    decType _
-      | isSub = AppT typeName (AppT (ConT ''UnSubResolver) m')
     decType (Just par) = AppT typeName (VarT $ mkTypeName par)
     decType _ = typeName
 

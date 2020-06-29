@@ -213,7 +213,7 @@ userUpdate :: EVENT
 userUpdate = Event [USER] (Content {contentID = 12})
 
 -- DB::Getter --------------------------------------------------------------------
-getDBAddress :: Content -> IO (Address (Resolver QUERY EVENT IO))
+getDBAddress :: WithOperation o => Content -> IO (Address (Resolver o EVENT IO))
 getDBAddress _id = do
   city <- dbText
   street <- dbText
@@ -225,7 +225,7 @@ getDBAddress _id = do
         addressHouseNumber = pure number
       }
 
-getDBUser :: Content -> IO (Either String (User (Resolver QUERY EVENT IO)))
+getDBUser :: WithOperation o => Content -> IO (Either String (User (Resolver o EVENT IO)))
 getDBUser _ = do
   Person {name, email} <- dbPerson
   pure $

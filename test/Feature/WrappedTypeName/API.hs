@@ -10,8 +10,7 @@ where
 
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
-  ( ComposedSubField,
-    Event,
+  ( Event,
     GQLRequest,
     GQLResponse,
     GQLType (..),
@@ -60,7 +59,7 @@ data Channel
 type EVENT = Event Channel ()
 
 data Subscription (m :: * -> *) = Subscription
-  { sub1 :: SubscriptionField (ComposedSubField m Maybe WA),
+  { sub1 :: SubscriptionField (m (Maybe (WA m))),
     sub2 :: SubscriptionField (m (Maybe Wrapped1)),
     sub3 :: SubscriptionField (m (Maybe Wrapped2))
   }

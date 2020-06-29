@@ -98,7 +98,7 @@ renderFieldType ::
   Type
 renderFieldType tKind FieldDefinition {fieldContent, fieldType} =
   genFieldT
-    (declareTypeRef (isSubscription tKind) fieldType)
+    (declareTypeRef fieldType)
     tKind
     fieldContent
 
