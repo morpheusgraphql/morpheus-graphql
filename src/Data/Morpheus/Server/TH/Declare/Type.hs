@@ -107,30 +107,22 @@ fieldTypeName namespace tName fieldName
   | namespace = mkFieldName (nameSpaceField tName fieldName)
   | otherwise = mkFieldName fieldName
 
+withSubscriptionField :: TypeKind -> Type -> Type
+withSubscriptionField tKind x
+  | isSubscription tKind = AppT (ConT ''SubscriptionField) x
+  | otherwise = x
+
 ------------------------------------------------
 genFieldT :: Type -> TypeKind -> Maybe (FieldContent TRUE cat) -> Type
-genFieldT result tKind (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename}))
-  | isSubscription tKind =
-    AppT
-      (ConT ''SubscriptionField)
-      ( AppT
-          (AppT arrowType argType)
-          (AppT m' result)
-      )
-  where
-    argType = ConT $ mkTypeName argsTypename
-    arrowType = ConT ''Arrow
-genFieldT result _ (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =
+genFieldT result kind (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =
   AppT
     (AppT arrowType argType)
-    (AppT m' result)
+    (withSubscriptionField kind (AppT m' result))
   where
     argType = ConT $ mkTypeName argsTypename
     arrowType = ConT ''Arrow
-genFieldT result tKind _
-  | isSubscription tKind = AppT (ConT ''SubscriptionField) (AppT m' result)
 genFieldT result kind _
-  | isOutputObject kind = AppT m' result
+  | isOutputObject kind = withSubscriptionField kind (AppT m' result)
   | otherwise = result
 
 type Arrow = (->)
