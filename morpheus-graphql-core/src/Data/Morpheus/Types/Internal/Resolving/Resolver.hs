@@ -39,7 +39,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     withArguments,
     getArguments,
     SubscriptionField (..),
-    ChannelOf,
   )
 where
 
@@ -139,17 +138,12 @@ data ResponseEvent event (m :: * -> *)
 
 type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
-data SubscriptionField a = SubscriptionField
-  { channel :: ChannelOf a,
-    unSubscribe :: a
-  }
-
--- Converts Subscription Resolver Type to Query Resolver
-type family ChannelOf (a :: *) :: *
-
-type instance ChannelOf (Resolver SUBSCRIPTION e m a) = StreamChannel e
-
-type instance ChannelOf (a -> Resolver SUBSCRIPTION e m b) = StreamChannel e
+data SubscriptionField a where
+  SubscriptionField ::
+    { channel :: forall e m v. (a ~ (Resolver SUBSCRIPTION e m v)) => StreamChannel e,
+      unSubscribe :: a
+    } ->
+    SubscriptionField a
 
 -- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
 data Context = Context

@@ -23,8 +23,7 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ChannelOf,
-    Resolver,
+  ( Resolver,
     StreamChannel,
     SubscriptionField (..),
   )
@@ -53,10 +52,7 @@ instance
 class GetChannel e a | a -> e where
   getChannel :: a -> StreamChannel e
 
-instance
-  ChannelOf (Resolver o e m a) ~ StreamChannel e =>
-  GetChannel e (SubscriptionField (Resolver o e m a))
-  where
+instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel SubscriptionField {channel} = channel
 
 class TypeRep e f where

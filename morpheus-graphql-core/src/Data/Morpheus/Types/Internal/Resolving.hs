@@ -40,7 +40,6 @@ module Data.Morpheus.Types.Internal.Resolving
     mkNull,
     mkString,
     SubscriptionField (..),
-    ChannelOf,
     getArguments,
   )
 where
