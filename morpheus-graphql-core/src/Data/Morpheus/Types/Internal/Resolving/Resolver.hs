@@ -43,6 +43,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     liftStateless,
     withArguments,
     SubscriptionField (..),
+    ChannelOf,
   )
 where
 
@@ -125,6 +126,7 @@ import Prelude
     id,
     lookup,
     otherwise,
+    undefined,
   )
 
 type WithOperation (o :: OperationType) = LiftOperation o
@@ -137,7 +139,17 @@ data ResponseEvent event (m :: * -> *)
 
 type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
-data SubscriptionField a = SubscriptionField {channel :: String, unSubscribe :: a}
+data SubscriptionField a = SubscriptionField
+  { channel :: ChannelOf a,
+    unSubscribe :: a
+  }
+
+-- Converts Subscription Resolver Type to Query Resolver
+type family ChannelOf (a :: *) :: *
+
+type instance ChannelOf (Resolver SUBSCRIPTION e m a) = StreamChannel e
+
+type instance ChannelOf (a -> Resolver SUBSCRIPTION e m b) = StreamChannel e
 
 -- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
 data Context = Context
@@ -332,13 +344,14 @@ subscribe ::
   [StreamChannel e] ->
   Resolver QUERY e m (e -> Resolver QUERY e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
-subscribe ch res =
-  SubscriptionField ("show ch")
+subscribe ch@(x : _) res =
+  SubscriptionField x
     $ ResolverS
     $ do
       pushEvents (fmap Channel ch :: [Channel e])
       (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
       pure $ ReaderT eventRes
+subscribe _ _ = undefined
 
 -- | A function to return the internal 'Context' within a resolver's monad.
 -- Using the 'Context' itself is unsafe because it expposes internal structures
@@ -518,7 +531,7 @@ data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),
     mutation :: Eventless (ResModel MUTATION e m),
     subscription :: Eventless (ResModel SUBSCRIPTION e m),
-    channelMap :: [(FieldName, String)]
+    channelMap :: [(FieldName, StreamChannel e)]
   }
 
 runRootDataResolver ::

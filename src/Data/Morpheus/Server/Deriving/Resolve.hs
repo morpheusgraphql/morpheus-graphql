@@ -22,7 +22,7 @@ import Data.Morpheus.Core
   ( runApi,
   )
 import Data.Morpheus.Internal.Utils (resolveUpdates)
-import Data.Morpheus.Server.Deriving.Channels (GetChannels (..))
+import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
     deriveModel,
@@ -86,7 +86,7 @@ type RootResolverConstraint m event query mutation subscription =
     OperationConstraint QUERY event m query,
     OperationConstraint MUTATION event m mutation,
     OperationConstraint SUBSCRIPTION event m subscription,
-    GetChannels (subscription (Resolver SUBSCRIPTION event m))
+    ChannelCon event m subscription
   )
 
 statelessResolver ::

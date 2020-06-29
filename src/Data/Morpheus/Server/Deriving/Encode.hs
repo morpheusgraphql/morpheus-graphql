@@ -241,7 +241,7 @@ deriveModel ::
   ( Con QUERY e m query,
     Con MUTATION e m mut,
     Con SUBSCRIPTION e m sub,
-    GetChannels (sub (Resolver SUBSCRIPTION e m)),
+    GetChannels e (sub (Resolver SUBSCRIPTION e m)),
     Applicative m,
     Monad m
   ) =>

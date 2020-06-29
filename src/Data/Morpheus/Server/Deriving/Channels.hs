@@ -2,15 +2,17 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Server.Deriving.Channels
   ( GetChannels (..),
+    ChannelCon,
   )
 where
 
@@ -18,46 +20,63 @@ where
 
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
+    SUBSCRIPTION,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( SubscriptionField (..),
+  ( ChannelOf,
+    Resolver,
+    StreamChannel,
+    SubscriptionField (..),
   )
+import Data.Proxy
 import Data.Semigroup ((<>))
 import Data.Text
   ( pack,
   )
 import GHC.Generics
 
-class (Generic a, TypeRep (Rep a)) => GetChannels a where
-  getChannels :: a -> [(FieldName, String)]
+type ChannelCon e m a =
+  ( TypeRep e (Rep (a (Resolver SUBSCRIPTION e m))),
+    Generic (a (Resolver SUBSCRIPTION e m))
+  )
 
-instance {-# OVERLAPPABLE #-} (Generic a, TypeRep (Rep a)) => GetChannels a where
-  getChannels = typeRep . from
+class GetChannels (e :: *) a | a -> e where
+  getChannels :: a -> [(FieldName, StreamChannel e)]
 
-class GetChannel a where
-  getChannel :: a -> String
+instance
+  {-# OVERLAPPABLE #-}
+  ChannelCon e m subs =>
+  GetChannels e (subs (Resolver SUBSCRIPTION e m))
+  where
+  getChannels = typeRep (Proxy @e) . from
 
-instance GetChannel (SubscriptionField a) where
+class GetChannel e a | a -> e where
+  getChannel :: a -> StreamChannel e
+
+instance
+  ChannelOf (Resolver o e m a) ~ StreamChannel e =>
+  GetChannel e (SubscriptionField (Resolver o e m a))
+  where
   getChannel SubscriptionField {channel} = channel
 
-class TypeRep f where
-  typeRep :: f a -> [(FieldName, String)]
+class TypeRep e f where
+  typeRep :: Proxy e -> f a -> [(FieldName, StreamChannel e)]
 
-instance TypeRep f => TypeRep (M1 D d f) where
-  typeRep (M1 src) = typeRep src
+instance TypeRep e f => TypeRep e (M1 D d f) where
+  typeRep c (M1 src) = typeRep c src
 
-instance FieldRep f => TypeRep (M1 C c f) where
-  typeRep (M1 src) = fieldRep src
+instance FieldRep e f => TypeRep e (M1 C c f) where
+  typeRep c (M1 src) = fieldRep c src
 
 --- FIELDS
-class FieldRep f where
-  fieldRep :: f a -> [(FieldName, String)]
+class FieldRep e f where
+  fieldRep :: Proxy e -> f a -> [(FieldName, StreamChannel e)]
 
-instance (FieldRep f, FieldRep g) => FieldRep (f :*: g) where
-  fieldRep (a :*: b) = fieldRep a <> fieldRep b
+instance (FieldRep e f, FieldRep e g) => FieldRep e (f :*: g) where
+  fieldRep e (a :*: b) = fieldRep e a <> fieldRep e b
 
-instance (Selector s, GetChannel a) => FieldRep (M1 S s (K1 s2 a)) where
-  fieldRep m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
+instance (Selector s, GetChannel e a) => FieldRep e (M1 S s (K1 s2 a)) where
+  fieldRep _ m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
 
-instance FieldRep U1 where
-  fieldRep _ = []
+instance FieldRep e U1 where
+  fieldRep _ _ = []
