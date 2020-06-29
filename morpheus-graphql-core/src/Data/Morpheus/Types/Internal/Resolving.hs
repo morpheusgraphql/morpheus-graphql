@@ -4,7 +4,6 @@
 module Data.Morpheus.Types.Internal.Resolving
   ( Event (..),
     Resolver,
-    MapStrategy (..),
     LiftOperation,
     runRootResModel,
     toResolver,

@@ -20,7 +20,6 @@
 module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event (..),
     Resolver,
-    MapStrategy (..),
     LiftOperation,
     toResolver,
     lift,
@@ -122,7 +121,6 @@ import Prelude
     Show (..),
     concatMap,
     const,
-    id,
     lookup,
     otherwise,
   )
@@ -574,46 +572,3 @@ runRootResModel
         runRootDataResolver [] mutation ctx
       selectByOperation Subscription =
         runRootDataResolver channelMap subscription ctx
-
--- map Resolving strategies
-class
-  MapStrategy
-    (from :: OperationType)
-    (to :: OperationType)
-  where
-  mapStrategy ::
-    Monad m =>
-    Resolver from e m (ResModel from e m) ->
-    Resolver to e m (ResModel to e m)
-
-instance MapStrategy o o where
-  mapStrategy = id
-
-instance MapStrategy QUERY SUBSCRIPTION where
-  mapStrategy (ResolverQ x) = ResolverS $ pure . mapDeriving <$> x
-
-mapDeriving ::
-  ( MapStrategy o o',
-    Monad m
-  ) =>
-  ResModel o e m ->
-  ResModel o' e m
-mapDeriving ResNull = ResNull
-mapDeriving (ResScalar x) = ResScalar x
-mapDeriving (ResEnum typeName enum) = ResEnum typeName enum
-mapDeriving (ResList x) = ResList $ fmap mapDeriving x
-mapDeriving (ResObject x) = ResObject (mapObjectDeriving x)
-mapDeriving (ResUnion name x) = ResUnion name (mapStrategy x)
-
-mapObjectDeriving ::
-  ( MapStrategy o o',
-    Monad m
-  ) =>
-  ObjectResModel o e m ->
-  ObjectResModel o' e m
-mapObjectDeriving (ObjectResModel tyname x) =
-  ObjectResModel tyname $
-    fmap (mapEntry mapStrategy) x
-
-mapEntry :: (a -> b) -> (k, a) -> (k, b)
-mapEntry f (name, value) = (name, f value)
