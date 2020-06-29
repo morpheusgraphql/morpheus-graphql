@@ -218,7 +218,7 @@ resolverFailureMessage Selection {selectionName, selectionPosition} message =
 data Resolver (o :: OperationType) event (m :: * -> *) value where
   ResolverQ :: {runResolverQ :: ResolverState () m value} -> Resolver QUERY event m value
   ResolverM :: {runResolverM :: ResolverState event m value} -> Resolver MUTATION event m value
-  ResolverS :: {runResolverS :: ResolverState (Channel event) m (ReaderT event (Resolver QUERY event m) value)} -> Resolver SUBSCRIPTION event m value
+  ResolverS :: {runResolverS :: ResolverState () m (ReaderT event (Resolver QUERY event m) value)} -> Resolver SUBSCRIPTION event m value
 
 instance Show (Resolver o e m value) where
   show ResolverQ {} = "Resolver QUERY e m a"
@@ -348,10 +348,7 @@ subscribe ::
 subscribe ch res =
   SubscriptionField ch
     $ ResolverS
-    $ do
-      pushEvents ([Channel ch] :: [Channel e])
-      (eventRes :: e -> Resolver QUERY e m a) <- clearStateResolverEvents (runResolverQ res)
-      pure $ ReaderT eventRes
+    $ ReaderT <$> runResolverQ res
 
 -- | A function to return the internal 'Context' within a resolver's monad.
 -- Using the 'Context' itself is unsafe because it expposes internal structures
@@ -492,17 +489,17 @@ runResolver channels (ResolverS resT) ctx = ResultT $ do
     Failure x -> Failure x
     Success {warnings, result} ->
       Success
-        { events = subscriptionResopnseBySelection (toEventResolver result ctx) ctx channels,
+        { events = subscriptionEvents (toEventResolver result ctx) ctx channels,
           warnings,
           result = gqlNull
         }
 
-subscriptionResopnseBySelection ::
+subscriptionEvents ::
   (e -> m GQLResponse) ->
   Context ->
   [(FieldName, StreamChannel e)] ->
   [ResponseEvent e m]
-subscriptionResopnseBySelection res ctx channels = [Subscribe (Event (channelBySelection ctx channels) res)]
+subscriptionEvents res ctx channels = [Subscribe (Event (channelBySelection ctx channels) res)]
 
 channelBySelection :: Context -> [(FieldName, StreamChannel e)] -> [Channel e]
 channelBySelection Context {currentSelection = Selection {selectionContent = SelectionSet selSet}} ch =
