@@ -69,7 +69,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     FieldResModel,
     LiftOperation,
-    MapStrategy (..),
     ObjectResModel (..),
     ResModel (..),
     Resolver,
@@ -124,26 +123,23 @@ instance
   ( DecodeType a,
     Generic a,
     Monad m,
-    LiftOperation fo,
-    Encode b fo e m,
-    MapStrategy fo o
+    LiftOperation o,
+    Encode b o e m
   ) =>
-  Encode (a -> Resolver fo e m b) o e m
+  Encode (a -> Resolver o e m b) o e m
   where
   encode x =
-    mapStrategy $
-      toResolver decodeArguments x >>= encode
+    toResolver decodeArguments x >>= encode
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
   ( Monad m,
-    Encode b fo e m,
-    MapStrategy fo o,
-    LiftOperation fo
+    Encode b o e m,
+    LiftOperation o
   ) =>
-  Encode (Resolver fo e m b) o e m
+  Encode (Resolver o e m b) o e m
   where
-  encode = mapStrategy . (>>= encode)
+  encode x = x >>= encode
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where

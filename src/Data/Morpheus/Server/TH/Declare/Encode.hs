@@ -50,9 +50,6 @@ import Language.Haskell.TH
 m_ :: TypeName
 m_ = "m"
 
-fo_ :: TypeName
-fo_ = "fieldOperationKind"
-
 po_ :: TypeName
 po_ = "parentOparation"
 
@@ -62,33 +59,14 @@ e_ = "encodeEvent"
 encodeVars :: [TypeName]
 encodeVars = [e_, m_]
 
-encodeVarsT :: [TypeQ]
-encodeVarsT = map nameVarT encodeVars
-
 deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
-deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}], tKind} =
+deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceD (cxt constrains) appHead methods
   where
-    subARgs = conT ''SUBSCRIPTION : encodeVarsT
-    instanceArgs
-      | isSubscription tKind = subARgs
-      | otherwise = map nameVarT (po_ : encodeVars)
+    instanceArgs = map nameVarT (po_ : encodeVars)
     mainType = applyT (mkTypeName tName) [mainTypeArg]
       where
-        mainTypeArg
-          | isSubscription tKind = applyT ''Resolver subARgs
-          | otherwise = typeT ''Resolver (fo_ : encodeVars)
-    -----------------------------------------------------------------------------------------
-    typeables
-      | isSubscription tKind =
-        [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
-      | otherwise =
-        [ iLiftOp po_,
-          iLiftOp fo_,
-          typeT ''MapStrategy [fo_, po_],
-          iTypeable fo_,
-          iTypeable po_
-        ]
+        mainTypeArg = typeT ''Resolver (po_ : encodeVars)
     -------------------------
     iLiftOp op = applyT ''LiftOperation [nameVarT op]
     -------------------------
@@ -96,12 +74,13 @@ deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}], tKind} =
     -------------------------------------------
     -- defines Constraint: (Typeable m, Monad m)
     constrains =
-      typeables
-        <> [ typeT ''Monad [m_],
-             applyT ''Encode (mainType : instanceArgs),
-             iTypeable e_,
-             iTypeable m_
-           ]
+      [ typeT ''Monad [m_],
+        applyT ''Encode (mainType : instanceArgs),
+        iTypeable e_,
+        iTypeable m_,
+        iLiftOp po_,
+        iTypeable po_
+      ]
     -------------------------------------------------------------------
     -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
     appHead =
