@@ -21,7 +21,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   ( Event (..),
     Resolver,
     LiftOperation,
-    toResolver,
     lift,
     subscribe,
     SubEvent,
@@ -35,10 +34,10 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     Context (..),
     unsafeInternalContext,
     runRootResModel,
-    setTypeName,
     RootResModel (..),
     liftStateless,
     withArguments,
+    getArguments,
     SubscriptionField (..),
     ChannelOf,
   )
@@ -310,12 +309,6 @@ instance LiftOperation MUTATION where
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
 
-setSelection :: (Monad m, LiftOperation o) => Selection VALID -> Resolver o e m a -> Resolver o e m a
-setSelection currentSelection = local (\ctx -> ctx {currentSelection})
-
-setTypeName :: (Monad m, LiftOperation o) => TypeName -> Resolver o e m a -> Resolver o e m a
-setTypeName currentTypeName = local (\ctx -> ctx {currentTypeName})
-
 subscribe ::
   forall e m a.
   ( PushEvents (Channel e) (ResolverState (Channel e) m),
@@ -327,10 +320,10 @@ subscribe ::
 subscribe ch res =
   SubscriptionField ch
     $ ResolverS
-    $ fixSub <$> runResolverQ res
+    $ fromSub <$> runResolverQ res
   where
-    fixSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverState () m) a
-    fixSub f = join (ReaderT $ \e -> runResolverS (f e))
+    fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverState () m) a
+    fromSub f = join (ReaderT $ \e -> runResolverS (f e))
 
 withArguments ::
   forall o e m a.
@@ -344,16 +337,6 @@ getArguments ::
   (LiftOperation o, Monad m) =>
   Resolver o e m (Arguments VALID)
 getArguments = selectionArguments . currentSelection <$> unsafeInternalContext
-
--- Selection Processing
-toResolver ::
-  forall o e m a b.
-  (LiftOperation o, Monad m) =>
-  (Arguments VALID -> Eventless a) ->
-  (a -> Resolver o e m b) ->
-  Resolver o e m b
-toResolver toArgs resolver =
-  getArguments >>= liftStateless . toArgs >>= resolver
 
 pickSelection :: TypeName -> UnionSelection VALID -> SelectionSet VALID
 pickSelection = selectOr empty unionTagSelection
@@ -393,10 +376,9 @@ resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
   Object . toOrdMap <$> traverse resolver selectionSet
   where
     resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
-    resolver sel =
-      setSelection sel
-        $ setTypeName __typename
-        $ ObjectEntry (keyOf sel) <$> lookupRes sel drv
+    resolver currentSelection =
+      local (\ctx -> ctx {currentSelection, currentTypeName = __typename}) $
+        ObjectEntry (keyOf currentSelection) <$> lookupRes currentSelection drv
 resolveObject _ _ =
   failure $ internalResolvingError "expected object as resolver"
 

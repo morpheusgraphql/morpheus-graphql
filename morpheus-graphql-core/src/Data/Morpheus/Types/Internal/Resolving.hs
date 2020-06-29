@@ -6,7 +6,6 @@ module Data.Morpheus.Types.Internal.Resolving
     Resolver,
     LiftOperation,
     runRootResModel,
-    toResolver,
     lift,
     SubEvent,
     Eventless,
@@ -18,7 +17,6 @@ module Data.Morpheus.Types.Internal.Resolving
     Result (..),
     ResultT (..),
     unpackEvents,
-    setTypeName,
     ObjectResModel (..),
     ResModel (..),
     FieldResModel,
@@ -43,6 +41,7 @@ module Data.Morpheus.Types.Internal.Resolving
     mkString,
     SubscriptionField (..),
     ChannelOf,
+    getArguments,
   )
 where
 

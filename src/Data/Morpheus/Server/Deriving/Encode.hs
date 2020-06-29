@@ -75,8 +75,8 @@ import Data.Morpheus.Types.Internal.Resolving
     RootResModel (..),
     SubscriptionField (..),
     failure,
+    getArguments,
     liftStateless,
-    toResolver,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -128,8 +128,11 @@ instance
   ) =>
   Encode (a -> Resolver o e m b) o e m
   where
-  encode x =
-    toResolver decodeArguments x >>= encode
+  encode f =
+    getArguments
+      >>= liftStateless . decodeArguments
+      >>= f
+      >>= encode
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
