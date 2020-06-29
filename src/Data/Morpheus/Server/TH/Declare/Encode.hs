@@ -53,28 +53,26 @@ e_ :: TypeName
 e_ = "encodeEvent"
 
 encodeVars :: [TypeName]
-encodeVars = [e_, m_]
+encodeVars = [po_, e_, m_]
+
+iTypeable :: TypeName -> Q Type
+iTypeable name = typeT ''Typeable [name]
 
 deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
 deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceD (cxt constrains) appHead methods
   where
-    instanceArgs = map nameVarT (po_ : encodeVars)
-    mainType = applyT (mkTypeName tName) [mainTypeArg]
-      where
-        mainTypeArg = typeT ''Resolver (po_ : encodeVars)
-    -------------------------
-    iLiftOp op = applyT ''LiftOperation [nameVarT op]
-    -------------------------
-    iTypeable name = typeT ''Typeable [name]
+    instanceArgs = map nameVarT encodeVars
+    mainTypeArg = [typeT ''Resolver encodeVars]
+    mainType = applyT (mkTypeName tName) mainTypeArg
     -------------------------------------------
     -- defines Constraint: (Typeable m, Monad m)
     constrains =
       [ typeT ''Monad [m_],
         applyT ''Encode (mainType : instanceArgs),
+        applyT ''LiftOperation [nameVarT po_],
         iTypeable e_,
         iTypeable m_,
-        iLiftOp po_,
         iTypeable po_
       ]
     -------------------------------------------------------------------
