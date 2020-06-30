@@ -97,10 +97,6 @@ instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => 
 instance (Monad m, LiftOperation o, Encode a o e m) => Encode (Maybe a) o e m where
   encode = maybe (pure ResNull) encode
 
--- MAYBE
-instance (Monad m, LiftOperation o, Encode a o e m) => Encode (SubscriptionField a) o e m where
-  encode (SubscriptionField _ res) = encode res
-
 -- LIST []
 instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
   encode = fmap ResList . traverse encode
@@ -118,6 +114,10 @@ instance (Eq k, Monad m, LiftOperation o, Encode (MapKind k v (Resolver o e m)) 
   encode value =
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
 
+-- SUBSCRIPTION
+instance (Monad m, LiftOperation o, Encode a o e m) => Encode (SubscriptionField a) o e m where
+  encode (SubscriptionField _ res) = encode res
+
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
   ( DecodeType a,
@@ -126,13 +126,12 @@ instance
     LiftOperation o,
     Encode b o e m
   ) =>
-  Encode (a -> Resolver o e m b) o e m
+  Encode (a -> b) o e m
   where
   encode f =
     getArguments
       >>= liftStateless . decodeArguments
-      >>= f
-      >>= encode
+      >>= encode . f
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance

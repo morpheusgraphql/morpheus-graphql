@@ -106,8 +106,8 @@ fieldTypeName namespace tName fieldName
 
 -- withSubscriptionField: t => SubscriptionField t
 withSubscriptionField :: TypeKind -> Type -> Type
-withSubscriptionField tKind x
-  | isSubscription tKind = AppT (ConT ''SubscriptionField) x
+withSubscriptionField kind x
+  | isSubscription kind = AppT (ConT ''SubscriptionField) x
   | otherwise = x
 
 -- withArgs: t => a -> t
