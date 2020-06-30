@@ -112,7 +112,16 @@ instanceFunD name args = simpleFunD name (map (varP . mkTypeName) args)
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
 instanceHeadMultiT className iType li = applyT className (iType : li)
 
--- "User" -> ["name","id"] -> (User name id)
+-- |
+-- input:
+-- >>>
+-- destructRecord "User" ["name","id"]
+-- >>>
+--
+-- expression:
+-- >>>
+-- (User name id)
+-- >>>
 destructRecord :: TypeName -> [FieldDefinition cat] -> PatQ
 destructRecord conName fields = conP (mkTypeName conName) (map (varP . mkFieldName) names)
   where
