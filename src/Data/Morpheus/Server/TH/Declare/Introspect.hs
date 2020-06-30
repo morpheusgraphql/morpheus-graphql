@@ -17,7 +17,7 @@ import Data.Morpheus.Internal.TH
     instanceFunD,
     instanceHeadMultiT,
     instanceProxyFunD,
-    nameConT,
+    toConT,
     toName,
     toVarT,
     tyConArgs,
@@ -156,14 +156,14 @@ introspectField cat FieldDefinition {fieldType, fieldContent} =
 proxyRepT :: TypeQ -> TypeRef -> Q Exp
 proxyRepT cat TypeRef {typeConName, typeArgs} = [|(ProxyRep :: ProxyRep $(cat) $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (nameConT typeConName) (toVarT m)
-    genSig _ = nameConT typeConName
+    genSig (Just m) = appT (toConT typeConName) (toVarT m)
+    genSig _ = toConT typeConName
 
 proxyT :: TypeRef -> Q Exp
 proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (nameConT typeConName) (toVarT m)
-    genSig _ = nameConT typeConName
+    genSig (Just m) = appT (toConT typeConName) (toVarT m)
+    genSig _ = toConT typeConName
 
 buildFields :: [FieldDefinition cat] -> ExpQ
 buildFields = listE . map buildField

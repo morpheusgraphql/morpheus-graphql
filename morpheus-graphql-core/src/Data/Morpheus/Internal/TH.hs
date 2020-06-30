@@ -25,7 +25,7 @@ module Data.Morpheus.Internal.TH
     decArgs,
     nameLitP,
     nameStringL,
-    nameConT,
+    toConT,
     toVarE,
     toVarT,
     nameConType,
@@ -78,11 +78,9 @@ declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
     wrappedT (TypeList : xs) = AppT (ConT ''[]) $ wrappedT xs
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT [] = decType typeArgs
-    ------------------------------------------------------
-    typeName = nameConType typeConName
     --------------------------------------------
-    decType (Just par) = AppT typeName (toVar par)
-    decType _ = typeName
+    decType (Just par) = apply typeConName (vars [par])
+    decType _ = toCon typeConName
 
 tyConArgs :: TypeKind -> [TypeName]
 tyConArgs kindD
@@ -208,8 +206,8 @@ decArgs (NewtypeD _ _ args _ _ _) = args
 decArgs (TySynD _ args _) = args
 decArgs _ = []
 
-nameConT :: TypeName -> Q Type
-nameConT = conT . toName
+toConT :: ToName a => a -> Q Type
+toConT = conT . toName
 
 toVarT :: ToVar a TypeQ => a -> TypeQ
 toVarT = toVar
