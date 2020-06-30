@@ -35,7 +35,7 @@ import Data.Morpheus.Kind
     SCALAR,
     VContext (..),
   )
-import Data.Morpheus.Server.Deriving.Channels (GetChannels (..))
+import Data.Morpheus.Server.Deriving.Channels (ChannelCon, getChannels)
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
@@ -238,7 +238,7 @@ deriveModel ::
   ( Con QUERY e m query,
     Con MUTATION e m mut,
     Con SUBSCRIPTION e m sub,
-    GetChannels e (sub (Resolver SUBSCRIPTION e m)),
+    ChannelCon e m sub,
     Applicative m,
     Monad m
   ) =>

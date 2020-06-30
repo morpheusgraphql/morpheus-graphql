@@ -12,7 +12,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Server.Deriving.Channels
-  ( GetChannels (..),
+  ( getChannels,
     ChannelCon,
     GetChannel (..),
     ExploreChannels (..),
@@ -50,25 +50,21 @@ import GHC.Generics
 
 data CustomProxy (c :: Bool) e = CustomProxy
 
-toProxy :: forall c e. CustomProxy c e -> Proxy e
-toProxy _ = Proxy @e
-
 type ChannelCon e m a =
-  ( ExploreChannels (CUSTOM (a (Resolver SUBSCRIPTION e m))) (a (Resolver SUBSCRIPTION e m)) e,
-    TypeRep e (Rep (a (Resolver SUBSCRIPTION e m))),
-    Generic (a (Resolver SUBSCRIPTION e m))
-  )
+  ExploreChannels
+    (CUSTOM (a (Resolver SUBSCRIPTION e m)))
+    (a (Resolver SUBSCRIPTION e m))
+    e
 
-class GetChannels (e :: *) a | a -> e where
-  getChannels :: a -> Selection VALID -> Eventless (Channel e)
-
-instance
+getChannels ::
+  forall e m subs.
   ChannelCon e m subs =>
-  GetChannels e (subs (Resolver SUBSCRIPTION e m))
-  where
-  getChannels value sel =
-    selectBy sel $
-      exploreChannels (CustomProxy :: CustomProxy (CUSTOM (subs (Resolver SUBSCRIPTION e m))) e) value
+  subs (Resolver SUBSCRIPTION e m) ->
+  Selection VALID ->
+  Eventless (Channel e)
+getChannels value sel =
+  selectBy sel $
+    exploreChannels (CustomProxy :: CustomProxy (CUSTOM (subs (Resolver SUBSCRIPTION e m))) e) value
 
 selectBy ::
   Selection VALID ->
@@ -102,8 +98,13 @@ instance
 class ExploreChannels (custom :: Bool) a e where
   exploreChannels :: CustomProxy custom e -> a -> [(FieldName, Selection VALID -> Eventless (Channel e))]
 
-instance ChannelCon e m subs => ExploreChannels FALSE (subs (Resolver SUBSCRIPTION e m)) e where
-  exploreChannels proxy = typeRep (toProxy proxy) . from
+instance
+  ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
+    Generic (subs (Resolver SUBSCRIPTION e m))
+  ) =>
+  ExploreChannels FALSE (subs (Resolver SUBSCRIPTION e m)) e
+  where
+  exploreChannels _ = typeRep (Proxy @e) . from
 
 ------------------------------------------------------
 class TypeRep e f where
