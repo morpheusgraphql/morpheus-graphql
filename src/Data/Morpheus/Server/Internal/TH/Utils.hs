@@ -42,8 +42,19 @@ import Language.Haskell.TH
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)
 
---  input : mapFields 'mkValue [FieldDefinition { fieldName = "field1",..} ,..]
---  expression: [("field1" , mkValue field1), ..]
+-- | 'mkFieldsE'
+--
+--  input :
+--  >>>
+--       mkFieldsE 'mkValue [FieldDefinition { fieldName = \"field1" ,..} ,..]
+--  >>>
+--
+--  expression :
+--  >>>
+--    [ ( \"field1\" , mkValue field1 ),
+--    ..
+--    ]
+-- >>>
 mkFieldsE :: Name -> [FieldDefinition cat] -> [Exp]
 mkFieldsE name = map (mkEntryWith name)
 
