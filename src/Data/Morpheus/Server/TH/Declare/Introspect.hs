@@ -14,6 +14,7 @@ where
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
   ( _',
+    _2',
     apply,
     applyVars,
     cat',
@@ -21,7 +22,6 @@ import Data.Morpheus.Internal.TH
     toCon,
     toVarT,
     tyConArgs,
-    v',
   )
 import Data.Morpheus.Internal.Utils
   ( concatUpdates,
@@ -88,7 +88,7 @@ deriveObjectRep
         | tKind == KindInputObject =
           conT ''IN
         | otherwise = conT ''OUT
-      methods = [funDSimple 'deriveTypeContent [_', v'] body]
+      methods = [funDSimple 'deriveTypeContent [_', _2'] body]
         where
           body
             | tKind == KindInputObject =

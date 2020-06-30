@@ -38,6 +38,7 @@ module Data.Morpheus.Internal.TH
     typeInstanceDec,
     v',
     cat',
+    _2',
   )
 where
 
@@ -70,6 +71,9 @@ m' = toVar m_
 
 _' :: PatQ
 _' = toVar (mkName "_")
+
+_2' :: PatQ
+_2' = toVar (mkName "_2")
 
 v' :: ToVar Name a => a
 v' = toVar (mkName "v")
@@ -201,7 +205,7 @@ funDSimple name args body = funD name [clause args (normalB body) []]
 -- (User name id)
 -- >>>
 destructRecord :: TypeName -> [FieldDefinition cat] -> PatQ
-destructRecord conName fields = conP (toName conName) (map (varP . toName) names)
+destructRecord conName fields = conP (toName conName) (vars names)
   where
     names = map fieldName fields
 
