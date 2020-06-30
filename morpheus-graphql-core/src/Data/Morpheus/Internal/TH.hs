@@ -14,7 +14,7 @@ module Data.Morpheus.Internal.TH
   ( tyConArgs,
     apply,
     applyVars,
-    instanceHeadT,
+    applyCons,
     funDProxy,
     instanceFunD,
     funDSimple,
@@ -27,7 +27,6 @@ module Data.Morpheus.Internal.TH
     toVarE,
     toVarT,
     nameConType,
-    nameVarP,
     declareTypeRef,
     nameSpaceField,
     nameSpaceType,
@@ -63,11 +62,11 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Text (unpack)
 import Language.Haskell.TH
 
-m' :: Type
-m' = toVar m_
-
 m_ :: TypeName
 m_ = "m"
+
+m' :: Type
+m' = toVar m_
 
 _' :: PatQ
 _' = toVar ("_" :: FieldName)
@@ -85,7 +84,7 @@ declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT [] = decType typeArgs
     --------------------------------------------
-    decType (Just par) = apply typeConName (vars [par])
+    decType (Just par) = apply typeConName [toVar par]
     decType _ = toCon typeConName
 
 tyConArgs :: TypeKind -> [TypeName]
@@ -177,6 +176,9 @@ instance Apply ExpQ where
 applyVars :: (ToName con, ToName var) => con -> [var] -> Q Type
 applyVars name li = apply name (vars li)
 
+applyCons :: (ToName con, ToName cons) => con -> [cons] -> Q Type
+applyCons name li = apply name (cons li)
+
 funDProxy :: [(Name, ExpQ)] -> [DecQ]
 funDProxy = map fun
   where
@@ -184,9 +186,6 @@ funDProxy = map fun
 
 funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
 funDSimple name args body = funD name [clause args (normalB body) []]
-
-instanceHeadT :: Name -> TypeName -> [TypeName] -> Q Type
-instanceHeadT cName iType tArgs = apply cName [applyVars iType tArgs]
 
 instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
 instanceFunD name args = funDSimple name (vars args)
@@ -230,9 +229,6 @@ toVarE = toVar
 
 toConE :: ToCon a Exp => a -> ExpQ
 toConE = toCon
-
-nameVarP :: FieldName -> PatQ
-nameVarP = varP . toName
 
 -- | 'mkFieldsE'
 --

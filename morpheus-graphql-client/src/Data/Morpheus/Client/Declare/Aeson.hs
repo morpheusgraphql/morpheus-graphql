@@ -25,10 +25,10 @@ import Data.Morpheus.Client.Internal.Types
     TypeNameTH (..),
   )
 import Data.Morpheus.Internal.TH
-  ( destructRecord,
+  ( applyCons,
+    destructRecord,
     funDSimple,
     instanceFunD,
-    instanceHeadT,
     mkFieldsE,
     toConE,
     toName,
@@ -89,7 +89,7 @@ deriveScalarToJSON
     } =
     let methods = [funD 'toJSON clauses]
         clauses = [clause [] (normalB $ varE 'scalarToJSON) []]
-     in instanceD (cxt []) (instanceHeadT ''ToJSON typename []) methods
+     in instanceD (cxt []) (applyCons ''ToJSON [typename]) methods
 
 -- FromJSON
 deriveFromJSON :: ClientTypeDefinition -> Q Dec
@@ -184,11 +184,10 @@ namespaced TypeNameTH {namespace, typename} =
   nameSpaceType namespace typename
 
 defineFromJSON :: TypeNameTH -> (t -> ExpQ) -> t -> Q Dec
-defineFromJSON name parseJ cFields = instanceD (cxt []) iHead [method]
+defineFromJSON name parseJ cFields = instanceD (cxt []) iHead body
   where
-    iHead = instanceHeadT ''FromJSON (namespaced name) []
-    -----------------------------------------
-    method = instanceFunD 'parseJSON [] (parseJ cFields)
+    iHead = applyCons ''FromJSON [namespaced name]
+    body = [instanceFunD 'parseJSON [] (parseJ cFields)]
 
 aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
 aesonFromJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
@@ -241,7 +240,7 @@ deriveToJSON
     } =
     instanceD (cxt []) appHead methods
     where
-      appHead = instanceHeadT ''ToJSON typename []
+      appHead = applyCons ''ToJSON [typename]
       ------------------------------------------------------------------
       -- defines: toJSON (User field1 field2 ...)= object ["name" .= name, "age" .= age, ...]
       methods = [funDSimple 'toJSON args body]
@@ -265,6 +264,6 @@ deriveToJSON
                 (normalB $ aesonToJSONEnumBody clientTypeName clientCons)
                 []
             ]
-       in instanceD (cxt []) (instanceHeadT ''ToJSON typename []) methods
+       in instanceD (cxt []) (applyCons ''ToJSON [typename]) methods
     | otherwise =
       fail "Input Unions are not yet supported"

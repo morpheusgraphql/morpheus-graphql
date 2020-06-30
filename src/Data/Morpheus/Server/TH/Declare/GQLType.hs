@@ -13,9 +13,9 @@ where
 --
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
-  ( applyVars,
+  ( apply,
+    applyVars,
     funDProxy,
-    instanceHeadT,
     toName,
     tyConArgs,
     typeInstanceDec,
@@ -64,7 +64,7 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
     --------------------------------
     typeArgs = tyConArgs tKind
     --------------------------------
-    iHead = instanceHeadT ''GQLType tName typeArgs
+    iHead = apply ''GQLType [applyVars tName typeArgs]
     headSig = applyVars tName typeArgs
     ---------------------------------------------------
     constrains = map constraintTypeable typeArgs

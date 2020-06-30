@@ -14,7 +14,7 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Internal.TH
-  ( instanceHeadT,
+  ( applyCons,
     v',
   )
 import Data.Morpheus.Server.Deriving.Decode
@@ -43,7 +43,7 @@ deriveDecode :: ServerTypeDefinition cat -> Q [Dec]
 deriveDecode ServerTypeDefinition {tName, tCons = [cons]} =
   pure <$> instanceD (cxt []) appHead methods
   where
-    appHead = instanceHeadT ''DecodeType tName []
+    appHead = applyCons ''DecodeType [tName]
     methods = [funD 'decodeType [clause argsE (normalB body) []]]
       where
         argsE = [v']
