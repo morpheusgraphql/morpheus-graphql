@@ -34,6 +34,7 @@ module Data.Morpheus.Internal.TH
     m_,
     m',
     _',
+    v',
     isEnum,
     mkFieldsE,
     toConE,
@@ -70,6 +71,9 @@ m_ = "m"
 
 _' :: PatQ
 _' = toVar ("_" :: FieldName)
+
+v' :: ToVar FieldName a => a
+v' = toVar ("v" :: FieldName)
 
 declareTypeRef :: TypeRef -> Type
 declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =

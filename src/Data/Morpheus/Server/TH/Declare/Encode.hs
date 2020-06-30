@@ -12,13 +12,13 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Internal.TH
-  ( apply,
+  ( _',
+    apply,
     applyVars,
     destructRecord,
     funDSimple,
     m_,
     mkFieldsE,
-    nameVarP,
     toVarT,
   )
 import Data.Morpheus.Server.Deriving.Encode
@@ -100,7 +100,7 @@ instanceType tName = apply ''ExploreResolvers (conT ''TRUE : genHeadType tName)
 exploreResolversD :: TypeName -> [FieldDefinition cat] -> DecQ
 exploreResolversD tName fields = funDSimple 'exploreResolvers args body
   where
-    args = [nameVarP "_", destructRecord tName fields]
+    args = [_', destructRecord tName fields]
     body = pure (decodeObjectE tName fields)
 
 deriveEncode :: ServerTypeDefinition cat -> Q [Dec]

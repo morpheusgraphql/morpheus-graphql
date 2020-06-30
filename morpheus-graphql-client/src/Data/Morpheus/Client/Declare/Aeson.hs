@@ -30,11 +30,11 @@ import Data.Morpheus.Internal.TH
     instanceFunD,
     instanceHeadT,
     mkFieldsE,
-    nameVarP,
     toConE,
     toName,
     toString,
     toVarE,
+    v',
   )
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
@@ -123,7 +123,7 @@ aesonObject :: [FieldName] -> ConsD cat -> ExpQ
 aesonObject tNamespace con@ConsD {cName} =
   appE
     [|withObject name|]
-    (lamE [nameVarP "o"] (aesonObjectBody tNamespace con))
+    (lamE [v'] (aesonObjectBody tNamespace con))
   where
     name = nameSpaceType tNamespace cName
 
@@ -142,8 +142,8 @@ aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
         ----------------------------------------------------------
 
         defField field@FieldDefinition {fieldName}
-          | isNullable field = [|o .:? fieldName|]
-          | otherwise = [|o .: fieldName|]
+          | isNullable field = [|v .:? fieldName|]
+          | otherwise = [|v .: fieldName|]
         --------------------------------------------------------
         startExp fNames =
           uInfixE
@@ -168,7 +168,7 @@ aesonUnionObject
     where
       buildMatch cons@ConsD {cName} = match objectPattern body []
         where
-          objectPattern = tupP [toString cName, nameVarP "o"]
+          objectPattern = tupP [toString cName, v']
           body = normalB $ aesonObjectBody namespace cons
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
@@ -205,15 +205,14 @@ aesonFromJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
                   (toConE $ nameSpaceType [toFieldName typename] cName)
 
 elseCaseEXP :: MatchQ
-elseCaseEXP = match (nameVarP varName) body []
+elseCaseEXP = match v' body []
   where
-    varName = "invalidValue"
     body =
       normalB $
         appE
           (toVarE 'fail)
           ( uInfixE
-              (appE (varE 'show) (toVarE varName))
+              (appE (varE 'show) v')
               (varE '(<>))
               (stringE " is Not Valid Union Constructor")
           )

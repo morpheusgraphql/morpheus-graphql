@@ -20,7 +20,8 @@ import Data.Morpheus.Error
   )
 import Data.Morpheus.Internal.TH
   ( toConE,
-    toVarE,
+    toString,
+    v',
   )
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -63,11 +64,7 @@ decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
         applyFields [x] = defField x
         applyFields (x : xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
         ------------------------------------------------------------------------
-        defField FieldDefinition {fieldName} =
-          uInfixE
-            (toVarE ("o" :: FieldName))
-            fieldDecoder
-            [|fieldName|]
+        defField FieldDefinition {fieldName} = uInfixE v' fieldDecoder (toString fieldName)
 
 withObject :: (ValidObject -> Eventless a) -> ValidValue -> Eventless a
 withObject f (Object object) = f object
