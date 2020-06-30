@@ -13,6 +13,9 @@ where
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerTypeDefinition (..),
   )
+import Data.Morpheus.Server.TH.Declare.Channels
+  ( deriveChannels,
+  )
 import Data.Morpheus.Server.TH.Declare.Decode
   ( deriveDecode,
   )
@@ -68,7 +71,7 @@ instance Declare (ServerTypeDefinition cat) where
             | isObject tKind && isInput tKind =
               [deriveObjectRep typeD, deriveDecode typeD]
             | isObject tKind =
-              [deriveObjectRep typeD, deriveEncode typeD]
+              [deriveObjectRep typeD, deriveEncode typeD, deriveChannels typeD]
             | otherwise =
               []
 

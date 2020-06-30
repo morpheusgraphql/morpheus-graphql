@@ -14,6 +14,8 @@
 module Data.Morpheus.Server.Deriving.Channels
   ( GetChannels (..),
     ChannelCon,
+    GetChannel (..),
+    ExploreChannels (..),
   )
 where
 
@@ -25,7 +27,8 @@ import Data.Morpheus.Server.Deriving.Decode
     decodeArguments,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
+  ( FALSE,
+    FieldName (..),
     SUBSCRIPTION,
     Selection (..),
     SelectionContent (..),
@@ -44,10 +47,14 @@ import Data.Text
   )
 import GHC.Generics
 
---newtype Proxy e = Proxy (Selection VALID)
+data CustomProxy (c :: Bool) e = CustomProxy
+
+toProxy :: forall c e. CustomProxy c e -> Proxy e
+toProxy _ = Proxy @e
 
 type ChannelCon e m a =
-  ( TypeRep e (Rep (a (Resolver SUBSCRIPTION e m))),
+  ( ExploreChannels FALSE (a (Resolver SUBSCRIPTION e m)) e,
+    TypeRep e (Rep (a (Resolver SUBSCRIPTION e m))),
     Generic (a (Resolver SUBSCRIPTION e m))
   )
 
@@ -55,11 +62,10 @@ class GetChannels (e :: *) a | a -> e where
   getChannels :: a -> Selection VALID -> Eventless (Channel e)
 
 instance
-  {-# OVERLAPPABLE #-}
   ChannelCon e m subs =>
   GetChannels e (subs (Resolver SUBSCRIPTION e m))
   where
-  getChannels value sel = selectBy sel $ typeRep (Proxy @e) $ from value
+  getChannels value sel = selectBy sel $ exploreChannels (CustomProxy :: CustomProxy FALSE e) value
 
 selectBy ::
   Selection VALID ->
@@ -88,6 +94,13 @@ instance
   where
   getChannel f sel@Selection {selectionArguments} =
     decodeArguments selectionArguments >>= (`getChannel` sel) . f
+
+------------------------------------------------------
+class ExploreChannels (custom :: Bool) a e where
+  exploreChannels :: CustomProxy custom e -> a -> [(FieldName, Selection VALID -> Eventless (Channel e))]
+
+instance ChannelCon e m subs => ExploreChannels FALSE (subs (Resolver SUBSCRIPTION e m)) e where
+  exploreChannels proxy = typeRep (toProxy proxy) . from
 
 ------------------------------------------------------
 class TypeRep e f where

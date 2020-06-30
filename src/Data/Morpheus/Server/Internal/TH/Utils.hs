@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Server.Internal.TH.Utils
@@ -6,6 +7,8 @@ module Data.Morpheus.Server.Internal.TH.Utils
     constraintTypeable,
     typeNameStringE,
     withPure,
+    o_,
+    e_,
   )
 where
 
@@ -36,6 +39,12 @@ import Language.Haskell.TH
     Q,
     Type,
   )
+
+o_ :: TypeName
+o_ = "oparation"
+
+e_ :: TypeName
+e_ = "encodeEvent"
 
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)
