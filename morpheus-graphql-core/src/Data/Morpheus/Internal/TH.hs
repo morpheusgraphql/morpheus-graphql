@@ -37,6 +37,7 @@ module Data.Morpheus.Internal.TH
     tyConArgs,
     typeInstanceDec,
     v',
+    cat',
   )
 where
 
@@ -68,10 +69,13 @@ m' :: Type
 m' = toVar m_
 
 _' :: PatQ
-_' = toVar ("_" :: FieldName)
+_' = toVar (mkName "_")
 
-v' :: ToVar FieldName a => a
-v' = toVar ("v" :: FieldName)
+v' :: ToVar Name a => a
+v' = toVar (mkName "v")
+
+cat' :: Type
+cat' = VarT (mkName "cat")
 
 declareTypeRef :: TypeRef -> Type
 declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =

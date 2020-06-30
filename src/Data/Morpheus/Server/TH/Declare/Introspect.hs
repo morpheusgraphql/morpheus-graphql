@@ -16,8 +16,9 @@ import Data.Morpheus.Internal.TH
   ( _',
     apply,
     applyVars,
+    cat',
     funDSimple,
-    toConT,
+    toCon,
     toVarT,
     tyConArgs,
     v',
@@ -60,14 +61,11 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Proxy (Proxy (..))
 import Language.Haskell.TH
 
-cat_ :: TypeQ
-cat_ = varT (mkName "cat")
-
 instanceIntrospect :: Maybe (TypeDefinition cat) -> Q [Dec]
 instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnum {}}) =
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
-    iHead = apply ''Introspect [cat_, toConT typeName]
+    iHead = pure (apply ''Introspect [cat', toCon typeName])
     defineIntrospect = funDSimple 'introspect [_'] [|insertType typeDef|]
 instanceIntrospect _ = pure []
 
@@ -156,14 +154,14 @@ introspectField cat FieldDefinition {fieldType, fieldContent} =
 proxyRepT :: TypeQ -> TypeRef -> Q Exp
 proxyRepT cat TypeRef {typeConName, typeArgs} = [|(ProxyRep :: ProxyRep $(cat) $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (toConT typeConName) (toVarT m)
-    genSig _ = toConT typeConName
+    genSig (Just m) = appT (toCon typeConName) (toVarT m)
+    genSig _ = toCon typeConName
 
 proxyT :: TypeRef -> Q Exp
 proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (toConT typeConName) (toVarT m)
-    genSig _ = toConT typeConName
+    genSig (Just m) = appT (toCon typeConName) (toVarT m)
+    genSig _ = toCon typeConName
 
 buildFields :: [FieldDefinition cat] -> ExpQ
 buildFields = listE . map buildField
