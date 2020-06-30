@@ -11,33 +11,32 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Internal.TH
-  ( tyConArgs,
+  ( _',
     apply,
-    applyVars,
     applyCons,
-    funDProxy,
-    instanceFunD,
-    funDSimple,
-    destructRecord,
-    typeInstanceDec,
-    infoTyVars,
+    applyVars,
     decArgs,
-    toString,
-    toConT,
-    toVarE,
-    toVarT,
-    nameConType,
     declareTypeRef,
+    destructRecord,
+    funDProxy,
+    funDSimple,
+    infoTyVars,
+    isEnum,
+    m',
+    m_,
+    mkFieldsE,
     nameSpaceField,
     nameSpaceType,
-    m_,
-    m',
-    _',
-    v',
-    isEnum,
-    mkFieldsE,
+    toCon,
     toConE,
+    toConT,
     toName,
+    toString,
+    toVarE,
+    toVarT,
+    tyConArgs,
+    typeInstanceDec,
+    v',
   )
 where
 
@@ -187,9 +186,6 @@ funDProxy = map fun
 funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
 funDSimple name args body = funD name [clause args (normalB body) []]
 
-instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
-instanceFunD name args = funDSimple name (vars args)
-
 -- |
 -- input:
 -- >>>
@@ -220,9 +216,6 @@ toConT = conT . toName
 
 toVarT :: ToVar a TypeQ => a -> TypeQ
 toVarT = toVar
-
-nameConType :: TypeName -> Type
-nameConType = toCon
 
 toVarE :: ToVar a Exp => a -> ExpQ
 toVarE = toVar

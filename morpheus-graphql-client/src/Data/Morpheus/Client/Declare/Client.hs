@@ -21,7 +21,10 @@ import Data.Morpheus.Client.Internal.Types
     TypeNameTH (..),
   )
 import Data.Morpheus.Internal.TH
-  ( nameConType,
+  ( toCon,
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( FieldName,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
@@ -46,9 +49,9 @@ apply :: Applicative f => a -> [a -> f b] -> f [b]
 apply a = traverse (\f -> f a)
 
 queryArgumentType :: Maybe ClientTypeDefinition -> (Type, Q [Dec])
-queryArgumentType Nothing = (nameConType "()", pure [])
+queryArgumentType Nothing = (toCon ("()" :: FieldName), pure [])
 queryArgumentType (Just client@ClientTypeDefinition {clientTypeName}) =
-  (nameConType (typename clientTypeName), declareType client)
+  (toCon (typename clientTypeName), declareType client)
 
 defineOperationType :: (Type, Q [Dec]) -> String -> ClientTypeDefinition -> Q [Dec]
 defineOperationType

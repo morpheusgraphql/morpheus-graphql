@@ -17,10 +17,10 @@ import Data.Morpheus.Internal.TH
     apply,
     applyVars,
     funDSimple,
-    instanceFunD,
     toConT,
     toVarT,
     tyConArgs,
+    v',
   )
 import Data.Morpheus.Internal.Utils
   ( concatUpdates,
@@ -90,7 +90,7 @@ deriveObjectRep
         | tKind == KindInputObject =
           conT ''IN
         | otherwise = conT ''OUT
-      methods = [instanceFunD 'deriveTypeContent ["_proxy1", "_proxy2"] body]
+      methods = [funDSimple 'deriveTypeContent [_', v'] body]
         where
           body
             | tKind == KindInputObject =

@@ -28,7 +28,6 @@ import Data.Morpheus.Internal.TH
   ( applyCons,
     destructRecord,
     funDSimple,
-    instanceFunD,
     mkFieldsE,
     toConE,
     toName,
@@ -187,7 +186,7 @@ defineFromJSON :: TypeNameTH -> (t -> ExpQ) -> t -> Q Dec
 defineFromJSON name parseJ cFields = instanceD (cxt []) iHead body
   where
     iHead = applyCons ''FromJSON [namespaced name]
-    body = [instanceFunD 'parseJSON [] (parseJ cFields)]
+    body = [funDSimple 'parseJSON [] (parseJ cFields)]
 
 aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
 aesonFromJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
