@@ -16,8 +16,6 @@ import Data.Morpheus.Internal.TH
     destructRecord,
     instanceHeadMultiT,
     mkTypeName,
-    nameStringE,
-    nameVarE,
     nameVarP,
     nameVarT,
     typeT,
@@ -28,7 +26,12 @@ import Data.Morpheus.Server.Deriving.Encode
   )
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerTypeDefinition (..),
-    constraintTypeable,
+  )
+import Data.Morpheus.Server.Internal.TH.Utils
+  ( constraintTypeable,
+    mkFieldsE,
+    typeNameStringE,
+    withPure,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
@@ -38,9 +41,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( LiftOperation,
-    ObjectResModel (..),
-    ResModel (..),
     Resolver,
+    mkObject,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
@@ -86,18 +88,18 @@ deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
     methods = [funD 'exploreResolvers [clause argsE (normalB body) []]]
       where
         argsE = [nameVarP "_", destructRecord tName varNames]
-        body =
-          appE (varE 'pure)
-            $ appE
-              (conE 'ResObject)
-            $ appE
-              ( appE
-                  (conE 'ObjectResModel)
-                  (nameStringE tName)
-              )
-              (listE $ map decodeVar varNames)
-        decodeVar name = [|(name, encode $(varName))|]
-          where
-            varName = nameVarE name
+        body = pure (decodeObjectE tName cFields)
         varNames = map fieldName cFields
 deriveEncode _ = pure []
+
+mkObjectE :: TypeName -> [Exp] -> Exp
+mkObjectE name =
+  AppE (AppE (VarE 'mkObject) (typeNameStringE name))
+    . ListE
+
+decodeObjectE :: TypeName -> [FieldDefinition cat] -> Exp
+decodeObjectE tName cFields =
+  withPure $
+    mkObjectE
+      tName
+      (mkFieldsE 'encode cFields)

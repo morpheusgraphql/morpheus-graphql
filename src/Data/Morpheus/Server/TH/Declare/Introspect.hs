@@ -33,7 +33,9 @@ import Data.Morpheus.Server.Deriving.Introspect
   )
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerTypeDefinition (..),
-    constraintTypeable,
+  )
+import Data.Morpheus.Server.Internal.TH.Utils
+  ( constraintTypeable,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__typeName, implements),

@@ -21,7 +21,6 @@ module Data.Morpheus.Internal.TH
     infoTyVars,
     decArgs,
     nameLitP,
-    nameStringE,
     nameStringL,
     nameConT,
     nameVarE,
@@ -118,9 +117,6 @@ nameLitP = litP . nameStringL
 
 nameStringL :: TypeName -> Lit
 nameStringL = stringL . unpack . readTypeName
-
-nameStringE :: TypeName -> ExpQ
-nameStringE = stringE . (unpack . readTypeName)
 
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes
