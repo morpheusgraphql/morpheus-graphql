@@ -24,7 +24,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
-    OUT,
     TRUE,
     TypeKind (..),
     TypeName,
@@ -122,6 +121,8 @@ withArgs argsTypename = AppT (AppT arrowType argType)
 withMonad :: Type -> Type
 withMonad = AppT m'
 
+type Arrow = (->)
+
 ------------------------------------------------
 withFieldWrappers ::
   TypeKind ->
@@ -137,5 +138,3 @@ withFieldWrappers kind _
     withSubscriptionField kind
       . withMonad
   | otherwise = id
-
-type Arrow = (->)

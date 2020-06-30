@@ -64,10 +64,11 @@ instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnu
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     iHead = instanceHeadMultiT ''Introspect cat_ [conT $ mkTypeName typeName]
-    defineIntrospect = instanceProxyFunD ('introspect, body)
-      where
-        body = [|insertType typeDef|]
+    defineIntrospect = instanceProxyFunD ('introspect, [|insertType typeDef|])
 instanceIntrospect _ = pure []
+
+constraintTypeable :: TypeName -> Q Type
+constraintTypeable name = typeT ''Typeable [name]
 
 -- [(FieldDefinition, TypeUpdater)]
 deriveObjectRep :: ServerTypeDefinition cat -> Q [Dec]
@@ -81,9 +82,7 @@ deriveObjectRep
     where
       mainTypeName = typeT (mkTypeName tName) typeArgs
       typeArgs = tyConArgs tKind
-      constrains = map conTypeable typeArgs
-        where
-          conTypeable name = typeT ''Typeable [name]
+      constrains = map constraintTypeable typeArgs
       -----------------------------------------------
       iHead = instanceHeadMultiT ''DeriveTypeContent instCat [conT ''TRUE, mainTypeName]
       instCat
