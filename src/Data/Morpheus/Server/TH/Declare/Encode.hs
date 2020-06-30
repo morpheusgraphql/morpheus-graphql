@@ -15,6 +15,7 @@ import Data.Morpheus.Internal.TH
   ( applyT,
     destructRecord,
     instanceHeadMultiT,
+    m_,
     mkFieldsE,
     mkTypeName,
     nameVarP,
@@ -49,49 +50,32 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
-m_ :: TypeName
-m_ = "m"
-
-po_ :: TypeName
-po_ = "oparation"
+o_ :: TypeName
+o_ = "oparation"
 
 e_ :: TypeName
 e_ = "encodeEvent"
 
 encodeVars :: [TypeName]
-encodeVars = [po_, e_, m_]
+encodeVars = [o_, e_, m_]
 
-deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
-deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
-  pure <$> instanceD (cxt constrains) appHead methods
+genHeadType :: TypeName -> [Q Type]
+genHeadType tName = mainType : instanceArgs
   where
     instanceArgs = map nameVarT encodeVars
     mainTypeArg = [typeT ''Resolver encodeVars]
     mainType = applyT (mkTypeName tName) mainTypeArg
-    -------------------------------------------
-    -- defines Constraint: (Monad m, ...)
-    constrains =
-      [ typeT ''Monad [m_],
-        applyT ''Encode (mainType : instanceArgs),
-        applyT ''LiftOperation [nameVarT po_],
-        constraintTypeable e_,
-        constraintTypeable m_,
-        constraintTypeable po_
-      ]
-    -------------------------------------------------------------------
-    -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
-    appHead =
-      instanceHeadMultiT
-        ''ExploreResolvers
-        (conT ''TRUE)
-        (mainType : instanceArgs)
-    ------------------------------------------------------------------
-    -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
-    methods = [simpleFunD 'exploreResolvers args body]
-      where
-        args = [nameVarP "_", destructRecord tName cFields]
-        body = pure (decodeObjectE tName cFields)
-deriveEncode _ = pure []
+
+-- defines Constraint: (Monad m, ...)
+mkConstrains :: TypeName -> [Q Type]
+mkConstrains tName =
+  [ typeT ''Monad [m_],
+    applyT ''Encode (genHeadType tName),
+    applyT ''LiftOperation [nameVarT o_],
+    constraintTypeable e_,
+    constraintTypeable m_,
+    constraintTypeable o_
+  ]
 
 mkObjectE :: TypeName -> Exp -> Exp
 mkObjectE name = AppE (AppE (VarE 'mkObject) (typeNameStringE name))
@@ -109,3 +93,27 @@ decodeObjectE tName cFields =
     mkObjectE
       tName
       (mkFieldsE 'mkEntry cFields)
+
+-- | defines: ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value)
+instanceType :: TypeName -> Q Type
+instanceType tName =
+  instanceHeadMultiT
+    ''ExploreResolvers
+    (conT ''TRUE)
+    (genHeadType tName)
+
+-- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
+exploreResolversD :: TypeName -> [FieldDefinition cat] -> DecQ
+exploreResolversD tName fields = simpleFunD 'exploreResolvers args body
+  where
+    args = [nameVarP "_", destructRecord tName fields]
+    body = pure (decodeObjectE tName fields)
+
+deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
+deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
+  pure <$> instanceD context typeDef funDefs
+  where
+    context = cxt (mkConstrains tName)
+    typeDef = instanceType tName
+    funDefs = [exploreResolversD tName cFields]
+deriveEncode _ = pure []
