@@ -15,9 +15,7 @@ import Data.Morpheus.Internal.TH
     m',
     m_,
     mkFieldsE,
-    mkTypeName,
     nameVarP,
-    nameVarT,
     simpleFunD,
   )
 import Data.Morpheus.Server.Deriving.Channels

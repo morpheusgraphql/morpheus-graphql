@@ -13,7 +13,7 @@ module Data.Morpheus.Server.Internal.TH.Utils
 where
 
 import Data.Morpheus.Internal.TH
-  ( mkFieldName,
+  ( toName,
     typeT,
   )
 import Data.Morpheus.Kind
@@ -39,10 +39,10 @@ import Language.Haskell.TH
   )
 
 o' :: Type
-o' = VarT (mkFieldName "oparation")
+o' = VarT $ toName ("oparation" :: TypeName)
 
 e' :: Type
-e' = VarT (mkFieldName "encodeEvent")
+e' = VarT $ toName ("encodeEvent" :: TypeName)
 
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)

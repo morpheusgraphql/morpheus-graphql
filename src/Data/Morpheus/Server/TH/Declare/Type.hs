@@ -11,10 +11,9 @@ where
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
-    mkFieldName,
-    mkTypeName,
     nameSpaceField,
     nameSpaceType,
+    toName,
     tyConArgs,
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
@@ -51,7 +50,7 @@ declareType namespace ServerTypeDefinition {tName, tCons, tKind, tNamespace} =
   where
     tVars = declareTyVar (tyConArgs tKind)
       where
-        declareTyVar = map (PlainTV . mkTypeName)
+        declareTyVar = map (PlainTV . toName)
     cons = declareCons namespace tKind (tNamespace, tName) tCons
 
 derive :: TypeKind -> [DerivClause]
@@ -65,7 +64,7 @@ deriveClasses :: [Name] -> DerivClause
 deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 
 mkNamespace :: [FieldName] -> TypeName -> Name
-mkNamespace tNamespace = mkTypeName . nameSpaceType tNamespace
+mkNamespace tNamespace = toName . nameSpaceType tNamespace
 
 declareCons ::
   Bool ->
@@ -101,8 +100,8 @@ renderFieldType tKind FieldDefinition {fieldContent, fieldType} =
 
 fieldTypeName :: Bool -> TypeName -> FieldName -> Name
 fieldTypeName namespace tName fieldName
-  | namespace = mkFieldName (nameSpaceField tName fieldName)
-  | otherwise = mkFieldName fieldName
+  | namespace = toName (nameSpaceField tName fieldName)
+  | otherwise = toName fieldName
 
 -- withSubscriptionField: t => SubscriptionField t
 withSubscriptionField :: TypeKind -> Type -> Type
@@ -114,7 +113,7 @@ withSubscriptionField kind x
 withArgs :: TypeName -> Type -> Type
 withArgs argsTypename = AppT (AppT arrowType argType)
   where
-    argType = ConT $ mkTypeName argsTypename
+    argType = ConT $ toName argsTypename
     arrowType = ConT ''Arrow
 
 -- withMonad: t => m t

@@ -15,7 +15,7 @@ where
 import Data.Morpheus.Internal.TH
   ( instanceHeadT,
     instanceProxyFunD,
-    mkTypeName,
+    toName,
     tyConArgs,
     typeInstanceDec,
     typeT,
@@ -46,7 +46,7 @@ interfaceF :: Name -> ExpQ
 interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () Maybe))))|]
 
 introspectInterface :: TypeName -> ExpQ
-introspectInterface = interfaceF . mkTypeName
+introspectInterface = interfaceF . toName
 
 deriveGQLType :: ServerTypeDefinition cat -> Q [Dec]
 deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
@@ -66,7 +66,7 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
     typeArgs = tyConArgs tKind
     --------------------------------
     iHead = instanceHeadT ''GQLType tName typeArgs
-    headSig = typeT (mkTypeName tName) typeArgs
+    headSig = typeT (toName tName) typeArgs
     ---------------------------------------------------
     constrains = map constraintTypeable typeArgs
     -------------------------------------------------

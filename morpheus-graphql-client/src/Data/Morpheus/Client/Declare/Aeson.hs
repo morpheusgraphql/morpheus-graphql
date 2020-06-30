@@ -29,12 +29,12 @@ import Data.Morpheus.Internal.TH
     instanceFunD,
     instanceHeadT,
     mkFieldsE,
-    mkTypeName,
     nameLitP,
     nameStringL,
     nameVarP,
     simpleFunD,
     toConE,
+    toName,
     toVarE,
   )
 import Data.Morpheus.Internal.Utils
@@ -226,7 +226,7 @@ aesonToJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
       where
         buildMatch ConsD {cName} = match enumPat body []
           where
-            enumPat = conP (mkTypeName $ nameSpaceType [toFieldName typename] cName) []
+            enumPat = conP (toName $ nameSpaceType [toFieldName typename] cName) []
             body = normalB $ litE (nameStringL cName)
 
 -- ToJSON

@@ -17,10 +17,9 @@ import Data.Morpheus.Internal.TH
     instanceHeadMultiT,
     m_,
     mkFieldsE,
-    mkTypeName,
     nameVarP,
-    nameVarT,
     simpleFunD,
+    toVarT,
     typeT,
   )
 import Data.Morpheus.Server.Deriving.Encode
@@ -62,7 +61,7 @@ encodeVars = [o_, e_, m_]
 genHeadType :: TypeName -> [Q Type]
 genHeadType tName = mainType : instanceArgs
   where
-    instanceArgs = map nameVarT encodeVars
+    instanceArgs = map toVarT encodeVars
     mainTypeArg = [typeT ''Resolver encodeVars]
     mainType = apply tName mainTypeArg
 
@@ -71,7 +70,7 @@ mkConstrains :: TypeName -> [Q Type]
 mkConstrains tName =
   [ typeT ''Monad [m_],
     apply ''Encode (genHeadType tName),
-    apply ''LiftOperation [nameVarT o_],
+    apply ''LiftOperation [toVarT o_],
     constraintTypeable e_,
     constraintTypeable m_,
     constraintTypeable o_

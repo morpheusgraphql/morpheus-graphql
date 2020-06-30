@@ -16,9 +16,9 @@ import Data.Morpheus.Internal.TH
   ( instanceFunD,
     instanceHeadMultiT,
     instanceProxyFunD,
-    mkTypeName,
     nameConT,
-    nameVarT,
+    toName,
+    toVarT,
     tyConArgs,
     typeT,
   )
@@ -67,7 +67,7 @@ instanceIntrospect :: Maybe (TypeDefinition cat) -> Q [Dec]
 instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnum {}}) =
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
-    iHead = instanceHeadMultiT ''Introspect cat_ [conT $ mkTypeName typeName]
+    iHead = instanceHeadMultiT ''Introspect cat_ [conT $ toName typeName]
     defineIntrospect = instanceProxyFunD ('introspect, [|insertType typeDef|])
 instanceIntrospect _ = pure []
 
@@ -81,7 +81,7 @@ deriveObjectRep
     } =
     pure <$> instanceD (cxt constrains) iHead methods
     where
-      mainTypeName = typeT (mkTypeName tName) typeArgs
+      mainTypeName = typeT (toName tName) typeArgs
       typeArgs = tyConArgs tKind
       constrains = map constraintTypeable typeArgs
       -----------------------------------------------
@@ -156,13 +156,13 @@ introspectField cat FieldDefinition {fieldType, fieldContent} =
 proxyRepT :: TypeQ -> TypeRef -> Q Exp
 proxyRepT cat TypeRef {typeConName, typeArgs} = [|(ProxyRep :: ProxyRep $(cat) $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (nameConT typeConName) (nameVarT m)
+    genSig (Just m) = appT (nameConT typeConName) (toVarT m)
     genSig _ = nameConT typeConName
 
 proxyT :: TypeRef -> Q Exp
 proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (nameConT typeConName) (nameVarT m)
+    genSig (Just m) = appT (nameConT typeConName) (toVarT m)
     genSig _ = nameConT typeConName
 
 buildFields :: [FieldDefinition cat] -> ExpQ

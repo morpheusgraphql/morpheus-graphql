@@ -27,7 +27,7 @@ module Data.Morpheus.Internal.TH
     nameStringL,
     nameConT,
     toVarE,
-    nameVarT,
+    toVarT,
     nameConType,
     nameVarP,
     declareTypeRef,
@@ -38,6 +38,7 @@ module Data.Morpheus.Internal.TH
     isEnum,
     mkFieldsE,
     toConE,
+    toName,
   )
 where
 
@@ -63,7 +64,7 @@ import Data.Text (unpack)
 import Language.Haskell.TH
 
 m' :: Type
-m' = VarT $ mkTypeName m_
+m' = toVar m_
 
 m_ :: TypeName
 m_ = "m"
@@ -80,7 +81,7 @@ declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
     ------------------------------------------------------
     typeName = nameConType typeConName
     --------------------------------------------
-    decType (Just par) = AppT typeName (VarT $ mkTypeName par)
+    decType (Just par) = AppT typeName (toVar par)
     decType _ = typeName
 
 tyConArgs :: TypeKind -> [TypeName]
@@ -97,17 +98,14 @@ vars = map toVar
 class ToName a where
   toName :: a -> Name
 
+instance ToName Name where
+  toName = id
+
 instance ToName TypeName where
   toName = mkName . unpack . readTypeName
 
 instance ToName FieldName where
   toName = mkName . unpack . readName . convertToHaskellName
-
-mkTypeName :: TypeName -> Name
-mkTypeName = toName
-
-mkFieldName :: FieldName -> Name
-mkFieldName = toName
 
 class ToTH a b where
   toCon :: a -> b
@@ -117,25 +115,13 @@ instance ToTH a b => ToTH a (Q b) where
   toCon = pure . toCon
   toVar = pure . toVar
 
-instance ToTH TypeName Type where
-  toCon = toCon . mkTypeName
-  toVar = toVar . mkTypeName
+instance (ToName a) => ToTH a Type where
+  toCon = ConT . toName
+  toVar = VarT . toName
 
-instance ToTH TypeName Exp where
-  toCon = toCon . mkTypeName
-  toVar = toVar . mkTypeName
-
-instance ToTH FieldName Exp where
-  toCon = toCon . mkFieldName
-  toVar = toVar . mkFieldName
-
-instance ToTH Name Type where
-  toCon = ConT
-  toVar = VarT
-
-instance ToTH Name Exp where
-  toCon = ConE
-  toVar = VarE
+instance (ToName a) => ToTH a Exp where
+  toCon = ConE . toName
+  toVar = VarE . toName
 
 class Apply a where
   apply :: ToTH i a => i -> [a] -> a
@@ -156,7 +142,7 @@ typeT :: Name -> [TypeName] -> Q Type
 typeT name li = apply name (vars li)
 
 instanceHeadT :: Name -> TypeName -> [TypeName] -> Q Type
-instanceHeadT cName iType tArgs = apply cName [apply (mkTypeName iType) (map (varT . mkTypeName) tArgs)]
+instanceHeadT cName iType tArgs = apply cName [apply iType (vars tArgs)]
 
 instanceProxyFunD :: (Name, ExpQ) -> DecQ
 instanceProxyFunD (name, body) = instanceFunD name ["_"] body
@@ -165,7 +151,7 @@ simpleFunD :: Name -> [PatQ] -> ExpQ -> DecQ
 simpleFunD name args body = funD name [clause args (normalB body) []]
 
 instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
-instanceFunD name args = simpleFunD name (map (varP . mkTypeName) args)
+instanceFunD name args = simpleFunD name (map (varP . toName) args)
 
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
 instanceHeadMultiT className iType li = apply className (iType : li)
@@ -181,7 +167,7 @@ instanceHeadMultiT className iType li = apply className (iType : li)
 -- (User name id)
 -- >>>
 destructRecord :: TypeName -> [FieldDefinition cat] -> PatQ
-destructRecord conName fields = conP (mkTypeName conName) (map (varP . mkFieldName) names)
+destructRecord conName fields = conP (toName conName) (map (varP . toName) names)
   where
     names = map fieldName fields
 
@@ -212,13 +198,13 @@ decArgs (TySynD _ args _) = args
 decArgs _ = []
 
 nameConT :: TypeName -> Q Type
-nameConT = conT . mkTypeName
+nameConT = conT . toName
 
-nameVarT :: TypeName -> Q Type
-nameVarT = varT . mkTypeName
+toVarT :: ToTH a TypeQ => a -> TypeQ
+toVarT = toVar
 
 nameConType :: TypeName -> Type
-nameConType = ConT . mkTypeName
+nameConType = ConT . toName
 
 toVarE :: ToTH a Exp => a -> ExpQ
 toVarE = toVar
@@ -227,7 +213,7 @@ toConE :: ToTH a Exp => a -> ExpQ
 toConE = toCon
 
 nameVarP :: FieldName -> PatQ
-nameVarP = varP . mkFieldName
+nameVarP = varP . toName
 
 -- | 'mkFieldsE'
 --
