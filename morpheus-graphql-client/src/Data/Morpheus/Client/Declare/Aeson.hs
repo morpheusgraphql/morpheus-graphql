@@ -30,12 +30,12 @@ import Data.Morpheus.Internal.TH
     instanceHeadT,
     mkFieldsE,
     mkTypeName,
-    nameConE,
     nameLitP,
     nameStringL,
-    nameVarE,
     nameVarP,
     simpleFunD,
+    toConE,
+    toVarE,
   )
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
@@ -131,7 +131,7 @@ aesonObject tNamespace con@ConsD {cName} =
 aesonObjectBody :: [FieldName] -> ConsD cat -> ExpQ
 aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
   where
-    consName = nameConE (nameSpaceType namespace cName)
+    consName = toConE (nameSpaceType namespace cName)
     ----------------------------------------------------------
     handleFields [] =
       failure $
@@ -203,7 +203,7 @@ aesonFromJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
               normalB $
                 appE
                   (varE 'pure)
-                  (nameConE $ nameSpaceType [toFieldName typename] cName)
+                  (toConE $ nameSpaceType [toFieldName typename] cName)
 
 elseCaseEXP :: MatchQ
 elseCaseEXP = match (nameVarP varName) body []
@@ -212,9 +212,9 @@ elseCaseEXP = match (nameVarP varName) body []
     body =
       normalB $
         appE
-          (nameVarE "fail")
+          (toVarE 'fail)
           ( uInfixE
-              (appE (varE 'show) (nameVarE varName))
+              (appE (varE 'show) (toVarE varName))
               (varE '(<>))
               (stringE " is Not Valid Union Constructor")
           )

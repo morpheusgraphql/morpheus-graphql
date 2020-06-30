@@ -9,9 +9,10 @@ module Data.Morpheus.Server.TH.Declare.Channels
 where
 
 import Data.Morpheus.Internal.TH
-  ( applyT,
+  ( apply,
     destructRecord,
     instanceHeadMultiT,
+    m',
     m_,
     mkFieldsE,
     mkTypeName,
@@ -27,7 +28,7 @@ import Data.Morpheus.Server.Internal.TH.Types
   ( ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.Internal.TH.Utils
-  ( e_,
+  ( e',
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
@@ -48,15 +49,14 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
-encodeVars :: [Q Type]
-encodeVars = conT ''SUBSCRIPTION : map (varT . mkTypeName) [e_, m_]
+encodeVars :: [Type]
+encodeVars = [ConT ''SUBSCRIPTION, e', m']
 
-genHeadType :: TypeName -> [Q Type]
-genHeadType tName = mainType : instanceArgs
+genHeadType :: TypeName -> [Type]
+genHeadType tName = mainType : [e']
   where
-    instanceArgs = map nameVarT [e_]
-    mainTypeArg = [applyT ''Resolver encodeVars]
-    mainType = applyT (mkTypeName tName) mainTypeArg
+    mainTypeArg = [apply ''Resolver encodeVars]
+    mainType = apply tName mainTypeArg
 
 mkEntry ::
   GetChannel e a =>
@@ -73,7 +73,7 @@ instanceType tName =
   instanceHeadMultiT
     ''ExploreChannels
     (conT ''TRUE)
-    (genHeadType tName)
+    (map pure $ genHeadType tName)
 
 exploreChannelsD :: TypeName -> [FieldDefinition cat] -> DecQ
 exploreChannelsD tName fields = simpleFunD 'exploreChannels args body

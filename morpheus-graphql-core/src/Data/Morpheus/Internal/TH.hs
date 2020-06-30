@@ -1,6 +1,9 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -10,7 +13,6 @@
 module Data.Morpheus.Internal.TH
   ( tyConArgs,
     apply,
-    applyT,
     typeT,
     instanceHeadT,
     instanceProxyFunD,
@@ -24,13 +26,10 @@ module Data.Morpheus.Internal.TH
     nameLitP,
     nameStringL,
     nameConT,
-    nameVarE,
+    toVarE,
     nameVarT,
     nameConType,
-    nameConE,
     nameVarP,
-    mkTypeName,
-    mkFieldName,
     declareTypeRef,
     nameSpaceField,
     nameSpaceType,
@@ -38,6 +37,7 @@ module Data.Morpheus.Internal.TH
     m',
     isEnum,
     mkFieldsE,
+    toConE,
   )
 where
 
@@ -88,17 +88,75 @@ tyConArgs kindD
   | isOutputObject kindD || kindD == KindUnion = [m_]
   | otherwise = []
 
-apply :: Name -> [Q Exp] -> Q Exp
-apply n = foldl appE (conE n)
+cons :: ToTH a b => [a] -> [b]
+cons = map toCon
 
-applyT :: Name -> [Q Type] -> Q Type
-applyT name = foldl appT (conT name)
+vars :: ToTH a b => [a] -> [b]
+vars = map toVar
+
+class ToName a where
+  toName :: a -> Name
+
+instance ToName TypeName where
+  toName = mkName . unpack . readTypeName
+
+instance ToName FieldName where
+  toName = mkName . unpack . readName . convertToHaskellName
+
+mkTypeName :: TypeName -> Name
+mkTypeName = toName
+
+mkFieldName :: FieldName -> Name
+mkFieldName = toName
+
+class ToTH a b where
+  toCon :: a -> b
+  toVar :: a -> b
+
+instance ToTH a b => ToTH a (Q b) where
+  toCon = pure . toCon
+  toVar = pure . toVar
+
+instance ToTH TypeName Type where
+  toCon = toCon . mkTypeName
+  toVar = toVar . mkTypeName
+
+instance ToTH TypeName Exp where
+  toCon = toCon . mkTypeName
+  toVar = toVar . mkTypeName
+
+instance ToTH FieldName Exp where
+  toCon = toCon . mkFieldName
+  toVar = toVar . mkFieldName
+
+instance ToTH Name Type where
+  toCon = ConT
+  toVar = VarT
+
+instance ToTH Name Exp where
+  toCon = ConE
+  toVar = VarE
+
+class Apply a where
+  apply :: ToTH i a => i -> [a] -> a
+
+instance Apply TypeQ where
+  apply = foldl appT . toCon
+
+instance Apply Type where
+  apply = foldl AppT . toCon
+
+instance Apply Exp where
+  apply = foldl AppE . toCon
+
+instance Apply ExpQ where
+  apply = foldl appE . toCon
 
 typeT :: Name -> [TypeName] -> Q Type
-typeT name li = applyT name (map (varT . mkTypeName) li)
+typeT name li = apply name (vars li)
 
 instanceHeadT :: Name -> TypeName -> [TypeName] -> Q Type
-instanceHeadT cName iType tArgs = applyT cName [applyT (mkTypeName iType) (map (varT . mkTypeName) tArgs)]
+instanceHeadT cName iType tArgs = apply cName [apply (mkTypeName iType) (map (varT . mkTypeName) tArgs)]
 
 instanceProxyFunD :: (Name, ExpQ) -> DecQ
 instanceProxyFunD (name, body) = instanceFunD name ["_"] body
@@ -110,7 +168,7 @@ instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
 instanceFunD name args = simpleFunD name (map (varP . mkTypeName) args)
 
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
-instanceHeadMultiT className iType li = applyT className (iType : li)
+instanceHeadMultiT className iType li = apply className (iType : li)
 
 -- |
 -- input:
@@ -153,26 +211,20 @@ decArgs (NewtypeD _ _ args _ _ _) = args
 decArgs (TySynD _ args _) = args
 decArgs _ = []
 
-mkTypeName :: TypeName -> Name
-mkTypeName = mkName . unpack . readTypeName
-
-mkFieldName :: FieldName -> Name
-mkFieldName = mkName . unpack . readName . convertToHaskellName
-
 nameConT :: TypeName -> Q Type
 nameConT = conT . mkTypeName
-
-nameConType :: TypeName -> Type
-nameConType = ConT . mkTypeName
 
 nameVarT :: TypeName -> Q Type
 nameVarT = varT . mkTypeName
 
-nameVarE :: FieldName -> ExpQ
-nameVarE = varE . mkFieldName
+nameConType :: TypeName -> Type
+nameConType = ConT . mkTypeName
 
-nameConE :: TypeName -> ExpQ
-nameConE = conE . mkTypeName
+toVarE :: ToTH a Exp => a -> ExpQ
+toVarE = toVar
+
+toConE :: ToTH a Exp => a -> ExpQ
+toConE = toCon
 
 nameVarP :: FieldName -> PatQ
 nameVarP = varP . mkFieldName
@@ -202,10 +254,7 @@ mkEntryWith ::
 mkEntryWith f FieldDefinition {fieldName} =
   AppE
     (AppE (VarE f) (fieldNameStringE fieldName))
-    (varNameE fieldName)
+    (toVar fieldName)
 
 fieldNameStringE :: FieldName -> Exp
 fieldNameStringE (FieldName x) = LitE $ StringL (unpack x)
-
-varNameE :: FieldName -> Exp
-varNameE = VarE . mkFieldName

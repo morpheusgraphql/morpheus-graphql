@@ -7,8 +7,8 @@ module Data.Morpheus.Server.Internal.TH.Utils
     constraintTypeable,
     typeNameStringE,
     withPure,
-    o_,
-    e_,
+    o',
+    e',
   )
 where
 
@@ -25,9 +25,7 @@ import Data.Morpheus.Kind
     WRAPPER,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldDefinition (..),
-    FieldName (..),
-    TypeKind (..),
+  ( TypeKind (..),
     TypeName (..),
   )
 import Data.Text (unpack)
@@ -37,14 +35,14 @@ import Language.Haskell.TH
     Lit (..),
     Name,
     Q,
-    Type,
+    Type (..),
   )
 
-o_ :: TypeName
-o_ = "oparation"
+o' :: Type
+o' = VarT (mkFieldName "oparation")
 
-e_ :: TypeName
-e_ = "encodeEvent"
+e' :: Type
+e' = VarT (mkFieldName "encodeEvent")
 
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)

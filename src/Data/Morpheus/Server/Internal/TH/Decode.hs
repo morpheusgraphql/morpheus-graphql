@@ -19,8 +19,8 @@ import Data.Morpheus.Error
   ( internalTypeMismatch,
   )
 import Data.Morpheus.Internal.TH
-  ( nameConE,
-    nameVarE,
+  ( toConE,
+    toVarE,
   )
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -55,7 +55,7 @@ import Language.Haskell.TH
 decodeObjectExpQ :: ExpQ -> ConsD cat -> ExpQ
 decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
   where
-    consName = nameConE cName
+    consName = toConE cName
     ----------------------------------------------------------------------------------
     handleFields fNames = uInfixE consName (varE '(<$>)) (applyFields fNames)
       where
@@ -65,7 +65,7 @@ decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
         ------------------------------------------------------------------------
         defField FieldDefinition {fieldName} =
           uInfixE
-            (nameVarE "o")
+            (toVarE ("o" :: FieldName))
             fieldDecoder
             [|fieldName|]
 

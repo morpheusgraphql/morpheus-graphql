@@ -12,7 +12,7 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Internal.TH
-  ( applyT,
+  ( apply,
     destructRecord,
     instanceHeadMultiT,
     m_,
@@ -64,14 +64,14 @@ genHeadType tName = mainType : instanceArgs
   where
     instanceArgs = map nameVarT encodeVars
     mainTypeArg = [typeT ''Resolver encodeVars]
-    mainType = applyT (mkTypeName tName) mainTypeArg
+    mainType = apply tName mainTypeArg
 
 -- defines Constraint: (Monad m, ...)
 mkConstrains :: TypeName -> [Q Type]
 mkConstrains tName =
   [ typeT ''Monad [m_],
-    applyT ''Encode (genHeadType tName),
-    applyT ''LiftOperation [nameVarT o_],
+    apply ''Encode (genHeadType tName),
+    apply ''LiftOperation [nameVarT o_],
     constraintTypeable e_,
     constraintTypeable m_,
     constraintTypeable o_
