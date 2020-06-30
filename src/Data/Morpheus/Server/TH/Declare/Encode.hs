@@ -102,7 +102,7 @@ instanceType tName =
     (conT ''TRUE)
     (genHeadType tName)
 
--- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
+-- | defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
 exploreResolversD :: TypeName -> [FieldDefinition cat] -> DecQ
 exploreResolversD tName fields = simpleFunD 'exploreResolvers args body
   where
