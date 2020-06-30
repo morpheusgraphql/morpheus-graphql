@@ -113,8 +113,8 @@ instance ToString a b => ToString a (Q b) where
 instance ToString TypeName Lit where
   toString = stringL . unpack . readTypeName
 
-instance ToString TypeName PatQ where
-  toString = litP . toString
+instance ToString TypeName Pat where
+  toString = LitP . toString
 
 instance ToString FieldName Lit where
   toString (FieldName x) = stringL (unpack x)
