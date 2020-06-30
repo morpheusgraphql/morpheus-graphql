@@ -20,15 +20,11 @@ import Data.Morpheus.Internal.TH
     typeInstanceDec,
     typeT,
   )
-import Data.Morpheus.Kind
-  ( ENUM,
-    INPUT,
-    INTERFACE,
-    OUTPUT,
-    SCALAR,
-    WRAPPER,
-  )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Utils
+  ( constraintTypeable,
+    kindName,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
   )
@@ -39,13 +35,11 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeKind (..),
     TypeName,
     isObject,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
-import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
 interfaceF :: Name -> ExpQ
@@ -74,9 +68,7 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
     iHead = instanceHeadT ''GQLType tName typeArgs
     headSig = typeT (mkTypeName tName) typeArgs
     ---------------------------------------------------
-    constrains = map conTypeable typeArgs
-      where
-        conTypeable name = typeT ''Typeable [name]
+    constrains = map constraintTypeable typeArgs
     -------------------------------------------------
     typeFamilies
       | isObject tKind = [deriveKIND, deriveCUSTOM]
@@ -89,17 +81,6 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
         deriveInstance insName tyName = do
           typeN <- headSig
           pure $ typeInstanceDec insName typeN (ConT tyName)
-
-kindName :: TypeKind -> Name
-kindName KindObject {} = ''OUTPUT
-kindName KindScalar = ''SCALAR
-kindName KindEnum = ''ENUM
-kindName KindUnion = ''OUTPUT
-kindName KindInputObject = ''INPUT
-kindName KindList = ''WRAPPER
-kindName KindNonNull = ''WRAPPER
-kindName KindInputUnion = ''INPUT
-kindName KindInterface = ''INTERFACE
 
 interfacesFrom :: Maybe (TypeDefinition ANY) -> [TypeName]
 interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements

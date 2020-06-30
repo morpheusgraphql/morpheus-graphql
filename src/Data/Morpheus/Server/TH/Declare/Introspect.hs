@@ -31,7 +31,10 @@ import Data.Morpheus.Server.Deriving.Introspect
     ProxyRep (..),
     deriveCustomInputObjectType,
   )
-import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Types
+  ( ServerTypeDefinition (..),
+    constraintTypeable,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__typeName, implements),
     TypeUpdater,
@@ -53,7 +56,6 @@ import Data.Morpheus.Types.Internal.AST
     unsafeFromFields,
   )
 import Data.Proxy (Proxy (..))
-import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
 cat_ :: TypeQ
@@ -66,9 +68,6 @@ instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnu
     iHead = instanceHeadMultiT ''Introspect cat_ [conT $ mkTypeName typeName]
     defineIntrospect = instanceProxyFunD ('introspect, [|insertType typeDef|])
 instanceIntrospect _ = pure []
-
-constraintTypeable :: TypeName -> Q Type
-constraintTypeable name = typeT ''Typeable [name]
 
 -- [(FieldDefinition, TypeUpdater)]
 deriveObjectRep :: ServerTypeDefinition cat -> Q [Dec]

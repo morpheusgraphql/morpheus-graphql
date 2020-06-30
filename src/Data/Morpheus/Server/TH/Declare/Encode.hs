@@ -26,7 +26,10 @@ import Data.Morpheus.Server.Deriving.Encode
   ( Encode (..),
     ExploreResolvers (..),
   )
-import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Types
+  ( ServerTypeDefinition (..),
+    constraintTypeable,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
@@ -40,7 +43,6 @@ import Data.Morpheus.Types.Internal.Resolving
     Resolver,
   )
 import Data.Semigroup ((<>))
-import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
 m_ :: TypeName
@@ -55,9 +57,6 @@ e_ = "encodeEvent"
 encodeVars :: [TypeName]
 encodeVars = [po_, e_, m_]
 
-iTypeable :: TypeName -> Q Type
-iTypeable name = typeT ''Typeable [name]
-
 deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
 deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceD (cxt constrains) appHead methods
@@ -66,14 +65,14 @@ deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
     mainTypeArg = [typeT ''Resolver encodeVars]
     mainType = applyT (mkTypeName tName) mainTypeArg
     -------------------------------------------
-    -- defines Constraint: (Typeable m, Monad m)
+    -- defines Constraint: (Monad m, ...)
     constrains =
       [ typeT ''Monad [m_],
         applyT ''Encode (mainType : instanceArgs),
         applyT ''LiftOperation [nameVarT po_],
-        iTypeable e_,
-        iTypeable m_,
-        iTypeable po_
+        constraintTypeable e_,
+        constraintTypeable m_,
+        constraintTypeable po_
       ]
     -------------------------------------------------------------------
     -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where

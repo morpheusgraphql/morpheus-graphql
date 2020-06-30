@@ -36,8 +36,8 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Language.Haskell.TH
 
-(.:) :: Decode a => ValidValue -> FieldName -> Eventless a
-value .: selectorName = withObject (decodeFieldWith decode selectorName) value
+decodeFieldValue :: Decode a => ValidValue -> FieldName -> Eventless a
+decodeFieldValue value selectorName = withObject (decodeFieldWith decode selectorName) value
 
 deriveDecode :: ServerTypeDefinition cat -> Q [Dec]
 deriveDecode ServerTypeDefinition {tName, tCons = [cons]} =
@@ -47,5 +47,5 @@ deriveDecode ServerTypeDefinition {tName, tCons = [cons]} =
     methods = [funD 'decodeType [clause argsE (normalB body) []]]
       where
         argsE = map nameVarP ["o"]
-        body = decodeObjectExpQ [|(.:)|] cons
+        body = decodeObjectExpQ (varE 'decodeFieldValue) cons
 deriveDecode _ = pure []
