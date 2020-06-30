@@ -29,12 +29,11 @@ import Data.Morpheus.Internal.TH
     instanceFunD,
     instanceHeadT,
     mkFieldsE,
-    nameLitP,
-    nameStringL,
     nameVarP,
     simpleFunD,
     toConE,
     toName,
+    toString,
     toVarE,
   )
 import Data.Morpheus.Internal.Utils
@@ -169,7 +168,7 @@ aesonUnionObject
     where
       buildMatch cons@ConsD {cName} = match objectPattern body []
         where
-          objectPattern = tupP [nameLitP cName, nameVarP "o"]
+          objectPattern = tupP [toString cName, nameVarP "o"]
           body = normalB $ aesonObjectBody namespace cons
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
@@ -198,7 +197,7 @@ aesonFromJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
       where
         buildMatch ConsD {cName} = match enumPat body []
           where
-            enumPat = nameLitP cName
+            enumPat = toString cName
             body =
               normalB $
                 appE
@@ -227,7 +226,7 @@ aesonToJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
         buildMatch ConsD {cName} = match enumPat body []
           where
             enumPat = conP (toName $ nameSpaceType [toFieldName typename] cName) []
-            body = normalB $ litE (nameStringL cName)
+            body = normalB (toString cName)
 
 -- ToJSON
 deriveToJSON :: ClientTypeDefinition -> Q Dec

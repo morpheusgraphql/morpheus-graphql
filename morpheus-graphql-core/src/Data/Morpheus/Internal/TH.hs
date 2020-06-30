@@ -23,8 +23,7 @@ module Data.Morpheus.Internal.TH
     typeInstanceDec,
     infoTyVars,
     decArgs,
-    nameLitP,
-    nameStringL,
+    toString,
     toConT,
     toVarE,
     toVarT,
@@ -105,6 +104,27 @@ instance ToName TypeName where
 instance ToName FieldName where
   toName = mkName . unpack . readName . convertToHaskellName
 
+class ToString a b where
+  toString :: a -> b
+
+instance ToString a b => ToString a (Q b) where
+  toString = pure . toString
+
+instance ToString TypeName Lit where
+  toString = stringL . unpack . readTypeName
+
+instance ToString TypeName PatQ where
+  toString = litP . toString
+
+instance ToString FieldName Lit where
+  toString (FieldName x) = stringL (unpack x)
+
+instance ToString TypeName Exp where
+  toString = LitE . toString
+
+instance ToString FieldName Exp where
+  toString = LitE . toString
+
 class ToCon a b where
   toCon :: a -> b
 
@@ -182,12 +202,6 @@ destructRecord conName fields = conP (toName conName) (map (varP . toName) names
 
 typeInstanceDec :: Name -> Type -> Type -> Dec
 
-nameLitP :: TypeName -> PatQ
-nameLitP = litP . nameStringL
-
-nameStringL :: TypeName -> Lit
-nameStringL = stringL . unpack . readTypeName
-
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes
 typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
@@ -213,7 +227,7 @@ toVarT :: ToVar a TypeQ => a -> TypeQ
 toVarT = toVar
 
 nameConType :: TypeName -> Type
-nameConType = ConT . toName
+nameConType = toCon
 
 toVarE :: ToVar a Exp => a -> ExpQ
 toVarE = toVar
@@ -248,8 +262,5 @@ mkEntryWith ::
   Exp
 mkEntryWith f FieldDefinition {fieldName} =
   AppE
-    (AppE (VarE f) (fieldNameStringE fieldName))
+    (AppE (VarE f) (toString fieldName))
     (toVar fieldName)
-
-fieldNameStringE :: FieldName -> Exp
-fieldNameStringE (FieldName x) = LitE $ StringL (unpack x)
