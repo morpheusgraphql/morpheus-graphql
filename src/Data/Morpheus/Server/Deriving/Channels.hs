@@ -21,11 +21,12 @@ where
 
 -- MORPHEUS
 import Data.Morpheus.Error (internalError)
-import Data.Morpheus.Internal.Utils (elems, failure)
+import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
   )
+import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( FALSE,
     FieldName (..),
@@ -53,7 +54,7 @@ toProxy :: forall c e. CustomProxy c e -> Proxy e
 toProxy _ = Proxy @e
 
 type ChannelCon e m a =
-  ( ExploreChannels FALSE (a (Resolver SUBSCRIPTION e m)) e,
+  ( ExploreChannels (CUSTOM (a (Resolver SUBSCRIPTION e m))) (a (Resolver SUBSCRIPTION e m)) e,
     TypeRep e (Rep (a (Resolver SUBSCRIPTION e m))),
     Generic (a (Resolver SUBSCRIPTION e m))
   )
@@ -65,7 +66,9 @@ instance
   ChannelCon e m subs =>
   GetChannels e (subs (Resolver SUBSCRIPTION e m))
   where
-  getChannels value sel = selectBy sel $ exploreChannels (CustomProxy :: CustomProxy FALSE e) value
+  getChannels value sel =
+    selectBy sel $
+      exploreChannels (CustomProxy :: CustomProxy (CUSTOM (subs (Resolver SUBSCRIPTION e m))) e) value
 
 selectBy ::
   Selection VALID ->
