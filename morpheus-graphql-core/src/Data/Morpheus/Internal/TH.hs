@@ -37,6 +37,7 @@ module Data.Morpheus.Internal.TH
     m_,
     m',
     isEnum,
+    mkFieldsE,
   )
 where
 
@@ -47,7 +48,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     TypeKind (..),
     TypeKind (..),
     TypeName (..),
@@ -166,3 +167,36 @@ nameConE = conE . mkTypeName
 
 nameVarP :: FieldName -> PatQ
 nameVarP = varP . mkFieldName
+
+-- | 'mkFieldsE'
+--
+--  input :
+--  >>>
+--       mkFieldsE 'mkValue [FieldDefinition { fieldName = \"field1" ,..} ,..]
+--  >>>
+--
+--  expression :
+--  >>>
+--    [ mkValue \"field1\" field1,
+--    ..
+--    ]
+-- >>>
+mkFieldsE :: Name -> [FieldDefinition cat] -> Exp
+mkFieldsE name = ListE . map (mkEntryWith name)
+
+--  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
+--  expression: mkValue "field1"  field1
+mkEntryWith ::
+  Name ->
+  FieldDefinition cat ->
+  Exp
+mkEntryWith f FieldDefinition {fieldName} =
+  AppE
+    (AppE (VarE f) (fieldNameStringE fieldName))
+    (varNameE fieldName)
+
+fieldNameStringE :: FieldName -> Exp
+fieldNameStringE (FieldName x) = LitE $ StringL (unpack x)
+
+varNameE :: FieldName -> Exp
+varNameE = VarE . mkFieldName

@@ -28,6 +28,7 @@ import Data.Morpheus.Internal.TH
   ( destructRecord,
     instanceFunD,
     instanceHeadT,
+    mkFieldsE,
     mkTypeName,
     nameConE,
     nameLitP,
@@ -248,9 +249,11 @@ deriveToJSON
       methods = [simpleFunD 'toJSON args body]
         where
           args = [destructRecord typename cFields]
-          body = appE (varE 'object) (listE $ map decodeVar varNames)
-          decodeVar name = [|name .= $(varName)|] where varName = nameVarE name
-          varNames = map fieldName cFields
+          body =
+            pure $
+              AppE
+                (VarE 'object)
+                (mkFieldsE '(.=) cFields)
 deriveToJSON
   ClientTypeDefinition
     { clientTypeName = clientTypeName@TypeNameTH {typename},

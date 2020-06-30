@@ -15,6 +15,7 @@ import Data.Morpheus.Internal.TH
   ( applyT,
     destructRecord,
     instanceHeadMultiT,
+    mkFieldsE,
     mkTypeName,
     nameVarP,
     nameVarT,
@@ -30,7 +31,6 @@ import Data.Morpheus.Server.Internal.TH.Types
   )
 import Data.Morpheus.Server.Internal.TH.Utils
   ( constraintTypeable,
-    mkFieldsE,
     typeNameStringE,
     withPure,
   )

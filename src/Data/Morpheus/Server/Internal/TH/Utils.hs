@@ -5,8 +5,6 @@ module Data.Morpheus.Server.Internal.TH.Utils
   ( kindName,
     constraintTypeable,
     typeNameStringE,
-    fieldNameStringE,
-    mkFieldsE,
     withPure,
   )
 where
@@ -42,41 +40,8 @@ import Language.Haskell.TH
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)
 
--- | 'mkFieldsE'
---
---  input :
---  >>>
---       mkFieldsE 'mkValue [FieldDefinition { fieldName = \"field1" ,..} ,..]
---  >>>
---
---  expression :
---  >>>
---    [ mkValue \"field1\" field1,
---    ..
---    ]
--- >>>
-mkFieldsE :: Name -> [FieldDefinition cat] -> Exp
-mkFieldsE name = ListE . map (mkEntryWith name)
-
---  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
---  expression: mkValue "field1"  field1
-mkEntryWith ::
-  Name ->
-  FieldDefinition cat ->
-  Exp
-mkEntryWith f FieldDefinition {fieldName} =
-  AppE
-    (AppE (VarE f) (fieldNameStringE fieldName))
-    (varNameE fieldName)
-
-varNameE :: FieldName -> Exp
-varNameE = VarE . mkFieldName
-
 typeNameStringE :: TypeName -> Exp
 typeNameStringE = LitE . StringL . (unpack . readTypeName)
-
-fieldNameStringE :: FieldName -> Exp
-fieldNameStringE (FieldName x) = LitE $ StringL (unpack x)
 
 constraintTypeable :: TypeName -> Q Type
 constraintTypeable name = typeT ''Typeable [name]
