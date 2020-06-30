@@ -13,14 +13,14 @@ where
 
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
-  ( instanceFunD,
+  ( applyVars,
+    instanceFunD,
     instanceHeadMultiT,
     instanceProxyFunD,
     nameConT,
     toName,
     toVarT,
     tyConArgs,
-    typeT,
   )
 import Data.Morpheus.Internal.Utils
   ( concatUpdates,
@@ -81,7 +81,7 @@ deriveObjectRep
     } =
     pure <$> instanceD (cxt constrains) iHead methods
     where
-      mainTypeName = typeT (toName tName) typeArgs
+      mainTypeName = applyVars tName typeArgs
       typeArgs = tyConArgs tKind
       constrains = map constraintTypeable typeArgs
       -----------------------------------------------

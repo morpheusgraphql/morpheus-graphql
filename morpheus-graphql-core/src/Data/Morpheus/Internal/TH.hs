@@ -13,7 +13,7 @@
 module Data.Morpheus.Internal.TH
   ( tyConArgs,
     apply,
-    typeT,
+    applyVars,
     instanceHeadT,
     instanceProxyFunD,
     instanceFunD,
@@ -89,10 +89,10 @@ tyConArgs kindD
   | isOutputObject kindD || kindD == KindUnion = [m_]
   | otherwise = []
 
-cons :: ToTH a b => [a] -> [b]
+cons :: ToCon a b => [a] -> [b]
 cons = map toCon
 
-vars :: ToTH a b => [a] -> [b]
+vars :: ToVar a b => [a] -> [b]
 vars = map toVar
 
 class ToName a where
@@ -107,24 +107,35 @@ instance ToName TypeName where
 instance ToName FieldName where
   toName = mkName . unpack . readName . convertToHaskellName
 
-class ToTH a b where
+class ToCon a b where
   toCon :: a -> b
+
+instance ToCon a b => ToCon a (Q b) where
+  toCon = pure . toCon
+
+instance (ToName a) => ToCon a Type where
+  toCon = ConT . toName
+
+instance (ToName a) => ToCon a Exp where
+  toCon = ConE . toName
+
+class ToVar a b where
   toVar :: a -> b
 
-instance ToTH a b => ToTH a (Q b) where
-  toCon = pure . toCon
+instance ToVar a b => ToVar a (Q b) where
   toVar = pure . toVar
 
-instance (ToName a) => ToTH a Type where
-  toCon = ConT . toName
+instance (ToName a) => ToVar a Type where
   toVar = VarT . toName
 
-instance (ToName a) => ToTH a Exp where
-  toCon = ConE . toName
+instance (ToName a) => ToVar a Exp where
   toVar = VarE . toName
 
+instance (ToName a) => ToVar a Pat where
+  toVar = VarP . toName
+
 class Apply a where
-  apply :: ToTH i a => i -> [a] -> a
+  apply :: ToCon i a => i -> [a] -> a
 
 instance Apply TypeQ where
   apply = foldl appT . toCon
@@ -138,11 +149,11 @@ instance Apply Exp where
 instance Apply ExpQ where
   apply = foldl appE . toCon
 
-typeT :: Name -> [TypeName] -> Q Type
-typeT name li = apply name (vars li)
+applyVars :: (ToName con, ToName var) => con -> [var] -> Q Type
+applyVars name li = apply name (vars li)
 
 instanceHeadT :: Name -> TypeName -> [TypeName] -> Q Type
-instanceHeadT cName iType tArgs = apply cName [apply iType (vars tArgs)]
+instanceHeadT cName iType tArgs = apply cName [applyVars iType tArgs]
 
 instanceProxyFunD :: (Name, ExpQ) -> DecQ
 instanceProxyFunD (name, body) = instanceFunD name ["_"] body
@@ -151,7 +162,7 @@ simpleFunD :: Name -> [PatQ] -> ExpQ -> DecQ
 simpleFunD name args body = funD name [clause args (normalB body) []]
 
 instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
-instanceFunD name args = simpleFunD name (map (varP . toName) args)
+instanceFunD name args = simpleFunD name (vars args)
 
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
 instanceHeadMultiT className iType li = apply className (iType : li)
@@ -200,16 +211,16 @@ decArgs _ = []
 nameConT :: TypeName -> Q Type
 nameConT = conT . toName
 
-toVarT :: ToTH a TypeQ => a -> TypeQ
+toVarT :: ToVar a TypeQ => a -> TypeQ
 toVarT = toVar
 
 nameConType :: TypeName -> Type
 nameConType = ConT . toName
 
-toVarE :: ToTH a Exp => a -> ExpQ
+toVarE :: ToVar a Exp => a -> ExpQ
 toVarE = toVar
 
-toConE :: ToTH a Exp => a -> ExpQ
+toConE :: ToCon a Exp => a -> ExpQ
 toConE = toCon
 
 nameVarP :: FieldName -> PatQ

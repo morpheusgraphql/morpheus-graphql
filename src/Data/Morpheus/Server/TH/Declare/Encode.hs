@@ -13,6 +13,7 @@ where
 
 import Data.Morpheus.Internal.TH
   ( apply,
+    applyVars,
     destructRecord,
     instanceHeadMultiT,
     m_,
@@ -20,7 +21,6 @@ import Data.Morpheus.Internal.TH
     nameVarP,
     simpleFunD,
     toVarT,
-    typeT,
   )
 import Data.Morpheus.Server.Deriving.Encode
   ( Encode (..),
@@ -62,13 +62,13 @@ genHeadType :: TypeName -> [Q Type]
 genHeadType tName = mainType : instanceArgs
   where
     instanceArgs = map toVarT encodeVars
-    mainTypeArg = [typeT ''Resolver encodeVars]
+    mainTypeArg = [applyVars ''Resolver encodeVars]
     mainType = apply tName mainTypeArg
 
 -- defines Constraint: (Monad m, ...)
 mkConstrains :: TypeName -> [Q Type]
 mkConstrains tName =
-  [ typeT ''Monad [m_],
+  [ applyVars ''Monad [m_],
     apply ''Encode (genHeadType tName),
     apply ''LiftOperation [toVarT o_],
     constraintTypeable e_,

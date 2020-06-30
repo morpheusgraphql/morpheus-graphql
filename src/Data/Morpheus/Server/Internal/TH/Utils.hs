@@ -13,8 +13,8 @@ module Data.Morpheus.Server.Internal.TH.Utils
 where
 
 import Data.Morpheus.Internal.TH
-  ( toName,
-    typeT,
+  ( applyVars,
+    toName,
   )
 import Data.Morpheus.Kind
   ( ENUM,
@@ -51,7 +51,7 @@ typeNameStringE :: TypeName -> Exp
 typeNameStringE = LitE . StringL . (unpack . readTypeName)
 
 constraintTypeable :: TypeName -> Q Type
-constraintTypeable name = typeT ''Typeable [name]
+constraintTypeable name = applyVars ''Typeable [name]
 
 kindName :: TypeKind -> Name
 kindName KindObject {} = ''OUTPUT
