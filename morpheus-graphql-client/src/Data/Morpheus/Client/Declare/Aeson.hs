@@ -26,11 +26,11 @@ import Data.Morpheus.Client.Internal.Types
   )
 import Data.Morpheus.Internal.TH
   ( destructRecord,
+    funDSimple,
     instanceFunD,
     instanceHeadT,
     mkFieldsE,
     nameVarP,
-    simpleFunD,
     toConE,
     toName,
     toString,
@@ -245,7 +245,7 @@ deriveToJSON
       appHead = instanceHeadT ''ToJSON typename []
       ------------------------------------------------------------------
       -- defines: toJSON (User field1 field2 ...)= object ["name" .= name, "age" .= age, ...]
-      methods = [simpleFunD 'toJSON args body]
+      methods = [funDSimple 'toJSON args body]
         where
           args = [destructRecord typename cFields]
           body =

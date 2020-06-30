@@ -14,8 +14,8 @@ where
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
   ( applyVars,
+    funDProxy,
     instanceHeadT,
-    instanceProxyFunD,
     toName,
     tyConArgs,
     typeInstanceDec,
@@ -53,8 +53,7 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
   pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
   where
     functions =
-      map
-        instanceProxyFunD
+      funDProxy
         [ ('__typeName, [|tName|]),
           ('description, [|tDescription|]),
           ('implements, implementsFunc)

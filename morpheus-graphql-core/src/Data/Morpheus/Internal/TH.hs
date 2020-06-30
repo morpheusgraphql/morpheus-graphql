@@ -15,10 +15,9 @@ module Data.Morpheus.Internal.TH
     apply,
     applyVars,
     instanceHeadT,
-    instanceProxyFunD,
+    funDProxy,
     instanceFunD,
-    simpleFunD,
-    instanceHeadMultiT,
+    funDSimple,
     destructRecord,
     typeInstanceDec,
     infoTyVars,
@@ -34,6 +33,7 @@ module Data.Morpheus.Internal.TH
     nameSpaceType,
     m_,
     m',
+    _',
     isEnum,
     mkFieldsE,
     toConE,
@@ -67,6 +67,9 @@ m' = toVar m_
 
 m_ :: TypeName
 m_ = "m"
+
+_' :: PatQ
+_' = toVar ("_" :: FieldName)
 
 declareTypeRef :: TypeRef -> Type
 declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
@@ -170,20 +173,19 @@ instance Apply ExpQ where
 applyVars :: (ToName con, ToName var) => con -> [var] -> Q Type
 applyVars name li = apply name (vars li)
 
+funDProxy :: [(Name, ExpQ)] -> [DecQ]
+funDProxy = map fun
+  where
+    fun (name, body) = funDSimple name [_'] body
+
+funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
+funDSimple name args body = funD name [clause args (normalB body) []]
+
 instanceHeadT :: Name -> TypeName -> [TypeName] -> Q Type
 instanceHeadT cName iType tArgs = apply cName [applyVars iType tArgs]
 
-instanceProxyFunD :: (Name, ExpQ) -> DecQ
-instanceProxyFunD (name, body) = instanceFunD name ["_"] body
-
-simpleFunD :: Name -> [PatQ] -> ExpQ -> DecQ
-simpleFunD name args body = funD name [clause args (normalB body) []]
-
 instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
-instanceFunD name args = simpleFunD name (vars args)
-
-instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
-instanceHeadMultiT className iType li = apply className (iType : li)
+instanceFunD name args = funDSimple name (vars args)
 
 -- |
 -- input:
@@ -199,16 +201,6 @@ destructRecord :: TypeName -> [FieldDefinition cat] -> PatQ
 destructRecord conName fields = conP (toName conName) (map (varP . toName) names)
   where
     names = map fieldName fields
-
-typeInstanceDec :: Name -> Type -> Type -> Dec
-
-#if MIN_VERSION_template_haskell(2,15,0)
--- fix breaking changes
-typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
-#else
---
-typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
-#endif
 
 infoTyVars :: Info -> [TyVarBndr]
 infoTyVars (TyConI x) = decArgs x
@@ -264,3 +256,13 @@ mkEntryWith f FieldDefinition {fieldName} =
   AppE
     (AppE (VarE f) (toString fieldName))
     (toVar fieldName)
+
+typeInstanceDec :: Name -> Type -> Type -> Dec
+
+#if MIN_VERSION_template_haskell(2,15,0)
+-- fix breaking changes
+typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
+#else
+--
+typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
+#endif

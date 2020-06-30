@@ -9,14 +9,12 @@ module Data.Morpheus.Server.TH.Declare.Channels
 where
 
 import Data.Morpheus.Internal.TH
-  ( apply,
+  ( _',
+    apply,
     destructRecord,
-    instanceHeadMultiT,
+    funDSimple,
     m',
-    m_,
     mkFieldsE,
-    nameVarP,
-    simpleFunD,
   )
 import Data.Morpheus.Server.Deriving.Channels
   ( ExploreChannels (..),
@@ -47,15 +45,6 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
-encodeVars :: [Type]
-encodeVars = [ConT ''SUBSCRIPTION, e', m']
-
-genHeadType :: TypeName -> [Type]
-genHeadType tName = mainType : [e']
-  where
-    mainTypeArg = [apply ''Resolver encodeVars]
-    mainType = apply tName mainTypeArg
-
 mkEntry ::
   GetChannel e a =>
   FieldName ->
@@ -65,18 +54,18 @@ mkEntry ::
   )
 mkEntry name field = (name, getChannel field)
 
+-- | defines :: "MyType" ==> MyType (Resolver SUBSCRIPTION e m)
+mkType :: TypeName -> Type
+mkType tName = apply tName [apply ''Resolver [ConT ''SUBSCRIPTION, e', m']]
+
 -- | defines: ExploreChannels ('TRUE) (<Type> (Resolver SUBSCRIPTION e m)) e
-instanceType :: TypeName -> Q Type
-instanceType tName =
-  instanceHeadMultiT
-    ''ExploreChannels
-    (conT ''TRUE)
-    (map pure $ genHeadType tName)
+mkTypeClass :: TypeName -> Type
+mkTypeClass tName = apply ''ExploreChannels [ConT ''TRUE, mkType tName, e']
 
 exploreChannelsD :: TypeName -> [FieldDefinition cat] -> DecQ
-exploreChannelsD tName fields = simpleFunD 'exploreChannels args body
+exploreChannelsD tName fields = funDSimple 'exploreChannels args body
   where
-    args = [nameVarP "_", destructRecord tName fields]
+    args = [_', destructRecord tName fields]
     body = pure (mkFieldsE 'mkEntry fields)
 
 deriveChannels :: ServerTypeDefinition cat -> Q [Dec]
@@ -85,6 +74,6 @@ deriveChannels ServerTypeDefinition {tName, tCons = [ConsD {cFields}], tKind}
     pure <$> instanceD context typeDef funDefs
   where
     context = cxt []
-    typeDef = instanceType tName
+    typeDef = pure (mkTypeClass tName)
     funDefs = [exploreChannelsD tName cFields]
 deriveChannels _ = pure []

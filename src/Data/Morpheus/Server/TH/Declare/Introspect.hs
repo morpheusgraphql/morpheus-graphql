@@ -13,12 +13,12 @@ where
 
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
-  ( applyVars,
+  ( _',
+    apply,
+    applyVars,
+    funDSimple,
     instanceFunD,
-    instanceHeadMultiT,
-    instanceProxyFunD,
     toConT,
-    toName,
     toVarT,
     tyConArgs,
   )
@@ -67,8 +67,8 @@ instanceIntrospect :: Maybe (TypeDefinition cat) -> Q [Dec]
 instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnum {}}) =
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
-    iHead = instanceHeadMultiT ''Introspect cat_ [conT $ toName typeName]
-    defineIntrospect = instanceProxyFunD ('introspect, [|insertType typeDef|])
+    iHead = apply ''Introspect [cat_, toConT typeName]
+    defineIntrospect = funDSimple 'introspect [_'] [|insertType typeDef|]
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
@@ -85,7 +85,7 @@ deriveObjectRep
       typeArgs = tyConArgs tKind
       constrains = map constraintTypeable typeArgs
       -----------------------------------------------
-      iHead = instanceHeadMultiT ''DeriveTypeContent instCat [conT ''TRUE, mainTypeName]
+      iHead = apply ''DeriveTypeContent [instCat, conT ''TRUE, mainTypeName]
       instCat
         | tKind == KindInputObject =
           conT ''IN

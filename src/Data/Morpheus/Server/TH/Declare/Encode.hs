@@ -15,11 +15,10 @@ import Data.Morpheus.Internal.TH
   ( apply,
     applyVars,
     destructRecord,
-    instanceHeadMultiT,
+    funDSimple,
     m_,
     mkFieldsE,
     nameVarP,
-    simpleFunD,
     toVarT,
   )
 import Data.Morpheus.Server.Deriving.Encode
@@ -95,15 +94,11 @@ decodeObjectE tName cFields =
 
 -- | defines: ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value)
 instanceType :: TypeName -> Q Type
-instanceType tName =
-  instanceHeadMultiT
-    ''ExploreResolvers
-    (conT ''TRUE)
-    (genHeadType tName)
+instanceType tName = apply ''ExploreResolvers (conT ''TRUE : genHeadType tName)
 
 -- | defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
 exploreResolversD :: TypeName -> [FieldDefinition cat] -> DecQ
-exploreResolversD tName fields = simpleFunD 'exploreResolvers args body
+exploreResolversD tName fields = funDSimple 'exploreResolvers args body
   where
     args = [nameVarP "_", destructRecord tName fields]
     body = pure (decodeObjectE tName fields)
