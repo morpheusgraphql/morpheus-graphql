@@ -51,24 +51,23 @@ withPure = AppE (VarE 'pure)
 --
 --  expression :
 --  >>>
---    [ ( \"field1\" , mkValue field1 ),
+--    [ mkValue \"field1\" field1,
 --    ..
 --    ]
 -- >>>
-mkFieldsE :: Name -> [FieldDefinition cat] -> [Exp]
-mkFieldsE name = map (mkEntryWith name)
+mkFieldsE :: Name -> [FieldDefinition cat] -> Exp
+mkFieldsE name = ListE . map (mkEntryWith name)
 
 --  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
---  expression: ("field1" ,mkValue field1)
+--  expression: mkValue "field1"  field1
 mkEntryWith ::
   Name ->
   FieldDefinition cat ->
   Exp
 mkEntryWith f FieldDefinition {fieldName} =
-  TupE
-    [ Just (fieldNameStringE fieldName),
-      Just (AppE (VarE f) (varNameE fieldName))
-    ]
+  AppE
+    (AppE (VarE f) (fieldNameStringE fieldName))
+    (varNameE fieldName)
 
 varNameE :: FieldName -> Exp
 varNameE = VarE . mkFieldName

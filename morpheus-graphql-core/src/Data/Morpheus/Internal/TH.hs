@@ -15,6 +15,7 @@ module Data.Morpheus.Internal.TH
     instanceHeadT,
     instanceProxyFunD,
     instanceFunD,
+    simpleFunD,
     instanceHeadMultiT,
     destructRecord,
     typeInstanceDec,
@@ -45,7 +46,8 @@ import Data.Morpheus.Internal.Utils
     nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( FieldDefinition (..),
+    FieldName,
     TypeKind (..),
     TypeKind (..),
     TypeName (..),
@@ -100,15 +102,20 @@ instanceHeadT cName iType tArgs = applyT cName [applyT (mkTypeName iType) (map (
 instanceProxyFunD :: (Name, ExpQ) -> DecQ
 instanceProxyFunD (name, body) = instanceFunD name ["_"] body
 
+simpleFunD :: Name -> [PatQ] -> ExpQ -> DecQ
+simpleFunD name args body = funD name [clause args (normalB body) []]
+
 instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
-instanceFunD name args body = funD name [clause (map (varP . mkTypeName) args) (normalB body) []]
+instanceFunD name args = simpleFunD name (map (varP . mkTypeName) args)
 
 instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
 instanceHeadMultiT className iType li = applyT className (iType : li)
 
 -- "User" -> ["name","id"] -> (User name id)
-destructRecord :: TypeName -> [FieldName] -> PatQ
-destructRecord conName fields = conP (mkTypeName conName) (map (varP . mkFieldName) fields)
+destructRecord :: TypeName -> [FieldDefinition cat] -> PatQ
+destructRecord conName fields = conP (mkTypeName conName) (map (varP . mkFieldName) names)
+  where
+    names = map fieldName fields
 
 typeInstanceDec :: Name -> Type -> Type -> Dec
 

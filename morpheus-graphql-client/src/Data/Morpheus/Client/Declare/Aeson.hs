@@ -34,6 +34,7 @@ import Data.Morpheus.Internal.TH
     nameStringL,
     nameVarE,
     nameVarP,
+    simpleFunD,
   )
 import Data.Morpheus.Internal.Utils
   ( nameSpaceType,
@@ -244,9 +245,9 @@ deriveToJSON
       appHead = instanceHeadT ''ToJSON typename []
       ------------------------------------------------------------------
       -- defines: toJSON (User field1 field2 ...)= object ["name" .= name, "age" .= age, ...]
-      methods = [funD 'toJSON [clause argsE (normalB body) []]]
+      methods = [simpleFunD 'toJSON args body]
         where
-          argsE = [destructRecord typename varNames]
+          args = [destructRecord typename cFields]
           body = appE (varE 'object) (listE $ map decodeVar varNames)
           decodeVar name = [|name .= $(varName)|] where varName = nameVarE name
           varNames = map fieldName cFields
