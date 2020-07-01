@@ -43,6 +43,7 @@ module Data.Morpheus.Internal.TH
     e',
     vars,
     decodeObjectE,
+    matchWith,
   )
 where
 
@@ -291,6 +292,29 @@ applyFields :: TypeName -> (Bool -> Name) -> [FieldDefinition cat] -> ExpQ
 applyFields name _ [] = fail $ show ("No Empty fields on " <> msg name :: Message)
 applyFields _ f [x] = defField f x
 applyFields name f (x : xs) = uInfixE (defField f x) (varE '(<*>)) (applyFields name f xs)
+
+matchWith ::
+  (t -> (PatQ, ExpQ)) ->
+  [t] ->
+  ExpQ
+matchWith f xs = lamCaseE (map buildMatch xs <> [elseCaseEXP])
+  where
+    buildMatch x = match pat (normalB body) []
+      where
+        (pat, body) = f x
+
+elseCaseEXP :: MatchQ
+elseCaseEXP = match v' body []
+  where
+    body =
+      normalB $
+        appE
+          (toVarE 'fail)
+          ( uInfixE
+              (appE (varE 'show) v')
+              (varE '(<>))
+              (stringE " is Not Valid Union Constructor")
+          )
 
 defField :: (Bool -> Name) -> FieldDefinition cat -> ExpQ
 defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable field)) (toString fieldName)

@@ -29,11 +29,11 @@ import Data.Morpheus.Internal.TH
     decodeObjectE,
     destructRecord,
     funDSimple,
+    matchWith,
     mkFieldsE,
     toConE,
     toName,
     toString,
-    toVarE,
     v',
   )
 import Data.Morpheus.Internal.Utils
@@ -62,8 +62,8 @@ import Language.Haskell.TH
   ( DecQ,
     Exp (..),
     ExpQ,
-    MatchQ,
     Name,
+    PatQ,
     Q,
     appE,
     conP,
@@ -72,9 +72,7 @@ import Language.Haskell.TH
     lamCaseE,
     match,
     normalB,
-    stringE,
     tupP,
-    uInfixE,
     varE,
   )
 
@@ -93,10 +91,7 @@ deriveScalarJSON = [deriveScalarFromJSON, deriveScalarToJSON]
 
 deriveScalarFromJSON :: ClientTypeDefinition -> DecQ
 deriveScalarFromJSON ClientTypeDefinition {clientTypeName} =
-  defineFromJSON
-    clientTypeName
-    (const $ varE 'scalarFromJSON)
-    clientTypeName
+  defineFromJSON clientTypeName (varE 'scalarFromJSON)
 
 deriveScalarToJSON :: ClientTypeDefinition -> DecQ
 deriveScalarToJSON
@@ -119,21 +114,15 @@ deriveFromJSON
     { clientTypeName = clientTypeName@TypeNameTH {namespace},
       clientCons = [cons]
     } =
-    defineFromJSON
-      clientTypeName
-      (aesonObject namespace)
-      cons
+    defineFromJSON clientTypeName $
+      aesonObject namespace cons
 deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
   | isEnum clientCons =
-    defineFromJSON
-      clientTypeName
-      (aesonFromJSONEnumBody clientTypeName)
-      clientCons
+    defineFromJSON clientTypeName $
+      aesonFromJSONEnumBody clientTypeName clientCons
   | otherwise =
-    defineFromJSON
-      clientTypeName
-      aesonUnionObject
-      typeD
+    defineFromJSON clientTypeName $
+      aesonUnionObject typeD
 
 aesonObject :: [FieldName] -> ConsD cat -> ExpQ
 aesonObject tNamespace con@ConsD {cName} = do
@@ -164,14 +153,13 @@ aesonUnionObject
     { clientCons,
       clientTypeName = TypeNameTH {namespace}
     } =
-    appE
-      (varE 'takeValueType)
-      (lamCaseE (map buildMatch clientCons <> [elseCaseEXP]))
+    appE (varE 'takeValueType) $
+      matchWith f clientCons
     where
-      buildMatch cons@ConsD {cName} = match objectPattern body []
-        where
-          objectPattern = tupP [toString cName, v']
-          body = normalB (aesonObjectBody namespace cons)
+      f cons@ConsD {cName} =
+        ( tupP [toString cName, v'],
+          aesonObjectBody namespace cons
+        )
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
 takeValueType f (Object hMap) = case H.lookup "__typename" hMap of
@@ -185,38 +173,20 @@ namespaced :: TypeNameTH -> TypeName
 namespaced TypeNameTH {namespace, typename} =
   nameSpaceType namespace typename
 
-defineFromJSON :: TypeNameTH -> (t -> ExpQ) -> t -> DecQ
-defineFromJSON name parseJ cFields = instanceD (cxt []) typeDef body
+defineFromJSON :: TypeNameTH -> ExpQ -> DecQ
+defineFromJSON name expr = instanceD (cxt []) typeDef body
   where
     typeDef = applyCons ''FromJSON [namespaced name]
-    body = [funDSimple 'parseJSON [] (parseJ cFields)]
+    body = [funDSimple 'parseJSON [] expr]
 
 aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
-aesonFromJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
+aesonFromJSONEnumBody TypeNameTH {typename} = matchWith f
   where
-    handlers = map buildMatch cons <> [elseCaseEXP]
-      where
-        buildMatch ConsD {cName} = match enumPat body []
-          where
-            enumPat = toString cName
-            body =
-              normalB $
-                appE
-                  (varE 'pure)
-                  (toConE $ nameSpaceType [toFieldName typename] cName)
-
-elseCaseEXP :: MatchQ
-elseCaseEXP = match v' body []
-  where
-    body =
-      normalB $
-        appE
-          (toVarE 'fail)
-          ( uInfixE
-              (appE (varE 'show) v')
-              (varE '(<>))
-              (stringE " is Not Valid Union Constructor")
-          )
+    f :: ConsD cat -> (PatQ, ExpQ)
+    f ConsD {cName} =
+      ( toString cName,
+        appE (varE 'pure) $ toConE $ nameSpaceType [toFieldName typename] cName
+      )
 
 aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
 aesonToJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
