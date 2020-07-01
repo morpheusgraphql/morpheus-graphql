@@ -68,6 +68,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     readName,
   )
+import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Language.Haskell.TH
 
