@@ -29,8 +29,8 @@ import Data.Maybe (Maybe (..))
 
   -- MORPHEUS
 
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Maybe (fromMaybe)
 import Data.Morpheus.Error
   ( internalError,
     internalTypeMismatch,
@@ -91,8 +91,11 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
+import Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
+import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import GHC.Generics
 import Prelude
@@ -132,13 +135,13 @@ instance Decode a => Decode (NonEmpty.NonEmpty a) where
   decode = withRefinedList (maybe (Left "Expected a NonEmpty list") Right . NonEmpty.nonEmpty) decode
 
 -- | Should this instance dedupe silently or fail on dupes ?
-instance (Ord a, Decode a) => Decode (Set.Set a) where
+instance (Ord a, Decode a) => Decode (Set a) where
   decode = (fmap Set.fromList) . (withList decode)
 
-instance (Decode a) => Decode (Seq.Seq a) where
+instance (Decode a) => Decode (Seq a) where
   decode = (fmap Seq.fromList) . (withList decode)
 
-instance (Decode a) => Decode (Vector.Vector a) where
+instance (Decode a) => Decode (Vector a) where
   decode = (fmap Vector.fromList) . (withList decode)
 
 -- | Decode GraphQL type with Specific Kind
