@@ -15,6 +15,7 @@ where
 
 import Data.Morpheus.Internal.TH
   ( applyCons,
+    decodeObjectE,
     funDSimple,
     v',
   )
@@ -24,12 +25,11 @@ import Data.Morpheus.Server.Deriving.Decode
   )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
-    decodeObjectExpQ,
     withObject,
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Types.Internal.AST
-  ( ConsD,
+  ( ConsD (..),
     FieldName,
     TypeName,
     ValidValue,
@@ -46,9 +46,9 @@ mkTypeClass :: TypeName -> Q Type
 mkTypeClass tName = applyCons ''DecodeType [tName]
 
 decodeValueD :: ConsD cat -> DecQ
-decodeValueD cons = funDSimple 'decodeType [v'] body
+decodeValueD ConsD {cName, cFields} = funDSimple 'decodeType [v'] body
   where
-    body = decodeObjectExpQ (varE 'decodeFieldValue) cons
+    body = decodeObjectE (const 'decodeFieldValue) cName cFields
 
 deriveDecode :: ServerTypeDefinition cat -> Q [Dec]
 deriveDecode

@@ -26,6 +26,7 @@ import Data.Morpheus.Client.Internal.Types
   )
 import Data.Morpheus.Internal.TH
   ( applyCons,
+    decodeObjectE,
     destructRecord,
     funDSimple,
     mkFieldsE,
@@ -60,8 +61,26 @@ import Data.Text
   ( unpack,
   )
 import Language.Haskell.TH
+  ( DecQ,
+    Exp (..),
+    ExpQ,
+    MatchQ,
+    Name,
+    Q,
+    appE,
+    conP,
+    cxt,
+    instanceD,
+    lamCaseE,
+    match,
+    normalB,
+    stringE,
+    tupP,
+    uInfixE,
+    varE,
+  )
 
-aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> Q Dec]
+aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> DecQ]
 aesonDeclarations KindEnum = [deriveFromJSON, deriveToJSON]
 aesonDeclarations KindScalar = deriveScalarJSON
 aesonDeclarations kind
@@ -71,27 +90,27 @@ aesonDeclarations kind
 failure :: Message -> Q a
 failure = fail . show
 
-deriveScalarJSON :: [ClientTypeDefinition -> Q Dec]
+deriveScalarJSON :: [ClientTypeDefinition -> DecQ]
 deriveScalarJSON = [deriveScalarFromJSON, deriveScalarToJSON]
 
-deriveScalarFromJSON :: ClientTypeDefinition -> Q Dec
+deriveScalarFromJSON :: ClientTypeDefinition -> DecQ
 deriveScalarFromJSON ClientTypeDefinition {clientTypeName} =
   defineFromJSON
     clientTypeName
     (const $ varE 'scalarFromJSON)
     clientTypeName
 
-deriveScalarToJSON :: ClientTypeDefinition -> Q Dec
+deriveScalarToJSON :: ClientTypeDefinition -> DecQ
 deriveScalarToJSON
   ClientTypeDefinition
     { clientTypeName = TypeNameTH {typename}
-    } =
-    let methods = [funD 'toJSON clauses]
-        clauses = [clause [] (normalB $ varE 'scalarToJSON) []]
-     in instanceD (cxt []) (applyCons ''ToJSON [typename]) methods
+    } = instanceD (cxt []) typeDef body
+    where
+      typeDef = applyCons ''ToJSON [typename]
+      body = [funDSimple 'toJSON [] (varE 'scalarToJSON)]
 
 -- FromJSON
-deriveFromJSON :: ClientTypeDefinition -> Q Dec
+deriveFromJSON :: ClientTypeDefinition -> DecQ
 deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
   failure $
     "Type "
@@ -119,41 +138,27 @@ deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
       typeD
 
 aesonObject :: [FieldName] -> ConsD cat -> ExpQ
-aesonObject tNamespace con@ConsD {cName} =
-  appE
-    [|withObject name|]
-    (lamE [v'] (aesonObjectBody tNamespace con))
+aesonObject tNamespace con@ConsD {cName} = do
+  body <- aesonObjectBody tNamespace con
+  pure $
+    AppE
+      (AppE (VarE 'withObject) name)
+      (LamE [v'] body)
   where
-    name = nameSpaceType tNamespace cName
+    name :: Exp
+    name = toString (nameSpaceType tNamespace cName)
 
 aesonObjectBody :: [FieldName] -> ConsD cat -> ExpQ
-aesonObjectBody namespace ConsD {cName, cFields} = handleFields cFields
-  where
-    consName = toConE (nameSpaceType namespace cName)
-    ----------------------------------------------------------
-    handleFields [] =
-      failure $
-        "Type \""
-          <> msg cName
-          <> "\" is Empty Object"
-    handleFields fields = startExp fields
-      where
-        ----------------------------------------------------------
+aesonObjectBody namespace ConsD {cName, cFields} =
+  decodeObjectE
+    entry
+    (nameSpaceType namespace cName)
+    cFields
 
-        defField field@FieldDefinition {fieldName}
-          | isNullable field = [|v .:? fieldName|]
-          | otherwise = [|v .: fieldName|]
-        --------------------------------------------------------
-        startExp fNames =
-          uInfixE
-            consName
-            (varE '(<$>))
-            (applyFields fNames)
-          where
-            applyFields [] = fail "No Empty fields"
-            applyFields [x] = defField x
-            applyFields (x : xs) =
-              uInfixE (defField x) (varE '(<*>)) (applyFields xs)
+entry :: FieldDefinition cat -> Name
+entry field
+  | isNullable field = '(.:?)
+  | otherwise = '(.:)
 
 aesonUnionObject :: ClientTypeDefinition -> ExpQ
 aesonUnionObject
@@ -168,7 +173,7 @@ aesonUnionObject
       buildMatch cons@ConsD {cName} = match objectPattern body []
         where
           objectPattern = tupP [toString cName, v']
-          body = normalB $ aesonObjectBody namespace cons
+          body = normalB (aesonObjectBody namespace cons)
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
 takeValueType f (Object hMap) = case H.lookup "__typename" hMap of
@@ -182,10 +187,10 @@ namespaced :: TypeNameTH -> TypeName
 namespaced TypeNameTH {namespace, typename} =
   nameSpaceType namespace typename
 
-defineFromJSON :: TypeNameTH -> (t -> ExpQ) -> t -> Q Dec
-defineFromJSON name parseJ cFields = instanceD (cxt []) iHead body
+defineFromJSON :: TypeNameTH -> (t -> ExpQ) -> t -> DecQ
+defineFromJSON name parseJ cFields = instanceD (cxt []) typeDef body
   where
-    iHead = applyCons ''FromJSON [namespaced name]
+    typeDef = applyCons ''FromJSON [namespaced name]
     body = [funDSimple 'parseJSON [] (parseJ cFields)]
 
 aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
@@ -226,7 +231,7 @@ aesonToJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
             body = normalB (toString cName)
 
 -- ToJSON
-deriveToJSON :: ClientTypeDefinition -> Q Dec
+deriveToJSON :: ClientTypeDefinition -> DecQ
 deriveToJSON
   ClientTypeDefinition
     { clientCons = []
@@ -255,14 +260,8 @@ deriveToJSON
     { clientTypeName = clientTypeName@TypeNameTH {typename},
       clientCons
     }
-    | isEnum clientCons =
-      let methods = [funD 'toJSON clauses]
-          clauses =
-            [ clause
-                []
-                (normalB $ aesonToJSONEnumBody clientTypeName clientCons)
-                []
-            ]
-       in instanceD (cxt []) (applyCons ''ToJSON [typename]) methods
-    | otherwise =
-      fail "Input Unions are not yet supported"
+    | isEnum clientCons = instanceD (cxt []) typeDef body
+    | otherwise = fail "Input Unions are not yet supported"
+    where
+      typeDef = applyCons ''ToJSON [typename]
+      body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
