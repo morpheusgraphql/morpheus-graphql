@@ -9,12 +9,14 @@ module Data.Morpheus.Server.Internal.TH.Utils
     withPure,
     o',
     e',
+    mkTypeableConstraints,
   )
 where
 
 import Data.Morpheus.Internal.TH
-  ( applyVars,
+  ( apply,
     toName,
+    vars,
   )
 import Data.Morpheus.Kind
   ( ENUM,
@@ -31,11 +33,12 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Text (unpack)
 import Data.Typeable (Typeable)
 import Language.Haskell.TH
-  ( Exp (..),
+  ( CxtQ,
+    Exp (..),
     Lit (..),
     Name,
-    Q,
     Type (..),
+    cxt,
   )
 
 o' :: Type
@@ -50,8 +53,11 @@ withPure = AppE (VarE 'pure)
 typeNameStringE :: TypeName -> Exp
 typeNameStringE = LitE . StringL . (unpack . readTypeName)
 
-constraintTypeable :: TypeName -> Q Type
-constraintTypeable name = applyVars ''Typeable [name]
+constraintTypeable :: Type -> Type
+constraintTypeable name = apply ''Typeable [name]
+
+mkTypeableConstraints :: [TypeName] -> CxtQ
+mkTypeableConstraints args = cxt $ map (pure . constraintTypeable) (vars args)
 
 kindName :: TypeKind -> Name
 kindName KindObject {} = ''OUTPUT

@@ -22,8 +22,8 @@ import Data.Morpheus.Internal.TH
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Server.Internal.TH.Utils
-  ( constraintTypeable,
-    kindName,
+  ( kindName,
+    mkTypeableConstraints,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -50,7 +50,7 @@ introspectInterface = interfaceF . toName
 
 deriveGQLType :: ServerTypeDefinition cat -> Q [Dec]
 deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
-  pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
+  pure <$> instanceD constrains iHead (functions <> typeFamilies)
   where
     functions =
       funDProxy
@@ -67,7 +67,7 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
     iHead = apply ''GQLType [applyVars tName typeArgs]
     headSig = applyVars tName typeArgs
     ---------------------------------------------------
-    constrains = map constraintTypeable typeArgs
+    constrains = mkTypeableConstraints typeArgs
     -------------------------------------------------
     typeFamilies
       | isObject tKind = [deriveKIND, deriveCUSTOM]

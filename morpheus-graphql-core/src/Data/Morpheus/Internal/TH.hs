@@ -30,7 +30,7 @@ module Data.Morpheus.Internal.TH
     toCon,
     toConE,
     toConT,
-    toName,
+    ToName (..),
     toString,
     toVarE,
     toVarT,
@@ -39,6 +39,9 @@ module Data.Morpheus.Internal.TH
     v',
     cat',
     _2',
+    o',
+    e',
+    vars,
   )
 where
 
@@ -67,7 +70,13 @@ m_ :: TypeName
 m_ = "m"
 
 m' :: Type
-m' = toVar m_
+m' = VarT (mkName "m")
+
+o' :: Type
+o' = VarT (mkName "o")
+
+e' :: Type
+e' = VarT (mkName "event")
 
 _' :: PatQ
 _' = toVar (mkName "_")
@@ -180,7 +189,16 @@ instance Apply Exp where
 instance Apply ExpQ where
   apply = foldl appE . toCon
 
-applyVars :: (ToName con, ToName var) => con -> [var] -> Q Type
+applyVars ::
+  ( ToName con,
+    ToName var,
+    Apply res,
+    ToCon con res,
+    ToVar var res
+  ) =>
+  con ->
+  [var] ->
+  res
 applyVars name li = apply name (vars li)
 
 applyCons :: (ToName con, ToName cons) => con -> [cons] -> Q Type

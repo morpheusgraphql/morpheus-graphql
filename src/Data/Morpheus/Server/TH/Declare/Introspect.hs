@@ -36,7 +36,7 @@ import Data.Morpheus.Server.Internal.TH.Types
   ( ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.Internal.TH.Utils
-  ( constraintTypeable,
+  ( mkTypeableConstraints,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__typeName, implements),
@@ -77,11 +77,11 @@ deriveObjectRep
       tCons = [ConsD {cFields}],
       tKind
     } =
-    pure <$> instanceD (cxt constrains) iHead methods
+    pure <$> instanceD constrains iHead methods
     where
       mainTypeName = applyVars tName typeArgs
       typeArgs = tyConArgs tKind
-      constrains = map constraintTypeable typeArgs
+      constrains = mkTypeableConstraints typeArgs
       -----------------------------------------------
       iHead = apply ''DeriveTypeContent [instCat, conT ''TRUE, mainTypeName]
       instCat

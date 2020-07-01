@@ -14,12 +14,12 @@ where
 import Data.Morpheus.Internal.TH
   ( _',
     apply,
-    applyVars,
     destructRecord,
+    e',
     funDSimple,
-    m_,
+    m',
     mkFieldsE,
-    toVarT,
+    o',
   )
 import Data.Morpheus.Server.Deriving.Encode
   ( Encode (..),
@@ -48,32 +48,26 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
-o_ :: TypeName
-o_ = "oparation"
+vars :: [Type]
+vars = [o', e', m']
 
-e_ :: TypeName
-e_ = "encodeEvent"
-
-encodeVars :: [TypeName]
-encodeVars = [o_, e_, m_]
-
-genHeadType :: TypeName -> [Q Type]
-genHeadType tName = mainType : instanceArgs
+mkType :: TypeName -> Type
+mkType tName = mainType
   where
-    instanceArgs = map toVarT encodeVars
-    mainTypeArg = [applyVars ''Resolver encodeVars]
+    mainTypeArg = [apply ''Resolver vars]
     mainType = apply tName mainTypeArg
 
+genHeadType :: TypeName -> [Type]
+genHeadType tName = mkType tName : vars
+
 -- defines Constraint: (Monad m, ...)
-mkConstrains :: TypeName -> [Q Type]
+mkConstrains :: TypeName -> [Type]
 mkConstrains tName =
-  [ applyVars ''Monad [m_],
+  [ apply ''Monad [m'],
     apply ''Encode (genHeadType tName),
-    apply ''LiftOperation [toVarT o_],
-    constraintTypeable e_,
-    constraintTypeable m_,
-    constraintTypeable o_
+    apply ''LiftOperation [o']
   ]
+    <> map constraintTypeable [o', e', m']
 
 mkObjectE :: TypeName -> Exp -> Exp
 mkObjectE name = AppE (AppE (VarE 'mkObject) (typeNameStringE name))
@@ -93,8 +87,8 @@ decodeObjectE tName cFields =
       (mkFieldsE 'mkEntry cFields)
 
 -- | defines: ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value)
-instanceType :: TypeName -> Q Type
-instanceType tName = apply ''ExploreResolvers (conT ''TRUE : genHeadType tName)
+instanceType :: TypeName -> Type
+instanceType tName = apply ''ExploreResolvers (ConT ''TRUE : genHeadType tName)
 
 -- | defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
 exploreResolversD :: TypeName -> [FieldDefinition cat] -> DecQ
@@ -107,7 +101,7 @@ deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
 deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceD context typeDef funDefs
   where
-    context = cxt (mkConstrains tName)
-    typeDef = instanceType tName
+    context = cxt (map pure $ mkConstrains tName)
+    typeDef = pure (instanceType tName)
     funDefs = [exploreResolversD tName cFields]
 deriveEncode _ = pure []
