@@ -12,6 +12,11 @@
   }
   ```
 
+### Breaking Changes
+
+- removed : `EventCon` from `Data.Morpheus.Core`
+- some internal changes
+
 ## 0.13.0 - 22.06.2020
 
 ### new features
