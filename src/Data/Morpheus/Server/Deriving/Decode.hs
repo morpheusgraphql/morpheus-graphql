@@ -26,6 +26,15 @@ import Control.Monad ((>>=))
 import Data.Functor ((<$>), Functor (..))
 import Data.List (elem)
 import Data.Maybe (Maybe (..))
+
+  -- MORPHEUS
+
+import qualified Data.List.NonEmpty as NonEmpty
+import Data.Maybe (fromMaybe)
+import Data.Morpheus.Error
+  ( internalError,
+    internalTypeMismatch,
+  )
 import Data.Morpheus.Internal.Utils
   ( elems,
   )
@@ -57,6 +66,9 @@ import Data.Morpheus.Server.Types.GQLType
       ),
     GQLTypeOptions (..),
     TypeData (..),
+    withObject,
+    withRefinedList,
+    withUnion,
   )
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
@@ -79,7 +91,9 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
+import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
+import qualified Data.Vector as Vector
 import GHC.Generics
 import Prelude
   ( ($),
@@ -114,8 +128,18 @@ instance Decode a => Decode (Maybe a) where
 instance Decode a => Decode [a] where
   decode = withList decode
 
+instance Decode a => Decode (NonEmpty.NonEmpty a) where
+  decode = withRefinedList (maybe (Left "Expected a NonEmpty list") Right . NonEmpty.nonEmpty) decode
+
+-- | Should this instance dedupe silently or fail on dupes ?
 instance (Ord a, Decode a) => Decode (Set.Set a) where
   decode = (fmap Set.fromList) . (withList decode)
+
+instance (Decode a) => Decode (Seq.Seq a) where
+  decode = (fmap Seq.fromList) . (withList decode)
+
+instance (Decode a) => Decode (Vector.Vector a) where
+  decode = (fmap Vector.fromList) . (withList decode)
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
