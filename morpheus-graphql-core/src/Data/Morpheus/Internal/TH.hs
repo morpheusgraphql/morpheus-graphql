@@ -294,11 +294,15 @@ applyFields _ f [x] = defField f x
 applyFields name f (x : xs) = uInfixE (defField f x) (varE '(<*>)) (applyFields name f xs)
 
 matchWith ::
+  Bool ->
   (t -> (PatQ, ExpQ)) ->
   [t] ->
   ExpQ
-matchWith f xs = lamCaseE (map buildMatch xs <> [elseCaseEXP])
+matchWith isClosed f xs = lamCaseE (map buildMatch xs <> fallback)
   where
+    fallback
+      | isClosed = []
+      | otherwise = [elseCaseEXP]
     buildMatch x = match pat (normalB body) []
       where
         (pat, body) = f x

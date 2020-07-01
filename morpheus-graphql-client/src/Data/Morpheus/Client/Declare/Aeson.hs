@@ -151,7 +151,7 @@ aesonUnionObject
       clientTypeName = TypeNameTH {namespace}
     } =
     appE (varE 'takeValueType) $
-      matchWith f clientCons
+      matchWith False f clientCons
     where
       f cons@ConsD {cName} =
         ( tupP [toString cName, v'],
@@ -177,7 +177,7 @@ defineFromJSON name expr = instanceD (cxt []) typeDef body
     body = [funDSimple 'parseJSON [] expr]
 
 aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
-aesonFromJSONEnumBody TypeNameTH {typename} = matchWith f
+aesonFromJSONEnumBody TypeNameTH {typename} = matchWith False f
   where
     f :: ConsD cat -> (PatQ, ExpQ)
     f ConsD {cName} =
@@ -186,7 +186,7 @@ aesonFromJSONEnumBody TypeNameTH {typename} = matchWith f
       )
 
 aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
-aesonToJSONEnumBody TypeNameTH {typename} = matchWith f
+aesonToJSONEnumBody TypeNameTH {typename} = matchWith True f
   where
     f :: ConsD cat -> (PatQ, ExpQ)
     f ConsD {cName} =
