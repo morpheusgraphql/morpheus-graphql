@@ -69,9 +69,6 @@ import Language.Haskell.TH
     conP,
     cxt,
     instanceD,
-    lamCaseE,
-    match,
-    normalB,
     tupP,
     varE,
   )
@@ -189,14 +186,13 @@ aesonFromJSONEnumBody TypeNameTH {typename} = matchWith f
       )
 
 aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
-aesonToJSONEnumBody TypeNameTH {typename} cons = lamCaseE handlers
+aesonToJSONEnumBody TypeNameTH {typename} = matchWith f
   where
-    handlers = map buildMatch cons
-      where
-        buildMatch ConsD {cName} = match enumPat body []
-          where
-            enumPat = conP (toName $ nameSpaceType [toFieldName typename] cName) []
-            body = normalB (toString cName)
+    f :: ConsD cat -> (PatQ, ExpQ)
+    f ConsD {cName} =
+      ( conP (toName $ nameSpaceType [toFieldName typename] cName) [],
+        toString cName
+      )
 
 -- ToJSON
 deriveToJSON :: ClientTypeDefinition -> DecQ
