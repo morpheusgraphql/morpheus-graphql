@@ -45,13 +45,11 @@ import Data.Morpheus.Types.GQLScalar
   )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
-    FieldDefinition (..),
     FieldName,
     Message,
     TypeKind (..),
     TypeName (..),
     isEnum,
-    isNullable,
     isOutputObject,
     msg,
     toFieldName,
@@ -156,8 +154,9 @@ aesonObjectBody namespace ConsD {cName, cFields} =
     cFields
 
 entry :: Bool -> Name
-entry True = '(.:?)
-entry False = '(.:)
+entry nullable
+  | nullable = '(.:?)
+  | otherwise = '(.:)
 
 aesonUnionObject :: ClientTypeDefinition -> ExpQ
 aesonUnionObject
