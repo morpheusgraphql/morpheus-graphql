@@ -22,6 +22,9 @@
   rootResolver = RootResolver <resolvers ...>
   ```
 
+- Subscription Resolver supports `Monad`.
+- nested Subscription Resolvers.
+
 ### Breaking Changes
 
 - root subscribtion fields must be wrapped with `SubscriptionField`. e.g:
@@ -46,6 +49,10 @@ resolveNewAdress = subscribe ADDRESS $ do
         -- exectues on every event
         lift (getDBAddress content)
 ```
+
+- removed from `Data.Morpheus.Types`
+  - `SubField`
+  - `ComposedSubField`
 
 ## 0.13.0 - 22.06.2020
 
