@@ -79,6 +79,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
+import qualified Data.Set as Set
 import GHC.Generics
 import Prelude
   ( ($),
@@ -112,6 +113,9 @@ instance Decode a => Decode (Maybe a) where
 
 instance Decode a => Decode [a] where
   decode = withList decode
+
+instance (Ord a, Decode a) => Decode (Set.Set a) where
+  decode = (fmap Set.fromList) . (withList decode)
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
