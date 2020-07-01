@@ -22,6 +22,31 @@
   rootResolver = RootResolver <resolvers ...>
   ```
 
+### Breaking Changes
+
+- root subscribtion fields must be wrapped with `SubscriptionField`. e.g:
+
+```haskell
+data Subscription (m :: * -> *) = Subscription
+{ newDeity :: SubscriptionField (m Deity),
+  newHuman :: HumanArgs -> SubscriptionField (m Human)
+}
+deriving (Generic)
+```
+
+- signature of `subscribe` is changed. now you can use it as followed:
+
+```haskell
+resolveNewAdress :: SubscriptionField (ResolverS EVENT IO Address)
+resolveNewAdress = subscribe ADDRESS $ do
+    -- executed only once
+    -- immediate response on failures
+    requireAuthorized
+    pure $ \(Event _ content) -> do
+        -- exectues on every event
+        lift (getDBAddress content)
+```
+
 ## 0.13.0 - 22.06.2020
 
 ### breaking changes
