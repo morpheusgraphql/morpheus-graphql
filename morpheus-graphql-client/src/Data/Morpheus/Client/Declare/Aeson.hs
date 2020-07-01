@@ -155,10 +155,9 @@ aesonObjectBody namespace ConsD {cName, cFields} =
     (nameSpaceType namespace cName)
     cFields
 
-entry :: FieldDefinition cat -> Name
-entry field
-  | isNullable field = '(.:?)
-  | otherwise = '(.:)
+entry :: Bool -> Name
+entry True = '(.:?)
+entry False = '(.:)
 
 aesonUnionObject :: ClientTypeDefinition -> ExpQ
 aesonUnionObject

@@ -62,6 +62,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     convertToHaskellName,
     isEnum,
+    isNullable,
     isOutputObject,
     msg,
     readName,
@@ -279,20 +280,20 @@ mkEntryWith f FieldDefinition {fieldName} =
     (AppE (VarE f) (toString fieldName))
     (toVar fieldName)
 
-decodeObjectE :: (FieldDefinition cat -> Name) -> TypeName -> [FieldDefinition cat] -> ExpQ
+decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat] -> ExpQ
 decodeObjectE funName conName fields =
   uInfixE
     (toCon conName)
     (varE '(<$>))
     (applyFields conName funName fields)
 
-applyFields :: TypeName -> (FieldDefinition cat -> Name) -> [FieldDefinition cat] -> ExpQ
+applyFields :: TypeName -> (Bool -> Name) -> [FieldDefinition cat] -> ExpQ
 applyFields name _ [] = fail $ show ("No Empty fields on " <> msg name :: Message)
 applyFields _ f [x] = defField f x
 applyFields name f (x : xs) = uInfixE (defField f x) (varE '(<*>)) (applyFields name f xs)
 
-defField :: (FieldDefinition cat -> Name) -> FieldDefinition cat -> ExpQ
-defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f field) (toString fieldName)
+defField :: (Bool -> Name) -> FieldDefinition cat -> ExpQ
+defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable field)) (toString fieldName)
 
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes
