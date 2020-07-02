@@ -169,7 +169,7 @@ instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
 
 instance Lift ScalarDefinition where
-  lift _ = [|ScalarDefinition pure|]
+  liftTyped _ = [||ScalarDefinition pure||]
 
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue
