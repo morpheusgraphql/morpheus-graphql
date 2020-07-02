@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Query.Fragment
   ( validateFragments,
@@ -10,7 +11,12 @@ module Data.Morpheus.Validation.Query.Fragment
   )
 where
 
-import Data.Foldable (traverse_)
+import Control.Applicative ((*>), pure)
+import Control.Monad ((>>=))
+import Data.Foldable (concat, concatMap, traverse_)
+import Data.Functor (($>), (<$>), fmap)
+import Data.List (elem, lookup)
+import Data.Maybe (Maybe (..))
 -- MORPHEUS
 import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
@@ -46,6 +52,12 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
+import Prelude
+  ( ($),
+    (.),
+    otherwise,
+  )
 
 validateFragments :: SelectionSet RAW -> BaseValidator ()
 validateFragments selectionSet =
@@ -100,16 +112,17 @@ fragmentsConditionTypeChecking =
 
 checkTypeExistence :: Fragment -> BaseValidator ()
 checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
-  askSchema
-    >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
-    >>= constraint OBJECT fr
-    >> pure ()
+  ( askSchema
+      >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
+      >>= constraint OBJECT fr
+  )
+    $> ()
 
 fragmentsCycleChecking :: BaseValidator ()
 fragmentsCycleChecking = exploreSpreads >>= fragmentCycleChecking
 
 exploreSpreads :: BaseValidator Graph
-exploreSpreads = map exploreFragmentSpreads . elems <$> askFragments
+exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
 
 exploreFragmentSpreads :: Fragment -> NodeEdges
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =
@@ -145,5 +158,5 @@ checkForCycle lib parentNode history = case lookup parentNode lib of
   Nothing -> pure []
   where
     checkNode x = if x `elem` history then cycleError x else recurse x
-    recurse node = checkForCycle lib node $ history ++ [node]
+    recurse node = checkForCycle lib node $ history <> [node]
     cycleError n = failure $ cannotSpreadWithinItself (n : history)
