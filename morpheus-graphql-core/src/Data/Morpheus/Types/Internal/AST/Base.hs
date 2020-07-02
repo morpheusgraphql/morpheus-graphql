@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -119,7 +120,10 @@ newtype Message = Message {readMessage :: Text}
 
 instance Lift Message where
   lift = liftString . readMessage
+
+#if MIN_VERSION_template_haskell(2,16,0)
   liftTyped = liftTypedString . readMessage
+#endif
 
 class Msg a where
   msg :: a -> Message
@@ -151,7 +155,10 @@ newtype FieldName = FieldName {readName :: Text}
 
 instance Lift FieldName where
   lift = liftString . readName
+
+#if MIN_VERSION_template_haskell(2,16,0)
   liftTyped = liftTypedString . readName
+#endif
 
 instance Msg FieldName where
   msg FieldName {readName} = Message $ "\"" <> readName <> "\""
@@ -174,7 +181,10 @@ newtype TypeName = TypeName {readTypeName :: Text}
 
 instance Lift TypeName where
   lift = liftString . readTypeName
+
+#if MIN_VERSION_template_haskell(2,16,0)
   liftTyped = liftTypedString . readTypeName
+#endif
 
 liftTypedString :: IsString a => Token -> Q (TExp a)
 liftTypedString = unsafeTExpCoerce . stringE . T.unpack

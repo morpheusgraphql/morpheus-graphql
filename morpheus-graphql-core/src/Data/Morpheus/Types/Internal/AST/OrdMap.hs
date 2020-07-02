@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -59,9 +60,15 @@ data OrdMap k a = OrdMap
   deriving (Show, Eq, Functor)
 
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (OrdMap k a) where
+  lift (OrdMap names x) = [|OrdMap names (HM.fromList ls)|]
+    where
+      ls = HM.toList x
+
+#if MIN_VERSION_template_haskell(2,16,0)
   liftTyped (OrdMap names x) = [||OrdMap names (HM.fromList ls)||]
     where
       ls = HM.toList x
+#endif
 
 instance (Eq k, Hashable k) => Foldable (OrdMap k) where
   foldMap f = foldMap f . getElements
