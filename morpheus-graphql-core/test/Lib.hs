@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Lib
   ( getGQLBody,
@@ -14,27 +15,41 @@ module Lib
   )
 where
 
-import Control.Applicative ((<|>))
+import Control.Applicative ((<|>), pure)
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Maybe (fromMaybe)
+import Data.Either (Either (..))
+import Data.Foldable (foldl)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Types.Internal.AST (FieldName (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
+import Data.Traversable (traverse)
 import System.Directory (doesDirectoryExist, listDirectory)
+import Prelude
+  ( ($),
+    (.),
+    Bool,
+    FilePath,
+    IO,
+    Show,
+    and,
+    map,
+  )
 
 readSource :: FieldName -> IO ByteString
 readSource = L.readFile . path . readName
 
-path :: Text -> String
-path name = "test/" ++ unpack name
+path :: Text -> FilePath
+path name = "test/" <> unpack name
 
-gqlLib :: Text -> String
-gqlLib x = path x ++ "/query.gql"
+gqlLib :: Text -> FilePath
+gqlLib x = path x <> "/query.gql"
 
-resLib :: Text -> String
-resLib x = path x ++ "/response.json"
+resLib :: Text -> FilePath
+resLib x = path x <> "/response.json"
 
 data FileUrl = FileUrl
   { filePath :: [FilePath],
@@ -44,7 +59,7 @@ data FileUrl = FileUrl
 
 data CaseTree = CaseTree
   { caseUrl :: FileUrl,
-    children :: Either [String] [CaseTree]
+    children :: Either [FilePath] [CaseTree]
   }
   deriving (Show)
 
@@ -70,7 +85,7 @@ deepScan = shouldScan . FileUrl []
       pure CaseTree {..}
     isDirectory :: FileUrl -> IO Bool
     isDirectory = doesDirectoryExist . toString
-    prefixed :: FileUrl -> IO (Either [String] [CaseTree])
+    prefixed :: FileUrl -> IO (Either [FilePath] [CaseTree])
     prefixed p = do
       dir <- isDirectory p
       if dir
@@ -83,13 +98,13 @@ deepScan = shouldScan . FileUrl []
         else pure $ Left []
 
 maybeVariables :: FieldName -> IO (Maybe Value)
-maybeVariables (FieldName x) = decode <$> (L.readFile (path x ++ "/variables.json") <|> return "{}")
+maybeVariables (FieldName x) = decode <$> (L.readFile (path x <> "/variables.json") <|> pure "{}")
 
 getGQLBody :: FieldName -> IO ByteString
 getGQLBody (FieldName p) = L.readFile (gqlLib p)
 
-getCases :: FromJSON a => String -> IO [a]
-getCases dir = fromMaybe [] . decode <$> L.readFile ("test/" ++ dir ++ "/cases.json")
+getCases :: FromJSON a => FilePath -> IO [a]
+getCases dir = fromMaybe [] . decode <$> L.readFile ("test/" <> dir <> "/cases.json")
 
 getResponseBody :: FieldName -> IO Value
 getResponseBody (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib p)

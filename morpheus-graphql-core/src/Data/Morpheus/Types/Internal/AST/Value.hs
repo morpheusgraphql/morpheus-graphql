@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
@@ -147,6 +148,10 @@ instance Lift (VariableContent a) where
   lift (DefaultValue x) = [|DefaultValue x|]
   lift (ValidVariableValue x) = [|ValidVariableValue x|]
 
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped (DefaultValue x) = [||DefaultValue x||]
+  liftTyped (ValidVariableValue x) = [||ValidVariableValue x||]
+#endif
 deriving instance Show (VariableContent a)
 
 deriving instance Eq (VariableContent a)

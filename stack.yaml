@@ -1,5 +1,5 @@
 # 8.10.1
-resolver: nightly-2020-06-21
+resolver: nightly-2020-06-29
 packages:
   - morpheus-graphql-examples-scotty
   - morpheus-graphql-examples-servant

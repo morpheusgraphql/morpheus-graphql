@@ -45,8 +45,6 @@ import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..), join)
 import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.IO.Class (MonadIO (..))
--- MORPHEUS
-
 import Control.Monad.Reader (MonadReader (..), asks)
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
@@ -54,7 +52,7 @@ import Control.Monad.Trans.Reader
     mapReaderT,
   )
 import Data.Functor ((<$>), Functor (..))
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Internal (internalResolvingError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
@@ -405,7 +403,7 @@ runDataResolver res = asks currentSelection >>= __encode res
 
 runResolver ::
   Monad m =>
-  (Selection VALID -> Eventless (Channel event)) ->
+  Maybe (Selection VALID -> Eventless (Channel event)) ->
   Resolver o event m ValidValue ->
   Context ->
   ResponseStream event m ValidValue
@@ -429,12 +427,14 @@ toEventResolver sel (ReaderT subRes) event =
 
 subscriptionEvents ::
   Context ->
-  (Selection VALID -> Eventless (Channel e)) ->
+  Maybe (Selection VALID -> Eventless (Channel e)) ->
   (e -> m GQLResponse) ->
   Eventless (ResponseEvent e m)
-subscriptionEvents Context {currentSelection} channelGenerator res = do
+subscriptionEvents Context {currentSelection} (Just channelGenerator) res = do
   channel <- channelGenerator currentSelection
   pure $ Subscribe (Event [channel] res)
+subscriptionEvents Context {currentSelection} Nothing _ =
+  failure [resolverFailureMessage currentSelection "channel Resolver is not defined"]
 
 -- Resolver Models -------------------------------------------------------------------
 type FieldResModel o e m =
@@ -470,12 +470,12 @@ data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),
     mutation :: Eventless (ResModel MUTATION e m),
     subscription :: Eventless (ResModel SUBSCRIPTION e m),
-    channelMap :: Selection VALID -> Eventless (Channel e)
+    channelMap :: Maybe (Selection VALID -> Eventless (Channel e))
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
-  (Selection VALID -> Eventless (Channel e)) ->
+  Maybe (Selection VALID -> Eventless (Channel e)) ->
   Eventless (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)

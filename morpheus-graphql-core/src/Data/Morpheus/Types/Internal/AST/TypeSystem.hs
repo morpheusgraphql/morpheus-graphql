@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -170,6 +171,10 @@ instance Show ScalarDefinition where
 
 instance Lift ScalarDefinition where
   lift _ = [|ScalarDefinition pure|]
+
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped _ = [||ScalarDefinition pure||]
+#endif
 
 -- ENUM VALUE
 data DataEnumValue = DataEnumValue

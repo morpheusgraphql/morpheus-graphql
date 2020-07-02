@@ -2,15 +2,20 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Main
   ( main,
   )
 where
 
+import Control.Applicative (pure)
+import Control.Monad (Monad)
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
+import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (runApi)
 import Data.Morpheus.Internal.Utils
   ( fromElems,
@@ -59,6 +64,16 @@ import Test.Tasty.HUnit
   ( assertFailure,
     testCase,
   )
+import Prelude
+  ( ($),
+    (.),
+    (==),
+    FilePath,
+    IO,
+    otherwise,
+    show,
+    uncurry,
+  )
 
 getSchema :: Monad m => ResponseStream e m Schema
 getSchema =
@@ -97,7 +112,7 @@ resolver =
             [("deity", resolveDeity)],
       mutation = pure mkNull,
       subscription = pure mkNull,
-      channelMap = const undefined --TODO:
+      channelMap = Nothing
     }
 
 resolveDeity :: (WithOperation o, Monad m) => Resolver o e m (ResModel o e m)
@@ -115,14 +130,14 @@ main = do
   defaultMain
     $ testGroup
       "core tests"
-    $ map
+    $ fmap
       (uncurry basicTest)
       [ ("basic Test", "api/simple"),
         ("test interface", "api/interface")
       ]
       <> [schema]
 
-basicTest :: String -> FieldName -> TestTree
+basicTest :: FilePath -> FieldName -> TestTree
 basicTest description path = testCase description $ do
   actual <- simpleTest <$> getRequest path
   expected <- expectedResponse path
@@ -138,7 +153,7 @@ expectedResponse = getResponseBody
 
 assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
 assertion expected (ResultT (Identity Success {result}))
-  | Just expected == decode (encode result) = return ()
+  | Just expected == decode (encode result) = pure ()
   | otherwise =
     assertFailure $ show ("expected: \n " <> msg expected <> " \n but got: \n " <> msg result)
 assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)

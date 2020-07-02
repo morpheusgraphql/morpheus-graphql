@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -14,6 +15,10 @@ module Data.Morpheus.Types.IO
   )
 where
 
+-- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Control.Monad.Fail (fail)
 import Data.Aeson
   ( (.:?),
     (.=),
@@ -41,10 +46,12 @@ import qualified Data.ByteString.Lazy.Char8 as LB
     fromStrict,
     toStrict,
   )
+import Data.Either (Either (..))
+import Data.Functor ((<$>), fmap)
 import qualified Data.HashMap.Lazy as LH
   ( toList,
   )
--- MORPHEUS
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils (badRequestError)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -67,6 +74,7 @@ import Data.Text.Lazy.Encoding
     encodeUtf8,
   )
 import GHC.Generics (Generic)
+import Prelude (($), (.), Show, String)
 
 decodeNoDup :: Failure String m => LB.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of

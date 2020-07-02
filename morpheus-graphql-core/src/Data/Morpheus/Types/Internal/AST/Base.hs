@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -74,9 +75,16 @@ import Data.String (IsString)
 import Data.Text (Text, intercalate, pack)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
--- import Instances.TH.Lift ()
-import Language.Haskell.TH (stringE)
-import Language.Haskell.TH.Syntax (Lift (..))
+import Language.Haskell.TH
+  ( ExpQ,
+    stringE,
+  )
+import Language.Haskell.TH.Syntax
+  ( Lift (..),
+    Q,
+    TExp,
+    unsafeTExpCoerce,
+  )
 import Prelude
   ( ($),
     (&&),
@@ -111,7 +119,11 @@ newtype Message = Message {readMessage :: Text}
     (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
 
 instance Lift Message where
-  lift = stringE . T.unpack . readMessage
+  lift = liftString . readMessage
+
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = liftTypedString . readMessage
+#endif
 
 class Msg a where
   msg :: a -> Message
@@ -142,7 +154,11 @@ newtype FieldName = FieldName {readName :: Text}
     (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
 
 instance Lift FieldName where
-  lift = stringE . T.unpack . readName
+  lift = liftString . readName
+
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = liftTypedString . readName
+#endif
 
 instance Msg FieldName where
   msg FieldName {readName} = Message $ "\"" <> readName <> "\""
@@ -164,7 +180,17 @@ newtype TypeName = TypeName {readTypeName :: Text}
     (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
 
 instance Lift TypeName where
-  lift = stringE . T.unpack . readTypeName
+  lift = liftString . readTypeName
+
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = liftTypedString . readTypeName
+#endif
+
+liftTypedString :: IsString a => Token -> Q (TExp a)
+liftTypedString = unsafeTExpCoerce . stringE . T.unpack
+
+liftString :: Token -> ExpQ
+liftString = stringE . T.unpack
 
 instance Msg TypeName where
   msg TypeName {readTypeName} = Message $ "\"" <> readTypeName <> "\""

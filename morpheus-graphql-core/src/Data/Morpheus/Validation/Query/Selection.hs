@@ -6,13 +6,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Query.Selection
   ( validateOperation,
   )
 where
 
--- MORPHEUS
+import Control.Applicative (pure)
+import Control.Monad ((>>=), fmap)
+import Data.Foldable (null)
+import Data.Functor ((<$>))
+import Data.List (filter)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
@@ -75,6 +81,15 @@ import Data.Morpheus.Validation.Query.UnionSelection
   ( validateUnionSelection,
   )
 import Data.Semigroup ((<>))
+import Prelude
+  ( ($),
+    (&&),
+    (.),
+    Eq (..),
+    const,
+    not,
+    otherwise,
+  )
 
 type TypeDef = (TypeName, FieldsDefinition OUT)
 
@@ -96,7 +111,7 @@ selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . elems
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
 singleTopLevelSelection Operation {operationType = Subscription, operationName} selSet =
   case selectionsWitoutTypename selSet of
-    (_ : xs) | not (null xs) -> failure $ map (singleTopLevelSelectionError operationName) xs
+    (_ : xs) | not (null xs) -> failure $ fmap (singleTopLevelSelectionError operationName) xs
     _ -> pure ()
 singleTopLevelSelection _ _ = pure ()
 

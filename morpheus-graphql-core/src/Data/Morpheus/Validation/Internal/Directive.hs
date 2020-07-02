@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Directive
   ( shouldIncludeSelection,
@@ -13,7 +14,9 @@ module Data.Morpheus.Validation.Internal.Directive
   )
 where
 
--- MORPHEUS
+import Control.Applicative (pure)
+import Control.Monad ((>>=))
+import Data.List (elem)
 import Data.Morpheus.Error (errorMessage, globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -43,6 +46,14 @@ import Data.Morpheus.Validation.Query.Arguments
   ( validateDirectiveArguments,
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
+import Prelude
+  ( ($),
+    (&&),
+    (==),
+    Bool (..),
+    otherwise,
+  )
 
 validateDirective :: DirectiveLocation -> [DirectiveDefinition] -> Directive RAW -> SelectionValidator (Directive VALID)
 validateDirective location directiveDefs directive@Directive {directiveArgs, ..} =

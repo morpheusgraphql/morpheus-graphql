@@ -2,17 +2,21 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Query.Variable
   ( resolveOperationVariables,
   )
 where
 
+import Control.Applicative ((*>), pure)
+import Control.Monad (Monad ((>>=)))
+import Data.Foldable (concat, concatMap)
+import Data.Functor ((<$>), fmap)
 import qualified Data.HashMap.Lazy as M
   ( lookup,
   )
-import Data.Maybe (maybe)
---- MORPHEUS
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Variable (uninitializedVariable)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -62,6 +66,18 @@ import Data.Morpheus.Validation.Internal.Value
   ( validateInput,
   )
 import Data.Semigroup ((<>))
+import Data.Traversable
+  ( traverse,
+  )
+import Prelude
+  ( ($),
+    (&&),
+    (.),
+    Bool (..),
+    Eq (..),
+    not,
+    otherwise,
+  )
 
 class ExploreRefs a where
   exploreRefs :: a -> [Ref]
@@ -158,7 +174,7 @@ lookupAndValidateValueOnBody
         BaseValidator ValidValue
       checkType (Just variable) Nothing varType = validator varType False variable
       checkType (Just variable) (Just defValue) varType =
-        validator varType True defValue >> validator varType False variable
+        validator varType True defValue *> validator varType False variable
       checkType Nothing (Just defValue) varType = validator varType True defValue
       checkType Nothing Nothing varType
         | validationMode /= WITHOUT_VARIABLES && not (isNullable variableType) =

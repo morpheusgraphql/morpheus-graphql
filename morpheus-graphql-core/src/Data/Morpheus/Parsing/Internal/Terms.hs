@@ -286,7 +286,7 @@ parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
         (char '[' *> ignoredTokens)
         (char ']' *> ignoredTokens)
         ( do
-            (wrappers, name) <- unwrapped <|> wrapped
+            (wrappers, tname) <- unwrapped <|> wrapped
             nonNull' <- parseNonNull
-            return ((ListType : nonNull') ++ wrappers, name)
+            return ((ListType : nonNull') ++ wrappers, tname)
         )

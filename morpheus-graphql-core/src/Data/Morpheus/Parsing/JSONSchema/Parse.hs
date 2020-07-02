@@ -3,14 +3,21 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.JSONSchema.Parse
   ( decodeIntrospection,
   )
 where
 
+import Control.Applicative (pure)
+import Control.Monad ((>>=))
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
+import Data.Either (Either (..))
+import Data.Functor ((<$>), fmap)
+import Data.List (concat)
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Internal (internalError)
 import Data.Morpheus.Internal.Utils
   ( fromElems,
@@ -53,6 +60,9 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup ((<>))
+import Data.String (String)
+import Data.Traversable (traverse)
+import Prelude (($), (.), Show (..), uncurry)
 
 decodeIntrospection :: ByteString -> Eventless AST.Schema
 decodeIntrospection jsonDoc = case jsonSchema of
@@ -71,7 +81,7 @@ instance ParseJSONSchema Type [TypeDefinition ANY] where
   parse Type {name = Just typeName, kind = SCALAR} =
     pure [createScalarType typeName]
   parse Type {name = Just typeName, kind = ENUM, enumValues = Just enums} =
-    pure [mkType typeName $ mkEnumContent (map enumName enums)]
+    pure [mkType typeName $ mkEnumContent (fmap enumName enums)]
   parse Type {name = Just typeName, kind = UNION, possibleTypes = Just unions} =
     case traverse name unions of
       Nothing -> internalError "ERROR: GQL ERROR"
