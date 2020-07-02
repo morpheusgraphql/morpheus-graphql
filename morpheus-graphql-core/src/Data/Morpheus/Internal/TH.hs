@@ -9,6 +9,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+-- MORPHEUS
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.TH
   ( _',
@@ -47,7 +49,11 @@ module Data.Morpheus.Internal.TH
   )
 where
 
--- MORPHEUS
+import Control.Applicative ((<*>), pure)
+import Control.Monad.Fail (fail)
+import Data.Foldable (foldl)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( nameSpaceField,
     nameSpaceType,
@@ -71,6 +77,17 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Language.Haskell.TH
+import Prelude
+  ( ($),
+    (.),
+    (==),
+    Bool (..),
+    id,
+    map,
+    otherwise,
+    show,
+    (||),
+  )
 
 m_ :: TypeName
 m_ = "m"
