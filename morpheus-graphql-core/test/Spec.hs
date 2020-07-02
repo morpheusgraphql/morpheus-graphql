@@ -70,7 +70,6 @@ import Prelude
     (==),
     FilePath,
     IO,
-    const,
     otherwise,
     show,
     uncurry,
