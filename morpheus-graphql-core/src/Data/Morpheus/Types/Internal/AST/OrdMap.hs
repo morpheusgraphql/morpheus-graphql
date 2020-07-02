@@ -58,8 +58,8 @@ data OrdMap k a = OrdMap
   }
   deriving (Show, Eq, Functor)
 
-instance (Lift a, Lift k) => Lift (OrdMap k a) where
-  lift (OrdMap names x) = [|OrdMap names (HM.fromList ls)|]
+instance (Lift a, Lift k, Eq k, Hashable k) => Lift (OrdMap k a) where
+  liftTyped (OrdMap names x) = [||OrdMap names (HM.fromList ls)||]
     where
       ls = HM.toList x
 

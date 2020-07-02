@@ -144,8 +144,8 @@ data VariableContent (stage :: Stage) where
   ValidVariableValue :: {validVarContent :: ValidValue} -> VariableContent VALID
 
 instance Lift (VariableContent a) where
-  lift (DefaultValue x) = [|DefaultValue x|]
-  lift (ValidVariableValue x) = [|ValidVariableValue x|]
+  liftTyped (DefaultValue x) = [||DefaultValue x||]
+  liftTyped (ValidVariableValue x) = [||ValidVariableValue x||]
 
 deriving instance Show (VariableContent a)
 
