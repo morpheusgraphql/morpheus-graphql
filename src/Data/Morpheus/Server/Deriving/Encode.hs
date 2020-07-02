@@ -254,7 +254,7 @@ deriveModel
       { query = objectResolvers queryResolver,
         mutation = objectResolvers mutationResolver,
         subscription = objectResolvers subscriptionResolver,
-        channelMap = getChannels subscriptionResolver
+        channelMap = Just (getChannels subscriptionResolver)
       }
 
 toFieldRes :: FieldNode o e m -> FieldResModel o e m
