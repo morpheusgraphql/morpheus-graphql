@@ -2,18 +2,21 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Schema
   ( testSchema,
   )
 where
 
+import Control.Applicative (pure)
 import Control.Monad ((<=<))
 import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
 import qualified Data.ByteString.Lazy as L (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Either (either)
+import Data.Either (Either (..), either)
+import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Core (parseFullGQLDocument, validateSchema)
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
@@ -34,14 +37,24 @@ import Lib
   )
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
+import Prelude
+  ( ($),
+    (.),
+    Eq (..),
+    FilePath,
+    IO,
+    String,
+    id,
+    show,
+  )
 
-readSource :: String -> IO ByteString
+readSource :: FilePath -> IO ByteString
 readSource = L.readFile
 
-readSchema :: String -> IO (Eventless Schema)
+readSchema :: FilePath -> IO (Eventless Schema)
 readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . (<> "/schema.gql")
 
-readResponse :: String -> IO Response
+readResponse :: FilePath -> IO Response
 readResponse = fmap (either AesonError id . eitherDecode) . readSource . (<> "/response.json")
 
 data Response
@@ -66,7 +79,7 @@ toTests CaseTree {caseUrl, children = Left {}} = schemaCase caseUrl
 toTests CaseTree {caseUrl = FileUrl {fileName}, children = Right children} =
   testGroup
     fileName
-    (map toTests children)
+    (fmap toTests children)
 
 testSchema :: IO TestTree
 testSchema = toTests <$> scanSchemaTests "test/schema"
@@ -78,7 +91,7 @@ schemaCase url = testCase (fileName url) $ do
   assertion expected schema
 
 assertion :: Response -> Eventless Schema -> IO ()
-assertion OK Success {} = return ()
+assertion OK Success {} = pure ()
 assertion Errors {errors = err} Failure {errors}
   | err == errors =
     pure
