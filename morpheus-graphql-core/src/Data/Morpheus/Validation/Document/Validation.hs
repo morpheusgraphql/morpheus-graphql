@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument,
@@ -11,13 +12,12 @@ module Data.Morpheus.Validation.Document.Validation
   )
 where
 
+import Control.Applicative ((*>), pure)
 import Control.Monad ((>=>))
 import Control.Monad.Reader (asks)
 import Data.Foldable (traverse_)
 import Data.Functor (($>))
---
--- Morpheus
-
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     PartialImplements (..),
@@ -73,6 +73,14 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   )
 import Data.Morpheus.Validation.Internal.Value (validateInput)
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
+import Prelude
+  ( ($),
+    (&&),
+    (==),
+    not,
+    otherwise,
+  )
 
 validateSchema :: Schema -> Eventless Schema
 validateSchema schema = validatePartialDocument (elems schema) $> schema
