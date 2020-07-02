@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Rendering.RenderIntrospection
   ( render,
@@ -15,9 +16,14 @@ module Data.Morpheus.Rendering.RenderIntrospection
   )
 where
 
-import Data.Maybe (isJust)
 -- Morpheus
 
+import Control.Applicative (pure)
+import Control.Monad (Monad (..), sequence)
+import Data.Foldable (foldr)
+import Data.Functor ((<$>), fmap)
+import Data.List (elem, filter)
+import Data.Maybe (Maybe (..), isJust, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure,
     elems,
@@ -80,6 +86,8 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (pack)
+import Data.Traversable (traverse)
+import Prelude (($), (.), concatMap, show)
 
 type Result e m a = Resolver QUERY e m a
 
@@ -253,7 +261,7 @@ interfacePossibleTypes interfaceName =
               . elems
         )
   where
-    implements typeDef@TypeDefinition {typeContent = DataObject {objectImplements}, ..}
+    implements typeDef@TypeDefinition {typeContent = DataObject {objectImplements}}
       | interfaceName `elem` objectImplements = [render typeDef]
     implements _ = []
 
