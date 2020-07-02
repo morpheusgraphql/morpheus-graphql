@@ -14,10 +14,8 @@ import Data.Morpheus.Error
 import Data.Morpheus.Parsing.Document.TypeSystem
   ( parseTypeDefinitions,
   )
-import Data.Morpheus.Types.Internal.AST (ANY, TypeDefinition)
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
+  ( Result (..),
   )
 import Data.Text
   ( Text,
