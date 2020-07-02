@@ -5,15 +5,18 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Value (validateInput) where
 
+import Control.Applicative ((*>), pure)
+import Control.Monad (Monad ((>>=)))
+import Data.Either (Either (..))
 import Data.Foldable (traverse_)
 import Data.Function ((&))
-import Data.List (elem)
-import Data.Maybe (maybe)
--- MORPHEUS
-
+import Data.Functor ((<$>), fmap)
+import Data.List (any, elem)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
@@ -83,6 +86,17 @@ import Data.Morpheus.Types.Internal.Validation
     withScopeType,
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
+import Prelude
+  ( ($),
+    (&&),
+    (.),
+    Bool (..),
+    Eq (..),
+    const,
+    not,
+    otherwise,
+  )
 
 castFailure ::
   ( GetWith ctx Schema,
@@ -355,10 +369,10 @@ validateEnum err enumValues value@(Scalar (String enumValue))
       then pure (Enum (TypeName enumValue))
       else err value
   where
-    tags = map enumName enumValues
+    tags = fmap enumName enumValues
 validateEnum err enumValues value@(Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
   | otherwise = err value
   where
-    tags = map enumName enumValues
+    tags = fmap enumName enumValues
 validateEnum err _ value = err value
