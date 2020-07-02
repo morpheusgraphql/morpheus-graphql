@@ -30,7 +30,7 @@ import Data.Morpheus.Server.Playground
   )
 import Data.Morpheus.Types.IO (MapAPI (..))
 import Data.Morpheus.Types.Internal.Resolving
-  ( GQLChannel (..),
+  ( Event,
   )
 import Data.Morpheus.Types.Internal.Subscription
   ( HTTP,
@@ -55,9 +55,7 @@ import qualified Network.WebSockets as WS
 
 type ServerConstraint e m =
   ( MonadIO m,
-    MonadUnliftIO m,
-    Eq (StreamChannel e),
-    GQLChannel e
+    MonadUnliftIO m
   )
 
 -- support old version of Websockets
@@ -94,15 +92,14 @@ httpPubApp api httpCallback =
 -- | Wai WebSocket Server App for GraphQL subscriptions
 subscriptionApp ::
   ( MonadUnliftIO m,
-    (Eq (StreamChannel e)),
-    (GQLChannel e)
+    Eq channel
   ) =>
-  ( Store e m ->
-    (Scope WS e m -> m ()) ->
+  ( Store (Event channel a) m ->
+    (Scope WS (Event channel a) m -> m ()) ->
     m app
   ) ->
-  (Input WS -> Stream WS e m) ->
-  m (app, e -> m ())
+  (Input WS -> Stream WS (Event channel a) m) ->
+  m (app, Event channel a -> m ())
 subscriptionApp appWrapper api =
   do
     store <- initDefaultStore
@@ -131,9 +128,8 @@ webSocketsWrapper store handler =
 webSocketsApp ::
   ( MonadIO m,
     MonadUnliftIO m,
-    (Eq (StreamChannel e)),
-    (GQLChannel e)
+    Eq channel
   ) =>
-  (Input WS -> Stream WS e m) ->
-  m (ServerApp, e -> m ())
+  (Input WS -> Stream WS (Event channel a) m) ->
+  m (ServerApp, Event channel a -> m ())
 webSocketsApp = subscriptionApp webSocketsWrapper

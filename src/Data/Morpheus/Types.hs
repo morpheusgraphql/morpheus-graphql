@@ -32,8 +32,6 @@ module Data.Morpheus.Types
     subscribe,
     unsafeInternalContext,
     Context (..),
-    SubField,
-    ComposedSubField,
     Input,
     Stream,
     WS,
@@ -55,6 +53,7 @@ module Data.Morpheus.Types
     IOMutRes,
     IOSubRes,
     interface,
+    SubscriptionField,
   )
 where
 
@@ -96,7 +95,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Failure,
     PushEvents (..),
     Resolver,
-    UnSubResolver,
+    SubscriptionField,
     WithOperation,
     failure,
     pushEvents,
@@ -136,7 +135,7 @@ type ResolverQ e m a = Flexible (Resolver QUERY e m) a
 
 type ResolverM e m a = Flexible (Resolver MUTATION e m) a
 
-type ResolverS e m a = Resolver SUBSCRIPTION e m (a (Resolver QUERY e m))
+type ResolverS e m a = Flexible (Resolver SUBSCRIPTION e m) a
 
 {-# DEPRECATED Res "use ResolverQ" #-}
 
@@ -173,11 +172,6 @@ type ResolveM e m a = ResolverM e m a
 {-# DEPRECATED ResolveS "use ResolverS" #-}
 
 type ResolveS e m a = ResolverS e m a
-
--- Subsciption Object Resolver Fields
-type SubField m a = (m (a (UnSubResolver m)))
-
-type ComposedSubField m f a = (m (f (a (UnSubResolver m))))
 
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents

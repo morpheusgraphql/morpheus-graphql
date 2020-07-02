@@ -35,6 +35,7 @@ import Data.Morpheus.Kind
     SCALAR,
     VContext (..),
   )
+import Data.Morpheus.Server.Deriving.Channels (ChannelCon, getChannels)
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
@@ -68,15 +69,14 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     FieldResModel,
     LiftOperation,
-    MapStrategy (..),
     ObjectResModel (..),
     ResModel (..),
     Resolver,
     RootResModel (..),
+    SubscriptionField (..),
     failure,
+    getArguments,
     liftStateless,
-    toResolver,
-    unsafeBind,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -114,31 +114,34 @@ instance (Eq k, Monad m, LiftOperation o, Encode (MapKind k v (Resolver o e m)) 
   encode value =
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
 
+-- SUBSCRIPTION
+instance (Monad m, LiftOperation o, Encode a o e m) => Encode (SubscriptionField a) o e m where
+  encode (SubscriptionField _ res) = encode res
+
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
   ( DecodeType a,
     Generic a,
     Monad m,
-    LiftOperation fo,
-    Encode b fo e m,
-    MapStrategy fo o
+    LiftOperation o,
+    Encode b o e m
   ) =>
-  Encode (a -> Resolver fo e m b) o e m
+  Encode (a -> b) o e m
   where
-  encode x =
-    mapStrategy $
-      toResolver decodeArguments x `unsafeBind` encode
+  encode f =
+    getArguments
+      >>= liftStateless . decodeArguments
+      >>= encode . f
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
   ( Monad m,
-    LiftOperation o,
-    Encode b fo e m,
-    MapStrategy fo o
+    Encode b o e m,
+    LiftOperation o
   ) =>
-  Encode (Resolver fo e m b) o e m
+  Encode (Resolver o e m b) o e m
   where
-  encode = mapStrategy . (`unsafeBind` encode)
+  encode x = x >>= encode
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
@@ -235,6 +238,7 @@ deriveModel ::
   ( Con QUERY e m query,
     Con MUTATION e m mut,
     Con SUBSCRIPTION e m sub,
+    ChannelCon e m sub,
     Applicative m,
     Monad m
   ) =>
@@ -249,7 +253,8 @@ deriveModel
     RootResModel
       { query = objectResolvers queryResolver,
         mutation = objectResolvers mutationResolver,
-        subscription = objectResolvers subscriptionResolver
+        subscription = objectResolvers subscriptionResolver,
+        channelMap = getChannels subscriptionResolver
       }
 
 toFieldRes :: FieldNode o e m -> FieldResModel o e m

@@ -10,6 +10,7 @@ import Data.Morpheus.Types
   ( Event (..),
     Resolver,
     RootResolver (..),
+    SubscriptionField,
     WithOperation,
     publish,
     subscribe,
@@ -21,8 +22,6 @@ import Server.Mythology.Character
     someDeity,
   )
 
--- TODO: importGQLDocument "examples/Subscription/api.gql"
---
 data Channel
   = ChannelA
   | ChannelB
@@ -44,7 +43,7 @@ newtype Mutation m = Mutation
   deriving (Generic)
 
 newtype Subscription (m :: * -> *) = Subscription
-  { newDeity :: m Deity
+  { newDeity :: SubscriptionField (m Deity)
   }
   deriving (Generic)
 
@@ -62,7 +61,7 @@ rootResolver =
       requireAuthorized
       publish [Event {channels = [ChannelA], content = ContentA 1}]
       pure someDeity
-    newDeity = subscribe [ChannelA] $ do
+    newDeity = subscribe ChannelA $ do
       requireAuthorized
       pure subResolver
       where
@@ -70,6 +69,7 @@ rootResolver =
         subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity -- resolve New State
         subResolver _ = fetchDeity -- Resolve Old State
           ---------------------------------------------------------
+    fetchDeity :: Applicative m => m Deity
     fetchDeity = pure someDeity
 
 requireAuthorized :: WithOperation o => Resolver o e IO ()

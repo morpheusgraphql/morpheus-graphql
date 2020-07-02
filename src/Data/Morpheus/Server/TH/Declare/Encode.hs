@@ -12,120 +12,96 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Internal.TH
-  ( applyT,
+  ( _',
+    apply,
     destructRecord,
-    instanceHeadMultiT,
-    mkTypeName,
-    nameStringE,
-    nameVarE,
-    nameVarP,
-    nameVarT,
-    typeT,
+    e',
+    funDSimple,
+    m',
+    mkFieldsE,
+    o',
   )
 import Data.Morpheus.Server.Deriving.Encode
   ( Encode (..),
     ExploreResolvers (..),
   )
-import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Types
+  ( ServerTypeDefinition (..),
+  )
+import Data.Morpheus.Server.Internal.TH.Utils
+  ( constraintTypeable,
+    typeNameStringE,
+    withPure,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldDefinition (..),
-    QUERY,
-    SUBSCRIPTION,
     TRUE,
     TypeName (..),
-    isSubscription,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( LiftOperation,
-    MapStrategy (..),
-    ObjectResModel (..),
-    ResModel (..),
+    ResModel,
     Resolver,
+    mkObject,
   )
 import Data.Semigroup ((<>))
-import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
-m_ :: TypeName
-m_ = "m"
+vars :: [Type]
+vars = [o', e', m']
 
-fo_ :: TypeName
-fo_ = "fieldOperationKind"
+mkType :: TypeName -> Type
+mkType tName = mainType
+  where
+    mainTypeArg = [apply ''Resolver vars]
+    mainType = apply tName mainTypeArg
 
-po_ :: TypeName
-po_ = "parentOparation"
+genHeadType :: TypeName -> [Type]
+genHeadType tName = mkType tName : vars
 
-e_ :: TypeName
-e_ = "encodeEvent"
+-- defines Constraint: (Monad m, ...)
+mkConstrains :: TypeName -> [Type]
+mkConstrains tName =
+  [ apply ''Monad [m'],
+    apply ''Encode (genHeadType tName),
+    apply ''LiftOperation [o']
+  ]
+    <> map constraintTypeable [o', e', m']
 
-encodeVars :: [TypeName]
-encodeVars = [e_, m_]
+mkObjectE :: TypeName -> Exp -> Exp
+mkObjectE name = AppE (AppE (VarE 'mkObject) (typeNameStringE name))
 
-encodeVarsT :: [TypeQ]
-encodeVarsT = map nameVarT encodeVars
+mkEntry ::
+  Encode resolver o e m =>
+  a ->
+  resolver ->
+  (a, Resolver o e m (ResModel o e m))
+mkEntry name field = (name, encode field)
+
+decodeObjectE :: TypeName -> [FieldDefinition cat] -> Exp
+decodeObjectE tName cFields =
+  withPure $
+    mkObjectE
+      tName
+      (mkFieldsE 'mkEntry cFields)
+
+-- | defines: ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value)
+instanceType :: TypeName -> Type
+instanceType tName = apply ''ExploreResolvers (ConT ''TRUE : genHeadType tName)
+
+-- | defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
+exploreResolversD :: TypeName -> [FieldDefinition cat] -> DecQ
+exploreResolversD tName fields = funDSimple 'exploreResolvers args body
+  where
+    args = [_', destructRecord tName fields]
+    body = pure (decodeObjectE tName fields)
 
 deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
-deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}], tKind} =
-  pure <$> instanceD (cxt constrains) appHead methods
+deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
+  pure <$> instanceD context typeDef funDefs
   where
-    subARgs = conT ''SUBSCRIPTION : encodeVarsT
-    instanceArgs
-      | isSubscription tKind = subARgs
-      | otherwise = map nameVarT (po_ : encodeVars)
-    mainType = applyT (mkTypeName tName) [mainTypeArg]
-      where
-        mainTypeArg
-          | isSubscription tKind = applyT ''Resolver subARgs
-          | otherwise = typeT ''Resolver (fo_ : encodeVars)
-    -----------------------------------------------------------------------------------------
-    typeables
-      | isSubscription tKind =
-        [applyT ''MapStrategy $ map conT [''QUERY, ''SUBSCRIPTION]]
-      | otherwise =
-        [ iLiftOp po_,
-          iLiftOp fo_,
-          typeT ''MapStrategy [fo_, po_],
-          iTypeable fo_,
-          iTypeable po_
-        ]
-    -------------------------
-    iLiftOp op = applyT ''LiftOperation [nameVarT op]
-    -------------------------
-    iTypeable name = typeT ''Typeable [name]
-    -------------------------------------------
-    -- defines Constraint: (Typeable m, Monad m)
-    constrains =
-      typeables
-        <> [ typeT ''Monad [m_],
-             applyT ''Encode (mainType : instanceArgs),
-             iTypeable e_,
-             iTypeable m_
-           ]
-    -------------------------------------------------------------------
-    -- defines: instance <constraint> =>  ObjectResolvers ('TRUE) (<Type> (ResolveT m)) (ResolveT m value) where
-    appHead =
-      instanceHeadMultiT
-        ''ExploreResolvers
-        (conT ''TRUE)
-        (mainType : instanceArgs)
-    ------------------------------------------------------------------
-    -- defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
-    methods = [funD 'exploreResolvers [clause argsE (normalB body) []]]
-      where
-        argsE = [nameVarP "_", destructRecord tName varNames]
-        body =
-          appE (varE 'pure)
-            $ appE
-              (conE 'ResObject)
-            $ appE
-              ( appE
-                  (conE 'ObjectResModel)
-                  (nameStringE tName)
-              )
-              (listE $ map decodeVar varNames)
-        decodeVar name = [|(name, encode $(varName))|]
-          where
-            varName = nameVarE name
-        varNames = map fieldName cFields
+    context = cxt (map pure $ mkConstrains tName)
+    typeDef = pure (instanceType tName)
+    funDefs = [exploreResolversD tName cFields]
 deriveEncode _ = pure []

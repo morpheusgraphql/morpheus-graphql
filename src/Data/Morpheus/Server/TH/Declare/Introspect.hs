@@ -13,14 +13,15 @@ where
 
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
-  ( instanceFunD,
-    instanceHeadMultiT,
-    instanceProxyFunD,
-    mkTypeName,
-    nameConT,
-    nameVarT,
+  ( _',
+    _2',
+    apply,
+    applyVars,
+    cat',
+    funDSimple,
+    toCon,
+    toVarT,
     tyConArgs,
-    typeT,
   )
 import Data.Morpheus.Internal.Utils
   ( concatUpdates,
@@ -31,7 +32,12 @@ import Data.Morpheus.Server.Deriving.Introspect
     ProxyRep (..),
     deriveCustomInputObjectType,
   )
-import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Types
+  ( ServerTypeDefinition (..),
+  )
+import Data.Morpheus.Server.Internal.TH.Utils
+  ( mkTypeableConstraints,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__typeName, implements),
     TypeUpdater,
@@ -53,20 +59,14 @@ import Data.Morpheus.Types.Internal.AST
     unsafeFromFields,
   )
 import Data.Proxy (Proxy (..))
-import Data.Typeable (Typeable)
 import Language.Haskell.TH
-
-cat_ :: TypeQ
-cat_ = varT (mkName "cat")
 
 instanceIntrospect :: Maybe (TypeDefinition cat) -> Q [Dec]
 instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnum {}}) =
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
-    iHead = instanceHeadMultiT ''Introspect cat_ [conT $ mkTypeName typeName]
-    defineIntrospect = instanceProxyFunD ('introspect, body)
-      where
-        body = [|insertType typeDef|]
+    iHead = pure (apply ''Introspect [cat', toCon typeName])
+    defineIntrospect = funDSimple 'introspect [_'] [|insertType typeDef|]
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
@@ -77,20 +77,18 @@ deriveObjectRep
       tCons = [ConsD {cFields}],
       tKind
     } =
-    pure <$> instanceD (cxt constrains) iHead methods
+    pure <$> instanceD constrains iHead methods
     where
-      mainTypeName = typeT (mkTypeName tName) typeArgs
+      mainTypeName = applyVars tName typeArgs
       typeArgs = tyConArgs tKind
-      constrains = map conTypeable typeArgs
-        where
-          conTypeable name = typeT ''Typeable [name]
+      constrains = mkTypeableConstraints typeArgs
       -----------------------------------------------
-      iHead = instanceHeadMultiT ''DeriveTypeContent instCat [conT ''TRUE, mainTypeName]
+      iHead = apply ''DeriveTypeContent [instCat, conT ''TRUE, mainTypeName]
       instCat
         | tKind == KindInputObject =
           conT ''IN
         | otherwise = conT ''OUT
-      methods = [instanceFunD 'deriveTypeContent ["_proxy1", "_proxy2"] body]
+      methods = [funDSimple 'deriveTypeContent [_', _2'] body]
         where
           body
             | tKind == KindInputObject =
@@ -156,14 +154,14 @@ introspectField cat FieldDefinition {fieldType, fieldContent} =
 proxyRepT :: TypeQ -> TypeRef -> Q Exp
 proxyRepT cat TypeRef {typeConName, typeArgs} = [|(ProxyRep :: ProxyRep $(cat) $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (nameConT typeConName) (nameVarT m)
-    genSig _ = nameConT typeConName
+    genSig (Just m) = appT (toCon typeConName) (toVarT m)
+    genSig _ = toCon typeConName
 
 proxyT :: TypeRef -> Q Exp
 proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
   where
-    genSig (Just m) = appT (nameConT typeConName) (nameVarT m)
-    genSig _ = nameConT typeConName
+    genSig (Just m) = appT (toCon typeConName) (toVarT m)
+    genSig _ = toCon typeConName
 
 buildFields :: [FieldDefinition cat] -> ExpQ
 buildFields = listE . map buildField

@@ -1,7 +1,5 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Server.Internal.TH.Decode
   ( withObject,
@@ -10,7 +8,6 @@ module Data.Morpheus.Server.Internal.TH.Decode
     withEnum,
     withUnion,
     decodeFieldWith,
-    decodeObjectExpQ,
   )
 where
 
@@ -18,19 +15,13 @@ where
 import Data.Morpheus.Error
   ( internalTypeMismatch,
   )
-import Data.Morpheus.Internal.TH
-  ( nameConE,
-    nameVarE,
-  )
 import Data.Morpheus.Internal.Utils
   ( empty,
     selectBy,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ConsD (..),
-    FieldDefinition (..),
-    FieldName,
+  ( FieldName,
     Message,
     Message,
     ObjectEntry (..),
@@ -38,36 +29,12 @@ import Data.Morpheus.Types.Internal.AST
     ValidObject,
     ValidValue,
     Value (..),
-    msg,
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Failure (..),
   )
-import Data.Semigroup ((<>))
-import Language.Haskell.TH
-  ( ExpQ,
-    uInfixE,
-    varE,
-  )
-
-decodeObjectExpQ :: ExpQ -> ConsD cat -> ExpQ
-decodeObjectExpQ fieldDecoder ConsD {cName, cFields} = handleFields cFields
-  where
-    consName = nameConE cName
-    ----------------------------------------------------------------------------------
-    handleFields fNames = uInfixE consName (varE '(<$>)) (applyFields fNames)
-      where
-        applyFields [] = fail $ show ("No Empty fields on " <> msg cName :: Message)
-        applyFields [x] = defField x
-        applyFields (x : xs) = uInfixE (defField x) (varE '(<*>)) (applyFields xs)
-        ------------------------------------------------------------------------
-        defField FieldDefinition {fieldName} =
-          uInfixE
-            (nameVarE "o")
-            fieldDecoder
-            [|fieldName|]
 
 withObject :: (ValidObject -> Eventless a) -> ValidValue -> Eventless a
 withObject f (Object object) = f object

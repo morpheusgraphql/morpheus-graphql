@@ -13,22 +13,18 @@ where
 --
 -- MORPHEUS
 import Data.Morpheus.Internal.TH
-  ( instanceHeadT,
-    instanceProxyFunD,
-    mkTypeName,
+  ( apply,
+    applyVars,
+    funDProxy,
+    toName,
     tyConArgs,
     typeInstanceDec,
-    typeT,
-  )
-import Data.Morpheus.Kind
-  ( ENUM,
-    INPUT,
-    INTERFACE,
-    OUTPUT,
-    SCALAR,
-    WRAPPER,
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Utils
+  ( kindName,
+    mkTypeableConstraints,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
   )
@@ -39,28 +35,25 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeKind (..),
     TypeName,
     isObject,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
-import Data.Typeable (Typeable)
 import Language.Haskell.TH
 
 interfaceF :: Name -> ExpQ
 interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () Maybe))))|]
 
 introspectInterface :: TypeName -> ExpQ
-introspectInterface = interfaceF . mkTypeName
+introspectInterface = interfaceF . toName
 
 deriveGQLType :: ServerTypeDefinition cat -> Q [Dec]
 deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
-  pure <$> instanceD (cxt constrains) iHead (functions <> typeFamilies)
+  pure <$> instanceD constrains iHead (functions <> typeFamilies)
   where
     functions =
-      map
-        instanceProxyFunD
+      funDProxy
         [ ('__typeName, [|tName|]),
           ('description, [|tDescription|]),
           ('implements, implementsFunc)
@@ -71,12 +64,10 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
     --------------------------------
     typeArgs = tyConArgs tKind
     --------------------------------
-    iHead = instanceHeadT ''GQLType tName typeArgs
-    headSig = typeT (mkTypeName tName) typeArgs
+    iHead = apply ''GQLType [applyVars tName typeArgs]
+    headSig = applyVars tName typeArgs
     ---------------------------------------------------
-    constrains = map conTypeable typeArgs
-      where
-        conTypeable name = typeT ''Typeable [name]
+    constrains = mkTypeableConstraints typeArgs
     -------------------------------------------------
     typeFamilies
       | isObject tKind = [deriveKIND, deriveCUSTOM]
@@ -89,17 +80,6 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
         deriveInstance insName tyName = do
           typeN <- headSig
           pure $ typeInstanceDec insName typeN (ConT tyName)
-
-kindName :: TypeKind -> Name
-kindName KindObject {} = ''OUTPUT
-kindName KindScalar = ''SCALAR
-kindName KindEnum = ''ENUM
-kindName KindUnion = ''OUTPUT
-kindName KindInputObject = ''INPUT
-kindName KindList = ''WRAPPER
-kindName KindNonNull = ''WRAPPER
-kindName KindInputUnion = ''INPUT
-kindName KindInterface = ''INTERFACE
 
 interfacesFrom :: Maybe (TypeDefinition ANY) -> [TypeName]
 interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements

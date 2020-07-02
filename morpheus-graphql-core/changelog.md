@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.1 - Unreleased Changes
+## 0.14.0 - Unreleased Changes
 
 ### new features
 
@@ -11,6 +11,11 @@
     query: MyQuery
   }
   ```
+
+### Breaking Changes
+
+- removed : `EventCon` from `Data.Morpheus.Core`
+- some internal changes
 
 ## 0.13.0 - 22.06.2020
 

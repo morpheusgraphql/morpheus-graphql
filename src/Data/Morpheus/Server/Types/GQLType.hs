@@ -36,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Resolver,
+    SubscriptionField,
   )
 import Data.Proxy (Proxy (..))
 import Data.Set (Set)
@@ -206,6 +207,11 @@ instance GQLType a => GQLType (Either s a) where
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = WRAPPER
+  __typeName _ = __typeName (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+
+instance GQLType a => GQLType (SubscriptionField a) where
+  type KIND (SubscriptionField a) = WRAPPER
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 

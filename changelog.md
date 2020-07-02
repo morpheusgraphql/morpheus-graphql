@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.1 - Unreleased Changes
+## 0.14.0 - Unreleased Changes
 
 ### new features
 
@@ -21,6 +21,38 @@
   rootResolver :: RootResolver () IO Query Undefined Undefined
   rootResolver = RootResolver <resolvers ...>
   ```
+
+- Subscription Resolver supports `Monad`.
+- nested Subscription Resolvers.
+
+### Breaking Changes
+
+- root subscribtion fields must be wrapped with `SubscriptionField`. e.g:
+
+```haskell
+data Subscription (m :: * -> *) = Subscription
+{ newDeity :: SubscriptionField (m Deity),
+  newHuman :: HumanArgs -> SubscriptionField (m Human)
+}
+deriving (Generic)
+```
+
+- signature of `subscribe` is changed. now you can use it as followed:
+
+```haskell
+resolveNewAdress :: SubscriptionField (ResolverS EVENT IO Address)
+resolveNewAdress = subscribe ADDRESS $ do
+    -- executed only once
+    -- immediate response on failures
+    requireAuthorized
+    pure $ \(Event _ content) -> do
+        -- exectues on every event
+        lift (getDBAddress content)
+```
+
+- removed from `Data.Morpheus.Types`
+  - `SubField`
+  - `ComposedSubField`
 
 ## 0.13.0 - 22.06.2020
 

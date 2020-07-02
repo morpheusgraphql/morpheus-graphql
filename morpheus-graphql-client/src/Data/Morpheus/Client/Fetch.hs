@@ -25,8 +25,8 @@ import Data.ByteString.Lazy (ByteString)
 -- MORPHEUS
 
 import Data.Morpheus.Internal.TH
-  ( instanceHeadT,
-    nameConType,
+  ( applyCons,
+    toCon,
     typeInstanceDec,
   )
 import Data.Morpheus.Types.IO
@@ -68,8 +68,8 @@ deriveFetch :: Type -> TypeName -> String -> Q [Dec]
 deriveFetch resultType typeName queryString =
   pure <$> instanceD (cxt []) iHead methods
   where
-    iHead = instanceHeadT ''Fetch typeName []
+    iHead = applyCons ''Fetch [typeName]
     methods =
       [ funD 'fetch [clause [] (normalB [|__fetch queryString typeName|]) []],
-        pure $ typeInstanceDec ''Args (nameConType typeName) resultType
+        pure $ typeInstanceDec ''Args (toCon typeName) resultType
       ]

@@ -63,8 +63,8 @@ rootResolver =
           },
       subscriptionResolver =
         Subscription
-          { newDeity = subscribe [DEITY] (pure characterSub),
-            newHuman = subscribe [HUMAN] (pure characterSub)
+          { newDeity = subscribe DEITY (pure characterSub),
+            newHuman = subscribe HUMAN (pure characterSub)
           }
     }
 

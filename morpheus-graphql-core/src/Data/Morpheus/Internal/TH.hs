@@ -1,6 +1,9 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -8,35 +11,39 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Internal.TH
-  ( tyConArgs,
+  ( _',
     apply,
-    applyT,
-    typeT,
-    instanceHeadT,
-    instanceProxyFunD,
-    instanceFunD,
-    instanceHeadMultiT,
-    destructRecord,
-    typeInstanceDec,
-    infoTyVars,
+    applyCons,
+    applyVars,
     decArgs,
-    nameLitP,
-    nameStringE,
-    nameStringL,
-    nameConT,
-    nameVarE,
-    nameVarT,
-    nameConType,
-    nameConE,
-    nameVarP,
-    mkTypeName,
-    mkFieldName,
     declareTypeRef,
+    destructRecord,
+    funDProxy,
+    funDSimple,
+    infoTyVars,
+    isEnum,
+    m',
+    m_,
+    mkFieldsE,
     nameSpaceField,
     nameSpaceType,
-    m_,
-    m',
-    isEnum,
+    toCon,
+    toConE,
+    toConT,
+    ToName (..),
+    toString,
+    toVarE,
+    toVarT,
+    tyConArgs,
+    typeInstanceDec,
+    v',
+    cat',
+    _2',
+    o',
+    e',
+    vars,
+    decodeObjectE,
+    matchWith,
   )
 where
 
@@ -46,7 +53,9 @@ import Data.Morpheus.Internal.Utils
     nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( FieldDefinition (..),
+    FieldName (..),
+    Message,
     TypeKind (..),
     TypeKind (..),
     TypeName (..),
@@ -54,23 +63,41 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     convertToHaskellName,
     isEnum,
+    isNullable,
     isOutputObject,
+    msg,
     readName,
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( UnSubResolver,
-  )
+import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Language.Haskell.TH
-
-m' :: Type
-m' = VarT $ mkTypeName m_
 
 m_ :: TypeName
 m_ = "m"
 
-declareTypeRef :: Bool -> TypeRef -> Type
-declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
+m' :: Type
+m' = VarT (mkName "m")
+
+o' :: Type
+o' = VarT (mkName "o")
+
+e' :: Type
+e' = VarT (mkName "event")
+
+_' :: PatQ
+_' = toVar (mkName "_")
+
+_2' :: PatQ
+_2' = toVar (mkName "_2")
+
+v' :: ToVar Name a => a
+v' = toVar (mkName "v")
+
+cat' :: Type
+cat' = VarT (mkName "cat")
+
+declareTypeRef :: TypeRef -> Type
+declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
   wrappedT
     typeWrappers
   where
@@ -78,63 +105,133 @@ declareTypeRef isSub TypeRef {typeConName, typeWrappers, typeArgs} =
     wrappedT (TypeList : xs) = AppT (ConT ''[]) $ wrappedT xs
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT [] = decType typeArgs
-    ------------------------------------------------------
-    typeName = nameConType typeConName
     --------------------------------------------
-    decType _
-      | isSub =
-        AppT typeName (AppT (ConT ''UnSubResolver) m')
-    decType (Just par) = AppT typeName (VarT $ mkTypeName par)
-    decType _ = typeName
+    decType (Just par) = apply typeConName [toVar par]
+    decType _ = toCon typeConName
 
 tyConArgs :: TypeKind -> [TypeName]
 tyConArgs kindD
   | isOutputObject kindD || kindD == KindUnion = [m_]
   | otherwise = []
 
-apply :: Name -> [Q Exp] -> Q Exp
-apply n = foldl appE (conE n)
+cons :: ToCon a b => [a] -> [b]
+cons = map toCon
 
-applyT :: Name -> [Q Type] -> Q Type
-applyT name = foldl appT (conT name)
+vars :: ToVar a b => [a] -> [b]
+vars = map toVar
 
-typeT :: Name -> [TypeName] -> Q Type
-typeT name li = applyT name (map (varT . mkTypeName) li)
+class ToName a where
+  toName :: a -> Name
 
-instanceHeadT :: Name -> TypeName -> [TypeName] -> Q Type
-instanceHeadT cName iType tArgs = applyT cName [applyT (mkTypeName iType) (map (varT . mkTypeName) tArgs)]
+instance ToName Name where
+  toName = id
 
-instanceProxyFunD :: (Name, ExpQ) -> DecQ
-instanceProxyFunD (name, body) = instanceFunD name ["_"] body
+instance ToName TypeName where
+  toName = mkName . unpack . readTypeName
 
-instanceFunD :: Name -> [TypeName] -> ExpQ -> Q Dec
-instanceFunD name args body = funD name [clause (map (varP . mkTypeName) args) (normalB body) []]
+instance ToName FieldName where
+  toName = mkName . unpack . readName . convertToHaskellName
 
-instanceHeadMultiT :: Name -> Q Type -> [Q Type] -> Q Type
-instanceHeadMultiT className iType li = applyT className (iType : li)
+class ToString a b where
+  toString :: a -> b
 
--- "User" -> ["name","id"] -> (User name id)
-destructRecord :: TypeName -> [FieldName] -> PatQ
-destructRecord conName fields = conP (mkTypeName conName) (map (varP . mkFieldName) fields)
+instance ToString a b => ToString a (Q b) where
+  toString = pure . toString
 
-typeInstanceDec :: Name -> Type -> Type -> Dec
+instance ToString TypeName Lit where
+  toString = stringL . unpack . readTypeName
 
-nameLitP :: TypeName -> PatQ
-nameLitP = litP . nameStringL
+instance ToString TypeName Pat where
+  toString = LitP . toString
 
-nameStringL :: TypeName -> Lit
-nameStringL = stringL . unpack . readTypeName
+instance ToString FieldName Lit where
+  toString (FieldName x) = stringL (unpack x)
 
-nameStringE :: TypeName -> ExpQ
-nameStringE = stringE . (unpack . readTypeName)
+instance ToString TypeName Exp where
+  toString = LitE . toString
 
-#if MIN_VERSION_template_haskell(2,15,0)
--- fix breaking changes
-typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
-#else
+instance ToString FieldName Exp where
+  toString = LitE . toString
+
+class ToCon a b where
+  toCon :: a -> b
+
+instance ToCon a b => ToCon a (Q b) where
+  toCon = pure . toCon
+
+instance (ToName a) => ToCon a Type where
+  toCon = ConT . toName
+
+instance (ToName a) => ToCon a Exp where
+  toCon = ConE . toName
+
+class ToVar a b where
+  toVar :: a -> b
+
+instance ToVar a b => ToVar a (Q b) where
+  toVar = pure . toVar
+
+instance (ToName a) => ToVar a Type where
+  toVar = VarT . toName
+
+instance (ToName a) => ToVar a Exp where
+  toVar = VarE . toName
+
+instance (ToName a) => ToVar a Pat where
+  toVar = VarP . toName
+
+class Apply a where
+  apply :: ToCon i a => i -> [a] -> a
+
+instance Apply TypeQ where
+  apply = foldl appT . toCon
+
+instance Apply Type where
+  apply = foldl AppT . toCon
+
+instance Apply Exp where
+  apply = foldl AppE . toCon
+
+instance Apply ExpQ where
+  apply = foldl appE . toCon
+
+applyVars ::
+  ( ToName con,
+    ToName var,
+    Apply res,
+    ToCon con res,
+    ToVar var res
+  ) =>
+  con ->
+  [var] ->
+  res
+applyVars name li = apply name (vars li)
+
+applyCons :: (ToName con, ToName cons) => con -> [cons] -> Q Type
+applyCons name li = apply name (cons li)
+
+funDProxy :: [(Name, ExpQ)] -> [DecQ]
+funDProxy = map fun
+  where
+    fun (name, body) = funDSimple name [_'] body
+
+funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
+funDSimple name args body = funD name [clause args (normalB body) []]
+
+-- |
+-- input:
+-- >>>
+-- destructRecord "User" ["name","id"]
+-- >>>
 --
-typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
-#endif
+-- expression:
+-- >>>
+-- (User name id)
+-- >>>
+destructRecord :: TypeName -> [FieldDefinition cat] -> PatQ
+destructRecord conName fields = conP (toName conName) (vars names)
+  where
+    names = map fieldName fields
 
 infoTyVars :: Info -> [TyVarBndr]
 infoTyVars (TyConI x) = decArgs x
@@ -146,26 +243,93 @@ decArgs (NewtypeD _ _ args _ _ _) = args
 decArgs (TySynD _ args _) = args
 decArgs _ = []
 
-mkTypeName :: TypeName -> Name
-mkTypeName = mkName . unpack . readTypeName
+toConT :: ToName a => a -> Q Type
+toConT = conT . toName
 
-mkFieldName :: FieldName -> Name
-mkFieldName = mkName . unpack . readName . convertToHaskellName
+toVarT :: ToVar a TypeQ => a -> TypeQ
+toVarT = toVar
 
-nameConT :: TypeName -> Q Type
-nameConT = conT . mkTypeName
+toVarE :: ToVar a Exp => a -> ExpQ
+toVarE = toVar
 
-nameConType :: TypeName -> Type
-nameConType = ConT . mkTypeName
+toConE :: ToCon a Exp => a -> ExpQ
+toConE = toCon
 
-nameVarT :: TypeName -> Q Type
-nameVarT = varT . mkTypeName
+-- | 'mkFieldsE'
+--
+--  input :
+--  >>>
+--       mkFieldsE 'mkValue [FieldDefinition { fieldName = \"field1" ,..} ,..]
+--  >>>
+--
+--  expression :
+--  >>>
+--    [ mkValue \"field1\" field1,
+--    ..
+--    ]
+-- >>>
+mkFieldsE :: Name -> [FieldDefinition cat] -> Exp
+mkFieldsE name = ListE . map (mkEntryWith name)
 
-nameVarE :: FieldName -> ExpQ
-nameVarE = varE . mkFieldName
+--  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
+--  expression: mkValue "field1"  field1
+mkEntryWith ::
+  Name ->
+  FieldDefinition cat ->
+  Exp
+mkEntryWith f FieldDefinition {fieldName} =
+  AppE
+    (AppE (VarE f) (toString fieldName))
+    (toVar fieldName)
 
-nameConE :: TypeName -> ExpQ
-nameConE = conE . mkTypeName
+decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat] -> ExpQ
+decodeObjectE funName conName fields =
+  uInfixE
+    (toCon conName)
+    (varE '(<$>))
+    (applyFields conName funName fields)
 
-nameVarP :: FieldName -> PatQ
-nameVarP = varP . mkFieldName
+applyFields :: TypeName -> (Bool -> Name) -> [FieldDefinition cat] -> ExpQ
+applyFields name _ [] = fail $ show ("No Empty fields on " <> msg name :: Message)
+applyFields _ f [x] = defField f x
+applyFields name f (x : xs) = uInfixE (defField f x) (varE '(<*>)) (applyFields name f xs)
+
+matchWith ::
+  Bool ->
+  (t -> (PatQ, ExpQ)) ->
+  [t] ->
+  ExpQ
+matchWith isClosed f xs = lamCaseE (map buildMatch xs <> fallback)
+  where
+    fallback
+      | isClosed = []
+      | otherwise = [elseCaseEXP]
+    buildMatch x = match pat (normalB body) []
+      where
+        (pat, body) = f x
+
+elseCaseEXP :: MatchQ
+elseCaseEXP = match v' body []
+  where
+    body =
+      normalB $
+        appE
+          (toVarE 'fail)
+          ( uInfixE
+              (appE (varE 'show) v')
+              (varE '(<>))
+              (stringE " is Not Valid Union Constructor")
+          )
+
+defField :: (Bool -> Name) -> FieldDefinition cat -> ExpQ
+defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable field)) (toString fieldName)
+
+#if MIN_VERSION_template_haskell(2,15,0)
+-- fix breaking changes
+typeInstanceDec :: Name -> Type -> Type -> Dec
+typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
+#else
+--
+typeInstanceDec :: Name -> Type -> Type -> Dec
+typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
+#endif

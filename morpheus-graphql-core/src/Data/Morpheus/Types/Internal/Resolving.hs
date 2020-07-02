@@ -3,24 +3,20 @@
 
 module Data.Morpheus.Types.Internal.Resolving
   ( Event (..),
-    UnSubResolver,
     Resolver,
-    MapStrategy (..),
     LiftOperation,
     runRootResModel,
-    toResolver,
     lift,
     SubEvent,
     Eventless,
     Failure (..),
-    GQLChannel (..),
+    eventChannels,
     ResponseEvent (..),
     ResponseStream,
     cleanEvents,
     Result (..),
     ResultT (..),
     unpackEvents,
-    setTypeName,
     ObjectResModel (..),
     ResModel (..),
     FieldResModel,
@@ -30,7 +26,6 @@ module Data.Morpheus.Types.Internal.Resolving
     Context (..),
     unsafeInternalContext,
     RootResModel (..),
-    unsafeBind,
     liftStateless,
     resultOr,
     withArguments,
@@ -44,6 +39,9 @@ module Data.Morpheus.Types.Internal.Resolving
     mkObject,
     mkNull,
     mkString,
+    SubscriptionField (..),
+    getArguments,
+    Channel (..),
   )
 where
 
@@ -54,6 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
+import Data.Morpheus.Types.Internal.Resolving.Event
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 import Prelude
   ( (.),

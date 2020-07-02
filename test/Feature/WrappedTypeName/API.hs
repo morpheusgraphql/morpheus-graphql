@@ -10,12 +10,12 @@ where
 
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
-  ( ComposedSubField,
-    Event,
+  ( Event,
     GQLRequest,
     GQLResponse,
     GQLType (..),
     RootResolver (..),
+    SubscriptionField,
     constRes,
     subscribe,
   )
@@ -59,9 +59,9 @@ data Channel
 type EVENT = Event Channel ()
 
 data Subscription (m :: * -> *) = Subscription
-  { sub1 :: ComposedSubField m Maybe WA,
-    sub2 :: m (Maybe Wrapped1),
-    sub3 :: m (Maybe Wrapped2)
+  { sub1 :: SubscriptionField (m (Maybe (WA m))),
+    sub2 :: SubscriptionField (m (Maybe Wrapped1)),
+    sub3 :: SubscriptionField (m (Maybe Wrapped2))
   }
   deriving (Generic, GQLType)
 
@@ -72,9 +72,9 @@ rootResolver =
       mutationResolver = Mutation {mut1 = Nothing, mut2 = Nothing, mut3 = Nothing},
       subscriptionResolver =
         Subscription
-          { sub1 = subscribe [Channel] (pure $ constRes Nothing),
-            sub2 = subscribe [Channel] (pure $ constRes Nothing),
-            sub3 = subscribe [Channel] (pure $ constRes Nothing)
+          { sub1 = subscribe Channel (pure $ constRes Nothing),
+            sub2 = subscribe Channel (pure $ constRes Nothing),
+            sub3 = subscribe Channel (pure $ constRes Nothing)
           }
     }
 

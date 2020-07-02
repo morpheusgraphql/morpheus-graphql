@@ -11,10 +11,9 @@ where
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
-    mkFieldName,
-    mkTypeName,
     nameSpaceField,
     nameSpaceType,
+    toName,
     tyConArgs,
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
@@ -30,6 +29,9 @@ import Data.Morpheus.Types.Internal.AST
     isOutput,
     isOutputObject,
     isSubscription,
+  )
+import Data.Morpheus.Types.Internal.Resolving
+  ( SubscriptionField,
   )
 import GHC.Generics (Generic)
 import Language.Haskell.TH
@@ -48,7 +50,7 @@ declareType namespace ServerTypeDefinition {tName, tCons, tKind, tNamespace} =
   where
     tVars = declareTyVar (tyConArgs tKind)
       where
-        declareTyVar = map (PlainTV . mkTypeName)
+        declareTyVar = map (PlainTV . toName)
     cons = declareCons namespace tKind (tNamespace, tName) tCons
 
 derive :: TypeKind -> [DerivClause]
@@ -62,7 +64,7 @@ deriveClasses :: [Name] -> DerivClause
 deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 
 mkNamespace :: [FieldName] -> TypeName -> Name
-mkNamespace tNamespace = mkTypeName . nameSpaceType tNamespace
+mkNamespace tNamespace = toName . nameSpaceType tNamespace
 
 declareCons ::
   Bool ->
@@ -94,27 +96,44 @@ renderFieldType ::
   FieldDefinition cat ->
   Type
 renderFieldType tKind FieldDefinition {fieldContent, fieldType} =
-  genFieldT
-    (declareTypeRef (isSubscription tKind) fieldType)
-    tKind
-    fieldContent
+  withFieldWrappers tKind fieldContent (declareTypeRef fieldType)
 
 fieldTypeName :: Bool -> TypeName -> FieldName -> Name
 fieldTypeName namespace tName fieldName
-  | namespace = mkFieldName (nameSpaceField tName fieldName)
-  | otherwise = mkFieldName fieldName
+  | namespace = toName (nameSpaceField tName fieldName)
+  | otherwise = toName fieldName
 
-------------------------------------------------
-genFieldT :: Type -> TypeKind -> Maybe (FieldContent TRUE cat) -> Type
-genFieldT result _ (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =
-  AppT
-    (AppT arrowType argType)
-    (AppT m' result)
+-- withSubscriptionField: t => SubscriptionField t
+withSubscriptionField :: TypeKind -> Type -> Type
+withSubscriptionField kind x
+  | isSubscription kind = AppT (ConT ''SubscriptionField) x
+  | otherwise = x
+
+-- withArgs: t => a -> t
+withArgs :: TypeName -> Type -> Type
+withArgs argsTypename = AppT (AppT arrowType argType)
   where
-    argType = ConT $ mkTypeName argsTypename
+    argType = ConT $ toName argsTypename
     arrowType = ConT ''Arrow
-genFieldT result kind _
-  | isOutputObject kind = AppT m' result
-  | otherwise = result
+
+-- withMonad: t => m t
+withMonad :: Type -> Type
+withMonad = AppT m'
 
 type Arrow = (->)
+
+------------------------------------------------
+withFieldWrappers ::
+  TypeKind ->
+  Maybe (FieldContent TRUE cat) ->
+  Type ->
+  Type
+withFieldWrappers kind (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =
+  withArgs argsTypename
+    . withSubscriptionField kind
+    . withMonad
+withFieldWrappers kind _
+  | isOutputObject kind =
+    withSubscriptionField kind
+      . withMonad
+  | otherwise = id

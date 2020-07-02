@@ -18,9 +18,8 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     isEnum,
-    mkFieldName,
-    mkTypeName,
     nameSpaceType,
+    toName,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -67,10 +66,10 @@ declareCons TypeNameTH {namespace, typename} clientCons
 
 declareField :: FieldDefinition ANY -> (Name, Bang, Type)
 declareField FieldDefinition {fieldName, fieldType} =
-  ( mkFieldName fieldName,
+  ( toName fieldName,
     Bang NoSourceUnpackedness NoSourceStrictness,
-    declareTypeRef False fieldType
+    declareTypeRef fieldType
   )
 
 mkConName :: [FieldName] -> TypeName -> Name
-mkConName namespace = mkTypeName . nameSpaceType namespace
+mkConName namespace = toName . nameSpaceType namespace
