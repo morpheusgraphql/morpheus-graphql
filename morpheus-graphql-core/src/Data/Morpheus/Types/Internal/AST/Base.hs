@@ -76,7 +76,7 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 -- import Instances.TH.Lift ()
 import Language.Haskell.TH (stringE)
-import Language.Haskell.TH.Syntax (Lift (..))
+import Language.Haskell.TH.Syntax (Lift (..), Q, TExp, unsafeTExpCoerce)
 import Prelude
   ( ($),
     (&&),
@@ -111,7 +111,7 @@ newtype Message = Message {readMessage :: Text}
     (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
 
 instance Lift Message where
-  lift = stringE . T.unpack . readMessage
+  liftTyped = liftTypedString . readMessage
 
 class Msg a where
   msg :: a -> Message
@@ -142,7 +142,7 @@ newtype FieldName = FieldName {readName :: Text}
     (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
 
 instance Lift FieldName where
-  lift = stringE . T.unpack . readName
+  liftTyped = liftTypedString . readName
 
 instance Msg FieldName where
   msg FieldName {readName} = Message $ "\"" <> readName <> "\""
@@ -164,7 +164,10 @@ newtype TypeName = TypeName {readTypeName :: Text}
     (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
 
 instance Lift TypeName where
-  lift = stringE . T.unpack . readTypeName
+  liftTyped = liftTypedString . readTypeName
+
+liftTypedString :: IsString a => Token -> Q (TExp a)
+liftTypedString = unsafeTExpCoerce . stringE . T.unpack
 
 instance Msg TypeName where
   msg TypeName {readTypeName} = Message $ "\"" <> readTypeName <> "\""
