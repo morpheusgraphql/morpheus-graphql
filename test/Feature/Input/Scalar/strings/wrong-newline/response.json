@@ -1,9 +1,8 @@
 {
-  "data": {
-    "one": 1,
-    "negOne": -1,
-    "negNummber": -1.235,
-    "expNumber": 30000,
-    "negExpNumber": -1.2e-36
-  }
+  "errors": [
+    {
+      "message": "offset=73:\nunexpected newline\nexpecting '\"' or EscapedChar\n",
+      "locations": [{ "line": 4, "column": 26 }]
+    }
+  ]
 }
