@@ -162,11 +162,11 @@ blockString :: Parser Token
 blockString = stringWith (string "\"\"\"") (printChar <|> newline)
 
 singleLineString :: Parser Token
-singleLineString = stringWith (char '"') printChar
+singleLineString = stringWith (char '"') (escapeChar <$> printChar)
 
 stringWith :: Parser quote -> Parser Char -> Parser Token
 stringWith quote parser =
-  strip . escape
+  strip . pack
     <$> ( quote
             *> manyTill parser quote
             <* ignoredTokens
@@ -182,9 +182,6 @@ escapeChar '\\' = '\\'
 escapeChar '\"' = '\"'
 escapeChar '/' = '/'
 escapeChar ch = ch
-
-escape :: String -> Token
-escape = pack . fmap escapeChar
 
 -- stringVal :: Parser Token
 -- stringVal =
