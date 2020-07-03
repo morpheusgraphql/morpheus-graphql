@@ -4,6 +4,8 @@
 
 ### new features
 
+- supports of block string values.
+
 - support of `schema`. issue #412
 
   ```graphql
