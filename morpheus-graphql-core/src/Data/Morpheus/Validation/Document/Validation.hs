@@ -236,7 +236,6 @@ validateArgumentDefaultValue
       validateDefaultValue inputField
 
 -- DEFAULT VALUE
--- TODO: implement default value validation
 validateFieldDefaultValue ::
   FieldDefinition IN ->
   SchemaValidator TypeName ()

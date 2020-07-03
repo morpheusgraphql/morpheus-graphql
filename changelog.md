@@ -4,6 +4,22 @@
 
 ### new features
 
+- supports of block string values. e.g:
+
+  ```graphql
+  query {
+    createDeity(
+      name: """
+      powerqwe
+      bla \n sd
+      blu \\ dete
+      """
+    ) {
+      name
+    }
+  }
+  ```
+
 - `Data.Morpheus.Document` exposes `RootResolverConstraint`
 - `Data.Morpheus.Server` exposes `httpPlayground`
 - `httpPubApp` supports `GQLRequest -> GQLResponse`

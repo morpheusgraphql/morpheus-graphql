@@ -1,0 +1,20 @@
+query ValidDecoding {
+  simple: testString(
+    value: """
+    bla bla \n
+    """
+  )
+  sophisticated: testString(
+    value: """
+    ewrwe
+        sdfd
+        werte
+      erqewr+
+
+      this is some text
+
+      bla
+          bla
+    """
+  )
+}

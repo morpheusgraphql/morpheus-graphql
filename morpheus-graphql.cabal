@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f1410945d7266ce96394e12cea358917a27cace4b66096d055c8dc03d05690a1
+-- hash: 8345ca09158d34b0e75349823b7009f02b3b11edf8c109b051345e2980c2af31
 
 name:           morpheus-graphql
 version:        0.13.0
@@ -135,8 +135,13 @@ data-files:
     test/Feature/Input/Object/unexpectedValue/query.gql
     test/Feature/Input/Object/unexpectedVariable/query.gql
     test/Feature/Input/Object/unknownField/query.gql
-    test/Feature/Input/Scalar/decodeFloat/query.gql
-    test/Feature/Input/Scalar/decodeInt/query.gql
+    test/Feature/Input/Scalar/numbers/decodeFloat/query.gql
+    test/Feature/Input/Scalar/numbers/decodeInt/query.gql
+    test/Feature/Input/Scalar/strings/block/query.gql
+    test/Feature/Input/Scalar/strings/escaped/query.gql
+    test/Feature/Input/Scalar/strings/regular/query.gql
+    test/Feature/Input/Scalar/strings/wrong-escaped/query.gql
+    test/Feature/Input/Scalar/strings/wrong-newline/query.gql
     test/Feature/InputType/variables/incompatibleType/equalType/query.gql
     test/Feature/InputType/variables/incompatibleType/stricterType/query.gql
     test/Feature/InputType/variables/incompatibleType/weakerType1/query.gql
@@ -304,8 +309,13 @@ data-files:
     test/Feature/Input/Object/unexpectedVariable/response.json
     test/Feature/Input/Object/unknownField/response.json
     test/Feature/Input/Scalar/cases.json
-    test/Feature/Input/Scalar/decodeFloat/response.json
-    test/Feature/Input/Scalar/decodeInt/response.json
+    test/Feature/Input/Scalar/numbers/decodeFloat/response.json
+    test/Feature/Input/Scalar/numbers/decodeInt/response.json
+    test/Feature/Input/Scalar/strings/block/response.json
+    test/Feature/Input/Scalar/strings/escaped/response.json
+    test/Feature/Input/Scalar/strings/regular/response.json
+    test/Feature/Input/Scalar/strings/wrong-escaped/response.json
+    test/Feature/Input/Scalar/strings/wrong-newline/response.json
     test/Feature/InputType/cases.json
     test/Feature/InputType/variables/incompatibleType/equalType/response.json
     test/Feature/InputType/variables/incompatibleType/equalType/variables.json

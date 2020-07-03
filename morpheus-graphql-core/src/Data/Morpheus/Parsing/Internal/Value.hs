@@ -21,6 +21,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseAssignment,
     parseName,
     parseNegativeSign,
+    parseString,
     parseTypeName,
     setOf,
     symbol,
@@ -37,12 +38,9 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     decodeScientific,
   )
-import Data.Text (pack)
 import Text.Megaparsec
   ( (<|>),
-    anySingleBut,
     between,
-    choice,
     label,
     many,
     sepBy,
@@ -77,23 +75,8 @@ enumValue = do
   ignoredTokens
   return enum
 
-escaped :: Parser Char
-escaped = label "escaped" $ do
-  x <- anySingleBut '\"'
-  if x == '\\' then choice (zipWith escapeChar codes replacements) else pure x
-  where
-    replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
-    codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
-    escapeChar code replacement = char code >> return replacement
-
 stringValue :: Parser (Value a)
-stringValue =
-  label "stringValue" $
-    Scalar . String . pack
-      <$> between
-        (char '"')
-        (char '"')
-        (many escaped)
+stringValue = label "stringValue" $ Scalar . String <$> parseString
 
 listValue :: Parser a -> Parser [a]
 listValue parser =

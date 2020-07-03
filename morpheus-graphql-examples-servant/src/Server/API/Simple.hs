@@ -76,7 +76,7 @@ rootResolver =
       pure
         Deity
           { name = pure name,
-            power = pure (Just "Shapeshifting")
+            power = pure (Just "Shapeshifting \n ")
           }
 
 resolveCreateDeity :: CreateDeityArgs -> ResolverM EVENT IO Deity

@@ -4,6 +4,22 @@
 
 ### new features
 
+- supports of block string values. e.g:
+
+  ```graphql
+  query {
+    createDeity(
+      name: """
+      powerqwe
+      bla \n sd
+      blu \\ dete
+      """
+    ) {
+      name
+    }
+  }
+  ```
+
 - support of `schema`. issue #412
 
   ```graphql

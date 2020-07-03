@@ -6,6 +6,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   ( name,
     variable,
     ignoredTokens,
+    parseString,
     -------------
     collection,
     setOf,
@@ -63,6 +64,7 @@ import Text.Megaparsec
   ( (<?>),
     (<|>),
     between,
+    choice,
     label,
     many,
     manyTill,
@@ -148,26 +150,53 @@ variable = label "variable" $ do
 --
 -- Description:
 --   StringValue
--- TODO: should support """ and "
---
+parseDescription :: Parser Description
+parseDescription = strip <$> parseString
+
 optDescription :: Parser (Maybe Description)
 optDescription = optional parseDescription
 
-parseDescription :: Parser Description
-parseDescription =
-  strip . pack <$> (blockDescription <|> singleLine) <* ignoredTokens
+parseString :: Parser Token
+parseString = blockString <|> singleLineString
+
+blockString :: Parser Token
+blockString = stringWith (string "\"\"\"") (printChar <|> newline)
+
+singleLineString :: Parser Token
+singleLineString = stringWith (char '"') escapedChar
+
+stringWith :: Parser quote -> Parser Char -> Parser Token
+stringWith quote parser =
+  pack
+    <$> ( quote
+            *> manyTill parser quote
+            <* ignoredTokens
+        )
+
+escapedChar :: Parser Char
+escapedChar = label "EscapedChar" $ printChar >>= handleEscape
+
+handleEscape :: Char -> Parser Char
+handleEscape '\\' = choice escape
+handleEscape x = pure x
+
+escape :: [Parser Char]
+escape = map escapeCh escapeOptions
   where
-    blockDescription =
-      blockQuotes
-        *> manyTill (printChar <|> newline) blockQuotes
-        <* ignoredTokens
-      where
-        blockQuotes = string "\"\"\""
-    ----------------------------
-    singleLine =
-      stringQuote *> manyTill printChar stringQuote <* ignoredTokens
-      where
-        stringQuote = char '"'
+    escapeCh :: (Char, Char) -> Parser Char
+    escapeCh (code, replacement) = char code $> replacement
+
+escapeOptions :: [(Char, Char)]
+escapeOptions =
+  [ ('b', '\b'),
+    ('n', '\n'),
+    ('f', '\f'),
+    ('r', '\r'),
+    ('t', '\t'),
+    ('\\', '\\'),
+    ('\"', '\"'),
+    ('/', '/')
+  ]
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
 --  Ignored:
@@ -176,7 +205,6 @@ parseDescription =
 --    LineTerminator
 --    Comment
 --    Comma
--- TODO: implement as in specification
 ignoredTokens :: Parser ()
 ignoredTokens =
   label "IgnoredTokens" $
