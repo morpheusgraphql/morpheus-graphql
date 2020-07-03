@@ -155,19 +155,54 @@ optDescription = optional parseDescription
 
 parseDescription :: Parser Description
 parseDescription =
-  strip . pack <$> (blockDescription <|> singleLine) <* ignoredTokens
+  strip
+    <$> (blockString <|> singleLineString)
+    <* ignoredTokens
+
+blockString :: Parser Token
+blockString =
+  escape
+    <$> ( blockQuote
+            *> manyTill (printChar <|> newline) blockQuote
+            <* ignoredTokens
+        )
   where
-    blockDescription =
-      blockQuotes
-        *> manyTill (printChar <|> newline) blockQuotes
-        <* ignoredTokens
-      where
-        blockQuotes = string "\"\"\""
-    ----------------------------
-    singleLine =
-      stringQuote *> manyTill printChar stringQuote <* ignoredTokens
-      where
-        stringQuote = char '"'
+    blockQuote = string "\"\"\""
+
+----------------------------
+singleLineString :: Parser Token
+singleLineString = stringWith (char '"') printChar
+
+stringWith :: Parser quote -> Parser Char -> Parser Token
+stringWith quote parser =
+  escape
+    <$> ( quote
+            *> manyTill parser quote
+            <* ignoredTokens
+        )
+
+escapeChar :: Char -> Char
+escapeChar '\b' = 'b'
+escapeChar '\n' = 'n'
+escapeChar '\f' = 'f'
+escapeChar '\r' = 'r'
+escapeChar '\t' = 't'
+escapeChar '\\' = '\\'
+escapeChar '\"' = '\"'
+escapeChar '/' = '/'
+escapeChar ch = ch
+
+escape :: String -> Token
+escape = pack . fmap escapeChar
+
+-- stringVal :: Parser Token
+-- stringVal =
+--   label "stringValue" $
+--     pack
+--       <$> between
+--         (char '"')
+--         (char '"')
+--         (many escaped)
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
 --  Ignored:

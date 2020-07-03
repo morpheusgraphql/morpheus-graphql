@@ -77,15 +77,6 @@ enumValue = do
   ignoredTokens
   return enum
 
-escaped :: Parser Char
-escaped = label "escaped" $ do
-  x <- anySingleBut '\"'
-  if x == '\\' then choice (zipWith escapeChar codes replacements) else pure x
-  where
-    replacements = ['\b', '\n', '\f', '\r', '\t', '\\', '\"', '/']
-    codes = ['b', 'n', 'f', 'r', 't', '\\', '\"', '/']
-    escapeChar code replacement = char code >> return replacement
-
 stringValue :: Parser (Value a)
 stringValue =
   label "stringValue" $
