@@ -6,6 +6,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   ( name,
     variable,
     ignoredTokens,
+    parseString,
     -------------
     collection,
     setOf,
@@ -148,13 +149,14 @@ variable = label "variable" $ do
 --
 -- Description:
 --   StringValue
--- TODO: should support """ and "
---
+parseDescription :: Parser Description
+parseDescription = parseString
+
 optDescription :: Parser (Maybe Description)
 optDescription = optional parseDescription
 
-parseDescription :: Parser Description
-parseDescription = blockString <|> singleLineString
+parseString :: Parser Token
+parseString = blockString <|> singleLineString
 
 blockString :: Parser Token
 blockString = stringWith (string "\"\"\"") (printChar <|> newline)

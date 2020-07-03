@@ -21,6 +21,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseAssignment,
     parseName,
     parseNegativeSign,
+    parseString,
     parseTypeName,
     setOf,
     symbol,
@@ -78,13 +79,7 @@ enumValue = do
   return enum
 
 stringValue :: Parser (Value a)
-stringValue =
-  label "stringValue" $
-    Scalar . String . pack
-      <$> between
-        (char '"')
-        (char '"')
-        (many escaped)
+stringValue = label "stringValue" $ Scalar . String <$> parseString
 
 listValue :: Parser a -> Parser [a]
 listValue parser =
