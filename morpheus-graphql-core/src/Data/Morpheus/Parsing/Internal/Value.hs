@@ -38,12 +38,9 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     decodeScientific,
   )
-import Data.Text (pack)
 import Text.Megaparsec
   ( (<|>),
-    anySingleBut,
     between,
-    choice,
     label,
     many,
     sepBy,
