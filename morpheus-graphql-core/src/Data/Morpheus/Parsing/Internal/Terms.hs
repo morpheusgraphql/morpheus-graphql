@@ -64,6 +64,7 @@ import Text.Megaparsec
   ( (<?>),
     (<|>),
     between,
+    choice,
     label,
     many,
     manyTill,
@@ -150,7 +151,7 @@ variable = label "variable" $ do
 -- Description:
 --   StringValue
 parseDescription :: Parser Description
-parseDescription = parseString
+parseDescription = strip <$> parseString
 
 optDescription :: Parser (Maybe Description)
 optDescription = optional parseDescription
@@ -162,26 +163,40 @@ blockString :: Parser Token
 blockString = stringWith (string "\"\"\"") (printChar <|> newline)
 
 singleLineString :: Parser Token
-singleLineString = stringWith (char '"') (escapeChar <$> printChar)
+singleLineString = stringWith (char '"') escapedChar
 
 stringWith :: Parser quote -> Parser Char -> Parser Token
 stringWith quote parser =
-  strip . pack
+  pack
     <$> ( quote
             *> manyTill parser quote
             <* ignoredTokens
         )
 
-escapeChar :: Char -> Char
-escapeChar '\b' = 'b'
-escapeChar '\n' = 'n'
-escapeChar '\f' = 'f'
-escapeChar '\r' = 'r'
-escapeChar '\t' = 't'
-escapeChar '\\' = '\\'
-escapeChar '\"' = '\"'
-escapeChar '/' = '/'
-escapeChar ch = ch
+escapedChar :: Parser Char
+escapedChar = label "EscapedChar" $ printChar >>= handleEscape
+
+handleEscape :: Char -> Parser Char
+handleEscape '\\' = choice escape
+handleEscape x = pure x
+
+escape :: [Parser Char]
+escape = map escapeCh escapeOptions
+  where
+    escapeCh :: (Char, Char) -> Parser Char
+    escapeCh (code, replacement) = char code $> replacement
+
+escapeOptions :: [(Char, Char)]
+escapeOptions =
+  [ ('b', '\b'),
+    ('n', '\n'),
+    ('f', '\f'),
+    ('r', '\r'),
+    ('t', '\t'),
+    ('\\', '\\'),
+    ('\"', '\"'),
+    ('/', '/')
+  ]
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
 --  Ignored:
