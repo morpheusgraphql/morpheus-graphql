@@ -183,15 +183,6 @@ escapeChar '\"' = '\"'
 escapeChar '/' = '/'
 escapeChar ch = ch
 
--- stringVal :: Parser Token
--- stringVal =
---   label "stringValue" $
---     pack
---       <$> between
---         (char '"')
---         (char '"')
---         (many escaped)
-
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
 --  Ignored:
 --    UnicodeBOM
@@ -199,7 +190,6 @@ escapeChar ch = ch
 --    LineTerminator
 --    Comment
 --    Comma
--- TODO: implement as in specification
 ignoredTokens :: Parser ()
 ignoredTokens =
   label "IgnoredTokens" $
