@@ -154,28 +154,17 @@ optDescription :: Parser (Maybe Description)
 optDescription = optional parseDescription
 
 parseDescription :: Parser Description
-parseDescription =
-  strip
-    <$> (blockString <|> singleLineString)
-    <* ignoredTokens
+parseDescription = blockString <|> singleLineString
 
 blockString :: Parser Token
-blockString =
-  escape
-    <$> ( blockQuote
-            *> manyTill (printChar <|> newline) blockQuote
-            <* ignoredTokens
-        )
-  where
-    blockQuote = string "\"\"\""
+blockString = stringWith (string "\"\"\"") (printChar <|> newline)
 
-----------------------------
 singleLineString :: Parser Token
 singleLineString = stringWith (char '"') printChar
 
 stringWith :: Parser quote -> Parser Char -> Parser Token
 stringWith quote parser =
-  escape
+  strip . escape
     <$> ( quote
             *> manyTill parser quote
             <* ignoredTokens
