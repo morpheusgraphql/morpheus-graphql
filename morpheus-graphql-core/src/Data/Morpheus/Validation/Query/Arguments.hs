@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -22,6 +23,8 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition,
     DirectiveDefinition (..),
     FieldDefinition (..),
+    FieldsDefinition,
+    IN,
     OUT,
     Object,
     ObjectEntry (..),
@@ -32,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     VALID,
     Value (..),
+    VariableDefinitions,
     fieldContentArgs,
   )
 import Data.Morpheus.Types.Internal.Validation
@@ -43,6 +47,7 @@ import Data.Morpheus.Types.Internal.Validation
     Scope (..),
     SelectionValidator,
     SetWith,
+    Unknown,
     askInputFieldType,
     askVariables,
     asks,
@@ -56,14 +61,29 @@ import Data.Morpheus.Validation.Internal.Value
   ( validateInput,
   )
 
+type VariableConstraints ctx =
+  ( GetWith ctx (VariableDefinitions VALID),
+    MissingRequired (VariableDefinitions VALID) ctx
+  )
+
 -- only Resolves , doesnot checks the types
-resolveObject :: RawValue -> SelectionValidator ResolvedValue
+resolveObject ::
+  VariableConstraints ctx =>
+  RawValue ->
+  DirectiveValidator ctx ResolvedValue
 resolveObject = resolve
   where
-    resolveEntry :: ObjectEntry RAW -> SelectionValidator (ObjectEntry CONST)
+    resolveEntry ::
+      VariableConstraints ctx =>
+      ObjectEntry RAW ->
+      DirectiveValidator ctx (ObjectEntry CONST)
     resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
     ------------------------------------------------
-    resolve :: RawValue -> SelectionValidator ResolvedValue
+
+    resolve ::
+      VariableConstraints ctx =>
+      RawValue ->
+      DirectiveValidator ctx ResolvedValue
     resolve Null = pure Null
     resolve (Scalar x) = pure $ Scalar x
     resolve (Enum x) = pure $ Enum x
@@ -75,23 +95,32 @@ resolveObject = resolve
           . selectRequired ref
 
 resolveArgumentVariables ::
+  VariableConstraints ctx =>
   Arguments RAW ->
   DirectiveValidator ctx (Arguments CONST)
 resolveArgumentVariables =
   traverse resolveVariable
   where
-    resolveVariable :: Argument RAW -> SelectionValidator (Argument CONST)
+    resolveVariable ::
+      VariableConstraints ctx =>
+      Argument RAW ->
+      DirectiveValidator ctx (Argument CONST)
     resolveVariable (Argument key val position) = do
       constValue <- resolveObject val
       pure $ Argument key constValue position
 
-validateArgument ::
+type ValueConstraints ctx =
   ( MissingRequired (Arguments CONST) ctx,
     GetWith ctx Schema,
     GetWith ctx Scope,
     SetWith ctx Scope,
-    MissingRequired (Object CONST) (InputContext ctx)
-  ) =>
+    MissingRequired (Object CONST) (InputContext ctx),
+    Unknown (FieldsDefinition IN) ctx,
+    Unknown (FieldsDefinition IN) (InputContext ctx)
+  )
+
+validateArgument ::
+  ValueConstraints ctx =>
   Arguments CONST ->
   ArgumentDefinition ->
   DirectiveValidator ctx (Argument VALID)
@@ -115,7 +144,8 @@ validateArgument
         ( GetWith ctx Schema,
           GetWith ctx Scope,
           SetWith ctx Scope,
-          MissingRequired (Object CONST) (InputContext ctx)
+          MissingRequired (Object CONST) (InputContext ctx),
+          Unknown (FieldsDefinition IN) (InputContext ctx)
         ) =>
         Argument CONST ->
         DirectiveValidator ctx (Argument VALID)
@@ -143,6 +173,7 @@ validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
 -------------------------------------------------
 
 validateDirectiveArguments ::
+  ArgumentConstraints ctx =>
   DirectiveDefinition ->
   Arguments RAW ->
   DirectiveValidator ctx (Arguments VALID)
@@ -154,7 +185,13 @@ validateDirectiveArguments
       (`selectKnown` directiveDef)
       directiveDefinitionArgs
 
+type ArgumentConstraints ctx =
+  ( VariableConstraints ctx,
+    ValueConstraints ctx
+  )
+
 validateArgumengts ::
+  ArgumentConstraints ctx =>
   (Argument CONST -> DirectiveValidator ctx ArgumentDefinition) ->
   ArgumentsDefinition ->
   Arguments RAW ->
