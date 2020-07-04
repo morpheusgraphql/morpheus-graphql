@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition,
     ArgumentsDefinition (..),
+    DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
     FieldName (..),
@@ -70,6 +71,10 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inInterface,
     inType,
     selectType,
+  )
+import Data.Morpheus.Validation.Internal.Directive
+  ( shouldIncludeSelection,
+    validateDirectives,
   )
 import Data.Morpheus.Validation.Internal.Value (validateInput)
 import Data.Semigroup ((<>))
@@ -142,10 +147,13 @@ checkInterfaceField ::
 checkInterfaceField
   objFields
   interfaceField@FieldDefinition
-    { fieldName
+    { fieldName,
+      fieldDirectives
     } =
     inField fieldName $
-      selectOr err (isSuptype interfaceField) fieldName objFields
+      do
+        _ <- validateDirectives FIELD_DEFINITION fieldDirectives
+        selectOr err (isSuptype interfaceField) fieldName objFields
     where
       err = failImplements Missing
 

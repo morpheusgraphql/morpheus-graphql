@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -22,19 +23,26 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition (..),
     FieldDefinition (..),
     OUT,
+    Object,
     ObjectEntry (..),
     RAW,
     RawValue,
     ResolvedValue,
+    Schema,
     TypeRef (..),
     VALID,
     Value (..),
     fieldContentArgs,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( InputSource (..),
+  ( DirectiveValidator,
+    GetWith,
+    InputContext,
+    InputSource (..),
+    MissingRequired,
     Scope (..),
     SelectionValidator,
+    SetWith,
     askInputFieldType,
     askVariables,
     asks,
@@ -68,7 +76,7 @@ resolveObject = resolve
 
 resolveArgumentVariables ::
   Arguments RAW ->
-  SelectionValidator (Arguments CONST)
+  DirectiveValidator ctx (Arguments CONST)
 resolveArgumentVariables =
   traverse resolveVariable
   where
@@ -78,9 +86,15 @@ resolveArgumentVariables =
       pure $ Argument key constValue position
 
 validateArgument ::
+  ( MissingRequired (Arguments CONST) ctx,
+    GetWith ctx Schema,
+    GetWith ctx Scope,
+    SetWith ctx Scope,
+    MissingRequired (Object CONST) (InputContext ctx)
+  ) =>
   Arguments CONST ->
   ArgumentDefinition ->
-  SelectionValidator (Argument VALID)
+  DirectiveValidator ctx (Argument VALID)
 validateArgument
   requestArgs
   argumentDef@FieldDefinition
@@ -97,7 +111,14 @@ validateArgument
       validateArgumentValue argument
     where
       -------------------------------------------------------------------------
-      validateArgumentValue :: Argument CONST -> SelectionValidator (Argument VALID)
+      validateArgumentValue ::
+        ( GetWith ctx Schema,
+          GetWith ctx Scope,
+          SetWith ctx Scope,
+          MissingRequired (Object CONST) (InputContext ctx)
+        ) =>
+        Argument CONST ->
+        DirectiveValidator ctx (Argument VALID)
       validateArgumentValue arg@Argument {argumentValue = value, ..} =
         withPosition argumentPosition
           $ startInput (SourceArgument arg)
@@ -124,7 +145,7 @@ validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
 validateDirectiveArguments ::
   DirectiveDefinition ->
   Arguments RAW ->
-  SelectionValidator (Arguments VALID)
+  DirectiveValidator ctx (Arguments VALID)
 validateDirectiveArguments
   directiveDef@DirectiveDefinition
     { directiveDefinitionArgs
@@ -134,10 +155,10 @@ validateDirectiveArguments
       directiveDefinitionArgs
 
 validateArgumengts ::
-  (Argument CONST -> SelectionValidator ArgumentDefinition) ->
+  (Argument CONST -> DirectiveValidator ctx ArgumentDefinition) ->
   ArgumentsDefinition ->
   Arguments RAW ->
-  SelectionValidator (Arguments VALID)
+  DirectiveValidator ctx (Arguments VALID)
 validateArgumengts checkUnknown argsDef rawArgs =
   do
     args <- resolveArgumentVariables rawArgs

@@ -47,6 +47,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     askSchema,
     askVariables,
     askFragments,
+    DirectiveValidator,
   )
 where
 
@@ -360,6 +361,8 @@ type BaseValidator = Validator (OperationContext ())
 type SelectionValidator = Validator (OperationContext (VariableDefinitions VALID))
 
 type InputValidator ctx = Validator (InputContext ctx)
+
+type DirectiveValidator ctx = Validator ctx
 
 -- Helpers
 get :: (MonadContext m ctx, GetWith ctx a) => m ctx a
