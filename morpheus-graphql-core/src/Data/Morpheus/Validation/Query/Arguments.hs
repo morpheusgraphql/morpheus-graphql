@@ -110,17 +110,20 @@ resolveArgumentVariables =
       pure $ Argument key constValue position
 
 type ValueConstraints ctx =
-  ( MissingRequired (Arguments CONST) ctx,
-    GetWith ctx Schema,
+  ( GetWith ctx Schema,
     GetWith ctx Scope,
     SetWith ctx Scope,
     MissingRequired (Object CONST) (InputContext ctx),
-    Unknown (FieldsDefinition IN) ctx,
     Unknown (FieldsDefinition IN) (InputContext ctx)
   )
 
+type ArgumentConstraints ctx =
+  ( MissingRequired (Arguments CONST) ctx,
+    ValueConstraints ctx
+  )
+
 validateArgument ::
-  ValueConstraints ctx =>
+  ArgumentConstraints ctx =>
   Arguments CONST ->
   ArgumentDefinition ->
   DirectiveValidator ctx (Argument VALID)
@@ -173,7 +176,7 @@ validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
 -------------------------------------------------
 
 validateDirectiveArguments ::
-  ArgumentConstraints ctx =>
+  ArgumentsConstraints ctx =>
   DirectiveDefinition ->
   Arguments RAW ->
   DirectiveValidator ctx (Arguments VALID)
@@ -185,13 +188,13 @@ validateDirectiveArguments
       (`selectKnown` directiveDef)
       directiveDefinitionArgs
 
-type ArgumentConstraints ctx =
+type ArgumentsConstraints ctx =
   ( VariableConstraints ctx,
-    ValueConstraints ctx
+    ArgumentConstraints ctx
   )
 
 validateArgumengts ::
-  ArgumentConstraints ctx =>
+  ArgumentsConstraints ctx =>
   (Argument CONST -> DirectiveValidator ctx ArgumentDefinition) ->
   ArgumentsDefinition ->
   Arguments RAW ->
