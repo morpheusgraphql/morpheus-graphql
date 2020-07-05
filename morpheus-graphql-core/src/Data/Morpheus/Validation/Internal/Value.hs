@@ -99,7 +99,7 @@ import Prelude
   )
 
 castFailure ::
-  ( GetWith ctx Schema,
+  ( GetWith ctx (Schema s),
     GetWith ctx Scope
   ) =>
   TypeRef ->
@@ -134,22 +134,22 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
             typeArgs = Nothing
           }
 
-type InputConstraints ctx =
-  ( GetWith ctx Schema,
+type InputConstraints ctx s =
+  ( GetWith ctx (Schema s),
     GetWith ctx Scope,
     GetWith (InputContext ctx) InputSource,
     SetWith ctx Scope,
     MissingRequired (Object CONST) (InputContext ctx),
-    Unknown (FieldsDefinition IN) (InputContext ctx)
+    Unknown (FieldsDefinition IN s) (InputContext ctx)
   )
 
 -- Validate input Values
 validateInput ::
-  forall ctx.
-  ( InputConstraints ctx
+  forall ctx s.
+  ( InputConstraints ctx s
   ) =>
   [TypeWrapper] ->
-  TypeDefinition IN ->
+  TypeDefinition IN s ->
   ObjectEntry CONST ->
   InputValidator ctx ValidValue
 validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
@@ -161,7 +161,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     -- VALIDATION
     validateWrapped ::
       [TypeWrapper] ->
-      TypeContent TRUE IN ->
+      TypeContent TRUE IN s ->
       ObjectEntry CONST ->
       InputValidator ctx ValidValue
     -- Validate Null. value = null ?
@@ -188,7 +188,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     validateUnwrapped ::
       -- error
       (Maybe Message -> ResolvedValue -> InputValidator ctx ValidValue) ->
-      TypeContent TRUE IN ->
+      TypeContent TRUE IN s ->
       Value CONST ->
       InputValidator ctx ValidValue
     validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
@@ -203,7 +203,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 
 -- INPUT UNION
 validatInputUnion ::
-  ( InputConstraints ctx
+  ( InputConstraints ctx s
   ) =>
   TypeName ->
   DataInputUnion ->
@@ -216,7 +216,7 @@ validatInputUnion typeName inputUnion rawFields =
     Right (name, Just value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
-  ( InputConstraints ctx
+  ( InputConstraints ctx s
   ) =>
   TypeName ->
   Value CONST ->
@@ -235,9 +235,9 @@ mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (En
 
 -- INUT Object
 validateInputObject ::
-  ( InputConstraints ctx
+  ( InputConstraints ctx s
   ) =>
-  FieldsDefinition IN ->
+  FieldsDefinition IN s ->
   Object CONST ->
   InputValidator ctx (Object VALID)
 validateInputObject fieldsDef object =
@@ -252,36 +252,36 @@ validateInputObject fieldsDef object =
           *> validateObjectWithDefaultValue object fieldsDef
 
 validateField ::
-  ( InputConstraints ctx
+  ( InputConstraints ctx s
   ) =>
   ObjectEntry CONST ->
-  FieldsDefinition IN ->
+  FieldsDefinition IN s ->
   InputValidator ctx (ObjectEntry VALID)
 validateField entry parentFields = do
   field <- selectKnown entry parentFields
   validateInputField field entry
 
 validateObjectWithDefaultValue ::
-  (InputConstraints c) =>
+  (InputConstraints c s) =>
   Object CONST ->
-  FieldsDefinition IN ->
+  FieldsDefinition IN s ->
   Validator (InputContext c) (Object VALID)
 validateObjectWithDefaultValue object fieldsDef =
   traverse (validateFieldWithDefaultValue object) (elems fieldsDef)
     >>= fromElems
 
 validateFieldWithDefaultValue ::
-  (InputConstraints c) =>
+  (InputConstraints c s) =>
   Object CONST ->
-  FieldDefinition IN ->
+  FieldDefinition IN s ->
   Validator (InputContext c) (ObjectEntry VALID)
 validateFieldWithDefaultValue object fieldDef@FieldDefinition {fieldName} = do
   entry <- selectWithDefaultValue (ObjectEntry fieldName) fieldDef object
   validateInputField fieldDef entry
 
 validateInputField ::
-  (InputConstraints c) =>
-  FieldDefinition IN ->
+  (InputConstraints c CONST) =>
+  FieldDefinition IN CONST ->
   ObjectEntry CONST ->
   Validator (InputContext c) (ObjectEntry VALID)
 validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
@@ -297,7 +297,7 @@ requiredFieldIsDefined ::
   ( MissingRequired (Object CONST) (InputContext ctx),
     GetWith ctx Scope
   ) =>
-  FieldDefinition IN ->
+  FieldDefinition IN CONST ->
   Object CONST ->
   InputValidator ctx (ObjectEntry CONST)
 requiredFieldIsDefined fieldDef@FieldDefinition {fieldName} =
@@ -359,7 +359,7 @@ isVariableValue =
 validateEnum ::
   (MonadContext m c, GetWith c InputSource) =>
   (ResolvedValue -> m c ValidValue) ->
-  [DataEnumValue] ->
+  [DataEnumValue s] ->
   ResolvedValue ->
   m c ValidValue
 validateEnum err enumValues value@(Scalar (String enumValue))
