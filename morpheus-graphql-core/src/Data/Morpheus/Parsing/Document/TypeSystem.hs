@@ -42,7 +42,6 @@ import Data.Morpheus.Parsing.Internal.Terms
   )
 import Data.Morpheus.Parsing.Internal.Value
   ( Parse (..),
-    parseDefaultValue,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -85,7 +84,10 @@ import Prelude
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY s)
+scalarTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition ANY s)
 scalarTypeDefinition typeDescription = label "ScalarTypeDefinition" $ do
   typeName <- typeDeclaration "scalar"
   typeDirectives <- optionalDirectives
@@ -162,7 +164,10 @@ interfaceTypeDefinition typeDescription = label "InterfaceTypeDefinition" $ do
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT s)
+unionTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition OUT s)
 unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
   typeName <- typeDeclaration "union"
   typeDirectives <- optionalDirectives
@@ -186,7 +191,10 @@ unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY s)
+enumTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition ANY s)
 enumTypeDefinition typeDescription = label "EnumTypeDefinition" $ do
   typeName <- typeDeclaration "enum"
   typeDirectives <- optionalDirectives

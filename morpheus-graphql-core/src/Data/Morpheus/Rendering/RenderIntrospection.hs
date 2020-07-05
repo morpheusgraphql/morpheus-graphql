@@ -239,7 +239,7 @@ instance RenderIntrospection (FieldDefinition IN VALID) where
           defaultValue fieldType (fmap defaultInputValue fieldContent)
         ]
 
-instance RenderIntrospection DataEnumValue where
+instance RenderIntrospection (DataEnumValue VALID) where
   render DataEnumValue {enumName, enumDescription, enumDirectives} =
     pure $ mkObject "__Field" $
       [ renderName enumName,

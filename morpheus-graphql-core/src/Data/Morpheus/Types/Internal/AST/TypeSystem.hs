@@ -145,7 +145,7 @@ import Prelude
     otherwise,
   )
 
-type DataEnum = [DataEnumValue]
+type DataEnum s = [DataEnumValue s]
 
 mkUnionMember :: TypeName -> UnionMember cat
 mkUnionMember name = UnionMember name True
@@ -179,14 +179,14 @@ instance Lift ScalarDefinition where
 #endif
 
 -- ENUM VALUE
-data DataEnumValue = DataEnumValue
+data DataEnumValue s = DataEnumValue
   { enumName :: TypeName,
     enumDescription :: Maybe Description,
-    enumDirectives :: [Directive VALID]
+    enumDirectives :: [Directive s]
   }
   deriving (Show, Lift)
 
-instance RenderGQL DataEnumValue where
+instance RenderGQL (DataEnumValue s) where
   render DataEnumValue {enumName} = render enumName
 
 -- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
@@ -206,7 +206,7 @@ data Schema (s :: Stage) = Schema
   deriving (Show)
 
 data SchemaDefinition = SchemaDefinition
-  { schemaDirectives :: Directives VALID,
+  { schemaDirectives :: Directives CONST,
     unSchemaDefinition :: OrdMap OperationType RootOperationTypeDefinition
   }
   deriving (Show)
@@ -357,7 +357,7 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
   { typeName :: TypeName,
     typeFingerprint :: DataFingerprint,
     typeDescription :: Maybe Description,
-    typeDirectives :: Directives VALID,
+    typeDirectives :: Directives s,
     typeContent :: TypeContent TRUE a s
   }
   deriving (Show, Lift)
@@ -409,7 +409,7 @@ data
     } ->
     TypeContent TRUE a s
   DataEnum ::
-    { enumMembers :: DataEnum
+    { enumMembers :: DataEnum s
     } ->
     TypeContent TRUE a s
   DataInputObject ::
@@ -457,7 +457,7 @@ mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s
 mkUnionContent typeData = DataUnion $ fmap mkUnionMember typeData
 
-mkEnumValue :: TypeName -> DataEnumValue
+mkEnumValue :: TypeName -> DataEnumValue s
 mkEnumValue enumName =
   DataEnumValue
     { enumName,

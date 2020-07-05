@@ -65,5 +65,5 @@ mkCons typename fields =
 isEnum :: [ConsD cat] -> Bool
 isEnum = all (null . cFields)
 
-mkConsEnum :: DataEnumValue -> ConsD cat
+mkConsEnum :: DataEnumValue VALID -> ConsD cat
 mkConsEnum DataEnumValue {enumName} = ConsD {cName = hsTypeName enumName, cFields = []}
