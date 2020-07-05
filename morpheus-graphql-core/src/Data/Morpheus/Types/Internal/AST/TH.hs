@@ -22,6 +22,7 @@ import Data.Morpheus.Types.Internal.AST.Fields
   ( FieldDefinition (..),
     FieldsDefinition,
   )
+import Data.Morpheus.Types.Internal.AST.Stage (VALID)
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( DataEnumValue (..),
   )
@@ -34,7 +35,7 @@ import Prelude
     null,
   )
 
-toHSFieldDefinition :: FieldDefinition cat -> FieldDefinition cat
+toHSFieldDefinition :: FieldDefinition cat VALID -> FieldDefinition cat VALID
 toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConName}} =
   field
     { fieldType = tyRef {typeConName = hsTypeName typeConName}
@@ -50,11 +51,11 @@ data TypeNameTH = TypeNameTH
 
 data ConsD cat = ConsD
   { cName :: TypeName,
-    cFields :: [FieldDefinition cat]
+    cFields :: [FieldDefinition cat VALID]
   }
   deriving (Show)
 
-mkCons :: TypeName -> FieldsDefinition cat -> ConsD cat
+mkCons :: TypeName -> FieldsDefinition cat VALID -> ConsD cat
 mkCons typename fields =
   ConsD
     { cName = hsTypeName typename,
