@@ -4,7 +4,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Validation.Query.Arguments
@@ -113,23 +115,23 @@ resolveArgumentVariables =
       constValue <- resolveObject val
       pure $ Argument key constValue position
 
-type ValueConstraints ctx =
-  ( GetWith ctx Schema,
+type ValueConstraints ctx s =
+  ( GetWith ctx (Schema s),
     GetWith ctx Scope,
     SetWith ctx Scope,
     MissingRequired (Object CONST) (InputContext ctx),
-    Unknown (FieldsDefinition IN) (InputContext ctx)
+    Unknown (FieldsDefinition IN s) (InputContext ctx)
   )
 
-type ArgumentConstraints ctx =
+type ArgumentConstraints ctx s =
   ( MissingRequired (Arguments CONST) ctx,
-    ValueConstraints ctx
+    ValueConstraints ctx s
   )
 
 validateArgument ::
-  ArgumentConstraints ctx =>
+  ArgumentConstraints ctx CONST =>
   Arguments CONST ->
-  ArgumentDefinition ->
+  ArgumentDefinition CONST ->
   Validator ctx (Argument VALID)
 validateArgument
   requestArgs
@@ -148,7 +150,7 @@ validateArgument
     where
       -------------------------------------------------------------------------
       validateArgumentValue ::
-        ValueConstraints ctx =>
+        ValueConstraints ctx CONST =>
         Argument CONST ->
         Validator ctx (Argument VALID)
       validateArgumentValue arg@Argument {argumentValue = value, ..} =
@@ -164,45 +166,55 @@ validateArgument
             pure Argument {argumentValue, ..}
 
 validateFieldArguments ::
-  FieldDefinition OUT ->
+  FieldDefinition OUT VALID ->
   Arguments RAW ->
   SelectionValidator (Arguments VALID)
 validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
-  validateArguments (`selectKnown` fieldDef) argsDef
+  validateArguments
+    ( ArgCTX f argsDef
+    )
   where
+    f :: Argument CONST -> SelectionValidator (ArgumentDefinition VALID)
+    f = (`selectKnown` fieldDef)
     argsDef = maybe empty fieldContentArgs fieldContent
 
 validateDirectiveArguments ::
-  ValidateArguments s ctx =>
-  DirectiveDefinition ->
-  Arguments s ->
+  forall ctx s s'.
+  ValidateArguments (ArgCTX ctx s) s' ctx =>
+  DirectiveDefinition s ->
+  Arguments s' ->
   Validator ctx (Arguments VALID)
 validateDirectiveArguments
   directiveDef@DirectiveDefinition
     { directiveDefinitionArgs
     } =
-    validateArguments
-      (`selectKnown` directiveDef)
-      directiveDefinitionArgs
+    validateArguments (ArgCTX f directiveDefinitionArgs)
+    where
+      f :: Argument CONST -> Validator ctx (ArgumentDefinition s)
+      f = (`selectKnown` directiveDef)
 
-type ArgumentsConstraints ctx =
+type ArgumentsConstraints ctx s =
   ( VariableConstraints ctx,
-    ArgumentConstraints ctx
+    ArgumentConstraints ctx s
   )
 
-class ValidateArguments stage ctx where
+data ArgCTX ctx s = ArgCTX
+  { bla :: Argument CONST -> Validator ctx (ArgumentDefinition s),
+    blu :: ArgumentsDefinition s
+  }
+
+class ValidateArguments args s2 ctx where
   validateArguments ::
-    (Argument CONST -> Validator ctx ArgumentDefinition) ->
-    ArgumentsDefinition ->
-    Arguments stage ->
+    args ->
+    Arguments s2 ->
     Validator ctx (Arguments VALID)
 
 instance
-  ArgumentsConstraints ctx =>
-  ValidateArguments RAW ctx
-  where
-  validateArguments checkUnknown argsDef rawArgs =
-    do
-      args <- resolveArgumentVariables rawArgs
-      traverse_ checkUnknown args
-      traverse (validateArgument args) (arguments argsDef)
+  ArgumentsConstraints ctx CONST =>
+  ValidateArguments (ArgCTX ctx VALID) RAW ctx
+
+-- validateArguments (ArgCTX checkUnknown argsDef) rawArgs =
+--   do
+--     args <- resolveArgumentVariables rawArgs
+--     traverse_ checkUnknown args
+--     traverse (validateArgument args) (arguments argsDef)
