@@ -83,6 +83,7 @@ validateDirectives location = traverse (validateDirective location)
 
 instance ValidateDirective VALID ctx
 
+-- -- TODO: hanle it
 -- instance ValidateDirective VALID ctx where
 -- validateDirective location directive@Directive {directiveArgs, ..} =
 --   withDirective directive $ do

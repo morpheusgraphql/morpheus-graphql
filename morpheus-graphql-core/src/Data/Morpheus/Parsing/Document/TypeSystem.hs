@@ -78,7 +78,7 @@ import Prelude
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
+scalarTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY VALID)
 scalarTypeDefinition typeDescription = label "ScalarTypeDefinition" $ do
   typeName <- typeDeclaration "scalar"
   typeDirectives <- optionalDirectives
