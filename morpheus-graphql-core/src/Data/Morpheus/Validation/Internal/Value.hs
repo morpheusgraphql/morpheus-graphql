@@ -1,10 +1,13 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Value (validateInput) where
@@ -141,6 +144,15 @@ type InputConstraints ctx s =
     Unknown (FieldsDefinition IN s) (InputContext ctx)
   )
 
+class ValidateValue args value ctx where
+  validate :: args -> value -> InputValidator ctx (Value VALID)
+
+instance
+  InputConstraints ctx s =>
+  ValidateValue ([TypeWrapper], TypeDefinition IN s) (ObjectEntry CONST) ctx
+  where
+  validate (x, y) = validateInput x y
+
 -- Validate input Values
 validateInput ::
   forall ctx s.
@@ -214,16 +226,15 @@ validatInputUnion typeName inputUnion rawFields =
     Right (name, Just value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
-  InputConstraints ctx VALID =>
+  InputConstraints ctx CONST =>
   TypeName ->
   Value CONST ->
   InputValidator ctx (Value VALID)
 validatInputUnionMember name value = do
-  inputDef <- askInputMember name
+  (inputDef :: TypeDefinition IN CONST) <- askInputMember name
   validValue <-
-    validateInput
-      [TypeMaybe]
-      inputDef
+    validate
+      ([TypeMaybe], inputDef)
       (ObjectEntry (toFieldName name) value)
   pure $ mkInputObject name [ObjectEntry (toFieldName name) validValue]
 
