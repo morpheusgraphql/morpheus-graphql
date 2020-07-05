@@ -309,11 +309,11 @@ askInputFieldType ::
   ( Failure GQLErrors (m c),
     Failure Message (m c),
     Monad (m c),
-    GetWith c (Schema VALID),
+    GetWith c (Schema s),
     MonadContext m c
   ) =>
-  FieldDefinition IN VALID ->
-  m c (TypeDefinition IN VALID)
+  FieldDefinition IN s ->
+  m c (TypeDefinition IN s)
 askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}} =
   askSchema
     >>= selectBy
@@ -322,12 +322,13 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
     >>= constraintINPUT
   where
     constraintINPUT ::
+      forall m s.
       ( Failure Message m,
         Monad m
       ) =>
-      TypeDefinition ANY VALID ->
-      m (TypeDefinition IN VALID)
-    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN VALID)) of
+      TypeDefinition ANY s ->
+      m (TypeDefinition IN s)
+    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN s)) of
       Just inputType -> pure inputType
       Nothing ->
         failure $
