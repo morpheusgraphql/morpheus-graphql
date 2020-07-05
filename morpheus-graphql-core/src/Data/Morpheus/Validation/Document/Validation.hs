@@ -152,7 +152,7 @@ checkInterfaceField
     } =
     inField fieldName $
       do
-        --   _ <- validateDirectives FIELD_DEFINITION fieldDirectives
+        _ <- validateDirectives FIELD_DEFINITION fieldDirectives
         selectOr err (isSuptype interfaceField) fieldName objFields
     where
       err = failImplements Missing

@@ -1,11 +1,14 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Directive
@@ -33,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     RAW,
     ScalarValue (..),
+    Stage,
     VALID,
     Value (..),
     msg,
@@ -58,18 +62,25 @@ import Prelude
     otherwise,
   )
 
-validateDirective ::
-  ArgumentsConstraints ctx =>
+class ValidateDirective (s :: Stage) ctx where
+  validateDirective :: DirectiveLocation -> Directive s -> Validator ctx (Directive VALID)
+
+instance (ArgumentsConstraints ctx) => ValidateDirective RAW ctx where
+  validateDirective location directive@Directive {directiveArgs, ..} =
+    withDirective directive $ do
+      directiveDef <- selectKnown directive defaultDirectives
+      args <- validateDirectiveArguments directiveDef directiveArgs
+      validateDirectiveLocation location directive directiveDef
+      pure Directive {directiveArgs = args, ..}
+
+validateDirectives ::
+  ValidateDirective s ctx =>
   DirectiveLocation ->
-  [DirectiveDefinition] ->
-  Directive RAW ->
-  Validator ctx (Directive VALID)
-validateDirective location directiveDefs directive@Directive {directiveArgs, ..} =
-  withDirective directive $ do
-    directiveDef <- selectKnown directive directiveDefs
-    args <- validateDirectiveArguments directiveDef directiveArgs
-    validateDirectiveLocation location directive directiveDef
-    pure Directive {directiveArgs = args, ..}
+  Directives s ->
+  Validator ctx (Directives VALID)
+validateDirectives location = traverse (validateDirective location)
+
+instance ValidateDirective VALID ctx
 
 validateDirectiveLocation ::
   DirectiveLocation ->
@@ -86,15 +97,6 @@ validateDirectiveLocation
         errorMessage
           directivePosition
           ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
-
-validateDirectives ::
-  ArgumentsConstraints ctx =>
-  DirectiveLocation ->
-  Directives RAW ->
-  Validator ctx (Directives VALID)
-validateDirectives location =
-  traverse
-    (validateDirective location defaultDirectives)
 
 directiveFulfilled ::
   GetWith ctx Scope =>
