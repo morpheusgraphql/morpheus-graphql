@@ -1,8 +1,11 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Validation.Query.Arguments
   ( validateDirectiveArguments,
@@ -165,22 +168,20 @@ validateFieldArguments ::
   Arguments RAW ->
   SelectionValidator (Arguments VALID)
 validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
-  validateArgumengts (`selectKnown` fieldDef) argsDef
+  validateArguments (`selectKnown` fieldDef) argsDef
   where
     argsDef = maybe empty fieldContentArgs fieldContent
 
--------------------------------------------------
-
 validateDirectiveArguments ::
-  ArgumentsConstraints ctx =>
+  ValidateArguments s ctx =>
   DirectiveDefinition ->
-  Arguments RAW ->
+  Arguments s ->
   Validator ctx (Arguments VALID)
 validateDirectiveArguments
   directiveDef@DirectiveDefinition
     { directiveDefinitionArgs
     } =
-    validateArgumengts
+    validateArguments
       (`selectKnown` directiveDef)
       directiveDefinitionArgs
 
@@ -189,14 +190,19 @@ type ArgumentsConstraints ctx =
     ArgumentConstraints ctx
   )
 
-validateArgumengts ::
+class ValidateArguments stage ctx where
+  validateArguments ::
+    (Argument CONST -> Validator ctx ArgumentDefinition) ->
+    ArgumentsDefinition ->
+    Arguments stage ->
+    Validator ctx (Arguments VALID)
+
+instance
   ArgumentsConstraints ctx =>
-  (Argument CONST -> Validator ctx ArgumentDefinition) ->
-  ArgumentsDefinition ->
-  Arguments RAW ->
-  Validator ctx (Arguments VALID)
-validateArgumengts checkUnknown argsDef rawArgs =
-  do
-    args <- resolveArgumentVariables rawArgs
-    traverse_ checkUnknown args
-    traverse (validateArgument args) (arguments argsDef)
+  ValidateArguments RAW ctx
+  where
+  validateArguments checkUnknown argsDef rawArgs =
+    do
+      args <- resolveArgumentVariables rawArgs
+      traverse_ checkUnknown args
+      traverse (validateArgument args) (arguments argsDef)

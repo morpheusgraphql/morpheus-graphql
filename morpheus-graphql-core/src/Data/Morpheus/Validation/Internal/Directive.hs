@@ -29,6 +29,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Schema.Directives (defaultDirectives)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    CONST,
     Directive (..),
     DirectiveDefinition (..),
     DirectiveLocation (..),
@@ -81,6 +82,14 @@ validateDirectives ::
 validateDirectives location = traverse (validateDirective location)
 
 instance ValidateDirective VALID ctx
+
+-- instance ValidateDirective VALID ctx where
+-- validateDirective location directive@Directive {directiveArgs, ..} =
+--   withDirective directive $ do
+--     directiveDef <- selectKnown directive defaultDirectives
+--     args <- validateDirectiveArguments directiveDef directiveArgs
+--     validateDirectiveLocation location directive directiveDef
+--     pure Directive {directiveArgs = args, ..}
 
 validateDirectiveLocation ::
   DirectiveLocation ->
