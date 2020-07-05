@@ -159,7 +159,8 @@ data CurrentSelection = CurrentSelection
 data Scope = Scope
   { position :: Position,
     typename :: TypeName,
-    kind :: ScopeKind
+    kind :: ScopeKind,
+    fieldname :: FieldName
   }
   deriving (Show)
 
@@ -230,14 +231,14 @@ asks f = f <$> get
 
 setSelectionName ::
   ( MonadContext m c,
-    SetWith c CurrentSelection
+    SetWith c Scope
   ) =>
   FieldName ->
   m c a ->
   m c a
-setSelectionName selectionName = set update
+setSelectionName fieldname = set update
   where
-    update ctx = ctx {selectionName}
+    update ctx = ctx {fieldname}
 
 askSchema ::
   ( MonadContext m c,
@@ -290,8 +291,7 @@ withDirective
           }
 
 withScope ::
-  ( SetWith c CurrentSelection,
-    MonadContext m c,
+  ( MonadContext m c,
     SetWith c Scope
   ) =>
   TypeName ->
