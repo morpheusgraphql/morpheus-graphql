@@ -113,8 +113,7 @@ class MissingRequired c ctx where
 instance MissingRequired (Arguments s) (OperationContext v) where
   missingRequired
     OperationContext
-      { scope = Scope {position, kind},
-        selection = CurrentSelection {selectionName}
+      { scope = Scope {position, kind, fieldname}
       }
     Ref {refName}
     _ =
@@ -127,8 +126,8 @@ instance MissingRequired (Arguments s) (OperationContext v) where
           locations = [position]
         }
       where
-        inScope DIRECTIVE = "Directive " <> msg ("@" <> selectionName)
-        inScope _ = "Field " <> msg selectionName
+        inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldname)
+        inScope _ = "Field " <> msg fieldname
 
 instance MissingRequired (Object s) (InputContext (OperationContext v)) where
   missingRequired

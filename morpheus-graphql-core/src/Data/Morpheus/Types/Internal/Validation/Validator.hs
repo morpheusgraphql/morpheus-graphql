@@ -150,9 +150,8 @@ data OperationContext vars = OperationContext
   }
   deriving (Show)
 
-data CurrentSelection = CurrentSelection
-  { operationName :: Maybe FieldName,
-    selectionName :: FieldName
+newtype CurrentSelection = CurrentSelection
+  { operationName :: Maybe FieldName
   }
   deriving (Show)
 

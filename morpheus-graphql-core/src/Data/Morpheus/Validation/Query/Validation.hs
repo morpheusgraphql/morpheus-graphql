@@ -63,8 +63,14 @@ validateRequest
         OperationContext
           { schema,
             fragments,
-            scope = Scope {typename = "Root", position = operationPosition, kind = SELECTION},
-            selection = CurrentSelection {operationName, selectionName = "Root"},
+            scope =
+              Scope
+                { kind = SELECTION,
+                  typename = "Root",
+                  fieldname = "Root",
+                  position = operationPosition
+                },
+            selection = CurrentSelection {operationName},
             variables
           }
       validateHelpers =
