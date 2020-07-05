@@ -270,8 +270,7 @@ withContext ::
 withContext f = Validator . withReaderT f . _runValidator
 
 withDirective ::
-  ( SetWith c CurrentSelection,
-    SetWith c Scope,
+  ( SetWith c Scope,
     MonadContext m c
   ) =>
   Directive s ->

@@ -38,12 +38,15 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( DirectiveValidator,
+  ( GetWith,
+    Scope,
+    Validator,
     selectKnown,
     withDirective,
   )
 import Data.Morpheus.Validation.Query.Arguments
-  ( validateDirectiveArguments,
+  ( ArgumentsConstraints,
+    validateDirectiveArguments,
   )
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
@@ -55,7 +58,12 @@ import Prelude
     otherwise,
   )
 
-validateDirective :: DirectiveLocation -> [DirectiveDefinition] -> Directive RAW -> DirectiveValidator ctx (Directive VALID)
+validateDirective ::
+  ArgumentsConstraints ctx =>
+  DirectiveLocation ->
+  [DirectiveDefinition] ->
+  Directive RAW ->
+  Validator ctx (Directive VALID)
 validateDirective location directiveDefs directive@Directive {directiveArgs, ..} =
   withDirective directive $ do
     directiveDef <- selectKnown directive directiveDefs
@@ -67,7 +75,7 @@ validateDirectiveLocation ::
   DirectiveLocation ->
   Directive s ->
   DirectiveDefinition ->
-  DirectiveValidator ctx ()
+  Validator ctx ()
 validateDirectiveLocation
   loc
   Directive {directiveName, directivePosition}
@@ -79,25 +87,47 @@ validateDirectiveLocation
           directivePosition
           ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
 
-validateDirectives :: DirectiveLocation -> Directives RAW -> DirectiveValidator ctx (Directives VALID)
-validateDirectives location = traverse (validateDirective location defaultDirectives)
+validateDirectives ::
+  ArgumentsConstraints ctx =>
+  DirectiveLocation ->
+  Directives RAW ->
+  Validator ctx (Directives VALID)
+validateDirectives location =
+  traverse
+    (validateDirective location defaultDirectives)
 
-directiveFulfilled :: Bool -> FieldName -> Directives s -> DirectiveValidator ctx Bool
+directiveFulfilled ::
+  GetWith ctx Scope =>
+  Bool ->
+  FieldName ->
+  Directives s ->
+  Validator ctx Bool
 directiveFulfilled target = selectOr (pure True) (argumentIf target)
 
-shouldIncludeSelection :: Directives VALID -> DirectiveValidator ctx Bool
+shouldIncludeSelection ::
+  GetWith ctx Scope =>
+  Directives VALID ->
+  Validator ctx Bool
 shouldIncludeSelection directives = do
   dontSkip <- directiveFulfilled False "skip" directives
   include <- directiveFulfilled True "include" directives
   pure (dontSkip && include)
 
-argumentIf :: Bool -> Directive s -> DirectiveValidator ctx Bool
+argumentIf ::
+  GetWith ctx Scope =>
+  Bool ->
+  Directive s ->
+  Validator ctx Bool
 argumentIf target Directive {directiveName, directiveArgs} =
   selectBy err "if" directiveArgs
     >>= assertArgument target
   where
     err = globalErrorMessage $ "Directive " <> msg ("@" <> directiveName) <> " argument \"if\" of type \"Boolean!\" is required but not provided."
 
-assertArgument :: Bool -> Argument s -> DirectiveValidator ctx Bool
+assertArgument ::
+  GetWith ctx Scope =>
+  Bool ->
+  Argument s ->
+  Validator ctx Bool
 assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
 assertArgument _ Argument {argumentValue} = failure $ "Expected type Boolean!, found " <> msg argumentValue <> "."

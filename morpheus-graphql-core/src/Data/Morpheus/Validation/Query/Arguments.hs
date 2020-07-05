@@ -7,6 +7,7 @@
 module Data.Morpheus.Validation.Query.Arguments
   ( validateDirectiveArguments,
     validateFieldArguments,
+    ArgumentsConstraints,
   )
 where
 
@@ -39,8 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     fieldContentArgs,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( DirectiveValidator,
-    GetWith,
+  ( GetWith,
     InputContext,
     InputSource (..),
     MissingRequired,
@@ -48,6 +48,7 @@ import Data.Morpheus.Types.Internal.Validation
     SelectionValidator,
     SetWith,
     Unknown,
+    Validator,
     askInputFieldType,
     askVariables,
     asks,
@@ -70,20 +71,20 @@ type VariableConstraints ctx =
 resolveObject ::
   VariableConstraints ctx =>
   RawValue ->
-  DirectiveValidator ctx ResolvedValue
+  Validator ctx ResolvedValue
 resolveObject = resolve
   where
     resolveEntry ::
       VariableConstraints ctx =>
       ObjectEntry RAW ->
-      DirectiveValidator ctx (ObjectEntry CONST)
+      Validator ctx (ObjectEntry CONST)
     resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
     ------------------------------------------------
 
     resolve ::
       VariableConstraints ctx =>
       RawValue ->
-      DirectiveValidator ctx ResolvedValue
+      Validator ctx ResolvedValue
     resolve Null = pure Null
     resolve (Scalar x) = pure $ Scalar x
     resolve (Enum x) = pure $ Enum x
@@ -97,14 +98,14 @@ resolveObject = resolve
 resolveArgumentVariables ::
   VariableConstraints ctx =>
   Arguments RAW ->
-  DirectiveValidator ctx (Arguments CONST)
+  Validator ctx (Arguments CONST)
 resolveArgumentVariables =
   traverse resolveVariable
   where
     resolveVariable ::
       VariableConstraints ctx =>
       Argument RAW ->
-      DirectiveValidator ctx (Argument CONST)
+      Validator ctx (Argument CONST)
     resolveVariable (Argument key val position) = do
       constValue <- resolveObject val
       pure $ Argument key constValue position
@@ -126,7 +127,7 @@ validateArgument ::
   ArgumentConstraints ctx =>
   Arguments CONST ->
   ArgumentDefinition ->
-  DirectiveValidator ctx (Argument VALID)
+  Validator ctx (Argument VALID)
 validateArgument
   requestArgs
   argumentDef@FieldDefinition
@@ -144,14 +145,9 @@ validateArgument
     where
       -------------------------------------------------------------------------
       validateArgumentValue ::
-        ( GetWith ctx Schema,
-          GetWith ctx Scope,
-          SetWith ctx Scope,
-          MissingRequired (Object CONST) (InputContext ctx),
-          Unknown (FieldsDefinition IN) (InputContext ctx)
-        ) =>
+        ValueConstraints ctx =>
         Argument CONST ->
-        DirectiveValidator ctx (Argument VALID)
+        Validator ctx (Argument VALID)
       validateArgumentValue arg@Argument {argumentValue = value, ..} =
         withPosition argumentPosition
           $ startInput (SourceArgument arg)
@@ -179,7 +175,7 @@ validateDirectiveArguments ::
   ArgumentsConstraints ctx =>
   DirectiveDefinition ->
   Arguments RAW ->
-  DirectiveValidator ctx (Arguments VALID)
+  Validator ctx (Arguments VALID)
 validateDirectiveArguments
   directiveDef@DirectiveDefinition
     { directiveDefinitionArgs
@@ -195,10 +191,10 @@ type ArgumentsConstraints ctx =
 
 validateArgumengts ::
   ArgumentsConstraints ctx =>
-  (Argument CONST -> DirectiveValidator ctx ArgumentDefinition) ->
+  (Argument CONST -> Validator ctx ArgumentDefinition) ->
   ArgumentsDefinition ->
   Arguments RAW ->
-  DirectiveValidator ctx (Arguments VALID)
+  Validator ctx (Arguments VALID)
 validateArgumengts checkUnknown argsDef rawArgs =
   do
     args <- resolveArgumentVariables rawArgs
