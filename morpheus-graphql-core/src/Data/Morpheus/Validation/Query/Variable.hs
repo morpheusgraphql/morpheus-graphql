@@ -24,6 +24,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    CONST,
     DefaultValue,
     Directive (..),
     Fragment (..),
@@ -170,7 +171,7 @@ lookupAndValidateValueOnBody
       checkType ::
         Maybe ResolvedValue ->
         DefaultValue ->
-        TypeDefinition IN ->
+        TypeDefinition IN CONST ->
         BaseValidator ValidValue
       checkType (Just variable) Nothing varType = validator varType False variable
       checkType (Just variable) (Just defValue) varType =
@@ -185,7 +186,7 @@ lookupAndValidateValueOnBody
           returnNull =
             maybe (pure Null) (validator varType False) (M.lookup variableName bodyVariables)
       -----------------------------------------------------------------------------------------------
-      validator :: TypeDefinition IN -> Bool -> ResolvedValue -> BaseValidator ValidValue
+      validator :: TypeDefinition IN CONST -> Bool -> ResolvedValue -> BaseValidator ValidValue
       validator varType isDefaultValue varValue =
         startInput (SourceVariable var isDefaultValue) $
           validateInput

@@ -1,7 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
@@ -38,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     RawValue,
     ResolvedValue,
     Schema,
+    Stage,
     TypeRef (..),
     VALID,
     Value (..),
@@ -49,6 +52,7 @@ import Data.Morpheus.Types.Internal.Validation
     InputContext,
     InputSource (..),
     MissingRequired,
+    OperationContext,
     Scope (..),
     SelectionValidator,
     SetWith,
@@ -166,11 +170,23 @@ validateArgument
             pure Argument {argumentValue, ..}
 
 validateFieldArguments ::
+  ( Validate
+      ( ArgCTX
+          ( OperationContext
+              (VariableDefinitions VALID)
+          )
+          VALID
+      )
+      RAW
+      ( OperationContext
+          (VariableDefinitions VALID)
+      )
+  ) =>
   FieldDefinition OUT VALID ->
   Arguments RAW ->
   SelectionValidator (Arguments VALID)
 validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
-  validateArguments
+  validate
     ( ArgCTX f argsDef
     )
   where
@@ -180,7 +196,7 @@ validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
 
 validateDirectiveArguments ::
   forall ctx s s'.
-  ValidateArguments (ArgCTX ctx s) s' ctx =>
+  Validate (ArgCTX ctx s) s' ctx =>
   DirectiveDefinition s ->
   Arguments s' ->
   Validator ctx (Arguments VALID)
@@ -188,7 +204,7 @@ validateDirectiveArguments
   directiveDef@DirectiveDefinition
     { directiveDefinitionArgs
     } =
-    validateArguments (ArgCTX f directiveDefinitionArgs)
+    validate (ArgCTX f directiveDefinitionArgs)
     where
       f :: Argument CONST -> Validator ctx (ArgumentDefinition s)
       f = (`selectKnown` directiveDef)
@@ -199,19 +215,19 @@ type ArgumentsConstraints ctx s =
   )
 
 data ArgCTX ctx s = ArgCTX
-  { bla :: Argument CONST -> Validator ctx (ArgumentDefinition s),
-    blu :: ArgumentsDefinition s
+  { getArg :: Argument CONST -> Validator ctx (ArgumentDefinition s),
+    argumentsDef :: ArgumentsDefinition s
   }
 
-class ValidateArguments args s2 ctx where
-  validateArguments ::
+class Validate args (s :: Stage) ctx where
+  validate ::
     args ->
-    Arguments s2 ->
+    Arguments s ->
     Validator ctx (Arguments VALID)
 
-instance
-  ArgumentsConstraints ctx CONST =>
-  ValidateArguments (ArgCTX ctx VALID) RAW ctx
+-- instance
+--   ArgumentsConstraints ctx CONST =>
+--   Validate Arguments (ArgCTX ctx VALID) RAW ctx
 
 -- validateArguments (ArgCTX checkUnknown argsDef) rawArgs =
 --   do
