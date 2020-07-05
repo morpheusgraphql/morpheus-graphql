@@ -245,7 +245,7 @@ funDSimple name args body = funD name [clause args (normalB body) []]
 -- >>>
 -- (User name id)
 -- >>>
-destructRecord :: TypeName -> [FieldDefinition cat] -> PatQ
+destructRecord :: TypeName -> [FieldDefinition cat s] -> PatQ
 destructRecord conName fields = conP (toName conName) (vars names)
   where
     names = map fieldName fields
@@ -285,28 +285,28 @@ toConE = toCon
 --    ..
 --    ]
 -- >>>
-mkFieldsE :: Name -> [FieldDefinition cat] -> Exp
+mkFieldsE :: Name -> [FieldDefinition cat s] -> Exp
 mkFieldsE name = ListE . map (mkEntryWith name)
 
 --  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
 --  expression: mkValue "field1"  field1
 mkEntryWith ::
   Name ->
-  FieldDefinition cat ->
+  FieldDefinition cat s ->
   Exp
 mkEntryWith f FieldDefinition {fieldName} =
   AppE
     (AppE (VarE f) (toString fieldName))
     (toVar fieldName)
 
-decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat] -> ExpQ
+decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat s] -> ExpQ
 decodeObjectE funName conName fields =
   uInfixE
     (toCon conName)
     (varE '(<$>))
     (applyFields conName funName fields)
 
-applyFields :: TypeName -> (Bool -> Name) -> [FieldDefinition cat] -> ExpQ
+applyFields :: TypeName -> (Bool -> Name) -> [FieldDefinition cat s] -> ExpQ
 applyFields name _ [] = fail $ show ("No Empty fields on " <> msg name :: Message)
 applyFields _ f [x] = defField f x
 applyFields name f (x : xs) = uInfixE (defField f x) (varE '(<*>)) (applyFields name f xs)
@@ -338,7 +338,7 @@ elseCaseEXP = match v' body []
               (stringE " is Not Valid Union Constructor")
           )
 
-defField :: (Bool -> Name) -> FieldDefinition cat -> ExpQ
+defField :: (Bool -> Name) -> FieldDefinition cat s -> ExpQ
 defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable field)) (toString fieldName)
 
 #if MIN_VERSION_template_haskell(2,15,0)

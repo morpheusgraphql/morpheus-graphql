@@ -13,7 +13,7 @@ import Data.Morpheus.Types.Internal.AST
     mkInputValue,
   )
 
-defaultDirectives :: [DirectiveDefinition]
+defaultDirectives :: [DirectiveDefinition s]
 defaultDirectives =
   [ DirectiveDefinition
       { directiveDefinitionName = "skip",
@@ -36,5 +36,5 @@ defaultDirectives =
       }
   ]
 
-argumentsIf :: ArgumentsDefinition
+argumentsIf :: ArgumentsDefinition s
 argumentsIf = singleton $ mkInputValue "if" [] "Boolean"

@@ -143,7 +143,7 @@ data SubscriptionField (a :: *) where
 -- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
 data Context = Context
   { currentSelection :: Selection VALID,
-    schema :: Schema,
+    schema :: Schema VALID,
     operation :: Operation VALID,
     currentTypeName :: TypeName
   }
