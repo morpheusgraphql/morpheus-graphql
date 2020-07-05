@@ -42,6 +42,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    CONST,
     FieldName,
     FieldsDefinition,
     OUT,
@@ -76,12 +77,12 @@ import Prelude
   )
 
 data TypeSystemContext c = TypeSystemContext
-  { types :: [TypeDefinition ANY],
+  { types :: [TypeDefinition ANY CONST],
     local :: c
   }
   deriving (Show)
 
-instance GetWith (TypeSystemContext ctx) Schema where
+instance GetWith (TypeSystemContext ctx) (Schema CONST) where
   getWith ctx = case fromElems (types ctx) of
     Success {result} -> result
     Failure {errors} -> error (show errors) --TODO: fix
@@ -97,7 +98,11 @@ instance GetWith (TypeSystemContext a) Scope where
 instance SetWith (TypeSystemContext a) Scope where
   setWith _ = id --TODO:
 
-selectType :: TypeName -> SchemaValidator ctx (TypeDefinition ANY)
+selectType ::
+  TypeName ->
+  SchemaValidator
+    ctx
+    (TypeDefinition ANY CONST)
 selectType name =
   asks types
     >>= selectBy err name
@@ -146,7 +151,9 @@ updateLocal f ctx = ctx {local = f (local ctx)}
 
 type SchemaValidator c = Validator (TypeSystemContext c)
 
-constraintInterface :: TypeDefinition ANY -> SchemaValidator ctx (TypeName, FieldsDefinition OUT)
+constraintInterface ::
+  TypeDefinition ANY CONST ->
+  SchemaValidator ctx (TypeName, FieldsDefinition OUT CONST)
 constraintInterface
   TypeDefinition
     { typeName,

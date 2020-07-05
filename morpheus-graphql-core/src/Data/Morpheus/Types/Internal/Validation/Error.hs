@@ -64,7 +64,7 @@ import Data.Semigroup ((<>))
 class InternalError a where
   internalError :: a -> GQLError
 
-instance InternalError (FieldDefinition cat) where
+instance InternalError (FieldDefinition cat s) where
   internalError
     FieldDefinition
       { fieldName,
@@ -191,20 +191,20 @@ instance Unknown Fragments ctx where
       pos
       ("Unknown Fragment " <> msg name <> ".")
 
-instance Unknown Schema ctx where
-  type UnknownSelector Schema = TypeNameRef
+instance Unknown (Schema s) ctx where
+  type UnknownSelector (Schema s) = TypeNameRef
   unknown _ _ TypeNameRef {typeNameRef, typeNamePosition} =
     errorMessage typeNamePosition ("Unknown type " <> msg typeNameRef <> ".")
 
-instance Unknown (FieldDefinition OUT) ctx where
-  type UnknownSelector (FieldDefinition OUT) = Argument CONST
+instance Unknown (FieldDefinition OUT s) ctx where
+  type UnknownSelector (FieldDefinition OUT s) = Argument CONST
   unknown _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown (FieldsDefinition IN) (InputContext (OperationContext v)) where
-  type UnknownSelector (FieldsDefinition IN) = ObjectEntry CONST
+instance Unknown (FieldsDefinition IN s) (InputContext (OperationContext v)) where
+  type UnknownSelector (FieldsDefinition IN s) = ObjectEntry CONST
   unknown
     input@InputContext {sourceContext = OperationContext {scope = Scope {position}}}
     _
@@ -215,8 +215,8 @@ instance Unknown (FieldsDefinition IN) (InputContext (OperationContext v)) where
           }
       ]
 
-instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ctx)) where
-  type UnknownSelector (FieldsDefinition IN) = ObjectEntry CONST
+instance Unknown (FieldsDefinition IN s) (InputContext (TypeSystemContext ctx)) where
+  type UnknownSelector (FieldsDefinition IN s) = ObjectEntry CONST
   unknown
     input
     _
@@ -227,22 +227,22 @@ instance Unknown (FieldsDefinition IN) (InputContext (TypeSystemContext ctx)) wh
           }
       ]
 
-instance Unknown DirectiveDefinition ctx where
-  type UnknownSelector DirectiveDefinition = Argument CONST
+instance Unknown (DirectiveDefinition s) ctx where
+  type UnknownSelector (DirectiveDefinition s) = Argument CONST
   unknown _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".")
 
-instance Unknown DirectiveDefinitions ctx where
-  type UnknownSelector DirectiveDefinitions = Directive RAW
+instance Unknown (DirectiveDefinitions s) ctx where
+  type UnknownSelector (DirectiveDefinitions s) = Directive RAW
   unknown _ _ Directive {directiveName, directivePosition} =
     errorMessage
       directivePosition
       ("Unknown Directive " <> msg directiveName <> ".")
 
-instance Unknown (FieldsDefinition OUT) (OperationContext v) where
-  type UnknownSelector (FieldsDefinition OUT) = Ref
+instance Unknown (FieldsDefinition OUT s) (OperationContext v) where
+  type UnknownSelector (FieldsDefinition OUT s) = Ref
   unknown OperationContext {scope = Scope {typename}} _ =
     unknownSelectionField typename
 
