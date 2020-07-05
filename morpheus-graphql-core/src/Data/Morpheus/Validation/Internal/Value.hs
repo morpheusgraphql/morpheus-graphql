@@ -99,12 +99,10 @@ import Prelude
   )
 
 castFailure ::
-  ( GetWith ctx (Schema s),
-    GetWith ctx Scope
-  ) =>
+  (GetWith ctx Scope) =>
   TypeRef ->
   Maybe Message ->
-  ResolvedValue ->
+  Value s ->
   InputValidator ctx a
 castFailure expected message value = do
   pos <- asks position
@@ -156,7 +154,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
   withScopeType typeName
     . validateWrapped tyWrappers tyCont
   where
-    mismatchError :: [TypeWrapper] -> Maybe Message -> ResolvedValue -> InputValidator ctx ValidValue
+    mismatchError :: [TypeWrapper] -> Maybe Message -> Value CONST -> InputValidator ctx (Value VALID)
     mismatchError wrappers = castFailure (TypeRef typeName Nothing wrappers)
     -- VALIDATION
     validateWrapped ::
@@ -203,7 +201,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 
 -- INPUT UNION
 validatInputUnion ::
-  ( InputConstraints ctx s
+  ( InputConstraints ctx CONST
   ) =>
   TypeName ->
   DataInputUnion ->
@@ -216,8 +214,7 @@ validatInputUnion typeName inputUnion rawFields =
     Right (name, Just value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
-  ( InputConstraints ctx s
-  ) =>
+  InputConstraints ctx VALID =>
   TypeName ->
   Value CONST ->
   InputValidator ctx (Value VALID)
