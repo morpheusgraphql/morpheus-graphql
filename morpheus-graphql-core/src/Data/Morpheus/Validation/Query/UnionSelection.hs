@@ -52,7 +52,7 @@ import Data.Morpheus.Validation.Query.Fragment
     resolveSpread,
   )
 
-type TypeDef = (TypeName, FieldsDefinition OUT)
+type TypeDef = (TypeName, FieldsDefinition OUT VALID)
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
@@ -85,7 +85,7 @@ tagUnionFragments types fragments =
     map categorizeType types
   where
     notEmpty = not . null . snd
-    categorizeType :: (TypeName, FieldsDefinition OUT) -> (TypeDef, [Fragment])
+    categorizeType :: TypeDef -> (TypeDef, [Fragment])
     categorizeType datatype = (datatype, filter matches fragments)
       where
         matches fragment = fragmentType fragment == fst datatype
