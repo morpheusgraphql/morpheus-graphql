@@ -77,7 +77,9 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 -- InputValueDefinition
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
-inputValueDefinition :: Parser (FieldDefinition IN)
+inputValueDefinition ::
+  Parse (Value s) =>
+  Parser (FieldDefinition IN s)
 inputValueDefinition = label "InputValueDefinition" $ do
   fieldDescription <- optDescription
   fieldName <- parseName
@@ -92,7 +94,9 @@ inputValueDefinition = label "InputValueDefinition" $ do
 -- ArgumentsDefinition:
 --   ( InputValueDefinition(list) )
 --
-argumentsDefinition :: Parser ArgumentsDefinition
+argumentsDefinition ::
+  Parse (Value s) =>
+  Parser (ArgumentsDefinition s)
 argumentsDefinition =
   label "ArgumentsDefinition" $
     uniqTuple inputValueDefinition
@@ -102,13 +106,15 @@ argumentsDefinition =
 --  FieldsDefinition :
 --    { FieldDefinition(list) }
 --
-fieldsDefinition :: Parser (FieldsDefinition OUT)
+fieldsDefinition ::
+  Parse (Value s) =>
+  Parser (FieldsDefinition OUT s)
 fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parser (FieldDefinition OUT)
+fieldDefinition :: Parse (Value s) => Parser (FieldDefinition OUT s)
 fieldDefinition = label "FieldDefinition" $ do
   fieldDescription <- optDescription
   fieldName <- parseName
@@ -122,7 +128,9 @@ fieldDefinition = label "FieldDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputFieldsDefinition :: Parser InputFieldsDefinition
+inputFieldsDefinition ::
+  Parse (Value s) =>
+  Parser (InputFieldsDefinition s)
 inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives

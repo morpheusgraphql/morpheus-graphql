@@ -38,6 +38,7 @@ import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
+    CONST,
     DataTypeWrapper (..),
     FieldDefinition,
     IN,
@@ -64,7 +65,7 @@ import Data.String (String)
 import Data.Traversable (traverse)
 import Prelude (($), (.), Show (..), uncurry)
 
-decodeIntrospection :: ByteString -> Eventless AST.Schema
+decodeIntrospection :: ByteString -> Eventless (AST.Schema CONST)
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ msg errors
   Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
@@ -77,7 +78,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
 class ParseJSONSchema a b where
   parse :: a -> Eventless b
 
-instance ParseJSONSchema Type [TypeDefinition ANY] where
+instance ParseJSONSchema Type [TypeDefinition ANY CONST] where
   parse Type {name = Just typeName, kind = SCALAR} =
     pure [createScalarType typeName]
   parse Type {name = Just typeName, kind = ENUM, enumValues = Just enums} =
@@ -88,17 +89,17 @@ instance ParseJSONSchema Type [TypeDefinition ANY] where
       Just uni -> pure [toAny $ mkType typeName $ mkUnionContent uni]
   parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
     do
-      (fields :: [FieldDefinition IN]) <- traverse parse iFields
+      (fields :: [FieldDefinition IN CONST]) <- traverse parse iFields
       fs <- fromElems fields
       pure [mkType typeName $ DataInputObject fs]
   parse Type {name = Just typeName, kind = OBJECT, fields = Just oFields} =
     do
-      (fields :: [FieldDefinition OUT]) <- traverse parse oFields
+      (fields :: [FieldDefinition OUT CONST]) <- traverse parse oFields
       fs <- fromElems fields
       pure [mkType typeName $ DataObject [] fs]
   parse _ = pure []
 
-instance ParseJSONSchema Field (FieldDefinition OUT) where
+instance ParseJSONSchema Field (FieldDefinition OUT CONST) where
   parse Field {fieldName, fieldArgs, fieldType} = do
     (wrappers, typename) <- fieldTypeFromJSON fieldType
     args <- traverse genArg fieldArgs >>= fromElems
@@ -107,7 +108,7 @@ instance ParseJSONSchema Field (FieldDefinition OUT) where
       genArg InputValue {inputName = argName, inputType = argType} =
         uncurry (mkInputValue argName) <$> fieldTypeFromJSON argType
 
-instance ParseJSONSchema InputValue (FieldDefinition IN) where
+instance ParseJSONSchema InputValue (FieldDefinition IN CONST) where
   parse InputValue {inputName, inputType} = uncurry (mkInputValue inputName) <$> fieldTypeFromJSON inputType
 
 fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], TypeName)

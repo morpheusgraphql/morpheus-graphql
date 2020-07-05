@@ -142,7 +142,7 @@ data ScopeKind
   deriving (Show)
 
 data OperationContext vars = OperationContext
-  { schema :: Schema,
+  { schema :: Schema VALID,
     scope :: Scope,
     fragments :: Fragments,
     selection :: CurrentSelection,
@@ -195,9 +195,9 @@ data Constraint (a :: Target) where
 
 type family Resolution (a :: Target)
 
-type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT)
+type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT VALID)
 
-type instance Resolution 'TARGET_INPUT = TypeDefinition IN
+type instance Resolution 'TARGET_INPUT = TypeDefinition IN VALID
 
 withInputScope :: Prop -> InputValidator c a -> InputValidator c a
 withInputScope prop = withContext update
@@ -241,9 +241,9 @@ setSelectionName fieldname = set update
 
 askSchema ::
   ( MonadContext m c,
-    GetWith c Schema
+    GetWith c (Schema s)
   ) =>
-  m c Schema
+  m c (Schema s)
 askSchema = get
 
 askVariables ::
@@ -395,10 +395,10 @@ instance GetWith (OperationContext v) Scope where
 instance GetWith c Scope => GetWith (InputContext c) Scope where
   getWith = getWith . sourceContext
 
-instance GetWith (OperationContext c) Schema where
+instance GetWith (OperationContext c) (Schema VALID) where
   getWith = schema
 
-instance GetWith c Schema => GetWith (InputContext c) Schema where
+instance GetWith c (Schema s) => GetWith (InputContext c) (Schema s) where
   getWith = getWith . sourceContext
 
 instance GetWith (OperationContext (VariableDefinitions VALID)) (VariableDefinitions VALID) where
