@@ -98,6 +98,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     UnionMember (..),
+    VALID,
     Value (..),
     __inputname,
     entryValue,
@@ -170,11 +171,11 @@ checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused ctx b) => ca -> 
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
-  forall (a :: Target) inp ctx.
+  forall (a :: Target) inp ctx s.
   KindViolation a inp =>
   Constraint (a :: Target) ->
   inp ->
-  TypeDefinition ANY ->
+  TypeDefinition ANY VALID ->
   Validator ctx (Resolution a)
 constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields}, typeName} =
   pure (typeName, objectFields)
@@ -198,15 +199,15 @@ selectRequired selector container =
       container
 
 selectWithDefaultValue ::
-  forall ctx values value.
+  forall ctx values value s.
   ( Selectable values value,
     MissingRequired values ctx,
     KEY value ~ FieldName,
     GetWith ctx Scope,
     MonadContext Validator ctx
   ) =>
-  (Value CONST -> value) ->
-  FieldDefinition IN ->
+  (Value s -> value) ->
+  FieldDefinition IN s ->
   values ->
   Validator ctx value
 selectWithDefaultValue
@@ -223,7 +224,9 @@ selectWithDefaultValue
       values
     where
       ------------------
-      handeNull :: Maybe (FieldContent TRUE IN) -> Validator ctx value
+      handeNull ::
+        Maybe (FieldContent TRUE IN s) ->
+        Validator ctx value
       handeNull (Just (DefaultInputValue value)) = pure $ f value
       handeNull Nothing
         | isNullable field = pure $ f Null
@@ -253,8 +256,8 @@ selectKnown selector lib =
       lib
 
 askFieldType ::
-  FieldDefinition OUT ->
-  SelectionValidator (TypeDefinition OUT)
+  FieldDefinition OUT VALID ->
+  SelectionValidator (TypeDefinition OUT VALID)
 askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   do
     schema <- askSchema
@@ -273,7 +276,7 @@ askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
 
 askTypeMember ::
   UnionMember OUT ->
-  SelectionValidator (TypeName, FieldsDefinition OUT)
+  SelectionValidator (TypeName, FieldsDefinition OUT VALID)
 askTypeMember UnionMember {memberName} =
   askSchema
     >>= selectOr notFound pure memberName
@@ -288,7 +291,9 @@ askTypeMember UnionMember {memberName} =
           <> msg scopeType
           <> "\" can't found in Schema."
     --------------------------------------
-    constraintOBJECT :: TypeDefinition ANY -> SelectionValidator (TypeName, FieldsDefinition OUT)
+    constraintOBJECT ::
+      TypeDefinition ANY s ->
+      SelectionValidator (TypeName, FieldsDefinition OUT s)
     constraintOBJECT TypeDefinition {typeName, typeContent} = con typeContent
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
@@ -304,11 +309,11 @@ askInputFieldType ::
   ( Failure GQLErrors (m c),
     Failure Message (m c),
     Monad (m c),
-    GetWith c Schema,
+    GetWith c (Schema VALID),
     MonadContext m c
   ) =>
-  FieldDefinition IN ->
-  m c (TypeDefinition IN)
+  FieldDefinition IN VALID ->
+  m c (TypeDefinition IN VALID)
 askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}} =
   askSchema
     >>= selectBy
@@ -320,9 +325,9 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
       ( Failure Message m,
         Monad m
       ) =>
-      TypeDefinition ANY ->
-      m (TypeDefinition IN)
-    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN)) of
+      TypeDefinition ANY VALID ->
+      m (TypeDefinition IN VALID)
+    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN VALID)) of
       Just inputType -> pure inputType
       Nothing ->
         failure $
@@ -333,14 +338,15 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
             <> "\" must be an input type."
 
 askInputMember ::
-  ( GetWith c Schema,
+  forall c m s.
+  ( GetWith c (Schema s),
     GetWith c Scope,
     Failure Message (m c),
     Monad (m c),
     MonadContext m c
   ) =>
   TypeName ->
-  m c (TypeDefinition IN)
+  m c (TypeDefinition IN s)
 askInputMember name =
   askSchema
     >>= selectOr notFound pure name
@@ -361,8 +367,8 @@ askInputMember name =
         Failure Message (m c),
         MonadContext m c
       ) =>
-      TypeDefinition ANY ->
-      m c (TypeDefinition IN)
+      TypeDefinition ANY s ->
+      m c (TypeDefinition IN s)
     constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
       where
         con ::
@@ -371,8 +377,8 @@ askInputMember name =
             Failure Message (m c),
             MonadContext m c
           ) =>
-          Maybe (TypeContent a IN) ->
-          m c (TypeDefinition IN)
+          Maybe (TypeContent a IN s) ->
+          m c (TypeDefinition IN s)
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
           scopeType <- asks typename
