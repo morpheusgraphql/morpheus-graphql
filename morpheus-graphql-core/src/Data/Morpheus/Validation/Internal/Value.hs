@@ -10,7 +10,12 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Validation.Internal.Value (validateInput) where
+module Data.Morpheus.Validation.Internal.Value
+  ( validateInput,
+    Validate (..),
+    ValueContext (..),
+  )
+where
 
 import Control.Applicative ((*>), pure)
 import Control.Monad (Monad ((>>=)))
@@ -149,16 +154,16 @@ class Validate args f s ctx where
 
 --instance Validate ([TypeWrapper], TypeDefinition IN CONST) ObjectEntry CONST ctx
 
-data ValueCTX s = ValueCTX
+data ValueContext s = ValueContext
   { valueWrappers :: [TypeWrapper],
     valueTypeDef :: TypeDefinition IN s
   }
 
 instance
   (InputConstraints ctx CONST) =>
-  Validate (ValueCTX CONST) ObjectEntry CONST ctx
+  Validate (ValueContext CONST) ObjectEntry CONST ctx
   where
-  validate (ValueCTX x y) obj@(ObjectEntry name _) =
+  validate (ValueContext x y) obj@(ObjectEntry name _) =
     ObjectEntry name <$> validateInput x y obj
 
 -- Validate input Values
@@ -223,7 +228,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 validatInputUnion ::
   ( GetWith ctx Scope,
     GetWith ctx (Schema s),
-    Validate (ValueCTX s) ObjectEntry s ctx
+    Validate (ValueContext s) ObjectEntry s ctx
   ) =>
   TypeName ->
   DataInputUnion ->
@@ -237,7 +242,7 @@ validatInputUnion typeName inputUnion rawFields =
 
 validatInputUnionMember ::
   forall ctx s.
-  ( Validate (ValueCTX s) ObjectEntry s ctx,
+  ( Validate (ValueContext s) ObjectEntry s ctx,
     GetWith ctx (Schema s),
     GetWith ctx Scope
   ) =>
@@ -248,7 +253,7 @@ validatInputUnionMember name value = do
   (inputDef :: TypeDefinition IN s) <- askInputMember name
   validValue <-
     validate
-      ValueCTX
+      ValueContext
         { valueWrappers = [TypeMaybe],
           valueTypeDef = inputDef
         }

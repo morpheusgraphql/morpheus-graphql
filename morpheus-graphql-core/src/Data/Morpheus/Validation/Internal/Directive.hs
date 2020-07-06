@@ -14,6 +14,7 @@
 module Data.Morpheus.Validation.Internal.Directive
   ( shouldIncludeSelection,
     validateDirectives,
+    ValidateDirective (..),
   )
 where
 

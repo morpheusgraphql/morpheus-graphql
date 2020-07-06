@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -55,7 +56,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( InputSource (..),
+  ( GetWith,
+    InputSource (..),
     InputValidator,
     askInputFieldType,
     runValidator,
@@ -74,10 +76,14 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     selectType,
   )
 import Data.Morpheus.Validation.Internal.Directive
-  ( shouldIncludeSelection,
+  ( ValidateDirective,
+    shouldIncludeSelection,
     validateDirectives,
   )
-import Data.Morpheus.Validation.Internal.Value (validateInput)
+import Data.Morpheus.Validation.Internal.Value
+  ( Validate (..),
+    ValueContext (..),
+  )
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Prelude
@@ -88,10 +94,10 @@ import Prelude
     otherwise,
   )
 
-validateSchema :: Schema s -> Eventless (Schema s)
+validateSchema :: Schema CONST -> Eventless (Schema CONST)
 validateSchema schema = validatePartialDocument (elems schema) $> schema
 
-validatePartialDocument :: [TypeDefinition ANY s] -> Eventless [TypeDefinition ANY s]
+validatePartialDocument :: [TypeDefinition ANY CONST] -> Eventless [TypeDefinition ANY CONST]
 validatePartialDocument types =
   runValidator
     (traverse validateType types)
@@ -101,8 +107,8 @@ validatePartialDocument types =
       }
 
 validateType ::
-  TypeDefinition ANY s ->
-  SchemaValidator () (TypeDefinition ANY s)
+  TypeDefinition ANY CONST ->
+  SchemaValidator () (TypeDefinition ANY CONST)
 validateType
   dt@TypeDefinition
     { typeName,
@@ -129,7 +135,7 @@ validateType x = pure x
 ----------------------------
 validateImplements ::
   [TypeName] ->
-  FieldsDefinition OUT s ->
+  FieldsDefinition OUT CONST ->
   SchemaValidator TypeName ()
 validateImplements objectImplements objectFields = do
   interface <- traverse selectInterface objectImplements
@@ -144,6 +150,10 @@ mustBeSubset objFields (typeName, fields) =
     traverse_ (checkInterfaceField objFields) (elems fields)
 
 checkInterfaceField ::
+  ( ValueConstraints s,
+    ValidateDirective s (TypeSystemContext (Interface, FieldName)),
+    TypeEq (FieldDefinition OUT s) (Interface, FieldName)
+  ) =>
   FieldsDefinition OUT s ->
   FieldDefinition OUT s ->
   SchemaValidator Interface ()
@@ -226,6 +236,7 @@ failImplements err = do
   failure $ partialImplements x err
 
 checkFieldArgsuments ::
+  ValueConstraints s =>
   FieldDefinition OUT s ->
   SchemaValidator TypeName ()
 checkFieldArgsuments FieldDefinition {fieldContent = Nothing} = pure ()
@@ -234,9 +245,10 @@ checkFieldArgsuments FieldDefinition {fieldContent = Just (FieldArgs args), fiel
   traverse_ (validateArgumentDefaultValue typeName fieldName) (elems args)
 
 validateArgumentDefaultValue ::
+  ValueConstraints s =>
   TypeName ->
   FieldName ->
-  ArgumentDefinition CONST ->
+  ArgumentDefinition s ->
   SchemaValidator TypeName ()
 validateArgumentDefaultValue _ _ FieldDefinition {fieldContent = Nothing} = pure ()
 validateArgumentDefaultValue
@@ -248,15 +260,24 @@ validateArgumentDefaultValue
 
 -- DEFAULT VALUE
 validateFieldDefaultValue ::
-  FieldDefinition IN CONST ->
+  ValueConstraints s =>
+  FieldDefinition IN s ->
   SchemaValidator TypeName ()
 validateFieldDefaultValue inputField@FieldDefinition {fieldName} = do
   typeName <- asks local
   startInput (SourceInputField typeName fieldName Nothing) $
     validateDefaultValue inputField
 
+type ValueConstraints s =
+  ( GetWith (TypeSystemContext TypeName) (Schema s),
+    Validate (ValueContext s) ObjectEntry s (TypeSystemContext TypeName)
+  )
+
 validateDefaultValue ::
-  FieldDefinition IN CONST ->
+  ( GetWith (TypeSystemContext TypeName) (Schema s),
+    Validate (ValueContext s) ObjectEntry s (TypeSystemContext TypeName)
+  ) =>
+  FieldDefinition IN s ->
   InputValidator (TypeSystemContext TypeName) ()
 validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure ()
 validateDefaultValue
@@ -266,5 +287,8 @@ validateDefaultValue
       fieldContent = Just DefaultInputValue {defaultInputValue}
     } = do
     datatype <- askInputFieldType inputField
-    _ <- validateInput typeWrappers datatype (ObjectEntry fieldName defaultInputValue)
+    _ <-
+      validate
+        (ValueContext typeWrappers datatype)
+        (ObjectEntry fieldName defaultInputValue)
     pure ()
