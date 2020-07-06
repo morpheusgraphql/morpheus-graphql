@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition,
     ArgumentsDefinition (..),
+    CONST,
     DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -87,10 +88,10 @@ import Prelude
     otherwise,
   )
 
-validateSchema :: Schema -> Eventless Schema
+validateSchema :: Schema s -> Eventless (Schema s)
 validateSchema schema = validatePartialDocument (elems schema) $> schema
 
-validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
+validatePartialDocument :: [TypeDefinition ANY s] -> Eventless [TypeDefinition ANY s]
 validatePartialDocument types =
   runValidator
     (traverse validateType types)
@@ -100,8 +101,8 @@ validatePartialDocument types =
       }
 
 validateType ::
-  TypeDefinition ANY ->
-  SchemaValidator () (TypeDefinition ANY)
+  TypeDefinition ANY s ->
+  SchemaValidator () (TypeDefinition ANY s)
 validateType
   dt@TypeDefinition
     { typeName,
@@ -128,21 +129,23 @@ validateType x = pure x
 ----------------------------
 validateImplements ::
   [TypeName] ->
-  FieldsDefinition OUT ->
+  FieldsDefinition OUT s ->
   SchemaValidator TypeName ()
 validateImplements objectImplements objectFields = do
   interface <- traverse selectInterface objectImplements
   traverse_ (mustBeSubset objectFields) interface
 
 mustBeSubset ::
-  FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> SchemaValidator TypeName ()
+  FieldsDefinition OUT CONST ->
+  (TypeName, FieldsDefinition OUT CONST) ->
+  SchemaValidator TypeName ()
 mustBeSubset objFields (typeName, fields) =
   inInterface typeName $
     traverse_ (checkInterfaceField objFields) (elems fields)
 
 checkInterfaceField ::
-  FieldsDefinition OUT ->
-  FieldDefinition OUT ->
+  FieldsDefinition OUT s ->
+  FieldDefinition OUT s ->
   SchemaValidator Interface ()
 checkInterfaceField
   objFields
@@ -160,7 +163,7 @@ checkInterfaceField
 class PartialImplements ctx => TypeEq a ctx where
   isSuptype :: a -> a -> SchemaValidator ctx ()
 
-instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
+instance TypeEq (FieldDefinition OUT CONST) (Interface, FieldName) where
   FieldDefinition
     { fieldType,
       fieldContent = args1
@@ -170,10 +173,10 @@ instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
         fieldContent = args2
       } = (fieldType `isSuptype` fieldType') *> (args1 `isSuptype` args2)
 
-instance TypeEq (Maybe (FieldContent TRUE OUT)) (Interface, FieldName) where
+instance TypeEq (Maybe (FieldContent TRUE OUT s)) (Interface, FieldName) where
   f1 `isSuptype` f2 = toARgs f1 `isSuptype` toARgs f2
     where
-      toARgs :: Maybe (FieldContent TRUE OUT) -> ArgumentsDefinition
+      toARgs :: Maybe (FieldContent TRUE OUT s) -> ArgumentsDefinition s
       toARgs (Just (FieldArgs args)) = args
       toARgs _ = empty
 
@@ -200,18 +203,18 @@ elemIn ::
   SchemaValidator ctx ()
 elemIn el = selectOr (failImplements Missing) (isSuptype el) (keyOf el)
 
-instance TypeEq ArgumentsDefinition (Interface, FieldName) where
+instance TypeEq (ArgumentsDefinition s) (Interface, FieldName) where
   args1 `isSuptype` args2 = traverse_ validateArg (elems args1)
     where
       validateArg arg = inArgument (keyOf arg) $ elemIn arg args2
 
-instance TypeEq ArgumentDefinition (Interface, Field) where
+instance TypeEq (ArgumentDefinition s) (Interface, Field) where
   arg1 `isSuptype` arg2 = fieldType arg1 `isSuptype` fieldType arg2
 
 -------------------------------
 selectInterface ::
   TypeName ->
-  SchemaValidator ctx (TypeName, FieldsDefinition OUT)
+  SchemaValidator ctx (TypeName, FieldsDefinition OUT CONST)
 selectInterface = selectType >=> constraintInterface
 
 failImplements ::
@@ -223,7 +226,7 @@ failImplements err = do
   failure $ partialImplements x err
 
 checkFieldArgsuments ::
-  FieldDefinition OUT ->
+  FieldDefinition OUT s ->
   SchemaValidator TypeName ()
 checkFieldArgsuments FieldDefinition {fieldContent = Nothing} = pure ()
 checkFieldArgsuments FieldDefinition {fieldContent = Just (FieldArgs args), fieldName} = do
@@ -233,7 +236,7 @@ checkFieldArgsuments FieldDefinition {fieldContent = Just (FieldArgs args), fiel
 validateArgumentDefaultValue ::
   TypeName ->
   FieldName ->
-  ArgumentDefinition ->
+  ArgumentDefinition CONST ->
   SchemaValidator TypeName ()
 validateArgumentDefaultValue _ _ FieldDefinition {fieldContent = Nothing} = pure ()
 validateArgumentDefaultValue
@@ -245,7 +248,7 @@ validateArgumentDefaultValue
 
 -- DEFAULT VALUE
 validateFieldDefaultValue ::
-  FieldDefinition IN ->
+  FieldDefinition IN CONST ->
   SchemaValidator TypeName ()
 validateFieldDefaultValue inputField@FieldDefinition {fieldName} = do
   typeName <- asks local
@@ -253,7 +256,7 @@ validateFieldDefaultValue inputField@FieldDefinition {fieldName} = do
     validateDefaultValue inputField
 
 validateDefaultValue ::
-  FieldDefinition IN ->
+  FieldDefinition IN CONST ->
   InputValidator (TypeSystemContext TypeName) ()
 validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure ()
 validateDefaultValue

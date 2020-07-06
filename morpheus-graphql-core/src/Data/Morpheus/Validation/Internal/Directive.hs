@@ -45,12 +45,14 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Validation
   ( GetWith,
     Scope,
+    SetWith,
     Validator,
     selectKnown,
     withDirective,
   )
 import Data.Morpheus.Validation.Query.Arguments
-  ( ArgumentsConstraints,
+  ( ArgCTX,
+    Validate,
     validateDirectiveArguments,
   )
 import Data.Semigroup ((<>))
@@ -66,10 +68,15 @@ import Prelude
 class ValidateDirective (s :: Stage) ctx where
   validateDirective :: DirectiveLocation -> Directive s -> Validator ctx (Directive VALID)
 
-instance (ArgumentsConstraints ctx) => ValidateDirective RAW ctx where
+instance
+  ( SetWith ctx Scope,
+    Validate (ArgCTX ctx VALID) RAW ctx
+  ) =>
+  ValidateDirective RAW ctx
+  where
   validateDirective location directive@Directive {directiveArgs, ..} =
     withDirective directive $ do
-      directiveDef <- selectKnown directive defaultDirectives
+      (directiveDef :: DirectiveDefinition VALID) <- selectKnown directive defaultDirectives
       args <- validateDirectiveArguments directiveDef directiveArgs
       validateDirectiveLocation location directive directiveDef
       pure Directive {directiveArgs = args, ..}
@@ -95,7 +102,7 @@ instance ValidateDirective VALID ctx
 validateDirectiveLocation ::
   DirectiveLocation ->
   Directive s ->
-  DirectiveDefinition ->
+  DirectiveDefinition s' ->
   Validator ctx ()
 validateDirectiveLocation
   loc
