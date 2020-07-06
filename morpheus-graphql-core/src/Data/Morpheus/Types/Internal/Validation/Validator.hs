@@ -83,6 +83,7 @@ import Data.Morpheus.Types.Internal.AST
     RAW,
     Ref (..),
     Schema,
+    Stage,
     TypeDefinition,
     TypeName (..),
     VALID,
@@ -193,11 +194,11 @@ data Constraint (a :: Target) where
 
 --  UNION  :: Constraint 'TARGET_UNION
 
-type family Resolution (a :: Target)
+type family Resolution (s :: Stage) (a :: Target)
 
-type instance Resolution 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT VALID)
+type instance Resolution s 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT s)
 
-type instance Resolution 'TARGET_INPUT = TypeDefinition IN VALID
+type instance Resolution s 'TARGET_INPUT = TypeDefinition IN s
 
 withInputScope :: Prop -> InputValidator c a -> InputValidator c a
 withInputScope prop = withContext update

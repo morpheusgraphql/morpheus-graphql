@@ -64,7 +64,8 @@ import Data.Morpheus.Types.Internal.Validation
     withPosition,
   )
 import Data.Morpheus.Validation.Internal.Value
-  ( validateInput,
+  ( Validate (..),
+    ValueContext (..),
   )
 import Data.Semigroup ((<>))
 import Data.Traversable
@@ -171,7 +172,7 @@ lookupAndValidateValueOnBody
       checkType ::
         Maybe ResolvedValue ->
         DefaultValue ->
-        TypeDefinition IN CONST ->
+        TypeDefinition IN VALID ->
         BaseValidator ValidValue
       checkType (Just variable) Nothing varType = validator varType False variable
       checkType (Just variable) (Just defValue) varType =
@@ -186,10 +187,12 @@ lookupAndValidateValueOnBody
           returnNull =
             maybe (pure Null) (validator varType False) (M.lookup variableName bodyVariables)
       -----------------------------------------------------------------------------------------------
-      validator :: TypeDefinition IN CONST -> Bool -> ResolvedValue -> BaseValidator ValidValue
+      validator :: TypeDefinition IN VALID -> Bool -> ResolvedValue -> BaseValidator ValidValue
       validator varType isDefaultValue varValue =
-        startInput (SourceVariable var isDefaultValue) $
-          validateInput
-            (typeWrappers variableType)
-            varType
-            (ObjectEntry variableName varValue)
+        entryValue
+          <$> startInput
+            (SourceVariable var isDefaultValue)
+            ( validate
+                (ValueContext (typeWrappers variableType) varType)
+                (ObjectEntry variableName varValue)
+            )

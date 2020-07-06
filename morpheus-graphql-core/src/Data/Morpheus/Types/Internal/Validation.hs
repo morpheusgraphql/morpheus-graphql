@@ -175,8 +175,8 @@ constraint ::
   KindViolation a inp =>
   Constraint (a :: Target) ->
   inp ->
-  TypeDefinition ANY VALID ->
-  Validator ctx (Resolution a)
+  TypeDefinition ANY s ->
+  Validator ctx (Resolution s a)
 constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields}, typeName} =
   pure (typeName, objectFields)
 constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny x)

@@ -152,6 +152,8 @@ type InputConstraints ctx s =
 class Validate args f s ctx where
   validate :: args -> f s -> InputValidator ctx (f VALID)
 
+instance Validate (ValueContext VALID) ObjectEntry CONST ctx
+
 --instance Validate ([TypeWrapper], TypeDefinition IN CONST) ObjectEntry CONST ctx
 
 data ValueContext s = ValueContext
