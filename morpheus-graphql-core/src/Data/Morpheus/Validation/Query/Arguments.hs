@@ -227,6 +227,8 @@ class Validate args (s :: Stage) ctx where
     Arguments s ->
     Validator ctx (Arguments VALID)
 
+instance Validate (ArgCTX ctx VALID) RAW ctx
+
 -- instance
 --   ArgumentsConstraints ctx CONST =>
 --   Validate Arguments (ArgCTX ctx VALID) RAW ctx

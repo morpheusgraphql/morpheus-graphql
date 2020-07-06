@@ -66,6 +66,13 @@ import Prelude
     otherwise,
   )
 
+validateDirectives ::
+  ValidateDirective s ctx =>
+  DirectiveLocation ->
+  Directives s ->
+  Validator ctx (Directives VALID)
+validateDirectives location = traverse (validateDirective location)
+
 class ValidateDirective (s :: Stage) ctx where
   validateDirective :: DirectiveLocation -> Directive s -> Validator ctx (Directive VALID)
 
@@ -82,12 +89,7 @@ instance
       validateDirectiveLocation location directive directiveDef
       pure Directive {directiveArgs = args, ..}
 
-validateDirectives ::
-  ValidateDirective s ctx =>
-  DirectiveLocation ->
-  Directives s ->
-  Validator ctx (Directives VALID)
-validateDirectives location = traverse (validateDirective location)
+instance ValidateDirective CONST ctx
 
 instance ValidateDirective VALID ctx
 

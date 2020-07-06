@@ -91,10 +91,10 @@ import Prelude
     otherwise,
   )
 
-type TypeDef = (TypeName, FieldsDefinition OUT)
+type TypeDef = (TypeName, FieldsDefinition OUT VALID)
 
 getOperationObject ::
-  Operation a -> SelectionValidator (TypeName, FieldsDefinition OUT)
+  Operation a -> SelectionValidator (TypeName, FieldsDefinition OUT VALID)
 getOperationObject operation = do
   dt <- askSchema >>= getOperationDataType operation
   case dt of
@@ -199,16 +199,16 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
             (`validateSelectionContent` selectionContent)
         where
           currentSelectionRef = Ref selectionName selectionPosition
-          commonValidation :: SelectionValidator (TypeDefinition OUT, Arguments VALID)
+          commonValidation :: SelectionValidator (TypeDefinition OUT VALID, Arguments VALID)
           commonValidation = do
-            (fieldDef :: FieldDefinition OUT) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
+            (fieldDef :: FieldDefinition OUT VALID) <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             -- validate field Argument -----
             arguments <-
               validateFieldArguments
                 fieldDef
                 selectionArguments
             -- check field Type existence  -----
-            (typeDef :: TypeDefinition OUT) <- askFieldType fieldDef
+            (typeDef :: TypeDefinition OUT VALID) <- askFieldType fieldDef
             pure (typeDef, arguments)
           -----------------------------------------------------------------------------------
           validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
@@ -231,7 +231,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                   }
             where
               ------------------------------------------------------------
-              isLeaf :: TypeDefinition OUT -> SelectionValidator ()
+              isLeaf :: TypeDefinition OUT VALID -> SelectionValidator ()
               isLeaf TypeDefinition {typeName = typename, typeContent}
                 | isEntNode typeContent = pure ()
                 | otherwise =
@@ -249,7 +249,7 @@ validateSelectionSet dataType@(typeName, fieldsDef) =
                     selectionContent = selContent
                   }
             where
-              validateByTypeContent :: TypeName -> TypeContent TRUE OUT -> SelectionValidator (SelectionContent VALID)
+              validateByTypeContent :: TypeName -> TypeContent TRUE OUT VALID -> SelectionValidator (SelectionContent VALID)
               -- Validate UnionSelection
               validateByTypeContent _ DataUnion {unionMembers} =
                 validateUnionSelection
