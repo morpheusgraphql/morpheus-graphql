@@ -38,7 +38,7 @@ import Data.Morpheus.Validation.Query.Variable
   )
 
 validateRequest ::
-  Schema ->
+  Schema VALID ->
   VALIDATION_MODE ->
   GQLQuery ->
   Eventless (Operation VALID)

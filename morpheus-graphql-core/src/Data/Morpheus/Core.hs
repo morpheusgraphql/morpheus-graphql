@@ -50,7 +50,8 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Operation (..),
+  ( CONST,
+    Operation (..),
     Schema (..),
     Selection (..),
     SelectionContent (..),
@@ -80,7 +81,7 @@ import Data.Text.Lazy.Encoding (decodeUtf8)
 runApi ::
   forall event m.
   (Monad m) =>
-  Schema ->
+  Schema CONST ->
   RootResModel event m ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
@@ -111,11 +112,11 @@ runApi inputSchema resModel request = do
                 }
           }
 
-parseDSL :: ByteString -> Either String Schema
+parseDSL :: ByteString -> Either String (Schema CONST)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument
 
-parseGQLDocument :: ByteString -> Eventless Schema
+parseGQLDocument :: ByteString -> Eventless (Schema CONST)
 parseGQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8
 
-parseFullGQLDocument :: ByteString -> Eventless Schema
+parseFullGQLDocument :: ByteString -> Eventless (Schema CONST)
 parseFullGQLDocument = parseGQLDocument >=> withSystemTypes

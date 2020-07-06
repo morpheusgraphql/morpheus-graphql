@@ -50,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeRef (..),
+    VALID,
     isWeaker,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -92,10 +93,11 @@ import Prelude
     (==),
     not,
     otherwise,
+    undefined,
   )
 
-validateSchema :: Schema CONST -> Eventless (Schema CONST)
-validateSchema schema = validatePartialDocument (elems schema) $> schema
+validateSchema :: Schema CONST -> Eventless (Schema VALID)
+validateSchema schema = undefined -- TODO: -- validatePartialDocument (elems schema) $> schema
 
 validatePartialDocument :: [TypeDefinition ANY CONST] -> Eventless [TypeDefinition ANY CONST]
 validatePartialDocument types =

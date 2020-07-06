@@ -21,6 +21,7 @@ import Data.Morpheus.Core (parseFullGQLDocument, validateSchema)
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     Schema,
+    VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -51,7 +52,7 @@ import Prelude
 readSource :: FilePath -> IO ByteString
 readSource = L.readFile
 
-readSchema :: FilePath -> IO (Eventless Schema)
+readSchema :: FilePath -> IO (Eventless (Schema VALID))
 readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . (<> "/schema.gql")
 
 readResponse :: FilePath -> IO Response
@@ -90,7 +91,7 @@ schemaCase url = testCase (fileName url) $ do
   expected <- readResponse (toString url)
   assertion expected schema
 
-assertion :: Response -> Eventless Schema -> IO ()
+assertion :: Response -> Eventless (Schema VALID) -> IO ()
 assertion OK Success {} = pure ()
 assertion Errors {errors = err} Failure {errors}
   | err == errors =
