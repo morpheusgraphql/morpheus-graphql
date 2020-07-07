@@ -91,13 +91,21 @@ import Prelude
   ( ($),
     (&&),
     (==),
+    id,
     not,
     otherwise,
     undefined,
   )
 
-validateSchema :: Schema CONST -> Eventless (Schema VALID)
-validateSchema schema = undefined -- TODO: -- validatePartialDocument (elems schema) $> schema
+class ValidateSchema s where
+  validateSchema :: Schema s -> Eventless (Schema VALID)
+
+instance ValidateSchema CONST
+
+--validateSchema schema = undefined -- TODO: -- validatePartialDocument (elems schema) $> schema
+
+instance ValidateSchema VALID where
+  validateSchema = pure
 
 validatePartialDocument :: [TypeDefinition ANY CONST] -> Eventless [TypeDefinition ANY CONST]
 validatePartialDocument types =

@@ -79,9 +79,9 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
 
 runApi ::
-  forall event m.
+  forall event m s.
   (Monad m) =>
-  Schema CONST ->
+  Schema s ->
   RootResModel event m ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
