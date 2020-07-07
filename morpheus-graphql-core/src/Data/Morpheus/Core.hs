@@ -69,7 +69,7 @@ import Data.Morpheus.Types.Internal.Resolving
     runRootResModel,
   )
 import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
-import Data.Morpheus.Validation.Document.Validation (validateSchema)
+import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
@@ -80,7 +80,7 @@ import Data.Text.Lazy.Encoding (decodeUtf8)
 
 runApi ::
   forall event m s.
-  (Monad m) =>
+  (Monad m, ValidateSchema s) =>
   Schema s ->
   RootResModel event m ->
   GQLRequest ->

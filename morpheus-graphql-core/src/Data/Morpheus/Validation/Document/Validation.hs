@@ -9,7 +9,7 @@
 
 module Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument,
-    validateSchema,
+    ValidateSchema (..),
   )
 where
 
