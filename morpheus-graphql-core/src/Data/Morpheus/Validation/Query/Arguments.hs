@@ -33,6 +33,7 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition,
     DirectiveDefinition (..),
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition,
     IN,
     OUT,
@@ -44,6 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema,
     Stage,
     TypeRef (..),
+    TypeWrapper,
     VALID,
     Value (..),
     VariableDefinitions,
@@ -69,9 +71,7 @@ import Data.Morpheus.Types.Internal.Validation
     startInput,
     withPosition,
   )
-import Data.Morpheus.Validation.Internal.Value
-  ( validateInput,
-  )
+import qualified Data.Morpheus.Validation.Internal.Value as V
 
 type VariableConstraints ctx =
   ( GetWith ctx (VariableDefinitions VALID),
@@ -131,13 +131,19 @@ type ValueConstraints ctx s =
 
 type ArgumentConstraints ctx s =
   ( MissingRequired (Arguments CONST) ctx,
-    ValueConstraints ctx s
+    ValueConstraints ctx s,
+    V.Validate
+      (V.ValueContext s)
+      ObjectEntry
+      CONST
+      (InputContext ctx)
   )
 
 validateArgument ::
-  ArgumentConstraints ctx CONST =>
+  forall s ctx.
+  ArgumentConstraints ctx s =>
   Arguments CONST ->
-  ArgumentDefinition CONST ->
+  ArgumentDefinition s ->
   Validator ctx (Argument VALID)
 validateArgument
   requestArgs
@@ -147,29 +153,44 @@ validateArgument
     } =
     do
       argumentPosition <- asks position
+      let (f :: Value s -> Argument CONST) = \value -> Argument {argumentName = fieldName, argumentValue = mock value, argumentPosition}
       argument <-
         selectWithDefaultValue
-          (\argumentValue -> Argument {argumentName = fieldName, argumentValue, argumentPosition})
+          f
           argumentDef
           requestArgs
-      validateArgumentValue argument
-    where
-      -------------------------------------------------------------------------
-      validateArgumentValue ::
-        ValueConstraints ctx CONST =>
-        Argument CONST ->
-        Validator ctx (Argument VALID)
-      validateArgumentValue arg@Argument {argumentValue = value, ..} =
-        withPosition argumentPosition
-          $ startInput (SourceArgument arg)
-          $ do
-            datatype <- askInputFieldType argumentDef
-            argumentValue <-
-              validateInput
+      validateArgumentValue argumentDef fieldName typeWrappers argument
+
+mock :: Value s -> Value CONST
+mock = undefined
+
+validateArgumentValue ::
+  ( ValueConstraints ctx s,
+    V.Validate
+      (V.ValueContext s)
+      ObjectEntry
+      CONST
+      (InputContext ctx)
+  ) =>
+  FieldDefinition IN s ->
+  FieldName ->
+  [TypeWrapper] ->
+  Argument CONST ->
+  Validator ctx (Argument VALID)
+validateArgumentValue argumentDef fieldName typeWrappers arg@Argument {argumentValue = value, ..} =
+  withPosition argumentPosition
+    $ startInput (SourceArgument arg)
+    $ do
+      datatype <- askInputFieldType argumentDef
+      argumentValue <-
+        entryValue
+          <$> V.validate
+            ( V.ValueContext
                 typeWrappers
                 datatype
-                (ObjectEntry fieldName value)
-            pure Argument {argumentValue, ..}
+            )
+            (ObjectEntry fieldName value)
+      pure Argument {argumentValue, ..}
 
 validateFieldArguments ::
   ( Validate
@@ -227,7 +248,15 @@ class Validate args (s :: Stage) ctx where
     Arguments s ->
     Validator ctx (Arguments VALID)
 
-instance Validate (ArgCTX ctx VALID) RAW ctx
+instance
+  ArgumentsConstraints ctx VALID =>
+  Validate (ArgCTX ctx VALID) RAW ctx
+  where
+  validate (ArgCTX checkUnknown argsDef) rawArgs =
+    do
+      args <- resolveArgumentVariables rawArgs
+      traverse_ checkUnknown args
+      traverse (validateArgument args) (arguments argsDef)
 
 -- instance
 --   ArgumentsConstraints ctx CONST =>

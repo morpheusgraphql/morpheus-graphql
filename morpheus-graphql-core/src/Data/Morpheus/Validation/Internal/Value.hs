@@ -11,8 +11,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Value
-  ( validateInput,
-    Validate (..),
+  ( Validate (..),
     ValueContext (..),
   )
 where
