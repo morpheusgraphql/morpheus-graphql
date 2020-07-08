@@ -202,19 +202,21 @@ selectRequired selector container =
       container
 
 selectWithDefaultValue ::
-  forall ctx values value s.
+  forall ctx values value s validValue.
   ( Selectable values value,
     MissingRequired values ctx,
     KEY value ~ FieldName,
     GetWith ctx Scope,
     MonadContext Validator ctx
   ) =>
-  (Value s -> value) ->
+  (Value s -> Validator ctx validValue) ->
+  (value -> Validator ctx validValue) ->
   FieldDefinition IN s ->
   values ->
-  Validator ctx value
+  Validator ctx validValue
 selectWithDefaultValue
   f
+  validateF
   field@FieldDefinition
     { fieldName,
       fieldContent
@@ -222,17 +224,17 @@ selectWithDefaultValue
   values =
     selectOr
       (handeNull fieldContent)
-      pure
+      validateF
       fieldName
       values
     where
       ------------------
       handeNull ::
         Maybe (FieldContent TRUE IN s) ->
-        Validator ctx value
-      handeNull (Just (DefaultInputValue value)) = pure $ f value
+        Validator ctx validValue
+      handeNull (Just (DefaultInputValue value)) = f value
       handeNull Nothing
-        | isNullable field = pure $ f Null
+        | isNullable field = f Null
         | otherwise = failSelection
       -----------------
       failSelection = do
@@ -467,3 +469,6 @@ isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
 
 class Validate args t ctx where
   validate :: forall f (s :: Stage). (f s ~ t) => args -> f s -> Validator ctx (f VALID)
+
+instance Validate args (f VALID) ctx where
+  validate _ = pure

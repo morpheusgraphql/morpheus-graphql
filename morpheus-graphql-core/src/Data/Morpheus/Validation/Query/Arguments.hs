@@ -137,7 +137,8 @@ validateArgument
       let (f :: Value s -> Argument CONST) = \value -> Argument {argumentName = fieldName, argumentValue = mock value, argumentPosition}
       argument <-
         selectWithDefaultValue
-          f
+          (pure . f)
+          pure
           argumentDef
           requestArgs
       validateArgumentValue argumentDef fieldName typeWrappers argument
