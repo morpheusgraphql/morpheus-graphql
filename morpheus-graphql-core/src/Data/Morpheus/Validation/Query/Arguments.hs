@@ -265,6 +265,8 @@ instance
       traverse_ checkUnknown args
       traverse (validateArgument args) (arguments argsDef)
 
+instance Validate (ArgCTX ctx CONST) CONST ctx
+
 -- instance
 --   ArgumentsConstraints ctx CONST =>
 --   Validate Arguments (ArgCTX ctx VALID) RAW ctx

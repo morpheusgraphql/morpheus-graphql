@@ -10,11 +10,10 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition (..),
     DirectiveLocation (..),
     TypeWrapper (..),
-    VALID,
     mkInputValue,
   )
 
-defaultDirectives :: [DirectiveDefinition VALID]
+defaultDirectives :: [DirectiveDefinition s]
 defaultDirectives =
   [ DirectiveDefinition
       { directiveDefinitionName = "skip",

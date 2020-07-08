@@ -28,6 +28,7 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    DirectiveDefinitions,
     OUT,
     QUERY,
     ScalarValue (..),
@@ -73,7 +74,7 @@ renderDirectives =
   mkList
     <$> traverse
       render
-      defaultDirectives
+      (defaultDirectives :: DirectiveDefinitions VALID)
 
 schemaResolver ::
   Monad m =>
