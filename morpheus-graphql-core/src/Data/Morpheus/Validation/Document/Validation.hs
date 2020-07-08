@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Document.Validation
@@ -52,6 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeRef (..),
     VALID,
+    Value,
     isWeaker,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -147,9 +149,8 @@ validateType ::
   TypeDefinition cat CONST ->
   SchemaValidator () (TypeDefinition cat VALID)
 validateType
-  dt@TypeDefinition
-    { typeName,
-      typeContent = content,
+  TypeDefinition
+    { typeContent = content,
       ..
     } = inType typeName $ do
     typeContent <- validateTypeContent content
@@ -183,14 +184,33 @@ validateTypeContent DataInterface {} = pure DataInterface {}
 validateObjectField ::
   FieldDefinition OUT CONST ->
   SchemaValidator TypeName (FieldDefinition OUT VALID)
-validateObjectField field@FieldDefinition {..} = do
-  checkFieldArgsuments field
+validateObjectField FieldDefinition {fieldContent = content, ..} = inField fieldName $ do
+  fieldContent <- validateOptional checkFieldArgsuments content
   pure $
     FieldDefinition
       { fieldDirectives = undefined,
-        fieldContent = undefined,
+        fieldContent,
         ..
       }
+
+checkFieldArgsuments ::
+  ValueConstraints CONST =>
+  FieldContent TRUE OUT CONST ->
+  SchemaValidator (TypeName, FieldName) (FieldContent TRUE OUT VALID)
+checkFieldArgsuments (FieldArgs (ArgumentsDefinition meta args)) =
+  FieldArgs . ArgumentsDefinition meta
+    <$> traverse validateArgumentDefaultValue args
+
+validateArgumentDefaultValue ::
+  ValueConstraints s =>
+  ArgumentDefinition s ->
+  SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
+validateArgumentDefaultValue inputField@FieldDefinition {fieldName = argName} =
+  do
+    (typeName, fName) <- asks local
+    startInput
+      (SourceInputField typeName fName (Just argName))
+      $ validateDefaultValue inputField
 
 -- INETRFACE
 ----------------------------
@@ -296,58 +316,44 @@ failImplements err = do
   x <- asks local
   failure $ partialImplements x err
 
-checkFieldArgsuments ::
-  ValueConstraints s =>
-  FieldDefinition OUT s ->
-  SchemaValidator TypeName ()
-checkFieldArgsuments FieldDefinition {fieldContent = Nothing} = pure ()
-checkFieldArgsuments FieldDefinition {fieldContent = Just (FieldArgs args), fieldName} = do
-  typeName <- asks local
-  traverse_ (validateArgumentDefaultValue typeName fieldName) (elems args)
-
-validateArgumentDefaultValue ::
-  ValueConstraints s =>
-  TypeName ->
-  FieldName ->
-  ArgumentDefinition s ->
-  SchemaValidator TypeName ()
-validateArgumentDefaultValue _ _ FieldDefinition {fieldContent = Nothing} = pure ()
-validateArgumentDefaultValue
-  typeName
-  fName
-  inputField@FieldDefinition {fieldName = argName} =
-    startInput (SourceInputField typeName fName (Just argName)) $
-      validateDefaultValue inputField
-
 -- DEFAULT VALUE
 validateFieldDefaultValue ::
   ValueConstraints s =>
   FieldDefinition IN s ->
-  SchemaValidator TypeName ()
-validateFieldDefaultValue inputField@FieldDefinition {fieldName} = do
-  typeName <- asks local
+  SchemaValidator TypeName (FieldDefinition IN VALID)
+validateFieldDefaultValue inputField@FieldDefinition {fieldName} = inField fieldName $ do
+  (typeName, _) <- asks local
   startInput (SourceInputField typeName fieldName Nothing) $
     validateDefaultValue inputField
 
 type ValueConstraints s =
-  ( GetWith (TypeSystemContext TypeName) (Schema s),
-    Validate (ValueContext s) ObjectEntry s (InputContext (TypeSystemContext TypeName))
+  ( GetWith (TypeSystemContext (TypeName, FieldName)) (Schema s),
+    Validate (ValueContext s) ObjectEntry s (InputContext (TypeSystemContext (TypeName, FieldName)))
   )
 
 validateDefaultValue ::
   ValueConstraints s =>
   FieldDefinition IN s ->
-  InputValidator (TypeSystemContext TypeName) ()
-validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure ()
+  InputValidator
+    (TypeSystemContext (TypeName, FieldName))
+    (FieldDefinition IN VALID)
+validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure undefined
 validateDefaultValue
   inputField@FieldDefinition
     { fieldName,
-      fieldType = TypeRef {typeWrappers},
-      fieldContent = Just DefaultInputValue {defaultInputValue}
+      fieldType = fieldType@TypeRef {typeWrappers},
+      fieldContent = Just DefaultInputValue {defaultInputValue},
+      ..
     } = do
     datatype <- askInputFieldType inputField
-    _ <-
-      validate
-        (ValueContext typeWrappers datatype)
-        (ObjectEntry fieldName defaultInputValue)
-    pure ()
+    (value :: Value VALID) <-
+      entryValue
+        <$> validate
+          (ValueContext typeWrappers datatype)
+          (ObjectEntry fieldName defaultInputValue)
+    pure $
+      FieldDefinition
+        { fieldContent = Just (DefaultInputValue value),
+          fieldDirectives = undefined,
+          ..
+        }
