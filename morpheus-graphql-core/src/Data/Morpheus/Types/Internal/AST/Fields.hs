@@ -132,7 +132,7 @@ instance NameCollision (Argument s) where
         locations = [argumentPosition]
       }
 
-type Arguments s = OrdMap FieldName (Argument s)
+type Arguments (s :: Stage) = OrdMap FieldName (Argument s)
 
 -- directive
 ------------------------------------------------------------------

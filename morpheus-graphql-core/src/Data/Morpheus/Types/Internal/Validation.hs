@@ -94,6 +94,7 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     Ref (..),
     Schema,
+    Stage,
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
@@ -465,4 +466,4 @@ isPosibeInputUnion tags (Enum name)
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
 
 class Validate args t ctx where
-  validate :: (f s ~ t) => args -> t -> Validator ctx (f VALID)
+  validate :: forall f (s :: Stage). (f s ~ t) => args -> f s -> Validator ctx (f VALID)
