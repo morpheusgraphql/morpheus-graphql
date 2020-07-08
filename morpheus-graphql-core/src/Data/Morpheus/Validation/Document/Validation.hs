@@ -175,8 +175,11 @@ validateTypeContent
 validateTypeContent DataInputObject {inputObjectFields} = do
   traverse_ validateFieldDefaultValue inputObjectFields
   pure $ DataInputObject {}
-
---validateTypeContent x = pure x
+validateTypeContent DataScalar {..} = pure DataScalar {..}
+validateTypeContent DataEnum {..} = pure DataEnum {}
+validateTypeContent DataInputUnion {} = pure DataInputUnion {}
+validateTypeContent DataUnion {} = pure DataUnion {}
+validateTypeContent DataInterface {} = pure DataInterface {}
 
 -- INETRFACE
 ----------------------------
