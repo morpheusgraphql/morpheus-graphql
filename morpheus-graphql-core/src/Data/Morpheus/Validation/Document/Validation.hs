@@ -97,7 +97,6 @@ import Prelude
     (==),
     not,
     otherwise,
-    undefined,
   )
 
 class ValidateSchema s where
@@ -148,15 +147,26 @@ validateType ::
 validateType
   TypeDefinition
     { typeContent = content,
+      typeDirectives = directives,
       ..
     } = inType typeName $ do
     typeContent <- validateTypeContent content
+    typeDirectives <- validateDirectives (typeDirectiveLocation content) directives
     pure $
       TypeDefinition
         { typeContent,
-          typeDirectives = empty, -- TODO: validate directives
+          typeDirectives,
           ..
         }
+
+typeDirectiveLocation :: TypeContent a b c -> DirectiveLocation
+typeDirectiveLocation DataObject {} = OBJECT
+typeDirectiveLocation DataInputObject {} = INPUT_OBJECT
+typeDirectiveLocation DataScalar {} = SCALAR
+typeDirectiveLocation DataEnum {} = ENUM
+typeDirectiveLocation DataInputUnion {} = OBJECT
+typeDirectiveLocation DataUnion {} = UNION
+typeDirectiveLocation DataInterface {} = INTERFACE
 
 validateTypeContent ::
   TypeContent TRUE cat CONST ->
@@ -181,14 +191,20 @@ validateTypeContent (DataInterface fields) =
 validateField ::
   FieldDefinition cat CONST ->
   SchemaValidator TypeName (FieldDefinition cat VALID)
-validateField field@FieldDefinition {fieldContent = content, ..} = inField fieldName $ do
-  fieldContent <- validateOptional (checkFieldContent field) content
-  pure $
-    FieldDefinition
-      { fieldDirectives = undefined,
-        fieldContent,
-        ..
-      }
+validateField
+  field@FieldDefinition
+    { fieldContent = content,
+      fieldDirectives = directives,
+      ..
+    } = inField fieldName $ do
+    fieldContent <- validateOptional (checkFieldContent field) content
+    fieldDirectives <- validateDirectives FIELD_DEFINITION directives
+    pure $
+      FieldDefinition
+        { fieldDirectives,
+          fieldContent,
+          ..
+        }
 
 checkFieldContent ::
   ValueConstraints CONST =>
@@ -217,11 +233,12 @@ validateArgumentDefaultValue
   FieldDefinition
     { fieldName = argName,
       fieldContent = Just (DefaultInputValue value),
-      fieldType,
-      fieldDescription
+      fieldDirectives = directives,
+      ..
     } =
     do
       (typeName, fName) <- asks local
+      fieldDirectives <- validateDirectives ARGUMENT_DEFINITION directives
       v <-
         startInput
           (SourceInputField typeName fName (Just argName))
@@ -230,9 +247,7 @@ validateArgumentDefaultValue
         FieldDefinition
           { fieldContent = Just (DefaultInputValue v),
             fieldName = argName,
-            fieldType,
-            fieldDescription,
-            fieldDirectives = undefined
+            ..
           }
 
 -- INETRFACE
@@ -343,7 +358,8 @@ failImplements err = do
 
 type ValueConstraints s =
   ( GetWith (TypeSystemContext (TypeName, FieldName)) (Schema s),
-    Validate (ValueContext s) ObjectEntry s (InputContext (TypeSystemContext (TypeName, FieldName)))
+    Validate (ValueContext s) ObjectEntry s (InputContext (TypeSystemContext (TypeName, FieldName))),
+    ValidateDirective s (TypeSystemContext (TypeName, FieldName))
   )
 
 validateDefaultValue ::
