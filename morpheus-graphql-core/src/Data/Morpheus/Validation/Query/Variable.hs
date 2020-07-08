@@ -24,7 +24,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
-    CONST,
     DefaultValue,
     Directive (..),
     Fragment (..),
