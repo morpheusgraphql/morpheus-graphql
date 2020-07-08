@@ -147,7 +147,7 @@ type InputConstraints ctx s =
     GetWith (InputContext ctx) InputSource,
     SetWith ctx Scope,
     MissingRequired (Object CONST) (InputContext ctx),
-    Unknown (FieldsDefinition IN s) (InputContext ctx),
+    Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext ctx),
     Validate (ValueContext s) ObjectEntry CONST (InputContext ctx)
   )
 

@@ -179,32 +179,28 @@ instance MissingRequired (VariableDefinitions s) (OperationContext v) where
           locations = [refPosition]
         }
 
-class Unknown c ctx where
-  type UnknownSelector c
-  unknown :: ctx -> c -> UnknownSelector c -> GQLErrors
+class Unknown c ref ctx where
+  -- type UnknownSelector c
+  unknown :: ctx -> c -> ref -> GQLErrors
 
 -- {...H} -> "Unknown fragment \"H\"."
-instance Unknown Fragments ctx where
-  type UnknownSelector Fragments = Ref
+instance Unknown Fragments Ref ctx where
   unknown _ _ (Ref name pos) =
     errorMessage
       pos
       ("Unknown Fragment " <> msg name <> ".")
 
-instance Unknown (Schema s) ctx where
-  type UnknownSelector (Schema s) = TypeNameRef
+instance Unknown (Schema s) TypeNameRef ctx where
   unknown _ _ TypeNameRef {typeNameRef, typeNamePosition} =
     errorMessage typeNamePosition ("Unknown type " <> msg typeNameRef <> ".")
 
-instance Unknown (FieldDefinition OUT s) ctx where
-  type UnknownSelector (FieldDefinition OUT s) = Argument CONST
+instance Unknown (FieldDefinition OUT s) (Argument CONST) ctx where
   unknown _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown (FieldsDefinition IN s) (InputContext (OperationContext v)) where
-  type UnknownSelector (FieldsDefinition IN s) = ObjectEntry CONST
+instance Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext (OperationContext v)) where
   unknown
     input@InputContext {sourceContext = OperationContext {scope = Scope {position}}}
     _
@@ -215,8 +211,7 @@ instance Unknown (FieldsDefinition IN s) (InputContext (OperationContext v)) whe
           }
       ]
 
-instance Unknown (FieldsDefinition IN s) (InputContext (TypeSystemContext ctx)) where
-  type UnknownSelector (FieldsDefinition IN s) = ObjectEntry CONST
+instance Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext (TypeSystemContext ctx)) where
   unknown
     input
     _
@@ -227,22 +222,19 @@ instance Unknown (FieldsDefinition IN s) (InputContext (TypeSystemContext ctx)) 
           }
       ]
 
-instance Unknown (DirectiveDefinition s) ctx where
-  type UnknownSelector (DirectiveDefinition s) = Argument CONST
+instance Unknown (DirectiveDefinition s) (Argument CONST) ctx where
   unknown _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".")
 
-instance Unknown (DirectiveDefinitions s) ctx where
-  type UnknownSelector (DirectiveDefinitions s) = Directive RAW
+instance Unknown (DirectiveDefinitions s) (Directive s) ctx where
   unknown _ _ Directive {directiveName, directivePosition} =
     errorMessage
       directivePosition
       ("Unknown Directive " <> msg directiveName <> ".")
 
-instance Unknown (FieldsDefinition OUT s) (OperationContext v) where
-  type UnknownSelector (FieldsDefinition OUT s) = Ref
+instance Unknown (FieldsDefinition OUT s) Ref (OperationContext v) where
   unknown OperationContext {scope = Scope {typename}} _ =
     unknownSelectionField typename
 

@@ -34,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition (..),
     FieldDefinition (..),
     FieldName,
-    FieldsDefinition,
     IN,
     OUT,
     Object,
@@ -60,7 +59,6 @@ import Data.Morpheus.Types.Internal.Validation
     Scope (..),
     SelectionValidator,
     SetWith,
-    Unknown,
     Validator,
     askInputFieldType,
     askVariables,
@@ -125,8 +123,7 @@ type ValueConstraints ctx s =
   ( GetWith ctx (Schema s),
     GetWith ctx Scope,
     SetWith ctx Scope,
-    MissingRequired (Object CONST) (InputContext ctx),
-    Unknown (FieldsDefinition IN s) (InputContext ctx)
+    MissingRequired (Object CONST) (InputContext ctx)
   )
 
 type ArgumentConstraints ctx s =

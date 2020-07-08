@@ -241,9 +241,8 @@ selectWithDefaultValue
 
 selectKnown ::
   ( Selectable c a,
-    Unknown c ctx,
+    Unknown c sel ctx,
     KeyOf sel,
-    sel ~ UnknownSelector c,
     KEY sel ~ KEY a
   ) =>
   sel ->
