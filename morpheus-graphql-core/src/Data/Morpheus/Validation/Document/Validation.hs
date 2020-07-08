@@ -170,16 +170,27 @@ validateTypeContent
     } =
     do
       validateImplements objectImplements objectFields
-      traverse_ checkFieldArgsuments objectFields
-      pure $ DataObject {objectImplements}
+      DataObject objectImplements <$> traverse validateObjectField objectFields
 validateTypeContent DataInputObject {inputObjectFields} = do
   traverse_ validateFieldDefaultValue inputObjectFields
   pure $ DataInputObject {}
 validateTypeContent DataScalar {..} = pure DataScalar {..}
-validateTypeContent DataEnum {..} = pure DataEnum {}
+validateTypeContent DataEnum {} = pure DataEnum {}
 validateTypeContent DataInputUnion {} = pure DataInputUnion {}
 validateTypeContent DataUnion {} = pure DataUnion {}
 validateTypeContent DataInterface {} = pure DataInterface {}
+
+validateObjectField ::
+  FieldDefinition OUT CONST ->
+  SchemaValidator TypeName (FieldDefinition OUT VALID)
+validateObjectField field@FieldDefinition {..} = do
+  checkFieldArgsuments field
+  pure $
+    FieldDefinition
+      { fieldDirectives = undefined,
+        fieldContent = undefined,
+        ..
+      }
 
 -- INETRFACE
 ----------------------------
