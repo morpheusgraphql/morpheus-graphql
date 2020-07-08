@@ -249,30 +249,17 @@ instance
   ArgumentsConstraints ctx VALID =>
   Validate (ArgCTX ctx VALID) RAW ctx
   where
-  validate (ArgCTX checkUnknown argsDef) rawArgs =
+  validate ctx rawArgs =
     do
       args <- resolveArgumentVariables rawArgs
-      traverse_ checkUnknown args
-      traverse (validateArgument args) (arguments argsDef)
+      validate ctx args
 
 instance
-  ( ArgumentConstraints ctx VALID
+  ( ArgumentConstraints ctx s
   ) =>
-  Validate (ArgCTX ctx VALID) CONST ctx
+  Validate (ArgCTX ctx s) CONST ctx
   where
   validate (ArgCTX checkUnknown argsDef) args =
     do
       traverse_ checkUnknown args
       traverse (validateArgument args) (arguments argsDef)
-
-instance Validate (ArgCTX ctx CONST) CONST ctx
-
--- instance
---   ArgumentsConstraints ctx CONST =>
---   Validate Arguments (ArgCTX ctx VALID) RAW ctx
-
--- validateArguments (ArgCTX checkUnknown argsDef) rawArgs =
---   do
---     args <- resolveArgumentVariables rawArgs
---     traverse_ checkUnknown args
---     traverse (validateArgument args) (arguments argsDef)
