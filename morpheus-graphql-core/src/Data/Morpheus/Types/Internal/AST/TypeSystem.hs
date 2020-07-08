@@ -147,20 +147,20 @@ import Prelude
 
 type DataEnum s = [DataEnumValue s]
 
-mkUnionMember :: TypeName -> UnionMember cat
+mkUnionMember :: TypeName -> UnionMember cat s
 mkUnionMember name = UnionMember name True
 
-data UnionMember (cat :: TypeCategory) = UnionMember
+data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
   { memberName :: TypeName,
     visibility :: Bool
   }
   deriving (Show, Lift, Eq)
 
-type DataUnion = [UnionMember OUT]
+type DataUnion s = [UnionMember OUT s]
 
-type DataInputUnion = [UnionMember IN]
+type DataInputUnion s = [UnionMember IN s]
 
-instance RenderGQL (UnionMember cat) where
+instance RenderGQL (UnionMember cat s) where
   render = render . memberName
 
 -- scalar
@@ -417,7 +417,7 @@ data
     } ->
     TypeContent (IsSelected a IN) a s
   DataInputUnion ::
-    { inputUnionMembers :: DataInputUnion
+    { inputUnionMembers :: DataInputUnion s
     } ->
     TypeContent (IsSelected a IN) a s
   DataObject ::
@@ -426,7 +426,7 @@ data
     } ->
     TypeContent (IsSelected a OUT) a s
   DataUnion ::
-    { unionMembers :: DataUnion
+    { unionMembers :: DataUnion s
     } ->
     TypeContent (IsSelected a OUT) a s
   DataInterface ::
@@ -548,7 +548,7 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
 __inputname :: FieldName
 __inputname = "inputname"
 
-mkInputUnionFields :: TypeName -> [UnionMember IN] -> FieldsDefinition IN s
+mkInputUnionFields :: TypeName -> [UnionMember IN s] -> FieldsDefinition IN s
 mkInputUnionFields name members = unsafeFromFields $ fieldTag : fmap mkUnionField members
   where
     fieldTag =
@@ -560,7 +560,7 @@ mkInputUnionFields name members = unsafeFromFields $ fieldTag : fmap mkUnionFiel
           fieldDirectives = []
         }
 
-mkUnionField :: UnionMember IN -> FieldDefinition IN s
+mkUnionField :: UnionMember IN s -> FieldDefinition IN s
 mkUnionField UnionMember {memberName} =
   FieldDefinition
     { fieldName = toFieldName memberName,

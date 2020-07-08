@@ -199,7 +199,7 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
               ("possibleTypes", interfacePossibleTypes typeName)
             ]
 
-instance RenderIntrospection (UnionMember OUT) where
+instance RenderIntrospection (UnionMember OUT s) where
   render UnionMember {memberName} = selectType memberName >>= render
 
 instance

@@ -148,7 +148,8 @@ type InputConstraints ctx s =
     GetWith (InputContext ctx) InputSource,
     SetWith ctx Scope,
     MissingRequired (Object CONST) (InputContext ctx),
-    Unknown (FieldsDefinition IN s) (InputContext ctx)
+    Unknown (FieldsDefinition IN s) (InputContext ctx),
+    Validate (ValueContext s) ObjectEntry CONST (InputContext ctx)
   )
 
 instance
@@ -175,8 +176,7 @@ data ValueContext s = ValueContext
 -- Validate input Values
 validateInput ::
   forall ctx s.
-  ( InputConstraints ctx s
-  ) =>
+  (InputConstraints ctx s) =>
   [TypeWrapper] ->
   TypeDefinition IN s ->
   ObjectEntry CONST ->
@@ -222,8 +222,8 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
       InputValidator ctx ValidValue
     validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
       Object <$> validateInputObject parentFields fields
-    --   validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
-    --     validatInputUnion typeName inputUnion rawFields
+    validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
+      validatInputUnion typeName inputUnion rawFields
     validateUnwrapped err (DataEnum tags) value =
       validateEnum (err Nothing) tags value
     validateUnwrapped err (DataScalar dataScalar) value =
@@ -232,37 +232,39 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 
 -- INPUT UNION
 validatInputUnion ::
+  forall schemaS s ctx.
   ( GetWith ctx Scope,
-    GetWith ctx (Schema s),
-    Validate (ValueContext s) ObjectEntry s (InputContext ctx)
+    GetWith ctx (Schema schemaS),
+    Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
   ) =>
   TypeName ->
-  DataInputUnion ->
+  DataInputUnion schemaS ->
   Object s ->
   InputValidator ctx (Value VALID)
 validatInputUnion typeName inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
     Right (name, Nothing) -> pure (mkInputObject name [])
-    Right (name, Just value) -> validatInputUnionMember name value
+    Right (name, Just value) -> validatInputUnionMember f name value
+      where
+        f :: TypeDefinition IN schemaS -> ValueContext schemaS
+        f = ValueContext [TypeMaybe]
 
 validatInputUnionMember ::
-  forall ctx s.
-  ( Validate (ValueContext s) ObjectEntry s (InputContext ctx),
-    GetWith ctx (Schema s),
+  forall ctx schemaS s.
+  ( Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx),
+    GetWith ctx (Schema schemaS),
     GetWith ctx Scope
   ) =>
+  (TypeDefinition IN schemaS -> ValueContext schemaS) ->
   TypeName ->
   Value s ->
   InputValidator ctx (Value VALID)
-validatInputUnionMember name value = do
-  (inputDef :: TypeDefinition IN s) <- askInputMember name
+validatInputUnionMember f name value = do
+  (inputDef :: TypeDefinition IN schemaS) <- askInputMember name
   validValue <-
     validate
-      ValueContext
-        { valueWrappers = [TypeMaybe],
-          valueTypeDef = inputDef
-        }
+      (f inputDef)
       (ObjectEntry (toFieldName name) value)
   pure $ mkInputObject name [validValue]
 
@@ -315,7 +317,7 @@ validateFieldWithDefaultValue object fieldDef@FieldDefinition {fieldName} = do
   entry <- selectWithDefaultValue (mockStage . ObjectEntry fieldName) fieldDef object
   validateInputField fieldDef entry
 
-mockStage :: f s -> f CONST
+mockStage :: ObjectEntry s -> ObjectEntry CONST
 mockStage = undefined
 
 validateInputField ::

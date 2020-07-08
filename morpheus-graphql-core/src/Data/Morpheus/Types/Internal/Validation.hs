@@ -276,7 +276,7 @@ askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
             <> "\" must be an OUTPUT_TYPE."
 
 askTypeMember ::
-  UnionMember OUT ->
+  UnionMember OUT s ->
   SelectionValidator (TypeName, FieldsDefinition OUT VALID)
 askTypeMember UnionMember {memberName} =
   askSchema
@@ -391,8 +391,8 @@ askInputMember name =
               <> "\" must be an INPUT_OBJECT."
 
 constraintInputUnion ::
-  forall stage.
-  [UnionMember IN] ->
+  forall stage schemaStage.
+  [UnionMember IN schemaStage] ->
   Object stage ->
   Either Message (TypeName, Maybe (Value stage))
 constraintInputUnion tags hm = do
@@ -421,7 +421,7 @@ constraintInputUnion tags hm = do
       pure (tyName, Just value)
     _ -> failure ("input union can have only one variant." :: Message)
 
-isPosibeInputUnion :: [UnionMember IN] -> Value stage -> Either Message TypeName
+isPosibeInputUnion :: [UnionMember IN s] -> Value stage -> Either Message TypeName
 isPosibeInputUnion tags (Enum name)
   | name `elem` fmap memberName tags = pure name
   | otherwise = failure $ msg name <> " is not posible union type"
