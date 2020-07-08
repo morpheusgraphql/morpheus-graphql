@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentDefinition,
     ArgumentsDefinition (..),
     CONST,
+    DataEnumValue (..),
     DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -182,11 +183,17 @@ validateTypeContent
 validateTypeContent DataInputObject {inputObjectFields} =
   DataInputObject <$> traverse validateField inputObjectFields
 validateTypeContent DataScalar {..} = pure DataScalar {..}
-validateTypeContent DataEnum {} = pure DataEnum {}
+validateTypeContent DataEnum {enumMembers} = DataEnum <$> traverse validateEnumMember enumMembers
 validateTypeContent DataInputUnion {} = pure DataInputUnion {}
 validateTypeContent DataUnion {} = pure DataUnion {}
 validateTypeContent (DataInterface fields) =
   DataInterface <$> traverse validateField fields
+
+validateEnumMember ::
+  DataEnumValue CONST -> SchemaValidator TypeName (DataEnumValue VALID)
+validateEnumMember DataEnumValue {enumDirectives = directives, ..} = do
+  enumDirectives <- validateDirectives ENUM_VALUE directives
+  pure DataEnumValue {..}
 
 validateField ::
   FieldDefinition cat CONST ->
