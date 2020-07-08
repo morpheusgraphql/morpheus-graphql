@@ -84,23 +84,18 @@ instance
   where
   validateDirective location directive@Directive {directiveArgs, ..} =
     withDirective directive $ do
-      (directiveDef :: DirectiveDefinition VALID) <- selectKnown directive defaultDirectives
+      directiveDef <- selectKnown directive defaultDirectives
       args <- validateDirectiveArguments directiveDef directiveArgs
       validateDirectiveLocation location directive directiveDef
       pure Directive {directiveArgs = args, ..}
 
-instance ValidateDirective CONST ctx
-
-instance ValidateDirective VALID ctx
-
--- -- TODO: hanle it
--- instance ValidateDirective VALID ctx where
--- validateDirective location directive@Directive {directiveArgs, ..} =
---   withDirective directive $ do
---     directiveDef <- selectKnown directive defaultDirectives
---     args <- validateDirectiveArguments directiveDef directiveArgs
---     validateDirectiveLocation location directive directiveDef
---     pure Directive {directiveArgs = args, ..}
+instance ValidateDirective CONST ctx where
+  validateDirective location directive@Directive {directiveArgs = args, ..} =
+    withDirective directive $ do
+      directiveDef <- selectKnown directive defaultDirectives
+      directiveArgs <- validateDirectiveArguments directiveDef args
+      validateDirectiveLocation location directive directiveDef
+      pure Directive {..}
 
 validateDirectiveLocation ::
   DirectiveLocation ->
