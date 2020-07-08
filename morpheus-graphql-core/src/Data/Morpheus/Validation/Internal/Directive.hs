@@ -14,7 +14,7 @@
 module Data.Morpheus.Validation.Internal.Directive
   ( shouldIncludeSelection,
     validateDirectives,
-    ValidateDirective (..),
+    Validate,
   )
 where
 
@@ -47,11 +47,12 @@ import Data.Morpheus.Types.Internal.Validation
   ( GetWith,
     Scope,
     SetWith,
+    Validate (..),
     Validator,
     selectKnown,
     withDirective,
   )
-import Data.Morpheus.Validation.Query.Arguments
+import qualified Data.Morpheus.Validation.Query.Arguments as A
   ( ArgCTX,
     Validate,
     validateDirectiveArguments,
@@ -67,38 +68,38 @@ import Prelude
   )
 
 validateDirectives ::
-  ValidateDirective s ctx =>
+  Validate DirectiveLocation (Directive s) ctx =>
   DirectiveLocation ->
   Directives s ->
   Validator ctx (Directives VALID)
-validateDirectives location = traverse (validateDirective location)
+validateDirectives location = traverse (validate location)
 
-class ValidateDirective (s :: Stage) ctx where
-  validateDirective :: DirectiveLocation -> Directive s -> Validator ctx (Directive VALID)
+-- class ValidateDirective (s :: Stage) ctx where
+--   validateDirective :: DirectiveLocation -> Directive s -> Validator ctx (Directive VALID)
 
 instance
   ( SetWith ctx Scope,
-    Validate (ArgCTX ctx VALID) RAW ctx
+    A.Validate (A.ArgCTX ctx VALID) RAW ctx
   ) =>
-  ValidateDirective RAW ctx
+  Validate DirectiveLocation (Directive RAW) ctx
   where
-  validateDirective location directive@Directive {directiveArgs, ..} =
+  validate location directive@Directive {directiveArgs, ..} =
     withDirective directive $ do
       (directiveDef :: DirectiveDefinition VALID) <- selectKnown directive defaultDirectives
-      args <- validateDirectiveArguments directiveDef directiveArgs
+      args <- A.validateDirectiveArguments directiveDef directiveArgs
       validateDirectiveLocation location directive directiveDef
       pure Directive {directiveArgs = args, ..}
 
 instance
   ( SetWith ctx Scope,
-    Validate (ArgCTX ctx CONST) CONST ctx
+    A.Validate (A.ArgCTX ctx CONST) CONST ctx
   ) =>
-  ValidateDirective CONST ctx
+  Validate DirectiveLocation (Directive CONST) ctx
   where
-  validateDirective location directive@Directive {directiveArgs = args, ..} =
+  validate location directive@Directive {directiveArgs = args, ..} =
     withDirective directive $ do
       (directiveDef :: DirectiveDefinition CONST) <- selectKnown directive defaultDirectives
-      directiveArgs <- validateDirectiveArguments directiveDef args
+      directiveArgs <- A.validateDirectiveArguments directiveDef args
       validateDirectiveLocation location directive directiveDef
       pure Directive {..}
 

@@ -39,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition (..),
     CONST,
     DataEnumValue (..),
+    Directive,
     DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -83,7 +84,7 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     selectType,
   )
 import Data.Morpheus.Validation.Internal.Directive
-  ( ValidateDirective,
+  ( Validate,
     validateDirectives,
   )
 import Data.Morpheus.Validation.Internal.Value
@@ -286,7 +287,7 @@ mustBeSubset objFields (typeName, fields) =
 
 checkInterfaceField ::
   ( ValueConstraints s,
-    ValidateDirective s (TypeSystemContext (Interface, FieldName)),
+    Validate DirectiveLocation (Directive s) (TypeSystemContext (Interface, FieldName)),
     TypeEq (FieldDefinition OUT s) (Interface, FieldName)
   ) =>
   FieldsDefinition OUT s ->
@@ -375,7 +376,7 @@ failImplements err = do
 type ValueConstraints s =
   ( GetWith (TypeSystemContext (TypeName, FieldName)) (Schema s),
     Validate (ValueContext s) (ObjectEntry s) (InputContext (TypeSystemContext (TypeName, FieldName))),
-    ValidateDirective s (TypeSystemContext (TypeName, FieldName))
+    Validate DirectiveLocation (Directive s) (TypeSystemContext (TypeName, FieldName))
   )
 
 validateDefaultValue ::
