@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Document.Validation
@@ -13,12 +14,12 @@ module Data.Morpheus.Validation.Document.Validation
   )
 where
 
-import Control.Applicative ((*>), pure)
+import Control.Applicative ((*>), (<*>), Applicative (..), pure)
 import Control.Monad ((>=>))
 import Control.Monad.Reader (asks)
 import Data.Foldable (traverse_)
-import Data.Functor (($>))
-import Data.Maybe (Maybe (..))
+import Data.Functor (($>), (<$>), fmap)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     PartialImplements (..),
@@ -44,7 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     OUT,
     ObjectEntry (..),
-    Schema,
+    Schema (..),
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
@@ -61,6 +62,7 @@ import Data.Morpheus.Types.Internal.Validation
     InputContext,
     InputSource (..),
     InputValidator,
+    Validator,
     askInputFieldType,
     runValidator,
     startInput,
@@ -91,6 +93,7 @@ import Data.Traversable (traverse)
 import Prelude
   ( ($),
     (&&),
+    (.),
     (==),
     id,
     not,
@@ -101,9 +104,31 @@ import Prelude
 class ValidateSchema s where
   validateSchema :: Schema s -> Eventless (Schema VALID)
 
-instance ValidateSchema CONST
+instance ValidateSchema CONST where
+  validateSchema
+    schema@Schema
+      { types,
+        query,
+        mutation,
+        subscription
+      } =
+      runValidator
+        __validateSchema
+        TypeSystemContext
+          { types = elems schema,
+            local = ()
+          }
+      where
+        __validateSchema :: SchemaValidator () (Schema VALID)
+        __validateSchema =
+          Schema
+            <$> traverse validateType types
+            <*> validateType query
+            <*> validateOptional validateType mutation
+            <*> validateOptional validateType subscription
 
---validateSchema schema = undefined -- TODO: -- validatePartialDocument (elems schema) $> schema
+validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
+validateOptional f = maybe (pure Nothing) (fmap Just . f)
 
 instance ValidateSchema VALID where
   validateSchema = pure
@@ -116,31 +141,42 @@ validatePartialDocument types =
       { types = systemTypes <> types,
         local = ()
       }
+    $> types
 
 validateType ::
-  TypeDefinition ANY CONST ->
-  SchemaValidator () (TypeDefinition ANY CONST)
+  TypeDefinition cat CONST ->
+  SchemaValidator () (TypeDefinition cat VALID)
 validateType
   dt@TypeDefinition
     { typeName,
-      typeContent =
-        DataObject
-          { objectImplements,
-            objectFields
-          }
-    } = inType typeName $
+      typeContent = content,
+      ..
+    } = inType typeName $ do
+    typeContent <- validateTypeContent content
+    pure $
+      TypeDefinition
+        { typeContent,
+          typeDirectives = empty, -- TODO: validate directives
+          ..
+        }
+
+validateTypeContent ::
+  TypeContent TRUE cat CONST ->
+  SchemaValidator TypeName (TypeContent TRUE cat VALID)
+validateTypeContent
+  DataObject
+    { objectImplements,
+      objectFields
+    } =
     do
       validateImplements objectImplements objectFields
       traverse_ checkFieldArgsuments objectFields
-      pure dt
-validateType
-  dt@TypeDefinition
-    { typeContent = DataInputObject {inputObjectFields},
-      typeName
-    } = inType typeName $ do
-    traverse_ validateFieldDefaultValue inputObjectFields
-    pure dt
-validateType x = pure x
+      pure $ DataObject {objectImplements}
+validateTypeContent DataInputObject {inputObjectFields} = do
+  traverse_ validateFieldDefaultValue inputObjectFields
+  pure $ DataInputObject {}
+
+--validateTypeContent x = pure x
 
 -- INETRFACE
 ----------------------------
