@@ -53,6 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeRef (..),
+    UnionMember (..),
     VALID,
     Value,
     isWeaker,
@@ -184,8 +185,9 @@ validateTypeContent DataInputObject {inputObjectFields} =
   DataInputObject <$> traverse validateField inputObjectFields
 validateTypeContent DataScalar {..} = pure DataScalar {..}
 validateTypeContent DataEnum {enumMembers} = DataEnum <$> traverse validateEnumMember enumMembers
-validateTypeContent DataInputUnion {} = pure DataInputUnion {}
-validateTypeContent DataUnion {} = pure DataUnion {}
+validateTypeContent DataInputUnion {inputUnionMembers} =
+  DataInputUnion <$> traverse validateUnionMember inputUnionMembers
+validateTypeContent DataUnion {unionMembers} = DataUnion <$> traverse validateUnionMember unionMembers
 validateTypeContent (DataInterface fields) =
   DataInterface <$> traverse validateField fields
 
@@ -194,6 +196,10 @@ validateEnumMember ::
 validateEnumMember DataEnumValue {enumDirectives = directives, ..} = do
   enumDirectives <- validateDirectives ENUM_VALUE directives
   pure DataEnumValue {..}
+
+validateUnionMember ::
+  UnionMember cat CONST -> SchemaValidator TypeName (UnionMember cat VALID)
+validateUnionMember UnionMember {..} = pure UnionMember {..}
 
 validateField ::
   FieldDefinition cat CONST ->
@@ -221,7 +227,7 @@ checkFieldContent ::
 checkFieldContent _ (FieldArgs (ArgumentsDefinition meta args)) =
   FieldArgs . ArgumentsDefinition meta
     <$> traverse
-      validateArgumentDefaultValue
+      validateArgument
       args
 checkFieldContent FieldDefinition {fieldName, fieldType} (DefaultInputValue value) = do
   (typeName, fName) <- asks local
@@ -230,32 +236,35 @@ checkFieldContent FieldDefinition {fieldName, fieldType} (DefaultInputValue valu
       (SourceInputField typeName fName Nothing)
       (validateDefaultValue fieldName fieldType value)
 
-validateArgumentDefaultValue ::
+validateArgument ::
   ValueConstraints s =>
   ArgumentDefinition s ->
   SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
-validateArgumentDefaultValue FieldDefinition {fieldName, fieldContent = Nothing} =
-  pure FieldDefinition {fieldName, fieldContent = Nothing}
-validateArgumentDefaultValue
+validateArgument
   FieldDefinition
-    { fieldName = argName,
-      fieldContent = Just (DefaultInputValue value),
+    { fieldContent = content,
       fieldDirectives = directives,
       ..
     } =
     do
-      (typeName, fName) <- asks local
       fieldDirectives <- validateDirectives ARGUMENT_DEFINITION directives
-      v <-
-        startInput
-          (SourceInputField typeName fName (Just argName))
-          (validateDefaultValue argName fieldType value)
-      pure
-        FieldDefinition
-          { fieldContent = Just (DefaultInputValue v),
-            fieldName = argName,
-            ..
-          }
+      fieldContent <- validateOptional (validateArgumentDefaultValue fieldName fieldType) content
+      pure FieldDefinition {..}
+
+validateArgumentDefaultValue ::
+  ValueConstraints s =>
+  FieldName ->
+  TypeRef ->
+  FieldContent TRUE IN s ->
+  SchemaValidator (TypeName, FieldName) (FieldContent TRUE IN VALID)
+validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
+  do
+    (typeName, fName) <- asks local
+    v <-
+      startInput
+        (SourceInputField typeName fName (Just argName))
+        (validateDefaultValue argName fieldType value)
+    pure (DefaultInputValue v)
 
 -- INETRFACE
 ----------------------------
