@@ -58,6 +58,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Types.Internal.Validation
   ( GetWith,
+    InputContext,
     InputSource (..),
     InputValidator,
     askInputFieldType,
@@ -280,13 +281,11 @@ validateFieldDefaultValue inputField@FieldDefinition {fieldName} = do
 
 type ValueConstraints s =
   ( GetWith (TypeSystemContext TypeName) (Schema s),
-    Validate (ValueContext s) ObjectEntry s (TypeSystemContext TypeName)
+    Validate (ValueContext s) ObjectEntry s (InputContext (TypeSystemContext TypeName))
   )
 
 validateDefaultValue ::
-  ( GetWith (TypeSystemContext TypeName) (Schema s),
-    Validate (ValueContext s) ObjectEntry s (TypeSystemContext TypeName)
-  ) =>
+  ValueConstraints s =>
   FieldDefinition IN s ->
   InputValidator (TypeSystemContext TypeName) ()
 validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure ()

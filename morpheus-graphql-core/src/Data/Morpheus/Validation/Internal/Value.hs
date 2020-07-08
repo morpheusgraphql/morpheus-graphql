@@ -81,6 +81,7 @@ import Data.Morpheus.Types.Internal.Validation
     ScopeKind (..),
     SetWith,
     Unknown,
+    Validate (..),
     Validator,
     askInputFieldType,
     askInputMember,
@@ -104,6 +105,7 @@ import Prelude
     const,
     not,
     otherwise,
+    undefined,
   )
 
 castFailure ::
@@ -149,10 +151,19 @@ type InputConstraints ctx s =
     Unknown (FieldsDefinition IN s) (InputContext ctx)
   )
 
-class Validate args f s ctx where
-  validate :: args -> f s -> InputValidator ctx (f VALID)
+instance
+  (InputConstraints ctx VALID) =>
+  Validate (ValueContext VALID) ObjectEntry CONST (InputContext ctx)
+  where
+  validate (ValueContext x y) obj@(ObjectEntry name _) =
+    ObjectEntry name <$> validateInput x y obj
 
-instance Validate (ValueContext VALID) ObjectEntry CONST ctx
+instance
+  (InputConstraints ctx CONST) =>
+  Validate (ValueContext CONST) ObjectEntry CONST (InputContext ctx)
+  where
+  validate (ValueContext x y) obj@(ObjectEntry name _) =
+    ObjectEntry name <$> validateInput x y obj
 
 --instance Validate ([TypeWrapper], TypeDefinition IN CONST) ObjectEntry CONST ctx
 
@@ -161,20 +172,13 @@ data ValueContext s = ValueContext
     valueTypeDef :: TypeDefinition IN s
   }
 
-instance
-  (InputConstraints ctx CONST) =>
-  Validate (ValueContext CONST) ObjectEntry CONST ctx
-  where
-  validate (ValueContext x y) obj@(ObjectEntry name _) =
-    ObjectEntry name <$> validateInput x y obj
-
 -- Validate input Values
 validateInput ::
-  forall ctx.
-  ( InputConstraints ctx CONST
+  forall ctx s.
+  ( InputConstraints ctx s
   ) =>
   [TypeWrapper] ->
-  TypeDefinition IN CONST ->
+  TypeDefinition IN s ->
   ObjectEntry CONST ->
   InputValidator ctx ValidValue
 validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
@@ -186,7 +190,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     -- VALIDATION
     validateWrapped ::
       [TypeWrapper] ->
-      TypeContent TRUE IN CONST ->
+      TypeContent TRUE IN s ->
       ObjectEntry CONST ->
       InputValidator ctx ValidValue
     -- Validate Null. value = null ?
@@ -213,13 +217,13 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     validateUnwrapped ::
       -- error
       (Maybe Message -> ResolvedValue -> InputValidator ctx ValidValue) ->
-      TypeContent TRUE IN CONST ->
+      TypeContent TRUE IN s ->
       Value CONST ->
       InputValidator ctx ValidValue
     validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
       Object <$> validateInputObject parentFields fields
-    validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
-      validatInputUnion typeName inputUnion rawFields
+    --   validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
+    --     validatInputUnion typeName inputUnion rawFields
     validateUnwrapped err (DataEnum tags) value =
       validateEnum (err Nothing) tags value
     validateUnwrapped err (DataScalar dataScalar) value =
@@ -230,7 +234,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 validatInputUnion ::
   ( GetWith ctx Scope,
     GetWith ctx (Schema s),
-    Validate (ValueContext s) ObjectEntry s ctx
+    Validate (ValueContext s) ObjectEntry s (InputContext ctx)
   ) =>
   TypeName ->
   DataInputUnion ->
@@ -244,7 +248,7 @@ validatInputUnion typeName inputUnion rawFields =
 
 validatInputUnionMember ::
   forall ctx s.
-  ( Validate (ValueContext s) ObjectEntry s ctx,
+  ( Validate (ValueContext s) ObjectEntry s (InputContext ctx),
     GetWith ctx (Schema s),
     GetWith ctx Scope
   ) =>
@@ -267,9 +271,9 @@ mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (En
 
 -- INUT Object
 validateInputObject ::
-  ( InputConstraints ctx CONST
+  ( InputConstraints ctx s
   ) =>
-  FieldsDefinition IN CONST ->
+  FieldsDefinition IN s ->
   Object CONST ->
   InputValidator ctx (Object VALID)
 validateInputObject fieldsDef object =
@@ -278,42 +282,45 @@ validateInputObject fieldsDef object =
     case kind of
       TYPE ->
         traverse_ (`requiredFieldIsDefined` object) fieldsDef
-          *> traverse (`validateField` fieldsDef) object
+          *> traverse (validateField fieldsDef) object
       _ ->
         traverse_ (`selectKnown` fieldsDef) object
-          *> validateObjectWithDefaultValue object fieldsDef
+          *> validateObjectWithDefaultValue fieldsDef object
 
 validateField ::
-  ( InputConstraints ctx CONST
+  ( InputConstraints ctx s
   ) =>
+  FieldsDefinition IN s ->
   ObjectEntry CONST ->
-  FieldsDefinition IN CONST ->
   InputValidator ctx (ObjectEntry VALID)
-validateField entry parentFields = do
+validateField parentFields entry = do
   field <- selectKnown entry parentFields
   validateInputField field entry
 
 validateObjectWithDefaultValue ::
-  (InputConstraints c CONST) =>
+  (InputConstraints c s) =>
+  FieldsDefinition IN s ->
   Object CONST ->
-  FieldsDefinition IN CONST ->
   Validator (InputContext c) (Object VALID)
-validateObjectWithDefaultValue object fieldsDef =
+validateObjectWithDefaultValue fieldsDef object =
   traverse (validateFieldWithDefaultValue object) (elems fieldsDef)
     >>= fromElems
 
 validateFieldWithDefaultValue ::
-  (InputConstraints c CONST) =>
+  (InputConstraints c s) =>
   Object CONST ->
-  FieldDefinition IN CONST ->
+  FieldDefinition IN s ->
   Validator (InputContext c) (ObjectEntry VALID)
 validateFieldWithDefaultValue object fieldDef@FieldDefinition {fieldName} = do
-  entry <- selectWithDefaultValue (ObjectEntry fieldName) fieldDef object
+  entry <- selectWithDefaultValue (mockStage . ObjectEntry fieldName) fieldDef object
   validateInputField fieldDef entry
 
+mockStage :: f s -> f CONST
+mockStage = undefined
+
 validateInputField ::
-  (InputConstraints c CONST) =>
-  FieldDefinition IN CONST ->
+  (InputConstraints c s) =>
+  FieldDefinition IN s ->
   ObjectEntry CONST ->
   Validator (InputContext c) (ObjectEntry VALID)
 validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
@@ -329,11 +336,11 @@ requiredFieldIsDefined ::
   ( MissingRequired (Object CONST) (InputContext ctx),
     GetWith ctx Scope
   ) =>
-  FieldDefinition IN CONST ->
+  FieldDefinition IN s ->
   Object CONST ->
   InputValidator ctx (ObjectEntry CONST)
 requiredFieldIsDefined fieldDef@FieldDefinition {fieldName} =
-  selectWithDefaultValue (ObjectEntry fieldName) fieldDef
+  selectWithDefaultValue (mockStage . ObjectEntry fieldName) fieldDef
 
 -- Leaf Validations
 validateScalar ::

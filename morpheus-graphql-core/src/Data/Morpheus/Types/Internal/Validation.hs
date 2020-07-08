@@ -53,6 +53,7 @@ module Data.Morpheus.Types.Internal.Validation
     askFragments,
     MonadContext,
     CurrentSelection (..),
+    Validate (..),
   )
 where
 
@@ -425,3 +426,6 @@ isPosibeInputUnion tags (Enum name)
   | name `elem` fmap memberName tags = pure name
   | otherwise = failure $ msg name <> " is not posible union type"
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
+
+class Validate args f s ctx where
+  validate :: args -> f s -> Validator ctx (f VALID)
