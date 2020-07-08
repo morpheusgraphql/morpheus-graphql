@@ -40,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     RAW,
     Ref (..),
     Schema,
+    TypeName,
     TypeNameRef (..),
     TypeRef (..),
     Variable (..),
@@ -48,7 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
-  ( TypeSystemContext,
+  ( TypeSystemContext (..),
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( CurrentSelection (..),
@@ -128,6 +129,23 @@ instance MissingRequired (Arguments s) (OperationContext v) where
       where
         inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldname)
         inScope _ = "Field " <> msg fieldname
+
+-- TODO: Intstance for Schema directives. detailed information
+instance MissingRequired (Arguments s) (TypeSystemContext ctx) where
+  missingRequired
+    TypeSystemContext
+      { local
+      }
+    Ref {refName}
+    _ =
+      GQLError
+        { message =
+            "TODO: schema"
+              <> " argument "
+              <> msg refName
+              <> " is required but not provided.",
+          locations = []
+        }
 
 instance MissingRequired (Object s) (InputContext (OperationContext v)) where
   missingRequired
@@ -222,13 +240,13 @@ instance Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext (Type
           }
       ]
 
-instance Unknown (DirectiveDefinition s) (Argument CONST) ctx where
+instance Unknown (DirectiveDefinition s) (Argument s') ctx where
   unknown _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
     errorMessage
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".")
 
-instance Unknown (DirectiveDefinitions s) (Directive s) ctx where
+instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
   unknown _ _ Directive {directiveName, directivePosition} =
     errorMessage
       directivePosition
