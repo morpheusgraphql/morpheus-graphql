@@ -54,6 +54,7 @@ module Data.Morpheus.Types.Internal.Validation
     MonadContext,
     CurrentSelection (..),
     Validate (..),
+    askInputFieldTypeByName,
   )
 where
 
@@ -85,6 +86,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
+    GQLError (..),
     GQLErrors,
     IN,
     Message,
@@ -305,6 +307,43 @@ askTypeMember UnionMember {memberName} =
               <> "\" referenced by union \""
               <> msg scopeType
               <> "\" must be an OBJECT."
+
+askInputFieldTypeByName ::
+  ( Failure GQLErrors (m c),
+    Failure Message (m c),
+    Monad (m c),
+    GetWith c (Schema s),
+    MonadContext m c
+  ) =>
+  TypeName ->
+  m c (TypeDefinition IN s)
+askInputFieldTypeByName name =
+  askSchema
+    >>= selectBy
+      [ GQLError
+          ( "Type \""
+              <> msg name
+              <> "\" referenced by field \""
+          )
+          []
+      ]
+      name
+    >>= constraintINPUT
+  where
+    constraintINPUT ::
+      forall m s.
+      ( Failure Message m,
+        Monad m
+      ) =>
+      TypeDefinition ANY s ->
+      m (TypeDefinition IN s)
+    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN s)) of
+      Just inputType -> pure inputType
+      Nothing ->
+        failure $
+          "Type \""
+            <> msg (typeName x)
+            <> "\" referenced by field \""
 
 askInputFieldType ::
   ( Failure GQLErrors (m c),
