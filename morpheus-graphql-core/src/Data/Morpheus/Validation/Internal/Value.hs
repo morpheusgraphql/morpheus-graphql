@@ -148,19 +148,19 @@ type InputConstraints ctx s =
     SetWith ctx Scope,
     MissingRequired (Object CONST) (InputContext ctx),
     Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext ctx),
-    Validate (ValueContext s) ObjectEntry CONST (InputContext ctx)
+    Validate (ValueContext s) (ObjectEntry CONST) (InputContext ctx)
   )
 
 instance
   (InputConstraints ctx VALID) =>
-  Validate (ValueContext VALID) ObjectEntry CONST (InputContext ctx)
+  Validate (ValueContext VALID) (ObjectEntry CONST) (InputContext ctx)
   where
   validate (ValueContext x y) obj@(ObjectEntry name _) =
     ObjectEntry name <$> validateInput x y obj
 
 instance
   (InputConstraints ctx CONST) =>
-  Validate (ValueContext CONST) ObjectEntry CONST (InputContext ctx)
+  Validate (ValueContext CONST) (ObjectEntry CONST) (InputContext ctx)
   where
   validate (ValueContext x y) obj@(ObjectEntry name _) =
     ObjectEntry name <$> validateInput x y obj
@@ -234,7 +234,7 @@ validatInputUnion ::
   forall schemaS s ctx.
   ( GetWith ctx Scope,
     GetWith ctx (Schema schemaS),
-    Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
+    Validate (ValueContext schemaS) (ObjectEntry s) (InputContext ctx)
   ) =>
   TypeName ->
   DataInputUnion schemaS ->
@@ -251,7 +251,7 @@ validatInputUnion typeName inputUnion rawFields =
 
 validatInputUnionMember ::
   forall ctx schemaS s.
-  ( Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx),
+  ( Validate (ValueContext schemaS) (ObjectEntry s) (InputContext ctx),
     GetWith ctx (Schema schemaS),
     GetWith ctx Scope
   ) =>

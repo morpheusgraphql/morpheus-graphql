@@ -374,7 +374,7 @@ failImplements err = do
 
 type ValueConstraints s =
   ( GetWith (TypeSystemContext (TypeName, FieldName)) (Schema s),
-    Validate (ValueContext s) ObjectEntry s (InputContext (TypeSystemContext (TypeName, FieldName))),
+    Validate (ValueContext s) (ObjectEntry s) (InputContext (TypeSystemContext (TypeName, FieldName))),
     ValidateDirective s (TypeSystemContext (TypeName, FieldName))
   )
 

@@ -464,5 +464,5 @@ isPosibeInputUnion tags (Enum name)
   | otherwise = failure $ msg name <> " is not posible union type"
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
 
-class Validate args f s ctx where
-  validate :: args -> f s -> Validator ctx (f VALID)
+class Validate args t ctx where
+  validate :: (f s ~ t) => args -> t -> Validator ctx (f VALID)

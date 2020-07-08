@@ -104,21 +104,6 @@ resolveObject = resolve
         >>= fmap (ResolvedVariable ref)
           . selectRequired ref
 
-resolveArgumentVariables ::
-  VariableConstraints ctx =>
-  Arguments RAW ->
-  Validator ctx (Arguments CONST)
-resolveArgumentVariables =
-  traverse resolveVariable
-  where
-    resolveVariable ::
-      VariableConstraints ctx =>
-      Argument RAW ->
-      Validator ctx (Argument CONST)
-    resolveVariable (Argument key val position) = do
-      constValue <- resolveObject val
-      pure $ Argument key constValue position
-
 type ValueConstraints ctx s =
   ( GetWith ctx (Schema s),
     GetWith ctx Scope,
@@ -131,8 +116,7 @@ type ArgumentConstraints ctx s =
     ValueConstraints ctx s,
     V.Validate
       (V.ValueContext s)
-      ObjectEntry
-      CONST
+      (ObjectEntry CONST)
       (InputContext ctx)
   )
 
@@ -165,8 +149,7 @@ validateArgumentValue ::
   ( ValueConstraints ctx s,
     V.Validate
       (V.ValueContext s)
-      ObjectEntry
-      CONST
+      (ObjectEntry CONST)
       (InputContext ctx)
   ) =>
   FieldDefinition IN s ->
@@ -239,6 +222,14 @@ data ArgCTX ctx s = ArgCTX
     argumentsDef :: ArgumentsDefinition s
   }
 
+resolveArgumentVariables ::
+  VariableConstraints ctx =>
+  Argument RAW ->
+  Validator ctx (Argument CONST)
+resolveArgumentVariables (Argument key val position) = do
+  constValue <- resolveObject val
+  pure $ Argument key constValue position
+
 class Validate args (s :: Stage) ctx where
   validate ::
     args ->
@@ -250,9 +241,8 @@ instance
   Validate (ArgCTX ctx VALID) RAW ctx
   where
   validate ctx rawArgs =
-    do
-      args <- resolveArgumentVariables rawArgs
-      validate ctx args
+    traverse resolveArgumentVariables rawArgs
+      >>= validate ctx
 
 instance
   ( ArgumentConstraints ctx s
