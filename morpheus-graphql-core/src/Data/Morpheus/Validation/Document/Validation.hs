@@ -64,7 +64,6 @@ import Data.Morpheus.Types.Internal.Validation
     InputContext,
     InputSource (..),
     InputValidator,
-    askInputFieldType,
     askInputFieldTypeByName,
     runValidator,
     startInput,
@@ -176,7 +175,8 @@ validateTypeContent DataScalar {..} = pure DataScalar {..}
 validateTypeContent DataEnum {} = pure DataEnum {}
 validateTypeContent DataInputUnion {} = pure DataInputUnion {}
 validateTypeContent DataUnion {} = pure DataUnion {}
-validateTypeContent DataInterface {} = pure DataInterface {}
+validateTypeContent (DataInterface fields) =
+  DataInterface <$> traverse validateField fields
 
 validateField ::
   FieldDefinition cat CONST ->
