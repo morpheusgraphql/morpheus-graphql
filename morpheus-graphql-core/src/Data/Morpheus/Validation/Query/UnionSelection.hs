@@ -56,7 +56,7 @@ type TypeDef = (TypeName, FieldsDefinition OUT VALID)
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
-  [UnionMember OUT] ->
+  [UnionMember OUT s] ->
   Selection RAW ->
   SelectionValidator [Fragment]
 exploreUnionFragments unionTags = splitFrag
@@ -116,7 +116,7 @@ validateCluster validator __typename = traverse _validateCluster >=> fmap UnionS
 validateUnionSelection ::
   (TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) ->
   SelectionSet RAW ->
-  DataUnion ->
+  DataUnion s ->
   SelectionValidator (SelectionContent VALID)
 validateUnionSelection validate selectionSet members = do
   let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
