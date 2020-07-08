@@ -81,7 +81,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    CONST,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
