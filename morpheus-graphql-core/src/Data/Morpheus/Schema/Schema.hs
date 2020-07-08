@@ -34,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeWrapper (..),
-    VALID,
     insertType,
     internalFingerprint,
     mkInputValue,
