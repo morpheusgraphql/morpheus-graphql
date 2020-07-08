@@ -152,7 +152,7 @@ type InputConstraints ctx schemaS s =
 
 instance
   ( InputConstraints ctx VALID CONST,
-    InputConstraints ctx VALID VALID
+    InputConstraints' ctx VALID
   ) =>
   Validate (ValueContext VALID) (ObjectEntry CONST) (InputContext ctx)
   where
@@ -161,7 +161,7 @@ instance
 
 instance
   ( InputConstraints ctx VALID CONST,
-    InputConstraints ctx CONST CONST
+    InputConstraints' ctx CONST
   ) =>
   Validate (ValueContext CONST) (ObjectEntry CONST) (InputContext ctx)
   where
@@ -179,7 +179,7 @@ data ValueContext s = ValueContext
 validateInput ::
   forall ctx s.
   ( InputConstraints ctx s CONST,
-    InputConstraints ctx s s
+    InputConstraints' ctx s
   ) =>
   [TypeWrapper] ->
   TypeDefinition IN s ->
@@ -306,7 +306,7 @@ validateField parentFields entry = do
 
 validateObjectWithDefaultValue ::
   ( InputConstraints c s CONST,
-    InputConstraints c s s
+    InputConstraints' c s
   ) =>
   FieldsDefinition IN s ->
   Object CONST ->
@@ -315,10 +315,17 @@ validateObjectWithDefaultValue fieldsDef object =
   traverse (validateFieldWithDefaultValue object) (elems fieldsDef)
     >>= fromElems
 
+type InputConstraints' ctx schemaS =
+  ( GetWith ctx (Schema schemaS),
+    MissingRequired (Object schemaS) (InputContext ctx),
+    Unknown (FieldsDefinition IN schemaS) (ObjectEntry schemaS) (InputContext ctx),
+    Validate (ValueContext schemaS) (ObjectEntry schemaS) (InputContext ctx)
+  )
+
 validateFieldWithDefaultValue ::
   forall s c s'.
   ( InputConstraints c s s',
-    InputConstraints c s s
+    InputConstraints' c s
   ) =>
   Object s' ->
   FieldDefinition IN s ->
