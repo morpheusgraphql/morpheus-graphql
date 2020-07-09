@@ -179,7 +179,7 @@ instance Unknown (FieldDefinition OUT s) (Argument CONST) ctx where
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext ctx) where
+instance Unknown (FieldsDefinition IN s) (ObjectEntry valueS) (InputContext ctx) where
   unknown
     Scope {position}
     ctx

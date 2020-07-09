@@ -49,7 +49,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Validation
   ( GetWith,
-    InputContext,
     InputSource (..),
     MissingRequired,
     Scope (..),
@@ -63,8 +62,7 @@ import Data.Morpheus.Types.Internal.Validation
     withPosition,
   )
 import Data.Morpheus.Validation.Internal.Value
-  ( Validate,
-    ValueContext,
+  ( ValueConstraints,
     validateInputByField,
   )
 
@@ -75,7 +73,7 @@ type VariableConstraints ctx =
 
 type ArgumentConstraints ctx s =
   ( GetWith ctx (Schema s),
-    Validate (ValueContext s) Value CONST (InputContext ctx)
+    ValueConstraints ctx s CONST
   )
 
 type ArgumentsConstraints ctx s =
@@ -96,7 +94,6 @@ resolveObject = resolve
       Validator ctx (ObjectEntry CONST)
     resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
     ------------------------------------------------
-
     resolve ::
       VariableConstraints ctx =>
       RawValue ->
