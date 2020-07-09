@@ -13,6 +13,7 @@
 module Data.Morpheus.Validation.Internal.Value
   ( Validate (..),
     ValueContext (..),
+    validateInputByField,
   )
 where
 
@@ -21,6 +22,7 @@ import Control.Monad (Monad ((>>=)))
 import Data.Either (Either (..))
 import Data.Foldable (traverse_)
 import Data.Function ((&))
+import Data.Functor (Functor)
 import Data.Functor ((<$>), fmap)
 import Data.List (any, elem)
 import Data.Maybe (Maybe (..), maybe)
@@ -146,8 +148,49 @@ type InputConstraints ctx schemaS s =
     ValidateWithDefault ctx schemaS s
   )
 
+-- validateValueByFieldDef ::
+--   FieldsDefinition IN schemaStage ->
+--   Value CONST ->
+--   InputValidator ctx (Value VALID)
+-- validateValueByFieldDef field = do
+--   valueTypeDef <- askInputFieldType field
+--   validateInput x y
+
 -- validateValueByRef :: TypeRef -> Value s -> InputValidator ctx (Value VALID)
--- validateValueByRef = validateInput x y
+-- validateValueByRef TypeRef {} = validateInput x y
+
+-- datatype  <- askInputFieldTypeByName typeConName
+-- validate (ValueContext typeWrappers datatype) defaultInputValue
+
+validateInputByField ::
+  ValueConstraints c schemaS s =>
+  FieldDefinition IN schemaS ->
+  Value s ->
+  Validator (InputContext c) (Value VALID)
+validateInputByField
+  fieldDef@FieldDefinition
+    { fieldType = TypeRef {typeWrappers}
+    }
+  value = do
+    inputTypeDef <- askInputFieldType fieldDef
+    validate
+      ( ValueContext
+          typeWrappers
+          inputTypeDef
+      )
+      value
+
+validateValueByField ::
+  ValueConstraints c schemaS s =>
+  FieldDefinition IN schemaS ->
+  Value s ->
+  Validator (InputContext c) (Value VALID)
+validateValueByField
+  fieldDef@FieldDefinition
+    { fieldName,
+      fieldType = TypeRef {typeConName}
+    } =
+    withInputScope (Prop fieldName typeConName) . validateInputByField fieldDef
 
 instance
   InputConstraints ctx VALID CONST =>
@@ -279,7 +322,7 @@ validateField ::
   InputValidator ctx (ObjectEntry VALID)
 validateField parentFields entry = do
   field <- selectKnown entry parentFields
-  validateInputField field entry
+  withEntry (validateValueByField field) entry
 
 validateObjectWithDefaultValue ::
   ValidateWithDefault c s CONST =>
@@ -301,44 +344,32 @@ instance
   ValidateWithDefault c VALID s
   where
   validateWithDefault object fieldDef@FieldDefinition {fieldName} =
-    selectWithDefaultValue
-      (pure . ObjectEntry fieldName)
-      (validateInputField fieldDef)
-      fieldDef
-      object
+    ObjectEntry fieldName
+      <$> selectWithDefaultValue
+        pure
+        (validateValueByField fieldDef . entryValue)
+        fieldDef
+        object
 
 instance
   ValueConstraints c CONST s =>
   ValidateWithDefault c CONST s
   where
   validateWithDefault object fieldDef@FieldDefinition {fieldName} =
-    selectWithDefaultValue
-      (validateInputField fieldDef . ObjectEntry fieldName)
-      (validateInputField fieldDef)
-      fieldDef
-      object
+    ObjectEntry fieldName
+      <$> selectWithDefaultValue
+        (validateValueByField fieldDef)
+        (validateValueByField fieldDef . entryValue)
+        fieldDef
+        object
 
-validateInputField ::
-  ValueConstraints c schemaS s =>
-  FieldDefinition IN schemaS ->
-  ObjectEntry s ->
-  Validator (InputContext c) (ObjectEntry VALID)
-validateInputField
-  fieldDef@FieldDefinition
-    { fieldName,
-      fieldType = TypeRef {typeConName, typeWrappers}
-    }
-  ObjectEntry {entryName, entryValue} =
-    do
-      inputTypeDef <- askInputFieldType fieldDef
-      withInputScope (Prop fieldName typeConName) $
-        ObjectEntry entryName
-          <$> validate
-            ( ValueContext
-                typeWrappers
-                inputTypeDef
-            )
-            entryValue
+withEntry ::
+  Functor f =>
+  (Value a -> f (Value b)) ->
+  ObjectEntry a ->
+  f (ObjectEntry b)
+withEntry f ObjectEntry {entryName, entryValue} =
+  ObjectEntry entryName <$> f entryValue
 
 requiredFieldIsDefined ::
   FieldDefinition IN s ->
