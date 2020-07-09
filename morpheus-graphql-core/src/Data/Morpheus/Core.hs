@@ -92,7 +92,7 @@ runApi inputSchema resModel request = do
     validRequest ::
       Monad m => ResponseStream event m Context
     validRequest = cleanEvents $ ResultT $ pure $ do
-      validSchema <- validateSchema inputSchema
+      validSchema <- validateSchema True inputSchema
       schema <- withSystemTypes validSchema
       operation <- parseRequestWith schema request
       pure $

@@ -67,7 +67,13 @@ import Data.Morpheus.Validation.Document.Validation
 import Data.Semigroup ((<>))
 import Data.String (String)
 import Data.Traversable (traverse)
-import Prelude (($), (.), Show (..), uncurry)
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Show (..),
+    uncurry,
+  )
 
 decodeIntrospection :: ByteString -> Eventless (AST.Schema VALID)
 decodeIntrospection jsonDoc = case jsonSchema of
@@ -77,7 +83,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
   Right res -> internalError (msg $ show res)
   where
     validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
-    validate = validateSchema
+    validate = validateSchema False
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
 

@@ -43,7 +43,7 @@ parseTypeSystemDefinition ::
 parseTypeSystemDefinition =
   P.parseSchema
     >=> buildSchema
-    >=> validateSchema
+    >=> validateSchema True
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition ANY CONST]

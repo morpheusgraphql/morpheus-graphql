@@ -101,22 +101,27 @@ import Prelude
     (&&),
     (.),
     (==),
+    Bool,
     not,
     otherwise,
   )
 
 class ValidateSchema s where
-  validateSchema :: Schema s -> Eventless (Schema VALID)
+  validateSchema :: Bool -> Schema s -> Eventless (Schema VALID)
 
 instance ValidateSchema CONST where
   validateSchema
+    withSystem
     schema@Schema
       { types,
         query,
         mutation,
         subscription
       } = do
-      sysSchema <- withSystemTypes schema
+      sysSchema <-
+        if withSystem
+          then withSystemTypes schema
+          else pure schema
       runValidator
         __validateSchema
         Scope
@@ -142,7 +147,7 @@ validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
 validateOptional f = maybe (pure Nothing) (fmap Just . f)
 
 instance ValidateSchema VALID where
-  validateSchema = pure
+  validateSchema _ = pure
 
 validatePartialDocument :: [TypeDefinition ANY CONST] -> Eventless [TypeDefinition ANY CONST]
 validatePartialDocument = pure
