@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -48,6 +49,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     askVariables,
     askFragments,
     DirectiveValidator,
+    ValidatorContext (..),
   )
 where
 
@@ -55,11 +57,10 @@ where
 
 import Control.Applicative (Applicative, pure)
 import Control.Monad (Monad)
-import Control.Monad.Reader (MonadReader)
+import Control.Monad.Reader (MonadReader (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
-    ask,
     withReaderT,
   )
 import Data.Functor ((<$>), Functor (..))
@@ -144,7 +145,6 @@ data ScopeKind
 
 data OperationContext vars = OperationContext
   { schema :: Schema VALID,
-    scope :: Scope,
     fragments :: Fragments,
     selection :: CurrentSelection,
     variables :: vars
@@ -261,14 +261,17 @@ askFragments ::
   m c Fragments
 askFragments = get
 
-runValidator :: Validator ctx a -> ctx -> Eventless a
-runValidator (Validator x) = runReaderT x
+runValidator :: Validator ctx a -> Scope -> ctx -> Eventless a
+runValidator (Validator x) scope unValidatorContext =
+  runReaderT
+    x
+    ValidatorContext {scope, unValidatorContext}
 
 withContext ::
   (c' -> c) ->
   Validator c a ->
   Validator c' a
-withContext f = Validator . withReaderT f . _runValidator
+withContext f = Validator . withReaderT (fmap f) . _runValidator
 
 withDirective ::
   ( SetWith c Scope,
@@ -326,7 +329,9 @@ withScopeType name = set update
     update Scope {..} = Scope {typename = name, ..}
 
 inputMessagePrefix :: InputValidator ctx Message
-inputMessagePrefix = renderInputPrefix <$> Validator ask
+inputMessagePrefix =
+  renderInputPrefix
+    . unValidatorContext <$> Validator ask
 
 startInput ::
   InputSource ->
@@ -341,19 +346,28 @@ startInput inputSource = withContext update
           sourceContext
         }
 
+data ValidatorContext (ctx :: *) = ValidatorContext
+  { scope :: Scope,
+    unValidatorContext :: ctx
+  }
+  deriving (Show, Functor)
+
 newtype Validator ctx a = Validator
   { _runValidator ::
       ReaderT
-        ctx
+        (ValidatorContext ctx)
         Eventless
         a
   }
   deriving newtype
     ( Functor,
       Applicative,
-      Monad,
-      MonadReader ctx
+      Monad
     )
+
+instance MonadReader ctx (Validator ctx) where
+  ask = unValidatorContext <$> Validator ask
+  local = withContext
 
 type BaseValidator = Validator (OperationContext ())
 
@@ -384,14 +398,11 @@ class
   setContext :: (c -> c) -> m c b -> m c b
 
 instance MonadContext Validator c where
-  getContext f = f <$> Validator ask
+  getContext f = f . unValidatorContext <$> Validator ask
   setContext = withContext
 
 class GetWith (c :: *) (v :: *) where
   getWith :: c -> v
-
-instance GetWith (OperationContext v) Scope where
-  getWith = scope
 
 instance GetWith c Scope => GetWith (InputContext c) Scope where
   getWith = getWith . sourceContext
@@ -419,13 +430,6 @@ instance SetWith (OperationContext v) CurrentSelection where
   setWith f OperationContext {selection = selection, ..} =
     OperationContext
       { selection = f selection,
-        ..
-      }
-
-instance SetWith (OperationContext v) Scope where
-  setWith f OperationContext {..} =
-    OperationContext
-      { scope = f scope,
         ..
       }
 
