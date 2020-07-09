@@ -337,8 +337,7 @@ instance ValidateWith c VALID VALID where
   validateInputField _ = pure
 
 instance
-  ( GetWith c (Schema VALID),
-    SetWith c Scope
+  ( GetWith c (Schema VALID)
   ) =>
   ValidateWith c VALID CONST
   where
@@ -354,8 +353,7 @@ instance
 
 --(InputConstraints c schemaS s) =>
 instance
-  ( GetWith c (Schema CONST),
-    SetWith c Scope
+  ( GetWith c (Schema CONST)
   ) =>
   ValidateWith c CONST CONST
   where

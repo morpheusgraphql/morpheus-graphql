@@ -238,13 +238,11 @@ asksScope ::
 asksScope f = f <$> getGlobalContext scope
 
 setSelectionName ::
-  ( MonadContext m c,
-    SetWith c Scope
-  ) =>
+  (MonadContext m c) =>
   FieldName ->
   m c a ->
   m c a
-setSelectionName fieldname = set update
+setSelectionName fieldname = setScope update
   where
     update ctx = ctx {fieldname}
 
@@ -282,8 +280,7 @@ withContext ::
 withContext f = Validator . withReaderT (fmap f) . _runValidator
 
 withDirective ::
-  ( SetWith c Scope,
-    MonadContext m c
+  ( MonadContext m c
   ) =>
   Directive s ->
   m c a ->
@@ -292,7 +289,7 @@ withDirective
   Directive
     { directiveName,
       directivePosition
-    } = setSelectionName directiveName . set update
+    } = setSelectionName directiveName . setScope update
     where
       update Scope {..} =
         Scope
@@ -302,37 +299,34 @@ withDirective
           }
 
 withScope ::
-  ( MonadContext m c,
-    SetWith c Scope
+  ( MonadContext m c
   ) =>
   TypeName ->
   Ref ->
   m c a ->
   m c a
 withScope typeName (Ref selName pos) =
-  setSelectionName selName . set update
+  setSelectionName selName . setScope update
   where
     update Scope {..} = Scope {typename = typeName, position = Just pos, ..}
 
 withPosition ::
-  ( MonadContext m c,
-    SetWith c Scope
+  ( MonadContext m c
   ) =>
   Position ->
   m c a ->
   m c a
-withPosition pos = set update
+withPosition pos = setScope update
   where
     update Scope {..} = Scope {position = Just pos, ..}
 
 withScopeType ::
-  ( MonadContext m c,
-    SetWith c Scope
+  ( MonadContext m c
   ) =>
   TypeName ->
   m c a ->
   m c a
-withScopeType name = set update
+withScopeType name = setScope update
   where
     update Scope {..} = Scope {typename = name, ..}
 
@@ -384,6 +378,16 @@ type SelectionValidator = Validator (OperationContext (VariableDefinitions VALID
 type InputValidator ctx = Validator (InputContext ctx)
 
 type DirectiveValidator ctx = Validator ctx
+
+setScope ::
+  (MonadContext m c) =>
+  (Scope -> Scope) ->
+  m c b ->
+  m c b
+setScope f = setGlobalContext (mapScope f)
+
+mapScope :: (Scope -> Scope) -> ValidatorContext s -> ValidatorContext s
+mapScope f ValidatorContext {scope, ..} = ValidatorContext {scope = f scope, ..}
 
 -- Helpers
 get :: (MonadContext m ctx, GetWith ctx a) => m ctx a
