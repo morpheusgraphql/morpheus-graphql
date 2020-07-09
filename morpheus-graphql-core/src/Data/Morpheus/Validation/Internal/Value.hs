@@ -77,7 +77,6 @@ import Data.Morpheus.Types.Internal.Validation
     Prop (..),
     Scope (..),
     ScopeKind (..),
-    SetWith,
     Validate (..),
     Validator,
     askInputFieldType,
@@ -139,7 +138,6 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
 
 type InputConstraints ctx schemaS s =
   ( GetWith ctx (Schema schemaS),
-    GetWith (InputContext ctx) InputSource,
     Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
   )
 
@@ -268,8 +266,7 @@ mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (En
 
 -- INUT Object
 validateInputObject ::
-  ( InputConstraints ctx s CONST,
-    ValidateWith ctx s CONST,
+  ( ValidateWith ctx s CONST,
     ValidateWith ctx s s
   ) =>
   FieldsDefinition IN s ->
@@ -287,8 +284,7 @@ validateInputObject fieldsDef object =
           *> validateObjectWithDefaultValue fieldsDef object
 
 validateField ::
-  ( InputConstraints ctx s CONST,
-    ValidateWith ctx s CONST
+  ( ValidateWith ctx s CONST
   ) =>
   FieldsDefinition IN s ->
   ObjectEntry CONST ->
@@ -298,8 +294,7 @@ validateField parentFields entry = do
   validateInputField field entry
 
 validateObjectWithDefaultValue ::
-  ( InputConstraints c s CONST,
-    ValidateWith c s s,
+  ( ValidateWith c s s,
     ValidateWith c s CONST
   ) =>
   FieldsDefinition IN s ->
@@ -311,8 +306,7 @@ validateObjectWithDefaultValue fieldsDef object =
 
 validateFieldWithDefaultValue ::
   forall s c s'.
-  ( InputConstraints c s s',
-    ValidateWith c s s,
+  ( ValidateWith c s s,
     ValidateWith c s s'
   ) =>
   Object s' ->
@@ -336,8 +330,7 @@ instance ValidateWith c VALID VALID where
   validateInputField _ = pure
 
 instance
-  ( GetWith c (Schema VALID)
-  ) =>
+  GetWith c (Schema VALID) =>
   ValidateWith c VALID CONST
   where
   validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
@@ -350,10 +343,8 @@ instance
         )
         entry
 
---(InputConstraints c schemaS s) =>
 instance
-  ( GetWith c (Schema CONST)
-  ) =>
+  GetWith c (Schema CONST) =>
   ValidateWith c CONST CONST
   where
   validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
