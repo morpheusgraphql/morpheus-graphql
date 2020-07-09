@@ -33,6 +33,7 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     failure,
+    ordTraverse,
   )
 import Data.Morpheus.Schema.Schema (systemTypes)
 import Data.Morpheus.Types.Internal.AST
@@ -191,16 +192,16 @@ validateTypeContent
     } =
     do
       validateImplements objectImplements objectFields
-      DataObject objectImplements <$> traverse validateField objectFields
+      DataObject objectImplements <$> ordTraverse validateField objectFields
 validateTypeContent DataInputObject {inputObjectFields} =
-  DataInputObject <$> traverse validateField inputObjectFields
+  DataInputObject <$> ordTraverse validateField inputObjectFields
 validateTypeContent DataScalar {..} = pure DataScalar {..}
 validateTypeContent DataEnum {enumMembers} = DataEnum <$> traverse validateEnumMember enumMembers
 validateTypeContent DataInputUnion {inputUnionMembers} =
   DataInputUnion <$> traverse validateUnionMember inputUnionMembers
 validateTypeContent DataUnion {unionMembers} = DataUnion <$> traverse validateUnionMember unionMembers
 validateTypeContent (DataInterface fields) =
-  DataInterface <$> traverse validateField fields
+  DataInterface <$> ordTraverse validateField fields
 
 validateEnumMember ::
   DataEnumValue CONST -> SchemaValidator TypeName (DataEnumValue VALID)
@@ -236,7 +237,7 @@ checkFieldContent ::
   SchemaValidator (TypeName, FieldName) (FieldContent TRUE cat VALID)
 checkFieldContent _ (FieldArgs (ArgumentsDefinition meta args)) =
   FieldArgs . ArgumentsDefinition meta
-    <$> traverse
+    <$> ordTraverse
       validateArgument
       args
 checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
