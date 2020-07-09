@@ -132,19 +132,33 @@ validateArgument
     { fieldName,
       fieldType = TypeRef {typeWrappers}
     } =
-    do
-      argumentPosition <- asks position
-      let (f :: Value s -> Argument CONST) = \value -> Argument {argumentName = fieldName, argumentValue = mock value, argumentPosition}
-      argument <-
-        selectWithDefaultValue
-          (pure . f)
-          pure
-          argumentDef
-          requestArgs
-      validateArgumentValue argumentDef fieldName typeWrappers argument
+    selectWithDefaultValue
+      f
+      (__validate argumentDef)
+      argumentDef
+      requestArgs
+    where
+      f :: Value s -> Validator ctx (Argument VALID)
+      f value = do
+        argumentPosition <- asks position
+        let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
+        validateArgumentValue argumentDef fieldName typeWrappers arg
 
-mock :: Value s -> Value CONST
-mock = undefined
+__validate ::
+  ( ValueConstraints ctx s,
+    V.Validate
+      (V.ValueContext s)
+      (ObjectEntry CONST)
+      (InputContext ctx)
+  ) =>
+  FieldDefinition IN s ->
+  Argument CONST ->
+  Validator ctx (Argument VALID)
+__validate
+  argumentDef@FieldDefinition
+    { fieldName,
+      fieldType = TypeRef {typeWrappers}
+    } = validateArgumentValue argumentDef fieldName typeWrappers
 
 validateArgumentValue ::
   ( ValueConstraints ctx s,
