@@ -15,8 +15,7 @@ module Data.Morpheus.Validation.Internal.Arguments
   ( validateDirectiveArguments,
     validateFieldArguments,
     ArgumentsConstraints,
-    ResolveArgument (..),
-    ValidateWithDefault (..),
+    ResolveArgument,
   )
 where
 
@@ -62,7 +61,8 @@ import Data.Morpheus.Types.Internal.Validation
     withPosition,
   )
 import Data.Morpheus.Validation.Internal.Value
-  ( ValueConstraints,
+  ( ValidateWithDefault,
+    ValueConstraints,
     validateInputByField,
   )
 
@@ -71,14 +71,11 @@ type VariableConstraints ctx =
     MissingRequired (VariableDefinitions VALID) ctx
   )
 
-type ArgumentConstraints ctx s =
-  ( GetWith ctx (Schema s),
-    ValueConstraints ctx s CONST
-  )
-
-type ArgumentsConstraints ctx s =
-  ( VariableConstraints ctx,
-    ArgumentConstraints ctx s
+type ArgumentsConstraints c schemaS valueS =
+  ( ResolveArgument valueS c,
+    GetWith c (Schema schemaS),
+    ValidateWithDefault c schemaS schemaS,
+    ValidateWithDefault c schemaS CONST
   )
 
 -- only Resolves , doesnot checks the types
@@ -108,63 +105,41 @@ resolveObject = resolve
         >>= fmap (ResolvedVariable ref)
           . selectRequired ref
 
-class ValidateWithDefault schemaStage ctx where
-  validateArgument ::
-    Arguments CONST ->
-    ArgumentDefinition schemaStage ->
-    Validator ctx (Argument VALID)
-
-instance
-  GetWith ctx (Schema VALID) =>
-  ValidateWithDefault VALID ctx
-  where
-  validateArgument
-    requestArgs
-    argumentDef@FieldDefinition
-      { fieldName
-      } =
-      selectWithDefaultValue
-        f
-        (validateArgumentValue argumentDef)
-        argumentDef
-        requestArgs
-      where
-        f :: Value VALID -> Validator ctx (Argument VALID)
-        f value = do
-          argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
-          pure Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
-
-instance
-  ArgumentConstraints ctx CONST =>
-  ValidateWithDefault CONST ctx
-  where
-  validateArgument
-    requestArgs
-    argumentDef@FieldDefinition
-      { fieldName
-      } =
-      selectWithDefaultValue
-        f
-        (validateArgumentValue argumentDef)
-        argumentDef
-        requestArgs
-      where
-        f :: Value CONST -> Validator ctx (Argument VALID)
-        f value = do
-          argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
-          let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
-          validateArgumentValue argumentDef arg
+validateArgument ::
+  forall ctx schemaS valueS.
+  ( ValueConstraints ctx schemaS valueS,
+    ValidateWithDefault ctx schemaS schemaS
+  ) =>
+  Arguments valueS ->
+  FieldDefinition IN schemaS ->
+  Validator ctx (Argument VALID)
+validateArgument
+  requestArgs
+  argumentDef@FieldDefinition
+    { fieldName
+    } =
+    selectWithDefaultValue
+      f
+      (validateArgumentValue argumentDef)
+      argumentDef
+      requestArgs
+    where
+      f :: Value schemaS -> Validator ctx (Argument VALID)
+      f value = do
+        argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
+        let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
+        validateArgumentValue argumentDef arg
 
 validateArgumentValue ::
-  ArgumentConstraints ctx schemaStage =>
-  FieldDefinition IN schemaStage ->
-  Argument CONST ->
+  (ValueConstraints ctx schemaS valueS) =>
+  FieldDefinition IN schemaS ->
+  Argument valueS ->
   Validator ctx (Argument VALID)
 validateArgumentValue
   argumentDef
-  arg@Argument {argumentValue = value, ..} =
+  Argument {argumentValue = value, ..} =
     withPosition argumentPosition
-      $ startInput (SourceArgument arg)
+      $ startInput (SourceArgument argumentName)
       $ do
         argumentValue <- validateInputByField argumentDef value
         pure Argument {argumentValue, ..}
@@ -187,10 +162,7 @@ validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
 
 validateDirectiveArguments ::
   forall ctx schemaStage valueStage.
-  ( ResolveArgument valueStage ctx,
-    GetWith ctx (Schema schemaStage),
-    ValidateWithDefault schemaStage ctx
-  ) =>
+  ArgumentsConstraints ctx schemaStage valueStage =>
   DirectiveDefinition schemaStage ->
   Arguments valueStage ->
   Validator ctx (Arguments VALID)
@@ -204,10 +176,7 @@ validateDirectiveArguments
       f = (`selectKnown` directiveDef)
 
 validateArguments ::
-  ( ResolveArgument s ctx,
-    GetWith ctx (Schema schemaStage),
-    ValidateWithDefault schemaStage ctx
-  ) =>
+  ArgumentsConstraints ctx schemaStage s =>
   (Argument CONST -> Validator ctx (ArgumentDefinition schemaStage)) ->
   ArgumentsDefinition schemaStage ->
   Arguments s ->

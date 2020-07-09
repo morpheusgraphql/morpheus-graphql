@@ -18,6 +18,7 @@ module Data.Morpheus.Validation.Internal.Value
     validateInputByTypeRef,
     validateInputByType,
     ValueConstraints,
+    ValidateWithDefault,
   )
 where
 

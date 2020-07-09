@@ -124,7 +124,7 @@ renderInputPrefix InputContext {inputPath, inputSource} =
   renderSource inputSource <> renderPath inputPath
 
 renderSource :: InputSource -> Message
-renderSource (SourceArgument Argument {argumentName}) =
+renderSource (SourceArgument argumentName) =
   "Argument " <> msg argumentName <> " got invalid value. "
 renderSource (SourceVariable Variable {variableName} _) =
   "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
@@ -173,7 +173,7 @@ data InputContext ctx = InputContext
   deriving (Show)
 
 data InputSource
-  = SourceArgument (Argument CONST)
+  = SourceArgument FieldName
   | SourceVariable
       { sourceVariable :: Variable RAW,
         isDefaultValue :: Bool

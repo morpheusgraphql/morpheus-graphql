@@ -51,8 +51,8 @@ import Data.Morpheus.Types.Internal.Validation
     withDirective,
   )
 import Data.Morpheus.Validation.Internal.Arguments
-  ( ResolveArgument,
-    ValidateWithDefault,
+  ( ArgumentsConstraints,
+    ResolveArgument,
     validateDirectiveArguments,
   )
 import Data.Proxy (Proxy (..))
@@ -87,10 +87,7 @@ validateTypeSystemDirectives location = traverse (validate (Proxy @CONST) locati
 
 validate ::
   forall s c schemaS.
-  ( ResolveArgument s c,
-    GetWith c (Schema schemaS),
-    ValidateWithDefault schemaS c
-  ) =>
+  ArgumentsConstraints c schemaS s =>
   Proxy schemaS ->
   DirectiveLocation ->
   Directive s ->
