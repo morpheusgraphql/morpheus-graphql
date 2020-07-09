@@ -67,7 +67,6 @@ import Data.Morpheus.Types.Internal.Validation
     InputValidator,
     Scope (..),
     ScopeKind (..),
-    askInputFieldTypeByName,
     runValidator,
     startInput,
   )

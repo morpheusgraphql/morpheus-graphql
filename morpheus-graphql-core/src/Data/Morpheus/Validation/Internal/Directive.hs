@@ -52,7 +52,7 @@ import Data.Morpheus.Types.Internal.Validation
   )
 import Data.Morpheus.Validation.Internal.Arguments
   ( ArgumentsConstraints,
-    ResolveArgument,
+    Resolve,
     validateDirectiveArguments,
   )
 import Data.Proxy (Proxy (..))
@@ -67,7 +67,7 @@ import Prelude
   )
 
 type DirectiveConstraint ctx schemaS s =
-  ( ResolveArgument s ctx,
+  ( Resolve Argument s ctx,
     GetWith ctx (Schema schemaS)
   )
 

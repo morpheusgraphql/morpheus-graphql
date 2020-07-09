@@ -15,7 +15,7 @@ module Data.Morpheus.Validation.Internal.Arguments
   ( validateDirectiveArguments,
     validateFieldArguments,
     ArgumentsConstraints,
-    ResolveArgument,
+    Resolve,
   )
 where
 
@@ -70,38 +70,11 @@ type VariableConstraints ctx =
   )
 
 type ArgumentsConstraints c schemaS valueS =
-  ( ResolveArgument valueS c,
+  ( Resolve Argument valueS c,
     GetWith c (Schema schemaS),
     ValidateWithDefault c schemaS schemaS,
     ValidateWithDefault c schemaS CONST
   )
-
--- only Resolves , doesnot checks the types
-resolveObject ::
-  VariableConstraints ctx =>
-  Value RAW ->
-  Validator ctx (Value CONST)
-resolveObject = resolve
-  where
-    resolveEntry ::
-      VariableConstraints ctx =>
-      ObjectEntry RAW ->
-      Validator ctx (ObjectEntry CONST)
-    resolveEntry (ObjectEntry name v) = ObjectEntry name <$> resolve v
-    ------------------------------------------------
-    resolve ::
-      VariableConstraints ctx =>
-      Value RAW ->
-      Validator ctx (Value CONST)
-    resolve Null = pure Null
-    resolve (Scalar x) = pure $ Scalar x
-    resolve (Enum x) = pure $ Enum x
-    resolve (List x) = List <$> traverse resolve x
-    resolve (Object obj) = Object <$> traverse resolveEntry obj
-    resolve (VariableValue ref) =
-      askVariables
-        >>= fmap (ResolvedVariable ref)
-          . selectRequired ref
 
 validateArgument ::
   forall ctx schemaS valueS.
@@ -180,22 +153,29 @@ validateArguments ::
   Arguments s ->
   Validator ctx (Arguments VALID)
 validateArguments checkUnknown argsDef rawArgs = do
-  args <- traverse resolveArgument rawArgs
+  args <- traverse resolve rawArgs
   traverse_ checkUnknown args
   traverse (validateArgument args) (arguments argsDef)
 
-class ResolveArgument s ctx where
-  resolveArgument ::
-    Argument s ->
-    Validator ctx (Argument CONST)
+class Resolve f s ctx where
+  resolve :: f s -> Validator ctx (f CONST)
 
-instance
-  VariableConstraints ctx =>
-  ResolveArgument RAW ctx
-  where
-  resolveArgument (Argument key val position) = do
-    constValue <- resolveObject val
-    pure $ Argument key constValue position
+instance VariableConstraints ctx => Resolve Argument RAW ctx where
+  resolve (Argument key val position) = flip (Argument key) position <$> resolve val
 
-instance ResolveArgument CONST ctx where
-  resolveArgument = pure
+instance Resolve f CONST ctx where
+  resolve = pure
+
+instance VariableConstraints ctx => Resolve Value RAW ctx where
+  resolve Null = pure Null
+  resolve (Scalar x) = pure $ Scalar x
+  resolve (Enum x) = pure $ Enum x
+  resolve (List elems) = List <$> traverse resolve elems
+  resolve (Object fields) = Object <$> traverse resolve fields
+  resolve (VariableValue ref) =
+    askVariables
+      >>= fmap (ResolvedVariable ref)
+        . selectRequired ref
+
+instance VariableConstraints ctx => Resolve ObjectEntry RAW ctx where
+  resolve (ObjectEntry name value) = ObjectEntry name <$> resolve value
