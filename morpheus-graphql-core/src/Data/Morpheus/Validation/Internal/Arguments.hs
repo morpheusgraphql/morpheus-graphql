@@ -11,7 +11,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Morpheus.Validation.Query.Arguments
+module Data.Morpheus.Validation.Internal.Arguments
   ( validateDirectiveArguments,
     validateFieldArguments,
     ArgumentsConstraints,

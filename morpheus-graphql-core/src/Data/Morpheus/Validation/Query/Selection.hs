@@ -66,12 +66,12 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
     withScope,
   )
+import Data.Morpheus.Validation.Internal.Arguments
+  ( validateFieldArguments,
+  )
 import Data.Morpheus.Validation.Internal.Directive
   ( shouldIncludeSelection,
     validateDirectives,
-  )
-import Data.Morpheus.Validation.Query.Arguments
-  ( validateFieldArguments,
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,

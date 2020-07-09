@@ -50,7 +50,7 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
     withDirective,
   )
-import qualified Data.Morpheus.Validation.Query.Arguments as A
+import qualified Data.Morpheus.Validation.Internal.Arguments as A
   ( ArgCTX,
     Validate,
     validateDirectiveArguments,
