@@ -45,7 +45,6 @@ import Data.Morpheus.Types.Internal.AST
     ResolvedValue,
     Schema,
     Stage,
-    TypeDefinition,
     TypeRef (..),
     TypeWrapper,
     VALID,
@@ -162,7 +161,7 @@ instance
         f value = do
           argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
           let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
-          validateArgumentValue' argumentDef fieldName typeWrappers arg
+          validateArgumentValue argumentDef fieldName typeWrappers arg
 
 type ArgConst ctx s =
   ( GetWith ctx (Schema s),
@@ -178,22 +177,16 @@ __validate
   argumentDef@FieldDefinition
     { fieldName,
       fieldType = TypeRef {typeWrappers}
-    } = validateArgumentValue' argumentDef fieldName typeWrappers
+    } = validateArgumentValue argumentDef fieldName typeWrappers
 
-validateArgumentValue' ::
-  ( GetWith ctx (Schema schemaStage),
-    V.Validate
-      (ValueContext schemaStage)
-      ObjectEntry
-      CONST
-      (InputContext ctx)
-  ) =>
+validateArgumentValue ::
+  ArgConst ctx schemaStage =>
   FieldDefinition IN schemaStage ->
   FieldName ->
   [TypeWrapper] ->
   Argument CONST ->
   Validator ctx (Argument VALID)
-validateArgumentValue'
+validateArgumentValue
   argumentDef
   fieldName
   typeWrappers
@@ -201,7 +194,7 @@ validateArgumentValue'
     withPosition argumentPosition
       $ startInput (SourceArgument arg)
       $ do
-        (valueTypeDef :: TypeDefinition IN s) <- askInputFieldType argumentDef
+        valueTypeDef <- askInputFieldType argumentDef
         let valueContext = ValueContext {valueWrappers = typeWrappers, valueTypeDef}
         let entry = ObjectEntry fieldName value
         argumentValue <- entryValue <$> V.validate valueContext entry
