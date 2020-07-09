@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -8,13 +9,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Directive
   ( shouldIncludeSelection,
-    validateDirectives,
-    Validate,
+    validateQueryDirectives,
+    validateTypeSystemDirectives,
   )
 where
 
@@ -38,21 +40,25 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     RAW,
     ScalarValue (..),
+    Schema,
     VALID,
     Value (..),
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( Validate (..),
+  ( GetWith,
     Validator,
     selectKnown,
     withDirective,
   )
 import qualified Data.Morpheus.Validation.Internal.Arguments as A
   ( ArgCTX,
-    Validate,
+    ResolveArgument,
+    ValidateWithDefault,
+    validate,
     validateDirectiveArguments,
   )
+import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Prelude
@@ -63,39 +69,41 @@ import Prelude
     otherwise,
   )
 
-validateDirectives ::
-  Validate DirectiveLocation Directive s ctx =>
+type DirectiveConstraint ctx schemaS s =
+  ( A.ResolveArgument s ctx,
+    GetWith ctx (Schema schemaS)
+  )
+
+validateQueryDirectives ::
+  DirectiveConstraint ctx VALID s =>
   DirectiveLocation ->
   Directives s ->
   Validator ctx (Directives VALID)
-validateDirectives location = traverse (validate location)
+validateQueryDirectives location = traverse (validate (Proxy @VALID) location)
 
--- class ValidateDirective (s :: Stage) ctx where
---   validateDirective :: DirectiveLocation -> Directive s -> Validator ctx (Directive VALID)
+validateTypeSystemDirectives ::
+  DirectiveConstraint ctx CONST s =>
+  DirectiveLocation ->
+  Directives s ->
+  Validator ctx (Directives VALID)
+validateTypeSystemDirectives location = traverse (validate (Proxy @CONST) location)
 
-instance
-  ( A.Validate (A.ArgCTX ctx VALID) RAW ctx
+validate ::
+  forall s c schemaS.
+  ( A.ResolveArgument s c,
+    GetWith c (Schema schemaS),
+    A.ValidateWithDefault schemaS c
   ) =>
-  Validate DirectiveLocation Directive RAW ctx
-  where
-  validate location directive@Directive {directiveArgs, ..} =
-    withDirective directive $ do
-      (directiveDef :: DirectiveDefinition VALID) <- selectKnown directive defaultDirectives
-      args <- A.validateDirectiveArguments directiveDef directiveArgs
-      validateDirectiveLocation location directive directiveDef
-      pure Directive {directiveArgs = args, ..}
-
-instance
-  ( A.Validate (A.ArgCTX ctx CONST) CONST ctx
-  ) =>
-  Validate DirectiveLocation Directive CONST ctx
-  where
-  validate location directive@Directive {directiveArgs = args, ..} =
-    withDirective directive $ do
-      (directiveDef :: DirectiveDefinition CONST) <- selectKnown directive defaultDirectives
-      directiveArgs <- A.validateDirectiveArguments directiveDef args
-      validateDirectiveLocation location directive directiveDef
-      pure Directive {..}
+  Proxy schemaS ->
+  DirectiveLocation ->
+  Directive s ->
+  Validator c (Directive VALID)
+validate _ location directive@Directive {directiveArgs, ..} =
+  withDirective directive $ do
+    (directiveDef :: DirectiveDefinition schemaS) <- selectKnown directive defaultDirectives
+    args <- A.validateDirectiveArguments directiveDef directiveArgs
+    validateDirectiveLocation location directive directiveDef
+    pure Directive {directiveArgs = args, ..}
 
 validateDirectiveLocation ::
   DirectiveLocation ->

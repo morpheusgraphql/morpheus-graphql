@@ -71,7 +71,7 @@ import Data.Morpheus.Validation.Internal.Arguments
   )
 import Data.Morpheus.Validation.Internal.Directive
   ( shouldIncludeSelection,
-    validateDirectives,
+    validateQueryDirectives,
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
@@ -143,7 +143,7 @@ validateOperation
       selection <- validateSelectionSet typeDef operationSelection
       singleTopLevelSelection rawOperation selection
       directives <-
-        validateDirectives
+        validateQueryDirectives
           (toDirectiveLocation operationType)
           operationDirectives
       pure $
@@ -167,7 +167,7 @@ processSelectionDirectives ::
   (Directives VALID -> SelectionValidator (SelectionSet VALID)) ->
   SelectionValidator (SelectionSet VALID)
 processSelectionDirectives location rawDirectives sel = do
-  directives <- validateDirectives location rawDirectives
+  directives <- validateQueryDirectives location rawDirectives
   include <- shouldIncludeSelection directives
   selection <- sel directives
   pure $

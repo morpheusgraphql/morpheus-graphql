@@ -40,7 +40,6 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition (..),
     CONST,
     DataEnumValue (..),
-    Directive,
     DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -64,9 +63,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( GetWith,
-    InputContext,
-    InputSource (..),
+  ( InputSource (..),
     InputValidator,
     Scope (..),
     ScopeKind (..),
@@ -87,8 +84,7 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     selectType,
   )
 import Data.Morpheus.Validation.Internal.Directive
-  ( Validate,
-    validateDirectives,
+  ( validateTypeSystemDirectives,
   )
 import Data.Morpheus.Validation.Internal.Value
   ( Validate (..),
@@ -169,7 +165,7 @@ validateType
       ..
     } = inType typeName $ do
     typeContent <- validateTypeContent content
-    typeDirectives <- validateDirectives (typeDirectiveLocation content) directives
+    typeDirectives <- validateTypeSystemDirectives (typeDirectiveLocation content) directives
     pure $
       TypeDefinition
         { typeContent,
@@ -210,7 +206,7 @@ validateTypeContent (DataInterface fields) =
 validateEnumMember ::
   DataEnumValue CONST -> SchemaValidator TypeName (DataEnumValue VALID)
 validateEnumMember DataEnumValue {enumDirectives = directives, ..} = do
-  enumDirectives <- validateDirectives ENUM_VALUE directives
+  enumDirectives <- validateTypeSystemDirectives ENUM_VALUE directives
   pure DataEnumValue {..}
 
 validateUnionMember ::
@@ -227,7 +223,7 @@ validateField
       ..
     } = inField fieldName $ do
     fieldContent <- validateOptional (checkFieldContent field) content
-    fieldDirectives <- validateDirectives FIELD_DEFINITION directives
+    fieldDirectives <- validateTypeSystemDirectives FIELD_DEFINITION directives
     pure $
       FieldDefinition
         { fieldDirectives,
@@ -236,7 +232,6 @@ validateField
         }
 
 checkFieldContent ::
-  ValueConstraints CONST =>
   FieldDefinition cat CONST ->
   FieldContent TRUE cat CONST ->
   SchemaValidator (TypeName, FieldName) (FieldContent TRUE cat VALID)
@@ -253,8 +248,7 @@ checkFieldContent FieldDefinition {fieldName, fieldType} (DefaultInputValue valu
       (validateDefaultValue fieldName fieldType value)
 
 validateArgument ::
-  ValueConstraints s =>
-  ArgumentDefinition s ->
+  ArgumentDefinition CONST ->
   SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
 validateArgument
   FieldDefinition
@@ -263,15 +257,14 @@ validateArgument
       ..
     } =
     do
-      fieldDirectives <- validateDirectives ARGUMENT_DEFINITION directives
+      fieldDirectives <- validateTypeSystemDirectives ARGUMENT_DEFINITION directives
       fieldContent <- validateOptional (validateArgumentDefaultValue fieldName fieldType) content
       pure FieldDefinition {..}
 
 validateArgumentDefaultValue ::
-  ValueConstraints s =>
   FieldName ->
   TypeRef ->
-  FieldContent TRUE IN s ->
+  FieldContent TRUE IN CONST ->
   SchemaValidator (TypeName, FieldName) (FieldContent TRUE IN VALID)
 validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
   do
@@ -301,12 +294,8 @@ mustBeSubset objFields (typeName, fields) =
     traverse_ (checkInterfaceField objFields) (elems fields)
 
 checkInterfaceField ::
-  ( ValueConstraints s,
-    Validate DirectiveLocation Directive s (TypeSystemContext (Interface, FieldName)),
-    TypeEq (FieldDefinition OUT s) (Interface, FieldName)
-  ) =>
-  FieldsDefinition OUT s ->
-  FieldDefinition OUT s ->
+  FieldsDefinition OUT CONST ->
+  FieldDefinition OUT CONST ->
   SchemaValidator Interface ()
 checkInterfaceField
   objFields
@@ -316,7 +305,7 @@ checkInterfaceField
     } =
     inField fieldName $
       do
-        _ <- validateDirectives FIELD_DEFINITION fieldDirectives
+        _ <- validateTypeSystemDirectives FIELD_DEFINITION fieldDirectives
         selectOr err (isSuptype interfaceField) fieldName objFields
     where
       err = failImplements Missing
@@ -388,18 +377,10 @@ failImplements err = do
 
 -- DEFAULT VALUE
 
-type ValueConstraints s =
-  ( GetWith (TypeSystemContext (TypeName, FieldName)) (Schema s),
-    Validate (ValueContext s) ObjectEntry s (InputContext (TypeSystemContext (TypeName, FieldName))),
-    Validate DirectiveLocation Directive s (TypeSystemContext (TypeName, FieldName))
-  )
-
 validateDefaultValue ::
-  forall s.
-  ValueConstraints s =>
   FieldName ->
   TypeRef ->
-  Value s ->
+  Value CONST ->
   InputValidator
     (TypeSystemContext (TypeName, FieldName))
     (Value VALID)
@@ -408,7 +389,7 @@ validateDefaultValue
   TypeRef {typeWrappers, typeConName}
   defaultInputValue =
     do
-      (datatype :: TypeDefinition IN s) <- askInputFieldTypeByName typeConName
+      (datatype :: TypeDefinition IN CONST) <- askInputFieldTypeByName typeConName
       entryValue
         <$> validate
           (ValueContext typeWrappers datatype)

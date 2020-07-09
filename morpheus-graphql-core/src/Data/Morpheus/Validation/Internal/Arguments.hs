@@ -15,8 +15,10 @@ module Data.Morpheus.Validation.Internal.Arguments
   ( validateDirectiveArguments,
     validateFieldArguments,
     ArgumentsConstraints,
-    Validate,
     ArgCTX,
+    validate,
+    ResolveArgument (..),
+    ValidateWithDefault (..),
   )
 where
 
@@ -44,7 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     RawValue,
     ResolvedValue,
     Schema,
-    Stage,
     TypeRef (..),
     TypeWrapper,
     VALID,
@@ -202,7 +203,10 @@ validateArgumentValue
 
 validateFieldArguments ::
   forall ctx.
-  (Validate (ArgCTX ctx VALID) RAW ctx) =>
+  ( GetWith ctx (VariableDefinitions VALID),
+    MissingRequired (VariableDefinitions VALID) ctx,
+    GetWith ctx (Schema VALID)
+  ) =>
   FieldDefinition OUT VALID ->
   Arguments RAW ->
   Validator ctx (Arguments VALID)
@@ -214,10 +218,13 @@ validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
     argsDef = maybe empty fieldContentArgs fieldContent
 
 validateDirectiveArguments ::
-  forall ctx s s'.
-  Validate (ArgCTX ctx s) s' ctx =>
-  DirectiveDefinition s ->
-  Arguments s' ->
+  forall ctx schemaStage valueStage.
+  ( ResolveArgument valueStage ctx,
+    GetWith ctx (Schema schemaStage),
+    ValidateWithDefault schemaStage ctx
+  ) =>
+  DirectiveDefinition schemaStage ->
+  Arguments valueStage ->
   Validator ctx (Arguments VALID)
 validateDirectiveArguments
   directiveDef@DirectiveDefinition
@@ -225,7 +232,7 @@ validateDirectiveArguments
     } =
     validate (ArgCTX f directiveDefinitionArgs)
     where
-      f :: Argument CONST -> Validator ctx (ArgumentDefinition s)
+      f :: Argument CONST -> Validator ctx (ArgumentDefinition schemaStage)
       f = (`selectKnown` directiveDef)
 
 type ArgumentsConstraints ctx s =
@@ -238,34 +245,31 @@ data ArgCTX ctx s = ArgCTX
     argumentsDef :: ArgumentsDefinition s
   }
 
-resolveArgumentVariables ::
-  VariableConstraints ctx =>
-  Argument RAW ->
-  Validator ctx (Argument CONST)
-resolveArgumentVariables (Argument key val position) = do
-  constValue <- resolveObject val
-  pure $ Argument key constValue position
-
-class Validate args (s :: Stage) ctx where
-  validate ::
-    args ->
-    Arguments s ->
-    Validator ctx (Arguments VALID)
-
-instance
-  ( ArgumentsConstraints ctx VALID
+validate ::
+  ( ResolveArgument s ctx,
+    GetWith ctx (Schema schemaStage),
+    ValidateWithDefault schemaStage ctx
   ) =>
-  Validate (ArgCTX ctx VALID) RAW ctx
-  where
-  validate ctx rawArgs =
-    traverse resolveArgumentVariables rawArgs
-      >>= validate ctx
+  ArgCTX ctx schemaStage ->
+  Arguments s ->
+  Validator ctx (Arguments VALID)
+validate (ArgCTX checkUnknown argsDef) rawArgs = do
+  args <- traverse resolveArgument rawArgs
+  traverse_ checkUnknown args
+  traverse (validateArgument args) (arguments argsDef)
+
+class ResolveArgument s ctx where
+  resolveArgument ::
+    Argument s ->
+    Validator ctx (Argument CONST)
 
 instance
-  ValidateWithDefault s ctx =>
-  Validate (ArgCTX ctx s) CONST ctx
+  VariableConstraints ctx =>
+  ResolveArgument RAW ctx
   where
-  validate (ArgCTX checkUnknown argsDef) args =
-    do
-      traverse_ checkUnknown args
-      traverse (validateArgument args) (arguments argsDef)
+  resolveArgument (Argument key val position) = do
+    constValue <- resolveObject val
+    pure $ Argument key constValue position
+
+instance ResolveArgument CONST ctx where
+  resolveArgument = pure
