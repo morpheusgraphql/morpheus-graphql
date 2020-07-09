@@ -43,6 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     ResolvedValue,
     Schema,
     Stage,
+    TypeDefinition,
     TypeRef (..),
     TypeWrapper,
     VALID,
@@ -70,6 +71,7 @@ import Data.Morpheus.Types.Internal.Validation
     withPosition,
   )
 import qualified Data.Morpheus.Validation.Internal.Value as V
+import Data.Morpheus.Validation.Internal.Value (ValueContext (..))
 
 type VariableConstraints ctx =
   ( GetWith ctx (VariableDefinitions VALID),
@@ -114,10 +116,7 @@ type ValueConstraints ctx s =
 type ArgumentConstraints ctx s =
   ( MissingRequired (Arguments CONST) ctx,
     ValueConstraints ctx s,
-    V.Validate
-      (V.ValueContext s)
-      (ObjectEntry CONST)
-      (InputContext ctx)
+    V.Validate (V.ValueContext s) ObjectEntry CONST (InputContext ctx)
   )
 
 validateArgument ::
@@ -148,7 +147,8 @@ __validate ::
   ( ValueConstraints ctx s,
     V.Validate
       (V.ValueContext s)
-      (ObjectEntry CONST)
+      ObjectEntry
+      CONST
       (InputContext ctx)
   ) =>
   FieldDefinition IN s ->
@@ -161,10 +161,12 @@ __validate
     } = validateArgumentValue argumentDef fieldName typeWrappers
 
 validateArgumentValue ::
+  forall s ctx.
   ( ValueConstraints ctx s,
     V.Validate
       (V.ValueContext s)
-      (ObjectEntry CONST)
+      ObjectEntry
+      CONST
       (InputContext ctx)
   ) =>
   FieldDefinition IN s ->
@@ -180,15 +182,10 @@ validateArgumentValue
     withPosition argumentPosition
       $ startInput (SourceArgument arg)
       $ do
-        datatype <- askInputFieldType argumentDef
-        argumentValue <-
-          entryValue
-            <$> V.validate
-              ( V.ValueContext
-                  typeWrappers
-                  datatype
-              )
-              (ObjectEntry fieldName value)
+        (valueTypeDef :: TypeDefinition IN s) <- askInputFieldType argumentDef
+        let valueContext = ValueContext {valueWrappers = typeWrappers, valueTypeDef}
+        let entry = ObjectEntry fieldName value
+        argumentValue <- entryValue <$> V.validate valueContext entry
         pure Argument {argumentValue, ..}
 
 validateFieldArguments ::
