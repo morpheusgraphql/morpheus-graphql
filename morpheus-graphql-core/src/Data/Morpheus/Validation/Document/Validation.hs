@@ -147,7 +147,12 @@ validatePartialDocument :: [TypeDefinition ANY CONST] -> Eventless [TypeDefiniti
 validatePartialDocument types =
   runValidator
     (traverse validateType types)
-    Scope {}
+    Scope
+      { position = Nothing,
+        typename = "TODO: typename",
+        kind = TYPE,
+        fieldname = "TODO: fieldname"
+      }
     TypeSystemContext
       { types = systemTypes <> types,
         local = ()
