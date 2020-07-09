@@ -64,7 +64,7 @@ import Data.Morpheus.Types.Internal.Validation
   )
 import Data.Morpheus.Validation.Internal.Value
   ( Validate,
-    ValueContext (..),
+    ValueContext,
     validateInputByField,
   )
 

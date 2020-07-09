@@ -11,9 +11,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Value
-  ( Validate (..),
-    ValueContext (..),
+  ( Validate,
+    ValueContext,
     validateInputByField,
+    validateInputByTypeRef,
+    validateInputByType,
   )
 where
 
@@ -22,8 +24,7 @@ import Control.Monad (Monad ((>>=)))
 import Data.Either (Either (..))
 import Data.Foldable (traverse_)
 import Data.Function ((&))
-import Data.Functor (Functor)
-import Data.Functor ((<$>), fmap)
+import Data.Functor ((<$>), Functor, fmap)
 import Data.List (any, elem)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
@@ -82,6 +83,7 @@ import Data.Morpheus.Types.Internal.Validation
     Validate (..),
     Validator,
     askInputFieldType,
+    askInputFieldTypeByName,
     askInputMember,
     asksScope,
     constraintInputUnion,
@@ -92,6 +94,7 @@ import Data.Morpheus.Types.Internal.Validation
     withInputScope,
     withScopeType,
   )
+import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Prelude
@@ -148,19 +151,32 @@ type InputConstraints ctx schemaS s =
     ValidateWithDefault ctx schemaS s
   )
 
--- validateValueByFieldDef ::
---   FieldsDefinition IN schemaStage ->
---   Value CONST ->
---   InputValidator ctx (Value VALID)
--- validateValueByFieldDef field = do
---   valueTypeDef <- askInputFieldType field
---   validateInput x y
+validateInputByType ::
+  ValueConstraints c schemaS s =>
+  [TypeWrapper] ->
+  TypeDefinition IN schemaS ->
+  Value s ->
+  Validator (InputContext c) (Value VALID)
+validateInputByType typeWrappers inputTypeDef =
+  validate
+    ( ValueContext
+        typeWrappers
+        inputTypeDef
+    )
 
--- validateValueByRef :: TypeRef -> Value s -> InputValidator ctx (Value VALID)
--- validateValueByRef TypeRef {} = validateInput x y
-
--- datatype  <- askInputFieldTypeByName typeConName
--- validate (ValueContext typeWrappers datatype) defaultInputValue
+validateInputByTypeRef ::
+  forall schemaS s c.
+  ValueConstraints c schemaS s =>
+  Proxy schemaS ->
+  TypeRef ->
+  Value s ->
+  Validator (InputContext c) (Value VALID)
+validateInputByTypeRef
+  _
+  TypeRef {typeWrappers, typeConName}
+  value = do
+    (inputTypeDef :: TypeDefinition IN schemaS) <- askInputFieldTypeByName typeConName
+    validateInputByType typeWrappers inputTypeDef value
 
 validateInputByField ::
   ValueConstraints c schemaS s =>
@@ -173,12 +189,7 @@ validateInputByField
     }
   value = do
     inputTypeDef <- askInputFieldType fieldDef
-    validate
-      ( ValueContext
-          typeWrappers
-          inputTypeDef
-      )
-      value
+    validateInputByType typeWrappers inputTypeDef value
 
 validateValueByField ::
   ValueConstraints c schemaS s =>

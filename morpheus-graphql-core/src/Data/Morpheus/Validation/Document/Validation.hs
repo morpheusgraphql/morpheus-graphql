@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Document.Validation
@@ -86,9 +87,9 @@ import Data.Morpheus.Validation.Internal.Directive
   ( validateTypeSystemDirectives,
   )
 import Data.Morpheus.Validation.Internal.Value
-  ( Validate (..),
-    ValueContext (..),
+  ( validateInputByTypeRef,
   )
+import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Prelude
@@ -382,9 +383,5 @@ validateDefaultValue ::
   InputValidator
     (TypeSystemContext (TypeName, FieldName))
     (Value VALID)
-validateDefaultValue
-  TypeRef {typeWrappers, typeConName}
-  defaultInputValue =
-    do
-      (datatype :: TypeDefinition IN CONST) <- askInputFieldTypeByName typeConName
-      validate (ValueContext typeWrappers datatype) defaultInputValue
+validateDefaultValue =
+  validateInputByTypeRef (Proxy @CONST)

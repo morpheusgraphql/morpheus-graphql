@@ -63,8 +63,7 @@ import Data.Morpheus.Types.Internal.Validation
     withPosition,
   )
 import Data.Morpheus.Validation.Internal.Value
-  ( Validate (..),
-    ValueContext (..),
+  ( validateInputByType,
   )
 import Data.Semigroup ((<>))
 import Data.Traversable
@@ -151,14 +150,14 @@ lookupAndValidateValueOnBody
   validationMode
   var@Variable
     { variableName,
-      variableType,
+      variableType = variableType@TypeRef {typeWrappers, typeConName},
       variablePosition,
       variableValue = DefaultValue defaultValue
     } =
     withPosition variablePosition $
       toVariable
         <$> ( askSchema
-                >>= selectKnown (TypeNameRef (typeConName variableType) variablePosition)
+                >>= selectKnown (TypeNameRef typeConName variablePosition)
                 >>= constraint INPUT var
                 >>= checkType getVariable defaultValue
             )
@@ -187,10 +186,11 @@ lookupAndValidateValueOnBody
             maybe (pure Null) (validator varType False) (M.lookup variableName bodyVariables)
       -----------------------------------------------------------------------------------------------
       validator :: TypeDefinition IN VALID -> Bool -> ResolvedValue -> BaseValidator ValidValue
-      validator varType isDefaultValue varValue =
+      validator varTypeDef isDefaultValue varValue =
         startInput
           (SourceVariable var isDefaultValue)
-          ( validate
-              (ValueContext (typeWrappers variableType) varType)
+          ( validateInputByType
+              typeWrappers
+              varTypeDef
               varValue
           )
