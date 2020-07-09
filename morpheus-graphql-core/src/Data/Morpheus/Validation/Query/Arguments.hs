@@ -170,7 +170,7 @@ validateArgumentValue ::
   FieldDefinition IN s ->
   FieldName ->
   [TypeWrapper] ->
-  Argument CONST ->
+  Argument s ->
   Validator ctx (Argument VALID)
 validateArgumentValue argumentDef fieldName typeWrappers arg@Argument {argumentValue = value, ..} =
   withPosition argumentPosition
