@@ -54,7 +54,7 @@ import Language.Haskell.TH
 m_ :: TypeName
 m_ = "m"
 
-getTypeArgs :: TypeName -> [TypeDefinition ANY] -> Q (Maybe TypeName)
+getTypeArgs :: TypeName -> [TypeDefinition ANY s] -> Q (Maybe TypeName)
 getTypeArgs "__TypeKind" _ = pure Nothing
 getTypeArgs "Boolean" _ = pure Nothing
 getTypeArgs "String" _ = pure Nothing
@@ -69,19 +69,19 @@ getTyArgs x
   | null (infoTyVars x) = Nothing
   | otherwise = Just m_
 
-kindToTyArgs :: TypeContent TRUE ANY -> Maybe TypeName
+kindToTyArgs :: TypeContent TRUE ANY s -> Maybe TypeName
 kindToTyArgs DataObject {} = Just m_
 kindToTyArgs DataUnion {} = Just m_
 kindToTyArgs DataInterface {} = Just m_
 kindToTyArgs _ = Nothing
 
-data TypeDec = InputType (ServerTypeDefinition IN) | OutputType (ServerTypeDefinition OUT)
+data TypeDec s = InputType (ServerTypeDefinition IN s) | OutputType (ServerTypeDefinition OUT s)
 
-toTHDefinitions :: Bool -> [TypeDefinition ANY] -> Q [TypeDec]
+toTHDefinitions :: Bool -> [TypeDefinition ANY s] -> Q [TypeDec s]
 toTHDefinitions namespace schema = traverse generateType schema
   where
     --------------------------------------------
-    generateType :: TypeDefinition ANY -> Q TypeDec
+    generateType :: TypeDefinition ANY s -> Q (TypeDec s)
     generateType
       typeDef@TypeDefinition
         { typeName,
@@ -112,7 +112,7 @@ toTHDefinitions namespace schema = traverse generateType schema
                   ..
                 }
 
-mkObjectCons :: TypeName -> FieldsDefinition cat -> [ConsD cat]
+mkObjectCons :: TypeName -> FieldsDefinition cat s -> [ConsD cat]
 mkObjectCons typeName fields = [mkCons typeName fields]
 
 mkArgsTypeName :: Bool -> TypeName -> FieldName -> TypeName
@@ -122,7 +122,11 @@ mkArgsTypeName namespace typeName fieldName
   where
     argTName = capitalTypeName (fieldName <> "Args")
 
-mkObjectField :: [TypeDefinition ANY] -> (FieldName -> TypeName) -> FieldDefinition OUT -> Q (FieldDefinition OUT)
+mkObjectField ::
+  [TypeDefinition ANY s] ->
+  (FieldName -> TypeName) ->
+  FieldDefinition OUT s ->
+  Q (FieldDefinition OUT s)
 mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = cont, fieldType = typeRef@TypeRef {typeConName}, ..} =
   do
     typeArgs <- getTypeArgs typeConName schema
@@ -134,7 +138,7 @@ mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = 
           ..
         }
   where
-    fieldCont :: FieldContent TRUE OUT -> Maybe (FieldContent TRUE OUT)
+    fieldCont :: FieldContent TRUE OUT s -> Maybe (FieldContent TRUE OUT s)
     fieldCont (FieldArgs ArgumentsDefinition {arguments})
       | not (null arguments) =
         Just $ FieldArgs $
@@ -144,16 +148,16 @@ mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = 
             }
     fieldCont _ = Nothing
 
-data BuildPlan
+data BuildPlan s
   = ConsIN [ConsD IN]
-  | ConsOUT [ServerTypeDefinition IN] [ConsD OUT]
+  | ConsOUT [ServerTypeDefinition IN s] [ConsD OUT]
 
 genTypeContent ::
-  [TypeDefinition ANY] ->
+  [TypeDefinition ANY s] ->
   (FieldName -> TypeName) ->
   TypeName ->
-  TypeContent TRUE ANY ->
-  Q BuildPlan
+  TypeContent TRUE ANY s ->
+  Q (BuildPlan s)
 genTypeContent _ _ _ DataScalar {} = pure (ConsIN [])
 genTypeContent _ _ _ (DataEnum tags) = pure $ ConsIN (map mkConsEnum tags)
 genTypeContent _ _ typeName (DataInputObject fields) =
@@ -193,11 +197,11 @@ genTypeContent _ _ typeName (DataUnion members) =
         cName = hsTypeName typeName <> utName
         utName = hsTypeName memberName
 
-genArgumentTypes :: (FieldName -> TypeName) -> FieldsDefinition OUT -> Q [ServerTypeDefinition IN]
+genArgumentTypes :: (FieldName -> TypeName) -> FieldsDefinition OUT s -> Q [ServerTypeDefinition IN s]
 genArgumentTypes genArgsTypeName fields =
   concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
-genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT -> Q [ServerTypeDefinition IN]
+genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT s -> Q [ServerTypeDefinition IN s]
 genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (FieldArgs ArgumentsDefinition {arguments})}
   | not (null arguments) =
     pure
