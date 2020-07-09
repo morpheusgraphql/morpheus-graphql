@@ -118,7 +118,7 @@ type ArgumentConstraints ctx s =
     V.Validate (V.ValueContext s) ObjectEntry CONST (InputContext ctx)
   )
 
-class ValidateArgumentWithDefault schemaStage ctx where
+class ValidateWithDefault schemaStage ctx where
   validateArgument ::
     Arguments CONST ->
     ArgumentDefinition schemaStage ->
@@ -126,7 +126,7 @@ class ValidateArgumentWithDefault schemaStage ctx where
 
 instance
   GetWith ctx (Schema VALID) =>
-  ValidateArgumentWithDefault VALID ctx
+  ValidateWithDefault VALID ctx
   where
   validateArgument
     requestArgs
@@ -146,7 +146,7 @@ instance
 
 instance
   ArgConst ctx CONST =>
-  ValidateArgumentWithDefault CONST ctx
+  ValidateWithDefault CONST ctx
   where
   validateArgument
     requestArgs
@@ -283,7 +283,7 @@ instance
       >>= validate ctx
 
 instance
-  ValidateArgumentWithDefault s ctx =>
+  ValidateWithDefault s ctx =>
   Validate (ArgCTX ctx s) CONST ctx
   where
   validate (ArgCTX checkUnknown argsDef) args =
