@@ -136,25 +136,25 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
             typeArgs = Nothing
           }
 
-type InputConstraints ctx schemaS s =
+type ValueConstraints ctx schemaS s =
   ( GetWith ctx (Schema schemaS),
     Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
   )
 
+type InputConstraints ctx schemaS s =
+  ( ValueConstraints ctx schemaS s,
+    ValidateWithDefault ctx schemaS s
+  )
+
 instance
-  ( InputConstraints ctx VALID CONST,
-    ValidateWith ctx VALID CONST
-  ) =>
+  InputConstraints ctx VALID CONST =>
   Validate (ValueContext VALID) ObjectEntry CONST (InputContext ctx)
   where
   validate (ValueContext x y) obj@(ObjectEntry name _) =
     ObjectEntry name <$> validateInput x y obj
 
 instance
-  ( InputConstraints ctx CONST CONST,
-    GetWith ctx (Schema CONST),
-    (ValidateWith ctx CONST CONST)
-  ) =>
+  InputConstraints ctx CONST CONST =>
   Validate (ValueContext CONST) ObjectEntry CONST (InputContext ctx)
   where
   validate (ValueContext x y) obj@(ObjectEntry name _) =
@@ -168,9 +168,7 @@ data ValueContext s = ValueContext
 -- Validate input Values
 validateInput ::
   forall ctx s.
-  ( InputConstraints ctx s CONST,
-    ValidateWith ctx s CONST,
-    ValidateWith ctx s s
+  ( InputConstraints ctx s CONST
   ) =>
   [TypeWrapper] ->
   TypeDefinition IN s ->
@@ -228,9 +226,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 -- INPUT UNION
 validatInputUnion ::
   forall schemaS s ctx.
-  ( GetWith ctx (Schema schemaS),
-    Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
-  ) =>
+  ValueConstraints ctx schemaS s =>
   TypeName ->
   DataInputUnion schemaS ->
   Object s ->
@@ -245,16 +241,13 @@ validatInputUnion typeName inputUnion rawFields =
         f = ValueContext [TypeMaybe]
 
 validatInputUnionMember ::
-  forall ctx schemaS s.
-  ( Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx),
-    GetWith ctx (Schema schemaS)
-  ) =>
+  ValueConstraints ctx schemaS s =>
   (TypeDefinition IN schemaS -> ValueContext schemaS) ->
   TypeName ->
   Value s ->
   InputValidator ctx (Value VALID)
 validatInputUnionMember f name value = do
-  (inputDef :: TypeDefinition IN schemaS) <- askInputMember name
+  inputDef <- askInputMember name
   validValue <-
     validate
       (f inputDef)
@@ -266,9 +259,7 @@ mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (En
 
 -- INUT Object
 validateInputObject ::
-  ( ValidateWith ctx s CONST,
-    ValidateWith ctx s s
-  ) =>
+  InputConstraints ctx s CONST =>
   FieldsDefinition IN s ->
   Object CONST ->
   InputValidator ctx (Object VALID)
@@ -284,8 +275,7 @@ validateInputObject fieldsDef object =
           *> validateObjectWithDefaultValue fieldsDef object
 
 validateField ::
-  ( ValidateWith ctx s CONST
-  ) =>
+  ValueConstraints ctx s CONST =>
   FieldsDefinition IN s ->
   ObjectEntry CONST ->
   InputValidator ctx (ObjectEntry VALID)
@@ -294,68 +284,58 @@ validateField parentFields entry = do
   validateInputField field entry
 
 validateObjectWithDefaultValue ::
-  ( ValidateWith c s s,
-    ValidateWith c s CONST
-  ) =>
+  ValidateWithDefault c s CONST =>
   FieldsDefinition IN s ->
   Object CONST ->
   Validator (InputContext c) (Object VALID)
 validateObjectWithDefaultValue fieldsDef object =
-  traverse (validateFieldWithDefaultValue object) (elems fieldsDef)
+  traverse (validateWithDefault object) (elems fieldsDef)
     >>= fromElems
 
-validateFieldWithDefaultValue ::
-  forall s c s'.
-  ( ValidateWith c s s,
-    ValidateWith c s s'
-  ) =>
-  Object s' ->
-  FieldDefinition IN s ->
-  Validator (InputContext c) (ObjectEntry VALID)
-validateFieldWithDefaultValue object fieldDef@FieldDefinition {fieldName} =
-  selectWithDefaultValue __validate (validateInputField fieldDef) fieldDef object
-  where
-    __validate ::
-      Value s ->
-      Validator (InputContext c) (ObjectEntry VALID)
-    __validate = validateInputField fieldDef . ObjectEntry fieldName
-
-class ValidateWith c schemaS s where
-  validateInputField ::
+class ValidateWithDefault c schemaS s where
+  validateWithDefault ::
+    Object s ->
     FieldDefinition IN schemaS ->
-    ObjectEntry s ->
     Validator (InputContext c) (ObjectEntry VALID)
 
-instance ValidateWith c VALID VALID where
-  validateInputField _ = pure
+instance
+  ValueConstraints c VALID s =>
+  ValidateWithDefault c VALID s
+  where
+  validateWithDefault object fieldDef@FieldDefinition {fieldName} =
+    selectWithDefaultValue validateDefaultValue (validateInputField fieldDef) fieldDef object
+    where
+      validateDefaultValue ::
+        Value VALID ->
+        Validator (InputContext c) (ObjectEntry VALID)
+      validateDefaultValue = pure . ObjectEntry fieldName
 
 instance
-  GetWith c (Schema VALID) =>
-  ValidateWith c VALID CONST
+  ValueConstraints c CONST s =>
+  ValidateWithDefault c CONST s
   where
-  validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
-    inputTypeDef <- askInputFieldType fieldDef
-    withInputScope (Prop fieldName typeConName) $
-      validate
-        ( ValueContext
-            typeWrappers
-            inputTypeDef
-        )
-        entry
+  validateWithDefault object fieldDef@FieldDefinition {fieldName} =
+    selectWithDefaultValue validateDefaultValue (validateInputField fieldDef) fieldDef object
+    where
+      validateDefaultValue ::
+        Value CONST ->
+        Validator (InputContext c) (ObjectEntry VALID)
+      validateDefaultValue = validateInputField fieldDef . ObjectEntry fieldName
 
-instance
-  GetWith c (Schema CONST) =>
-  ValidateWith c CONST CONST
-  where
-  validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
-    inputTypeDef <- askInputFieldType fieldDef
-    withInputScope (Prop fieldName typeConName) $
-      validate
-        ( ValueContext
-            typeWrappers
-            inputTypeDef
-        )
-        entry
+validateInputField ::
+  ValueConstraints c schemaS s =>
+  FieldDefinition IN schemaS ->
+  ObjectEntry s ->
+  Validator (InputContext c) (ObjectEntry VALID)
+validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
+  inputTypeDef <- askInputFieldType fieldDef
+  withInputScope (Prop fieldName typeConName) $
+    validate
+      ( ValueContext
+          typeWrappers
+          inputTypeDef
+      )
+      entry
 
 requiredFieldIsDefined ::
   FieldDefinition IN s ->
