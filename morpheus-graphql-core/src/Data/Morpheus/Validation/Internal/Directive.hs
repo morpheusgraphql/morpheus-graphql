@@ -68,7 +68,7 @@ import Prelude
   )
 
 validateDirectives ::
-  Validate DirectiveLocation (Directive s) ctx =>
+  Validate DirectiveLocation Directive s ctx =>
   DirectiveLocation ->
   Directives s ->
   Validator ctx (Directives VALID)
@@ -81,7 +81,7 @@ instance
   ( SetWith ctx Scope,
     A.Validate (A.ArgCTX ctx VALID) RAW ctx
   ) =>
-  Validate DirectiveLocation (Directive RAW) ctx
+  Validate DirectiveLocation Directive RAW ctx
   where
   validate location directive@Directive {directiveArgs, ..} =
     withDirective directive $ do
@@ -94,7 +94,7 @@ instance
   ( SetWith ctx Scope,
     A.Validate (A.ArgCTX ctx CONST) CONST ctx
   ) =>
-  Validate DirectiveLocation (Directive CONST) ctx
+  Validate DirectiveLocation Directive CONST ctx
   where
   validate location directive@Directive {directiveArgs = args, ..} =
     withDirective directive $ do

@@ -287,7 +287,7 @@ mustBeSubset objFields (typeName, fields) =
 
 checkInterfaceField ::
   ( ValueConstraints s,
-    Validate DirectiveLocation (Directive s) (TypeSystemContext (Interface, FieldName)),
+    Validate DirectiveLocation Directive s (TypeSystemContext (Interface, FieldName)),
     TypeEq (FieldDefinition OUT s) (Interface, FieldName)
   ) =>
   FieldsDefinition OUT s ->
@@ -375,8 +375,8 @@ failImplements err = do
 
 type ValueConstraints s =
   ( GetWith (TypeSystemContext (TypeName, FieldName)) (Schema s),
-    Validate (ValueContext s) (ObjectEntry s) (InputContext (TypeSystemContext (TypeName, FieldName))),
-    Validate DirectiveLocation (Directive s) (TypeSystemContext (TypeName, FieldName))
+    Validate (ValueContext s) ObjectEntry s (InputContext (TypeSystemContext (TypeName, FieldName))),
+    Validate DirectiveLocation Directive s (TypeSystemContext (TypeName, FieldName))
   )
 
 validateDefaultValue ::
