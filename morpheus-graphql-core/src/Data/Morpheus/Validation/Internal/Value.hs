@@ -25,7 +25,7 @@ import Data.Functor ((<$>), fmap)
 import Data.List (any, elem)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
-import Data.Morpheus.Error.Utils (errorMessage)
+import Data.Morpheus.Error.Utils (renderErrorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -116,7 +116,7 @@ castFailure expected message value = do
   pos <- asks position
   prefix <- inputMessagePrefix
   failure
-    $ errorMessage pos
+    $ renderErrorMessage pos
     $ prefix <> typeViolation expected value <> maybe "" (" " <>) message
 
 checkTypeEquality ::
@@ -146,7 +146,6 @@ type InputConstraints ctx schemaS s =
     GetWith (InputContext ctx) InputSource,
     SetWith ctx Scope,
     MissingRequired (Object s) (InputContext ctx),
-    Unknown (FieldsDefinition IN schemaS) (ObjectEntry s) (InputContext ctx),
     Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
   )
 
@@ -168,8 +167,6 @@ instance
   where
   validate (ValueContext x y) obj@(ObjectEntry name _) =
     ObjectEntry name <$> validateInput x y obj
-
---instance Validate ([TypeWrapper], TypeDefinition IN CONST) ObjectEntry CONST ctx
 
 data ValueContext s = ValueContext
   { valueWrappers :: [TypeWrapper],
@@ -337,27 +334,6 @@ validateFieldWithDefaultValue object fieldDef@FieldDefinition {fieldName} =
       Validator (InputContext c) (ObjectEntry VALID)
     __validate = validateInputField fieldDef . ObjectEntry fieldName
 
--- class ValidateWith c schemaS s where
---   validateFieldWithDefaultValue ::
---     Object schemaS ->
---     FieldDefinition IN s ->
---     Validator (InputContext c) (ObjectEntry VALID)
-
--- instance
---   ( Selectable
---       (Object schemaS)
---       (ObjectEntry VALID)
---   ) =>
---   ValidateWith c schemaS schemaS
---   where
---   validateFieldWithDefaultValue object fieldDef@FieldDefinition {fieldName} =
---     selectWithDefaultValue __validate pure fieldDef object
---     where
---       __validate ::
---         Value schemaS ->
---         Validator (InputContext c) (ObjectEntry VALID)
---       __validate = pure . ObjectEntry fieldName
-
 class ValidateWith c schemaS s where
   validateInputField ::
     FieldDefinition IN schemaS ->
@@ -371,11 +347,7 @@ instance
   ( GetWith c (Schema VALID),
     GetWith c Scope,
     SetWith c Scope,
-    MissingRequired (Object CONST) (InputContext c),
-    Unknown
-      (FieldsDefinition IN VALID)
-      (ObjectEntry CONST)
-      (InputContext c)
+    MissingRequired (Object CONST) (InputContext c)
   ) =>
   ValidateWith c VALID CONST
   where
@@ -394,11 +366,7 @@ instance
   ( GetWith c (Schema CONST),
     GetWith c Scope,
     SetWith c Scope,
-    MissingRequired (Object CONST) (InputContext c),
-    Unknown
-      (FieldsDefinition IN CONST)
-      (ObjectEntry CONST)
-      (InputContext c)
+    MissingRequired (Object CONST) (InputContext c)
   ) =>
   ValidateWith c CONST CONST
   where

@@ -53,7 +53,7 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative)
+import Control.Applicative (Applicative, pure)
 import Control.Monad (Monad)
 import Control.Monad.Reader (MonadReader)
 import Control.Monad.Trans.Class (MonadTrans (..))
@@ -63,7 +63,7 @@ import Control.Monad.Trans.Reader
     withReaderT,
   )
 import Data.Functor ((<$>), Functor (..))
-import Data.Maybe (Maybe (..))
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -157,7 +157,7 @@ newtype CurrentSelection = CurrentSelection
   deriving (Show)
 
 data Scope = Scope
-  { position :: Position,
+  { position :: Maybe Position,
     typename :: TypeName,
     kind :: ScopeKind,
     fieldname :: FieldName
@@ -285,7 +285,7 @@ withDirective
     where
       update Scope {..} =
         Scope
-          { position = directivePosition,
+          { position = Just directivePosition,
             kind = DIRECTIVE,
             ..
           }
@@ -301,7 +301,7 @@ withScope ::
 withScope typeName (Ref selName pos) =
   setSelectionName selName . set update
   where
-    update Scope {..} = Scope {typename = typeName, position = pos, ..}
+    update Scope {..} = Scope {typename = typeName, position = Just pos, ..}
 
 withPosition ::
   ( MonadContext m c,
@@ -312,7 +312,7 @@ withPosition ::
   m c a
 withPosition pos = set update
   where
-    update Scope {..} = Scope {position = pos, ..}
+    update Scope {..} = Scope {position = Just pos, ..}
 
 withScopeType ::
   ( MonadContext m c,
@@ -448,7 +448,7 @@ instance
     failure
       [ GQLError
           { message = "INTERNAL: " <> inputMessage,
-            locations = [position]
+            locations = maybe [] pure position
           }
       ]
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -17,7 +18,7 @@ module Data.Morpheus.Types.Internal.Validation.Error
 where
 
 -- MORPHEUS
-
+import Data.Maybe (maybeToList)
 import Data.Morpheus.Error.Selection (unknownSelectionField)
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST
@@ -37,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Object,
     ObjectEntry (..),
+    Position,
     RAW,
     Ref (..),
     Schema,
@@ -53,6 +55,7 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( CurrentSelection (..),
+    GetWith (..),
     InputContext (..),
     OperationContext (..),
     Scope (..),
@@ -61,6 +64,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     renderInputPrefix,
   )
 import Data.Semigroup ((<>))
+import Prelude (($))
 
 class InternalError a where
   internalError :: a -> GQLError
@@ -124,7 +128,7 @@ instance MissingRequired (Arguments s) (OperationContext v) where
               <> " argument "
               <> msg refName
               <> " is required but not provided.",
-          locations = [position]
+          locations = maybeToList position
         }
       where
         inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldname)
@@ -163,7 +167,7 @@ instance MissingRequired (Object s) (InputContext (OperationContext v)) where
               <> "Undefined Field "
               <> msg refName
               <> ".",
-          locations = [position]
+          locations = maybeToList position
         }
 
 instance MissingRequired (Object s) (InputContext (TypeSystemContext ctx)) where
@@ -218,25 +222,17 @@ instance Unknown (FieldDefinition OUT s) (Argument CONST) ctx where
       argumentPosition
       ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
 
-instance Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext (OperationContext v)) where
+instance
+  GetWith ctx Scope =>
+  Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext ctx)
+  where
   unknown
-    input@InputContext {sourceContext = OperationContext {scope = Scope {position}}}
+    ctx
     _
     ObjectEntry {entryName} =
       [ GQLError
-          { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
-            locations = [position]
-          }
-      ]
-
-instance Unknown (FieldsDefinition IN s) (ObjectEntry CONST) (InputContext (TypeSystemContext ctx)) where
-  unknown
-    input
-    _
-    ObjectEntry {entryName} =
-      [ GQLError
-          { message = renderInputPrefix input <> "Unknown Field " <> msg entryName <> ".",
-            locations = []
+          { message = renderInputPrefix ctx <> "Unknown Field " <> msg entryName <> ".",
+            locations = maybeToList $ position $ getWith ctx
           }
       ]
 

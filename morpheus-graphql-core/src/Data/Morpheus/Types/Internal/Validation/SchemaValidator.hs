@@ -34,6 +34,7 @@ where
 import Control.Applicative (pure)
 import Control.Monad ((>>=))
 import Control.Monad.Reader (asks)
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -90,9 +91,10 @@ instance GetWith (TypeSystemContext ctx) (Schema CONST) where
 instance GetWith (TypeSystemContext a) Scope where
   getWith _ =
     Scope
-      { position = Position {line = 0, column = 0},
-        typename = "TODO:",
-        kind = TYPE
+      { position = Nothing,
+        typename = "TODO: typename",
+        kind = TYPE,
+        fieldname = "TODO: fieldname"
       }
 
 instance SetWith (TypeSystemContext a) Scope where

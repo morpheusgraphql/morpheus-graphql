@@ -69,7 +69,7 @@ import Data.Either (Either)
 import Data.Foldable (null)
 import Data.Functor ((<$>), fmap)
 import Data.List (elem, filter)
-import Data.Maybe (Maybe (..), maybe)
+import Data.Maybe (Maybe (..), fromMaybe, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
@@ -92,6 +92,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Object,
     ObjectEntry (..),
+    Position (..),
     Ref (..),
     Schema,
     Stage,
@@ -240,7 +241,7 @@ selectWithDefaultValue
       failSelection = do
         ctx <- Validator ask
         position <- asks position
-        failure [missingRequired ctx (Ref fieldName position) values]
+        failure [missingRequired ctx (Ref fieldName (fromMaybe (Position 0 0) position)) values]
 
 selectKnown ::
   ( Selectable c a,

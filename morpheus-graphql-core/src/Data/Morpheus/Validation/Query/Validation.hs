@@ -68,7 +68,7 @@ validateRequest
                 { kind = SELECTION,
                   typename = "Root",
                   fieldname = "Root",
-                  position = operationPosition
+                  position = Just operationPosition
                 },
             selection = CurrentSelection {operationName},
             variables

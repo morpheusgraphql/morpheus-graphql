@@ -21,6 +21,7 @@ module Data.Morpheus.Validation.Query.Arguments
 where
 
 import Data.Foldable (traverse_)
+import Data.Maybe (fromMaybe)
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -38,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Object,
     ObjectEntry (..),
+    Position (..),
     RAW,
     RawValue,
     ResolvedValue,
@@ -142,7 +144,7 @@ validateArgument
     where
       f :: Value s -> Validator ctx (Argument VALID)
       f value = do
-        argumentPosition <- asks position
+        argumentPosition <- fromMaybe (Position 0 0) <$> asks position
         let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
         validateArgumentValue argumentDef fieldName typeWrappers arg
 
