@@ -45,6 +45,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     withContext,
     renderField,
     asks,
+    asksScope,
     askSchema,
     askVariables,
     askFragments,
@@ -229,6 +230,13 @@ asks ::
   m c a
 asks f = f <$> get
 
+asksScope ::
+  ( MonadContext m c
+  ) =>
+  (Scope -> a) ->
+  m c a
+asksScope f = f <$> getGlobalContext scope
+
 setSelectionName ::
   ( MonadContext m c,
     SetWith c Scope
@@ -394,18 +402,19 @@ class
   Monad (m c) =>
   MonadContext m c
   where
+  getGlobalContext :: (ValidatorContext c -> a) -> m c a
+  setGlobalContext :: (ValidatorContext c -> ValidatorContext c) -> m c b -> m c b
   getContext :: (c -> a) -> m c a
   setContext :: (c -> c) -> m c b -> m c b
 
 instance MonadContext Validator c where
+  getGlobalContext f = f <$> Validator ask
   getContext f = f . unValidatorContext <$> Validator ask
+  setGlobalContext f = Validator . withReaderT f . _runValidator
   setContext = withContext
 
 class GetWith (c :: *) (v :: *) where
   getWith :: c -> v
-
-instance GetWith c Scope => GetWith (InputContext c) Scope where
-  getWith = getWith . sourceContext
 
 instance GetWith (OperationContext c) (Schema VALID) where
   getWith = schema
@@ -442,13 +451,11 @@ instance SetWith c Scope => SetWith (InputContext c) Scope where
 
 -- can be only used for internal errors
 instance
-  ( MonadContext Validator ctx,
-    GetWith ctx Scope
-  ) =>
+  (MonadContext Validator ctx) =>
   Failure Message (Validator ctx)
   where
   failure inputMessage = do
-    position <- asks position
+    position <- asksScope position
     failure
       [ GQLError
           { message = "INTERNAL: " <> inputMessage,

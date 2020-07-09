@@ -30,6 +30,7 @@ module Data.Morpheus.Types.Internal.Validation
     withScopeType,
     withPosition,
     asks,
+    asksScope,
     selectWithDefaultValue,
     askInputFieldType,
     askInputMember,
@@ -137,10 +138,12 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     SetWith (..),
     Target (..),
     Validator (..),
+    ValidatorContext (..),
     askFragments,
     askSchema,
     askVariables,
     asks,
+    asksScope,
     inputMessagePrefix,
     inputValueSource,
     runValidator,
@@ -168,7 +171,7 @@ failOnUnused :: Unused ctx b => [b] -> Validator ctx ()
 failOnUnused x
   | null x = pure ()
   | otherwise = do
-    ctx <- Validator ask
+    ctx <- unValidatorContext <$> Validator ask
     failure $ fmap (unused ctx) x
 
 checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused ctx b) => ca -> [b] -> Validator ctx ()
@@ -196,9 +199,9 @@ selectRequired ::
   Validator ctx value
 selectRequired selector container =
   do
-    ctx <- Validator ask
+    ValidatorContext scope ctx <- Validator ask
     selectBy
-      [missingRequired ctx selector container]
+      [missingRequired scope ctx selector container]
       (keyOf selector)
       container
 
@@ -207,7 +210,6 @@ selectWithDefaultValue ::
   ( Selectable values value,
     MissingRequired values ctx,
     KEY value ~ FieldName,
-    GetWith ctx Scope,
     MonadContext Validator ctx
   ) =>
   (Value s -> Validator ctx validValue) ->
@@ -239,9 +241,9 @@ selectWithDefaultValue
         | otherwise = failSelection
       -----------------
       failSelection = do
-        ctx <- Validator ask
-        position <- asks position
-        failure [missingRequired ctx (Ref fieldName (fromMaybe (Position 0 0) position)) values]
+        ValidatorContext scope ctx <- Validator ask
+        position <- asksScope position
+        failure [missingRequired scope ctx (Ref fieldName (fromMaybe (Position 0 0) position)) values]
 
 selectKnown ::
   ( Selectable c a,
@@ -254,9 +256,9 @@ selectKnown ::
   Validator ctx a
 selectKnown selector lib =
   do
-    ctx <- Validator ask
+    ValidatorContext scope ctx <- Validator ask
     selectBy
-      (unknown ctx lib selector)
+      (unknown scope ctx lib selector)
       (keyOf selector)
       lib
 
@@ -288,7 +290,7 @@ askTypeMember UnionMember {memberName} =
     >>= constraintOBJECT
   where
     notFound = do
-      scopeType <- asks typename
+      scopeType <- asksScope typename
       failure $
         "Type \""
           <> msg memberName
@@ -303,7 +305,7 @@ askTypeMember UnionMember {memberName} =
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
         con _ = do
-          scopeType <- asks typename
+          scopeType <- asksScope typename
           failure $
             "Type \"" <> msg typeName
               <> "\" referenced by union \""
@@ -383,7 +385,6 @@ askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeCon
 askInputMember ::
   forall c m s.
   ( GetWith c (Schema s),
-    GetWith c Scope,
     Failure Message (m c),
     Monad (m c),
     MonadContext m c
@@ -398,7 +399,7 @@ askInputMember name =
     typeInfo tName =
       "Type \"" <> msg tName <> "\" referenced by inputUnion "
     notFound = do
-      scopeType <- asks typename
+      scopeType <- asksScope typename
       failure $
         typeInfo name
           <> msg scopeType
@@ -406,7 +407,6 @@ askInputMember name =
     --------------------------------------
     constraintINPUT_OBJECT ::
       ( Monad (m c),
-        GetWith c Scope,
         Failure Message (m c),
         MonadContext m c
       ) =>
@@ -416,7 +416,6 @@ askInputMember name =
       where
         con ::
           ( Monad (m c),
-            GetWith c Scope,
             Failure Message (m c),
             MonadContext m c
           ) =>
@@ -424,7 +423,7 @@ askInputMember name =
           m c (TypeDefinition IN s)
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
-          scopeType <- asks typename
+          scopeType <- asksScope typename
           failure $
             typeInfo typeName
               <> "\""

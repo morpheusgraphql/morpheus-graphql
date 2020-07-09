@@ -38,14 +38,12 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     RAW,
     ScalarValue (..),
-    Stage,
     VALID,
     Value (..),
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( GetWith,
-    Scope,
     SetWith,
     Validate (..),
     Validator,
@@ -78,8 +76,7 @@ validateDirectives location = traverse (validate location)
 --   validateDirective :: DirectiveLocation -> Directive s -> Validator ctx (Directive VALID)
 
 instance
-  ( SetWith ctx Scope,
-    A.Validate (A.ArgCTX ctx VALID) RAW ctx
+  ( A.Validate (A.ArgCTX ctx VALID) RAW ctx
   ) =>
   Validate DirectiveLocation Directive RAW ctx
   where
@@ -91,8 +88,7 @@ instance
       pure Directive {directiveArgs = args, ..}
 
 instance
-  ( SetWith ctx Scope,
-    A.Validate (A.ArgCTX ctx CONST) CONST ctx
+  ( A.Validate (A.ArgCTX ctx CONST) CONST ctx
   ) =>
   Validate DirectiveLocation Directive CONST ctx
   where
@@ -120,7 +116,6 @@ validateDirectiveLocation
           ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
 
 directiveFulfilled ::
-  GetWith ctx Scope =>
   Bool ->
   FieldName ->
   Directives s ->
@@ -128,7 +123,6 @@ directiveFulfilled ::
 directiveFulfilled target = selectOr (pure True) (argumentIf target)
 
 shouldIncludeSelection ::
-  GetWith ctx Scope =>
   Directives VALID ->
   Validator ctx Bool
 shouldIncludeSelection directives = do
@@ -137,7 +131,6 @@ shouldIncludeSelection directives = do
   pure (dontSkip && include)
 
 argumentIf ::
-  GetWith ctx Scope =>
   Bool ->
   Directive s ->
   Validator ctx Bool
@@ -148,7 +141,6 @@ argumentIf target Directive {directiveName, directiveArgs} =
     err = globalErrorMessage $ "Directive " <> msg ("@" <> directiveName) <> " argument \"if\" of type \"Boolean!\" is required but not provided."
 
 assertArgument ::
-  GetWith ctx Scope =>
   Bool ->
   Argument s ->
   Validator ctx Bool

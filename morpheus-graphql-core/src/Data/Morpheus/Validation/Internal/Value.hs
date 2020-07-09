@@ -82,7 +82,7 @@ import Data.Morpheus.Types.Internal.Validation
     Validator,
     askInputFieldType,
     askInputMember,
-    asks,
+    asksScope,
     constraintInputUnion,
     inputMessagePrefix,
     inputValueSource,
@@ -105,13 +105,12 @@ import Prelude
   )
 
 castFailure ::
-  (GetWith ctx Scope) =>
   TypeRef ->
   Maybe Message ->
   Value s ->
   InputValidator ctx a
 castFailure expected message value = do
-  pos <- asks position
+  pos <- asksScope position
   prefix <- inputMessagePrefix
   failure
     $ renderErrorMessage pos
@@ -140,7 +139,6 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
 
 type InputConstraints ctx schemaS s =
   ( GetWith ctx (Schema schemaS),
-    GetWith ctx Scope,
     GetWith (InputContext ctx) InputSource,
     SetWith ctx Scope,
     Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
@@ -233,8 +231,7 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 -- INPUT UNION
 validatInputUnion ::
   forall schemaS s ctx.
-  ( GetWith ctx Scope,
-    GetWith ctx (Schema schemaS),
+  ( GetWith ctx (Schema schemaS),
     Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
   ) =>
   TypeName ->
@@ -253,8 +250,7 @@ validatInputUnion typeName inputUnion rawFields =
 validatInputUnionMember ::
   forall ctx schemaS s.
   ( Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx),
-    GetWith ctx (Schema schemaS),
-    GetWith ctx Scope
+    GetWith ctx (Schema schemaS)
   ) =>
   (TypeDefinition IN schemaS -> ValueContext schemaS) ->
   TypeName ->
@@ -282,7 +278,7 @@ validateInputObject ::
   InputValidator ctx (Object VALID)
 validateInputObject fieldsDef object =
   do
-    kind <- asks kind
+    kind <- asksScope kind
     case kind of
       TYPE ->
         traverse_ (`requiredFieldIsDefined` object) fieldsDef
@@ -342,7 +338,6 @@ instance ValidateWith c VALID VALID where
 
 instance
   ( GetWith c (Schema VALID),
-    GetWith c Scope,
     SetWith c Scope
   ) =>
   ValidateWith c VALID CONST
@@ -360,7 +355,6 @@ instance
 --(InputConstraints c schemaS s) =>
 instance
   ( GetWith c (Schema CONST),
-    GetWith c Scope,
     SetWith c Scope
   ) =>
   ValidateWith c CONST CONST
@@ -376,7 +370,6 @@ instance
         entry
 
 requiredFieldIsDefined ::
-  (GetWith ctx Scope) =>
   FieldDefinition IN s ->
   Object CONST ->
   InputValidator ctx ()

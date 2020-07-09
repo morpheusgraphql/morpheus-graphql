@@ -110,8 +110,6 @@ resolveObject = resolve
 
 type ValueConstraints ctx s =
   ( GetWith ctx (Schema s),
-    GetWith ctx Scope,
-    SetWith ctx Scope,
     MissingRequired (Object CONST) (InputContext ctx)
   )
 

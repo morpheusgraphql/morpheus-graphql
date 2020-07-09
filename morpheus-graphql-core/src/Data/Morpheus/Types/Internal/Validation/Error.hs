@@ -52,7 +52,6 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( CurrentSelection (..),
-    GetWith (..),
     InputContext (..),
     OperationContext (..),
     Scope (..),
@@ -61,7 +60,6 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     renderInputPrefix,
   )
 import Data.Semigroup ((<>))
-import Prelude (($))
 
 class InternalError a where
   internalError :: a -> GQLError
@@ -146,9 +144,9 @@ instance MissingRequired (Arguments s) (TypeSystemContext ctx) where
           locations = []
         }
 
-instance GetWith ctx Scope => MissingRequired (Object s) (InputContext ctx) where
+instance MissingRequired (Object s) (InputContext ctx) where
   missingRequired
-    _
+    Scope {position}
     ctx
     Ref {refName}
     _ =
@@ -158,7 +156,7 @@ instance GetWith ctx Scope => MissingRequired (Object s) (InputContext ctx) wher
               <> "Undefined Field "
               <> msg refName
               <> ".",
-          locations = maybeToList $ position $ getWith ctx
+          locations = maybeToList position
         }
 
 instance MissingRequired (VariableDefinitions s) (OperationContext v) where
