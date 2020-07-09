@@ -43,9 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( GetWith,
-    SetWith,
-    Validate (..),
+  ( Validate (..),
     Validator,
     selectKnown,
     withDirective,
