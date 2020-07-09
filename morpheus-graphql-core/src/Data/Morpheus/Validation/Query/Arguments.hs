@@ -58,9 +58,7 @@ import Data.Morpheus.Types.Internal.Validation
     InputContext,
     InputSource (..),
     MissingRequired,
-    OperationContext,
     Scope (..),
-    SelectionValidator,
     Validator,
     askInputFieldType,
     askVariables,
@@ -210,27 +208,15 @@ validateArgumentValue'
         pure Argument {argumentValue, ..}
 
 validateFieldArguments ::
-  ( Validate
-      ( ArgCTX
-          ( OperationContext
-              (VariableDefinitions VALID)
-          )
-          VALID
-      )
-      RAW
-      ( OperationContext
-          (VariableDefinitions VALID)
-      )
-  ) =>
+  forall ctx.
+  (Validate (ArgCTX ctx VALID) RAW ctx) =>
   FieldDefinition OUT VALID ->
   Arguments RAW ->
-  SelectionValidator (Arguments VALID)
+  Validator ctx (Arguments VALID)
 validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
-  validate
-    ( ArgCTX f argsDef
-    )
+  validate (ArgCTX f argsDef)
   where
-    f :: Argument CONST -> SelectionValidator (ArgumentDefinition VALID)
+    f :: Argument CONST -> Validator ctx (ArgumentDefinition VALID)
     f = (`selectKnown` fieldDef)
     argsDef = maybe empty fieldContentArgs fieldContent
 
