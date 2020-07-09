@@ -54,7 +54,7 @@ declareType
     where
       derive className = DerivClause Nothing [ConT className]
 
-declareCons :: TypeNameTH -> [ConsD ANY] -> [Con]
+declareCons :: TypeNameTH -> [ConsD ANY VALID] -> [Con]
 declareCons TypeNameTH {namespace, typename} clientCons
   | isEnum clientCons = map consE clientCons
   | otherwise = map consR clientCons

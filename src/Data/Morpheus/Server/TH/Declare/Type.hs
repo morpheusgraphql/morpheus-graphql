@@ -70,7 +70,7 @@ declareCons ::
   Bool ->
   TypeKind ->
   ([FieldName], TypeName) ->
-  [ConsD cat] ->
+  [ConsD cat s] ->
   [Con]
 declareCons namespace tKind (tNamespace, tName) = map consR
   where

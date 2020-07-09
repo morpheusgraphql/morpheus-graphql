@@ -49,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     Message,
     TypeKind (..),
     TypeName (..),
+    VALID,
     isEnum,
     isOutputObject,
     msg,
@@ -121,7 +122,7 @@ deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
     defineFromJSON clientTypeName $
       aesonUnionObject typeD
 
-aesonObject :: [FieldName] -> ConsD cat -> ExpQ
+aesonObject :: [FieldName] -> ConsD cat VALID -> ExpQ
 aesonObject tNamespace con@ConsD {cName} = do
   body <- aesonObjectBody tNamespace con
   pure $
@@ -132,7 +133,7 @@ aesonObject tNamespace con@ConsD {cName} = do
     name :: Exp
     name = toString (nameSpaceType tNamespace cName)
 
-aesonObjectBody :: [FieldName] -> ConsD cat -> ExpQ
+aesonObjectBody :: [FieldName] -> ConsD cat VALID -> ExpQ
 aesonObjectBody namespace ConsD {cName, cFields} =
   decodeObjectE
     entry
@@ -176,19 +177,19 @@ defineFromJSON name expr = instanceD (cxt []) typeDef body
     typeDef = applyCons ''FromJSON [namespaced name]
     body = [funDSimple 'parseJSON [] expr]
 
-aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
+aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
 aesonFromJSONEnumBody TypeNameTH {typename} = matchWith False f
   where
-    f :: ConsD cat -> (PatQ, ExpQ)
+    f :: ConsD cat VALID -> (PatQ, ExpQ)
     f ConsD {cName} =
       ( toString cName,
         appE (varE 'pure) $ toConE $ nameSpaceType [toFieldName typename] cName
       )
 
-aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat] -> ExpQ
+aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
 aesonToJSONEnumBody TypeNameTH {typename} = matchWith True f
   where
-    f :: ConsD cat -> (PatQ, ExpQ)
+    f :: ConsD cat VALID -> (PatQ, ExpQ)
     f ConsD {cName} =
       ( conP (toName $ nameSpaceType [toFieldName typename] cName) [],
         toString cName

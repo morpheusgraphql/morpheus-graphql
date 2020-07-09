@@ -116,7 +116,7 @@ genConsD ::
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter
-    ( ConsD ANY,
+    ( ConsD ANY VALID,
       [ClientTypeDefinition],
       [TypeName]
     )

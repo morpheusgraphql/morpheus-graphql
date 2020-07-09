@@ -77,7 +77,11 @@ kindToTyArgs _ = Nothing
 
 data TypeDec s = InputType (ServerTypeDefinition IN s) | OutputType (ServerTypeDefinition OUT s)
 
-toTHDefinitions :: Bool -> [TypeDefinition ANY s] -> Q [TypeDec s]
+toTHDefinitions ::
+  forall s.
+  Bool ->
+  [TypeDefinition ANY s] ->
+  Q [TypeDec s]
 toTHDefinitions namespace schema = traverse generateType schema
   where
     --------------------------------------------
@@ -112,7 +116,7 @@ toTHDefinitions namespace schema = traverse generateType schema
                   ..
                 }
 
-mkObjectCons :: TypeName -> FieldsDefinition cat s -> [ConsD cat]
+mkObjectCons :: TypeName -> FieldsDefinition cat s -> [ConsD cat s]
 mkObjectCons typeName fields = [mkCons typeName fields]
 
 mkArgsTypeName :: Bool -> TypeName -> FieldName -> TypeName
@@ -149,8 +153,8 @@ mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = 
     fieldCont _ = Nothing
 
 data BuildPlan s
-  = ConsIN [ConsD IN]
-  | ConsOUT [ServerTypeDefinition IN s] [ConsD OUT]
+  = ConsIN [ConsD IN s]
+  | ConsOUT [ServerTypeDefinition IN s] [ConsD OUT s]
 
 genTypeContent ::
   [TypeDefinition ANY s] ->

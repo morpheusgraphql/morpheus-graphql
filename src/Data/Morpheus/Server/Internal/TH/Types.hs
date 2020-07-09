@@ -18,7 +18,7 @@ data ServerTypeDefinition cat s = ServerTypeDefinition
   { tName :: TypeName,
     tNamespace :: [FieldName],
     typeArgD :: [ServerTypeDefinition IN s],
-    tCons :: [ConsD cat],
+    tCons :: [ConsD cat s],
     tKind :: TypeKind,
     typeOriginal :: Maybe (TypeDefinition ANY s)
   }

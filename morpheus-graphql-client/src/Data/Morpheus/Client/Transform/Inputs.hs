@@ -155,7 +155,7 @@ buildInputType name = getType name >>= generateTypes
             ]
         subTypes _ = pure []
 
-mkInputType :: TypeName -> TypeKind -> [ConsD ANY] -> ClientTypeDefinition
+mkInputType :: TypeName -> TypeKind -> [ConsD ANY VALID] -> ClientTypeDefinition
 mkInputType typename clientKind clientCons =
   ClientTypeDefinition
     { clientTypeName = TypeNameTH [] typename,
