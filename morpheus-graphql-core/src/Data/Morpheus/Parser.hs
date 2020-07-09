@@ -31,6 +31,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Validation.Document.Validation
   ( validatePartialDocument,
+    validateSchema,
   )
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
@@ -38,9 +39,11 @@ import Data.Morpheus.Validation.Query.Validation
 import Data.Text (Text)
 
 parseTypeSystemDefinition ::
-  Text -> Eventless (Schema CONST)
+  Text -> Eventless (Schema VALID)
 parseTypeSystemDefinition =
-  P.parseSchema >=> buildSchema
+  P.parseSchema
+    >=> buildSchema
+    >=> validateSchema
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition ANY CONST]

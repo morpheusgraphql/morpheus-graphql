@@ -47,6 +47,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeWrapper,
+    VALID,
     createScalarType,
     mkEnumContent,
     mkInputValue,
@@ -60,18 +61,23 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
+import Data.Morpheus.Validation.Document.Validation
+  ( validateSchema,
+  )
 import Data.Semigroup ((<>))
 import Data.String (String)
 import Data.Traversable (traverse)
 import Prelude (($), (.), Show (..), uncurry)
 
-decodeIntrospection :: ByteString -> Eventless (AST.Schema CONST)
+decodeIntrospection :: ByteString -> Eventless (AST.Schema VALID)
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> internalError $ msg errors
   Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
-    traverse parse types >>= fromElems . concat
+    traverse parse types >>= fromElems . concat >>= validate
   Right res -> internalError (msg $ show res)
   where
+    validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
+    validate = validateSchema
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
 
