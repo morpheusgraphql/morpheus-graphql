@@ -25,7 +25,6 @@ where
 import Control.Applicative ((*>), pure)
 import Control.Monad (Monad ((>>=)))
 import Data.Either (Either (..))
-import Data.Foldable (traverse_)
 import Data.Function ((&))
 import Data.Functor ((<$>), Functor, fmap)
 import Data.List (any, elem)
@@ -37,6 +36,7 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
     fromElems,
+    ordTraverse_,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -293,10 +293,10 @@ validateInputObject fieldsDef object =
     kind <- asksScope kind
     case kind of
       TYPE ->
-        traverse_ (`requiredFieldIsDefined` object) fieldsDef
+        ordTraverse_ (`requiredFieldIsDefined` object) fieldsDef
           *> traverse (validateField fieldsDef) object
       _ ->
-        traverse_ (`selectKnown` fieldsDef) object
+        ordTraverse_ (`selectKnown` fieldsDef) object
           *> validateObjectWithDefaultValue fieldsDef object
 
 validateField ::
