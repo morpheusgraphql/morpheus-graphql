@@ -173,11 +173,12 @@ lookupDeprecated = find isDeprecation
 
 lookupDeprecatedReason :: Directive s -> Maybe Description
 lookupDeprecatedReason Directive {directiveArgs} =
-  selectOr Nothing (Just . maybeString) "reason" directiveArgs
+  selectOr Nothing maybeString "reason" directiveArgs
   where
-    maybeString :: Argument s -> Description
-    maybeString Argument {argumentValue = (Scalar (String x))} = x
-    maybeString _ = "can't read deprecated Reason Value"
+    maybeString :: Argument s -> Maybe Description
+    maybeString Argument {argumentValue = Null} = Nothing
+    maybeString Argument {argumentValue = (Scalar (String x))} = Just x
+    maybeString _ = Just "can't read deprecated Reason Value"
 
 instance ToAny FieldDefinition where
   toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny <$> fieldContent, ..}

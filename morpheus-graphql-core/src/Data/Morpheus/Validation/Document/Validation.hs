@@ -121,7 +121,7 @@ instance ValidateSchema CONST where
             fieldname = "TODO: fieldname"
           }
         TypeSystemContext
-          { types = elems schema,
+          { types = systemTypes <> elems schema,
             local = ()
           }
       where

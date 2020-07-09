@@ -53,7 +53,7 @@ readSource :: FilePath -> IO ByteString
 readSource = L.readFile
 
 readSchema :: FilePath -> IO (Eventless (Schema VALID))
-readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . (<> "/schema.gql")
+readSchema = fmap parseFullGQLDocument . readSource . (<> "/schema.gql")
 
 readResponse :: FilePath -> IO Response
 readResponse = fmap (either AesonError id . eitherDecode) . readSource . (<> "/response.json")
