@@ -38,11 +38,8 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Object,
     ObjectEntry (..),
-    Position,
-    RAW,
     Ref (..),
     Schema,
-    TypeName,
     TypeNameRef (..),
     TypeRef (..),
     Variable (..),
@@ -151,37 +148,18 @@ instance MissingRequired (Arguments s) (TypeSystemContext ctx) where
           locations = []
         }
 
-instance MissingRequired (Object s) (InputContext (OperationContext v)) where
+instance GetWith ctx Scope => MissingRequired (Object s) (InputContext ctx) where
   missingRequired
-    input@InputContext
-      { sourceContext =
-          OperationContext
-            { scope = Scope {position}
-            }
-      }
+    ctx
     Ref {refName}
     _ =
       GQLError
         { message =
-            renderInputPrefix input
+            renderInputPrefix ctx
               <> "Undefined Field "
               <> msg refName
               <> ".",
-          locations = maybeToList position
-        }
-
-instance MissingRequired (Object s) (InputContext (TypeSystemContext ctx)) where
-  missingRequired
-    input
-    Ref {refName}
-    _ =
-      GQLError
-        { message =
-            renderInputPrefix input
-              <> "Undefined Field "
-              <> msg refName
-              <> ".",
-          locations = []
+          locations = maybeToList $ position $ getWith ctx
         }
 
 instance MissingRequired (VariableDefinitions s) (OperationContext v) where
