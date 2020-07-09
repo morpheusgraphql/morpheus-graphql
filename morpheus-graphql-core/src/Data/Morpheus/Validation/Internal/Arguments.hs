@@ -10,6 +10,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Arguments
   ( validateDirectiveArguments,
@@ -19,11 +20,14 @@ module Data.Morpheus.Validation.Internal.Arguments
   )
 where
 
-import Control.Monad ((>=>))
-import Data.Foldable (traverse_)
-import Data.Maybe (fromMaybe)
+import Control.Applicative (pure)
+import Control.Monad ((>=>), (>>=))
+import Data.Functor ((<$>), fmap)
+import Data.Maybe (fromMaybe, maybe)
 import Data.Morpheus.Internal.Utils
   ( empty,
+    ordTraverse,
+    ordTraverse_,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -63,6 +67,12 @@ import Data.Morpheus.Validation.Internal.Value
   ( ValidateWithDefault,
     ValueConstraints,
     validateInputByField,
+  )
+import Data.Traversable (traverse)
+import Prelude
+  ( ($),
+    (.),
+    flip,
   )
 
 type VariableConstraints ctx =
@@ -150,9 +160,9 @@ validateArguments ::
   Arguments s ->
   Validator ctx (Arguments VALID)
 validateArguments checkUnknown argsDef rawArgs = do
-  args <- traverse resolve rawArgs
-  traverse_ checkUnknown args
-  traverse (validateArgument args) (arguments argsDef)
+  args <- ordTraverse resolve rawArgs
+  ordTraverse_ checkUnknown args
+  ordTraverse (validateArgument args) (arguments argsDef)
 
 class Resolve f s ctx where
   resolve :: f s -> Validator ctx (f CONST)

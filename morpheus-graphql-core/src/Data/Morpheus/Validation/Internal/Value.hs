@@ -36,6 +36,7 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
     fromElems,
+    ordTraverse,
     ordTraverse_,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -294,7 +295,7 @@ validateInputObject fieldsDef object =
     case kind of
       TYPE ->
         ordTraverse_ (`requiredFieldIsDefined` object) fieldsDef
-          *> traverse (validateField fieldsDef) object
+          *> ordTraverse (validateField fieldsDef) object
       _ ->
         ordTraverse_ (`selectKnown` fieldsDef) object
           *> validateObjectWithDefaultValue fieldsDef object
