@@ -30,6 +30,7 @@ import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
     Operation (..),
     Schema,
+    VALID,
     VALIDATION_MODE (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -38,7 +39,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Language.Haskell.TH
 
-defineQuery :: IO (Eventless Schema) -> (GQLQuery, String) -> Q [Dec]
+defineQuery :: IO (Eventless (Schema VALID)) -> (GQLQuery, String) -> Q [Dec]
 defineQuery ioSchema (query, src) = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` query) of
@@ -48,7 +49,7 @@ defineQuery ioSchema (query, src) = do
         warnings
       } -> gqlWarnings warnings >> declareClient src result
 
-validateWith :: Schema -> GQLQuery -> Eventless ClientDefinition
+validateWith :: Schema VALID -> GQLQuery -> Eventless ClientDefinition
 validateWith
   schema
   rawRequest@GQLQuery

@@ -28,6 +28,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     TypeKind (..),
     TypeName,
+    VALID,
   )
 import Data.Semigroup ((<>))
 import GHC.Generics (Generic)
@@ -64,7 +65,7 @@ declareCons TypeNameTH {namespace, typename} clientCons
         (mkConName namespace cName)
         (map declareField cFields)
 
-declareField :: FieldDefinition ANY -> (Name, Bang, Type)
+declareField :: FieldDefinition ANY VALID -> (Name, Bang, Type)
 declareField FieldDefinition {fieldName, fieldType} =
   ( toName fieldName,
     Bang NoSourceUnpackedness NoSourceStrictness,

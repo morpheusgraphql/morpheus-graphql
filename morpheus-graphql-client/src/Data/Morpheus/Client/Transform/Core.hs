@@ -63,7 +63,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 
-type Env = (Schema, VariableDefinitions RAW)
+type Env = (Schema VALID, VariableDefinitions RAW)
 
 newtype Converter a = Converter
   { runConverter ::
@@ -81,7 +81,7 @@ compileError :: Message -> GQLErrors
 compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
-getType :: TypeName -> Converter (TypeDefinition ANY)
+getType :: TypeName -> Converter (TypeDefinition ANY VALID)
 getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> msg typename) typename
 
 customScalarTypes :: TypeName -> [TypeName]
@@ -89,15 +89,15 @@ customScalarTypes typeName
   | isNotSystemTypeName typeName = [typeName]
   | otherwise = []
 
-leafType :: TypeDefinition a -> Converter ([ClientTypeDefinition], [TypeName])
+leafType :: TypeDefinition a VALID -> Converter ([ClientTypeDefinition], [TypeName])
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
-    fromKind :: TypeContent TRUE a -> Converter ([ClientTypeDefinition], [TypeName])
+    fromKind :: TypeContent TRUE a VALID -> Converter ([ClientTypeDefinition], [TypeName])
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], customScalarTypes typeName)
     fromKind _ = failure $ compileError "Invalid schema Expected scalar"
 
-typeFrom :: [FieldName] -> TypeDefinition a -> TypeName
+typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
   where
     __typeFrom DataScalar {} = hsTypeName typeName
