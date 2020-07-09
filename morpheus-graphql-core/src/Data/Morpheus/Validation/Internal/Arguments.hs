@@ -34,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition,
     DirectiveDefinition (..),
     FieldDefinition (..),
-    FieldName,
     IN,
     OUT,
     Object,
@@ -160,11 +159,11 @@ instance
         f value = do
           argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
           let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
-          validateArgumentValue argumentDef fieldName typeWrappers arg
+          validateArgumentValue argumentDef typeWrappers arg
 
 type ArgConst ctx s =
   ( GetWith ctx (Schema s),
-    V.Validate (ValueContext s) ObjectEntry CONST (InputContext ctx)
+    V.Validate (ValueContext s) Value CONST (InputContext ctx)
   )
 
 __validate ::
@@ -174,20 +173,17 @@ __validate ::
   Validator ctx (Argument VALID)
 __validate
   argumentDef@FieldDefinition
-    { fieldName,
-      fieldType = TypeRef {typeWrappers}
-    } = validateArgumentValue argumentDef fieldName typeWrappers
+    { fieldType = TypeRef {typeWrappers}
+    } = validateArgumentValue argumentDef typeWrappers
 
 validateArgumentValue ::
   ArgConst ctx schemaStage =>
   FieldDefinition IN schemaStage ->
-  FieldName ->
   [TypeWrapper] ->
   Argument CONST ->
   Validator ctx (Argument VALID)
 validateArgumentValue
   argumentDef
-  fieldName
   typeWrappers
   arg@Argument {argumentValue = value, ..} =
     withPosition argumentPosition
@@ -195,8 +191,7 @@ validateArgumentValue
       $ do
         valueTypeDef <- askInputFieldType argumentDef
         let valueContext = ValueContext {valueWrappers = typeWrappers, valueTypeDef}
-        let entry = ObjectEntry fieldName value
-        argumentValue <- entryValue <$> V.validate valueContext entry
+        argumentValue <- V.validate valueContext value
         pure Argument {argumentValue, ..}
 
 validateFieldArguments ::

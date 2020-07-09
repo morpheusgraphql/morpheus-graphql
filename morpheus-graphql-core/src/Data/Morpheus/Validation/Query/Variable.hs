@@ -188,10 +188,9 @@ lookupAndValidateValueOnBody
       -----------------------------------------------------------------------------------------------
       validator :: TypeDefinition IN VALID -> Bool -> ResolvedValue -> BaseValidator ValidValue
       validator varType isDefaultValue varValue =
-        entryValue
-          <$> startInput
-            (SourceVariable var isDefaultValue)
-            ( validate
-                (ValueContext (typeWrappers variableType) varType)
-                (ObjectEntry variableName varValue)
-            )
+        startInput
+          (SourceVariable var isDefaultValue)
+          ( validate
+              (ValueContext (typeWrappers variableType) varType)
+              varValue
+          )

@@ -138,7 +138,7 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
 
 type ValueConstraints ctx schemaS s =
   ( GetWith ctx (Schema schemaS),
-    Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
+    Validate (ValueContext schemaS) Value s (InputContext ctx)
   )
 
 type InputConstraints ctx schemaS s =
@@ -146,19 +146,20 @@ type InputConstraints ctx schemaS s =
     ValidateWithDefault ctx schemaS s
   )
 
+-- validateValueByRef :: TypeRef -> Value s -> InputValidator ctx (Value VALID)
+-- validateValueByRef = validateInput x y
+
 instance
   InputConstraints ctx VALID CONST =>
-  Validate (ValueContext VALID) ObjectEntry CONST (InputContext ctx)
+  Validate (ValueContext VALID) Value CONST (InputContext ctx)
   where
-  validate (ValueContext x y) obj@(ObjectEntry name _) =
-    ObjectEntry name <$> validateInput x y obj
+  validate (ValueContext x y) = validateInput x y
 
 instance
   InputConstraints ctx CONST CONST =>
-  Validate (ValueContext CONST) ObjectEntry CONST (InputContext ctx)
+  Validate (ValueContext CONST) Value CONST (InputContext ctx)
   where
-  validate (ValueContext x y) obj@(ObjectEntry name _) =
-    ObjectEntry name <$> validateInput x y obj
+  validate (ValueContext x y) = validateInput x y
 
 data ValueContext s = ValueContext
   { valueWrappers :: [TypeWrapper],
@@ -172,7 +173,7 @@ validateInput ::
   ) =>
   [TypeWrapper] ->
   TypeDefinition IN s ->
-  ObjectEntry CONST ->
+  Value CONST ->
   InputValidator ctx ValidValue
 validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
   withScopeType typeName
@@ -184,29 +185,29 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
     validateWrapped ::
       [TypeWrapper] ->
       TypeContent TRUE IN s ->
-      ObjectEntry CONST ->
+      Value CONST ->
       InputValidator ctx ValidValue
     -- Validate Null. value = null ?
-    validateWrapped wrappers _ ObjectEntry {entryValue = ResolvedVariable ref variable} =
+    validateWrapped wrappers _ (ResolvedVariable ref variable) =
       checkTypeEquality (typeName, wrappers) ref variable
-    validateWrapped wrappers _ ObjectEntry {entryValue = Null}
+    validateWrapped wrappers _ Null
       | isNullable wrappers = pure Null
       | otherwise = mismatchError wrappers Nothing Null
     -- Validate LIST
-    validateWrapped [TypeMaybe] dt ObjectEntry {entryValue} =
+    validateWrapped [TypeMaybe] dt entryValue =
       validateUnwrapped (mismatchError [TypeMaybe]) dt entryValue
     validateWrapped (TypeMaybe : wrappers) _ value =
       validateWrapped wrappers tyCont value
-    validateWrapped (TypeList : wrappers) _ (ObjectEntry key (List list)) =
+    validateWrapped (TypeList : wrappers) _ (List list) =
       List <$> traverse validateElement list
       where
-        validateElement = validateWrapped wrappers tyCont . ObjectEntry key
+        validateElement = validateWrapped wrappers tyCont
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
-    validateWrapped [] dt ObjectEntry {entryValue} =
+    validateWrapped [] dt entryValue =
       validateUnwrapped (mismatchError []) dt entryValue
     {-- 3. THROW ERROR: on invalid values --}
-    validateWrapped wrappers _ ObjectEntry {entryValue} = mismatchError wrappers Nothing entryValue
+    validateWrapped wrappers _ entryValue = mismatchError wrappers Nothing entryValue
     validateUnwrapped ::
       -- error
       (Maybe Message -> ResolvedValue -> InputValidator ctx ValidValue) ->
@@ -248,11 +249,8 @@ validatInputUnionMember ::
   InputValidator ctx (Value VALID)
 validatInputUnionMember f name value = do
   inputDef <- askInputMember name
-  validValue <-
-    validate
-      (f inputDef)
-      (ObjectEntry (toFieldName name) value)
-  pure $ mkInputObject name [validValue]
+  validValue <- validate (f inputDef) value
+  pure $ mkInputObject name [ObjectEntry (toFieldName name) validValue]
 
 mkInputObject :: TypeName -> [ObjectEntry s] -> Value s
 mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (Enum name) : xs
@@ -303,39 +301,44 @@ instance
   ValidateWithDefault c VALID s
   where
   validateWithDefault object fieldDef@FieldDefinition {fieldName} =
-    selectWithDefaultValue validateDefaultValue (validateInputField fieldDef) fieldDef object
-    where
-      validateDefaultValue ::
-        Value VALID ->
-        Validator (InputContext c) (ObjectEntry VALID)
-      validateDefaultValue = pure . ObjectEntry fieldName
+    selectWithDefaultValue
+      (pure . ObjectEntry fieldName)
+      (validateInputField fieldDef)
+      fieldDef
+      object
 
 instance
   ValueConstraints c CONST s =>
   ValidateWithDefault c CONST s
   where
   validateWithDefault object fieldDef@FieldDefinition {fieldName} =
-    selectWithDefaultValue validateDefaultValue (validateInputField fieldDef) fieldDef object
-    where
-      validateDefaultValue ::
-        Value CONST ->
-        Validator (InputContext c) (ObjectEntry VALID)
-      validateDefaultValue = validateInputField fieldDef . ObjectEntry fieldName
+    selectWithDefaultValue
+      (validateInputField fieldDef . ObjectEntry fieldName)
+      (validateInputField fieldDef)
+      fieldDef
+      object
 
 validateInputField ::
   ValueConstraints c schemaS s =>
   FieldDefinition IN schemaS ->
   ObjectEntry s ->
   Validator (InputContext c) (ObjectEntry VALID)
-validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
-  inputTypeDef <- askInputFieldType fieldDef
-  withInputScope (Prop fieldName typeConName) $
-    validate
-      ( ValueContext
-          typeWrappers
-          inputTypeDef
-      )
-      entry
+validateInputField
+  fieldDef@FieldDefinition
+    { fieldName,
+      fieldType = TypeRef {typeConName, typeWrappers}
+    }
+  ObjectEntry {entryName, entryValue} =
+    do
+      inputTypeDef <- askInputFieldType fieldDef
+      withInputScope (Prop fieldName typeConName) $
+        ObjectEntry entryName
+          <$> validate
+            ( ValueContext
+                typeWrappers
+                inputTypeDef
+            )
+            entryValue
 
 requiredFieldIsDefined ::
   FieldDefinition IN s ->

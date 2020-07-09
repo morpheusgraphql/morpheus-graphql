@@ -47,7 +47,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     IN,
     OUT,
-    ObjectEntry (..),
     Schema (..),
     TRUE,
     TypeContent (..),
@@ -240,12 +239,12 @@ checkFieldContent _ (FieldArgs (ArgumentsDefinition meta args)) =
     <$> traverse
       validateArgument
       args
-checkFieldContent FieldDefinition {fieldName, fieldType} (DefaultInputValue value) = do
+checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
   (typeName, fName) <- asks local
   DefaultInputValue
     <$> startInput
       (SourceInputField typeName fName Nothing)
-      (validateDefaultValue fieldName fieldType value)
+      (validateDefaultValue fieldType value)
 
 validateArgument ::
   ArgumentDefinition CONST ->
@@ -272,7 +271,7 @@ validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
     v <-
       startInput
         (SourceInputField typeName fName (Just argName))
-        (validateDefaultValue argName fieldType value)
+        (validateDefaultValue fieldType value)
     pure (DefaultInputValue v)
 
 -- INETRFACE
@@ -378,19 +377,14 @@ failImplements err = do
 -- DEFAULT VALUE
 
 validateDefaultValue ::
-  FieldName ->
   TypeRef ->
   Value CONST ->
   InputValidator
     (TypeSystemContext (TypeName, FieldName))
     (Value VALID)
 validateDefaultValue
-  fieldName
   TypeRef {typeWrappers, typeConName}
   defaultInputValue =
     do
       (datatype :: TypeDefinition IN CONST) <- askInputFieldTypeByName typeConName
-      entryValue
-        <$> validate
-          (ValueContext typeWrappers datatype)
-          (ObjectEntry fieldName defaultInputValue)
+      validate (ValueContext typeWrappers datatype) defaultInputValue
