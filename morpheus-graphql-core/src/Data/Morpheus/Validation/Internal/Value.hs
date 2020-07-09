@@ -320,13 +320,6 @@ validateObjectWithDefaultValue fieldsDef object =
   traverse (validateFieldWithDefaultValue object) (elems fieldsDef)
     >>= fromElems
 
-type InputConstraints' ctx schemaS =
-  ( GetWith ctx (Schema schemaS),
-    MissingRequired (Object schemaS) (InputContext ctx),
-    Unknown (FieldsDefinition IN schemaS) (ObjectEntry schemaS) (InputContext ctx),
-    Validate (ValueContext schemaS) (ObjectEntry schemaS) (InputContext ctx)
-  )
-
 validateFieldWithDefaultValue ::
   forall s c s'.
   ( InputConstraints c s s',
@@ -374,12 +367,40 @@ class ValidateWith c schemaS s where
 instance ValidateWith c VALID VALID where
   validateInputField _ = pure
 
+instance
+  ( GetWith c (Schema VALID),
+    GetWith c Scope,
+    SetWith c Scope,
+    MissingRequired (Object CONST) (InputContext c),
+    Unknown
+      (FieldsDefinition IN VALID)
+      (ObjectEntry CONST)
+      (InputContext c)
+  ) =>
+  ValidateWith c VALID CONST
+  where
+  validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
+    inputTypeDef <- askInputFieldType fieldDef
+    withInputScope (Prop fieldName typeConName) $
+      validate
+        ( ValueContext
+            typeWrappers
+            inputTypeDef
+        )
+        entry
+
 --(InputConstraints c schemaS s) =>
 instance
   ( GetWith c (Schema CONST),
-    GetWith c Scope
+    GetWith c Scope,
+    SetWith c Scope,
+    MissingRequired (Object CONST) (InputContext c),
+    Unknown
+      (FieldsDefinition IN CONST)
+      (ObjectEntry CONST)
+      (InputContext c)
   ) =>
-  ValidateWith c CONST VALID
+  ValidateWith c CONST CONST
   where
   validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
     inputTypeDef <- askInputFieldType fieldDef
