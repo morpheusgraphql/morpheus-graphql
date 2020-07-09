@@ -118,36 +118,61 @@ type ArgumentConstraints ctx s =
     V.Validate (V.ValueContext s) ObjectEntry CONST (InputContext ctx)
   )
 
-validateArgument ::
-  forall s ctx.
-  ( ArgumentConstraints ctx s,
-    Validate' s CONST ctx,
-    Validate' s s ctx
-  ) =>
-  Arguments CONST ->
-  ArgumentDefinition s ->
-  Validator ctx (Argument VALID)
-validateArgument
-  requestArgs
-  argumentDef@FieldDefinition
-    { fieldName,
-      fieldType = TypeRef {typeWrappers}
-    } =
-    selectWithDefaultValue
-      f
-      (__validate argumentDef)
-      argumentDef
-      requestArgs
-    where
-      f :: Value s -> Validator ctx (Argument VALID)
-      f value = do
-        argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
-        let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
-        validateArgumentValue argumentDef fieldName typeWrappers arg
+class ValidateArgumentWithDefault schemaStage ctx where
+  validateArgument ::
+    Arguments CONST ->
+    ArgumentDefinition schemaStage ->
+    Validator ctx (Argument VALID)
+
+instance
+  GetWith ctx (Schema VALID) =>
+  ValidateArgumentWithDefault VALID ctx
+  where
+  validateArgument
+    requestArgs
+    argumentDef@FieldDefinition
+      { fieldName
+      } =
+      selectWithDefaultValue
+        f
+        (__validate argumentDef)
+        argumentDef
+        requestArgs
+      where
+        f :: Value VALID -> Validator ctx (Argument VALID)
+        f value = do
+          argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
+          pure Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
+
+instance
+  ArgConst ctx CONST =>
+  ValidateArgumentWithDefault CONST ctx
+  where
+  validateArgument
+    requestArgs
+    argumentDef@FieldDefinition
+      { fieldName,
+        fieldType = TypeRef {typeWrappers}
+      } =
+      selectWithDefaultValue
+        f
+        (__validate argumentDef)
+        argumentDef
+        requestArgs
+      where
+        f :: Value CONST -> Validator ctx (Argument VALID)
+        f value = do
+          argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
+          let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
+          validateArgumentValue' argumentDef fieldName typeWrappers arg
+
+type ArgConst ctx s =
+  ( GetWith ctx (Schema s),
+    V.Validate (ValueContext s) ObjectEntry CONST (InputContext ctx)
+  )
 
 __validate ::
-  ( Validate' s CONST ctx
-  ) =>
+  ArgConst ctx s =>
   FieldDefinition IN s ->
   Argument CONST ->
   Validator ctx (Argument VALID)
@@ -155,42 +180,34 @@ __validate
   argumentDef@FieldDefinition
     { fieldName,
       fieldType = TypeRef {typeWrappers}
-    } = validateArgumentValue argumentDef fieldName typeWrappers
+    } = validateArgumentValue' argumentDef fieldName typeWrappers
 
-class Validate' schemaStage valueStage ctx where
-  validateArgumentValue ::
-    FieldDefinition IN schemaStage ->
-    FieldName ->
-    [TypeWrapper] ->
-    Argument valueStage ->
-    Validator ctx (Argument VALID)
-
-instance Validate' VALID VALID ctx where
-  validateArgumentValue _ _ _ = pure
-
-instance
-  ( ValueConstraints ctx s,
+validateArgumentValue' ::
+  ( GetWith ctx (Schema schemaStage),
     V.Validate
-      (V.ValueContext s)
+      (ValueContext schemaStage)
       ObjectEntry
       CONST
       (InputContext ctx)
   ) =>
-  Validate' s CONST ctx
-  where
-  validateArgumentValue
-    argumentDef
-    fieldName
-    typeWrappers
-    arg@Argument {argumentValue = value, ..} =
-      withPosition argumentPosition
-        $ startInput (SourceArgument arg)
-        $ do
-          (valueTypeDef :: TypeDefinition IN s) <- askInputFieldType argumentDef
-          let valueContext = ValueContext {valueWrappers = typeWrappers, valueTypeDef}
-          let entry = ObjectEntry fieldName value
-          argumentValue <- entryValue <$> V.validate valueContext entry
-          pure Argument {argumentValue, ..}
+  FieldDefinition IN schemaStage ->
+  FieldName ->
+  [TypeWrapper] ->
+  Argument CONST ->
+  Validator ctx (Argument VALID)
+validateArgumentValue'
+  argumentDef
+  fieldName
+  typeWrappers
+  arg@Argument {argumentValue = value, ..} =
+    withPosition argumentPosition
+      $ startInput (SourceArgument arg)
+      $ do
+        (valueTypeDef :: TypeDefinition IN s) <- askInputFieldType argumentDef
+        let valueContext = ValueContext {valueWrappers = typeWrappers, valueTypeDef}
+        let entry = ObjectEntry fieldName value
+        argumentValue <- entryValue <$> V.validate valueContext entry
+        pure Argument {argumentValue, ..}
 
 validateFieldArguments ::
   ( Validate
@@ -257,8 +274,7 @@ class Validate args (s :: Stage) ctx where
     Validator ctx (Arguments VALID)
 
 instance
-  ( ArgumentsConstraints ctx VALID,
-    Validate' VALID CONST ctx
+  ( ArgumentsConstraints ctx VALID
   ) =>
   Validate (ArgCTX ctx VALID) RAW ctx
   where
@@ -267,10 +283,7 @@ instance
       >>= validate ctx
 
 instance
-  ( ArgumentConstraints ctx s,
-    Validate' s s ctx,
-    Validate' s CONST ctx
-  ) =>
+  ValidateArgumentWithDefault s ctx =>
   Validate (ArgCTX ctx s) CONST ctx
   where
   validate (ArgCTX checkUnknown argsDef) args =

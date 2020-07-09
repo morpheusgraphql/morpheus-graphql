@@ -110,7 +110,7 @@ instance Unused (OperationContext v) Fragment where
 class MissingRequired c ctx where
   missingRequired :: Scope -> ctx -> Ref -> c -> GQLError
 
-instance MissingRequired (Arguments s) (OperationContext v) where
+instance MissingRequired (Arguments s) ctx where
   missingRequired
     Scope {position, kind, fieldname}
     _
@@ -127,22 +127,6 @@ instance MissingRequired (Arguments s) (OperationContext v) where
       where
         inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldname)
         inScope _ = "Field " <> msg fieldname
-
--- TODO: Intstance for Schema directives. detailed information
-instance MissingRequired (Arguments s) (TypeSystemContext ctx) where
-  missingRequired
-    _
-    _
-    Ref {refName}
-    _ =
-      GQLError
-        { message =
-            "TODO: schema"
-              <> " argument "
-              <> msg refName
-              <> " is required but not provided.",
-          locations = []
-        }
 
 instance MissingRequired (Object s) (InputContext ctx) where
   missingRequired
