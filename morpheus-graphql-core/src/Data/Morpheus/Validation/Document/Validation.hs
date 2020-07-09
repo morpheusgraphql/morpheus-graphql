@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -67,6 +68,8 @@ import Data.Morpheus.Types.Internal.Validation
     InputContext,
     InputSource (..),
     InputValidator,
+    Scope (..),
+    ScopeKind (..),
     askInputFieldTypeByName,
     runValidator,
     startInput,
@@ -115,6 +118,12 @@ instance ValidateSchema CONST where
       } =
       runValidator
         __validateSchema
+        Scope
+          { position = Nothing,
+            typename = "TODO: typename",
+            kind = TYPE,
+            fieldname = "TODO: fieldname"
+          }
         TypeSystemContext
           { types = elems schema,
             local = ()
@@ -138,6 +147,7 @@ validatePartialDocument :: [TypeDefinition ANY CONST] -> Eventless [TypeDefiniti
 validatePartialDocument types =
   runValidator
     (traverse validateType types)
+    Scope {}
     TypeSystemContext
       { types = systemTypes <> types,
         local = ()

@@ -140,7 +140,6 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
 type InputConstraints ctx schemaS s =
   ( GetWith ctx (Schema schemaS),
     GetWith (InputContext ctx) InputSource,
-    SetWith ctx Scope,
     Validate (ValueContext schemaS) ObjectEntry s (InputContext ctx)
   )
 

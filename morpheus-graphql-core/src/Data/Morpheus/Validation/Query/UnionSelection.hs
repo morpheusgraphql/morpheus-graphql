@@ -45,7 +45,7 @@ import Data.Morpheus.Types.Internal.Validation
   ( Scope (..),
     SelectionValidator,
     askTypeMember,
-    asks,
+    asksScope,
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
@@ -67,7 +67,7 @@ exploreUnionFragments unionTags = splitFrag
     splitFrag (Spread _ ref) = packFragment <$> resolveSpread (map memberName unionTags) ref
     splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
     splitFrag Selection {selectionName, selectionPosition} = do
-      typeName <- asks typename
+      typeName <- asksScope typename
       failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
     splitFrag (InlineFragment fragment) =
       packFragment

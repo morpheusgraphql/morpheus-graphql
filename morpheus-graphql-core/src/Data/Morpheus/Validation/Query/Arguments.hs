@@ -61,11 +61,10 @@ import Data.Morpheus.Types.Internal.Validation
     OperationContext,
     Scope (..),
     SelectionValidator,
-    SetWith,
     Validator,
     askInputFieldType,
     askVariables,
-    asks,
+    asksScope,
     selectKnown,
     selectRequired,
     selectWithDefaultValue,
@@ -142,7 +141,7 @@ validateArgument
     where
       f :: Value s -> Validator ctx (Argument VALID)
       f value = do
-        argumentPosition <- fromMaybe (Position 0 0) <$> asks position
+        argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
         let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
         validateArgumentValue argumentDef fieldName typeWrappers arg
 

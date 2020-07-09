@@ -446,13 +446,6 @@ instance SetWith (OperationContext v) CurrentSelection where
         ..
       }
 
-instance SetWith c Scope => SetWith (InputContext c) Scope where
-  setWith f InputContext {..} =
-    InputContext
-      { sourceContext = setWith f sourceContext,
-        ..
-      }
-
 -- can be only used for internal errors
 instance
   (MonadContext Validator ctx) =>

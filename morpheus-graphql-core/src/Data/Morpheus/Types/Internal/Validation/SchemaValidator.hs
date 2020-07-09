@@ -88,18 +88,6 @@ instance GetWith (TypeSystemContext ctx) (Schema CONST) where
     Success {result} -> result
     Failure {errors} -> error (show errors) --TODO: fix
 
-instance GetWith (TypeSystemContext a) Scope where
-  getWith _ =
-    Scope
-      { position = Nothing,
-        typename = "TODO: typename",
-        kind = TYPE,
-        fieldname = "TODO: fieldname"
-      }
-
-instance SetWith (TypeSystemContext a) Scope where
-  setWith _ = id --TODO:
-
 selectType ::
   TypeName ->
   SchemaValidator
