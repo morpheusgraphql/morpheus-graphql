@@ -38,8 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     Position (..),
     RAW,
-    RawValue,
-    ResolvedValue,
     Schema,
     VALID,
     Value (..),
@@ -81,8 +79,8 @@ type ArgumentsConstraints c schemaS valueS =
 -- only Resolves , doesnot checks the types
 resolveObject ::
   VariableConstraints ctx =>
-  RawValue ->
-  Validator ctx ResolvedValue
+  Value RAW ->
+  Validator ctx (Value CONST)
 resolveObject = resolve
   where
     resolveEntry ::
@@ -93,8 +91,8 @@ resolveObject = resolve
     ------------------------------------------------
     resolve ::
       VariableConstraints ctx =>
-      RawValue ->
-      Validator ctx ResolvedValue
+      Value RAW ->
+      Validator ctx (Value CONST)
     resolve Null = pure Null
     resolve (Scalar x) = pure $ Scalar x
     resolve (Enum x) = pure $ Enum x
