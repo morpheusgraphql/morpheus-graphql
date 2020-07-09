@@ -19,6 +19,7 @@ module Data.Morpheus.Validation.Internal.Arguments
   )
 where
 
+import Control.Monad ((>=>))
 import Data.Foldable (traverse_)
 import Data.Maybe (fromMaybe)
 import Data.Morpheus.Internal.Utils
@@ -86,20 +87,17 @@ validateArgument ::
   Validator ctx (Argument VALID)
 validateArgument
   requestArgs
-  argumentDef@FieldDefinition
-    { fieldName
-    } =
+  argumentDef =
     selectWithDefaultValue
-      f
+      (toArgument argumentDef >=> validateArgumentValue argumentDef)
       (validateArgumentValue argumentDef)
       argumentDef
       requestArgs
-    where
-      f :: Value schemaS -> Validator ctx (Argument VALID)
-      f value = do
-        argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
-        let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
-        validateArgumentValue argumentDef arg
+
+toArgument :: FieldDefinition IN s -> Value schemaS -> Validator ctx (Argument schemaS)
+toArgument
+  FieldDefinition {fieldName}
+  value = Argument fieldName value . fromMaybe (Position 0 0) <$> asksScope position
 
 validateArgumentValue ::
   (ValueConstraints ctx schemaS valueS) =>
@@ -125,10 +123,10 @@ validateFieldArguments ::
   Arguments RAW ->
   Validator ctx (Arguments VALID)
 validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
-  validateArguments f argsDef
+  validateArguments
+    (`selectKnown` fieldDef)
+    argsDef
   where
-    f :: Argument CONST -> Validator ctx (ArgumentDefinition VALID)
-    f = (`selectKnown` fieldDef)
     argsDef = maybe empty fieldContentArgs fieldContent
 
 validateDirectiveArguments ::
@@ -141,10 +139,9 @@ validateDirectiveArguments
   directiveDef@DirectiveDefinition
     { directiveDefinitionArgs
     } =
-    validateArguments f directiveDefinitionArgs
-    where
-      f :: Argument CONST -> Validator ctx (ArgumentDefinition schemaStage)
-      f = (`selectKnown` directiveDef)
+    validateArguments
+      (`selectKnown` directiveDef)
+      directiveDefinitionArgs
 
 validateArguments ::
   ArgumentsConstraints ctx schemaStage s =>
