@@ -69,6 +69,7 @@ import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
+    CONST,
     DataFingerprint (..),
     DataUnion,
     FALSE,
@@ -128,13 +129,13 @@ class Introspect (cat :: TypeCategory) a where
   isObject :: proxy cat a -> Bool
   default isObject :: GQLType a => proxy cat a -> Bool
   isObject _ = isObjectKind (Proxy @a)
-  field :: proxy cat a -> FieldName -> FieldDefinition cat
+  field :: proxy cat a -> FieldName -> FieldDefinition cat CONST
   -----------------------------------------------
   default field ::
     GQLType a =>
     proxy cat a ->
     FieldName ->
-    FieldDefinition cat
+    FieldDefinition cat CONST
   field _ = buildField (Proxy @a) Nothing
 
 -- Maybe
@@ -173,7 +174,7 @@ instance (GQLType b, DeriveTypeContent IN 'False a, Introspect OUT b) => Introsp
   field _ name = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
     where
       fieldObj = field (ProxyRep :: ProxyRep OUT b) name
-      fieldArgs :: ArgumentsDefinition
+      fieldArgs :: ArgumentsDefinition CONST
       fieldArgs =
         fieldsToArguments
           $ fst
@@ -257,7 +258,7 @@ introspectInputObjectFields ::
   DeriveTypeContent IN custom a =>
   proxy1 (custom :: Bool) ->
   (TypeName, proxy2 a) ->
-  (FieldsDefinition IN, [TypeUpdater])
+  (FieldsDefinition IN CONST, [TypeUpdater])
 introspectInputObjectFields p1 (name, proxy) =
   withObject (deriveTypeContent p1 (proxy, ([], []), InputType, "", DataFingerprint "" []))
   where
@@ -268,7 +269,7 @@ introspectObjectFields ::
   DeriveTypeContent OUT custom a =>
   proxy1 (custom :: Bool) ->
   (TypeName, proxy2 a) ->
-  (FieldsDefinition OUT, [TypeUpdater])
+  (FieldsDefinition OUT CONST, [TypeUpdater])
 introspectObjectFields p1 (name, proxy) =
   withObject (deriveTypeContent p1 (proxy, ([], []), OutputType, "", DataFingerprint "" []))
   where
@@ -280,7 +281,10 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
 class DeriveTypeContent cat (custom :: Bool) a where
-  deriveTypeContent :: proxy1 custom -> (proxy2 a, ([TypeName], [TypeUpdater]), TypeScope cat, TypeName, DataFingerprint) -> (TypeContent TRUE cat, [TypeUpdater])
+  deriveTypeContent ::
+    proxy1 custom ->
+    (proxy2 a, ([TypeName], [TypeUpdater]), TypeScope cat, TypeName, DataFingerprint) ->
+    (TypeContent TRUE cat CONST, [TypeUpdater])
 
 instance (TypeRep cat (Rep a), Generic a) => DeriveTypeContent cat FALSE a where
   deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
@@ -295,9 +299,9 @@ instance (TypeRep cat (Rep a), Generic a) => DeriveTypeContent cat FALSE a where
 buildField ::
   GQLType a =>
   Proxy a ->
-  Maybe (FieldContent TRUE cat) ->
+  Maybe (FieldContent TRUE cat CONST) ->
   FieldName ->
-  FieldDefinition cat
+  FieldDefinition cat CONST
 buildField proxy fieldContent fieldName =
   FieldDefinition
     { fieldType = mkTypeRef (__typeName proxy),
@@ -307,7 +311,7 @@ buildField proxy fieldContent fieldName =
       ..
     }
 
-buildType :: GQLType a => TypeContent TRUE cat -> Proxy a -> TypeDefinition cat
+buildType :: GQLType a => TypeContent TRUE cat CONST -> Proxy a -> TypeDefinition cat CONST
 buildType typeContent proxy =
   TypeDefinition
     { typeName = __typeName proxy,
@@ -319,7 +323,7 @@ buildType typeContent proxy =
 
 updateLib ::
   GQLType a =>
-  (Proxy a -> TypeDefinition cat) ->
+  (Proxy a -> TypeDefinition cat CONST) ->
   [TypeUpdater] ->
   Proxy a ->
   TypeUpdater
@@ -327,7 +331,7 @@ updateLib f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint pro
 
 updateLibOUT ::
   GQLType a =>
-  (Proxy a -> TypeDefinition OUT) ->
+  (Proxy a -> TypeDefinition OUT CONST) ->
   [TypeUpdater] ->
   Proxy a ->
   TypeUpdater
@@ -343,7 +347,7 @@ data ConsRep cat = ConsRep
 
 data FieldRep cat = FieldRep
   { fieldTypeName :: TypeName,
-    fieldData :: FieldDefinition cat,
+    fieldData :: FieldDefinition cat CONST,
     fieldTypeUpdater :: TypeUpdater,
     fieldIsObject :: Bool
   }
@@ -386,30 +390,30 @@ analyseRep baseName cons =
     (unionRecordRep, anyonimousUnionRep) = partition consIsRecord left2
 
 buildInputUnion ::
-  (TypeName, DataFingerprint) -> [ConsRep IN] -> (TypeContent TRUE IN, [TypeUpdater])
+  (TypeName, DataFingerprint) -> [ConsRep IN] -> (TypeContent TRUE IN CONST, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons =
   datatype
     (analyseRep baseName cons)
   where
-    datatype :: ResRep IN -> (TypeContent TRUE IN, [TypeUpdater])
+    datatype :: ResRep IN -> (TypeContent TRUE IN CONST, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (DataInputUnion typeMembers, types <> unionTypes)
       where
-        typeMembers :: [UnionMember IN]
+        typeMembers :: [UnionMember IN CONST]
         typeMembers = map mkUnionMember (unionRef <> unionMembers) <> map (`UnionMember` False) enumCons
         (unionMembers, unionTypes) =
           buildUnions wrapInputObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
-    wrapInputObject :: (FieldsDefinition IN -> TypeContent TRUE IN)
+    wrapInputObject :: (FieldsDefinition IN CONST -> TypeContent TRUE IN CONST)
     wrapInputObject = DataInputObject
 
 buildUnionType ::
   (TypeName, DataFingerprint) ->
-  (DataUnion -> TypeContent TRUE cat) ->
-  (FieldsDefinition cat -> TypeContent TRUE cat) ->
+  (DataUnion CONST -> TypeContent TRUE cat CONST) ->
+  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   [ConsRep cat] ->
-  (TypeContent TRUE cat, [TypeUpdater])
+  (TypeContent TRUE cat CONST, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
   datatype
     (analyseRep baseName cons)
@@ -426,7 +430,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
           buildUnions wrapObject baseFingerprint unionRecordRep
     types = map fieldTypeUpdater $ concatMap consFields cons
 
-buildObject :: ([TypeName], [TypeUpdater]) -> TypeScope cat -> [FieldRep cat] -> (TypeContent TRUE cat, [TypeUpdater])
+buildObject :: ([TypeName], [TypeUpdater]) -> TypeScope cat -> [FieldRep cat] -> (TypeContent TRUE cat CONST, [TypeUpdater])
 buildObject (interfaces, interfaceTypes) scope consFields =
   ( wrapWith scope fields,
     types <> interfaceTypes
@@ -434,18 +438,18 @@ buildObject (interfaces, interfaceTypes) scope consFields =
   where
     (fields, types) = buildDataObject consFields
     --- wrap with
-    wrapWith :: TypeScope cat -> FieldsDefinition cat -> TypeContent TRUE cat
+    wrapWith :: TypeScope cat -> FieldsDefinition cat CONST -> TypeContent TRUE cat CONST
     wrapWith InputType = DataInputObject
     wrapWith OutputType = DataObject interfaces
 
-buildDataObject :: [FieldRep cat] -> (FieldsDefinition cat, [TypeUpdater])
+buildDataObject :: [FieldRep cat] -> (FieldsDefinition cat CONST, [TypeUpdater])
 buildDataObject consFields = (fields, types)
   where
     fields = unsafeFromFields $ map fieldData consFields
     types = map fieldTypeUpdater consFields
 
 buildUnions ::
-  (FieldsDefinition cat -> TypeContent TRUE cat) ->
+  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   DataFingerprint ->
   [ConsRep cat] ->
   ([TypeName], [TypeUpdater])
@@ -455,7 +459,7 @@ buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
     members = map consName cons
 
 buildUnionRecord ::
-  (FieldsDefinition cat -> TypeContent TRUE cat) -> DataFingerprint -> ConsRep cat -> TypeDefinition cat
+  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) -> DataFingerprint -> ConsRep cat -> TypeDefinition cat CONST
 buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
   TypeDefinition
     { typeName = consName,
@@ -469,7 +473,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
     }
 
 buildUnionEnum ::
-  (FieldsDefinition cat -> TypeContent TRUE cat) ->
+  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   TypeName ->
   DataFingerprint ->
   [TypeName] ->
@@ -506,7 +510,7 @@ buildEnum typeName typeFingerprint tags =
       }
 
 buildEnumObject ::
-  (FieldsDefinition cat -> TypeContent TRUE cat) ->
+  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   TypeName ->
   DataFingerprint ->
   TypeName ->

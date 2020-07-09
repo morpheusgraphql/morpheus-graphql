@@ -79,7 +79,7 @@ mkEntry ::
   (a, Resolver o e m (ResModel o e m))
 mkEntry name field = (name, encode field)
 
-decodeObjectE :: TypeName -> [FieldDefinition cat] -> Exp
+decodeObjectE :: TypeName -> [FieldDefinition cat s] -> Exp
 decodeObjectE tName cFields =
   withPure $
     mkObjectE
@@ -91,13 +91,13 @@ instanceType :: TypeName -> Type
 instanceType tName = apply ''ExploreResolvers (ConT ''TRUE : genHeadType tName)
 
 -- | defines: objectResolvers <Type field1 field2 ...> = [("field1",encode field1),("field2",encode field2), ...]
-exploreResolversD :: TypeName -> [FieldDefinition cat] -> DecQ
+exploreResolversD :: TypeName -> [FieldDefinition cat s] -> DecQ
 exploreResolversD tName fields = funDSimple 'exploreResolvers args body
   where
     args = [_', destructRecord tName fields]
     body = pure (decodeObjectE tName fields)
 
-deriveEncode :: ServerTypeDefinition cat -> Q [Dec]
+deriveEncode :: ServerTypeDefinition cat s -> Q [Dec]
 deriveEncode ServerTypeDefinition {tName, tCons = [ConsD {cFields}]} =
   pure <$> instanceD context typeDef funDefs
   where

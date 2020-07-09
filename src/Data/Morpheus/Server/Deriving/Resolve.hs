@@ -40,7 +40,8 @@ import Data.Morpheus.Types.IO
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldsDefinition,
+  ( CONST,
+    FieldsDefinition,
     MUTATION,
     OUT,
     QUERY,
@@ -99,7 +100,7 @@ coreResolver root request =
     >>= execOperator
   where
     validRequest ::
-      Monad m => ResponseStream event m Schema
+      Monad m => ResponseStream event m (Schema CONST)
     validRequest = cleanEvents $ ResultT $ pure $ fullSchema $ Identity root
     --------------------------------------
     execOperator schema = runApi schema (deriveModel root) request
@@ -108,7 +109,7 @@ fullSchema ::
   forall proxy m event query mutation subscription.
   (IntrospectConstraint m event query mutation subscription) =>
   proxy (RootResolver m event query mutation subscription) ->
-  Eventless Schema
+  Eventless (Schema CONST)
 fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema =
@@ -142,10 +143,10 @@ fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
             ( "type for subscription",
               Proxy @(subscription (Resolver SUBSCRIPTION event m))
             )
-    maybeOperator :: FieldsDefinition OUT -> TypeName -> Maybe (TypeDefinition OUT)
+    maybeOperator :: FieldsDefinition OUT CONST -> TypeName -> Maybe (TypeDefinition OUT CONST)
     maybeOperator fields
       | null fields = const Nothing
       | otherwise = Just . operatorType fields
     -------------------------------------------------
-    operatorType :: FieldsDefinition OUT -> TypeName -> TypeDefinition OUT
+    operatorType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OUT CONST
     operatorType fields typeName = mkType typeName (DataObject [] fields)

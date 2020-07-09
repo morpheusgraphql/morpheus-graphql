@@ -62,13 +62,13 @@ mkType tName = apply tName [apply ''Resolver [ConT ''SUBSCRIPTION, e', m']]
 mkTypeClass :: TypeName -> Type
 mkTypeClass tName = apply ''ExploreChannels [ConT ''TRUE, mkType tName, e']
 
-exploreChannelsD :: TypeName -> [FieldDefinition cat] -> DecQ
+exploreChannelsD :: TypeName -> [FieldDefinition cat s] -> DecQ
 exploreChannelsD tName fields = funDSimple 'exploreChannels args body
   where
     args = [_', destructRecord tName fields]
     body = pure (mkFieldsE 'mkEntry fields)
 
-deriveChannels :: ServerTypeDefinition cat -> Q [Dec]
+deriveChannels :: ServerTypeDefinition cat s -> Q [Dec]
 deriveChannels ServerTypeDefinition {tName, tCons = [ConsD {cFields}], tKind}
   | isSubscription tKind =
     pure <$> instanceD context typeDef funDefs

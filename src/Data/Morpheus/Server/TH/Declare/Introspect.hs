@@ -61,7 +61,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Proxy (Proxy (..))
 import Language.Haskell.TH
 
-instanceIntrospect :: Maybe (TypeDefinition cat) -> Q [Dec]
+instanceIntrospect :: Maybe (TypeDefinition cat s) -> Q [Dec]
 instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnum {}}) =
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
@@ -70,7 +70,7 @@ instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnu
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
-deriveObjectRep :: ServerTypeDefinition cat -> Q [Dec]
+deriveObjectRep :: ServerTypeDefinition cat s -> Q [Dec]
 deriveObjectRep
   ServerTypeDefinition
     { tName,
@@ -108,9 +108,9 @@ deriveObjectRep
 deriveObjectRep _ = pure []
 
 deriveInputObject ::
-  [FieldDefinition IN] ->
+  [FieldDefinition IN s] ->
   [TypeUpdater] ->
-  ( TypeContent TRUE IN,
+  ( TypeContent TRUE IN s,
     [TypeUpdater]
   )
 deriveInputObject fields typeUpdates =
@@ -119,9 +119,9 @@ deriveInputObject fields typeUpdates =
 deriveOutputObject ::
   (GQLType a) =>
   Proxy a ->
-  [FieldDefinition OUT] ->
+  [FieldDefinition OUT s] ->
   [TypeUpdater] ->
-  ( TypeContent TRUE OUT,
+  ( TypeContent TRUE OUT s,
     [TypeUpdater]
   )
 deriveOutputObject proxy fields typeUpdates =
@@ -137,14 +137,14 @@ interfaceNames = map fst . implements
 interfaceTypes :: GQLType a => Proxy a -> TypeUpdater
 interfaceTypes = concatUpdates . map snd . implements
 
-buildTypes :: TypeQ -> [FieldDefinition cat] -> ExpQ
+buildTypes :: TypeQ -> [FieldDefinition cat s] -> ExpQ
 buildTypes cat = listE . concatMap (introspectField cat)
 
-introspectField :: TypeQ -> FieldDefinition cat -> [ExpQ]
+introspectField :: TypeQ -> FieldDefinition cat s -> [ExpQ]
 introspectField cat FieldDefinition {fieldType, fieldContent} =
   [|introspect $(proxyRepT cat fieldType)|] : inputTypes fieldContent
   where
-    inputTypes :: Maybe (FieldContent TRUE cat) -> [ExpQ]
+    inputTypes :: Maybe (FieldContent TRUE cat s) -> [ExpQ]
     inputTypes (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypeName}))
       | argsTypeName /= "()" = [[|deriveCustomInputObjectType (argsTypeName, $(proxyT tAlias))|]]
       where
@@ -163,7 +163,7 @@ proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
     genSig (Just m) = appT (toCon typeConName) (toVarT m)
     genSig _ = toCon typeConName
 
-buildFields :: [FieldDefinition cat] -> ExpQ
+buildFields :: [FieldDefinition cat s] -> ExpQ
 buildFields = listE . map buildField
   where
     buildField f@FieldDefinition {fieldType} = [|f {fieldType = fieldType {typeConName = __typeName $(proxyT fieldType)}}|]

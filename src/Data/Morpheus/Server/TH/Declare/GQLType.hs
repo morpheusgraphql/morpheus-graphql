@@ -48,7 +48,7 @@ interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () 
 introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . toName
 
-deriveGQLType :: ServerTypeDefinition cat -> Q [Dec]
+deriveGQLType :: ServerTypeDefinition cat s -> Q [Dec]
 deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
   pure <$> instanceD constrains iHead (functions <> typeFamilies)
   where
@@ -81,6 +81,6 @@ deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
           typeN <- headSig
           pure $ typeInstanceDec insName typeN (ConT tyName)
 
-interfacesFrom :: Maybe (TypeDefinition ANY) -> [TypeName]
+interfacesFrom :: Maybe (TypeDefinition ANY s) -> [TypeName]
 interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
 interfacesFrom _ = []
