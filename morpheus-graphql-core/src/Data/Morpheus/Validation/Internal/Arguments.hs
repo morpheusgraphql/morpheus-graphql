@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     IN,
     OUT,
-    Object,
     ObjectEntry (..),
     Position (..),
     RAW,
@@ -74,6 +73,16 @@ type VariableConstraints ctx =
     MissingRequired (VariableDefinitions VALID) ctx
   )
 
+type ArgumentConstraints ctx s =
+  ( GetWith ctx (Schema s),
+    Validate (ValueContext s) Value CONST (InputContext ctx)
+  )
+
+type ArgumentsConstraints ctx s =
+  ( VariableConstraints ctx,
+    ArgumentConstraints ctx s
+  )
+
 -- only Resolves , doesnot checks the types
 resolveObject ::
   VariableConstraints ctx =>
@@ -102,22 +111,6 @@ resolveObject = resolve
         >>= fmap (ResolvedVariable ref)
           . selectRequired ref
 
-type ValueConstraints ctx s =
-  ( GetWith ctx (Schema s),
-    MissingRequired (Object CONST) (InputContext ctx)
-  )
-
-type ArgumentConstraints ctx s =
-  ( MissingRequired (Arguments CONST) ctx,
-    ValueConstraints ctx s,
-    Validate (ValueContext s) ObjectEntry CONST (InputContext ctx)
-  )
-
-type ArgConst ctx s =
-  ( GetWith ctx (Schema s),
-    Validate (ValueContext s) Value CONST (InputContext ctx)
-  )
-
 class ValidateWithDefault schemaStage ctx where
   validateArgument ::
     Arguments CONST ->
@@ -145,7 +138,7 @@ instance
           pure Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
 
 instance
-  ArgConst ctx CONST =>
+  ArgumentConstraints ctx CONST =>
   ValidateWithDefault CONST ctx
   where
   validateArgument
@@ -166,7 +159,7 @@ instance
           validateArgumentValue argumentDef arg
 
 validateArgumentValue ::
-  ArgConst ctx schemaStage =>
+  ArgumentConstraints ctx schemaStage =>
   FieldDefinition IN schemaStage ->
   Argument CONST ->
   Validator ctx (Argument VALID)
@@ -212,11 +205,6 @@ validateDirectiveArguments
     where
       f :: Argument CONST -> Validator ctx (ArgumentDefinition schemaStage)
       f = (`selectKnown` directiveDef)
-
-type ArgumentsConstraints ctx s =
-  ( VariableConstraints ctx,
-    ArgumentConstraints ctx s
-  )
 
 validateArguments ::
   ( ResolveArgument s ctx,
