@@ -393,15 +393,6 @@ mapScope f ValidatorContext {scope, ..} = ValidatorContext {scope = f scope, ..}
 get :: (MonadContext m ctx, GetWith ctx a) => m ctx a
 get = getContext getWith
 
-set ::
-  ( MonadContext m c,
-    SetWith c a
-  ) =>
-  (a -> a) ->
-  m c b ->
-  m c b
-set f = setContext (setWith f)
-
 class
   Monad (m c) =>
   MonadContext m c

@@ -34,7 +34,6 @@ where
 import Control.Applicative (pure)
 import Control.Monad ((>>=))
 import Control.Monad.Reader (asks)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -47,7 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     FieldsDefinition,
     OUT,
-    Position (..),
     Schema,
     TypeContent (..),
     TypeDefinition (..),
@@ -57,9 +55,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving (Result (..))
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( GetWith (..),
-    Scope (..),
-    ScopeKind (..),
-    SetWith (..),
     Validator (..),
     renderField,
     withContext,
@@ -74,7 +69,6 @@ import Prelude
     Show (..),
     const,
     error,
-    id,
   )
 
 data TypeSystemContext c = TypeSystemContext

@@ -15,8 +15,6 @@ module Data.Morpheus.Validation.Internal.Arguments
   ( validateDirectiveArguments,
     validateFieldArguments,
     ArgumentsConstraints,
-    ArgCTX,
-    validate,
     ResolveArgument (..),
     ValidateWithDefault (..),
   )
@@ -211,7 +209,7 @@ validateFieldArguments ::
   Arguments RAW ->
   Validator ctx (Arguments VALID)
 validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
-  validate (ArgCTX f argsDef)
+  validateArguments f argsDef
   where
     f :: Argument CONST -> Validator ctx (ArgumentDefinition VALID)
     f = (`selectKnown` fieldDef)
@@ -230,7 +228,7 @@ validateDirectiveArguments
   directiveDef@DirectiveDefinition
     { directiveDefinitionArgs
     } =
-    validate (ArgCTX f directiveDefinitionArgs)
+    validateArguments f directiveDefinitionArgs
     where
       f :: Argument CONST -> Validator ctx (ArgumentDefinition schemaStage)
       f = (`selectKnown` directiveDef)
@@ -240,20 +238,16 @@ type ArgumentsConstraints ctx s =
     ArgumentConstraints ctx s
   )
 
-data ArgCTX ctx s = ArgCTX
-  { getArg :: Argument CONST -> Validator ctx (ArgumentDefinition s),
-    argumentsDef :: ArgumentsDefinition s
-  }
-
-validate ::
+validateArguments ::
   ( ResolveArgument s ctx,
     GetWith ctx (Schema schemaStage),
     ValidateWithDefault schemaStage ctx
   ) =>
-  ArgCTX ctx schemaStage ->
+  (Argument CONST -> Validator ctx (ArgumentDefinition schemaStage)) ->
+  ArgumentsDefinition schemaStage ->
   Arguments s ->
   Validator ctx (Arguments VALID)
-validate (ArgCTX checkUnknown argsDef) rawArgs = do
+validateArguments checkUnknown argsDef rawArgs = do
   args <- traverse resolveArgument rawArgs
   traverse_ checkUnknown args
   traverse (validateArgument args) (arguments argsDef)

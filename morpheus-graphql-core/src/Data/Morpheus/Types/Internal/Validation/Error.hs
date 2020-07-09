@@ -47,9 +47,6 @@ import Data.Morpheus.Types.Internal.AST
     getOperationName,
     msg,
   )
-import Data.Morpheus.Types.Internal.Validation.SchemaValidator
-  ( TypeSystemContext (..),
-  )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( CurrentSelection (..),
     InputContext (..),
