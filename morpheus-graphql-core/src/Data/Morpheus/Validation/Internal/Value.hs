@@ -412,21 +412,6 @@ instance
         )
         entry
 
--- validateInputField ::
---   (InputConstraints c schemaS s) =>
---   FieldDefinition IN schemaS ->
---   ObjectEntry s ->
---   Validator (InputContext c) (ObjectEntry VALID)
--- validateInputField fieldDef@FieldDefinition {fieldName, fieldType = TypeRef {typeConName, typeWrappers}} entry = do
---   inputTypeDef <- askInputFieldType fieldDef
---   withInputScope (Prop fieldName typeConName) $
---     validate
---       ( ValueContext
---           typeWrappers
---           inputTypeDef
---       )
---       entry
-
 requiredFieldIsDefined ::
   ( MissingRequired (Object CONST) (InputContext ctx),
     GetWith ctx Scope
