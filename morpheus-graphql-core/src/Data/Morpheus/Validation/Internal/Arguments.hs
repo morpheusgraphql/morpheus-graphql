@@ -63,8 +63,11 @@ import Data.Morpheus.Types.Internal.Validation
     startInput,
     withPosition,
   )
-import qualified Data.Morpheus.Validation.Internal.Value as V
-import Data.Morpheus.Validation.Internal.Value (ValueContext (..), validateInputByField)
+import Data.Morpheus.Validation.Internal.Value
+  ( Validate,
+    ValueContext (..),
+    validateInputByField,
+  )
 
 type VariableConstraints ctx =
   ( GetWith ctx (VariableDefinitions VALID),
@@ -107,7 +110,12 @@ type ValueConstraints ctx s =
 type ArgumentConstraints ctx s =
   ( MissingRequired (Arguments CONST) ctx,
     ValueConstraints ctx s,
-    V.Validate (V.ValueContext s) ObjectEntry CONST (InputContext ctx)
+    Validate (ValueContext s) ObjectEntry CONST (InputContext ctx)
+  )
+
+type ArgConst ctx s =
+  ( GetWith ctx (Schema s),
+    Validate (ValueContext s) Value CONST (InputContext ctx)
   )
 
 class ValidateWithDefault schemaStage ctx where
@@ -156,11 +164,6 @@ instance
           argumentPosition <- fromMaybe (Position 0 0) <$> asksScope position
           let arg = Argument {argumentName = fieldName, argumentValue = value, argumentPosition}
           validateArgumentValue argumentDef arg
-
-type ArgConst ctx s =
-  ( GetWith ctx (Schema s),
-    V.Validate (ValueContext s) Value CONST (InputContext ctx)
-  )
 
 validateArgumentValue ::
   ArgConst ctx schemaStage =>
