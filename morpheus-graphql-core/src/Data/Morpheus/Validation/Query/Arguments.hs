@@ -172,20 +172,24 @@ validateArgumentValue ::
   [TypeWrapper] ->
   Argument s ->
   Validator ctx (Argument VALID)
-validateArgumentValue argumentDef fieldName typeWrappers arg@Argument {argumentValue = value, ..} =
-  withPosition argumentPosition
-    $ startInput (SourceArgument arg)
-    $ do
-      datatype <- askInputFieldType argumentDef
-      argumentValue <-
-        entryValue
-          <$> V.validate
-            ( V.ValueContext
-                typeWrappers
-                datatype
-            )
-            (ObjectEntry fieldName value)
-      pure Argument {argumentValue, ..}
+validateArgumentValue
+  argumentDef
+  fieldName
+  typeWrappers
+  arg@Argument {argumentValue = value, ..} =
+    withPosition argumentPosition
+      $ startInput (SourceArgument arg)
+      $ do
+        datatype <- askInputFieldType argumentDef
+        argumentValue <-
+          entryValue
+            <$> V.validate
+              ( V.ValueContext
+                  typeWrappers
+                  datatype
+              )
+              (ObjectEntry fieldName value)
+        pure Argument {argumentValue, ..}
 
 validateFieldArguments ::
   ( Validate
