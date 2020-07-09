@@ -37,7 +37,6 @@ import Control.Monad.Reader (asks)
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    fromElems,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -52,7 +51,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     msg,
   )
-import Data.Morpheus.Types.Internal.Resolving (Result (..))
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( GetWith (..),
     Validator (..),
@@ -68,19 +66,16 @@ import Prelude
     (.),
     Show (..),
     const,
-    error,
   )
 
 data TypeSystemContext c = TypeSystemContext
-  { types :: [TypeDefinition ANY CONST],
+  { schema :: Schema CONST,
     local :: c
   }
   deriving (Show)
 
 instance GetWith (TypeSystemContext ctx) (Schema CONST) where
-  getWith ctx = case fromElems (types ctx) of
-    Success {result} -> result
-    Failure {errors} -> error (show errors) --TODO: fix
+  getWith = schema
 
 selectType ::
   TypeName ->
@@ -88,7 +83,7 @@ selectType ::
     ctx
     (TypeDefinition ANY CONST)
 selectType name =
-  asks types
+  asks schema
     >>= selectBy err name
   where
     err = globalErrorMessage $ "Unknown Type " <> msg name <> "."

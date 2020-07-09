@@ -5,12 +5,12 @@ https://en.wikipedia.org/wiki/Euro
 """
 scalar Euro
 
-input Cat @testDir {
+input Cat {
   name: String!
 }
 
 input Dog {
-  name: String! @inputDirective(testName: "")
+  name: String!
 }
 
 input Bird {
@@ -22,7 +22,7 @@ input Bird {
 """
 id of city
 """
-enum CityID @enumDir {
+enum CityID {
   """
   temporary multiline Test for Enum field descripions
   """
@@ -33,7 +33,7 @@ enum CityID @enumDir {
 }
 
 input Coordinates {
-  latitude: Euro! = 23423 @customDirective(testName: "")
+  latitude: Euro! = 23423
   "temporary singleline Test for input object field descripions"
   longitude: [[[UniqueID!]!]]! = [[[{ id: "" }]]]
 }
@@ -51,7 +51,7 @@ interface Account {
   name: String!
 }
 
-type Address @typeDirective(id: 1) {
+type Address {
   """
   temporary multiline Test for Enum field descripions
   """
@@ -77,7 +77,7 @@ type User implements Account {
     arguments
     descripions
     """
-    coordinates: Coordinates! @argsDirective(id: 1)
+    coordinates: Coordinates!
     "temporary singleline Test for input object field descripions"
     comment: String = "test default value"
   ): Address!

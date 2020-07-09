@@ -33,9 +33,12 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     failure,
+    fromElems,
     ordTraverse,
   )
-import Data.Morpheus.Schema.Schema (systemTypes)
+import Data.Morpheus.Schema.Schema
+  ( withSystemTypes,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition,
@@ -49,6 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     IN,
     OUT,
+    Schema (..),
     Schema (..),
     TRUE,
     TypeContent (..),
@@ -111,7 +115,8 @@ instance ValidateSchema CONST where
         query,
         mutation,
         subscription
-      } =
+      } = do
+      sysSchema <- withSystemTypes schema
       runValidator
         __validateSchema
         Scope
@@ -121,7 +126,7 @@ instance ValidateSchema CONST where
             fieldname = "TODO: fieldname"
           }
         TypeSystemContext
-          { types = systemTypes <> elems schema,
+          { schema = sysSchema,
             local = ()
           }
       where
@@ -140,20 +145,23 @@ instance ValidateSchema VALID where
   validateSchema = pure
 
 validatePartialDocument :: [TypeDefinition ANY CONST] -> Eventless [TypeDefinition ANY CONST]
-validatePartialDocument types =
-  runValidator
-    (traverse validateType types)
-    Scope
-      { position = Nothing,
-        typename = "TODO: typename",
-        kind = TYPE,
-        fieldname = "TODO: fieldname"
-      }
-    TypeSystemContext
-      { types = systemTypes <> types,
-        local = ()
-      }
-    $> types
+validatePartialDocument = pure
+
+-- TODO: validate
+-- schema <- fromElems types
+-- runValidator
+--   (traverse validateType types)
+--   Scope
+--     { position = Nothing,
+--       typename = "TODO: typename",
+--       kind = TYPE,
+--       fieldname = "TODO: fieldname"
+--     }
+--   TypeSystemContext
+--     { schema,
+--       local = ()
+--     }
+--   $> types
 
 validateType ::
   TypeDefinition cat CONST ->
