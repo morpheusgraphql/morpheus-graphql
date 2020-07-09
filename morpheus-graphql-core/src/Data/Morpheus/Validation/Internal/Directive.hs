@@ -38,7 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveLocation (..),
     Directives,
     FieldName,
-    RAW,
     ScalarValue (..),
     Schema,
     VALID,
@@ -51,11 +50,9 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
     withDirective,
   )
-import qualified Data.Morpheus.Validation.Internal.Arguments as A
-  ( ArgCTX,
-    ResolveArgument,
+import Data.Morpheus.Validation.Internal.Arguments
+  ( ResolveArgument,
     ValidateWithDefault,
-    validate,
     validateDirectiveArguments,
   )
 import Data.Proxy (Proxy (..))
@@ -70,7 +67,7 @@ import Prelude
   )
 
 type DirectiveConstraint ctx schemaS s =
-  ( A.ResolveArgument s ctx,
+  ( ResolveArgument s ctx,
     GetWith ctx (Schema schemaS)
   )
 
@@ -90,9 +87,9 @@ validateTypeSystemDirectives location = traverse (validate (Proxy @CONST) locati
 
 validate ::
   forall s c schemaS.
-  ( A.ResolveArgument s c,
+  ( ResolveArgument s c,
     GetWith c (Schema schemaS),
-    A.ValidateWithDefault schemaS c
+    ValidateWithDefault schemaS c
   ) =>
   Proxy schemaS ->
   DirectiveLocation ->
@@ -101,7 +98,7 @@ validate ::
 validate _ location directive@Directive {directiveArgs, ..} =
   withDirective directive $ do
     (directiveDef :: DirectiveDefinition schemaS) <- selectKnown directive defaultDirectives
-    args <- A.validateDirectiveArguments directiveDef directiveArgs
+    args <- validateDirectiveArguments directiveDef directiveArgs
     validateDirectiveLocation location directive directiveDef
     pure Directive {directiveArgs = args, ..}
 
