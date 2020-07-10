@@ -10,14 +10,13 @@ module Schema
 where
 
 import Control.Applicative (pure)
-import Control.Monad ((<=<))
 import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
 import qualified Data.ByteString.Lazy as L (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Either (Either (..), either)
 import Data.Functor ((<$>), fmap)
-import Data.Morpheus.Core (parseFullGQLDocument, validateSchema)
+import Data.Morpheus.Core (parseFullGQLDocument)
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     Schema,
