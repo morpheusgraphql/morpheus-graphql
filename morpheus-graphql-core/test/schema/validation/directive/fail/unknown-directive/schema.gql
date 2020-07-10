@@ -1,15 +1,24 @@
-scalar MyScalar @deprecated
+scalar MyScalar @DirectveA
 
-enum TestEnum @deprecated {
-  EnumA @if
+enum TestEnum @DirectveB {
+  EnumA @DirectveB
   EnumB
 }
+type A @DirectveC {
+  name: String! @DirectveC
+}
 
-input Input1 @deprecated {
-  field1: ID @if
+type B @DirectveC {
+  name: String! @DirectveC
+}
+
+union MyUnion @DirectveD = A | B
+
+input Input1 @DirectveE {
+  field1: ID @DirectveE
   field2: String
 }
 
-type Query @deprecated {
-  field(a1: Int @skip): Int @if
+type Query @DirectveF {
+  field(a1: Int @DirectveF): Int @DirectveF
 }
