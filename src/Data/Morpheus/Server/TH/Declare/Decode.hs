@@ -45,12 +45,12 @@ decodeFieldValue value selectorName = withObject (decodeFieldWith decode selecto
 mkTypeClass :: TypeName -> Q Type
 mkTypeClass tName = applyCons ''DecodeType [tName]
 
-decodeValueD :: ConsD cat -> DecQ
+decodeValueD :: ConsD cat s -> DecQ
 decodeValueD ConsD {cName, cFields} = funDSimple 'decodeType [v'] body
   where
     body = decodeObjectE (const 'decodeFieldValue) cName cFields
 
-deriveDecode :: ServerTypeDefinition cat -> Q [Dec]
+deriveDecode :: ServerTypeDefinition cat s -> Q [Dec]
 deriveDecode
   ServerTypeDefinition
     { tName,

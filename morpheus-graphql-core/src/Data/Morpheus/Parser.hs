@@ -17,6 +17,7 @@ import Data.Morpheus.Types.IO
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    CONST,
     GQLQuery (..),
     Operation,
     Schema (..),
@@ -29,7 +30,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Morpheus.Validation.Document.Validation
-  ( validatePartialDocument,
+  ( validateSchema,
   )
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
@@ -37,17 +38,18 @@ import Data.Morpheus.Validation.Query.Validation
 import Data.Text (Text)
 
 parseTypeSystemDefinition ::
-  Text -> Eventless Schema
+  Text -> Eventless (Schema VALID)
 parseTypeSystemDefinition =
-  P.parseSchema >=> buildSchema
+  P.parseSchema
+    >=> buildSchema
+    >=> validateSchema True
 
 parseTypeDefinitions ::
-  Text -> Eventless [TypeDefinition ANY]
-parseTypeDefinitions =
-  P.parseTypeDefinitions >=> validatePartialDocument
+  Text -> Eventless [TypeDefinition ANY CONST]
+parseTypeDefinitions = P.parseTypeDefinitions
 
 parseRequest :: GQLRequest -> Eventless GQLQuery
 parseRequest = parseGQL
 
-parseRequestWith :: Schema -> GQLRequest -> Eventless (Operation VALID)
+parseRequestWith :: Schema VALID -> GQLRequest -> Eventless (Operation VALID)
 parseRequestWith schema = parseRequest >=> validateRequest schema FULL_VALIDATION

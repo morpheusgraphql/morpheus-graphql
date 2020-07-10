@@ -24,7 +24,9 @@ import qualified Data.Map as M
   ( fromList,
   )
 -- MORPHEUS
-import Data.Morpheus (interpreter)
+import Data.Morpheus
+  ( interpreter,
+  )
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
   )
@@ -53,6 +55,7 @@ import Data.Morpheus.Types
     publish,
     subscribe,
   )
+import Data.Proxy (Proxy (..))
 import Data.Set (Set)
 import qualified Data.Set as S
   ( fromList,
@@ -102,7 +105,7 @@ instance GQLScalar Euro where
           (round (fromIntegral x / 100 :: Double))
           (mod x 100)
       )
-  parseValue _ = Left ""
+  parseValue _ = Left "invalid currency blue"
   serialize (Euro x y) = Int (x * 100 + y)
 
 data Channel = USER | ADDRESS

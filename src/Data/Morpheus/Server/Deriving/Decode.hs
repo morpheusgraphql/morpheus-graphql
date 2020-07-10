@@ -94,10 +94,13 @@ class DecodeKind (kind :: GQL_KIND) a where
   decodeKind :: Proxy kind -> ValidValue -> Eventless a
 
 -- SCALAR
-instance (GQLScalar a) => DecodeKind SCALAR a where
+instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
   decodeKind _ value = case toScalar value >>= parseValue of
-    Right scalar -> return scalar
-    Left errorMessage -> internalTypeMismatch (msg errorMessage) value
+    Right scalar -> pure scalar
+    Left message ->
+      internalTypeMismatch
+        ("SCALAR<" <> msg (__typeName (Proxy @a)) <> ">" <> msg message)
+        value
 
 -- ENUM
 instance DecodeType a => DecodeKind ENUM a where

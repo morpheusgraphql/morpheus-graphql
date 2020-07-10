@@ -19,6 +19,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( FALSE,
     TRUE,
   )
+import Data.Morpheus.Types.Internal.AST.Stage (Stage)
 import Prelude (Bool (..))
 
 data TypeCategory = In | Out | Any
@@ -30,10 +31,10 @@ type OUT = 'Out
 type ANY = 'Any
 
 class ToAny a where
-  toAny :: a (k :: TypeCategory) -> a ANY
+  toAny :: a (k :: TypeCategory) (s :: Stage) -> a ANY s
 
 class FromAny a (k :: TypeCategory) where
-  fromAny :: a ANY -> Maybe (a k)
+  fromAny :: a ANY (s :: Stage) -> Maybe (a k s)
 
 type family IsSelected (c :: TypeCategory) (a :: TypeCategory) :: Bool
 

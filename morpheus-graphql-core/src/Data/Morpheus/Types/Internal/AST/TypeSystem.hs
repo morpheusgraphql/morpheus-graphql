@@ -116,7 +116,9 @@ import Data.Morpheus.Types.Internal.AST.OrdMap
   ( OrdMap,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
-  ( VALID,
+  ( CONST,
+    Stage,
+    VALID,
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,
@@ -143,22 +145,22 @@ import Prelude
     otherwise,
   )
 
-type DataEnum = [DataEnumValue]
+type DataEnum s = [DataEnumValue s]
 
-mkUnionMember :: TypeName -> UnionMember cat
+mkUnionMember :: TypeName -> UnionMember cat s
 mkUnionMember name = UnionMember name True
 
-data UnionMember (cat :: TypeCategory) = UnionMember
+data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
   { memberName :: TypeName,
     visibility :: Bool
   }
   deriving (Show, Lift, Eq)
 
-type DataUnion = [UnionMember OUT]
+type DataUnion s = [UnionMember OUT s]
 
-type DataInputUnion = [UnionMember IN]
+type DataInputUnion s = [UnionMember IN s]
 
-instance RenderGQL (UnionMember cat) where
+instance RenderGQL (UnionMember cat s) where
   render = render . memberName
 
 -- scalar
@@ -177,14 +179,14 @@ instance Lift ScalarDefinition where
 #endif
 
 -- ENUM VALUE
-data DataEnumValue = DataEnumValue
+data DataEnumValue s = DataEnumValue
   { enumName :: TypeName,
     enumDescription :: Maybe Description,
-    enumDirectives :: [Directive VALID]
+    enumDirectives :: [Directive s]
   }
   deriving (Show, Lift)
 
-instance RenderGQL DataEnumValue where
+instance RenderGQL (DataEnumValue s) where
   render DataEnumValue {enumName} = render enumName
 
 -- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
@@ -195,16 +197,16 @@ instance RenderGQL DataEnumValue where
 -- RootOperationTypeDefinition :
 --    OperationType: NamedType
 
-data Schema = Schema
-  { types :: TypeLib,
-    query :: TypeDefinition OUT,
-    mutation :: Maybe (TypeDefinition OUT),
-    subscription :: Maybe (TypeDefinition OUT)
+data Schema (s :: Stage) = Schema
+  { types :: TypeLib s,
+    query :: TypeDefinition OUT s,
+    mutation :: Maybe (TypeDefinition OUT s),
+    subscription :: Maybe (TypeDefinition OUT s)
   }
   deriving (Show)
 
 data SchemaDefinition = SchemaDefinition
-  { schemaDirectives :: Directives VALID,
+  { schemaDirectives :: Directives CONST,
     unSchemaDefinition :: OrdMap OperationType RootOperationTypeDefinition
   }
   deriving (Show)
@@ -225,7 +227,7 @@ instance KeyOf SchemaDefinition where
 
 data RawTypeDefinition
   = RawSchemaDefinition SchemaDefinition
-  | RawTypeDefinition (TypeDefinition ANY)
+  | RawTypeDefinition (TypeDefinition ANY CONST)
   deriving (Show)
 
 data RootOperationTypeDefinition = RootOperationTypeDefinition
@@ -245,12 +247,12 @@ instance KeyOf RootOperationTypeDefinition where
   type KEY RootOperationTypeDefinition = OperationType
   keyOf = rootOperationType
 
-type TypeLib = HashMap TypeName (TypeDefinition ANY)
+type TypeLib s = HashMap TypeName (TypeDefinition ANY s)
 
-instance Selectable Schema (TypeDefinition ANY) where
+instance Selectable (Schema s) (TypeDefinition ANY s) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-instance Listable (TypeDefinition ANY) Schema where
+instance Listable (TypeDefinition ANY s) (Schema s) where
   elems = HM.elems . typeRegister
   fromElems types =
     traverse3
@@ -265,18 +267,18 @@ buildWith ::
   ( Applicative f,
     Failure GQLErrors f
   ) =>
-  [TypeDefinition cat] ->
-  ( Maybe (TypeDefinition OUT),
-    Maybe (TypeDefinition OUT),
-    Maybe (TypeDefinition OUT)
+  [TypeDefinition cat s] ->
+  ( Maybe (TypeDefinition OUT s),
+    Maybe (TypeDefinition OUT s),
+    Maybe (TypeDefinition OUT s)
   ) ->
-  f Schema
+  f (Schema s)
 buildWith otypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] otypes
   pure $ (foldr unsafeDefineType (initTypeLib query) types) {mutation, subscription}
 buildWith _ (Nothing, _, _) = failure $ globalErrorMessage "Query root type must be provided."
 
-excludeTypes :: [Maybe (TypeDefinition c1)] -> [TypeDefinition c2] -> [TypeDefinition c2]
+excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
 excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
   where
     blacklist :: [TypeName]
@@ -285,9 +287,9 @@ excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
 buildSchema ::
   (Monad m, Failure GQLErrors m) =>
   ( Maybe SchemaDefinition,
-    [TypeDefinition ANY]
+    [TypeDefinition ANY s]
   ) ->
-  m Schema
+  m (Schema s)
 buildSchema (Nothing, types) = fromElems types
 buildSchema (Just schemaDef, types) =
   traverse3 selectOp (Query, Mutation, Subscription)
@@ -300,9 +302,9 @@ traverse3 f (a1, a2, a3) = (,,) <$> f a1 <*> f a2 <*> f a3
 
 typeReference ::
   (Monad m, Failure GQLErrors m) =>
-  [TypeDefinition ANY] ->
+  [TypeDefinition ANY s] ->
   RootOperationTypeDefinition ->
-  m (Maybe (TypeDefinition OUT))
+  m (Maybe (TypeDefinition OUT s))
 typeReference types rootOperation =
   popByKey types rootOperation
     >>= maybe
@@ -315,12 +317,12 @@ selectOperation ::
   ) =>
   SchemaDefinition ->
   OperationType ->
-  [TypeDefinition ANY] ->
-  f (Maybe (TypeDefinition OUT))
+  [TypeDefinition ANY s] ->
+  f (Maybe (TypeDefinition OUT s))
 selectOperation schemaDef operationType lib =
   selectOr (pure Nothing) (typeReference lib) operationType schemaDef
 
-initTypeLib :: TypeDefinition OUT -> Schema
+initTypeLib :: TypeDefinition OUT s -> Schema s
 initTypeLib query =
   Schema
     { types = empty,
@@ -329,16 +331,16 @@ initTypeLib query =
       subscription = Nothing
     }
 
-typeRegister :: Schema -> TypeLib
+typeRegister :: Schema s -> TypeLib s
 typeRegister Schema {types, query, mutation, subscription} =
   types
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
-lookupDataType :: TypeName -> Schema -> Maybe (TypeDefinition ANY)
+lookupDataType :: TypeName -> Schema s -> Maybe (TypeDefinition ANY s)
 lookupDataType name = HM.lookup name . typeRegister
 
-isTypeDefined :: TypeName -> Schema -> Maybe DataFingerprint
+isTypeDefined :: TypeName -> Schema s -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
@@ -351,17 +353,17 @@ isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 --   EnumTypeDefinition
 --   InputObjectTypeDefinition
 
-data TypeDefinition (a :: TypeCategory) = TypeDefinition
+data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
   { typeName :: TypeName,
     typeFingerprint :: DataFingerprint,
     typeDescription :: Maybe Description,
-    typeDirectives :: Directives VALID,
-    typeContent :: TypeContent TRUE a
+    typeDirectives :: Directives s,
+    typeContent :: TypeContent TRUE a s
   }
   deriving (Show, Lift)
 
-instance KeyOf (TypeDefinition a) where
-  type KEY (TypeDefinition a) = TypeName
+instance KeyOf (TypeDefinition a s) where
+  type KEY (TypeDefinition a s) = TypeName
   keyOf = typeName
 
 instance ToAny TypeDefinition where
@@ -396,42 +398,47 @@ instance FromAny (TypeContent TRUE) OUT where
   fromAny DataInterface {..} = Just DataInterface {..}
   fromAny _ = Nothing
 
-data TypeContent (b :: Bool) (a :: TypeCategory) where
+data
+  TypeContent
+    (b :: Bool)
+    (a :: TypeCategory)
+    (s :: Stage)
+  where
   DataScalar ::
     { dataScalar :: ScalarDefinition
     } ->
-    TypeContent TRUE a
+    TypeContent TRUE a s
   DataEnum ::
-    { enumMembers :: DataEnum
+    { enumMembers :: DataEnum s
     } ->
-    TypeContent TRUE a
+    TypeContent TRUE a s
   DataInputObject ::
-    { inputObjectFields :: FieldsDefinition IN
+    { inputObjectFields :: FieldsDefinition IN s
     } ->
-    TypeContent (IsSelected a IN) a
+    TypeContent (IsSelected a IN) a s
   DataInputUnion ::
-    { inputUnionMembers :: DataInputUnion
+    { inputUnionMembers :: DataInputUnion s
     } ->
-    TypeContent (IsSelected a IN) a
+    TypeContent (IsSelected a IN) a s
   DataObject ::
     { objectImplements :: [TypeName],
-      objectFields :: FieldsDefinition OUT
+      objectFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IsSelected a OUT) a
+    TypeContent (IsSelected a OUT) a s
   DataUnion ::
-    { unionMembers :: DataUnion
+    { unionMembers :: DataUnion s
     } ->
-    TypeContent (IsSelected a OUT) a
+    TypeContent (IsSelected a OUT) a s
   DataInterface ::
-    { interfaceFields :: FieldsDefinition OUT
+    { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IsSelected a OUT) a
+    TypeContent (IsSelected a OUT) a s
 
-deriving instance Show (TypeContent a b)
+deriving instance Show (TypeContent a b s)
 
-deriving instance Lift (TypeContent a b)
+deriving instance Lift (TypeContent a b s)
 
-mkType :: TypeName -> TypeContent TRUE a -> TypeDefinition a
+mkType :: TypeName -> TypeContent TRUE a s -> TypeDefinition a s
 mkType typeName typeContent =
   TypeDefinition
     { typeName,
@@ -441,16 +448,16 @@ mkType typeName typeContent =
       typeContent
     }
 
-createScalarType :: TypeName -> TypeDefinition a
+createScalarType :: TypeName -> TypeDefinition a s
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
-mkEnumContent :: [TypeName] -> TypeContent TRUE a
+mkEnumContent :: [TypeName] -> TypeContent TRUE a s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
-mkUnionContent :: [TypeName] -> TypeContent TRUE OUT
+mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s
 mkUnionContent typeData = DataUnion $ fmap mkUnionMember typeData
 
-mkEnumValue :: TypeName -> DataEnumValue
+mkEnumValue :: TypeName -> DataEnumValue s
 mkEnumValue enumName =
   DataEnumValue
     { enumName,
@@ -458,12 +465,12 @@ mkEnumValue enumName =
       enumDirectives = []
     }
 
-isEntNode :: TypeContent TRUE a -> Bool
+isEntNode :: TypeContent TRUE a s -> Bool
 isEntNode DataScalar {} = True
 isEntNode DataEnum {} = True
 isEntNode _ = False
 
-kindOf :: TypeDefinition a -> TypeKind
+kindOf :: TypeDefinition a s -> TypeKind
 kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
   where
     __kind DataScalar {} = KindScalar
@@ -474,11 +481,11 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
 
-fromOperation :: Maybe (TypeDefinition OUT) -> [(TypeName, TypeDefinition ANY)]
+fromOperation :: Maybe (TypeDefinition OUT s) -> [(TypeName, TypeDefinition ANY s)]
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
-unsafeDefineType :: TypeDefinition cat -> Schema -> Schema
+unsafeDefineType :: TypeDefinition cat s -> Schema s -> Schema s
 unsafeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
   lib {types = HM.insert name unionTags (HM.insert typeName (toAny dt) (types lib))}
   where
@@ -496,8 +503,8 @@ unsafeDefineType datatype lib =
 
 insertType ::
   (Monad m, Failure GQLErrors m) =>
-  TypeDefinition cat ->
-  UpdateT m Schema
+  TypeDefinition cat s ->
+  UpdateT m (Schema s)
 insertType datatype@TypeDefinition {typeName} = UpdateT $ \lib ->
   case isTypeDefined typeName lib of
     Nothing -> resolveUpdates (unsafeDefineType datatype lib) []
@@ -510,10 +517,10 @@ updateSchema ::
   (Monad m, Failure GQLErrors m) =>
   TypeName ->
   DataFingerprint ->
-  [UpdateT m Schema] ->
-  (a -> TypeDefinition cat) ->
+  [UpdateT m (Schema s)] ->
+  (a -> TypeDefinition cat s) ->
   a ->
-  UpdateT m Schema
+  UpdateT m (Schema s)
 updateSchema name fingerprint stack f x = UpdateT $ \lib ->
   case isTypeDefined name lib of
     Nothing ->
@@ -529,9 +536,9 @@ lookupWith f key = find ((== key) . f)
 
 popByKey ::
   (Applicative m, Failure GQLErrors m) =>
-  [TypeDefinition ANY] ->
+  [TypeDefinition ANY s] ->
   RootOperationTypeDefinition ->
-  m (Maybe (TypeDefinition OUT))
+  m (Maybe (TypeDefinition OUT s))
 popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     pure (fromAny dt)
@@ -541,7 +548,7 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
 __inputname :: FieldName
 __inputname = "inputname"
 
-mkInputUnionFields :: TypeName -> [UnionMember IN] -> FieldsDefinition IN
+mkInputUnionFields :: TypeName -> [UnionMember IN s] -> FieldsDefinition IN s
 mkInputUnionFields name members = unsafeFromFields $ fieldTag : fmap mkUnionField members
   where
     fieldTag =
@@ -553,7 +560,7 @@ mkInputUnionFields name members = unsafeFromFields $ fieldTag : fmap mkUnionFiel
           fieldDirectives = []
         }
 
-mkUnionField :: UnionMember IN -> FieldDefinition IN
+mkUnionField :: UnionMember IN s -> FieldDefinition IN s
 mkUnionField UnionMember {memberName} =
   FieldDefinition
     { fieldName = toFieldName memberName,
@@ -572,12 +579,12 @@ mkUnionField UnionMember {memberName} =
 -- OTHER
 --------------------------------------------------------------------------------------------------
 
-instance RenderGQL Schema where
+instance RenderGQL (Schema s) where
   render schema = intercalate "\n\n" $ fmap render visibleTypes
     where
       visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
 
-instance RenderGQL (TypeDefinition a) where
+instance RenderGQL (TypeDefinition a s) where
   render TypeDefinition {typeName, typeContent} = __render typeContent
     where
       __render DataInterface {interfaceFields} = "interface " <> render typeName <> render interfaceFields

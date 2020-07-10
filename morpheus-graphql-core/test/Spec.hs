@@ -75,7 +75,7 @@ import Prelude
     uncurry,
   )
 
-getSchema :: Monad m => ResponseStream e m Schema
+getSchema :: Monad m => ResponseStream e m (Schema VALID)
 getSchema =
   fromElems
     [dsl|

@@ -28,12 +28,14 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    DirectiveDefinitions,
     OUT,
     QUERY,
     ScalarValue (..),
     Schema (..),
     TypeDefinition (..),
     TypeName (..),
+    VALID,
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -48,18 +50,20 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 
 resolveTypes ::
-  Monad m => Schema -> Resolver QUERY e m (ResModel QUERY e m)
+  Monad m => Schema VALID -> Resolver QUERY e m (ResModel QUERY e m)
 resolveTypes schema = mkList <$> traverse render (elems schema)
 
 renderOperation ::
-  Monad m => Maybe (TypeDefinition OUT) -> Resolver QUERY e m (ResModel QUERY e m)
+  Monad m =>
+  Maybe (TypeDefinition OUT VALID) ->
+  Resolver QUERY e m (ResModel QUERY e m)
 renderOperation (Just TypeDefinition {typeName}) = pure $ createObjectType typeName Nothing [] empty
 renderOperation Nothing = pure mkNull
 
 findType ::
   Monad m =>
   TypeName ->
-  Schema ->
+  Schema VALID ->
   Resolver QUERY e m (ResModel QUERY e m)
 findType = selectOr (pure mkNull) render
 
@@ -70,11 +74,11 @@ renderDirectives =
   mkList
     <$> traverse
       render
-      defaultDirectives
+      (defaultDirectives :: DirectiveDefinitions VALID)
 
 schemaResolver ::
   Monad m =>
-  Schema ->
+  Schema VALID ->
   Resolver QUERY e m (ResModel QUERY e m)
 schemaResolver schema@Schema {query, mutation, subscription} =
   pure $
@@ -87,7 +91,7 @@ schemaResolver schema@Schema {query, mutation, subscription} =
         ("directives", renderDirectives)
       ]
 
-schemaAPI :: Monad m => Schema -> ResModel QUERY e m
+schemaAPI :: Monad m => Schema VALID -> ResModel QUERY e m
 schemaAPI schema =
   mkObject
     "Root"
@@ -103,7 +107,11 @@ schemaAPI schema =
             } = findType (TypeName typename) schema
         handleArg _ = pure mkNull
 
-withSystemFields :: Monad m => Schema -> RootResModel e m -> ResultT e' m (RootResModel e m)
+withSystemFields ::
+  Monad m =>
+  Schema VALID ->
+  RootResModel e m ->
+  ResultT e' m (RootResModel e m)
 withSystemFields schema RootResModel {query, ..} =
   pure $
     RootResModel

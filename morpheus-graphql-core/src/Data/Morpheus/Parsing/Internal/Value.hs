@@ -28,13 +28,12 @@ import Data.Morpheus.Parsing.Internal.Terms
     variable,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( CONST,
+    FieldName,
     ObjectEntry (..),
     OrdMap,
     RAW,
-    ResolvedValue,
     ScalarValue (..),
-    VALID,
     Value (..),
     decodeScientific,
   )
@@ -98,12 +97,12 @@ parsePrimitives :: Parser (Value a)
 parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
 
-parseDefaultValue :: Parser ResolvedValue
+parseDefaultValue :: Parser (Value s)
 parseDefaultValue = do
   symbol '='
   parseV
   where
-    parseV :: Parser ResolvedValue
+    parseV :: Parser (Value s)
     parseV = structValue parseV
 
 class Parse a where
@@ -112,7 +111,7 @@ class Parse a where
 instance Parse (Value RAW) where
   parse = (VariableValue <$> variable) <|> structValue parse
 
-instance Parse (Value VALID) where
+instance Parse (Value CONST) where
   parse = structValue parse
 
 structValue :: Parser (Value a) -> Parser (Value a)

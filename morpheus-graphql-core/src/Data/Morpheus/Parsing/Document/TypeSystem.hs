@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -39,8 +40,12 @@ import Data.Morpheus.Parsing.Internal.Terms
     setOf,
     symbol,
   )
+import Data.Morpheus.Parsing.Internal.Value
+  ( Parse (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    CONST,
     DataFingerprint (..),
     Description,
     IN,
@@ -52,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    Value,
     mkUnionMember,
     toAny,
   )
@@ -78,7 +84,10 @@ import Prelude
 --  ScalarTypeDefinition:
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
-scalarTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
+scalarTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition ANY s)
 scalarTypeDefinition typeDescription = label "ScalarTypeDefinition" $ do
   typeName <- typeDeclaration "scalar"
   typeDirectives <- optionalDirectives
@@ -104,7 +113,10 @@ scalarTypeDefinition typeDescription = label "ScalarTypeDefinition" $ do
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-objectTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
+objectTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition OUT s)
 objectTypeDefinition typeDescription = label "ObjectTypeDefinition" $ do
   typeName <- typeDeclaration "type"
   objectImplements <- optionalImplementsInterfaces
@@ -129,7 +141,10 @@ optionalImplementsInterfaces = implements <|> pure []
 --  InterfaceTypeDefinition
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
-interfaceTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
+interfaceTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition OUT s)
 interfaceTypeDefinition typeDescription = label "InterfaceTypeDefinition" $ do
   typeName <- typeDeclaration "interface"
   typeDirectives <- optionalDirectives
@@ -149,7 +164,10 @@ interfaceTypeDefinition typeDescription = label "InterfaceTypeDefinition" $ do
 --    = |(opt) NamedType
 --      UnionMemberTypes | NamedType
 --
-unionTypeDefinition :: Maybe Description -> Parser (TypeDefinition OUT)
+unionTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition OUT s)
 unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
   typeName <- typeDeclaration "union"
   typeDirectives <- optionalDirectives
@@ -173,7 +191,10 @@ unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
 --  EnumValueDefinition
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
-enumTypeDefinition :: Maybe Description -> Parser (TypeDefinition ANY)
+enumTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition ANY s)
 enumTypeDefinition typeDescription = label "EnumTypeDefinition" $ do
   typeName <- typeDeclaration "enum"
   typeDirectives <- optionalDirectives
@@ -192,7 +213,10 @@ enumTypeDefinition typeDescription = label "EnumTypeDefinition" $ do
 --   InputFieldsDefinition:
 --     { InputValueDefinition(list) }
 --
-inputObjectTypeDefinition :: Maybe Description -> Parser (TypeDefinition IN)
+inputObjectTypeDefinition ::
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (TypeDefinition IN s)
 inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $ do
     typeName <- typeDeclaration "input"
@@ -232,7 +256,9 @@ parseRootOperationTypeDefinition = do
   symbol ':'
   RootOperationTypeDefinition operationType <$> parseTypeName
 
-parseDataType :: Parser (TypeDefinition ANY)
+parseDataType ::
+  Parse (Value s) =>
+  Parser (TypeDefinition ANY s)
 parseDataType = label "TypeDefinition" $ do
   description <- optDescription
   -- scalar | enum |  input | object | union | interface
@@ -243,22 +269,23 @@ parseDataType = label "TypeDefinition" $ do
     <|> (toAny <$> objectTypeDefinition description)
     <|> (toAny <$> interfaceTypeDefinition description)
 
-parseRawTypeDefinition :: Parser RawTypeDefinition
+parseRawTypeDefinition ::
+  Parser RawTypeDefinition
 parseRawTypeDefinition =
   label "TypeSystemDefinitions" $
     RawTypeDefinition <$> parseDataType
       <|> parseSchemaDefinition
 
-splitSchema :: [RawTypeDefinition] -> ([SchemaDefinition], [TypeDefinition ANY])
+splitSchema :: [RawTypeDefinition] -> ([SchemaDefinition], [TypeDefinition ANY CONST])
 splitSchema = partitionEithers . fmap split
   where
     split (RawTypeDefinition x) = Right x
     split (RawSchemaDefinition y) = Left y
 
 withSchemaDefinition ::
-  ([SchemaDefinition], [TypeDefinition ANY]) ->
+  ([SchemaDefinition], [TypeDefinition ANY s]) ->
   Eventless
-    (Maybe SchemaDefinition, [TypeDefinition ANY])
+    (Maybe SchemaDefinition, [TypeDefinition ANY s])
 withSchemaDefinition ([], t) = pure (Nothing, t)
 withSchemaDefinition ([x], t) = pure (Just x, t)
 withSchemaDefinition (_ : xs, _) = failure (fmap (nameCollision "schema") xs)
@@ -268,10 +295,10 @@ parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
   ignoredTokens
   manyTill parseRawTypeDefinition eof
 
-parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY]
+parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY CONST]
 parseTypeDefinitions = fmap snd . parseSchema
 
-parseSchema :: Text -> Eventless (Maybe SchemaDefinition, [TypeDefinition ANY])
+parseSchema :: Text -> Eventless (Maybe SchemaDefinition, [TypeDefinition ANY CONST])
 parseSchema =
   processParser parseTypeSystemDefinition
     >=> withSchemaDefinition . splitSchema

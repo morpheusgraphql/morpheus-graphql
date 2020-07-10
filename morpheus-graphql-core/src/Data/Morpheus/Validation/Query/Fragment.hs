@@ -34,11 +34,13 @@ import Data.Morpheus.Types.Internal.AST
     Position,
     RAW,
     Ref (..),
+    Schema,
     Selection (..),
     SelectionContent (..),
     SelectionSet,
     TypeName,
     TypeNameRef (..),
+    VALID,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( BaseValidator,
@@ -112,7 +114,7 @@ fragmentsConditionTypeChecking =
 
 checkTypeExistence :: Fragment -> BaseValidator ()
 checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
-  ( askSchema
+  ( (askSchema :: BaseValidator (Schema VALID))
       >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
       >>= constraint OBJECT fr
   )

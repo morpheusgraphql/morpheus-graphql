@@ -2,31 +2,31 @@
   "errors": [
     {
       "message": "Field Query.field(i1:) got invalid default value. in field \"field1.field2\": Expected type \"String\" found 1.",
-      "locations": [{ "line": 0, "column": 0 }]
+      "locations": []
     },
     {
       "message": "Field Query.field(i1:) got invalid default value. in field \"field2\": Expected type \"String\" found true.",
-      "locations": [{ "line": 0, "column": 0 }]
+      "locations": []
     },
     {
       "message": "Field Query.field(i2:) got invalid default value. in field \"field1\": Expected type \"ID\" found {field3: 2344}.",
-      "locations": [{ "line": 0, "column": 0 }]
+      "locations": []
     },
     {
       "message": "Field Query.field(i2:) got invalid default value. in field \"field2\": Expected type \"String\" found 123.",
-      "locations": [{ "line": 0, "column": 0 }]
+      "locations": []
     },
     {
       "message": "Field Query.field(i3:) got invalid default value. Expected type \"TestEnum\" found EnumBB.",
-      "locations": [{ "line": 0, "column": 0 }]
+      "locations": []
     },
     {
       "message": "Field Query.field(i4:) got invalid default value. Expected type \"ID\" found true.",
-      "locations": [{ "line": 0, "column": 0 }]
+      "locations": []
     },
     {
       "message": "Field Query.field(i5:) got invalid default value. Expected type \"Int\" found \"some text\".",
-      "locations": [{ "line": 0, "column": 0 }]
+      "locations": []
     }
   ]
 }

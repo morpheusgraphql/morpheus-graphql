@@ -1,0 +1,24 @@
+{
+  "errors": [
+    {
+      "message": "Argument \"reason\" got invalid value. Expected type \"String\" found EnumA.",
+      "locations": [{ "line": 2, "column": 21 }]
+    },
+    {
+      "message": "Argument \"reason\" got invalid value. Expected type \"String\" found 1.",
+      "locations": [{ "line": 3, "column": 21 }]
+    },
+    {
+      "message": "Argument \"reason\" got invalid value. Expected type \"String\" found Bool.",
+      "locations": [{ "line": 4, "column": 21 }]
+    },
+    {
+      "message": "Argument \"reason\" got invalid value. Expected type \"String\" found {field: \"\"}.",
+      "locations": [{ "line": 8, "column": 26 }]
+    },
+    {
+      "message": "Argument \"reason\" got invalid value. Expected type \"String\" found [\"some deprication\"].",
+      "locations": [{ "line": 9, "column": 30 }]
+    }
+  ]
+}

@@ -84,9 +84,7 @@ import Data.Morpheus.Types.Internal.AST.OrdMap
     unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
-  ( CONST,
-    Stage,
-    VALID,
+  ( Stage,
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( IN,
@@ -134,7 +132,7 @@ instance NameCollision (Argument s) where
         locations = [argumentPosition]
       }
 
-type Arguments s = OrdMap FieldName (Argument s)
+type Arguments (s :: Stage) = OrdMap FieldName (Argument s)
 
 -- directive
 ------------------------------------------------------------------
@@ -150,36 +148,37 @@ instance KeyOf (Directive s) where
 
 type Directives s = [Directive s]
 
-data DirectiveDefinition = DirectiveDefinition
+data DirectiveDefinition s = DirectiveDefinition
   { directiveDefinitionName :: FieldName,
     directiveDefinitionDescription :: Maybe Description,
     directiveDefinitionLocations :: [DirectiveLocation],
-    directiveDefinitionArgs :: ArgumentsDefinition
+    directiveDefinitionArgs :: ArgumentsDefinition s
   }
   deriving (Show, Lift)
 
-type DirectiveDefinitions = [DirectiveDefinition]
+type DirectiveDefinitions s = [DirectiveDefinition s]
 
-instance KeyOf DirectiveDefinition where
+instance KeyOf (DirectiveDefinition s) where
   keyOf = directiveDefinitionName
 
-instance Selectable DirectiveDefinition ArgumentDefinition where
+instance Selectable (DirectiveDefinition s) (ArgumentDefinition s) where
   selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
     selectOr fb f key directiveDefinitionArgs
 
-lookupDeprecated :: [Directive VALID] -> Maybe (Directive VALID)
+lookupDeprecated :: [Directive s] -> Maybe (Directive s)
 lookupDeprecated = find isDeprecation
   where
     isDeprecation Directive {directiveName = "deprecated"} = True
     isDeprecation _ = False
 
-lookupDeprecatedReason :: Directive VALID -> Maybe Description
+lookupDeprecatedReason :: Directive s -> Maybe Description
 lookupDeprecatedReason Directive {directiveArgs} =
-  selectOr Nothing (Just . maybeString) "reason" directiveArgs
+  selectOr Nothing maybeString "reason" directiveArgs
   where
-    maybeString :: Argument VALID -> Description
-    maybeString Argument {argumentValue = (Scalar (String x))} = x
-    maybeString _ = "can't read deprecated Reason Value"
+    maybeString :: Argument s -> Maybe Description
+    maybeString Argument {argumentValue = Null} = Nothing
+    maybeString Argument {argumentValue = (Scalar (String x))} = Just x
+    maybeString _ = Just "can't read deprecated Reason Value"
 
 instance ToAny FieldDefinition where
   toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny <$> fieldContent, ..}
@@ -200,16 +199,16 @@ newtype Fields def = Fields
 
 deriving instance (KEY def ~ FieldName, KeyOf def) => Collection def (Fields def)
 
-instance Merge (FieldsDefinition cat) where
+instance Merge (FieldsDefinition cat s) where
   merge path (Fields x) (Fields y) = Fields <$> merge path x y
 
-instance Selectable (Fields (FieldDefinition cat)) (FieldDefinition cat) where
+instance Selectable (Fields (FieldDefinition cat s)) (FieldDefinition cat s) where
   selectOr fb f name (Fields lib) = selectOr fb f name lib
 
-unsafeFromFields :: [FieldDefinition cat] -> FieldsDefinition cat
+unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
 unsafeFromFields = Fields . unsafeFromValues
 
-fieldsToArguments :: FieldsDefinition IN -> ArgumentsDefinition
+fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
 fieldsToArguments = ArgumentsDefinition Nothing . unFields
 
 instance (KEY def ~ FieldName, KeyOf def, NameCollision def) => Listable def (Fields def) where
@@ -228,7 +227,7 @@ instance (KEY def ~ FieldName, KeyOf def, NameCollision def) => Listable def (Fi
 --  FieldsDefinition
 --    { FieldDefinition(list) }
 --
-type FieldsDefinition cat = Fields (FieldDefinition cat)
+type FieldsDefinition cat s = Fields (FieldDefinition cat s)
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -236,69 +235,69 @@ type FieldsDefinition cat = Fields (FieldDefinition cat)
 -- InputValueDefinition
 --   Description(opt) Name: Type DefaultValue(opt) Directives[Const](opt)
 
-data FieldDefinition (cat :: TypeCategory) = FieldDefinition
+data FieldDefinition (cat :: TypeCategory) (s :: Stage) = FieldDefinition
   { fieldName :: FieldName,
     fieldDescription :: Maybe Description,
     fieldType :: TypeRef,
-    fieldContent :: Maybe (FieldContent TRUE cat),
-    fieldDirectives :: [Directive VALID]
+    fieldDirectives :: [Directive s],
+    fieldContent :: Maybe (FieldContent TRUE cat s)
   }
   deriving (Show, Lift)
 
-data FieldContent (bool :: Bool) (cat :: TypeCategory) where
+data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
   DefaultInputValue ::
-    { defaultInputValue :: Value CONST
+    { defaultInputValue :: Value s
     } ->
-    FieldContent (IsSelected cat IN) cat
+    FieldContent (IsSelected cat IN) cat s
   FieldArgs ::
-    { fieldArgsDef :: ArgumentsDefinition
+    { fieldArgsDef :: ArgumentsDefinition s
     } ->
-    FieldContent (IsSelected cat OUT) cat
+    FieldContent (IsSelected cat OUT) cat s
 
-fieldContentArgs :: FieldContent b cat -> ArgumentsDefinition
+fieldContentArgs :: FieldContent b cat s -> ArgumentsDefinition s
 fieldContentArgs (FieldArgs args) = args
 fieldContentArgs _ = empty
 
-deriving instance Show (FieldContent bool cat)
+deriving instance Show (FieldContent bool cat s)
 
-deriving instance Lift (FieldContent bool cat)
+deriving instance Lift (FieldContent bool cat s)
 
-instance KeyOf (FieldDefinition cat) where
+instance KeyOf (FieldDefinition cat s) where
   keyOf = fieldName
 
-instance Selectable (FieldDefinition OUT) ArgumentDefinition where
+instance Selectable (FieldDefinition OUT s) (ArgumentDefinition s) where
   selectOr fb f key FieldDefinition {fieldContent = Just (FieldArgs args)} = selectOr fb f key args
   selectOr fb _ _ _ = fb
 
-instance NameCollision (FieldDefinition cat) where
+instance NameCollision (FieldDefinition cat s) where
   nameCollision name _ =
     GQLError
       { message = "There can Be only One field Named " <> msg name,
         locations = []
       }
 
-instance RenderGQL (FieldDefinition cat) where
+instance RenderGQL (FieldDefinition cat s) where
   render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = Just (FieldArgs args)} =
     name <> render args <> ": " <> render fieldType
   render FieldDefinition {fieldName = FieldName name, fieldType} =
     name <> ": " <> render fieldType
 
-instance RenderGQL (FieldsDefinition cat) where
+instance RenderGQL (FieldsDefinition cat s) where
   render = renderObject render . filter fieldVisibility . elems
 
-instance Nullable (FieldDefinition cat) where
+instance Nullable (FieldDefinition cat s) where
   isNullable = isNullable . fieldType
   toNullable field = field {fieldType = toNullable (fieldType field)}
 
-fieldVisibility :: FieldDefinition cat -> Bool
+fieldVisibility :: FieldDefinition cat s -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 
 createField ::
-  Maybe (FieldContent TRUE cat) ->
+  Maybe (FieldContent TRUE cat s) ->
   FieldName ->
   [TypeWrapper] ->
   TypeName ->
-  FieldDefinition cat
+  FieldDefinition cat s
 createField fieldContent fieldName typeWrappers typeConName =
   FieldDefinition
     { fieldName,
@@ -308,18 +307,18 @@ createField fieldContent fieldName typeWrappers typeConName =
       fieldDirectives = []
     }
 
-mkInputValue :: FieldName -> [TypeWrapper] -> TypeName -> FieldDefinition cat
+mkInputValue :: FieldName -> [TypeWrapper] -> TypeName -> FieldDefinition cat s
 mkInputValue = createField Nothing
 
 mkObjectField ::
-  ArgumentsDefinition ->
+  ArgumentsDefinition s ->
   FieldName ->
   [TypeWrapper] ->
   TypeName ->
-  FieldDefinition OUT
+  FieldDefinition OUT s
 mkObjectField args = createField (Just $ FieldArgs args)
 
-toListField :: FieldDefinition cat -> FieldDefinition cat
+toListField :: FieldDefinition cat s -> FieldDefinition cat s
 toListField dataField = dataField {fieldType = listW (fieldType dataField)}
   where
     listW alias@TypeRef {typeWrappers} =
@@ -330,7 +329,7 @@ toListField dataField = dataField {fieldType = listW (fieldType dataField)}
 --- InputFieldsDefinition
 -- { InputValueDefinition(list) }
 
-type InputFieldsDefinition = Fields InputValueDefinition
+type InputFieldsDefinition s = Fields (InputValueDefinition s)
 
 type InputValueDefinition = FieldDefinition IN
 
@@ -339,13 +338,13 @@ type InputValueDefinition = FieldDefinition IN
 -- ArgumentsDefinition:
 --   (InputValueDefinition(list))
 
-data ArgumentsDefinition = ArgumentsDefinition
+data ArgumentsDefinition s = ArgumentsDefinition
   { argumentsTypename :: Maybe TypeName,
-    arguments :: OrdMap FieldName ArgumentDefinition
+    arguments :: OrdMap FieldName (ArgumentDefinition s)
   }
   deriving (Show, Lift)
 
-instance RenderGQL ArgumentsDefinition where
+instance RenderGQL (ArgumentsDefinition s) where
   render ArgumentsDefinition {arguments}
     | null arguments =
       ""
@@ -353,13 +352,13 @@ instance RenderGQL ArgumentsDefinition where
 
 type ArgumentDefinition = FieldDefinition IN
 
-instance Selectable ArgumentsDefinition ArgumentDefinition where
+instance Selectable (ArgumentsDefinition s) (ArgumentDefinition s) where
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
-instance Collection ArgumentDefinition ArgumentsDefinition where
+instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where
   empty = ArgumentsDefinition Nothing empty
   singleton = ArgumentsDefinition Nothing . singleton
 
-instance Listable ArgumentDefinition ArgumentsDefinition where
+instance Listable (ArgumentDefinition s) (ArgumentsDefinition s) where
   elems (ArgumentsDefinition _ args) = elems args
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args

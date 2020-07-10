@@ -38,7 +38,7 @@ import Data.Morpheus.Validation.Query.Variable
   )
 
 validateRequest ::
-  Schema ->
+  Schema VALID ->
   VALIDATION_MODE ->
   GQLQuery ->
   Eventless (Operation VALID)
@@ -56,15 +56,21 @@ validateRequest
           }
     } =
     do
-      variables <- runValidator validateHelpers (ctx ())
-      runValidator (validateOperation operation) (ctx variables)
+      variables <- runValidator validateHelpers scope (ctx ())
+      runValidator (validateOperation operation) scope (ctx variables)
     where
+      scope =
+        Scope
+          { kind = SELECTION,
+            typename = "Root",
+            fieldname = "Root",
+            position = Just operationPosition
+          }
       ctx variables =
         OperationContext
           { schema,
             fragments,
-            scope = Scope {typename = "Root", position = operationPosition, kind = SELECTION},
-            selection = CurrentSelection {operationName, selectionName = "Root"},
+            selection = CurrentSelection {operationName},
             variables
           }
       validateHelpers =

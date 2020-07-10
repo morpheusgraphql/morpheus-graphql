@@ -14,12 +14,12 @@ import Data.Morpheus.Types.Internal.AST
   )
 
 --- Core
-data ServerTypeDefinition cat = ServerTypeDefinition
+data ServerTypeDefinition cat s = ServerTypeDefinition
   { tName :: TypeName,
     tNamespace :: [FieldName],
-    typeArgD :: [ServerTypeDefinition IN],
-    tCons :: [ConsD cat],
+    typeArgD :: [ServerTypeDefinition IN s],
+    tCons :: [ConsD cat s],
     tKind :: TypeKind,
-    typeOriginal :: Maybe (TypeDefinition ANY)
+    typeOriginal :: Maybe (TypeDefinition ANY s)
   }
   deriving (Show)

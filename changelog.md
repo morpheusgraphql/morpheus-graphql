@@ -4,6 +4,19 @@
 
 ### new features
 
+- compileTimeSchemaValidation :
+  morpheus validates schema at runtime (after the schema derivation).
+  to be ensure that only correct api is compiled.
+  we can use template haskell method `compileTimeSchemaValidation`
+
+```hs
+import Morpheus.Graphql.Server(compileTimeSchemaValidation)
+
+_validateSchema :: ()
+_validateSchema = $(compileTimeSchemaValidation (Identity gqlRoot))
+```
+
+- directive Validation for Document (TypeSystem).
 - supports of block string values. e.g:
 
   ```graphql
@@ -43,6 +56,7 @@
 
 ### Breaking Changes
 
+- internal refactoring: changed AST
 - root subscribtion fields must be wrapped with `SubscriptionField`. e.g:
 
 ```haskell

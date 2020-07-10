@@ -37,27 +37,22 @@ import Control.Monad.Reader (asks)
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    fromElems,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    CONST,
     FieldName,
     FieldsDefinition,
     OUT,
-    Position (..),
     Schema,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     msg,
   )
-import Data.Morpheus.Types.Internal.Resolving (Result (..))
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( GetWith (..),
-    Scope (..),
-    ScopeKind (..),
-    SetWith (..),
     Validator (..),
     renderField,
     withContext,
@@ -71,35 +66,24 @@ import Prelude
     (.),
     Show (..),
     const,
-    error,
-    id,
   )
 
 data TypeSystemContext c = TypeSystemContext
-  { types :: [TypeDefinition ANY],
+  { schema :: Schema CONST,
     local :: c
   }
   deriving (Show)
 
-instance GetWith (TypeSystemContext ctx) Schema where
-  getWith ctx = case fromElems (types ctx) of
-    Success {result} -> result
-    Failure {errors} -> error (show errors) --TODO: fix
+instance GetWith (TypeSystemContext ctx) (Schema CONST) where
+  getWith = schema
 
-instance GetWith (TypeSystemContext a) Scope where
-  getWith _ =
-    Scope
-      { position = Position {line = 0, column = 0},
-        typename = "TODO:",
-        kind = TYPE
-      }
-
-instance SetWith (TypeSystemContext a) Scope where
-  setWith _ = id --TODO:
-
-selectType :: TypeName -> SchemaValidator ctx (TypeDefinition ANY)
+selectType ::
+  TypeName ->
+  SchemaValidator
+    ctx
+    (TypeDefinition ANY CONST)
 selectType name =
-  asks types
+  asks schema
     >>= selectBy err name
   where
     err = globalErrorMessage $ "Unknown Type " <> msg name <> "."
@@ -146,7 +130,9 @@ updateLocal f ctx = ctx {local = f (local ctx)}
 
 type SchemaValidator c = Validator (TypeSystemContext c)
 
-constraintInterface :: TypeDefinition ANY -> SchemaValidator ctx (TypeName, FieldsDefinition OUT)
+constraintInterface ::
+  TypeDefinition ANY CONST ->
+  SchemaValidator ctx (TypeName, FieldsDefinition OUT CONST)
 constraintInterface
   TypeDefinition
     { typeName,

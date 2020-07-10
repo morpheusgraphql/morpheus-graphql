@@ -10,17 +10,17 @@ module Schema
 where
 
 import Control.Applicative (pure)
-import Control.Monad ((<=<))
 import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
 import qualified Data.ByteString.Lazy as L (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Either (Either (..), either)
 import Data.Functor ((<$>), fmap)
-import Data.Morpheus.Core (parseFullGQLDocument, validateSchema)
+import Data.Morpheus.Core (parseFullGQLDocument)
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     Schema,
+    VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -51,8 +51,8 @@ import Prelude
 readSource :: FilePath -> IO ByteString
 readSource = L.readFile
 
-readSchema :: FilePath -> IO (Eventless Schema)
-readSchema = fmap (validateSchema <=< parseFullGQLDocument) . readSource . (<> "/schema.gql")
+readSchema :: FilePath -> IO (Eventless (Schema VALID))
+readSchema = fmap parseFullGQLDocument . readSource . (<> "/schema.gql")
 
 readResponse :: FilePath -> IO Response
 readResponse = fmap (either AesonError id . eitherDecode) . readSource . (<> "/response.json")
@@ -90,7 +90,7 @@ schemaCase url = testCase (fileName url) $ do
   expected <- readResponse (toString url)
   assertion expected schema
 
-assertion :: Response -> Eventless Schema -> IO ()
+assertion :: Response -> Eventless (Schema VALID) -> IO ()
 assertion OK Success {} = pure ()
 assertion Errors {errors = err} Failure {errors}
   | err == errors =

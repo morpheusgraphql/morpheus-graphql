@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "Field Query.field(i1:) got invalid default value. in field \"field.field\": Unknown Field \"field3\".",
+      "message": "Field Query.field(i1:) got invalid default value. Unknown Field \"field2\".",
       "locations": []
     },
     {
@@ -9,7 +9,7 @@
       "locations": []
     },
     {
-      "message": "Field Query.field(i1:) got invalid default value. Unknown Field \"field2\".",
+      "message": "Field Query.field(i1:) got invalid default value. in field \"field.field\": Unknown Field \"field3\".",
       "locations": []
     }
   ]

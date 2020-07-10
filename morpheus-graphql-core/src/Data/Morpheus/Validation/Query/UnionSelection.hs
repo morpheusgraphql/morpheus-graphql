@@ -45,18 +45,18 @@ import Data.Morpheus.Types.Internal.Validation
   ( Scope (..),
     SelectionValidator,
     askTypeMember,
-    asks,
+    asksScope,
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
     resolveSpread,
   )
 
-type TypeDef = (TypeName, FieldsDefinition OUT)
+type TypeDef = (TypeName, FieldsDefinition OUT VALID)
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
-  [UnionMember OUT] ->
+  [UnionMember OUT s] ->
   Selection RAW ->
   SelectionValidator [Fragment]
 exploreUnionFragments unionTags = splitFrag
@@ -67,7 +67,7 @@ exploreUnionFragments unionTags = splitFrag
     splitFrag (Spread _ ref) = packFragment <$> resolveSpread (map memberName unionTags) ref
     splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
     splitFrag Selection {selectionName, selectionPosition} = do
-      typeName <- asks typename
+      typeName <- asksScope typename
       failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
     splitFrag (InlineFragment fragment) =
       packFragment
@@ -85,7 +85,7 @@ tagUnionFragments types fragments =
     map categorizeType types
   where
     notEmpty = not . null . snd
-    categorizeType :: (TypeName, FieldsDefinition OUT) -> (TypeDef, [Fragment])
+    categorizeType :: TypeDef -> (TypeDef, [Fragment])
     categorizeType datatype = (datatype, filter matches fragments)
       where
         matches fragment = fragmentType fragment == fst datatype
@@ -116,7 +116,7 @@ validateCluster validator __typename = traverse _validateCluster >=> fmap UnionS
 validateUnionSelection ::
   (TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) ->
   SelectionSet RAW ->
-  DataUnion ->
+  DataUnion s ->
   SelectionValidator (SelectionContent VALID)
 validateUnionSelection validate selectionSet members = do
   let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet

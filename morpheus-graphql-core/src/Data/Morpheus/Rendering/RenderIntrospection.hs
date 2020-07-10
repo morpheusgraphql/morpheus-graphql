@@ -38,7 +38,6 @@ import qualified Data.Morpheus.Types.Internal.AST as AST (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
-    CONST,
     DataEnumValue (..),
     DataTypeWrapper (..),
     Description,
@@ -98,7 +97,7 @@ class
   ) =>
   WithSchema m
   where
-  getSchema :: m Schema
+  getSchema :: m (Schema VALID)
 
 instance Monad m => WithSchema (Resolver QUERY e m) where
   getSchema = schema <$> unsafeInternalContext
@@ -106,7 +105,7 @@ instance Monad m => WithSchema (Resolver QUERY e m) where
 selectType ::
   WithSchema m =>
   TypeName ->
-  m (TypeDefinition ANY)
+  m (TypeDefinition ANY VALID)
 selectType name =
   getSchema
     >>= selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> msg name <> "\"") name
@@ -132,7 +131,7 @@ instance RenderIntrospection TypeKind where
 instance RenderIntrospection a => RenderIntrospection [a] where
   render ls = mkList <$> traverse render ls
 
-instance RenderIntrospection DirectiveDefinition where
+instance RenderIntrospection (DirectiveDefinition VALID) where
   render
     DirectiveDefinition
       { directiveDefinitionName,
@@ -152,7 +151,7 @@ instance RenderIntrospection DirectiveDefinition where
 instance RenderIntrospection DirectiveLocation where
   render locations = pure $ mkString (pack $ show locations)
 
-instance RenderIntrospection (TypeDefinition a) where
+instance RenderIntrospection (TypeDefinition cat VALID) where
   render
     TypeDefinition
       { typeName,
@@ -160,9 +159,16 @@ instance RenderIntrospection (TypeDefinition a) where
         typeContent
       } = pure $ renderContent typeContent
       where
-        __type :: Monad m => TypeKind -> [(FieldName, Resolver QUERY e m (ResModel QUERY e m))] -> ResModel QUERY e m
+        __type ::
+          Monad m =>
+          TypeKind ->
+          [(FieldName, Resolver QUERY e m (ResModel QUERY e m))] ->
+          ResModel QUERY e m
         __type kind = mkType kind typeName typeDescription
-        renderContent :: Monad m => TypeContent bool a -> ResModel QUERY e m
+        renderContent ::
+          Monad m =>
+          TypeContent bool a VALID ->
+          ResModel QUERY e m
         renderContent DataScalar {} = __type SCALAR []
         renderContent (DataEnum enums) = __type ENUM [("enumValues", render enums)]
         renderContent (DataInputObject inputFiels) =
@@ -180,8 +186,10 @@ instance RenderIntrospection (TypeDefinition a) where
             INPUT_OBJECT
             [ ( "inputFields",
                 render
-                  $ mkInputUnionFields typeName
-                  $ filter visibility members
+                  ( mkInputUnionFields typeName $
+                      filter visibility members ::
+                      FieldsDefinition IN VALID
+                  )
               )
             ]
         renderContent (DataInterface fields) =
@@ -191,13 +199,19 @@ instance RenderIntrospection (TypeDefinition a) where
               ("possibleTypes", interfacePossibleTypes typeName)
             ]
 
-instance RenderIntrospection (UnionMember OUT) where
+instance RenderIntrospection (UnionMember OUT s) where
   render UnionMember {memberName} = selectType memberName >>= render
 
-instance RenderIntrospection (FieldDefinition cat) => RenderIntrospection (FieldsDefinition cat) where
+instance
+  RenderIntrospection (FieldDefinition cat s) =>
+  RenderIntrospection (FieldsDefinition cat s)
+  where
   render = render . filter fieldVisibility . elems
 
-instance RenderIntrospection (FieldDefinition OUT) where
+instance
+  RenderIntrospection
+    (FieldDefinition OUT VALID)
+  where
   render FieldDefinition {..} =
     pure
       $ mkObject "__Field"
@@ -208,13 +222,13 @@ instance RenderIntrospection (FieldDefinition OUT) where
         ]
         <> renderDeprecated fieldDirectives
 
-instance RenderIntrospection (FieldContent TRUE OUT) where
+instance RenderIntrospection (FieldContent TRUE OUT VALID) where
   render (FieldArgs args) = render args
 
-instance RenderIntrospection ArgumentsDefinition where
+instance RenderIntrospection (ArgumentsDefinition VALID) where
   render ArgumentsDefinition {arguments} = mkList <$> traverse render (elems arguments)
 
-instance RenderIntrospection (FieldDefinition IN) where
+instance RenderIntrospection (FieldDefinition IN VALID) where
   render FieldDefinition {..} =
     pure $
       mkObject
@@ -225,7 +239,7 @@ instance RenderIntrospection (FieldDefinition IN) where
           defaultValue fieldType (fmap defaultInputValue fieldContent)
         ]
 
-instance RenderIntrospection DataEnumValue where
+instance RenderIntrospection (DataEnumValue VALID) where
   render DataEnumValue {enumName, enumDescription, enumDirectives} =
     pure $ mkObject "__Field" $
       [ renderName enumName,
@@ -267,7 +281,7 @@ interfacePossibleTypes interfaceName =
 
 renderDeprecated ::
   (Monad m) =>
-  Directives VALID ->
+  Directives s ->
   [(FieldName, Resolver QUERY e m (ResModel QUERY e m))]
 renderDeprecated dirs =
   [ ("isDeprecated", pure $ mkBoolean (isJust $ lookupDeprecated dirs)),
@@ -309,7 +323,12 @@ mkType kind name desc etc =
     )
 
 createObjectType ::
-  Monad m => TypeName -> Maybe Description -> [TypeName] -> FieldsDefinition OUT -> ResModel QUERY e m
+  Monad m =>
+  TypeName ->
+  Maybe Description ->
+  [TypeName] ->
+  FieldsDefinition OUT VALID ->
+  ResModel QUERY e m
 createObjectType name desc interfaces fields =
   mkType OBJECT name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
 
@@ -345,7 +364,7 @@ type' ref = ("type", render ref)
 defaultValue ::
   Monad m =>
   TypeRef ->
-  Maybe (Value CONST) ->
+  Maybe (Value VALID) ->
   ( FieldName,
     Resolver QUERY e m (ResModel QUERY e m)
   )
@@ -365,8 +384,8 @@ defaultValue
 fulfill ::
   WithSchema m =>
   TypeRef ->
-  Maybe (Value CONST) ->
-  m (Value CONST)
+  Maybe (Value VALID) ->
+  m (Value VALID)
 fulfill TypeRef {typeConName} (Just (Object fields)) =
   selectType typeConName
     >>= \case
@@ -388,9 +407,9 @@ fulfill _ Nothing = pure Null
 
 handleField ::
   WithSchema m =>
-  Object CONST ->
-  FieldDefinition IN ->
-  m (ObjectEntry CONST)
+  Object VALID ->
+  FieldDefinition IN VALID ->
+  m (ObjectEntry VALID)
 handleField
   fields
   FieldDefinition

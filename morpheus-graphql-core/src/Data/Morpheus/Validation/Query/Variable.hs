@@ -63,7 +63,7 @@ import Data.Morpheus.Types.Internal.Validation
     withPosition,
   )
 import Data.Morpheus.Validation.Internal.Value
-  ( validateInput,
+  ( validateInputByType,
   )
 import Data.Semigroup ((<>))
 import Data.Traversable
@@ -150,14 +150,14 @@ lookupAndValidateValueOnBody
   validationMode
   var@Variable
     { variableName,
-      variableType,
+      variableType = variableType@TypeRef {typeWrappers, typeConName},
       variablePosition,
       variableValue = DefaultValue defaultValue
     } =
     withPosition variablePosition $
       toVariable
         <$> ( askSchema
-                >>= selectKnown (TypeNameRef (typeConName variableType) variablePosition)
+                >>= selectKnown (TypeNameRef typeConName variablePosition)
                 >>= constraint INPUT var
                 >>= checkType getVariable defaultValue
             )
@@ -170,7 +170,7 @@ lookupAndValidateValueOnBody
       checkType ::
         Maybe ResolvedValue ->
         DefaultValue ->
-        TypeDefinition IN ->
+        TypeDefinition IN VALID ->
         BaseValidator ValidValue
       checkType (Just variable) Nothing varType = validator varType False variable
       checkType (Just variable) (Just defValue) varType =
@@ -185,10 +185,12 @@ lookupAndValidateValueOnBody
           returnNull =
             maybe (pure Null) (validator varType False) (M.lookup variableName bodyVariables)
       -----------------------------------------------------------------------------------------------
-      validator :: TypeDefinition IN -> Bool -> ResolvedValue -> BaseValidator ValidValue
-      validator varType isDefaultValue varValue =
-        startInput (SourceVariable var isDefaultValue) $
-          validateInput
-            (typeWrappers variableType)
-            varType
-            (ObjectEntry variableName varValue)
+      validator :: TypeDefinition IN VALID -> Bool -> ResolvedValue -> BaseValidator ValidValue
+      validator varTypeDef isDefaultValue varValue =
+        startInput
+          (SourceVariable var isDefaultValue)
+          ( validateInputByType
+              typeWrappers
+              varTypeDef
+              varValue
+          )

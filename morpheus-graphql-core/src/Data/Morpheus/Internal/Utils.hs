@@ -32,14 +32,18 @@ module Data.Morpheus.Internal.Utils
     resolveUpdates,
     concatUpdates,
     failUpdates,
+    ordTraverse,
+    ordTraverse_,
+    traverseCollection,
   )
 where
 
-import Control.Monad (foldM)
+import Control.Monad ((=<<), foldM)
 import Data.Char
   ( toLower,
     toUpper,
   )
+import Data.Foldable (traverse_)
 import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
@@ -61,6 +65,7 @@ import qualified Data.Text as T
     pack,
     unpack,
   )
+import Data.Traversable (traverse)
 import Instances.TH.Lift ()
 import Text.Megaparsec.Internal (ParsecT (..))
 import Text.Megaparsec.Stream (Stream)
@@ -135,6 +140,40 @@ member = selectOr False toTrue
   where
     toTrue :: a -> Bool
     toTrue _ = True
+
+ordTraverse ::
+  ( KeyOf b,
+    Monad f,
+    Listable a (t a),
+    Listable b (t b),
+    Failure GQLErrors f
+  ) =>
+  (a -> f b) ->
+  t a ->
+  f (t b)
+ordTraverse = traverseCollection
+
+traverseCollection ::
+  ( KeyOf b,
+    Monad f,
+    Listable a (t a),
+    Listable b (t' b),
+    Failure GQLErrors f
+  ) =>
+  (a -> f b) ->
+  t a ->
+  f (t' b)
+traverseCollection f a = fromElems =<< traverse f (elems a)
+
+ordTraverse_ ::
+  ( Monad f,
+    Listable a (t a),
+    Failure GQLErrors f
+  ) =>
+  (a -> f b) ->
+  t a ->
+  f ()
+ordTraverse_ f a = traverse_ f (elems a)
 
 class Eq (KEY a) => KeyOf a where
   type KEY a :: *

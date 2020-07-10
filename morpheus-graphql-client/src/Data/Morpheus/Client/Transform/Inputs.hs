@@ -74,7 +74,7 @@ renderArguments variables cName
             ]
         }
       where
-        fieldD :: Variable RAW -> FieldDefinition ANY
+        fieldD :: Variable RAW -> FieldDefinition ANY VALID
         fieldD Variable {variableName, variableType} =
           FieldDefinition
             { fieldName = variableName,
@@ -112,7 +112,7 @@ exploreInputTypeNames name collected
             (name : collected)
             (map toInputTypeD $ elems fields)
           where
-            toInputTypeD :: FieldDefinition IN -> UpdateT Converter [TypeName]
+            toInputTypeD :: FieldDefinition IN VALID -> UpdateT Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
               UpdateT (exploreInputTypeNames typeConName)
         scanType (DataEnum _) = pure (collected <> [typeName])
@@ -126,7 +126,7 @@ buildInputType name = getType name >>= generateTypes
   where
     generateTypes TypeDefinition {typeName, typeContent} = subTypes typeContent
       where
-        subTypes :: TypeContent TRUE ANY -> Converter [ClientTypeDefinition]
+        subTypes :: TypeContent TRUE ANY VALID -> Converter [ClientTypeDefinition]
         subTypes (DataInputObject inputFields) = do
           fields <- traverse toClientFieldDefinition (elems inputFields)
           pure
@@ -155,7 +155,7 @@ buildInputType name = getType name >>= generateTypes
             ]
         subTypes _ = pure []
 
-mkInputType :: TypeName -> TypeKind -> [ConsD ANY] -> ClientTypeDefinition
+mkInputType :: TypeName -> TypeKind -> [ConsD ANY VALID] -> ClientTypeDefinition
 mkInputType typename clientKind clientCons =
   ClientTypeDefinition
     { clientTypeName = TypeNameTH [] typename,
@@ -163,7 +163,7 @@ mkInputType typename clientKind clientCons =
       clientCons
     }
 
-toClientFieldDefinition :: FieldDefinition IN -> Converter (FieldDefinition IN)
+toClientFieldDefinition :: FieldDefinition IN VALID -> Converter (FieldDefinition IN VALID)
 toClientFieldDefinition FieldDefinition {fieldType, ..} = do
   typeConName <- typeFrom [] <$> getType (typeConName fieldType)
   pure FieldDefinition {fieldType = fieldType {typeConName}, ..}

@@ -68,7 +68,7 @@ import Data.Morpheus.Types.Internal.Resolving
     runRootResModel,
   )
 import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
-import Data.Morpheus.Validation.Document.Validation (validateSchema)
+import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
@@ -78,9 +78,9 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
 
 runApi ::
-  forall event m.
-  (Monad m) =>
-  Schema ->
+  forall event m s.
+  (Monad m, ValidateSchema s) =>
+  Schema s ->
   RootResModel event m ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
@@ -92,7 +92,7 @@ runApi inputSchema resModel request = do
     validRequest ::
       Monad m => ResponseStream event m Context
     validRequest = cleanEvents $ ResultT $ pure $ do
-      validSchema <- validateSchema inputSchema
+      validSchema <- validateSchema True inputSchema
       schema <- withSystemTypes validSchema
       operation <- parseRequestWith schema request
       pure $
@@ -111,11 +111,11 @@ runApi inputSchema resModel request = do
                 }
           }
 
-parseDSL :: ByteString -> Either String Schema
+parseDSL :: ByteString -> Either String (Schema VALID)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument
 
-parseGQLDocument :: ByteString -> Eventless Schema
+parseGQLDocument :: ByteString -> Eventless (Schema VALID)
 parseGQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8
 
-parseFullGQLDocument :: ByteString -> Eventless Schema
+parseFullGQLDocument :: ByteString -> Eventless (Schema VALID)
 parseFullGQLDocument = parseGQLDocument >=> withSystemTypes

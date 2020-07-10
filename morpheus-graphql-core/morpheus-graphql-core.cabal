@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e335f18e4fec2655763d9c49e1bcd858efb531e56a3a1df7b32277a88eddf0bd
+-- hash: d1432ee03af43e5c0994d758adc947e83c4f63c6f1c7081926e9d6629d321698
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -41,6 +41,11 @@ data-files:
     test/schema/validation/default-value/field/missing-field/schema.gql
     test/schema/validation/default-value/field/unexpected-value/schema.gql
     test/schema/validation/default-value/field/unknown-field/schema.gql
+    test/schema/validation/directive/fail/at-invalid-place/schema.gql
+    test/schema/validation/directive/fail/missing-argument/schema.gql
+    test/schema/validation/directive/fail/unexpected-value/schema.gql
+    test/schema/validation/directive/fail/unknown-directive/schema.gql
+    test/schema/validation/directive/ok/deprecated/schema.gql
     test/schema/validation/interface/field-args/fail/schema.gql
     test/schema/validation/interface/field-args/ok/schema.gql
     test/schema/validation/interface/field-type/fail/schema.gql
@@ -71,6 +76,11 @@ data-files:
     test/schema/validation/default-value/field/missing-field/response.json
     test/schema/validation/default-value/field/unexpected-value/response.json
     test/schema/validation/default-value/field/unknown-field/response.json
+    test/schema/validation/directive/fail/at-invalid-place/response.json
+    test/schema/validation/directive/fail/missing-argument/response.json
+    test/schema/validation/directive/fail/unexpected-value/response.json
+    test/schema/validation/directive/fail/unknown-directive/response.json
+    test/schema/validation/directive/ok/deprecated/response.json
     test/schema/validation/interface/field-args/fail/response.json
     test/schema/validation/interface/field-args/ok/response.json
     test/schema/validation/interface/field-type/fail/response.json
@@ -151,9 +161,9 @@ library
       Data.Morpheus.Types.Internal.Validation.Validator
       Data.Morpheus.Types.SelectionTree
       Data.Morpheus.Validation.Document.Validation
+      Data.Morpheus.Validation.Internal.Arguments
       Data.Morpheus.Validation.Internal.Directive
       Data.Morpheus.Validation.Internal.Value
-      Data.Morpheus.Validation.Query.Arguments
       Data.Morpheus.Validation.Query.Fragment
       Data.Morpheus.Validation.Query.Selection
       Data.Morpheus.Validation.Query.UnionSelection

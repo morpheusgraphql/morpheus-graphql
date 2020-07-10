@@ -40,7 +40,7 @@ newtype ID = ID
 instance GQLScalar ID where
   parseValue (Int x) = pure (ID $ pack $ show x)
   parseValue (String x) = pure (ID x)
-  parseValue _ = Left ""
+  parseValue _ = Left "ID can only be String or number"
   serialize (ID x) = String x
 
 instance ToJSON ID where

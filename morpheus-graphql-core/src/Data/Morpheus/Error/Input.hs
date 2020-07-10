@@ -8,13 +8,13 @@ where
 
 import Data.Morpheus.Types.Internal.AST
   ( Message,
-    ResolvedValue,
     TypeRef (..),
+    Value,
     msg,
   )
 import Data.Semigroup ((<>))
 
-typeViolation :: TypeRef -> ResolvedValue -> Message
+typeViolation :: TypeRef -> Value s -> Message
 typeViolation expected found =
   "Expected type "
     <> msg expected

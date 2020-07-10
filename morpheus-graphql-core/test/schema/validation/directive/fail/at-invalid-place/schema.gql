@@ -1,0 +1,15 @@
+scalar MyScalar @deprecated
+
+enum TestEnum @deprecated {
+  EnumA @include(if: true)
+  EnumB
+}
+
+input Input1 @deprecated {
+  field1: ID @include(if: true)
+  field2: String
+}
+
+type Query @deprecated {
+  field(a1: Int @skip(if: true)): Int @include(if: true)
+}

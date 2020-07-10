@@ -60,7 +60,7 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 
 toClientDefinition ::
-  Schema ->
+  Schema VALID ->
   VariableDefinitions RAW ->
   Operation VALID ->
   Eventless ClientDefinition
@@ -95,7 +95,7 @@ renderOperationType op@Operation {operationName, operationSelection} = do
 genRecordType ::
   [FieldName] ->
   TypeName ->
-  TypeDefinition ANY ->
+  TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter ([ClientTypeDefinition], [TypeName])
 genRecordType path tName dataType recordSelSet = do
@@ -113,10 +113,10 @@ genRecordType path tName dataType recordSelSet = do
 genConsD ::
   [FieldName] ->
   TypeName ->
-  TypeDefinition ANY ->
+  TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter
-    ( ConsD ANY,
+    ( ConsD ANY VALID,
       [ClientTypeDefinition],
       [TypeName]
     )
@@ -126,7 +126,7 @@ genConsD path cName datatype selSet = do
   where
     genField ::
       Selection VALID ->
-      Converter (FieldDefinition ANY, [ClientTypeDefinition], [TypeName])
+      Converter (FieldDefinition ANY VALID, [ClientTypeDefinition], [TypeName])
     genField sel =
       do
         (fieldDataType, fieldType) <-
@@ -154,7 +154,7 @@ genConsD path cName datatype selSet = do
 ------------------------------------------
 subTypesBySelection ::
   [FieldName] ->
-  TypeDefinition ANY ->
+  TypeDefinition ANY VALID ->
   Selection VALID ->
   Converter
     ( [ClientTypeDefinition],
@@ -184,9 +184,9 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection unio
 
 getFieldType ::
   [FieldName] ->
-  TypeDefinition ANY ->
+  TypeDefinition ANY VALID ->
   Selection VALID ->
-  Converter (TypeDefinition ANY, TypeRef)
+  Converter (TypeDefinition ANY VALID, TypeRef)
 getFieldType
   path
   TypeDefinition {typeContent = DataObject {objectFields}, typeName}

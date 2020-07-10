@@ -49,13 +49,13 @@ instance Declare a => Declare [a] where
   type DeclareCtx [a] = DeclareCtx a
   declare namespace = fmap concat . traverse (declare namespace)
 
-instance Declare TypeDec where
-  type DeclareCtx TypeDec = Bool
+instance Declare (TypeDec s) where
+  type DeclareCtx (TypeDec s) = Bool
   declare namespace (InputType typeD) = declare namespace typeD
   declare namespace (OutputType typeD) = declare namespace typeD
 
-instance Declare (ServerTypeDefinition cat) where
-  type DeclareCtx (ServerTypeDefinition cat) = Bool
+instance Declare (ServerTypeDefinition cat s) where
+  type DeclareCtx (ServerTypeDefinition cat s) = Bool
   declare namespace typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
     do
       let mainType = declareType namespace typeD
@@ -75,7 +75,7 @@ instance Declare (ServerTypeDefinition cat) where
             | otherwise =
               []
 
-declareArgTypes :: Bool -> [ServerTypeDefinition IN] -> Q [Dec]
+declareArgTypes :: Bool -> [ServerTypeDefinition IN s] -> Q [Dec]
 declareArgTypes namespace types = do
   introspectArgs <- concat <$> traverse deriveObjectRep types
   decodeArgs <- concat <$> traverse deriveDecode types

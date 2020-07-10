@@ -292,7 +292,7 @@ data Operation (s :: Stage) = Operation
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)
 
-getOperationDataType :: Failure GQLErrors m => Operation a -> Schema -> m (TypeDefinition OUT)
+getOperationDataType :: Failure GQLErrors m => Operation s -> Schema s' -> m (TypeDefinition OUT s')
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)
 getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
   case mutation lib of

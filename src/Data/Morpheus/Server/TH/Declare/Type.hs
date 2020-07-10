@@ -36,7 +36,7 @@ import Data.Morpheus.Types.Internal.Resolving
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
-declareType :: Bool -> ServerTypeDefinition cat -> [Dec]
+declareType :: Bool -> ServerTypeDefinition cat s -> [Dec]
 declareType _ ServerTypeDefinition {tKind = KindScalar} = []
 declareType namespace ServerTypeDefinition {tName, tCons, tKind, tNamespace} =
   [ DataD
@@ -70,7 +70,7 @@ declareCons ::
   Bool ->
   TypeKind ->
   ([FieldName], TypeName) ->
-  [ConsD cat] ->
+  [ConsD cat s] ->
   [Con]
 declareCons namespace tKind (tNamespace, tName) = map consR
   where
@@ -83,7 +83,7 @@ declareField ::
   Bool ->
   TypeKind ->
   TypeName ->
-  FieldDefinition cat ->
+  FieldDefinition cat s ->
   (Name, Bang, Type)
 declareField namespace tKind tName field@FieldDefinition {fieldName} =
   ( fieldTypeName namespace tName fieldName,
@@ -93,7 +93,7 @@ declareField namespace tKind tName field@FieldDefinition {fieldName} =
 
 renderFieldType ::
   TypeKind ->
-  FieldDefinition cat ->
+  FieldDefinition cat s ->
   Type
 renderFieldType tKind FieldDefinition {fieldContent, fieldType} =
   withFieldWrappers tKind fieldContent (declareTypeRef fieldType)
@@ -125,7 +125,7 @@ type Arrow = (->)
 ------------------------------------------------
 withFieldWrappers ::
   TypeKind ->
-  Maybe (FieldContent TRUE cat) ->
+  Maybe (FieldContent TRUE cat s) ->
   Type ->
   Type
 withFieldWrappers kind (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =

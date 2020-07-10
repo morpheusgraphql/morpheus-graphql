@@ -1,23 +1,27 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Document.Validation
-  ( validatePartialDocument,
-    validateSchema,
+  ( ValidateSchema (..),
   )
 where
 
-import Control.Applicative ((*>), pure)
+import Control.Applicative ((*>), (<*>), Applicative (..), pure)
 import Control.Monad ((>=>))
 import Control.Monad.Reader (asks)
 import Data.Foldable (traverse_)
-import Data.Functor (($>))
-import Data.Maybe (Maybe (..))
+import Data.Functor ((<$>), fmap)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     PartialImplements (..),
@@ -28,25 +32,33 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     failure,
+    ordTraverse,
   )
-import Data.Morpheus.Schema.Schema (systemTypes)
+import Data.Morpheus.Schema.Schema
+  ( withSystemTypes,
+  )
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    ArgumentDefinition,
+  ( ArgumentDefinition,
     ArgumentsDefinition (..),
+    CONST,
+    DataEnumValue (..),
+    DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
     IN,
     OUT,
-    ObjectEntry (..),
-    Schema,
+    Schema (..),
+    Schema (..),
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     TypeRef (..),
+    UnionMember (..),
+    VALID,
+    Value,
     isWeaker,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -55,7 +67,8 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
     InputValidator,
-    askInputFieldType,
+    Scope (..),
+    ScopeKind (..),
     runValidator,
     startInput,
   )
@@ -71,88 +84,220 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inType,
     selectType,
   )
-import Data.Morpheus.Validation.Internal.Value (validateInput)
-import Data.Semigroup ((<>))
+import Data.Morpheus.Validation.Internal.Directive
+  ( validateTypeSystemDirectives,
+  )
+import Data.Morpheus.Validation.Internal.Value
+  ( validateInputByTypeRef,
+  )
+import Data.Proxy (Proxy (..))
 import Data.Traversable (traverse)
 import Prelude
   ( ($),
     (&&),
+    (.),
     (==),
+    Bool,
     not,
     otherwise,
   )
 
-validateSchema :: Schema -> Eventless Schema
-validateSchema schema = validatePartialDocument (elems schema) $> schema
+class ValidateSchema s where
+  validateSchema :: Bool -> Schema s -> Eventless (Schema VALID)
 
-validatePartialDocument :: [TypeDefinition ANY] -> Eventless [TypeDefinition ANY]
-validatePartialDocument types =
-  runValidator
-    (traverse validateType types)
-    TypeSystemContext
-      { types = systemTypes <> types,
-        local = ()
-      }
+instance ValidateSchema CONST where
+  validateSchema
+    withSystem
+    schema@Schema
+      { types,
+        query,
+        mutation,
+        subscription
+      } = do
+      sysSchema <-
+        if withSystem
+          then withSystemTypes schema
+          else pure schema
+      runValidator
+        __validateSchema
+        Scope
+          { position = Nothing,
+            typename = "DocumentRoot",
+            kind = TYPE,
+            fieldname = "DocumentRoot"
+          }
+        TypeSystemContext
+          { schema = sysSchema,
+            local = ()
+          }
+      where
+        __validateSchema :: SchemaValidator () (Schema VALID)
+        __validateSchema =
+          Schema
+            <$> traverse validateType types
+            <*> validateType query
+            <*> validateOptional validateType mutation
+            <*> validateOptional validateType subscription
+
+validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
+validateOptional f = maybe (pure Nothing) (fmap Just . f)
+
+instance ValidateSchema VALID where
+  validateSchema _ = pure
 
 validateType ::
-  TypeDefinition ANY ->
-  SchemaValidator () (TypeDefinition ANY)
+  TypeDefinition cat CONST ->
+  SchemaValidator () (TypeDefinition cat VALID)
 validateType
-  dt@TypeDefinition
+  TypeDefinition
     { typeName,
-      typeContent =
-        DataObject
-          { objectImplements,
-            objectFields
-          }
-    } = inType typeName $
+      typeFingerprint,
+      typeDescription,
+      typeDirectives,
+      typeContent
+    } =
+    inType typeName $
+      TypeDefinition
+        typeName
+        typeFingerprint
+        typeDescription
+        <$> validateTypeSystemDirectives (typeDirectiveLocation typeContent) typeDirectives
+        <*> validateTypeContent typeContent
+
+typeDirectiveLocation :: TypeContent a b c -> DirectiveLocation
+typeDirectiveLocation DataObject {} = OBJECT
+typeDirectiveLocation DataInputObject {} = INPUT_OBJECT
+typeDirectiveLocation DataScalar {} = SCALAR
+typeDirectiveLocation DataEnum {} = ENUM
+typeDirectiveLocation DataInputUnion {} = OBJECT
+typeDirectiveLocation DataUnion {} = UNION
+typeDirectiveLocation DataInterface {} = INTERFACE
+
+validateTypeContent ::
+  TypeContent TRUE cat CONST ->
+  SchemaValidator TypeName (TypeContent TRUE cat VALID)
+validateTypeContent
+  DataObject
+    { objectImplements,
+      objectFields
+    } =
     do
       validateImplements objectImplements objectFields
-      traverse_ checkFieldArgsuments objectFields
-      pure dt
-validateType
-  dt@TypeDefinition
-    { typeContent = DataInputObject {inputObjectFields},
-      typeName
-    } = inType typeName $ do
-    traverse_ validateFieldDefaultValue inputObjectFields
-    pure dt
-validateType x = pure x
+      DataObject objectImplements <$> ordTraverse validateField objectFields
+validateTypeContent DataInputObject {inputObjectFields} =
+  DataInputObject <$> ordTraverse validateField inputObjectFields
+validateTypeContent DataScalar {..} = pure DataScalar {..}
+validateTypeContent DataEnum {enumMembers} = DataEnum <$> traverse validateEnumMember enumMembers
+validateTypeContent DataInputUnion {inputUnionMembers} =
+  DataInputUnion <$> traverse validateUnionMember inputUnionMembers
+validateTypeContent DataUnion {unionMembers} = DataUnion <$> traverse validateUnionMember unionMembers
+validateTypeContent (DataInterface fields) =
+  DataInterface <$> ordTraverse validateField fields
+
+validateEnumMember ::
+  DataEnumValue CONST -> SchemaValidator TypeName (DataEnumValue VALID)
+validateEnumMember DataEnumValue {enumDirectives = directives, ..} = do
+  enumDirectives <- validateTypeSystemDirectives ENUM_VALUE directives
+  pure DataEnumValue {..}
+
+validateUnionMember ::
+  UnionMember cat CONST -> SchemaValidator TypeName (UnionMember cat VALID)
+validateUnionMember UnionMember {..} = pure UnionMember {..}
+
+validateField ::
+  FieldDefinition cat CONST ->
+  SchemaValidator TypeName (FieldDefinition cat VALID)
+validateField field@FieldDefinition {..} =
+  inField
+    fieldName
+    ( FieldDefinition
+        fieldName
+        fieldDescription
+        fieldType
+        <$> validateTypeSystemDirectives FIELD_DEFINITION fieldDirectives
+          <*> validateOptional (checkFieldContent field) fieldContent
+    )
+
+checkFieldContent ::
+  FieldDefinition cat CONST ->
+  FieldContent TRUE cat CONST ->
+  SchemaValidator (TypeName, FieldName) (FieldContent TRUE cat VALID)
+checkFieldContent _ (FieldArgs (ArgumentsDefinition meta args)) =
+  FieldArgs . ArgumentsDefinition meta
+    <$> ordTraverse
+      validateArgument
+      args
+checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
+  (typeName, fName) <- asks local
+  DefaultInputValue
+    <$> startInput
+      (SourceInputField typeName fName Nothing)
+      (validateDefaultValue fieldType value)
+
+validateArgument ::
+  ArgumentDefinition CONST ->
+  SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
+validateArgument FieldDefinition {..} =
+  FieldDefinition
+    fieldName
+    fieldDescription
+    fieldType
+    <$> validateTypeSystemDirectives ARGUMENT_DEFINITION fieldDirectives
+    <*> validateOptional (validateArgumentDefaultValue fieldName fieldType) fieldContent
+
+validateArgumentDefaultValue ::
+  FieldName ->
+  TypeRef ->
+  FieldContent TRUE IN CONST ->
+  SchemaValidator (TypeName, FieldName) (FieldContent TRUE IN VALID)
+validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
+  do
+    (typeName, fName) <- asks local
+    v <-
+      startInput
+        (SourceInputField typeName fName (Just argName))
+        (validateDefaultValue fieldType value)
+    pure (DefaultInputValue v)
 
 -- INETRFACE
 ----------------------------
 validateImplements ::
   [TypeName] ->
-  FieldsDefinition OUT ->
+  FieldsDefinition OUT CONST ->
   SchemaValidator TypeName ()
 validateImplements objectImplements objectFields = do
   interface <- traverse selectInterface objectImplements
   traverse_ (mustBeSubset objectFields) interface
 
 mustBeSubset ::
-  FieldsDefinition OUT -> (TypeName, FieldsDefinition OUT) -> SchemaValidator TypeName ()
+  FieldsDefinition OUT CONST ->
+  (TypeName, FieldsDefinition OUT CONST) ->
+  SchemaValidator TypeName ()
 mustBeSubset objFields (typeName, fields) =
   inInterface typeName $
     traverse_ (checkInterfaceField objFields) (elems fields)
 
 checkInterfaceField ::
-  FieldsDefinition OUT ->
-  FieldDefinition OUT ->
+  FieldsDefinition OUT CONST ->
+  FieldDefinition OUT CONST ->
   SchemaValidator Interface ()
 checkInterfaceField
   objFields
   interfaceField@FieldDefinition
-    { fieldName
+    { fieldName,
+      fieldDirectives
     } =
     inField fieldName $
-      selectOr err (isSuptype interfaceField) fieldName objFields
+      do
+        _ <- validateTypeSystemDirectives FIELD_DEFINITION fieldDirectives
+        selectOr err (isSuptype interfaceField) fieldName objFields
     where
       err = failImplements Missing
 
 class PartialImplements ctx => TypeEq a ctx where
   isSuptype :: a -> a -> SchemaValidator ctx ()
 
-instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
+instance TypeEq (FieldDefinition OUT CONST) (Interface, FieldName) where
   FieldDefinition
     { fieldType,
       fieldContent = args1
@@ -162,10 +307,10 @@ instance TypeEq (FieldDefinition OUT) (Interface, FieldName) where
         fieldContent = args2
       } = (fieldType `isSuptype` fieldType') *> (args1 `isSuptype` args2)
 
-instance TypeEq (Maybe (FieldContent TRUE OUT)) (Interface, FieldName) where
+instance TypeEq (Maybe (FieldContent TRUE OUT s)) (Interface, FieldName) where
   f1 `isSuptype` f2 = toARgs f1 `isSuptype` toARgs f2
     where
-      toARgs :: Maybe (FieldContent TRUE OUT) -> ArgumentsDefinition
+      toARgs :: Maybe (FieldContent TRUE OUT s) -> ArgumentsDefinition s
       toARgs (Just (FieldArgs args)) = args
       toARgs _ = empty
 
@@ -192,18 +337,18 @@ elemIn ::
   SchemaValidator ctx ()
 elemIn el = selectOr (failImplements Missing) (isSuptype el) (keyOf el)
 
-instance TypeEq ArgumentsDefinition (Interface, FieldName) where
+instance TypeEq (ArgumentsDefinition s) (Interface, FieldName) where
   args1 `isSuptype` args2 = traverse_ validateArg (elems args1)
     where
       validateArg arg = inArgument (keyOf arg) $ elemIn arg args2
 
-instance TypeEq ArgumentDefinition (Interface, Field) where
+instance TypeEq (ArgumentDefinition s) (Interface, Field) where
   arg1 `isSuptype` arg2 = fieldType arg1 `isSuptype` fieldType arg2
 
 -------------------------------
 selectInterface ::
   TypeName ->
-  SchemaValidator ctx (TypeName, FieldsDefinition OUT)
+  SchemaValidator ctx (TypeName, FieldsDefinition OUT CONST)
 selectInterface = selectType >=> constraintInterface
 
 failImplements ::
@@ -214,46 +359,13 @@ failImplements err = do
   x <- asks local
   failure $ partialImplements x err
 
-checkFieldArgsuments ::
-  FieldDefinition OUT ->
-  SchemaValidator TypeName ()
-checkFieldArgsuments FieldDefinition {fieldContent = Nothing} = pure ()
-checkFieldArgsuments FieldDefinition {fieldContent = Just (FieldArgs args), fieldName} = do
-  typeName <- asks local
-  traverse_ (validateArgumentDefaultValue typeName fieldName) (elems args)
-
-validateArgumentDefaultValue ::
-  TypeName ->
-  FieldName ->
-  ArgumentDefinition ->
-  SchemaValidator TypeName ()
-validateArgumentDefaultValue _ _ FieldDefinition {fieldContent = Nothing} = pure ()
-validateArgumentDefaultValue
-  typeName
-  fName
-  inputField@FieldDefinition {fieldName = argName} =
-    startInput (SourceInputField typeName fName (Just argName)) $
-      validateDefaultValue inputField
-
 -- DEFAULT VALUE
-validateFieldDefaultValue ::
-  FieldDefinition IN ->
-  SchemaValidator TypeName ()
-validateFieldDefaultValue inputField@FieldDefinition {fieldName} = do
-  typeName <- asks local
-  startInput (SourceInputField typeName fieldName Nothing) $
-    validateDefaultValue inputField
 
 validateDefaultValue ::
-  FieldDefinition IN ->
-  InputValidator (TypeSystemContext TypeName) ()
-validateDefaultValue FieldDefinition {fieldContent = Nothing} = pure ()
-validateDefaultValue
-  inputField@FieldDefinition
-    { fieldName,
-      fieldType = TypeRef {typeWrappers},
-      fieldContent = Just DefaultInputValue {defaultInputValue}
-    } = do
-    datatype <- askInputFieldType inputField
-    _ <- validateInput typeWrappers datatype (ObjectEntry fieldName defaultInputValue)
-    pure ()
+  TypeRef ->
+  Value CONST ->
+  InputValidator
+    (TypeSystemContext (TypeName, FieldName))
+    (Value VALID)
+validateDefaultValue =
+  validateInputByTypeRef (Proxy @CONST)

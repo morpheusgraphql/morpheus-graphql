@@ -37,6 +37,7 @@ import Data.Morpheus.Types.Internal.AST
   ( GQLQuery,
     ScalarValue (..),
     Schema,
+    VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -52,7 +53,7 @@ defineByIntrospectionFile = defineByIntrospection . L.readFile
 defineByDocument :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
 defineByDocument doc = defineQuery (schemaByDocument doc)
 
-schemaByDocument :: IO ByteString -> IO (Eventless Schema)
+schemaByDocument :: IO ByteString -> IO (Eventless (Schema VALID))
 schemaByDocument documentGQL = parseFullGQLDocument <$> documentGQL
 
 defineByIntrospection :: IO ByteString -> (GQLQuery, String) -> Q [Dec]

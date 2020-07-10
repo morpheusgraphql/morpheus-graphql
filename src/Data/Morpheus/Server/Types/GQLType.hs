@@ -26,7 +26,8 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
-  ( DataFingerprint (..),
+  ( CONST,
+    DataFingerprint (..),
     FALSE,
     QUERY,
     Schema,
@@ -56,7 +57,7 @@ import Data.Typeable
     typeRepTyCon,
   )
 
-type TypeUpdater = UpdateT Eventless Schema
+type TypeUpdater = UpdateT Eventless (Schema CONST)
 
 resolverCon :: TyCon
 resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)

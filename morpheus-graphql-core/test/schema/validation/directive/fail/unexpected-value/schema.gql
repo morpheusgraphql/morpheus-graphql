@@ -1,0 +1,14 @@
+enum TestEnum {
+  EnumA @deprecated(reason: EnumA)
+  EnumB @deprecated(reason: 1)
+  EnumB @deprecated(reason: Bool)
+}
+
+input Input {
+  field1: ID @deprecated(reason: { field: "" })
+  field2: String @deprecated(reason: ["some deprication"])
+}
+
+type Query {
+  field: Int
+}

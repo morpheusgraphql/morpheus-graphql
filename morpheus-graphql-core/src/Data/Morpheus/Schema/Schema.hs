@@ -41,7 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     unsafeFromFields,
   )
 
-withSystemTypes :: (Monad m, Failure GQLErrors m, Failure Message m) => Schema -> m Schema
+withSystemTypes :: (Monad m, Failure GQLErrors m, Failure Message m) => Schema s -> m (Schema s)
 withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject inter fields}} =
   ( do
       fs <- fields <:> hiddenFields
@@ -50,7 +50,7 @@ withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject int
     >>= (`resolveUpdates` map (insertType . internalType) systemTypes)
 withSystemTypes _ = failure ("Query must be an Object Type" :: Message)
 
-hiddenFields :: FieldsDefinition OUT
+hiddenFields :: FieldsDefinition OUT s
 hiddenFields =
   unsafeFromFields
     [ mkObjectField
@@ -64,14 +64,14 @@ hiddenFields =
         "__Schema"
     ]
 
-internalType :: TypeDefinition a -> TypeDefinition a
+internalType :: TypeDefinition a s -> TypeDefinition a s
 internalType
   tyDef@TypeDefinition
     { typeFingerprint = DataFingerprint name xs
     } =
     tyDef {typeFingerprint = internalFingerprint name xs}
 
-systemTypes :: [TypeDefinition ANY]
+systemTypes :: [TypeDefinition ANY s]
 systemTypes =
   [dsl|
 

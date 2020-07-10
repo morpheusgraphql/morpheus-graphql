@@ -34,7 +34,7 @@ import Prelude
     null,
   )
 
-toHSFieldDefinition :: FieldDefinition cat -> FieldDefinition cat
+toHSFieldDefinition :: FieldDefinition cat s -> FieldDefinition cat s
 toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConName}} =
   field
     { fieldType = tyRef {typeConName = hsTypeName typeConName}
@@ -48,21 +48,21 @@ data TypeNameTH = TypeNameTH
 
 -- Template Haskell Types
 
-data ConsD cat = ConsD
+data ConsD cat s = ConsD
   { cName :: TypeName,
-    cFields :: [FieldDefinition cat]
+    cFields :: [FieldDefinition cat s]
   }
   deriving (Show)
 
-mkCons :: TypeName -> FieldsDefinition cat -> ConsD cat
+mkCons :: TypeName -> FieldsDefinition cat s -> ConsD cat s
 mkCons typename fields =
   ConsD
     { cName = hsTypeName typename,
       cFields = fmap toHSFieldDefinition (elems fields)
     }
 
-isEnum :: [ConsD cat] -> Bool
+isEnum :: [ConsD cat s] -> Bool
 isEnum = all (null . cFields)
 
-mkConsEnum :: DataEnumValue -> ConsD cat
+mkConsEnum :: DataEnumValue s -> ConsD cat s
 mkConsEnum DataEnumValue {enumName} = ConsD {cName = hsTypeName enumName, cFields = []}
