@@ -107,6 +107,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( Directive,
+    DirectiveDefinition (..),
     Directives,
     FieldDefinition (..),
     FieldsDefinition,
@@ -228,6 +229,7 @@ instance KeyOf SchemaDefinition where
 data RawTypeDefinition
   = RawSchemaDefinition SchemaDefinition
   | RawTypeDefinition (TypeDefinition ANY CONST)
+  | RawDirectiveDefinition (DirectiveDefinition CONST)
   deriving (Show)
 
 data RootOperationTypeDefinition = RootOperationTypeDefinition
