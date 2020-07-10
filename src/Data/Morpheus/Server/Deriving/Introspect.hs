@@ -29,6 +29,7 @@ module Data.Morpheus.Server.Deriving.Introspect
     TypeScope (..),
     ProxyRep (..),
     TypeUpdater,
+    fullSchema,
   )
 where
 
@@ -41,6 +42,7 @@ import Data.Morpheus.Internal.Utils
   ( concatUpdates,
     empty,
     failUpdates,
+    resolveUpdates,
     singleton,
   )
 import Data.Morpheus.Kind
@@ -60,6 +62,7 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    GQLType (CUSTOM),
     TypeUpdater,
   )
 import Data.Morpheus.Server.Types.Types
@@ -79,8 +82,12 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     FieldsDefinition,
     IN,
+    MUTATION,
     Message,
     OUT,
+    QUERY,
+    SUBSCRIPTION,
+    Schema (..),
     TRUE,
     TypeCategory,
     TypeContent (..),
@@ -89,9 +96,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     UnionMember (..),
     fieldsToArguments,
+    initTypeLib,
     insertType,
     mkEnumContent,
     mkInputValue,
+    mkType,
     mkTypeRef,
     mkUnionMember,
     msg,
@@ -101,7 +110,8 @@ import Data.Morpheus.Types.Internal.AST
     updateSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
+  ( Eventless,
+    Resolver,
     SubscriptionField (..),
   )
 import Data.Proxy (Proxy (..))
@@ -114,8 +124,67 @@ import GHC.Generics
 
 type IntroCon a = (GQLType a, DeriveTypeContent OUT (CUSTOM a) a)
 
+type IntrospectConstraint m event query mutation subscription =
+  ( IntroCon (query (Resolver QUERY event m)),
+    IntroCon (mutation (Resolver MUTATION event m)),
+    IntroCon (subscription (Resolver SUBSCRIPTION event m))
+  )
+
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
+
+fullSchema ::
+  forall
+    rootResolver
+    proxy
+    m
+    event
+    query
+    mutation
+    subscription.
+  (IntrospectConstraint m event query mutation subscription) =>
+  proxy (rootResolver m event query mutation subscription) ->
+  Eventless (Schema CONST)
+fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
+  where
+    querySchema =
+      resolveUpdates (initTypeLib (operatorType fields "Query")) types
+      where
+        (fields, types) =
+          introspectObjectFields
+            (Proxy @(CUSTOM (query (Resolver QUERY event m))))
+            ("type for query", Proxy @(query (Resolver QUERY event m)))
+    ------------------------------
+    mutationSchema lib =
+      resolveUpdates
+        (lib {mutation = maybeOperator fields "Mutation"})
+        types
+      where
+        (fields, types) =
+          introspectObjectFields
+            (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
+            ( "type for mutation",
+              Proxy @(mutation (Resolver MUTATION event m))
+            )
+    ------------------------------
+    subscriptionSchema lib =
+      resolveUpdates
+        (lib {subscription = maybeOperator fields "Subscription"})
+        types
+      where
+        (fields, types) =
+          introspectObjectFields
+            (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
+            ( "type for subscription",
+              Proxy @(subscription (Resolver SUBSCRIPTION event m))
+            )
+    maybeOperator :: FieldsDefinition OUT CONST -> TypeName -> Maybe (TypeDefinition OUT CONST)
+    maybeOperator fields
+      | null fields = const Nothing
+      | otherwise = Just . operatorType fields
+    -------------------------------------------------
+    operatorType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OUT CONST
+    operatorType fields typeName = mkType typeName (DataObject [] fields)
 
 introspectOUT :: forall a. (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
 introspectOUT _ = introspect (ProxyRep :: ProxyRep OUT a)
