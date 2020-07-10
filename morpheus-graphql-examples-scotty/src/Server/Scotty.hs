@@ -19,6 +19,7 @@ import Data.Morpheus.Server
   ( httpPubApp,
     webSocketsApp,
   )
+import Data.Morpheus.Types.Internal.AST
 import qualified Server.Mythology.API as Mythology (api, rootResolver)
 import Server.Sophisticated.API
   ( EVENT,
@@ -34,7 +35,8 @@ import Web.Scotty
   ( ScottyM,
   )
 
-validateSchema = $(compileTimeSchema (Identity gqlRoot))
+validSchema :: Schema VALID
+validSchema = $(compileTimeSchema (Identity gqlRoot))
 
 scottyServer :: IO ()
 scottyServer = do
