@@ -138,6 +138,8 @@ type IntrospectConstraint m event query mutation subscription =
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
 
+-- | normaly morpheus server validates schema at runtime (after the schema derivation).
+--   this method allows you to validate it at compile time.
 compileTimeSchemaValidation ::
   (IntrospectConstraint m event qu mu su) =>
   proxy (root m event qu mu su) ->

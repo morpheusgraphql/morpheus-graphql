@@ -4,6 +4,7 @@
 
 ### new features
 
+- directive Validation for Document (TypeSystem).
 - supports of block string values. e.g:
 
   ```graphql

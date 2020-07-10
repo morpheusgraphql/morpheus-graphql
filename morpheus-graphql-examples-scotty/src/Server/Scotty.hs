@@ -14,9 +14,9 @@ import Client.Client
   ( fetchUser,
   )
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus (compileTimeSchemaValidation)
 import Data.Morpheus.Server
-  ( httpPubApp,
+  ( compileTimeSchemaValidation,
+    httpPubApp,
     webSocketsApp,
   )
 import qualified Server.Mythology.API as Mythology (api, rootResolver)

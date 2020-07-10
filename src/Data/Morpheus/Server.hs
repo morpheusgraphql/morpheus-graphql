@@ -16,6 +16,7 @@ module Data.Morpheus.Server
     subscriptionApp,
     ServerConstraint,
     httpPlayground,
+    compileTimeSchemaValidation,
   )
 where
 
@@ -25,6 +26,10 @@ import Control.Monad.IO.Unlift
     withRunInIO,
   )
 -- MORPHEUS
+
+import Data.Morpheus.Server.Deriving.Introspect
+  ( compileTimeSchemaValidation,
+  )
 import Data.Morpheus.Server.Playground
   ( httpPlayground,
   )
