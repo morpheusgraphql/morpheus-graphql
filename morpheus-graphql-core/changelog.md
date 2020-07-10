@@ -31,7 +31,12 @@
 ### Breaking Changes
 
 - removed : `EventCon` from `Data.Morpheus.Core`
-- some internal changes
+- internal refactoring: changed AST.
+  Schema AST Types now need parameter `stage = RAW | CONST | VALID`.
+  - `Schema VALID`
+  - `TypeDefinition VALID`
+  - `FieldDefinition IN VALID`
+  - ...
 
 ## 0.13.0 - 22.06.2020
 

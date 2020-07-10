@@ -43,6 +43,7 @@
 
 ### Breaking Changes
 
+- internal refactoring: changed AST
 - root subscribtion fields must be wrapped with `SubscriptionField`. e.g:
 
 ```haskell
