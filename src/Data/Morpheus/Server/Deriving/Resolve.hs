@@ -48,7 +48,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
     ResponseStream,
     ResultT (..),
-    cleanEvents,
   )
 
 type OperationConstraint operation event m a =
@@ -83,6 +82,6 @@ coreResolver root request =
   where
     validRequest ::
       Monad m => ResponseStream event m (Schema CONST)
-    validRequest = cleanEvents $ ResultT $ pure $ deriveSchema $ Identity root
+    validRequest = deriveSchema $ Identity root
     --------------------------------------
     execOperator schema = runApi schema (deriveModel root) request

@@ -35,7 +35,8 @@ import Data.Map (Map)
 
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
-  ( concatUpdates,
+  ( Failure (..),
+    concatUpdates,
     empty,
     failUpdates,
     resolveUpdates,
@@ -77,6 +78,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     FieldName (..),
     FieldsDefinition,
+    GQLErrors,
     IN,
     MUTATION,
     Message,
@@ -106,8 +108,8 @@ import Data.Morpheus.Types.Internal.AST
     updateSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Resolver,
+  ( Resolver,
+    Result (..),
     SubscriptionField (..),
   )
 import Data.Proxy (Proxy (..))
@@ -137,11 +139,17 @@ deriveSchema ::
     event
     query
     mutation
-    subscription.
-  (IntrospectConstraint m event query mutation subscription) =>
+    subscription
+    f.
+  ( IntrospectConstraint m event query mutation subscription,
+    Applicative f,
+    Failure GQLErrors f
+  ) =>
   proxy (rootResolver m event query mutation subscription) ->
-  Eventless (Schema CONST)
-deriveSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
+  f (Schema CONST)
+deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
+  Success {result} -> pure result
+  Failure {errors} -> failure errors
   where
     querySchema =
       resolveUpdates (initTypeLib (operatorType fields "Query")) types
