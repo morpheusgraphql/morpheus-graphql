@@ -36,11 +36,9 @@ import Data.Morpheus.Types.IO
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    MUTATION,
+  ( MUTATION,
     QUERY,
     SUBSCRIPTION,
-    Schema,
     VALID,
     Value,
   )
@@ -76,12 +74,6 @@ coreResolver ::
   RootResolver m event query mut sub ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-coreResolver root request =
-  validRequest
-    >>= execOperator
-  where
-    validRequest ::
-      Monad m => ResponseStream event m (Schema CONST)
-    validRequest = deriveSchema $ Identity root
-    --------------------------------------
-    execOperator schema = runApi schema (deriveModel root) request
+coreResolver root request = do
+  schema <- deriveSchema (Identity root)
+  runApi schema (deriveModel root) request
