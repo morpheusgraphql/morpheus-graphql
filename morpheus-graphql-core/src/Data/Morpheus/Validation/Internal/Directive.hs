@@ -20,8 +20,9 @@ module Data.Morpheus.Validation.Internal.Directive
   )
 where
 
-import Control.Applicative (pure)
+import Control.Applicative ((*>), pure)
 import Control.Monad ((>>=))
+import Data.Functor ((<$>))
 import Data.List (elem)
 import Data.Morpheus.Error (errorMessage, globalErrorMessage)
 import Data.Morpheus.Internal.Utils
@@ -92,12 +93,13 @@ validate ::
   DirectiveLocation ->
   Directive s ->
   Validator c (Directive VALID)
-validate _ location directive@Directive {directiveArgs, ..} =
+validate _ location directive@Directive {..} =
   withDirective directive $ do
     (directiveDef :: DirectiveDefinition schemaS) <- selectKnown directive defaultDirectives
-    args <- validateDirectiveArguments directiveDef directiveArgs
-    validateDirectiveLocation location directive directiveDef
-    pure Directive {directiveArgs = args, ..}
+    Directive directiveName directivePosition
+      <$> ( validateDirectiveLocation location directive directiveDef
+              *> validateDirectiveArguments directiveDef directiveArgs
+          )
 
 validateDirectiveLocation ::
   DirectiveLocation ->

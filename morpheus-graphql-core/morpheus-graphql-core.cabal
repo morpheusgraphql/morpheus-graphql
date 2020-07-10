@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 49f02903158fffcfa4cb74b2e655be84ba3c06adc806c4f2fe94501b237f3107
+-- hash: 58a27a8830cecd19da53727bbcb7f6cfbd1171f7eb657dcf188dee2aaa436a3a
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -42,6 +42,7 @@ data-files:
     test/schema/validation/default-value/field/unexpected-value/schema.gql
     test/schema/validation/default-value/field/unknown-field/schema.gql
     test/schema/validation/directive/fail/at-invalid-place/schema.gql
+    test/schema/validation/directive/fail/missing-argument/schema.gql
     test/schema/validation/directive/fail/unknown-directive/schema.gql
     test/schema/validation/directive/ok/deprecated/schema.gql
     test/schema/validation/interface/field-args/fail/schema.gql
@@ -75,6 +76,7 @@ data-files:
     test/schema/validation/default-value/field/unexpected-value/response.json
     test/schema/validation/default-value/field/unknown-field/response.json
     test/schema/validation/directive/fail/at-invalid-place/response.json
+    test/schema/validation/directive/fail/missing-argument/response.json
     test/schema/validation/directive/fail/unknown-directive/response.json
     test/schema/validation/directive/ok/deprecated/response.json
     test/schema/validation/interface/field-args/fail/response.json
