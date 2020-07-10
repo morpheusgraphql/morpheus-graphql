@@ -12,8 +12,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Document.Validation
-  ( validatePartialDocument,
-    ValidateSchema (..),
+  ( ValidateSchema (..),
   )
 where
 
@@ -21,7 +20,7 @@ import Control.Applicative ((*>), (<*>), Applicative (..), pure)
 import Control.Monad ((>=>))
 import Control.Monad.Reader (asks)
 import Data.Foldable (traverse_)
-import Data.Functor (($>), (<$>), fmap)
+import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
@@ -33,15 +32,13 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     failure,
-    fromElems,
     ordTraverse,
   )
 import Data.Morpheus.Schema.Schema
   ( withSystemTypes,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    ArgumentDefinition,
+  ( ArgumentDefinition,
     ArgumentsDefinition (..),
     CONST,
     DataEnumValue (..),
@@ -94,7 +91,6 @@ import Data.Morpheus.Validation.Internal.Value
   ( validateInputByTypeRef,
   )
 import Data.Proxy (Proxy (..))
-import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Prelude
   ( ($),
@@ -126,9 +122,9 @@ instance ValidateSchema CONST where
         __validateSchema
         Scope
           { position = Nothing,
-            typename = "TODO: typename",
+            typename = "DocumentRoot",
             kind = TYPE,
-            fieldname = "TODO: fieldname"
+            fieldname = "DocumentRoot"
           }
         TypeSystemContext
           { schema = sysSchema,
@@ -148,25 +144,6 @@ validateOptional f = maybe (pure Nothing) (fmap Just . f)
 
 instance ValidateSchema VALID where
   validateSchema _ = pure
-
-validatePartialDocument :: [TypeDefinition ANY CONST] -> Eventless [TypeDefinition ANY CONST]
-validatePartialDocument = pure
-
--- TODO: validate
--- schema <- fromElems types
--- runValidator
---   (traverse validateType types)
---   Scope
---     { position = Nothing,
---       typename = "TODO: typename",
---       kind = TYPE,
---       fieldname = "TODO: fieldname"
---     }
---   TypeSystemContext
---     { schema,
---       local = ()
---     }
---   $> types
 
 validateType ::
   TypeDefinition cat CONST ->

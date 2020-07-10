@@ -30,8 +30,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Morpheus.Validation.Document.Validation
-  ( validatePartialDocument,
-    validateSchema,
+  ( validateSchema,
   )
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
@@ -47,8 +46,7 @@ parseTypeSystemDefinition =
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition ANY CONST]
-parseTypeDefinitions =
-  P.parseTypeDefinitions >=> validatePartialDocument
+parseTypeDefinitions = P.parseTypeDefinitions
 
 parseRequest :: GQLRequest -> Eventless GQLQuery
 parseRequest = parseGQL
