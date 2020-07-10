@@ -203,7 +203,7 @@ data Schema (s :: Stage) = Schema
     mutation :: Maybe (TypeDefinition OUT s),
     subscription :: Maybe (TypeDefinition OUT s)
   }
-  deriving (Show, Lift)
+  deriving (Show)
 
 data SchemaDefinition = SchemaDefinition
   { schemaDirectives :: Directives CONST,
@@ -248,11 +248,6 @@ instance KeyOf RootOperationTypeDefinition where
   keyOf = rootOperationType
 
 type TypeLib s = HashMap TypeName (TypeDefinition ANY s)
-
-instance Lift (HashMap TypeName (TypeDefinition ANY s)) where
-  liftTyped hmap = [||HM.fromList xs||]
-    where
-      xs = HM.toList hmap
 
 instance Selectable (Schema s) (TypeDefinition ANY s) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
