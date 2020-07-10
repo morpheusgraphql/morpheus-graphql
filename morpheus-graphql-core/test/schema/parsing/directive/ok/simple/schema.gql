@@ -1,0 +1,5 @@
+directive @myDirective () on 
+
+type Query {
+  name: String
+}

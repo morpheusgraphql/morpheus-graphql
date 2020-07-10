@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d1432ee03af43e5c0994d758adc947e83c4f63c6f1c7081926e9d6629d321698
+-- hash: 253eb7f4abe74c2fc62a2c4833c0f2e33261159933edca4a39b6dfe4470c3230
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -25,6 +25,8 @@ extra-source-files:
 data-files:
     test/api/interface/query.gql
     test/api/simple/query.gql
+    test/schema/parsing/directive/ok/simple/schema.gql
+    test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/schema.gql
@@ -60,6 +62,8 @@ data-files:
     test/schema/validation/schema-definition/ok/full/schema.gql
     test/api/interface/response.json
     test/api/simple/response.json
+    test/schema/parsing/directive/ok/simple/response.json
+    test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/response.json

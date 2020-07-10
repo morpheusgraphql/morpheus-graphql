@@ -1,0 +1,15 @@
+directive @DirectiveA on 
+
+directive @DirectiveB (arg: Int) on 
+
+directive @DirectiveC (arg: MyInput! = {}) on 
+
+directive @DirectiveD (arg: String = "bla")  on 
+
+input MyInput {
+  name: name
+}
+
+type Query {
+  name: String
+}
