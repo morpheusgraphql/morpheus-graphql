@@ -48,6 +48,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     DataFingerprint (..),
     Description,
+    DirectiveDefinition (..),
     IN,
     OUT,
     RawTypeDefinition (..),
@@ -229,6 +230,20 @@ inputObjectTypeDefinition typeDescription =
           ..
         }
 
+parseDirectiveDefinition :: Parser RawTypeDefinition
+parseDirectiveDefinition = label "DirectiveDefinition" $ do
+  keyword "directive"
+  directiveDefinitionName <- typeDeclaration "input"
+  unSchemaDefinition <- setOf parseRootOperationTypeDefinition
+  pure
+    $ RawDirectiveDefinition
+    $ DirectiveDefinition
+      { directiveDefinitionName,
+        directiveDefinitionDescription,
+        directiveDefinitionLocations,
+        directiveDefinitionArgs
+      }
+
 -- 3.2 Schema
 -- SchemaDefinition:
 --    schema Directives[Const,opt]
@@ -248,7 +263,9 @@ parseSchemaDefinition = label "SchemaDefinition" $ do
   keyword "schema"
   schemaDirectives <- optionalDirectives
   unSchemaDefinition <- setOf parseRootOperationTypeDefinition
-  pure $ RawSchemaDefinition $ SchemaDefinition {schemaDirectives, unSchemaDefinition}
+  pure
+    $ RawSchemaDefinition
+    $ SchemaDefinition {schemaDirectives, unSchemaDefinition}
 
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition = do
@@ -281,6 +298,8 @@ splitSchema = partitionEithers . fmap split
   where
     split (RawTypeDefinition x) = Right x
     split (RawSchemaDefinition y) = Left y
+
+--  split (RawDirectiveDefinition d)
 
 withSchemaDefinition ::
   ([SchemaDefinition], [TypeDefinition ANY s]) ->
