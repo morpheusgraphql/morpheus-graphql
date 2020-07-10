@@ -237,18 +237,18 @@ inputObjectTypeDefinition typeDescription =
         }
 
 parseDirectiveDefinition ::
-  Parse (Value s) =>
-  Maybe Description ->
-  Parser (DirectiveDefinition s)
-parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefinition" $ do
+  Parser RawTypeDefinition
+parseDirectiveDefinition = label "DirectiveDefinition" $ do
+  directiveDefinitionDescription <- optDescription
   keyword "directive"
   symbol '@'
   directiveDefinitionName <- parseName
   directiveDefinitionArgs <- argumentsDefinition
   keyword "on"
   directiveDefinitionLocations <- parseDirectiveLocation `sepBy1` symbol '|'
-  pure $
-    DirectiveDefinition
+  pure
+    $ RawDirectiveDefinition
+    $ DirectiveDefinition
       { directiveDefinitionName,
         directiveDefinitionDescription,
         directiveDefinitionLocations,
@@ -303,6 +303,7 @@ parseRawTypeDefinition =
   label "TypeSystemDefinitions" $
     RawTypeDefinition <$> parseDataType
       <|> parseSchemaDefinition
+      <|> parseDirectiveDefinition
 
 splitSchema :: [RawTypeDefinition] -> ([SchemaDefinition], [TypeDefinition ANY CONST])
 splitSchema = partitionEithers . fmap split
