@@ -8,6 +8,7 @@ module Data.Morpheus.Server.Deriving.Resolve
   ( statelessResolver,
     RootResolverConstraint,
     coreResolver,
+    deriveSchema,
   )
 where
 
@@ -24,7 +25,7 @@ import Data.Morpheus.Server.Deriving.Encode
   )
 import Data.Morpheus.Server.Deriving.Introspect
   ( IntroCon,
-    fullSchema,
+    deriveSchema,
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
@@ -82,6 +83,6 @@ coreResolver root request =
   where
     validRequest ::
       Monad m => ResponseStream event m (Schema CONST)
-    validRequest = cleanEvents $ ResultT $ pure $ fullSchema $ Identity root
+    validRequest = cleanEvents $ ResultT $ pure $ deriveSchema $ Identity root
     --------------------------------------
     execOperator schema = runApi schema (deriveModel root) request

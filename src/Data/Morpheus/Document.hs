@@ -18,7 +18,7 @@ import Data.Morpheus.Core
   )
 import Data.Morpheus.Server.Deriving.Resolve
   ( RootResolverConstraint,
-    fullSchema,
+    deriveSchema,
   )
 import Data.Morpheus.Server.TH.Compile
   ( compileDocument,
@@ -48,4 +48,4 @@ toGraphQLDocument ::
   ByteString
 toGraphQLDocument =
   resultOr (pack . show) (encodeUtf8 . LT.fromStrict . render)
-    . fullSchema
+    . deriveSchema

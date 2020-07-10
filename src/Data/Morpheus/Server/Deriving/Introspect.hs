@@ -29,7 +29,7 @@ module Data.Morpheus.Server.Deriving.Introspect
     TypeScope (..),
     ProxyRep (..),
     TypeUpdater,
-    fullSchema,
+    deriveSchema,
   )
 where
 
@@ -133,7 +133,7 @@ type IntrospectConstraint m event query mutation subscription =
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
 
-fullSchema ::
+deriveSchema ::
   forall
     rootResolver
     proxy
@@ -145,7 +145,7 @@ fullSchema ::
   (IntrospectConstraint m event query mutation subscription) =>
   proxy (rootResolver m event query mutation subscription) ->
   Eventless (Schema CONST)
-fullSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
+deriveSchema _ = querySchema >>= mutationSchema >>= subscriptionSchema
   where
     querySchema =
       resolveUpdates (initTypeLib (operatorType fields "Query")) types
