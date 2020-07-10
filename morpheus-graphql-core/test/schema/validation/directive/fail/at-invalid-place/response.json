@@ -1,0 +1,36 @@
+{
+  "errors": [
+    {
+      "message": "Directive \"deprecated\" may not to be used on SCALAR",
+      "locations": [{ "line": 1, "column": 17 }]
+    },
+    {
+      "message": "Directive \"deprecated\" may not to be used on ENUM",
+      "locations": [{ "line": 3, "column": 15 }]
+    },
+    {
+      "message": "Directive \"include\" may not to be used on ENUM_VALUE",
+      "locations": [{ "line": 4, "column": 9 }]
+    },
+    {
+      "message": "Directive \"deprecated\" may not to be used on INPUT_OBJECT",
+      "locations": [{ "line": 8, "column": 14 }]
+    },
+    {
+      "message": "Directive \"include\" may not to be used on FIELD_DEFINITION",
+      "locations": [{ "line": 9, "column": 14 }]
+    },
+    {
+      "message": "Directive \"deprecated\" may not to be used on OBJECT",
+      "locations": [{ "line": 13, "column": 12 }]
+    },
+    {
+      "message": "Directive \"include\" may not to be used on FIELD_DEFINITION",
+      "locations": [{ "line": 14, "column": 39 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on ARGUMENT_DEFINITION",
+      "locations": [{ "line": 14, "column": 17 }]
+    }
+  ]
+}

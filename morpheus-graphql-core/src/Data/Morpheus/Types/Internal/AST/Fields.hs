@@ -239,8 +239,8 @@ data FieldDefinition (cat :: TypeCategory) (s :: Stage) = FieldDefinition
   { fieldName :: FieldName,
     fieldDescription :: Maybe Description,
     fieldType :: TypeRef,
-    fieldContent :: Maybe (FieldContent TRUE cat s),
-    fieldDirectives :: [Directive s]
+    fieldDirectives :: [Directive s],
+    fieldContent :: Maybe (FieldContent TRUE cat s)
   }
   deriving (Show, Lift)
 

@@ -150,18 +150,19 @@ validateType ::
   SchemaValidator () (TypeDefinition cat VALID)
 validateType
   TypeDefinition
-    { typeContent = content,
-      typeDirectives = directives,
-      ..
-    } = inType typeName $ do
-    typeContent <- validateTypeContent content
-    typeDirectives <- validateTypeSystemDirectives (typeDirectiveLocation content) directives
-    pure $
+    { typeName,
+      typeFingerprint,
+      typeDescription,
+      typeDirectives,
+      typeContent
+    } =
+    inType typeName $
       TypeDefinition
-        { typeContent,
-          typeDirectives,
-          ..
-        }
+        typeName
+        typeFingerprint
+        typeDescription
+        <$> validateTypeSystemDirectives (typeDirectiveLocation typeContent) typeDirectives
+        <*> validateTypeContent typeContent
 
 typeDirectiveLocation :: TypeContent a b c -> DirectiveLocation
 typeDirectiveLocation DataObject {} = OBJECT
@@ -206,20 +207,16 @@ validateUnionMember UnionMember {..} = pure UnionMember {..}
 validateField ::
   FieldDefinition cat CONST ->
   SchemaValidator TypeName (FieldDefinition cat VALID)
-validateField
-  field@FieldDefinition
-    { fieldContent = content,
-      fieldDirectives = directives,
-      ..
-    } = inField fieldName $ do
-    fieldContent <- validateOptional (checkFieldContent field) content
-    fieldDirectives <- validateTypeSystemDirectives FIELD_DEFINITION directives
-    pure $
-      FieldDefinition
-        { fieldDirectives,
-          fieldContent,
-          ..
-        }
+validateField field@FieldDefinition {..} =
+  inField
+    fieldName
+    ( FieldDefinition
+        fieldName
+        fieldDescription
+        fieldType
+        <$> validateTypeSystemDirectives FIELD_DEFINITION fieldDirectives
+          <*> validateOptional (checkFieldContent field) fieldContent
+    )
 
 checkFieldContent ::
   FieldDefinition cat CONST ->
@@ -240,16 +237,13 @@ checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
 validateArgument ::
   ArgumentDefinition CONST ->
   SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
-validateArgument
+validateArgument FieldDefinition {..} =
   FieldDefinition
-    { fieldContent = content,
-      fieldDirectives = directives,
-      ..
-    } =
-    do
-      fieldDirectives <- validateTypeSystemDirectives ARGUMENT_DEFINITION directives
-      fieldContent <- validateOptional (validateArgumentDefaultValue fieldName fieldType) content
-      pure FieldDefinition {..}
+    fieldName
+    fieldDescription
+    fieldType
+    <$> validateTypeSystemDirectives ARGUMENT_DEFINITION fieldDirectives
+    <*> validateOptional (validateArgumentDefaultValue fieldName fieldType) fieldContent
 
 validateArgumentDefaultValue ::
   FieldName ->
