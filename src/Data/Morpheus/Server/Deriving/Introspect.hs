@@ -125,7 +125,7 @@ import Data.Text
   ( pack,
   )
 import GHC.Generics
-import Language.Haskell.TH (Q, TExp)
+import Language.Haskell.TH (Exp, Q)
 
 type IntroCon a = (GQLType a, DeriveTypeContent OUT (CUSTOM a) a)
 
@@ -141,13 +141,13 @@ data ProxyRep (cat :: TypeCategory) a
 compileTimeSchema ::
   (IntrospectConstraint m event qu mu su) =>
   proxy (root m event qu mu su) ->
-  Q (TExp (Schema VALID))
+  Q Exp
 compileTimeSchema =
   fromSchema
     . (deriveSchema >=> validateSchema True)
 
-fromSchema :: Eventless (Schema VALID) -> Q (TExp (Schema VALID))
-fromSchema Success {result} = [||result||]
+fromSchema :: Eventless (Schema VALID) -> Q Exp
+fromSchema Success {result} = [|result|]
 fromSchema Failure {errors} = fail (show errors)
 
 deriveSchema ::
