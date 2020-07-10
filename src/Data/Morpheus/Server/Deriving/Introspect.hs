@@ -12,6 +12,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -29,10 +30,11 @@ module Data.Morpheus.Server.Deriving.Introspect
   )
 where
 
-import Data.List (partition)
-import Data.Map (Map)
 -- MORPHEUS
 
+import Control.Monad ((>=>))
+import Data.List (partition)
+import Data.Map (Map)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -108,7 +110,8 @@ import Data.Morpheus.Types.Internal.AST
     updateSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
+  ( Eventless,
+    Resolver,
     Result (..),
     SubscriptionField (..),
   )
@@ -119,6 +122,7 @@ import Data.Text
   ( pack,
   )
 import GHC.Generics
+import Language.Haskell.TH (Exp, Q)
 
 type IntroCon a = (GQLType a, DeriveTypeContent OUT (CUSTOM a) a)
 
@@ -130,6 +134,26 @@ type IntrospectConstraint m event query mutation subscription =
 
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
+
+deriveSchemaTH ::
+  forall
+    rootResolver
+    proxy
+    m
+    event
+    query
+    mutation
+    subscription.
+  (IntrospectConstraint m event query mutation subscription) =>
+  proxy (rootResolver m event query mutation subscription) ->
+  Q Exp
+deriveSchemaTH = deriveSchema >=> fromSchema
+
+fromSchema :: Schema CONST -> Q Exp
+fromSchema schema = [|schema|]
+
+instance Failure GQLErrors Q where
+  failure = fail . show
 
 deriveSchema ::
   forall
