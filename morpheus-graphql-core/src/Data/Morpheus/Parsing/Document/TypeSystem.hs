@@ -230,7 +230,8 @@ inputObjectTypeDefinition typeDescription =
           ..
         }
 
-parseDirectiveDefinition :: Parser RawTypeDefinition
+parseDirectiveDefinition ::
+  Parser RawTypeDefinition
 parseDirectiveDefinition = label "DirectiveDefinition" $ do
   keyword "directive"
   directiveDefinitionName <- typeDeclaration "input"
