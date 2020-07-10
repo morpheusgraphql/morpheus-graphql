@@ -290,24 +290,8 @@ validateInputObject ::
   Object valueS ->
   InputValidator ctx (Object VALID)
 validateInputObject fieldsDef object =
-  do
-    kind <- asksScope kind
-    case kind of
-      TYPE ->
-        ordTraverse_ (`requiredFieldIsDefined` object) fieldsDef
-          *> ordTraverse (validateField fieldsDef) object
-      _ ->
-        ordTraverse_ (`selectKnown` fieldsDef) object
-          *> validateObjectWithDefaultValue fieldsDef object
-
-validateField ::
-  ValueConstraints ctx s valueS =>
-  FieldsDefinition IN s ->
-  ObjectEntry valueS ->
-  InputValidator ctx (ObjectEntry VALID)
-validateField parentFields entry = do
-  field <- selectKnown entry parentFields
-  withEntry (validateValueByField field) entry
+  ordTraverse_ (`selectKnown` fieldsDef) object
+    *> validateObjectWithDefaultValue fieldsDef object
 
 validateObjectWithDefaultValue ::
   ValidateWithDefault c schemaS valueS =>
@@ -347,20 +331,6 @@ instance
         (validateValueByField fieldDef . entryValue)
         fieldDef
         object
-
-withEntry ::
-  Functor f =>
-  (Value a -> f (Value b)) ->
-  ObjectEntry a ->
-  f (ObjectEntry b)
-withEntry f ObjectEntry {entryName, entryValue} =
-  ObjectEntry entryName <$> f entryValue
-
-requiredFieldIsDefined ::
-  FieldDefinition IN s ->
-  Object valueS ->
-  InputValidator ctx ()
-requiredFieldIsDefined = selectWithDefaultValue (const $ pure ()) (const $ pure ())
 
 -- Leaf Validations
 validateScalar ::
