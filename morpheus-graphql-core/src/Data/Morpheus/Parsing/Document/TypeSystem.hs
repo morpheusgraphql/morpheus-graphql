@@ -231,18 +231,18 @@ inputObjectTypeDefinition typeDescription =
         }
 
 parseDirectiveDefinition ::
-  Parser RawTypeDefinition
-parseDirectiveDefinition = label "DirectiveDefinition" $ do
-  keyword "directive"
-  directiveDefinitionName <- typeDeclaration "input"
-  unSchemaDefinition <- setOf parseRootOperationTypeDefinition
-  pure
-    $ RawDirectiveDefinition
-    $ DirectiveDefinition
+  Parse (Value s) =>
+  Maybe Description ->
+  Parser (DirectiveDefinition s)
+parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefinition" $ do
+  directiveDefinitionName <- typeDeclaration "directive"
+  -- unSchemaDefinition <- setOf parseRootOperationTypeDefinition
+  pure $
+    DirectiveDefinition
       { directiveDefinitionName,
-        directiveDefinitionDescription,
-        directiveDefinitionLocations,
-        directiveDefinitionArgs
+        directiveDefinitionDescription
+        --     directiveDefinitionLocations,
+        --     directiveDefinitionArgs
       }
 
 -- 3.2 Schema
