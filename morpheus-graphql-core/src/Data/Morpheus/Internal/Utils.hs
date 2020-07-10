@@ -34,6 +34,7 @@ module Data.Morpheus.Internal.Utils
     failUpdates,
     ordTraverse,
     ordTraverse_,
+    traverseCollection,
   )
 where
 
@@ -150,7 +151,19 @@ ordTraverse ::
   (a -> f b) ->
   t a ->
   f (t b)
-ordTraverse f a = fromElems =<< traverse f (elems a)
+ordTraverse = traverseCollection
+
+traverseCollection ::
+  ( KeyOf b,
+    Monad f,
+    Listable a (t a),
+    Listable b (t' b),
+    Failure GQLErrors f
+  ) =>
+  (a -> f b) ->
+  t a ->
+  f (t' b)
+traverseCollection f a = fromElems =<< traverse f (elems a)
 
 ordTraverse_ ::
   ( Monad f,

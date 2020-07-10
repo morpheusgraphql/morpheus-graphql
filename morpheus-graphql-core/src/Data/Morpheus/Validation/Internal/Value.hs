@@ -23,10 +23,10 @@ module Data.Morpheus.Validation.Internal.Value
 where
 
 import Control.Applicative ((*>), pure)
-import Control.Monad (Monad ((>>=)))
+import Control.Monad (Monad)
 import Data.Either (Either (..))
 import Data.Function ((&))
-import Data.Functor ((<$>), Functor, fmap)
+import Data.Functor ((<$>), fmap)
 import Data.List (any, elem)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
@@ -34,10 +34,8 @@ import Data.Morpheus.Error.Utils (renderErrorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    elems,
-    fromElems,
-    ordTraverse,
     ordTraverse_,
+    traverseCollection,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -83,7 +81,6 @@ import Data.Morpheus.Types.Internal.Validation
     MonadContext,
     Prop (..),
     Scope (..),
-    ScopeKind (..),
     Validator,
     askInputFieldType,
     askInputFieldTypeByName,
@@ -299,8 +296,7 @@ validateObjectWithDefaultValue ::
   Object valueS ->
   Validator (InputContext c) (Object VALID)
 validateObjectWithDefaultValue fieldsDef object =
-  traverse (validateWithDefault object) (elems fieldsDef)
-    >>= fromElems
+  traverseCollection (validateWithDefault object) fieldsDef
 
 class ValidateWithDefault c schemaS s where
   validateWithDefault ::
@@ -351,13 +347,14 @@ validateScalar typeName ScalarDefinition {validateValue} value err = do
     toScalar :: Value s -> m ValidValue
     toScalar (Scalar x) | isValidDefault typeName x = pure (Scalar x)
     toScalar _ = err Nothing value
-    isValidDefault :: TypeName -> ScalarValue -> Bool
-    isValidDefault "Boolean" = isBoolean
-    isValidDefault "String" = isString
-    isValidDefault "Float" = oneOf [isFloat, isInt]
-    isValidDefault "Int" = isInt
-    isValidDefault "ID" = oneOf [isInt, isFloat, isString]
-    isValidDefault _ = const True
+
+isValidDefault :: TypeName -> ScalarValue -> Bool
+isValidDefault "Boolean" = isBoolean
+isValidDefault "String" = isString
+isValidDefault "Float" = oneOf [isFloat, isInt]
+isValidDefault "Int" = isInt
+isValidDefault "ID" = oneOf [isInt, isFloat, isString]
+isValidDefault _ = const True
 
 oneOf :: [a -> Bool] -> a -> Bool
 oneOf ls v = any (v &) ls
