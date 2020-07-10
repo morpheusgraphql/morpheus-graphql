@@ -18,15 +18,20 @@ import Data.Either (Either (..), partitionEithers)
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Parsing.Internal.Arguments
+  ( maybeArguments,
+  )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
   )
 import Data.Morpheus.Parsing.Internal.Pattern
-  ( enumValueDefinition,
+  ( argumentsDefinition,
+    enumValueDefinition,
     fieldsDefinition,
     inputFieldsDefinition,
     optionalDirectives,
+    parseDirectiveLocation,
     parseOperationType,
     typeDeclaration,
   )
@@ -237,14 +242,17 @@ parseDirectiveDefinition ::
   Parser (DirectiveDefinition s)
 parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefinition" $ do
   keyword "directive"
+  symbol '@'
   directiveDefinitionName <- parseName
-  -- unSchemaDefinition <- setOf parseRootOperationTypeDefinition
+  directiveDefinitionArgs <- argumentsDefinition
+  keyword "on"
+  directiveDefinitionLocations <- parseDirectiveLocation `sepBy1` symbol '|'
   pure $
     DirectiveDefinition
       { directiveDefinitionName,
-        directiveDefinitionDescription
-        --     directiveDefinitionLocations,
-        --     directiveDefinitionArgs
+        directiveDefinitionDescription,
+        directiveDefinitionLocations,
+        directiveDefinitionArgs
       }
 
 -- 3.2 Schema

@@ -10,6 +10,8 @@ module Data.Morpheus.Parsing.Internal.Pattern
     enumValueDefinition,
     inputFieldsDefinition,
     parseOperationType,
+    argumentsDefinition,
+    parseDirectiveLocation,
   )
 where
 
@@ -41,6 +43,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DataEnumValue (..),
     Directive (..),
+    DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
@@ -174,3 +177,8 @@ parseOperationType = label "OperationType" $ do
       <|> (string "subscription" $> Subscription)
   ignoredTokens
   return kind
+
+-- TODO: PARSE DIRECTIVE
+parseDirectiveLocation :: Parser DirectiveLocation
+parseDirectiveLocation =
+  pure FIELD_DEFINITION
