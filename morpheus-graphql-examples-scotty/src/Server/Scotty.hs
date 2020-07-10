@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.Scotty
@@ -12,6 +13,8 @@ where
 import Client.Client
   ( fetchUser,
   )
+import Data.Functor.Identity (Identity (..))
+import Data.Morpheus (compileTimeSchema)
 import Data.Morpheus.Server
   ( httpPubApp,
     webSocketsApp,
@@ -30,6 +33,8 @@ import Server.Utils
 import Web.Scotty
   ( ScottyM,
   )
+
+validateSchema = $(compileTimeSchema (Identity gqlRoot))
 
 scottyServer :: IO ()
 scottyServer = do

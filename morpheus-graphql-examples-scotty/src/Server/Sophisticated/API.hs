@@ -24,7 +24,10 @@ import qualified Data.Map as M
   ( fromList,
   )
 -- MORPHEUS
-import Data.Morpheus (interpreter)
+import Data.Morpheus
+  ( compileTimeSchema,
+    interpreter,
+  )
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
   )
@@ -53,6 +56,7 @@ import Data.Morpheus.Types
     publish,
     subscribe,
   )
+import Data.Proxy (Proxy (..))
 import Data.Set (Set)
 import qualified Data.Set as S
   ( fromList,

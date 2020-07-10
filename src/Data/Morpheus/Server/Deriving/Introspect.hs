@@ -36,6 +36,7 @@ where
 import Control.Monad ((>=>))
 import Data.List (partition)
 import Data.Map (Map)
+import Data.Morpheus.Core (validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -96,6 +97,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     UnionMember (..),
+    VALID,
     fieldsToArguments,
     initTypeLib,
     insertType,
@@ -111,7 +113,8 @@ import Data.Morpheus.Types.Internal.AST
     updateSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
+  ( Eventless,
+    Resolver,
     Result (..),
     SubscriptionField (..),
   )
@@ -122,7 +125,7 @@ import Data.Text
   ( pack,
   )
 import GHC.Generics
-import Language.Haskell.TH (Exp, Q)
+import Language.Haskell.TH (Q, TExp)
 
 type IntroCon a = (GQLType a, DeriveTypeContent OUT (CUSTOM a) a)
 
@@ -138,14 +141,14 @@ data ProxyRep (cat :: TypeCategory) a
 compileTimeSchema ::
   (IntrospectConstraint m event qu mu su) =>
   proxy (root m event qu mu su) ->
-  Q Exp
-compileTimeSchema = deriveSchema >=> fromSchema
+  Q (TExp (Schema VALID))
+compileTimeSchema =
+  fromSchema
+    . (deriveSchema >=> validateSchema True)
 
-fromSchema :: Schema CONST -> Q Exp
-fromSchema schema = [|schema|]
-
-instance Failure GQLErrors Q where
-  failure = fail . show
+fromSchema :: Eventless (Schema VALID) -> Q (TExp (Schema VALID))
+fromSchema Success {result} = [||result||]
+fromSchema Failure {errors} = fail (show errors)
 
 deriveSchema ::
   forall
