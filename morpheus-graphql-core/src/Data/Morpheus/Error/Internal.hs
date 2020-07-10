@@ -36,4 +36,4 @@ internalResolvingError = globalErrorMessage . ("INTERNAL ERROR:" <>)
 -- if value is already validated but value has different type
 internalTypeMismatch :: Message -> ValidValue -> Eventless a
 internalTypeMismatch text jsType =
-  internalError $ "Type mismatch " <> text <> msg jsType
+  internalError $ "Type mismatch! expected:" <> text <> ", got: " <> msg jsType

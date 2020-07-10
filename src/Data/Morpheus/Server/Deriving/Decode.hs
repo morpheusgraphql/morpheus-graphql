@@ -97,7 +97,10 @@ class DecodeKind (kind :: GQL_KIND) a where
 instance (GQLScalar a) => DecodeKind SCALAR a where
   decodeKind _ value = case toScalar value >>= parseValue of
     Right scalar -> return scalar
-    Left errorMessage -> internalTypeMismatch (msg errorMessage) value
+    Left errorMessage ->
+      internalTypeMismatch
+        (" SCALAR: " <> msg errorMessage)
+        value
 
 -- ENUM
 instance DecodeType a => DecodeKind ENUM a where
