@@ -27,7 +27,7 @@ module Data.Morpheus.Server.Deriving.Introspect
     ProxyRep (..),
     TypeUpdater,
     deriveSchema,
-    deriveSchemaTH,
+    compileTimeSchema,
   )
 where
 
@@ -135,11 +135,11 @@ type IntrospectConstraint m event query mutation subscription =
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
 
-deriveSchemaTH ::
+compileTimeSchema ::
   (IntrospectConstraint m event qu mu su) =>
   proxy (root m event qu mu su) ->
   Q Exp
-deriveSchemaTH = deriveSchema >=> fromSchema
+compileTimeSchema = deriveSchema >=> fromSchema
 
 fromSchema :: Schema CONST -> Q Exp
 fromSchema schema = [|schema|]
