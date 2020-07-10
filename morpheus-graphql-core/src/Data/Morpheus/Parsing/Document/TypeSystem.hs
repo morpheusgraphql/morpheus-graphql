@@ -35,6 +35,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     ignoredTokens,
     keyword,
     optDescription,
+    parseName,
     parseTypeName,
     sepByAnd,
     setOf,
@@ -235,7 +236,8 @@ parseDirectiveDefinition ::
   Maybe Description ->
   Parser (DirectiveDefinition s)
 parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefinition" $ do
-  directiveDefinitionName <- typeDeclaration "directive"
+  keyword "directive"
+  directiveDefinitionName <- parseName
   -- unSchemaDefinition <- setOf parseRootOperationTypeDefinition
   pure $
     DirectiveDefinition
