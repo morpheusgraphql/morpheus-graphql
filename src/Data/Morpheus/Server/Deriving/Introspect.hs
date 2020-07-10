@@ -27,7 +27,7 @@ module Data.Morpheus.Server.Deriving.Introspect
     ProxyRep (..),
     TypeUpdater,
     deriveSchema,
-    compileTimeSchema,
+    compileTimeSchemaValidation,
   )
 where
 
@@ -138,16 +138,16 @@ type IntrospectConstraint m event query mutation subscription =
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
 
-compileTimeSchema ::
+compileTimeSchemaValidation ::
   (IntrospectConstraint m event qu mu su) =>
   proxy (root m event qu mu su) ->
   Q Exp
-compileTimeSchema =
+compileTimeSchemaValidation =
   fromSchema
     . (deriveSchema >=> validateSchema True)
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
-fromSchema Success {result} = [|result|]
+fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
 deriveSchema ::

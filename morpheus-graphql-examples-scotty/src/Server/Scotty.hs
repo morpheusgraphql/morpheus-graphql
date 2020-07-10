@@ -14,12 +14,11 @@ import Client.Client
   ( fetchUser,
   )
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus (compileTimeSchema)
+import Data.Morpheus (compileTimeSchemaValidation)
 import Data.Morpheus.Server
   ( httpPubApp,
     webSocketsApp,
   )
-import Data.Morpheus.Types.Internal.AST
 import qualified Server.Mythology.API as Mythology (api, rootResolver)
 import Server.Sophisticated.API
   ( EVENT,
@@ -35,8 +34,8 @@ import Web.Scotty
   ( ScottyM,
   )
 
-validSchema :: Schema VALID
-validSchema = $(compileTimeSchema (Identity gqlRoot))
+_validateSchema :: ()
+_validateSchema = $(compileTimeSchemaValidation (Identity gqlRoot))
 
 scottyServer :: IO ()
 scottyServer = do
