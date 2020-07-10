@@ -27,6 +27,7 @@ module Data.Morpheus.Server.Deriving.Introspect
     ProxyRep (..),
     TypeUpdater,
     deriveSchema,
+    deriveSchemaTH,
   )
 where
 
@@ -110,8 +111,7 @@ import Data.Morpheus.Types.Internal.AST
     updateSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Resolver,
+  ( Resolver,
     Result (..),
     SubscriptionField (..),
   )
@@ -136,16 +136,8 @@ data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
 
 deriveSchemaTH ::
-  forall
-    rootResolver
-    proxy
-    m
-    event
-    query
-    mutation
-    subscription.
-  (IntrospectConstraint m event query mutation subscription) =>
-  proxy (rootResolver m event query mutation subscription) ->
+  (IntrospectConstraint m event qu mu su) =>
+  proxy (root m event qu mu su) ->
   Q Exp
 deriveSchemaTH = deriveSchema >=> fromSchema
 
