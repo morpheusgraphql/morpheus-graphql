@@ -210,30 +210,38 @@ data Schema (s :: Stage) = Schema
   deriving (Show)
 
 instance Merge (Schema s) where
-  merge _ s1 s2@Schema {types} =
+  merge _ s1 s2 =
     initial
-      >>= (`resolveUpdates` fmap insertType (HM.elems types))
+      >>= (`resolveUpdates` fmap insertType (HM.elems (types s2)))
     where
-      initial = do
-        query <- mergeQuery (query s1) (query s2)
-        pure $
-          s1
-            { query,
-              directiveDefinitions = directiveDefinitions s1 <> directiveDefinitions s2
-            }
+      initial =
+        Schema (types s1)
+          <$> mergeOperation (query s1) (query s2)
+            <*> mergeOptional (mutation s1) (mutation s2)
+            <*> mergeOptional (subscription s1) (subscription s2)
+            <*> pure (directiveDefinitions s1 <> directiveDefinitions s2)
 
-mergeQuery ::
+mergeOptional ::
+  (Monad m, Failure GQLErrors m) =>
+  Maybe (TypeDefinition OUT s) ->
+  Maybe (TypeDefinition OUT s) ->
+  m (Maybe (TypeDefinition OUT s))
+mergeOptional Nothing y = pure y
+mergeOptional (Just x) Nothing = pure (Just x)
+mergeOptional (Just x) (Just y) = Just <$> mergeOperation x y
+
+mergeOperation ::
   (Monad m, Failure GQLErrors m) =>
   TypeDefinition OUT s ->
   TypeDefinition OUT s ->
   m (TypeDefinition OUT s)
-mergeQuery
+mergeOperation
   TypeDefinition {typeContent = DataObject i1 fields1}
   TypeDefinition {typeContent = DataObject i2 fields2, ..} =
     do
       fields <- fields1 <:> fields2
       pure $ TypeDefinition {typeContent = DataObject (i1 <> i2) fields, ..}
-mergeQuery _ _ = failure $ globalErrorMessage "can't merge schema: Query must be an Object Type"
+mergeOperation _ _ = failure $ globalErrorMessage "can't merge schema: Query must be an Object Type"
 
 data SchemaDefinition = SchemaDefinition
   { schemaDirectives :: Directives CONST,
