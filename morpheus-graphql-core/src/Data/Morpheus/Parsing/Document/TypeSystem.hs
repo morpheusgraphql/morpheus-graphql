@@ -248,9 +248,9 @@ inputObjectTypeDefinition typeDescription =
 --    |[opt] DirectiveLocation
 
 parseDirectiveDefinition ::
+  Maybe Description ->
   Parser RawTypeDefinition
-parseDirectiveDefinition = label "DirectiveDefinition" $ do
-  directiveDefinitionDescription <- optDescription
+parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefinition" $ do
   keyword "directive"
   symbol '@'
   directiveDefinitionName <- parseName
@@ -281,8 +281,8 @@ parseDirectiveDefinition = label "DirectiveDefinition" $ do
 --     subscription :: Maybe TypeName
 --   }
 
-parseSchemaDefinition :: Parser RawTypeDefinition
-parseSchemaDefinition = label "SchemaDefinition" $ do
+parseSchemaDefinition :: Maybe Description -> Parser RawTypeDefinition
+parseSchemaDefinition _schemaDescription = label "SchemaDefinition" $ do
   keyword "schema"
   schemaDirectives <- optionalDirectives
   unSchemaDefinition <- setOf parseRootOperationTypeDefinition
@@ -296,26 +296,26 @@ parseRootOperationTypeDefinition = do
   symbol ':'
   RootOperationTypeDefinition operationType <$> parseTypeName
 
-parseDataType ::
-  Parse (Value s) =>
-  Parser (TypeDefinition ANY s)
-parseDataType = label "TypeDefinition" $ do
-  description <- optDescription
-  -- scalar | enum |  input | object | union | interface
-  (toAny <$> inputObjectTypeDefinition description)
-    <|> (toAny <$> unionTypeDefinition description)
-    <|> enumTypeDefinition description
-    <|> scalarTypeDefinition description
-    <|> (toAny <$> objectTypeDefinition description)
-    <|> (toAny <$> interfaceTypeDefinition description)
-
-parseRawTypeDefinition ::
+parseTypeSystemUnit ::
   Parser RawTypeDefinition
-parseRawTypeDefinition =
-  label "TypeSystemDefinitions" $
-    RawTypeDefinition <$> parseDataType
-      <|> parseSchemaDefinition
-      <|> parseDirectiveDefinition
+parseTypeSystemUnit =
+  label "TypeDefinition" $
+    do
+      description <- optDescription
+      -- scalar | enum |  input | object | union | interface
+      types description
+        <|> parseSchemaDefinition description
+        <|> parseDirectiveDefinition description
+  where
+    types description =
+      RawTypeDefinition
+        <$> ( (toAny <$> inputObjectTypeDefinition description)
+                <|> (toAny <$> unionTypeDefinition description)
+                <|> enumTypeDefinition description
+                <|> scalarTypeDefinition description
+                <|> (toAny <$> objectTypeDefinition description)
+                <|> (toAny <$> interfaceTypeDefinition description)
+            )
 
 typePartition ::
   [RawTypeDefinition] ->
@@ -355,7 +355,7 @@ withSchemaDefinition (_ : xs, _, _) = failure (fmap (nameCollision "schema") xs)
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
 parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
   ignoredTokens
-  manyTill parseRawTypeDefinition eof
+  manyTill parseTypeSystemUnit eof
 
 typeSystemDefinition ::
   Text ->

@@ -30,7 +30,6 @@ import Data.Morpheus.Internal.Utils
     selectBy,
     selectOr,
   )
-import Data.Morpheus.Schema.Directives (defaultDirectives)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     CONST,
@@ -98,10 +97,7 @@ validate ::
 validate _ location directive@Directive {..} =
   withDirective directive $ do
     (Schema {directiveDefinitions} :: Schema schemaS) <- askSchema
-    (directiveDef :: DirectiveDefinition schemaS) <-
-      selectKnown
-        directive
-        (directiveDefinitions <> defaultDirectives)
+    (directiveDef :: DirectiveDefinition schemaS) <- selectKnown directive directiveDefinitions
     Directive directiveName directivePosition
       <$> ( validateDirectiveLocation location directive directiveDef
               *> validateDirectiveArguments directiveDef directiveArgs

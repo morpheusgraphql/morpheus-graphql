@@ -39,6 +39,23 @@ internalSchema =
   toInternalSchema
     [dsl|
 
+"""
+Directs the executor to skip this field or fragment when the `if` argument is true.
+"""
+directive @skip(if: Boolean!) 
+  on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""
+Directs the executor to include this field or fragment only when the `if` argument is true.
+"""
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""
+Marks an element of a GraphQL schema as no longer supported.
+"""
+directive @deprecated(reason: String) on FIELD_DEFINITION | ENUM_VALUE
+
+
 scalar Boolean
 scalar Int
 scalar Float
