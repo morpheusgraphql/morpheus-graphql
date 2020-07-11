@@ -58,6 +58,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     convertToHaskellName,
     isOutput,
     mkTypeRef,
+    InternalError (..),
   )
 where
 
@@ -123,6 +124,21 @@ instance Lift Message where
 
 #if MIN_VERSION_template_haskell(2,16,0)
   liftTyped = liftTypedString . readMessage
+#endif
+
+newtype InternalError = InternalError
+  { readInternalError :: Text
+  }
+  deriving
+    (Generic)
+  deriving newtype
+    (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
+
+instance Lift InternalError where
+  lift = liftString . readInternalError
+
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = liftTypedString . readInternalError
 #endif
 
 class Msg a where

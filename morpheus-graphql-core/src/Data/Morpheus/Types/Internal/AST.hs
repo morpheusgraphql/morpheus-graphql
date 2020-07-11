@@ -151,6 +151,7 @@ module Data.Morpheus.Types.Internal.AST
     UnionSelection,
     SchemaDefinition (..),
     buildSchema,
+    InternalError (..),
   )
 where
 
