@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 253eb7f4abe74c2fc62a2c4833c0f2e33261159933edca4a39b6dfe4470c3230
+-- hash: b5ceb90bb971a72566e846f2ca6a47e543a093b72d0187f98a1f0c67ed66cf32
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -43,6 +43,7 @@ data-files:
     test/schema/validation/default-value/field/missing-field/schema.gql
     test/schema/validation/default-value/field/unexpected-value/schema.gql
     test/schema/validation/default-value/field/unknown-field/schema.gql
+    test/schema/validation/directive/custom-directive/ok/schema.gql
     test/schema/validation/directive/fail/at-invalid-place/schema.gql
     test/schema/validation/directive/fail/missing-argument/schema.gql
     test/schema/validation/directive/fail/unexpected-value/schema.gql
@@ -80,6 +81,7 @@ data-files:
     test/schema/validation/default-value/field/missing-field/response.json
     test/schema/validation/default-value/field/unexpected-value/response.json
     test/schema/validation/default-value/field/unknown-field/response.json
+    test/schema/validation/directive/custom-directive/ok/response.json
     test/schema/validation/directive/fail/at-invalid-place/response.json
     test/schema/validation/directive/fail/missing-argument/response.json
     test/schema/validation/directive/fail/unexpected-value/response.json
