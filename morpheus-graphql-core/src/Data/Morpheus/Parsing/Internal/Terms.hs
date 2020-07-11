@@ -24,9 +24,10 @@ module Data.Morpheus.Parsing.Internal.Terms
     keyword,
     symbol,
     optDescription,
-    optionalList,
+    optionalCollection,
     parseNegativeSign,
     parseTypeName,
+    pipe,
   )
 where
 
@@ -70,6 +71,7 @@ import Text.Megaparsec
     manyTill,
     optional,
     sepBy,
+    sepBy1,
     sepEndBy,
     skipManyTill,
     try,
@@ -227,9 +229,12 @@ comma :: Parser ()
 comma = label "Comma" $ char ',' *> space
 
 ------------------------------------------------------------------------
--- COMPLEX
+
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (optional (char '&') *> ignoredTokens)
+sepByAnd entry = entry `sepBy` (optional (symbol '&') *> ignoredTokens)
+
+pipe :: Parser a -> Parser [a]
+pipe x = optional (symbol '|') *> (x `sepBy1` symbol '|')
 
 -----------------------------
 collection :: Parser a -> Parser [a]
@@ -238,14 +243,14 @@ collection entry = braces (entry `sepEndBy` ignoredTokens)
 setOf :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 setOf = collection >=> fromElems
 
+optionalCollection :: Collection a c => Parser c -> Parser c
+optionalCollection x = x <|> pure empty
+
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []
   ignoredTokens
   return wrapper
-
-optionalList :: Parser [a] -> Parser [a]
-optionalList x = x <|> pure []
 
 uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 uniqTuple parser =

@@ -4,6 +4,12 @@
 
 ### new features
 
+- parser supports custom directive definition. e.g
+
+```graphql
+directive @MyDirective on FIELD_DEFINITION | OBJECT
+```
+
 - directive Validation for Document (TypeSystem).
 - supports of block string values. e.g:
 

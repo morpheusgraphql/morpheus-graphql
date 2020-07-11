@@ -14,7 +14,7 @@ where
 
 import Control.Applicative ((*>), pure)
 import Control.Monad ((>=>))
-import Data.Either (Either (..), partitionEithers)
+import Data.Foldable (foldr)
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
@@ -23,10 +23,12 @@ import Data.Morpheus.Parsing.Internal.Internal
     processParser,
   )
 import Data.Morpheus.Parsing.Internal.Pattern
-  ( enumValueDefinition,
+  ( argumentsDefinition,
+    enumValueDefinition,
     fieldsDefinition,
     inputFieldsDefinition,
     optionalDirectives,
+    parseDirectiveLocation,
     parseOperationType,
     typeDeclaration,
   )
@@ -35,7 +37,10 @@ import Data.Morpheus.Parsing.Internal.Terms
     ignoredTokens,
     keyword,
     optDescription,
+    optionalCollection,
+    parseName,
     parseTypeName,
+    pipe,
     sepByAnd,
     setOf,
     symbol,
@@ -48,16 +53,19 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     DataFingerprint (..),
     Description,
+    DirectiveDefinition (..),
     IN,
     OUT,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     ScalarDefinition (..),
+    Schema,
     SchemaDefinition (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     Value,
+    buildSchema,
     mkUnionMember,
     toAny,
   )
@@ -71,12 +79,11 @@ import Text.Megaparsec
     eof,
     label,
     manyTill,
-    sepBy1,
+    optional,
   )
 import Prelude
   ( ($),
     (.),
-    snd,
   )
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
@@ -178,7 +185,9 @@ unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
         ..
       }
   where
-    unionMemberTypes = symbol '=' *> (mkUnionMember <$> parseTypeName) `sepBy1` symbol '|'
+    unionMemberTypes =
+      symbol '='
+        *> pipe (mkUnionMember <$> parseTypeName)
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
 --
@@ -229,6 +238,35 @@ inputObjectTypeDefinition typeDescription =
           ..
         }
 
+-- 3.13 DirectiveDefinition
+--
+--  DirectiveDefinition:
+--     Description[opt] directive @ Name ArgumentsDefinition[opt] repeatable[opt] on DirectiveLocations
+--
+--  DirectiveLocations:
+--    DirectiveLocations | DirectiveLocation
+--    |[opt] DirectiveLocation
+
+parseDirectiveDefinition ::
+  Maybe Description ->
+  Parser RawTypeDefinition
+parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefinition" $ do
+  keyword "directive"
+  symbol '@'
+  directiveDefinitionName <- parseName
+  directiveDefinitionArgs <- optionalCollection argumentsDefinition
+  _ <- optional (keyword "repeatable")
+  keyword "on"
+  directiveDefinitionLocations <- pipe parseDirectiveLocation
+  pure
+    $ RawDirectiveDefinition
+    $ DirectiveDefinition
+      { directiveDefinitionName,
+        directiveDefinitionDescription,
+        directiveDefinitionLocations,
+        directiveDefinitionArgs
+      }
+
 -- 3.2 Schema
 -- SchemaDefinition:
 --    schema Directives[Const,opt]
@@ -243,12 +281,14 @@ inputObjectTypeDefinition typeDescription =
 --     subscription :: Maybe TypeName
 --   }
 
-parseSchemaDefinition :: Parser RawTypeDefinition
-parseSchemaDefinition = label "SchemaDefinition" $ do
+parseSchemaDefinition :: Maybe Description -> Parser RawTypeDefinition
+parseSchemaDefinition _schemaDescription = label "SchemaDefinition" $ do
   keyword "schema"
   schemaDirectives <- optionalDirectives
   unSchemaDefinition <- setOf parseRootOperationTypeDefinition
-  pure $ RawSchemaDefinition $ SchemaDefinition {schemaDirectives, unSchemaDefinition}
+  pure
+    $ RawSchemaDefinition
+    $ SchemaDefinition {schemaDirectives, unSchemaDefinition}
 
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition = do
@@ -256,49 +296,87 @@ parseRootOperationTypeDefinition = do
   symbol ':'
   RootOperationTypeDefinition operationType <$> parseTypeName
 
-parseDataType ::
-  Parse (Value s) =>
-  Parser (TypeDefinition ANY s)
-parseDataType = label "TypeDefinition" $ do
-  description <- optDescription
-  -- scalar | enum |  input | object | union | interface
-  (toAny <$> inputObjectTypeDefinition description)
-    <|> (toAny <$> unionTypeDefinition description)
-    <|> enumTypeDefinition description
-    <|> scalarTypeDefinition description
-    <|> (toAny <$> objectTypeDefinition description)
-    <|> (toAny <$> interfaceTypeDefinition description)
-
-parseRawTypeDefinition ::
+parseTypeSystemUnit ::
   Parser RawTypeDefinition
-parseRawTypeDefinition =
-  label "TypeSystemDefinitions" $
-    RawTypeDefinition <$> parseDataType
-      <|> parseSchemaDefinition
-
-splitSchema :: [RawTypeDefinition] -> ([SchemaDefinition], [TypeDefinition ANY CONST])
-splitSchema = partitionEithers . fmap split
+parseTypeSystemUnit =
+  label "TypeDefinition" $
+    do
+      description <- optDescription
+      -- scalar | enum |  input | object | union | interface
+      types description
+        <|> parseSchemaDefinition description
+        <|> parseDirectiveDefinition description
   where
-    split (RawTypeDefinition x) = Right x
-    split (RawSchemaDefinition y) = Left y
+    types description =
+      RawTypeDefinition
+        <$> ( (toAny <$> inputObjectTypeDefinition description)
+                <|> (toAny <$> unionTypeDefinition description)
+                <|> enumTypeDefinition description
+                <|> scalarTypeDefinition description
+                <|> (toAny <$> objectTypeDefinition description)
+                <|> (toAny <$> interfaceTypeDefinition description)
+            )
+
+typePartition ::
+  [RawTypeDefinition] ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY CONST],
+    [DirectiveDefinition CONST]
+  )
+typePartition = foldr split ([], [], [])
+
+split ::
+  RawTypeDefinition ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY CONST],
+    [DirectiveDefinition CONST]
+  ) ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY CONST],
+    [DirectiveDefinition CONST]
+  )
+split (RawSchemaDefinition schema) (schemas, types, dirs) = (schema : schemas, types, dirs)
+split (RawTypeDefinition ty) (schemas, types, dirs) = (schemas, ty : types, dirs)
+split (RawDirectiveDefinition dir) (schemas, types, dirs) = (schemas, types, dir : dirs)
+
+--  split (RawDirectiveDefinition d)
 
 withSchemaDefinition ::
-  ([SchemaDefinition], [TypeDefinition ANY s]) ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY s],
+    [DirectiveDefinition CONST]
+  ) ->
   Eventless
-    (Maybe SchemaDefinition, [TypeDefinition ANY s])
-withSchemaDefinition ([], t) = pure (Nothing, t)
-withSchemaDefinition ([x], t) = pure (Just x, t)
-withSchemaDefinition (_ : xs, _) = failure (fmap (nameCollision "schema") xs)
+    (Maybe SchemaDefinition, [TypeDefinition ANY s], [DirectiveDefinition CONST])
+withSchemaDefinition ([], t, dirs) = pure (Nothing, t, dirs)
+withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
+withSchemaDefinition (_ : xs, _, _) = failure (fmap (nameCollision "schema") xs)
 
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
 parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
   ignoredTokens
-  manyTill parseRawTypeDefinition eof
+  manyTill parseTypeSystemUnit eof
+
+typeSystemDefinition ::
+  Text ->
+  Eventless
+    ( Maybe SchemaDefinition,
+      [TypeDefinition ANY CONST],
+      [DirectiveDefinition CONST]
+    )
+typeSystemDefinition =
+  processParser parseTypeSystemDefinition
+    >=> withSchemaDefinition . typePartition
 
 parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY CONST]
-parseTypeDefinitions = fmap snd . parseSchema
+parseTypeDefinitions = fmap snd3 . typeSystemDefinition
 
-parseSchema :: Text -> Eventless (Maybe SchemaDefinition, [TypeDefinition ANY CONST])
+snd3 :: (a, b, c) -> b
+snd3 (_, x, _) = x
+
+parseSchema ::
+  Text ->
+  Eventless (Schema CONST)
 parseSchema =
-  processParser parseTypeSystemDefinition
-    >=> withSchemaDefinition . splitSchema
+  typeSystemDefinition
+    >=> buildSchema

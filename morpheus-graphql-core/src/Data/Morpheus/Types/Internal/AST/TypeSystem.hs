@@ -70,10 +70,12 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Error.Schema (nameCollisionError)
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
+  ( (<:>),
+    Collection (..),
     Failure (..),
     KeyOf (..),
     Listable (..),
+    Merge (..),
     Selectable (..),
     UpdateT (..),
     elems,
@@ -81,7 +83,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
-    renderIndent,
+    newline,
+    renderMembers,
     renderObject,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -107,6 +110,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( Directive,
+    DirectiveDefinition (..),
     Directives,
     FieldDefinition (..),
     FieldsDefinition,
@@ -201,9 +205,44 @@ data Schema (s :: Stage) = Schema
   { types :: TypeLib s,
     query :: TypeDefinition OUT s,
     mutation :: Maybe (TypeDefinition OUT s),
-    subscription :: Maybe (TypeDefinition OUT s)
+    subscription :: Maybe (TypeDefinition OUT s),
+    directiveDefinitions :: [DirectiveDefinition s]
   }
   deriving (Show)
+
+instance Merge (Schema s) where
+  merge _ s1 s2 =
+    initial
+      >>= (`resolveUpdates` fmap insertType (HM.elems (types s2)))
+    where
+      initial =
+        Schema (types s1)
+          <$> mergeOperation (query s1) (query s2)
+            <*> mergeOptional (mutation s1) (mutation s2)
+            <*> mergeOptional (subscription s1) (subscription s2)
+            <*> pure (directiveDefinitions s1 <> directiveDefinitions s2)
+
+mergeOptional ::
+  (Monad m, Failure GQLErrors m) =>
+  Maybe (TypeDefinition OUT s) ->
+  Maybe (TypeDefinition OUT s) ->
+  m (Maybe (TypeDefinition OUT s))
+mergeOptional Nothing y = pure y
+mergeOptional (Just x) Nothing = pure (Just x)
+mergeOptional (Just x) (Just y) = Just <$> mergeOperation x y
+
+mergeOperation ::
+  (Monad m, Failure GQLErrors m) =>
+  TypeDefinition OUT s ->
+  TypeDefinition OUT s ->
+  m (TypeDefinition OUT s)
+mergeOperation
+  TypeDefinition {typeContent = DataObject i1 fields1}
+  TypeDefinition {typeContent = DataObject i2 fields2, ..} =
+    do
+      fields <- fields1 <:> fields2
+      pure $ TypeDefinition {typeContent = DataObject (i1 <> i2) fields, ..}
+mergeOperation _ _ = failure $ globalErrorMessage "can't merge schema: Query must be an Object Type"
 
 data SchemaDefinition = SchemaDefinition
   { schemaDirectives :: Directives CONST,
@@ -228,6 +267,7 @@ instance KeyOf SchemaDefinition where
 data RawTypeDefinition
   = RawSchemaDefinition SchemaDefinition
   | RawTypeDefinition (TypeDefinition ANY CONST)
+  | RawDirectiveDefinition (DirectiveDefinition CONST)
   deriving (Show)
 
 data RootOperationTypeDefinition = RootOperationTypeDefinition
@@ -284,16 +324,30 @@ excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
     blacklist :: [TypeName]
     blacklist = fmap typeName (catMaybes excusionTypes)
 
+withDirectives ::
+  [DirectiveDefinition s] ->
+  Schema s ->
+  Schema s
+withDirectives dirs Schema {..} =
+  Schema
+    { directiveDefinitions = directiveDefinitions <> dirs,
+      ..
+    }
+
 buildSchema ::
   (Monad m, Failure GQLErrors m) =>
   ( Maybe SchemaDefinition,
-    [TypeDefinition ANY s]
+    [TypeDefinition ANY s],
+    [DirectiveDefinition s]
   ) ->
   m (Schema s)
-buildSchema (Nothing, types) = fromElems types
-buildSchema (Just schemaDef, types) =
-  traverse3 selectOp (Query, Mutation, Subscription)
-    >>= buildWith types
+buildSchema (Nothing, types, dirs) = withDirectives dirs <$> fromElems types
+buildSchema (Just schemaDef, types, dirs) =
+  withDirectives
+    dirs
+    <$> ( traverse3 selectOp (Query, Mutation, Subscription)
+            >>= buildWith types
+        )
   where
     selectOp op = selectOperation schemaDef op types
 
@@ -328,7 +382,8 @@ initTypeLib query =
     { types = empty,
       query = query,
       mutation = Nothing,
-      subscription = Nothing
+      subscription = Nothing,
+      directiveDefinitions = empty
     }
 
 typeRegister :: Schema s -> TypeLib s
@@ -580,21 +635,21 @@ mkUnionField UnionMember {memberName} =
 --------------------------------------------------------------------------------------------------
 
 instance RenderGQL (Schema s) where
-  render schema = intercalate "\n\n" $ fmap render visibleTypes
+  render schema = intercalate newline (fmap render visibleTypes)
     where
       visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
 
 instance RenderGQL (TypeDefinition a s) where
-  render TypeDefinition {typeName, typeContent} = __render typeContent
+  render TypeDefinition {typeName, typeContent} = __render typeContent <> newline
     where
       __render DataInterface {interfaceFields} = "interface " <> render typeName <> render interfaceFields
       __render DataScalar {} = "scalar " <> render typeName
-      __render (DataEnum tags) = "enum " <> render typeName <> renderObject render tags
+      __render (DataEnum tags) = "enum " <> render typeName <> renderObject tags
       __render (DataUnion members) =
         "union "
           <> render typeName
-          <> " =\n    "
-          <> intercalate ("\n" <> renderIndent <> "| ") (fmap render members)
+          <> " = "
+          <> renderMembers members
       __render (DataInputObject fields) = "input " <> render typeName <> render fields
       __render (DataInputUnion members) = "input " <> render typeName <> render fields
         where

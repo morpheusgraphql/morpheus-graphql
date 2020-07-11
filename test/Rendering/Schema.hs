@@ -11,15 +11,14 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Rendering.Schema
-  ( schemaProxy,
+  ( proxy,
+    path,
   )
 where
 
 import Data.Morpheus.Document (importGQLDocumentWithNamespace)
-import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
   ( GQLScalar (..),
-    GQLType (..),
     ID (..),
     RootResolver (..),
     ScalarValue (..),
@@ -33,14 +32,14 @@ data TestScalar
   = TestScalar
   deriving (Show, Generic)
 
-instance GQLType TestScalar where
-  type KIND TestScalar = SCALAR
-
 instance GQLScalar TestScalar where
   parseValue _ = pure TestScalar
   serialize TestScalar = Int 0
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
-schemaProxy :: Proxy (RootResolver IO () Query Undefined Undefined)
-schemaProxy = Proxy @(RootResolver IO () Query Undefined Undefined)
+path :: String
+path = "test/Rendering/schema.gql"
+
+proxy :: Proxy (RootResolver IO () Query Undefined Undefined)
+proxy = Proxy @(RootResolver IO () Query Undefined Undefined)

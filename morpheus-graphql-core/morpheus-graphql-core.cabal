@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d1432ee03af43e5c0994d758adc947e83c4f63c6f1c7081926e9d6629d321698
+-- hash: a1ace2a1e46379d2a6faf2713e43cdfe2085558b622629035ae2b7398f2ced8e
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -25,6 +25,8 @@ extra-source-files:
 data-files:
     test/api/interface/query.gql
     test/api/simple/query.gql
+    test/schema/parsing/directive/ok/simple/schema.gql
+    test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/schema.gql
@@ -43,8 +45,10 @@ data-files:
     test/schema/validation/default-value/field/unknown-field/schema.gql
     test/schema/validation/directive/fail/at-invalid-place/schema.gql
     test/schema/validation/directive/fail/missing-argument/schema.gql
+    test/schema/validation/directive/fail/sopthisticated/schema.gql
     test/schema/validation/directive/fail/unexpected-value/schema.gql
     test/schema/validation/directive/fail/unknown-directive/schema.gql
+    test/schema/validation/directive/ok/deprecated/custom-directive/schema.gql
     test/schema/validation/directive/ok/deprecated/schema.gql
     test/schema/validation/interface/field-args/fail/schema.gql
     test/schema/validation/interface/field-args/ok/schema.gql
@@ -60,6 +64,8 @@ data-files:
     test/schema/validation/schema-definition/ok/full/schema.gql
     test/api/interface/response.json
     test/api/simple/response.json
+    test/schema/parsing/directive/ok/simple/response.json
+    test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/response.json
@@ -78,8 +84,10 @@ data-files:
     test/schema/validation/default-value/field/unknown-field/response.json
     test/schema/validation/directive/fail/at-invalid-place/response.json
     test/schema/validation/directive/fail/missing-argument/response.json
+    test/schema/validation/directive/fail/sopthisticated/response.json
     test/schema/validation/directive/fail/unexpected-value/response.json
     test/schema/validation/directive/fail/unknown-directive/response.json
+    test/schema/validation/directive/ok/deprecated/custom-directive/response.json
     test/schema/validation/directive/ok/deprecated/response.json
     test/schema/validation/interface/field-args/fail/response.json
     test/schema/validation/interface/field-args/ok/response.json
@@ -136,7 +144,6 @@ library
       Data.Morpheus.Parsing.Request.Selection
       Data.Morpheus.Rendering.RenderGQL
       Data.Morpheus.Rendering.RenderIntrospection
-      Data.Morpheus.Schema.Directives
       Data.Morpheus.Schema.DSL
       Data.Morpheus.Schema.Schema
       Data.Morpheus.Schema.SchemaAPI

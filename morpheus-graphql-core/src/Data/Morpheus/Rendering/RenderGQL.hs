@@ -5,7 +5,8 @@
 module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     renderObject,
-    renderIndent,
+    renderMembers,
+    newline,
   )
 where
 
@@ -43,9 +44,23 @@ instance RenderGQL Bool where
   render True = "true"
   render False = "false"
 
-renderIndent :: Rendering
-renderIndent = "  "
+indent :: Rendering
+indent = "  "
 
-renderObject :: (a -> Rendering) -> [a] -> Rendering
-renderObject f list =
-  " { \n  " <> intercalate ("\n" <> renderIndent) (fmap f list) <> "\n}"
+space :: Rendering
+space = " "
+
+newline :: Rendering
+newline = "\n"
+
+indentNewline :: Rendering
+indentNewline = newline <> indent
+
+renderAtNewLine :: (RenderGQL a) => [a] -> Rendering
+renderAtNewLine elems = indentNewline <> intercalate indentNewline (fmap render elems)
+
+renderObject :: (RenderGQL a) => [a] -> Rendering
+renderObject fields = " {" <> renderAtNewLine fields <> "\n}"
+
+renderMembers :: (RenderGQL a) => [a] -> Rendering
+renderMembers members = intercalate (space <> "|" <> space) (fmap render members)

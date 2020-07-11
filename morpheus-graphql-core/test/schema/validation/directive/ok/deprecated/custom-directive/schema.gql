@@ -1,9 +1,9 @@
-directive @DirectiveA(a1: String!, a2: Int!) on SCALAR | ENUM | ENUM_VALUE
+directive @DirectiveA on SCALAR | ENUM | ENUM_VALUE
 
-directive @DirectiveB(a1: Int!) on INPUT_FIELD_DEFINITION | INPUT_OBJECT
+directive @DirectiveB(arg: Int) on INPUT_FIELD_DEFINITION | INPUT_OBJECT
 
 directive @DirectiveC(
-  arg: MyInput!
+  arg: MyInput! = {}
 ) on FIELD_DEFINITION | OBJECT | ARGUMENT_DEFINITION
 
 scalar MyScalar @DirectiveA

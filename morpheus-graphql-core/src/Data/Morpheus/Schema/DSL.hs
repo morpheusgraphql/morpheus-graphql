@@ -3,17 +3,20 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Morpheus.Schema.DSL (dsl) where
 
+import Data.HashMap.Lazy (fromList, toList)
 import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
 import Data.Morpheus.Parsing.Document.TypeSystem
-  ( parseTypeDefinitions,
+  ( parseSchema,
   )
+import Data.Morpheus.Types.Internal.AST (Schema (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Result (..),
   )
@@ -37,7 +40,12 @@ dsl =
       error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
 dslExpression :: Text -> Q Exp
-dslExpression doc = case parseTypeDefinitions doc of
+dslExpression doc = case parseSchema doc of
   Failure errors -> fail (renderGQLErrors errors)
-  Success {result, warnings} ->
-    gqlWarnings warnings >> [|result|]
+  Success {result = Schema {types = lib, ..}, warnings} ->
+    gqlWarnings warnings
+      >> [|
+        Schema {types = fromList typeLib, ..}
+        |]
+    where
+      typeLib = toList lib

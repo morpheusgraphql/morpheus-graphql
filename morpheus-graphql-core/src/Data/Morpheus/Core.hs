@@ -30,7 +30,8 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.Morpheus.Internal.Utils
-  ( empty,
+  ( (<:>),
+    empty,
   )
 import Data.Morpheus.Parser
   ( parseRequest,
@@ -44,7 +45,7 @@ import Data.Morpheus.Parsing.JSONSchema.Parse
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
-import Data.Morpheus.Schema.Schema (withSystemTypes)
+import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Schema.SchemaAPI (withSystemFields)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -93,7 +94,7 @@ runApi inputSchema resModel request = do
       Monad m => ResponseStream event m Context
     validRequest = cleanEvents $ ResultT $ pure $ do
       validSchema <- validateSchema True inputSchema
-      schema <- withSystemTypes validSchema
+      schema <- internalSchema <:> validSchema
       operation <- parseRequestWith schema request
       pure $
         Context
@@ -118,4 +119,4 @@ parseGQLDocument :: ByteString -> Eventless (Schema VALID)
 parseGQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8
 
 parseFullGQLDocument :: ByteString -> Eventless (Schema VALID)
-parseFullGQLDocument = parseGQLDocument >=> withSystemTypes
+parseFullGQLDocument = parseGQLDocument >=> (internalSchema <:>)

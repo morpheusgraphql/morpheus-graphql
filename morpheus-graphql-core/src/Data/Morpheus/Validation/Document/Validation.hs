@@ -1,8 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -27,7 +29,8 @@ import Data.Morpheus.Error.Document.Interface
     PartialImplements (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( KeyOf (..),
+  ( (<:>),
+    KeyOf (..),
     Selectable (..),
     elems,
     empty,
@@ -35,13 +38,14 @@ import Data.Morpheus.Internal.Utils
     ordTraverse,
   )
 import Data.Morpheus.Schema.Schema
-  ( withSystemTypes,
+  ( internalSchema,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentDefinition,
     ArgumentsDefinition (..),
     CONST,
     DataEnumValue (..),
+    DirectiveDefinition (..),
     DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -52,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     Schema (..),
     TRUE,
+    TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -112,11 +117,12 @@ instance ValidateSchema CONST where
       { types,
         query,
         mutation,
-        subscription
+        subscription,
+        directiveDefinitions
       } = do
       sysSchema <-
         if withSystem
-          then withSystemTypes schema
+          then internalSchema <:> schema
           else pure schema
       runValidator
         __validateSchema
@@ -138,6 +144,7 @@ instance ValidateSchema CONST where
             <*> validateType query
             <*> validateOptional validateType mutation
             <*> validateOptional validateType subscription
+            <*> traverse validateDirectiveDefinition directiveDefinitions
 
 validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
 validateOptional f = maybe (pure Nothing) (fmap Just . f)
@@ -204,7 +211,18 @@ validateUnionMember ::
   UnionMember cat CONST -> SchemaValidator TypeName (UnionMember cat VALID)
 validateUnionMember UnionMember {..} = pure UnionMember {..}
 
+class FieldDirectiveLocation (cat :: TypeCategory) where
+  directiveLocation :: Proxy cat -> DirectiveLocation
+
+instance FieldDirectiveLocation OUT where
+  directiveLocation _ = FIELD_DEFINITION
+
+instance FieldDirectiveLocation IN where
+  directiveLocation _ = INPUT_FIELD_DEFINITION
+
 validateField ::
+  forall cat.
+  FieldDirectiveLocation cat =>
   FieldDefinition cat CONST ->
   SchemaValidator TypeName (FieldDefinition cat VALID)
 validateField field@FieldDefinition {..} =
@@ -214,7 +232,7 @@ validateField field@FieldDefinition {..} =
         fieldName
         fieldDescription
         fieldType
-        <$> validateTypeSystemDirectives FIELD_DEFINITION fieldDirectives
+        <$> validateTypeSystemDirectives (directiveLocation (Proxy @cat)) fieldDirectives
           <*> validateOptional (checkFieldContent field) fieldContent
     )
 
@@ -222,11 +240,7 @@ checkFieldContent ::
   FieldDefinition cat CONST ->
   FieldContent TRUE cat CONST ->
   SchemaValidator (TypeName, FieldName) (FieldContent TRUE cat VALID)
-checkFieldContent _ (FieldArgs (ArgumentsDefinition meta args)) =
-  FieldArgs . ArgumentsDefinition meta
-    <$> ordTraverse
-      validateArgument
-      args
+checkFieldContent _ (FieldArgs argsDef) = FieldArgs <$> validateArgumentsDefinition argsDef
 checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
   (typeName, fName) <- asks local
   DefaultInputValue
@@ -234,10 +248,19 @@ checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
       (SourceInputField typeName fName Nothing)
       (validateDefaultValue fieldType value)
 
-validateArgument ::
+validateArgumentsDefinition ::
+  ArgumentsDefinition CONST ->
+  SchemaValidator (TypeName, FieldName) (ArgumentsDefinition VALID)
+validateArgumentsDefinition (ArgumentsDefinition meta args) =
+  ArgumentsDefinition meta
+    <$> ordTraverse
+      validateArgumentDefinition
+      args
+
+validateArgumentDefinition ::
   ArgumentDefinition CONST ->
   SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
-validateArgument FieldDefinition {..} =
+validateArgumentDefinition FieldDefinition {..} =
   FieldDefinition
     fieldName
     fieldDescription
@@ -369,3 +392,10 @@ validateDefaultValue ::
     (Value VALID)
 validateDefaultValue =
   validateInputByTypeRef (Proxy @CONST)
+
+-- TODO: validate directives
+validateDirectiveDefinition :: DirectiveDefinition CONST -> SchemaValidator () (DirectiveDefinition VALID)
+validateDirectiveDefinition DirectiveDefinition {directiveDefinitionArgs = args, ..} =
+  inType "Directive" $ inField directiveDefinitionName $ do
+    directiveDefinitionArgs <- validateArgumentsDefinition args
+    pure DirectiveDefinition {..}

@@ -1,19 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Rendering.TestSchemaRendering
   ( testSchemaRendering,
   )
 where
 
+import Data.ByteString.Lazy.Char8 (readFile)
 import Data.Morpheus.Document (toGraphQLDocument)
-import Rendering.Schema (schemaProxy)
+import Rendering.Schema (path, proxy)
 import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertEqual, testCase)
+import Prelude (($))
 
--- TODO: better Test
 testSchemaRendering :: TestTree
-testSchemaRendering = testCase "Test Rendering" $ assertEqual "test schema Rendering" expected schema
-  where
-    schema = toGraphQLDocument schemaProxy
-    expected =
-      "enum TestEnum { \n  EnumA\n  EnumB\n  EnumC\n}\n\ntype Address { \n  street: [[[[String!]!]!]]\n}\n\ninput Coordinates { \n  latitude: TestScalar!\n  longitude: Int!\n}\n\ntype User { \n  type: String!\n  address(coordinates: Coordinates!, type: String): Int!\n  friend(id: ID!, cityID: TestEnum): User!\n}\n\ntype Query { \n  user: User!\n  testUnion: TestUnion\n}\n\nunion TestUnion =\n    User\n  | Address\n\nscalar TestScalar"
+testSchemaRendering = testCase "Test Rendering" $ do
+  let schema = toGraphQLDocument proxy
+  expected <- readFile path
+  assertEqual "test schema Rendering" expected schema

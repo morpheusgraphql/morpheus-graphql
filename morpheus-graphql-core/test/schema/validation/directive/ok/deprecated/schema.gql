@@ -6,10 +6,10 @@ enum TestEnum {
 }
 
 input Input1 {
-  field1: ID @deprecated
+  field1: ID
   field2: String
 }
 
 type Query {
-  field(a1: Int): Int
+  field(a1: Int): Int @deprecated
 }
