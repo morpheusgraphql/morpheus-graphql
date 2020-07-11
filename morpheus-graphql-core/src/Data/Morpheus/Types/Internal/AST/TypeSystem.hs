@@ -83,6 +83,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    newline,
     renderMembers,
     renderObject,
   )
@@ -634,12 +635,12 @@ mkUnionField UnionMember {memberName} =
 --------------------------------------------------------------------------------------------------
 
 instance RenderGQL (Schema s) where
-  render schema = intercalate "\n\n" $ fmap render visibleTypes
+  render schema = intercalate newline (fmap render visibleTypes)
     where
       visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
 
 instance RenderGQL (TypeDefinition a s) where
-  render TypeDefinition {typeName, typeContent} = __render typeContent
+  render TypeDefinition {typeName, typeContent} = __render typeContent <> newline
     where
       __render DataInterface {interfaceFields} = "interface " <> render typeName <> render interfaceFields
       __render DataScalar {} = "scalar " <> render typeName

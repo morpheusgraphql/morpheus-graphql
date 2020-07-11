@@ -6,6 +6,7 @@ module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     renderObject,
     renderMembers,
+    newline,
   )
 where
 
