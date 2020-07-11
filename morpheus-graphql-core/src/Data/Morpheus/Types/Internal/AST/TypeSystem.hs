@@ -52,10 +52,11 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
 where
 
 -- MORPHEUS
+
 import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..))
+import Control.Monad (Monad (..), foldM)
 import Data.Either (Either (..))
-import Data.Foldable (concatMap, foldr)
+import Data.Foldable (concatMap)
 import Data.Functor ((<$>), fmap)
 import Data.HashMap.Lazy
   ( HashMap,
@@ -119,6 +120,11 @@ import Data.Morpheus.Types.Internal.AST.Fields
 import Data.Morpheus.Types.Internal.AST.OrdMap
   ( OrdMap,
   )
+import Data.Morpheus.Types.Internal.AST.SafeHashMap
+  ( SafeHashMap,
+    safeInsert,
+    toHashMap,
+  )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
     Stage,
@@ -146,6 +152,7 @@ import Prelude
     Bool (..),
     Eq (..),
     Show (..),
+    flip,
     otherwise,
   )
 
@@ -208,19 +215,16 @@ data Schema (s :: Stage) = Schema
     subscription :: Maybe (TypeDefinition OUT s),
     directiveDefinitions :: [DirectiveDefinition s]
   }
-  deriving (Show)
+  deriving (Show, Lift)
 
 instance Merge (Schema s) where
   merge _ s1 s2 =
-    initial
-      >>= (`resolveUpdates` fmap insertType (HM.elems (types s2)))
-    where
-      initial =
-        Schema (types s1)
-          <$> mergeOperation (query s1) (query s2)
-            <*> mergeOptional (mutation s1) (mutation s2)
-            <*> mergeOptional (subscription s1) (subscription s2)
-            <*> pure (directiveDefinitions s1 <> directiveDefinitions s2)
+    Schema
+      <$> (types s1 <:> types s2)
+      <*> mergeOperation (query s1) (query s2)
+      <*> mergeOptional (mutation s1) (mutation s2)
+      <*> mergeOptional (subscription s1) (subscription s2)
+      <*> pure (directiveDefinitions s1 <> directiveDefinitions s2)
 
 mergeOptional ::
   (Monad m, Failure GQLErrors m) =>
@@ -250,7 +254,7 @@ data SchemaDefinition = SchemaDefinition
   }
   deriving (Show)
 
-instance Selectable SchemaDefinition RootOperationTypeDefinition where
+instance Selectable RootOperationTypeDefinition SchemaDefinition where
   selectOr fallback f key SchemaDefinition {unSchemaDefinition} =
     selectOr fallback f key unSchemaDefinition
 
@@ -287,9 +291,9 @@ instance KeyOf RootOperationTypeDefinition where
   type KEY RootOperationTypeDefinition = OperationType
   keyOf = rootOperationType
 
-type TypeLib s = HashMap TypeName (TypeDefinition ANY s)
+type TypeLib s = SafeHashMap TypeName (TypeDefinition ANY s)
 
-instance Selectable (Schema s) (TypeDefinition ANY s) where
+instance Selectable (TypeDefinition ANY s) (Schema s) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 instance Listable (TypeDefinition ANY s) (Schema s) where
@@ -304,7 +308,7 @@ instance Listable (TypeDefinition ANY s) (Schema s) where
       >>= buildWith types
 
 buildWith ::
-  ( Applicative f,
+  ( Monad f,
     Failure GQLErrors f
   ) =>
   [TypeDefinition cat s] ->
@@ -315,7 +319,8 @@ buildWith ::
   f (Schema s)
 buildWith otypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] otypes
-  pure $ (foldr unsafeDefineType (initTypeLib query) types) {mutation, subscription}
+  let schema = (initTypeLib query) {mutation, subscription}
+  foldM (flip safeDefineType) schema types
 buildWith _ (Nothing, _, _) = failure $ globalErrorMessage "Query root type must be provided."
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
@@ -386,14 +391,14 @@ initTypeLib query =
       directiveDefinitions = empty
     }
 
-typeRegister :: Schema s -> TypeLib s
+typeRegister :: Schema s -> HashMap TypeName (TypeDefinition ANY s)
 typeRegister Schema {types, query, mutation, subscription} =
-  types
+  toHashMap types
     `union` HM.fromList
       (concatMap fromOperation [Just query, mutation, subscription])
 
 lookupDataType :: TypeName -> Schema s -> Maybe (TypeDefinition ANY s)
-lookupDataType name = HM.lookup name . typeRegister
+lookupDataType = selectOr Nothing Just
 
 isTypeDefined :: TypeName -> Schema s -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
@@ -420,6 +425,13 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
 instance KeyOf (TypeDefinition a s) where
   type KEY (TypeDefinition a s) = TypeName
   keyOf = typeName
+
+instance NameCollision (TypeDefinition cat s) where
+  nameCollision typeName _ =
+    GQLError
+      { message = "There can Be only One TypeDefinition Named " <> msg typeName <> ".",
+        locations = []
+      }
 
 instance ToAny TypeDefinition where
   toAny TypeDefinition {typeContent, ..} = TypeDefinition {typeContent = toAny typeContent, ..}
@@ -540,21 +552,28 @@ fromOperation :: Maybe (TypeDefinition OUT s) -> [(TypeName, TypeDefinition ANY 
 fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
 fromOperation Nothing = []
 
-unsafeDefineType :: TypeDefinition cat s -> Schema s -> Schema s
-unsafeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib =
-  lib {types = HM.insert name unionTags (HM.insert typeName (toAny dt) (types lib))}
+safeDefineType ::
+  ( Monad m,
+    Failure GQLErrors m
+  ) =>
+  TypeDefinition cat s ->
+  Schema s ->
+  m (Schema s)
+safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib = do
+  types <- safeInsert unionTags (types lib) >>= safeInsert (toAny dt)
+  pure lib {types}
   where
-    name = typeName <> "Tags"
     unionTags =
       TypeDefinition
-        { typeName = name,
+        { typeName = typeName <> "Tags",
           typeFingerprint,
           typeDescription = Nothing,
           typeDirectives = [],
           typeContent = mkEnumContent (fmap memberName enumKeys)
         }
-unsafeDefineType datatype lib =
-  lib {types = HM.insert (typeName datatype) (toAny datatype) (types lib)}
+safeDefineType datatype lib = do
+  types <- safeInsert (toAny datatype) (types lib)
+  pure lib {types}
 
 insertType ::
   (Monad m, Failure GQLErrors m) =>
@@ -562,7 +581,9 @@ insertType ::
   UpdateT m (Schema s)
 insertType datatype@TypeDefinition {typeName} = UpdateT $ \lib ->
   case isTypeDefined typeName lib of
-    Nothing -> resolveUpdates (unsafeDefineType datatype lib) []
+    Nothing -> do
+      x <- safeDefineType datatype lib
+      resolveUpdates x []
     Just fingerprint
       | fingerprint == typeFingerprint datatype -> pure lib
       -- throw error if 2 different types has same name
@@ -578,10 +599,9 @@ updateSchema ::
   UpdateT m (Schema s)
 updateSchema name fingerprint stack f x = UpdateT $ \lib ->
   case isTypeDefined name lib of
-    Nothing ->
-      resolveUpdates
-        (unsafeDefineType (f x) lib)
-        stack
+    Nothing -> do
+      t <- safeDefineType (f x) lib
+      resolveUpdates t stack
     Just fingerprint' | fingerprint' == fingerprint -> pure lib
     -- throw error if 2 different types has same name
     Just _ -> failure $ nameCollisionError name

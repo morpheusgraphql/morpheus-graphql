@@ -161,7 +161,7 @@ type DirectiveDefinitions s = [DirectiveDefinition s]
 instance KeyOf (DirectiveDefinition s) where
   keyOf = directiveDefinitionName
 
-instance Selectable (DirectiveDefinition s) (ArgumentDefinition s) where
+instance Selectable (ArgumentDefinition s) (DirectiveDefinition s) where
   selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
     selectOr fb f key directiveDefinitionArgs
 
@@ -202,7 +202,7 @@ deriving instance (KEY def ~ FieldName, KeyOf def) => Collection def (Fields def
 instance Merge (FieldsDefinition cat s) where
   merge path (Fields x) (Fields y) = Fields <$> merge path x y
 
-instance Selectable (Fields (FieldDefinition cat s)) (FieldDefinition cat s) where
+instance Selectable (FieldDefinition cat s) (Fields (FieldDefinition cat s)) where
   selectOr fb f name (Fields lib) = selectOr fb f name lib
 
 unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
@@ -265,7 +265,7 @@ deriving instance Lift (FieldContent bool cat s)
 instance KeyOf (FieldDefinition cat s) where
   keyOf = fieldName
 
-instance Selectable (FieldDefinition OUT s) (ArgumentDefinition s) where
+instance Selectable (ArgumentDefinition s) (FieldDefinition OUT s) where
   selectOr fb f key FieldDefinition {fieldContent = Just (FieldArgs args)} = selectOr fb f key args
   selectOr fb _ _ _ = fb
 
@@ -352,7 +352,7 @@ instance RenderGQL (ArgumentsDefinition s) where
 
 type ArgumentDefinition = FieldDefinition IN
 
-instance Selectable (ArgumentsDefinition s) (ArgumentDefinition s) where
+instance Selectable (ArgumentDefinition s) (ArgumentsDefinition s) where
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
 instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where

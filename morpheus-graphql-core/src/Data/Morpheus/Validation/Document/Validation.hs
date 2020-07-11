@@ -352,7 +352,7 @@ instance (PartialImplements ctx) => TypeEq TypeRef ctx where
 
 elemIn ::
   ( KeyOf a,
-    Selectable c a,
+    Selectable a c,
     TypeEq a ctx
   ) =>
   a ->

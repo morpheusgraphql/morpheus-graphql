@@ -14,6 +14,9 @@
 module Data.Morpheus.Types.Internal.AST.OrdMap
   ( OrdMap (..),
     unsafeFromValues,
+    safeJoin,
+    safeUnionWith,
+    insertNoDups,
   )
 where
 
@@ -85,7 +88,7 @@ instance (KeyOf a, Hashable k, KEY a ~ k) => Collection a (OrdMap k a) where
   empty = OrdMap [] HM.empty
   singleton x = OrdMap [keyOf x] $ HM.singleton (keyOf x) x
 
-instance (Eq k, Hashable k, k ~ KEY a) => Selectable (OrdMap k a) a where
+instance (Eq k, Hashable k, k ~ KEY a) => Selectable a (OrdMap k a) where
   selectOr fb f key OrdMap {mapEntries} = maybe fb f (HM.lookup key mapEntries)
 
 instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (OrdMap k a) where

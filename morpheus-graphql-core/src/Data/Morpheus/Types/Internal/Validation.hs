@@ -162,7 +162,7 @@ import Prelude
     otherwise,
   )
 
-getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a) => ca -> [b] -> [b]
+getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable a c) => c -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
 
 failOnUnused :: Unused ctx b => [b] -> Validator ctx ()
@@ -172,7 +172,7 @@ failOnUnused x
     ctx <- unValidatorContext <$> Validator ask
     failure $ fmap (unused ctx) x
 
-checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable ca a, Unused ctx b) => ca -> [b] -> Validator ctx ()
+checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable a ca, Unused ctx b) => ca -> [b] -> Validator ctx ()
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
@@ -188,7 +188,7 @@ constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny
 constraint target ctx _ = failure [kindViolation target ctx]
 
 selectRequired ::
-  ( Selectable c value,
+  ( Selectable value c,
     MissingRequired c ctx,
     KEY Ref ~ KEY value
   ) =>
@@ -205,7 +205,7 @@ selectRequired selector container =
 
 selectWithDefaultValue ::
   forall ctx values value s validValue.
-  ( Selectable values value,
+  ( Selectable value values,
     MissingRequired values ctx,
     KEY value ~ FieldName,
     MonadContext Validator ctx
@@ -244,7 +244,7 @@ selectWithDefaultValue
         failure [missingRequired scope ctx (Ref fieldName (fromMaybe (Position 0 0) position)) values]
 
 selectKnown ::
-  ( Selectable c a,
+  ( Selectable a c,
     Unknown c sel ctx,
     KeyOf sel,
     KEY sel ~ KEY a
