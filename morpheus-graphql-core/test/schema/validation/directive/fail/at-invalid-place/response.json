@@ -17,7 +17,7 @@
       "locations": [{ "line": 8, "column": 14 }]
     },
     {
-      "message": "Directive \"include\" may not to be used on FIELD_DEFINITION",
+      "message": "Directive \"include\" may not to be used on INPUT_FIELD_DEFINITION",
       "locations": [{ "line": 9, "column": 14 }]
     },
     {
