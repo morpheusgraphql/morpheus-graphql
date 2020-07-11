@@ -17,10 +17,8 @@ module Rendering.Schema
 where
 
 import Data.Morpheus.Document (importGQLDocumentWithNamespace)
-import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
   ( GQLScalar (..),
-    GQLType (..),
     ID (..),
     RootResolver (..),
     ScalarValue (..),
@@ -33,9 +31,6 @@ import GHC.Generics (Generic)
 data TestScalar
   = TestScalar
   deriving (Show, Generic)
-
-instance GQLType TestScalar where
-  type KIND TestScalar = SCALAR
 
 instance GQLScalar TestScalar where
   parseValue _ = pure TestScalar
