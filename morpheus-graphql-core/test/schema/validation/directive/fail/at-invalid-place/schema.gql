@@ -1,7 +1,15 @@
-scalar MyScalar @deprecated
+directive @DirectiveA on INPUT_OBJECT
 
-enum TestEnum @deprecated {
-  EnumA @include(if: true)
+directive @DirectiveB on SCALAR
+
+directive @DirectiveC on ENUM
+
+directive @DirectiveD on INPUT_FIELD_DEFINITION
+
+scalar MyScalar @DirectiveA
+
+enum TestEnum @DirectiveB {
+  EnumA @DirectiveC
   EnumB
 }
 
@@ -11,5 +19,5 @@ input Input1 @deprecated {
 }
 
 type Query @deprecated {
-  field(a1: Int @skip(if: true)): Int @include(if: true)
+  field(a1: Int @DirectiveD): Int @include(if: true)
 }
