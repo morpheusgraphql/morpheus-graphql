@@ -154,6 +154,9 @@ class Msg a where
 instance Msg Message where
   msg = id
 
+instance Msg InternalError where
+  msg = Message . ("Internal Error! " <>) . readInternalError
+
 instance Msg String where
   msg = Message . pack
 

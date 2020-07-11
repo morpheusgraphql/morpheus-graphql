@@ -38,6 +38,7 @@ import Data.Functor.Identity (Identity)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
+    InternalError,
     Message,
     Operation,
     Schema,
@@ -90,6 +91,11 @@ instance (Monad m) => Failure Message (ResolverStateT e m) where
     selection <- asks currentSelection
     lift $ failure [resolverFailureMessage selection message]
 
+instance (Monad m) => Failure InternalError (ResolverStateT e m) where
+  failure message = ResolverState $ do
+    selection <- asks currentSelection
+    lift $ failure [renderInternalResolverError selection message]
+
 instance (Monad m) => Failure GQLErrors (ResolverStateT e m) where
   failure = ResolverState . lift . failure
 
@@ -113,5 +119,12 @@ resolverFailureMessage :: Selection VALID -> Message -> GQLError
 resolverFailureMessage Selection {selectionName, selectionPosition} message =
   GQLError
     { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
+      locations = [selectionPosition]
+    }
+
+renderInternalResolverError :: Selection VALID -> InternalError -> GQLError
+renderInternalResolverError Selection {selectionName, selectionPosition} message =
+  GQLError
+    { message = msg message,
       locations = [selectionPosition]
     }
