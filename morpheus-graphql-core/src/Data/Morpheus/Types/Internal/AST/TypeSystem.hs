@@ -83,7 +83,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
-    renderIndent,
+    renderMembers,
     renderObject,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -643,12 +643,12 @@ instance RenderGQL (TypeDefinition a s) where
     where
       __render DataInterface {interfaceFields} = "interface " <> render typeName <> render interfaceFields
       __render DataScalar {} = "scalar " <> render typeName
-      __render (DataEnum tags) = "enum " <> render typeName <> renderObject render tags
+      __render (DataEnum tags) = "enum " <> render typeName <> renderObject tags
       __render (DataUnion members) =
         "union "
           <> render typeName
-          <> " =\n    "
-          <> intercalate ("\n" <> renderIndent <> "| ") (fmap render members)
+          <> " = "
+          <> renderMembers members
       __render (DataInputObject fields) = "input " <> render typeName <> render fields
       __render (DataInputUnion members) = "input " <> render typeName <> render fields
         where

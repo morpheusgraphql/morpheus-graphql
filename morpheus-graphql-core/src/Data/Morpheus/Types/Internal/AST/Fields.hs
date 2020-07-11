@@ -283,7 +283,7 @@ instance RenderGQL (FieldDefinition cat s) where
     name <> ": " <> render fieldType
 
 instance RenderGQL (FieldsDefinition cat s) where
-  render = renderObject render . filter fieldVisibility . elems
+  render = renderObject . filter fieldVisibility . elems
 
 instance Nullable (FieldDefinition cat s) where
   isNullable = isNullable . fieldType

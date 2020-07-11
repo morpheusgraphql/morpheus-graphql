@@ -11,7 +11,8 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Rendering.Schema
-  ( schemaProxy,
+  ( proxy,
+    path,
   )
 where
 
@@ -42,5 +43,8 @@ instance GQLScalar TestScalar where
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
-schemaProxy :: Proxy (RootResolver IO () Query Undefined Undefined)
-schemaProxy = Proxy @(RootResolver IO () Query Undefined Undefined)
+path :: String
+path = "test/Rendering/schema.gql"
+
+proxy :: Proxy (RootResolver IO () Query Undefined Undefined)
+proxy = Proxy @(RootResolver IO () Query Undefined Undefined)
