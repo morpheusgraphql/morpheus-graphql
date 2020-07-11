@@ -153,6 +153,7 @@ import Prelude
     Bool (..),
     Eq (..),
     Show (..),
+    const,
     flip,
     otherwise,
   )
@@ -580,15 +581,8 @@ insertType ::
   (Monad m, Failure GQLErrors m) =>
   TypeDefinition cat s ->
   UpdateT m (Schema s)
-insertType datatype@TypeDefinition {typeName} = UpdateT $ \lib ->
-  case isTypeDefined typeName lib of
-    Nothing -> do
-      x <- safeDefineType datatype lib
-      resolveUpdates x []
-    Just fingerprint
-      | fingerprint == typeFingerprint datatype -> pure lib
-      -- throw error if 2 different types has same name
-      | otherwise -> failure $ nameCollisionError typeName
+insertType datatype@TypeDefinition {typeName, typeFingerprint} =
+  updateSchema typeName typeFingerprint [] (const datatype) ()
 
 updateSchema ::
   (Monad m, Failure GQLErrors m) =>
