@@ -20,7 +20,7 @@ module Data.Morpheus.Validation.Internal.Arguments
   )
 where
 
-import Control.Applicative (pure)
+import Control.Applicative ((*>), pure)
 import Control.Monad ((>=>), (>>=))
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (fromMaybe, maybe)
@@ -162,7 +162,7 @@ validateArguments ::
 validateArguments checkUnknown argsDef rawArgs = do
   args <- ordTraverse resolve rawArgs
   ordTraverse_ checkUnknown args
-  ordTraverse (validateArgument args) (arguments argsDef)
+    *> ordTraverse (validateArgument args) (arguments argsDef)
 
 class Resolve f s ctx where
   resolve :: f s -> Validator ctx (f CONST)
