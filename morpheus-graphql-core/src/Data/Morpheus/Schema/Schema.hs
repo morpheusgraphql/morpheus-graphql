@@ -10,30 +10,19 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Data.Morpheus.Schema.Schema
-  ( withSystemTypes,
+  ( internalSchema,
   )
 where
 
 -- MORPHEUS
 
-import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    Failure (..),
-  )
 import Data.Morpheus.Schema.DSL (dsl)
 import Data.Morpheus.Types.Internal.AST
   ( DataFingerprint (..),
-    GQLErrors,
     Schema (..),
     TypeDefinition (..),
     internalFingerprint,
   )
-
-withSystemTypes ::
-  (Monad m, Failure GQLErrors m) =>
-  Schema s ->
-  m (Schema s)
-withSystemTypes = (defaultSchema <:>)
 
 toInternalSchema :: Schema s -> Schema s
 toInternalSchema Schema {..} = Schema {types = fmap toInternalType types, ..}
@@ -45,8 +34,8 @@ toInternalType
     } =
     tyDef {typeFingerprint = internalFingerprint name xs}
 
-defaultSchema :: Schema s
-defaultSchema =
+internalSchema :: Schema s
+internalSchema =
   toInternalSchema
     [dsl|
 

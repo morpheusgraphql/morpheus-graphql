@@ -29,7 +29,8 @@ import Data.Morpheus.Error.Document.Interface
     PartialImplements (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( KeyOf (..),
+  ( (<:>),
+    KeyOf (..),
     Selectable (..),
     elems,
     empty,
@@ -37,7 +38,7 @@ import Data.Morpheus.Internal.Utils
     ordTraverse,
   )
 import Data.Morpheus.Schema.Schema
-  ( withSystemTypes,
+  ( internalSchema,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentDefinition,
@@ -121,7 +122,7 @@ instance ValidateSchema CONST where
       } = do
       sysSchema <-
         if withSystem
-          then withSystemTypes schema
+          then internalSchema <:> schema
           else pure schema
       runValidator
         __validateSchema
