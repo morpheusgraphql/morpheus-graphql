@@ -109,7 +109,7 @@ import Data.Morpheus.Types.Internal.Resolving.Event
   )
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
   ( Context (..),
-    ResolverState (..),
+    ResolverStateT (..),
     clearStateResolverEvents,
     resolverFailureMessage,
   )
@@ -149,11 +149,11 @@ data SubscriptionField (a :: *) where
 --
 ---------------------------------------------------------------
 data Resolver (o :: OperationType) event (m :: * -> *) value where
-  ResolverQ :: {runResolverQ :: ResolverState () m value} -> Resolver QUERY event m value
-  ResolverM :: {runResolverM :: ResolverState event m value} -> Resolver MUTATION event m value
-  ResolverS :: {runResolverS :: ResolverState () m (SubEventRes event m value)} -> Resolver SUBSCRIPTION event m value
+  ResolverQ :: {runResolverQ :: ResolverStateT () m value} -> Resolver QUERY event m value
+  ResolverM :: {runResolverM :: ResolverStateT event m value} -> Resolver MUTATION event m value
+  ResolverS :: {runResolverS :: ResolverStateT () m (SubEventRes event m value)} -> Resolver SUBSCRIPTION event m value
 
-type SubEventRes event m value = ReaderT event (ResolverState () m) value
+type SubEventRes event m value = ReaderT event (ResolverStateT () m) value
 
 instance Show (Resolver o e m value) where
   show ResolverQ {} = "Resolver QUERY e m a"
@@ -174,16 +174,21 @@ instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   return = pure
   (ResolverQ x) >>= m2 = ResolverQ (x >>= runResolverQ . m2)
   (ResolverM x) >>= m2 = ResolverM (x >>= runResolverM . m2)
-  (ResolverS res) >>= m2 = ResolverS $ do
-    (readResA :: ReaderT e (ResolverState () m) a) <- res
-    pure $ ReaderT $ \e -> do
-      (a :: a) <- runReaderT readResA e
-      (readResB :: ReaderT e (ResolverState () m) b) <- runResolverS (m2 a)
-      runReaderT readResB e
+  (ResolverS res) >>= m2 = ResolverS (liftSubResolver m2 <$> res)
 
 #if __GLASGOW_HASKELL__ < 808
   fail = failure . msg
 # endif
+
+liftSubResolver ::
+  (Monad m) =>
+  (t -> Resolver SUBSCRIPTION r m a) ->
+  ReaderT r (ResolverStateT () m) t ->
+  ReaderT r (ResolverStateT () m) a
+liftSubResolver m2 readResA = ReaderT $ \e -> do
+  a <- runReaderT readResA e
+  readResB <- runResolverS (m2 a)
+  runReaderT readResB e
 
 -- MonadIO
 instance (MonadIO m, LiftOperation o) => MonadIO (Resolver o e m) where
@@ -237,7 +242,7 @@ liftStateless =
     . statelessToResultT
 
 class LiftOperation (o :: OperationType) where
-  packResolver :: Monad m => ResolverState e m a -> Resolver o e m a
+  packResolver :: Monad m => ResolverStateT e m a -> Resolver o e m a
 
 instance LiftOperation QUERY where
   packResolver = ResolverQ . clearStateResolverEvents
@@ -259,7 +264,7 @@ subscribe ch res =
     $ ResolverS
     $ fromSub <$> runResolverQ res
   where
-    fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverState () m) a
+    fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
     fromSub f = join (ReaderT $ \e -> runResolverS (f e))
 
 withArguments ::

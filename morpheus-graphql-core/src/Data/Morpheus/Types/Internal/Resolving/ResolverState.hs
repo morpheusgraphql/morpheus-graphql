@@ -18,7 +18,7 @@
 
 module Data.Morpheus.Types.Internal.Resolving.ResolverState
   ( Context (..),
-    ResolverState (..),
+    ResolverStateT (..),
     resolverFailureMessage,
     clearStateResolverEvents,
   )
@@ -68,7 +68,7 @@ data Context = Context
   deriving (Show)
 
 -- Resolver Internal State
-newtype ResolverState event m a = ResolverState
+newtype ResolverStateT event m a = ResolverState
   { runResolverState :: ReaderT Context (ResultT event m) a
   }
   deriving
@@ -78,31 +78,31 @@ newtype ResolverState event m a = ResolverState
       MonadReader Context
     )
 
-instance MonadTrans (ResolverState e) where
+instance MonadTrans (ResolverStateT e) where
   lift = ResolverState . lift . lift
 
-instance (Monad m) => Failure Message (ResolverState e m) where
+instance (Monad m) => Failure Message (ResolverStateT e m) where
   failure message = ResolverState $ do
     selection <- asks currentSelection
     lift $ failure [resolverFailureMessage selection message]
 
-instance (Monad m) => Failure GQLErrors (ResolverState e m) where
+instance (Monad m) => Failure GQLErrors (ResolverStateT e m) where
   failure = ResolverState . lift . failure
 
-instance (Monad m) => PushEvents e (ResolverState e m) where
+instance (Monad m) => PushEvents e (ResolverStateT e m) where
   pushEvents = ResolverState . lift . pushEvents
 
 mapResolverState ::
   ( ResultT e m a ->
     ResultT e' m' a'
   ) ->
-  ResolverState e m a ->
-  ResolverState e' m' a'
+  ResolverStateT e m a ->
+  ResolverStateT e' m' a'
 mapResolverState f (ResolverState x) = ResolverState (mapReaderT f x)
 
 -- clear evets and starts new resolver with diferenct type of events but with same value
 -- use properly. only if you know what you are doing
-clearStateResolverEvents :: (Functor m) => ResolverState e m a -> ResolverState e' m a
+clearStateResolverEvents :: (Functor m) => ResolverStateT e m a -> ResolverStateT e' m a
 clearStateResolverEvents = mapResolverState cleanEvents
 
 resolverFailureMessage :: Selection VALID -> Message -> GQLError
