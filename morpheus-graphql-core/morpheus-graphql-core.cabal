@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 074ab3bc03395d71b71b77c640802759eb275bc4b5b6744d7d48defbf8c88104
+-- hash: 96336e8156b35726f2dd7cddd242c1c7ef3928ee9b3cb6b069e365c9e2a6ab4a
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -45,6 +45,7 @@ data-files:
     test/schema/validation/default-value/field/unknown-field/schema.gql
     test/schema/validation/directive/fail/at-invalid-place/schema.gql
     test/schema/validation/directive/fail/missing-argument/schema.gql
+    test/schema/validation/directive/fail/multuple-errors/schema.gql
     test/schema/validation/directive/fail/unexpected-value/schema.gql
     test/schema/validation/directive/fail/unknown-directive/schema.gql
     test/schema/validation/directive/ok/deprecated/custom-directive/schema.gql
@@ -83,6 +84,7 @@ data-files:
     test/schema/validation/default-value/field/unknown-field/response.json
     test/schema/validation/directive/fail/at-invalid-place/response.json
     test/schema/validation/directive/fail/missing-argument/response.json
+    test/schema/validation/directive/fail/multuple-errors/response.json
     test/schema/validation/directive/fail/unexpected-value/response.json
     test/schema/validation/directive/fail/unknown-directive/response.json
     test/schema/validation/directive/ok/deprecated/custom-directive/response.json

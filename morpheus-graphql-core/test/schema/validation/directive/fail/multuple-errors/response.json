@@ -1,0 +1,36 @@
+{
+  "errors": [
+    {
+      "message": "Directive \"include\" may not to be used on INPUT_OBJECT",
+      "locations": [{ "line": 1, "column": 13 }]
+    },
+    {
+      "message": "Directive \"@include\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 1, "column": 13 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on INPUT_FIELD_DEFINITION",
+      "locations": [{ "line": 2, "column": 13 }]
+    },
+    {
+      "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 2, "column": 13 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on OBJECT",
+      "locations": [{ "line": 5, "column": 12 }]
+    },
+    {
+      "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 5, "column": 12 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on FIELD_DEFINITION",
+      "locations": [{ "line": 6, "column": 23 }]
+    },
+    {
+      "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 6, "column": 23 }]
+    }
+  ]
+}

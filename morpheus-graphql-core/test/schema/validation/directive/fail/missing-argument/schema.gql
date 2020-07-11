@@ -1,7 +1,25 @@
-input Input @include {
-  field: ID @skip
+directive @DirectiveA(a1: String!, a2: Int!) on SCALAR | ENUM | ENUM_VALUE
+
+directive @DirectiveB(a1: Int!) on INPUT_FIELD_DEFINITION | INPUT_OBJECT
+
+directive @DirectiveC(
+  arg: MyInput!
+) on FIELD_DEFINITION | OBJECT | ARGUMENT_DEFINITION
+
+scalar MyScalar @DirectiveA
+
+enum MyEnum @DirectiveA {
+  EnumA @DirectiveA
 }
 
-type Query @skip {
-  field(a1: Int): Int @skip
+input MyInput @DirectiveB {
+  field: String @DirectiveB
+}
+
+type MyType @DirectiveC {
+  field(a1: Int @DirectiveC): String @DirectiveC
+}
+
+type Query {
+  name: String
 }
