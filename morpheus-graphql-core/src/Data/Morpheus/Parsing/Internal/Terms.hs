@@ -24,7 +24,7 @@ module Data.Morpheus.Parsing.Internal.Terms
     keyword,
     symbol,
     optDescription,
-    optionalList,
+    optionalCollection,
     parseNegativeSign,
     parseTypeName,
     pipe,
@@ -243,14 +243,14 @@ collection entry = braces (entry `sepEndBy` ignoredTokens)
 setOf :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 setOf = collection >=> fromElems
 
+optionalCollection :: Collection a c => Parser c -> Parser c
+optionalCollection x = x <|> pure empty
+
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []
   ignoredTokens
   return wrapper
-
-optionalList :: Parser [a] -> Parser [a]
-optionalList x = x <|> pure []
 
 uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
 uniqTuple parser =

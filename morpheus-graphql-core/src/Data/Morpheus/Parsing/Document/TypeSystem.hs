@@ -37,6 +37,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     ignoredTokens,
     keyword,
     optDescription,
+    optionalCollection,
     parseName,
     parseTypeName,
     pipe,
@@ -76,6 +77,7 @@ import Text.Megaparsec
     eof,
     label,
     manyTill,
+    optional,
   )
 import Prelude
   ( ($),
@@ -235,6 +237,15 @@ inputObjectTypeDefinition typeDescription =
           ..
         }
 
+-- 3.13 DirectiveDefinition
+--
+--  DirectiveDefinition:
+--     Description[opt] directive @ Name ArgumentsDefinition[opt] repeatable[opt] on DirectiveLocations
+--
+--  DirectiveLocations:
+--    DirectiveLocations | DirectiveLocation
+--    |[opt] DirectiveLocation
+
 parseDirectiveDefinition ::
   Parser RawTypeDefinition
 parseDirectiveDefinition = label "DirectiveDefinition" $ do
@@ -242,7 +253,8 @@ parseDirectiveDefinition = label "DirectiveDefinition" $ do
   keyword "directive"
   symbol '@'
   directiveDefinitionName <- parseName
-  directiveDefinitionArgs <- argumentsDefinition
+  directiveDefinitionArgs <- optionalCollection argumentsDefinition
+  _ <- optional (keyword "repeatable")
   keyword "on"
   directiveDefinitionLocations <- pipe parseDirectiveLocation
   pure
