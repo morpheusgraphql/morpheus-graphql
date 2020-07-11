@@ -68,7 +68,6 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldName,
-    GQLError (..),
     GQLErrors,
     GQLValue (..),
     MUTATION,
@@ -80,7 +79,6 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
-    Schema,
     Selection (..),
     SelectionContent (..),
     SelectionSet,
@@ -108,6 +106,12 @@ import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Event
   ( Channel (..),
     Event (..),
+  )
+import Data.Morpheus.Types.Internal.Resolving.ResolverState
+  ( Context (..),
+    ResolverState (..),
+    clearStateResolverEvents,
+    resolverFailureMessage,
   )
 import Data.Semigroup
   ( Semigroup (..),
@@ -139,60 +143,6 @@ data SubscriptionField (a :: *) where
       unSubscribe :: a
     } ->
     SubscriptionField a
-
--- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
-data Context = Context
-  { currentSelection :: Selection VALID,
-    schema :: Schema VALID,
-    operation :: Operation VALID,
-    currentTypeName :: TypeName
-  }
-  deriving (Show)
-
--- Resolver Internal State
-newtype ResolverState event m a = ResolverState
-  { runResolverState :: ReaderT Context (ResultT event m) a
-  }
-  deriving
-    ( Functor,
-      Applicative,
-      Monad,
-      MonadReader Context
-    )
-
-instance MonadTrans (ResolverState e) where
-  lift = ResolverState . lift . lift
-
-instance (Monad m) => Failure Message (ResolverState e m) where
-  failure message = ResolverState $ do
-    selection <- asks currentSelection
-    lift $ failure [resolverFailureMessage selection message]
-
-instance (Monad m) => Failure GQLErrors (ResolverState e m) where
-  failure = ResolverState . lift . failure
-
-instance (Monad m) => PushEvents e (ResolverState e m) where
-  pushEvents = ResolverState . lift . pushEvents
-
-mapResolverState ::
-  ( ResultT e m a ->
-    ResultT e' m' a'
-  ) ->
-  ResolverState e m a ->
-  ResolverState e' m' a'
-mapResolverState f (ResolverState x) = ResolverState (mapReaderT f x)
-
--- clear evets and starts new resolver with diferenct type of events but with same value
--- use properly. only if you know what you are doing
-clearStateResolverEvents :: (Functor m) => ResolverState e m a -> ResolverState e' m a
-clearStateResolverEvents = mapResolverState cleanEvents
-
-resolverFailureMessage :: Selection VALID -> Message -> GQLError
-resolverFailureMessage Selection {selectionName, selectionPosition} message =
-  GQLError
-    { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
-      locations = [selectionPosition]
-    }
 
 --
 -- GraphQL Field Resolver
