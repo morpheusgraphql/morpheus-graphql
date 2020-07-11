@@ -59,7 +59,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     isOutput,
     mkTypeRef,
     InternalError (..),
-    toInternalError,
+    msgInteral,
   )
 where
 
@@ -143,8 +143,8 @@ instance Lift InternalError where
   liftTyped = liftTypedString . readInternalError
 #endif
 
-toInternalError :: (Msg a) => a -> InternalError
-toInternalError = InternalError . readMessage . msg
+msgInteral :: (Msg a) => a -> InternalError
+msgInteral = InternalError . readMessage . msg
 
 class Msg a where
   msg :: a -> Message

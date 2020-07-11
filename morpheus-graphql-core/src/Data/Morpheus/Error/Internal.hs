@@ -14,7 +14,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
     InternalError,
     Message,
-    toInternalError,
+    msgInteral,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value,
@@ -37,5 +37,5 @@ internalResolvingError = globalErrorMessage . ("INTERNAL ERROR:" <>)
 -- if value is already validated but value has different type
 typeMismatch :: Message -> Value s -> InternalError
 typeMismatch text jsType =
-  "Type mismatch! expected:" <> toInternalError text <> ", got: "
-    <> toInternalError jsType
+  "Type mismatch! expected:" <> msgInteral text <> ", got: "
+    <> msgInteral jsType

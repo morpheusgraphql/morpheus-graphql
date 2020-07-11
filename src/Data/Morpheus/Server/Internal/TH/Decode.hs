@@ -4,12 +4,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Server.Internal.TH.Decode
-  ( withObject,
+  ( withInputObject,
     withMaybe,
     withList,
     withEnum,
     withInputUnion,
     decodeFieldWith,
+    withScalar,
   )
 where
 
@@ -22,28 +23,34 @@ import Data.Morpheus.Internal.Utils
     selectBy,
     selectOr,
   )
+import Data.Morpheus.Types.GQLScalar
+  ( toScalar,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     InternalError,
     ObjectEntry (..),
+    ScalarValue,
+    Token,
     TypeName (..),
     VALID,
     ValidObject,
     ValidValue,
     Value (..),
+    msg,
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
   )
 
-withObject ::
+withInputObject ::
   Failure InternalError m =>
   (ValidObject -> m a) ->
   ValidValue ->
   m a
-withObject f (Object object) = f object
-withObject _ isType = failure (typeMismatch "Object" isType)
+withInputObject f (Object object) = f object
+withInputObject _ isType = failure (typeMismatch "Object" isType)
 
 withMaybe :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Maybe a)
 withMaybe _ Null = pure Nothing
@@ -76,9 +83,24 @@ withInputUnion decoder unions =
   where
     providesValueFor (Enum key) = selectOr notfound onFound (toFieldName key) unions
       where
-        notfound = withObject (decoder key unions) (Object empty)
-        onFound = withObject (decoder key unions) . entryValue
+        notfound = withInputObject (decoder key unions) (Object empty)
+        onFound = withInputObject (decoder key unions) . entryValue
     providesValueFor _ = failure ("__typename must be Enum" :: InternalError)
+
+withScalar ::
+  (Applicative m, Failure InternalError m) =>
+  TypeName ->
+  (ScalarValue -> Either Token a) ->
+  Value VALID ->
+  m a
+withScalar typename parseValue value = case toScalar value >>= parseValue of
+  Right scalar -> pure scalar
+  Left message ->
+    failure
+      ( typeMismatch
+          ("SCALAR(" <> msg typename <> ")" <> msg message)
+          value
+      )
 
 decodeFieldWith :: (Value VALID -> m a) -> FieldName -> ValidObject -> m a
 decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)

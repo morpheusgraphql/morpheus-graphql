@@ -21,7 +21,7 @@ where
 
 -- MORPHEUS
 import Data.Morpheus.Error
-  ( internalTypeMismatch,
+  ( typeMismatch,
   )
 import Data.Morpheus.Internal.Utils
   ( elems,
@@ -40,10 +40,11 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
+    withInputObject,
     withInputUnion,
     withList,
     withMaybe,
-    withObject,
+    withScalar,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import Data.Morpheus.Types.GQLScalar
@@ -95,12 +96,7 @@ class DecodeKind (kind :: GQL_KIND) a where
 
 -- SCALAR
 instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ value = case toScalar value >>= parseValue of
-    Right scalar -> pure scalar
-    Left message ->
-      internalTypeMismatch
-        ("SCALAR<" <> msg (__typeName (Proxy @a)) <> ">" <> msg message)
-        value
+  decodeKind _ = withScalar (__typeName (Proxy @a)) parseValue
 
 -- ENUM
 instance DecodeType a => DecodeKind ENUM a where
@@ -237,7 +233,7 @@ instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) whe
     where
       __decode = fmap (M1 . K1) . decodeRec
       fieldName = selNameProxy (Proxy @s)
-      decodeRec = withObject (decodeFieldWith decode fieldName)
+      decodeRec = withInputObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where
   refType _ = Nothing
