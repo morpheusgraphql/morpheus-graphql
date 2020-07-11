@@ -55,8 +55,10 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     Value,
   )
+import Data.Text (pack)
 import Text.Megaparsec
   ( (<|>),
+    choice,
     label,
     many,
     optional,
@@ -178,7 +180,33 @@ parseOperationType = label "OperationType" $ do
   ignoredTokens
   return kind
 
--- TODO: PARSE DIRECTIVE
 parseDirectiveLocation :: Parser DirectiveLocation
 parseDirectiveLocation =
-  pure FIELD_DEFINITION
+  label
+    "DirectiveLocation"
+    ( choice $
+        toKeyword
+          <$> [ FIELD_DEFINITION,
+                FRAGMENT_DEFINITION,
+                FRAGMENT_SPREAD,
+                INLINE_FRAGMENT,
+                ARGUMENT_DEFINITION,
+                INTERFACE,
+                ENUM_VALUE,
+                INPUT_OBJECT,
+                INPUT_FIELD_DEFINITION,
+                SCHEMA,
+                SCALAR,
+                OBJECT,
+                QUERY,
+                MUTATION,
+                SUBSCRIPTION,
+                UNION,
+                ENUM,
+                FIELD
+              ]
+    )
+    <* ignoredTokens
+
+toKeyword :: Show a => a -> Parser a
+toKeyword x = string (pack $ show x) $> x
