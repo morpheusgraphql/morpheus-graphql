@@ -1,8 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -53,6 +55,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     Schema (..),
     TRUE,
+    TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -207,7 +210,18 @@ validateUnionMember ::
   UnionMember cat CONST -> SchemaValidator TypeName (UnionMember cat VALID)
 validateUnionMember UnionMember {..} = pure UnionMember {..}
 
+class FieldDirectiveLocation (cat :: TypeCategory) where
+  directiveLocation :: Proxy cat -> DirectiveLocation
+
+instance FieldDirectiveLocation OUT where
+  directiveLocation _ = FIELD_DEFINITION
+
+instance FieldDirectiveLocation IN where
+  directiveLocation _ = INPUT_FIELD_DEFINITION
+
 validateField ::
+  forall cat.
+  FieldDirectiveLocation cat =>
   FieldDefinition cat CONST ->
   SchemaValidator TypeName (FieldDefinition cat VALID)
 validateField field@FieldDefinition {..} =
@@ -217,7 +231,7 @@ validateField field@FieldDefinition {..} =
         fieldName
         fieldDescription
         fieldType
-        <$> validateTypeSystemDirectives FIELD_DEFINITION fieldDirectives
+        <$> validateTypeSystemDirectives (directiveLocation (Proxy @cat)) fieldDirectives
           <*> validateOptional (checkFieldContent field) fieldContent
     )
 
@@ -373,6 +387,7 @@ validateDefaultValue ::
 validateDefaultValue =
   validateInputByTypeRef (Proxy @CONST)
 
+-- TODO: validate directives
 validateDirectiveDefinition :: DirectiveDefinition s -> SchemaValidator () (DirectiveDefinition VALID)
 validateDirectiveDefinition DirectiveDefinition {directiveDefinitionArgs = args, ..} = do
   --directiveDefinitionArgs <- pure empty
