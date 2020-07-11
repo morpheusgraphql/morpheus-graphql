@@ -13,8 +13,16 @@
       "locations": [{ "line": 4, "column": 21 }]
     },
     {
+      "message": "Directive \"deprecated\" may not to be used on INPUT_FIELD_DEFINITION",
+      "locations": [{ "line": 8, "column": 14 }]
+    },
+    {
       "message": "Argument \"reason\" got invalid value. Expected type \"String\" found {field: \"\"}.",
       "locations": [{ "line": 8, "column": 26 }]
+    },
+    {
+      "message": "Directive \"deprecated\" may not to be used on INPUT_FIELD_DEFINITION",
+      "locations": [{ "line": 9, "column": 18 }]
     },
     {
       "message": "Argument \"reason\" got invalid value. Expected type \"String\" found [\"some deprication\"].",
