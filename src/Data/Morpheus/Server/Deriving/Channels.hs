@@ -20,7 +20,6 @@ module Data.Morpheus.Server.Deriving.Channels
 where
 
 -- MORPHEUS
-import Data.Morpheus.Error (internalError)
 import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,

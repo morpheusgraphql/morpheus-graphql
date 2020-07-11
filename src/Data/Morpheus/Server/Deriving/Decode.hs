@@ -21,8 +21,7 @@ where
 
 -- MORPHEUS
 import Data.Morpheus.Error
-  ( internalError,
-    internalTypeMismatch,
+  ( internalTypeMismatch,
   )
 import Data.Morpheus.Internal.Utils
   ( elems,
@@ -54,6 +53,7 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
+    InternalError,
     ObjectEntry (..),
     TypeName (..),
     VALID,
@@ -178,7 +178,7 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
 getEnumTag :: ValidObject -> Eventless TypeName
 getEnumTag x = case elems x of
   [ObjectEntry "enum" (Enum value)] -> pure value
-  _ -> internalError "bad union enum object"
+  _ -> failure ("bad union enum object" :: InternalError)
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
@@ -206,7 +206,7 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
           (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
           name
           (Enum name, cxt)
-      __decode _ = internalError "lists and scalars are not allowed in Union"
+      __decode _ = failure ("lists and scalars are not allowed in Union" :: InternalError)
 
 instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
   decodeRep = fmap M1 . decodeFields
