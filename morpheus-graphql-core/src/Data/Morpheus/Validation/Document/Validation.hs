@@ -239,11 +239,7 @@ checkFieldContent ::
   FieldDefinition cat CONST ->
   FieldContent TRUE cat CONST ->
   SchemaValidator (TypeName, FieldName) (FieldContent TRUE cat VALID)
-checkFieldContent _ (FieldArgs (ArgumentsDefinition meta args)) =
-  FieldArgs . ArgumentsDefinition meta
-    <$> ordTraverse
-      validateArgument
-      args
+checkFieldContent _ (FieldArgs argsDef) = FieldArgs <$> validateArgumentsDefinition argsDef
 checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
   (typeName, fName) <- asks local
   DefaultInputValue
@@ -251,10 +247,19 @@ checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
       (SourceInputField typeName fName Nothing)
       (validateDefaultValue fieldType value)
 
-validateArgument ::
+validateArgumentsDefinition ::
+  ArgumentsDefinition CONST ->
+  SchemaValidator (TypeName, FieldName) (ArgumentsDefinition VALID)
+validateArgumentsDefinition (ArgumentsDefinition meta args) =
+  ArgumentsDefinition meta
+    <$> ordTraverse
+      validateArgumentDefinition
+      args
+
+validateArgumentDefinition ::
   ArgumentDefinition CONST ->
   SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
-validateArgument FieldDefinition {..} =
+validateArgumentDefinition FieldDefinition {..} =
   FieldDefinition
     fieldName
     fieldDescription
@@ -388,7 +393,8 @@ validateDefaultValue =
   validateInputByTypeRef (Proxy @CONST)
 
 -- TODO: validate directives
-validateDirectiveDefinition :: DirectiveDefinition s -> SchemaValidator () (DirectiveDefinition VALID)
-validateDirectiveDefinition DirectiveDefinition {directiveDefinitionArgs = args, ..} = do
-  --directiveDefinitionArgs <- pure empty
-  pure DirectiveDefinition {..}
+validateDirectiveDefinition :: DirectiveDefinition CONST -> SchemaValidator () (DirectiveDefinition VALID)
+validateDirectiveDefinition DirectiveDefinition {directiveDefinitionArgs = args, ..} =
+  inType "Directive" $ inField directiveDefinitionName $ do
+    directiveDefinitionArgs <- validateArgumentsDefinition args
+    pure DirectiveDefinition {..}
