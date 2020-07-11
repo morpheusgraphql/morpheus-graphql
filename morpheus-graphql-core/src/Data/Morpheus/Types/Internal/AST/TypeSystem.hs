@@ -79,6 +79,7 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
     UpdateT (..),
+    concatUpdates,
     elems,
     resolveUpdates,
   )
@@ -597,14 +598,16 @@ updateSchema ::
   (a -> TypeDefinition cat s) ->
   a ->
   UpdateT m (Schema s)
-updateSchema name fingerprint stack f x = UpdateT $ \lib ->
-  case isTypeDefined name lib of
-    Nothing -> do
-      t <- safeDefineType (f x) lib
-      resolveUpdates t stack
-    Just fingerprint' | fingerprint' == fingerprint -> pure lib
-    -- throw error if 2 different types has same name
-    Just _ -> failure $ nameCollisionError name
+updateSchema name fingerprint stack f x
+  | isNotSystemTypeName name = UpdateT $ \lib ->
+    case isTypeDefined name lib of
+      Nothing -> do
+        t <- safeDefineType (f x) lib
+        resolveUpdates t stack
+      Just fingerprint' | fingerprint' == fingerprint -> pure lib
+      -- throw error if 2 different types has same name
+      Just _ -> failure $ nameCollisionError name
+  | otherwise = concatUpdates stack
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
