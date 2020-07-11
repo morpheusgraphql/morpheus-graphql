@@ -1,12 +1,5 @@
-directive @MyDIrective 
-  on 
-    FIELD_DEFINITION 
-  | TYPE_DEFINITION
+directive @MyDirective on FIELD_DEFINITION | OBJECT
 
-type MyType @MyDIrective {
-  name: String @MyDIrective 
-}
-
-type Query  {
+type Query {
   name: String
 }

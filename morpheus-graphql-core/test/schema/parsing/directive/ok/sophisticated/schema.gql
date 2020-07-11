@@ -1,16 +1,12 @@
-directive @DirectiveA on FIELD_DEFINITION
+directive @DirectiveA on SCALAR
 
-directive @DirectiveB(arg: Int) on FIELD_DEFINITION
+directive @DirectiveB(arg: Int) on FIELD_DEFINITION | INPUT_OBJECT
 
 directive @DirectiveC(arg: MyInput! = {}) on FIELD_DEFINITION | FIELD_DEFINITION
 
 directive @DirectiveD(
   arg: String = "bla"
 ) on FIELD_DEFINITION | FIELD_DEFINITION
-
-input MyInput {
-  name: name
-}
 
 type Query {
   name: String
