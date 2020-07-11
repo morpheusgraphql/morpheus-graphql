@@ -9,7 +9,7 @@
       "locations": [{ "line": 1, "column": 13 }]
     },
     {
-      "message": "Directive \"skip\" may not to be used on FIELD_DEFINITION",
+      "message": "Directive \"skip\" may not to be used on INPUT_FIELD_DEFINITION",
       "locations": [{ "line": 2, "column": 13 }]
     },
     {
