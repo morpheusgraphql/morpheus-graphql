@@ -70,10 +70,12 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Error.Schema (nameCollisionError)
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
+  ( (<:>),
+    Collection (..),
     Failure (..),
     KeyOf (..),
     Listable (..),
+    Merge (..),
     Selectable (..),
     UpdateT (..),
     elems,
@@ -206,6 +208,32 @@ data Schema (s :: Stage) = Schema
     directiveDefinitions :: [DirectiveDefinition s]
   }
   deriving (Show)
+
+instance Merge (Schema s) where
+  merge _ s1 s2@Schema {types} =
+    initial
+      >>= (`resolveUpdates` fmap insertType (HM.elems types))
+    where
+      initial = do
+        query <- mergeQuery (query s1) (query s2)
+        pure $
+          s1
+            { query,
+              directiveDefinitions = directiveDefinitions s1 <> directiveDefinitions s2
+            }
+
+mergeQuery ::
+  (Monad m, Failure GQLErrors m) =>
+  TypeDefinition OUT s ->
+  TypeDefinition OUT s ->
+  m (TypeDefinition OUT s)
+mergeQuery
+  TypeDefinition {typeContent = DataObject i1 fields1}
+  TypeDefinition {typeContent = DataObject i2 fields2, ..} =
+    do
+      fields <- fields1 <:> fields2
+      pure $ TypeDefinition {typeContent = DataObject (i1 <> i2) fields, ..}
+mergeQuery _ _ = failure $ globalErrorMessage "can't merge schema: Query must be an Object Type"
 
 data SchemaDefinition = SchemaDefinition
   { schemaDirectives :: Directives CONST,

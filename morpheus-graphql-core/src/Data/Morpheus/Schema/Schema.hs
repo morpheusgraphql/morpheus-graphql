@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -10,7 +11,6 @@
 
 module Data.Morpheus.Schema.Schema
   ( withSystemTypes,
-    systemTypes,
   )
 where
 
@@ -19,61 +19,36 @@ where
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Failure (..),
-    resolveUpdates,
-    singleton,
   )
 import Data.Morpheus.Schema.DSL (dsl)
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    DataFingerprint (..),
-    FieldsDefinition,
+  ( DataFingerprint (..),
     GQLErrors,
-    Message,
-    OUT,
     Schema (..),
-    TypeContent (..),
     TypeDefinition (..),
-    TypeWrapper (..),
-    insertType,
     internalFingerprint,
-    mkInputValue,
-    mkObjectField,
-    unsafeFromFields,
   )
 
-withSystemTypes :: (Monad m, Failure GQLErrors m, Failure Message m) => Schema s -> m (Schema s)
-withSystemTypes s@Schema {query = q@TypeDefinition {typeContent = DataObject inter fields}} =
-  ( do
-      fs <- fields <:> hiddenFields
-      pure $ s {query = q {typeContent = DataObject inter fs}}
-  )
-    >>= (`resolveUpdates` map (insertType . internalType) systemTypes)
-withSystemTypes _ = failure ("Query must be an Object Type" :: Message)
+withSystemTypes ::
+  (Monad m, Failure GQLErrors m) =>
+  Schema s ->
+  m (Schema s)
+withSystemTypes = (defaultSchema <:>)
 
-hiddenFields :: FieldsDefinition OUT s
-hiddenFields =
-  unsafeFromFields
-    [ mkObjectField
-        (singleton (mkInputValue "name" [] "String"))
-        "__type"
-        [TypeMaybe]
-        "__Type",
-      mkInputValue
-        "__schema"
-        []
-        "__Schema"
-    ]
+toInternalSchema :: Schema s -> Schema s
+toInternalSchema Schema {..} = Schema {types = fmap toInternalType types, ..}
 
-internalType :: TypeDefinition a s -> TypeDefinition a s
-internalType
+toInternalType :: TypeDefinition a s -> TypeDefinition a s
+toInternalType
   tyDef@TypeDefinition
     { typeFingerprint = DataFingerprint name xs
     } =
     tyDef {typeFingerprint = internalFingerprint name xs}
 
-systemTypes :: [TypeDefinition ANY s]
-systemTypes =
-  [dsl|
+defaultSchema :: Schema s
+defaultSchema =
+  toInternalSchema
+    [dsl|
 
 scalar Boolean
 scalar Int
@@ -173,6 +148,11 @@ enum __TypeKind {
   INPUT_OBJECT
   LIST
   NON_NULL
+}
+
+type Query {
+  __type(name: String!): __Type
+  __schema: __Schema!
 }
 
 |]

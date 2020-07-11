@@ -24,7 +24,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     VALID,
     VALIDATION_MODE (..),
-    buildSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -41,7 +40,6 @@ parseTypeSystemDefinition ::
   Text -> Eventless (Schema VALID)
 parseTypeSystemDefinition =
   P.parseSchema
-    >=> buildSchema
     >=> validateSchema True
 
 parseTypeDefinitions ::

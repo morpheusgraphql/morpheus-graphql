@@ -59,11 +59,13 @@ import Data.Morpheus.Types.Internal.AST
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     ScalarDefinition (..),
+    Schema,
     SchemaDefinition (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     Value,
+    buildSchema,
     mkUnionMember,
     toAny,
   )
@@ -355,19 +357,26 @@ parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
   ignoredTokens
   manyTill parseRawTypeDefinition eof
 
-parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY CONST]
-parseTypeDefinitions = fmap snd3 . parseSchema
-
-snd3 :: (a, b, c) -> b
-snd3 (_, x, _) = x
-
-parseSchema ::
+typeSystemDefinition ::
   Text ->
   Eventless
     ( Maybe SchemaDefinition,
       [TypeDefinition ANY CONST],
       [DirectiveDefinition CONST]
     )
-parseSchema =
+typeSystemDefinition =
   processParser parseTypeSystemDefinition
     >=> withSchemaDefinition . typePartition
+
+parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY CONST]
+parseTypeDefinitions = fmap snd3 . typeSystemDefinition
+
+snd3 :: (a, b, c) -> b
+snd3 (_, x, _) = x
+
+parseSchema ::
+  Text ->
+  Eventless (Schema CONST)
+parseSchema =
+  typeSystemDefinition
+    >=> buildSchema
