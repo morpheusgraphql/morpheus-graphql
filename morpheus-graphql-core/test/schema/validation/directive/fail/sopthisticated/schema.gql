@@ -1,0 +1,19 @@
+directive @DirectiveA(a1: String!) on SCALAR
+
+directive @DirectiveC(arg: Int!) on ARGUMENT_DEFINITION
+
+enum MyEnum {
+  EnumA @DirectiveA
+}
+
+type MyType @SomeDirective {
+  field(a1: Int @DirectiveC(arg: True, someargs: 1)): String @DirectiveC
+}
+
+input Input @include {
+  field: ID @skip
+}
+
+type Query @DirectiveC(arg: "bla") {
+  field(a1: Int): Int @skip
+}

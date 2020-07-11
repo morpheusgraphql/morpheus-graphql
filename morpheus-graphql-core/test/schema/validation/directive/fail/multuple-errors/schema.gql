@@ -1,7 +1,0 @@
-input Input @include {
-  field: ID @skip
-}
-
-type Query @skip {
-  field(a1: Int): Int @skip
-}
