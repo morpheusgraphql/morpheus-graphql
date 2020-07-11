@@ -77,8 +77,7 @@ import Prelude
 
 getSchema :: Monad m => ResponseStream e m (Schema VALID)
 getSchema =
-  fromElems
-    [dsl|
+  [dsl|
   
   type Query {
     deity(name: String): Deity!
