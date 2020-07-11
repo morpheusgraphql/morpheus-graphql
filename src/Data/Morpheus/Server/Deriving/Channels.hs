@@ -30,6 +30,7 @@ import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( FALSE,
     FieldName (..),
+    InternalError,
     SUBSCRIPTION,
     Selection (..),
     SelectionContent (..),
@@ -76,10 +77,10 @@ selectBy ::
 selectBy Selection {selectionContent = SelectionSet selSet} ch =
   case elems selSet of
     [sel@Selection {selectionName}] -> case lookup selectionName ch of
-      Nothing -> internalError "invalid subscription: no channel is selected."
+      Nothing -> "invalid subscription: no channel is selected." :: InternalError
       Just f -> f sel
-    _ -> internalError "invalid subscription: there can be only one top level selection"
-selectBy _ _ = internalError "invalid subscription: expected selectionSet"
+    _ -> "invalid subscription: there can be only one top level selection" :: InternalError
+selectBy _ _ = "invalid subscription: expected selectionSet" :: InternalError
 
 class GetChannel e a | a -> e where
   getChannel :: a -> Selection VALID -> Eventless (Channel e)
