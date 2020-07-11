@@ -42,6 +42,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition (..),
     CONST,
     DataEnumValue (..),
+    DirectiveDefinition (..),
     DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -112,7 +113,8 @@ instance ValidateSchema CONST where
       { types,
         query,
         mutation,
-        subscription
+        subscription,
+        directiveDefinitions
       } = do
       sysSchema <-
         if withSystem
@@ -138,6 +140,7 @@ instance ValidateSchema CONST where
             <*> validateType query
             <*> validateOptional validateType mutation
             <*> validateOptional validateType subscription
+            <*> traverse validateDirectiveDefinition directiveDefinitions
 
 validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
 validateOptional f = maybe (pure Nothing) (fmap Just . f)
@@ -369,3 +372,8 @@ validateDefaultValue ::
     (Value VALID)
 validateDefaultValue =
   validateInputByTypeRef (Proxy @CONST)
+
+validateDirectiveDefinition :: DirectiveDefinition s -> SchemaValidator () (DirectiveDefinition VALID)
+validateDirectiveDefinition DirectiveDefinition {directiveDefinitionArgs = args, ..} = do
+  --directiveDefinitionArgs <- pure empty
+  pure DirectiveDefinition {..}

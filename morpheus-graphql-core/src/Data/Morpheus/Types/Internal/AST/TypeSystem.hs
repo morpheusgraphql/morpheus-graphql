@@ -202,7 +202,8 @@ data Schema (s :: Stage) = Schema
   { types :: TypeLib s,
     query :: TypeDefinition OUT s,
     mutation :: Maybe (TypeDefinition OUT s),
-    subscription :: Maybe (TypeDefinition OUT s)
+    subscription :: Maybe (TypeDefinition OUT s),
+    directiveDefinitions :: [DirectiveDefinition s]
   }
   deriving (Show)
 
@@ -286,16 +287,30 @@ excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
     blacklist :: [TypeName]
     blacklist = fmap typeName (catMaybes excusionTypes)
 
+withDirectives ::
+  [DirectiveDefinition s] ->
+  Schema s ->
+  Schema s
+withDirectives dirs Schema {..} =
+  Schema
+    { directiveDefinitions = directiveDefinitions <> dirs,
+      ..
+    }
+
 buildSchema ::
   (Monad m, Failure GQLErrors m) =>
   ( Maybe SchemaDefinition,
-    [TypeDefinition ANY s]
+    [TypeDefinition ANY s],
+    [DirectiveDefinition s]
   ) ->
   m (Schema s)
-buildSchema (Nothing, types) = fromElems types
-buildSchema (Just schemaDef, types) =
-  traverse3 selectOp (Query, Mutation, Subscription)
-    >>= buildWith types
+buildSchema (Nothing, types, dirs) = withDirectives dirs <$> fromElems types
+buildSchema (Just schemaDef, types, dirs) =
+  withDirectives
+    dirs
+    <$> ( traverse3 selectOp (Query, Mutation, Subscription)
+            >>= buildWith types
+        )
   where
     selectOp op = selectOperation schemaDef op types
 
@@ -330,7 +345,8 @@ initTypeLib query =
     { types = empty,
       query = query,
       mutation = Nothing,
-      subscription = Nothing
+      subscription = Nothing,
+      directiveDefinitions = empty
     }
 
 typeRegister :: Schema s -> TypeLib s

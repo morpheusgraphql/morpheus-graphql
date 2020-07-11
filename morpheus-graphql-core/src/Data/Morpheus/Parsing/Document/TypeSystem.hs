@@ -82,7 +82,6 @@ import Text.Megaparsec
 import Prelude
   ( ($),
     (.),
-    snd,
   )
 
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
@@ -349,7 +348,7 @@ withSchemaDefinition ::
     (Maybe SchemaDefinition, [TypeDefinition ANY s], [DirectiveDefinition CONST])
 withSchemaDefinition ([], t, dirs) = pure (Nothing, t, dirs)
 withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
-withSchemaDefinition (_ : xs, _, dirs) = failure (fmap (nameCollision "schema") xs, dirs)
+withSchemaDefinition (_ : xs, _, _) = failure (fmap (nameCollision "schema") xs)
 
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
 parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
@@ -357,9 +356,18 @@ parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
   manyTill parseRawTypeDefinition eof
 
 parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY CONST]
-parseTypeDefinitions = fmap snd . parseSchema
+parseTypeDefinitions = fmap snd3 . parseSchema
 
-parseSchema :: Text -> Eventless (Maybe SchemaDefinition, [TypeDefinition ANY CONST])
+snd3 :: (a, b, c) -> b
+snd3 (_, x, _) = x
+
+parseSchema ::
+  Text ->
+  Eventless
+    ( Maybe SchemaDefinition,
+      [TypeDefinition ANY CONST],
+      [DirectiveDefinition CONST]
+    )
 parseSchema =
   processParser parseTypeSystemDefinition
     >=> withSchemaDefinition . typePartition
