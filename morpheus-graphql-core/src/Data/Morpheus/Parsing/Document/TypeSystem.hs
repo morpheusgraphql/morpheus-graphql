@@ -14,7 +14,7 @@ where
 
 import Control.Applicative ((*>), pure)
 import Control.Monad ((>=>))
-import Data.Either (Either (..), partitionEithers)
+import Data.Foldable (foldr)
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
@@ -316,21 +316,40 @@ parseRawTypeDefinition =
       <|> parseSchemaDefinition
       <|> parseDirectiveDefinition
 
-splitSchema :: [RawTypeDefinition] -> ([SchemaDefinition], [TypeDefinition ANY CONST])
-splitSchema = partitionEithers . fmap split
-  where
-    split (RawTypeDefinition x) = Right x
-    split (RawSchemaDefinition y) = Left y
+typePartition ::
+  [RawTypeDefinition] ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY CONST],
+    [DirectiveDefinition CONST]
+  )
+typePartition = foldr split ([], [], [])
+
+split ::
+  RawTypeDefinition ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY CONST],
+    [DirectiveDefinition CONST]
+  ) ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY CONST],
+    [DirectiveDefinition CONST]
+  )
+split (RawSchemaDefinition schema) (schemas, types, dirs) = (schema : schemas, types, dirs)
+split (RawTypeDefinition ty) (schemas, types, dirs) = (schemas, ty : types, dirs)
+split (RawDirectiveDefinition dir) (schemas, types, dirs) = (schemas, types, dir : dirs)
 
 --  split (RawDirectiveDefinition d)
 
 withSchemaDefinition ::
-  ([SchemaDefinition], [TypeDefinition ANY s]) ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY s],
+    [DirectiveDefinition CONST]
+  ) ->
   Eventless
-    (Maybe SchemaDefinition, [TypeDefinition ANY s])
-withSchemaDefinition ([], t) = pure (Nothing, t)
-withSchemaDefinition ([x], t) = pure (Just x, t)
-withSchemaDefinition (_ : xs, _) = failure (fmap (nameCollision "schema") xs)
+    (Maybe SchemaDefinition, [TypeDefinition ANY s], [DirectiveDefinition CONST])
+withSchemaDefinition ([], t, dirs) = pure (Nothing, t, dirs)
+withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
+withSchemaDefinition (_ : xs, _, dirs) = failure (fmap (nameCollision "schema") xs, dirs)
 
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
 parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
@@ -343,4 +362,4 @@ parseTypeDefinitions = fmap snd . parseSchema
 parseSchema :: Text -> Eventless (Maybe SchemaDefinition, [TypeDefinition ANY CONST])
 parseSchema =
   processParser parseTypeSystemDefinition
-    >=> withSchemaDefinition . splitSchema
+    >=> withSchemaDefinition . typePartition
