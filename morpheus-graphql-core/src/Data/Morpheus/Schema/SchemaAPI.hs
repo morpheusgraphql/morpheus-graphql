@@ -20,15 +20,11 @@ import Data.Morpheus.Rendering.RenderIntrospection
   ( createObjectType,
     render,
   )
-import Data.Morpheus.Schema.Directives
-  ( defaultDirectives,
-  )
 import Data.Morpheus.Schema.Schema
   (
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
-    DirectiveDefinitions,
     OUT,
     QUERY,
     ScalarValue (..),
@@ -67,20 +63,11 @@ findType ::
   Resolver QUERY e m (ResModel QUERY e m)
 findType = selectOr (pure mkNull) render
 
-renderDirectives ::
-  Monad m =>
-  Resolver QUERY e m (ResModel QUERY e m)
-renderDirectives =
-  mkList
-    <$> traverse
-      render
-      (defaultDirectives :: DirectiveDefinitions VALID)
-
 schemaResolver ::
   Monad m =>
   Schema VALID ->
   Resolver QUERY e m (ResModel QUERY e m)
-schemaResolver schema@Schema {query, mutation, subscription} =
+schemaResolver schema@Schema {query, mutation, subscription, directiveDefinitions} =
   pure $
     mkObject
       "__Schema"
@@ -88,7 +75,7 @@ schemaResolver schema@Schema {query, mutation, subscription} =
         ("queryType", renderOperation (Just query)),
         ("mutationType", renderOperation mutation),
         ("subscriptionType", renderOperation subscription),
-        ("directives", renderDirectives)
+        ("directives", mkList <$> traverse render directiveDefinitions)
       ]
 
 schemaAPI :: Monad m => Schema VALID -> ResModel QUERY e m
