@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Internal
-  ( internalTypeMismatch,
+  ( typeMismatch,
     internalError,
     internalResolvingError,
   )
@@ -12,11 +12,12 @@ where
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
+    InternalError,
     Message,
-    msg,
+    toInternalError,
   )
 import Data.Morpheus.Types.Internal.AST.Value
-  ( ValidValue,
+  ( Value,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
@@ -34,6 +35,7 @@ internalResolvingError :: Message -> GQLErrors
 internalResolvingError = globalErrorMessage . ("INTERNAL ERROR:" <>)
 
 -- if value is already validated but value has different type
-internalTypeMismatch :: Message -> ValidValue -> Eventless a
-internalTypeMismatch text jsType =
-  internalError $ "Type mismatch! expected:" <> text <> ", got: " <> msg jsType
+typeMismatch :: Message -> Value s -> InternalError
+typeMismatch text jsType =
+  "Type mismatch! expected:" <> toInternalError text <> ", got: "
+    <> toInternalError jsType

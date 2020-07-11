@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverState
     ResolverStateT (..),
     resolverFailureMessage,
     clearStateResolverEvents,
+    ResolverState,
   )
 where
 
@@ -33,6 +34,7 @@ import Control.Monad.Trans.Reader
     mapReaderT,
   )
 import Data.Functor (Functor (..))
+import Data.Functor.Identity (Identity)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
@@ -66,6 +68,8 @@ data Context = Context
     currentTypeName :: TypeName
   }
   deriving (Show)
+
+type ResolverState = ResolverStateT () Identity
 
 -- Resolver Internal State
 newtype ResolverStateT event m a = ResolverState

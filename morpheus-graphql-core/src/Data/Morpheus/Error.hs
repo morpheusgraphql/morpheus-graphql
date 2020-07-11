@@ -2,7 +2,7 @@ module Data.Morpheus.Error
   ( errorMessage,
     globalErrorMessage,
     internalError,
-    internalTypeMismatch,
+    typeMismatch,
     gqlWarnings,
     renderGQLErrors,
     deprecatedField,

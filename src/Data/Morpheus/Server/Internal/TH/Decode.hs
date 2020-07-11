@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Server.Internal.TH.Decode
@@ -6,14 +8,14 @@ module Data.Morpheus.Server.Internal.TH.Decode
     withMaybe,
     withList,
     withEnum,
-    withUnion,
+    withInputUnion,
     decodeFieldWith,
   )
 where
 
 -- MORPHEUS
 import Data.Morpheus.Error
-  ( internalTypeMismatch,
+  ( typeMismatch,
   )
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -22,45 +24,61 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    Message,
-    Message,
+    InternalError,
     ObjectEntry (..),
     TypeName (..),
+    VALID,
     ValidObject,
     ValidValue,
     Value (..),
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Failure (..),
+  ( Failure (..),
   )
 
-withObject :: (ValidObject -> Eventless a) -> ValidValue -> Eventless a
+withObject ::
+  Failure InternalError m =>
+  (ValidObject -> m a) ->
+  ValidValue ->
+  m a
 withObject f (Object object) = f object
-withObject _ isType = internalTypeMismatch "Object" isType
+withObject _ isType = failure (typeMismatch "Object" isType)
 
 withMaybe :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Maybe a)
 withMaybe _ Null = pure Nothing
 withMaybe decode x = Just <$> decode x
 
-withList :: (ValidValue -> Eventless a) -> ValidValue -> Eventless [a]
+withList ::
+  (Failure InternalError m, Monad m) =>
+  (ValidValue -> m a) ->
+  ValidValue ->
+  m [a]
 withList decode (List li) = traverse decode li
-withList _ isType = internalTypeMismatch "List" isType
+withList _ isType = failure (typeMismatch "List" isType)
 
-withEnum :: (TypeName -> Eventless a) -> ValidValue -> Eventless a
+withEnum :: Failure InternalError m => (TypeName -> m a) -> Value VALID -> m a
 withEnum decode (Enum value) = decode value
-withEnum _ isType = internalTypeMismatch "Enum" isType
+withEnum _ isType = failure (typeMismatch "Enum" isType)
 
-withUnion :: (TypeName -> ValidObject -> ValidObject -> Eventless a) -> ValidObject -> Eventless a
-withUnion decoder unions = do
-  (enum :: ValidValue) <- entryValue <$> selectBy ("__typename not found on Input Union" :: Message) "__typename" unions
-  case enum of
-    (Enum key) -> selectOr notfound onFound (toFieldName key) unions
+withInputUnion ::
+  (Failure InternalError m, Monad m) =>
+  (TypeName -> ValidObject -> ValidObject -> m a) ->
+  ValidObject ->
+  m a
+withInputUnion decoder unions =
+  entryValue
+    <$> selectBy
+      ("__typename not found on Input Union" :: InternalError)
+      "__typename"
+      unions
+    >>= providesValueFor
+  where
+    providesValueFor (Enum key) = selectOr notfound onFound (toFieldName key) unions
       where
         notfound = withObject (decoder key unions) (Object empty)
         onFound = withObject (decoder key unions) . entryValue
-    _ -> failure ("__typename must be Enum" :: Message)
+    providesValueFor _ = failure ("__typename must be Enum" :: InternalError)
 
-decodeFieldWith :: (ValidValue -> Eventless a) -> FieldName -> ValidObject -> Eventless a
+decodeFieldWith :: (Value VALID -> m a) -> FieldName -> ValidObject -> m a
 decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)

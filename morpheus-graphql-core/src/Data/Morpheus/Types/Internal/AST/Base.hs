@@ -59,6 +59,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     isOutput,
     mkTypeRef,
     InternalError (..),
+    toInternalError,
   )
 where
 
@@ -100,6 +101,7 @@ import Prelude
     String,
     elem,
     fst,
+    id,
     not,
     notElem,
     otherwise,
@@ -141,10 +143,16 @@ instance Lift InternalError where
   liftTyped = liftTypedString . readInternalError
 #endif
 
+toInternalError :: (Msg a) => a -> InternalError
+toInternalError = InternalError . readMessage . msg
+
 class Msg a where
   msg :: a -> Message
   msgSepBy :: Text -> [a] -> Message
   msgSepBy t = Message . intercalate t . fmap (readMessage . msg)
+
+instance Msg Message where
+  msg = id
 
 instance Msg String where
   msg = Message . pack
