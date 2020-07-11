@@ -27,6 +27,7 @@ module Data.Morpheus.Parsing.Internal.Terms
     optionalList,
     parseNegativeSign,
     parseTypeName,
+    pipe,
   )
 where
 
@@ -70,6 +71,7 @@ import Text.Megaparsec
     manyTill,
     optional,
     sepBy,
+    sepBy1,
     sepEndBy,
     skipManyTill,
     try,
@@ -227,9 +229,12 @@ comma :: Parser ()
 comma = label "Comma" $ char ',' *> space
 
 ------------------------------------------------------------------------
--- COMPLEX
+
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (optional (char '&') *> ignoredTokens)
+sepByAnd entry = entry `sepBy` (optional (symbol '&') *> ignoredTokens)
+
+pipe :: Parser a -> Parser [a]
+pipe x = optional (symbol '|') *> (x `sepBy1` symbol '|')
 
 -----------------------------
 collection :: Parser a -> Parser [a]

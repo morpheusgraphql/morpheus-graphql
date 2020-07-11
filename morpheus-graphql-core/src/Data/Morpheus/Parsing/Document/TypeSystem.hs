@@ -18,9 +18,6 @@ import Data.Either (Either (..), partitionEithers)
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Parsing.Internal.Arguments
-  ( maybeArguments,
-  )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
@@ -42,6 +39,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     optDescription,
     parseName,
     parseTypeName,
+    pipe,
     sepByAnd,
     setOf,
     symbol,
@@ -78,7 +76,6 @@ import Text.Megaparsec
     eof,
     label,
     manyTill,
-    sepBy1,
   )
 import Prelude
   ( ($),
@@ -185,7 +182,9 @@ unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
         ..
       }
   where
-    unionMemberTypes = symbol '=' *> (mkUnionMember <$> parseTypeName) `sepBy1` symbol '|'
+    unionMemberTypes =
+      symbol '='
+        *> pipe (mkUnionMember <$> parseTypeName)
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
 --
@@ -245,7 +244,7 @@ parseDirectiveDefinition = label "DirectiveDefinition" $ do
   directiveDefinitionName <- parseName
   directiveDefinitionArgs <- argumentsDefinition
   keyword "on"
-  directiveDefinitionLocations <- parseDirectiveLocation `sepBy1` symbol '|'
+  directiveDefinitionLocations <- pipe parseDirectiveLocation
   pure
     $ RawDirectiveDefinition
     $ DirectiveDefinition
