@@ -75,7 +75,7 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("queryType", renderOperation (Just query)),
         ("mutationType", renderOperation mutation),
         ("subscriptionType", renderOperation subscription),
-        ("directives", mkList <$> traverse render directiveDefinitions)
+        ("directives", render directiveDefinitions)
       ]
 
 schemaAPI :: Monad m => Schema VALID -> ResModel QUERY e m
