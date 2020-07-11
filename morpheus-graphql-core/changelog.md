@@ -4,6 +4,7 @@
 
 ### new features
 
+- quasiqouter `[dsl| <type definitions> |]` generates `Schema VALID`.
 - parser supports custom directive definition. e.g
 
 ```graphql

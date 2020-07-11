@@ -17,9 +17,6 @@ import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (runApi)
-import Data.Morpheus.Internal.Utils
-  ( fromElems,
-  )
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -75,10 +72,10 @@ import Prelude
     uncurry,
   )
 
-getSchema :: Monad m => ResponseStream e m (Schema VALID)
-getSchema =
+apiSchema :: Schema VALID
+apiSchema =
   [dsl|
-  
+
   type Query {
     deity(name: String): Deity!
   }
@@ -143,9 +140,7 @@ basicTest description path = testCase description $ do
   assertion expected actual
 
 simpleTest :: GQLRequest -> ResponseStream e Identity (Value VALID)
-simpleTest request = do
-  schema <- getSchema
-  runApi schema resolver request
+simpleTest = runApi apiSchema resolver
 
 expectedResponse :: FieldName -> IO A.Value
 expectedResponse = getResponseBody

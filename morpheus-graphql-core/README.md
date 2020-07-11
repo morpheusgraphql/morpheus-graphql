@@ -9,10 +9,9 @@ core Functionalities of Morpheus GraphQL, can be used to build GraphQL server, c
 ## Build GraphQL api with Core
 
 ```hs
-getSchema :: Monad m => ResponseStream e m Schema
-getSchema =
-  fromList
-    [dsl|
+schema :: Schema VALID
+schema =
+  [dsl|
   type Query {
     deity(name: String): Deity!
   }
@@ -45,7 +44,5 @@ resolveDeity =
       ]
 
 api :: GQLRequest -> ResponseStream e Identity (Value VALID)
-api request = do
-  schema <- getSchema
-  runApi schema resolver request
+api = runApi schema resolver
 ```

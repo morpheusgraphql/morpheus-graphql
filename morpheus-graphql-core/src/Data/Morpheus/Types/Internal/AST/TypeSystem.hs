@@ -398,7 +398,7 @@ typeRegister Schema {types, query, mutation, subscription} =
       (concatMap fromOperation [Just query, mutation, subscription])
 
 lookupDataType :: TypeName -> Schema s -> Maybe (TypeDefinition ANY s)
-lookupDataType = selectOr Nothing Just
+lookupDataType name = HM.lookup name . typeRegister
 
 isTypeDefined :: TypeName -> Schema s -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
