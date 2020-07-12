@@ -9,12 +9,16 @@ module Data.Morpheus.Rendering.RenderGQL
     newline,
     renderArguments,
     renderEntry,
+    space,
+    Rendering,
   )
 where
 
 -- MORPHEUS
+
 import Data.Foldable (null)
 import Data.Functor ((<$>))
+import Data.Maybe (Maybe, maybe)
 import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
@@ -35,6 +39,12 @@ type Rendering = Text
 
 class RenderGQL a where
   render :: a -> Rendering
+
+instance
+  RenderGQL a =>
+  RenderGQL (Maybe a)
+  where
+  render = maybe "" render
 
 instance RenderGQL Int where
   render = pack . show

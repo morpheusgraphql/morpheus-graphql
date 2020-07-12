@@ -39,13 +39,14 @@ import Control.Monad.Trans.Reader
   )
 import Data.Functor (Functor (..))
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Rendering.RenderGQL (render)
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
     InternalError,
     Message,
-    Msg,
     Operation,
     Schema,
     Selection (..),
@@ -67,6 +68,7 @@ import Data.Semigroup
 import Prelude
   ( ($),
     (.),
+    Int,
     Show (..),
     id,
   )
@@ -171,15 +173,15 @@ renderContext
     "on type "
       <> msg currentTypeName
       <> "\n\n\n\n"
-      <> renderSection "Selection" (render currentSelection)
-      <> renderSection "Query" (show operation)
-      <> renderSection "Schema" (render schema)
+      <> renderSection "Selection" currentSelection
+      <> renderSection "Query" operation
+      <> renderSection "Schema" schema
 
-renderSection :: Msg a => Message -> a -> Message
+renderSection :: RenderGQL a => Message -> a -> Message
 renderSection label content =
   "\n\n" <> label <> ":" <> line
     <> "\n\n"
-    <> msg content
+    <> msg (render content)
     <> "\n\n"
   where
-    line = stimes 20 "-"
+    line = stimes (20 :: Int) "-"

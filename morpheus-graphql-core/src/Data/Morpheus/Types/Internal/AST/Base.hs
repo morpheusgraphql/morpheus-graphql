@@ -70,6 +70,7 @@ import Data.Aeson
     encode,
   )
 import Data.ByteString.Lazy.Char8 (ByteString, unpack)
+import Data.Char (toLower)
 import Data.Hashable (Hashable)
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Semigroup (Semigroup (..))
@@ -97,7 +98,7 @@ import Prelude
     Int,
     Maybe (..),
     Ord (..),
-    Show,
+    Show (..),
     String,
     elem,
     fst,
@@ -262,6 +263,9 @@ data OperationType
   | Subscription
   | Mutation
   deriving (Show, Eq, Lift, Generic, Hashable)
+
+instance RenderGQL OperationType where
+  render = pack . fmap toLower . show
 
 instance Msg OperationType where
   msg Query = msg ("query" :: TypeName)
