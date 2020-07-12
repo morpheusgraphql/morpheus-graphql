@@ -39,8 +39,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Channel,
-    Eventless,
     Resolver,
+    ResolverState,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
@@ -50,7 +50,7 @@ mkEntry ::
   FieldName ->
   a ->
   ( FieldName,
-    Selection VALID -> Eventless (Channel e)
+    Selection VALID -> ResolverState (Channel e)
   )
 mkEntry name field = (name, getChannel field)
 

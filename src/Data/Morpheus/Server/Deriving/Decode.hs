@@ -20,9 +20,6 @@ module Data.Morpheus.Server.Deriving.Decode
 where
 
 -- MORPHEUS
-import Data.Morpheus.Error
-  ( typeMismatch,
-  )
 import Data.Morpheus.Internal.Utils
   ( elems,
   )
@@ -49,7 +46,6 @@ import Data.Morpheus.Server.Internal.TH.Decode
 import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
-    toScalar,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),

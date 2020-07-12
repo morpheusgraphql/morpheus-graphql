@@ -22,6 +22,10 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverState
     resolverFailureMessage,
     clearStateResolverEvents,
     ResolverState,
+    toResolverStateT,
+    runResolverStateT,
+    runResolverStateM,
+    runResolverState,
   )
 where
 
@@ -34,7 +38,7 @@ import Control.Monad.Trans.Reader
     mapReaderT,
   )
 import Data.Functor (Functor (..))
-import Data.Functor.Identity (Identity)
+import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
@@ -48,8 +52,10 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Failure (..),
+  ( Eventless,
+    Failure (..),
     PushEvents (..),
+    Result,
     ResultT (..),
     cleanEvents,
   )
@@ -72,9 +78,18 @@ data Context = Context
 
 type ResolverState = ResolverStateT () Identity
 
+runResolverStateT :: ResolverStateT e m a -> Context -> ResultT e m a
+runResolverStateT = runReaderT . _runResolverStateT
+
+runResolverStateM :: ResolverStateT e m a -> Context -> m (Result e a)
+runResolverStateM res = runResultT . runResolverStateT res
+
+runResolverState :: ResolverState a -> Context -> Eventless a
+runResolverState res = runIdentity . runResolverStateM res
+
 -- Resolver Internal State
-newtype ResolverStateT event m a = ResolverState
-  { runResolverState :: ReaderT Context (ResultT event m) a
+newtype ResolverStateT event m a = ResolverStateT
+  { _runResolverStateT :: ReaderT Context (ResultT event m) a
   }
   deriving
     ( Functor,
@@ -84,23 +99,23 @@ newtype ResolverStateT event m a = ResolverState
     )
 
 instance MonadTrans (ResolverStateT e) where
-  lift = ResolverState . lift . lift
+  lift = ResolverStateT . lift . lift
 
 instance (Monad m) => Failure Message (ResolverStateT e m) where
-  failure message = ResolverState $ do
+  failure message = ResolverStateT $ do
     selection <- asks currentSelection
     lift $ failure [resolverFailureMessage selection message]
 
 instance (Monad m) => Failure InternalError (ResolverStateT e m) where
-  failure message = ResolverState $ do
+  failure message = ResolverStateT $ do
     selection <- asks currentSelection
     lift $ failure [renderInternalResolverError selection message]
 
 instance (Monad m) => Failure GQLErrors (ResolverStateT e m) where
-  failure = ResolverState . lift . failure
+  failure = ResolverStateT . lift . failure
 
 instance (Monad m) => PushEvents e (ResolverStateT e m) where
-  pushEvents = ResolverState . lift . pushEvents
+  pushEvents = ResolverStateT . lift . pushEvents
 
 mapResolverState ::
   ( ResultT e m a ->
@@ -108,7 +123,20 @@ mapResolverState ::
   ) ->
   ResolverStateT e m a ->
   ResolverStateT e' m' a'
-mapResolverState f (ResolverState x) = ResolverState (mapReaderT f x)
+mapResolverState f (ResolverStateT x) = ResolverStateT (mapReaderT f x)
+
+toResolverStateT ::
+  Applicative m =>
+  ResolverState a ->
+  ResolverStateT e m a
+toResolverStateT = mapResolverState injectResult
+
+injectResult ::
+  (Applicative m) =>
+  ResultT () Identity a ->
+  ResultT e m a
+injectResult (ResultT (Identity x)) =
+  cleanEvents $ ResultT (pure x)
 
 -- clear evets and starts new resolver with diferenct type of events but with same value
 -- use properly. only if you know what you are doing

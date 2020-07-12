@@ -43,6 +43,7 @@ module Data.Morpheus.Types.Internal.Resolving
     getArguments,
     Channel (..),
     ResolverState,
+    liftResolverState,
   )
 where
 

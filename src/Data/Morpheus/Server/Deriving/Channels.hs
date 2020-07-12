@@ -20,7 +20,10 @@ module Data.Morpheus.Server.Deriving.Channels
 where
 
 -- MORPHEUS
-import Data.Morpheus.Internal.Utils (elems)
+import Data.Morpheus.Internal.Utils
+  ( Failure (..),
+    elems,
+  )
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
@@ -37,8 +40,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Channel,
-    Eventless,
     Resolver,
+    ResolverState,
     SubscriptionField (..),
   )
 import Data.Proxy (Proxy (..))
@@ -61,28 +64,29 @@ getChannels ::
   ChannelCon e m subs =>
   subs (Resolver SUBSCRIPTION e m) ->
   Selection VALID ->
-  Eventless (Channel e)
+  ResolverState (Channel e)
 getChannels value sel =
   selectBy sel $
     exploreChannels (CustomProxy :: CustomProxy (CUSTOM (subs (Resolver SUBSCRIPTION e m))) e) value
 
 selectBy ::
+  Failure InternalError m =>
   Selection VALID ->
   [ ( FieldName,
-      Selection VALID -> Eventless (Channel e)
+      Selection VALID -> m (Channel e)
     )
   ] ->
-  Eventless (Channel e)
+  m (Channel e)
 selectBy Selection {selectionContent = SelectionSet selSet} ch =
   case elems selSet of
     [sel@Selection {selectionName}] -> case lookup selectionName ch of
-      Nothing -> "invalid subscription: no channel is selected." :: InternalError
+      Nothing -> failure ("invalid subscription: no channel is selected." :: InternalError)
       Just f -> f sel
-    _ -> "invalid subscription: there can be only one top level selection" :: InternalError
-selectBy _ _ = "invalid subscription: expected selectionSet" :: InternalError
+    _ -> failure ("invalid subscription: there can be only one top level selection" :: InternalError)
+selectBy _ _ = failure ("invalid subscription: expected selectionSet" :: InternalError)
 
 class GetChannel e a | a -> e where
-  getChannel :: a -> Selection VALID -> Eventless (Channel e)
+  getChannel :: a -> Selection VALID -> ResolverState (Channel e)
 
 instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel SubscriptionField {channel} = const (pure channel)
@@ -96,7 +100,7 @@ instance
 
 ------------------------------------------------------
 class ExploreChannels (custom :: Bool) a e where
-  exploreChannels :: CustomProxy custom e -> a -> [(FieldName, Selection VALID -> Eventless (Channel e))]
+  exploreChannels :: CustomProxy custom e -> a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
 
 instance
   ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
@@ -108,7 +112,7 @@ instance
 
 ------------------------------------------------------
 class TypeRep e f where
-  typeRep :: Proxy e -> f a -> [(FieldName, Selection VALID -> Eventless (Channel e))]
+  typeRep :: Proxy e -> f a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
 
 instance TypeRep e f => TypeRep e (M1 D d f) where
   typeRep c (M1 src) = typeRep c src
@@ -118,7 +122,7 @@ instance FieldRep e f => TypeRep e (M1 C c f) where
 
 --- FIELDS
 class FieldRep e f where
-  fieldRep :: Proxy e -> f a -> [(FieldName, Selection VALID -> Eventless (Channel e))]
+  fieldRep :: Proxy e -> f a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
 
 instance (FieldRep e f, FieldRep e g) => FieldRep e (f :*: g) where
   fieldRep e (a :*: b) = fieldRep e a <> fieldRep e b

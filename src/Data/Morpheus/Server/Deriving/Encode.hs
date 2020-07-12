@@ -76,6 +76,7 @@ import Data.Morpheus.Types.Internal.Resolving
     SubscriptionField (..),
     failure,
     getArguments,
+    liftResolverState,
     liftStateless,
   )
 import Data.Proxy (Proxy (..))
@@ -130,7 +131,7 @@ instance
   where
   encode f =
     getArguments
-      >>= liftStateless . decodeArguments
+      >>= liftResolverState . decodeArguments
       >>= encode . f
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY

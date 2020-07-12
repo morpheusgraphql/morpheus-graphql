@@ -38,6 +38,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     withArguments,
     getArguments,
     SubscriptionField (..),
+    liftResolverState,
   )
 where
 
@@ -109,9 +110,14 @@ import Data.Morpheus.Types.Internal.Resolving.Event
   )
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
   ( Context (..),
+    ResolverState,
     ResolverStateT (..),
     clearStateResolverEvents,
     resolverFailureMessage,
+    runResolverState,
+    runResolverStateM,
+    runResolverStateT,
+    toResolverStateT,
   )
 import Data.Semigroup
   ( Semigroup (..),
@@ -236,10 +242,13 @@ liftStateless ::
   Resolver o e m a
 liftStateless =
   packResolver
-    . ResolverState
+    . ResolverStateT
     . ReaderT
     . const
     . statelessToResultT
+
+liftResolverState :: (LiftOperation o, Monad m) => ResolverState a -> Resolver o e m a
+liftResolverState = packResolver . toResolverStateT
 
 class LiftOperation (o :: OperationType) where
   packResolver :: Monad m => ResolverStateT e m a -> Resolver o e m a
@@ -358,14 +367,14 @@ runDataResolver res = asks currentSelection >>= __encode res
 
 runResolver ::
   Monad m =>
-  Maybe (Selection VALID -> Eventless (Channel event)) ->
+  Maybe (Selection VALID -> ResolverState (Channel event)) ->
   Resolver o event m ValidValue ->
   Context ->
   ResponseStream event m ValidValue
-runResolver _ (ResolverQ resT) sel = cleanEvents $ runReaderT (runResolverState resT) sel
-runResolver _ (ResolverM resT) sel = mapEvent Publish $ runReaderT (runResolverState resT) sel
+runResolver _ (ResolverQ resT) sel = cleanEvents $ runResolverStateT resT sel
+runResolver _ (ResolverM resT) sel = mapEvent Publish $ runResolverStateT resT sel
 runResolver toChannel (ResolverS resT) ctx = ResultT $ do
-  readResValue <- runResultT $ runReaderT (runResolverState resT) ctx
+  readResValue <- runResolverStateM resT ctx
   pure $ case readResValue >>= subscriptionEvents ctx toChannel . toEventResolver ctx of
     Failure x -> Failure x
     Success {warnings, result} ->
@@ -376,18 +385,19 @@ runResolver toChannel (ResolverS resT) ctx = ResultT $ do
         }
 
 toEventResolver :: Monad m => Context -> SubEventRes event m ValidValue -> (event -> m GQLResponse)
-toEventResolver sel (ReaderT subRes) event =
-  renderResponse
-    <$> runResultT (runReaderT (runResolverState $ subRes event) sel)
+toEventResolver sel (ReaderT subRes) event = renderResponse <$> runResolverStateM (subRes event) sel
 
 subscriptionEvents ::
   Context ->
-  Maybe (Selection VALID -> Eventless (Channel e)) ->
+  Maybe (Selection VALID -> ResolverState (Channel e)) ->
   (e -> m GQLResponse) ->
   Eventless (ResponseEvent e m)
-subscriptionEvents Context {currentSelection} (Just channelGenerator) res = do
-  channel <- channelGenerator currentSelection
-  pure $ Subscribe (Event [channel] res)
+subscriptionEvents ctx@Context {currentSelection} (Just channelGenerator) res =
+  runResolverState handle ctx
+  where
+    handle = do
+      channel <- channelGenerator currentSelection
+      pure $ Subscribe (Event [channel] res)
 subscriptionEvents Context {currentSelection} Nothing _ =
   failure [resolverFailureMessage currentSelection "channel Resolver is not defined"]
 
@@ -425,12 +435,12 @@ data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),
     mutation :: Eventless (ResModel MUTATION e m),
     subscription :: Eventless (ResModel SUBSCRIPTION e m),
-    channelMap :: Maybe (Selection VALID -> Eventless (Channel e))
+    channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
-  Maybe (Selection VALID -> Eventless (Channel e)) ->
+  Maybe (Selection VALID -> ResolverState (Channel e)) ->
   Eventless (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)
