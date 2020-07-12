@@ -137,8 +137,8 @@ renderSelectionSet = renderObject . elems
 
 instance RenderGQL (SelectionContent VALID) where
   render SelectionField = ""
-  -- TODO: render unionTags
   render (SelectionSet selSet) = renderSelectionSet selSet
+  render (UnionSelection unionSets) = renderObject (elems unionSets)
 
 instance
   Merge (SelectionSet s) =>
@@ -167,6 +167,13 @@ data UnionTag = UnionTag
     unionTagSelection :: SelectionSet VALID
   }
   deriving (Show, Eq, Lift)
+
+instance RenderGQL UnionTag where
+  render UnionTag {unionTagName, unionTagSelection} =
+    "... on "
+      <> render unionTagName
+      <> space
+      <> renderSelectionSet unionTagSelection
 
 mergeConflict :: [Ref] -> GQLError -> GQLErrors
 mergeConflict [] err = [err]
