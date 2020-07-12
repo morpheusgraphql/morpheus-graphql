@@ -44,7 +44,7 @@ where
 
 -- MORPHEUS
 
-import Data.Foldable (Foldable, null)
+import Data.Foldable (Foldable)
 import Data.Functor ((<$>), Functor (..))
 import Data.List (find)
 import Data.Maybe (Maybe (..))
@@ -61,6 +61,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    renderArguments,
+    renderEntry,
     renderObject,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -98,7 +100,6 @@ import Data.Morpheus.Types.Internal.AST.Value
     Value (..),
   )
 import Data.Semigroup (Semigroup ((<>)))
-import Data.Text (intercalate)
 import Data.Traversable (Traversable)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
@@ -110,7 +111,6 @@ import Prelude
     Show,
     filter,
     notElem,
-    otherwise,
   )
 
 -- scalar
@@ -124,6 +124,10 @@ data Argument (valid :: Stage) = Argument
 
 instance KeyOf (Argument stage) where
   keyOf = argumentName
+
+instance RenderGQL (Argument s) where
+  render Argument {argumentName, argumentValue} =
+    renderEntry argumentName argumentValue
 
 instance NameCollision (Argument s) where
   nameCollision _ Argument {argumentName, argumentPosition} =
@@ -279,8 +283,8 @@ instance NameCollision (FieldDefinition cat s) where
 instance RenderGQL (FieldDefinition cat s) where
   render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = Just (FieldArgs args)} =
     name <> render args <> ": " <> render fieldType
-  render FieldDefinition {fieldName = FieldName name, fieldType} =
-    name <> ": " <> render fieldType
+  render FieldDefinition {fieldName, fieldType} =
+    renderEntry fieldName fieldType
 
 instance RenderGQL (FieldsDefinition cat s) where
   render = renderObject . filter fieldVisibility . elems
@@ -345,10 +349,7 @@ data ArgumentsDefinition s = ArgumentsDefinition
   deriving (Show, Lift)
 
 instance RenderGQL (ArgumentsDefinition s) where
-  render ArgumentsDefinition {arguments}
-    | null arguments =
-      ""
-    | otherwise = "(" <> intercalate ", " (render <$> elems arguments) <> ")"
+  render ArgumentsDefinition {arguments} = renderArguments (elems arguments)
 
 type ArgumentDefinition = FieldDefinition IN
 

@@ -170,7 +170,7 @@ renderContext
     "on type "
       <> msg currentTypeName
       <> " with selection:"
-      <> msg (show currentSelection)
+      <> msg (render currentSelection)
       <> ".\n\n"
       <> "Query:\n"
       <> msg (show operation)

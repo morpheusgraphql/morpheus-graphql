@@ -45,6 +45,12 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
     Merge (..),
+    elems,
+  )
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+    renderArguments,
+    renderObject,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
@@ -124,6 +130,13 @@ data SelectionContent (s :: Stage) where
   SelectionSet :: SelectionSet s -> SelectionContent s
   UnionSelection :: UnionSelection VALID -> SelectionContent VALID
 
+instance RenderGQL (SelectionContent VALID) where
+  render SelectionField = ""
+  render (SelectionSet selSet) =
+    renderObject (elems selSet)
+
+-- TODO: render unionTags
+
 instance
   Merge (SelectionSet s) =>
   Merge (SelectionContent s)
@@ -194,6 +207,15 @@ data Selection (s :: Stage) where
     Selection s
   InlineFragment :: Fragment -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
+
+instance RenderGQL (Selection VALID) where
+  render
+    Selection
+      { ..
+      } =
+      render (fromMaybe selectionName selectionAlias)
+        <> renderArguments (elems selectionArguments)
+        <> render selectionContent
 
 instance KeyOf (Selection s) where
   keyOf
