@@ -1,10 +1,10 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Internal
   ( typeMismatch,
     internalError,
-    internalResolvingError,
   )
 where
 
@@ -20,19 +20,15 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( Value,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-    Failure (..),
+  ( Failure (..),
   )
 import Data.Semigroup ((<>))
-import Prelude (($), (.))
+import Prelude (($))
 
 -- GQL:: if no mutation defined -> "Schema is not configured for mutations."
 -- all kind internal error in development
-internalError :: Message -> Eventless a
+internalError :: Failure GQLErrors m => Message -> m a
 internalError x = failure $ globalErrorMessage $ "INTERNAL ERROR: " <> x
-
-internalResolvingError :: Message -> GQLErrors
-internalResolvingError = globalErrorMessage . ("INTERNAL ERROR:" <>)
 
 -- if value is already validated but value has different type
 typeMismatch :: Message -> Value s -> InternalError

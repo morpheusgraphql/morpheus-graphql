@@ -54,7 +54,7 @@ import Control.Monad.Trans.Reader
   )
 import Data.Functor ((<$>), Functor (..))
 import Data.Maybe (Maybe (..), maybe)
-import Data.Morpheus.Error.Internal (internalResolvingError)
+import Data.Morpheus.Error.Internal (internalError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
   ( Merge (..),
@@ -71,6 +71,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     GQLErrors,
     GQLValue (..),
+    InternalError,
     MUTATION,
     Message,
     ObjectEntry (..),
@@ -328,8 +329,7 @@ resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
     resolver currentSelection =
       local (\ctx -> ctx {currentSelection, currentTypeName = __typename}) $
         ObjectEntry (keyOf currentSelection) <$> lookupRes currentSelection drv
-resolveObject _ _ =
-  failure $ internalResolvingError "expected object as resolver"
+resolveObject _ _ = packResolver $ failure ("expected object as resolver" :: InternalError)
 
 runDataResolver :: (Monad m, LiftOperation o) => ResModel o e m -> Resolver o e m ValidValue
 runDataResolver res = asks currentSelection >>= __encode res
@@ -428,8 +428,7 @@ data ResModel (o :: OperationType) e (m :: * -> *)
 instance Merge (ResModel o e m) where
   merge p (ResObject x) (ResObject y) =
     ResObject <$> merge p x y
-  merge _ _ _ =
-    failure $ internalResolvingError "can't merge: incompatible resolvers"
+  merge _ _ _ = internalError "can't merge: incompatible resolvers"
 
 data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),
