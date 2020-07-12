@@ -4,7 +4,11 @@
 
 ### new features
 
-- for better debuging, internal errors messages will display resolving state.
+- for better debuging, internal errors messages will display resolving state:
+  - `current TypeName`
+  - `current Selection`
+  - `OperationDefinition`
+  - `SchemaDefinition`
 - rendering graphql "AST". e.g `render ( slection :: Selection VALID)` will render
 
 ```graphql
