@@ -73,12 +73,11 @@ withInputUnion ::
   ValidObject ->
   m a
 withInputUnion decoder unions =
-  entryValue
-    <$> selectBy
-      ("__typename not found on Input Union" :: InternalError)
-      "__typename"
-      unions
-    >>= providesValueFor
+  selectBy
+    ("__typename not found on Input Union" :: InternalError)
+    "__typename"
+    unions
+    >>= providesValueFor . entryValue
   where
     providesValueFor (Enum key) = selectOr notfound onFound (toFieldName key) unions
       where
