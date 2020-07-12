@@ -4,7 +4,7 @@
 
 ### new features
 
-- for better debuging. internal errors messages will include resolving state.
+- for better debuging, internal errors messages will display resolving state.
 - rendering graphql "AST". e.g `render ( slection :: Selection VALID)` will render
 
 ```graphql
