@@ -170,18 +170,16 @@ renderContext
       operation,
       currentTypeName
     } =
-    "on type "
-      <> msg currentTypeName
-      <> "\n\n\n\n"
-      <> renderSection "Selection" currentSelection
-      <> renderSection "Query" operation
-      <> renderSection "Schema" schema
+    renderSection "Current Type" currentTypeName
+      <> renderSection "Current Selection" currentSelection
+      <> renderSection "OperationDefinition" operation
+      <> renderSection "SchemaDefinition" schema
 
 renderSection :: RenderGQL a => Message -> a -> Message
 renderSection label content =
-  "\n\n" <> label <> ":" <> line
+  "\n\n" <> label <> ":\n" <> line
     <> "\n\n"
     <> msg (render content)
     <> "\n\n"
   where
-    line = stimes (20 :: Int) "-"
+    line = stimes (50 :: Int) "-"
