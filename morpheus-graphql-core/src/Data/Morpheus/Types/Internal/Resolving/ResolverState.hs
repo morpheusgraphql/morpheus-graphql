@@ -45,6 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     GQLErrors,
     InternalError,
     Message,
+    Msg,
     Operation,
     Schema,
     Selection (..),
@@ -169,10 +170,16 @@ renderContext
     } =
     "on type "
       <> msg currentTypeName
-      <> " with selection:"
-      <> msg (render currentSelection)
-      <> ".\n\n"
-      <> "Query:\n"
-      <> msg (show operation)
-      <> ".\n\n schema:\n  "
-      <> msg (render schema)
+      <> "\n\n\n\n"
+      <> renderSection "Selection" (render currentSelection)
+      <> renderSection "Query" (show operation)
+      <> renderSection "Schema" (render schema)
+
+renderSection :: Msg a => Message -> a -> Message
+renderSection label content =
+  "\n\n" <> label <> ":" <> line
+    <> "\n\n"
+    <> msg content
+    <> "\n\n"
+  where
+    line = stimes 20 "-"
