@@ -111,7 +111,7 @@ join = __join empty
 toOrdMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet opt a -> OrdMap FieldName a
 toOrdMap = OM.unsafeFromValues . unpack
 
-instance (KeyOf a, k ~ KEY a) => Selectable (MergeSet opt a) a where
+instance (KeyOf a, k ~ KEY a) => Selectable a (MergeSet opt a) where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
 
 -- must merge files on collision

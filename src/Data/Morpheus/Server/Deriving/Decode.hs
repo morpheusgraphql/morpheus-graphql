@@ -20,10 +20,6 @@ module Data.Morpheus.Server.Deriving.Decode
 where
 
 -- MORPHEUS
-import Data.Morpheus.Error
-  ( internalError,
-    internalTypeMismatch,
-  )
 import Data.Morpheus.Internal.Utils
   ( elems,
   )
@@ -41,19 +37,20 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
+    withInputObject,
+    withInputUnion,
     withList,
     withMaybe,
-    withObject,
-    withUnion,
+    withScalar,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __typeName))
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
-    toScalar,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
+    InternalError,
     ObjectEntry (..),
     TypeName (..),
     VALID,
@@ -63,22 +60,22 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Failure (..),
+  ( Failure (..),
+    ResolverState,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
 import GHC.Generics
 
 -- GENERIC
-decodeArguments :: DecodeType a => Arguments VALID -> Eventless a
+decodeArguments :: DecodeType a => Arguments VALID -> ResolverState a
 decodeArguments = decodeType . Object . fmap toEntry
   where
     toEntry (Argument name value _) = ObjectEntry name value
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
-  decode :: ValidValue -> Eventless a
+  decode :: ValidValue -> ResolverState a
 
 instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
@@ -91,16 +88,11 @@ instance Decode a => Decode [a] where
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
-  decodeKind :: Proxy kind -> ValidValue -> Eventless a
+  decodeKind :: Proxy kind -> ValidValue -> ResolverState a
 
 -- SCALAR
 instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ value = case toScalar value >>= parseValue of
-    Right scalar -> pure scalar
-    Left message ->
-      internalTypeMismatch
-        ("SCALAR<" <> msg (__typeName (Proxy @a)) <> ">" <> msg message)
-        value
+  decodeKind _ = withScalar (__typeName (Proxy @a)) parseValue
 
 -- ENUM
 instance DecodeType a => DecodeKind ENUM a where
@@ -115,7 +107,7 @@ instance DecodeType a => DecodeKind INPUT a where
   decodeKind _ = decodeType
 
 class DecodeType a where
-  decodeType :: ValidValue -> Eventless a
+  decodeType :: ValidValue -> ResolverState a
 
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeType a where
   decodeType = fmap to . decodeRep . (,Cont D_CONS "")
@@ -128,11 +120,11 @@ instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeType a whe
 --     deriving (Generic, GQLType)
 
 decideUnion ::
-  ([TypeName], value -> Eventless (f1 a)) ->
-  ([TypeName], value -> Eventless (f2 a)) ->
+  ([TypeName], value -> ResolverState (f1 a)) ->
+  ([TypeName], value -> ResolverState (f2 a)) ->
   TypeName ->
   value ->
-  Eventless ((:+:) f1 f2 a)
+  ResolverState ((:+:) f1 f2 a)
 decideUnion (left, f1) (right, f2) name value
   | name `elem` left =
     L1 <$> f1 value
@@ -166,7 +158,7 @@ instance Semigroup Info where
 --
 class DecodeRep f where
   tags :: Proxy f -> TypeName -> Info
-  decodeRep :: (ValidValue, Cont) -> Eventless (f a)
+  decodeRep :: (ValidValue, Cont) -> ResolverState (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
@@ -175,16 +167,16 @@ instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
       <$> decodeRep
         (x, y {typeName = datatypeNameProxy (Proxy @d)})
 
-getEnumTag :: ValidObject -> Eventless TypeName
+getEnumTag :: ValidObject -> ResolverState TypeName
 getEnumTag x = case elems x of
   [ObjectEntry "enum" (Enum value)] -> pure value
-  _ -> internalError "bad union enum object"
+  _ -> failure ("bad union enum object" :: InternalError)
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
     where
-      __decode (Object obj, cont) = withUnion handleUnion obj
+      __decode (Object obj, cont) = withInputUnion handleUnion obj
         where
           handleUnion name unions object
             | name == typeName cont <> "EnumObject" =
@@ -206,7 +198,7 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
           (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
           name
           (Enum name, cxt)
-      __decode _ = internalError "lists and scalars are not allowed in Union"
+      __decode _ = failure ("lists and scalars are not allowed in Union" :: InternalError)
 
 instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
   decodeRep = fmap M1 . decodeFields
@@ -223,7 +215,7 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
 
 class DecodeFields f where
   refType :: Proxy f -> Maybe TypeName
-  decodeFields :: (ValidValue, Cont) -> Eventless (f a)
+  decodeFields :: (ValidValue, Cont) -> ResolverState (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing
@@ -237,7 +229,7 @@ instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) whe
     where
       __decode = fmap (M1 . K1) . decodeRec
       fieldName = selNameProxy (Proxy @s)
-      decodeRec = withObject (decodeFieldWith decode fieldName)
+      decodeRec = withInputObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where
   refType _ = Nothing

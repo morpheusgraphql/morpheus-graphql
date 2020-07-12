@@ -7,10 +7,18 @@ module Data.Morpheus.Rendering.RenderGQL
     renderObject,
     renderMembers,
     newline,
+    renderArguments,
+    renderEntry,
+    space,
+    Rendering,
   )
 where
 
 -- MORPHEUS
+
+import Data.Foldable (null)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe, maybe)
 import Data.Semigroup ((<>))
 import Data.Text
   ( Text,
@@ -23,6 +31,7 @@ import Prelude
     Float,
     Int,
     fmap,
+    otherwise,
     show,
   )
 
@@ -30,6 +39,12 @@ type Rendering = Text
 
 class RenderGQL a where
   render :: a -> Rendering
+
+instance
+  RenderGQL a =>
+  RenderGQL (Maybe a)
+  where
+  render = maybe "" render
 
 instance RenderGQL Int where
   render = pack . show
@@ -64,3 +79,15 @@ renderObject fields = " {" <> renderAtNewLine fields <> "\n}"
 
 renderMembers :: (RenderGQL a) => [a] -> Rendering
 renderMembers members = intercalate (space <> "|" <> space) (fmap render members)
+
+renderArguments :: (RenderGQL a) => [a] -> Rendering
+renderArguments arguments
+  | null arguments = ""
+  | otherwise = "(" <> intercalate ", " (render <$> arguments) <> ")"
+
+renderEntry ::
+  (RenderGQL name, RenderGQL value) =>
+  name ->
+  value ->
+  Rendering
+renderEntry name value = render name <> ": " <> render value

@@ -25,7 +25,7 @@ import Data.Morpheus.Server.Deriving.Decode
   )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
-    withObject,
+    withInputObject,
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Types.Internal.AST
@@ -35,12 +35,12 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
+  ( ResolverState,
   )
 import Language.Haskell.TH
 
-decodeFieldValue :: Decode a => ValidValue -> FieldName -> Eventless a
-decodeFieldValue value selectorName = withObject (decodeFieldWith decode selectorName) value
+decodeFieldValue :: Decode a => ValidValue -> FieldName -> ResolverState a
+decodeFieldValue value selectorName = withInputObject (decodeFieldWith decode selectorName) value
 
 mkTypeClass :: TypeName -> Q Type
 mkTypeClass tName = applyCons ''DecodeType [tName]

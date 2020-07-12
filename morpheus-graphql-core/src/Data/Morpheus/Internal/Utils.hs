@@ -123,19 +123,19 @@ instance (Hashable k, KeyOf v, k ~ KEY v) => Collection v (HashMap k v) where
   empty = HM.empty
   singleton x = HM.singleton (keyOf x) x
 
-class Selectable c a | c -> a where
+class Selectable a c | c -> a where
   selectOr :: d -> (a -> d) -> KEY a -> c -> d
 
-instance KeyOf a => Selectable [a] a where
+instance KeyOf a => Selectable a [a] where
   selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
 
-instance (KEY a ~ k, Eq k, Hashable k) => Selectable (HashMap k a) a where
+instance (KEY a ~ k, Eq k, Hashable k) => Selectable a (HashMap k a) where
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
-selectBy :: (Failure e m, Selectable c a, Monad m) => e -> KEY a -> c -> m a
+selectBy :: (Failure e m, Selectable a c, Monad m) => e -> KEY a -> c -> m a
 selectBy err = selectOr (failure err) pure
 
-member :: forall a c. Selectable c a => KEY a -> c -> Bool
+member :: forall a c. Selectable a c => KEY a -> c -> Bool
 member = selectOr False toTrue
   where
     toTrue :: a -> Bool

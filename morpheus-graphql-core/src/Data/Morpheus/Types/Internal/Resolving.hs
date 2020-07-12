@@ -42,6 +42,8 @@ module Data.Morpheus.Types.Internal.Resolving
     SubscriptionField (..),
     getArguments,
     Channel (..),
+    ResolverState,
+    liftResolverState,
   )
 where
 
@@ -54,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Event
 import Data.Morpheus.Types.Internal.Resolving.Resolver
+import Data.Morpheus.Types.Internal.Resolving.ResolverState
 import Prelude
   ( (.),
     Bool,

@@ -44,7 +44,7 @@ where
 
 -- MORPHEUS
 
-import Data.Foldable (Foldable, null)
+import Data.Foldable (Foldable)
 import Data.Functor ((<$>), Functor (..))
 import Data.List (find)
 import Data.Maybe (Maybe (..))
@@ -61,6 +61,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    renderArguments,
+    renderEntry,
     renderObject,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -98,7 +100,6 @@ import Data.Morpheus.Types.Internal.AST.Value
     Value (..),
   )
 import Data.Semigroup (Semigroup ((<>)))
-import Data.Text (intercalate)
 import Data.Traversable (Traversable)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
@@ -110,7 +111,6 @@ import Prelude
     Show,
     filter,
     notElem,
-    otherwise,
   )
 
 -- scalar
@@ -124,6 +124,10 @@ data Argument (valid :: Stage) = Argument
 
 instance KeyOf (Argument stage) where
   keyOf = argumentName
+
+instance RenderGQL (Argument s) where
+  render Argument {argumentName, argumentValue} =
+    renderEntry argumentName argumentValue
 
 instance NameCollision (Argument s) where
   nameCollision _ Argument {argumentName, argumentPosition} =
@@ -161,7 +165,7 @@ type DirectiveDefinitions s = [DirectiveDefinition s]
 instance KeyOf (DirectiveDefinition s) where
   keyOf = directiveDefinitionName
 
-instance Selectable (DirectiveDefinition s) (ArgumentDefinition s) where
+instance Selectable (ArgumentDefinition s) (DirectiveDefinition s) where
   selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
     selectOr fb f key directiveDefinitionArgs
 
@@ -202,7 +206,7 @@ deriving instance (KEY def ~ FieldName, KeyOf def) => Collection def (Fields def
 instance Merge (FieldsDefinition cat s) where
   merge path (Fields x) (Fields y) = Fields <$> merge path x y
 
-instance Selectable (Fields (FieldDefinition cat s)) (FieldDefinition cat s) where
+instance Selectable (FieldDefinition cat s) (Fields (FieldDefinition cat s)) where
   selectOr fb f name (Fields lib) = selectOr fb f name lib
 
 unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
@@ -265,7 +269,7 @@ deriving instance Lift (FieldContent bool cat s)
 instance KeyOf (FieldDefinition cat s) where
   keyOf = fieldName
 
-instance Selectable (FieldDefinition OUT s) (ArgumentDefinition s) where
+instance Selectable (ArgumentDefinition s) (FieldDefinition OUT s) where
   selectOr fb f key FieldDefinition {fieldContent = Just (FieldArgs args)} = selectOr fb f key args
   selectOr fb _ _ _ = fb
 
@@ -279,8 +283,8 @@ instance NameCollision (FieldDefinition cat s) where
 instance RenderGQL (FieldDefinition cat s) where
   render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = Just (FieldArgs args)} =
     name <> render args <> ": " <> render fieldType
-  render FieldDefinition {fieldName = FieldName name, fieldType} =
-    name <> ": " <> render fieldType
+  render FieldDefinition {fieldName, fieldType} =
+    renderEntry fieldName fieldType
 
 instance RenderGQL (FieldsDefinition cat s) where
   render = renderObject . filter fieldVisibility . elems
@@ -345,14 +349,11 @@ data ArgumentsDefinition s = ArgumentsDefinition
   deriving (Show, Lift)
 
 instance RenderGQL (ArgumentsDefinition s) where
-  render ArgumentsDefinition {arguments}
-    | null arguments =
-      ""
-    | otherwise = "(" <> intercalate ", " (render <$> elems arguments) <> ")"
+  render ArgumentsDefinition {arguments} = renderArguments (elems arguments)
 
 type ArgumentDefinition = FieldDefinition IN
 
-instance Selectable (ArgumentsDefinition s) (ArgumentDefinition s) where
+instance Selectable (ArgumentDefinition s) (ArgumentsDefinition s) where
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
 instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where

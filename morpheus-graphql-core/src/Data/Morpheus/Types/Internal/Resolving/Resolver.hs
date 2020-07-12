@@ -38,6 +38,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     withArguments,
     getArguments,
     SubscriptionField (..),
+    liftResolverState,
   )
 where
 
@@ -53,7 +54,7 @@ import Control.Monad.Trans.Reader
   )
 import Data.Functor ((<$>), Functor (..))
 import Data.Maybe (Maybe (..), maybe)
-import Data.Morpheus.Error.Internal (internalResolvingError)
+import Data.Morpheus.Error.Internal (internalError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
   ( Merge (..),
@@ -68,9 +69,9 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldName,
-    GQLError (..),
     GQLErrors,
     GQLValue (..),
+    InternalError,
     MUTATION,
     Message,
     ObjectEntry (..),
@@ -80,7 +81,6 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
-    Schema,
     Selection (..),
     SelectionContent (..),
     SelectionSet,
@@ -108,6 +108,17 @@ import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Event
   ( Channel (..),
     Event (..),
+  )
+import Data.Morpheus.Types.Internal.Resolving.ResolverState
+  ( Context (..),
+    ResolverState,
+    ResolverStateT (..),
+    clearStateResolverEvents,
+    resolverFailureMessage,
+    runResolverState,
+    runResolverStateM,
+    runResolverStateT,
+    toResolverStateT,
   )
 import Data.Semigroup
   ( Semigroup (..),
@@ -140,70 +151,16 @@ data SubscriptionField (a :: *) where
     } ->
     SubscriptionField a
 
--- | A datatype to expose 'Schema' and the query's AST information ('Selection', 'Operation').
-data Context = Context
-  { currentSelection :: Selection VALID,
-    schema :: Schema VALID,
-    operation :: Operation VALID,
-    currentTypeName :: TypeName
-  }
-  deriving (Show)
-
--- Resolver Internal State
-newtype ResolverState event m a = ResolverState
-  { runResolverState :: ReaderT Context (ResultT event m) a
-  }
-  deriving
-    ( Functor,
-      Applicative,
-      Monad,
-      MonadReader Context
-    )
-
-instance MonadTrans (ResolverState e) where
-  lift = ResolverState . lift . lift
-
-instance (Monad m) => Failure Message (ResolverState e m) where
-  failure message = ResolverState $ do
-    selection <- asks currentSelection
-    lift $ failure [resolverFailureMessage selection message]
-
-instance (Monad m) => Failure GQLErrors (ResolverState e m) where
-  failure = ResolverState . lift . failure
-
-instance (Monad m) => PushEvents e (ResolverState e m) where
-  pushEvents = ResolverState . lift . pushEvents
-
-mapResolverState ::
-  ( ResultT e m a ->
-    ResultT e' m' a'
-  ) ->
-  ResolverState e m a ->
-  ResolverState e' m' a'
-mapResolverState f (ResolverState x) = ResolverState (mapReaderT f x)
-
--- clear evets and starts new resolver with diferenct type of events but with same value
--- use properly. only if you know what you are doing
-clearStateResolverEvents :: (Functor m) => ResolverState e m a -> ResolverState e' m a
-clearStateResolverEvents = mapResolverState cleanEvents
-
-resolverFailureMessage :: Selection VALID -> Message -> GQLError
-resolverFailureMessage Selection {selectionName, selectionPosition} message =
-  GQLError
-    { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
-      locations = [selectionPosition]
-    }
-
 --
 -- GraphQL Field Resolver
 --
 ---------------------------------------------------------------
 data Resolver (o :: OperationType) event (m :: * -> *) value where
-  ResolverQ :: {runResolverQ :: ResolverState () m value} -> Resolver QUERY event m value
-  ResolverM :: {runResolverM :: ResolverState event m value} -> Resolver MUTATION event m value
-  ResolverS :: {runResolverS :: ResolverState () m (SubEventRes event m value)} -> Resolver SUBSCRIPTION event m value
+  ResolverQ :: {runResolverQ :: ResolverStateT () m value} -> Resolver QUERY event m value
+  ResolverM :: {runResolverM :: ResolverStateT event m value} -> Resolver MUTATION event m value
+  ResolverS :: {runResolverS :: ResolverStateT () m (SubEventRes event m value)} -> Resolver SUBSCRIPTION event m value
 
-type SubEventRes event m value = ReaderT event (ResolverState () m) value
+type SubEventRes event m value = ReaderT event (ResolverStateT () m) value
 
 instance Show (Resolver o e m value) where
   show ResolverQ {} = "Resolver QUERY e m a"
@@ -224,16 +181,21 @@ instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   return = pure
   (ResolverQ x) >>= m2 = ResolverQ (x >>= runResolverQ . m2)
   (ResolverM x) >>= m2 = ResolverM (x >>= runResolverM . m2)
-  (ResolverS res) >>= m2 = ResolverS $ do
-    (readResA :: ReaderT e (ResolverState () m) a) <- res
-    pure $ ReaderT $ \e -> do
-      (a :: a) <- runReaderT readResA e
-      (readResB :: ReaderT e (ResolverState () m) b) <- runResolverS (m2 a)
-      runReaderT readResB e
+  (ResolverS res) >>= m2 = ResolverS (liftSubResolver m2 <$> res)
 
 #if __GLASGOW_HASKELL__ < 808
   fail = failure . msg
 # endif
+
+liftSubResolver ::
+  (Monad m) =>
+  (t -> Resolver SUBSCRIPTION r m a) ->
+  ReaderT r (ResolverStateT () m) t ->
+  ReaderT r (ResolverStateT () m) a
+liftSubResolver m2 readResA = ReaderT $ \e -> do
+  a <- runReaderT readResA e
+  readResB <- runResolverS (m2 a)
+  runReaderT readResB e
 
 -- MonadIO
 instance (MonadIO m, LiftOperation o) => MonadIO (Resolver o e m) where
@@ -281,13 +243,16 @@ liftStateless ::
   Resolver o e m a
 liftStateless =
   packResolver
-    . ResolverState
+    . ResolverStateT
     . ReaderT
     . const
     . statelessToResultT
 
+liftResolverState :: (LiftOperation o, Monad m) => ResolverState a -> Resolver o e m a
+liftResolverState = packResolver . toResolverStateT
+
 class LiftOperation (o :: OperationType) where
-  packResolver :: Monad m => ResolverState e m a -> Resolver o e m a
+  packResolver :: Monad m => ResolverStateT e m a -> Resolver o e m a
 
 instance LiftOperation QUERY where
   packResolver = ResolverQ . clearStateResolverEvents
@@ -309,7 +274,7 @@ subscribe ch res =
     $ ResolverS
     $ fromSub <$> runResolverQ res
   where
-    fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverState () m) a
+    fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
     fromSub f = join (ReaderT $ \e -> runResolverS (f e))
 
 withArguments ::
@@ -364,8 +329,7 @@ resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
     resolver currentSelection =
       local (\ctx -> ctx {currentSelection, currentTypeName = __typename}) $
         ObjectEntry (keyOf currentSelection) <$> lookupRes currentSelection drv
-resolveObject _ _ =
-  failure $ internalResolvingError "expected object as resolver"
+resolveObject _ _ = packResolver $ failure ("expected object as resolver" :: InternalError)
 
 runDataResolver :: (Monad m, LiftOperation o) => ResModel o e m -> Resolver o e m ValidValue
 runDataResolver res = asks currentSelection >>= __encode res
@@ -403,14 +367,14 @@ runDataResolver res = asks currentSelection >>= __encode res
 
 runResolver ::
   Monad m =>
-  Maybe (Selection VALID -> Eventless (Channel event)) ->
+  Maybe (Selection VALID -> ResolverState (Channel event)) ->
   Resolver o event m ValidValue ->
   Context ->
   ResponseStream event m ValidValue
-runResolver _ (ResolverQ resT) sel = cleanEvents $ runReaderT (runResolverState resT) sel
-runResolver _ (ResolverM resT) sel = mapEvent Publish $ runReaderT (runResolverState resT) sel
+runResolver _ (ResolverQ resT) sel = cleanEvents $ runResolverStateT resT sel
+runResolver _ (ResolverM resT) sel = mapEvent Publish $ runResolverStateT resT sel
 runResolver toChannel (ResolverS resT) ctx = ResultT $ do
-  readResValue <- runResultT $ runReaderT (runResolverState resT) ctx
+  readResValue <- runResolverStateM resT ctx
   pure $ case readResValue >>= subscriptionEvents ctx toChannel . toEventResolver ctx of
     Failure x -> Failure x
     Success {warnings, result} ->
@@ -421,18 +385,19 @@ runResolver toChannel (ResolverS resT) ctx = ResultT $ do
         }
 
 toEventResolver :: Monad m => Context -> SubEventRes event m ValidValue -> (event -> m GQLResponse)
-toEventResolver sel (ReaderT subRes) event =
-  renderResponse
-    <$> runResultT (runReaderT (runResolverState $ subRes event) sel)
+toEventResolver sel (ReaderT subRes) event = renderResponse <$> runResolverStateM (subRes event) sel
 
 subscriptionEvents ::
   Context ->
-  Maybe (Selection VALID -> Eventless (Channel e)) ->
+  Maybe (Selection VALID -> ResolverState (Channel e)) ->
   (e -> m GQLResponse) ->
   Eventless (ResponseEvent e m)
-subscriptionEvents Context {currentSelection} (Just channelGenerator) res = do
-  channel <- channelGenerator currentSelection
-  pure $ Subscribe (Event [channel] res)
+subscriptionEvents ctx@Context {currentSelection} (Just channelGenerator) res =
+  runResolverState handle ctx
+  where
+    handle = do
+      channel <- channelGenerator currentSelection
+      pure $ Subscribe (Event [channel] res)
 subscriptionEvents Context {currentSelection} Nothing _ =
   failure [resolverFailureMessage currentSelection "channel Resolver is not defined"]
 
@@ -463,19 +428,18 @@ data ResModel (o :: OperationType) e (m :: * -> *)
 instance Merge (ResModel o e m) where
   merge p (ResObject x) (ResObject y) =
     ResObject <$> merge p x y
-  merge _ _ _ =
-    failure $ internalResolvingError "can't merge: incompatible resolvers"
+  merge _ _ _ = internalError "can't merge: incompatible resolvers"
 
 data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),
     mutation :: Eventless (ResModel MUTATION e m),
     subscription :: Eventless (ResModel SUBSCRIPTION e m),
-    channelMap :: Maybe (Selection VALID -> Eventless (Channel e))
+    channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
-  Maybe (Selection VALID -> Eventless (Channel e)) ->
+  Maybe (Selection VALID -> ResolverState (Channel e)) ->
   Eventless (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)

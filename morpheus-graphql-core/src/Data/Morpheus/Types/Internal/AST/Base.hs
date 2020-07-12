@@ -58,6 +58,8 @@ module Data.Morpheus.Types.Internal.AST.Base
     convertToHaskellName,
     isOutput,
     mkTypeRef,
+    InternalError (..),
+    msgInternal,
   )
 where
 
@@ -68,6 +70,7 @@ import Data.Aeson
     encode,
   )
 import Data.ByteString.Lazy.Char8 (ByteString, unpack)
+import Data.Char (toLower)
 import Data.Hashable (Hashable)
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Semigroup (Semigroup (..))
@@ -95,10 +98,11 @@ import Prelude
     Int,
     Maybe (..),
     Ord (..),
-    Show,
+    Show (..),
     String,
     elem,
     fst,
+    id,
     not,
     notElem,
     otherwise,
@@ -125,10 +129,34 @@ instance Lift Message where
   liftTyped = liftTypedString . readMessage
 #endif
 
+newtype InternalError = InternalError
+  { readInternalError :: Text
+  }
+  deriving
+    (Generic)
+  deriving newtype
+    (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
+
+instance Lift InternalError where
+  lift = liftString . readInternalError
+
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped = liftTypedString . readInternalError
+#endif
+
+msgInternal :: (Msg a) => a -> InternalError
+msgInternal = InternalError . readMessage . msg
+
 class Msg a where
   msg :: a -> Message
   msgSepBy :: Text -> [a] -> Message
   msgSepBy t = Message . intercalate t . fmap (readMessage . msg)
+
+instance Msg Message where
+  msg = id
+
+instance Msg InternalError where
+  msg = Message . ("Internal Error! " <>) . readInternalError
 
 instance Msg String where
   msg = Message . pack
@@ -235,6 +263,9 @@ data OperationType
   | Subscription
   | Mutation
   deriving (Show, Eq, Lift, Generic, Hashable)
+
+instance RenderGQL OperationType where
+  render = pack . fmap toLower . show
 
 instance Msg OperationType where
   msg Query = msg ("query" :: TypeName)

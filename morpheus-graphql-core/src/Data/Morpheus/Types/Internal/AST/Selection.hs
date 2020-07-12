@@ -45,12 +45,21 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
     Merge (..),
+    elems,
+  )
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+    Rendering,
+    renderArguments,
+    renderObject,
+    space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     GQLError (..),
     GQLErrors,
     Message,
+    Msg (..),
     OperationType (..),
     Position,
     Ref (..),
@@ -123,6 +132,14 @@ data SelectionContent (s :: Stage) where
   SelectionSet :: SelectionSet s -> SelectionContent s
   UnionSelection :: UnionSelection VALID -> SelectionContent VALID
 
+renderSelectionSet :: SelectionSet VALID -> Rendering
+renderSelectionSet = renderObject . elems
+
+instance RenderGQL (SelectionContent VALID) where
+  render SelectionField = ""
+  render (SelectionSet selSet) = renderSelectionSet selSet
+  render (UnionSelection unionSets) = renderObject (elems unionSets)
+
 instance
   Merge (SelectionSet s) =>
   Merge (SelectionContent s)
@@ -150,6 +167,13 @@ data UnionTag = UnionTag
     unionTagSelection :: SelectionSet VALID
   }
   deriving (Show, Eq, Lift)
+
+instance RenderGQL UnionTag where
+  render UnionTag {unionTagName, unionTagSelection} =
+    "... on "
+      <> render unionTagName
+      <> space
+      <> renderSelectionSet unionTagSelection
 
 mergeConflict :: [Ref] -> GQLError -> GQLErrors
 mergeConflict [] err = [err]
@@ -193,6 +217,15 @@ data Selection (s :: Stage) where
     Selection s
   InlineFragment :: Fragment -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
+
+instance RenderGQL (Selection VALID) where
+  render
+    Selection
+      { ..
+      } =
+      render (fromMaybe selectionName selectionAlias)
+        <> renderArguments (elems selectionArguments)
+        <> render selectionContent
 
 instance KeyOf (Selection s) where
   keyOf
@@ -288,6 +321,19 @@ data Operation (s :: Stage) = Operation
     operationDirectives :: Directives s
   }
   deriving (Show, Lift)
+
+instance RenderGQL (Operation VALID) where
+  render
+    Operation
+      { operationName,
+        operationType,
+        operationSelection
+      } =
+      render operationType
+        <> space
+        <> render operationName
+        <> space
+        <> renderSelectionSet operationSelection
 
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)
