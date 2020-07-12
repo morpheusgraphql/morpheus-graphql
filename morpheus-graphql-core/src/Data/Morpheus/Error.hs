@@ -7,7 +7,6 @@ module Data.Morpheus.Error
   )
 where
 
-import Data.Morpheus.Error.Internal
 import Data.Morpheus.Error.Utils
 import Data.Morpheus.Error.Warning
   ( deprecatedField,
