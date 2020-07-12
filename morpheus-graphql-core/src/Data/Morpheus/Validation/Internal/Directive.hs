@@ -24,7 +24,7 @@ import Control.Applicative ((*>), pure)
 import Control.Monad ((>>=))
 import Data.Functor ((<$>))
 import Data.List (elem)
-import Data.Morpheus.Error (errorMessage, globalErrorMessage)
+import Data.Morpheus.Error (errorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectBy,
@@ -138,11 +138,15 @@ argumentIf ::
   Bool ->
   Directive s ->
   Validator ctx Bool
-argumentIf target Directive {directiveName, directiveArgs} =
+argumentIf target Directive {directiveName, directiveArgs, directivePosition} =
   selectBy err "if" directiveArgs
     >>= assertArgument target
   where
-    err = globalErrorMessage $ "Directive " <> msg ("@" <> directiveName) <> " argument \"if\" of type \"Boolean!\" is required but not provided."
+    err =
+      errorMessage directivePosition $
+        "Directive "
+          <> msg ("@" <> directiveName)
+          <> " argument \"if\" of type \"Boolean!\" is required but not provided."
 
 assertArgument ::
   Bool ->
