@@ -54,10 +54,9 @@ import Control.Monad.Trans.Reader
   )
 import Data.Functor ((<$>), Functor (..))
 import Data.Maybe (Maybe (..), maybe)
-import Data.Morpheus.Error.Internal (internalError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
-  ( Merge (..),
+  ( SemigroupM (..),
     empty,
     keyOf,
     selectOr,
@@ -412,8 +411,8 @@ data ObjectResModel o e m = ObjectResModel
   }
   deriving (Show)
 
-instance Merge (ObjectResModel o e m) where
-  merge _ (ObjectResModel tyname x) (ObjectResModel _ y) =
+instance Applicative f => SemigroupM f (ObjectResModel o e m) where
+  sjoin _ (ObjectResModel tyname x) (ObjectResModel _ y) =
     pure $ ObjectResModel tyname (x <> y)
 
 data ResModel (o :: OperationType) e (m :: * -> *)
@@ -425,10 +424,10 @@ data ResModel (o :: OperationType) e (m :: * -> *)
   | ResUnion TypeName (Resolver o e m (ResModel o e m))
   deriving (Show)
 
-instance Merge (ResModel o e m) where
-  merge p (ResObject x) (ResObject y) =
-    ResObject <$> merge p x y
-  merge _ _ _ = internalError "can't merge: incompatible resolvers"
+instance (Monad f, Failure InternalError f) => SemigroupM f (ResModel o e m) where
+  sjoin p (ResObject x) (ResObject y) =
+    ResObject <$> sjoin p x y
+  sjoin _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
 
 data RootResModel e m = RootResModel
   { query :: Eventless (ResModel QUERY e m),

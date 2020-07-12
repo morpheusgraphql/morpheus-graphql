@@ -35,10 +35,15 @@ module Data.Morpheus.Internal.Utils
     ordTraverse,
     ordTraverse_,
     traverseCollection,
+    -- NoDupsT (..),
+    -- liftA2NoDupsT,
+    (<.>),
+    SemigroupM (..),
   )
 where
 
-import Control.Monad ((=<<), foldM)
+import Control.Applicative (Applicative (..))
+import Control.Monad ((=<<), (>>=), foldM)
 import Data.Char
   ( toLower,
     toUpper,
@@ -59,7 +64,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeName (..),
     TypeNameRef (..),
   )
-import Data.Semigroup ((<>))
+import Data.Semigroup (Semigroup (..))
 import qualified Data.Text as T
   ( concat,
     pack,
@@ -72,7 +77,6 @@ import Text.Megaparsec.Stream (Stream)
 import Prelude
   ( ($),
     (.),
-    Applicative (..),
     Bool (..),
     Either (..),
     Eq (..),
@@ -84,6 +88,7 @@ import Prelude
     const,
     fst,
     length,
+    uncurry,
   )
 
 mapText :: (String -> String) -> Token -> Token
@@ -165,8 +170,25 @@ traverseCollection ::
   f (t' b)
 traverseCollection f a = fromElems =<< traverse f (elems a)
 
-(<.>) :: f a -> f a -> f a
-a <.> b = a
+-- newtype NoDupsT m a = NoDupsT
+--   { _unNoDups :: m a
+--   }
+
+-- liftA2NoDupsT ::
+--   (Monad m) =>
+--   (a -> a -> m a) ->
+--   NoDupsT m a ->
+--   NoDupsT m a ->
+--   NoDupsT m a
+-- liftA2NoDupsT f (NoDupsT x) (NoDupsT y) = NoDupsT (withM f x y)
+
+-- withM ::
+--   (Monad m) =>
+--   (a -> a -> m a) ->
+--   m a ->
+--   m a ->
+--   m a
+-- withM f x y = liftA2 (,) x y >>= uncurry f
 
 ordTraverse_ ::
   ( Monad f,
@@ -214,6 +236,16 @@ class Merge a where
 
 (<:>) :: (Monad m, Merge a, Failure GQLErrors m) => a -> a -> m a
 (<:>) = merge []
+
+class SemigroupM m a where
+  sjoin :: [Ref] -> a -> a -> m a
+
+(<.>) ::
+  (SemigroupM m a) =>
+  a ->
+  a ->
+  m a
+(<.>) = sjoin []
 
 -- Failure: for custome Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where
