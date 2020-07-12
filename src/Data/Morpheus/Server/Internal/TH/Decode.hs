@@ -15,9 +15,6 @@ module Data.Morpheus.Server.Internal.TH.Decode
 where
 
 -- MORPHEUS
-import Data.Morpheus.Error
-  ( typeMismatch,
-  )
 import Data.Morpheus.Internal.Utils
   ( empty,
     selectBy,
@@ -29,6 +26,7 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     InternalError,
+    Message,
     ObjectEntry (..),
     ScalarValue,
     Token,
@@ -38,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
+    msgInteral,
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -104,3 +103,9 @@ withScalar typename parseValue value = case toScalar value >>= parseValue of
 
 decodeFieldWith :: (Value VALID -> m a) -> FieldName -> ValidObject -> m a
 decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)
+
+-- if value is already validated but value has different type
+typeMismatch :: Message -> Value s -> InternalError
+typeMismatch text jsType =
+  "Type mismatch! expected:" <> msgInteral text <> ", got: "
+    <> msgInteral jsType

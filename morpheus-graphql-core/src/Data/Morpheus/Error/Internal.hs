@@ -3,8 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Internal
-  ( typeMismatch,
-    internalError,
+  ( internalError,
   )
 where
 
@@ -29,9 +28,3 @@ import Prelude (($))
 -- all kind internal error in development
 internalError :: Failure GQLErrors m => Message -> m a
 internalError x = failure $ globalErrorMessage $ "INTERNAL ERROR: " <> x
-
--- if value is already validated but value has different type
-typeMismatch :: Message -> Value s -> InternalError
-typeMismatch text jsType =
-  "Type mismatch! expected:" <> msgInteral text <> ", got: "
-    <> msgInteral jsType
