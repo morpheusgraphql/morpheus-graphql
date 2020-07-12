@@ -42,6 +42,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
   )
+import Data.Semigroup ((<>))
 
 withInputObject ::
   Failure InternalError m =>
