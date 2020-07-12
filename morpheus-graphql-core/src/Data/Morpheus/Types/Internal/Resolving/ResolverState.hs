@@ -66,6 +66,7 @@ import Prelude
   ( ($),
     (.),
     Show (..),
+    id,
   )
 
 data Context = Context
@@ -102,14 +103,14 @@ instance MonadTrans (ResolverStateT e) where
   lift = ResolverStateT . lift . lift
 
 instance (Monad m) => Failure Message (ResolverStateT e m) where
-  failure message = ResolverStateT $ do
+  failure message = do
     selection <- asks currentSelection
-    lift $ failure [resolverFailureMessage selection message]
+    failure [resolverFailureMessage selection message]
 
 instance (Monad m) => Failure InternalError (ResolverStateT e m) where
-  failure message = ResolverStateT $ do
-    selection <- asks currentSelection
-    lift $ failure [renderInternalResolverError selection message]
+  failure message = do
+    ctx <- asks id
+    failure [renderInternalResolverError ctx message]
 
 instance (Monad m) => Failure GQLErrors (ResolverStateT e m) where
   failure = ResolverStateT . lift . failure
@@ -150,9 +151,9 @@ resolverFailureMessage Selection {selectionName, selectionPosition} message =
       locations = [selectionPosition]
     }
 
-renderInternalResolverError :: Selection VALID -> InternalError -> GQLError
-renderInternalResolverError Selection {selectionName, selectionPosition} message =
+renderInternalResolverError :: Context -> InternalError -> GQLError
+renderInternalResolverError ctx@Context {currentSelection} message =
   GQLError
-    { message = msg message,
-      locations = [selectionPosition]
+    { message = msg message <> ". " <> msg (show ctx),
+      locations = [selectionPosition currentSelection]
     }
