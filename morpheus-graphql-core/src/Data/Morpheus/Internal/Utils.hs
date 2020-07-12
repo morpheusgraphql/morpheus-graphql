@@ -165,6 +165,9 @@ traverseCollection ::
   f (t' b)
 traverseCollection f a = fromElems =<< traverse f (elems a)
 
+(<.>) :: f a -> f a -> f a
+a <.> b = a
+
 ordTraverse_ ::
   ( Monad f,
     Listable a (t a),
