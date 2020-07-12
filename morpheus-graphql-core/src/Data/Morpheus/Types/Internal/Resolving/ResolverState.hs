@@ -39,6 +39,7 @@ import Control.Monad.Trans.Reader
   )
 import Data.Functor (Functor (..))
 import Data.Functor.Identity (Identity (..))
+import Data.Morpheus.Rendering.RenderGQL (render)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
@@ -154,6 +155,24 @@ resolverFailureMessage Selection {selectionName, selectionPosition} message =
 renderInternalResolverError :: Context -> InternalError -> GQLError
 renderInternalResolverError ctx@Context {currentSelection} message =
   GQLError
-    { message = msg message <> ". " <> msg (show ctx),
+    { message = msg message <> ". " <> renderContext ctx,
       locations = [selectionPosition currentSelection]
     }
+
+renderContext :: Context -> Message
+renderContext
+  Context
+    { currentSelection,
+      schema,
+      operation,
+      currentTypeName
+    } =
+    "on type "
+      <> msg currentTypeName
+      <> " with selection:"
+      <> msg (show currentSelection)
+      <> ".\n\n"
+      <> "Query:\n"
+      <> msg (show operation)
+      <> ".\n\n schema:\n  "
+      <> msg (render schema)

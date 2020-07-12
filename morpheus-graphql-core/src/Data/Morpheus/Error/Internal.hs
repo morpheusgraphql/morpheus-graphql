@@ -13,7 +13,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( GQLErrors,
     InternalError,
     Message,
-    msgInteral,
+    msgInternal,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value,

@@ -51,6 +51,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLError (..),
     GQLErrors,
     Message,
+    Msg (..),
     OperationType (..),
     Position,
     Ref (..),

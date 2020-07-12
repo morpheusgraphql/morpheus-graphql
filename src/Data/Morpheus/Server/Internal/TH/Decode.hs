@@ -36,7 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
-    msgInteral,
+    msgInternal,
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -107,5 +107,5 @@ decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)
 -- if value is already validated but value has different type
 typeMismatch :: Message -> Value s -> InternalError
 typeMismatch text jsType =
-  "Type mismatch! expected:" <> msgInteral text <> ", got: "
-    <> msgInteral jsType
+  "Type mismatch! expected:" <> msgInternal text <> ", got: "
+    <> msgInternal jsType
