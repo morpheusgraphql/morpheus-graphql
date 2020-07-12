@@ -4,6 +4,17 @@
 
 ### new features
 
+- for better debuging. internal errors messages will include resolving state.
+- rendering graphql "AST". e.g `render ( slection :: Selection VALID)` will render
+
+```graphql
+{
+  user(arg1: 1) {
+    name
+  }
+}
+```
+
 - quasiqouter `[dsl| <type definitions> |]` generates `Schema VALID`.
 - parser supports custom directive definition. e.g
 
