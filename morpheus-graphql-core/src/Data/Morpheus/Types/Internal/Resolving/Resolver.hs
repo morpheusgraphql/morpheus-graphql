@@ -412,7 +412,7 @@ data ObjectResModel o e m = ObjectResModel
   deriving (Show)
 
 instance Applicative f => SemigroupM f (ObjectResModel o e m) where
-  sjoin _ (ObjectResModel tyname x) (ObjectResModel _ y) =
+  mergeM _ (ObjectResModel tyname x) (ObjectResModel _ y) =
     pure $ ObjectResModel tyname (x <> y)
 
 data ResModel (o :: OperationType) e (m :: * -> *)
@@ -425,21 +425,21 @@ data ResModel (o :: OperationType) e (m :: * -> *)
   deriving (Show)
 
 instance (Monad f, Failure InternalError f) => SemigroupM f (ResModel o e m) where
-  sjoin p (ResObject x) (ResObject y) =
-    ResObject <$> sjoin p x y
-  sjoin _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
+  mergeM p (ResObject x) (ResObject y) =
+    ResObject <$> mergeM p x y
+  mergeM _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
 
 data RootResModel e m = RootResModel
-  { query :: Eventless (ResModel QUERY e m),
-    mutation :: Eventless (ResModel MUTATION e m),
-    subscription :: Eventless (ResModel SUBSCRIPTION e m),
+  { query :: ResolverState (ResModel QUERY e m),
+    mutation :: ResolverState (ResModel MUTATION e m),
+    subscription :: ResolverState (ResModel SUBSCRIPTION e m),
     channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
-  Eventless (ResModel o e m) ->
+  ResolverState (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)
 runRootDataResolver
@@ -447,7 +447,7 @@ runRootDataResolver
   res
   ctx@Context {operation = Operation {operationSelection}} =
     do
-      root <- statelessToResultT res
+      root <- runResolverStateT (toResolverStateT res) ctx
       runResolver channels (resolveObject operationSelection root) ctx
 
 runRootResModel :: Monad m => RootResModel e m -> Context -> ResponseStream e m (Value VALID)

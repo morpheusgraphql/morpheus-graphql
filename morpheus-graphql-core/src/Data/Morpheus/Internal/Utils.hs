@@ -43,7 +43,7 @@ module Data.Morpheus.Internal.Utils
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<), (>>=), foldM)
+import Control.Monad ((=<<), foldM)
 import Data.Char
   ( toLower,
     toUpper,
@@ -88,7 +88,6 @@ import Prelude
     const,
     fst,
     length,
-    uncurry,
   )
 
 mapText :: (String -> String) -> Token -> Token
@@ -238,14 +237,14 @@ class Merge a where
 (<:>) = merge []
 
 class SemigroupM m a where
-  sjoin :: [Ref] -> a -> a -> m a
+  mergeM :: [Ref] -> a -> a -> m a
 
 (<.>) ::
   (SemigroupM m a) =>
   a ->
   a ->
   m a
-(<.>) = sjoin []
+(<.>) = mergeM []
 
 -- Failure: for custome Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where
