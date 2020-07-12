@@ -69,9 +69,7 @@ import GHC.Generics
 
 -- GENERIC
 decodeArguments :: DecodeType a => Arguments VALID -> ResolverState a
-decodeArguments = decodeType . Object . fmap toEntry
-  where
-    toEntry (Argument name value _) = ObjectEntry name value
+decodeArguments _ = failure ("TODO: FIXME: some error" :: InternalError)
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
@@ -96,11 +94,11 @@ instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
 
 -- ENUM
 instance DecodeType a => DecodeKind ENUM a where
-  decodeKind _ = decodeType
+  decodeKind _ _ = failure ("bla" :: InternalError)
 
 -- TODO: remove
 instance DecodeType a => DecodeKind OUTPUT a where
-  decodeKind _ = decodeType
+  decodeKind _ _ = failure ("bla" :: InternalError)
 
 -- INPUT_OBJECT and  INPUT_UNION
 instance DecodeType a => DecodeKind INPUT a where
