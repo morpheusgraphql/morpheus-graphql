@@ -363,7 +363,7 @@ renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QU
 renderKind = ("kind",) . render
 
 type' :: Monad m => TypeRef -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-type' ref = ("type", render ref)
+type' = ("type",) . render
 
 defaultValue ::
   Monad m =>
