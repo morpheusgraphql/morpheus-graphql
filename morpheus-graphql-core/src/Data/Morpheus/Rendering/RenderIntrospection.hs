@@ -376,8 +376,7 @@ defaultValue
   typeRef
   value =
     ( "defaultValue",
-      fulfill typeRef value
-        >>= render . Just
+      fulfill typeRef value >>= render
     )
 
 fulfill ::
