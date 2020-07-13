@@ -93,8 +93,6 @@ import Prelude
     show,
   )
 
-type Result e m a = Resolver QUERY e m a
-
 class
   ( Monad m,
     Failure Message m,
@@ -134,7 +132,8 @@ instance RenderIntrospection a => RenderIntrospection [a] where
   render ls = mkList <$> traverse render ls
 
 instance RenderIntrospection a => RenderIntrospection (Maybe a) where
-  render = opt render
+  render (Just value) = render value
+  render Nothing = pure mkNull
 
 instance RenderIntrospection Bool where
   render = pure . mkBoolean
@@ -272,7 +271,7 @@ instance RenderIntrospection (DataEnumValue VALID) where
 
 instance RenderIntrospection TypeRef where
   render TypeRef {typeConName, typeWrappers} = do
-    kind <- lookupKind typeConName
+    kind <- kindOf <$> selectType typeConName
     let currentType = mkType kind typeConName Nothing []
     pure $ foldr wrap currentType (toGQLWrapper typeWrappers)
     where
@@ -314,9 +313,6 @@ renderDeprecated dirs =
 description :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
 description desc = ("description", render desc)
 
-lookupKind :: (Monad m) => TypeName -> Result e m TypeKind
-lookupKind = fmap kindOf . selectType
-
 mkType ::
   (Monad m, RenderIntrospection name) =>
   TypeKind ->
@@ -354,10 +350,6 @@ implementedInterface name =
   where
     renderContent typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef
     renderContent _ = failure ("Type " <> msg name <> " must be an Interface" :: Message)
-
-opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> Resolver QUERY e m (ResModel QUERY e m)
-opt f (Just x) = f x
-opt _ Nothing = pure mkNull
 
 renderName ::
   ( RenderIntrospection name,
