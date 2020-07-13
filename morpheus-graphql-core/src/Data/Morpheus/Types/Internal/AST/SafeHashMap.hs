@@ -22,8 +22,6 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad, join)
 import Data.Foldable (Foldable (..))
 import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
@@ -48,8 +46,7 @@ import Data.Semigroup (Semigroup (..))
 import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
-  ( ($),
-    (.),
+  ( (.),
     Eq,
     Show,
   )
