@@ -61,7 +61,7 @@ where
 -- MORPHEUS
 
 import Control.Applicative (pure)
-import Control.Monad ((=<<), Monad ((>>=)))
+import Control.Monad (Monad ((>>=)))
 import Control.Monad.Trans.Reader
   ( ask,
   )
@@ -85,6 +85,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
+    FromAny,
     GQLErrors,
     IN,
     InternalError,
@@ -265,11 +266,9 @@ askFieldType ::
   FieldDefinition OUT VALID ->
   SelectionValidator (TypeDefinition OUT VALID)
 askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
-  do
-    anyType <- selectBy (unknownType field) typeConName =<< askSchema
-    case fromAny anyType of
-      Just x -> pure x
-      Nothing -> failure (fieldTypeViolation False field anyType)
+  askSchema
+    >>= selectBy (unknownType field) typeConName
+    >>= internalConstraint (fieldTypeViolation False field)
 
 askTypeMember ::
   UnionMember OUT s ->
@@ -306,11 +305,7 @@ askInputFieldTypeByName ::
 askInputFieldTypeByName name =
   askSchema
     >>= selectBy (unknownInputType name) name
-    >>= constraintINPUT
-  where
-    constraintINPUT x = case fromAny x of
-      Just inputType -> pure inputType
-      Nothing -> failure (inputTypeViolation x)
+    >>= internalConstraint inputTypeViolation
 
 askInputFieldType ::
   ( Failure GQLErrors (m c),
@@ -323,21 +318,8 @@ askInputFieldType ::
   m c (TypeDefinition IN s)
 askInputFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   askSchema
-    >>= selectBy
-      (unknownType field)
-      typeConName
-    >>= constraintINPUT
-  where
-    constraintINPUT ::
-      forall m s.
-      ( Failure InternalError m,
-        Monad m
-      ) =>
-      TypeDefinition ANY s ->
-      m (TypeDefinition IN s)
-    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN s)) of
-      Just inputType -> pure inputType
-      Nothing -> failure (fieldTypeViolation True field x)
+    >>= selectBy (unknownType field) typeConName
+    >>= internalConstraint (fieldTypeViolation True field)
 
 askInputMember ::
   forall c m s.
@@ -502,3 +484,14 @@ unionTypeViolation isInput scopeType x =
     mustBe
       | isInput = "INPUT_OBJECT"
       | otherwise = "OUTPUT_OBJECT"
+
+internalConstraint ::
+  ( FromAny a k,
+    Failure InternalError f
+  ) =>
+  (a ANY s -> InternalError) ->
+  a ANY s ->
+  f (a k s)
+internalConstraint err anyType = case fromAny anyType of
+  Just x -> pure x
+  Nothing -> failure (err anyType)
