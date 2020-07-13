@@ -16,7 +16,7 @@ where
 import Data.Aeson
 --
 -- MORPHEUS
-import Data.Morpheus.Schema.TypeKind (TypeKind)
+import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,

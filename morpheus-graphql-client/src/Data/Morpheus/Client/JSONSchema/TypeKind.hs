@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Schema.TypeKind
+module Data.Morpheus.Client.JSONSchema.TypeKind
   ( TypeKind (..),
   )
 where
