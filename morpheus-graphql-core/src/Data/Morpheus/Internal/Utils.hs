@@ -35,8 +35,6 @@ module Data.Morpheus.Internal.Utils
     ordTraverse,
     ordTraverse_,
     traverseCollection,
-    -- NoDupsT (..),
-    -- liftA2NoDupsT,
     (<.>),
     SemigroupM (..),
   )
@@ -168,26 +166,6 @@ traverseCollection ::
   t a ->
   f (t' b)
 traverseCollection f a = fromElems =<< traverse f (elems a)
-
--- newtype NoDupsT m a = NoDupsT
---   { _unNoDups :: m a
---   }
-
--- liftA2NoDupsT ::
---   (Monad m) =>
---   (a -> a -> m a) ->
---   NoDupsT m a ->
---   NoDupsT m a ->
---   NoDupsT m a
--- liftA2NoDupsT f (NoDupsT x) (NoDupsT y) = NoDupsT (withM f x y)
-
--- withM ::
---   (Monad m) =>
---   (a -> a -> m a) ->
---   m a ->
---   m a ->
---   m a
--- withM f x y = liftA2 (,) x y >>= uncurry f
 
 ordTraverse_ ::
   ( Monad f,
