@@ -11,7 +11,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.SafeHashMap
@@ -86,32 +85,6 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
 #if MIN_VERSION_template_haskell(2,16,0)
   liftTyped (SafeHashMap x) = let ls = HM.toList x in [||SafeHashMap (HM.fromList ls)||]
 #endif
-
-newtype NoDups m a = NoDups {a :: m a}
-
-instance
-  ( Monad m,
-    Eq (KEY a),
-    Hashable (KEY a),
-    Failure GQLErrors m,
-    NameCollision a,
-    k ~ KEY a
-  ) =>
-  Semigroup (NoDups m (SafeHashMap k a))
-  where
-  (NoDups x) <> (NoDups y) = NoDups (joinSafeHashMap x y)
-
-joinSafeHashMap ::
-  ( Monad f,
-    Eq (KEY a),
-    Hashable (KEY a),
-    Failure GQLErrors f,
-    NameCollision a
-  ) =>
-  f (SafeHashMap (KEY a) a) ->
-  f (SafeHashMap (KEY a) a) ->
-  f (SafeHashMap (KEY a) a)
-joinSafeHashMap x y = SafeHashMap <$> join (safeJoin <$> (toHashMap <$> x) <*> (toHashMap <$> y))
 
 instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (SafeHashMap k a) where
   merge _ (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> safeJoin x y
