@@ -1,13 +1,9 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Core
@@ -33,7 +29,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
-    Message,
   )
 import Data.Semigroup ((<>))
 import Prelude
@@ -77,10 +72,6 @@ instance Monad (Result e) where
 instance Failure [GQLError] (Result ev) where
   failure = Failure
 
-instance Failure Message (Result e) where
-  failure text =
-    Failure [GQLError {message = "INTERNAL: " <> text, locations = []}]
-
 instance PushEvents events (Result events) where
   pushEvents events = Success {result = (), warnings = [], events}
 
@@ -118,9 +109,6 @@ instance MonadTrans (ResultT event) where
 --     ResultT $ pure $ Failure [GQLError {message = pack x, locations = []}]
 
 instance Monad m => Failure GQLErrors (ResultT event m) where
-  failure = ResultT . pure . failure
-
-instance Applicative m => Failure Message (ResultT event m) where
   failure = ResultT . pure . failure
 
 instance Applicative m => PushEvents event (ResultT event m) where
