@@ -61,7 +61,7 @@ where
 -- MORPHEUS
 
 import Control.Applicative (pure)
-import Control.Monad (Monad ((>>=)))
+import Control.Monad ((=<<), Monad ((>>=)))
 import Control.Monad.Trans.Reader
   ( ask,
   )
@@ -85,9 +85,9 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
-    GQLError (..),
     GQLErrors,
     IN,
+    InternalError,
     Message,
     OUT,
     Object,
@@ -108,11 +108,11 @@ import Data.Morpheus.Types.Internal.AST
     fromAny,
     isNullable,
     msg,
+    msgInternal,
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Validation.Error
-  ( InternalError (..),
-    KindViolation (..),
+  ( KindViolation (..),
     MissingRequired (..),
     Unknown (..),
     Unused (..),
@@ -158,6 +158,7 @@ import Data.Semigroup
 import Prelude
   ( ($),
     (.),
+    Bool (..),
     not,
     otherwise,
   )
@@ -265,19 +266,10 @@ askFieldType ::
   SelectionValidator (TypeDefinition OUT VALID)
 askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   do
-    schema <- askSchema
-    anyType <-
-      selectBy
-        [internalError field]
-        typeConName
-        schema
+    anyType <- selectBy (unknownType field) typeConName =<< askSchema
     case fromAny anyType of
       Just x -> pure x
-      Nothing ->
-        failure $
-          "Type \"" <> msg (typeName anyType)
-            <> "\" referenced by OBJECT \""
-            <> "\" must be an OUTPUT_TYPE."
+      Nothing -> failure (fieldTypeViolation False field anyType)
 
 askTypeMember ::
   UnionMember OUT s ->
@@ -289,30 +281,22 @@ askTypeMember UnionMember {memberName} =
   where
     notFound = do
       scopeType <- asksScope typename
-      failure $
-        "Type \""
-          <> msg memberName
-          <> "\" referenced by union \""
-          <> msg scopeType
-          <> "\" can't found in Schema."
+      failure
+        (unknownUnionType False scopeType memberName)
     --------------------------------------
     constraintOBJECT ::
       TypeDefinition ANY s ->
       SelectionValidator (TypeName, FieldsDefinition OUT s)
-    constraintOBJECT TypeDefinition {typeName, typeContent} = con typeContent
+    constraintOBJECT t@TypeDefinition {typeName, typeContent} = con typeContent
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
         con _ = do
           scopeType <- asksScope typename
-          failure $
-            "Type \"" <> msg typeName
-              <> "\" referenced by union \""
-              <> msg scopeType
-              <> "\" must be an OBJECT."
+          failure (unionTypeViolation False scopeType t)
 
 askInputFieldTypeByName ::
   ( Failure GQLErrors (m c),
-    Failure Message (m c),
+    Failure InternalError (m c),
     Monad (m c),
     GetWith c (Schema s),
     MonadContext m c
@@ -321,69 +305,44 @@ askInputFieldTypeByName ::
   m c (TypeDefinition IN s)
 askInputFieldTypeByName name =
   askSchema
-    >>= selectBy
-      [ GQLError
-          ( "Type \""
-              <> msg name
-              <> "\" referenced by field \""
-          )
-          []
-      ]
-      name
+    >>= selectBy (unknownInputType name) name
     >>= constraintINPUT
   where
-    constraintINPUT ::
-      forall m s.
-      ( Failure Message m,
-        Monad m
-      ) =>
-      TypeDefinition ANY s ->
-      m (TypeDefinition IN s)
-    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN s)) of
+    constraintINPUT x = case fromAny x of
       Just inputType -> pure inputType
-      Nothing ->
-        failure $
-          "Type \""
-            <> msg (typeName x)
-            <> "\" referenced by field \""
+      Nothing -> failure (inputTypeViolation x)
 
 askInputFieldType ::
   ( Failure GQLErrors (m c),
-    Failure Message (m c),
+    Failure InternalError (m c),
     Monad (m c),
     GetWith c (Schema s),
     MonadContext m c
   ) =>
   FieldDefinition IN s ->
   m c (TypeDefinition IN s)
-askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}} =
+askInputFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
   askSchema
     >>= selectBy
-      [internalError field]
+      (unknownType field)
       typeConName
     >>= constraintINPUT
   where
     constraintINPUT ::
       forall m s.
-      ( Failure Message m,
+      ( Failure InternalError m,
         Monad m
       ) =>
       TypeDefinition ANY s ->
       m (TypeDefinition IN s)
     constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN s)) of
       Just inputType -> pure inputType
-      Nothing ->
-        failure $
-          "Type \""
-            <> msg (typeName x)
-            <> "\" referenced by field \""
-            <> msg fieldName
-            <> "\" must be an input type."
+      Nothing -> failure (fieldTypeViolation True field x)
 
 askInputMember ::
   forall c m s.
   ( GetWith c (Schema s),
-    Failure Message (m c),
+    Failure InternalError (m c),
     Monad (m c),
     MonadContext m c
   ) =>
@@ -394,27 +353,22 @@ askInputMember name =
     >>= selectOr notFound pure name
     >>= constraintINPUT_OBJECT
   where
-    typeInfo tName =
-      "Type \"" <> msg tName <> "\" referenced by inputUnion "
     notFound = do
       scopeType <- asksScope typename
-      failure $
-        typeInfo name
-          <> msg scopeType
-          <> "\" can't found in Schema."
+      failure (unknownUnionType True scopeType name)
     --------------------------------------
     constraintINPUT_OBJECT ::
       ( Monad (m c),
-        Failure Message (m c),
+        Failure InternalError (m c),
         MonadContext m c
       ) =>
       TypeDefinition ANY s ->
       m c (TypeDefinition IN s)
-    constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
+    constraintINPUT_OBJECT t@TypeDefinition {typeContent, ..} = con (fromAny typeContent)
       where
         con ::
           ( Monad (m c),
-            Failure Message (m c),
+            Failure InternalError (m c),
             MonadContext m c
           ) =>
           Maybe (TypeContent a IN s) ->
@@ -422,11 +376,7 @@ askInputMember name =
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
           scopeType <- asksScope typename
-          failure $
-            typeInfo typeName
-              <> "\""
-              <> msg scopeType
-              <> "\" must be an INPUT_OBJECT."
+          failure (unionTypeViolation True scopeType t)
 
 constraintInputUnion ::
   forall stage schemaStage.
@@ -464,3 +414,91 @@ isPosibeInputUnion tags (Enum name)
   | name `elem` fmap memberName tags = pure name
   | otherwise = failure $ msg name <> " is not posible union type"
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
+
+unknownInputType :: TypeName -> InternalError
+unknownInputType name =
+  "Type " <> msgInternal name <> " can't found in Schema "
+
+unknownType :: FieldDefinition cat s -> InternalError
+unknownType
+  FieldDefinition
+    { fieldName,
+      fieldType = TypeRef {typeConName}
+    } =
+    "Type " <> msgInternal typeConName
+      <> " referenced by field "
+      <> msgInternal fieldName
+      <> " can't found in Schema "
+
+unknownUnionType ::
+  Bool ->
+  TypeName ->
+  TypeName ->
+  InternalError
+unknownUnionType
+  isInput
+  scopeType
+  memberName =
+    "Type \""
+      <> msgInternal memberName
+      <> "\" referenced by "
+      <> refType
+      <> " union \""
+      <> msgInternal scopeType
+      <> "\" can't found in Schema."
+    where
+      refType
+        | isInput = "INPUT_OBJECT"
+        | otherwise = "OBJECT"
+
+inputTypeViolation :: TypeDefinition c s -> InternalError
+inputTypeViolation x =
+  "Type "
+    <> msgInternal (typeName x)
+    <> " must be an Input Type."
+
+fieldTypeViolation ::
+  Bool ->
+  FieldDefinition cat s ->
+  TypeDefinition cat' s' ->
+  InternalError
+fieldTypeViolation isInput field anyType =
+  "Type \"" <> msgInternal (typeName anyType)
+    <> "\" referenced by "
+    <> refType
+    <> " \""
+    <> msgInternal (fieldName field)
+    <> "\" must be an"
+    <> mustBe
+    <> "."
+  where
+    refType
+      | isInput = "INPUT_OBJECT"
+      | otherwise = "OBJECT"
+    mustBe
+      | isInput = "INPUT_TYPE"
+      | otherwise = "OUTPUT_TYPE"
+
+unionRefType :: Bool -> InternalError
+unionRefType isInput
+  | isInput = "INPUT_UNION"
+  | otherwise = "UNION"
+
+unionTypeViolation ::
+  Bool ->
+  TypeName ->
+  TypeDefinition cat' s' ->
+  InternalError
+unionTypeViolation isInput scopeType x =
+  "Type \"" <> msgInternal (typeName x)
+    <> "\" referenced by "
+    <> unionRefType isInput
+    <> " \""
+    <> msgInternal scopeType
+    <> "\" must be an "
+    <> mustBe
+    <> "."
+  where
+    mustBe
+      | isInput = "INPUT_OBJECT"
+      | otherwise = "OUTPUT_OBJECT"

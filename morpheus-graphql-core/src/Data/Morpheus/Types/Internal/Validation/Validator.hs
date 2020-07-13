@@ -56,7 +56,7 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative, pure)
+import Control.Applicative (Applicative)
 import Control.Monad (Monad)
 import Control.Monad.Reader (MonadReader (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
@@ -65,7 +65,8 @@ import Control.Monad.Trans.Reader
     withReaderT,
   )
 import Data.Functor ((<$>), Functor (..))
-import Data.Maybe (Maybe (..), maybe)
+import Data.Maybe (Maybe (..))
+import Data.Morpheus.Error.Utils (renderErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -74,9 +75,9 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     FieldsDefinition,
     Fragments,
-    GQLError (..),
     GQLErrors,
     IN,
+    InternalError,
     Message,
     OUT,
     Position,
@@ -438,16 +439,16 @@ instance SetWith (OperationContext v) CurrentSelection where
 -- can be only used for internal errors
 instance
   (MonadContext Validator ctx) =>
-  Failure Message (Validator ctx)
+  Failure InternalError (Validator ctx)
   where
   failure inputMessage = do
     position <- asksScope position
     failure
-      [ GQLError
-          { message = "INTERNAL: " <> inputMessage,
-            locations = maybe [] pure position
-          }
-      ]
+      ( renderErrorMessage
+          position
+          $ msg
+            inputMessage
+      )
 
 instance Failure GQLErrors (Validator ctx) where
   failure = Validator . lift . failure
