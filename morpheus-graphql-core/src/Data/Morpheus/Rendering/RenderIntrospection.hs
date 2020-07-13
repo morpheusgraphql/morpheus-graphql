@@ -2,8 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -21,16 +19,14 @@ where
 import Control.Applicative (pure)
 import Control.Monad (Monad (..), sequence)
 import Data.Foldable (foldr)
-import Data.Functor ((<$>), fmap)
+import Data.Functor ((<$>))
 import Data.List (elem, filter)
 import Data.Maybe (Maybe (..), isJust, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure,
     elems,
     failure,
-    fromElems,
     selectBy,
-    selectOr,
   )
 import qualified Data.Morpheus.Rendering.RenderGQL as GQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST
@@ -50,8 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Message,
     OUT,
-    Object,
-    ObjectEntry (..),
     QUERY,
     Schema,
     TRUE,
@@ -85,9 +79,13 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Data.Text (pack)
 import Data.Traversable (traverse)
-import Prelude (($), (.), concatMap, show)
-
-type Result e m a = Resolver QUERY e m a
+import Prelude
+  ( ($),
+    (.),
+    Bool,
+    concatMap,
+    show,
+  )
 
 class
   ( Monad m,
@@ -124,6 +122,16 @@ instance RenderIntrospection FieldName where
 instance RenderIntrospection Description where
   render = pure . mkString
 
+instance RenderIntrospection a => RenderIntrospection [a] where
+  render ls = mkList <$> traverse render ls
+
+instance RenderIntrospection a => RenderIntrospection (Maybe a) where
+  render (Just value) = render value
+  render Nothing = pure mkNull
+
+instance RenderIntrospection Bool where
+  render = pure . mkBoolean
+
 instance RenderIntrospection TypeKind where
   render KindScalar = pure $ mkString "SCALAR"
   render KindObject {} = pure $ mkString "OBJECT"
@@ -134,9 +142,6 @@ instance RenderIntrospection TypeKind where
   render KindList = pure $ mkString "LIST"
   render KindNonNull = pure $ mkString "NON_NULL"
   render KindInterface = pure $ mkString "INTERFACE"
-
-instance RenderIntrospection a => RenderIntrospection [a] where
-  render ls = mkList <$> traverse render ls
 
 instance RenderIntrospection (DirectiveDefinition VALID) where
   render
@@ -215,6 +220,13 @@ instance
   where
   render = render . filter fieldVisibility . elems
 
+instance RenderIntrospection (FieldContent TRUE IN VALID) where
+  render = render . defaultInputValue
+
+instance RenderIntrospection (Value VALID) where
+  render Null = pure mkNull
+  render x = pure $ mkString $ GQL.render x
+
 instance
   RenderIntrospection
     (FieldDefinition OUT VALID)
@@ -243,7 +255,7 @@ instance RenderIntrospection (FieldDefinition IN VALID) where
         [ renderName fieldName,
           description fieldDescription,
           type' fieldType,
-          defaultValue fieldType (fmap defaultInputValue fieldContent)
+          defaultValue fieldContent
         ]
 
 instance RenderIntrospection (DataEnumValue VALID) where
@@ -256,7 +268,7 @@ instance RenderIntrospection (DataEnumValue VALID) where
 
 instance RenderIntrospection TypeRef where
   render TypeRef {typeConName, typeWrappers} = do
-    kind <- lookupKind typeConName
+    kind <- kindOf <$> selectType typeConName
     let currentType = mkType kind typeConName Nothing []
     pure $ foldr wrap currentType (toGQLWrapper typeWrappers)
     where
@@ -291,15 +303,12 @@ renderDeprecated ::
   Directives s ->
   [(FieldName, Resolver QUERY e m (ResModel QUERY e m))]
 renderDeprecated dirs =
-  [ ("isDeprecated", pure $ mkBoolean (isJust $ lookupDeprecated dirs)),
-    ("deprecationReason", opt (pure . mkString) (lookupDeprecated dirs >>= lookupDeprecatedReason))
+  [ ("isDeprecated", render (isJust $ lookupDeprecated dirs)),
+    ("deprecationReason", render (lookupDeprecated dirs >>= lookupDeprecatedReason))
   ]
 
 description :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-description desc = ("description", opt render desc)
-
-lookupKind :: (Monad m) => TypeName -> Result e m TypeKind
-lookupKind = fmap kindOf . selectType
+description = ("description",) . render
 
 mkType ::
   (Monad m, RenderIntrospection name) =>
@@ -339,10 +348,6 @@ implementedInterface name =
     renderContent typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef
     renderContent _ = failure ("Type " <> msg name <> " must be an Interface" :: Message)
 
-opt :: Monad m => (a -> Resolver QUERY e m (ResModel QUERY e m)) -> Maybe a -> Resolver QUERY e m (ResModel QUERY e m)
-opt f (Just x) = f x
-opt _ Nothing = pure mkNull
-
 renderName ::
   ( RenderIntrospection name,
     Monad m
@@ -355,70 +360,12 @@ renderKind :: Monad m => TypeKind -> (FieldName, Resolver QUERY e m (ResModel QU
 renderKind = ("kind",) . render
 
 type' :: Monad m => TypeRef -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-type' ref = ("type", render ref)
+type' = ("type",) . render
 
 defaultValue ::
   Monad m =>
-  TypeRef ->
-  Maybe (Value VALID) ->
+  Maybe (FieldContent TRUE IN VALID) ->
   ( FieldName,
     Resolver QUERY e m (ResModel QUERY e m)
   )
-defaultValue
-  typeRef
-  value =
-    ( "defaultValue",
-      opt
-        ( fmap
-            (mkString . GQL.render)
-            . fulfill typeRef
-            . Just
-        )
-        value
-    )
-
-fulfill ::
-  WithSchema m =>
-  TypeRef ->
-  Maybe (Value VALID) ->
-  m (Value VALID)
-fulfill TypeRef {typeConName} (Just (Object fields)) =
-  selectType typeConName
-    >>= \case
-      TypeDefinition
-        { typeContent =
-            DataInputObject {inputObjectFields}
-        } ->
-          Object
-            <$> ( traverse
-                    (handleField fields)
-                    (elems inputObjectFields)
-                    >>= fromElems
-                )
-      _ -> failure (msg typeConName <> "is not must be Object")
-fulfill typeRef (Just (List values)) =
-  List <$> traverse (fulfill typeRef . Just) values
-fulfill _ (Just v) = pure v
-fulfill _ Nothing = pure Null
-
-handleField ::
-  WithSchema m =>
-  Object VALID ->
-  FieldDefinition IN VALID ->
-  m (ObjectEntry VALID)
-handleField
-  fields
-  FieldDefinition
-    { fieldName,
-      fieldType,
-      fieldContent = x
-    } =
-    ObjectEntry fieldName
-      <$> fulfill
-        fieldType
-        ( selectOr
-            (fmap defaultInputValue x)
-            (Just . entryValue)
-            fieldName
-            fields
-        )
+defaultValue = ("defaultValue",) . render
