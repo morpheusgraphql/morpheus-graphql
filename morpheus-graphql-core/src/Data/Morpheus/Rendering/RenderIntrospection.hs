@@ -21,16 +21,14 @@ where
 import Control.Applicative (pure)
 import Control.Monad (Monad (..), sequence)
 import Data.Foldable (foldr)
-import Data.Functor ((<$>), fmap)
+import Data.Functor ((<$>))
 import Data.List (elem, filter)
 import Data.Maybe (Maybe (..), isJust, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure,
     elems,
     failure,
-    fromElems,
     selectBy,
-    selectOr,
   )
 import qualified Data.Morpheus.Rendering.RenderGQL as GQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST
@@ -50,8 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Message,
     OUT,
-    Object,
-    ObjectEntry (..),
     QUERY,
     Schema,
     TRUE,
@@ -226,6 +222,9 @@ instance
   where
   render = render . filter fieldVisibility . elems
 
+instance RenderIntrospection (FieldContent TRUE IN VALID) where
+  render = render . defaultInputValue
+
 instance RenderIntrospection (Value VALID) where
   render Null = pure mkNull
   render x = pure $ mkString $ GQL.render x
@@ -258,7 +257,7 @@ instance RenderIntrospection (FieldDefinition IN VALID) where
         [ renderName fieldName,
           description fieldDescription,
           type' fieldType,
-          defaultValue fieldType (fmap defaultInputValue fieldContent)
+          defaultValue fieldContent
         ]
 
 instance RenderIntrospection (DataEnumValue VALID) where
@@ -311,7 +310,7 @@ renderDeprecated dirs =
   ]
 
 description :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-description desc = ("description", render desc)
+description = ("description",) . render
 
 mkType ::
   (Monad m, RenderIntrospection name) =>
@@ -367,60 +366,8 @@ type' = ("type",) . render
 
 defaultValue ::
   Monad m =>
-  TypeRef ->
-  Maybe (Value VALID) ->
+  Maybe (FieldContent TRUE IN VALID) ->
   ( FieldName,
     Resolver QUERY e m (ResModel QUERY e m)
   )
-defaultValue
-  typeRef
-  value =
-    ( "defaultValue",
-      fulfill typeRef value >>= render
-    )
-
-fulfill ::
-  WithSchema m =>
-  TypeRef ->
-  Maybe (Value VALID) ->
-  m (Value VALID)
-fulfill TypeRef {typeConName} (Just (Object fields)) =
-  selectType typeConName
-    >>= \case
-      TypeDefinition
-        { typeContent =
-            DataInputObject {inputObjectFields}
-        } ->
-          Object
-            <$> ( traverse
-                    (handleField fields)
-                    (elems inputObjectFields)
-                    >>= fromElems
-                )
-      _ -> failure (msg typeConName <> "is not must be Object")
-fulfill typeRef (Just (List values)) =
-  List <$> traverse (fulfill typeRef . Just) values
-fulfill _ (Just v) = pure v
-fulfill _ Nothing = pure Null
-
-handleField ::
-  WithSchema m =>
-  Object VALID ->
-  FieldDefinition IN VALID ->
-  m (ObjectEntry VALID)
-handleField
-  fields
-  FieldDefinition
-    { fieldName,
-      fieldType,
-      fieldContent
-    } =
-    ObjectEntry fieldName
-      <$> fulfill
-        fieldType
-        ( selectOr
-            (fmap defaultInputValue fieldContent)
-            (Just . entryValue)
-            fieldName
-            fields
-        )
+defaultValue = ("defaultValue",) . render
