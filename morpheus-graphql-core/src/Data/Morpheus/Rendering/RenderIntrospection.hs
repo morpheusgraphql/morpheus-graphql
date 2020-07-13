@@ -85,7 +85,13 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Data.Text (pack)
 import Data.Traversable (traverse)
-import Prelude (($), (.), concatMap, show)
+import Prelude
+  ( ($),
+    (.),
+    Bool,
+    concatMap,
+    show,
+  )
 
 type Result e m a = Resolver QUERY e m a
 
@@ -124,6 +130,15 @@ instance RenderIntrospection FieldName where
 instance RenderIntrospection Description where
   render = pure . mkString
 
+instance RenderIntrospection a => RenderIntrospection [a] where
+  render ls = mkList <$> traverse render ls
+
+instance RenderIntrospection a => RenderIntrospection (Maybe a) where
+  render = opt render
+
+instance RenderIntrospection Bool where
+  render = pure . mkBoolean
+
 instance RenderIntrospection TypeKind where
   render KindScalar = pure $ mkString "SCALAR"
   render KindObject {} = pure $ mkString "OBJECT"
@@ -134,9 +149,6 @@ instance RenderIntrospection TypeKind where
   render KindList = pure $ mkString "LIST"
   render KindNonNull = pure $ mkString "NON_NULL"
   render KindInterface = pure $ mkString "INTERFACE"
-
-instance RenderIntrospection a => RenderIntrospection [a] where
-  render ls = mkList <$> traverse render ls
 
 instance RenderIntrospection (DirectiveDefinition VALID) where
   render
@@ -215,6 +227,10 @@ instance
   where
   render = render . filter fieldVisibility . elems
 
+instance RenderIntrospection (Value VALID) where
+  render Null = pure mkNull
+  render x = pure $ mkString $ GQL.render x
+
 instance
   RenderIntrospection
     (FieldDefinition OUT VALID)
@@ -291,12 +307,12 @@ renderDeprecated ::
   Directives s ->
   [(FieldName, Resolver QUERY e m (ResModel QUERY e m))]
 renderDeprecated dirs =
-  [ ("isDeprecated", pure $ mkBoolean (isJust $ lookupDeprecated dirs)),
-    ("deprecationReason", opt (pure . mkString) (lookupDeprecated dirs >>= lookupDeprecatedReason))
+  [ ("isDeprecated", render (isJust $ lookupDeprecated dirs)),
+    ("deprecationReason", render (lookupDeprecated dirs >>= lookupDeprecatedReason))
   ]
 
 description :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (ResModel QUERY e m))
-description desc = ("description", opt render desc)
+description desc = ("description", render desc)
 
 lookupKind :: (Monad m) => TypeName -> Result e m TypeKind
 lookupKind = fmap kindOf . selectType
@@ -368,13 +384,8 @@ defaultValue
   typeRef
   value =
     ( "defaultValue",
-      opt
-        ( fmap
-            (mkString . GQL.render)
-            . fulfill typeRef
-            . Just
-        )
-        value
+      fulfill typeRef value
+        >>= render . Just
     )
 
 fulfill ::
@@ -411,13 +422,13 @@ handleField
   FieldDefinition
     { fieldName,
       fieldType,
-      fieldContent = x
+      fieldContent
     } =
     ObjectEntry fieldName
       <$> fulfill
         fieldType
         ( selectOr
-            (fmap defaultInputValue x)
+            (fmap defaultInputValue fieldContent)
             (Just . entryValue)
             fieldName
             fields
