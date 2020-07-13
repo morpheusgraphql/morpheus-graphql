@@ -18,6 +18,7 @@ import Data.Either (Either (..))
 import Data.Functor ((<$>), fmap)
 import Data.List (concat)
 import Data.Maybe (Maybe (..))
+import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind (..))
 import Data.Morpheus.Client.JSONSchema.Types
   ( EnumValue (..),
     Field (..),
@@ -26,11 +27,13 @@ import Data.Morpheus.Client.JSONSchema.Types
     Schema (..),
     Type (..),
   )
+import Data.Morpheus.Core
+  ( validateSchema,
+  )
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( fromElems,
   )
-import Data.Morpheus.Schema.TypeKind (TypeKind (..))
 import Data.Morpheus.Types.IO (JSONResponse (..))
 import qualified Data.Morpheus.Types.Internal.AST as AST
   ( Schema,
@@ -62,9 +65,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     failure,
-  )
-import Data.Morpheus.Validation.Document.Validation
-  ( validateSchema,
   )
 import Data.Semigroup ((<>))
 import Data.String (String)
