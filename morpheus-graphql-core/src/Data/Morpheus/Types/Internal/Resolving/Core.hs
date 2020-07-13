@@ -19,7 +19,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
     mapEvent,
     cleanEvents,
     PushEvents (..),
-    statelessToResultT,
     resultOr,
   )
 where
@@ -94,15 +93,6 @@ newtype ResultT event (m :: * -> *) a = ResultT
   { runResultT :: m (Result event a)
   }
   deriving (Functor)
-
-statelessToResultT ::
-  Applicative m =>
-  Eventless a ->
-  ResultT e m a
-statelessToResultT =
-  cleanEvents
-    . ResultT
-    . pure
 
 instance Applicative m => Applicative (ResultT event m) where
   pure = ResultT . pure . pure

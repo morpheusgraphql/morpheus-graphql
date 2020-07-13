@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Morpheus.Parsing.JSONSchema.Types
+module Data.Morpheus.Client.JSONSchema.Types
   ( Introspection (..),
     Schema (..),
     Type (..),

@@ -34,7 +34,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     unsafeInternalContext,
     runRootResModel,
     RootResModel (..),
-    liftStateless,
     withArguments,
     getArguments,
     SubscriptionField (..),
@@ -102,7 +101,6 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     ResultT (..),
     cleanEvents,
     mapEvent,
-    statelessToResultT,
   )
 import Data.Morpheus.Types.Internal.Resolving.Event
   ( Channel (..),
@@ -128,7 +126,6 @@ import Prelude
     (.),
     Eq (..),
     Show (..),
-    const,
     lookup,
     otherwise,
   )
@@ -233,19 +230,6 @@ instance (LiftOperation o, Monad m) => MonadReader Context (Resolver o e m) wher
 -- the internal AST with a safe interface.
 unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
 unsafeInternalContext = ask
-
-liftStateless ::
-  ( LiftOperation o,
-    Monad m
-  ) =>
-  Eventless a ->
-  Resolver o e m a
-liftStateless =
-  packResolver
-    . ResolverStateT
-    . ReaderT
-    . const
-    . statelessToResultT
 
 liftResolverState :: (LiftOperation o, Monad m) => ResolverState a -> Resolver o e m a
 liftResolverState = packResolver . toResolverStateT
