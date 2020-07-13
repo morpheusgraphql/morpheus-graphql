@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Morpheus.Parsing.JSONSchema.Types
+module Data.Morpheus.Client.JSONSchema.Types
   ( Introspection (..),
     Schema (..),
     Type (..),
@@ -16,7 +16,7 @@ where
 import Data.Aeson
 --
 -- MORPHEUS
-import Data.Morpheus.Schema.TypeKind (TypeKind)
+import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,

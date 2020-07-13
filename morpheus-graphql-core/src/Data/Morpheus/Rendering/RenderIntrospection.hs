@@ -33,8 +33,6 @@ import Data.Morpheus.Internal.Utils
     selectOr,
   )
 import qualified Data.Morpheus.Rendering.RenderGQL as GQL (RenderGQL (..))
-import Data.Morpheus.Schema.TypeKind (TypeKind (..))
-import qualified Data.Morpheus.Types.Internal.AST as AST (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -59,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName (..),
     TypeRef (..),
     UnionMember (..),
@@ -126,7 +125,15 @@ instance RenderIntrospection Description where
   render = pure . mkString
 
 instance RenderIntrospection TypeKind where
-  render = pure . mkString . pack . show
+  render KindScalar = pure $ mkString "SCALAR"
+  render KindObject {} = pure $ mkString "OBJECT"
+  render KindUnion = pure $ mkString "UNION"
+  render KindInputUnion = pure $ mkString "INPUT_OBJECT"
+  render KindEnum = pure $ mkString "ENUM"
+  render KindInputObject = pure $ mkString "INPUT_OBJECT"
+  render KindList = pure $ mkString "LIST"
+  render KindNonNull = pure $ mkString "NON_NULL"
+  render KindInterface = pure $ mkString "INTERFACE"
 
 instance RenderIntrospection a => RenderIntrospection [a] where
   render ls = mkList <$> traverse render ls
@@ -169,21 +176,21 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
           Monad m =>
           TypeContent bool a VALID ->
           ResModel QUERY e m
-        renderContent DataScalar {} = __type SCALAR []
-        renderContent (DataEnum enums) = __type ENUM [("enumValues", render enums)]
+        renderContent DataScalar {} = __type KindScalar []
+        renderContent (DataEnum enums) = __type KindEnum [("enumValues", render enums)]
         renderContent (DataInputObject inputFiels) =
           __type
-            INPUT_OBJECT
+            KindInputObject
             [("inputFields", render inputFiels)]
         renderContent DataObject {objectImplements, objectFields} =
           createObjectType typeName typeDescription objectImplements objectFields
         renderContent (DataUnion union) =
           __type
-            UNION
+            KindUnion
             [("possibleTypes", render union)]
         renderContent (DataInputUnion members) =
           __type
-            INPUT_OBJECT
+            KindInputObject
             [ ( "inputFields",
                 render
                   ( mkInputUnionFields typeName $
@@ -194,7 +201,7 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
             ]
         renderContent (DataInterface fields) =
           __type
-            INTERFACE
+            KindInterface
             [ ("fields", render fields),
               ("possibleTypes", interfacePossibleTypes typeName)
             ]
@@ -260,8 +267,8 @@ instance RenderIntrospection TypeRef where
           [ renderKind (wrapperKind wrapper),
             ("ofType", pure contentType)
           ]
-      wrapperKind ListType = LIST
-      wrapperKind NonNullType = NON_NULL
+      wrapperKind ListType = KindList
+      wrapperKind NonNullType = KindNonNull
 
 interfacePossibleTypes ::
   (Monad m) =>
@@ -292,18 +299,7 @@ description :: Monad m => Maybe Description -> (FieldName, Resolver QUERY e m (R
 description desc = ("description", opt render desc)
 
 lookupKind :: (Monad m) => TypeName -> Result e m TypeKind
-lookupKind = fmap (renderTypeKind . kindOf) . selectType
-
-renderTypeKind :: AST.TypeKind -> TypeKind
-renderTypeKind AST.KindScalar = SCALAR
-renderTypeKind (AST.KindObject _) = OBJECT
-renderTypeKind AST.KindUnion = UNION
-renderTypeKind AST.KindInputUnion = INPUT_OBJECT
-renderTypeKind AST.KindEnum = ENUM
-renderTypeKind AST.KindInputObject = INPUT_OBJECT
-renderTypeKind AST.KindList = LIST
-renderTypeKind AST.KindNonNull = NON_NULL
-renderTypeKind AST.KindInterface = INTERFACE
+lookupKind = fmap kindOf . selectType
 
 mkType ::
   (Monad m, RenderIntrospection name) =>
@@ -330,7 +326,7 @@ createObjectType ::
   FieldsDefinition OUT VALID ->
   ResModel QUERY e m
 createObjectType name desc interfaces fields =
-  mkType OBJECT name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
+  mkType (KindObject Nothing) name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
 
 implementedInterface ::
   (Monad m) =>

@@ -35,9 +35,12 @@ module Data.Morpheus.Internal.Utils
     ordTraverse,
     ordTraverse_,
     traverseCollection,
+    (<.>),
+    SemigroupM (..),
   )
 where
 
+import Control.Applicative (Applicative (..))
 import Control.Monad ((=<<), foldM)
 import Data.Char
   ( toLower,
@@ -59,7 +62,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeName (..),
     TypeNameRef (..),
   )
-import Data.Semigroup ((<>))
+import Data.Semigroup (Semigroup (..))
 import qualified Data.Text as T
   ( concat,
     pack,
@@ -72,7 +75,6 @@ import Text.Megaparsec.Stream (Stream)
 import Prelude
   ( ($),
     (.),
-    Applicative (..),
     Bool (..),
     Either (..),
     Eq (..),
@@ -211,6 +213,16 @@ class Merge a where
 
 (<:>) :: (Monad m, Merge a, Failure GQLErrors m) => a -> a -> m a
 (<:>) = merge []
+
+class SemigroupM m a where
+  mergeM :: [Ref] -> a -> a -> m a
+
+(<.>) ::
+  (SemigroupM m a) =>
+  a ->
+  a ->
+  m a
+(<.>) = mergeM []
 
 -- Failure: for custome Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where

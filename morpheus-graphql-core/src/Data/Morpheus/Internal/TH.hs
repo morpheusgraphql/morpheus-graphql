@@ -63,7 +63,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     Message,
     TypeKind (..),
-    TypeKind (..),
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),

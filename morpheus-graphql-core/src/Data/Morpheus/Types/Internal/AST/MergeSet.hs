@@ -50,7 +50,7 @@ import Data.Morpheus.Types.Internal.AST.Stage
     Stage,
     VALID,
   )
-import Data.Semigroup ((<>))
+import Data.Semigroup (Semigroup (..))
 import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude

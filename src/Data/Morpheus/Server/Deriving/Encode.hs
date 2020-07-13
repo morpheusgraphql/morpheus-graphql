@@ -58,6 +58,7 @@ import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     FieldName (..),
+    InternalError,
     MUTATION,
     Message,
     OperationType (..),
@@ -66,18 +67,17 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    FieldResModel,
+  ( FieldResModel,
     LiftOperation,
     ObjectResModel (..),
     ResModel (..),
     Resolver,
+    ResolverState,
     RootResModel (..),
     SubscriptionField (..),
     failure,
     getArguments,
     liftResolverState,
-    liftStateless,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -154,13 +154,13 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 
 -- ENUM
 instance (Generic a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
-  encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
+  encodeKind (VContext value) = liftResolverState $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
+  encodeKind (VContext value) = liftResolverState $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind INTERFACE a o e m where
-  encodeKind (VContext value) = liftStateless $ exploreResolvers (Proxy @(CUSTOM a)) value
+  encodeKind (VContext value) = liftResolverState $ exploreResolvers (Proxy @(CUSTOM a)) value
 
 convertNode ::
   (Monad m, LiftOperation o) =>
@@ -198,7 +198,7 @@ type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 
 --- GENERICS ------------------------------------------------
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: Proxy custom -> a -> Eventless (ResModel o e m)
+  exploreResolvers :: Proxy custom -> a -> ResolverState (ResModel o e m)
 
 instance (Generic a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers 'False a o e m where
   exploreResolvers _ value =
@@ -214,7 +214,7 @@ objectResolvers ::
     LiftOperation o
   ) =>
   a ->
-  Eventless (ResModel o e m)
+  ResolverState (ResModel o e m)
 objectResolvers value =
   exploreResolvers (Proxy @(CUSTOM a)) value
     >>= constraintOnject
@@ -222,7 +222,7 @@ objectResolvers value =
     constraintOnject obj@ResObject {} =
       pure obj
     constraintOnject _ =
-      failure ("resolver must be an object" :: Message)
+      failure ("resolver must be an object" :: InternalError)
 
 type Con o e m a =
   ExploreResolvers

@@ -26,7 +26,6 @@ module Data.Morpheus.Types.Internal.Resolving
     Context (..),
     unsafeInternalContext,
     RootResModel (..),
-    liftStateless,
     resultOr,
     withArguments,
     -- Dynamic Resolver

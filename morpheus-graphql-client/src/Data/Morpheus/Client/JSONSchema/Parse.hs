@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Parsing.JSONSchema.Parse
+module Data.Morpheus.Client.JSONSchema.Parse
   ( decodeIntrospection,
   )
 where
@@ -18,11 +18,8 @@ import Data.Either (Either (..))
 import Data.Functor ((<$>), fmap)
 import Data.List (concat)
 import Data.Maybe (Maybe (..))
-import Data.Morpheus.Error.Internal (internalError)
-import Data.Morpheus.Internal.Utils
-  ( fromElems,
-  )
-import Data.Morpheus.Parsing.JSONSchema.Types
+import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind (..))
+import Data.Morpheus.Client.JSONSchema.Types
   ( EnumValue (..),
     Field (..),
     InputValue (..),
@@ -30,7 +27,13 @@ import Data.Morpheus.Parsing.JSONSchema.Types
     Schema (..),
     Type (..),
   )
-import Data.Morpheus.Schema.TypeKind (TypeKind (..))
+import Data.Morpheus.Core
+  ( validateSchema,
+  )
+import Data.Morpheus.Error (globalErrorMessage)
+import Data.Morpheus.Internal.Utils
+  ( fromElems,
+  )
 import Data.Morpheus.Types.IO (JSONResponse (..))
 import qualified Data.Morpheus.Types.Internal.AST as AST
   ( Schema,
@@ -42,6 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     DataTypeWrapper (..),
     FieldDefinition,
     IN,
+    Message,
     OUT,
     TypeContent (..),
     TypeDefinition (..),
@@ -60,9 +64,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-  )
-import Data.Morpheus.Validation.Document.Validation
-  ( validateSchema,
+    failure,
   )
 import Data.Semigroup ((<>))
 import Data.String (String)
@@ -75,12 +77,15 @@ import Prelude
     uncurry,
   )
 
+decoderError :: Message -> Eventless a
+decoderError = failure . globalErrorMessage
+
 decodeIntrospection :: ByteString -> Eventless (AST.Schema VALID)
 decodeIntrospection jsonDoc = case jsonSchema of
-  Left errors -> internalError $ msg errors
+  Left errors -> decoderError $ msg errors
   Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
     traverse parse types >>= fromElems . concat >>= validate
-  Right res -> internalError (msg $ show res)
+  Right res -> decoderError (msg $ show res)
   where
     validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
     validate = validateSchema False
@@ -97,7 +102,7 @@ instance ParseJSONSchema Type [TypeDefinition ANY CONST] where
     pure [mkType typeName $ mkEnumContent (fmap enumName enums)]
   parse Type {name = Just typeName, kind = UNION, possibleTypes = Just unions} =
     case traverse name unions of
-      Nothing -> internalError "ERROR: GQL ERROR"
+      Nothing -> decoderError "ERROR: GQL ERROR"
       Just uni -> pure [toAny $ mkType typeName $ mkUnionContent uni]
   parse Type {name = Just typeName, kind = INPUT_OBJECT, inputFields = Just iFields} =
     do
@@ -134,4 +139,4 @@ fieldTypeFromJSON = fmap toHs . fieldTypeRec []
     fieldTypeRec acc Type {kind = NON_NULL, ofType = Just ofType} =
       fieldTypeRec (NonNullType : acc) ofType
     fieldTypeRec acc Type {name = Just name} = pure (acc, name)
-    fieldTypeRec _ x = internalError $ "Unsuported Field" <> msg (show x)
+    fieldTypeRec _ x = decoderError $ "Unsuported Field" <> msg (show x)

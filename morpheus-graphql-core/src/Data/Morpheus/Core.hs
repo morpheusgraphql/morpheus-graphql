@@ -12,7 +12,6 @@ module Data.Morpheus.Core
     parseDSL,
     parseFullGQLDocument,
     parseGQLDocument,
-    decodeIntrospection,
     parseTypeSystemDefinition,
     parseTypeDefinitions,
     validateRequest,
@@ -38,9 +37,6 @@ import Data.Morpheus.Parser
     parseRequestWith,
     parseTypeDefinitions,
     parseTypeSystemDefinition,
-  )
-import Data.Morpheus.Parsing.JSONSchema.Parse
-  ( decodeIntrospection,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),

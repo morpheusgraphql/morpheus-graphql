@@ -34,7 +34,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     unsafeInternalContext,
     runRootResModel,
     RootResModel (..),
-    liftStateless,
     withArguments,
     getArguments,
     SubscriptionField (..),
@@ -54,10 +53,9 @@ import Control.Monad.Trans.Reader
   )
 import Data.Functor ((<$>), Functor (..))
 import Data.Maybe (Maybe (..), maybe)
-import Data.Morpheus.Error.Internal (internalError)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
-  ( Merge (..),
+  ( SemigroupM (..),
     empty,
     keyOf,
     selectOr,
@@ -103,7 +101,6 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     ResultT (..),
     cleanEvents,
     mapEvent,
-    statelessToResultT,
   )
 import Data.Morpheus.Types.Internal.Resolving.Event
   ( Channel (..),
@@ -129,7 +126,6 @@ import Prelude
     (.),
     Eq (..),
     Show (..),
-    const,
     lookup,
     otherwise,
   )
@@ -234,19 +230,6 @@ instance (LiftOperation o, Monad m) => MonadReader Context (Resolver o e m) wher
 -- the internal AST with a safe interface.
 unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
 unsafeInternalContext = ask
-
-liftStateless ::
-  ( LiftOperation o,
-    Monad m
-  ) =>
-  Eventless a ->
-  Resolver o e m a
-liftStateless =
-  packResolver
-    . ResolverStateT
-    . ReaderT
-    . const
-    . statelessToResultT
 
 liftResolverState :: (LiftOperation o, Monad m) => ResolverState a -> Resolver o e m a
 liftResolverState = packResolver . toResolverStateT
@@ -412,8 +395,8 @@ data ObjectResModel o e m = ObjectResModel
   }
   deriving (Show)
 
-instance Merge (ObjectResModel o e m) where
-  merge _ (ObjectResModel tyname x) (ObjectResModel _ y) =
+instance Applicative f => SemigroupM f (ObjectResModel o e m) where
+  mergeM _ (ObjectResModel tyname x) (ObjectResModel _ y) =
     pure $ ObjectResModel tyname (x <> y)
 
 data ResModel (o :: OperationType) e (m :: * -> *)
@@ -425,22 +408,22 @@ data ResModel (o :: OperationType) e (m :: * -> *)
   | ResUnion TypeName (Resolver o e m (ResModel o e m))
   deriving (Show)
 
-instance Merge (ResModel o e m) where
-  merge p (ResObject x) (ResObject y) =
-    ResObject <$> merge p x y
-  merge _ _ _ = internalError "can't merge: incompatible resolvers"
+instance (Monad f, Failure InternalError f) => SemigroupM f (ResModel o e m) where
+  mergeM p (ResObject x) (ResObject y) =
+    ResObject <$> mergeM p x y
+  mergeM _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
 
 data RootResModel e m = RootResModel
-  { query :: Eventless (ResModel QUERY e m),
-    mutation :: Eventless (ResModel MUTATION e m),
-    subscription :: Eventless (ResModel SUBSCRIPTION e m),
+  { query :: ResolverState (ResModel QUERY e m),
+    mutation :: ResolverState (ResModel MUTATION e m),
+    subscription :: ResolverState (ResModel SUBSCRIPTION e m),
     channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
-  Eventless (ResModel o e m) ->
+  ResolverState (ResModel o e m) ->
   Context ->
   ResponseStream e m (Value VALID)
 runRootDataResolver
@@ -448,7 +431,7 @@ runRootDataResolver
   res
   ctx@Context {operation = Operation {operationSelection}} =
     do
-      root <- statelessToResultT res
+      root <- runResolverStateT (toResolverStateT res) ctx
       runResolver channels (resolveObject operationSelection root) ctx
 
 runRootResModel :: Monad m => RootResModel e m -> Context -> ResponseStream e m (Value VALID)

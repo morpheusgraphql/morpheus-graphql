@@ -26,9 +26,11 @@ import Data.Morpheus.Client.Build
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
-import Data.Morpheus.Core
+import Data.Morpheus.Client.JSONSchema.Parse
   ( decodeIntrospection,
-    parseFullGQLDocument,
+  )
+import Data.Morpheus.Core
+  ( parseFullGQLDocument,
   )
 import Data.Morpheus.QuasiQuoter (gql)
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
