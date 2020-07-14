@@ -479,15 +479,21 @@ renderContext
       currentTypeKind,
       fieldname
     } =
-    renderSection "current type" currentTypeName
-      <> renderSection "current type kind" currentTypeKind
-      <> renderSection "current field name" fieldname
+    renderSection
+      "Scope"
+      ( "referenced by type "
+          <> msg currentTypeName
+          <> " of kind "
+          <> render currentTypeKind
+          <> " in field "
+          <> msg fieldname
+      )
 
-renderSection :: RenderGQL a => Message -> a -> Message
+renderSection :: Message -> Message -> Message
 renderSection label content =
   "\n\n" <> label <> ":\n" <> line
     <> "\n\n"
-    <> msg (render content)
+    <> content
     <> "\n\n"
   where
     line = stimes (50 :: Int) "-"
