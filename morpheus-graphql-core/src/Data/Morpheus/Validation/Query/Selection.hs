@@ -221,38 +221,14 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
           ----- SelectionSet
           validateSelectionContent directives (SelectionSet rawSelectionSet) =
             do
-              (tyDef@TypeDefinition {typeContent}, validArgs) <- commonValidation
-              selContent <- withScope tyDef currentSelectionRef $ validateByTypeContent tyDef typeContent
+              (tyDef, validArgs) <- commonValidation
+              selContent <- validateByTypeContent tyDef currentSelectionRef rawSelectionSet
               pure $ singleton $
                 sel
                   { selectionArguments = validArgs,
                     selectionDirectives = directives,
                     selectionContent = selContent
                   }
-            where
-              validateByTypeContent :: TypeDefinition OUT VALID -> TypeContent TRUE OUT VALID -> SelectionValidator (SelectionContent VALID)
-              -- Validate UnionSelection
-              validateByTypeContent _ DataUnion {unionMembers} =
-                validateUnionSelection
-                  validateSelectionSet
-                  rawSelectionSet
-                  unionMembers
-              -- Validate Regular selection set
-              validateByTypeContent tyDef DataObject {objectFields} =
-                SelectionSet
-                  <$> validateSelectionSet
-                    (tyDef, objectFields)
-                    rawSelectionSet
-              validateByTypeContent tyDef DataInterface {interfaceFields} =
-                SelectionSet
-                  <$> validateSelectionSet
-                    (tyDef, interfaceFields)
-                    rawSelectionSet
-              validateByTypeContent tyDef _ =
-                failure $
-                  hasNoSubfields
-                    (Ref selectionName selectionPosition)
-                    tyDef
     validateSelection (Spread dirs ref) =
       processSelectionDirectives FRAGMENT_SPREAD dirs
         $ const
@@ -273,3 +249,39 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
             >>= validateFragment
     --------------------------------------------------------------------------------
     validateFragment Fragment {fragmentSelection} = validateSelectionSet dataType fragmentSelection
+
+validateByTypeContent ::
+  TypeDefinition OUT VALID ->
+  Ref ->
+  SelectionSet RAW ->
+  SelectionValidator (SelectionContent VALID)
+validateByTypeContent
+  typeDef@TypeDefinition {typeContent}
+  currentSelectionRef
+  rawSelectionSet =
+    withScope typeDef currentSelectionRef $
+      __validate typeContent
+    where
+      __validate :: TypeContent TRUE OUT VALID -> SelectionValidator (SelectionContent VALID)
+      -- Validate UnionSelection
+      __validate DataUnion {unionMembers} =
+        validateUnionSelection
+          validateSelectionSet
+          rawSelectionSet
+          unionMembers
+      -- Validate Regular selection set
+      __validate DataObject {objectFields} =
+        SelectionSet
+          <$> validateSelectionSet
+            (typeDef, objectFields)
+            rawSelectionSet
+      __validate DataInterface {interfaceFields} =
+        SelectionSet
+          <$> validateSelectionSet
+            (typeDef, interfaceFields)
+            rawSelectionSet
+      __validate _ =
+        failure $
+          hasNoSubfields
+            currentSelectionRef
+            typeDef
