@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
@@ -71,7 +72,7 @@ import GHC.Generics
 decodeArguments :: DecodeType a => Arguments VALID -> ResolverState a
 decodeArguments = decodeType . Object . fmap toEntry
   where
-    toEntry (Argument name value _) = ObjectEntry name value
+    toEntry Argument {..} = ObjectEntry argumentName argumentValue
 
 -- | Decode GraphQL query arguments and input values
 class Decode a where
