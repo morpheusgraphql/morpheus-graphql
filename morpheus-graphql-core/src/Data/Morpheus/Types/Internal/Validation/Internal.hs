@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
     FieldsDefinition,
-    FromAny,
     GQLErrors,
     IN,
     InternalError,
@@ -72,10 +71,38 @@ import Prelude
 askFieldType ::
   FieldDefinition OUT VALID ->
   SelectionValidator (TypeDefinition OUT VALID)
-askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
+askFieldType FieldDefinition {fieldType = TypeRef {typeConName}} =
   askSchema
     >>= selectBy (unknownType typeConName) typeConName
-    >>= internalConstraint (fieldTypeViolation False field)
+    >>= internalConstraint (typeViolation False)
+
+askInputFieldTypeByName ::
+  ( Failure GQLErrors (m c),
+    Failure InternalError (m c),
+    Monad (m c),
+    GetWith c (Schema s),
+    MonadContext m c
+  ) =>
+  TypeName ->
+  m c (TypeDefinition IN s)
+askInputFieldTypeByName name =
+  askSchema
+    >>= selectBy (unknownType name) name
+    >>= internalConstraint (typeViolation True)
+
+askInputFieldType ::
+  ( Failure GQLErrors (m c),
+    Failure InternalError (m c),
+    Monad (m c),
+    GetWith c (Schema s),
+    MonadContext m c
+  ) =>
+  FieldDefinition IN s ->
+  m c (TypeDefinition IN s)
+askInputFieldType FieldDefinition {fieldType = TypeRef {typeConName}} =
+  askSchema
+    >>= selectBy (unknownType typeConName) typeConName
+    >>= internalConstraint (typeViolation True)
 
 askTypeMember ::
   UnionMember OUT s ->
@@ -91,38 +118,10 @@ askTypeMember UnionMember {memberName} =
     constraintOBJECT ::
       TypeDefinition OUT s ->
       SelectionValidator (TypeDefinition OUT s, FieldsDefinition OUT s)
-    constraintOBJECT t@TypeDefinition {typeContent} = con typeContent
+    constraintOBJECT t@TypeDefinition {typeContent, typeName} = con typeContent
       where
         con DataObject {objectFields} = pure (t, objectFields)
-        con _ = failure (unionTypeViolation False t)
-
-askInputFieldTypeByName ::
-  ( Failure GQLErrors (m c),
-    Failure InternalError (m c),
-    Monad (m c),
-    GetWith c (Schema s),
-    MonadContext m c
-  ) =>
-  TypeName ->
-  m c (TypeDefinition IN s)
-askInputFieldTypeByName name =
-  askSchema
-    >>= selectBy (unknownType name) name
-    >>= internalConstraint inputTypeViolation
-
-askInputFieldType ::
-  ( Failure GQLErrors (m c),
-    Failure InternalError (m c),
-    Monad (m c),
-    GetWith c (Schema s),
-    MonadContext m c
-  ) =>
-  FieldDefinition IN s ->
-  m c (TypeDefinition IN s)
-askInputFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
-  askSchema
-    >>= selectBy (unknownType typeConName) typeConName
-    >>= internalConstraint (fieldTypeViolation True field)
+        con _ = failure (unionTypeViolation False typeName)
 
 askInputMember ::
   forall c m s.
@@ -147,7 +146,7 @@ askInputMember name =
       ) =>
       TypeDefinition ANY s ->
       m c (TypeDefinition IN s)
-    constraintINPUT_OBJECT t@TypeDefinition {typeContent, ..} = con (fromAny typeContent)
+    constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
       where
         con ::
           ( Monad (m c),
@@ -157,7 +156,7 @@ askInputMember name =
           Maybe (TypeContent a IN s) ->
           m c (TypeDefinition IN s)
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
-        con _ = failure (unionTypeViolation True t)
+        con _ = failure (unionTypeViolation True typeName)
 
 getOperationObjectType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
 getOperationObjectType operation = do
@@ -179,26 +178,19 @@ getOperationObjectType operation = do
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
 
-inputTypeViolation :: TypeDefinition c s -> InternalError
-inputTypeViolation x = "Type " <> msgInternal (typeName x) <> " must be an Input Type."
-
-fieldTypeViolation ::
+typeViolation ::
   Bool ->
-  FieldDefinition cat s ->
-  TypeDefinition cat' s' ->
+  TypeName ->
   InternalError
-fieldTypeViolation isInput field anyType =
-  "Type \"" <> msgInternal (typeName anyType)
-    <> "\" referenced by "
-    <> refType
-    <> " \""
-    <> msgInternal (fieldName field)
+typeViolation isInput typeName =
+  "Type \"" <> msgInternal typeName
     <> "\" must be an"
-    <> mustBe
+    <> mustBeCategory isInput
     <> "."
-  where
-    refType = mustBeKind "OBJECT" isInput
-    mustBe = mustBeKind "TYPE" isInput
+
+mustBeCategory :: Bool -> InternalError
+mustBeCategory True = "input type"
+mustBeCategory False = " output type"
 
 mustBeKind :: InternalError -> Bool -> InternalError
 mustBeKind kind isInput
@@ -207,20 +199,19 @@ mustBeKind kind isInput
 
 unionTypeViolation ::
   Bool ->
-  TypeDefinition cat' s' ->
+  TypeName ->
   InternalError
-unionTypeViolation isInput x =
-  "Type \"" <> msgInternal (typeName x) <> "\" must be an " <> mustBe <> "."
+unionTypeViolation isInput typeName =
+  "Type \"" <> msgInternal typeName <> "\" must be an " <> mustBe <> "."
   where
     mustBe = mustBeKind "OBJECT" isInput
 
 internalConstraint ::
-  ( FromAny a k,
-    Failure InternalError f
+  ( Failure InternalError f
   ) =>
-  (a ANY s -> InternalError) ->
-  a ANY s ->
-  f (a k s)
+  (TypeName -> InternalError) ->
+  TypeDefinition ANY s ->
+  f (TypeDefinition k s)
 internalConstraint err anyType = case fromAny anyType of
   Just x -> pure x
-  Nothing -> failure (err anyType)
+  Nothing -> failure (err (typeName anyType))
