@@ -48,6 +48,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     RootOperationTypeDefinition (..),
     SchemaDefinition (..),
     buildSchema,
+    TypedRef (..),
   )
 where
 
@@ -159,6 +160,10 @@ import Prelude
   )
 
 type DataEnum s = [DataEnumValue s]
+
+newtype TypedRef (cat :: TypeCategory) (s :: Stage) = TypedRef
+  { unTypedRef :: TypeRef
+  }
 
 mkUnionMember :: TypeName -> UnionMember cat s
 mkUnionMember name = UnionMember name True

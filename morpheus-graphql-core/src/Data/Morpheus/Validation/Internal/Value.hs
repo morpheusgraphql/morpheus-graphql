@@ -57,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
+    TypedRef (..),
     VALID,
     ValidValue,
     Value (..),
@@ -153,17 +154,14 @@ validateInputByType ::
 validateInputByType = validateInput
 
 validateInputByTypeRef ::
-  forall schemaS s c.
   ValueConstraints c schemaS s =>
-  Proxy schemaS ->
-  TypeRef ->
+  TypedRef IN schemaS ->
   Value s ->
   Validator (InputContext c) (Value VALID)
 validateInputByTypeRef
-  _
-  typeRef@TypeRef {typeWrappers}
+  ref@(TypedRef TypeRef {typeWrappers})
   value = do
-    (inputTypeDef :: TypeDefinition IN schemaS) <- askTypeByRef typeRef
+    inputTypeDef <- askTypeByRef ref
     validateInputByType typeWrappers inputTypeDef value
 
 validateValueByField ::
@@ -177,7 +175,9 @@ validateValueByField
     { fieldName,
       fieldType = typeRef@TypeRef {typeConName}
     } =
-    withInputScope (Prop fieldName typeConName) . validateInputByTypeRef (Proxy @schemaS) typeRef
+    withInputScope (Prop fieldName typeConName)
+      . validateInputByTypeRef
+        (TypedRef typeRef :: TypedRef IN schemaS)
 
 -- Validate input Values
 validateInput ::
