@@ -14,7 +14,6 @@
 module Data.Morpheus.Types.Internal.Validation.Internal
   ( askFieldType,
     askTypeMember,
-    askInputFieldTypeByName,
     askInputMember,
     getOperationObjectType,
     askInputFieldType,
@@ -34,7 +33,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    FieldDefinition (..),
     FieldsDefinition,
     FromAny,
     GQLErrors,
@@ -77,20 +75,6 @@ askFieldType TypeRef {typeConName} =
     >>= selectBy (unknownType typeConName) typeConName
     >>= internalConstraint (typeViolation False)
 
-askInputFieldTypeByName ::
-  ( Failure GQLErrors (m c),
-    Failure InternalError (m c),
-    Monad (m c),
-    GetWith c (Schema s),
-    MonadContext m c
-  ) =>
-  TypeName ->
-  m c (TypeDefinition IN s)
-askInputFieldTypeByName name =
-  askSchema
-    >>= selectBy (unknownType name) name
-    >>= internalConstraint (typeViolation True)
-
 askInputFieldType ::
   ( Failure GQLErrors (m c),
     Failure InternalError (m c),
@@ -98,16 +82,19 @@ askInputFieldType ::
     GetWith c (Schema s),
     MonadContext m c
   ) =>
-  FieldDefinition IN s ->
+  TypeRef ->
   m c (TypeDefinition IN s)
-askInputFieldType FieldDefinition {fieldType = TypeRef {typeConName}} =
+askInputFieldType TypeRef {typeConName} =
   askSchema
     >>= selectBy (unknownType typeConName) typeConName
     >>= internalConstraint (typeViolation True)
 
 askTypeMember ::
   UnionMember OUT s ->
-  SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
+  SelectionValidator
+    ( TypeDefinition OUT VALID,
+      FieldsDefinition OUT VALID
+    )
 askTypeMember UnionMember {memberName} =
   askSchema
     >>= selectOr notFound pure memberName

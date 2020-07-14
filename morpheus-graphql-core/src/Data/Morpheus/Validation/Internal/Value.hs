@@ -83,7 +83,6 @@ import Data.Morpheus.Types.Internal.Validation
     Scope (..),
     Validator,
     askInputFieldType,
-    askInputFieldTypeByName,
     askInputMember,
     asksScope,
     constraintInputUnion,
@@ -163,22 +162,23 @@ validateInputByTypeRef ::
   Validator (InputContext c) (Value VALID)
 validateInputByTypeRef
   _
-  TypeRef {typeWrappers, typeConName}
+  typeRef@TypeRef {typeWrappers}
   value = do
-    (inputTypeDef :: TypeDefinition IN schemaS) <- askInputFieldTypeByName typeConName
+    (inputTypeDef :: TypeDefinition IN schemaS) <- askInputFieldType typeRef
     validateInputByType typeWrappers inputTypeDef value
 
 validateInputByField ::
+  forall c schemaS s.
   ValueConstraints c schemaS s =>
   FieldDefinition IN schemaS ->
   Value s ->
   Validator (InputContext c) (Value VALID)
 validateInputByField
-  fieldDef@FieldDefinition
-    { fieldType = TypeRef {typeWrappers}
+  FieldDefinition
+    { fieldType = typeRef@TypeRef {typeWrappers}
     }
   value = do
-    inputTypeDef <- askInputFieldType fieldDef
+    (inputTypeDef :: TypeDefinition IN schemaS) <- askInputFieldType typeRef
     validateInputByType typeWrappers inputTypeDef value
 
 validateValueByField ::

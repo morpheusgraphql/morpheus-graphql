@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     DirectiveLocation (FIELD, FRAGMENT_SPREAD, INLINE_FRAGMENT, MUTATION, QUERY, SUBSCRIPTION),
     Directives,
+    FieldDefinition (fieldType),
     FieldName,
     FieldsDefinition,
     Fragment (..),
@@ -188,7 +189,7 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
           commonValidation = do
             fieldDef <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             (,)
-              <$> askFieldType fieldDef
+              <$> askFieldType (fieldType fieldDef)
               <*> validateFieldArguments fieldDef selectionArguments
           -----------------------------------------------------------------------------------
           validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
