@@ -48,7 +48,6 @@ module Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     DefaultValue,
     getOperationName,
-    getOperationDataType,
     -- DSL
     ScalarDefinition (..),
     DataEnum,

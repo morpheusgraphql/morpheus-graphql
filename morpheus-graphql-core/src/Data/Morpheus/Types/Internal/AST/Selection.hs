@@ -24,7 +24,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
     VariableDefinitions,
     DefaultValue,
     getOperationName,
-    getOperationDataType,
   )
 where
 
@@ -36,10 +35,6 @@ import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..), fromMaybe, isJust, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
-  )
-import Data.Morpheus.Error.Operation
-  ( mutationIsNotDefined,
-    subscriptionIsNotDefined,
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -82,13 +77,6 @@ import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,
     Stage,
     VALID,
-  )
-import Data.Morpheus.Types.Internal.AST.TypeCategory
-  ( OUT,
-  )
-import Data.Morpheus.Types.Internal.AST.TypeSystem
-  ( Schema (..),
-    TypeDefinition (..),
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ResolvedValue,
@@ -337,14 +325,3 @@ instance RenderGQL (Operation VALID) where
 
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)
-
-getOperationDataType :: Failure GQLErrors m => Operation s -> Schema s' -> m (TypeDefinition OUT s')
-getOperationDataType Operation {operationType = Query} lib = pure (query lib)
-getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
-  case mutation lib of
-    Just x -> pure x
-    Nothing -> failure $ mutationIsNotDefined operationPosition
-getOperationDataType Operation {operationType = Subscription, operationPosition} lib =
-  case subscription lib of
-    Just x -> pure x
-    Nothing -> failure $ subscriptionIsNotDefined operationPosition

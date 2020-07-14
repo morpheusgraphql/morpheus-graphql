@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,7 +14,7 @@ module Data.Morpheus.Types.Internal.Validation.Internal
   ( askFieldType,
     askTypeMember,
     askInputMember,
-    getOperationObjectType,
+    getOperationType,
     askInputFieldType,
   )
 where
@@ -26,6 +25,10 @@ import Control.Applicative (Applicative, pure)
 import Control.Monad (Monad ((>>=)))
 import Data.Functor ((<$>))
 import Data.Maybe (maybe)
+import Data.Morpheus.Error.Operation
+  ( mutationIsNotDefined,
+    subscriptionIsNotDefined,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectBy,
@@ -35,11 +38,14 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldsDefinition,
     FromAny,
+    GQLErrors,
     IN,
     InternalError,
     OUT,
     Operation,
-    Schema,
+    Operation (..),
+    OperationType (..),
+    Schema (..),
     Token,
     TypeContent (..),
     TypeDefinition (..),
@@ -48,7 +54,6 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     fromAny,
-    getOperationDataType,
     msgInternal,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
@@ -118,11 +123,18 @@ askInputMember name =
   where
     notFound = failure (unknownType name)
 
-getOperationObjectType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
-getOperationObjectType operation =
+getOperationType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
+getOperationType operation =
   askSchema
     >>= getOperationDataType operation
     >>= constraintObject
+
+getOperationDataType :: Failure GQLErrors m => Operation s -> Schema VALID -> m (TypeDefinition OUT VALID)
+getOperationDataType Operation {operationType = Query} lib = pure (query lib)
+getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
+  maybe (failure $ mutationIsNotDefined operationPosition) pure (mutation lib)
+getOperationDataType Operation {operationType = Subscription, operationPosition} lib =
+  maybe (failure $ subscriptionIsNotDefined operationPosition) pure (subscription lib)
 
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."

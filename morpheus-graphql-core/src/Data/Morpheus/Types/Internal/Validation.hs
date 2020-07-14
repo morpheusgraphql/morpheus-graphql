@@ -52,7 +52,7 @@ module Data.Morpheus.Types.Internal.Validation
     askFragments,
     MonadContext,
     CurrentSelection (..),
-    getOperationObjectType,
+    getOperationType,
   )
 where
 
@@ -111,7 +111,7 @@ import Data.Morpheus.Types.Internal.Validation.Internal
     askInputFieldType,
     askInputMember,
     askTypeMember,
-    getOperationObjectType,
+    getOperationType,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( BaseValidator,
