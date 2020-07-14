@@ -36,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),
     FieldsDefinition,
+    FromAny,
     GQLErrors,
     IN,
     InternalError,
@@ -69,9 +70,9 @@ import Prelude
   )
 
 askFieldType ::
-  FieldDefinition OUT VALID ->
+  TypeRef ->
   SelectionValidator (TypeDefinition OUT VALID)
-askFieldType FieldDefinition {fieldType = TypeRef {typeConName}} =
+askFieldType TypeRef {typeConName} =
   askSchema
     >>= selectBy (unknownType typeConName) typeConName
     >>= internalConstraint (typeViolation False)
@@ -207,7 +208,8 @@ unionTypeViolation isInput typeName =
     mustBe = mustBeKind "OBJECT" isInput
 
 internalConstraint ::
-  ( Failure InternalError f
+  ( Failure InternalError f,
+    FromAny TypeDefinition k
   ) =>
   (TypeName -> InternalError) ->
   TypeDefinition ANY s ->
