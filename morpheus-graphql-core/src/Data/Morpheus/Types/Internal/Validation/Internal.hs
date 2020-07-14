@@ -40,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Operation,
     Schema,
+    Token,
     TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
@@ -118,21 +119,10 @@ askInputMember name =
     notFound = failure (unknownType name)
 
 getOperationObjectType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
-getOperationObjectType operation = do
-  dt <- askSchema >>= getOperationDataType operation
-  case dt of
-    TypeDefinition {typeContent = DataObject {objectFields, ..}, typeName, ..} ->
-      pure
-        ( TypeDefinition {typeContent = DataObject {objectFields, ..}, ..},
-          objectFields
-        )
-    TypeDefinition {typeName} ->
-      failure
-        ( "Type Mismatch: operation \""
-            <> msgInternal typeName
-            <> "\" must be an Object" ::
-            InternalError
-        )
+getOperationObjectType operation =
+  askSchema
+    >>= getOperationDataType operation
+    >>= constraintObject
 
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
@@ -141,7 +131,7 @@ _kindConstraint ::
   ( Failure InternalError f,
     FromAny TypeDefinition k
   ) =>
-  TypeName ->
+  Token ->
   TypeDefinition ANY s ->
   f (TypeDefinition k s)
 _kindConstraint err anyType =
@@ -175,7 +165,7 @@ instance KindErrors OUT where
   constraintObject TypeDefinition {typeName} = failure (violation "object" typeName)
 
 violation ::
-  TypeName ->
+  Token ->
   TypeName ->
   InternalError
 violation kind typeName =
