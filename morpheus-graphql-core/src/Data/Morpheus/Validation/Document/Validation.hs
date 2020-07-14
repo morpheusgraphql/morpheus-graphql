@@ -59,6 +59,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName,
     TypeRef (..),
     UnionMember (..),
@@ -128,9 +129,10 @@ instance ValidateSchema CONST where
         __validateSchema
         Scope
           { position = Nothing,
-            typename = "DocumentRoot",
+            currentTypeName = "Root",
+            currentTypeKind = KindObject Nothing,
             kind = TYPE,
-            fieldname = "DocumentRoot"
+            fieldname = "Root"
           }
         TypeSystemContext
           { schema = sysSchema,

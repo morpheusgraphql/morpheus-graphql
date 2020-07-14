@@ -86,6 +86,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema,
     Stage,
     TypeDefinition,
+    TypeKind (..),
     TypeName (..),
     VALID,
     Variable (..),
@@ -158,9 +159,10 @@ newtype CurrentSelection = CurrentSelection
 
 data Scope = Scope
   { position :: Maybe Position,
-    typename :: TypeName,
-    kind :: ScopeKind,
-    fieldname :: FieldName
+    currentTypeName :: TypeName,
+    currentTypeKind :: TypeKind,
+    fieldname :: FieldName,
+    kind :: ScopeKind
   }
   deriving (Show)
 
@@ -307,7 +309,12 @@ withScope ::
 withScope typeName (Ref selName pos) =
   setSelectionName selName . setScope update
   where
-    update Scope {..} = Scope {typename = typeName, position = Just pos, ..}
+    update Scope {..} =
+      Scope
+        { currentTypeName = typeName,
+          position = Just pos,
+          ..
+        }
 
 withPosition ::
   ( MonadContext m c
@@ -327,7 +334,7 @@ withScopeType ::
   m c a
 withScopeType name = setScope update
   where
-    update Scope {..} = Scope {typename = name, ..}
+    update Scope {..} = Scope {currentTypeName = name, ..}
 
 inputMessagePrefix :: InputValidator ctx Message
 inputMessagePrefix =

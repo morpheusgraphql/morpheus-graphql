@@ -279,7 +279,7 @@ askTypeMember UnionMember {memberName} =
     >>= constraintOBJECT
   where
     notFound = do
-      scopeType <- asksScope typename
+      scopeType <- asksScope currentTypeName
       failure
         (unknownUnionType False scopeType memberName)
     --------------------------------------
@@ -290,7 +290,7 @@ askTypeMember UnionMember {memberName} =
       where
         con DataObject {objectFields} = pure (typeName, objectFields)
         con _ = do
-          scopeType <- asksScope typename
+          scopeType <- asksScope currentTypeName
           failure (unionTypeViolation False scopeType t)
 
 askInputFieldTypeByName ::
@@ -336,7 +336,7 @@ askInputMember name =
     >>= constraintINPUT_OBJECT
   where
     notFound = do
-      scopeType <- asksScope typename
+      scopeType <- asksScope currentTypeName
       failure (unknownUnionType True scopeType name)
     --------------------------------------
     constraintINPUT_OBJECT ::
@@ -357,7 +357,7 @@ askInputMember name =
           m c (TypeDefinition IN s)
         con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
         con _ = do
-          scopeType <- asksScope typename
+          scopeType <- asksScope currentTypeName
           failure (unionTypeViolation True scopeType t)
 
 constraintInputUnion ::

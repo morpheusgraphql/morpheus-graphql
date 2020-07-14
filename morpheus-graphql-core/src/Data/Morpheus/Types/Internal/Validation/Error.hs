@@ -185,7 +185,7 @@ instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
       ("Unknown Directive " <> msg directiveName <> ".")
 
 instance Unknown (FieldsDefinition OUT s) Ref (OperationContext v) where
-  unknown Scope {typename} _ _ = unknownSelectionField typename
+  unknown Scope {currentTypeName} _ _ = unknownSelectionField currentTypeName
 
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> GQLError

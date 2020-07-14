@@ -14,6 +14,7 @@ import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
     Operation (..),
     Schema (..),
+    TypeKind (..),
     VALID,
     VALIDATION_MODE,
   )
@@ -62,7 +63,8 @@ validateRequest
       scope =
         Scope
           { kind = SELECTION,
-            typename = "Root",
+            currentTypeName = "Root",
+            currentTypeKind = KindObject Nothing,
             fieldname = "Root",
             position = Just operationPosition
           }
