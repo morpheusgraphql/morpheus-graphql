@@ -45,6 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     Position (..),
     RAW,
     Schema,
+    TypedRef (..),
     VALID,
     Value (..),
     VariableDefinitions,
@@ -69,7 +70,6 @@ import Data.Morpheus.Validation.Internal.Value
     ValueConstraints,
     validateInputByTypeRef,
   )
-import Data.Proxy (Proxy (..))
 import Data.Traversable (traverse)
 import Prelude
   ( ($),
@@ -109,7 +109,7 @@ validateArgument
 toArgument :: FieldDefinition IN s -> Value schemaS -> Validator ctx (Argument schemaS)
 toArgument
   FieldDefinition {fieldName}
-  value = Argument fieldName value . fromMaybe (Position 0 0) <$> asksScope position
+  value = flip (Argument fieldName) value . fromMaybe (Position 0 0) <$> asksScope position
 
 validateArgumentValue ::
   forall ctx schemaS valueS.
@@ -118,12 +118,12 @@ validateArgumentValue ::
   Argument valueS ->
   Validator ctx (Argument VALID)
 validateArgumentValue
-  argumentDef
+  FieldDefinition {fieldType}
   Argument {argumentValue = value, ..} =
     withPosition argumentPosition
       $ startInput (SourceArgument argumentName)
       $ do
-        argumentValue <- validateInputByTypeRef (Proxy @schemaS) (fieldType argumentDef) value
+        argumentValue <- validateInputByTypeRef (TypedRef fieldType :: TypedRef IN schemaS) value
         pure Argument {argumentValue, ..}
 
 validateFieldArguments ::
@@ -171,7 +171,7 @@ class Resolve f s ctx where
   resolve :: f s -> Validator ctx (f CONST)
 
 instance VariableConstraints ctx => Resolve Argument RAW ctx where
-  resolve (Argument key val position) = flip (Argument key) position <$> resolve val
+  resolve (Argument key position val) = Argument key position <$> resolve val
 
 instance Resolve f CONST ctx where
   resolve = pure

@@ -50,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypedRef (..),
     VALID,
     isEntNode,
     msg,
@@ -189,7 +190,7 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
           commonValidation = do
             fieldDef <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             (,)
-              <$> askTypeByRef (fieldType fieldDef)
+              <$> askTypeByRef (TypedRef (fieldType fieldDef) :: TypedRef OUT VALID)
               <*> validateFieldArguments fieldDef selectionArguments
           -----------------------------------------------------------------------------------
           validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
