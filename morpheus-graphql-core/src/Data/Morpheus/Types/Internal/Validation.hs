@@ -55,6 +55,7 @@ module Data.Morpheus.Types.Internal.Validation
     MonadContext,
     CurrentSelection (..),
     askInputFieldTypeByName,
+    getOperationObjectType,
   )
 where
 
@@ -93,6 +94,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Object,
     ObjectEntry (..),
+    Operation,
     Position (..),
     Ref (..),
     Schema,
@@ -107,6 +109,7 @@ import Data.Morpheus.Types.Internal.AST
     __inputname,
     entryValue,
     fromAny,
+    getOperationDataType,
     isNullable,
     msg,
     msgInternal,
@@ -272,10 +275,12 @@ askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
 
 askTypeMember ::
   UnionMember OUT s ->
-  SelectionValidator (TypeName, FieldsDefinition OUT VALID)
-askTypeMember UnionMember {memberName} =
+  SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
+askTypeMember UnionMember {memberName} = do
+  scopeType <- asksScope currentTypeName
   askSchema
     >>= selectOr notFound pure memberName
+    >>= internalConstraint (unionTypeViolation False scopeType)
     >>= constraintOBJECT
   where
     notFound = do
@@ -284,11 +289,11 @@ askTypeMember UnionMember {memberName} =
         (unknownUnionType False scopeType memberName)
     --------------------------------------
     constraintOBJECT ::
-      TypeDefinition ANY s ->
-      SelectionValidator (TypeName, FieldsDefinition OUT s)
-    constraintOBJECT t@TypeDefinition {typeName, typeContent} = con typeContent
+      TypeDefinition OUT s ->
+      SelectionValidator (TypeDefinition OUT s, FieldsDefinition OUT s)
+    constraintOBJECT t@TypeDefinition {typeContent} = con typeContent
       where
-        con DataObject {objectFields} = pure (typeName, objectFields)
+        con DataObject {objectFields} = pure (t, objectFields)
         con _ = do
           scopeType <- asksScope currentTypeName
           failure (unionTypeViolation False scopeType t)
@@ -396,6 +401,23 @@ isPosibeInputUnion tags (Enum name)
   | name `elem` fmap memberName tags = pure name
   | otherwise = failure $ msg name <> " is not posible union type"
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
+
+getOperationObjectType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
+getOperationObjectType operation = do
+  dt <- askSchema >>= getOperationDataType operation
+  case dt of
+    TypeDefinition {typeContent = DataObject {objectFields, ..}, typeName, ..} ->
+      pure
+        ( TypeDefinition {typeContent = DataObject {objectFields, ..}, ..},
+          objectFields
+        )
+    TypeDefinition {typeName} ->
+      failure
+        ( "Type Mismatch: operation \""
+            <> msgInternal typeName
+            <> "\" must be an Object" ::
+            InternalError
+        )
 
 unknownInputType :: TypeName -> InternalError
 unknownInputType name =

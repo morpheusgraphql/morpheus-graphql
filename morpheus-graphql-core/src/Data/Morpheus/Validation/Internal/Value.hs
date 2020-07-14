@@ -202,8 +202,8 @@ validateInput ::
   TypeDefinition IN schemaS ->
   Value valueS ->
   InputValidator ctx ValidValue
-validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
-  withScopeType typeName
+validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName} =
+  withScopeType typeDef
     . validateWrapped tyWrappers tyCont
   where
     mismatchError :: [TypeWrapper] -> Maybe Message -> Value valueS -> InputValidator ctx (Value VALID)

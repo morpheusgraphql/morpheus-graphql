@@ -10,19 +10,22 @@ module Data.Morpheus.Error.Selection
 where
 
 import Data.Morpheus.Error.Utils (errorMessage)
-import Data.Morpheus.Types.Internal.AST.Base
+import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLErrors,
+    OUT,
     Position,
     Ref (..),
+    TypeDefinition (..),
     TypeName,
+    VALID,
     msg,
   )
 import Data.Semigroup ((<>))
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
-hasNoSubfields :: Ref -> TypeName -> GQLErrors
-hasNoSubfields (Ref selectionName position) typeName = errorMessage position text
+hasNoSubfields :: Ref -> TypeDefinition OUT VALID -> GQLErrors
+hasNoSubfields (Ref selectionName position) TypeDefinition {typeName} = errorMessage position text
   where
     text =
       "Field "

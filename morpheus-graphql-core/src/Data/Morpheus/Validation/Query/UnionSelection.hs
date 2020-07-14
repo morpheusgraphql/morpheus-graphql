@@ -33,6 +33,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     SelectionSet,
+    TypeDefinition (..),
     TypeName,
     UnionMember (..),
     UnionTag (..),
@@ -52,7 +53,7 @@ import Data.Morpheus.Validation.Query.Fragment
     resolveSpread,
   )
 
-type TypeDef = (TypeName, FieldsDefinition OUT VALID)
+type TypeDef = (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
@@ -86,9 +87,9 @@ tagUnionFragments types fragments =
   where
     notEmpty = not . null . snd
     categorizeType :: TypeDef -> (TypeDef, [Fragment])
-    categorizeType datatype = (datatype, filter matches fragments)
+    categorizeType datatype@(TypeDefinition {typeName}, _) = (datatype, filter matches fragments)
       where
-        matches fragment = fragmentType fragment == fst datatype
+        matches fragment = fragmentType fragment == typeName
 
 {-
     - all Variable and Fragment references will be: resolved and validated
@@ -109,9 +110,9 @@ validateCluster ::
 validateCluster validator __typename = traverse _validateCluster >=> fmap UnionSelection . fromElems
   where
     _validateCluster :: (TypeDef, [Fragment]) -> SelectionValidator UnionTag
-    _validateCluster (unionType, fragmets) = do
+    _validateCluster (unionType@(TypeDefinition {typeName}, _), fragmets) = do
       fragmentSelections <- MS.join (__typename : map fragmentSelection fragmets)
-      UnionTag (fst unionType) <$> validator unionType fragmentSelections
+      UnionTag typeName <$> validator unionType fragmentSelections
 
 validateUnionSelection ::
   (TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) ->

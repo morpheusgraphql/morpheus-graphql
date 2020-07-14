@@ -85,13 +85,14 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Schema,
     Stage,
-    TypeDefinition,
+    TypeDefinition (..),
     TypeKind (..),
     TypeName (..),
     VALID,
     Variable (..),
     VariableDefinitions,
     intercalateName,
+    kindOf,
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -302,17 +303,33 @@ withDirective
 withScope ::
   ( MonadContext m c
   ) =>
-  TypeName ->
+  TypeDefinition cat s ->
   Ref ->
   m c a ->
   m c a
-withScope typeName (Ref selName pos) =
+withScope t@TypeDefinition {typeName} (Ref selName pos) =
   setSelectionName selName . setScope update
   where
     update Scope {..} =
       Scope
         { currentTypeName = typeName,
+          currentTypeKind = kindOf t,
           position = Just pos,
+          ..
+        }
+
+withScopeType ::
+  ( MonadContext m c
+  ) =>
+  TypeDefinition cat s ->
+  m c a ->
+  m c a
+withScopeType t@TypeDefinition {typeName} = setScope update
+  where
+    update Scope {..} =
+      Scope
+        { currentTypeName = typeName,
+          currentTypeKind = kindOf t,
           ..
         }
 
@@ -325,16 +342,6 @@ withPosition ::
 withPosition pos = setScope update
   where
     update Scope {..} = Scope {position = Just pos, ..}
-
-withScopeType ::
-  ( MonadContext m c
-  ) =>
-  TypeName ->
-  m c a ->
-  m c a
-withScopeType name = setScope update
-  where
-    update Scope {..} = Scope {currentTypeName = name, ..}
 
 inputMessagePrefix :: InputValidator ctx Message
 inputMessagePrefix =
