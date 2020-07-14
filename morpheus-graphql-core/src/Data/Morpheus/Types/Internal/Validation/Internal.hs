@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -22,8 +23,8 @@ where
 -- MORPHEUS
 
 import Control.Applicative (Applicative, pure)
-import Control.Monad (Monad ((>>=)))
-import Data.Functor ((<$>))
+import Control.Monad ((>=>), Monad ((>>=)))
+import Data.Functor (fmap)
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.Operation
   ( mutationIsNotDefined,
@@ -32,7 +33,6 @@ import Data.Morpheus.Error.Operation
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectBy,
-    selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -46,8 +46,10 @@ import Data.Morpheus.Types.Internal.AST
     Operation (..),
     OperationType (..),
     Schema (..),
+    TRUE,
     Token,
     TypeContent (..),
+    TypeContent,
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
@@ -67,16 +69,14 @@ import Data.Semigroup
   )
 import Prelude
   ( ($),
+    (.),
     fst,
   )
 
 askFieldType ::
   TypeRef ->
   SelectionValidator (TypeDefinition OUT VALID)
-askFieldType TypeRef {typeConName} =
-  askSchema
-    >>= selectBy (unknownType typeConName) typeConName
-    >>= kindConstraint
+askFieldType = askType . typeConName
 
 askInputFieldType ::
   ( Failure InternalError (m c),
@@ -86,10 +86,7 @@ askInputFieldType ::
   ) =>
   TypeRef ->
   m c (TypeDefinition IN s)
-askInputFieldType TypeRef {typeConName} =
-  askSchema
-    >>= selectBy (unknownType typeConName) typeConName
-    >>= kindConstraint
+askInputFieldType = askType . typeConName
 
 askTypeMember ::
   UnionMember OUT s ->
@@ -97,13 +94,7 @@ askTypeMember ::
     ( TypeDefinition OUT VALID,
       FieldsDefinition OUT VALID
     )
-askTypeMember UnionMember {memberName} =
-  askSchema
-    >>= selectOr notFound pure memberName
-    >>= kindConstraint
-    >>= constraintObject
-  where
-    notFound = failure (unknownType memberName)
+askTypeMember = askMember . memberName
 
 askInputMember ::
   ( GetWith c (Schema s),
@@ -113,15 +104,27 @@ askInputMember ::
   ) =>
   TypeName ->
   m c (TypeDefinition IN s)
-askInputMember name =
-  fst
-    <$> ( askSchema
-            >>= selectOr notFound pure name
-            >>= kindConstraint
-            >>= constraintObject
-        )
-  where
-    notFound = failure (unknownType name)
+askInputMember = fmap fst . askMember
+
+type Constraints m c cat s =
+  ( Failure InternalError (m c),
+    Monad (m c),
+    MonadContext m c,
+    GetWith c (Schema s),
+    KindErrors cat,
+    FromAny (TypeContent TRUE) cat
+  )
+
+askType ::
+  Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
+askType name =
+  askSchema
+    >>= selectBy (unknownType name) name
+    >>= kindConstraint
+
+askMember ::
+  Constraints m c cat s => TypeName -> m c (TypeDefinition cat s, FieldsDefinition cat s)
+askMember = askType >=> constraintObject
 
 getOperationType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
 getOperationType operation =
