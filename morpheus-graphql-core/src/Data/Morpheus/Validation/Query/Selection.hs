@@ -60,7 +60,7 @@ import Data.Morpheus.Types.Internal.AST.MergeSet
 import Data.Morpheus.Types.Internal.Validation
   ( SelectionValidator,
     askFieldType,
-    getOperationObjectType,
+    getOperationType,
     selectKnown,
     withScope,
   )
@@ -125,7 +125,7 @@ validateOperation
       ..
     } =
     do
-      typeDef <- getOperationObjectType rawOperation
+      typeDef <- getOperationType rawOperation
       selection <- validateSelectionSet typeDef operationSelection
       singleTopLevelSelection rawOperation selection
       directives <-
