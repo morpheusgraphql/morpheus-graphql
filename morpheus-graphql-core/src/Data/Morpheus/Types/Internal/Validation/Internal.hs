@@ -24,8 +24,7 @@ where
 
 import Control.Applicative (pure)
 import Control.Monad (Monad ((>>=)))
-import Data.Functor ((<$>), fmap)
-import Data.Maybe (Maybe (..), fromMaybe)
+import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectBy,
@@ -35,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldsDefinition,
     FromAny,
-    GQLErrors,
     IN,
     InternalError,
     OUT,
@@ -62,7 +60,6 @@ import Data.Semigroup
   )
 import Prelude
   ( ($),
-    (.),
     Bool (..),
     otherwise,
   )
@@ -73,11 +70,10 @@ askFieldType ::
 askFieldType TypeRef {typeConName} =
   askSchema
     >>= selectBy (unknownType typeConName) typeConName
-    >>= internalConstraint (typeViolation False)
+    >>= kindConstraint (categoryViolation False)
 
 askInputFieldType ::
-  ( Failure GQLErrors (m c),
-    Failure InternalError (m c),
+  ( Failure InternalError (m c),
     Monad (m c),
     GetWith c (Schema s),
     MonadContext m c
@@ -87,7 +83,7 @@ askInputFieldType ::
 askInputFieldType TypeRef {typeConName} =
   askSchema
     >>= selectBy (unknownType typeConName) typeConName
-    >>= internalConstraint (typeViolation True)
+    >>= kindConstraint (categoryViolation True)
 
 askTypeMember ::
   UnionMember OUT s ->
@@ -98,7 +94,7 @@ askTypeMember ::
 askTypeMember UnionMember {memberName} =
   askSchema
     >>= selectOr notFound pure memberName
-    >>= internalConstraint (unionTypeViolation False)
+    >>= kindConstraint (unionTypeViolation False)
     >>= constraintOBJECT
   where
     notFound = failure (unknownType memberName)
@@ -112,7 +108,6 @@ askTypeMember UnionMember {memberName} =
         con _ = failure (unionTypeViolation False typeName)
 
 askInputMember ::
-  forall c m s.
   ( GetWith c (Schema s),
     Failure InternalError (m c),
     Monad (m c),
@@ -123,28 +118,21 @@ askInputMember ::
 askInputMember name =
   askSchema
     >>= selectOr notFound pure name
-    >>= constraintINPUT_OBJECT
+    >>= kindConstraint (categoryViolation True)
+    >>= constraintInputObject
   where
     notFound = failure (unknownType name)
-    --------------------------------------
-    constraintINPUT_OBJECT ::
-      ( Monad (m c),
-        Failure InternalError (m c),
-        MonadContext m c
-      ) =>
-      TypeDefinition ANY s ->
-      m c (TypeDefinition IN s)
-    constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
-      where
-        con ::
-          ( Monad (m c),
-            Failure InternalError (m c),
-            MonadContext m c
-          ) =>
-          Maybe (TypeContent a IN s) ->
-          m c (TypeDefinition IN s)
-        con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
-        con _ = failure (unionTypeViolation True typeName)
+
+constraintInputObject ::
+  forall c m s.
+  ( Monad (m c),
+    Failure InternalError (m c),
+    MonadContext m c
+  ) =>
+  TypeDefinition IN s ->
+  m c (TypeDefinition IN s)
+constraintInputObject typeDef@TypeDefinition {typeContent = DataInputObject {}} = pure typeDef
+constraintInputObject TypeDefinition {typeName} = failure (unionTypeViolation True typeName)
 
 getOperationObjectType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
 getOperationObjectType operation = do
@@ -166,11 +154,11 @@ getOperationObjectType operation = do
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
 
-typeViolation ::
+categoryViolation ::
   Bool ->
   TypeName ->
   InternalError
-typeViolation isInput typeName =
+categoryViolation isInput typeName =
   "Type \"" <> msgInternal typeName
     <> "\" must be an"
     <> mustBeCategory isInput
@@ -194,13 +182,15 @@ unionTypeViolation isInput typeName =
   where
     mustBe = mustBeKind "OBJECT" isInput
 
-internalConstraint ::
+kindConstraint ::
   ( Failure InternalError f,
     FromAny TypeDefinition k
   ) =>
   (TypeName -> InternalError) ->
   TypeDefinition ANY s ->
   f (TypeDefinition k s)
-internalConstraint err anyType = case fromAny anyType of
-  Just x -> pure x
-  Nothing -> failure (err (typeName anyType))
+kindConstraint err anyType =
+  maybe
+    (failure $ err (typeName anyType))
+    pure
+    (fromAny anyType)
