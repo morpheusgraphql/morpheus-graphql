@@ -484,7 +484,7 @@ renderContext
       ( "referenced by type "
           <> msg currentTypeName
           <> " of kind "
-          <> render currentTypeKind
+          <> msg (render currentTypeKind)
           <> " in field "
           <> msg fieldname
       )
