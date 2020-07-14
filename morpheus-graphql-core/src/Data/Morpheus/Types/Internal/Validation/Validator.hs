@@ -70,6 +70,7 @@ import Data.Morpheus.Error.Utils (renderErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST
   ( Directive (..),
     FieldName (..),
@@ -100,12 +101,15 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup
   ( (<>),
+    stimes,
   )
 import Prelude
   ( ($),
     (.),
     Bool,
+    Int,
     Show,
+    id,
   )
 
 data Prop = Prop
@@ -450,19 +454,41 @@ instance SetWith (OperationContext v) CurrentSelection where
         ..
       }
 
+instance Failure GQLErrors (Validator ctx) where
+  failure = Validator . lift . failure
+
 -- can be only used for internal errors
 instance
   (MonadContext Validator ctx) =>
   Failure InternalError (Validator ctx)
   where
   failure inputMessage = do
-    position <- asksScope position
+    scope <- asksScope id
+    schema <- askSchema
     failure
       ( renderErrorMessage
-          position
+          (position scope)
           $ msg
             inputMessage
+            <> renderContext scope
       )
 
-instance Failure GQLErrors (Validator ctx) where
-  failure = Validator . lift . failure
+renderContext :: Scope -> Message
+renderContext
+  Scope
+    { currentTypeName,
+      currentTypeKind,
+      fieldname
+    } =
+    renderSection "current type" currentTypeName
+      <> renderSection "current type kind" currentTypeKind
+      <> renderSection "current field name" fieldname
+
+renderSection :: RenderGQL a => Message -> a -> Message
+renderSection label content =
+  "\n\n" <> label <> ":\n" <> line
+    <> "\n\n"
+    <> msg (render content)
+    <> "\n\n"
+  where
+    line = stimes (50 :: Int) "-"

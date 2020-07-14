@@ -337,6 +337,17 @@ data TypeKind
   | KindInterface
   deriving (Eq, Show, Lift)
 
+instance RenderGQL TypeKind where
+  render KindScalar = "SCALAR"
+  render KindObject {} = "OBJECT"
+  render KindUnion = "UNION"
+  render KindInputUnion = "INPUT_OBJECT"
+  render KindEnum = "ENUM"
+  render KindInputObject = "INPUT_OBJECT"
+  render KindList = "LIST"
+  render KindNonNull = "NON_NULL"
+  render KindInterface = "INTERFACE"
+
 isSubscription :: TypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
 isSubscription _ = False
