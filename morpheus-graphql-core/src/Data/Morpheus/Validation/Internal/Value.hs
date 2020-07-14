@@ -14,8 +14,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Value
-  ( validateInputByField,
-    validateInputByTypeRef,
+  ( validateInputByTypeRef,
     validateInputByType,
     ValueConstraints,
     ValidateWithDefault,
@@ -82,8 +81,8 @@ import Data.Morpheus.Types.Internal.Validation
     Prop (..),
     Scope (..),
     Validator,
-    askInputFieldType,
     askInputMember,
+    askTypeByRef,
     asksScope,
     constraintInputUnion,
     inputMessagePrefix,
@@ -164,34 +163,21 @@ validateInputByTypeRef
   _
   typeRef@TypeRef {typeWrappers}
   value = do
-    (inputTypeDef :: TypeDefinition IN schemaS) <- askInputFieldType typeRef
-    validateInputByType typeWrappers inputTypeDef value
-
-validateInputByField ::
-  forall c schemaS s.
-  ValueConstraints c schemaS s =>
-  FieldDefinition IN schemaS ->
-  Value s ->
-  Validator (InputContext c) (Value VALID)
-validateInputByField
-  FieldDefinition
-    { fieldType = typeRef@TypeRef {typeWrappers}
-    }
-  value = do
-    (inputTypeDef :: TypeDefinition IN schemaS) <- askInputFieldType typeRef
+    (inputTypeDef :: TypeDefinition IN schemaS) <- askTypeByRef typeRef
     validateInputByType typeWrappers inputTypeDef value
 
 validateValueByField ::
+  forall schemaS s c.
   ValueConstraints c schemaS s =>
   FieldDefinition IN schemaS ->
   Value s ->
   Validator (InputContext c) (Value VALID)
 validateValueByField
-  fieldDef@FieldDefinition
+  FieldDefinition
     { fieldName,
-      fieldType = TypeRef {typeConName}
+      fieldType = typeRef@TypeRef {typeConName}
     } =
-    withInputScope (Prop fieldName typeConName) . validateInputByField fieldDef
+    withInputScope (Prop fieldName typeConName) . validateInputByTypeRef (Proxy @schemaS) typeRef
 
 -- Validate input Values
 validateInput ::

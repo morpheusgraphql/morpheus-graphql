@@ -9,6 +9,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -66,8 +67,9 @@ import Data.Morpheus.Types.Internal.Validation
 import Data.Morpheus.Validation.Internal.Value
   ( ValidateWithDefault,
     ValueConstraints,
-    validateInputByField,
+    validateInputByTypeRef,
   )
+import Data.Proxy (Proxy (..))
 import Data.Traversable (traverse)
 import Prelude
   ( ($),
@@ -110,6 +112,7 @@ toArgument
   value = Argument fieldName value . fromMaybe (Position 0 0) <$> asksScope position
 
 validateArgumentValue ::
+  forall ctx schemaS valueS.
   (ValueConstraints ctx schemaS valueS) =>
   FieldDefinition IN schemaS ->
   Argument valueS ->
@@ -120,7 +123,7 @@ validateArgumentValue
     withPosition argumentPosition
       $ startInput (SourceArgument argumentName)
       $ do
-        argumentValue <- validateInputByField argumentDef value
+        argumentValue <- validateInputByTypeRef (Proxy @schemaS) (fieldType argumentDef) value
         pure Argument {argumentValue, ..}
 
 validateFieldArguments ::

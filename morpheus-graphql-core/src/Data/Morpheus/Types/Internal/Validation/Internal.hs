@@ -12,11 +12,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation.Internal
-  ( askFieldType,
+  ( askTypeByRef,
     askTypeMember,
     askInputMember,
     getOperationType,
-    askInputFieldType,
   )
 where
 
@@ -68,20 +67,18 @@ import Prelude
     fst,
   )
 
-askFieldType ::
+askTypeByRef ::
+  Constraints m c cat s =>
   TypeRef ->
-  SelectionValidator (TypeDefinition OUT VALID)
-askFieldType = askType . typeConName
+  m c (TypeDefinition cat s)
+askTypeByRef = askType . typeConName
 
-askInputFieldType ::
-  ( Failure InternalError (m c),
-    Monad (m c),
-    GetWith c (Schema s),
-    MonadContext m c
-  ) =>
-  TypeRef ->
-  m c (TypeDefinition IN s)
-askInputFieldType = askType . typeConName
+askType ::
+  Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
+askType name =
+  askSchema
+    >>= selectBy (unknownType name) name
+    >>= kindConstraint
 
 askTypeMember ::
   UnionMember OUT s ->
@@ -109,13 +106,6 @@ type Constraints m c cat s =
     KindErrors cat,
     FromAny (TypeContent TRUE) cat
   )
-
-askType ::
-  Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
-askType name =
-  askSchema
-    >>= selectBy (unknownType name) name
-    >>= kindConstraint
 
 askMember ::
   Constraints m c cat s => TypeName -> m c (TypeDefinition cat s, FieldsDefinition cat s)

@@ -59,7 +59,7 @@ import Data.Morpheus.Types.Internal.AST.MergeSet
   )
 import Data.Morpheus.Types.Internal.Validation
   ( SelectionValidator,
-    askFieldType,
+    askTypeByRef,
     getOperationType,
     selectKnown,
     withScope,
@@ -189,7 +189,7 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
           commonValidation = do
             fieldDef <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             (,)
-              <$> askFieldType (fieldType fieldDef)
+              <$> askTypeByRef (fieldType fieldDef)
               <*> validateFieldArguments fieldDef selectionArguments
           -----------------------------------------------------------------------------------
           validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)

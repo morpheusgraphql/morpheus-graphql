@@ -18,7 +18,7 @@ module Data.Morpheus.Types.Internal.Validation
     OperationContext (..),
     runValidator,
     DirectiveValidator,
-    askFieldType,
+    askTypeByRef,
     askTypeMember,
     selectRequired,
     selectKnown,
@@ -30,7 +30,6 @@ module Data.Morpheus.Types.Internal.Validation
     asks,
     asksScope,
     selectWithDefaultValue,
-    askInputFieldType,
     askInputMember,
     startInput,
     withInputScope,
@@ -107,9 +106,8 @@ import Data.Morpheus.Types.Internal.Validation.Error
     Unused (..),
   )
 import Data.Morpheus.Types.Internal.Validation.Internal
-  ( askFieldType,
-    askInputFieldType,
-    askInputMember,
+  ( askInputMember,
+    askTypeByRef,
     askTypeMember,
     getOperationType,
   )
