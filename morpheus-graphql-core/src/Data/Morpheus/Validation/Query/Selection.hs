@@ -39,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     Fragment (..),
     GQLError (..),
+    InternalError,
     OUT,
     Operation (..),
     OperationType (..),
@@ -55,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
     getOperationDataType,
     isEntNode,
     msg,
+    msgInternal,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
@@ -100,10 +102,12 @@ getOperationObject operation = do
   case dt of
     TypeDefinition {typeContent = DataObject {objectFields}, typeName} -> pure (typeName, objectFields)
     TypeDefinition {typeName} ->
-      failure $
-        "Type Mismatch: operation \""
-          <> msg typeName
-          <> "\" must be an Object"
+      failure
+        ( "Type Mismatch: operation \""
+            <> msgInternal typeName
+            <> "\" must be an Object" ::
+            InternalError
+        )
 
 selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
 selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . elems

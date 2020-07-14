@@ -153,4 +153,7 @@ assertArgument ::
   Argument s ->
   Validator ctx Bool
 assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
-assertArgument _ Argument {argumentValue} = failure $ "Expected type Boolean!, found " <> msg argumentValue <> "."
+assertArgument _ Argument {argumentValue, argumentPosition} =
+  failure
+    $ errorMessage argumentPosition
+    $ "Expected type Boolean!, found " <> msg argumentValue <> "."
