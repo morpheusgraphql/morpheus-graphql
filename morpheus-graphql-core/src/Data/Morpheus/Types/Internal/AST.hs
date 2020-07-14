@@ -152,6 +152,7 @@ module Data.Morpheus.Types.Internal.AST
     buildSchema,
     InternalError (..),
     msgInternal,
+    getOperationDataType,
   )
 where
 

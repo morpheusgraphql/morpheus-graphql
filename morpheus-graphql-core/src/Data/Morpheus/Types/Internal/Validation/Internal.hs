@@ -26,10 +26,6 @@ import Control.Applicative (Applicative, pure)
 import Control.Monad ((>=>), Monad ((>>=)))
 import Data.Functor (fmap)
 import Data.Maybe (maybe)
-import Data.Morpheus.Error.Operation
-  ( mutationIsNotDefined,
-    subscriptionIsNotDefined,
-  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectBy,
@@ -38,13 +34,11 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldsDefinition,
     FromAny,
-    GQLErrors,
     IN,
     InternalError,
     OUT,
     Operation,
     Operation (..),
-    OperationType (..),
     Schema (..),
     TRUE,
     Token,
@@ -56,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     fromAny,
+    getOperationDataType,
     msgInternal,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
@@ -131,13 +126,6 @@ getOperationType operation =
   askSchema
     >>= getOperationDataType operation
     >>= constraintObject
-
-getOperationDataType :: Failure GQLErrors m => Operation s -> Schema VALID -> m (TypeDefinition OUT VALID)
-getOperationDataType Operation {operationType = Query} lib = pure (query lib)
-getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
-  maybe (failure $ mutationIsNotDefined operationPosition) pure (mutation lib)
-getOperationDataType Operation {operationType = Subscription, operationPosition} lib =
-  maybe (failure $ subscriptionIsNotDefined operationPosition) pure (subscription lib)
 
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
