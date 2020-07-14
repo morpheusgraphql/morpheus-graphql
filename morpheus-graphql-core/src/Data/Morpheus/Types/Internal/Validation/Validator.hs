@@ -464,7 +464,6 @@ instance
   where
   failure inputMessage = do
     scope <- asksScope id
-    schema <- askSchema
     failure
       ( renderErrorMessage
           (position scope)

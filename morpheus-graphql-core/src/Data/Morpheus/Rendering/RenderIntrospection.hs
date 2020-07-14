@@ -133,7 +133,7 @@ instance RenderIntrospection Bool where
   render = pure . mkBoolean
 
 instance RenderIntrospection TypeKind where
-  render = pure . mkString . GQL.rnder
+  render = pure . mkString . GQL.render
 
 instance RenderIntrospection (DirectiveDefinition VALID) where
   render
