@@ -22,8 +22,9 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (pure)
+import Control.Applicative (Applicative, pure)
 import Control.Monad (Monad ((>>=)))
+import Data.Functor ((<$>))
 import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -60,8 +61,7 @@ import Data.Semigroup
   )
 import Prelude
   ( ($),
-    Bool (..),
-    otherwise,
+    fst,
   )
 
 askFieldType ::
@@ -70,7 +70,7 @@ askFieldType ::
 askFieldType TypeRef {typeConName} =
   askSchema
     >>= selectBy (unknownType typeConName) typeConName
-    >>= kindConstraint (categoryViolation False)
+    >>= kindConstraint
 
 askInputFieldType ::
   ( Failure InternalError (m c),
@@ -83,7 +83,7 @@ askInputFieldType ::
 askInputFieldType TypeRef {typeConName} =
   askSchema
     >>= selectBy (unknownType typeConName) typeConName
-    >>= kindConstraint (categoryViolation True)
+    >>= kindConstraint
 
 askTypeMember ::
   UnionMember OUT s ->
@@ -94,18 +94,10 @@ askTypeMember ::
 askTypeMember UnionMember {memberName} =
   askSchema
     >>= selectOr notFound pure memberName
-    >>= kindConstraint (unionTypeViolation False)
-    >>= constraintOBJECT
+    >>= kindConstraint
+    >>= constraintObject
   where
     notFound = failure (unknownType memberName)
-    --------------------------------------
-    constraintOBJECT ::
-      TypeDefinition OUT s ->
-      SelectionValidator (TypeDefinition OUT s, FieldsDefinition OUT s)
-    constraintOBJECT t@TypeDefinition {typeContent, typeName} = con typeContent
-      where
-        con DataObject {objectFields} = pure (t, objectFields)
-        con _ = failure (unionTypeViolation False typeName)
 
 askInputMember ::
   ( GetWith c (Schema s),
@@ -116,23 +108,14 @@ askInputMember ::
   TypeName ->
   m c (TypeDefinition IN s)
 askInputMember name =
-  askSchema
-    >>= selectOr notFound pure name
-    >>= kindConstraint (categoryViolation True)
-    >>= constraintInputObject
+  fst
+    <$> ( askSchema
+            >>= selectOr notFound pure name
+            >>= kindConstraint
+            >>= constraintObject
+        )
   where
     notFound = failure (unknownType name)
-
-constraintInputObject ::
-  forall c m s.
-  ( Monad (m c),
-    Failure InternalError (m c),
-    MonadContext m c
-  ) =>
-  TypeDefinition IN s ->
-  m c (TypeDefinition IN s)
-constraintInputObject typeDef@TypeDefinition {typeContent = DataInputObject {}} = pure typeDef
-constraintInputObject TypeDefinition {typeName} = failure (unionTypeViolation True typeName)
 
 getOperationObjectType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
 getOperationObjectType operation = do
@@ -154,43 +137,49 @@ getOperationObjectType operation = do
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
 
-categoryViolation ::
-  Bool ->
-  TypeName ->
-  InternalError
-categoryViolation isInput typeName =
-  "Type \"" <> msgInternal typeName
-    <> "\" must be an"
-    <> mustBeCategory isInput
-    <> "."
-
-mustBeCategory :: Bool -> InternalError
-mustBeCategory True = "input type"
-mustBeCategory False = " output type"
-
-mustBeKind :: InternalError -> Bool -> InternalError
-mustBeKind kind isInput
-  | isInput = "INPUT_" <> kind
-  | otherwise = "OUTPUT" <> kind
-
-unionTypeViolation ::
-  Bool ->
-  TypeName ->
-  InternalError
-unionTypeViolation isInput typeName =
-  "Type \"" <> msgInternal typeName <> "\" must be an " <> mustBe <> "."
-  where
-    mustBe = mustBeKind "OBJECT" isInput
-
-kindConstraint ::
+_kindConstraint ::
   ( Failure InternalError f,
     FromAny TypeDefinition k
   ) =>
-  (TypeName -> InternalError) ->
+  TypeName ->
   TypeDefinition ANY s ->
   f (TypeDefinition k s)
-kindConstraint err anyType =
+_kindConstraint err anyType =
   maybe
-    (failure $ err (typeName anyType))
+    (failure $ violation err (typeName anyType))
     pure
     (fromAny anyType)
+
+class KindErrors c where
+  kindConstraint ::
+    ( Failure InternalError f,
+      FromAny TypeDefinition c
+    ) =>
+    TypeDefinition ANY s ->
+    f (TypeDefinition c s)
+  constraintObject ::
+    ( Applicative f,
+      Failure InternalError f
+    ) =>
+    TypeDefinition c s ->
+    f (TypeDefinition c s, FieldsDefinition c s)
+
+instance KindErrors IN where
+  kindConstraint = _kindConstraint "input type"
+  constraintObject typeDef@TypeDefinition {typeContent = DataInputObject inputFields} = pure (typeDef, inputFields)
+  constraintObject TypeDefinition {typeName} = failure (violation "input object" typeName)
+
+instance KindErrors OUT where
+  kindConstraint = _kindConstraint "output type"
+  constraintObject typeDef@TypeDefinition {typeContent = DataObject {objectFields}} = pure (typeDef, objectFields)
+  constraintObject TypeDefinition {typeName} = failure (violation "object" typeName)
+
+violation ::
+  TypeName ->
+  TypeName ->
+  InternalError
+violation kind typeName =
+  "Type \"" <> msgInternal typeName
+    <> "\" must be an"
+    <> msgInternal kind
+    <> "."
