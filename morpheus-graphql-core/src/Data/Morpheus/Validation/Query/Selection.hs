@@ -202,22 +202,16 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
                   }
             | otherwise = do
               (datatype, validArgs) <- commonValidation
-              isLeaf datatype
-                $> singleton
+              selContent <-
+                validateContentLeaf currentSelectionRef datatype
+              pure $
+                singleton
                   ( sel
                       { selectionArguments = validArgs,
                         selectionDirectives = directives,
-                        selectionContent = SelectionField
+                        selectionContent = selContent
                       }
                   )
-            where
-              ------------------------------------------------------------
-              isLeaf :: TypeDefinition OUT VALID -> SelectionValidator ()
-              isLeaf TypeDefinition {typeName = typename, typeContent}
-                | isEntNode typeContent = pure ()
-                | otherwise =
-                  failure $
-                    subfieldsNotSelected selectionName typename selectionPosition
           ----- SelectionSet
           validateSelectionContent directives (SelectionSet rawSelectionSet) =
             do
@@ -249,6 +243,17 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
             >>= validateFragment
     --------------------------------------------------------------------------------
     validateFragment Fragment {fragmentSelection} = validateSelectionSet dataType fragmentSelection
+
+validateContentLeaf ::
+  Ref ->
+  TypeDefinition OUT VALID ->
+  SelectionValidator (SelectionContent s)
+validateContentLeaf
+  (Ref selectionName selectionPosition)
+  TypeDefinition {typeName, typeContent}
+    | isEntNode typeContent = pure SelectionField
+    | otherwise =
+      failure $ subfieldsNotSelected selectionName typeName selectionPosition
 
 validateByTypeContent ::
   TypeDefinition OUT VALID ->
