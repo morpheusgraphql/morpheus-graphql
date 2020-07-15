@@ -1,21 +1,16 @@
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Value
   ( validateInputByTypeRef,
     validateInputByType,
-    ValueConstraints,
     ValidateWithDefault,
   )
 where
@@ -140,12 +135,8 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
             typeArgs = Nothing
           }
 
-type ValueConstraints (ctx :: *) (schemaS :: Stage) (s :: Stage) =
-  ( ValidateWithDefault ctx schemaS s
-  )
-
 validateInputByType ::
-  (ValueConstraints c schemaS s) =>
+  ValidateWithDefault c schemaS s =>
   [TypeWrapper] ->
   TypeDefinition IN schemaS ->
   Value s ->
@@ -153,7 +144,7 @@ validateInputByType ::
 validateInputByType = validateInput
 
 validateInputByTypeRef ::
-  ValueConstraints c schemaS s =>
+  ValidateWithDefault c schemaS s =>
   Typed IN schemaS TypeRef ->
   Value s ->
   Validator schemaS (InputContext c) (Value VALID)
@@ -167,7 +158,7 @@ validateInputByTypeRef
       value
 
 validateValueByField ::
-  ValueConstraints c schemaS s =>
+  ValidateWithDefault c schemaS s =>
   FieldDefinition IN schemaS ->
   Value s ->
   Validator schemaS (InputContext c) (Value VALID)
@@ -179,7 +170,7 @@ validateValueByField field =
 -- Validate input Values
 validateInput ::
   forall ctx schemaS valueS.
-  ( ValueConstraints ctx schemaS valueS
+  ( ValidateWithDefault ctx schemaS valueS
   ) =>
   [TypeWrapper] ->
   TypeDefinition IN schemaS ->
@@ -236,7 +227,7 @@ validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName}
 
 -- INPUT UNION
 validatInputUnion ::
-  ValueConstraints ctx schemaS s =>
+  ValidateWithDefault ctx schemaS s =>
   TypeName ->
   DataInputUnion schemaS ->
   Object s ->
@@ -248,7 +239,7 @@ validatInputUnion typeName inputUnion rawFields =
     Right (name, Just value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
-  ValueConstraints ctx schemaS valueS =>
+  ValidateWithDefault ctx schemaS valueS =>
   UnionMember IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx (Value VALID)
@@ -262,7 +253,7 @@ mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (En
 
 -- INUT Object
 validateInputObject ::
-  ValueConstraints ctx schemaS valueS =>
+  ValidateWithDefault ctx schemaS valueS =>
   FieldsDefinition IN schemaS ->
   Object valueS ->
   InputValidator schemaS ctx (Object VALID)
@@ -284,10 +275,7 @@ class ValidateWithDefault c schemaS s where
     FieldDefinition IN schemaS ->
     Validator schemaS (InputContext c) (ObjectEntry VALID)
 
-instance
-  ValueConstraints c VALID s =>
-  ValidateWithDefault c VALID s
-  where
+instance ValidateWithDefault c VALID s where
   validateWithDefault object fieldDef@FieldDefinition {fieldName} =
     ObjectEntry fieldName
       <$> selectWithDefaultValue
@@ -296,10 +284,7 @@ instance
         fieldDef
         object
 
-instance
-  ValueConstraints c CONST s =>
-  ValidateWithDefault c CONST s
-  where
+instance ValidateWithDefault c CONST s where
   validateWithDefault object fieldDef@FieldDefinition {fieldName} =
     ObjectEntry fieldName
       <$> selectWithDefaultValue
