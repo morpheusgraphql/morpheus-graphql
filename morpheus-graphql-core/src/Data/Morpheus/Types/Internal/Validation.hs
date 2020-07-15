@@ -30,7 +30,6 @@ module Data.Morpheus.Types.Internal.Validation
     asks,
     asksScope,
     selectWithDefaultValue,
-    askInputMember,
     startInput,
     inField,
     inputMessagePrefix,
@@ -105,8 +104,7 @@ import Data.Morpheus.Types.Internal.Validation.Error
     Unused (..),
   )
 import Data.Morpheus.Types.Internal.Validation.Internal
-  ( askInputMember,
-    askTypeByRef,
+  ( askTypeByRef,
     askTypeMember,
     getOperationType,
   )

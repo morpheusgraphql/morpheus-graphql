@@ -14,7 +14,6 @@
 module Data.Morpheus.Types.Internal.Validation.Internal
   ( askTypeByRef,
     askTypeMember,
-    askInputMember,
     getOperationType,
   )
 where
@@ -52,7 +51,6 @@ import Data.Morpheus.Types.Internal.AST
     getOperationDataType,
     msgInternal,
     typeConName,
-    typed,
     untyped,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
@@ -83,22 +81,10 @@ askType name =
     >>= kindConstraint
 
 askTypeMember ::
-  UnionMember OUT VALID ->
-  SelectionValidator
-    ( TypeDefinition OUT VALID,
-      FieldsDefinition OUT VALID
-    )
-askTypeMember = askMember . typed memberName
-
-askInputMember ::
-  ( GetWith c (Schema s),
-    Failure InternalError (m c),
-    Monad (m c),
-    MonadContext m c
-  ) =>
-  UnionMember IN s ->
-  m c (TypeDefinition IN s, FieldsDefinition IN s)
-askInputMember = askMember . typed memberName
+  Constraints m c cat s =>
+  UnionMember cat s ->
+  m c (TypeDefinition cat s, FieldsDefinition cat s)
+askTypeMember = askType . memberName >=> constraintObject
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),
@@ -108,10 +94,6 @@ type Constraints m c cat s =
     KindErrors cat,
     FromAny (TypeContent TRUE) cat
   )
-
-askMember ::
-  Constraints m c cat s => Typed cat s' TypeName -> m c (TypeDefinition cat s, FieldsDefinition cat s)
-askMember = untyped askType >=> constraintObject
 
 getOperationType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
 getOperationType operation =

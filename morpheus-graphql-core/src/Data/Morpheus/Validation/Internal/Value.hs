@@ -83,8 +83,8 @@ import Data.Morpheus.Types.Internal.Validation
     MonadContext,
     Scope (..),
     Validator,
-    askInputMember,
     askTypeByRef,
+    askTypeMember,
     asksScope,
     constraintInputUnion,
     inField,
@@ -255,7 +255,7 @@ validatInputUnionMember ::
   Value valueS ->
   InputValidator ctx (Value VALID)
 validatInputUnionMember member@UnionMember {memberName} value = do
-  inputDef <- fst <$> askInputMember member
+  inputDef <- fst <$> askTypeMember member
   validValue <- validateInputByType [TypeMaybe] inputDef value
   pure $ mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
 
