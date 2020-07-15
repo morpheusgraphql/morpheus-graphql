@@ -48,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     ScalarDefinition (..),
     ScalarValue (..),
-    Schema,
     Stage,
     TRUE,
     TypeContent (..),
@@ -112,7 +111,7 @@ castFailure ::
   TypeRef ->
   Maybe Message ->
   Value s ->
-  InputValidator ctx a
+  InputValidator schemaS ctx a
 castFailure expected message value = do
   pos <- asksScope position
   prefix <- inputMessagePrefix
@@ -124,7 +123,7 @@ checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->
   Ref ->
   Variable VALID ->
-  InputValidator ctx ValidValue
+  InputValidator schemaS ctx ValidValue
 checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = ValidVariableValue value, variableType}
   | typeConName variableType == tyConName
       && not
@@ -142,8 +141,7 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
           }
 
 type ValueConstraints (ctx :: *) (schemaS :: Stage) (s :: Stage) =
-  ( GetWith ctx (Schema schemaS),
-    ValidateWithDefault ctx schemaS s
+  ( ValidateWithDefault ctx schemaS s
   )
 
 validateInputByType ::
@@ -151,14 +149,14 @@ validateInputByType ::
   [TypeWrapper] ->
   TypeDefinition IN schemaS ->
   Value s ->
-  Validator (InputContext c) (Value VALID)
+  Validator schemaS (InputContext c) (Value VALID)
 validateInputByType = validateInput
 
 validateInputByTypeRef ::
   ValueConstraints c schemaS s =>
   Typed IN schemaS TypeRef ->
   Value s ->
-  Validator (InputContext c) (Value VALID)
+  Validator schemaS (InputContext c) (Value VALID)
 validateInputByTypeRef
   ref
   value = do
@@ -172,7 +170,7 @@ validateValueByField ::
   ValueConstraints c schemaS s =>
   FieldDefinition IN schemaS ->
   Value s ->
-  Validator (InputContext c) (Value VALID)
+  Validator schemaS (InputContext c) (Value VALID)
 validateValueByField field =
   inField field
     . validateInputByTypeRef
@@ -186,19 +184,19 @@ validateInput ::
   [TypeWrapper] ->
   TypeDefinition IN schemaS ->
   Value valueS ->
-  InputValidator ctx ValidValue
+  InputValidator schemaS ctx ValidValue
 validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName} =
   withScopeType typeDef
     . validateWrapped tyWrappers tyCont
   where
-    mismatchError :: [TypeWrapper] -> Maybe Message -> Value valueS -> InputValidator ctx (Value VALID)
+    mismatchError :: [TypeWrapper] -> Maybe Message -> Value valueS -> InputValidator schemaS ctx (Value VALID)
     mismatchError wrappers = castFailure (TypeRef typeName Nothing wrappers)
     -- VALIDATION
     validateWrapped ::
       [TypeWrapper] ->
       TypeContent TRUE IN schemaS ->
       Value valueS ->
-      InputValidator ctx ValidValue
+      InputValidator schemaS ctx ValidValue
     -- Validate Null. value = null ?
     validateWrapped wrappers _ (ResolvedVariable ref variable) =
       checkTypeEquality (typeName, wrappers) ref variable
@@ -222,10 +220,10 @@ validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName}
     validateWrapped wrappers _ entryValue = mismatchError wrappers Nothing entryValue
     validateUnwrapped ::
       -- error
-      (Maybe Message -> Value valueS -> InputValidator ctx ValidValue) ->
+      (Maybe Message -> Value valueS -> InputValidator schemaS ctx ValidValue) ->
       TypeContent TRUE IN schemaS ->
       Value valueS ->
-      InputValidator ctx ValidValue
+      InputValidator schemaS ctx ValidValue
     validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
       Object <$> validateInputObject parentFields fields
     validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
@@ -242,7 +240,7 @@ validatInputUnion ::
   TypeName ->
   DataInputUnion schemaS ->
   Object s ->
-  InputValidator ctx (Value VALID)
+  InputValidator schemaS ctx (Value VALID)
 validatInputUnion typeName inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
@@ -253,7 +251,7 @@ validatInputUnionMember ::
   ValueConstraints ctx schemaS valueS =>
   UnionMember IN schemaS ->
   Value valueS ->
-  InputValidator ctx (Value VALID)
+  InputValidator schemaS ctx (Value VALID)
 validatInputUnionMember member@UnionMember {memberName} value = do
   inputDef <- fst <$> askTypeMember member
   validValue <- validateInputByType [TypeMaybe] inputDef value
@@ -264,10 +262,10 @@ mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (En
 
 -- INUT Object
 validateInputObject ::
-  ValueConstraints ctx s valueS =>
-  FieldsDefinition IN s ->
+  ValueConstraints ctx schemaS valueS =>
+  FieldsDefinition IN schemaS ->
   Object valueS ->
-  InputValidator ctx (Object VALID)
+  InputValidator schemaS ctx (Object VALID)
 validateInputObject fieldsDef object =
   ordTraverse_ (`selectKnown` fieldsDef) object
     *> validateObjectWithDefaultValue fieldsDef object
@@ -276,7 +274,7 @@ validateObjectWithDefaultValue ::
   ValidateWithDefault c schemaS valueS =>
   FieldsDefinition IN schemaS ->
   Object valueS ->
-  Validator (InputContext c) (Object VALID)
+  Validator schemaS (InputContext c) (Object VALID)
 validateObjectWithDefaultValue fieldsDef object =
   traverseCollection (validateWithDefault object) fieldsDef
 
@@ -284,7 +282,7 @@ class ValidateWithDefault c schemaS s where
   validateWithDefault ::
     Object s ->
     FieldDefinition IN schemaS ->
-    Validator (InputContext c) (ObjectEntry VALID)
+    Validator schemaS (InputContext c) (ObjectEntry VALID)
 
 instance
   ValueConstraints c VALID s =>
@@ -357,7 +355,7 @@ isInt :: ScalarValue -> Bool
 isInt Int {} = True
 isInt _ = False
 
-isVariableValue :: (MonadContext m c, GetWith c InputSource) => m c Bool
+isVariableValue :: (MonadContext m s c, GetWith c InputSource) => m c Bool
 isVariableValue =
   \case
     SourceVariable {isDefaultValue} -> not isDefaultValue
@@ -365,7 +363,7 @@ isVariableValue =
     <$> inputValueSource
 
 validateEnum ::
-  (MonadContext m c, GetWith c InputSource) =>
+  (MonadContext m s c, GetWith c InputSource) =>
   (Value valueS -> m c (Value VALID)) ->
   [DataEnumValue s] ->
   Value valueS ->
