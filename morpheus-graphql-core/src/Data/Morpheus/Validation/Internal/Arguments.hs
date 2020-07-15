@@ -6,9 +6,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -89,7 +87,6 @@ type ArgumentsConstraints c schemaS valueS =
   )
 
 validateArgument ::
-  forall ctx schemaS valueS.
   ( ValueConstraints ctx schemaS valueS,
     ValidateWithDefault ctx schemaS schemaS
   ) =>
@@ -111,7 +108,6 @@ toArgument
   value = flip (Argument fieldName) value . fromMaybe (Position 0 0) <$> asksScope position
 
 validateArgumentValue ::
-  forall ctx schemaS valueS.
   (ValueConstraints ctx schemaS valueS) =>
   FieldDefinition IN schemaS ->
   Argument valueS ->
@@ -127,7 +123,6 @@ validateArgumentValue
         <$> validateInputByTypeRef (typed fieldType field) argumentValue
 
 validateFieldArguments ::
-  forall ctx.
   ( GetWith ctx (VariableDefinitions VALID),
     MissingRequired (VariableDefinitions VALID) ctx,
     GetWith ctx (Schema VALID)
@@ -143,7 +138,6 @@ validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
     argsDef = maybe empty fieldContentArgs fieldContent
 
 validateDirectiveArguments ::
-  forall ctx schemaStage valueStage.
   ArgumentsConstraints ctx schemaStage valueStage =>
   DirectiveDefinition schemaStage ->
   Arguments valueStage ->
