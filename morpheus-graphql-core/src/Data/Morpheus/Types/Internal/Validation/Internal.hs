@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Operation,
     Operation (..),
-    Schema (..),
     TRUE,
     Token,
     TypeContent (..),
@@ -54,8 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     untyped,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( GetWith,
-    MonadContext,
+  ( MonadContext,
     SelectionValidator,
     askSchema,
   )
