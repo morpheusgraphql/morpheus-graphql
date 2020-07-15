@@ -436,9 +436,6 @@ instance MonadContext (Validator s) s c where
 class GetWith (c :: *) (v :: *) where
   getWith :: c -> v
 
-instance GetWith c (Schema s) => GetWith (InputContext c) (Schema s) where
-  getWith = getWith . sourceContext
-
 instance GetWith (OperationContext (VariableDefinitions VALID)) (VariableDefinitions VALID) where
   getWith = variables
 
