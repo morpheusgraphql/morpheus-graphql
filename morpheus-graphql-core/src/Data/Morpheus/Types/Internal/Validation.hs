@@ -156,23 +156,30 @@ import Prelude
 getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable a c) => c -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
 
-failOnUnused :: Unused ctx b => [b] -> Validator ctx ()
+failOnUnused :: Unused ctx b => [b] -> Validator s ctx ()
 failOnUnused x
   | null x = pure ()
   | otherwise = do
     ctx <- unValidatorContext <$> Validator ask
     failure $ fmap (unused ctx) x
 
-checkUnused :: (KeyOf b, KEY a ~ KEY b, Selectable a ca, Unused ctx b) => ca -> [b] -> Validator ctx ()
+checkUnused ::
+  ( KeyOf b,
+    KEY a ~ KEY b,
+    Selectable a ca,
+    Unused ctx b
+  ) =>
+  ca ->
+  [b] ->
+  Validator s ctx ()
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
-  forall (a :: Target) inp ctx s.
   KindViolation a inp =>
   Constraint (a :: Target) ->
   inp ->
   TypeDefinition ANY s ->
-  Validator ctx (Resolution s a)
+  Validator s ctx (Resolution s a)
 constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields}, typeName} =
   pure (typeName, objectFields)
 constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny x)
@@ -181,14 +188,14 @@ constraint target ctx _ = failure [kindViolation target ctx]
 selectRequired ::
   ( Selectable value c,
     MissingRequired c ctx,
-    KEY Ref ~ KEY value
+    FieldName ~ KEY value
   ) =>
   Ref ->
   c ->
-  Validator ctx value
+  Validator s ctx value
 selectRequired selector container =
   do
-    ValidatorContext scope ctx <- Validator ask
+    ValidatorContext scope schema ctx <- Validator ask
     selectBy
       [missingRequired scope ctx selector container]
       (keyOf selector)
@@ -199,13 +206,13 @@ selectWithDefaultValue ::
   ( Selectable value values,
     MissingRequired values ctx,
     KEY value ~ FieldName,
-    MonadContext Validator ctx
+    MonadContext (Validator s) s ctx
   ) =>
-  (Value s -> Validator ctx validValue) ->
-  (value -> Validator ctx validValue) ->
+  (Value s -> Validator s ctx validValue) ->
+  (value -> Validator s ctx validValue) ->
   FieldDefinition IN s ->
   values ->
-  Validator ctx validValue
+  Validator s ctx validValue
 selectWithDefaultValue
   f
   validateF
@@ -223,14 +230,14 @@ selectWithDefaultValue
       ------------------
       handeNull ::
         Maybe (FieldContent TRUE IN s) ->
-        Validator ctx validValue
+        Validator s ctx validValue
       handeNull (Just (DefaultInputValue value)) = f value
       handeNull Nothing
         | isNullable field = f Null
         | otherwise = failSelection
       -----------------
       failSelection = do
-        ValidatorContext scope ctx <- Validator ask
+        ValidatorContext scope schema ctx <- Validator ask
         position <- asksScope position
         failure [missingRequired scope ctx (Ref fieldName (fromMaybe (Position 0 0) position)) values]
 
@@ -242,10 +249,10 @@ selectKnown ::
   ) =>
   sel ->
   c ->
-  Validator ctx a
+  Validator s ctx a
 selectKnown selector lib =
   do
-    ValidatorContext scope ctx <- Validator ask
+    ValidatorContext scope schema ctx <- Validator ask
     selectBy
       (unknown scope ctx lib selector)
       (keyOf selector)

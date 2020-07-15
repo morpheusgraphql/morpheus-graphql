@@ -89,8 +89,7 @@ askTypeMember = __askType . memberName >=> constraintObject
 type Constraints m c cat s =
   ( Failure InternalError (m c),
     Monad (m c),
-    MonadContext m c,
-    GetWith c (Schema s),
+    MonadContext m s c,
     KindErrors cat,
     FromAny (TypeContent TRUE) cat
   )

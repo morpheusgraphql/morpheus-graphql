@@ -122,13 +122,13 @@ data Field = Field
     fieldArgument :: FieldName
   }
 
-withLocalContext :: (a -> b) -> Validator (TypeSystemContext b) v -> Validator (TypeSystemContext a) v
+withLocalContext :: (a -> b) -> SchemaValidator b v -> SchemaValidator a v
 withLocalContext = withContext . updateLocal
 
 updateLocal :: (a -> b) -> TypeSystemContext a -> TypeSystemContext b
 updateLocal f ctx = ctx {local = f (local ctx)}
 
-type SchemaValidator c = Validator (TypeSystemContext c)
+type SchemaValidator c = Validator CONST (TypeSystemContext c)
 
 constraintInterface ::
   TypeDefinition ANY CONST ->

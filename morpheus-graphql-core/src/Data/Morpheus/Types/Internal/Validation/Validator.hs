@@ -74,8 +74,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    Directive (..),
+  ( Directive (..),
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
@@ -261,11 +260,10 @@ setSelectionName fieldname = setScope update
     update ctx = ctx {fieldname}
 
 askSchema ::
-  ( MonadContext m s c,
-    GetWith c (Schema s)
+  ( MonadContext m s c
   ) =>
   m c (Schema s)
-askSchema = get
+askSchema = getGlobalContext schema
 
 askVariables ::
   ( MonadContext m s c,
@@ -397,7 +395,7 @@ instance MonadReader ctx (Validator s ctx) where
 
 type BaseValidator = Validator VALID (OperationContext ())
 
-type SelectionValidator = Validator CONST (OperationContext (VariableDefinitions VALID))
+type SelectionValidator = Validator VALID (OperationContext (VariableDefinitions VALID))
 
 type InputValidator s ctx = Validator s (InputContext ctx)
 
