@@ -104,10 +104,13 @@ getOperationType operation =
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
 
-_kindConstraint ::
+type KindConstraint f c =
   ( Failure InternalError f,
-    FromAny TypeDefinition k
-  ) =>
+    FromAny TypeDefinition c
+  )
+
+_kindConstraint ::
+  KindConstraint f k =>
   Token ->
   TypeDefinition ANY s ->
   f (TypeDefinition k s)
@@ -118,12 +121,7 @@ _kindConstraint err anyType =
     (fromAny anyType)
 
 class KindErrors c where
-  kindConstraint ::
-    ( Failure InternalError f,
-      FromAny TypeDefinition c
-    ) =>
-    TypeDefinition ANY s ->
-    f (TypeDefinition c s)
+  kindConstraint :: KindConstraint f c => TypeDefinition ANY s -> f (TypeDefinition c s)
   constraintObject ::
     ( Applicative f,
       Failure InternalError f
