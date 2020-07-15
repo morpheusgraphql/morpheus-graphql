@@ -38,7 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldName,
     ScalarValue (..),
-    Schema,
     Schema (..),
     VALID,
     Value (..),
@@ -80,15 +79,14 @@ validateTypeSystemDirectives ::
 validateTypeSystemDirectives location = traverse (validate location)
 
 validate ::
-  forall s c schemaS.
   ArgumentsConstraints c schemaS s =>
   DirectiveLocation ->
   Directive s ->
   Validator schemaS c (Directive VALID)
 validate location directive@Directive {..} =
   withDirective directive $ do
-    (Schema {directiveDefinitions} :: Schema schemaS) <- askSchema
-    (directiveDef :: DirectiveDefinition schemaS) <- selectKnown directive directiveDefinitions
+    Schema {directiveDefinitions} <- askSchema
+    directiveDef <- selectKnown directive directiveDefinitions
     Directive directiveName directivePosition
       <$> ( validateDirectiveLocation location directive directiveDef
               *> validateDirectiveArguments directiveDef directiveArgs
