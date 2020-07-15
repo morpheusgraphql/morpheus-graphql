@@ -113,7 +113,6 @@ import Prelude
     Bool,
     Int,
     Show,
-    id,
   )
 
 data Prop = Prop
@@ -463,17 +462,26 @@ instance
   Failure InternalError (Validator s ctx)
   where
   failure inputMessage = do
-    scope <- asksScope id
+    ctx <- Validator ask
     failure
       ( renderErrorMessage
-          (position scope)
+          (position $ scope ctx)
           $ msg
             inputMessage
-            <> renderContext scope
+            <> renderContext ctx
       )
 
-renderContext :: Scope -> Message
+renderContext :: ValidatorContext s ctx -> Message
 renderContext
+  ValidatorContext
+    { schema,
+      scope
+    } =
+    renderScope scope
+      <> renderSection "SchemaDefinition" schema
+
+renderScope :: Scope -> Message
+renderScope
   Scope
     { currentTypeName,
       currentTypeKind,
@@ -482,18 +490,18 @@ renderContext
     renderSection
       "Scope"
       ( "referenced by type "
-          <> msg currentTypeName
+          <> render currentTypeName
           <> " of kind "
-          <> msg (render currentTypeKind)
+          <> render currentTypeKind
           <> " in field "
-          <> msg fieldname
+          <> render fieldname
       )
 
-renderSection :: Message -> Message -> Message
+renderSection :: RenderGQL a => Message -> a -> Message
 renderSection label content =
   "\n\n" <> label <> ":\n" <> line
     <> "\n\n"
-    <> content
+    <> msg (render content)
     <> "\n\n"
   where
     line = stimes (50 :: Int) "-"
