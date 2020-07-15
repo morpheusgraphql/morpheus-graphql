@@ -290,7 +290,7 @@ withContext ::
 withContext f = Validator . withReaderT (fmap f) . _runValidator
 
 withDirective ::
-  ( MonadContext m s c
+  ( MonadContext m schemaS c
   ) =>
   Directive s ->
   m c a ->

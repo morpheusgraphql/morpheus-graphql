@@ -9,7 +9,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -57,7 +56,6 @@ import Data.Morpheus.Validation.Internal.Arguments
     Resolve,
     validateDirectiveArguments,
   )
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Prelude
@@ -77,24 +75,23 @@ validateQueryDirectives ::
   DirectiveConstraint ctx VALID s =>
   DirectiveLocation ->
   Directives s ->
-  Validator ctx (Directives VALID)
-validateQueryDirectives location = traverse (validate (Proxy @VALID) location)
+  Validator VALID ctx (Directives VALID)
+validateQueryDirectives location = traverse (validate location)
 
 validateTypeSystemDirectives ::
   DirectiveConstraint ctx CONST s =>
   DirectiveLocation ->
   Directives s ->
-  Validator ctx (Directives VALID)
-validateTypeSystemDirectives location = traverse (validate (Proxy @CONST) location)
+  Validator CONST ctx (Directives VALID)
+validateTypeSystemDirectives location = traverse (validate location)
 
 validate ::
   forall s c schemaS.
   ArgumentsConstraints c schemaS s =>
-  Proxy schemaS ->
   DirectiveLocation ->
   Directive s ->
-  Validator c (Directive VALID)
-validate _ location directive@Directive {..} =
+  Validator schemaS c (Directive VALID)
+validate location directive@Directive {..} =
   withDirective directive $ do
     (Schema {directiveDefinitions} :: Schema schemaS) <- askSchema
     (directiveDef :: DirectiveDefinition schemaS) <- selectKnown directive directiveDefinitions
@@ -107,7 +104,7 @@ validateDirectiveLocation ::
   DirectiveLocation ->
   Directive s ->
   DirectiveDefinition s' ->
-  Validator ctx ()
+  Validator schemaS ctx ()
 validateDirectiveLocation
   loc
   Directive {directiveName, directivePosition}
@@ -123,12 +120,12 @@ directiveFulfilled ::
   Bool ->
   FieldName ->
   Directives s ->
-  Validator ctx Bool
+  Validator schemaS ctx Bool
 directiveFulfilled target = selectOr (pure True) (argumentIf target)
 
 shouldIncludeSelection ::
   Directives VALID ->
-  Validator ctx Bool
+  Validator schemaS ctx Bool
 shouldIncludeSelection directives = do
   dontSkip <- directiveFulfilled False "skip" directives
   include <- directiveFulfilled True "include" directives
@@ -137,7 +134,7 @@ shouldIncludeSelection directives = do
 argumentIf ::
   Bool ->
   Directive s ->
-  Validator ctx Bool
+  Validator schemaS ctx Bool
 argumentIf target Directive {directiveName, directiveArgs, directivePosition} =
   selectBy err "if" directiveArgs
     >>= assertArgument target
@@ -151,7 +148,7 @@ argumentIf target Directive {directiveName, directiveArgs, directivePosition} =
 assertArgument ::
   Bool ->
   Argument s ->
-  Validator ctx Bool
+  Validator schemaS ctx Bool
 assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
 assertArgument _ Argument {argumentValue, argumentPosition} =
   failure
