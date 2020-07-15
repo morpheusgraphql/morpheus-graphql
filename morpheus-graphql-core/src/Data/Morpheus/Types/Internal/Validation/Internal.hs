@@ -45,13 +45,15 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent,
     TypeDefinition (..),
     TypeName (..),
-    TypedRef (..),
+    TypeRef,
+    Typed,
     UnionMember (..),
     VALID,
     fromAny,
     getOperationDataType,
     msgInternal,
     typeConName,
+    untyped,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( GetWith,
@@ -70,9 +72,9 @@ import Prelude
 
 askTypeByRef ::
   Constraints m c cat s =>
-  TypedRef cat s ->
+  Typed cat s TypeRef ->
   m c (TypeDefinition cat s)
-askTypeByRef = askType . typeConName . unTypedRef
+askTypeByRef = askType . untyped typeConName
 
 askType ::
   Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)

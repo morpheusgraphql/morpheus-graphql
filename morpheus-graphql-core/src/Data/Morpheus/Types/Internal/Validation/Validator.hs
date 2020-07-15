@@ -24,7 +24,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     withScope,
     withScopeType,
     withPosition,
-    withInputScope,
+    inField,
     inputMessagePrefix,
     InputSource (..),
     InputContext (..),
@@ -73,6 +73,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST
   ( Directive (..),
+    FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
     Fragments,
@@ -89,6 +90,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeKind (..),
     TypeName (..),
+    TypeRef (..),
     VALID,
     Variable (..),
     VariableDefinitions,
@@ -207,18 +209,22 @@ type instance Resolution s 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT s)
 
 type instance Resolution s 'TARGET_INPUT = TypeDefinition IN s
 
-withInputScope :: Prop -> InputValidator c a -> InputValidator c a
-withInputScope prop = withContext update
-  where
-    update
-      InputContext
-        { inputPath = old,
-          ..
-        } =
+inField :: FieldDefinition IN s -> InputValidator c a -> InputValidator c a
+inField
+  FieldDefinition
+    { fieldName,
+      fieldType = TypeRef {typeConName}
+    } = withContext update
+    where
+      update
         InputContext
-          { inputPath = old <> [prop],
+          { inputPath = old,
             ..
-          }
+          } =
+          InputContext
+            { inputPath = old <> [Prop fieldName typeConName],
+              ..
+            }
 
 inputValueSource ::
   forall m c.

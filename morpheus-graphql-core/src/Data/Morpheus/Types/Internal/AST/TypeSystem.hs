@@ -48,7 +48,9 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     RootOperationTypeDefinition (..),
     SchemaDefinition (..),
     buildSchema,
-    TypedRef (..),
+    Typed (Typed),
+    untyped,
+    typed,
   )
 where
 
@@ -161,8 +163,20 @@ import Prelude
 
 type DataEnum s = [DataEnumValue s]
 
-newtype TypedRef (cat :: TypeCategory) (s :: Stage) = TypedRef
-  { unTypedRef :: TypeRef
+-- used for perserving type information from untyped values
+-- e.g
+-- unionType :: UnionMember IN VALID -> Typed IN VALID TypeName
+-- unionType = typed memberName
+typed :: (a c s -> b) -> a c s -> Typed c s b
+typed f = Typed . f
+
+untyped :: (a -> b) -> Typed c s a -> b
+untyped f = f . _untyped
+
+-- | used for perserving type information from untyped values
+-- see function typed
+newtype Typed (cat :: TypeCategory) (s :: Stage) a = Typed
+  { _untyped :: a
   }
 
 mkUnionMember :: TypeName -> UnionMember cat s

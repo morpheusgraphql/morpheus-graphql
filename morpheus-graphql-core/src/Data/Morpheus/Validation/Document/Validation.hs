@@ -62,7 +62,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName,
     TypeRef (..),
-    TypedRef (..),
+    Typed (..),
     UnionMember (..),
     VALID,
     Value,
@@ -394,7 +394,7 @@ validateDefaultValue ::
     (TypeSystemContext (TypeName, FieldName))
     (Value VALID)
 validateDefaultValue typeRef =
-  validateInputByTypeRef (TypedRef typeRef :: TypedRef IN CONST)
+  validateInputByTypeRef (Typed typeRef :: Typed IN CONST TypeRef)
 
 -- TODO: validate directives
 validateDirectiveDefinition :: DirectiveDefinition CONST -> SchemaValidator () (DirectiveDefinition VALID)

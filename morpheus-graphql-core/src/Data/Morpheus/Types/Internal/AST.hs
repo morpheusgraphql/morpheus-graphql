@@ -153,7 +153,9 @@ module Data.Morpheus.Types.Internal.AST
     InternalError (..),
     msgInternal,
     getOperationDataType,
-    TypedRef (..),
+    Typed (Typed),
+    typed,
+    untyped,
   )
 where
 

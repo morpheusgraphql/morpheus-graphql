@@ -9,7 +9,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -45,11 +44,11 @@ import Data.Morpheus.Types.Internal.AST
     Position (..),
     RAW,
     Schema,
-    TypedRef (..),
     VALID,
     Value (..),
     VariableDefinitions,
     fieldContentArgs,
+    typed,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( GetWith,
@@ -118,13 +117,14 @@ validateArgumentValue ::
   Argument valueS ->
   Validator ctx (Argument VALID)
 validateArgumentValue
-  FieldDefinition {fieldType}
-  Argument {argumentValue = value, ..} =
+  field
+  Argument {argumentValue, ..} =
     withPosition argumentPosition
       $ startInput (SourceArgument argumentName)
-      $ do
-        argumentValue <- validateInputByTypeRef (TypedRef fieldType :: TypedRef IN schemaS) value
-        pure Argument {argumentValue, ..}
+      $ Argument
+        argumentName
+        argumentPosition
+        <$> validateInputByTypeRef (typed fieldType field) argumentValue
 
 validateFieldArguments ::
   forall ctx.

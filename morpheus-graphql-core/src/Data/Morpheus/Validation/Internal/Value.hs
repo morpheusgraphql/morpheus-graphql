@@ -57,7 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
-    TypedRef (..),
+    Typed,
     VALID,
     ValidValue,
     Value (..),
@@ -69,6 +69,8 @@ import Data.Morpheus.Types.Internal.AST
     mkTypeRef,
     msg,
     toFieldName,
+    typed,
+    untyped,
   )
 import Data.Morpheus.Types.Internal.AST.OrdMap
   ( unsafeFromValues,
@@ -79,18 +81,17 @@ import Data.Morpheus.Types.Internal.Validation
     InputSource (..),
     InputValidator,
     MonadContext,
-    Prop (..),
     Scope (..),
     Validator,
     askInputMember,
     askTypeByRef,
     asksScope,
     constraintInputUnion,
+    inField,
     inputMessagePrefix,
     inputValueSource,
     selectKnown,
     selectWithDefaultValue,
-    withInputScope,
     withScopeType,
   )
 import Data.Proxy (Proxy (..))
@@ -155,14 +156,17 @@ validateInputByType = validateInput
 
 validateInputByTypeRef ::
   ValueConstraints c schemaS s =>
-  TypedRef IN schemaS ->
+  Typed IN schemaS TypeRef ->
   Value s ->
   Validator (InputContext c) (Value VALID)
 validateInputByTypeRef
-  ref@(TypedRef TypeRef {typeWrappers})
+  ref
   value = do
     inputTypeDef <- askTypeByRef ref
-    validateInputByType typeWrappers inputTypeDef value
+    validateInputByType
+      (untyped typeWrappers ref)
+      inputTypeDef
+      value
 
 validateValueByField ::
   forall schemaS s c.
@@ -170,14 +174,10 @@ validateValueByField ::
   FieldDefinition IN schemaS ->
   Value s ->
   Validator (InputContext c) (Value VALID)
-validateValueByField
-  FieldDefinition
-    { fieldName,
-      fieldType = typeRef@TypeRef {typeConName}
-    } =
-    withInputScope (Prop fieldName typeConName)
-      . validateInputByTypeRef
-        (TypedRef typeRef :: TypedRef IN schemaS)
+validateValueByField field =
+  inField field
+    . validateInputByTypeRef
+      (typed fieldType field)
 
 -- Validate input Values
 validateInput ::
