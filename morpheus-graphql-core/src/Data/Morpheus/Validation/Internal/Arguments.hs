@@ -41,7 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     Position (..),
     RAW,
-    Schema,
     VALID,
     Value (..),
     VariableDefinitions,
@@ -53,6 +52,7 @@ import Data.Morpheus.Types.Internal.Validation
     InputSource (..),
     MissingRequired,
     Scope (..),
+    SelectionValidator,
     Validator,
     askVariables,
     asksScope,
@@ -64,7 +64,6 @@ import Data.Morpheus.Types.Internal.Validation
   )
 import Data.Morpheus.Validation.Internal.Value
   ( ValidateWithDefault,
-    ValueConstraints,
     validateInputByTypeRef,
   )
 import Data.Traversable (traverse)
@@ -81,18 +80,17 @@ type VariableConstraints ctx =
 
 type ArgumentsConstraints c schemaS valueS =
   ( Resolve Argument valueS c,
-    GetWith c (Schema schemaS),
     ValidateWithDefault c schemaS schemaS,
     ValidateWithDefault c schemaS CONST
   )
 
 validateArgument ::
-  ( ValueConstraints ctx schemaS valueS,
+  ( ValidateWithDefault ctx schemaS valueS,
     ValidateWithDefault ctx schemaS schemaS
   ) =>
   Arguments valueS ->
   FieldDefinition IN schemaS ->
-  Validator ctx (Argument VALID)
+  Validator schemaS ctx (Argument VALID)
 validateArgument
   requestArgs
   argumentDef =
@@ -102,16 +100,16 @@ validateArgument
       argumentDef
       requestArgs
 
-toArgument :: FieldDefinition IN s -> Value schemaS -> Validator ctx (Argument schemaS)
+toArgument :: FieldDefinition IN s -> Value schemaS -> Validator schemaStage ctx (Argument schemaS)
 toArgument
   FieldDefinition {fieldName}
   value = flip (Argument fieldName) value . fromMaybe (Position 0 0) <$> asksScope position
 
 validateArgumentValue ::
-  (ValueConstraints ctx schemaS valueS) =>
+  (ValidateWithDefault ctx schemaS valueS) =>
   FieldDefinition IN schemaS ->
   Argument valueS ->
-  Validator ctx (Argument VALID)
+  Validator schemaS ctx (Argument VALID)
 validateArgumentValue
   field
   Argument {argumentValue, ..} =
@@ -123,13 +121,9 @@ validateArgumentValue
         <$> validateInputByTypeRef (typed fieldType field) argumentValue
 
 validateFieldArguments ::
-  ( GetWith ctx (VariableDefinitions VALID),
-    MissingRequired (VariableDefinitions VALID) ctx,
-    GetWith ctx (Schema VALID)
-  ) =>
   FieldDefinition OUT VALID ->
   Arguments RAW ->
-  Validator ctx (Arguments VALID)
+  SelectionValidator (Arguments VALID)
 validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
   validateArguments
     (`selectKnown` fieldDef)
@@ -141,7 +135,7 @@ validateDirectiveArguments ::
   ArgumentsConstraints ctx schemaStage valueStage =>
   DirectiveDefinition schemaStage ->
   Arguments valueStage ->
-  Validator ctx (Arguments VALID)
+  Validator schemaStage ctx (Arguments VALID)
 validateDirectiveArguments
   directiveDef@DirectiveDefinition
     { directiveDefinitionArgs
@@ -152,17 +146,17 @@ validateDirectiveArguments
 
 validateArguments ::
   ArgumentsConstraints ctx schemaStage s =>
-  (Argument CONST -> Validator ctx (ArgumentDefinition schemaStage)) ->
+  (Argument CONST -> Validator schemaStage ctx (ArgumentDefinition schemaStage)) ->
   ArgumentsDefinition schemaStage ->
   Arguments s ->
-  Validator ctx (Arguments VALID)
+  Validator schemaStage ctx (Arguments VALID)
 validateArguments checkUnknown argsDef rawArgs = do
   args <- ordTraverse resolve rawArgs
   ordTraverse_ checkUnknown args
     *> ordTraverse (validateArgument args) (arguments argsDef)
 
 class Resolve f s ctx where
-  resolve :: f s -> Validator ctx (f CONST)
+  resolve :: f s -> Validator schemaS ctx (f CONST)
 
 instance VariableConstraints ctx => Resolve Argument RAW ctx where
   resolve (Argument key position val) = Argument key position <$> resolve val

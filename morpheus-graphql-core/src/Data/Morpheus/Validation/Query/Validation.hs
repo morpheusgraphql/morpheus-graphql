@@ -57,8 +57,8 @@ validateRequest
           }
     } =
     do
-      variables <- runValidator validateHelpers scope (ctx ())
-      runValidator (validateOperation operation) scope (ctx variables)
+      variables <- runValidator validateHelpers schema scope (ctx ())
+      runValidator (validateOperation operation) schema scope (ctx variables)
     where
       scope =
         Scope
@@ -70,8 +70,7 @@ validateRequest
           }
       ctx variables =
         OperationContext
-          { schema,
-            fragments,
+          { fragments,
             selection = CurrentSelection {operationName},
             variables
           }

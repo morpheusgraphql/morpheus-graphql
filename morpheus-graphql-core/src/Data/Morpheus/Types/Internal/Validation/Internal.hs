@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Operation,
     Operation (..),
-    Schema (..),
     TRUE,
     Token,
     TypeContent (..),
@@ -54,8 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     untyped,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( GetWith,
-    MonadContext,
+  ( MonadContext,
     SelectionValidator,
     askSchema,
   )
@@ -89,8 +87,7 @@ askTypeMember = __askType . memberName >=> constraintObject
 type Constraints m c cat s =
   ( Failure InternalError (m c),
     Monad (m c),
-    MonadContext m c,
-    GetWith c (Schema s),
+    MonadContext m s c,
     KindErrors cat,
     FromAny (TypeContent TRUE) cat
   )

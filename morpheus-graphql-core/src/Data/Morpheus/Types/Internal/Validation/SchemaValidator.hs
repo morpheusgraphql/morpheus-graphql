@@ -14,7 +14,6 @@
 
 module Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( SchemaValidator,
-    selectType,
     TypeSystemContext (..),
     constraintInterface,
     inField,
@@ -32,12 +31,9 @@ where
 -- MORPHEUS
 
 import Control.Applicative (pure)
-import Control.Monad ((>>=))
-import Control.Monad.Reader (asks)
 import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -45,15 +41,13 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     FieldsDefinition,
     OUT,
-    Schema,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( GetWith (..),
-    Validator (..),
+  ( Validator (..),
     renderField,
     withContext,
   )
@@ -68,25 +62,9 @@ import Prelude
     const,
   )
 
-data TypeSystemContext c = TypeSystemContext
-  { schema :: Schema CONST,
-    local :: c
-  }
+newtype TypeSystemContext c = TypeSystemContext
+  {local :: c}
   deriving (Show)
-
-instance GetWith (TypeSystemContext ctx) (Schema CONST) where
-  getWith = schema
-
-selectType ::
-  TypeName ->
-  SchemaValidator
-    ctx
-    (TypeDefinition ANY CONST)
-selectType name =
-  asks schema
-    >>= selectBy err name
-  where
-    err = globalErrorMessage $ "Unknown Type " <> msg name <> "."
 
 inType ::
   TypeName ->
@@ -122,13 +100,13 @@ data Field = Field
     fieldArgument :: FieldName
   }
 
-withLocalContext :: (a -> b) -> Validator (TypeSystemContext b) v -> Validator (TypeSystemContext a) v
+withLocalContext :: (a -> b) -> SchemaValidator b v -> SchemaValidator a v
 withLocalContext = withContext . updateLocal
 
 updateLocal :: (a -> b) -> TypeSystemContext a -> TypeSystemContext b
 updateLocal f ctx = ctx {local = f (local ctx)}
 
-type SchemaValidator c = Validator (TypeSystemContext c)
+type SchemaValidator c = Validator CONST (TypeSystemContext c)
 
 constraintInterface ::
   TypeDefinition ANY CONST ->
