@@ -23,7 +23,6 @@ where
 
 import Control.Applicative (Applicative, pure)
 import Control.Monad ((>=>), Monad ((>>=)))
-import Data.Functor (fmap)
 import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -67,14 +66,13 @@ import Data.Semigroup
 import Prelude
   ( ($),
     (.),
-    fst,
   )
 
 askTypeByRef ::
   Constraints m c cat s =>
   Typed cat s TypeRef ->
   m c (TypeDefinition cat s)
-askTypeByRef = askType . untyped typeConName
+askTypeByRef = untyped (askType . typeConName)
 
 askType ::
   Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
@@ -97,9 +95,9 @@ askInputMember ::
     Monad (m c),
     MonadContext m c
   ) =>
-  TypeName ->
-  m c (TypeDefinition IN s)
-askInputMember = fmap fst . askMember
+  Typed IN s TypeName ->
+  m c (TypeDefinition IN s, FieldsDefinition IN s)
+askInputMember = untyped askMember
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),

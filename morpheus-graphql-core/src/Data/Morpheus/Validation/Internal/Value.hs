@@ -9,7 +9,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -57,7 +56,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
-    Typed,
+    Typed (..),
     VALID,
     ValidValue,
     Value (..),
@@ -94,7 +93,6 @@ import Data.Morpheus.Types.Internal.Validation
     selectWithDefaultValue,
     withScopeType,
   )
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Prelude
@@ -104,6 +102,7 @@ import Prelude
     Bool (..),
     Eq (..),
     const,
+    fst,
     not,
     otherwise,
   )
@@ -249,17 +248,18 @@ validatInputUnion typeName inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
     Right (name, Nothing) -> pure (mkInputObject name [])
-    Right (name, Just value) -> validatInputUnionMember (Proxy @schemaS) name value
+    Right (name, Just value) ->
+      validatInputUnionMember
+        (Typed name :: Typed IN schemaS TypeName)
+        value
 
 validatInputUnionMember ::
-  forall ctx schemaS valueS.
   ValueConstraints ctx schemaS valueS =>
-  Proxy schemaS ->
-  TypeName ->
+  Typed IN schemaS TypeName ->
   Value valueS ->
   InputValidator ctx (Value VALID)
-validatInputUnionMember _ name value = do
-  (inputDef :: TypeDefinition IN schemaS) <- askInputMember name
+validatInputUnionMember typedName@(Typed name) value = do
+  inputDef <- fst <$> askInputMember typedName
   validValue <- validateInputByType [TypeMaybe] inputDef value
   pure $ mkInputObject name [ObjectEntry (toFieldName name) validValue]
 
