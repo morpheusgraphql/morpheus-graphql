@@ -64,7 +64,7 @@ import Control.Monad.Trans.Reader
 import Data.Either (Either)
 import Data.Foldable (null)
 import Data.Functor ((<$>), fmap)
-import Data.List (elem, filter)
+import Data.List (filter)
 import Data.Maybe (Maybe (..), fromMaybe, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -89,7 +89,6 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName (..),
     UnionMember (..),
     Value (..),
     __inputname,
@@ -258,7 +257,7 @@ constraintInputUnion ::
   forall stage schemaStage.
   [UnionMember IN schemaStage] ->
   Object stage ->
-  Either Message (TypeName, Maybe (Value stage))
+  Either Message (UnionMember IN schemaStage, Maybe (Value stage))
 constraintInputUnion tags hm = do
   (enum :: Value stage) <-
     entryValue
@@ -269,24 +268,26 @@ constraintInputUnion tags hm = do
         )
         __inputname
         hm
-  tyName <- isPosibeInputUnion tags enum
+  unionMember <- isPosibeInputUnion tags enum
   case size hm of
-    1 -> pure (tyName, Nothing)
+    1 -> pure (unionMember, Nothing)
     2 -> do
       value <-
         entryValue
           <$> selectBy
             ( "value for Union \""
-                <> msg tyName
+                <> msg unionMember
                 <> "\" was not Provided."
             )
-            (toFieldName tyName)
+            (toFieldName $ memberName unionMember)
             hm
-      pure (tyName, Just value)
+      pure (unionMember, Just value)
     _ -> failure ("input union can have only one variant." :: Message)
 
-isPosibeInputUnion :: [UnionMember IN s] -> Value stage -> Either Message TypeName
-isPosibeInputUnion tags (Enum name)
-  | name `elem` fmap memberName tags = pure name
-  | otherwise = failure $ msg name <> " is not posible union type"
+isPosibeInputUnion :: [UnionMember IN s] -> Value stage -> Either Message (UnionMember IN s)
+isPosibeInputUnion tags (Enum name) =
+  selectBy
+    (msg name <> " is not posible union type")
+    name
+    tags
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"

@@ -96,9 +96,9 @@ askInputMember ::
     Monad (m c),
     MonadContext m c
   ) =>
-  Typed IN s TypeName ->
+  UnionMember IN s ->
   m c (TypeDefinition IN s, FieldsDefinition IN s)
-askInputMember = askMember
+askInputMember = askMember . typed memberName
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),

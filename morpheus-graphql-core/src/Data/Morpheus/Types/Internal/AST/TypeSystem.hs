@@ -195,6 +195,13 @@ type DataInputUnion s = [UnionMember IN s]
 instance RenderGQL (UnionMember cat s) where
   render = render . memberName
 
+instance Msg (UnionMember cat s) where
+  msg = msg . memberName
+
+instance KeyOf (UnionMember cat s) where
+  type KEY (UnionMember cat s) = TypeName
+  keyOf = memberName
+
 -- scalar
 ------------------------------------------------------------------
 newtype ScalarDefinition = ScalarDefinition

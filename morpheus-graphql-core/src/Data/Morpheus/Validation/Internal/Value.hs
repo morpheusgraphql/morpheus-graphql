@@ -57,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper (..),
     Typed (..),
+    UnionMember (..),
     VALID,
     ValidValue,
     Value (..),
@@ -168,7 +169,6 @@ validateInputByTypeRef
       value
 
 validateValueByField ::
-  forall schemaS s c.
   ValueConstraints c schemaS s =>
   FieldDefinition IN schemaS ->
   Value s ->
@@ -238,7 +238,6 @@ validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName}
 
 -- INPUT UNION
 validatInputUnion ::
-  forall schemaS s ctx.
   ValueConstraints ctx schemaS s =>
   TypeName ->
   DataInputUnion schemaS ->
@@ -247,21 +246,18 @@ validatInputUnion ::
 validatInputUnion typeName inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
-    Right (name, Nothing) -> pure (mkInputObject name [])
-    Right (name, Just value) ->
-      validatInputUnionMember
-        (Typed name :: Typed IN schemaS TypeName)
-        value
+    Right (UnionMember {memberName}, Nothing) -> pure (mkInputObject memberName [])
+    Right (name, Just value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
   ValueConstraints ctx schemaS valueS =>
-  Typed IN schemaS TypeName ->
+  UnionMember IN schemaS ->
   Value valueS ->
   InputValidator ctx (Value VALID)
-validatInputUnionMember typedName@(Typed name) value = do
-  inputDef <- fst <$> askInputMember typedName
+validatInputUnionMember member@UnionMember {memberName} value = do
+  inputDef <- fst <$> askInputMember member
   validValue <- validateInputByType [TypeMaybe] inputDef value
-  pure $ mkInputObject name [ObjectEntry (toFieldName name) validValue]
+  pure $ mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
 
 mkInputObject :: TypeName -> [ObjectEntry s] -> Value s
 mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (Enum name) : xs
