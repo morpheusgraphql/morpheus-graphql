@@ -43,7 +43,6 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     ScalarDefinition (..),
     ScalarValue (..),
-    Stage,
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
