@@ -209,7 +209,6 @@ validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName}
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ entryValue = mismatchError wrappers Nothing entryValue
     validateUnwrapped ::
-      -- error
       (Maybe Message -> Value valueS -> InputValidator schemaS ctx ValidValue) ->
       TypeContent TRUE IN schemaS ->
       Value valueS ->
