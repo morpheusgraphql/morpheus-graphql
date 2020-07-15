@@ -83,7 +83,7 @@ import Data.Morpheus.Types.Internal.Validation
     MonadContext,
     Scope (..),
     Validator,
-    askTypeByRef,
+    askType,
     askTypeMember,
     asksScope,
     constraintInputUnion,
@@ -162,7 +162,7 @@ validateInputByTypeRef ::
 validateInputByTypeRef
   ref
   value = do
-    inputTypeDef <- askTypeByRef ref
+    inputTypeDef <- askType ref
     validateInputByType
       (untyped typeWrappers ref)
       inputTypeDef

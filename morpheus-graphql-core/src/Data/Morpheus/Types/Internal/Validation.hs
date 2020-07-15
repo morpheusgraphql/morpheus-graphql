@@ -18,7 +18,7 @@ module Data.Morpheus.Types.Internal.Validation
     OperationContext (..),
     runValidator,
     DirectiveValidator,
-    askTypeByRef,
+    askType,
     askTypeMember,
     selectRequired,
     selectKnown,
@@ -104,7 +104,7 @@ import Data.Morpheus.Types.Internal.Validation.Error
     Unused (..),
   )
 import Data.Morpheus.Types.Internal.Validation.Internal
-  ( askTypeByRef,
+  ( askType,
     askTypeMember,
     getOperationType,
   )

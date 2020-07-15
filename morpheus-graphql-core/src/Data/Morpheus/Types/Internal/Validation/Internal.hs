@@ -12,7 +12,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation.Internal
-  ( askTypeByRef,
+  ( askType,
     askTypeMember,
     getOperationType,
   )
@@ -67,15 +67,15 @@ import Prelude
     (.),
   )
 
-askTypeByRef ::
+askType ::
   Constraints m c cat s =>
   Typed cat s TypeRef ->
   m c (TypeDefinition cat s)
-askTypeByRef = untyped (askType . typeConName)
+askType = untyped (__askType . typeConName)
 
-askType ::
+__askType ::
   Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
-askType name =
+__askType name =
   askSchema
     >>= selectBy (unknownType name) name
     >>= kindConstraint
@@ -84,7 +84,7 @@ askTypeMember ::
   Constraints m c cat s =>
   UnionMember cat s ->
   m c (TypeDefinition cat s, FieldsDefinition cat s)
-askTypeMember = askType . memberName >=> constraintObject
+askTypeMember = __askType . memberName >=> constraintObject
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),
