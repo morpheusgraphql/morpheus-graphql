@@ -3,6 +3,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -12,6 +13,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation.Validator
@@ -72,7 +74,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST
-  ( Directive (..),
+  ( CONST,
+    Directive (..),
     FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
@@ -152,8 +155,7 @@ data ScopeKind
   deriving (Show)
 
 data OperationContext vars = OperationContext
-  { schema :: Schema VALID,
-    fragments :: Fragments,
+  { fragments :: Fragments,
     selection :: CurrentSelection,
     variables :: vars
   }
@@ -209,7 +211,7 @@ type instance Resolution s 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT s)
 
 type instance Resolution s 'TARGET_INPUT = TypeDefinition IN s
 
-inField :: FieldDefinition IN s -> InputValidator c a -> InputValidator c a
+inField :: FieldDefinition IN s -> InputValidator s c a -> InputValidator s c a
 inField
   FieldDefinition
     { fieldName,
@@ -227,15 +229,15 @@ inField
             }
 
 inputValueSource ::
-  forall m c.
+  forall m c s.
   ( GetWith c InputSource,
-    MonadContext m c
+    MonadContext m s c
   ) =>
   m c InputSource
 inputValueSource = get
 
 asks ::
-  ( MonadContext m c,
+  ( MonadContext m s c,
     GetWith c t
   ) =>
   (t -> a) ->
@@ -243,14 +245,14 @@ asks ::
 asks f = f <$> get
 
 asksScope ::
-  ( MonadContext m c
+  ( MonadContext m s c
   ) =>
   (Scope -> a) ->
   m c a
 asksScope f = f <$> getGlobalContext scope
 
 setSelectionName ::
-  (MonadContext m c) =>
+  (MonadContext m s c) =>
   FieldName ->
   m c a ->
   m c a
@@ -259,40 +261,38 @@ setSelectionName fieldname = setScope update
     update ctx = ctx {fieldname}
 
 askSchema ::
-  ( MonadContext m c,
+  ( MonadContext m s c,
     GetWith c (Schema s)
   ) =>
   m c (Schema s)
 askSchema = get
 
 askVariables ::
-  ( MonadContext m c,
+  ( MonadContext m s c,
     GetWith c (VariableDefinitions VALID)
   ) =>
   m c (VariableDefinitions VALID)
 askVariables = get
 
 askFragments ::
-  ( MonadContext m c,
+  ( MonadContext m s c,
     GetWith c Fragments
   ) =>
   m c Fragments
 askFragments = get
 
-runValidator :: Validator ctx a -> Scope -> ctx -> Eventless a
-runValidator (Validator x) scope unValidatorContext =
-  runReaderT
-    x
-    ValidatorContext {scope, unValidatorContext}
+runValidator :: Validator s ctx a -> Schema s -> Scope -> ctx -> Eventless a
+runValidator (Validator x) schema scope unValidatorContext =
+  runReaderT x ValidatorContext {..}
 
 withContext ::
   (c' -> c) ->
-  Validator c a ->
-  Validator c' a
+  Validator s c a ->
+  Validator s c' a
 withContext f = Validator . withReaderT (fmap f) . _runValidator
 
 withDirective ::
-  ( MonadContext m c
+  ( MonadContext m s c
   ) =>
   Directive s ->
   m c a ->
@@ -311,7 +311,7 @@ withDirective
           }
 
 withScope ::
-  ( MonadContext m c
+  ( MonadContext m s c
   ) =>
   TypeDefinition cat s ->
   Ref ->
@@ -329,7 +329,7 @@ withScope t@TypeDefinition {typeName} (Ref selName pos) =
         }
 
 withScopeType ::
-  ( MonadContext m c
+  ( MonadContext m s c
   ) =>
   TypeDefinition cat s ->
   m c a ->
@@ -344,7 +344,7 @@ withScopeType t@TypeDefinition {typeName} = setScope update
         }
 
 withPosition ::
-  ( MonadContext m c
+  ( MonadContext m s c
   ) =>
   Position ->
   m c a ->
@@ -353,15 +353,15 @@ withPosition pos = setScope update
   where
     update Scope {..} = Scope {position = Just pos, ..}
 
-inputMessagePrefix :: InputValidator ctx Message
+inputMessagePrefix :: InputValidator s ctx Message
 inputMessagePrefix =
   renderInputPrefix
     . unValidatorContext <$> Validator ask
 
 startInput ::
   InputSource ->
-  InputValidator ctx a ->
-  Validator ctx a
+  InputValidator s ctx a ->
+  Validator s ctx a
 startInput inputSource = withContext update
   where
     update sourceContext =
@@ -371,16 +371,17 @@ startInput inputSource = withContext update
           sourceContext
         }
 
-data ValidatorContext (ctx :: *) = ValidatorContext
+data ValidatorContext (s :: Stage) (ctx :: *) = ValidatorContext
   { scope :: Scope,
+    schema :: Schema s,
     unValidatorContext :: ctx
   }
   deriving (Show, Functor)
 
-newtype Validator ctx a = Validator
+newtype Validator s ctx a = Validator
   { _runValidator ::
       ReaderT
-        (ValidatorContext ctx)
+        (ValidatorContext s ctx)
         Eventless
         a
   }
@@ -390,42 +391,43 @@ newtype Validator ctx a = Validator
       Monad
     )
 
-instance MonadReader ctx (Validator ctx) where
+instance MonadReader ctx (Validator s ctx) where
   ask = unValidatorContext <$> Validator ask
   local = withContext
 
-type BaseValidator = Validator (OperationContext ())
+type BaseValidator = Validator VALID (OperationContext ())
 
-type SelectionValidator = Validator (OperationContext (VariableDefinitions VALID))
+type SelectionValidator = Validator CONST (OperationContext (VariableDefinitions VALID))
 
-type InputValidator ctx = Validator (InputContext ctx)
+type InputValidator s ctx = Validator s (InputContext ctx)
 
 type DirectiveValidator ctx = Validator ctx
 
 setScope ::
-  (MonadContext m c) =>
+  (MonadContext m s c) =>
   (Scope -> Scope) ->
   m c b ->
   m c b
 setScope f = setGlobalContext (mapScope f)
 
-mapScope :: (Scope -> Scope) -> ValidatorContext s -> ValidatorContext s
+mapScope :: (Scope -> Scope) -> ValidatorContext s ctx -> ValidatorContext s ctx
 mapScope f ValidatorContext {scope, ..} = ValidatorContext {scope = f scope, ..}
 
 -- Helpers
-get :: (MonadContext m ctx, GetWith ctx a) => m ctx a
+get :: (MonadContext m s ctx, GetWith ctx a) => m ctx a
 get = getContext getWith
 
 class
   Monad (m c) =>
-  MonadContext m c
+  MonadContext m s c
+    | m -> s
   where
-  getGlobalContext :: (ValidatorContext c -> a) -> m c a
-  setGlobalContext :: (ValidatorContext c -> ValidatorContext c) -> m c b -> m c b
+  getGlobalContext :: (ValidatorContext s c -> a) -> m c a
+  setGlobalContext :: (ValidatorContext s c -> ValidatorContext s c) -> m c b -> m c b
   getContext :: (c -> a) -> m c a
   setContext :: (c -> c) -> m c b -> m c b
 
-instance MonadContext Validator c where
+instance MonadContext (Validator s) s c where
   getGlobalContext f = f <$> Validator ask
   getContext f = f . unValidatorContext <$> Validator ask
   setGlobalContext f = Validator . withReaderT f . _runValidator
@@ -433,9 +435,6 @@ instance MonadContext Validator c where
 
 class GetWith (c :: *) (v :: *) where
   getWith :: c -> v
-
-instance GetWith (OperationContext c) (Schema VALID) where
-  getWith = schema
 
 instance GetWith c (Schema s) => GetWith (InputContext c) (Schema s) where
   getWith = getWith . sourceContext
@@ -460,13 +459,13 @@ instance SetWith (OperationContext v) CurrentSelection where
         ..
       }
 
-instance Failure GQLErrors (Validator ctx) where
+instance Failure GQLErrors (Validator s ctx) where
   failure = Validator . lift . failure
 
 -- can be only used for internal errors
 instance
-  (MonadContext Validator ctx) =>
-  Failure InternalError (Validator ctx)
+  (MonadContext (Validator s) s ctx) =>
+  Failure InternalError (Validator s ctx)
   where
   failure inputMessage = do
     scope <- asksScope id
