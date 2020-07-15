@@ -34,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionSet,
     SelectionSet,
     TypeDefinition (..),
-    TypeName,
     UnionMember (..),
     UnionTag (..),
     VALID,
@@ -117,7 +116,7 @@ validateCluster validator __typename = traverse _validateCluster >=> fmap UnionS
 validateUnionSelection ::
   (TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) ->
   SelectionSet RAW ->
-  DataUnion s ->
+  DataUnion VALID ->
   SelectionValidator (SelectionContent VALID)
 validateUnionSelection validate selectionSet members = do
   let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
