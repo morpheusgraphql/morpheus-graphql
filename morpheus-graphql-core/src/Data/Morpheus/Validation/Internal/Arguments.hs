@@ -64,7 +64,6 @@ import Data.Morpheus.Types.Internal.Validation
   )
 import Data.Morpheus.Validation.Internal.Value
   ( ValidateWithDefault,
-    ValueConstraints,
     validateInputByTypeRef,
   )
 import Data.Traversable (traverse)
@@ -86,7 +85,7 @@ type ArgumentsConstraints c schemaS valueS =
   )
 
 validateArgument ::
-  ( ValueConstraints ctx schemaS valueS,
+  ( ValidateWithDefault ctx schemaS valueS,
     ValidateWithDefault ctx schemaS schemaS
   ) =>
   Arguments valueS ->
@@ -107,7 +106,7 @@ toArgument
   value = flip (Argument fieldName) value . fromMaybe (Position 0 0) <$> asksScope position
 
 validateArgumentValue ::
-  (ValueConstraints ctx schemaS valueS) =>
+  (ValidateWithDefault ctx schemaS valueS) =>
   FieldDefinition IN schemaS ->
   Argument valueS ->
   Validator schemaS ctx (Argument VALID)
