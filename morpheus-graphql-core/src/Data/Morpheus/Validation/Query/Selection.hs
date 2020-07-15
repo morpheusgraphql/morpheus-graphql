@@ -16,7 +16,7 @@ where
 import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=), fmap)
 import Data.Foldable (null)
-import Data.Functor (($>), (<$>))
+import Data.Functor ((<$>))
 import Data.List (filter)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection
@@ -50,10 +50,10 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypedRef (..),
     VALID,
     isEntNode,
     msg,
+    typed,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
@@ -190,7 +190,7 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
           commonValidation = do
             fieldDef <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             (,)
-              <$> askTypeByRef (TypedRef (fieldType fieldDef) :: TypedRef OUT VALID)
+              <$> askTypeByRef (typed fieldType fieldDef)
               <*> validateFieldArguments fieldDef selectionArguments
           -----------------------------------------------------------------------------------
           validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
