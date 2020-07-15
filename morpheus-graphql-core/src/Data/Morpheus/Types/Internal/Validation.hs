@@ -51,12 +51,14 @@ module Data.Morpheus.Types.Internal.Validation
     MonadContext,
     CurrentSelection (..),
     getOperationType,
+    selectType,
   )
 where
 
 -- MORPHEUS
 
 import Control.Applicative (pure)
+import Control.Monad ((>>=))
 import Control.Monad.Trans.Reader
   ( ask,
   )
@@ -65,6 +67,7 @@ import Data.Foldable (null)
 import Data.Functor ((<$>), fmap)
 import Data.List (filter)
 import Data.Maybe (Maybe (..), fromMaybe, maybe)
+import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
@@ -88,6 +91,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     UnionMember (..),
     Value (..),
     __inputname,
@@ -195,7 +199,7 @@ selectRequired ::
   Validator s ctx value
 selectRequired selector container =
   do
-    ValidatorContext scope schema ctx <- Validator ask
+    ValidatorContext scope _schema ctx <- Validator ask
     selectBy
       [missingRequired scope ctx selector container]
       (keyOf selector)
@@ -237,9 +241,17 @@ selectWithDefaultValue
         | otherwise = failSelection
       -----------------
       failSelection = do
-        ValidatorContext scope schema ctx <- Validator ask
+        ValidatorContext scope _schema ctx <- Validator ask
         position <- asksScope position
         failure [missingRequired scope ctx (Ref fieldName (fromMaybe (Position 0 0) position)) values]
+
+selectType ::
+  TypeName ->
+  Validator s ctx (TypeDefinition ANY s)
+selectType name =
+  askSchema >>= selectBy err name
+  where
+    err = globalErrorMessage $ "Unknown Type " <> msg name <> "."
 
 selectKnown ::
   ( Selectable a c,
@@ -252,7 +264,7 @@ selectKnown ::
   Validator s ctx a
 selectKnown selector lib =
   do
-    ValidatorContext scope schema ctx <- Validator ask
+    ValidatorContext scope _schema ctx <- Validator ask
     selectBy
       (unknown scope ctx lib selector)
       (keyOf selector)

@@ -77,6 +77,7 @@ import Data.Morpheus.Types.Internal.Validation
     Scope (..),
     ScopeKind (..),
     runValidator,
+    selectType,
     startInput,
   )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
@@ -89,7 +90,6 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inField,
     inInterface,
     inType,
-    selectType,
   )
 import Data.Morpheus.Validation.Internal.Directive
   ( validateTypeSystemDirectives,
@@ -128,6 +128,7 @@ instance ValidateSchema CONST where
           else pure schema
       runValidator
         __validateSchema
+        sysSchema
         Scope
           { position = Nothing,
             currentTypeName = "Root",
@@ -136,8 +137,7 @@ instance ValidateSchema CONST where
             fieldname = "Root"
           }
         TypeSystemContext
-          { schema = sysSchema,
-            local = ()
+          { local = ()
           }
       where
         __validateSchema :: SchemaValidator () (Schema VALID)
@@ -391,10 +391,11 @@ validateDefaultValue ::
   TypeRef ->
   Value CONST ->
   InputValidator
+    CONST
     (TypeSystemContext (TypeName, FieldName))
     (Value VALID)
 validateDefaultValue typeRef =
-  validateInputByTypeRef (Typed typeRef :: Typed IN CONST TypeRef)
+  validateInputByTypeRef (Typed typeRef)
 
 -- TODO: validate directives
 validateDirectiveDefinition :: DirectiveDefinition CONST -> SchemaValidator () (DirectiveDefinition VALID)

@@ -45,8 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( GetWith,
-    Validator,
+  ( Validator,
     askSchema,
     selectKnown,
     withDirective,
@@ -66,20 +65,15 @@ import Prelude
     otherwise,
   )
 
-type DirectiveConstraint ctx schemaS s =
-  ( Resolve Argument s ctx,
-    GetWith ctx (Schema schemaS)
-  )
-
 validateQueryDirectives ::
-  DirectiveConstraint ctx VALID s =>
+  Resolve Argument s ctx =>
   DirectiveLocation ->
   Directives s ->
   Validator VALID ctx (Directives VALID)
 validateQueryDirectives location = traverse (validate location)
 
 validateTypeSystemDirectives ::
-  DirectiveConstraint ctx CONST s =>
+  Resolve Argument s ctx =>
   DirectiveLocation ->
   Directives s ->
   Validator CONST ctx (Directives VALID)
