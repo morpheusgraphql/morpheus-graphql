@@ -24,7 +24,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     withScope,
     withScopeType,
     withPosition,
-    withInputScope,
+    inField,
     inputMessagePrefix,
     InputSource (..),
     InputContext (..),
@@ -56,7 +56,7 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative, pure)
+import Control.Applicative (Applicative)
 import Control.Monad (Monad)
 import Control.Monad.Reader (MonadReader (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
@@ -65,18 +65,21 @@ import Control.Monad.Trans.Reader
     withReaderT,
   )
 import Data.Functor ((<$>), Functor (..))
-import Data.Maybe (Maybe (..), maybe)
+import Data.Maybe (Maybe (..))
+import Data.Morpheus.Error.Utils (renderErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST
   ( Directive (..),
+    FieldDefinition (..),
     FieldName (..),
     FieldsDefinition,
     Fragments,
-    GQLError (..),
     GQLErrors,
     IN,
+    InternalError,
     Message,
     OUT,
     Position,
@@ -84,12 +87,15 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Schema,
     Stage,
-    TypeDefinition,
+    TypeDefinition (..),
+    TypeKind (..),
     TypeName (..),
+    TypeRef (..),
     VALID,
     Variable (..),
     VariableDefinitions,
     intercalateName,
+    kindOf,
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -97,12 +103,15 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup
   ( (<>),
+    stimes,
   )
 import Prelude
   ( ($),
     (.),
     Bool,
+    Int,
     Show,
+    id,
   )
 
 data Prop = Prop
@@ -157,9 +166,10 @@ newtype CurrentSelection = CurrentSelection
 
 data Scope = Scope
   { position :: Maybe Position,
-    typename :: TypeName,
-    kind :: ScopeKind,
-    fieldname :: FieldName
+    currentTypeName :: TypeName,
+    currentTypeKind :: TypeKind,
+    fieldname :: FieldName,
+    kind :: ScopeKind
   }
   deriving (Show)
 
@@ -199,18 +209,22 @@ type instance Resolution s 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT s)
 
 type instance Resolution s 'TARGET_INPUT = TypeDefinition IN s
 
-withInputScope :: Prop -> InputValidator c a -> InputValidator c a
-withInputScope prop = withContext update
-  where
-    update
-      InputContext
-        { inputPath = old,
-          ..
-        } =
+inField :: FieldDefinition IN s -> InputValidator c a -> InputValidator c a
+inField
+  FieldDefinition
+    { fieldName,
+      fieldType = TypeRef {typeConName}
+    } = withContext update
+    where
+      update
         InputContext
-          { inputPath = old <> [prop],
+          { inputPath = old,
             ..
-          }
+          } =
+          InputContext
+            { inputPath = old <> [Prop fieldName typeConName],
+              ..
+            }
 
 inputValueSource ::
   forall m c.
@@ -299,14 +313,35 @@ withDirective
 withScope ::
   ( MonadContext m c
   ) =>
-  TypeName ->
+  TypeDefinition cat s ->
   Ref ->
   m c a ->
   m c a
-withScope typeName (Ref selName pos) =
+withScope t@TypeDefinition {typeName} (Ref selName pos) =
   setSelectionName selName . setScope update
   where
-    update Scope {..} = Scope {typename = typeName, position = Just pos, ..}
+    update Scope {..} =
+      Scope
+        { currentTypeName = typeName,
+          currentTypeKind = kindOf t,
+          position = Just pos,
+          ..
+        }
+
+withScopeType ::
+  ( MonadContext m c
+  ) =>
+  TypeDefinition cat s ->
+  m c a ->
+  m c a
+withScopeType t@TypeDefinition {typeName} = setScope update
+  where
+    update Scope {..} =
+      Scope
+        { currentTypeName = typeName,
+          currentTypeKind = kindOf t,
+          ..
+        }
 
 withPosition ::
   ( MonadContext m c
@@ -317,16 +352,6 @@ withPosition ::
 withPosition pos = setScope update
   where
     update Scope {..} = Scope {position = Just pos, ..}
-
-withScopeType ::
-  ( MonadContext m c
-  ) =>
-  TypeName ->
-  m c a ->
-  m c a
-withScopeType name = setScope update
-  where
-    update Scope {..} = Scope {typename = name, ..}
 
 inputMessagePrefix :: InputValidator ctx Message
 inputMessagePrefix =
@@ -435,19 +460,46 @@ instance SetWith (OperationContext v) CurrentSelection where
         ..
       }
 
+instance Failure GQLErrors (Validator ctx) where
+  failure = Validator . lift . failure
+
 -- can be only used for internal errors
 instance
   (MonadContext Validator ctx) =>
-  Failure Message (Validator ctx)
+  Failure InternalError (Validator ctx)
   where
   failure inputMessage = do
-    position <- asksScope position
+    scope <- asksScope id
     failure
-      [ GQLError
-          { message = "INTERNAL: " <> inputMessage,
-            locations = maybe [] pure position
-          }
-      ]
+      ( renderErrorMessage
+          (position scope)
+          $ msg
+            inputMessage
+            <> renderContext scope
+      )
 
-instance Failure GQLErrors (Validator ctx) where
-  failure = Validator . lift . failure
+renderContext :: Scope -> Message
+renderContext
+  Scope
+    { currentTypeName,
+      currentTypeKind,
+      fieldname
+    } =
+    renderSection
+      "Scope"
+      ( "referenced by type "
+          <> msg currentTypeName
+          <> " of kind "
+          <> msg (render currentTypeKind)
+          <> " in field "
+          <> msg fieldname
+      )
+
+renderSection :: Message -> Message -> Message
+renderSection label content =
+  "\n\n" <> label <> ":\n" <> line
+    <> "\n\n"
+    <> content
+    <> "\n\n"
+  where
+    line = stimes (50 :: Int) "-"

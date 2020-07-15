@@ -9,13 +9,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Value
-  ( validateInputByField,
-    validateInputByTypeRef,
+  ( validateInputByTypeRef,
     validateInputByType,
     ValueConstraints,
     ValidateWithDefault,
@@ -58,6 +56,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
+    Typed (..),
+    UnionMember (..),
     VALID,
     ValidValue,
     Value (..),
@@ -69,6 +69,8 @@ import Data.Morpheus.Types.Internal.AST
     mkTypeRef,
     msg,
     toFieldName,
+    typed,
+    untyped,
   )
 import Data.Morpheus.Types.Internal.AST.OrdMap
   ( unsafeFromValues,
@@ -79,22 +81,19 @@ import Data.Morpheus.Types.Internal.Validation
     InputSource (..),
     InputValidator,
     MonadContext,
-    Prop (..),
     Scope (..),
     Validator,
-    askInputFieldType,
-    askInputFieldTypeByName,
-    askInputMember,
+    askType,
+    askTypeMember,
     asksScope,
     constraintInputUnion,
+    inField,
     inputMessagePrefix,
     inputValueSource,
     selectKnown,
     selectWithDefaultValue,
-    withInputScope,
     withScopeType,
   )
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Prelude
@@ -104,6 +103,7 @@ import Prelude
     Bool (..),
     Eq (..),
     const,
+    fst,
     not,
     otherwise,
   )
@@ -155,43 +155,28 @@ validateInputByType ::
 validateInputByType = validateInput
 
 validateInputByTypeRef ::
-  forall schemaS s c.
   ValueConstraints c schemaS s =>
-  Proxy schemaS ->
-  TypeRef ->
+  Typed IN schemaS TypeRef ->
   Value s ->
   Validator (InputContext c) (Value VALID)
 validateInputByTypeRef
-  _
-  TypeRef {typeWrappers, typeConName}
+  ref
   value = do
-    (inputTypeDef :: TypeDefinition IN schemaS) <- askInputFieldTypeByName typeConName
-    validateInputByType typeWrappers inputTypeDef value
-
-validateInputByField ::
-  ValueConstraints c schemaS s =>
-  FieldDefinition IN schemaS ->
-  Value s ->
-  Validator (InputContext c) (Value VALID)
-validateInputByField
-  fieldDef@FieldDefinition
-    { fieldType = TypeRef {typeWrappers}
-    }
-  value = do
-    inputTypeDef <- askInputFieldType fieldDef
-    validateInputByType typeWrappers inputTypeDef value
+    inputTypeDef <- askType ref
+    validateInputByType
+      (untyped typeWrappers ref)
+      inputTypeDef
+      value
 
 validateValueByField ::
   ValueConstraints c schemaS s =>
   FieldDefinition IN schemaS ->
   Value s ->
   Validator (InputContext c) (Value VALID)
-validateValueByField
-  fieldDef@FieldDefinition
-    { fieldName,
-      fieldType = TypeRef {typeConName}
-    } =
-    withInputScope (Prop fieldName typeConName) . validateInputByField fieldDef
+validateValueByField field =
+  inField field
+    . validateInputByTypeRef
+      (typed fieldType field)
 
 -- Validate input Values
 validateInput ::
@@ -202,8 +187,8 @@ validateInput ::
   TypeDefinition IN schemaS ->
   Value valueS ->
   InputValidator ctx ValidValue
-validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
-  withScopeType typeName
+validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName} =
+  withScopeType typeDef
     . validateWrapped tyWrappers tyCont
   where
     mismatchError :: [TypeWrapper] -> Maybe Message -> Value valueS -> InputValidator ctx (Value VALID)
@@ -253,7 +238,6 @@ validateInput tyWrappers TypeDefinition {typeContent = tyCont, typeName} =
 
 -- INPUT UNION
 validatInputUnion ::
-  forall schemaS s ctx.
   ValueConstraints ctx schemaS s =>
   TypeName ->
   DataInputUnion schemaS ->
@@ -262,20 +246,18 @@ validatInputUnion ::
 validatInputUnion typeName inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
-    Right (name, Nothing) -> pure (mkInputObject name [])
-    Right (name, Just value) -> validatInputUnionMember (Proxy @schemaS) name value
+    Right (UnionMember {memberName}, Nothing) -> pure (mkInputObject memberName [])
+    Right (name, Just value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
-  forall ctx schemaS valueS.
   ValueConstraints ctx schemaS valueS =>
-  Proxy schemaS ->
-  TypeName ->
+  UnionMember IN schemaS ->
   Value valueS ->
   InputValidator ctx (Value VALID)
-validatInputUnionMember _ name value = do
-  (inputDef :: TypeDefinition IN schemaS) <- askInputMember name
+validatInputUnionMember member@UnionMember {memberName} value = do
+  inputDef <- fst <$> askTypeMember member
   validValue <- validateInputByType [TypeMaybe] inputDef value
-  pure $ mkInputObject name [ObjectEntry (toFieldName name) validValue]
+  pure $ mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
 
 mkInputObject :: TypeName -> [ObjectEntry s] -> Value s
 mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (Enum name) : xs

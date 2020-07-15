@@ -28,8 +28,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
   )
 where
 
--- MORPHEUS
-
 import Control.Applicative (pure)
 import Data.Foldable (all, foldr)
 import Data.Functor ((<$>), fmap)
@@ -338,13 +336,9 @@ instance RenderGQL (Operation VALID) where
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)
 
-getOperationDataType :: Failure GQLErrors m => Operation s -> Schema s' -> m (TypeDefinition OUT s')
+getOperationDataType :: Failure GQLErrors m => Operation s -> Schema VALID -> m (TypeDefinition OUT VALID)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)
 getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
-  case mutation lib of
-    Just x -> pure x
-    Nothing -> failure $ mutationIsNotDefined operationPosition
+  maybe (failure $ mutationIsNotDefined operationPosition) pure (mutation lib)
 getOperationDataType Operation {operationType = Subscription, operationPosition} lib =
-  case subscription lib of
-    Just x -> pure x
-    Nothing -> failure $ subscriptionIsNotDefined operationPosition
+  maybe (failure $ subscriptionIsNotDefined operationPosition) pure (subscription lib)

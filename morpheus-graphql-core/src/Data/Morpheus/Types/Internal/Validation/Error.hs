@@ -11,7 +11,6 @@ module Data.Morpheus.Types.Internal.Validation.Error
   ( MissingRequired (..),
     KindViolation (..),
     Unknown (..),
-    InternalError (..),
     Target (..),
     Unused (..),
   )
@@ -57,24 +56,6 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     renderInputPrefix,
   )
 import Data.Semigroup ((<>))
-
-class InternalError a where
-  internalError :: a -> GQLError
-
-instance InternalError (FieldDefinition cat s) where
-  internalError
-    FieldDefinition
-      { fieldName,
-        fieldType = TypeRef {typeConName}
-      } =
-      GQLError
-        { message =
-            "INTERNAL: Type " <> msg typeConName
-              <> " referenced by field "
-              <> msg fieldName
-              <> " can't found in Schema ",
-          locations = []
-        }
 
 class Unused ctx c where
   unused :: ctx -> c -> GQLError
@@ -204,7 +185,7 @@ instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
       ("Unknown Directive " <> msg directiveName <> ".")
 
 instance Unknown (FieldsDefinition OUT s) Ref (OperationContext v) where
-  unknown Scope {typename} _ _ = unknownSelectionField typename
+  unknown Scope {currentTypeName} _ _ = unknownSelectionField currentTypeName
 
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> GQLError

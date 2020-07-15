@@ -6,9 +6,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -48,6 +46,7 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     VariableDefinitions,
     fieldContentArgs,
+    typed,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( GetWith,
@@ -66,7 +65,7 @@ import Data.Morpheus.Types.Internal.Validation
 import Data.Morpheus.Validation.Internal.Value
   ( ValidateWithDefault,
     ValueConstraints,
-    validateInputByField,
+    validateInputByTypeRef,
   )
 import Data.Traversable (traverse)
 import Prelude
@@ -88,7 +87,6 @@ type ArgumentsConstraints c schemaS valueS =
   )
 
 validateArgument ::
-  forall ctx schemaS valueS.
   ( ValueConstraints ctx schemaS valueS,
     ValidateWithDefault ctx schemaS schemaS
   ) =>
@@ -107,7 +105,7 @@ validateArgument
 toArgument :: FieldDefinition IN s -> Value schemaS -> Validator ctx (Argument schemaS)
 toArgument
   FieldDefinition {fieldName}
-  value = Argument fieldName value . fromMaybe (Position 0 0) <$> asksScope position
+  value = flip (Argument fieldName) value . fromMaybe (Position 0 0) <$> asksScope position
 
 validateArgumentValue ::
   (ValueConstraints ctx schemaS valueS) =>
@@ -115,16 +113,16 @@ validateArgumentValue ::
   Argument valueS ->
   Validator ctx (Argument VALID)
 validateArgumentValue
-  argumentDef
-  Argument {argumentValue = value, ..} =
+  field
+  Argument {argumentValue, ..} =
     withPosition argumentPosition
       $ startInput (SourceArgument argumentName)
-      $ do
-        argumentValue <- validateInputByField argumentDef value
-        pure Argument {argumentValue, ..}
+      $ Argument
+        argumentName
+        argumentPosition
+        <$> validateInputByTypeRef (typed fieldType field) argumentValue
 
 validateFieldArguments ::
-  forall ctx.
   ( GetWith ctx (VariableDefinitions VALID),
     MissingRequired (VariableDefinitions VALID) ctx,
     GetWith ctx (Schema VALID)
@@ -140,7 +138,6 @@ validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
     argsDef = maybe empty fieldContentArgs fieldContent
 
 validateDirectiveArguments ::
-  forall ctx schemaStage valueStage.
   ArgumentsConstraints ctx schemaStage valueStage =>
   DirectiveDefinition schemaStage ->
   Arguments valueStage ->
@@ -168,7 +165,7 @@ class Resolve f s ctx where
   resolve :: f s -> Validator ctx (f CONST)
 
 instance VariableConstraints ctx => Resolve Argument RAW ctx where
-  resolve (Argument key val position) = flip (Argument key) position <$> resolve val
+  resolve (Argument key position val) = Argument key position <$> resolve val
 
 instance Resolve f CONST ctx where
   resolve = pure

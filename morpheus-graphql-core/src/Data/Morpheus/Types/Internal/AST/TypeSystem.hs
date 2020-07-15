@@ -48,6 +48,9 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     RootOperationTypeDefinition (..),
     SchemaDefinition (..),
     buildSchema,
+    Typed (Typed),
+    untyped,
+    typed,
   )
 where
 
@@ -160,6 +163,22 @@ import Prelude
 
 type DataEnum s = [DataEnumValue s]
 
+-- used for perserving type information from untyped values
+-- e.g
+-- unionType :: UnionMember IN VALID -> Typed IN VALID TypeName
+-- unionType = typed memberName
+typed :: (a c s -> b) -> a c s -> Typed c s b
+typed f = Typed . f
+
+untyped :: (a -> b) -> Typed c s a -> b
+untyped f = f . _untyped
+
+-- | used for perserving type information from untyped values
+-- see function typed
+newtype Typed (cat :: TypeCategory) (s :: Stage) a = Typed
+  { _untyped :: a
+  }
+
 mkUnionMember :: TypeName -> UnionMember cat s
 mkUnionMember name = UnionMember name True
 
@@ -175,6 +194,13 @@ type DataInputUnion s = [UnionMember IN s]
 
 instance RenderGQL (UnionMember cat s) where
   render = render . memberName
+
+instance Msg (UnionMember cat s) where
+  msg = msg . memberName
+
+instance KeyOf (UnionMember cat s) where
+  type KEY (UnionMember cat s) = TypeName
+  keyOf = memberName
 
 -- scalar
 ------------------------------------------------------------------

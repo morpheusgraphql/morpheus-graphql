@@ -48,7 +48,6 @@ module Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     DefaultValue,
     getOperationName,
-    getOperationDataType,
     -- DSL
     ScalarDefinition (..),
     DataEnum,
@@ -153,6 +152,10 @@ module Data.Morpheus.Types.Internal.AST
     buildSchema,
     InternalError (..),
     msgInternal,
+    getOperationDataType,
+    Typed (Typed),
+    typed,
+    untyped,
   )
 where
 

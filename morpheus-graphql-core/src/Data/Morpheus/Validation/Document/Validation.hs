@@ -59,8 +59,10 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName,
     TypeRef (..),
+    Typed (..),
     UnionMember (..),
     VALID,
     Value,
@@ -128,9 +130,10 @@ instance ValidateSchema CONST where
         __validateSchema
         Scope
           { position = Nothing,
-            typename = "DocumentRoot",
+            currentTypeName = "Root",
+            currentTypeKind = KindObject Nothing,
             kind = TYPE,
-            fieldname = "DocumentRoot"
+            fieldname = "Root"
           }
         TypeSystemContext
           { schema = sysSchema,
@@ -390,8 +393,8 @@ validateDefaultValue ::
   InputValidator
     (TypeSystemContext (TypeName, FieldName))
     (Value VALID)
-validateDefaultValue =
-  validateInputByTypeRef (Proxy @CONST)
+validateDefaultValue typeRef =
+  validateInputByTypeRef (Typed typeRef :: Typed IN CONST TypeRef)
 
 -- TODO: validate directives
 validateDirectiveDefinition :: DirectiveDefinition CONST -> SchemaValidator () (DirectiveDefinition VALID)

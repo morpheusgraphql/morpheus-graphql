@@ -133,15 +133,7 @@ instance RenderIntrospection Bool where
   render = pure . mkBoolean
 
 instance RenderIntrospection TypeKind where
-  render KindScalar = pure $ mkString "SCALAR"
-  render KindObject {} = pure $ mkString "OBJECT"
-  render KindUnion = pure $ mkString "UNION"
-  render KindInputUnion = pure $ mkString "INPUT_OBJECT"
-  render KindEnum = pure $ mkString "ENUM"
-  render KindInputObject = pure $ mkString "INPUT_OBJECT"
-  render KindList = pure $ mkString "LIST"
-  render KindNonNull = pure $ mkString "NON_NULL"
-  render KindInterface = pure $ mkString "INTERFACE"
+  render = pure . mkString . GQL.render
 
 instance RenderIntrospection (DirectiveDefinition VALID) where
   render

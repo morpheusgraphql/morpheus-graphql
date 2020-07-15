@@ -5,8 +5,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -20,7 +18,7 @@ module Data.Morpheus.Types.Internal.Validation
     OperationContext (..),
     runValidator,
     DirectiveValidator,
-    askFieldType,
+    askType,
     askTypeMember,
     selectRequired,
     selectKnown,
@@ -32,10 +30,8 @@ module Data.Morpheus.Types.Internal.Validation
     asks,
     asksScope,
     selectWithDefaultValue,
-    askInputFieldType,
-    askInputMember,
     startInput,
-    withInputScope,
+    inField,
     inputMessagePrefix,
     checkUnused,
     Prop (..),
@@ -54,21 +50,20 @@ module Data.Morpheus.Types.Internal.Validation
     askFragments,
     MonadContext,
     CurrentSelection (..),
-    askInputFieldTypeByName,
+    getOperationType,
   )
 where
 
 -- MORPHEUS
 
 import Control.Applicative (pure)
-import Control.Monad (Monad ((>>=)))
 import Control.Monad.Trans.Reader
   ( ask,
   )
 import Data.Either (Either)
 import Data.Foldable (null)
 import Data.Functor ((<$>), fmap)
-import Data.List (elem, filter)
+import Data.List (filter)
 import Data.Maybe (Maybe (..), fromMaybe, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -84,24 +79,16 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
-    FieldsDefinition,
-    GQLError (..),
-    GQLErrors,
     IN,
     Message,
-    OUT,
     Object,
     ObjectEntry (..),
     Position (..),
     Ref (..),
-    Schema,
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName (..),
-    TypeRef (..),
     UnionMember (..),
-    VALID,
     Value (..),
     __inputname,
     entryValue,
@@ -111,11 +98,15 @@ import Data.Morpheus.Types.Internal.AST
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Validation.Error
-  ( InternalError (..),
-    KindViolation (..),
+  ( KindViolation (..),
     MissingRequired (..),
     Unknown (..),
     Unused (..),
+  )
+import Data.Morpheus.Types.Internal.Validation.Internal
+  ( askType,
+    askTypeMember,
+    getOperationType,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( BaseValidator,
@@ -142,12 +133,12 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     askVariables,
     asks,
     asksScope,
+    inField,
     inputMessagePrefix,
     inputValueSource,
     runValidator,
     startInput,
     withDirective,
-    withInputScope,
     withPosition,
     withScope,
     withScopeType,
@@ -260,179 +251,11 @@ selectKnown selector lib =
       (keyOf selector)
       lib
 
-askFieldType ::
-  FieldDefinition OUT VALID ->
-  SelectionValidator (TypeDefinition OUT VALID)
-askFieldType field@FieldDefinition {fieldType = TypeRef {typeConName}} =
-  do
-    schema <- askSchema
-    anyType <-
-      selectBy
-        [internalError field]
-        typeConName
-        schema
-    case fromAny anyType of
-      Just x -> pure x
-      Nothing ->
-        failure $
-          "Type \"" <> msg (typeName anyType)
-            <> "\" referenced by OBJECT \""
-            <> "\" must be an OUTPUT_TYPE."
-
-askTypeMember ::
-  UnionMember OUT s ->
-  SelectionValidator (TypeName, FieldsDefinition OUT VALID)
-askTypeMember UnionMember {memberName} =
-  askSchema
-    >>= selectOr notFound pure memberName
-    >>= constraintOBJECT
-  where
-    notFound = do
-      scopeType <- asksScope typename
-      failure $
-        "Type \""
-          <> msg memberName
-          <> "\" referenced by union \""
-          <> msg scopeType
-          <> "\" can't found in Schema."
-    --------------------------------------
-    constraintOBJECT ::
-      TypeDefinition ANY s ->
-      SelectionValidator (TypeName, FieldsDefinition OUT s)
-    constraintOBJECT TypeDefinition {typeName, typeContent} = con typeContent
-      where
-        con DataObject {objectFields} = pure (typeName, objectFields)
-        con _ = do
-          scopeType <- asksScope typename
-          failure $
-            "Type \"" <> msg typeName
-              <> "\" referenced by union \""
-              <> msg scopeType
-              <> "\" must be an OBJECT."
-
-askInputFieldTypeByName ::
-  ( Failure GQLErrors (m c),
-    Failure Message (m c),
-    Monad (m c),
-    GetWith c (Schema s),
-    MonadContext m c
-  ) =>
-  TypeName ->
-  m c (TypeDefinition IN s)
-askInputFieldTypeByName name =
-  askSchema
-    >>= selectBy
-      [ GQLError
-          ( "Type \""
-              <> msg name
-              <> "\" referenced by field \""
-          )
-          []
-      ]
-      name
-    >>= constraintINPUT
-  where
-    constraintINPUT ::
-      forall m s.
-      ( Failure Message m,
-        Monad m
-      ) =>
-      TypeDefinition ANY s ->
-      m (TypeDefinition IN s)
-    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN s)) of
-      Just inputType -> pure inputType
-      Nothing ->
-        failure $
-          "Type \""
-            <> msg (typeName x)
-            <> "\" referenced by field \""
-
-askInputFieldType ::
-  ( Failure GQLErrors (m c),
-    Failure Message (m c),
-    Monad (m c),
-    GetWith c (Schema s),
-    MonadContext m c
-  ) =>
-  FieldDefinition IN s ->
-  m c (TypeDefinition IN s)
-askInputFieldType field@FieldDefinition {fieldName, fieldType = TypeRef {typeConName}} =
-  askSchema
-    >>= selectBy
-      [internalError field]
-      typeConName
-    >>= constraintINPUT
-  where
-    constraintINPUT ::
-      forall m s.
-      ( Failure Message m,
-        Monad m
-      ) =>
-      TypeDefinition ANY s ->
-      m (TypeDefinition IN s)
-    constraintINPUT x = case (fromAny x :: Maybe (TypeDefinition IN s)) of
-      Just inputType -> pure inputType
-      Nothing ->
-        failure $
-          "Type \""
-            <> msg (typeName x)
-            <> "\" referenced by field \""
-            <> msg fieldName
-            <> "\" must be an input type."
-
-askInputMember ::
-  forall c m s.
-  ( GetWith c (Schema s),
-    Failure Message (m c),
-    Monad (m c),
-    MonadContext m c
-  ) =>
-  TypeName ->
-  m c (TypeDefinition IN s)
-askInputMember name =
-  askSchema
-    >>= selectOr notFound pure name
-    >>= constraintINPUT_OBJECT
-  where
-    typeInfo tName =
-      "Type \"" <> msg tName <> "\" referenced by inputUnion "
-    notFound = do
-      scopeType <- asksScope typename
-      failure $
-        typeInfo name
-          <> msg scopeType
-          <> "\" can't found in Schema."
-    --------------------------------------
-    constraintINPUT_OBJECT ::
-      ( Monad (m c),
-        Failure Message (m c),
-        MonadContext m c
-      ) =>
-      TypeDefinition ANY s ->
-      m c (TypeDefinition IN s)
-    constraintINPUT_OBJECT TypeDefinition {typeContent, ..} = con (fromAny typeContent)
-      where
-        con ::
-          ( Monad (m c),
-            Failure Message (m c),
-            MonadContext m c
-          ) =>
-          Maybe (TypeContent a IN s) ->
-          m c (TypeDefinition IN s)
-        con (Just content@DataInputObject {}) = pure TypeDefinition {typeContent = content, ..}
-        con _ = do
-          scopeType <- asksScope typename
-          failure $
-            typeInfo typeName
-              <> "\""
-              <> msg scopeType
-              <> "\" must be an INPUT_OBJECT."
-
 constraintInputUnion ::
   forall stage schemaStage.
   [UnionMember IN schemaStage] ->
   Object stage ->
-  Either Message (TypeName, Maybe (Value stage))
+  Either Message (UnionMember IN schemaStage, Maybe (Value stage))
 constraintInputUnion tags hm = do
   (enum :: Value stage) <-
     entryValue
@@ -443,24 +266,26 @@ constraintInputUnion tags hm = do
         )
         __inputname
         hm
-  tyName <- isPosibeInputUnion tags enum
+  unionMember <- isPosibeInputUnion tags enum
   case size hm of
-    1 -> pure (tyName, Nothing)
+    1 -> pure (unionMember, Nothing)
     2 -> do
       value <-
         entryValue
           <$> selectBy
             ( "value for Union \""
-                <> msg tyName
+                <> msg unionMember
                 <> "\" was not Provided."
             )
-            (toFieldName tyName)
+            (toFieldName $ memberName unionMember)
             hm
-      pure (tyName, Just value)
+      pure (unionMember, Just value)
     _ -> failure ("input union can have only one variant." :: Message)
 
-isPosibeInputUnion :: [UnionMember IN s] -> Value stage -> Either Message TypeName
-isPosibeInputUnion tags (Enum name)
-  | name `elem` fmap memberName tags = pure name
-  | otherwise = failure $ msg name <> " is not posible union type"
+isPosibeInputUnion :: [UnionMember IN s] -> Value stage -> Either Message (UnionMember IN s)
+isPosibeInputUnion tags (Enum name) =
+  selectBy
+    (msg name <> " is not posible union type")
+    name
+    tags
 isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
