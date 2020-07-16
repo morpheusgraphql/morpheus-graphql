@@ -92,7 +92,7 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inType,
   )
 import Data.Morpheus.Validation.Internal.Directive
-  ( validateTypeSystemDirectives,
+  ( validateDirectives,
   )
 import Data.Morpheus.Validation.Internal.Value
   ( validateInputByTypeRef,
@@ -171,7 +171,7 @@ validateType
         typeName
         typeFingerprint
         typeDescription
-        <$> validateTypeSystemDirectives (typeDirectiveLocation typeContent) typeDirectives
+        <$> validateDirectives (typeDirectiveLocation typeContent) typeDirectives
         <*> validateTypeContent typeContent
 
 typeDirectiveLocation :: TypeContent a b c -> DirectiveLocation
@@ -207,7 +207,7 @@ validateTypeContent (DataInterface fields) =
 validateEnumMember ::
   DataEnumValue CONST -> SchemaValidator TypeName (DataEnumValue VALID)
 validateEnumMember DataEnumValue {enumDirectives = directives, ..} = do
-  enumDirectives <- validateTypeSystemDirectives ENUM_VALUE directives
+  enumDirectives <- validateDirectives ENUM_VALUE directives
   pure DataEnumValue {..}
 
 validateUnionMember ::
@@ -235,7 +235,7 @@ validateField field@FieldDefinition {..} =
         fieldName
         fieldDescription
         fieldType
-        <$> validateTypeSystemDirectives (directiveLocation (Proxy @cat)) fieldDirectives
+        <$> validateDirectives (directiveLocation (Proxy @cat)) fieldDirectives
           <*> validateOptional (checkFieldContent field) fieldContent
     )
 
@@ -268,7 +268,7 @@ validateArgumentDefinition FieldDefinition {..} =
     fieldName
     fieldDescription
     fieldType
-    <$> validateTypeSystemDirectives ARGUMENT_DEFINITION fieldDirectives
+    <$> validateDirectives ARGUMENT_DEFINITION fieldDirectives
     <*> validateOptional (validateArgumentDefaultValue fieldName fieldType) fieldContent
 
 validateArgumentDefaultValue ::
@@ -315,7 +315,7 @@ checkInterfaceField
     } =
     inField fieldName $
       do
-        _ <- validateTypeSystemDirectives FIELD_DEFINITION fieldDirectives
+        _ <- validateDirectives FIELD_DEFINITION fieldDirectives
         selectOr err (isSuptype interfaceField) fieldName objFields
     where
       err = failImplements Missing

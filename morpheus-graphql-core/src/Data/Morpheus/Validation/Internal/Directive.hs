@@ -14,8 +14,7 @@
 
 module Data.Morpheus.Validation.Internal.Directive
   ( shouldIncludeSelection,
-    validateQueryDirectives,
-    validateTypeSystemDirectives,
+    validateDirectives,
   )
 where
 
@@ -51,7 +50,6 @@ import Data.Morpheus.Types.Internal.Validation
   )
 import Data.Morpheus.Validation.Internal.Arguments
   ( ArgumentsConstraints,
-    Resolve,
     validateDirectiveArguments,
   )
 import Data.Semigroup ((<>))
@@ -64,19 +62,12 @@ import Prelude
     otherwise,
   )
 
-validateQueryDirectives ::
-  Resolve Argument s ctx =>
+validateDirectives ::
+  ArgumentsConstraints ctx schemaS s =>
   DirectiveLocation ->
   Directives s ->
-  Validator VALID ctx (Directives VALID)
-validateQueryDirectives location = traverse (validate location)
-
-validateTypeSystemDirectives ::
-  Resolve Argument s ctx =>
-  DirectiveLocation ->
-  Directives s ->
-  Validator CONST ctx (Directives VALID)
-validateTypeSystemDirectives location = traverse (validate location)
+  Validator schemaS ctx (Directives VALID)
+validateDirectives location = traverse (validate location)
 
 validate ::
   ArgumentsConstraints c schemaS s =>

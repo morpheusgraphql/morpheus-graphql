@@ -257,15 +257,7 @@ validateInputObject ::
   InputValidator schemaS ctx (Object VALID)
 validateInputObject fieldsDef object =
   ordTraverse_ (`selectKnown` fieldsDef) object
-    *> validateObjectWithDefaultValue fieldsDef object
-
-validateObjectWithDefaultValue ::
-  ValidateWithDefault c schemaS valueS =>
-  FieldsDefinition IN schemaS ->
-  Object valueS ->
-  Validator schemaS (InputContext c) (Object VALID)
-validateObjectWithDefaultValue fieldsDef object =
-  traverseCollection (validateWithDefault object) fieldsDef
+    *> traverseCollection (validateWithDefault object) fieldsDef
 
 class ValidateWithDefault c schemaS s where
   validateWithDefault ::
