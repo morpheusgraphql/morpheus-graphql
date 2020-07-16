@@ -92,6 +92,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName (..),
     TypeRef (..),
+    TypeWrapper,
     VALID,
     Variable (..),
     VariableDefinitions,
@@ -167,6 +168,7 @@ data Scope = Scope
   { position :: Maybe Position,
     currentTypeName :: TypeName,
     currentTypeKind :: TypeKind,
+    currentTypeWrappers :: [TypeWrapper],
     fieldname :: FieldName,
     kind :: ScopeKind
   }

@@ -96,12 +96,12 @@ import Prelude
     otherwise,
   )
 
-castFailure ::
+violation ::
   [TypeWrapper] ->
   Maybe Message ->
   Value s ->
   InputValidator schemaS ctx a
-castFailure wrappers message value = do
+violation wrappers message value = do
   Scope {position, currentTypeName} <- asksScope id
   prefix <- inputMessagePrefix
   failure
@@ -118,8 +118,8 @@ unwrapppedFailure ::
   Value s ->
   InputValidator schemaS ctx a
 unwrapppedFailure nullable
-  | nullable = castFailure [TypeMaybe]
-  | otherwise = castFailure []
+  | nullable = violation [TypeMaybe]
+  | otherwise = violation []
 
 checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->
@@ -189,7 +189,7 @@ validateWrapped wrappers _ (ResolvedVariable ref variable) = do
   checkTypeEquality (typeName, wrappers) ref variable
 validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
-  | otherwise = castFailure wrappers Nothing Null
+  | otherwise = violation wrappers Nothing Null
 -- Validate LIST
 validateWrapped [TypeMaybe] dt entryValue = validateUnwrapped True dt entryValue
 validateWrapped (TypeMaybe : wrappers) tyCont value =
@@ -200,7 +200,7 @@ validateWrapped (TypeList : wrappers) tyCont (List list) =
 {-- VALIDATE OBJECT--}
 validateWrapped [] dt entryValue = validateUnwrapped False dt entryValue
 {-- 3. THROW ERROR: on invalid values --}
-validateWrapped wrappers _ entryValue = castFailure wrappers Nothing entryValue
+validateWrapped wrappers _ entryValue = violation wrappers Nothing entryValue
 
 validateUnwrapped ::
   ValidateWithDefault ctx schemaS valueS =>
@@ -226,7 +226,7 @@ validatInputUnion ::
   InputValidator schemaS ctx (Value VALID)
 validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
-    Left message -> castFailure [] (Just message) (Object rawFields)
+    Left message -> violation [] (Just message) (Object rawFields)
     Right (UnionMember {memberName}, Nothing) -> pure (mkInputObject memberName [])
     Right (name, Just value) -> validatInputUnionMember name value
 
