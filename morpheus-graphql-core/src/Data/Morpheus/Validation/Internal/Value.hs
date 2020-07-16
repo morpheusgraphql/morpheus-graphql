@@ -16,7 +16,6 @@ module Data.Morpheus.Validation.Internal.Value
 where
 
 import Control.Applicative ((*>), pure)
-import Control.Monad (Monad)
 import Data.Either (Either (..))
 import Data.Function ((&))
 import Data.Functor ((<$>), fmap)
@@ -59,7 +58,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableContent (..),
     isNullable,
     isWeaker,
-    mkTypeRef,
     msg,
     toFieldName,
     typed,
@@ -97,21 +95,26 @@ import Prelude
     Eq (..),
     const,
     fst,
+    id,
     not,
     otherwise,
   )
 
 castFailure ::
-  TypeRef ->
+  [TypeWrapper] ->
   Maybe Message ->
   Value s ->
   InputValidator schemaS ctx a
-castFailure expected message value = do
-  pos <- asksScope position
+castFailure wrappers message value = do
+  Scope {position, currentTypeName} <- asksScope id
   prefix <- inputMessagePrefix
   failure
-    $ renderErrorMessage pos
-    $ prefix <> typeViolation expected value <> maybe "" (" " <>) message
+    $ renderErrorMessage position
+    $ prefix
+      <> typeViolation
+        (TypeRef currentTypeName Nothing wrappers)
+        value
+      <> maybe "" (" " <>) message
 
 checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->
@@ -171,8 +174,6 @@ validateInputByType tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typ
   withScopeType typeDef
     . validateWrapped tyWrappers tyCont
   where
-    mismatchError :: [TypeWrapper] -> Maybe Message -> Value valueS -> InputValidator schemaS ctx (Value VALID)
-    mismatchError wrappers = castFailure (TypeRef typeName Nothing wrappers)
     -- VALIDATION
     validateWrapped ::
       [TypeWrapper] ->
@@ -184,10 +185,10 @@ validateInputByType tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typ
       checkTypeEquality (typeName, wrappers) ref variable
     validateWrapped wrappers _ Null
       | isNullable wrappers = pure Null
-      | otherwise = mismatchError wrappers Nothing Null
+      | otherwise = castFailure wrappers Nothing Null
     -- Validate LIST
     validateWrapped [TypeMaybe] dt entryValue =
-      validateUnwrapped (mismatchError [TypeMaybe]) dt entryValue
+      validateUnwrapped (castFailure [TypeMaybe]) dt entryValue
     validateWrapped (TypeMaybe : wrappers) _ value =
       validateWrapped wrappers tyCont value
     validateWrapped (TypeList : wrappers) _ (List list) =
@@ -197,9 +198,9 @@ validateInputByType tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typ
     {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
     {-- VALIDATE OBJECT--}
     validateWrapped [] dt entryValue =
-      validateUnwrapped (mismatchError []) dt entryValue
+      validateUnwrapped (castFailure []) dt entryValue
     {-- 3. THROW ERROR: on invalid values --}
-    validateWrapped wrappers _ entryValue = mismatchError wrappers Nothing entryValue
+    validateWrapped wrappers _ entryValue = castFailure wrappers Nothing entryValue
 
 validateUnwrapped ::
   ValidateWithDefault ctx schemaS valueS =>
@@ -228,9 +229,7 @@ validatInputUnion ::
   InputValidator schemaS ctx (Value VALID)
 validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
-    Left message -> do
-      typeName <- asksScope currentTypeName
-      castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
+    Left message -> castFailure [] (Just message) (Object rawFields)
     Right (UnionMember {memberName}, Nothing) -> pure (mkInputObject memberName [])
     Right (name, Just value) -> validatInputUnionMember name value
 
