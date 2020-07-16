@@ -1,11 +1,9 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Internal.Value
@@ -16,7 +14,6 @@ module Data.Morpheus.Validation.Internal.Value
 where
 
 import Control.Applicative ((*>), pure)
-import Control.Monad (Monad)
 import Data.Either (Either (..))
 import Data.Function ((&))
 import Data.Functor ((<$>), fmap)
@@ -59,7 +56,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableContent (..),
     isNullable,
     isWeaker,
-    mkTypeRef,
     msg,
     toFieldName,
     typed,
@@ -69,11 +65,9 @@ import Data.Morpheus.Types.Internal.AST.OrdMap
   ( unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( GetWith,
-    InputContext,
+  ( InputContext,
     InputSource (..),
     InputValidator,
-    MonadContext,
     Scope (..),
     Validator,
     askType,
@@ -97,21 +91,30 @@ import Prelude
     Eq (..),
     const,
     fst,
+    id,
     not,
     otherwise,
   )
 
-castFailure ::
-  TypeRef ->
+violation ::
   Maybe Message ->
   Value s ->
   InputValidator schemaS ctx a
-castFailure expected message value = do
-  pos <- asksScope position
+violation message value = do
+  Scope
+    { position,
+      currentTypeName,
+      currentTypeWrappers
+    } <-
+    asksScope id
   prefix <- inputMessagePrefix
   failure
-    $ renderErrorMessage pos
-    $ prefix <> typeViolation expected value <> maybe "" (" " <>) message
+    $ renderErrorMessage position
+    $ prefix
+      <> typeViolation
+        (TypeRef currentTypeName Nothing currentTypeWrappers)
+        value
+      <> maybe "" (" " <>) message
 
 checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->
@@ -133,14 +136,6 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
             typeWrappers = tyWrappers,
             typeArgs = Nothing
           }
-
-validateInputByType ::
-  ValidateWithDefault c schemaS s =>
-  [TypeWrapper] ->
-  TypeDefinition IN schemaS ->
-  Value s ->
-  Validator schemaS (InputContext c) (Value VALID)
-validateInputByType = validateInput
 
 validateInputByTypeRef ::
   ValidateWithDefault c schemaS s =>
@@ -167,72 +162,67 @@ validateValueByField field =
       (typed fieldType field)
 
 -- Validate input Values
-validateInput ::
-  forall ctx schemaS valueS.
-  ( ValidateWithDefault ctx schemaS valueS
-  ) =>
+validateInputByType ::
+  ValidateWithDefault ctx schemaS valueS =>
   [TypeWrapper] ->
   TypeDefinition IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx ValidValue
-validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName} =
-  withScopeType typeDef
-    . validateWrapped tyWrappers tyCont
-  where
-    mismatchError :: [TypeWrapper] -> Maybe Message -> Value valueS -> InputValidator schemaS ctx (Value VALID)
-    mismatchError wrappers = castFailure (TypeRef typeName Nothing wrappers)
-    -- VALIDATION
-    validateWrapped ::
-      [TypeWrapper] ->
-      TypeContent TRUE IN schemaS ->
-      Value valueS ->
-      InputValidator schemaS ctx ValidValue
-    -- Validate Null. value = null ?
-    validateWrapped wrappers _ (ResolvedVariable ref variable) =
-      checkTypeEquality (typeName, wrappers) ref variable
-    validateWrapped wrappers _ Null
-      | isNullable wrappers = pure Null
-      | otherwise = mismatchError wrappers Nothing Null
-    -- Validate LIST
-    validateWrapped [TypeMaybe] dt entryValue =
-      validateUnwrapped (mismatchError [TypeMaybe]) dt entryValue
-    validateWrapped (TypeMaybe : wrappers) _ value =
-      validateWrapped wrappers tyCont value
-    validateWrapped (TypeList : wrappers) _ (List list) =
-      List <$> traverse validateElement list
-      where
-        validateElement = validateWrapped wrappers tyCont
-    {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
-    {-- VALIDATE OBJECT--}
-    validateWrapped [] dt entryValue =
-      validateUnwrapped (mismatchError []) dt entryValue
-    {-- 3. THROW ERROR: on invalid values --}
-    validateWrapped wrappers _ entryValue = mismatchError wrappers Nothing entryValue
-    validateUnwrapped ::
-      (Maybe Message -> Value valueS -> InputValidator schemaS ctx ValidValue) ->
-      TypeContent TRUE IN schemaS ->
-      Value valueS ->
-      InputValidator schemaS ctx ValidValue
-    validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
-      Object <$> validateInputObject parentFields fields
-    validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
-      validatInputUnion typeName inputUnion rawFields
-    validateUnwrapped err (DataEnum tags) value =
-      validateEnum (err Nothing) tags value
-    validateUnwrapped err (DataScalar dataScalar) value =
-      validateScalar typeName dataScalar value err
-    validateUnwrapped err _ value = err Nothing value
+validateInputByType tyWrappers typeDef =
+  withScopeType (typeDef, tyWrappers) . validateWrapped tyWrappers typeDef
+
+-- VALIDATION
+validateWrapped ::
+  ValidateWithDefault ctx schemaS valueS =>
+  [TypeWrapper] ->
+  TypeDefinition IN schemaS ->
+  Value valueS ->
+  InputValidator schemaS ctx ValidValue
+-- Validate Null. value = null ?
+validateWrapped wrappers _ (ResolvedVariable ref variable) = do
+  typeName <- asksScope currentTypeName
+  checkTypeEquality (typeName, wrappers) ref variable
+validateWrapped wrappers _ Null
+  | isNullable wrappers = pure Null
+  | otherwise = violation Nothing Null
+-- Validate LIST
+validateWrapped [TypeMaybe] TypeDefinition {typeContent} entryValue =
+  validateUnwrapped typeContent entryValue
+validateWrapped (TypeMaybe : wrappers) typeDef value =
+  validateInputByType wrappers typeDef value
+validateWrapped (TypeList : wrappers) tyCont (List list) =
+  List <$> traverse (validateInputByType wrappers tyCont) list
+{-- 2. VALIDATE TYPES, all wrappers are already Processed --}
+{-- VALIDATE OBJECT--}
+validateWrapped [] TypeDefinition {typeContent} entryValue =
+  validateUnwrapped typeContent entryValue
+{-- 3. THROW ERROR: on invalid values --}
+validateWrapped _ _ entryValue = violation Nothing entryValue
+
+validateUnwrapped ::
+  ValidateWithDefault ctx schemaS valueS =>
+  TypeContent TRUE IN schemaS ->
+  Value valueS ->
+  InputValidator schemaS ctx ValidValue
+validateUnwrapped (DataInputObject parentFields) (Object fields) =
+  Object <$> validateInputObject parentFields fields
+validateUnwrapped (DataInputUnion inputUnion) (Object rawFields) =
+  validatInputUnion inputUnion rawFields
+validateUnwrapped (DataEnum tags) value =
+  validateEnum tags value
+validateUnwrapped (DataScalar dataScalar) value =
+  validateScalar dataScalar value
+validateUnwrapped _ value = violation Nothing value
 
 -- INPUT UNION
 validatInputUnion ::
   ValidateWithDefault ctx schemaS s =>
-  TypeName ->
   DataInputUnion schemaS ->
   Object s ->
   InputValidator schemaS ctx (Value VALID)
-validatInputUnion typeName inputUnion rawFields =
+validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
-    Left message -> castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
+    Left message -> violation (Just message) (Object rawFields)
     Right (UnionMember {memberName}, Nothing) -> pure (mkInputObject memberName [])
     Right (name, Just value) -> validatInputUnionMember name value
 
@@ -257,15 +247,7 @@ validateInputObject ::
   InputValidator schemaS ctx (Object VALID)
 validateInputObject fieldsDef object =
   ordTraverse_ (`selectKnown` fieldsDef) object
-    *> validateObjectWithDefaultValue fieldsDef object
-
-validateObjectWithDefaultValue ::
-  ValidateWithDefault c schemaS valueS =>
-  FieldsDefinition IN schemaS ->
-  Object valueS ->
-  Validator schemaS (InputContext c) (Object VALID)
-validateObjectWithDefaultValue fieldsDef object =
-  traverseCollection (validateWithDefault object) fieldsDef
+    *> traverseCollection (validateWithDefault object) fieldsDef
 
 class ValidateWithDefault c schemaS s where
   validateWithDefault ::
@@ -293,23 +275,20 @@ instance ValidateWithDefault c CONST s where
 
 -- Leaf Validations
 validateScalar ::
-  forall m s.
-  (Monad m) =>
-  TypeName ->
   ScalarDefinition ->
   Value s ->
-  (Maybe Message -> Value s -> m ValidValue) ->
-  m ValidValue
-validateScalar typeName ScalarDefinition {validateValue} value err = do
-  scalarValue <- toScalar value
+  InputValidator schemaS ctx ValidValue
+validateScalar ScalarDefinition {validateValue} value = do
+  typeName <- asksScope currentTypeName
+  scalarValue <- toScalar typeName value
   case validateValue scalarValue of
     Right _ -> pure scalarValue
-    Left "" -> err Nothing value
-    Left message -> err (Just $ msg message) value
+    Left "" -> violation Nothing value
+    Left message -> violation (Just $ msg message) value
   where
-    toScalar :: Value s -> m ValidValue
-    toScalar (Scalar x) | isValidDefault typeName x = pure (Scalar x)
-    toScalar _ = err Nothing value
+    toScalar :: TypeName -> Value s -> InputValidator schemaS ctx ValidValue
+    toScalar typeName (Scalar x) | isValidDefault typeName x = pure (Scalar x)
+    toScalar _ _ = violation Nothing value
 
 isValidDefault :: TypeName -> ScalarValue -> Bool
 isValidDefault "Boolean" = isBoolean
@@ -338,7 +317,7 @@ isInt :: ScalarValue -> Bool
 isInt Int {} = True
 isInt _ = False
 
-isVariableValue :: (MonadContext m s c, GetWith c InputSource) => m c Bool
+isVariableValue :: InputValidator schemaS c Bool
 isVariableValue =
   \case
     SourceVariable {isDefaultValue} -> not isDefaultValue
@@ -346,22 +325,20 @@ isVariableValue =
     <$> inputValueSource
 
 validateEnum ::
-  (MonadContext m s c, GetWith c InputSource) =>
-  (Value valueS -> m c (Value VALID)) ->
   [DataEnumValue s] ->
   Value valueS ->
-  m c ValidValue
-validateEnum err enumValues value@(Scalar (String enumValue))
+  InputValidator schemaS c ValidValue
+validateEnum enumValues value@(Scalar (String enumValue))
   | TypeName enumValue `elem` tags = do
     isFromVariable <- isVariableValue
     if isFromVariable
       then pure (Enum (TypeName enumValue))
-      else err value
+      else violation Nothing value
   where
     tags = fmap enumName enumValues
-validateEnum err enumValues value@(Enum enumValue)
+validateEnum enumValues value@(Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
-  | otherwise = err value
+  | otherwise = violation Nothing value
   where
     tags = fmap enumName enumValues
-validateEnum err _ value = err value
+validateEnum _ value = violation Nothing value
