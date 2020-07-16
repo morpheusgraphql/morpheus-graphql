@@ -168,8 +168,7 @@ validateValueByField field =
 
 -- Validate input Values
 validateInputByType ::
-  ( ValidateWithDefault ctx schemaS valueS
-  ) =>
+  ValidateWithDefault ctx schemaS valueS =>
   [TypeWrapper] ->
   TypeDefinition IN schemaS ->
   Value valueS ->
