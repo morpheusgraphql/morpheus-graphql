@@ -65,6 +65,7 @@ validateRequest
           { kind = SELECTION,
             currentTypeName = "Root",
             currentTypeKind = KindObject Nothing,
+            currentTypeWrappers = [],
             fieldname = "Root",
             position = Just operationPosition
           }

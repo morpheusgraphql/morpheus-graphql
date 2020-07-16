@@ -329,15 +329,16 @@ withScope t@TypeDefinition {typeName} (Ref selName pos) =
 withScopeType ::
   ( MonadContext m s c
   ) =>
-  TypeDefinition cat s ->
+  (TypeDefinition cat s, [TypeWrapper]) ->
   m c a ->
   m c a
-withScopeType t@TypeDefinition {typeName} = setScope update
+withScopeType (t@TypeDefinition {typeName}, wrappers) = setScope update
   where
     update Scope {..} =
       Scope
         { currentTypeName = typeName,
           currentTypeKind = kindOf t,
+          currentTypeWrappers = wrappers,
           ..
         }
 

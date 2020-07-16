@@ -173,14 +173,14 @@ validateInputByType ::
   TypeDefinition IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx ValidValue
-validateInputByType tyWrappers typeDef@TypeDefinition {typeContent = tyCont} =
-  withScopeType typeDef . validateWrapped tyWrappers tyCont
+validateInputByType tyWrappers typeDef =
+  withScopeType (typeDef, tyWrappers) . validateWrapped tyWrappers typeDef
 
 -- VALIDATION
 validateWrapped ::
   ValidateWithDefault ctx schemaS valueS =>
   [TypeWrapper] ->
-  TypeContent TRUE IN schemaS ->
+  TypeDefinition IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx ValidValue
 -- Validate Null. value = null ?
@@ -191,14 +191,16 @@ validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
   | otherwise = violation wrappers Nothing Null
 -- Validate LIST
-validateWrapped [TypeMaybe] dt entryValue = validateUnwrapped True dt entryValue
-validateWrapped (TypeMaybe : wrappers) tyCont value =
-  validateWrapped wrappers tyCont value
+validateWrapped [TypeMaybe] TypeDefinition {typeContent} entryValue =
+  validateUnwrapped True typeContent entryValue
+validateWrapped (TypeMaybe : wrappers) typeDef value =
+  validateWrapped wrappers typeDef value
 validateWrapped (TypeList : wrappers) tyCont (List list) =
   List <$> traverse (validateWrapped wrappers tyCont) list
 {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
 {-- VALIDATE OBJECT--}
-validateWrapped [] dt entryValue = validateUnwrapped False dt entryValue
+validateWrapped [] TypeDefinition {typeContent} entryValue =
+  validateUnwrapped False typeContent entryValue
 {-- 3. THROW ERROR: on invalid values --}
 validateWrapped wrappers _ entryValue = violation wrappers Nothing entryValue
 
