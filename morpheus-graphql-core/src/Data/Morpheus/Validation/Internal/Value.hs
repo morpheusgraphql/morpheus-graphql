@@ -134,14 +134,6 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
             typeArgs = Nothing
           }
 
-validateInputByType ::
-  ValidateWithDefault c schemaS s =>
-  [TypeWrapper] ->
-  TypeDefinition IN schemaS ->
-  Value s ->
-  Validator schemaS (InputContext c) (Value VALID)
-validateInputByType = validateInput
-
 validateInputByTypeRef ::
   ValidateWithDefault c schemaS s =>
   Typed IN schemaS TypeRef ->
@@ -167,7 +159,7 @@ validateValueByField field =
       (typed fieldType field)
 
 -- Validate input Values
-validateInput ::
+validateInputByType ::
   forall ctx schemaS valueS.
   ( ValidateWithDefault ctx schemaS valueS
   ) =>
@@ -175,7 +167,7 @@ validateInput ::
   TypeDefinition IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx ValidValue
-validateInput tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName} =
+validateInputByType tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typeName} =
   withScopeType typeDef
     . validateWrapped tyWrappers tyCont
   where
