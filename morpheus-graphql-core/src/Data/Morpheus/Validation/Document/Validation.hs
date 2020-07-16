@@ -133,6 +133,7 @@ instance ValidateSchema CONST where
           { position = Nothing,
             currentTypeName = "Root",
             currentTypeKind = KindObject Nothing,
+            currentTypeWrappers = [],
             kind = TYPE,
             fieldname = "Root"
           }

@@ -30,7 +30,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
-    CONST,
     Directive (..),
     DirectiveDefinition (..),
     DirectiveLocation (..),
