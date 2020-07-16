@@ -200,31 +200,37 @@ validateInputByType tyWrappers typeDef@TypeDefinition {typeContent = tyCont, typ
       validateUnwrapped (mismatchError []) dt entryValue
     {-- 3. THROW ERROR: on invalid values --}
     validateWrapped wrappers _ entryValue = mismatchError wrappers Nothing entryValue
-    validateUnwrapped ::
-      (Maybe Message -> Value valueS -> InputValidator schemaS ctx ValidValue) ->
-      TypeContent TRUE IN schemaS ->
-      Value valueS ->
-      InputValidator schemaS ctx ValidValue
-    validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
-      Object <$> validateInputObject parentFields fields
-    validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
-      validatInputUnion typeName inputUnion rawFields
-    validateUnwrapped err (DataEnum tags) value =
-      validateEnum (err Nothing) tags value
-    validateUnwrapped err (DataScalar dataScalar) value =
-      validateScalar typeName dataScalar value err
-    validateUnwrapped err _ value = err Nothing value
+
+validateUnwrapped ::
+  ValidateWithDefault ctx schemaS valueS =>
+  ( Maybe Message ->
+    Value valueS ->
+    InputValidator schemaS ctx ValidValue
+  ) ->
+  TypeContent TRUE IN schemaS ->
+  Value valueS ->
+  InputValidator schemaS ctx ValidValue
+validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
+  Object <$> validateInputObject parentFields fields
+validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
+  validatInputUnion inputUnion rawFields
+validateUnwrapped err (DataEnum tags) value =
+  validateEnum (err Nothing) tags value
+validateUnwrapped err (DataScalar dataScalar) value =
+  validateScalar dataScalar value err
+validateUnwrapped err _ value = err Nothing value
 
 -- INPUT UNION
 validatInputUnion ::
   ValidateWithDefault ctx schemaS s =>
-  TypeName ->
   DataInputUnion schemaS ->
   Object s ->
   InputValidator schemaS ctx (Value VALID)
-validatInputUnion typeName inputUnion rawFields =
+validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
-    Left message -> castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
+    Left message -> do
+      typeName <- asksScope currentTypeName
+      castFailure (mkTypeRef typeName) (Just message) (Object rawFields)
     Right (UnionMember {memberName}, Nothing) -> pure (mkInputObject memberName [])
     Right (name, Just value) -> validatInputUnionMember name value
 
@@ -277,23 +283,22 @@ instance ValidateWithDefault c CONST s where
 
 -- Leaf Validations
 validateScalar ::
-  forall m s.
-  (Monad m) =>
-  TypeName ->
+  forall s schemaS ctx.
   ScalarDefinition ->
   Value s ->
-  (Maybe Message -> Value s -> m ValidValue) ->
-  m ValidValue
-validateScalar typeName ScalarDefinition {validateValue} value err = do
-  scalarValue <- toScalar value
+  (Maybe Message -> Value s -> InputValidator schemaS ctx ValidValue) ->
+  InputValidator schemaS ctx ValidValue
+validateScalar ScalarDefinition {validateValue} value err = do
+  typeName <- asksScope currentTypeName
+  scalarValue <- toScalar typeName value
   case validateValue scalarValue of
     Right _ -> pure scalarValue
     Left "" -> err Nothing value
     Left message -> err (Just $ msg message) value
   where
-    toScalar :: Value s -> m ValidValue
-    toScalar (Scalar x) | isValidDefault typeName x = pure (Scalar x)
-    toScalar _ = err Nothing value
+    toScalar :: TypeName -> Value s -> InputValidator schemaS ctx ValidValue
+    toScalar typeName (Scalar x) | isValidDefault typeName x = pure (Scalar x)
+    toScalar _ _ = err Nothing value
 
 isValidDefault :: TypeName -> ScalarValue -> Bool
 isValidDefault "Boolean" = isBoolean
