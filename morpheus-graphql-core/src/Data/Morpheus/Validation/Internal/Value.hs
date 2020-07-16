@@ -97,29 +97,24 @@ import Prelude
   )
 
 violation ::
-  [TypeWrapper] ->
   Maybe Message ->
   Value s ->
   InputValidator schemaS ctx a
-violation wrappers message value = do
-  Scope {position, currentTypeName} <- asksScope id
+violation message value = do
+  Scope
+    { position,
+      currentTypeName,
+      currentTypeWrappers
+    } <-
+    asksScope id
   prefix <- inputMessagePrefix
   failure
     $ renderErrorMessage position
     $ prefix
       <> typeViolation
-        (TypeRef currentTypeName Nothing wrappers)
+        (TypeRef currentTypeName Nothing currentTypeWrappers)
         value
       <> maybe "" (" " <>) message
-
-unwrapppedFailure ::
-  Bool ->
-  Maybe Message ->
-  Value s ->
-  InputValidator schemaS ctx a
-unwrapppedFailure nullable
-  | nullable = violation [TypeMaybe]
-  | otherwise = violation []
 
 checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->
@@ -189,36 +184,35 @@ validateWrapped wrappers _ (ResolvedVariable ref variable) = do
   checkTypeEquality (typeName, wrappers) ref variable
 validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
-  | otherwise = violation wrappers Nothing Null
+  | otherwise = violation Nothing Null
 -- Validate LIST
 validateWrapped [TypeMaybe] TypeDefinition {typeContent} entryValue =
-  validateUnwrapped True typeContent entryValue
+  validateUnwrapped typeContent entryValue
 validateWrapped (TypeMaybe : wrappers) typeDef value =
-  validateWrapped wrappers typeDef value
+  validateInputByType wrappers typeDef value
 validateWrapped (TypeList : wrappers) tyCont (List list) =
-  List <$> traverse (validateWrapped wrappers tyCont) list
+  List <$> traverse (validateInputByType wrappers tyCont) list
 {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
 {-- VALIDATE OBJECT--}
 validateWrapped [] TypeDefinition {typeContent} entryValue =
-  validateUnwrapped False typeContent entryValue
+  validateUnwrapped typeContent entryValue
 {-- 3. THROW ERROR: on invalid values --}
-validateWrapped wrappers _ entryValue = violation wrappers Nothing entryValue
+validateWrapped _ _ entryValue = violation Nothing entryValue
 
 validateUnwrapped ::
   ValidateWithDefault ctx schemaS valueS =>
-  Bool ->
   TypeContent TRUE IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx ValidValue
-validateUnwrapped _ (DataInputObject parentFields) (Object fields) =
+validateUnwrapped (DataInputObject parentFields) (Object fields) =
   Object <$> validateInputObject parentFields fields
-validateUnwrapped _ (DataInputUnion inputUnion) (Object rawFields) =
+validateUnwrapped (DataInputUnion inputUnion) (Object rawFields) =
   validatInputUnion inputUnion rawFields
-validateUnwrapped nullable (DataEnum tags) value =
-  validateEnum nullable tags value
-validateUnwrapped nullable (DataScalar dataScalar) value =
-  validateScalar nullable dataScalar value
-validateUnwrapped nullable _ value = unwrapppedFailure nullable Nothing value
+validateUnwrapped (DataEnum tags) value =
+  validateEnum tags value
+validateUnwrapped (DataScalar dataScalar) value =
+  validateScalar dataScalar value
+validateUnwrapped _ value = violation Nothing value
 
 -- INPUT UNION
 validatInputUnion ::
@@ -228,7 +222,7 @@ validatInputUnion ::
   InputValidator schemaS ctx (Value VALID)
 validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
-    Left message -> violation [] (Just message) (Object rawFields)
+    Left message -> violation (Just message) (Object rawFields)
     Right (UnionMember {memberName}, Nothing) -> pure (mkInputObject memberName [])
     Right (name, Just value) -> validatInputUnionMember name value
 
@@ -281,21 +275,20 @@ instance ValidateWithDefault c CONST s where
 
 -- Leaf Validations
 validateScalar ::
-  Bool ->
   ScalarDefinition ->
   Value s ->
   InputValidator schemaS ctx ValidValue
-validateScalar nullable ScalarDefinition {validateValue} value = do
+validateScalar ScalarDefinition {validateValue} value = do
   typeName <- asksScope currentTypeName
   scalarValue <- toScalar typeName value
   case validateValue scalarValue of
     Right _ -> pure scalarValue
-    Left "" -> unwrapppedFailure nullable Nothing value
-    Left message -> unwrapppedFailure nullable (Just $ msg message) value
+    Left "" -> violation Nothing value
+    Left message -> violation (Just $ msg message) value
   where
     toScalar :: TypeName -> Value s -> InputValidator schemaS ctx ValidValue
     toScalar typeName (Scalar x) | isValidDefault typeName x = pure (Scalar x)
-    toScalar _ _ = unwrapppedFailure nullable Nothing value
+    toScalar _ _ = violation Nothing value
 
 isValidDefault :: TypeName -> ScalarValue -> Bool
 isValidDefault "Boolean" = isBoolean
@@ -332,21 +325,20 @@ isVariableValue =
     <$> inputValueSource
 
 validateEnum ::
-  Bool ->
   [DataEnumValue s] ->
   Value valueS ->
   InputValidator schemaS c ValidValue
-validateEnum nullable enumValues value@(Scalar (String enumValue))
+validateEnum enumValues value@(Scalar (String enumValue))
   | TypeName enumValue `elem` tags = do
     isFromVariable <- isVariableValue
     if isFromVariable
       then pure (Enum (TypeName enumValue))
-      else unwrapppedFailure nullable Nothing value
+      else violation Nothing value
   where
     tags = fmap enumName enumValues
-validateEnum nullable enumValues value@(Enum enumValue)
+validateEnum enumValues value@(Enum enumValue)
   | enumValue `elem` tags = pure (Enum enumValue)
-  | otherwise = unwrapppedFailure nullable Nothing value
+  | otherwise = violation Nothing value
   where
     tags = fmap enumName enumValues
-validateEnum nullable _ value = unwrapppedFailure nullable Nothing value
+validateEnum _ value = violation Nothing value
