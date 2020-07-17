@@ -35,7 +35,6 @@ module Data.Morpheus.Internal.Utils
     (<.>),
     SemigroupM (..),
     safeFromList,
-    safeJoin,
     safeUnionWith,
   )
 where
@@ -209,6 +208,9 @@ size = length . elems
 -- Merge Object with of Failure as an Option
 class Merge a where
   merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
+
+instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
+  merge _ = safeJoin
 
 (<:>) :: (Monad m, Merge a, Failure GQLErrors m) => a -> a -> m a
 (<:>) = merge []

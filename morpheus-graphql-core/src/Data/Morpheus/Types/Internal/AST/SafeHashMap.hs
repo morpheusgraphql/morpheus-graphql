@@ -35,7 +35,6 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
     safeFromList,
-    safeJoin,
     safeUnionWith,
     toPair,
   )
@@ -70,8 +69,8 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
   liftTyped (SafeHashMap x) = let ls = HM.toList x in [||SafeHashMap (HM.fromList ls)||]
 #endif
 
-instance (NameCollision a, Eq k, Hashable k) => Merge (SafeHashMap k a) where
-  merge _ (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> safeJoin x y
+instance (NameCollision a, KeyOf k a) => Merge (SafeHashMap k a) where
+  merge ref (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> merge ref x y
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a) where
   fromElems = fmap SafeHashMap . safeFromList
