@@ -118,7 +118,7 @@ instance Collection a [a] where
   empty = []
   singleton x = [x]
 
-instance (Hashable k, KeyOf k v) => Collection v (HashMap k v) where
+instance KeyOf k v => Collection v (HashMap k v) where
   empty = HM.empty
   singleton x = HM.singleton (keyOf x) x
 
@@ -128,10 +128,7 @@ class Selectable k a c | c -> a where
 instance KeyOf k a => Selectable k a [a] where
   selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
 
-instance
-  (Eq k, Hashable k) =>
-  Selectable k a (HashMap k a)
-  where
+instance KeyOf k a => Selectable k a (HashMap k a) where
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
 selectBy :: (Failure e m, Selectable k a c, Monad m) => e -> k -> c -> m a
@@ -177,10 +174,10 @@ ordTraverse_ ::
   f ()
 ordTraverse_ f a = traverse_ f (elems a)
 
-class Eq k => KeyOf k a | a -> k where
+class (Eq k, Hashable k) => KeyOf k a | a -> k where
   keyOf :: a -> k
 
-instance Eq a => KeyOf a (a, b) where
+instance (Eq k, Hashable k) => KeyOf k (k, a) where
   keyOf = fst
 
 instance KeyOf FieldName Ref where

@@ -169,7 +169,7 @@ instance KeyOf FieldName (Variable s) where
   keyOf = variableName
 
 instance NameCollision (Variable s) where
-  nameCollision _ Variable {variableName, variablePosition} =
+  nameCollision Variable {variableName, variablePosition} =
     GQLError
       { message = "There can Be only One Variable Named " <> msg variableName,
         locations = [variablePosition]
@@ -200,7 +200,7 @@ instance RenderGQL (ObjectEntry a) where
   render (ObjectEntry (FieldName name) value) = name <> ": " <> render value
 
 instance NameCollision (ObjectEntry s) where
-  nameCollision _ ObjectEntry {entryName} =
+  nameCollision ObjectEntry {entryName} =
     GQLError
       { message = "There can Be only One field Named " <> msg entryName,
         locations = []

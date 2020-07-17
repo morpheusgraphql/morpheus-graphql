@@ -52,7 +52,7 @@ import Prelude
     Show,
     error,
     otherwise,
-    uncurry,
+    snd,
   )
 
 -- OrdMap
@@ -134,7 +134,7 @@ safeUnionWith ::
 safeUnionWith hm names = case insertNoDups (hm, []) names of
   (res, dupps)
     | null dupps -> pure res
-    | otherwise -> failure $ fmap (uncurry nameCollision) dupps
+    | otherwise -> failure $ fmap (nameCollision . snd) dupps
 
 type NoDupHashMap k a = (HashMap k a, [(k, a)])
 

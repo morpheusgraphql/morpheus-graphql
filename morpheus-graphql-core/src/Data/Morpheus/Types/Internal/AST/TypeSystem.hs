@@ -198,8 +198,7 @@ instance RenderGQL (UnionMember cat s) where
 instance Msg (UnionMember cat s) where
   msg = msg . memberName
 
-instance KeyOf (UnionMember cat s) where
-  type KEY (UnionMember cat s) = TypeName
+instance KeyOf TypeName (UnionMember cat s) where
   keyOf = memberName
 
 -- scalar
@@ -282,18 +281,18 @@ data SchemaDefinition = SchemaDefinition
   }
   deriving (Show)
 
-instance Selectable RootOperationTypeDefinition SchemaDefinition where
+instance Selectable OperationType RootOperationTypeDefinition SchemaDefinition where
   selectOr fallback f key SchemaDefinition {unSchemaDefinition} =
     selectOr fallback f key unSchemaDefinition
 
 instance NameCollision SchemaDefinition where
-  nameCollision _ _ =
+  nameCollision _ =
     GQLError
       { message = "There can Be only One SchemaDefinition.",
         locations = []
       }
 
-instance KeyOf SchemaDefinition where
+instance KeyOf TypeName SchemaDefinition where
   keyOf _ = "schema"
 
 data RawTypeDefinition
@@ -309,19 +308,20 @@ data RootOperationTypeDefinition = RootOperationTypeDefinition
   deriving (Show, Eq)
 
 instance NameCollision RootOperationTypeDefinition where
-  nameCollision name _ =
+  nameCollision RootOperationTypeDefinition {rootOperationType} =
     GQLError
-      { message = "There can Be only One TypeDefinition for schema." <> msg name,
+      { message =
+          "There can Be only One TypeDefinition for schema."
+            <> msg rootOperationType,
         locations = []
       }
 
-instance KeyOf RootOperationTypeDefinition where
-  type KEY RootOperationTypeDefinition = OperationType
+instance KeyOf OperationType RootOperationTypeDefinition where
   keyOf = rootOperationType
 
 type TypeLib s = SafeHashMap TypeName (TypeDefinition ANY s)
 
-instance Selectable (TypeDefinition ANY s) (Schema s) where
+instance Selectable TypeName (TypeDefinition ANY s) (Schema s) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 instance Listable (TypeDefinition ANY s) (Schema s) where
@@ -450,14 +450,13 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
   }
   deriving (Show, Lift)
 
-instance KeyOf (TypeDefinition a s) where
-  type KEY (TypeDefinition a s) = TypeName
+instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName
 
 instance NameCollision (TypeDefinition cat s) where
-  nameCollision typeName _ =
+  nameCollision x =
     GQLError
-      { message = "There can Be only One TypeDefinition Named " <> msg typeName <> ".",
+      { message = "There can Be only One TypeDefinition Named " <> msg (typeName x) <> ".",
         locations = []
       }
 
