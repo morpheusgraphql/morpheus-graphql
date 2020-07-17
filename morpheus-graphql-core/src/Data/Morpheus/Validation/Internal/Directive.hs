@@ -25,7 +25,6 @@ import Data.List (elem)
 import Data.Morpheus.Error (errorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    selectBy,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -119,15 +118,9 @@ argumentIf ::
   Bool ->
   Directive s ->
   Validator schemaS ctx Bool
-argumentIf target Directive {directiveName, directiveArgs, directivePosition} =
+argumentIf target Directive {directiveArgs, directivePosition} =
   selectRequired (Ref "if" directivePosition) directiveArgs
     >>= assertArgument target
-
--- err =
---   errorMessage $
---     "Directive "
---       <> msg ("@" <> directiveName)
---       <> " argument \"if\" of type \"Boolean!\" is required but not provided."
 
 assertArgument ::
   Bool ->
