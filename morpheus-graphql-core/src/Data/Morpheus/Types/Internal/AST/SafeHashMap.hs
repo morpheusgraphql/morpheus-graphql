@@ -76,8 +76,7 @@ instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a
   elems = elems . toHashMap
 
 safeInsert ::
-  ( Hashable k,
-    NameCollision a,
+  ( NameCollision a,
     KeyOf k a,
     Monad m,
     Failure GQLErrors m
@@ -85,4 +84,4 @@ safeInsert ::
   a ->
   SafeHashMap k a ->
   m (SafeHashMap k a)
-safeInsert x shm = shm <:> singleton x
+safeInsert x = (<:> singleton x)
