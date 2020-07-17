@@ -34,7 +34,6 @@ import Data.Morpheus.Internal.Utils
     Listable (..),
     Merge (..),
     Selectable (..),
-    safeFromList,
     safeUnionWith,
     toPair,
   )
@@ -73,8 +72,8 @@ instance (NameCollision a, KeyOf k a) => Merge (SafeHashMap k a) where
   merge ref (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> merge ref x y
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a) where
-  fromElems = fmap SafeHashMap . safeFromList
-  elems = HM.elems . toHashMap
+  fromElems = fmap SafeHashMap . fromElems
+  elems = elems . toHashMap
 
 safeInsert ::
   ( Hashable k,

@@ -31,7 +31,6 @@ import Data.Morpheus.Internal.Utils
     Listable (..),
     Merge (..),
     Selectable (..),
-    safeFromList,
     toPair,
   )
 import Data.Semigroup ((<>))
@@ -89,7 +88,7 @@ instance (NameCollision a, KeyOf k a) => Merge (OrdMap k a) where
   merge ref (OrdMap k1 x) (OrdMap k2 y) = OrdMap (k1 <> k2) <$> merge ref x y
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) where
-  fromElems values = OrdMap (fmap keyOf values) <$> safeFromList values
+  fromElems values = OrdMap (fmap keyOf values) <$> fromElems values
   elems = getElements
 
 unsafeFromValues ::

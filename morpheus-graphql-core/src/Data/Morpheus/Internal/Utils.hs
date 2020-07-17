@@ -34,7 +34,6 @@ module Data.Morpheus.Internal.Utils
     traverseCollection,
     (<.>),
     SemigroupM (..),
-    safeFromList,
     safeUnionWith,
   )
 where
@@ -198,6 +197,10 @@ toPair x = (keyOf x, x)
 class Listable a coll | coll -> a where
   elems :: coll -> [a]
   fromElems :: (Monad m, Failure GQLErrors m) => [a] -> m coll
+
+instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
+  fromElems = safeFromList
+  elems = HM.elems
 
 keys :: (KeyOf k a, Listable a coll) => coll -> [k]
 keys = fmap keyOf . elems
