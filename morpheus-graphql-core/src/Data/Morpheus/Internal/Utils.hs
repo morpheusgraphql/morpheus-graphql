@@ -121,34 +121,37 @@ instance Collection a [a] where
   empty = []
   singleton x = [x]
 
-instance (Hashable k, KeyOf v, k ~ KEY v) => Collection v (HashMap k v) where
+instance (Hashable k, KeyOf k v) => Collection v (HashMap k v) where
   empty = HM.empty
   singleton x = HM.singleton (keyOf x) x
 
-class Selectable a c | c -> a where
-  selectOr :: d -> (a -> d) -> KEY a -> c -> d
+class Selectable k a c | c -> a where
+  selectOr :: d -> (a -> d) -> k -> c -> d
 
-instance KeyOf a => Selectable a [a] where
+instance KeyOf k a => Selectable k a [a] where
   selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
 
-instance (KEY a ~ k, Eq k, Hashable k) => Selectable a (HashMap k a) where
+instance
+  (Eq k, Hashable k) =>
+  Selectable k a (HashMap k a)
+  where
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
-selectBy :: (Failure e m, Selectable a c, Monad m) => e -> KEY a -> c -> m a
+selectBy :: (Failure e m, Selectable k a c, Monad m) => e -> k -> c -> m a
 selectBy err = selectOr (failure err) pure
 
-member :: forall a c. Selectable a c => KEY a -> c -> Bool
+member :: Selectable k a c => k -> c -> Bool
 member = selectOr False toTrue
   where
     toTrue :: a -> Bool
     toTrue _ = True
 
 ordTraverse ::
-  ( KeyOf b,
-    Monad f,
+  ( Monad f,
+    Failure GQLErrors f,
+    KeyOf k b,
     Listable a (t a),
-    Listable b (t b),
-    Failure GQLErrors f
+    Listable b (t b)
   ) =>
   (a -> f b) ->
   t a ->
@@ -156,8 +159,8 @@ ordTraverse ::
 ordTraverse = traverseCollection
 
 traverseCollection ::
-  ( KeyOf b,
-    Monad f,
+  ( Monad f,
+    KeyOf k b,
     Listable a (t a),
     Listable b (t' b),
     Failure GQLErrors f
@@ -177,31 +180,27 @@ ordTraverse_ ::
   f ()
 ordTraverse_ f a = traverse_ f (elems a)
 
-class Eq (KEY a) => KeyOf a where
-  type KEY a :: *
-  type KEY a = FieldName
-  keyOf :: a -> KEY a
+class Eq k => KeyOf k a | a -> k where
+  keyOf :: a -> k
 
-instance Eq a => KeyOf (a, b) where
-  type KEY (a, b) = a
+instance Eq a => KeyOf a (a, b) where
   keyOf = fst
 
-instance KeyOf Ref where
+instance KeyOf FieldName Ref where
   keyOf = refName
 
-instance KeyOf TypeNameRef where
-  type KEY TypeNameRef = TypeName
+instance KeyOf TypeName TypeNameRef where
   keyOf = typeNameRef
 
-toPair :: KeyOf a => a -> (KEY a, a)
+toPair :: KeyOf k a => a -> (k, a)
 toPair x = (keyOf x, x)
 
 -- list Like Collections
 class Listable a coll | coll -> a where
   elems :: coll -> [a]
-  fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m coll
+  fromElems :: (KeyOf k a, Monad m, Failure GQLErrors m) => [a] -> m coll
 
-keys :: (KeyOf a, Listable a coll) => coll -> [KEY a]
+keys :: (KeyOf k a, Listable a coll) => coll -> [k]
 keys = fmap keyOf . elems
 
 size :: Listable a coll => coll -> Int
