@@ -61,7 +61,6 @@ import Control.Monad (Monad (..), foldM)
 import Data.Either (Either (..))
 import Data.Foldable (concatMap)
 import Data.Functor ((<$>), fmap)
-import qualified Data.HashMap.Lazy as HM
 import Data.List (filter, find, notElem)
 import Data.Maybe (Maybe (..), catMaybes, maybe)
 import Data.Morpheus.Error (globalErrorMessage)
@@ -122,8 +121,7 @@ import Data.Morpheus.Types.Internal.AST.OrdMap
   )
 import Data.Morpheus.Types.Internal.AST.SafeHashMap
   ( SafeHashMap,
-    safeInsert,
-    toHashMap,
+    insert,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
@@ -427,7 +425,7 @@ lookupDataType name Schema {types, query, mutation, subscription} =
   isType name query
     <|> (mutation >>= isType name)
     <|> (subscription >>= isType name)
-    <|> HM.lookup name (toHashMap types)
+    <|> selectOr Nothing Just name types
 
 isTypeDefined :: TypeName -> Schema s -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
@@ -588,7 +586,7 @@ safeDefineType ::
   Schema s ->
   m (Schema s)
 safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib = do
-  types <- safeInsert unionTags (types lib) >>= safeInsert (toAny dt)
+  types <- insert unionTags (types lib) >>= insert (toAny dt)
   pure lib {types}
   where
     unionTags =
@@ -600,7 +598,7 @@ safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKey
           typeContent = mkEnumContent (fmap memberName enumKeys)
         }
 safeDefineType datatype lib = do
-  types <- safeInsert (toAny datatype) (types lib)
+  types <- insert (toAny datatype) (types lib)
   pure lib {types}
 
 insertType ::

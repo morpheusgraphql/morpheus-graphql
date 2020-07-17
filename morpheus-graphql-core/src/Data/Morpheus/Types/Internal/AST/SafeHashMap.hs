@@ -15,8 +15,7 @@
 
 module Data.Morpheus.Types.Internal.AST.SafeHashMap
   ( SafeHashMap,
-    toHashMap,
-    safeInsert,
+    insert,
   )
 where
 
@@ -47,7 +46,7 @@ import Prelude
   )
 
 newtype SafeHashMap k a = SafeHashMap
-  { toHashMap :: HashMap k a
+  { unpackSafeHashMap :: HashMap k a
   }
   deriving
     ( Show,
@@ -73,9 +72,9 @@ instance (NameCollision a, KeyOf k a) => Merge (SafeHashMap k a) where
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a) where
   fromElems = fmap SafeHashMap . fromElems
-  elems = elems . toHashMap
+  elems = elems . unpackSafeHashMap
 
-safeInsert ::
+insert ::
   ( NameCollision a,
     KeyOf k a,
     Monad m,
@@ -84,4 +83,4 @@ safeInsert ::
   a ->
   SafeHashMap k a ->
   m (SafeHashMap k a)
-safeInsert x = (<:> singleton x)
+insert x = (<:> singleton x)
