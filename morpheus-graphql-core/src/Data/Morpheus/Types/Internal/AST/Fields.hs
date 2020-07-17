@@ -201,12 +201,12 @@ newtype Fields def = Fields
       Traversable
     )
 
-deriving instance (KEY def ~ FieldName, KeyOf def) => Collection def (Fields def)
+deriving instance (KeyOf FieldName def) => Collection def (Fields def)
 
 instance Merge (FieldsDefinition cat s) where
   merge path (Fields x) (Fields y) = Fields <$> merge path x y
 
-instance Selectable (FieldDefinition cat s) (Fields (FieldDefinition cat s)) where
+instance Selectable FieldName (FieldDefinition cat s) (Fields (FieldDefinition cat s)) where
   selectOr fb f name (Fields lib) = selectOr fb f name lib
 
 unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
@@ -215,7 +215,7 @@ unsafeFromFields = Fields . unsafeFromValues
 fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
 fieldsToArguments = ArgumentsDefinition Nothing . unFields
 
-instance (KEY def ~ FieldName, KeyOf def, NameCollision def) => Listable def (Fields def) where
+instance (KeyOf FieldName def, NameCollision def) => Listable def (Fields def) where
   fromElems = fmap Fields . fromElems
   elems = elems . unFields
 
@@ -266,10 +266,10 @@ deriving instance Show (FieldContent bool cat s)
 
 deriving instance Lift (FieldContent bool cat s)
 
-instance KeyOf (FieldDefinition cat s) where
+instance KeyOf FieldName (FieldDefinition cat s) where
   keyOf = fieldName
 
-instance Selectable (ArgumentDefinition s) (FieldDefinition OUT s) where
+instance Selectable FieldName (ArgumentDefinition s) (FieldDefinition OUT s) where
   selectOr fb f key FieldDefinition {fieldContent = Just (FieldArgs args)} = selectOr fb f key args
   selectOr fb _ _ _ = fb
 

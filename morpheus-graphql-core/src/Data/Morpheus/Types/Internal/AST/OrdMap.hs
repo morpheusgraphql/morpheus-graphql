@@ -94,7 +94,7 @@ instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
 instance (NameCollision a, Eq k, Hashable k) => Merge (OrdMap k a) where
   merge _ (OrdMap k1 x) (OrdMap k2 y) = OrdMap (k1 <> k2) <$> safeJoin x y
 
-instance (NameCollision a, Eq k, Hashable k) => Listable a (OrdMap k a) where
+instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) where
   fromElems = safeFromList
   elems = getElements
 

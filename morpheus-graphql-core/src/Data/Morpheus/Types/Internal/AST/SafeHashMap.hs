@@ -61,18 +61,16 @@ newtype SafeHashMap k a = SafeHashMap
     )
 
 deriving newtype instance
-  ( KEY a ~ k,
-    Hashable k,
-    KeyOf a
+  ( Hashable k,
+    KeyOf k a
   ) =>
   Collection a (SafeHashMap k a)
 
 deriving newtype instance
-  ( KEY a ~ k,
-    Hashable k,
-    KeyOf a
+  ( Hashable k,
+    KeyOf k a
   ) =>
-  Selectable a (SafeHashMap k a)
+  Selectable k a (SafeHashMap k a)
 
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
   lift (SafeHashMap x) = let ls = HM.toList x in [|SafeHashMap (HM.fromList ls)|]
@@ -81,19 +79,17 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
   liftTyped (SafeHashMap x) = let ls = HM.toList x in [||SafeHashMap (HM.fromList ls)||]
 #endif
 
-instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (SafeHashMap k a) where
+instance (NameCollision a, Eq k, Hashable k) => Merge (SafeHashMap k a) where
   merge _ (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> safeJoin x y
 
-instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable a (SafeHashMap k a) where
+instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a) where
   fromElems = fmap SafeHashMap . safeUnionWith HM.empty . fmap toPair
   elems = HM.elems . toHashMap
 
 safeInsert ::
-  ( KEY a ~ k,
-    Eq k,
-    Hashable k,
+  ( Hashable k,
     NameCollision a,
-    KeyOf a,
+    KeyOf k a,
     Functor m,
     Failure GQLErrors m
   ) =>

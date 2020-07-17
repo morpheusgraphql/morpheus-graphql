@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -164,7 +165,7 @@ data Variable (stage :: Stage) = Variable
   }
   deriving (Show, Eq, Lift)
 
-instance KeyOf (Variable s) where
+instance KeyOf FieldName (Variable s) where
   keyOf = variableName
 
 instance NameCollision (Variable s) where
@@ -205,7 +206,7 @@ instance NameCollision (ObjectEntry s) where
         locations = []
       }
 
-instance KeyOf (ObjectEntry s) where
+instance KeyOf FieldName (ObjectEntry s) where
   keyOf = entryName
 
 type Object a = OrdMap FieldName (ObjectEntry a)
