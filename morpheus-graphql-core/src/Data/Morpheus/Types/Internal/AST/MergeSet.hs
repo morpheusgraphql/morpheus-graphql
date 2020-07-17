@@ -37,8 +37,7 @@ import Data.Morpheus.Internal.Utils
     elems,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    GQLErrors,
+  ( GQLErrors,
     Ref,
   )
 import Data.Morpheus.Types.Internal.AST.OrdMap
@@ -108,7 +107,7 @@ join = __join empty
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
-toOrdMap :: (KeyOf FieldName a) => MergeSet opt a -> OrdMap k a
+toOrdMap :: (KeyOf k a) => MergeSet opt a -> OrdMap k a
 toOrdMap = OM.unsafeFromValues . unpack
 
 instance (KeyOf k a) => Selectable k a (MergeSet opt a) where

@@ -240,7 +240,7 @@ pipe x = optional (symbol '|') *> (x `sepBy1` symbol '|')
 collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
 
-setOf :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
+setOf :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
 setOf = collection >=> fromElems
 
 optionalCollection :: Collection a c => Parser c -> Parser c
@@ -252,7 +252,7 @@ parseNonNull = do
   ignoredTokens
   return wrapper
 
-uniqTuple :: (Listable a coll, KeyOf a) => Parser a -> Parser coll
+uniqTuple :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTuple parser =
   label "Tuple" $
     between
@@ -261,7 +261,7 @@ uniqTuple parser =
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
       >>= fromElems
 
-uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf a) => Parser a -> Parser coll
+uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
