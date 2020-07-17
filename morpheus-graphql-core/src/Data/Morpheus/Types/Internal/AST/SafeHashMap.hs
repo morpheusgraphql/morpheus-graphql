@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.AST.SafeHashMap
 where
 
 -- MORPHEUS
+import Control.Monad (Monad)
 import Data.Foldable (Foldable (..))
 import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
@@ -28,14 +29,13 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
+  ( (<:>),
+    Collection (..),
     Failure (..),
     KeyOf (..),
     Listable (..),
     Merge (..),
     Selectable (..),
-    safeUnionWith,
-    toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base (GQLErrors)
 import Data.Traversable (Traversable (..))
@@ -79,10 +79,10 @@ safeInsert ::
   ( Hashable k,
     NameCollision a,
     KeyOf k a,
-    Functor m,
+    Monad m,
     Failure GQLErrors m
   ) =>
   a ->
   SafeHashMap k a ->
   m (SafeHashMap k a)
-safeInsert x (SafeHashMap hm) = SafeHashMap <$> safeUnionWith hm [toPair x]
+safeInsert x shm = shm <:> singleton x

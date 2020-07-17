@@ -34,7 +34,6 @@ module Data.Morpheus.Internal.Utils
     traverseCollection,
     (<.>),
     SemigroupM (..),
-    safeUnionWith,
   )
 where
 
