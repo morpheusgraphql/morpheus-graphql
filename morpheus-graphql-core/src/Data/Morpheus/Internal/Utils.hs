@@ -34,6 +34,9 @@ module Data.Morpheus.Internal.Utils
     traverseCollection,
     (<.>),
     SemigroupM (..),
+    safeFromList,
+    safeJoin,
+    safeUnionWith,
   )
 where
 
@@ -43,13 +46,14 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Foldable (traverse_)
+import Data.Foldable (null, traverse_)
 import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
-import Data.Maybe (maybe)
+import Data.Maybe (isJust, maybe)
+import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -83,6 +87,8 @@ import Prelude
     const,
     fst,
     length,
+    otherwise,
+    snd,
   )
 
 mapText :: (String -> String) -> Token -> Token
@@ -247,3 +253,41 @@ concatUpdates x = UpdateT (`resolveUpdates` x)
 
 resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
 resolveUpdates a = foldM (&) a . fmap updateTState
+
+safeFromList ::
+  ( Failure GQLErrors m,
+    Applicative m,
+    NameCollision a,
+    Eq k,
+    Hashable k,
+    KeyOf k a
+  ) =>
+  [a] ->
+  m (HashMap k a)
+safeFromList values = safeUnionWith HM.empty (fmap toPair values)
+
+safeJoin :: (Failure GQLErrors m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
+safeJoin hm newls = safeUnionWith hm (HM.toList newls)
+
+safeUnionWith ::
+  ( Failure GQLErrors m,
+    Applicative m,
+    Eq k,
+    Hashable k,
+    NameCollision a
+  ) =>
+  HashMap k a ->
+  [(k, a)] ->
+  m (HashMap k a)
+safeUnionWith hm names = case insertNoDups (hm, []) names of
+  (res, dupps)
+    | null dupps -> pure res
+    | otherwise -> failure $ fmap (nameCollision . snd) dupps
+
+type NoDupHashMap k a = (HashMap k a, [(k, a)])
+
+insertNoDups :: (Eq k, Hashable k) => NoDupHashMap k a -> [(k, a)] -> NoDupHashMap k a
+insertNoDups collected [] = collected
+insertNoDups (coll, errors) (pair@(name, value) : xs)
+  | isJust (name `HM.lookup` coll) = insertNoDups (coll, errors <> [pair]) xs
+  | otherwise = insertNoDups (HM.insert name value coll, errors) xs

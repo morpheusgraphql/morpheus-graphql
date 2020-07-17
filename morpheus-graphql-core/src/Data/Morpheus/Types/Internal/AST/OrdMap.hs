@@ -14,33 +14,26 @@
 module Data.Morpheus.Types.Internal.AST.OrdMap
   ( OrdMap (..),
     unsafeFromValues,
-    safeJoin,
-    safeUnionWith,
-    insertNoDups,
   )
 where
 
 -- MORPHEUS
-
-import Control.Applicative (Applicative (..))
 import Data.Foldable (Foldable (..))
 import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
-import Data.Maybe (fromMaybe, isJust, maybe)
+import Data.Maybe (fromMaybe, maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
-    Failure (..),
     KeyOf (..),
     Listable (..),
     Merge (..),
     Selectable (..),
+    safeFromList,
+    safeJoin,
     toPair,
-  )
-import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
   )
 import Data.Semigroup ((<>))
 import Data.Traversable (Traversable (..))
@@ -51,8 +44,6 @@ import Prelude
     Eq,
     Show,
     error,
-    otherwise,
-    snd,
   )
 
 -- OrdMap
@@ -60,7 +51,11 @@ data OrdMap k a = OrdMap
   { mapKeys :: [k],
     mapEntries :: HashMap k a
   }
-  deriving (Show, Eq, Functor)
+  deriving
+    ( Show,
+      Eq,
+      Functor
+    )
 
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (OrdMap k a) where
   lift (OrdMap names x) = [|OrdMap names (HM.fromList ls)|]
@@ -95,20 +90,8 @@ instance (NameCollision a, Eq k, Hashable k) => Merge (OrdMap k a) where
   merge _ (OrdMap k1 x) (OrdMap k2 y) = OrdMap (k1 <> k2) <$> safeJoin x y
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) where
-  fromElems = safeFromList
+  fromElems values = OrdMap (fmap keyOf values) <$> safeFromList values
   elems = getElements
-
-safeFromList ::
-  ( Failure GQLErrors m,
-    Applicative m,
-    NameCollision a,
-    Eq k,
-    Hashable k,
-    KeyOf k a
-  ) =>
-  [a] ->
-  m (OrdMap k a)
-safeFromList values = OrdMap (fmap keyOf values) <$> safeUnionWith HM.empty (fmap toPair values)
 
 unsafeFromValues ::
   ( KeyOf k a,
@@ -117,29 +100,3 @@ unsafeFromValues ::
   [a] ->
   OrdMap k a
 unsafeFromValues x = OrdMap (fmap keyOf x) $ HM.fromList $ fmap toPair x
-
-safeJoin :: (Failure GQLErrors m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
-safeJoin hm newls = safeUnionWith hm (HM.toList newls)
-
-safeUnionWith ::
-  ( Failure GQLErrors m,
-    Applicative m,
-    Eq k,
-    Hashable k,
-    NameCollision a
-  ) =>
-  HashMap k a ->
-  [(k, a)] ->
-  m (HashMap k a)
-safeUnionWith hm names = case insertNoDups (hm, []) names of
-  (res, dupps)
-    | null dupps -> pure res
-    | otherwise -> failure $ fmap (nameCollision . snd) dupps
-
-type NoDupHashMap k a = (HashMap k a, [(k, a)])
-
-insertNoDups :: (Eq k, Hashable k) => NoDupHashMap k a -> [(k, a)] -> NoDupHashMap k a
-insertNoDups collected [] = collected
-insertNoDups (coll, errors) (pair@(name, value) : xs)
-  | isJust (name `HM.lookup` coll) = insertNoDups (coll, errors <> [pair]) xs
-  | otherwise = insertNoDups (HM.insert name value coll, errors) xs

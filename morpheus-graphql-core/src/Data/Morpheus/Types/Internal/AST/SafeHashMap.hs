@@ -34,13 +34,12 @@ import Data.Morpheus.Internal.Utils
     Listable (..),
     Merge (..),
     Selectable (..),
+    safeFromList,
+    safeJoin,
+    safeUnionWith,
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base (GQLErrors)
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( safeJoin,
-    safeUnionWith,
-  )
 import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
@@ -59,18 +58,10 @@ newtype SafeHashMap k a = SafeHashMap
       Foldable,
       Traversable
     )
-
-deriving newtype instance
-  ( Hashable k,
-    KeyOf k a
-  ) =>
-  Collection a (SafeHashMap k a)
-
-deriving newtype instance
-  ( Hashable k,
-    KeyOf k a
-  ) =>
-  Selectable k a (SafeHashMap k a)
+  deriving newtype
+    ( Collection a,
+      Selectable k a
+    )
 
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
   lift (SafeHashMap x) = let ls = HM.toList x in [|SafeHashMap (HM.fromList ls)|]
@@ -83,7 +74,7 @@ instance (NameCollision a, Eq k, Hashable k) => Merge (SafeHashMap k a) where
   merge _ (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> safeJoin x y
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a) where
-  fromElems = fmap SafeHashMap . safeUnionWith HM.empty . fmap toPair
+  fromElems = fmap SafeHashMap . safeFromList
   elems = HM.elems . toHashMap
 
 safeInsert ::
