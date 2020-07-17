@@ -84,17 +84,17 @@ getElements OrdMap {mapKeys, mapEntries} = fmap takeValue mapKeys
 instance (Eq k, Hashable k) => Traversable (OrdMap k) where
   traverse f (OrdMap names values) = OrdMap names <$> traverse f values
 
-instance (KeyOf a, Hashable k, KEY a ~ k) => Collection a (OrdMap k a) where
+instance (KeyOf k a, Hashable k) => Collection a (OrdMap k a) where
   empty = OrdMap [] HM.empty
   singleton x = OrdMap [keyOf x] $ HM.singleton (keyOf x) x
 
-instance (Eq k, Hashable k, k ~ KEY a) => Selectable a (OrdMap k a) where
+instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
   selectOr fb f key OrdMap {mapEntries} = maybe fb f (HM.lookup key mapEntries)
 
-instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Merge (OrdMap k a) where
+instance (NameCollision a, Eq k, Hashable k) => Merge (OrdMap k a) where
   merge _ (OrdMap k1 x) (OrdMap k2 y) = OrdMap (k1 <> k2) <$> safeJoin x y
 
-instance (NameCollision a, Eq k, Hashable k, k ~ KEY a) => Listable a (OrdMap k a) where
+instance (NameCollision a, Eq k, Hashable k) => Listable a (OrdMap k a) where
   fromElems = safeFromList
   elems = getElements
 
@@ -102,24 +102,23 @@ safeFromList ::
   ( Failure GQLErrors m,
     Applicative m,
     NameCollision a,
-    Eq (KEY a),
-    Hashable (KEY a),
-    KeyOf a
+    Eq k,
+    Hashable k,
+    KeyOf k a
   ) =>
   [a] ->
-  m (OrdMap (KEY a) a)
+  m (OrdMap k a)
 safeFromList values = OrdMap (fmap keyOf values) <$> safeUnionWith HM.empty (fmap toPair values)
 
 unsafeFromValues ::
-  ( KeyOf a,
-    Eq (KEY a),
-    Hashable (KEY a)
+  ( KeyOf k a,
+    Hashable k
   ) =>
   [a] ->
-  OrdMap (KEY a) a
+  OrdMap k a
 unsafeFromValues x = OrdMap (fmap keyOf x) $ HM.fromList $ fmap toPair x
 
-safeJoin :: (Failure GQLErrors m, Eq k, Hashable k, KEY a ~ k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
+safeJoin :: (Failure GQLErrors m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
 safeJoin hm newls = safeUnionWith hm (HM.toList newls)
 
 safeUnionWith ::
@@ -127,8 +126,7 @@ safeUnionWith ::
     Applicative m,
     Eq k,
     Hashable k,
-    NameCollision a,
-    KEY a ~ k
+    NameCollision a
   ) =>
   HashMap k a ->
   [(k, a)] ->

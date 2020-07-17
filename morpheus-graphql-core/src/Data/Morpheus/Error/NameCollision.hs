@@ -11,4 +11,4 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 
 class NameCollision a where
-  nameCollision :: KEY a -> a -> GQLError
+  nameCollision :: k -> a -> GQLError
