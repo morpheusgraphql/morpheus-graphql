@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -157,7 +156,7 @@ import Prelude
     otherwise,
   )
 
-getUnused :: (KeyOf b, KEY a ~ KEY b, Selectable a c) => c -> [b] -> [b]
+getUnused :: (KeyOf k b, Selectable k a c) => c -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
 
 failOnUnused :: Unused ctx b => [b] -> Validator s ctx ()
@@ -168,9 +167,8 @@ failOnUnused x
     failure $ fmap (unused ctx) x
 
 checkUnused ::
-  ( KeyOf b,
-    KEY a ~ KEY b,
-    Selectable a ca,
+  ( KeyOf k b,
+    Selectable k a ca,
     Unused ctx b
   ) =>
   ca ->
@@ -190,9 +188,8 @@ constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny
 constraint target ctx _ = failure [kindViolation target ctx]
 
 selectRequired ::
-  ( Selectable value c,
-    MissingRequired c ctx,
-    FieldName ~ KEY value
+  ( Selectable FieldName value c,
+    MissingRequired c ctx
   ) =>
   Ref ->
   c ->
@@ -207,9 +204,8 @@ selectRequired selector container =
 
 selectWithDefaultValue ::
   forall ctx values value s validValue.
-  ( Selectable value values,
+  ( Selectable FieldName value values,
     MissingRequired values ctx,
-    KEY value ~ FieldName,
     MonadContext (Validator s) s ctx
   ) =>
   (Value s -> Validator s ctx validValue) ->
@@ -254,10 +250,9 @@ selectType name =
     err = globalErrorMessage $ "Unknown Type " <> msg name <> "."
 
 selectKnown ::
-  ( Selectable a c,
+  ( Selectable k a c,
     Unknown c sel ctx,
-    KeyOf sel,
-    KEY sel ~ KEY a
+    KeyOf k sel
   ) =>
   sel ->
   c ->

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -114,13 +115,13 @@ data Fragment = Fragment
 
 -- ERRORs
 instance NameCollision Fragment where
-  nameCollision _ Fragment {fragmentName, fragmentPosition} =
+  nameCollision Fragment {fragmentName, fragmentPosition} =
     GQLError
       { message = "There can be only one fragment named " <> msg fragmentName <> ".",
         locations = [fragmentPosition]
       }
 
-instance KeyOf Fragment where
+instance KeyOf FieldName Fragment where
   keyOf = fragmentName
 
 type Fragments = OrdMap FieldName Fragment
@@ -166,6 +167,9 @@ data UnionTag = UnionTag
   }
   deriving (Show, Eq, Lift)
 
+instance KeyOf TypeName UnionTag where
+  keyOf = unionTagName
+
 instance RenderGQL UnionTag where
   render UnionTag {unionTagName, unionTagSelection} =
     "... on "
@@ -195,10 +199,6 @@ instance Merge UnionTag where
   merge path (UnionTag oldTag oldSel) (UnionTag _ currentSel) =
     UnionTag oldTag <$> merge path oldSel currentSel
 
-instance KeyOf UnionTag where
-  type KEY UnionTag = TypeName
-  keyOf = unionTagName
-
 type UnionSelection (s :: Stage) = MergeSet s UnionTag
 
 type SelectionSet (s :: Stage) = MergeSet s (Selection s)
@@ -225,7 +225,7 @@ instance RenderGQL (Selection VALID) where
         <> renderArguments (elems selectionArguments)
         <> render selectionContent
 
-instance KeyOf (Selection s) where
+instance KeyOf FieldName (Selection s) where
   keyOf
     Selection
       { selectionName,

@@ -122,7 +122,7 @@ data Argument (valid :: Stage) = Argument
   }
   deriving (Show, Eq, Lift)
 
-instance KeyOf (Argument stage) where
+instance KeyOf FieldName (Argument stage) where
   keyOf = argumentName
 
 instance RenderGQL (Argument s) where
@@ -130,7 +130,7 @@ instance RenderGQL (Argument s) where
     renderEntry argumentName argumentValue
 
 instance NameCollision (Argument s) where
-  nameCollision _ Argument {argumentName, argumentPosition} =
+  nameCollision Argument {argumentName, argumentPosition} =
     GQLError
       { message = "There can Be only One Argument Named " <> msg argumentName,
         locations = [argumentPosition]
@@ -147,7 +147,7 @@ data Directive (s :: Stage) = Directive
   }
   deriving (Show, Lift, Eq)
 
-instance KeyOf (Directive s) where
+instance KeyOf FieldName (Directive s) where
   keyOf = directiveName
 
 type Directives s = [Directive s]
@@ -162,10 +162,10 @@ data DirectiveDefinition s = DirectiveDefinition
 
 type DirectiveDefinitions s = [DirectiveDefinition s]
 
-instance KeyOf (DirectiveDefinition s) where
+instance KeyOf FieldName (DirectiveDefinition s) where
   keyOf = directiveDefinitionName
 
-instance Selectable (ArgumentDefinition s) (DirectiveDefinition s) where
+instance Selectable FieldName (ArgumentDefinition s) (DirectiveDefinition s) where
   selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
     selectOr fb f key directiveDefinitionArgs
 
@@ -177,12 +177,16 @@ lookupDeprecated = find isDeprecation
 
 lookupDeprecatedReason :: Directive s -> Maybe Description
 lookupDeprecatedReason Directive {directiveArgs} =
-  selectOr Nothing maybeString "reason" directiveArgs
-  where
-    maybeString :: Argument s -> Maybe Description
-    maybeString Argument {argumentValue = Null} = Nothing
-    maybeString Argument {argumentValue = (Scalar (String x))} = Just x
-    maybeString _ = Just "can't read deprecated Reason Value"
+  selectOr
+    Nothing
+    argumentStringValue
+    ("reason" :: FieldName)
+    directiveArgs
+
+argumentStringValue :: Argument s -> Maybe Description
+argumentStringValue Argument {argumentValue = Null} = Nothing
+argumentStringValue Argument {argumentValue = (Scalar (String x))} = Just x
+argumentStringValue _ = Just "can't read deprecated Reason Value"
 
 instance ToAny FieldDefinition where
   toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny <$> fieldContent, ..}
@@ -201,12 +205,12 @@ newtype Fields def = Fields
       Traversable
     )
 
-deriving instance (KEY def ~ FieldName, KeyOf def) => Collection def (Fields def)
+deriving instance (KeyOf FieldName def) => Collection def (Fields def)
 
 instance Merge (FieldsDefinition cat s) where
   merge path (Fields x) (Fields y) = Fields <$> merge path x y
 
-instance Selectable (FieldDefinition cat s) (Fields (FieldDefinition cat s)) where
+instance Selectable FieldName (FieldDefinition cat s) (Fields (FieldDefinition cat s)) where
   selectOr fb f name (Fields lib) = selectOr fb f name lib
 
 unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
@@ -215,7 +219,7 @@ unsafeFromFields = Fields . unsafeFromValues
 fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
 fieldsToArguments = ArgumentsDefinition Nothing . unFields
 
-instance (KEY def ~ FieldName, KeyOf def, NameCollision def) => Listable def (Fields def) where
+instance (KeyOf FieldName def, NameCollision def) => Listable def (Fields def) where
   fromElems = fmap Fields . fromElems
   elems = elems . unFields
 
@@ -266,17 +270,17 @@ deriving instance Show (FieldContent bool cat s)
 
 deriving instance Lift (FieldContent bool cat s)
 
-instance KeyOf (FieldDefinition cat s) where
+instance KeyOf FieldName (FieldDefinition cat s) where
   keyOf = fieldName
 
-instance Selectable (ArgumentDefinition s) (FieldDefinition OUT s) where
+instance Selectable FieldName (ArgumentDefinition s) (FieldDefinition OUT s) where
   selectOr fb f key FieldDefinition {fieldContent = Just (FieldArgs args)} = selectOr fb f key args
   selectOr fb _ _ _ = fb
 
 instance NameCollision (FieldDefinition cat s) where
-  nameCollision name _ =
+  nameCollision FieldDefinition {fieldName} =
     GQLError
-      { message = "There can Be only One field Named " <> msg name,
+      { message = "There can Be only One field Named " <> msg fieldName,
         locations = []
       }
 
@@ -353,7 +357,7 @@ instance RenderGQL (ArgumentsDefinition s) where
 
 type ArgumentDefinition = FieldDefinition IN
 
-instance Selectable (ArgumentDefinition s) (ArgumentsDefinition s) where
+instance Selectable FieldName (ArgumentDefinition s) (ArgumentsDefinition s) where
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
 instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where

@@ -350,7 +350,7 @@ withSchemaDefinition ::
     (Maybe SchemaDefinition, [TypeDefinition ANY s], [DirectiveDefinition CONST])
 withSchemaDefinition ([], t, dirs) = pure (Nothing, t, dirs)
 withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
-withSchemaDefinition (_ : xs, _, _) = failure (fmap (nameCollision "schema") xs)
+withSchemaDefinition (_ : xs, _, _) = failure (fmap nameCollision xs)
 
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
 parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do

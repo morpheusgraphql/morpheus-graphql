@@ -2,9 +2,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
@@ -46,13 +43,14 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Foldable (traverse_)
+import Data.Foldable (null, traverse_)
 import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
-import Data.Maybe (maybe)
+import Data.Maybe (isJust, maybe)
+import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -86,6 +84,8 @@ import Prelude
     const,
     fst,
     length,
+    otherwise,
+    snd,
   )
 
 mapText :: (String -> String) -> Token -> Token
@@ -121,34 +121,34 @@ instance Collection a [a] where
   empty = []
   singleton x = [x]
 
-instance (Hashable k, KeyOf v, k ~ KEY v) => Collection v (HashMap k v) where
+instance KeyOf k v => Collection v (HashMap k v) where
   empty = HM.empty
   singleton x = HM.singleton (keyOf x) x
 
-class Selectable a c | c -> a where
-  selectOr :: d -> (a -> d) -> KEY a -> c -> d
+class Selectable k a c | c -> a where
+  selectOr :: d -> (a -> d) -> k -> c -> d
 
-instance KeyOf a => Selectable a [a] where
+instance KeyOf k a => Selectable k a [a] where
   selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
 
-instance (KEY a ~ k, Eq k, Hashable k) => Selectable a (HashMap k a) where
+instance KeyOf k a => Selectable k a (HashMap k a) where
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
-selectBy :: (Failure e m, Selectable a c, Monad m) => e -> KEY a -> c -> m a
+selectBy :: (Failure e m, Selectable k a c, Monad m) => e -> k -> c -> m a
 selectBy err = selectOr (failure err) pure
 
-member :: forall a c. Selectable a c => KEY a -> c -> Bool
+member :: Selectable k a c => k -> c -> Bool
 member = selectOr False toTrue
   where
     toTrue :: a -> Bool
     toTrue _ = True
 
 ordTraverse ::
-  ( KeyOf b,
-    Monad f,
+  ( Monad f,
+    Failure GQLErrors f,
+    KeyOf k b,
     Listable a (t a),
-    Listable b (t b),
-    Failure GQLErrors f
+    Listable b (t b)
   ) =>
   (a -> f b) ->
   t a ->
@@ -156,8 +156,8 @@ ordTraverse ::
 ordTraverse = traverseCollection
 
 traverseCollection ::
-  ( KeyOf b,
-    Monad f,
+  ( Monad f,
+    KeyOf k b,
     Listable a (t a),
     Listable b (t' b),
     Failure GQLErrors f
@@ -177,31 +177,31 @@ ordTraverse_ ::
   f ()
 ordTraverse_ f a = traverse_ f (elems a)
 
-class Eq (KEY a) => KeyOf a where
-  type KEY a :: *
-  type KEY a = FieldName
-  keyOf :: a -> KEY a
+class (Eq k, Hashable k) => KeyOf k a | a -> k where
+  keyOf :: a -> k
 
-instance Eq a => KeyOf (a, b) where
-  type KEY (a, b) = a
+instance (Eq k, Hashable k) => KeyOf k (k, a) where
   keyOf = fst
 
-instance KeyOf Ref where
+instance KeyOf FieldName Ref where
   keyOf = refName
 
-instance KeyOf TypeNameRef where
-  type KEY TypeNameRef = TypeName
+instance KeyOf TypeName TypeNameRef where
   keyOf = typeNameRef
 
-toPair :: KeyOf a => a -> (KEY a, a)
+toPair :: KeyOf k a => a -> (k, a)
 toPair x = (keyOf x, x)
 
 -- list Like Collections
 class Listable a coll | coll -> a where
   elems :: coll -> [a]
-  fromElems :: (KeyOf a, Monad m, Failure GQLErrors m) => [a] -> m coll
+  fromElems :: (Monad m, Failure GQLErrors m) => [a] -> m coll
 
-keys :: (KeyOf a, Listable a coll) => coll -> [KEY a]
+instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
+  fromElems = safeFromList
+  elems = HM.elems
+
+keys :: (KeyOf k a, Listable a coll) => coll -> [k]
 keys = fmap keyOf . elems
 
 size :: Listable a coll => coll -> Int
@@ -210,6 +210,9 @@ size = length . elems
 -- Merge Object with of Failure as an Option
 class Merge a where
   merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
+
+instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
+  merge _ = safeJoin
 
 (<:>) :: (Monad m, Merge a, Failure GQLErrors m) => a -> a -> m a
 (<:>) = merge []
@@ -254,3 +257,41 @@ concatUpdates x = UpdateT (`resolveUpdates` x)
 
 resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
 resolveUpdates a = foldM (&) a . fmap updateTState
+
+safeFromList ::
+  ( Failure GQLErrors m,
+    Applicative m,
+    NameCollision a,
+    Eq k,
+    Hashable k,
+    KeyOf k a
+  ) =>
+  [a] ->
+  m (HashMap k a)
+safeFromList values = safeUnionWith HM.empty (fmap toPair values)
+
+safeJoin :: (Failure GQLErrors m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
+safeJoin hm newls = safeUnionWith hm (HM.toList newls)
+
+safeUnionWith ::
+  ( Failure GQLErrors m,
+    Applicative m,
+    Eq k,
+    Hashable k,
+    NameCollision a
+  ) =>
+  HashMap k a ->
+  [(k, a)] ->
+  m (HashMap k a)
+safeUnionWith hm names = case insertNoDups (hm, []) names of
+  (res, dupps)
+    | null dupps -> pure res
+    | otherwise -> failure $ fmap (nameCollision . snd) dupps
+
+type NoDupHashMap k a = (HashMap k a, [(k, a)])
+
+insertNoDups :: (Eq k, Hashable k) => NoDupHashMap k a -> [(k, a)] -> NoDupHashMap k a
+insertNoDups collected [] = collected
+insertNoDups (coll, errors) (pair@(name, value) : xs)
+  | isJust (name `HM.lookup` coll) = insertNoDups (coll, errors <> [pair]) xs
+  | otherwise = insertNoDups (HM.insert name value coll, errors) xs

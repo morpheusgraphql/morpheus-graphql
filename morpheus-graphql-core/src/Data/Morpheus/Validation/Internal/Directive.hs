@@ -25,7 +25,6 @@ import Data.List (elem)
 import Data.Morpheus.Error (errorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    selectBy,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -35,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveLocation (..),
     Directives,
     FieldName,
+    Ref (..),
     ScalarValue (..),
     Schema (..),
     VALID,
@@ -45,6 +45,7 @@ import Data.Morpheus.Types.Internal.Validation
   ( Validator,
     askSchema,
     selectKnown,
+    selectRequired,
     withDirective,
   )
 import Data.Morpheus.Validation.Internal.Arguments
@@ -117,15 +118,9 @@ argumentIf ::
   Bool ->
   Directive s ->
   Validator schemaS ctx Bool
-argumentIf target Directive {directiveName, directiveArgs, directivePosition} =
-  selectBy err "if" directiveArgs
+argumentIf target Directive {directiveArgs, directivePosition} =
+  selectRequired (Ref "if" directivePosition) directiveArgs
     >>= assertArgument target
-  where
-    err =
-      errorMessage directivePosition $
-        "Directive "
-          <> msg ("@" <> directiveName)
-          <> " argument \"if\" of type \"Boolean!\" is required but not provided."
 
 assertArgument ::
   Bool ->

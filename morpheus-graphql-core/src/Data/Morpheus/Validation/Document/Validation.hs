@@ -355,8 +355,8 @@ instance (PartialImplements ctx) => TypeEq TypeRef ctx where
         failImplements UnexpectedType {expectedType = t1, foundType = t2}
 
 elemIn ::
-  ( KeyOf a,
-    Selectable a c,
+  ( KeyOf k a,
+    Selectable k a c,
     TypeEq a ctx
   ) =>
   a ->

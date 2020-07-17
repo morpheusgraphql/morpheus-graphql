@@ -25,6 +25,7 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    FieldName,
     OUT,
     QUERY,
     ScalarValue (..),
@@ -86,7 +87,7 @@ schemaAPI schema =
       ("__schema", schemaResolver schema)
     ]
   where
-    typeResolver = selectOr (pure mkNull) handleArg "name"
+    typeResolver = selectOr (pure mkNull) handleArg ("name" :: FieldName)
       where
         handleArg
           Argument

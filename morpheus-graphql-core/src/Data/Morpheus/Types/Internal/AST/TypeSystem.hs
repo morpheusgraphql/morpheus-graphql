@@ -56,16 +56,11 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative (..))
+import Control.Applicative ((<|>), Applicative (..))
 import Control.Monad (Monad (..), foldM)
 import Data.Either (Either (..))
 import Data.Foldable (concatMap)
 import Data.Functor ((<$>), fmap)
-import Data.HashMap.Lazy
-  ( HashMap,
-    union,
-  )
-import qualified Data.HashMap.Lazy as HM
 import Data.List (filter, find, notElem)
 import Data.Maybe (Maybe (..), catMaybes, maybe)
 import Data.Morpheus.Error (globalErrorMessage)
@@ -126,8 +121,7 @@ import Data.Morpheus.Types.Internal.AST.OrdMap
   )
 import Data.Morpheus.Types.Internal.AST.SafeHashMap
   ( SafeHashMap,
-    safeInsert,
-    toHashMap,
+    insert,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
@@ -198,8 +192,7 @@ instance RenderGQL (UnionMember cat s) where
 instance Msg (UnionMember cat s) where
   msg = msg . memberName
 
-instance KeyOf (UnionMember cat s) where
-  type KEY (UnionMember cat s) = TypeName
+instance KeyOf TypeName (UnionMember cat s) where
   keyOf = memberName
 
 -- scalar
@@ -282,18 +275,18 @@ data SchemaDefinition = SchemaDefinition
   }
   deriving (Show)
 
-instance Selectable RootOperationTypeDefinition SchemaDefinition where
+instance Selectable OperationType RootOperationTypeDefinition SchemaDefinition where
   selectOr fallback f key SchemaDefinition {unSchemaDefinition} =
     selectOr fallback f key unSchemaDefinition
 
 instance NameCollision SchemaDefinition where
-  nameCollision _ _ =
+  nameCollision _ =
     GQLError
       { message = "There can Be only One SchemaDefinition.",
         locations = []
       }
 
-instance KeyOf SchemaDefinition where
+instance KeyOf TypeName SchemaDefinition where
   keyOf _ = "schema"
 
 data RawTypeDefinition
@@ -309,23 +302,26 @@ data RootOperationTypeDefinition = RootOperationTypeDefinition
   deriving (Show, Eq)
 
 instance NameCollision RootOperationTypeDefinition where
-  nameCollision name _ =
+  nameCollision RootOperationTypeDefinition {rootOperationType} =
     GQLError
-      { message = "There can Be only One TypeDefinition for schema." <> msg name,
+      { message =
+          "There can Be only One TypeDefinition for schema."
+            <> msg rootOperationType,
         locations = []
       }
 
-instance KeyOf RootOperationTypeDefinition where
-  type KEY RootOperationTypeDefinition = OperationType
+instance KeyOf OperationType RootOperationTypeDefinition where
   keyOf = rootOperationType
 
 type TypeLib s = SafeHashMap TypeName (TypeDefinition ANY s)
 
-instance Selectable (TypeDefinition ANY s) (Schema s) where
+instance Selectable TypeName (TypeDefinition ANY s) (Schema s) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 instance Listable (TypeDefinition ANY s) (Schema s) where
-  elems = HM.elems . typeRegister
+  elems Schema {..} =
+    elems types
+      <> concatMap fromOperation [Just query, mutation, subscription]
   fromElems types =
     traverse3
       (popByKey types)
@@ -419,14 +415,17 @@ initTypeLib query =
       directiveDefinitions = empty
     }
 
-typeRegister :: Schema s -> HashMap TypeName (TypeDefinition ANY s)
-typeRegister Schema {types, query, mutation, subscription} =
-  toHashMap types
-    `union` HM.fromList
-      (concatMap fromOperation [Just query, mutation, subscription])
+isType :: TypeName -> TypeDefinition OUT s -> Maybe (TypeDefinition ANY s)
+isType name x
+  | name == typeName x = Just (toAny x)
+  | otherwise = Nothing
 
 lookupDataType :: TypeName -> Schema s -> Maybe (TypeDefinition ANY s)
-lookupDataType name = HM.lookup name . typeRegister
+lookupDataType name Schema {types, query, mutation, subscription} =
+  isType name query
+    <|> (mutation >>= isType name)
+    <|> (subscription >>= isType name)
+    <|> selectOr Nothing Just name types
 
 isTypeDefined :: TypeName -> Schema s -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
@@ -450,14 +449,13 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
   }
   deriving (Show, Lift)
 
-instance KeyOf (TypeDefinition a s) where
-  type KEY (TypeDefinition a s) = TypeName
+instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName
 
 instance NameCollision (TypeDefinition cat s) where
-  nameCollision typeName _ =
+  nameCollision x =
     GQLError
-      { message = "There can Be only One TypeDefinition Named " <> msg typeName <> ".",
+      { message = "There can Be only One TypeDefinition Named " <> msg (typeName x) <> ".",
         locations = []
       }
 
@@ -576,8 +574,8 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
 
-fromOperation :: Maybe (TypeDefinition OUT s) -> [(TypeName, TypeDefinition ANY s)]
-fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
+fromOperation :: Maybe (TypeDefinition OUT s) -> [TypeDefinition ANY s]
+fromOperation (Just datatype) = [toAny datatype]
 fromOperation Nothing = []
 
 safeDefineType ::
@@ -588,7 +586,7 @@ safeDefineType ::
   Schema s ->
   m (Schema s)
 safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib = do
-  types <- safeInsert unionTags (types lib) >>= safeInsert (toAny dt)
+  types <- insert unionTags (types lib) >>= insert (toAny dt)
   pure lib {types}
   where
     unionTags =
@@ -600,7 +598,7 @@ safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKey
           typeContent = mkEnumContent (fmap memberName enumKeys)
         }
 safeDefineType datatype lib = do
-  types <- safeInsert (toAny datatype) (types lib)
+  types <- insert (toAny datatype) (types lib)
   pure lib {types}
 
 insertType ::

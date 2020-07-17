@@ -37,8 +37,7 @@ import Data.Morpheus.Internal.Utils
     elems,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    GQLErrors,
+  ( GQLErrors,
     Ref,
   )
 import Data.Morpheus.Types.Internal.AST.OrdMap
@@ -81,7 +80,7 @@ concatTraverse ::
     Eq b,
     Merge a,
     Merge b,
-    KeyOf b,
+    KeyOf k b,
     Monad m,
     Failure GQLErrors m
   ) =>
@@ -94,7 +93,7 @@ concatTraverse f smap =
 
 join ::
   ( Eq a,
-    KeyOf a,
+    KeyOf k a,
     Merge a,
     Monad m,
     Failure GQLErrors m,
@@ -108,16 +107,16 @@ join = __join empty
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
-toOrdMap :: (KEY a ~ FieldName, KeyOf a) => MergeSet opt a -> OrdMap FieldName a
+toOrdMap :: (KeyOf k a) => MergeSet opt a -> OrdMap k a
 toOrdMap = OM.unsafeFromValues . unpack
 
-instance (KeyOf a, k ~ KEY a) => Selectable a (MergeSet opt a) where
+instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
 
 -- must merge files on collision
 
 instance
-  ( KeyOf a,
+  ( KeyOf k a,
     Listable a (MergeSet VALID a),
     Merge a,
     Eq a
@@ -128,7 +127,7 @@ instance
 
 instance
   ( Listable a (MergeSet VALID a),
-    KeyOf a,
+    KeyOf k a,
     Merge a,
     Eq a
   ) =>
@@ -144,17 +143,17 @@ instance Listable a (MergeSet RAW a) where
   fromElems = pure . MergeSet
   elems = unpack
 
-safeFromList :: (Monad m, KeyOf a, Eq a, Merge a, Failure GQLErrors m) => [a] -> m (MergeSet opt a)
+safeFromList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure GQLErrors m) => [a] -> m (MergeSet opt a)
 safeFromList = insertList [] empty
 
-safeJoin :: (Monad m, KeyOf a, Eq a, Listable a (MergeSet opt a), Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> MergeSet opt a -> m (MergeSet opt a)
+safeJoin :: (Monad m, KeyOf k a, Eq a, Listable a (MergeSet opt a), Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> MergeSet opt a -> m (MergeSet opt a)
 safeJoin path hm1 hm2 = insertList path hm1 (elems hm2)
 
-insertList :: (Monad m, Eq a, KeyOf a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> [a] -> m (MergeSet opt a)
+insertList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> [a] -> m (MergeSet opt a)
 insertList _ smap [] = pure smap
 insertList path smap (x : xs) = insert path smap x >>= flip (insertList path) xs
 
-insert :: (Monad m, Eq a, KeyOf a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> a -> m (MergeSet opt a)
+insert :: (Monad m, Eq a, KeyOf k a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> a -> m (MergeSet opt a)
 insert path mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
   where
     __insert =
