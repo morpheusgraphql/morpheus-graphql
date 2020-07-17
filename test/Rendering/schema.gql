@@ -19,11 +19,11 @@ type User {
   friend(id: ID!, cityID: TestEnum): User!
 }
 
+union TestUnion = User | Address
+
+scalar TestScalar
+
 type Query {
   user: User!
   testUnion: TestUnion
 }
-
-union TestUnion = User | Address
-
-scalar TestScalar

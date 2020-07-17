@@ -56,15 +56,11 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative (..))
+import Control.Applicative ((<|>), Applicative (..))
 import Control.Monad (Monad (..), foldM)
 import Data.Either (Either (..))
 import Data.Foldable (concatMap)
 import Data.Functor ((<$>), fmap)
-import Data.HashMap.Lazy
-  ( HashMap,
-    union,
-  )
 import qualified Data.HashMap.Lazy as HM
 import Data.List (filter, find, notElem)
 import Data.Maybe (Maybe (..), catMaybes, maybe)
@@ -325,7 +321,9 @@ instance Selectable TypeName (TypeDefinition ANY s) (Schema s) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
 instance Listable (TypeDefinition ANY s) (Schema s) where
-  elems = HM.elems . typeRegister
+  elems Schema {..} =
+    elems types
+      <> concatMap fromOperation [Just query, mutation, subscription]
   fromElems types =
     traverse3
       (popByKey types)
@@ -419,14 +417,17 @@ initTypeLib query =
       directiveDefinitions = empty
     }
 
-typeRegister :: Schema s -> HashMap TypeName (TypeDefinition ANY s)
-typeRegister Schema {types, query, mutation, subscription} =
-  toHashMap types
-    `union` HM.fromList
-      (concatMap fromOperation [Just query, mutation, subscription])
+isType :: TypeName -> TypeDefinition OUT s -> Maybe (TypeDefinition ANY s)
+isType name x
+  | name == typeName x = Just (toAny x)
+  | otherwise = Nothing
 
 lookupDataType :: TypeName -> Schema s -> Maybe (TypeDefinition ANY s)
-lookupDataType name = HM.lookup name . typeRegister
+lookupDataType name Schema {types, query, mutation, subscription} =
+  isType name query
+    <|> (mutation >>= isType name)
+    <|> (subscription >>= isType name)
+    <|> HM.lookup name (toHashMap types)
 
 isTypeDefined :: TypeName -> Schema s -> Maybe DataFingerprint
 isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
@@ -575,8 +576,8 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
 
-fromOperation :: Maybe (TypeDefinition OUT s) -> [(TypeName, TypeDefinition ANY s)]
-fromOperation (Just datatype) = [(typeName datatype, toAny datatype)]
+fromOperation :: Maybe (TypeDefinition OUT s) -> [TypeDefinition ANY s]
+fromOperation (Just datatype) = [toAny datatype]
 fromOperation Nothing = []
 
 safeDefineType ::
