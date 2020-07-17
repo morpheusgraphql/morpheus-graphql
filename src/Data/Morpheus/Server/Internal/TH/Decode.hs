@@ -76,7 +76,7 @@ withInputUnion ::
 withInputUnion decoder unions =
   selectBy
     ("__typename not found on Input Union" :: InternalError)
-    "__typename"
+    ("__typename" :: FieldName)
     unions
     >>= providesValueFor . entryValue
   where

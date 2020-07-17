@@ -148,8 +148,7 @@ elems = HM.elems . unpackStore
 toList :: ClientConnectionStore e m -> [(UUID, ClientConnection e m)]
 toList = HM.toList . unpackStore
 
-instance KeyOf (ClientConnection e m) where
-  type KEY (ClientConnection e m) = ID
+instance KeyOf UUID (ClientConnection e m) where
   keyOf = connectionId
 
 instance Collection (ClientConnection e m) (ClientConnectionStore e m) where
