@@ -167,6 +167,9 @@ data UnionTag = UnionTag
   }
   deriving (Show, Eq, Lift)
 
+instance KeyOf TypeName UnionTag where
+  keyOf = unionTagName
+
 instance RenderGQL UnionTag where
   render UnionTag {unionTagName, unionTagSelection} =
     "... on "
@@ -195,9 +198,6 @@ mergeConflict refs@(rootField : xs) err =
 instance Merge UnionTag where
   merge path (UnionTag oldTag oldSel) (UnionTag _ currentSel) =
     UnionTag oldTag <$> merge path oldSel currentSel
-
-instance KeyOf TypeName UnionTag where
-  keyOf = unionTagName
 
 type UnionSelection (s :: Stage) = MergeSet s UnionTag
 

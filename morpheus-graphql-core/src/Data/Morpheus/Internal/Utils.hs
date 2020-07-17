@@ -192,7 +192,7 @@ toPair x = (keyOf x, x)
 -- list Like Collections
 class Listable a coll | coll -> a where
   elems :: coll -> [a]
-  fromElems :: (KeyOf k a, Monad m, Failure GQLErrors m) => [a] -> m coll
+  fromElems :: (Monad m, Failure GQLErrors m) => [a] -> m coll
 
 keys :: (KeyOf k a, Listable a coll) => coll -> [k]
 keys = fmap keyOf . elems
