@@ -30,7 +30,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     ResModel (..),
     FieldResModel,
     WithOperation,
-    Context (..),
+    ResolverContext (..),
     unsafeInternalContext,
     runRootResModel,
     RootResModel (..),
@@ -107,7 +107,7 @@ import Data.Morpheus.Types.Internal.Resolving.Event
     Event (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
-  ( Context (..),
+  ( ResolverContext (..),
     ResolverState,
     ResolverStateT (..),
     clearStateResolverEvents,
@@ -218,17 +218,17 @@ instance (Monad m) => PushEvents e (Resolver MUTATION e m) where
 instance (Monad m, Semigroup a, LiftOperation o) => Semigroup (Resolver o e m a) where
   x <> y = fmap (<>) x <*> y
 
-instance (LiftOperation o, Monad m) => MonadReader Context (Resolver o e m) where
+instance (LiftOperation o, Monad m) => MonadReader ResolverContext (Resolver o e m) where
   ask = packResolver ask
   local f (ResolverQ res) = ResolverQ (local f res)
   local f (ResolverM res) = ResolverM (local f res)
   local f (ResolverS resM) = ResolverS $ mapReaderT (local f) <$> resM
 
--- | A function to return the internal 'Context' within a resolver's monad.
--- Using the 'Context' itself is unsafe because it expposes internal structures
+-- | A function to return the internal 'ResolverContext' within a resolver's monad.
+-- Using the 'ResolverContext' itself is unsafe because it expposes internal structures
 -- of the AST, but you can use the "Data.Morpheus.Types.SelectionTree" typeclass to manipulate
 -- the internal AST with a safe interface.
-unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m Context
+unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m ResolverContext
 unsafeInternalContext = ask
 
 liftResolverState :: (LiftOperation o, Monad m) => ResolverState a -> Resolver o e m a
@@ -352,7 +352,7 @@ runResolver ::
   Monad m =>
   Maybe (Selection VALID -> ResolverState (Channel event)) ->
   Resolver o event m ValidValue ->
-  Context ->
+  ResolverContext ->
   ResponseStream event m ValidValue
 runResolver _ (ResolverQ resT) sel = cleanEvents $ runResolverStateT resT sel
 runResolver _ (ResolverM resT) sel = mapEvent Publish $ runResolverStateT resT sel
@@ -367,22 +367,21 @@ runResolver toChannel (ResolverS resT) ctx = ResultT $ do
           result = gqlNull
         }
 
-toEventResolver :: Monad m => Context -> SubEventRes event m ValidValue -> (event -> m GQLResponse)
+toEventResolver :: Monad m => ResolverContext -> SubEventRes event m ValidValue -> (event -> m GQLResponse)
 toEventResolver sel (ReaderT subRes) event = renderResponse <$> runResolverStateM (subRes event) sel
 
 subscriptionEvents ::
-  Context ->
+  ResolverContext ->
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
   (e -> m GQLResponse) ->
   Eventless (ResponseEvent e m)
-subscriptionEvents ctx@Context {currentSelection} (Just channelGenerator) res =
+subscriptionEvents ctx@ResolverContext {currentSelection} (Just channelGenerator) res =
   runResolverState handle ctx
   where
     handle = do
       channel <- channelGenerator currentSelection
       pure $ Subscribe (Event [channel] res)
-subscriptionEvents Context {currentSelection} Nothing _ =
-  failure [resolverFailureMessage currentSelection "channel Resolver is not defined"]
+subscriptionEvents ctx Nothing _ = failure [resolverFailureMessage ctx "channel Resolver is not defined"]
 
 -- Resolver Models -------------------------------------------------------------------
 type FieldResModel o e m =
@@ -424,17 +423,17 @@ runRootDataResolver ::
   (Monad m, LiftOperation o) =>
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
   ResolverState (ResModel o e m) ->
-  Context ->
+  ResolverContext ->
   ResponseStream e m (Value VALID)
 runRootDataResolver
   channels
   res
-  ctx@Context {operation = Operation {operationSelection}} =
+  ctx@ResolverContext {operation = Operation {operationSelection}} =
     do
       root <- runResolverStateT (toResolverStateT res) ctx
       runResolver channels (resolveObject operationSelection root) ctx
 
-runRootResModel :: Monad m => RootResModel e m -> Context -> ResponseStream e m (Value VALID)
+runRootResModel :: Monad m => RootResModel e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResModel
   RootResModel
     { query,
@@ -442,7 +441,7 @@ runRootResModel
       subscription,
       channelMap
     }
-  ctx@Context {operation = Operation {operationType}} =
+  ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType
     where
       selectByOperation Query =
