@@ -31,7 +31,7 @@ module Data.Morpheus.Types
     publish,
     subscribe,
     unsafeInternalContext,
-    Context (..),
+    ResolverContext (..),
     Input,
     Stream,
     WS,
@@ -90,11 +90,11 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Context (..),
-    Event (..),
+  ( Event (..),
     Failure,
     PushEvents (..),
     Resolver,
+    ResolverContext (..),
     SubscriptionField,
     WithOperation,
     failure,
