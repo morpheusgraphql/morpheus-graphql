@@ -69,6 +69,7 @@ import Data.Semigroup
 import Prelude
   ( ($),
     (.),
+    Bool (..),
     Int,
     Show (..),
     id,
@@ -152,13 +153,18 @@ clearStateResolverEvents = mapResolverState cleanEvents
 
 resolverFailureMessage :: ResolverContext -> Message -> GQLError
 resolverFailureMessage
-  ResolverContext
+  ctx@ResolverContext
     { currentSelection =
         Selection {selectionName, selectionPosition}
     }
   message =
     GQLError
-      { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
+      { message =
+          "Failure on Resolving Field "
+            <> msg selectionName
+            <> ": "
+            <> message
+            <> withInternalContext ctx,
         locations = [selectionPosition]
       }
 
@@ -168,6 +174,10 @@ renderInternalResolverError ctx@ResolverContext {currentSelection} message =
     { message = msg message <> ". " <> renderContext ctx,
       locations = [selectionPosition currentSelection]
     }
+
+withInternalContext :: ResolverContext -> Message
+withInternalContext ResolverContext {config = Config {debug = False}} = ""
+withInternalContext resCTX = renderContext resCTX
 
 renderContext :: ResolverContext -> Message
 renderContext
