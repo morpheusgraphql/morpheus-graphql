@@ -83,7 +83,7 @@ runApi ::
   GQLRequest ->
   ResponseStream event m (Value VALID)
 runApi inputSchema resModel request = do
-  let config = Config {debug = True}
+  let config = Config {debug = False}
   validRequest <- validateReq config inputSchema request
   resovers <- withSystemFields (schema validRequest) resModel
   runRootResModel resovers validRequest
