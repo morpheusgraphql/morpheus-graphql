@@ -56,8 +56,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
-  ( Context (..),
-    Eventless,
+  ( Eventless,
+    ResolverContext (..),
     ResponseStream,
     ResultT (..),
     RootResModel,
@@ -95,13 +95,13 @@ validateReq ::
   Config ->
   Schema s ->
   GQLRequest ->
-  ResponseStream event m Context
+  ResponseStream event m ResolverContext
 validateReq config inputSchema request = cleanEvents $ ResultT $ pure $ do
   validSchema <- validateSchema True inputSchema
   schema <- internalSchema <:> validSchema
   operation <- parseRequestWith schema request
   pure $
-    Context
+    ResolverContext
       { schema,
         config,
         operation,
