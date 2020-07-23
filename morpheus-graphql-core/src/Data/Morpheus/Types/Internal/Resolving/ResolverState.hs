@@ -110,8 +110,8 @@ instance MonadTrans (ResolverStateT e) where
 
 instance (Monad m) => Failure Message (ResolverStateT e m) where
   failure message = do
-    selection <- asks currentSelection
-    failure [resolverFailureMessage selection message]
+    cxt <- asks id
+    failure [resolverFailureMessage cxt message]
 
 instance (Monad m) => Failure InternalError (ResolverStateT e m) where
   failure message = do
@@ -150,12 +150,17 @@ injectResult (ResultT (Identity x)) =
 clearStateResolverEvents :: (Functor m) => ResolverStateT e m a -> ResolverStateT e' m a
 clearStateResolverEvents = mapResolverState cleanEvents
 
-resolverFailureMessage :: Selection VALID -> Message -> GQLError
-resolverFailureMessage Selection {selectionName, selectionPosition} message =
-  GQLError
-    { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
-      locations = [selectionPosition]
+resolverFailureMessage :: ResolverContext -> Message -> GQLError
+resolverFailureMessage
+  ResolverContext
+    { currentSelection =
+        Selection {selectionName, selectionPosition}
     }
+  message =
+    GQLError
+      { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
+        locations = [selectionPosition]
+      }
 
 renderInternalResolverError :: ResolverContext -> InternalError -> GQLError
 renderInternalResolverError ctx@ResolverContext {currentSelection} message =
