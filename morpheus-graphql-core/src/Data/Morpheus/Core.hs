@@ -82,13 +82,13 @@ runApi ::
   GQLRequest ->
   ResponseStream event m (Value VALID)
 runApi inputSchema resModel request = do
-  ctx <- validRequest
-  model <- withSystemFields (schema ctx) resModel
-  runRootResModel model ctx
+  validRequest <- validateReq
+  resovers <- withSystemFields (schema validRequest) resModel
+  runRootResModel resovers validRequest
   where
-    validRequest ::
+    validateReq ::
       Monad m => ResponseStream event m Context
-    validRequest = cleanEvents $ ResultT $ pure $ do
+    validateReq = cleanEvents $ ResultT $ pure $ do
       validSchema <- validateSchema True inputSchema
       schema <- internalSchema <:> validSchema
       operation <- parseRequestWith schema request
