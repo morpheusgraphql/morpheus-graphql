@@ -82,31 +82,36 @@ runApi ::
   GQLRequest ->
   ResponseStream event m (Value VALID)
 runApi inputSchema resModel request = do
-  validRequest <- validateReq
+  validRequest <- validateReq inputSchema request
   resovers <- withSystemFields (schema validRequest) resModel
   runRootResModel resovers validRequest
-  where
-    validateReq ::
-      Monad m => ResponseStream event m Context
-    validateReq = cleanEvents $ ResultT $ pure $ do
-      validSchema <- validateSchema True inputSchema
-      schema <- internalSchema <:> validSchema
-      operation <- parseRequestWith schema request
-      pure $
-        Context
-          { schema,
-            operation,
-            currentTypeName = "Root",
-            currentSelection =
-              Selection
-                { selectionName = "Root",
-                  selectionArguments = empty,
-                  selectionPosition = operationPosition operation,
-                  selectionAlias = Nothing,
-                  selectionContent = SelectionSet (operationSelection operation),
-                  selectionDirectives = []
-                }
-          }
+
+validateReq ::
+  ( Monad m,
+    ValidateSchema s
+  ) =>
+  Schema s ->
+  GQLRequest ->
+  ResponseStream event m Context
+validateReq inputSchema request = cleanEvents $ ResultT $ pure $ do
+  validSchema <- validateSchema True inputSchema
+  schema <- internalSchema <:> validSchema
+  operation <- parseRequestWith schema request
+  pure $
+    Context
+      { schema,
+        operation,
+        currentTypeName = "Root",
+        currentSelection =
+          Selection
+            { selectionName = "Root",
+              selectionArguments = empty,
+              selectionPosition = operationPosition operation,
+              selectionAlias = Nothing,
+              selectionContent = SelectionSet (operationSelection operation),
+              selectionDirectives = []
+            }
+      }
 
 parseDSL :: ByteString -> Either String (Schema VALID)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument
