@@ -103,6 +103,7 @@ validateReq config inputSchema request = cleanEvents $ ResultT $ pure $ do
   pure $
     Context
       { schema,
+        config,
         operation,
         currentTypeName = "Root",
         currentSelection =

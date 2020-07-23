@@ -54,6 +54,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     msg,
   )
+import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
     Failure (..),
@@ -77,7 +78,8 @@ data Context = Context
   { currentSelection :: Selection VALID,
     schema :: Schema VALID,
     operation :: Operation VALID,
-    currentTypeName :: TypeName
+    currentTypeName :: TypeName,
+    config :: Config
   }
   deriving (Show)
 
