@@ -63,6 +63,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Position,
     Ref (..),
     TypeName (..),
+    ValidationError,
     intercalateName,
     msg,
     readName,
@@ -336,7 +337,7 @@ instance RenderGQL (Operation VALID) where
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)
 
-getOperationDataType :: Failure GQLErrors m => Operation s -> Schema VALID -> m (TypeDefinition OUT VALID)
+getOperationDataType :: Failure ValidationError m => Operation s -> Schema VALID -> m (TypeDefinition OUT VALID)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)
 getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
   maybe (failure $ mutationIsNotDefined operationPosition) pure (mutation lib)

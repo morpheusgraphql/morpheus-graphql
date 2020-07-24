@@ -78,6 +78,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     FieldsDefinition,
     Fragments,
+    GQLError (..),
     GQLErrors,
     IN,
     InternalError,
@@ -94,6 +95,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper,
     VALID,
+    ValidationError (..),
     Variable (..),
     VariableDefinitions,
     intercalateName,
@@ -455,8 +457,14 @@ instance SetWith (OperationContext v) CurrentSelection where
         ..
       }
 
-instance Failure GQLErrors (Validator s ctx) where
-  failure = Validator . lift . failure
+instance Failure [ValidationError] (Validator s ctx) where
+  failure = failValidator . fmap toGQLError
+
+failValidator :: GQLErrors -> Validator s ctx a
+failValidator = Validator . lift . failure
+
+toGQLError :: ValidationError -> GQLError
+toGQLError (ValidationError message pos) = GQLError message pos
 
 -- can be only used for internal errors
 instance
@@ -465,7 +473,7 @@ instance
   where
   failure inputMessage = do
     ctx <- Validator ask
-    failure
+    failValidator
       ( renderErrorMessage
           (position $ scope ctx)
           $ msg

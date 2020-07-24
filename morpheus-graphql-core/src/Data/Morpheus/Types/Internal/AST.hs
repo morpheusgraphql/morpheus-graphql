@@ -151,11 +151,13 @@ module Data.Morpheus.Types.Internal.AST
     SchemaDefinition (..),
     buildSchema,
     InternalError (..),
+    ValidationError (..),
     msgInternal,
     getOperationDataType,
     Typed (Typed),
     typed,
     untyped,
+    msgValidation,
   )
 where
 

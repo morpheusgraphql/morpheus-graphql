@@ -7,16 +7,19 @@ module Data.Morpheus.Error.Operation
   )
 where
 
-import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
-    Position,
+  ( Position,
+    ValidationError (..),
   )
 
-mutationIsNotDefined :: Position -> GQLErrors
+mutationIsNotDefined :: Position -> ValidationError
 mutationIsNotDefined position =
-  errorMessage position "Schema is not configured for mutations."
+  ValidationError
+    "Schema is not configured for mutations."
+    [position]
 
-subscriptionIsNotDefined :: Position -> GQLErrors
+subscriptionIsNotDefined :: Position -> ValidationError
 subscriptionIsNotDefined position =
-  errorMessage position "Schema is not configured for subscriptions."
+  ValidationError
+    "Schema is not configured for subscriptions."
+    [position]

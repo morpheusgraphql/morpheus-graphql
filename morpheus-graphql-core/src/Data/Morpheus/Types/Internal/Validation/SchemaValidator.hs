@@ -44,7 +44,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    ValidationError,
     msg,
+    msgValidation,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( Validator (..),
@@ -117,4 +119,4 @@ constraintInterface
       typeContent = DataInterface fields
     } = pure (typeName, fields)
 constraintInterface TypeDefinition {typeName} =
-  failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
+  failure ["type " <> msgValidation typeName <> " must be an interface" :: ValidationError]
