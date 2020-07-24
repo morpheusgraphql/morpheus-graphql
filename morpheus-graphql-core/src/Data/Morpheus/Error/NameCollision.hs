@@ -6,8 +6,8 @@ module Data.Morpheus.Error.NameCollision
 where
 
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLError (..),
+  ( ValidationError,
   )
 
 class NameCollision a where
-  nameCollision :: a -> GQLError
+  nameCollision :: a -> ValidationError
