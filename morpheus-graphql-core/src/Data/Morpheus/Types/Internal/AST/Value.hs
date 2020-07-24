@@ -64,12 +64,13 @@ import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
-    GQLError (..),
     Msg (..),
     Position,
     Ref (..),
     TypeName (..),
     TypeRef,
+    ValidationError (..),
+    msgValidation,
   )
 import Data.Morpheus.Types.Internal.AST.OrdMap
   ( OrdMap,
@@ -170,9 +171,9 @@ instance KeyOf FieldName (Variable s) where
 
 instance NameCollision (Variable s) where
   nameCollision Variable {variableName, variablePosition} =
-    GQLError
-      { message = "There can Be only One Variable Named " <> msg variableName,
-        locations = [variablePosition]
+    ValidationError
+      { validationMessage = "There can Be only One Variable Named " <> msg variableName,
+        validationLocations = [variablePosition]
       }
 
 type VariableDefinitions s = OrdMap FieldName (Variable s)
@@ -201,10 +202,7 @@ instance RenderGQL (ObjectEntry a) where
 
 instance NameCollision (ObjectEntry s) where
   nameCollision ObjectEntry {entryName} =
-    GQLError
-      { message = "There can Be only One field Named " <> msg entryName,
-        locations = []
-      }
+    "There can Be only One field Named " <> msgValidation entryName :: ValidationError
 
 instance KeyOf FieldName (ObjectEntry s) where
   keyOf = entryName
@@ -228,11 +226,9 @@ deriving instance Lift (Value a)
 deriving instance Lift (ObjectEntry a)
 
 instance RenderGQL (Value a) where
-  -- TODO: fix
   render (ResolvedVariable Ref {refName} _) =
     "$" <> readName refName
   render (VariableValue Ref {refName}) = "$" <> readName refName <> " "
-  -- TODO: fix
   render Null = "null"
   render (Enum x) = readTypeName x
   render (Scalar x) = render x

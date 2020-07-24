@@ -3,27 +3,23 @@
 
 module Data.Morpheus.Error.Schema
   ( nameCollisionError,
-    schemaValidationError,
   )
 where
 
-import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
-    Message,
-    TypeName,
-    msg,
+  ( TypeName,
+    ValidationError,
+    msgValidation,
   )
 import Data.Semigroup ((<>))
 import Prelude (($))
 
-schemaValidationError :: Message -> GQLErrors
-schemaValidationError error' =
-  globalErrorMessage $ "Schema Validation Error, " <> error'
+schemaValidationError :: ValidationError -> ValidationError
+schemaValidationError error = "Schema Validation Error, " <> error
 
-nameCollisionError :: TypeName -> GQLErrors
+nameCollisionError :: TypeName -> ValidationError
 nameCollisionError typeName =
   schemaValidationError $
     "Name collision: "
-      <> msg typeName
+      <> msgValidation typeName
       <> " is used for different dataTypes in two separate modules"

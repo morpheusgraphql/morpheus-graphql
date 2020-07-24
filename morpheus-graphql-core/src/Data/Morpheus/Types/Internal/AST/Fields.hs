@@ -69,7 +69,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
     FieldName,
     FieldName (..),
-    GQLError (..),
     Msg (..),
     Nullable (..),
     Position,
@@ -77,7 +76,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeName,
     TypeRef (..),
     TypeWrapper (..),
-    msg,
+    ValidationError (..),
+    msgValidation,
     sysFields,
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
@@ -131,9 +131,9 @@ instance RenderGQL (Argument s) where
 
 instance NameCollision (Argument s) where
   nameCollision Argument {argumentName, argumentPosition} =
-    GQLError
-      { message = "There can Be only One Argument Named " <> msg argumentName,
-        locations = [argumentPosition]
+    ValidationError
+      { validationMessage = "There can Be only One Argument Named " <> msg argumentName,
+        validationLocations = [argumentPosition]
       }
 
 type Arguments (s :: Stage) = OrdMap FieldName (Argument s)
@@ -279,10 +279,7 @@ instance Selectable FieldName (ArgumentDefinition s) (FieldDefinition OUT s) whe
 
 instance NameCollision (FieldDefinition cat s) where
   nameCollision FieldDefinition {fieldName} =
-    GQLError
-      { message = "There can Be only One field Named " <> msg fieldName,
-        locations = []
-      }
+    "There can Be only One field Named " <> msgValidation fieldName
 
 instance RenderGQL (FieldDefinition cat s) where
   render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = Just (FieldArgs args)} =
