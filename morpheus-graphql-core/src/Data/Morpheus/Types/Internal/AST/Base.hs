@@ -62,6 +62,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     msgInternal,
     ValidationError (..),
     msgValidation,
+    ValidationErrors,
   )
 where
 
@@ -151,6 +152,8 @@ instance IsString ValidationError where
 instance Semigroup ValidationError where
   ValidationError m1 p1 <> ValidationError m2 p2 =
     ValidationError (m1 <> m2) (p1 <> p2)
+
+type ValidationErrors = [ValidationError]
 
 -- instance Lift InternalError where
 --   lift = liftString . readInternalError

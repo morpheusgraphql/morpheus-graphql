@@ -20,7 +20,7 @@ import Data.Functor ((<$>), fmap)
 import Data.List (any, elem)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
-import Data.Morpheus.Error.Utils (renderErrorMessage)
+import Data.Morpheus.Error.Utils (validationErrorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -109,7 +109,7 @@ violation message value = do
     asksScope id
   prefix <- inputMessagePrefix
   failure
-    $ renderErrorMessage position
+    $ validationErrorMessage position
     $ prefix
       <> typeViolation
         (TypeRef currentTypeName Nothing currentTypeWrappers)

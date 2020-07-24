@@ -59,6 +59,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Token,
     TypeName (..),
     TypeNameRef (..),
+    ValidationError,
   )
 import Data.Semigroup (Semigroup (..))
 import qualified Data.Text as T
@@ -148,7 +149,8 @@ ordTraverse ::
     Failure GQLErrors f,
     KeyOf k b,
     Listable a (t a),
-    Listable b (t b)
+    Listable b (t b),
+    Failure ValidationError f
   ) =>
   (a -> f b) ->
   t a ->
@@ -160,7 +162,7 @@ traverseCollection ::
     KeyOf k b,
     Listable a (t a),
     Listable b (t' b),
-    Failure GQLErrors f
+    Failure ValidationError f
   ) =>
   (a -> f b) ->
   t a ->
@@ -169,8 +171,7 @@ traverseCollection f a = fromElems =<< traverse f (elems a)
 
 ordTraverse_ ::
   ( Monad f,
-    Listable a (t a),
-    Failure GQLErrors f
+    Listable a (t a)
   ) =>
   (a -> f b) ->
   t a ->
@@ -195,7 +196,7 @@ toPair x = (keyOf x, x)
 -- list Like Collections
 class Listable a coll | coll -> a where
   elems :: coll -> [a]
-  fromElems :: (Monad m, Failure GQLErrors m) => [a] -> m coll
+  fromElems :: (Monad m, Failure ValidationError m) => [a] -> m coll
 
 instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
   fromElems = safeFromList
@@ -209,12 +210,12 @@ size = length . elems
 
 -- Merge Object with of Failure as an Option
 class Merge a where
-  merge :: (Monad m, Failure GQLErrors m) => [Ref] -> a -> a -> m a
+  merge :: (Monad m, Failure ValidationError m) => [Ref] -> a -> a -> m a
 
 instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
   merge _ = safeJoin
 
-(<:>) :: (Monad m, Merge a, Failure GQLErrors m) => a -> a -> m a
+(<:>) :: (Monad m, Merge a, Failure ValidationError m) => a -> a -> m a
 (<:>) = merge []
 
 class SemigroupM m a where
@@ -259,7 +260,7 @@ resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
 resolveUpdates a = foldM (&) a . fmap updateTState
 
 safeFromList ::
-  ( Failure GQLErrors m,
+  ( Failure ValidationError m,
     Applicative m,
     NameCollision a,
     Eq k,
@@ -270,11 +271,11 @@ safeFromList ::
   m (HashMap k a)
 safeFromList values = safeUnionWith HM.empty (fmap toPair values)
 
-safeJoin :: (Failure GQLErrors m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
+safeJoin :: (Failure ValidationError m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
 safeJoin hm newls = safeUnionWith hm (HM.toList newls)
 
 safeUnionWith ::
-  ( Failure GQLErrors m,
+  ( Failure ValidationError m,
     Applicative m,
     Eq k,
     Hashable k,

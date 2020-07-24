@@ -66,7 +66,6 @@ import Data.Foldable (null)
 import Data.Functor ((<$>), fmap)
 import Data.List (filter)
 import Data.Maybe (Maybe (..), fromMaybe, maybe)
-import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
@@ -92,12 +91,14 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     UnionMember (..),
+    ValidationError,
     Value (..),
     __inputname,
     entryValue,
     fromAny,
     isNullable,
     msg,
+    msgValidation,
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Validation.Error
@@ -247,7 +248,7 @@ selectType ::
 selectType name =
   askSchema >>= selectBy err name
   where
-    err = globalErrorMessage $ "Unknown Type " <> msg name <> "."
+    err = "Unknown Type " <> msgValidation name <> "." :: ValidationError
 
 selectKnown ::
   ( Selectable k a c,

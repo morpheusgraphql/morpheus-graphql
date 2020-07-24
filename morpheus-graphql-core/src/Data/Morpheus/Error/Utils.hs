@@ -6,7 +6,7 @@ module Data.Morpheus.Error.Utils
   ( errorMessage,
     globalErrorMessage,
     badRequestError,
-    renderErrorMessage,
+    validationErrorMessage,
   )
 where
 
@@ -20,12 +20,13 @@ import Data.Morpheus.Types.Internal.AST.Base
     GQLErrors,
     Message,
     Position (..),
+    ValidationError (..),
   )
 import Data.Semigroup ((<>))
 import Prelude ((.), String)
 
-renderErrorMessage :: Maybe Position -> Message -> GQLErrors
-renderErrorMessage pos message = [GQLError {message, locations = maybeToList pos}]
+validationErrorMessage :: Maybe Position -> Message -> ValidationError
+validationErrorMessage pos message = ValidationError message (maybeToList pos)
 
 errorMessage :: Position -> Message -> GQLErrors
 errorMessage position message = [GQLError {message, locations = [position]}]

@@ -19,6 +19,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     VALID,
+    ValidationError (..),
     msg,
   )
 import Data.Semigroup ((<>))
@@ -34,8 +35,8 @@ hasNoSubfields (Ref selectionName position) TypeDefinition {typeName} = errorMes
         <> msg typeName
         <> " has no subfields."
 
-unknownSelectionField :: TypeName -> Ref -> GQLErrors
-unknownSelectionField typeName Ref {refName, refPosition} = errorMessage refPosition text
+unknownSelectionField :: TypeName -> Ref -> ValidationError
+unknownSelectionField typeName Ref {refName, refPosition} = ValidationError text [refPosition]
   where
     text =
       "Cannot query field " <> msg refName

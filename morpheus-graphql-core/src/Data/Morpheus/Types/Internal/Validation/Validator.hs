@@ -57,7 +57,7 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative)
+import Control.Applicative (Applicative, pure)
 import Control.Monad (Monad)
 import Control.Monad.Reader (MonadReader (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
@@ -67,7 +67,9 @@ import Control.Monad.Trans.Reader
   )
 import Data.Functor ((<$>), Functor (..))
 import Data.Maybe (Maybe (..))
-import Data.Morpheus.Error.Utils (renderErrorMessage)
+import Data.Morpheus.Error.Utils
+  ( validationErrorMessage,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -460,6 +462,9 @@ instance SetWith (OperationContext v) CurrentSelection where
 instance Failure [ValidationError] (Validator s ctx) where
   failure = failValidator . fmap toGQLError
 
+instance Failure ValidationError (Validator s ctx) where
+  failure = failValidator . pure . toGQLError
+
 failValidator :: GQLErrors -> Validator s ctx a
 failValidator = Validator . lift . failure
 
@@ -473,8 +478,8 @@ instance
   where
   failure inputMessage = do
     ctx <- Validator ask
-    failValidator
-      ( renderErrorMessage
+    failure
+      ( validationErrorMessage
           (position $ scope ctx)
           $ msg
             inputMessage
