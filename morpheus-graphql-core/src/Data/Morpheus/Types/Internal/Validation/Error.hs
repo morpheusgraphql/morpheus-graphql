@@ -19,7 +19,6 @@ where
 -- MORPHEUS
 import Data.Maybe (maybeToList)
 import Data.Morpheus.Error.Selection (unknownSelectionField)
-import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
@@ -44,6 +43,8 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationName,
     msg,
+    msgValidation,
+    withPosition,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( CurrentSelection (..),
@@ -55,6 +56,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     renderInputPrefix,
   )
 import Data.Semigroup ((<>))
+import Prelude (($))
 
 class Unused ctx c where
   unused :: ctx -> c -> ValidationError
@@ -111,14 +113,14 @@ instance MissingRequired (Object s) (InputContext ctx) where
     ctx
     Ref {refName}
     _ =
-      ValidationError
-        { validationMessage =
-            renderInputPrefix ctx
-              <> "Undefined Field "
-              <> msg refName
-              <> ".",
-          validationLocations = maybeToList position
-        }
+      withPosition
+        position
+        ( renderInputPrefix
+            ctx
+            <> "Undefined Field "
+            <> msgValidation refName
+            <> "."
+        )
 
 instance MissingRequired (VariableDefinitions s) (OperationContext v) where
   missingRequired
@@ -170,10 +172,8 @@ instance Unknown (FieldsDefinition IN s) (ObjectEntry valueS) (InputContext ctx)
     ctx
     _
     ObjectEntry {entryName} =
-      ValidationError
-        { validationMessage = renderInputPrefix ctx <> "Unknown Field " <> msg entryName <> ".",
-          validationLocations = maybeToList position
-        }
+      withPosition position $
+        renderInputPrefix ctx <> "Unknown Field " <> msgValidation entryName <> "."
 
 instance Unknown (DirectiveDefinition s) (Argument s') ctx where
   unknown _ _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =

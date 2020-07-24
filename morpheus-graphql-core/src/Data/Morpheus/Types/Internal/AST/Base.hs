@@ -63,6 +63,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     ValidationError (..),
     msgValidation,
     ValidationErrors,
+    withPosition,
   )
 where
 
@@ -75,6 +76,7 @@ import Data.Aeson
 import Data.ByteString.Lazy.Char8 (ByteString, unpack)
 import Data.Char (toLower)
 import Data.Hashable (Hashable)
+import Data.Maybe (Maybe (..), maybeToList)
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Semigroup (Semigroup (..))
 import Data.String (IsString (..))
@@ -99,7 +101,6 @@ import Prelude
     Eq (..),
     Functor (..),
     Int,
-    Maybe (..),
     Ord (..),
     Show (..),
     String,
@@ -152,6 +153,9 @@ instance IsString ValidationError where
 instance Semigroup ValidationError where
   ValidationError m1 p1 <> ValidationError m2 p2 =
     ValidationError (m1 <> m2) (p1 <> p2)
+
+withPosition :: Maybe Position -> ValidationError -> ValidationError
+withPosition pos (ValidationError m ps) = ValidationError m (ps <> maybeToList pos)
 
 type ValidationErrors = [ValidationError]
 

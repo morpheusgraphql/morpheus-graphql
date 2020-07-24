@@ -51,9 +51,12 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     VALID,
+    ValidationError (..),
     isEntNode,
     msg,
+    msgValidation,
     typed,
+    withPosition,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
@@ -102,17 +105,14 @@ singleTopLevelSelection Operation {operationType = Subscription, operationName} 
     _ -> pure ()
 singleTopLevelSelection _ _ = pure ()
 
-singleTopLevelSelectionError :: Maybe FieldName -> Selection VALID -> GQLError
+singleTopLevelSelectionError :: Maybe FieldName -> Selection VALID -> ValidationError
 singleTopLevelSelectionError name Selection {selectionPosition} =
-  GQLError
-    { message =
-        subscriptionName
-          <> " must select "
-          <> "only one top level field.",
-      locations = [selectionPosition]
-    }
+  withPosition (Just selectionPosition) $
+    subscriptionName
+      <> " must select "
+      <> "only one top level field."
   where
-    subscriptionName = maybe "Anonymous Subscription" (("Subscription " <>) . msg) name
+    subscriptionName = maybe "Anonymous Subscription" (("Subscription " <>) . msgValidation) name
 
 validateOperation ::
   Operation RAW ->

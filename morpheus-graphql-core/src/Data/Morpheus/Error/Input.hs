@@ -7,19 +7,19 @@ module Data.Morpheus.Error.Input
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( Message,
-    TypeRef (..),
+  ( TypeRef (..),
+    ValidationError,
     Value,
-    msg,
+    msgValidation,
   )
 import Data.Semigroup ((<>))
 
-typeViolation :: TypeRef -> Value s -> Message
+typeViolation :: TypeRef -> Value s -> ValidationError
 typeViolation expected found =
   "Expected type "
-    <> msg expected
+    <> msgValidation expected
     <> " found "
-    <> msg found
+    <> msgValidation found
     <> "."
 
 {-

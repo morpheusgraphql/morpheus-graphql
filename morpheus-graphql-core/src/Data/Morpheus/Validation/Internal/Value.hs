@@ -20,7 +20,6 @@ import Data.Functor ((<$>), fmap)
 import Data.List (any, elem)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
-import Data.Morpheus.Error.Utils (validationErrorMessage)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -57,9 +56,11 @@ import Data.Morpheus.Types.Internal.AST
     isNullable,
     isWeaker,
     msg,
+    msgValidation,
     toFieldName,
     typed,
     untyped,
+    withPosition,
   )
 import Data.Morpheus.Types.Internal.AST.OrdMap
   ( unsafeFromValues,
@@ -109,12 +110,12 @@ violation message value = do
     asksScope id
   prefix <- inputMessagePrefix
   failure
-    $ validationErrorMessage position
+    $ withPosition position
     $ prefix
       <> typeViolation
         (TypeRef currentTypeName Nothing currentTypeWrappers)
         value
-      <> maybe "" (" " <>) message
+      <> maybe "" ((" " <>) . msgValidation) message
 
 checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->

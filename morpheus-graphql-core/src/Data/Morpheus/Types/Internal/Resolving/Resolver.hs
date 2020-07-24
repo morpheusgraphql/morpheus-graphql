@@ -282,7 +282,8 @@ withObject ::
 withObject f Selection {selectionName, selectionContent, selectionPosition} = checkContent selectionContent
   where
     checkContent (SelectionSet selection) = f selection
-    checkContent _ = failure (subfieldsNotSelected selectionName "" selectionPosition)
+
+-- checkContent _ = failure (subfieldsNotSelected selectionName "" selectionPosition)
 
 lookupRes ::
   (LiftOperation o, Monad m) =>
