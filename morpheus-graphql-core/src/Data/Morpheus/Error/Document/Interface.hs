@@ -12,14 +12,12 @@ module Data.Morpheus.Error.Document.Interface
 where
 
 import Data.Maybe (Maybe (..))
-import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName (..),
-    GQLError (..),
-    GQLErrors,
     TypeName (..),
     TypeRef,
-    msg,
+    ValidationError,
+    msgValidation,
   )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Field (..),
@@ -28,10 +26,8 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   )
 import Data.Semigroup ((<>))
 
-unknownInterface :: TypeName -> GQLErrors
-unknownInterface name = globalErrorMessage message
-  where
-    message = "Unknown Interface " <> msg name <> "."
+unknownInterface :: TypeName -> ValidationError
+unknownInterface name = "Unknown Interface " <> msgValidation name <> "."
 
 data ImplementsError
   = UnexpectedType
@@ -47,31 +43,25 @@ data Place = Place
   }
 
 class PartialImplements ctx where
-  partialImplements :: ctx -> ImplementsError -> GQLErrors
+  partialImplements :: ctx -> ImplementsError -> ValidationError
 
 instance PartialImplements (Interface, FieldName) where
   partialImplements (Interface interfaceName typename, fieldname) errorType =
-    [ GQLError
-        { message = message,
-          locations = []
-        }
-    ]
+    "Interface field "
+      <> renderField interfaceName fieldname Nothing
+      <> detailedMessage errorType
     where
-      message =
-        "Interface field "
-          <> renderField interfaceName fieldname Nothing
-          <> detailedMessage errorType
       detailedMessage UnexpectedType {expectedType, foundType} =
         " expects type "
-          <> msg expectedType
+          <> msgValidation expectedType
           <> " but "
           <> renderField typename fieldname Nothing
           <> " is type "
-          <> msg foundType
+          <> msgValidation foundType
           <> "."
       detailedMessage Missing =
         " expected but "
-          <> msg typename
+          <> msgValidation typename
           <> " does not provide it."
 
 -- Interface field TestInterface.name expected but User does not provide it.
@@ -79,24 +69,17 @@ instance PartialImplements (Interface, FieldName) where
 
 instance PartialImplements (Interface, Field) where
   partialImplements (Interface interfaceName typename, Field fieldname argName) errorType =
-    [ GQLError
-        { message = message,
-          locations = []
-        }
-    ]
+    "Interface field argument "
+      <> renderField interfaceName fieldname (Just argName)
+      <> detailedMessage errorType
     where
-      --
-      message =
-        "Interface field argument "
-          <> renderField interfaceName fieldname (Just argName)
-          <> detailedMessage errorType
       detailedMessage UnexpectedType {expectedType, foundType} =
         " expects type"
-          <> msg expectedType
+          <> msgValidation expectedType
           <> " but "
           <> renderField typename fieldname (Just argName)
           <> " is type "
-          <> msg foundType
+          <> msgValidation foundType
           <> "."
       detailedMessage Missing =
         " expected but "

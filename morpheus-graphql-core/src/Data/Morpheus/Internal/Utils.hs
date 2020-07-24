@@ -54,7 +54,6 @@ import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
-    GQLErrors,
     Ref (..),
     Token,
     TypeName (..),
@@ -146,7 +145,6 @@ member = selectOr False toTrue
 
 ordTraverse ::
   ( Monad f,
-    Failure GQLErrors f,
     KeyOf k b,
     Listable a (t a),
     Listable b (t b),

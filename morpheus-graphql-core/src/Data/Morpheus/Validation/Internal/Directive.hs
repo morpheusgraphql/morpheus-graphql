@@ -22,7 +22,9 @@ import Control.Applicative ((*>), pure)
 import Control.Monad ((>>=))
 import Data.Functor ((<$>))
 import Data.List (elem)
-import Data.Morpheus.Error (errorMessage)
+import Data.Morpheus.Error.Utils
+  ( validationErrorMessage,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectOr,
@@ -59,6 +61,7 @@ import Prelude
     (&&),
     (==),
     Bool (..),
+    Maybe (..),
     otherwise,
   )
 
@@ -95,8 +98,8 @@ validateDirectiveLocation
     | loc `elem` directiveDefinitionLocations = pure ()
     | otherwise =
       failure $
-        errorMessage
-          directivePosition
+        validationErrorMessage
+          (Just directivePosition)
           ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
 
 directiveFulfilled ::
@@ -129,5 +132,6 @@ assertArgument ::
 assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
 assertArgument _ Argument {argumentValue, argumentPosition} =
   failure
-    $ errorMessage argumentPosition
+    $ validationErrorMessage
+      (Just argumentPosition)
     $ "Expected type Boolean!, found " <> msg argumentValue <> "."

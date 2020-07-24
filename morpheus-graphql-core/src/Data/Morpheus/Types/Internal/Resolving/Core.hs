@@ -29,6 +29,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
+    ValidationError (..),
   )
 import Data.Semigroup ((<>))
 import Prelude
@@ -71,6 +72,8 @@ instance Monad (Result e) where
 
 instance Failure [GQLError] (Result ev) where
   failure = Failure
+
+instance Failure [ValidationError] (Result ev)
 
 instance PushEvents events (Result events) where
   pushEvents events = Success {result = (), warnings = [], events}

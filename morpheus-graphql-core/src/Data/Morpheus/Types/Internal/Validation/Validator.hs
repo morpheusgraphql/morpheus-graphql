@@ -103,6 +103,7 @@ import Data.Morpheus.Types.Internal.AST
     intercalateName,
     kindOf,
     msg,
+    msgValidation,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -127,25 +128,25 @@ data Prop = Prop
 
 type Path = [Prop]
 
-renderPath :: Path -> Message
+renderPath :: Path -> ValidationError
 renderPath [] = ""
-renderPath path = "in field " <> msg (intercalateName "." $ fmap propName path) <> ": "
+renderPath path = "in field " <> msgValidation (intercalateName "." $ fmap propName path) <> ": "
 
-renderInputPrefix :: InputContext c -> Message
+renderInputPrefix :: InputContext c -> ValidationError
 renderInputPrefix InputContext {inputPath, inputSource} =
   renderSource inputSource <> renderPath inputPath
 
-renderSource :: InputSource -> Message
+renderSource :: InputSource -> ValidationError
 renderSource (SourceArgument argumentName) =
-  "Argument " <> msg argumentName <> " got invalid value. "
+  "Argument " <> msgValidation argumentName <> " got invalid value. "
 renderSource (SourceVariable Variable {variableName} _) =
-  "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
+  "Variable " <> msgValidation ("$" <> variableName) <> " got invalid value. "
 renderSource SourceInputField {sourceTypeName, sourceFieldName, sourceArgumentName} =
   "Field " <> renderField sourceTypeName sourceFieldName sourceArgumentName <> " got invalid default value. "
 
-renderField :: TypeName -> FieldName -> Maybe FieldName -> Message
+renderField :: TypeName -> FieldName -> Maybe FieldName -> ValidationError
 renderField (TypeName tname) (FieldName fname) arg =
-  msg (tname <> "." <> fname <> renderArg arg)
+  msgValidation (tname <> "." <> fname <> renderArg arg)
   where
     renderArg (Just (FieldName argName)) = "(" <> argName <> ":)"
     renderArg Nothing = ""
@@ -356,7 +357,7 @@ withPosition pos = setScope update
   where
     update Scope {..} = Scope {position = Just pos, ..}
 
-inputMessagePrefix :: InputValidator s ctx Message
+inputMessagePrefix :: InputValidator s ctx ValidationError
 inputMessagePrefix =
   renderInputPrefix
     . unValidatorContext <$> Validator ask
