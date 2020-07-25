@@ -160,6 +160,7 @@ module Data.Morpheus.Types.Internal.AST
     msgValidation,
     withPosition,
     ValidationErrors,
+    toGQLError,
   )
 where
 

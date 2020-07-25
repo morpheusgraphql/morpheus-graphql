@@ -89,6 +89,7 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
+    toGQLError,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( toOrdMap,
@@ -282,8 +283,7 @@ withObject ::
 withObject f Selection {selectionName, selectionContent, selectionPosition} = checkContent selectionContent
   where
     checkContent (SelectionSet selection) = f selection
-
--- checkContent _ = failure (subfieldsNotSelected selectionName "" selectionPosition)
+    checkContent _ = failure [toGQLError $ subfieldsNotSelected selectionName "" selectionPosition]
 
 lookupRes ::
   (LiftOperation o, Monad m) =>
