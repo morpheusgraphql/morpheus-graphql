@@ -24,7 +24,10 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     VALID,
   )
-import Data.Morpheus.Types.Internal.Config (Config (..))
+import Data.Morpheus.Types.Internal.Config
+  ( Config (..),
+    VALIDATION_MODE (..),
+  )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
@@ -40,7 +43,12 @@ parseTypeSystemDefinition ::
   Text -> Eventless (Schema VALID)
 parseTypeSystemDefinition =
   P.parseSchema
-    >=> validateSchema True Config {debug = False}
+    >=> validateSchema
+      True
+      Config
+        { debug = False,
+          validationMode = FULL_VALIDATION
+        }
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition ANY CONST]
