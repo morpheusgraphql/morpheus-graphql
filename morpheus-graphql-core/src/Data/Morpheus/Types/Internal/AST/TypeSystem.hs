@@ -63,7 +63,6 @@ import Data.Foldable (concatMap)
 import Data.Functor ((<$>), fmap)
 import Data.List (filter, find, notElem)
 import Data.Maybe (Maybe (..), catMaybes, maybe)
-import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -92,7 +91,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     Description,
     FieldName,
     FieldName (..),
-    GQLErrors,
     Msg (..),
     OperationType (..),
     TRUE,
