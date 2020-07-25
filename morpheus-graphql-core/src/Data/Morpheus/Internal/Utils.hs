@@ -58,11 +58,13 @@ import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
+    GQLErrors,
     Ref (..),
     Token,
     TypeName (..),
     TypeNameRef (..),
     ValidationErrors,
+    toGQLError,
   )
 import Data.Semigroup (Semigroup (..))
 import qualified Data.Text as T
@@ -237,11 +239,11 @@ class Applicative f => Failure error (f :: * -> *) where
 instance Failure error (Either error) where
   failure = Left
 
-instance (Monad m, Failure error m) => Failure error (ReaderT ctx m) where
+instance (Monad m, Failure errors m) => Failure errors (ReaderT ctx m) where
   failure = lift . failure
 
-instance (Stream s, Ord e, Failure [a] m) => Failure [a] (ParsecT e s m) where
-  failure x = ParsecT $ \_ _ _ _ _ -> failure x
+instance (Stream s, Ord e, Failure GQLErrors m) => Failure ValidationErrors (ParsecT e s m) where
+  failure x = ParsecT $ \_ _ _ _ _ -> failure (fmap toGQLError x)
 
 mapFst :: (a -> a') -> (a, b) -> (a', b)
 mapFst f (a, b) = (f a, b)

@@ -159,6 +159,7 @@ module Data.Morpheus.Types.Internal.AST
     untyped,
     msgValidation,
     withPosition,
+    ValidationErrors,
   )
 where
 

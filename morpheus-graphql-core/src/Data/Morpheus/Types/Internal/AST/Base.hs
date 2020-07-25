@@ -64,6 +64,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     msgValidation,
     ValidationErrors,
     withPosition,
+    toGQLError,
   )
 where
 
@@ -158,6 +159,9 @@ withPosition :: Maybe Position -> ValidationError -> ValidationError
 withPosition pos (ValidationError m ps) = ValidationError m (ps <> maybeToList pos)
 
 type ValidationErrors = [ValidationError]
+
+toGQLError :: ValidationError -> GQLError
+toGQLError (ValidationError m p) = GQLError m p
 
 -- instance Lift InternalError where
 --   lift = liftString . readInternalError

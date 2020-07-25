@@ -30,6 +30,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
     ValidationError (..),
+    toGQLError,
   )
 import Data.Semigroup ((<>))
 import Prelude
@@ -73,10 +74,11 @@ instance Monad (Result e) where
 instance Failure [GQLError] (Result ev) where
   failure = Failure
 
-instance Failure [ValidationError] (Result ev)
-
 instance PushEvents events (Result events) where
   pushEvents events = Success {result = (), warnings = [], events}
+
+instance Failure [ValidationError] (Result ev) where
+  failure = failure . fmap toGQLError
 
 resultOr :: (GQLErrors -> a') -> (a -> a') -> Result e a -> a'
 resultOr _ f (Success x _ _) = f x
@@ -106,10 +108,6 @@ instance Monad m => Monad (ResultT event m) where
 
 instance MonadTrans (ResultT event) where
   lift = ResultT . fmap pure
-
--- instance Applicative m => Failure String (ResultT event m) where
---   failure x =
---     ResultT $ pure $ Failure [GQLError {message = pack x, locations = []}]
 
 instance Monad m => Failure GQLErrors (ResultT event m) where
   failure = ResultT . pure . failure
