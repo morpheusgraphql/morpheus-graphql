@@ -23,7 +23,6 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TypeDefinition (..),
     VALID,
-    VALIDATION_MODE (..),
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
@@ -41,7 +40,7 @@ parseTypeSystemDefinition ::
   Text -> Eventless (Schema VALID)
 parseTypeSystemDefinition =
   P.parseSchema
-    >=> validateSchema True Config {debug = True}
+    >=> validateSchema True Config {debug = False}
 
 parseTypeDefinitions ::
   Text -> Eventless [TypeDefinition ANY CONST]
@@ -51,9 +50,4 @@ parseRequest :: GQLRequest -> Eventless GQLQuery
 parseRequest = parseGQL
 
 parseRequestWith :: Config -> Schema VALID -> GQLRequest -> Eventless (Operation VALID)
-parseRequestWith config schema =
-  parseRequest
-    >=> validateRequest
-      config
-      schema
-      FULL_VALIDATION
+parseRequestWith config schema = parseRequest >=> validateRequest config schema

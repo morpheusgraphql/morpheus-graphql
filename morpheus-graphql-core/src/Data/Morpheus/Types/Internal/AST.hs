@@ -16,7 +16,6 @@ module Data.Morpheus.Types.Internal.AST
     CONST,
     VALID,
     RAW,
-    VALIDATION_MODE (..),
     -- VALUE
     Value (..),
     ScalarValue (..),

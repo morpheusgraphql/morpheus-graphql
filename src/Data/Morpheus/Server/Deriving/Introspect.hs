@@ -112,6 +112,7 @@ import Data.Morpheus.Types.Internal.AST
     unsafeFromFields,
     updateSchema,
   )
+import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Resolver,
@@ -146,7 +147,7 @@ compileTimeSchemaValidation ::
   Q Exp
 compileTimeSchemaValidation =
   fromSchema
-    . (deriveSchema >=> validateSchema True)
+    . (deriveSchema >=> validateSchema True Config {debug = False})
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]

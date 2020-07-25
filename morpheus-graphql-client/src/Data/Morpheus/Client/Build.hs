@@ -31,7 +31,9 @@ import Data.Morpheus.Types.Internal.AST
     Operation (..),
     Schema,
     VALID,
-    VALIDATION_MODE (..),
+  )
+import Data.Morpheus.Types.Internal.Config
+  ( VALIDATION_MODE (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

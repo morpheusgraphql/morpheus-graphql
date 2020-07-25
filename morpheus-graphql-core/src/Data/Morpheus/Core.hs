@@ -54,7 +54,10 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value,
   )
-import Data.Morpheus.Types.Internal.Config (Config (..))
+import Data.Morpheus.Types.Internal.Config
+  ( Config (..),
+    VALIDATION_MODE (..),
+  )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     ResolverContext (..),
@@ -83,7 +86,7 @@ runApi ::
   GQLRequest ->
   ResponseStream event m (Value VALID)
 runApi inputSchema resModel request = do
-  let config = Config {debug = False}
+  let config = Config {debug = False, validationMode = FULL_VALIDATION}
   validRequest <- validateReq config inputSchema request
   resovers <- withSystemFields (schema validRequest) resModel
   runRootResModel resovers validRequest

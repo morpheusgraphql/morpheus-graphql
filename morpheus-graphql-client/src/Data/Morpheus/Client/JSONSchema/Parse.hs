@@ -62,6 +62,7 @@ import Data.Morpheus.Types.Internal.AST
     toAny,
     toHSWrappers,
   )
+import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     failure,
@@ -88,7 +89,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
   Right res -> decoderError (msg $ show res)
   where
     validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
-    validate = validateSchema False
+    validate = validateSchema False Config {debug = False}
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
 

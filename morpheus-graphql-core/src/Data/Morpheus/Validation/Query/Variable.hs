@@ -41,7 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeNameRef (..),
     TypeRef (..),
     VALID,
-    VALIDATION_MODE (..),
     ValidValue,
     Value (..),
     Variable (..),
@@ -49,6 +48,10 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     Variables,
     isNullable,
+  )
+import Data.Morpheus.Types.Internal.Config
+  ( Config (..),
+    VALIDATION_MODE (..),
   )
 import Data.Morpheus.Types.Internal.Validation
   ( BaseValidator,
@@ -121,13 +124,13 @@ allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
             )
 
 resolveOperationVariables ::
+  Config ->
   Variables ->
-  VALIDATION_MODE ->
   Operation RAW ->
   BaseValidator (VariableDefinitions VALID)
 resolveOperationVariables
+  Config {validationMode}
   root
-  validationMode
   Operation
     { operationSelection,
       operationArguments

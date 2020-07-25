@@ -20,7 +20,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     Description,
     TypeWrapper (..),
     TypeRef (..),
-    VALIDATION_MODE (..),
     OperationType (..),
     QUERY,
     MUTATION,
@@ -276,11 +275,6 @@ data GQLError = GQLError
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 type GQLErrors = [GQLError]
-
-data VALIDATION_MODE
-  = WITHOUT_VARIABLES
-  | FULL_VALIDATION
-  deriving (Eq, Show)
 
 data DataFingerprint = DataFingerprint TypeName [String] deriving (Show, Eq, Ord, Lift)
 

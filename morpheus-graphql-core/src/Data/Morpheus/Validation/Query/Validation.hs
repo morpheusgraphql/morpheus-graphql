@@ -16,7 +16,6 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TypeKind (..),
     VALID,
-    VALIDATION_MODE,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
@@ -42,13 +41,11 @@ import Data.Morpheus.Validation.Query.Variable
 validateRequest ::
   Config ->
   Schema VALID ->
-  VALIDATION_MODE ->
   GQLQuery ->
   Eventless (Operation VALID)
 validateRequest
   config
   schema
-  validationMode
   GQLQuery
     { fragments,
       inputVariables,
@@ -81,6 +78,6 @@ validateRequest
       validateHelpers =
         validateFragments operationSelection
           *> resolveOperationVariables
+            config
             (fromList inputVariables)
-            validationMode
             operation
