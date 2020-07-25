@@ -97,9 +97,9 @@ validateReq ::
   GQLRequest ->
   ResponseStream event m ResolverContext
 validateReq config inputSchema request = cleanEvents $ ResultT $ pure $ do
-  validSchema <- validateSchema True inputSchema
+  validSchema <- validateSchema True config inputSchema
   schema <- internalSchema <:> validSchema
-  operation <- parseRequestWith schema request
+  operation <- parseRequestWith config schema request
   pure $
     ResolverContext
       { schema,

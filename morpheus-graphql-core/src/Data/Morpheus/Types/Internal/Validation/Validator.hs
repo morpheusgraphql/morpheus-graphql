@@ -57,7 +57,7 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative, pure)
+import Control.Applicative (Applicative)
 import Control.Monad (Monad)
 import Control.Monad.Reader (MonadReader (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
@@ -105,6 +105,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     msgValidation,
   )
+import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
@@ -118,6 +119,7 @@ import Prelude
     Bool,
     Int,
     Show,
+    otherwise,
   )
 
 data Prop = Prop
@@ -284,8 +286,8 @@ askFragments ::
   m c Fragments
 askFragments = get
 
-runValidator :: Validator s ctx a -> Schema s -> Scope -> ctx -> Eventless a
-runValidator (Validator x) schema scope unValidatorContext =
+runValidator :: Validator s ctx a -> Config -> Schema s -> Scope -> ctx -> Eventless a
+runValidator (Validator x) config schema scope validatorCTX =
   runReaderT x ValidatorContext {..}
 
 withContext ::
@@ -360,7 +362,7 @@ withPosition pos = setScope update
 inputMessagePrefix :: InputValidator s ctx ValidationError
 inputMessagePrefix =
   renderInputPrefix
-    . unValidatorContext <$> Validator ask
+    . validatorCTX <$> Validator ask
 
 startInput ::
   InputSource ->
@@ -378,7 +380,8 @@ startInput inputSource = withContext update
 data ValidatorContext (s :: Stage) (ctx :: *) = ValidatorContext
   { scope :: Scope,
     schema :: Schema s,
-    unValidatorContext :: ctx
+    validatorCTX :: ctx,
+    config :: Config
   }
   deriving (Show, Functor)
 
@@ -396,7 +399,7 @@ newtype Validator s ctx a = Validator
     )
 
 instance MonadReader ctx (Validator s ctx) where
-  ask = unValidatorContext <$> Validator ask
+  ask = validatorCTX <$> Validator ask
   local = withContext
 
 type BaseValidator = Validator VALID (OperationContext ())
@@ -433,7 +436,7 @@ class
 
 instance MonadContext (Validator s) s c where
   getGlobalContext f = f <$> Validator ask
-  getContext f = f . unValidatorContext <$> Validator ask
+  getContext f = f . validatorCTX <$> Validator ask
   setGlobalContext f = Validator . withReaderT f . _runValidator
   setContext = withContext
 
@@ -461,16 +464,30 @@ instance SetWith (OperationContext v) CurrentSelection where
       }
 
 instance Failure [ValidationError] (Validator s ctx) where
-  failure = failValidator . fmap toGQLError
+  failure errors = do
+    ctx <- Validator ask
+    failValidator (fmap (fromValidatinError ctx) errors)
 
 instance Failure ValidationError (Validator s ctx) where
-  failure = failValidator . pure . toGQLError
+  failure err = failure [err]
 
 failValidator :: GQLErrors -> Validator s ctx a
 failValidator = Validator . lift . failure
 
-toGQLError :: ValidationError -> GQLError
-toGQLError (ValidationError message pos) = GQLError message pos
+fromValidatinError :: ValidatorContext s ctx -> ValidationError -> GQLError
+fromValidatinError
+  context@ValidatorContext
+    { config
+    }
+  (ValidationError text locations) =
+    GQLError
+      { message,
+        locations
+      }
+    where
+      message
+        | debug config = text <> renderContext context
+        | otherwise = text
 
 -- can be only used for internal errors
 instance
