@@ -10,8 +10,7 @@ where
 
 import Data.Morpheus.Error.Utils (validationErrorMessage)
 import Data.Morpheus.Types.Internal.AST
-  ( GQLErrors,
-    Ref (..),
+  ( Ref (..),
     TypeRef,
     ValidationError,
     Variable (..),

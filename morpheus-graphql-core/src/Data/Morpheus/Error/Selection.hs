@@ -9,7 +9,6 @@ module Data.Morpheus.Error.Selection
   )
 where
 
-import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     OUT,

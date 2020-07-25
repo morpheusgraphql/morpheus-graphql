@@ -31,7 +31,6 @@ where
 -- MORPHEUS
 
 import Control.Applicative (pure)
-import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -45,7 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     ValidationError,
-    msg,
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
@@ -58,8 +56,7 @@ import Data.Semigroup
     Semigroup (..),
   )
 import Prelude
-  ( ($),
-    (.),
+  ( (.),
     Show (..),
     const,
   )
