@@ -39,6 +39,10 @@ where
 
 import Control.Applicative (Applicative (..))
 import Control.Monad ((=<<), foldM)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Reader
+  ( ReaderT (..),
+  )
 import Data.Char
   ( toLower,
     toUpper,
@@ -232,6 +236,9 @@ class Applicative f => Failure error (f :: * -> *) where
 
 instance Failure error (Either error) where
   failure = Left
+
+instance (Monad m, Failure error m) => Failure error (ReaderT ctx m) where
+  failure = lift . failure
 
 instance (Stream s, Ord e, Failure [a] m) => Failure [a] (ParsecT e s m) where
   failure x = ParsecT $ \_ _ _ _ _ -> failure x
