@@ -4,6 +4,7 @@
 
 ### new features
 
+- `debugInterpreter`: displays internal context on grahql errors
 - compileTimeSchemaValidation :
   morpheus validates schema at runtime (after the schema derivation).
   to be ensure that only correct api is compiled.
@@ -53,24 +54,10 @@ _validateSchema = $(compileTimeSchemaValidation (Identity gqlRoot))
 
 - Subscription Resolver supports `Monad`.
 - nested Subscription Resolvers.
-- configurable api: `Data.Morpheus.Core` exports
-  - `Config`
-  - `defaultConfig`
-  - `debugConfig`
 
 ### Breaking Changes
 
-- runApi requires argument config
-
-  ```hs
-    runApi ::
-      Schema s ->
-      RootResModel event m ->
-      Config ->
-      GQLRequest ->
-      ResponseStream event m (Value VALID)
-  ```
-
+- `Context' renamed to`ResolverContext'
 - internal refactoring: changed AST
 - root subscribtion fields must be wrapped with `SubscriptionField`. e.g:
 
