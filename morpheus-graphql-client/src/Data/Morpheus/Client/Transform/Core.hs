@@ -57,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecated,
     lookupDeprecatedReason,
     msg,
+    toGQLError,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -81,7 +82,8 @@ newtype Converter a = Converter
       Failure GQLErrors
     )
 
-instance Failure ValidationError Converter
+instance Failure ValidationError Converter where
+  failure err = failure [toGQLError err]
 
 compileError :: Message -> GQLErrors
 compileError x =

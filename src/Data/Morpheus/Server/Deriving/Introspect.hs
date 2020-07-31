@@ -36,7 +36,7 @@ where
 import Control.Monad ((>=>))
 import Data.List (partition)
 import Data.Map (Map)
-import Data.Morpheus.Core (validateSchema)
+import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -112,7 +112,6 @@ import Data.Morpheus.Types.Internal.AST
     unsafeFromFields,
     updateSchema,
   )
-import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Resolver,
@@ -147,7 +146,7 @@ compileTimeSchemaValidation ::
   Q Exp
 compileTimeSchemaValidation =
   fromSchema
-    . (deriveSchema >=> validateSchema True Config {debug = False})
+    . (deriveSchema >=> validateSchema True defaultConfig)
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
