@@ -4,6 +4,7 @@
 
 ### new features
 
+- exposed: `Data.Morpheus.Types.SelectionTree`
 - configurable api: `Data.Morpheus.Core` exports
 
   - `Config`
