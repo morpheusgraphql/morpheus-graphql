@@ -66,9 +66,9 @@ import Data.Morpheus.Types.Internal.AST
     toGQLWrapper,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Context (..),
-    ResModel,
+  ( ResModel,
     Resolver,
+    ResolverContext (..),
     mkBoolean,
     mkList,
     mkNull,

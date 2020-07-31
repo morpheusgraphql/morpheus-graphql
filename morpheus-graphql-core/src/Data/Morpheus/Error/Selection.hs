@@ -9,23 +9,22 @@ module Data.Morpheus.Error.Selection
   )
 where
 
-import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    GQLErrors,
     OUT,
     Position,
     Ref (..),
     TypeDefinition (..),
     TypeName,
     VALID,
+    ValidationError (..),
     msg,
   )
 import Data.Semigroup ((<>))
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
-hasNoSubfields :: Ref -> TypeDefinition OUT VALID -> GQLErrors
-hasNoSubfields (Ref selectionName position) TypeDefinition {typeName} = errorMessage position text
+hasNoSubfields :: Ref -> TypeDefinition OUT VALID -> ValidationError
+hasNoSubfields (Ref selectionName position) TypeDefinition {typeName} = ValidationError text [position]
   where
     text =
       "Field "
@@ -34,8 +33,8 @@ hasNoSubfields (Ref selectionName position) TypeDefinition {typeName} = errorMes
         <> msg typeName
         <> " has no subfields."
 
-unknownSelectionField :: TypeName -> Ref -> GQLErrors
-unknownSelectionField typeName Ref {refName, refPosition} = errorMessage refPosition text
+unknownSelectionField :: TypeName -> Ref -> ValidationError
+unknownSelectionField typeName Ref {refName, refPosition} = ValidationError text [refPosition]
   where
     text =
       "Cannot query field " <> msg refName
@@ -44,8 +43,8 @@ unknownSelectionField typeName Ref {refName, refPosition} = errorMessage refPosi
         <> "."
 
 -- GQL:: Field \"hobby\" of type \"Hobby!\" must have a selection of subfields. Did you mean \"hobby { ... }\"?
-subfieldsNotSelected :: FieldName -> TypeName -> Position -> GQLErrors
-subfieldsNotSelected fieldName typeName position = errorMessage position text
+subfieldsNotSelected :: FieldName -> TypeName -> Position -> ValidationError
+subfieldsNotSelected fieldName typeName position = ValidationError text [position]
   where
     text =
       "Field " <> msg fieldName <> " of type "

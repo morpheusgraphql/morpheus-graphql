@@ -19,7 +19,6 @@ where
 -- MORPHEUS
 import Data.Maybe (maybeToList)
 import Data.Morpheus.Error.Selection (unknownSelectionField)
-import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
@@ -31,8 +30,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     Fragment (..),
     Fragments,
-    GQLError (..),
-    GQLErrors,
     IN,
     OUT,
     Object,
@@ -41,10 +38,13 @@ import Data.Morpheus.Types.Internal.AST
     Schema,
     TypeNameRef (..),
     TypeRef (..),
+    ValidationError (..),
     Variable (..),
     VariableDefinitions,
     getOperationName,
     msg,
+    msgValidation,
+    withPosition,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( CurrentSelection (..),
@@ -56,37 +56,38 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     renderInputPrefix,
   )
 import Data.Semigroup ((<>))
+import Prelude (($))
 
 class Unused ctx c where
-  unused :: ctx -> c -> GQLError
+  unused :: ctx -> c -> ValidationError
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 instance Unused (OperationContext v) (Variable s) where
   unused
     OperationContext {selection = CurrentSelection {operationName}}
     Variable {variableName, variablePosition} =
-      GQLError
-        { message =
+      ValidationError
+        { validationMessage =
             "Variable " <> msg ("$" <> variableName)
               <> " is never used in operation "
               <> msg (getOperationName operationName)
               <> ".",
-          locations = [variablePosition]
+          validationLocations = [variablePosition]
         }
 
 instance Unused (OperationContext v) Fragment where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
-      GQLError
-        { message =
+      ValidationError
+        { validationMessage =
             "Fragment " <> msg fragmentName
               <> " is never used.",
-          locations = [fragmentPosition]
+          validationLocations = [fragmentPosition]
         }
 
 class MissingRequired c ctx where
-  missingRequired :: Scope -> ctx -> Ref -> c -> GQLError
+  missingRequired :: Scope -> ctx -> Ref -> c -> ValidationError
 
 instance MissingRequired (Arguments s) ctx where
   missingRequired
@@ -94,13 +95,13 @@ instance MissingRequired (Arguments s) ctx where
     _
     Ref {refName}
     _ =
-      GQLError
-        { message =
+      ValidationError
+        { validationMessage =
             inScope kind
               <> " argument "
               <> msg refName
               <> " is required but not provided.",
-          locations = maybeToList position
+          validationLocations = maybeToList position
         }
       where
         inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldname)
@@ -112,14 +113,14 @@ instance MissingRequired (Object s) (InputContext ctx) where
     ctx
     Ref {refName}
     _ =
-      GQLError
-        { message =
-            renderInputPrefix ctx
-              <> "Undefined Field "
-              <> msg refName
-              <> ".",
-          locations = maybeToList position
-        }
+      withPosition
+        position
+        ( renderInputPrefix
+            ctx
+            <> "Undefined Field "
+            <> msgValidation refName
+            <> "."
+        )
 
 instance MissingRequired (VariableDefinitions s) (OperationContext v) where
   missingRequired
@@ -129,36 +130,41 @@ instance MissingRequired (VariableDefinitions s) (OperationContext v) where
       }
     Ref {refName, refPosition}
     _ =
-      GQLError
-        { message =
+      ValidationError
+        { validationMessage =
             "Variable "
               <> msg refName
               <> " is not defined by operation "
               <> msg (getOperationName operationName)
               <> ".",
-          locations = [refPosition]
+          validationLocations = [refPosition]
         }
 
 class Unknown c ref ctx where
   -- type UnknownSelector c
-  unknown :: Scope -> ctx -> c -> ref -> GQLErrors
+  unknown :: Scope -> ctx -> c -> ref -> ValidationError
 
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown Fragments Ref ctx where
   unknown _ _ _ (Ref name pos) =
-    errorMessage
-      pos
-      ("Unknown Fragment " <> msg name <> ".")
+    ValidationError
+      { validationMessage = "Unknown Fragment " <> msg name <> ".",
+        validationLocations = [pos]
+      }
 
 instance Unknown (Schema s) TypeNameRef ctx where
   unknown _ _ _ TypeNameRef {typeNameRef, typeNamePosition} =
-    errorMessage typeNamePosition ("Unknown type " <> msg typeNameRef <> ".")
+    ValidationError
+      { validationMessage = "Unknown type " <> msg typeNameRef <> ".",
+        validationLocations = [typeNamePosition]
+      }
 
 instance Unknown (FieldDefinition OUT s) (Argument CONST) ctx where
   unknown _ _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
-    errorMessage
-      argumentPosition
-      ("Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".")
+    ValidationError
+      { validationMessage = "Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".",
+        validationLocations = [argumentPosition]
+      }
 
 instance Unknown (FieldsDefinition IN s) (ObjectEntry valueS) (InputContext ctx) where
   unknown
@@ -166,40 +172,39 @@ instance Unknown (FieldsDefinition IN s) (ObjectEntry valueS) (InputContext ctx)
     ctx
     _
     ObjectEntry {entryName} =
-      [ GQLError
-          { message = renderInputPrefix ctx <> "Unknown Field " <> msg entryName <> ".",
-            locations = maybeToList position
-          }
-      ]
+      withPosition position $
+        renderInputPrefix ctx <> "Unknown Field " <> msgValidation entryName <> "."
 
 instance Unknown (DirectiveDefinition s) (Argument s') ctx where
   unknown _ _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
-    errorMessage
-      argumentPosition
-      ("Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".")
+    ValidationError
+      { validationMessage = "Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".",
+        validationLocations = [argumentPosition]
+      }
 
 instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
   unknown _ _ _ Directive {directiveName, directivePosition} =
-    errorMessage
-      directivePosition
-      ("Unknown Directive " <> msg directiveName <> ".")
+    ValidationError
+      { validationMessage = "Unknown Directive " <> msg directiveName <> ".",
+        validationLocations = [directivePosition]
+      }
 
 instance Unknown (FieldsDefinition OUT s) Ref (OperationContext v) where
   unknown Scope {currentTypeName} _ _ = unknownSelectionField currentTypeName
 
 class KindViolation (t :: Target) ctx where
-  kindViolation :: c t -> ctx -> GQLError
+  kindViolation :: c t -> ctx -> ValidationError
 
 instance KindViolation 'TARGET_OBJECT Fragment where
   kindViolation _ Fragment {fragmentName, fragmentType, fragmentPosition} =
-    GQLError
-      { message =
+    ValidationError
+      { validationMessage =
           "Fragment "
             <> msg fragmentName
             <> " cannot condition on non composite type "
             <> msg fragmentType
             <> ".",
-        locations = [fragmentPosition]
+        validationLocations = [fragmentPosition]
       }
 
 instance KindViolation 'TARGET_INPUT (Variable s) where
@@ -210,12 +215,12 @@ instance KindViolation 'TARGET_INPUT (Variable s) where
         variablePosition,
         variableType = TypeRef {typeConName}
       } =
-      GQLError
-        { message =
+      ValidationError
+        { validationMessage =
             "Variable "
               <> msg ("$" <> variableName)
               <> " cannot be non-input type "
               <> msg typeConName
               <> ".",
-          locations = [variablePosition]
+          validationLocations = [variablePosition]
         }

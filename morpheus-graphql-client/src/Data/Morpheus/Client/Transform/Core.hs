@@ -50,12 +50,14 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     VALID,
+    ValidationError,
     VariableDefinitions,
     hsTypeName,
     isNotSystemTypeName,
     lookupDeprecated,
     lookupDeprecatedReason,
     msg,
+    toGQLError,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -72,10 +74,16 @@ newtype Converter a = Converter
         Eventless
         a
   }
-  deriving (Functor, Applicative, Monad, MonadReader Env)
+  deriving
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadReader Env,
+      Failure GQLErrors
+    )
 
-instance Failure GQLErrors Converter where
-  failure = Converter . lift . failure
+instance Failure ValidationError Converter where
+  failure err = failure [toGQLError err]
 
 compileError :: Message -> GQLErrors
 compileError x =

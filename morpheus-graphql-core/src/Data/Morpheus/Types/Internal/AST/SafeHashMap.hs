@@ -36,7 +36,7 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
   )
-import Data.Morpheus.Types.Internal.AST.Base (GQLErrors)
+import Data.Morpheus.Types.Internal.AST.Base (ValidationErrors)
 import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
@@ -78,7 +78,7 @@ insert ::
   ( NameCollision a,
     KeyOf k a,
     Monad m,
-    Failure GQLErrors m
+    Failure ValidationErrors m
   ) =>
   a ->
   SafeHashMap k a ->

@@ -37,8 +37,8 @@ import Data.Morpheus.Internal.Utils
     elems,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( GQLErrors,
-    Ref,
+  ( Ref,
+    ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.OrdMap
   ( OrdMap (..),
@@ -82,7 +82,7 @@ concatTraverse ::
     Merge b,
     KeyOf k b,
     Monad m,
-    Failure GQLErrors m
+    Failure ValidationErrors m
   ) =>
   (a -> m (MergeSet VALID b)) ->
   MergeSet RAW a ->
@@ -96,7 +96,7 @@ join ::
     KeyOf k a,
     Merge a,
     Monad m,
-    Failure GQLErrors m,
+    Failure ValidationErrors m,
     Listable a (MergeSet opt a),
     Merge (MergeSet opt a)
   ) =>
@@ -143,17 +143,17 @@ instance Listable a (MergeSet RAW a) where
   fromElems = pure . MergeSet
   elems = unpack
 
-safeFromList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure GQLErrors m) => [a] -> m (MergeSet opt a)
+safeFromList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [a] -> m (MergeSet opt a)
 safeFromList = insertList [] empty
 
-safeJoin :: (Monad m, KeyOf k a, Eq a, Listable a (MergeSet opt a), Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> MergeSet opt a -> m (MergeSet opt a)
+safeJoin :: (Monad m, KeyOf k a, Eq a, Listable a (MergeSet opt a), Merge a, Failure ValidationErrors m) => [Ref] -> MergeSet opt a -> MergeSet opt a -> m (MergeSet opt a)
 safeJoin path hm1 hm2 = insertList path hm1 (elems hm2)
 
-insertList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> [a] -> m (MergeSet opt a)
+insertList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [Ref] -> MergeSet opt a -> [a] -> m (MergeSet opt a)
 insertList _ smap [] = pure smap
 insertList path smap (x : xs) = insert path smap x >>= flip (insertList path) xs
 
-insert :: (Monad m, Eq a, KeyOf k a, Merge a, Failure GQLErrors m) => [Ref] -> MergeSet opt a -> a -> m (MergeSet opt a)
+insert :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [Ref] -> MergeSet opt a -> a -> m (MergeSet opt a)
 insert path mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
   where
     __insert =

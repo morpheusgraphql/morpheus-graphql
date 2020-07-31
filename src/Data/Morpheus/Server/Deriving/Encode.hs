@@ -60,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     InternalError,
     MUTATION,
-    Message,
     OperationType (..),
     QUERY,
     SUBSCRIPTION,

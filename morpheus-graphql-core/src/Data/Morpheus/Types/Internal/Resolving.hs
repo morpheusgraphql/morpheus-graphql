@@ -23,7 +23,7 @@ module Data.Morpheus.Types.Internal.Resolving
     WithOperation,
     PushEvents (..),
     subscribe,
-    Context (..),
+    ResolverContext (..),
     unsafeInternalContext,
     RootResModel (..),
     resultOr,

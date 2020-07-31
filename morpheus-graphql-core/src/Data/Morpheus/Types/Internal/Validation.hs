@@ -66,7 +66,6 @@ import Data.Foldable (null)
 import Data.Functor ((<$>), fmap)
 import Data.List (filter)
 import Data.Maybe (Maybe (..), fromMaybe, maybe)
-import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
@@ -92,12 +91,14 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     UnionMember (..),
+    ValidationError,
     Value (..),
     __inputname,
     entryValue,
     fromAny,
     isNullable,
     msg,
+    msgValidation,
     toFieldName,
   )
 import Data.Morpheus.Types.Internal.Validation.Error
@@ -163,7 +164,7 @@ failOnUnused :: Unused ctx b => [b] -> Validator s ctx ()
 failOnUnused x
   | null x = pure ()
   | otherwise = do
-    ctx <- unValidatorContext <$> Validator ask
+    ctx <- validatorCTX <$> Validator ask
     failure $ fmap (unused ctx) x
 
 checkUnused ::
@@ -196,9 +197,9 @@ selectRequired ::
   Validator s ctx value
 selectRequired selector container =
   do
-    ValidatorContext scope _schema ctx <- Validator ask
+    ValidatorContext {scope, validatorCTX} <- Validator ask
     selectBy
-      [missingRequired scope ctx selector container]
+      [missingRequired scope validatorCTX selector container]
       (keyOf selector)
       container
 
@@ -237,9 +238,9 @@ selectWithDefaultValue
         | otherwise = failSelection
       -----------------
       failSelection = do
-        ValidatorContext scope _schema ctx <- Validator ask
+        ValidatorContext {scope, validatorCTX} <- Validator ask
         position <- asksScope position
-        failure [missingRequired scope ctx (Ref fieldName (fromMaybe (Position 0 0) position)) values]
+        failure [missingRequired scope validatorCTX (Ref fieldName (fromMaybe (Position 0 0) position)) values]
 
 selectType ::
   TypeName ->
@@ -247,7 +248,7 @@ selectType ::
 selectType name =
   askSchema >>= selectBy err name
   where
-    err = globalErrorMessage $ "Unknown Type " <> msg name <> "."
+    err = "Unknown Type " <> msgValidation name <> "." :: ValidationError
 
 selectKnown ::
   ( Selectable k a c,
@@ -259,9 +260,9 @@ selectKnown ::
   Validator s ctx a
 selectKnown selector lib =
   do
-    ValidatorContext scope _schema ctx <- Validator ask
+    ValidatorContext {scope, validatorCTX} <- Validator ask
     selectBy
-      (unknown scope ctx lib selector)
+      (unknown scope validatorCTX lib selector)
       (keyOf selector)
       lib
 

@@ -68,6 +68,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     isWeaker,
   )
+import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
@@ -110,11 +111,12 @@ import Prelude
   )
 
 class ValidateSchema s where
-  validateSchema :: Bool -> Schema s -> Eventless (Schema VALID)
+  validateSchema :: Bool -> Config -> Schema s -> Eventless (Schema VALID)
 
 instance ValidateSchema CONST where
   validateSchema
     withSystem
+    config
     schema@Schema
       { types,
         query,
@@ -128,6 +130,7 @@ instance ValidateSchema CONST where
           else pure schema
       runValidator
         __validateSchema
+        config
         sysSchema
         Scope
           { position = Nothing,
@@ -154,7 +157,7 @@ validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
 validateOptional f = maybe (pure Nothing) (fmap Just . f)
 
 instance ValidateSchema VALID where
-  validateSchema _ = pure
+  validateSchema _ _ = pure
 
 validateType ::
   TypeDefinition cat CONST ->

@@ -17,7 +17,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving.ResolverState
-  ( Context (..),
+  ( ResolverContext (..),
     ResolverStateT (..),
     resolverFailureMessage,
     clearStateResolverEvents,
@@ -54,6 +54,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     msg,
   )
+import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
     Failure (..),
@@ -68,39 +69,41 @@ import Data.Semigroup
 import Prelude
   ( ($),
     (.),
+    Bool (..),
     Int,
     Show (..),
     id,
   )
 
-data Context = Context
+data ResolverContext = ResolverContext
   { currentSelection :: Selection VALID,
     schema :: Schema VALID,
     operation :: Operation VALID,
-    currentTypeName :: TypeName
+    currentTypeName :: TypeName,
+    config :: Config
   }
   deriving (Show)
 
 type ResolverState = ResolverStateT () Identity
 
-runResolverStateT :: ResolverStateT e m a -> Context -> ResultT e m a
+runResolverStateT :: ResolverStateT e m a -> ResolverContext -> ResultT e m a
 runResolverStateT = runReaderT . _runResolverStateT
 
-runResolverStateM :: ResolverStateT e m a -> Context -> m (Result e a)
+runResolverStateM :: ResolverStateT e m a -> ResolverContext -> m (Result e a)
 runResolverStateM res = runResultT . runResolverStateT res
 
-runResolverState :: ResolverState a -> Context -> Eventless a
+runResolverState :: ResolverState a -> ResolverContext -> Eventless a
 runResolverState res = runIdentity . runResolverStateM res
 
 -- Resolver Internal State
 newtype ResolverStateT event m a = ResolverStateT
-  { _runResolverStateT :: ReaderT Context (ResultT event m) a
+  { _runResolverStateT :: ReaderT ResolverContext (ResultT event m) a
   }
   deriving
     ( Functor,
       Applicative,
       Monad,
-      MonadReader Context
+      MonadReader ResolverContext
     )
 
 instance MonadTrans (ResolverStateT e) where
@@ -108,8 +111,8 @@ instance MonadTrans (ResolverStateT e) where
 
 instance (Monad m) => Failure Message (ResolverStateT e m) where
   failure message = do
-    selection <- asks currentSelection
-    failure [resolverFailureMessage selection message]
+    cxt <- asks id
+    failure [resolverFailureMessage cxt message]
 
 instance (Monad m) => Failure InternalError (ResolverStateT e m) where
   failure message = do
@@ -148,23 +151,37 @@ injectResult (ResultT (Identity x)) =
 clearStateResolverEvents :: (Functor m) => ResolverStateT e m a -> ResolverStateT e' m a
 clearStateResolverEvents = mapResolverState cleanEvents
 
-resolverFailureMessage :: Selection VALID -> Message -> GQLError
-resolverFailureMessage Selection {selectionName, selectionPosition} message =
-  GQLError
-    { message = "Failure on Resolving Field " <> msg selectionName <> ": " <> message,
-      locations = [selectionPosition]
+resolverFailureMessage :: ResolverContext -> Message -> GQLError
+resolverFailureMessage
+  ctx@ResolverContext
+    { currentSelection =
+        Selection {selectionName, selectionPosition}
     }
+  message =
+    GQLError
+      { message =
+          "Failure on Resolving Field "
+            <> msg selectionName
+            <> ": "
+            <> message
+            <> withInternalContext ctx,
+        locations = [selectionPosition]
+      }
 
-renderInternalResolverError :: Context -> InternalError -> GQLError
-renderInternalResolverError ctx@Context {currentSelection} message =
+renderInternalResolverError :: ResolverContext -> InternalError -> GQLError
+renderInternalResolverError ctx@ResolverContext {currentSelection} message =
   GQLError
     { message = msg message <> ". " <> renderContext ctx,
       locations = [selectionPosition currentSelection]
     }
 
-renderContext :: Context -> Message
+withInternalContext :: ResolverContext -> Message
+withInternalContext ResolverContext {config = Config {debug = False}} = ""
+withInternalContext resCTX = renderContext resCTX
+
+renderContext :: ResolverContext -> Message
 renderContext
-  Context
+  ResolverContext
     { currentSelection,
       schema,
       operation,

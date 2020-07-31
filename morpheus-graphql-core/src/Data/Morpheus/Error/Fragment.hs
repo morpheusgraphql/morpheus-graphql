@@ -10,14 +10,13 @@ where
 -- MORPHEUS
 
 import Data.Maybe (Maybe (..))
-import Data.Morpheus.Error.Utils (errorMessage)
+import Data.Morpheus.Error.Utils (validationErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
-    GQLError (..),
-    GQLErrors,
     Position,
     Ref (..),
     TypeName,
+    ValidationError (..),
     msg,
     msgSepBy,
   )
@@ -36,8 +35,8 @@ import Prelude (($), fmap, head)
     {...H} -> "Unknown fragment \"H\"."
 -}
 
-cannotSpreadWithinItself :: [Ref] -> GQLErrors
-cannotSpreadWithinItself fragments = [GQLError {message = text, locations = fmap refPosition fragments}]
+cannotSpreadWithinItself :: [Ref] -> ValidationError
+cannotSpreadWithinItself fragments = ValidationError text (fmap refPosition fragments)
   where
     text =
       "Cannot spread fragment "
@@ -47,10 +46,10 @@ cannotSpreadWithinItself fragments = [GQLError {message = text, locations = fmap
         <> "."
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-cannotBeSpreadOnType :: Maybe FieldName -> TypeName -> Position -> [TypeName] -> GQLErrors
+cannotBeSpreadOnType :: Maybe FieldName -> TypeName -> Position -> [TypeName] -> ValidationError
 cannotBeSpreadOnType key fragmentType position typeMembers =
-  errorMessage
-    position
+  validationErrorMessage
+    (Just position)
     text
   where
     text =

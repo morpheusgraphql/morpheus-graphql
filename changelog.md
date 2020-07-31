@@ -4,6 +4,7 @@
 
 ### new features
 
+- `debugInterpreter`: displays internal context on grahql errors
 - compileTimeSchemaValidation :
   morpheus validates schema at runtime (after the schema derivation).
   to be ensure that only correct api is compiled.
@@ -56,6 +57,7 @@ _validateSchema = $(compileTimeSchemaValidation (Identity gqlRoot))
 
 ### Breaking Changes
 
+- `Context' renamed to`ResolverContext'
 - internal refactoring: changed AST
 - root subscribtion fields must be wrapped with `SubscriptionField`. e.g:
 

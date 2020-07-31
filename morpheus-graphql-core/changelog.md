@@ -4,6 +4,12 @@
 
 ### new features
 
+- configurable api: `Data.Morpheus.Core` exports
+
+  - `Config`
+  - `defaultConfig`
+  - `debugConfig`
+
 - for better debuging, internal errors messages will display resolving state:
   - `current TypeName`
   - `current Selection`
@@ -53,6 +59,7 @@ directive @MyDirective on FIELD_DEFINITION | OBJECT
 
 ### Breaking Changes
 
+- `Context' renamed to`ResolverContext'
 - removed : `EventCon` from `Data.Morpheus.Core`
 - internal refactoring: changed AST.
   Schema AST Types now need parameter `stage = RAW | CONST | VALID`.
@@ -60,6 +67,15 @@ directive @MyDirective on FIELD_DEFINITION | OBJECT
   - `TypeDefinition VALID`
   - `FieldDefinition IN VALID`
   - ...
+- runApi requires argument config
+  ```hs
+    runApi ::
+      Schema s ->
+      RootResModel event m ->
+      Config ->
+      GQLRequest ->
+      ResponseStream event m (Value VALID)
+  ```
 
 ## 0.13.0 - 22.06.2020
 

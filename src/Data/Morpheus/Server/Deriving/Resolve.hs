@@ -16,7 +16,8 @@ import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
 import Data.Morpheus.Core
-  ( runApi,
+  ( Config,
+    runApi,
   )
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
@@ -64,16 +65,18 @@ type RootResolverConstraint m event query mutation subscription =
 statelessResolver ::
   RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
+  Config ->
   GQLRequest ->
   m GQLResponse
-statelessResolver root req =
-  renderResponse <$> runResultT (coreResolver root req)
+statelessResolver root config req =
+  renderResponse <$> runResultT (coreResolver root config req)
 
 coreResolver ::
   RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
+  Config ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-coreResolver root request = do
+coreResolver root config request = do
   schema <- deriveSchema (Identity root)
-  runApi schema (deriveModel root) request
+  runApi schema (deriveModel root) config request

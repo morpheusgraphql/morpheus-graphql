@@ -67,7 +67,9 @@ import Control.Monad.Trans.Reader
   )
 import Data.Functor ((<$>), Functor (..))
 import Data.Maybe (Maybe (..))
-import Data.Morpheus.Error.Utils (renderErrorMessage)
+import Data.Morpheus.Error.Utils
+  ( validationErrorMessage,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -78,6 +80,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     FieldsDefinition,
     Fragments,
+    GQLError (..),
     GQLErrors,
     IN,
     InternalError,
@@ -94,12 +97,15 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper,
     VALID,
+    ValidationError (..),
     Variable (..),
     VariableDefinitions,
     intercalateName,
     kindOf,
     msg,
+    msgValidation,
   )
+import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
@@ -113,6 +119,7 @@ import Prelude
     Bool,
     Int,
     Show,
+    otherwise,
   )
 
 data Prop = Prop
@@ -123,25 +130,25 @@ data Prop = Prop
 
 type Path = [Prop]
 
-renderPath :: Path -> Message
+renderPath :: Path -> ValidationError
 renderPath [] = ""
-renderPath path = "in field " <> msg (intercalateName "." $ fmap propName path) <> ": "
+renderPath path = "in field " <> msgValidation (intercalateName "." $ fmap propName path) <> ": "
 
-renderInputPrefix :: InputContext c -> Message
+renderInputPrefix :: InputContext c -> ValidationError
 renderInputPrefix InputContext {inputPath, inputSource} =
   renderSource inputSource <> renderPath inputPath
 
-renderSource :: InputSource -> Message
+renderSource :: InputSource -> ValidationError
 renderSource (SourceArgument argumentName) =
-  "Argument " <> msg argumentName <> " got invalid value. "
+  "Argument " <> msgValidation argumentName <> " got invalid value. "
 renderSource (SourceVariable Variable {variableName} _) =
-  "Variable " <> msg ("$" <> variableName) <> " got invalid value. "
+  "Variable " <> msgValidation ("$" <> variableName) <> " got invalid value. "
 renderSource SourceInputField {sourceTypeName, sourceFieldName, sourceArgumentName} =
   "Field " <> renderField sourceTypeName sourceFieldName sourceArgumentName <> " got invalid default value. "
 
-renderField :: TypeName -> FieldName -> Maybe FieldName -> Message
+renderField :: TypeName -> FieldName -> Maybe FieldName -> ValidationError
 renderField (TypeName tname) (FieldName fname) arg =
-  msg (tname <> "." <> fname <> renderArg arg)
+  msgValidation (tname <> "." <> fname <> renderArg arg)
   where
     renderArg (Just (FieldName argName)) = "(" <> argName <> ":)"
     renderArg Nothing = ""
@@ -279,8 +286,8 @@ askFragments ::
   m c Fragments
 askFragments = get
 
-runValidator :: Validator s ctx a -> Schema s -> Scope -> ctx -> Eventless a
-runValidator (Validator x) schema scope unValidatorContext =
+runValidator :: Validator s ctx a -> Config -> Schema s -> Scope -> ctx -> Eventless a
+runValidator (Validator x) config schema scope validatorCTX =
   runReaderT x ValidatorContext {..}
 
 withContext ::
@@ -352,10 +359,10 @@ withPosition pos = setScope update
   where
     update Scope {..} = Scope {position = Just pos, ..}
 
-inputMessagePrefix :: InputValidator s ctx Message
+inputMessagePrefix :: InputValidator s ctx ValidationError
 inputMessagePrefix =
   renderInputPrefix
-    . unValidatorContext <$> Validator ask
+    . validatorCTX <$> Validator ask
 
 startInput ::
   InputSource ->
@@ -373,7 +380,8 @@ startInput inputSource = withContext update
 data ValidatorContext (s :: Stage) (ctx :: *) = ValidatorContext
   { scope :: Scope,
     schema :: Schema s,
-    unValidatorContext :: ctx
+    validatorCTX :: ctx,
+    config :: Config
   }
   deriving (Show, Functor)
 
@@ -391,7 +399,7 @@ newtype Validator s ctx a = Validator
     )
 
 instance MonadReader ctx (Validator s ctx) where
-  ask = unValidatorContext <$> Validator ask
+  ask = validatorCTX <$> Validator ask
   local = withContext
 
 type BaseValidator = Validator VALID (OperationContext ())
@@ -428,7 +436,7 @@ class
 
 instance MonadContext (Validator s) s c where
   getGlobalContext f = f <$> Validator ask
-  getContext f = f . unValidatorContext <$> Validator ask
+  getContext f = f . validatorCTX <$> Validator ask
   setGlobalContext f = Validator . withReaderT f . _runValidator
   setContext = withContext
 
@@ -455,8 +463,31 @@ instance SetWith (OperationContext v) CurrentSelection where
         ..
       }
 
-instance Failure GQLErrors (Validator s ctx) where
-  failure = Validator . lift . failure
+instance Failure [ValidationError] (Validator s ctx) where
+  failure errors = do
+    ctx <- Validator ask
+    failValidator (fmap (fromValidatinError ctx) errors)
+
+instance Failure ValidationError (Validator s ctx) where
+  failure err = failure [err]
+
+failValidator :: GQLErrors -> Validator s ctx a
+failValidator = Validator . lift . failure
+
+fromValidatinError :: ValidatorContext s ctx -> ValidationError -> GQLError
+fromValidatinError
+  context@ValidatorContext
+    { config
+    }
+  (ValidationError text locations) =
+    GQLError
+      { message,
+        locations
+      }
+    where
+      message
+        | debug config = text <> renderContext context
+        | otherwise = text
 
 -- can be only used for internal errors
 instance
@@ -466,7 +497,7 @@ instance
   failure inputMessage = do
     ctx <- Validator ask
     failure
-      ( renderErrorMessage
+      ( validationErrorMessage
           (position $ scope ctx)
           $ msg
             inputMessage

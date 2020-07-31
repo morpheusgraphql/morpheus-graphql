@@ -28,7 +28,8 @@ import Data.Morpheus.Client.JSONSchema.Types
     Type (..),
   )
 import Data.Morpheus.Core
-  ( validateSchema,
+  ( defaultConfig,
+    validateSchema,
   )
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
@@ -88,7 +89,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
   Right res -> decoderError (msg $ show res)
   where
     validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
-    validate = validateSchema False
+    validate = validateSchema False defaultConfig
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
 

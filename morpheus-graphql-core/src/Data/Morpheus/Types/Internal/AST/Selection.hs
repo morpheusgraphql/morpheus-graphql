@@ -55,16 +55,17 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
-    GQLError (..),
-    GQLErrors,
     Message,
     Msg (..),
     OperationType (..),
     Position,
     Ref (..),
     TypeName (..),
+    ValidationError (..),
+    ValidationErrors,
     intercalateName,
     msg,
+    msgValidation,
     readName,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
@@ -116,10 +117,9 @@ data Fragment = Fragment
 -- ERRORs
 instance NameCollision Fragment where
   nameCollision Fragment {fragmentName, fragmentPosition} =
-    GQLError
-      { message = "There can be only one fragment named " <> msg fragmentName <> ".",
-        locations = [fragmentPosition]
-      }
+    ValidationError
+      ("There can be only one fragment named " <> msg fragmentName <> ".")
+      [fragmentPosition]
 
 instance KeyOf FieldName Fragment where
   keyOf = fragmentName
@@ -149,9 +149,9 @@ instance
     | oldC == currC = pure oldC
     | otherwise =
       failure
-        [ GQLError
-            { message = msg (intercalateName "." $ fmap refName path),
-              locations = fmap refPosition path
+        [ ValidationError
+            { validationMessage = msg (intercalateName "." $ fmap refName path),
+              validationLocations = fmap refPosition path
             }
         ]
 
@@ -177,12 +177,12 @@ instance RenderGQL UnionTag where
       <> space
       <> renderSelectionSet unionTagSelection
 
-mergeConflict :: [Ref] -> GQLError -> GQLErrors
+mergeConflict :: [Ref] -> ValidationError -> ValidationErrors
 mergeConflict [] err = [err]
 mergeConflict refs@(rootField : xs) err =
-  [ GQLError
-      { message = renderSubfields <> message err,
-        locations = fmap refPosition refs <> locations err
+  [ ValidationError
+      { validationMessage = renderSubfields <> validationMessage err,
+        validationLocations = fmap refPosition refs <> validationLocations err
       }
   ]
   where
@@ -271,12 +271,12 @@ instance
           | selectionName old == selectionName current = pure $ selectionName current
           | otherwise =
             failure $ mergeConflict path $
-              GQLError
-                { message =
+              ValidationError
+                { validationMessage =
                     "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
                       <> " are different fields. "
                       <> useDufferentAliases,
-                  locations = [pos1, pos2]
+                  validationLocations = [pos1, pos2]
                 }
         ---------------------
         -- allias name is relevant only if they collide by allias like:
@@ -291,16 +291,15 @@ instance
           | selectionArguments old == selectionArguments current = pure $ selectionArguments current
           | otherwise =
             failure $ mergeConflict currentPath $
-              GQLError
-                { message = "they have differing arguments. " <> useDufferentAliases,
-                  locations = [pos1, pos2]
+              ValidationError
+                { validationMessage = "they have differing arguments. " <> useDufferentAliases,
+                  validationLocations = [pos1, pos2]
                 }
   merge path _ _ =
-    failure $ mergeConflict path $
-      GQLError
-        { message = "INTERNAL: can't merge. " <> useDufferentAliases,
-          locations = []
-        }
+    failure $
+      mergeConflict
+        path
+        ("INTERNAL: can't merge. " <> msgValidation useDufferentAliases :: ValidationError)
 
 deriving instance Show (Selection a)
 
@@ -336,7 +335,7 @@ instance RenderGQL (Operation VALID) where
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)
 
-getOperationDataType :: Failure GQLErrors m => Operation s -> Schema VALID -> m (TypeDefinition OUT VALID)
+getOperationDataType :: Failure ValidationError m => Operation s -> Schema VALID -> m (TypeDefinition OUT VALID)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)
 getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
   maybe (failure $ mutationIsNotDefined operationPosition) pure (mutation lib)

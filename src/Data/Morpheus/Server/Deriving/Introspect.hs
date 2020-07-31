@@ -36,7 +36,7 @@ where
 import Control.Monad ((>=>))
 import Data.List (partition)
 import Data.Map (Map)
-import Data.Morpheus.Core (validateSchema)
+import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -146,7 +146,7 @@ compileTimeSchemaValidation ::
   Q Exp
 compileTimeSchemaValidation =
   fromSchema
-    . (deriveSchema >=> validateSchema True)
+    . (deriveSchema >=> validateSchema True defaultConfig)
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]

@@ -31,7 +31,6 @@ where
 -- MORPHEUS
 
 import Control.Applicative (pure)
-import Data.Morpheus.Error.Utils (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -44,7 +43,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
-    msg,
+    ValidationError,
+    msgValidation,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( Validator (..),
@@ -56,8 +56,7 @@ import Data.Semigroup
     Semigroup (..),
   )
 import Prelude
-  ( ($),
-    (.),
+  ( (.),
     Show (..),
     const,
   )
@@ -117,4 +116,4 @@ constraintInterface
       typeContent = DataInterface fields
     } = pure (typeName, fields)
 constraintInterface TypeDefinition {typeName} =
-  failure $ globalErrorMessage $ "type " <> msg typeName <> " must be an interface"
+  failure ["type " <> msgValidation typeName <> " must be an interface" :: ValidationError]

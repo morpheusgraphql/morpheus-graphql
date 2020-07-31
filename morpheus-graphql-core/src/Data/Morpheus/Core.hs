@@ -20,6 +20,10 @@ module Data.Morpheus.Core
     parseRequest,
     RenderGQL (..),
     SelectionTree (..),
+    Config (..),
+    VALIDATION_MODE (..),
+    defaultConfig,
+    debugConfig,
   )
 where
 
@@ -54,9 +58,15 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value,
   )
+import Data.Morpheus.Types.Internal.Config
+  ( Config (..),
+    VALIDATION_MODE (..),
+    debugConfig,
+    defaultConfig,
+  )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Context (..),
-    Eventless,
+  ( Eventless,
+    ResolverContext (..),
     ResponseStream,
     ResultT (..),
     RootResModel,
@@ -79,34 +89,42 @@ runApi ::
   (Monad m, ValidateSchema s) =>
   Schema s ->
   RootResModel event m ->
+  Config ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runApi inputSchema resModel request = do
-  ctx <- validRequest
-  model <- withSystemFields (schema ctx) resModel
-  runRootResModel model ctx
-  where
-    validRequest ::
-      Monad m => ResponseStream event m Context
-    validRequest = cleanEvents $ ResultT $ pure $ do
-      validSchema <- validateSchema True inputSchema
-      schema <- internalSchema <:> validSchema
-      operation <- parseRequestWith schema request
-      pure $
-        Context
-          { schema,
-            operation,
-            currentTypeName = "Root",
-            currentSelection =
-              Selection
-                { selectionName = "Root",
-                  selectionArguments = empty,
-                  selectionPosition = operationPosition operation,
-                  selectionAlias = Nothing,
-                  selectionContent = SelectionSet (operationSelection operation),
-                  selectionDirectives = []
-                }
-          }
+runApi inputSchema resModel config request = do
+  validRequest <- validateReq inputSchema config request
+  resovers <- withSystemFields (schema validRequest) resModel
+  runRootResModel resovers validRequest
+
+validateReq ::
+  ( Monad m,
+    ValidateSchema s
+  ) =>
+  Schema s ->
+  Config ->
+  GQLRequest ->
+  ResponseStream event m ResolverContext
+validateReq inputSchema config request = cleanEvents $ ResultT $ pure $ do
+  validSchema <- validateSchema True config inputSchema
+  schema <- internalSchema <:> validSchema
+  operation <- parseRequestWith config schema request
+  pure $
+    ResolverContext
+      { schema,
+        config,
+        operation,
+        currentTypeName = "Root",
+        currentSelection =
+          Selection
+            { selectionName = "Root",
+              selectionArguments = empty,
+              selectionPosition = operationPosition operation,
+              selectionAlias = Nothing,
+              selectionContent = SelectionSet (operationSelection operation),
+              selectionDirectives = []
+            }
+      }
 
 parseDSL :: ByteString -> Either String (Schema VALID)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument

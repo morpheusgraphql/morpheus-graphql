@@ -9,7 +9,7 @@ module Data.Morpheus.Server.Deriving.Interpreter
 where
 
 -- MORPHEUS
-
+import Data.Morpheus.Core (debugConfig, defaultConfig)
 import Data.Morpheus.Server.Deriving.Resolve
   ( RootResolverConstraint,
     coreResolver,
@@ -54,15 +54,21 @@ class Interpreter e m a b where
     RootResolver m e query mut sub ->
     a ->
     b
+  debugInterpreter ::
+    Monad m =>
+    (RootResolverConstraint m e query mut sub) =>
+    RootResolver m e query mut sub ->
+    a ->
+    b
 
 instance Interpreter e m GQLRequest (m GQLResponse) where
-  interpreter = statelessResolver
+  interpreter root = statelessResolver root defaultConfig
+  debugInterpreter root = statelessResolver root debugConfig
 
 instance Interpreter (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
-  interpreter root = toOutStream (coreResolver root)
+  interpreter root = toOutStream (coreResolver root defaultConfig)
+  debugInterpreter root = toOutStream (coreResolver root debugConfig)
 
-instance
-  (MapAPI a a) =>
-  Interpreter e m a (m a)
-  where
+instance (MapAPI a a) => Interpreter e m a (m a) where
   interpreter root = mapAPI (interpreter root)
+  debugInterpreter root = mapAPI (debugInterpreter root)

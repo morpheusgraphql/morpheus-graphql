@@ -20,7 +20,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     Description,
     TypeWrapper (..),
     TypeRef (..),
-    VALIDATION_MODE (..),
     OperationType (..),
     QUERY,
     MUTATION,
@@ -60,6 +59,11 @@ module Data.Morpheus.Types.Internal.AST.Base
     mkTypeRef,
     InternalError (..),
     msgInternal,
+    ValidationError (..),
+    msgValidation,
+    ValidationErrors,
+    withPosition,
+    toGQLError,
   )
 where
 
@@ -72,9 +76,10 @@ import Data.Aeson
 import Data.ByteString.Lazy.Char8 (ByteString, unpack)
 import Data.Char (toLower)
 import Data.Hashable (Hashable)
+import Data.Maybe (Maybe (..), maybeToList)
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
 import Data.Semigroup (Semigroup (..))
-import Data.String (IsString)
+import Data.String (IsString (..))
 import Data.Text (Text, intercalate, pack)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -96,7 +101,6 @@ import Prelude
     Eq (..),
     Functor (..),
     Int,
-    Maybe (..),
     Ord (..),
     Show (..),
     String,
@@ -137,15 +141,39 @@ newtype InternalError = InternalError
   deriving newtype
     (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
 
-instance Lift InternalError where
-  lift = liftString . readInternalError
+data ValidationError = ValidationError
+  { validationMessage :: Message,
+    validationLocations :: [Position]
+  }
+  deriving (Show)
 
-#if MIN_VERSION_template_haskell(2,16,0)
-  liftTyped = liftTypedString . readInternalError
-#endif
+instance IsString ValidationError where
+  fromString = (`ValidationError` []) . msg
+
+instance Semigroup ValidationError where
+  ValidationError m1 p1 <> ValidationError m2 p2 =
+    ValidationError (m1 <> m2) (p1 <> p2)
+
+withPosition :: Maybe Position -> ValidationError -> ValidationError
+withPosition pos (ValidationError m ps) = ValidationError m (ps <> maybeToList pos)
+
+type ValidationErrors = [ValidationError]
+
+toGQLError :: ValidationError -> GQLError
+toGQLError (ValidationError m p) = GQLError m p
+
+-- instance Lift InternalError where
+--   lift = liftString . readInternalError
+
+-- #if MIN_VERSION_template_haskell(2,16,0)
+--   liftTyped = liftTypedString . readInternalError
+-- #endif
 
 msgInternal :: (Msg a) => a -> InternalError
 msgInternal = InternalError . readMessage . msg
+
+msgValidation :: (Msg a) => a -> ValidationError
+msgValidation = (`ValidationError` []) . msg
 
 class Msg a where
   msg :: a -> Message
@@ -247,11 +275,6 @@ data GQLError = GQLError
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 type GQLErrors = [GQLError]
-
-data VALIDATION_MODE
-  = WITHOUT_VARIABLES
-  | FULL_VALIDATION
-  deriving (Eq, Show)
 
 data DataFingerprint = DataFingerprint TypeName [String] deriving (Show, Eq, Ord, Lift)
 
