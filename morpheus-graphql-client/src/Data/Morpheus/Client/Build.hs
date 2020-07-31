@@ -20,7 +20,9 @@ import Data.Morpheus.Client.Transform.Selection
   ( toClientDefinition,
   )
 import Data.Morpheus.Core
-  ( validateRequest,
+  ( Config (..),
+    VALIDATION_MODE (..),
+    validateRequest,
   )
 import Data.Morpheus.Error
   ( gqlWarnings,
@@ -31,10 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     Operation (..),
     Schema,
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Config
-  ( Config (..),
-    VALIDATION_MODE (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,

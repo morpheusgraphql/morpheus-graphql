@@ -21,6 +21,7 @@ module Data.Morpheus.Core
     RenderGQL (..),
     SelectionTree (..),
     Config (..),
+    VALIDATION_MODE (..),
     defaultConfig,
     debugConfig,
   )
@@ -59,6 +60,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Config
   ( Config (..),
+    VALIDATION_MODE (..),
     debugConfig,
     defaultConfig,
   )
