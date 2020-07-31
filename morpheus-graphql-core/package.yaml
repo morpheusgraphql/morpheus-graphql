@@ -47,6 +47,7 @@ library:
     - Data.Morpheus.Types.Internal.Resolving
     - Data.Morpheus.Types.GQLScalar
     - Data.Morpheus.Types.ID
+    - Data.Morpheus.Types.SelectionTree
 
   ghc-options: -Wall
 
