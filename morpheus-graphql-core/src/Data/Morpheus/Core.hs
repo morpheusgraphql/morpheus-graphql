@@ -20,6 +20,9 @@ module Data.Morpheus.Core
     parseRequest,
     RenderGQL (..),
     SelectionTree (..),
+    Config (..),
+    defaultConfig,
+    debugConfig,
   )
 where
 
@@ -56,7 +59,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Config
   ( Config (..),
-    VALIDATION_MODE (..),
+    debugConfig,
+    defaultConfig,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -83,11 +87,11 @@ runApi ::
   (Monad m, ValidateSchema s) =>
   Schema s ->
   RootResModel event m ->
+  Config ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runApi inputSchema resModel request = do
-  let config = Config {debug = False, validationMode = FULL_VALIDATION}
-  validRequest <- validateReq config inputSchema request
+runApi inputSchema resModel config request = do
+  validRequest <- validateReq inputSchema config request
   resovers <- withSystemFields (schema validRequest) resModel
   runRootResModel resovers validRequest
 
@@ -95,11 +99,11 @@ validateReq ::
   ( Monad m,
     ValidateSchema s
   ) =>
-  Config ->
   Schema s ->
+  Config ->
   GQLRequest ->
   ResponseStream event m ResolverContext
-validateReq config inputSchema request = cleanEvents $ ResultT $ pure $ do
+validateReq inputSchema config request = cleanEvents $ ResultT $ pure $ do
   validSchema <- validateSchema True config inputSchema
   schema <- internalSchema <:> validSchema
   operation <- parseRequestWith config schema request

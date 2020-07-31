@@ -3,11 +3,13 @@
 module Data.Morpheus.Types.Internal.Config
   ( Config (..),
     VALIDATION_MODE (..),
+    defaultConfig,
+    debugConfig,
   )
 where
 
 import Prelude
-  ( Bool,
+  ( Bool (..),
     Eq,
     Show,
   )
@@ -22,3 +24,17 @@ data Config = Config
     validationMode :: VALIDATION_MODE
   }
   deriving (Show)
+
+defaultConfig :: Config
+defaultConfig =
+  Config
+    { debug = False,
+      validationMode = FULL_VALIDATION
+    }
+
+debugConfig :: Config
+debugConfig =
+  Config
+    { debug = True,
+      validationMode = FULL_VALIDATION
+    }

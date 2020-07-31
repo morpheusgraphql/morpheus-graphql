@@ -16,7 +16,7 @@ import Data.Aeson (decode, encode)
 import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
-import Data.Morpheus.Core (runApi)
+import Data.Morpheus.Core (defaultConfig, runApi)
 import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -140,7 +140,7 @@ basicTest description path = testCase description $ do
   assertion expected actual
 
 simpleTest :: GQLRequest -> ResponseStream e Identity (Value VALID)
-simpleTest = runApi apiSchema resolver
+simpleTest = runApi apiSchema resolver defaultConfig
 
 expectedResponse :: FieldName -> IO A.Value
 expectedResponse = getResponseBody
