@@ -1,9 +1,9 @@
-query Get__Type {
-  deity {
-    ...OnInterface
+{
+  myUnion {
+    ...onDeity
   }
 }
 
-fragment OnInterface on Supernatural {
+fragment onDeity on Deity {
   power
 }

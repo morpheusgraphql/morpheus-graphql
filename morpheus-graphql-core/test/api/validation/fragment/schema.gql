@@ -15,6 +15,10 @@ type Deity implements Character & Supernatural {
   power: [String!]!
 }
 
+union MyUnion = Hero | Deity
+
 type Query {
   deity: Deity!
+  myUnion: MyUnion
+  character: Character!
 }
