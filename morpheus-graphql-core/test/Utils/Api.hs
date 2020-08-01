@@ -12,7 +12,7 @@ where
 import Control.Applicative (pure)
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
-import Data.Functor ((<$>))
+import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (defaultConfig, runApi)
