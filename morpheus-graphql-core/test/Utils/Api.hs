@@ -71,18 +71,6 @@ import Prelude
     show,
   )
 
-resolver :: Monad m => RootResModel e m
-resolver =
-  RootResModel
-    { query = pure mkNull,
-      mutation = pure mkNull,
-      subscription = pure mkNull,
-      channelMap = Nothing
-    }
-
-simpleTest :: Schema VALID -> GQLRequest -> ResponseStream e Identity (Value VALID)
-simpleTest apiSchema = runApi apiSchema resolver defaultConfig
-
 assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
 assertion expected (ResultT (Identity Success {result}))
   | Just expected == decode (encode result) = pure ()
@@ -93,6 +81,7 @@ assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 apiTest :: FieldName -> TestTree
 apiTest path = testCase "TODO: description" $ do
   schema <- assertValidSchema path
-  actual <- simpleTest schema <$> getRequest path
+  resolvers <- getResolvers path
+  actual <- runApi schema resolvers defaultConfig <$> getRequest path
   expected <- expectedResponse path
   assertion expected actual

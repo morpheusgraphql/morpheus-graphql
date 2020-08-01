@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Lib
@@ -16,24 +17,39 @@ module Lib
     getRequest,
     assertValidSchema,
     getSchema,
+    getResolvers,
   )
 where
 
-import Control.Applicative ((<|>), pure)
-import Control.Monad ((>=>))
+import Control.Applicative ((<|>), Applicative, pure)
+import Control.Monad ((>=>), Monad)
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Either (Either (..))
 import Data.Foldable (foldl)
 import Data.Functor ((<$>))
+import Data.HashMap.Lazy (lookup)
 import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Core (parseGQLDocument)
+import Data.Morpheus.Internal.Utils (selectOr)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
 import Data.Morpheus.Types.Internal.AST (FieldName (..), Schema (..), VALID)
-import Data.Morpheus.Types.Internal.Resolving (Eventless, resultOr)
+import Data.Morpheus.Types.Internal.Resolving
+  ( ResModel,
+    Resolver,
+    ResponseStream,
+    Result (..),
+    ResultT (..),
+    RootResModel (..),
+    WithOperation,
+    mkList,
+    mkNull,
+    mkObject,
+    mkString,
+  )
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
 import qualified Data.Text.Lazy as LT (toStrict)
@@ -50,6 +66,7 @@ import Prelude
     FilePath,
     IO,
     Show,
+    String,
     and,
     map,
     show,
@@ -143,3 +160,20 @@ getRequest p = do
         query = queryBS,
         variables
       }
+
+getResolvers :: Monad m => FieldName -> IO (RootResModel e m)
+getResolvers (FieldName p) = do
+  res <- fromMaybe Null . decode <$> L.readFile (path p <> "/resolvers.json")
+  pure
+    RootResModel
+      { query = pure (lookupRes "query" res),
+        mutation = pure (lookupRes "mutation" res),
+        subscription = pure (lookupRes "subscription" res),
+        channelMap = Nothing
+      }
+
+lookupRes :: Text -> Value -> ResModel o e m
+lookupRes name (Object fields) = case lookup name fields of
+  Nothing -> mkNull
+  Just x -> mkValue x
+lookupRes _ _ = mkNull
