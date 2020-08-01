@@ -1,11 +1,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Main
-  ( main,
+module Utils.Api
+  ( apiTest,
+    assertion,
   )
 where
 
@@ -17,7 +17,6 @@ import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (defaultConfig, runApi)
-import Data.Morpheus.QuasiQuoter (dsl)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
@@ -52,15 +51,11 @@ import Lib
   )
 import Test.Tasty
   ( TestTree,
-    defaultMain,
     testGroup,
   )
 import Test.Tasty.HUnit
   ( assertFailure,
     testCase,
-  )
-import Utils.Api
-  ( assertion,
   )
 import Utils.Schema
   ( testSchema,
@@ -74,74 +69,34 @@ import Prelude
     otherwise,
     show,
     uncurry,
+    undefined,
   )
 
-apiSchema :: Schema VALID
-apiSchema =
-  [dsl|
-
-  type Query {
-    deity(name: String): Deity!
-  }
-
-  interface Character {
-    name : String
-  }
-
-  interface Supernatural {
-    power: [String!]!
-  }
-
-  type Hero implements Character {
-    name: String
-  }
-
-  type Deity implements Character Supernatural {
-    name: String!
-    power: [String!]!
-  }
-|]
+getSchema :: FieldName -> IO (Schema VALID)
+getSchema = undefined
 
 resolver :: Monad m => RootResModel e m
 resolver =
   RootResModel
-    { query =
-        pure $
-          mkObject
-            "Query"
-            [("deity", resolveDeity)],
+    { query = pure mkNull,
       mutation = pure mkNull,
       subscription = pure mkNull,
       channelMap = Nothing
     }
 
-resolveDeity :: (WithOperation o, Monad m) => Resolver o e m (ResModel o e m)
-resolveDeity =
-  pure $
-    mkObject
-      "Deity"
-      [ ("name", pure $ mkString "Morpheus"),
-        ("power", pure $ mkList [mkString "Shapeshifting"])
-      ]
+simpleTest :: Schema VALID -> GQLRequest -> ResponseStream e Identity (Value VALID)
+simpleTest apiSchema = runApi apiSchema resolver defaultConfig
 
-main :: IO ()
-main = do
-  schema <- testSchema
-  defaultMain
-    $ testGroup
-      "core tests"
-    $ fmap
-      (uncurry basicTest)
-      [ ("basic Test", "api/simple"),
-        ("test interface", "api/interface")
-      ]
-      <> [schema]
+assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
+assertion expected (ResultT (Identity Success {result}))
+  | Just expected == decode (encode result) = pure ()
+  | otherwise =
+    assertFailure $ show ("expected: \n " <> msg expected <> " \n but got: \n " <> msg result)
+assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 
-basicTest :: FilePath -> FieldName -> TestTree
-basicTest description path = testCase description $ do
-  actual <- simpleTest <$> getRequest path
+apiTest :: FieldName -> TestTree
+apiTest path = testCase "TODO: description" $ do
+  schema <- getSchema path
+  actual <- simpleTest schema <$> getRequest path
   expected <- expectedResponse path
   assertion expected actual
-
-simpleTest :: GQLRequest -> ResponseStream e Identity (Value VALID)
-simpleTest = runApi apiSchema resolver defaultConfig

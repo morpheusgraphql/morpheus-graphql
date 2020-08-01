@@ -1,10 +1,11 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Lib
   ( getGQLBody,
-    getResponseBody,
+    expectedResponse,
     getCases,
     maybeVariables,
     readSource,
@@ -12,6 +13,7 @@ module Lib
     FileUrl (..),
     CaseTree (..),
     toString,
+    getRequest,
   )
 where
 
@@ -23,9 +25,14 @@ import Data.Either (Either (..))
 import Data.Foldable (foldl)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..), fromMaybe)
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+  )
 import Data.Morpheus.Types.Internal.AST (FieldName (..))
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
+import qualified Data.Text.Lazy as LT (toStrict)
+import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Traversable (traverse)
 import System.Directory (doesDirectoryExist, listDirectory)
 import Prelude
@@ -106,5 +113,16 @@ getGQLBody (FieldName p) = L.readFile (gqlLib p)
 getCases :: FromJSON a => FilePath -> IO [a]
 getCases dir = fromMaybe [] . decode <$> L.readFile ("test/" <> dir <> "/cases.json")
 
-getResponseBody :: FieldName -> IO Value
-getResponseBody (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib p)
+expectedResponse :: FieldName -> IO Value
+expectedResponse (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib p)
+
+getRequest :: FieldName -> IO GQLRequest
+getRequest p = do
+  queryBS <- LT.toStrict . decodeUtf8 <$> getGQLBody p
+  variables <- maybeVariables p
+  pure $
+    GQLRequest
+      { operationName = Nothing,
+        query = queryBS,
+        variables
+      }
