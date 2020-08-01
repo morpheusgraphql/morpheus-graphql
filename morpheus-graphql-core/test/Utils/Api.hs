@@ -10,16 +10,14 @@ module Utils.Api
 where
 
 import Control.Applicative (pure)
-import Control.Monad (Monad)
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
-import Data.Functor (fmap)
 import Data.Functor ((<$>))
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (defaultConfig, runApi)
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( FieldName (..),
     VALID,
     Value (..),
     msg,
@@ -30,6 +28,7 @@ import Data.Morpheus.Types.Internal.Resolving
     ResultT (..),
   )
 import Data.Semigroup ((<>))
+import Data.Text (unpack)
 import Lib
   ( assertValidSchema,
     expectedResponse,
@@ -48,7 +47,6 @@ import Prelude
   ( ($),
     (==),
     IO,
-    String,
     otherwise,
     show,
   )
@@ -60,18 +58,19 @@ assertion expected (ResultT (Identity Success {result}))
     assertFailure $ show ("expected: \n " <> msg expected <> " \n but got: \n " <> msg result)
 assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 
-apiTest :: String -> FieldName -> [FieldName] -> TestTree
-apiTest description apiPath requestPath =
-  testGroup description $
+apiTest :: FieldName -> [FieldName] -> TestTree
+apiTest apiPath requestPath =
+  testGroup (unpack $ readName apiPath) $
     fmap (testApiRequest apiPath) requestPath
 
 testApiRequest ::
   FieldName ->
   FieldName ->
   TestTree
-testApiRequest apiPath path = testCase (show path) $ do
+testApiRequest apiPath path = testCase (unpack $ readName path) $ do
   schema <- assertValidSchema apiPath
   resolvers <- getResolvers apiPath
-  actual <- runApi schema resolvers defaultConfig <$> getRequest (apiPath <> "/" <> path)
-  expected <- expectedResponse path
+  let fullPath = apiPath <> "/" <> path
+  actual <- runApi schema resolvers defaultConfig <$> getRequest fullPath
+  expected <- expectedResponse fullPath
   assertion expected actual
