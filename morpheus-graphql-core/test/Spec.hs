@@ -28,5 +28,11 @@ main = do
     testGroup
       "core tests"
       [ schema,
-        apiTest "api/deity" ["simple", "interface"]
+        apiTest "api/deity" ["simple", "interface"],
+        apiTest
+          "api/validation/fragment"
+          [ "on-type",
+            "on-interface",
+            "on-union-type"
+          ]
       ]

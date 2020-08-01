@@ -1,0 +1,20 @@
+type Query {
+  deity(name: String): Deity!
+}
+
+interface Character {
+  name: String
+}
+
+interface Supernatural {
+  power: [String!]!
+}
+
+type Hero implements Character {
+  name: String
+}
+
+type Deity implements Character & Supernatural {
+  name: String!
+  power: [String!]!
+}
