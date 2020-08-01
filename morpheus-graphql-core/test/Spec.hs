@@ -60,7 +60,8 @@ import Test.Tasty.HUnit
     testCase,
   )
 import Utils.Api
-  ( assertion,
+  ( apiTest,
+    assertion,
   )
 import Utils.Schema
   ( testSchema,
@@ -135,7 +136,9 @@ main = do
       [ ("basic Test", "api/simple"),
         ("test interface", "api/interface")
       ]
-      <> [schema]
+      <> [ schema,
+           apiTest "/api/validation/simple"
+         ]
 
 basicTest :: FilePath -> FieldName -> TestTree
 basicTest description path = testCase description $ do
