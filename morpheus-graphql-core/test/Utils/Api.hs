@@ -13,7 +13,7 @@ import Control.Applicative (pure)
 import Control.Monad (Monad)
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
-import Data.Functor ((<$>), fmap)
+import Data.Functor ((<$>))
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (defaultConfig, runApi)
@@ -44,7 +44,8 @@ import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as LT (toStrict)
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Lib
-  ( expectedResponse,
+  ( assertValidSchema,
+    expectedResponse,
     getGQLBody,
     getRequest,
     maybeVariables,
@@ -68,12 +69,7 @@ import Prelude
     IO,
     otherwise,
     show,
-    uncurry,
-    undefined,
   )
-
-getSchema :: FieldName -> IO (Schema VALID)
-getSchema = undefined
 
 resolver :: Monad m => RootResModel e m
 resolver =
@@ -96,7 +92,7 @@ assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
 
 apiTest :: FieldName -> TestTree
 apiTest path = testCase "TODO: description" $ do
-  schema <- getSchema path
+  schema <- assertValidSchema path
   actual <- simpleTest schema <$> getRequest path
   expected <- expectedResponse path
   assertion expected actual

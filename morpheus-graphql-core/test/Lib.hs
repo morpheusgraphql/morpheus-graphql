@@ -14,10 +14,13 @@ module Lib
     CaseTree (..),
     toString,
     getRequest,
+    assertValidSchema,
+    getSchema,
   )
 where
 
 import Control.Applicative ((<|>), pure)
+import Control.Monad ((>=>))
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
@@ -25,16 +28,21 @@ import Data.Either (Either (..))
 import Data.Foldable (foldl)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..), fromMaybe)
+import Data.Morpheus.Core (parseGQLDocument)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
-import Data.Morpheus.Types.Internal.AST (FieldName (..))
+import Data.Morpheus.Types.Internal.AST (FieldName (..), Schema (..), VALID)
+import Data.Morpheus.Types.Internal.Resolving (Eventless, resultOr)
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
 import qualified Data.Text.Lazy as LT (toStrict)
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Traversable (traverse)
 import System.Directory (doesDirectoryExist, listDirectory)
+import Test.Tasty.HUnit
+  ( assertFailure,
+  )
 import Prelude
   ( ($),
     (.),
@@ -44,6 +52,7 @@ import Prelude
     Show,
     and,
     map,
+    show,
   )
 
 readSource :: FieldName -> IO ByteString
@@ -112,6 +121,14 @@ getGQLBody (FieldName p) = L.readFile (gqlLib p)
 
 getCases :: FromJSON a => FilePath -> IO [a]
 getCases dir = fromMaybe [] . decode <$> L.readFile ("test/" <> dir <> "/cases.json")
+
+getSchema :: FieldName -> IO (Eventless (Schema VALID))
+getSchema (FieldName x) = parseGQLDocument <$> L.readFile (path x <> "/schema.gql")
+
+assertValidSchema :: FieldName -> IO (Schema VALID)
+assertValidSchema = getSchema >=> resultOr failedSchema pure
+  where
+    failedSchema err = assertFailure ("unexpected schema validation error: \n " <> show err)
 
 expectedResponse :: FieldName -> IO Value
 expectedResponse (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib p)
