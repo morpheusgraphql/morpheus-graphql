@@ -21,7 +21,7 @@ module Lib
   )
 where
 
-import Control.Applicative ((<|>), Applicative, pure)
+import Control.Applicative ((<|>), pure)
 import Control.Monad ((>=>), Monad)
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
@@ -32,23 +32,18 @@ import Data.Functor ((<$>))
 import Data.HashMap.Lazy (lookup)
 import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Core (parseGQLDocument)
-import Data.Morpheus.Internal.Utils (selectOr)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
 import Data.Morpheus.Types.Internal.AST (FieldName (..), Schema (..), VALID)
 import Data.Morpheus.Types.Internal.Resolving
-  ( ResModel,
-    Resolver,
-    ResponseStream,
-    Result (..),
-    ResultT (..),
+  ( Eventless,
+    ResModel,
     RootResModel (..),
     WithOperation,
-    mkList,
     mkNull,
-    mkObject,
-    mkString,
+    mkValue,
+    resultOr,
   )
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
@@ -66,7 +61,6 @@ import Prelude
     FilePath,
     IO,
     Show,
-    String,
     and,
     map,
     show,
@@ -172,7 +166,13 @@ getResolvers (FieldName p) = do
         channelMap = Nothing
       }
 
-lookupRes :: Text -> Value -> ResModel o e m
+lookupRes ::
+  ( WithOperation o,
+    Monad m
+  ) =>
+  Text ->
+  Value ->
+  ResModel o e m
 lookupRes name (Object fields) = case lookup name fields of
   Nothing -> mkNull
   Just x -> mkValue x
