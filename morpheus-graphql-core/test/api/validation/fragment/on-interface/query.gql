@@ -3,7 +3,7 @@
     ...OnSupernatural
   }
   character {
-    ...Character
+    ...OnCharacter
   }
 }
 
