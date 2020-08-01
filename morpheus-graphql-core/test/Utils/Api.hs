@@ -48,6 +48,7 @@ import Lib
     expectedResponse,
     getGQLBody,
     getRequest,
+    getResolvers,
     maybeVariables,
   )
 import Test.Tasty
