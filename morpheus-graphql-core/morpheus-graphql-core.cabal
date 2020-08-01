@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2b24551fe6ec95c9fcca3b6ef482190fe128769536f81a8a183556b5a93a8111
+-- hash: d12f01dd80a4d855d79dcfb13f532d589f253cff1711c40d5b4704fdb9f7fdde
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -24,9 +24,9 @@ extra-source-files:
     README.md
 data-files:
     test/api/interface/query.gql
+    test/api/interface/schema.gql
     test/api/simple/query.gql
-    test/api/validation/simple/query.gql
-    test/api/validation/simple/schema.gql
+    test/api/simple/schema.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -64,10 +64,10 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
+    test/api/interface/resolvers.json
     test/api/interface/response.json
+    test/api/simple/resolvers.json
     test/api/simple/response.json
-    test/api/validation/simple/resolvers.json
-    test/api/validation/simple/response.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
