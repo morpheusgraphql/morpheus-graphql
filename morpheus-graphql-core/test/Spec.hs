@@ -77,6 +77,5 @@ main = do
     testGroup
       "core tests"
       [ schema,
-        apiTest "api/simple",
-        apiTest "api/interface"
+        apiTest "api" ["simple", "interface"]
       ]
