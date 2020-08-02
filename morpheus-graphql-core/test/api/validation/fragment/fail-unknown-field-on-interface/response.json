@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"power\" on type \"Character\".",
+      "locations": [{ "line": 15, "column": 3 }]
+    },
+    {
+      "message": "Cannot query field \"name\" on type \"Supernatural\".",
+      "locations": [{ "line": 15, "column": 3 }]
+    }
+  ]
+}

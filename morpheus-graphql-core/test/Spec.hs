@@ -34,6 +34,7 @@ main = do
           [ "on-type",
             "on-interface",
             "inline-on-interface",
-            "on-union-type"
+            "on-union-type",
+            "fail-unknown-field-on-interface"
           ]
       ]

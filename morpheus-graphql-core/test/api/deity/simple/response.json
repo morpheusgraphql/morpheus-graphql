@@ -1,6 +1,8 @@
 {
-  "deity": {
-    "name": "Morpheus",
-    "power": ["Shapeshifting"]
+  "data": {
+    "deity": {
+      "name": "Morpheus",
+      "power": ["Shapeshifting"]
+    }
   }
 }

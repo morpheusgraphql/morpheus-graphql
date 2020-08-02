@@ -1,5 +1,4 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,19 +11,19 @@ where
 import Control.Applicative (pure)
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
+import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (defaultConfig, runApi)
+import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     VALID,
     Value (..),
-    msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResponseStream,
-    Result (..),
     ResultT (..),
   )
 import Data.Semigroup ((<>))
@@ -48,15 +47,17 @@ import Prelude
     (==),
     IO,
     otherwise,
-    show,
   )
 
 assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
-assertion expected (ResultT (Identity Success {result}))
-  | Just expected == decode (encode result) = pure ()
+assertion expected (ResultT (Identity actual))
+  | Just expected == decode actualValue = pure ()
   | otherwise =
-    assertFailure $ show ("expected: \n " <> msg expected <> " \n but got: \n " <> msg result)
-assertion _ (ResultT (Identity Failure {errors})) = assertFailure (show errors)
+    assertFailure $
+      LB.unpack
+        ("expected: \n\n " <> encode expected <> " \n\n but got: \n\n " <> actualValue)
+  where
+    actualValue = encode (renderResponse actual)
 
 apiTest :: FieldName -> [FieldName] -> TestTree
 apiTest apiPath requestPath =

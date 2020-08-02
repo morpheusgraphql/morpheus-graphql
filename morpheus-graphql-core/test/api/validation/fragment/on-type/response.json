@@ -1,5 +1,7 @@
 {
-  "deity": {
-    "name": "Morpheus"
+  "data": {
+    "deity": {
+      "name": "Morpheus"
+    }
   }
 }
