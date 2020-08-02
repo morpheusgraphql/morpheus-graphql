@@ -30,7 +30,7 @@ import Data.Either (Either (..))
 import Data.Foldable (foldl)
 import Data.Functor ((<$>))
 import Data.HashMap.Lazy (lookup)
-import Data.Maybe (Maybe (..), fromMaybe)
+import Data.Maybe (Maybe (..), fromMaybe, maybe)
 import Data.Morpheus.Core (parseGQLDocument)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -173,7 +173,5 @@ lookupRes ::
   Text ->
   Value ->
   ResModel o e m
-lookupRes name (Object fields) = case lookup name fields of
-  Nothing -> mkNull
-  Just x -> mkValue x
+lookupRes name (Object fields) = maybe mkNull mkValue (lookup name fields)
 lookupRes _ _ = mkNull
