@@ -6,7 +6,7 @@
   }
   character {
     ... on Character {
-      power
+      name
     }
   }
 }

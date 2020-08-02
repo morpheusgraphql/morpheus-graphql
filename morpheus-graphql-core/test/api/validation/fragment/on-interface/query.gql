@@ -12,5 +12,5 @@ fragment OnSupernatural on Supernatural {
 }
 
 fragment OnCharacter on Character {
-  power
+  name
 }
