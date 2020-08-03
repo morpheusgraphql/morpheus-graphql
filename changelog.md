@@ -4,6 +4,7 @@
 
 ### new features
 
+- query validation supports interfaces
 - `debugInterpreter`: displays internal context on grahql errors
 - compileTimeSchemaValidation :
   morpheus validates schema at runtime (after the schema derivation).

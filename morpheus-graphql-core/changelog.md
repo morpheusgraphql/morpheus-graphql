@@ -4,6 +4,7 @@
 
 ### new features
 
+- query validation supports interfaces
 - exposed: `Data.Morpheus.Types.SelectionTree`
 - configurable api: `Data.Morpheus.Core` exports
 
