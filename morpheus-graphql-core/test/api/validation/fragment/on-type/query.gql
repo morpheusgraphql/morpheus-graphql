@@ -1,0 +1,9 @@
+{
+  deity {
+    ...OnDeity
+  }
+}
+
+fragment OnDeity on Deity {
+  name
+}

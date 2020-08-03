@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: de15f7b5435b34e84a6ee3664788ed408610597ca00810961d0e556c4a78bd0a
+-- hash: 9c017f635ee610e9679cbe538e7c47c3f5268b6ba51acc9c8f7436daec24673c
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -23,8 +23,15 @@ extra-source-files:
     changelog.md
     README.md
 data-files:
-    test/api/interface/query.gql
-    test/api/simple/query.gql
+    test/api/deity/interface/query.gql
+    test/api/deity/schema.gql
+    test/api/deity/simple/query.gql
+    test/api/validation/fragment/fail-unknown-field-on-interface/query.gql
+    test/api/validation/fragment/inline-on-interface/query.gql
+    test/api/validation/fragment/on-interface/query.gql
+    test/api/validation/fragment/on-type/query.gql
+    test/api/validation/fragment/on-union-type/query.gql
+    test/api/validation/fragment/schema.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -62,8 +69,15 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
-    test/api/interface/response.json
-    test/api/simple/response.json
+    test/api/deity/interface/response.json
+    test/api/deity/resolvers.json
+    test/api/deity/simple/response.json
+    test/api/validation/fragment/fail-unknown-field-on-interface/response.json
+    test/api/validation/fragment/inline-on-interface/response.json
+    test/api/validation/fragment/on-interface/response.json
+    test/api/validation/fragment/on-type/response.json
+    test/api/validation/fragment/on-union-type/response.json
+    test/api/validation/fragment/resolvers.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
@@ -201,7 +215,8 @@ test-suite morpheus-test
   main-is: Spec.hs
   other-modules:
       Lib
-      Schema
+      Utils.Api
+      Utils.Schema
       Paths_morpheus_graphql_core
   hs-source-dirs:
       test

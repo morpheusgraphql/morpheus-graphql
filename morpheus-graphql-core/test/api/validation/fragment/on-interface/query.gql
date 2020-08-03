@@ -1,0 +1,16 @@
+{
+  deity {
+    ...OnSupernatural
+  }
+  character {
+    ...OnCharacter
+  }
+}
+
+fragment OnSupernatural on Supernatural {
+  power
+}
+
+fragment OnCharacter on Character {
+  name
+}

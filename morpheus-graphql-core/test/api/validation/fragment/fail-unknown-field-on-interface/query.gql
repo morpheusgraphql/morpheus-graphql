@@ -1,0 +1,9 @@
+{
+  character {
+    ...OnCharacter
+  }
+}
+
+fragment OnCharacter on Character {
+  power
+}

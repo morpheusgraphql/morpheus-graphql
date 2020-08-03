@@ -74,7 +74,11 @@ checkUnusedFragments selectionSet = do
     (elems fragments)
 
 castFragmentType ::
-  Maybe FieldName -> Position -> [TypeName] -> Fragment -> SelectionValidator Fragment
+  Maybe FieldName ->
+  Position ->
+  [TypeName] ->
+  Fragment ->
+  SelectionValidator Fragment
 castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers

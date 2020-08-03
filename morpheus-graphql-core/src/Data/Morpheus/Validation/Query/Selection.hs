@@ -49,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     VALID,
     ValidationError (..),
     isEntNode,
@@ -160,6 +161,10 @@ processSelectionDirectives location rawDirectives sel = do
       then selection
       else empty
 
+possibleTypes :: TypeDefinition a s -> [TypeName]
+possibleTypes TypeDefinition {typeName, typeContent = DataObject {objectImplements}} = typeName : objectImplements
+possibleTypes TypeDefinition {typeName} = [typeName]
+
 validateSelectionSet ::
   TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
 validateSelectionSet dataType@(typeDef, fieldsDef) =
@@ -227,7 +232,7 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
       processSelectionDirectives FRAGMENT_SPREAD dirs
         $ const
         -- TODO: add directives to selection
-        $ resolveSpread [typeName typeDef] ref
+        $ resolveSpread (possibleTypes typeDef) ref
           >>= validateFragment
     validateSelection
       ( InlineFragment
@@ -239,7 +244,7 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
         processSelectionDirectives INLINE_FRAGMENT fragmentDirectives
           $ const
           -- TODO: add directives to selection
-          $ castFragmentType Nothing fragmentPosition [typeName typeDef] fragment
+          $ castFragmentType Nothing fragmentPosition (possibleTypes typeDef) fragment
             >>= validateFragment
     --------------------------------------------------------------------------------
     validateFragment Fragment {fragmentSelection} = validateSelectionSet dataType fragmentSelection

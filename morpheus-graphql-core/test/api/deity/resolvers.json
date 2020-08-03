@@ -1,0 +1,8 @@
+{
+  "query": {
+    "deity": {
+      "name": "Morpheus",
+      "power": ["Shapeshifting"]
+    }
+  }
+}
