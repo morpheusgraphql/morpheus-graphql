@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving
@@ -43,21 +44,37 @@ module Data.Morpheus.Types.Internal.Resolving
     Channel (..),
     ResolverState,
     liftResolverState,
+    mkValue,
   )
 where
 
+import Control.Applicative (pure)
+import Control.Monad (Monad)
+import qualified Data.Aeson as A
+import Data.Functor (fmap)
+import qualified Data.HashMap.Strict as HM
+  ( toList,
+  )
+import Data.Morpheus.Internal.Utils
+  ( mapTuple,
+  )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( FieldName (..),
     ScalarValue (..),
     Token,
     TypeName,
+    decodeScientific,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Event
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
+import qualified Data.Vector as V
+  ( toList,
+  )
 import Prelude
-  ( (.),
+  ( ($),
+    (.),
     Bool,
     Float,
     Int,
@@ -86,6 +103,22 @@ mkUnion = ResUnion
 
 mkNull :: ResModel o e m
 mkNull = ResNull
+
+mkValue ::
+  (LiftOperation o, Monad m) =>
+  A.Value ->
+  ResModel o e m
+mkValue (A.Object v) =
+  mkObject
+    "DynamicValue"
+    $ fmap
+      (mapTuple FieldName (pure . mkValue))
+      (HM.toList v)
+mkValue (A.Array ls) = mkList (fmap mkValue (V.toList ls))
+mkValue A.Null = mkNull
+mkValue (A.Number x) = ResScalar (decodeScientific x)
+mkValue (A.String x) = ResScalar (String x)
+mkValue (A.Bool x) = ResScalar (Boolean x)
 
 mkObject ::
   TypeName ->

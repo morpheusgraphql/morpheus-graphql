@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"power\" on type \"Character\".",
+      "locations": [{ "line": 8, "column": 3 }]
+    }
+  ]
+}

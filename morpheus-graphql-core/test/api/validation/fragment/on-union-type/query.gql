@@ -1,0 +1,9 @@
+{
+  myUnion {
+    ...onDeity
+  }
+}
+
+fragment onDeity on Deity {
+  power
+}

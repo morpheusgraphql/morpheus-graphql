@@ -1,0 +1,24 @@
+interface Character {
+  name: String
+}
+
+interface Supernatural {
+  power: [String!]!
+}
+
+type Hero implements Character {
+  name: String
+}
+
+type Deity implements Character & Supernatural {
+  name: String!
+  power: [String!]!
+}
+
+union MyUnion = Hero | Deity
+
+type Query {
+  deity: Deity!
+  myUnion: MyUnion
+  character: Character!
+}
