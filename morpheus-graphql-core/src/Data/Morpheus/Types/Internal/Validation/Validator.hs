@@ -160,7 +160,7 @@ data ScopeKind
   deriving (Show)
 
 data OperationContext vars = OperationContext
-  { fragments :: Fragments VALID,
+  { fragments :: Fragments RAW,
     selection :: CurrentSelection,
     variables :: vars
   }
@@ -281,9 +281,9 @@ askVariables = get
 
 askFragments ::
   ( MonadContext m s c,
-    GetWith c (Fragments s)
+    GetWith c (Fragments s')
   ) =>
-  m c (Fragments s)
+  m c (Fragments s')
 askFragments = get
 
 runValidator :: Validator s ctx a -> Config -> Schema s -> Scope -> ctx -> Eventless a
@@ -449,7 +449,7 @@ instance GetWith (OperationContext (VariableDefinitions VALID)) (VariableDefinit
 instance GetWith (InputContext ctx) InputSource where
   getWith = inputSource
 
-instance GetWith (OperationContext v) (Fragments VALID) where
+instance GetWith (OperationContext v) (Fragments RAW) where
   getWith = fragments
 
 -- Setters

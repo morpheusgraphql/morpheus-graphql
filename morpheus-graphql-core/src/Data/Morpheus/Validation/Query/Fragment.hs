@@ -79,18 +79,18 @@ castFragmentType ::
   Position ->
   [TypeName] ->
   Fragment RAW ->
-  SelectionValidator (Fragment VALID)
+  SelectionValidator (Fragment RAW)
 castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [TypeName] -> Ref -> SelectionValidator (Fragment CONST)
+resolveSpread :: [TypeName] -> Ref -> SelectionValidator (Fragment RAW)
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
-usedFragments :: Fragments s -> [Selection RAW] -> [Node]
+usedFragments :: Fragments RAW -> [Selection RAW] -> [Node]
 usedFragments fragments = concatMap findAllUses
   where
     findUsesSelectionContent :: SelectionContent RAW -> [Node]
@@ -114,9 +114,10 @@ usedFragments fragments = concatMap findAllUses
 
 fragmentsConditionTypeChecking :: BaseValidator ()
 fragmentsConditionTypeChecking =
-  askFragments >>= traverse_ checkTypeExistence
+  askFragments
+    >>= traverse_ checkTypeExistence
 
-checkTypeExistence :: Fragment s -> BaseValidator ()
+checkTypeExistence :: Fragment RAW -> BaseValidator ()
 checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
   ( (askSchema :: BaseValidator (Schema VALID))
       >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
