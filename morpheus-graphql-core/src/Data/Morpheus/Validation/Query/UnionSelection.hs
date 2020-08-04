@@ -113,7 +113,9 @@ validateCluster ::
   SelectionSet RAW ->
   [(TypeDef, [Fragment RAW])] ->
   SelectionValidator (SelectionContent VALID)
-validateCluster validator __typename = traverse _validateCluster >=> fmap UnionSelection . fromElems
+validateCluster validator __typename =
+  traverse _validateCluster
+    >=> fmap UnionSelection . fromElems
   where
     _validateCluster :: (TypeDef, [Fragment RAW]) -> SelectionValidator UnionTag
     _validateCluster (unionType@(TypeDefinition {typeName}, _), fragmets) = do
