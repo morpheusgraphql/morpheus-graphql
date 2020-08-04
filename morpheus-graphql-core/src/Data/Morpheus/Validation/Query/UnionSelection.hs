@@ -52,7 +52,10 @@ import Data.Morpheus.Validation.Query.Fragment
     resolveSpread,
   )
 
-type TypeDef = (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
+type TypeDef =
+  ( TypeDefinition OUT VALID,
+    FieldsDefinition OUT VALID
+  )
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::

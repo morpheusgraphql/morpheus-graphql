@@ -285,6 +285,7 @@ validateByTypeContent
           <$> validateSelectionSet
             (typeDef, objectFields)
             rawSelectionSet
+      -- TODO: Union Like Validation
       __validate DataInterface {interfaceFields} =
         SelectionSet
           <$> validateSelectionSet
