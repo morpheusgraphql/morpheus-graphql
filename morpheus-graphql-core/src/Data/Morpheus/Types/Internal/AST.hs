@@ -182,7 +182,7 @@ import Prelude (Show)
 type Variables = HashMap FieldName ResolvedValue
 
 data GQLQuery = GQLQuery
-  { fragments :: Fragments,
+  { fragments :: Fragments RAW,
     operation :: Operation RAW,
     inputVariables :: [(FieldName, ResolvedValue)]
   }

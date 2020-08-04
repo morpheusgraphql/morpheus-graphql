@@ -28,7 +28,8 @@ import Data.Morpheus.Internal.Utils
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( CONST,
+    FieldName,
     Fragment (..),
     Fragments,
     Position,
@@ -77,19 +78,19 @@ castFragmentType ::
   Maybe FieldName ->
   Position ->
   [TypeName] ->
-  Fragment ->
-  SelectionValidator Fragment
+  Fragment RAW ->
+  SelectionValidator (Fragment VALID)
 castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [TypeName] -> Ref -> SelectionValidator Fragment
+resolveSpread :: [TypeName] -> Ref -> SelectionValidator (Fragment CONST)
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
-usedFragments :: Fragments -> [Selection RAW] -> [Node]
+usedFragments :: Fragments s -> [Selection RAW] -> [Node]
 usedFragments fragments = concatMap findAllUses
   where
     findUsesSelectionContent :: SelectionContent RAW -> [Node]
@@ -115,7 +116,7 @@ fragmentsConditionTypeChecking :: BaseValidator ()
 fragmentsConditionTypeChecking =
   askFragments >>= traverse_ checkTypeExistence
 
-checkTypeExistence :: Fragment -> BaseValidator ()
+checkTypeExistence :: Fragment s -> BaseValidator ()
 checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
   ( (askSchema :: BaseValidator (Schema VALID))
       >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
@@ -129,22 +130,25 @@ fragmentsCycleChecking = exploreSpreads >>= fragmentCycleChecking
 exploreSpreads :: BaseValidator Graph
 exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
 
-exploreFragmentSpreads :: Fragment -> NodeEdges
+exploreFragmentSpreads :: Fragment RAW -> NodeEdges
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =
-  (Ref fragmentName fragmentPosition, concatMap scanForSpread fragmentSelection)
+  (Ref fragmentName fragmentPosition, concatMap scanSpread fragmentSelection)
 
-scanForSpreadContent :: SelectionContent RAW -> [Node]
-scanForSpreadContent SelectionField = []
-scanForSpreadContent (SelectionSet selectionSet) =
-  concatMap scanForSpread selectionSet
+class ScanSpread a where
+  scanSpread :: a -> [Node]
 
-scanForSpread :: Selection RAW -> [Node]
-scanForSpread Selection {selectionContent} =
-  scanForSpreadContent selectionContent
-scanForSpread (InlineFragment Fragment {fragmentSelection}) =
-  concatMap scanForSpread fragmentSelection
-scanForSpread (Spread _ Ref {refName, refPosition}) =
-  [Ref refName refPosition]
+instance ScanSpread (Selection RAW) where
+  scanSpread Selection {selectionContent} =
+    scanSpread selectionContent
+  scanSpread (InlineFragment Fragment {fragmentSelection}) =
+    concatMap scanSpread fragmentSelection
+  scanSpread (Spread _ Ref {refName, refPosition}) =
+    [Ref refName refPosition]
+
+instance ScanSpread (SelectionContent RAW) where
+  scanSpread SelectionField = []
+  scanSpread (SelectionSet selectionSet) =
+    concatMap scanSpread selectionSet
 
 type Node = Ref
 

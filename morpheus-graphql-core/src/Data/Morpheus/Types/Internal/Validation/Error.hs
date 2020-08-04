@@ -75,7 +75,7 @@ instance Unused (OperationContext v) (Variable s) where
           validationLocations = [variablePosition]
         }
 
-instance Unused (OperationContext v) Fragment where
+instance Unused (OperationContext v) (Fragment s) where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
@@ -145,7 +145,7 @@ class Unknown c ref ctx where
   unknown :: Scope -> ctx -> c -> ref -> ValidationError
 
 -- {...H} -> "Unknown fragment \"H\"."
-instance Unknown Fragments Ref ctx where
+instance Unknown (Fragments s) Ref ctx where
   unknown _ _ _ (Ref name pos) =
     ValidationError
       { validationMessage = "Unknown Fragment " <> msg name <> ".",
@@ -195,7 +195,7 @@ instance Unknown (FieldsDefinition OUT s) Ref (OperationContext v) where
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> ValidationError
 
-instance KindViolation 'TARGET_OBJECT Fragment where
+instance KindViolation 'TARGET_OBJECT (Fragment s) where
   kindViolation _ Fragment {fragmentName, fragmentType, fragmentPosition} =
     ValidationError
       { validationMessage =
