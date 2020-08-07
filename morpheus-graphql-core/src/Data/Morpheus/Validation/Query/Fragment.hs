@@ -22,6 +22,7 @@ import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
     cannotSpreadWithinItself,
   )
+import Data.Morpheus.Internal.Graph (cycleChecking)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
@@ -54,7 +55,6 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
   )
 import Data.Semigroup ((<>))
-import Data.Traversable (traverse)
 import Prelude
   ( ($),
     (.),
@@ -128,6 +128,9 @@ checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
 fragmentsCycleChecking :: BaseValidator ()
 fragmentsCycleChecking = exploreSpreads >>= fragmentCycleChecking
 
+fragmentCycleChecking :: Graph -> BaseValidator ()
+fragmentCycleChecking = cycleChecking (failure . cannotSpreadWithinItself)
+
 exploreSpreads :: BaseValidator Graph
 exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
 
@@ -156,17 +159,3 @@ type Node = Ref
 type NodeEdges = (Node, [Node])
 
 type Graph = [NodeEdges]
-
-fragmentCycleChecking :: Graph -> BaseValidator ()
-fragmentCycleChecking lib = traverse_ checkFragment lib
-  where
-    checkFragment (fragmentID, _) = checkForCycle lib fragmentID [fragmentID]
-
-checkForCycle :: Graph -> Node -> [Node] -> BaseValidator Graph
-checkForCycle lib parentNode history = case lookup parentNode lib of
-  Just node -> concat <$> traverse checkNode node
-  Nothing -> pure []
-  where
-    checkNode x = if x `elem` history then cycleError x else recurse x
-    recurse node = checkForCycle lib node $ history <> [node]
-    cycleError n = failure $ cannotSpreadWithinItself (n : history)
