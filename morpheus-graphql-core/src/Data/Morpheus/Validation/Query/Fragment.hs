@@ -13,9 +13,9 @@ where
 
 import Control.Applicative ((*>), pure)
 import Control.Monad ((>>=))
-import Data.Foldable (concat, concatMap, traverse_)
+import Data.Foldable (concatMap, traverse_)
 import Data.Functor (($>), (<$>), fmap)
-import Data.List (elem, lookup)
+import Data.List (elem)
 import Data.Maybe (Maybe (..))
 -- MORPHEUS
 import Data.Morpheus.Error.Fragment
