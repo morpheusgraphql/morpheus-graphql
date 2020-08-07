@@ -5,6 +5,9 @@
 
 module Data.Morpheus.Internal.Graph
   ( cycleChecking,
+    Node,
+    Graph,
+    Edges,
   )
 where
 
@@ -20,6 +23,8 @@ import Data.Semigroup ((<>))
 import Prelude
   ( otherwise,
   )
+
+type Node = Ref
 
 type Edges = (Ref, [Ref])
 

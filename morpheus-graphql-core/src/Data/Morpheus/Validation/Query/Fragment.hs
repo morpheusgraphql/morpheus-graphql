@@ -22,15 +22,19 @@ import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
     cannotSpreadWithinItself,
   )
-import Data.Morpheus.Internal.Graph (cycleChecking)
+import Data.Morpheus.Internal.Graph
+  ( Edges,
+    Graph,
+    Node,
+    cycleChecking,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    FieldName,
+  ( FieldName,
     Fragment (..),
     Fragments,
     Position,
@@ -126,15 +130,14 @@ checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
     $> ()
 
 fragmentsCycleChecking :: BaseValidator ()
-fragmentsCycleChecking = exploreSpreads >>= fragmentCycleChecking
-
-fragmentCycleChecking :: Graph -> BaseValidator ()
-fragmentCycleChecking = cycleChecking (failure . cannotSpreadWithinItself)
+fragmentsCycleChecking =
+  exploreSpreads
+    >>= cycleChecking (failure . cannotSpreadWithinItself)
 
 exploreSpreads :: BaseValidator Graph
 exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
 
-exploreFragmentSpreads :: Fragment RAW -> NodeEdges
+exploreFragmentSpreads :: Fragment RAW -> Edges
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =
   (Ref fragmentName fragmentPosition, concatMap scanSpread fragmentSelection)
 
@@ -153,9 +156,3 @@ instance ScanSpread (SelectionContent RAW) where
   scanSpread SelectionField = []
   scanSpread (SelectionSet selectionSet) =
     concatMap scanSpread selectionSet
-
-type Node = Ref
-
-type NodeEdges = (Node, [Node])
-
-type Graph = [NodeEdges]
