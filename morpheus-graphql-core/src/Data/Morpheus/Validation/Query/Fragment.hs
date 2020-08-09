@@ -66,7 +66,6 @@ import Prelude
   ( ($),
     (.),
     otherwise,
-    undefined,
   )
 
 resolveValidFragment ::
@@ -86,12 +85,10 @@ validateFragment validate allowedTypes fragment@Fragment {fragmentPosition} =
     >>= validate . fragmentSelection
 
 validateFragments :: SelectionSet RAW -> FragmentValidator RAW (Fragments VALID)
-validateFragments selectionSet = undefined
-
--- fragmentsCycleChecking
---   *> checkUnusedFragments selectionSet
---   *> fragmentsConditionTypeChecking
---   *> undefined
+validateFragments selectionSet =
+  fragmentsCycleChecking
+    *> checkUnusedFragments selectionSet
+    *> fragmentsConditionTypeChecking
 
 checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do
