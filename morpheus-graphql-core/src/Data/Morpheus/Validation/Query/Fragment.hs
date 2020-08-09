@@ -15,6 +15,7 @@ module Data.Morpheus.Validation.Query.Fragment
     validateFragment,
     selectFragmentType,
     ResolveFragment (..),
+    checkfragmentPreconditions,
   )
 where
 
@@ -63,7 +64,8 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( Constraint (..),
+  ( BaseValidator,
+    Constraint (..),
     FragmentValidator,
     askFragments,
     askSchema,
@@ -110,8 +112,7 @@ validateFragments ::
   SelectionSet RAW ->
   FragmentValidator RAW (Fragments VALID)
 validateFragments f selectionSet =
-  fragmentsCycleChecking
-    *> checkUnusedFragments selectionSet
+  checkUnusedFragments selectionSet
     *> fragmentsConditionTypeChecking
     *> __validateFragments f
 
@@ -193,12 +194,12 @@ selectFragmentType fr@Fragment {fragmentType, fragmentPosition} = do
   typeDef <- selectKnown (TypeNameRef fragmentType fragmentPosition) schema
   constraint OBJECT fr typeDef
 
-fragmentsCycleChecking :: FragmentValidator RAW ()
-fragmentsCycleChecking =
+checkfragmentPreconditions :: BaseValidator ()
+checkfragmentPreconditions =
   exploreSpreads
     >>= cycleChecking (failure . cannotSpreadWithinItself)
 
-exploreSpreads :: FragmentValidator RAW Graph
+exploreSpreads :: BaseValidator Graph
 exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
 
 exploreFragmentSpreads :: Fragment RAW -> Edges

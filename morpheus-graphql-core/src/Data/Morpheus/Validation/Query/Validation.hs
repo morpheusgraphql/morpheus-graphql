@@ -30,7 +30,8 @@ import Data.Morpheus.Types.Internal.Validation
     runValidator,
   )
 import Data.Morpheus.Validation.Query.Fragment
-  ( validateFragments,
+  ( checkfragmentPreconditions,
+    validateFragments,
   )
 import Data.Morpheus.Validation.Query.Selection
   ( vaidateFragmentSelection,
@@ -79,7 +80,8 @@ validateRequest
             variables
           }
       validateHelpers =
-        resolveOperationVariables
-          config
-          (fromList inputVariables)
-          operation
+        checkfragmentPreconditions
+          *> resolveOperationVariables
+            config
+            (fromList inputVariables)
+            operation
