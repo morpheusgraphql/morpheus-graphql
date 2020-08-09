@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Query.Fragment
@@ -11,6 +12,7 @@ module Data.Morpheus.Validation.Query.Fragment
     resolveSpread,
     validateFragment,
     resolveValidFragment,
+    selectFragmentType,
   )
 where
 
@@ -81,7 +83,7 @@ resolveValidFragment allowedTargets ref =
   fragmentSelection <$> resolveSpread allowedTargets ref
 
 validateFragment ::
-  (TypeNameRef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
+  (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   [TypeName] ->
   Fragment RAW ->
   FragmentValidator s (Fragment VALID)
@@ -90,7 +92,7 @@ validateFragment validate allowedTypes fragment@Fragment {fragmentPosition} =
     >>= onlyValidateFrag validate
 
 validateFragments ::
-  (TypeNameRef -> SelectionSet RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
+  (Fragment RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
   SelectionSet RAW ->
   FragmentValidator RAW (Fragments VALID)
 validateFragments f selectionSet =
@@ -100,21 +102,20 @@ validateFragments f selectionSet =
     *> __validateFragments f
 
 __validateFragments ::
-  (TypeNameRef -> SelectionSet RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
+  (Fragment RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
   FragmentValidator RAW (Fragments VALID)
 __validateFragments f = askFragments >>= traverse (onlyValidateFrag f)
 
 onlyValidateFrag ::
-  (TypeNameRef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
+  (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   Fragment RAW ->
   FragmentValidator s (Fragment VALID)
-onlyValidateFrag validate Fragment {..} =
+onlyValidateFrag validate f@Fragment {..} =
   Fragment
     fragmentName
     fragmentType
     fragmentPosition
-    <$> validate (TypeNameRef fragmentType fragmentPosition) fragmentSelection
-      <*> validateFragmentDirectives fragmentDirectives
+    <$> validate f <*> validateFragmentDirectives fragmentDirectives
 
 validateFragmentDirectives :: Directives RAW -> FragmentValidator s (Directives VALID)
 validateFragmentDirectives _ = pure []
@@ -169,13 +170,14 @@ fragmentsConditionTypeChecking =
   askFragments
     >>= traverse_ checkTypeExistence
 
-checkTypeExistence :: Fragment RAW -> FragmentValidator RAW ()
-checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
-  ( (askSchema :: FragmentValidator s (Schema VALID))
-      >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
-      >>= constraint OBJECT fr
-  )
-    $> ()
+checkTypeExistence :: Fragment RAW -> FragmentValidator s ()
+checkTypeExistence fr = selectFragmentType fr $> ()
+
+selectFragmentType :: Fragment RAW -> FragmentValidator s (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
+selectFragmentType fr@Fragment {fragmentType, fragmentPosition} = do
+  (schema :: Schema VALID) <- askSchema
+  typeDef <- selectKnown (TypeNameRef fragmentType fragmentPosition) schema
+  constraint OBJECT fr typeDef
 
 fragmentsCycleChecking :: FragmentValidator RAW ()
 fragmentsCycleChecking =

@@ -217,7 +217,7 @@ data Constraint (a :: Target) where
 
 type family Resolution (s :: Stage) (a :: Target)
 
-type instance Resolution s 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT s)
+type instance Resolution s 'TARGET_OBJECT = (TypeDefinition OUT s, FieldsDefinition OUT s)
 
 type instance Resolution s 'TARGET_INPUT = TypeDefinition IN s
 

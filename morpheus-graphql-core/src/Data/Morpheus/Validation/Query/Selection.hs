@@ -10,7 +10,7 @@
 
 module Data.Morpheus.Validation.Query.Selection
   ( validateOperation,
-    validateSelectionSetWithTypeName,
+    vaidateFragmentSelection,
   )
 where
 
@@ -83,6 +83,7 @@ import Data.Morpheus.Validation.Internal.Directive
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
     resolveValidFragment,
+    selectFragmentType,
     validateFragment,
   )
 import Data.Morpheus.Validation.Query.UnionSelection
@@ -174,20 +175,10 @@ possibleTypes :: TypeDefinition a s -> [TypeName]
 possibleTypes TypeDefinition {typeName, typeContent = DataObject {objectImplements}} = typeName : objectImplements
 possibleTypes TypeDefinition {typeName} = [typeName]
 
-validateSelectionSetWithTypeName :: TypeNameRef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)
-validateSelectionSetWithTypeName typename selection = do
-  schema <- askSchema
-  typeDef <- selectKnown typename schema
-  case typeDef of
-    TypeDefinition
-      { typeContent =
-          DataObject
-            { objectFields,
-              ..
-            },
-        ..
-      } -> validateSelectionSet (TypeDefinition {typeContent = DataObject {objectFields, ..}, ..}, objectFields) selection
-    _ -> undefined
+vaidateFragmentSelection :: Fragment RAW -> FragmentValidator s (SelectionSet VALID)
+vaidateFragmentSelection f@Fragment {fragmentSelection} = do
+  typeDef <- selectFragmentType f
+  validateSelectionSet typeDef fragmentSelection
 
 validateSelectionSet ::
   forall s. TypeDef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)
@@ -265,7 +256,7 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
         ) =
         processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
           const (validate fragment)
-    validate = fmap fragmentSelection . validateFragment (const (validateSelectionSet dataType)) (possibleTypes typeDef)
+    validate = fmap fragmentSelection . validateFragment vaidateFragmentSelection (possibleTypes typeDef)
 
 validateContentLeaf ::
   Ref ->

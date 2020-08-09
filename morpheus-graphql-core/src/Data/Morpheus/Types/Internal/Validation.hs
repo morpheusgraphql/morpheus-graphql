@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -185,10 +186,10 @@ constraint ::
   inp ->
   TypeDefinition ANY s ->
   Validator s ctx (Resolution s a)
-constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields}, typeName} =
-  pure (typeName, objectFields)
-constraint OBJECT _ TypeDefinition {typeContent = DataInterface fields, typeName} =
-  pure (typeName, fields)
+constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields, ..}, ..} =
+  pure (TypeDefinition {typeContent = DataObject {objectFields, ..}, ..}, objectFields)
+constraint OBJECT _ TypeDefinition {typeContent = DataInterface fields, ..} =
+  pure (TypeDefinition {typeContent = DataInterface fields, ..}, fields)
 constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny x)
 constraint target ctx _ = failure [kindViolation target ctx]
 
