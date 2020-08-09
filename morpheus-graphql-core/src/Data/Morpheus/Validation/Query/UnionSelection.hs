@@ -61,20 +61,21 @@ type TypeDef =
 exploreUnionFragments ::
   [UnionMember OUT s] ->
   Selection RAW ->
-  SelectionValidator [Fragment RAW]
+  SelectionValidator [Fragment VALID]
 exploreUnionFragments unionTags = splitFrag
   where
     packFragment fragment = [fragment]
     splitFrag ::
-      Selection RAW -> SelectionValidator [Fragment RAW]
+      Selection RAW -> SelectionValidator [Fragment VALID]
     splitFrag (Spread _ ref) = packFragment <$> resolveSpread (map memberName unionTags) ref
     splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
     splitFrag Selection {selectionName, selectionPosition} = do
       typeName <- asksScope currentTypeName
       failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
-    splitFrag (InlineFragment fragment) =
-      packFragment
-        <$> castFragmentType Nothing (fragmentPosition fragment) (map memberName unionTags) fragment
+
+-- splitFrag (InlineFragment fragment) =
+--   packFragment
+--     <$> castFragmentType Nothing (fragmentPosition fragment) (map memberName unionTags) fragment
 
 -- sorts Fragment by contitional Types
 -- [
@@ -83,16 +84,15 @@ exploreUnionFragments unionTags = splitFrag
 -- ]
 tagUnionFragments ::
   [TypeDef] ->
-  [Fragment RAW] ->
-  [(TypeDef, [Fragment RAW])]
+  [Fragment VALID] ->
+  [(TypeDef, [Fragment VALID])]
 tagUnionFragments types fragments =
-  filter notEmpty $
-    map categorizeType types
+  filter notEmpty (map categorizeType types)
   where
     notEmpty = not . null . snd
     categorizeType ::
       TypeDef ->
-      (TypeDef, [Fragment RAW])
+      (TypeDef, [Fragment VALID])
     categorizeType datatype@(TypeDefinition {typeName}, _) = (datatype, filter matches fragments)
       where
         matches fragment = fragmentType fragment == typeName
@@ -114,13 +114,13 @@ validateCluster ::
     SelectionValidator (SelectionSet VALID)
   ) ->
   SelectionSet RAW ->
-  [(TypeDef, [Fragment RAW])] ->
+  [(TypeDef, [Fragment VALID])] ->
   SelectionValidator (SelectionContent VALID)
 validateCluster validator __typename =
   traverse _validateCluster
     >=> fmap UnionSelection . fromElems
   where
-    _validateCluster :: (TypeDef, [Fragment RAW]) -> SelectionValidator UnionTag
+    _validateCluster :: (TypeDef, [Fragment VALID]) -> SelectionValidator UnionTag
     _validateCluster (unionType@(TypeDefinition {typeName}, _), fragmets) = do
       fragmentSelections <- MS.join (__typename : map fragmentSelection fragmets)
       UnionTag typeName <$> validator unionType fragmentSelections

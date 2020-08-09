@@ -51,6 +51,7 @@ module Data.Morpheus.Types.Internal.Validation
     CurrentSelection (..),
     getOperationType,
     selectType,
+    FragmentValidator,
   )
 where
 
@@ -117,6 +118,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     Constraint (..),
     CurrentSelection (..),
     DirectiveValidator,
+    FragmentValidator,
     GetWith (..),
     InputContext,
     InputSource (..),

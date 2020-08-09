@@ -62,7 +62,7 @@ class Unused ctx c where
   unused :: ctx -> c -> ValidationError
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-instance Unused (OperationContext v) (Variable s) where
+instance Unused (OperationContext s1 s2) (Variable s) where
   unused
     OperationContext {selection = CurrentSelection {operationName}}
     Variable {variableName, variablePosition} =
@@ -75,7 +75,7 @@ instance Unused (OperationContext v) (Variable s) where
           validationLocations = [variablePosition]
         }
 
-instance Unused (OperationContext v) (Fragment s) where
+instance Unused (OperationContext s1 s2) (Fragment s) where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
@@ -122,7 +122,7 @@ instance MissingRequired (Object s) (InputContext ctx) where
             <> "."
         )
 
-instance MissingRequired (VariableDefinitions s) (OperationContext v) where
+instance MissingRequired (VariableDefinitions s) (OperationContext s1 s2) where
   missingRequired
     _
     OperationContext
@@ -189,7 +189,7 @@ instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
         validationLocations = [directivePosition]
       }
 
-instance Unknown (FieldsDefinition OUT s) Ref (OperationContext v) where
+instance Unknown (FieldsDefinition OUT s) Ref (OperationContext s1 s2) where
   unknown Scope {currentTypeName} _ _ = unknownSelectionField currentTypeName
 
 class KindViolation (t :: Target) ctx where
