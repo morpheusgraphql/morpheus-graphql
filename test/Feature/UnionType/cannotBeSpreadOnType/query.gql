@@ -5,5 +5,5 @@
 }
 
 fragment FC on C {
-  aText
+  cText
 }
