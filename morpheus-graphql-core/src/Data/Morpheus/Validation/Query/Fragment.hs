@@ -170,7 +170,7 @@ fragmentsConditionTypeChecking =
   askFragments
     >>= traverse_ checkTypeExistence
 
-checkTypeExistence :: Fragment RAW -> FragmentValidator s ()
+checkTypeExistence :: Fragment RAW -> FragmentValidator RAW ()
 checkTypeExistence fr = selectFragmentType fr $> ()
 
 selectFragmentType :: Fragment RAW -> FragmentValidator s (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
