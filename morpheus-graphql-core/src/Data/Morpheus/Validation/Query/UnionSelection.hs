@@ -64,10 +64,9 @@ exploreUnionFragments ::
   SelectionValidator [Fragment VALID]
 exploreUnionFragments unionTags = splitFrag
   where
-    packFragment fragment = [fragment]
     splitFrag ::
       Selection RAW -> SelectionValidator [Fragment VALID]
-    splitFrag (Spread _ ref) = packFragment <$> resolveSpread (map memberName unionTags) ref
+    splitFrag (Spread _ ref) = pure <$> resolveSpread (map memberName unionTags) ref
     splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
     splitFrag Selection {selectionName, selectionPosition} = do
       typeName <- asksScope currentTypeName
@@ -116,14 +115,14 @@ validateCluster ::
   SelectionSet RAW ->
   [(TypeDef, [Fragment VALID])] ->
   SelectionValidator (SelectionContent VALID)
-validateCluster validator __typename =
+validateCluster validator __typenameSet =
   traverse _validateCluster
     >=> fmap UnionSelection . fromElems
   where
     _validateCluster :: (TypeDef, [Fragment VALID]) -> SelectionValidator UnionTag
     _validateCluster (unionType@(TypeDefinition {typeName}, _), fragmets) = do
-      fragmentSelections <- MS.join (__typename : map fragmentSelection fragmets)
-      UnionTag typeName <$> validator unionType fragmentSelections
+      selSet <- validator unionType __typenameSet
+      UnionTag typeName <$> MS.join (selSet : map fragmentSelection fragmets)
 
 validateUnionSelection ::
   (TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) ->

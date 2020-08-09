@@ -76,7 +76,8 @@ import Data.Morpheus.Validation.Internal.Directive
   )
 import Data.Morpheus.Validation.Query.Fragment
   ( castFragmentType,
-    resolveSpread,
+    resolveValidFragment,
+    validateFragment,
   )
 import Data.Morpheus.Validation.Query.UnionSelection
   ( validateUnionSelection,
@@ -229,25 +230,19 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
                     selectionContent = selContent
                   }
     validateSelection (Spread dirs ref) =
-      processSelectionDirectives FRAGMENT_SPREAD dirs
-        $ const
-        -- TODO: add directives to selection
-        $ resolveSpread (possibleTypes typeDef) ref
-          >>= validateFragment
+      processSelectionDirectives
+        FRAGMENT_SPREAD
+        dirs
+        (const $ resolveValidFragment (possibleTypes typeDef) ref)
     validateSelection
       ( InlineFragment
           fragment@Fragment
-            { fragmentDirectives,
-              fragmentPosition
+            { fragmentDirectives
             }
         ) =
-        processSelectionDirectives INLINE_FRAGMENT fragmentDirectives
-          $ const
-          -- TODO: add directives to selection
-          $ castFragmentType Nothing fragmentPosition (possibleTypes typeDef) fragment
-            >>= validateFragment
-    --------------------------------------------------------------------------------
-    validateFragment Fragment {fragmentSelection} = validateSelectionSet dataType fragmentSelection
+        processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
+          const (validate fragment)
+    validate = validateFragment (validateSelectionSet dataType) (possibleTypes typeDef)
 
 validateContentLeaf ::
   Ref ->

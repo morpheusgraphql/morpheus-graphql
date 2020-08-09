@@ -8,6 +8,8 @@ module Data.Morpheus.Validation.Query.Fragment
   ( validateFragments,
     castFragmentType,
     resolveSpread,
+    validateFragment,
+    resolveValidFragment,
   )
 where
 
@@ -52,8 +54,7 @@ import Data.Morpheus.Types.Internal.Validation
   ( BaseValidator,
     Constraint (..),
     FragmentValidator,
-    OperationContext,
-    Validator,
+    SelectionValidator,
     askFragments,
     askSchema,
     checkUnused,
@@ -65,13 +66,32 @@ import Prelude
   ( ($),
     (.),
     otherwise,
+    undefined,
   )
 
-validateFragments :: SelectionSet RAW -> BaseValidator ()
-validateFragments selectionSet =
-  fragmentsCycleChecking
-    *> checkUnusedFragments selectionSet
-    *> fragmentsConditionTypeChecking
+resolveValidFragment ::
+  [TypeName] ->
+  Ref ->
+  SelectionValidator (SelectionSet VALID)
+resolveValidFragment allowedTargets ref =
+  fragmentSelection <$> resolveSpread allowedTargets ref
+
+validateFragment ::
+  (SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) ->
+  [TypeName] ->
+  Fragment RAW ->
+  SelectionValidator (SelectionSet VALID)
+validateFragment validate allowedTypes fragment@Fragment {fragmentPosition} =
+  castFragmentType Nothing fragmentPosition allowedTypes fragment
+    >>= validate . fragmentSelection
+
+validateFragments :: SelectionSet RAW -> FragmentValidator RAW (Fragments VALID)
+validateFragments selectionSet = undefined
+
+-- fragmentsCycleChecking
+--   *> checkUnusedFragments selectionSet
+--   *> fragmentsConditionTypeChecking
+--   *> undefined
 
 checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do
@@ -85,12 +105,12 @@ castFragmentType ::
   Position ->
   [TypeName] ->
   Fragment s ->
-  FragmentValidator s (Fragment s)
+  FragmentValidator s1 (Fragment s)
 castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [TypeName] -> Ref -> FragmentValidator s (Fragment s)
+resolveSpread :: [TypeName] -> Ref -> SelectionValidator (Fragment VALID)
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref

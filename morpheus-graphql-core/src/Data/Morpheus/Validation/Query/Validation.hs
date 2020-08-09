@@ -10,6 +10,7 @@ module Data.Morpheus.Validation.Query.Validation
 where
 
 import Data.HashMap.Lazy (fromList)
+import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
     Operation (..),
@@ -57,8 +58,9 @@ validateRequest
           }
     } =
     do
-      variables <- runValidator validateHelpers config schema scope (ctx ())
-      runValidator (validateOperation operation) config schema scope (ctx variables)
+      variables <- runValidator validateHelpers config schema scope (ctx empty fragments)
+      frags <- runValidator (validateFragments operationSelection) config schema scope (ctx variables fragments)
+      runValidator (validateOperation operation) config schema scope (ctx variables frags)
     where
       scope =
         Scope
@@ -69,15 +71,14 @@ validateRequest
             fieldname = "Root",
             position = Just operationPosition
           }
-      ctx variables =
+      ctx variables fragments =
         OperationContext
-          { fragments,
-            selection = CurrentSelection {operationName},
+          { selection = CurrentSelection {operationName},
+            fragments,
             variables
           }
       validateHelpers =
-        validateFragments operationSelection
-          *> resolveOperationVariables
-            config
-            (fromList inputVariables)
-            operation
+        resolveOperationVariables
+          config
+          (fromList inputVariables)
+          operation
