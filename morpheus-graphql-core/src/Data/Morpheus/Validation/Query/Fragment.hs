@@ -13,7 +13,6 @@ module Data.Morpheus.Validation.Query.Fragment
     castFragmentType,
     resolveSpread,
     validateFragment,
-    resolveValidFragment,
     selectFragmentType,
     ResolveFragment (..),
   )
@@ -65,7 +64,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Validation
   ( Constraint (..),
     FragmentValidator,
-    SelectionValidator,
     askFragments,
     askSchema,
     checkUnused,

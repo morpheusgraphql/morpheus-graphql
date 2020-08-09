@@ -53,7 +53,6 @@ import Data.Morpheus.Types.Internal.Validation
     InputSource (..),
     MissingRequired,
     Scope (..),
-    SelectionValidator,
     Validator,
     askVariables,
     asksScope,
