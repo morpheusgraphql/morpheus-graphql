@@ -59,6 +59,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition,
     TypeName,
     TypeNameRef (..),
+    UnionTag (..),
     VALID,
   )
 import Data.Morpheus.Types.Internal.Validation
@@ -83,15 +84,17 @@ class ResolveFragment (s :: Stage) where
     (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
     [TypeName] ->
     Ref ->
-    FragmentValidator s (SelectionSet VALID)
+    FragmentValidator s UnionTag
 
 instance ResolveFragment VALID where
-  resolveValidFragment _ allowedTargets ref =
-    fragmentSelection <$> resolveSpread allowedTargets ref
+  resolveValidFragment _ allowedTargets ref = do
+    Fragment {fragmentType, fragmentSelection} <- resolveSpread allowedTargets ref
+    pure $ UnionTag fragmentType fragmentSelection
 
 instance ResolveFragment RAW where
-  resolveValidFragment f allowedTargets ref =
-    resolveSpread allowedTargets ref >>= f
+  resolveValidFragment f allowedTargets ref = do
+    fragment@Fragment {fragmentType} <- resolveSpread allowedTargets ref
+    UnionTag fragmentType <$> f fragment
 
 validateFragment ::
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->

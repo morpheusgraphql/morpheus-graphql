@@ -49,8 +49,8 @@ import Data.Morpheus.Types.Internal.Validation
     asksScope,
   )
 import Data.Morpheus.Validation.Query.Fragment
-  ( castFragmentType,
-    resolveSpread,
+  ( ResolveFragment (resolveValidFragment),
+    castFragmentType,
   )
 
 type TypeDef =
@@ -60,18 +60,15 @@ type TypeDef =
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
-  [UnionMember OUT s] ->
+  (ResolveFragment s) =>
+  [UnionMember OUT unionS] ->
   Selection RAW ->
-  FragmentValidator s' [Fragment VALID]
-exploreUnionFragments unionTags = splitFrag
-  where
-    splitFrag ::
-      Selection RAW -> FragmentValidator s [Fragment VALID]
-    --  splitFrag (Spread _ ref) = pure <$> resolveSpread (map memberName unionTags) ref
-    splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
-    splitFrag Selection {selectionName, selectionPosition} = do
-      typeName <- asksScope currentTypeName
-      failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
+  FragmentValidator s [UnionTag]
+exploreUnionFragments unionTags (Spread _ ref) = pure <$> resolveValidFragment undefined (map memberName unionTags) ref
+exploreUnionFragments unionTags Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
+exploreUnionFragments unionTags Selection {selectionName, selectionPosition} = do
+  typeName <- asksScope currentTypeName
+  failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
 
 -- splitFrag (InlineFragment fragment) =
 --   packFragment
@@ -84,18 +81,18 @@ exploreUnionFragments unionTags = splitFrag
 -- ]
 tagUnionFragments ::
   [TypeDef] ->
-  [Fragment VALID] ->
-  [(TypeDef, [Fragment VALID])]
+  [UnionTag] ->
+  [(TypeDef, [UnionTag])]
 tagUnionFragments types fragments =
   filter notEmpty (map categorizeType types)
   where
     notEmpty = not . null . snd
     categorizeType ::
       TypeDef ->
-      (TypeDef, [Fragment VALID])
+      (TypeDef, [UnionTag])
     categorizeType datatype@(TypeDefinition {typeName}, _) = (datatype, filter matches fragments)
       where
-        matches fragment = fragmentType fragment == typeName
+        matches = (typeName ==) . unionTagName
 
 {-
     - all Variable and Fragment references will be: resolved and validated
@@ -115,18 +112,19 @@ validateCluster ::
     FragmentValidator s (SelectionSet VALID)
   ) ->
   SelectionSet RAW ->
-  [(TypeDef, [Fragment VALID])] ->
+  [(TypeDef, [UnionTag])] ->
   FragmentValidator s (SelectionContent VALID)
 validateCluster validator __typenameSet =
   traverse _validateCluster
     >=> fmap UnionSelection . fromElems
   where
-    _validateCluster :: (TypeDef, [Fragment VALID]) -> FragmentValidator s UnionTag
+    _validateCluster :: (TypeDef, [UnionTag]) -> FragmentValidator s UnionTag
     _validateCluster (unionType@(TypeDefinition {typeName}, _), fragmets) = do
       selSet <- validator unionType __typenameSet
-      UnionTag typeName <$> MS.join (selSet : map fragmentSelection fragmets)
+      UnionTag typeName <$> MS.join (selSet : map unionTagSelection fragmets)
 
 validateUnionSelection ::
+  ResolveFragment s =>
   (TypeDef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   SelectionSet RAW ->
   DataUnion VALID ->

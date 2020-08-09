@@ -50,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    UnionTag (..),
     VALID,
     ValidationError (..),
     isEntNode,
@@ -244,7 +245,7 @@ validateSelectionSet (typeDef, fieldsDef) =
       processSelectionDirectives
         FRAGMENT_SPREAD
         dirs
-        (const $ resolveValidFragment vaidateFragmentSelection (possibleTypes typeDef) ref)
+        (const $ unionTagSelection <$> resolveValidFragment vaidateFragmentSelection (possibleTypes typeDef) ref)
     validateSelection
       ( InlineFragment
           fragment@Fragment
