@@ -15,9 +15,8 @@ module Data.Morpheus.Validation.Query.Selection
 where
 
 import Control.Applicative ((<*>), pure)
-import Control.Monad ((>>=), fmap)
 import Data.Foldable (null)
-import Data.Functor ((<$>))
+import Data.Functor ((<$>), fmap)
 import Data.List (filter)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection
@@ -51,7 +50,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
-    TypeNameRef,
     VALID,
     ValidationError (..),
     isEntNode,
@@ -63,12 +61,9 @@ import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( Constraint (OBJECT),
-    FragmentValidator,
+  ( FragmentValidator,
     SelectionValidator,
-    askSchema,
     askType,
-    constraint,
     getOperationType,
     selectKnown,
     withScope,
@@ -81,7 +76,7 @@ import Data.Morpheus.Validation.Internal.Directive
     validateDirectives,
   )
 import Data.Morpheus.Validation.Query.Fragment
-  ( castFragmentType,
+  ( ResolveFragment (..),
     resolveValidFragment,
     selectFragmentType,
     validateFragment,
@@ -98,8 +93,6 @@ import Prelude
     const,
     not,
     otherwise,
-    snd,
-    undefined,
   )
 
 type TypeDef = (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
@@ -175,14 +168,18 @@ possibleTypes :: TypeDefinition a s -> [TypeName]
 possibleTypes TypeDefinition {typeName, typeContent = DataObject {objectImplements}} = typeName : objectImplements
 possibleTypes TypeDefinition {typeName} = [typeName]
 
-vaidateFragmentSelection :: Fragment RAW -> FragmentValidator s (SelectionSet VALID)
+vaidateFragmentSelection :: (ResolveFragment s) => Fragment RAW -> FragmentValidator s (SelectionSet VALID)
 vaidateFragmentSelection f@Fragment {fragmentSelection} = do
   typeDef <- selectFragmentType f
   validateSelectionSet typeDef fragmentSelection
 
 validateSelectionSet ::
-  forall s. TypeDef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)
-validateSelectionSet dataType@(typeDef, fieldsDef) =
+  forall s.
+  (ResolveFragment s) =>
+  TypeDef ->
+  SelectionSet RAW ->
+  FragmentValidator s (SelectionSet VALID)
+validateSelectionSet (typeDef, fieldsDef) =
   concatTraverse validateSelection
   where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
@@ -243,11 +240,11 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
                     selectionDirectives = directives,
                     selectionContent = selContent
                   }
-    -- validateSelection (Spread dirs ref) =
-    --   processSelectionDirectives
-    --     FRAGMENT_SPREAD
-    --     dirs
-    --     (const $ resolveValidFragment (possibleTypes typeDef) ref)
+    validateSelection (Spread dirs ref) =
+      processSelectionDirectives
+        FRAGMENT_SPREAD
+        dirs
+        (const $ resolveValidFragment vaidateFragmentSelection (possibleTypes typeDef) ref)
     validateSelection
       ( InlineFragment
           fragment@Fragment
@@ -270,6 +267,8 @@ validateContentLeaf
       failure $ subfieldsNotSelected selectionName typeName selectionPosition
 
 validateByTypeContent ::
+  forall s.
+  (ResolveFragment s) =>
   TypeDefinition OUT VALID ->
   Ref ->
   SelectionSet RAW ->

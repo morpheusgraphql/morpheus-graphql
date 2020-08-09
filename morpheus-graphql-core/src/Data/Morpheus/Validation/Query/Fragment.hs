@@ -1,6 +1,8 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -13,6 +15,7 @@ module Data.Morpheus.Validation.Query.Fragment
     validateFragment,
     resolveValidFragment,
     selectFragmentType,
+    ResolveFragment (..),
   )
 where
 
@@ -52,6 +55,8 @@ import Data.Morpheus.Types.Internal.AST
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    Stage,
+    Stage,
     TypeDefinition,
     TypeName,
     TypeNameRef (..),
@@ -75,12 +80,20 @@ import Prelude
     otherwise,
   )
 
-resolveValidFragment ::
-  [TypeName] ->
-  Ref ->
-  FragmentValidator s (SelectionSet s)
-resolveValidFragment allowedTargets ref =
-  fragmentSelection <$> resolveSpread allowedTargets ref
+class ResolveFragment (s :: Stage) where
+  resolveValidFragment ::
+    (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
+    [TypeName] ->
+    Ref ->
+    FragmentValidator s (SelectionSet VALID)
+
+instance ResolveFragment VALID where
+  resolveValidFragment _ allowedTargets ref =
+    fragmentSelection <$> resolveSpread allowedTargets ref
+
+instance ResolveFragment RAW where
+  resolveValidFragment f allowedTargets ref =
+    resolveSpread allowedTargets ref >>= f
 
 validateFragment ::
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
