@@ -48,7 +48,8 @@ import Data.Morpheus.Types.Internal.AST
     typed,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( GetWith,
+  ( FragmentValidator,
+    GetWith,
     InputSource (..),
     MissingRequired,
     Scope (..),
@@ -123,7 +124,7 @@ validateArgumentValue
 validateFieldArguments ::
   FieldDefinition OUT VALID ->
   Arguments RAW ->
-  SelectionValidator (Arguments VALID)
+  FragmentValidator s (Arguments VALID)
 validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
   validateArguments
     (`selectKnown` fieldDef)

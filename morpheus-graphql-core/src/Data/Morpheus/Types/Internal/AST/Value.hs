@@ -78,6 +78,7 @@ import Data.Morpheus.Types.Internal.AST.OrdMap
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
+    CONST_OR_VALID,
     RAW,
     Stage,
     VALID,
@@ -134,14 +135,6 @@ instance A.FromJSON ScalarValue where
   parseJSON (A.String v) = pure $ String v
   parseJSON notScalar = fail $ "Expected Scalar got :" <> show notScalar
 
-type family VAR (a :: Stage) :: Stage
-
-type instance VAR RAW = CONST
-
-type instance VAR CONST = CONST
-
-type instance VAR VALID = VALID
-
 data VariableContent (stage :: Stage) where
   DefaultValue :: Maybe ResolvedValue -> VariableContent CONST
   ValidVariableValue :: {validVarContent :: ValidValue} -> VariableContent VALID
@@ -162,7 +155,7 @@ data Variable (stage :: Stage) = Variable
   { variableName :: FieldName,
     variableType :: TypeRef,
     variablePosition :: Position,
-    variableValue :: VariableContent (VAR stage)
+    variableValue :: VariableContent (CONST_OR_VALID stage)
   }
   deriving (Show, Eq, Lift)
 

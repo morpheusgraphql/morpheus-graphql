@@ -79,7 +79,8 @@ import Data.Morpheus.Types.Internal.AST.OrdMap
   ( OrdMap,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
-  ( RAW,
+  ( CONST,
+    RAW,
     Stage,
     VALID,
   )
@@ -213,6 +214,7 @@ data Selection (s :: Stage) where
       selectionDirectives :: Directives s
     } ->
     Selection s
+  FragmentRef :: Ref -> Selection CONST
   InlineFragment :: Fragment RAW -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
 

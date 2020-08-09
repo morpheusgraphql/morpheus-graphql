@@ -42,7 +42,8 @@ import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
   ( join,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( Scope (..),
+  ( FragmentValidator,
+    Scope (..),
     SelectionValidator,
     askTypeMember,
     asksScope,
@@ -61,12 +62,12 @@ type TypeDef =
 exploreUnionFragments ::
   [UnionMember OUT s] ->
   Selection RAW ->
-  SelectionValidator [Fragment VALID]
+  FragmentValidator s' [Fragment VALID]
 exploreUnionFragments unionTags = splitFrag
   where
     splitFrag ::
-      Selection RAW -> SelectionValidator [Fragment VALID]
-    splitFrag (Spread _ ref) = pure <$> resolveSpread (map memberName unionTags) ref
+      Selection RAW -> FragmentValidator s [Fragment VALID]
+    --  splitFrag (Spread _ ref) = pure <$> resolveSpread (map memberName unionTags) ref
     splitFrag Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
     splitFrag Selection {selectionName, selectionPosition} = do
       typeName <- asksScope currentTypeName
@@ -108,27 +109,28 @@ tagUnionFragments types fragments =
       ]
  -}
 validateCluster ::
+  forall s.
   ( TypeDef ->
     SelectionSet RAW ->
-    SelectionValidator (SelectionSet VALID)
+    FragmentValidator s (SelectionSet VALID)
   ) ->
   SelectionSet RAW ->
   [(TypeDef, [Fragment VALID])] ->
-  SelectionValidator (SelectionContent VALID)
+  FragmentValidator s (SelectionContent VALID)
 validateCluster validator __typenameSet =
   traverse _validateCluster
     >=> fmap UnionSelection . fromElems
   where
-    _validateCluster :: (TypeDef, [Fragment VALID]) -> SelectionValidator UnionTag
+    _validateCluster :: (TypeDef, [Fragment VALID]) -> FragmentValidator s UnionTag
     _validateCluster (unionType@(TypeDefinition {typeName}, _), fragmets) = do
       selSet <- validator unionType __typenameSet
       UnionTag typeName <$> MS.join (selSet : map fragmentSelection fragmets)
 
 validateUnionSelection ::
-  (TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) ->
+  (TypeDef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   SelectionSet RAW ->
   DataUnion VALID ->
-  SelectionValidator (SelectionContent VALID)
+  FragmentValidator s (SelectionContent VALID)
 validateUnionSelection validate selectionSet members = do
   let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
   -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)

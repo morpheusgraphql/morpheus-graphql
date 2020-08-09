@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Query.Fragment
@@ -13,7 +14,7 @@ module Data.Morpheus.Validation.Query.Fragment
   )
 where
 
-import Control.Applicative ((*>), pure)
+import Control.Applicative ((*>), (<*>), pure)
 import Control.Monad ((>>=))
 import Data.Foldable (concatMap, traverse_)
 import Data.Functor (($>), (<$>), fmap)
@@ -36,9 +37,12 @@ import Data.Morpheus.Internal.Utils
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( Directives,
+    FieldName,
+    FieldsDefinition,
     Fragment (..),
     Fragments,
+    OUT,
     Position,
     RAW,
     Ref (..),
@@ -46,13 +50,13 @@ import Data.Morpheus.Types.Internal.AST
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    TypeDefinition,
     TypeName,
     TypeNameRef (..),
     VALID,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( BaseValidator,
-    Constraint (..),
+  ( Constraint (..),
     FragmentValidator,
     SelectionValidator,
     askFragments,
@@ -62,6 +66,7 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
 import Prelude
   ( ($),
     (.),
@@ -71,26 +76,50 @@ import Prelude
 resolveValidFragment ::
   [TypeName] ->
   Ref ->
-  SelectionValidator (SelectionSet VALID)
+  FragmentValidator s (SelectionSet s)
 resolveValidFragment allowedTargets ref =
   fragmentSelection <$> resolveSpread allowedTargets ref
 
 validateFragment ::
-  (SelectionSet RAW -> SelectionValidator (SelectionSet VALID)) ->
+  (TypeNameRef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   [TypeName] ->
   Fragment RAW ->
-  SelectionValidator (SelectionSet VALID)
+  FragmentValidator s (Fragment VALID)
 validateFragment validate allowedTypes fragment@Fragment {fragmentPosition} =
   castFragmentType Nothing fragmentPosition allowedTypes fragment
-    >>= validate . fragmentSelection
+    >>= onlyValidateFrag validate
 
-validateFragments :: SelectionSet RAW -> FragmentValidator RAW (Fragments VALID)
-validateFragments selectionSet =
+validateFragments ::
+  (TypeNameRef -> SelectionSet RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
+  SelectionSet RAW ->
+  FragmentValidator RAW (Fragments VALID)
+validateFragments f selectionSet =
   fragmentsCycleChecking
     *> checkUnusedFragments selectionSet
     *> fragmentsConditionTypeChecking
+    *> __validateFragments f
 
-checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
+__validateFragments ::
+  (TypeNameRef -> SelectionSet RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
+  FragmentValidator RAW (Fragments VALID)
+__validateFragments f = askFragments >>= traverse (onlyValidateFrag f)
+
+onlyValidateFrag ::
+  (TypeNameRef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
+  Fragment RAW ->
+  FragmentValidator s (Fragment VALID)
+onlyValidateFrag validate Fragment {..} =
+  Fragment
+    fragmentName
+    fragmentType
+    fragmentPosition
+    <$> validate (TypeNameRef fragmentType fragmentPosition) fragmentSelection
+      <*> validateFragmentDirectives fragmentDirectives
+
+validateFragmentDirectives :: Directives RAW -> FragmentValidator s (Directives VALID)
+validateFragmentDirectives _ = pure []
+
+checkUnusedFragments :: SelectionSet RAW -> FragmentValidator RAW ()
 checkUnusedFragments selectionSet = do
   fragments <- askFragments
   checkUnused
@@ -107,7 +136,7 @@ castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [TypeName] -> Ref -> SelectionValidator (Fragment VALID)
+resolveSpread :: [TypeName] -> Ref -> FragmentValidator s (Fragment s)
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref
@@ -135,25 +164,25 @@ usedFragments fragments = concatMap findAllUses
             refName
             fragments
 
-fragmentsConditionTypeChecking :: BaseValidator ()
+fragmentsConditionTypeChecking :: FragmentValidator RAW ()
 fragmentsConditionTypeChecking =
   askFragments
     >>= traverse_ checkTypeExistence
 
-checkTypeExistence :: Fragment RAW -> BaseValidator ()
+checkTypeExistence :: Fragment RAW -> FragmentValidator RAW ()
 checkTypeExistence fr@Fragment {fragmentType, fragmentPosition} =
-  ( (askSchema :: BaseValidator (Schema VALID))
+  ( (askSchema :: FragmentValidator s (Schema VALID))
       >>= selectKnown (TypeNameRef fragmentType fragmentPosition)
       >>= constraint OBJECT fr
   )
     $> ()
 
-fragmentsCycleChecking :: BaseValidator ()
+fragmentsCycleChecking :: FragmentValidator RAW ()
 fragmentsCycleChecking =
   exploreSpreads
     >>= cycleChecking (failure . cannotSpreadWithinItself)
 
-exploreSpreads :: BaseValidator Graph
+exploreSpreads :: FragmentValidator RAW Graph
 exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
 
 exploreFragmentSpreads :: Fragment RAW -> Edges

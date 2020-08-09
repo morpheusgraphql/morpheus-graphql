@@ -10,6 +10,7 @@
 
 module Data.Morpheus.Validation.Query.Selection
   ( validateOperation,
+    validateSelectionSetWithTypeName,
   )
 where
 
@@ -50,6 +51,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    TypeNameRef,
     VALID,
     ValidationError (..),
     isEntNode,
@@ -61,8 +63,12 @@ import Data.Morpheus.Types.Internal.AST.MergeSet
   ( concatTraverse,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( SelectionValidator,
+  ( Constraint (OBJECT),
+    FragmentValidator,
+    SelectionValidator,
+    askSchema,
     askType,
+    constraint,
     getOperationType,
     selectKnown,
     withScope,
@@ -91,6 +97,8 @@ import Prelude
     const,
     not,
     otherwise,
+    snd,
+    undefined,
   )
 
 type TypeDef = (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
@@ -151,8 +159,8 @@ toDirectiveLocation Query = QUERY
 processSelectionDirectives ::
   DirectiveLocation ->
   Directives RAW ->
-  (Directives VALID -> SelectionValidator (SelectionSet VALID)) ->
-  SelectionValidator (SelectionSet VALID)
+  (Directives VALID -> FragmentValidator s (SelectionSet VALID)) ->
+  FragmentValidator s (SelectionSet VALID)
 processSelectionDirectives location rawDirectives sel = do
   directives <- validateDirectives location rawDirectives
   include <- shouldIncludeSelection directives
@@ -166,13 +174,28 @@ possibleTypes :: TypeDefinition a s -> [TypeName]
 possibleTypes TypeDefinition {typeName, typeContent = DataObject {objectImplements}} = typeName : objectImplements
 possibleTypes TypeDefinition {typeName} = [typeName]
 
+validateSelectionSetWithTypeName :: TypeNameRef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)
+validateSelectionSetWithTypeName typename selection = do
+  schema <- askSchema
+  typeDef <- selectKnown typename schema
+  case typeDef of
+    TypeDefinition
+      { typeContent =
+          DataObject
+            { objectFields,
+              ..
+            },
+        ..
+      } -> validateSelectionSet (TypeDefinition {typeContent = DataObject {objectFields, ..}, ..}, objectFields) selection
+    _ -> undefined
+
 validateSelectionSet ::
-  TypeDef -> SelectionSet RAW -> SelectionValidator (SelectionSet VALID)
+  forall s. TypeDef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)
 validateSelectionSet dataType@(typeDef, fieldsDef) =
   concatTraverse validateSelection
   where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
-    validateSelection :: Selection RAW -> SelectionValidator (SelectionSet VALID)
+    validateSelection :: Selection RAW -> FragmentValidator s (SelectionSet VALID)
     validateSelection
       sel@Selection
         { selectionName,
@@ -190,14 +213,14 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
             (`validateSelectionContent` selectionContent)
         where
           currentSelectionRef = Ref selectionName selectionPosition
-          commonValidation :: SelectionValidator (TypeDefinition OUT VALID, Arguments VALID)
+          commonValidation :: FragmentValidator s (TypeDefinition OUT VALID, Arguments VALID)
           commonValidation = do
             fieldDef <- selectKnown (Ref selectionName selectionPosition) fieldsDef
             (,)
               <$> askType (typed fieldType fieldDef)
               <*> validateFieldArguments fieldDef selectionArguments
           -----------------------------------------------------------------------------------
-          validateSelectionContent :: Directives VALID -> SelectionContent RAW -> SelectionValidator (SelectionSet VALID)
+          validateSelectionContent :: Directives VALID -> SelectionContent RAW -> FragmentValidator s (SelectionSet VALID)
           validateSelectionContent directives SelectionField
             | null selectionArguments && selectionName == "__typename" =
               pure $ singleton $
@@ -229,11 +252,11 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
                     selectionDirectives = directives,
                     selectionContent = selContent
                   }
-    validateSelection (Spread dirs ref) =
-      processSelectionDirectives
-        FRAGMENT_SPREAD
-        dirs
-        (const $ resolveValidFragment (possibleTypes typeDef) ref)
+    -- validateSelection (Spread dirs ref) =
+    --   processSelectionDirectives
+    --     FRAGMENT_SPREAD
+    --     dirs
+    --     (const $ resolveValidFragment (possibleTypes typeDef) ref)
     validateSelection
       ( InlineFragment
           fragment@Fragment
@@ -242,12 +265,12 @@ validateSelectionSet dataType@(typeDef, fieldsDef) =
         ) =
         processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
           const (validate fragment)
-    validate = validateFragment (validateSelectionSet dataType) (possibleTypes typeDef)
+    validate = fmap fragmentSelection . validateFragment (const (validateSelectionSet dataType)) (possibleTypes typeDef)
 
 validateContentLeaf ::
   Ref ->
   TypeDefinition OUT VALID ->
-  SelectionValidator (SelectionContent s)
+  FragmentValidator s' (SelectionContent s)
 validateContentLeaf
   (Ref selectionName selectionPosition)
   TypeDefinition {typeName, typeContent}
@@ -259,7 +282,7 @@ validateByTypeContent ::
   TypeDefinition OUT VALID ->
   Ref ->
   SelectionSet RAW ->
-  SelectionValidator (SelectionContent VALID)
+  FragmentValidator s (SelectionContent VALID)
 validateByTypeContent
   typeDef@TypeDefinition {typeContent}
   currentSelectionRef
@@ -267,7 +290,7 @@ validateByTypeContent
     withScope typeDef currentSelectionRef $
       __validate typeContent
     where
-      __validate :: TypeContent TRUE OUT VALID -> SelectionValidator (SelectionContent VALID)
+      __validate :: TypeContent TRUE OUT VALID -> FragmentValidator s (SelectionContent VALID)
       -- Validate UnionSelection
       __validate DataUnion {unionMembers} =
         validateUnionSelection
