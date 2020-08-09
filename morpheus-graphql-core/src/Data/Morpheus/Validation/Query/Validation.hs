@@ -30,8 +30,10 @@ import Data.Morpheus.Types.Internal.Validation
     runValidator,
   )
 import Data.Morpheus.Validation.Query.Fragment
-  ( checkfragmentPreconditions,
-    validateFragments,
+  ( validateFragments,
+  )
+import Data.Morpheus.Validation.Query.FragmentPreconditions
+  ( checkFragmentPreconditions,
   )
 import Data.Morpheus.Validation.Query.Selection
   ( vaidateFragmentSelection,
@@ -61,7 +63,7 @@ validateRequest
     } =
     do
       variables <- runValidator validateHelpers config schema scope (ctx empty fragments)
-      frags <- runValidator (validateFragments vaidateFragmentSelection operationSelection) config schema scope (ctx variables fragments)
+      frags <- runValidator (validateFragments vaidateFragmentSelection) config schema scope (ctx variables fragments)
       runValidator (validateOperation operation) config schema scope (ctx variables frags)
     where
       scope =
@@ -80,7 +82,7 @@ validateRequest
             variables
           }
       validateHelpers =
-        checkfragmentPreconditions
+        checkFragmentPreconditions operationSelection
           *> resolveOperationVariables
             config
             (fromList inputVariables)
