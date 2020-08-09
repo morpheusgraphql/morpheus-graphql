@@ -44,7 +44,6 @@ import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
 import Data.Morpheus.Types.Internal.Validation
   ( FragmentValidator,
     Scope (..),
-    SelectionValidator,
     askTypeMember,
     asksScope,
   )
@@ -61,18 +60,22 @@ type TypeDef =
 -- returns all Fragments used in Union
 exploreUnionFragments ::
   (ResolveFragment s) =>
+  ( Fragment RAW ->
+    FragmentValidator s (SelectionSet VALID)
+  ) ->
   [UnionMember OUT unionS] ->
   Selection RAW ->
   FragmentValidator s [UnionTag]
-exploreUnionFragments unionTags (Spread _ ref) = pure <$> resolveValidFragment undefined (map memberName unionTags) ref
-exploreUnionFragments unionTags Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
-exploreUnionFragments unionTags Selection {selectionName, selectionPosition} = do
+exploreUnionFragments f unionTags (Spread _ ref) = pure <$> resolveValidFragment f (map memberName unionTags) ref
+exploreUnionFragments _ _ Selection {selectionName = "__typename", selectionContent = SelectionField} = pure []
+exploreUnionFragments _ _ Selection {selectionName, selectionPosition} = do
   typeName <- asksScope currentTypeName
   failure $ unknownSelectionField typeName (Ref selectionName selectionPosition)
-
--- splitFrag (InlineFragment fragment) =
---   packFragment
---     <$> castFragmentType Nothing (fragmentPosition fragment) (map memberName unionTags) fragment
+exploreUnionFragments f unionTags (InlineFragment fragment@Fragment {fragmentType}) =
+  pure . UnionTag fragmentType
+    <$> ( castFragmentType Nothing (fragmentPosition fragment) (map memberName unionTags) fragment
+            >>= f
+        )
 
 -- sorts Fragment by contitional Types
 -- [
@@ -125,16 +128,17 @@ validateCluster validator __typenameSet =
 
 validateUnionSelection ::
   ResolveFragment s =>
+  (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   (TypeDef -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   SelectionSet RAW ->
   DataUnion VALID ->
   FragmentValidator s (SelectionContent VALID)
-validateUnionSelection validate selectionSet members = do
+validateUnionSelection validateFragment validate selectionSet members = do
   let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
   -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
   -- [("User", FieldsDefinition { ... }), ("Product", FieldsDefinition { ...
   unionTypes <- traverse askTypeMember members
   -- find all Fragments used in Selection
-  spreads <- concat <$> traverse (exploreUnionFragments members) (elems selectionSet)
+  spreads <- concat <$> traverse (exploreUnionFragments validateFragment members) (elems selectionSet)
   let categories = tagUnionFragments unionTypes spreads
   validateCluster validate __typename categories

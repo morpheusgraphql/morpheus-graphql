@@ -285,6 +285,7 @@ validateByTypeContent
       -- Validate UnionSelection
       __validate DataUnion {unionMembers} =
         validateUnionSelection
+          vaidateFragmentSelection
           validateSelectionSet
           rawSelectionSet
           unionMembers
