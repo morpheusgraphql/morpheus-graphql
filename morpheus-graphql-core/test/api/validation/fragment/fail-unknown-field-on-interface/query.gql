@@ -1,4 +1,7 @@
 {
+  deity {
+    ...onSupernatural
+  }
   character {
     ...OnCharacter
   }
@@ -6,4 +9,8 @@
 
 fragment OnCharacter on Character {
   power
+}
+
+fragment onSupernatural on Supernatural {
+  name
 }

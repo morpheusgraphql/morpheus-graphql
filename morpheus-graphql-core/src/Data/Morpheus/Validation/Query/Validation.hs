@@ -10,6 +10,7 @@ module Data.Morpheus.Validation.Query.Validation
 where
 
 import Data.HashMap.Lazy (fromList)
+import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
     Operation (..),
@@ -31,8 +32,12 @@ import Data.Morpheus.Types.Internal.Validation
 import Data.Morpheus.Validation.Query.Fragment
   ( validateFragments,
   )
+import Data.Morpheus.Validation.Query.FragmentPreconditions
+  ( checkFragmentPreconditions,
+  )
 import Data.Morpheus.Validation.Query.Selection
-  ( validateOperation,
+  ( vaidateFragmentSelection,
+    validateOperation,
   )
 import Data.Morpheus.Validation.Query.Variable
   ( resolveOperationVariables,
@@ -57,8 +62,41 @@ validateRequest
           }
     } =
     do
-      variables <- runValidator validateHelpers config schema scope (ctx ())
-      runValidator (validateOperation operation) config schema scope (ctx variables)
+      variables <-
+        runValidator
+          validateHelpers
+          config
+          schema
+          scope
+          ( OperationContext
+              { selection,
+                fragments,
+                variables = empty
+              }
+          )
+      validFragments <-
+        runValidator
+          (validateFragments vaidateFragmentSelection)
+          config
+          schema
+          scope
+          ( OperationContext
+              { selection,
+                fragments,
+                variables
+              }
+          )
+      runValidator
+        (validateOperation operation)
+        config
+        schema
+        scope
+        ( OperationContext
+            { selection,
+              fragments = validFragments,
+              variables
+            }
+        )
     where
       scope =
         Scope
@@ -69,14 +107,9 @@ validateRequest
             fieldname = "Root",
             position = Just operationPosition
           }
-      ctx variables =
-        OperationContext
-          { fragments,
-            selection = CurrentSelection {operationName},
-            variables
-          }
+      selection = CurrentSelection {operationName}
       validateHelpers =
-        validateFragments operationSelection
+        checkFragmentPreconditions operationSelection
           *> resolveOperationVariables
             config
             (fromList inputVariables)

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Stage
@@ -6,6 +7,7 @@ module Data.Morpheus.Types.Internal.AST.Stage
     VALID,
     RAW,
     Stage (..),
+    CONST_OR_VALID,
   )
 where
 
@@ -19,3 +21,11 @@ data Stage
   = RAW
   | CONST
   | VALID
+
+type family CONST_OR_VALID (a :: Stage) :: Stage
+
+type instance CONST_OR_VALID RAW = CONST
+
+type instance CONST_OR_VALID CONST = CONST
+
+type instance CONST_OR_VALID VALID = VALID

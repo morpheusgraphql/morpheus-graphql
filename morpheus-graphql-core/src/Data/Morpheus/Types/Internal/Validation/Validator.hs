@@ -52,6 +52,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     askFragments,
     DirectiveValidator,
     ValidatorContext (..),
+    FragmentValidator,
   )
 where
 
@@ -159,10 +160,13 @@ data ScopeKind
   | TYPE
   deriving (Show)
 
-data OperationContext vars = OperationContext
-  { fragments :: Fragments,
-    selection :: CurrentSelection,
-    variables :: vars
+data
+  OperationContext
+    (s1 :: Stage)
+    (s2 :: Stage) = OperationContext
+  { fragments :: Fragments s2,
+    variables :: VariableDefinitions s1,
+    selection :: CurrentSelection
   }
   deriving (Show)
 
@@ -213,7 +217,7 @@ data Constraint (a :: Target) where
 
 type family Resolution (s :: Stage) (a :: Target)
 
-type instance Resolution s 'TARGET_OBJECT = (TypeName, FieldsDefinition OUT s)
+type instance Resolution s 'TARGET_OBJECT = (TypeDefinition OUT s, FieldsDefinition OUT s)
 
 type instance Resolution s 'TARGET_INPUT = TypeDefinition IN s
 
@@ -281,9 +285,9 @@ askVariables = get
 
 askFragments ::
   ( MonadContext m s c,
-    GetWith c Fragments
+    GetWith c (Fragments s')
   ) =>
-  m c Fragments
+  m c (Fragments s')
 askFragments = get
 
 runValidator :: Validator s ctx a -> Config -> Schema s -> Scope -> ctx -> Eventless a
@@ -402,9 +406,11 @@ instance MonadReader ctx (Validator s ctx) where
   ask = validatorCTX <$> Validator ask
   local = withContext
 
-type BaseValidator = Validator VALID (OperationContext ())
+type BaseValidator = Validator VALID (OperationContext RAW RAW)
 
-type SelectionValidator = Validator VALID (OperationContext (VariableDefinitions VALID))
+type FragmentValidator (s :: Stage) = Validator VALID (OperationContext VALID s)
+
+type SelectionValidator = Validator VALID (OperationContext VALID VALID)
 
 type InputValidator s ctx = Validator s (InputContext ctx)
 
@@ -443,20 +449,20 @@ instance MonadContext (Validator s) s c where
 class GetWith (c :: *) (v :: *) where
   getWith :: c -> v
 
-instance GetWith (OperationContext (VariableDefinitions VALID)) (VariableDefinitions VALID) where
+instance GetWith (OperationContext VALID fragStage) (VariableDefinitions VALID) where
   getWith = variables
 
 instance GetWith (InputContext ctx) InputSource where
   getWith = inputSource
 
-instance GetWith (OperationContext v) Fragments where
+instance GetWith (OperationContext varStage fragStage) (Fragments fragStage) where
   getWith = fragments
 
 -- Setters
 class SetWith (c :: *) (v :: *) where
   setWith :: (v -> v) -> c -> c
 
-instance SetWith (OperationContext v) CurrentSelection where
+instance SetWith (OperationContext s1 s2) CurrentSelection where
   setWith f OperationContext {selection = selection, ..} =
     OperationContext
       { selection = f selection,

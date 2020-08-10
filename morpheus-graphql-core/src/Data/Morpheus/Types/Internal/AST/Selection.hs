@@ -105,26 +105,26 @@ import Prelude
     otherwise,
   )
 
-data Fragment = Fragment
+data Fragment (stage :: Stage) = Fragment
   { fragmentName :: FieldName,
     fragmentType :: TypeName,
     fragmentPosition :: Position,
-    fragmentSelection :: SelectionSet RAW,
-    fragmentDirectives :: Directives RAW
+    fragmentSelection :: SelectionSet stage,
+    fragmentDirectives :: Directives stage
   }
   deriving (Show, Eq, Lift)
 
 -- ERRORs
-instance NameCollision Fragment where
+instance NameCollision (Fragment s) where
   nameCollision Fragment {fragmentName, fragmentPosition} =
     ValidationError
       ("There can be only one fragment named " <> msg fragmentName <> ".")
       [fragmentPosition]
 
-instance KeyOf FieldName Fragment where
+instance KeyOf FieldName (Fragment s) where
   keyOf = fragmentName
 
-type Fragments = OrdMap FieldName Fragment
+type Fragments (s :: Stage) = OrdMap FieldName (Fragment s)
 
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
@@ -213,7 +213,7 @@ data Selection (s :: Stage) where
       selectionDirectives :: Directives s
     } ->
     Selection s
-  InlineFragment :: Fragment -> Selection RAW
+  InlineFragment :: Fragment RAW -> Selection RAW
   Spread :: Directives RAW -> Ref -> Selection RAW
 
 instance RenderGQL (Selection VALID) where

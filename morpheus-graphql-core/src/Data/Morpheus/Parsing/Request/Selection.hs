@@ -108,7 +108,7 @@ spread = label "FragmentSpread" $ do
 --  FragmentDefinition:
 --   fragment FragmentName TypeCondition Directives(opt) SelectionSet
 --
-parseFragmentDefinition :: Parser Fragment
+parseFragmentDefinition :: Parser (Fragment RAW)
 parseFragmentDefinition = label "FragmentDefinition" $ do
   keyword "fragment"
   fragmentPosition <- getLocation
@@ -125,7 +125,7 @@ inlineFragment = label "InlineFragment" $ do
   fragmentPosition <- spreadLiteral
   InlineFragment <$> fragmentBody "INLINE_FRAGMENT" fragmentPosition
 
-fragmentBody :: FieldName -> Position -> Parser Fragment
+fragmentBody :: FieldName -> Position -> Parser (Fragment RAW)
 fragmentBody fragmentName fragmentPosition = label "FragmentBody" $ do
   fragmentType <- parseTypeCondition
   fragmentDirectives <- optionalDirectives
