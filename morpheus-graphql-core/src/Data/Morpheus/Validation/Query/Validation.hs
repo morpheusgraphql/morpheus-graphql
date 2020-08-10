@@ -62,9 +62,41 @@ validateRequest
           }
     } =
     do
-      variables <- runValidator validateHelpers config schema scope (ctx empty fragments)
-      frags <- runValidator (validateFragments vaidateFragmentSelection) config schema scope (ctx variables fragments)
-      runValidator (validateOperation operation) config schema scope (ctx variables frags)
+      variables <-
+        runValidator
+          validateHelpers
+          config
+          schema
+          scope
+          ( OperationContext
+              { selection,
+                fragments,
+                variables = empty
+              }
+          )
+      validFragments <-
+        runValidator
+          (validateFragments vaidateFragmentSelection)
+          config
+          schema
+          scope
+          ( OperationContext
+              { selection,
+                fragments,
+                variables
+              }
+          )
+      runValidator
+        (validateOperation operation)
+        config
+        schema
+        scope
+        ( OperationContext
+            { selection,
+              fragments = validFragments,
+              variables
+            }
+        )
     where
       scope =
         Scope
@@ -75,12 +107,7 @@ validateRequest
             fieldname = "Root",
             position = Just operationPosition
           }
-      ctx variables fragments =
-        OperationContext
-          { selection = CurrentSelection {operationName},
-            fragments,
-            variables
-          }
+      selection = CurrentSelection {operationName}
       validateHelpers =
         checkFragmentPreconditions operationSelection
           *> resolveOperationVariables
