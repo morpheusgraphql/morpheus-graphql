@@ -18,10 +18,9 @@ module Data.Morpheus.Validation.Query.Fragment
   )
 where
 
-import Control.Applicative ((*>), (<*>), pure)
+import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=))
-import Data.Foldable (traverse_)
-import Data.Functor (($>), (<$>))
+import Data.Functor ((<$>))
 import Data.List (elem)
 import Data.Maybe (Maybe (..))
 -- MORPHEUS
@@ -94,14 +93,7 @@ validateFragment validate allowedTypes fragment@Fragment {fragmentPosition} =
 validateFragments ::
   (Fragment RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
   FragmentValidator RAW (Fragments VALID)
-validateFragments f =
-  fragmentsConditionTypeChecking
-    *> __validateFragments f
-
-__validateFragments ::
-  (Fragment RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
-  FragmentValidator RAW (Fragments VALID)
-__validateFragments f = askFragments >>= traverse (onlyValidateFrag f)
+validateFragments f = askFragments >>= traverse (onlyValidateFrag f)
 
 onlyValidateFrag ::
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
@@ -115,7 +107,7 @@ onlyValidateFrag validate f@Fragment {..} =
     <$> validate f <*> validateFragmentDirectives fragmentDirectives
 
 validateFragmentDirectives :: Directives RAW -> FragmentValidator s (Directives VALID)
-validateFragmentDirectives _ = pure []
+validateFragmentDirectives _ = pure [] --TODO: validate fragment directives
 
 castFragmentType ::
   Maybe FieldName ->
@@ -132,14 +124,6 @@ resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref
     >>= castFragmentType (Just refName) refPosition allowedTargets
-
-fragmentsConditionTypeChecking :: FragmentValidator RAW ()
-fragmentsConditionTypeChecking =
-  askFragments
-    >>= traverse_ checkTypeExistence
-
-checkTypeExistence :: Fragment RAW -> FragmentValidator RAW ()
-checkTypeExistence fr = selectFragmentType fr $> ()
 
 selectFragmentType :: Fragment RAW -> FragmentValidator s (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
 selectFragmentType fr@Fragment {fragmentType, fragmentPosition} = do
