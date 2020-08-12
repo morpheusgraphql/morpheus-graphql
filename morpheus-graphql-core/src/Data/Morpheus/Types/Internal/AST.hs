@@ -161,6 +161,8 @@ module Data.Morpheus.Types.Internal.AST
     withPosition,
     ValidationErrors,
     toGQLError,
+    IsSelected,
+    LEAF,
   )
 where
 

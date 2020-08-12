@@ -534,10 +534,10 @@ mkType typeName typeContent =
       typeContent
     }
 
-createScalarType :: TypeName -> TypeDefinition LEAF s
+createScalarType :: IsSelected LEAF a ~ TRUE => TypeName -> TypeDefinition a s
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
-mkEnumContent :: [TypeName] -> TypeContent TRUE ANY s
+mkEnumContent :: IsSelected LEAF a ~ TRUE => [TypeName] -> TypeContent TRUE a s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s
