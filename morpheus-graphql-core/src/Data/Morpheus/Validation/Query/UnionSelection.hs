@@ -8,6 +8,7 @@
 
 module Data.Morpheus.Validation.Query.UnionSelection
   ( validateUnionSelection,
+    validateInterfaceSelection,
   )
 where
 
@@ -35,9 +36,11 @@ import Data.Morpheus.Types.Internal.AST
     SelectionSet,
     SelectionSet,
     TypeDefinition (..),
+    TypeName,
     UnionMember (..),
     UnionTag (..),
     VALID,
+    possibleInterfaceTypes,
     toCategory,
   )
 import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
@@ -46,6 +49,7 @@ import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
 import Data.Morpheus.Types.Internal.Validation
   ( FragmentValidator,
     Scope (..),
+    askInterfaceTypes,
     askTypeMember,
     asksScope,
   )
@@ -74,13 +78,31 @@ exploreUnionFragments f unionTags (InlineFragment fragment@Fragment {fragmentTyp
             >>= f
         )
 
+-- returns all Fragments used in Union
+exploreInterfaceFragments ::
+  (ResolveFragment s) =>
+  ( Fragment RAW ->
+    FragmentValidator s (SelectionSet VALID)
+  ) ->
+  TypeDefinition IMPLEMENTABLE VALID ->
+  [TypeDefinition IMPLEMENTABLE VALID] ->
+  Selection RAW ->
+  FragmentValidator s [UnionTag]
+exploreInterfaceFragments _ _ _ Selection {} = pure []
+exploreInterfaceFragments f t types (Spread _ ref) = pure <$> resolveValidFragment f (typeName <$> t : types) ref
+exploreInterfaceFragments f t types (InlineFragment fragment@Fragment {fragmentType}) =
+  pure . UnionTag fragmentType
+    <$> ( castFragmentType Nothing (fragmentPosition fragment) (typeName <$> t : types) fragment
+            >>= f
+        )
+
 -- sorts Fragment by contitional Types
 -- [
 --   ( Type for Tag User , [ Fragment for User] )
 --   ( Type for Tag Product , [ Fragment for Product] )
 -- ]
 tagUnionFragments ::
-  [TypeDefinition OBJECT VALID] ->
+  [TypeDefinition IMPLEMENTABLE VALID] ->
   [UnionTag] ->
   [(TypeDefinition IMPLEMENTABLE VALID, [UnionTag])]
 tagUnionFragments types fragments =
@@ -88,9 +110,9 @@ tagUnionFragments types fragments =
   where
     notEmpty = not . null . snd
     categorizeType ::
-      TypeDefinition OBJECT VALID ->
+      TypeDefinition IMPLEMENTABLE VALID ->
       (TypeDefinition IMPLEMENTABLE VALID, [UnionTag])
-    categorizeType datatype@TypeDefinition {typeName} = (toCategory datatype, filter matches fragments)
+    categorizeType datatype@TypeDefinition {typeName} = (datatype, filter matches fragments)
       where
         matches = (typeName ==) . unionTagName
 
@@ -123,6 +145,27 @@ validateCluster validator __typenameSet =
       selSet <- validator unionType __typenameSet
       UnionTag typeName <$> MS.join (selSet : map unionTagSelection fragmets)
 
+validateInterfaceSelection ::
+  ResolveFragment s =>
+  (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
+  (TypeDefinition IMPLEMENTABLE VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
+  TypeDefinition IMPLEMENTABLE VALID ->
+  SelectionSet RAW ->
+  FragmentValidator s (SelectionContent VALID)
+validateInterfaceSelection
+  validateFragment
+  validate
+  typeDef
+  selectionSet = do
+    possibleTypes <- askInterfaceTypes typeDef
+    spreads <-
+      concat
+        <$> traverse
+          (exploreInterfaceFragments validateFragment typeDef possibleTypes)
+          (elems selectionSet)
+    let categories = tagUnionFragments possibleTypes spreads
+    validateCluster validate selectionSet categories
+
 validateUnionSelection ::
   ResolveFragment s =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
@@ -134,7 +177,7 @@ validateUnionSelection validateFragment validate members selectionSet = do
   let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
   -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
   -- [("User", FieldsDefinition { ... }), ("Product", FieldsDefinition { ...
-  unionTypes <- traverse askTypeMember members
+  unionTypes <- traverse (fmap toCategory . askTypeMember) members
   -- find all Fragments used in Selection
   spreads <- concat <$> traverse (exploreUnionFragments validateFragment members) (elems selectionSet)
   let categories = tagUnionFragments unionTypes spreads

@@ -566,6 +566,11 @@ instance FromCategory (TypeContent TRUE) ANY OBJECT where
   fromCategory DataObject {..} = Just DataObject {..}
   fromCategory _ = Nothing
 
+instance FromCategory (TypeContent TRUE) ANY IMPLEMENTABLE where
+  fromCategory DataObject {..} = Just DataObject {..}
+  fromCategory DataInterface {..} = Just DataInterface {..}
+  fromCategory _ = Nothing
+
 mkType :: TypeName -> TypeContent TRUE a s -> TypeDefinition a s
 mkType typeName typeContent =
   TypeDefinition

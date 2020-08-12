@@ -277,12 +277,15 @@ pickSelection = selectOr empty unionTagSelection
 
 withObject ::
   (LiftOperation o, Monad m) =>
+  TypeName ->
   (SelectionSet VALID -> Resolver o e m value) ->
   Selection VALID ->
   Resolver o e m value
-withObject f Selection {selectionName, selectionContent, selectionPosition} = checkContent selectionContent
+withObject __typename f Selection {selectionName, selectionContent, selectionPosition} = checkContent selectionContent
   where
     checkContent (SelectionSet selection) = f selection
+    checkContent (UnionSelection unionSel) =
+      f (selectOr empty unionTagSelection __typename unionSel)
     checkContent _ = failure [toGQLError $ subfieldsNotSelected selectionName "" selectionPosition]
 
 lookupRes ::
@@ -323,7 +326,7 @@ runDataResolver res = asks currentSelection >>= __encode res
         -- LIST
         encodeNode (ResList x) _ = List <$> traverse runDataResolver x
         -- Object -----------------
-        encodeNode objDrv@ResObject {} _ = withObject (`resolveObject` objDrv) sel
+        encodeNode objDrv@(ResObject ObjectResModel {__typename}) _ = withObject __typename (`resolveObject` objDrv) sel
         -- ENUM
         encodeNode (ResEnum _ enum) SelectionField = pure $ gqlString $ readTypeName enum
         encodeNode (ResEnum typename enum) unionSel@UnionSelection {} =

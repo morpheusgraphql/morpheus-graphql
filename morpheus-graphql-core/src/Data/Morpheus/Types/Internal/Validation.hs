@@ -53,6 +53,7 @@ module Data.Morpheus.Types.Internal.Validation
     getOperationType,
     selectType,
     FragmentValidator,
+    askInterfaceTypes,
   )
 where
 
@@ -110,7 +111,8 @@ import Data.Morpheus.Types.Internal.Validation.Error
     Unused (..),
   )
 import Data.Morpheus.Types.Internal.Validation.Internal
-  ( askType,
+  ( askInterfaceTypes,
+    askType,
     askTypeMember,
     getOperationType,
   )

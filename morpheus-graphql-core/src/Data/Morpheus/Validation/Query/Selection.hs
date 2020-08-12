@@ -86,7 +86,8 @@ import Data.Morpheus.Validation.Query.Fragment
     validateFragment,
   )
 import Data.Morpheus.Validation.Query.UnionSelection
-  ( validateUnionSelection,
+  ( validateInterfaceSelection,
+    validateUnionSelection,
   )
 import Data.Semigroup ((<>))
 import Prelude
@@ -299,7 +300,10 @@ validateByTypeContent
         fmap SelectionSet . validateSelectionSet (TypeDefinition {typeContent = DataObject {..}, ..})
       -- TODO: Union Like Validation
       __validate DataInterface {..} =
-        fmap SelectionSet . validateSelectionSet (TypeDefinition {typeContent = DataInterface {..}, ..})
+        validateInterfaceSelection
+          vaidateFragmentSelection
+          validateSelectionSet
+          (TypeDefinition {typeContent = DataInterface {..}, ..})
       __validate _ =
         const
           $ failure
