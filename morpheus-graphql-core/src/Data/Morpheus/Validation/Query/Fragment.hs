@@ -33,10 +33,8 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( Directives,
     FieldName,
-    FieldsDefinition,
     Fragment (..),
     Fragments,
-    OUT,
     OUTPUT_OBJECT,
     Position,
     RAW,

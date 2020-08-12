@@ -11,7 +11,6 @@ where
 
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    OUT,
     Position,
     Ref (..),
     TypeDefinition (..),

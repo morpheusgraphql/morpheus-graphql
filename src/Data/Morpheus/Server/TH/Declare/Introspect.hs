@@ -44,10 +44,12 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
+    CONST,
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
     IN,
+    LEAF,
     OUT,
     TRUE,
     TypeContent (..),
@@ -66,7 +68,7 @@ instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnu
   pure <$> instanceD (cxt []) iHead [defineIntrospect]
   where
     iHead = pure (apply ''Introspect [cat', toCon typeName])
-    defineIntrospect = funDSimple 'introspect [_'] [|insertType typeDef|]
+    defineIntrospect = funDSimple 'introspect [_'] [|insertType (typeDef :: TypeDefinition LEAF CONST)|]
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]
