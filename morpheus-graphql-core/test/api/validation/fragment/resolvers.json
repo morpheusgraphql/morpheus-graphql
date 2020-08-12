@@ -4,8 +4,15 @@
       "name": "Morpheus",
       "power": ["Shapeshifting"]
     },
-    "character": {
-      "name": "Test Character"
-    }
+    "character": [
+      {
+        "name": "Test Deity",
+        "power": ["Show Only on Deity"]
+      },
+      {
+        "name": "Test Character",
+        "power": ["this should be skipped"]
+      }
+    ]
   }
 }

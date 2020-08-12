@@ -35,6 +35,7 @@ main = do
             "on-interface",
             "inline-on-interface",
             "on-union-type",
-            "fail-unknown-field-on-interface"
+            "fail-unknown-field-on-interface",
+            "on-interface-type-casting"
           ]
       ]

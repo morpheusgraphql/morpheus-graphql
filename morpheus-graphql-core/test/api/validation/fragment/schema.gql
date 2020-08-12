@@ -20,5 +20,5 @@ union MyUnion = Hero | Deity
 type Query {
   deity: Deity!
   myUnion: MyUnion
-  character: Character!
+  character: [Character!]
 }

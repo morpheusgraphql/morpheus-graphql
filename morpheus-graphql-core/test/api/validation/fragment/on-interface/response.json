@@ -1,6 +1,13 @@
 {
   "data": {
     "deity": { "power": ["Shapeshifting"] },
-    "character": { "name": "Test Character" }
+    "character": [
+      {
+        "name": "Test Deity"
+      },
+      {
+        "name": "Test Character"
+      }
+    ]
   }
 }

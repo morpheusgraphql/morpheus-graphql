@@ -1,0 +1,8 @@
+{
+  "data": {
+    "character": [
+      { "name": "Test Deity", "power": ["Show Only on Deity"] },
+      { "name": "Test Character" }
+    ]
+  }
+}

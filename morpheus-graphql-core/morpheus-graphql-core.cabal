@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5bef6bdbe08d93e6a98bd3574b4b5c06615f910b670da366185526dc9bc357cf
+-- hash: 5e9a91ab5c9d74880c6da90e7da778a9c366e1e664a2fd96f2494ad2e31651dd
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -28,6 +28,7 @@ data-files:
     test/api/deity/simple/query.gql
     test/api/validation/fragment/fail-unknown-field-on-interface/query.gql
     test/api/validation/fragment/inline-on-interface/query.gql
+    test/api/validation/fragment/on-interface-type-casting/query.gql
     test/api/validation/fragment/on-interface/query.gql
     test/api/validation/fragment/on-type/query.gql
     test/api/validation/fragment/on-union-type/query.gql
@@ -74,6 +75,7 @@ data-files:
     test/api/deity/simple/response.json
     test/api/validation/fragment/fail-unknown-field-on-interface/response.json
     test/api/validation/fragment/inline-on-interface/response.json
+    test/api/validation/fragment/on-interface-type-casting/response.json
     test/api/validation/fragment/on-interface/response.json
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
