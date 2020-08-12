@@ -187,9 +187,9 @@ constraint ::
   TypeDefinition ANY s ->
   Validator s ctx (Resolution s a)
 constraint OBJECT _ TypeDefinition {typeContent = DataObject {objectFields, ..}, ..} =
-  pure (TypeDefinition {typeContent = DataObject {objectFields, ..}, ..}, objectFields)
+  pure TypeDefinition {typeContent = DataObject {objectFields, ..}, ..}
 constraint OBJECT _ TypeDefinition {typeContent = DataInterface fields, ..} =
-  pure (TypeDefinition {typeContent = DataInterface fields, ..}, fields)
+  pure TypeDefinition {typeContent = DataInterface fields, ..}
 constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny x)
 constraint target ctx _ = failure [kindViolation target ctx]
 

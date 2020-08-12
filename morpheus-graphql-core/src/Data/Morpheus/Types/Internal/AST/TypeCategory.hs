@@ -59,19 +59,27 @@ type instance IsSelected ANY a = TRUE
 type instance IsSelected a ANY = TRUE
 
 -- LEAF
+type instance IsSelected LEAF LEAF = TRUE
+
 type instance IsSelected LEAF IN = TRUE
 
 type instance IsSelected LEAF OUT = TRUE
+
+type instance IsSelected LEAF OUTPUT_OBJECT = FALSE
 
 -- IN
 type instance IsSelected IN IN = TRUE
 
 type instance IsSelected IN OUT = FALSE
 
+type instance IsSelected IN OUTPUT_OBJECT = FALSE
+
 -- OUT
 type instance IsSelected OUT OUT = TRUE
 
 type instance IsSelected OUT IN = FALSE
+
+type instance IsSelected OUT OUTPUT_OBJECT = FALSE
 
 -- OUTPUT_OBJECT
 type instance IsSelected OUTPUT_OBJECT OUTPUT_OBJECT = TRUE
@@ -79,3 +87,5 @@ type instance IsSelected OUTPUT_OBJECT OUTPUT_OBJECT = TRUE
 type instance IsSelected OUTPUT_OBJECT OUT = TRUE
 
 type instance IsSelected OUTPUT_OBJECT IN = FALSE
+
+type instance IsSelected OUTPUT_OBJECT LEAF = FALSE

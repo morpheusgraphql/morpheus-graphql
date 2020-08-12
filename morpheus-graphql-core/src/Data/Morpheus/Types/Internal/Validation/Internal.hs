@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -34,10 +35,13 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     InternalError,
     OUT,
+    OUTPUT_OBJECT,
     Operation,
     Operation (..),
+    Stage,
     TRUE,
     Token,
+    TypeCategory,
     TypeContent (..),
     TypeContent,
     TypeDefinition (..),
@@ -50,6 +54,7 @@ import Data.Morpheus.Types.Internal.AST
     getOperationDataType,
     msgInternal,
     typeConName,
+    typed,
     untyped,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
@@ -71,6 +76,12 @@ askType ::
   m c (TypeDefinition cat s)
 askType = untyped (__askType . typeConName)
 
+askType2 ::
+  Constraints m c cat s =>
+  Typed cat s TypeName ->
+  m c (TypeDefinition cat s)
+askType2 = untyped __askType
+
 __askType ::
   Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
 __askType name =
@@ -81,8 +92,14 @@ __askType name =
 askTypeMember ::
   Constraints m c cat s =>
   UnionMember cat s ->
-  m c (TypeDefinition cat s, FieldsDefinition cat s)
-askTypeMember = __askType . memberName >=> constraintObject
+  m c (TypeMemberResponse cat s)
+askTypeMember = askType2 . typed memberName >=> constraintObject
+
+type family TypeMemberResponse (cat :: TypeCategory) (s :: Stage)
+
+type instance TypeMemberResponse OUT s = TypeDefinition OUTPUT_OBJECT s
+
+type instance TypeMemberResponse IN s = (TypeDefinition IN s, FieldsDefinition IN s)
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),
@@ -92,11 +109,8 @@ type Constraints m c cat s =
     FromAny (TypeContent TRUE) cat
   )
 
-getOperationType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
-getOperationType operation =
-  askSchema
-    >>= getOperationDataType operation
-    >>= constraintObject
+getOperationType :: Operation a -> SelectionValidator (TypeDefinition OUTPUT_OBJECT VALID)
+getOperationType operation = askSchema >>= getOperationDataType operation
 
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
@@ -124,7 +138,7 @@ class KindErrors c where
       Failure InternalError f
     ) =>
     TypeDefinition c s ->
-    f (TypeDefinition c s, FieldsDefinition c s)
+    f (TypeMemberResponse c s)
 
 instance KindErrors IN where
   kindConstraint = _kindConstraint "input type"
@@ -133,7 +147,7 @@ instance KindErrors IN where
 
 instance KindErrors OUT where
   kindConstraint = _kindConstraint "output type"
-  constraintObject typeDef@TypeDefinition {typeContent = DataObject {objectFields}} = pure (typeDef, objectFields)
+  constraintObject TypeDefinition {typeContent = DataObject {..}, ..} = pure TypeDefinition {typeContent = DataObject {..}, ..}
   constraintObject TypeDefinition {typeName} = failure (violation "object" typeName)
 
 violation ::

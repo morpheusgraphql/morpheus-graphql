@@ -39,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     Fragment (..),
     OUT,
+    OUTPUT_OBJECT,
     Operation (..),
     OperationType (..),
     RAW,
@@ -95,8 +96,6 @@ import Prelude
     not,
     otherwise,
   )
-
-type TypeDef = (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
 
 selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
 selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . elems
@@ -174,13 +173,17 @@ vaidateFragmentSelection f@Fragment {fragmentSelection} = do
   typeDef <- selectFragmentType f
   validateSelectionSet typeDef fragmentSelection
 
+getFields :: TypeDefinition OUTPUT_OBJECT s -> FieldsDefinition OUT s
+getFields TypeDefinition {typeContent = DataObject {objectFields}} = objectFields
+getFields TypeDefinition {typeContent = DataInterface fields} = fields
+
 validateSelectionSet ::
   forall s.
   (ResolveFragment s) =>
-  TypeDef ->
+  TypeDefinition OUTPUT_OBJECT VALID ->
   SelectionSet RAW ->
   FragmentValidator s (SelectionSet VALID)
-validateSelectionSet (typeDef, fieldsDef) =
+validateSelectionSet typeDef =
   concatTraverse validateSelection
   where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
@@ -204,7 +207,7 @@ validateSelectionSet (typeDef, fieldsDef) =
           currentSelectionRef = Ref selectionName selectionPosition
           commonValidation :: FragmentValidator s (TypeDefinition OUT VALID, Arguments VALID)
           commonValidation = do
-            fieldDef <- selectKnown (Ref selectionName selectionPosition) fieldsDef
+            fieldDef <- selectKnown (Ref selectionName selectionPosition) (getFields typeDef)
             (,)
               <$> askType (typed fieldType fieldDef)
               <*> validateFieldArguments fieldDef selectionArguments
@@ -275,13 +278,15 @@ validateByTypeContent ::
   SelectionSet RAW ->
   FragmentValidator s (SelectionContent VALID)
 validateByTypeContent
-  typeDef@TypeDefinition {typeContent}
+  typeDef@TypeDefinition {typeContent, ..}
   currentSelectionRef
   rawSelectionSet =
     withScope typeDef currentSelectionRef $
       __validate typeContent
     where
-      __validate :: TypeContent TRUE OUT VALID -> FragmentValidator s (SelectionContent VALID)
+      __validate ::
+        TypeContent TRUE OUT VALID ->
+        FragmentValidator s (SelectionContent VALID)
       -- Validate UnionSelection
       __validate DataUnion {unionMembers} =
         validateUnionSelection
@@ -290,17 +295,11 @@ validateByTypeContent
           rawSelectionSet
           unionMembers
       -- Validate Regular selection set
-      __validate DataObject {objectFields} =
-        SelectionSet
-          <$> validateSelectionSet
-            (typeDef, objectFields)
-            rawSelectionSet
+      __validate DataObject {..} =
+        SelectionSet <$> validateSelectionSet (TypeDefinition {typeContent = DataObject {..}, ..}) rawSelectionSet
       -- TODO: Union Like Validation
-      __validate DataInterface {interfaceFields} =
-        SelectionSet
-          <$> validateSelectionSet
-            (typeDef, interfaceFields)
-            rawSelectionSet
+      __validate DataInterface {..} =
+        SelectionSet <$> validateSelectionSet (TypeDefinition {typeContent = DataInterface {..}, ..}) rawSelectionSet
       __validate _ =
         failure $
           hasNoSubfields

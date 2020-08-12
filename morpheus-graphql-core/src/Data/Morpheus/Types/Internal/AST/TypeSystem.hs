@@ -133,6 +133,7 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     FromAny (..),
     IN,
     IsSelected,
+    LEAF,
     OUT,
     OUTPUT_OBJECT,
     ToAny (..),
@@ -492,11 +493,11 @@ data
   DataScalar ::
     { dataScalar :: ScalarDefinition
     } ->
-    TypeContent TRUE a s
+    TypeContent (IsSelected LEAF a) a s
   DataEnum ::
     { enumMembers :: DataEnum s
     } ->
-    TypeContent TRUE a s
+    TypeContent (IsSelected LEAF a) a s
   DataInputObject ::
     { inputObjectFields :: FieldsDefinition IN s
     } ->
@@ -517,7 +518,7 @@ data
   DataInterface ::
     { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IsSelected OUT a) a s
+    TypeContent (IsSelected OUTPUT_OBJECT a) a s
 
 deriving instance Show (TypeContent a b s)
 
@@ -533,10 +534,10 @@ mkType typeName typeContent =
       typeContent
     }
 
-createScalarType :: TypeName -> TypeDefinition a s
+createScalarType :: TypeName -> TypeDefinition LEAF s
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
-mkEnumContent :: [TypeName] -> TypeContent TRUE a s
+mkEnumContent :: [TypeName] -> TypeContent TRUE ANY s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s
