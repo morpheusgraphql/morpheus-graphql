@@ -278,10 +278,10 @@ renderPossibleTypes ::
   (Monad m) =>
   TypeName ->
   Resolver QUERY e m (ResModel QUERY e m)
-renderPossibleTypes typeDef =
+renderPossibleTypes name =
   mkList
     <$> ( getSchema
-            >>= traverse render . interfacePossibleTypes typeDef
+            >>= traverse render . interfacePossibleTypes name
         )
 
 renderDeprecated ::
