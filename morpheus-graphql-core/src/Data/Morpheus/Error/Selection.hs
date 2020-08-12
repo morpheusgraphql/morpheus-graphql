@@ -11,7 +11,6 @@ where
 
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    OUT,
     Position,
     Ref (..),
     TypeDefinition (..),
@@ -23,7 +22,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Semigroup ((<>))
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
-hasNoSubfields :: Ref -> TypeDefinition OUT VALID -> ValidationError
+hasNoSubfields :: Ref -> TypeDefinition s VALID -> ValidationError
 hasNoSubfields (Ref selectionName position) TypeDefinition {typeName} = ValidationError text [position]
   where
     text =

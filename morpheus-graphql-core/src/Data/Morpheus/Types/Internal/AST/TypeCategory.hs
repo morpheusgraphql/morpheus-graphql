@@ -1,16 +1,24 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
   ( TypeCategory,
+    ELEM,
     OUT,
     IN,
     ANY,
-    FromAny (..),
-    ToAny (..),
-    IsSelected,
+    LEAF,
+    OBJECT,
+    IMPLEMENTABLE,
+    fromAny,
+    toAny,
+    REQURE_IMPLEMENTABLE,
+    ToCategory (..),
+    FromCategory (..),
   )
 where
 
@@ -22,30 +30,104 @@ import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.Stage (Stage)
 import Prelude (Bool (..))
 
-data TypeCategory = In | Out | Any
+data TypeCategory
+  = IN
+  | OUT
+  | ANY
+  | LEAF
+  | OBJECT
+  | IMPLEMENTABLE
 
-type IN = 'In
+type IN = 'IN
 
-type OUT = 'Out
+type OUT = 'OUT
 
-type ANY = 'Any
+type ANY = 'ANY
 
-class ToAny a where
-  toAny :: a (k :: TypeCategory) (s :: Stage) -> a ANY s
+type OBJECT = 'OBJECT
 
-class FromAny a (k :: TypeCategory) where
-  fromAny :: a ANY (s :: Stage) -> Maybe (a k s)
+type IMPLEMENTABLE = 'IMPLEMENTABLE
 
-type family IsSelected (c :: TypeCategory) (a :: TypeCategory) :: Bool
+type LEAF = 'LEAF
 
-type instance IsSelected ANY a = TRUE
+toAny ::
+  (ToCategory a k ANY) =>
+  a (k :: TypeCategory) (s :: Stage) ->
+  a ANY s
+toAny = toCategory
 
-type instance IsSelected OUT OUT = TRUE
+fromAny ::
+  (FromCategory a ANY k) =>
+  a ANY (s :: Stage) ->
+  Maybe (a k s)
+fromAny = fromCategory
 
-type instance IsSelected IN IN = TRUE
+class ToCategory a (k :: TypeCategory) (k' :: TypeCategory) where
+  toCategory :: a k (s :: Stage) -> a k' s
 
-type instance IsSelected IN OUT = FALSE
+class FromCategory a (k :: TypeCategory) (k' :: TypeCategory) where
+  fromCategory :: a k (s :: Stage) -> Maybe (a k' s)
 
-type instance IsSelected OUT IN = FALSE
+type family
+  ELEM
+    (elemKind :: TypeCategory)
+    (setOfKind :: TypeCategory) ::
+    Bool
 
-type instance IsSelected a ANY = TRUE
+type REQURE_IMPLEMENTABLE cat = ELEM cat IMPLEMENTABLE ~ TRUE
+
+-- ANY
+type instance ELEM ANY a = TRUE
+
+type instance ELEM a ANY = TRUE
+
+-- LEAF
+type instance ELEM LEAF LEAF = TRUE
+
+type instance ELEM LEAF IN = TRUE
+
+type instance ELEM LEAF OUT = TRUE
+
+type instance ELEM LEAF OBJECT = FALSE
+
+type instance ELEM LEAF IMPLEMENTABLE = FALSE
+
+-- IN
+type instance ELEM IN IN = TRUE
+
+type instance ELEM IN OUT = FALSE
+
+type instance ELEM IN OBJECT = FALSE
+
+type instance ELEM IN IMPLEMENTABLE = FALSE
+
+-- OUT
+type instance ELEM OUT OUT = TRUE
+
+type instance ELEM OUT IN = FALSE
+
+type instance ELEM OUT OBJECT = FALSE
+
+type instance ELEM OUT IMPLEMENTABLE = FALSE
+
+-- IMPLEMENTABLE
+type instance ELEM IMPLEMENTABLE IMPLEMENTABLE = TRUE
+
+type instance ELEM IMPLEMENTABLE OUT = TRUE
+
+type instance ELEM IMPLEMENTABLE IN = FALSE
+
+type instance ELEM IMPLEMENTABLE LEAF = FALSE
+
+type instance ELEM IMPLEMENTABLE OBJECT = FALSE
+
+-- OUTPUT_OBJECT
+type instance ELEM OBJECT OBJECT = TRUE
+
+type instance ELEM OBJECT IMPLEMENTABLE = TRUE
+
+type instance ELEM OBJECT OUT = TRUE
+
+type instance ELEM OBJECT IN = FALSE
+
+type instance ELEM OBJECT LEAF = FALSE

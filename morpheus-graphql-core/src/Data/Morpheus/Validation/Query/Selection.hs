@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     FieldsDefinition,
     Fragment (..),
+    IMPLEMENTABLE,
     OUT,
     Operation (..),
     OperationType (..),
@@ -55,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
     ValidationError (..),
     isEntNode,
     msgValidation,
+    toCategory,
     typed,
     withPosition,
   )
@@ -96,8 +98,6 @@ import Prelude
     otherwise,
   )
 
-type TypeDef = (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
-
 selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
 selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . elems
 
@@ -130,7 +130,7 @@ validateOperation
     } =
     do
       typeDef <- getOperationType rawOperation
-      selection <- validateSelectionSet typeDef operationSelection
+      selection <- validateSelectionSet (toCategory typeDef) operationSelection
       singleTopLevelSelection rawOperation selection
       directives <-
         validateDirectives
@@ -174,13 +174,18 @@ vaidateFragmentSelection f@Fragment {fragmentSelection} = do
   typeDef <- selectFragmentType f
   validateSelectionSet typeDef fragmentSelection
 
+getFields :: TypeDefinition IMPLEMENTABLE s -> FieldsDefinition OUT s
+getFields TypeDefinition {typeContent = DataObject {objectFields}} = objectFields
+getFields TypeDefinition {typeContent = DataInterface fields} = fields
+
 validateSelectionSet ::
   forall s.
-  (ResolveFragment s) =>
-  TypeDef ->
+  ( ResolveFragment s
+  ) =>
+  TypeDefinition IMPLEMENTABLE VALID ->
   SelectionSet RAW ->
   FragmentValidator s (SelectionSet VALID)
-validateSelectionSet (typeDef, fieldsDef) =
+validateSelectionSet typeDef =
   concatTraverse validateSelection
   where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
@@ -204,7 +209,7 @@ validateSelectionSet (typeDef, fieldsDef) =
           currentSelectionRef = Ref selectionName selectionPosition
           commonValidation :: FragmentValidator s (TypeDefinition OUT VALID, Arguments VALID)
           commonValidation = do
-            fieldDef <- selectKnown (Ref selectionName selectionPosition) fieldsDef
+            fieldDef <- selectKnown (Ref selectionName selectionPosition) (getFields typeDef)
             (,)
               <$> askType (typed fieldType fieldDef)
               <*> validateFieldArguments fieldDef selectionArguments
@@ -275,34 +280,30 @@ validateByTypeContent ::
   SelectionSet RAW ->
   FragmentValidator s (SelectionContent VALID)
 validateByTypeContent
-  typeDef@TypeDefinition {typeContent}
-  currentSelectionRef
-  rawSelectionSet =
-    withScope typeDef currentSelectionRef $
-      __validate typeContent
+  typeDef@TypeDefinition {typeContent, ..}
+  currentSelectionRef =
+    withScope typeDef currentSelectionRef
+      . __validate typeContent
     where
-      __validate :: TypeContent TRUE OUT VALID -> FragmentValidator s (SelectionContent VALID)
+      __validate ::
+        TypeContent TRUE OUT VALID ->
+        SelectionSet RAW ->
+        FragmentValidator s (SelectionContent VALID)
       -- Validate UnionSelection
       __validate DataUnion {unionMembers} =
         validateUnionSelection
           vaidateFragmentSelection
           validateSelectionSet
-          rawSelectionSet
           unionMembers
       -- Validate Regular selection set
-      __validate DataObject {objectFields} =
-        SelectionSet
-          <$> validateSelectionSet
-            (typeDef, objectFields)
-            rawSelectionSet
+      __validate DataObject {..} =
+        fmap SelectionSet . validateSelectionSet (TypeDefinition {typeContent = DataObject {..}, ..})
       -- TODO: Union Like Validation
-      __validate DataInterface {interfaceFields} =
-        SelectionSet
-          <$> validateSelectionSet
-            (typeDef, interfaceFields)
-            rawSelectionSet
+      __validate DataInterface {..} =
+        fmap SelectionSet . validateSelectionSet (TypeDefinition {typeContent = DataInterface {..}, ..})
       __validate _ =
-        failure $
-          hasNoSubfields
+        const
+          $ failure
+          $ hasNoSubfields
             currentSelectionRef
             typeDef

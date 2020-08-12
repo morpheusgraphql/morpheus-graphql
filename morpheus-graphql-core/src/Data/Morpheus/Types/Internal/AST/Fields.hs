@@ -89,11 +89,13 @@ import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
-  ( IN,
-    IsSelected,
+  ( ANY,
+    ELEM,
+    IN,
     OUT,
-    ToAny (..),
+    ToCategory (..),
     TypeCategory,
+    toAny,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
@@ -188,12 +190,12 @@ argumentStringValue Argument {argumentValue = Null} = Nothing
 argumentStringValue Argument {argumentValue = (Scalar (String x))} = Just x
 argumentStringValue _ = Just "can't read deprecated Reason Value"
 
-instance ToAny FieldDefinition where
-  toAny FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny <$> fieldContent, ..}
+instance ToCategory FieldDefinition a ANY where
+  toCategory FieldDefinition {fieldContent, ..} = FieldDefinition {fieldContent = toAny <$> fieldContent, ..}
 
-instance ToAny (FieldContent TRUE) where
-  toAny (FieldArgs x) = FieldArgs x
-  toAny (DefaultInputValue x) = DefaultInputValue x
+instance ToCategory (FieldContent TRUE) a ANY where
+  toCategory (FieldArgs x) = FieldArgs x
+  toCategory (DefaultInputValue x) = DefaultInputValue x
 
 newtype Fields def = Fields
   {unFields :: OrdMap FieldName def}
@@ -256,11 +258,11 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
   DefaultInputValue ::
     { defaultInputValue :: Value s
     } ->
-    FieldContent (IsSelected cat IN) cat s
+    FieldContent (ELEM IN cat) cat s
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition s
     } ->
-    FieldContent (IsSelected cat OUT) cat s
+    FieldContent (ELEM OUT cat) cat s
 
 fieldContentArgs :: FieldContent b cat s -> ArgumentsDefinition s
 fieldContentArgs (FieldArgs args) = args

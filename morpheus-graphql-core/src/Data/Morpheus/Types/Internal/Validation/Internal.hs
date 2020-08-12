@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -30,14 +31,17 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldsDefinition,
-    FromAny,
+    FromCategory,
     IN,
     InternalError,
+    OBJECT,
     OUT,
     Operation,
     Operation (..),
+    Stage,
     TRUE,
     Token,
+    TypeCategory,
     TypeContent (..),
     TypeContent,
     TypeDefinition (..),
@@ -50,6 +54,7 @@ import Data.Morpheus.Types.Internal.AST
     getOperationDataType,
     msgInternal,
     typeConName,
+    typed,
     untyped,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
@@ -71,6 +76,12 @@ askType ::
   m c (TypeDefinition cat s)
 askType = untyped (__askType . typeConName)
 
+askType2 ::
+  Constraints m c cat s =>
+  Typed cat s TypeName ->
+  m c (TypeDefinition cat s)
+askType2 = untyped __askType
+
 __askType ::
   Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
 __askType name =
@@ -81,29 +92,32 @@ __askType name =
 askTypeMember ::
   Constraints m c cat s =>
   UnionMember cat s ->
-  m c (TypeDefinition cat s, FieldsDefinition cat s)
-askTypeMember = __askType . memberName >=> constraintObject
+  m c (TypeMemberResponse cat s)
+askTypeMember = askType2 . typed memberName >=> constraintObject
+
+type family TypeMemberResponse (cat :: TypeCategory) (s :: Stage)
+
+type instance TypeMemberResponse OUT s = TypeDefinition OBJECT s
+
+type instance TypeMemberResponse IN s = (TypeDefinition IN s, FieldsDefinition IN s)
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),
     Monad (m c),
     MonadContext m s c,
     KindErrors cat,
-    FromAny (TypeContent TRUE) cat
+    FromCategory (TypeContent TRUE) ANY cat
   )
 
-getOperationType :: Operation a -> SelectionValidator (TypeDefinition OUT VALID, FieldsDefinition OUT VALID)
-getOperationType operation =
-  askSchema
-    >>= getOperationDataType operation
-    >>= constraintObject
+getOperationType :: Operation a -> SelectionValidator (TypeDefinition OBJECT VALID)
+getOperationType operation = askSchema >>= getOperationDataType operation
 
 unknownType :: TypeName -> InternalError
 unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
 
 type KindConstraint f c =
   ( Failure InternalError f,
-    FromAny TypeDefinition c
+    FromCategory TypeDefinition ANY c
   )
 
 _kindConstraint ::
@@ -124,7 +138,7 @@ class KindErrors c where
       Failure InternalError f
     ) =>
     TypeDefinition c s ->
-    f (TypeDefinition c s, FieldsDefinition c s)
+    f (TypeMemberResponse c s)
 
 instance KindErrors IN where
   kindConstraint = _kindConstraint "input type"
@@ -133,7 +147,7 @@ instance KindErrors IN where
 
 instance KindErrors OUT where
   kindConstraint = _kindConstraint "output type"
-  constraintObject typeDef@TypeDefinition {typeContent = DataObject {objectFields}} = pure (typeDef, objectFields)
+  constraintObject TypeDefinition {typeContent = DataObject {..}, ..} = pure TypeDefinition {typeContent = DataObject {..}, ..}
   constraintObject TypeDefinition {typeName} = failure (violation "object" typeName)
 
 violation ::

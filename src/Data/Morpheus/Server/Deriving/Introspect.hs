@@ -76,6 +76,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     DataFingerprint (..),
     DataUnion,
+    ELEM,
     FALSE,
     FieldContent (..),
     FieldDefinition (..),
@@ -84,8 +85,10 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     GQLErrors,
     IN,
+    LEAF,
     MUTATION,
     Message,
+    OBJECT,
     OUT,
     QUERY,
     SUBSCRIPTION,
@@ -203,12 +206,12 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
             ( "type for subscription",
               Proxy @(subscription (Resolver SUBSCRIPTION event m))
             )
-    maybeOperator :: FieldsDefinition OUT CONST -> TypeName -> Maybe (TypeDefinition OUT CONST)
+    maybeOperator :: FieldsDefinition OUT CONST -> TypeName -> Maybe (TypeDefinition OBJECT CONST)
     maybeOperator fields
       | null fields = const Nothing
       | otherwise = Just . operatorType fields
     -------------------------------------------------
-    operatorType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OUT CONST
+    operatorType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
     operatorType fields typeName = mkType typeName (DataObject [] fields)
 
 introspectOUT :: forall a. (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
@@ -301,12 +304,14 @@ class IntrospectKind (kind :: GQL_KIND) a where
 instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
   introspectKind _ = updateLib scalarType [] (Proxy @a)
     where
+      scalarType :: Proxy a -> TypeDefinition LEAF CONST
       scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
 instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
     where
+      enumType :: Proxy a -> TypeDefinition LEAF CONST
       enumType = buildType $ mkEnumContent $ enumTags (Proxy @(Rep a))
 
 instance (GQL_TYPE a, DeriveTypeContent IN (CUSTOM a) a) => IntrospectKind INPUT a where
@@ -503,6 +508,7 @@ buildInputUnion (baseName, baseFingerprint) cons =
     wrapInputObject = DataInputObject
 
 buildUnionType ::
+  (ELEM LEAF cat ~ TRUE) =>
   (TypeName, DataFingerprint) ->
   (DataUnion CONST -> TypeContent TRUE cat CONST) ->
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
@@ -596,12 +602,14 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
 buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> TypeUpdater
 buildEnum typeName typeFingerprint tags =
   insertType
-    TypeDefinition
-      { typeDescription = Nothing,
-        typeDirectives = empty,
-        typeContent = mkEnumContent tags,
-        ..
-      }
+    ( TypeDefinition
+        { typeDescription = Nothing,
+          typeDirectives = empty,
+          typeContent = mkEnumContent tags,
+          ..
+        } ::
+        TypeDefinition LEAF CONST
+    )
 
 buildEnumObject ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
