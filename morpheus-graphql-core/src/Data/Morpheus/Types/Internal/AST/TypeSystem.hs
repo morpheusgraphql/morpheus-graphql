@@ -131,13 +131,16 @@ import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,
     ELEM,
-    FromAny (..),
+    FromCategory (..),
+    IMPLEMENTABLE,
     IN,
     LEAF,
+    OBJECT,
     OUT,
-    OUTPUT_OBJECT,
-    ToAny (..),
+    ToCategory (..),
     TypeCategory,
+    fromAny,
+    toAny,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
@@ -233,9 +236,9 @@ instance RenderGQL (DataEnumValue s) where
 
 data Schema (s :: Stage) = Schema
   { types :: TypeLib s,
-    query :: TypeDefinition OUTPUT_OBJECT s,
-    mutation :: Maybe (TypeDefinition OUTPUT_OBJECT s),
-    subscription :: Maybe (TypeDefinition OUTPUT_OBJECT s),
+    query :: TypeDefinition OBJECT s,
+    mutation :: Maybe (TypeDefinition OBJECT s),
+    subscription :: Maybe (TypeDefinition OBJECT s),
     directiveDefinitions :: [DirectiveDefinition s]
   }
   deriving (Show, Lift)
@@ -251,25 +254,24 @@ instance Merge (Schema s) where
 
 mergeOptional ::
   (Monad m, Failure ValidationErrors m) =>
-  Maybe (TypeDefinition OUTPUT_OBJECT s) ->
-  Maybe (TypeDefinition OUTPUT_OBJECT s) ->
-  m (Maybe (TypeDefinition OUTPUT_OBJECT s))
+  Maybe (TypeDefinition OBJECT s) ->
+  Maybe (TypeDefinition OBJECT s) ->
+  m (Maybe (TypeDefinition OBJECT s))
 mergeOptional Nothing y = pure y
 mergeOptional (Just x) Nothing = pure (Just x)
 mergeOptional (Just x) (Just y) = Just <$> mergeOperation x y
 
 mergeOperation ::
   (Monad m, Failure ValidationErrors m) =>
-  TypeDefinition OUTPUT_OBJECT s ->
-  TypeDefinition OUTPUT_OBJECT s ->
-  m (TypeDefinition OUTPUT_OBJECT s)
+  TypeDefinition OBJECT s ->
+  TypeDefinition OBJECT s ->
+  m (TypeDefinition OBJECT s)
 mergeOperation
   TypeDefinition {typeContent = DataObject i1 fields1}
   TypeDefinition {typeContent = DataObject i2 fields2, ..} =
     do
       fields <- fields1 <:> fields2
       pure $ TypeDefinition {typeContent = DataObject (i1 <> i2) fields, ..}
-mergeOperation _ _ = failure ["can't merge schema: Query must be an Object Type" :: ValidationError]
 
 data SchemaDefinition = SchemaDefinition
   { schemaDirectives :: Directives CONST,
@@ -329,9 +331,9 @@ buildWith ::
     Failure ValidationErrors f
   ) =>
   [TypeDefinition cat s] ->
-  ( Maybe (TypeDefinition OUTPUT_OBJECT s),
-    Maybe (TypeDefinition OUTPUT_OBJECT s),
-    Maybe (TypeDefinition OUTPUT_OBJECT s)
+  ( Maybe (TypeDefinition OBJECT s),
+    Maybe (TypeDefinition OBJECT s),
+    Maybe (TypeDefinition OBJECT s)
   ) ->
   f (Schema s)
 buildWith otypes (Just query, mutation, subscription) = do
@@ -380,7 +382,7 @@ typeReference ::
   (Monad m, Failure ValidationErrors m) =>
   [TypeDefinition ANY s] ->
   RootOperationTypeDefinition ->
-  m (Maybe (TypeDefinition OUTPUT_OBJECT s))
+  m (Maybe (TypeDefinition OBJECT s))
 typeReference types rootOperation =
   popByKey types rootOperation
     >>= maybe
@@ -394,11 +396,11 @@ selectOperation ::
   SchemaDefinition ->
   OperationType ->
   [TypeDefinition ANY s] ->
-  f (Maybe (TypeDefinition OUTPUT_OBJECT s))
+  f (Maybe (TypeDefinition OBJECT s))
 selectOperation schemaDef operationType lib =
   selectOr (pure Nothing) (typeReference lib) operationType schemaDef
 
-initTypeLib :: TypeDefinition OUTPUT_OBJECT s -> Schema s
+initTypeLib :: TypeDefinition OBJECT s -> Schema s
 initTypeLib query =
   Schema
     { types = empty,
@@ -408,7 +410,7 @@ initTypeLib query =
       directiveDefinitions = empty
     }
 
-isType :: TypeName -> TypeDefinition OUTPUT_OBJECT s -> Maybe (TypeDefinition ANY s)
+isType :: TypeName -> TypeDefinition OBJECT s -> Maybe (TypeDefinition ANY s)
 isType name x
   | name == typeName x = Just (toAny x)
   | otherwise = Nothing
@@ -448,41 +450,23 @@ instance KeyOf TypeName (TypeDefinition a s) where
 instance NameCollision (TypeDefinition cat s) where
   nameCollision x = "There can Be only One TypeDefinition Named " <> msgValidation (typeName x) <> "."
 
-instance ToAny TypeDefinition where
-  toAny TypeDefinition {typeContent, ..} = TypeDefinition {typeContent = toAny typeContent, ..}
+instance
+  ToCategory (TypeContent TRUE) cat cat' =>
+  ToCategory TypeDefinition cat cat'
+  where
+  toCategory TypeDefinition {typeContent, ..} =
+    TypeDefinition
+      { typeContent = toCategory typeContent,
+        ..
+      }
 
-instance ToAny (TypeContent TRUE) where
-  toAny DataScalar {..} = DataScalar {..}
-  toAny DataEnum {..} = DataEnum {..}
-  toAny DataInputObject {..} = DataInputObject {..}
-  toAny DataInputUnion {..} = DataInputUnion {..}
-  toAny DataObject {..} = DataObject {..}
-  toAny DataUnion {..} = DataUnion {..}
-  toAny DataInterface {..} = DataInterface {..}
-
-instance (FromAny (TypeContent TRUE) a) => FromAny TypeDefinition a where
-  fromAny TypeDefinition {typeContent, ..} = bla <$> fromAny typeContent
+instance
+  (FromCategory (TypeContent TRUE) cat cat') =>
+  FromCategory TypeDefinition cat cat'
+  where
+  fromCategory TypeDefinition {typeContent, ..} = bla <$> fromCategory typeContent
     where
       bla x = TypeDefinition {typeContent = x, ..}
-
-instance FromAny (TypeContent TRUE) IN where
-  fromAny DataScalar {..} = Just DataScalar {..}
-  fromAny DataEnum {..} = Just DataEnum {..}
-  fromAny DataInputObject {..} = Just DataInputObject {..}
-  fromAny DataInputUnion {..} = Just DataInputUnion {..}
-  fromAny _ = Nothing
-
-instance FromAny (TypeContent TRUE) OUT where
-  fromAny DataScalar {..} = Just DataScalar {..}
-  fromAny DataEnum {..} = Just DataEnum {..}
-  fromAny DataObject {..} = Just DataObject {..}
-  fromAny DataUnion {..} = Just DataUnion {..}
-  fromAny DataInterface {..} = Just DataInterface {..}
-  fromAny _ = Nothing
-
-instance FromAny (TypeContent TRUE) OUTPUT_OBJECT where
-  fromAny DataObject {..} = Just DataObject {..}
-  fromAny _ = Nothing
 
 data
   TypeContent
@@ -510,7 +494,7 @@ data
     { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (ELEM OUTPUT_OBJECT a) a s
+    TypeContent (ELEM OBJECT a) a s
   DataUnion ::
     { unionMembers :: DataUnion s
     } ->
@@ -518,11 +502,42 @@ data
   DataInterface ::
     { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (ELEM OUTPUT_OBJECT a) a s
+    TypeContent (ELEM IMPLEMENTABLE a) a s
 
 deriving instance Show (TypeContent a b s)
 
 deriving instance Lift (TypeContent a b s)
+
+instance ToCategory (TypeContent TRUE) a ANY where
+  toCategory DataScalar {..} = DataScalar {..}
+  toCategory DataEnum {..} = DataEnum {..}
+  toCategory DataInputObject {..} = DataInputObject {..}
+  toCategory DataInputUnion {..} = DataInputUnion {..}
+  toCategory DataObject {..} = DataObject {..}
+  toCategory DataUnion {..} = DataUnion {..}
+  toCategory DataInterface {..} = DataInterface {..}
+
+instance ToCategory (TypeContent TRUE) OBJECT IMPLEMENTABLE where
+  toCategory DataObject {..} = DataObject {..}
+
+instance FromCategory (TypeContent TRUE) ANY IN where
+  fromCategory DataScalar {..} = Just DataScalar {..}
+  fromCategory DataEnum {..} = Just DataEnum {..}
+  fromCategory DataInputObject {..} = Just DataInputObject {..}
+  fromCategory DataInputUnion {..} = Just DataInputUnion {..}
+  fromCategory _ = Nothing
+
+instance FromCategory (TypeContent TRUE) ANY OUT where
+  fromCategory DataScalar {..} = Just DataScalar {..}
+  fromCategory DataEnum {..} = Just DataEnum {..}
+  fromCategory DataObject {..} = Just DataObject {..}
+  fromCategory DataUnion {..} = Just DataUnion {..}
+  fromCategory DataInterface {..} = Just DataInterface {..}
+  fromCategory _ = Nothing
+
+instance FromCategory (TypeContent TRUE) ANY OBJECT where
+  fromCategory DataObject {..} = Just DataObject {..}
+  fromCategory _ = Nothing
 
 mkType :: TypeName -> TypeContent TRUE a s -> TypeDefinition a s
 mkType typeName typeContent =
@@ -567,7 +582,7 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
 
-fromOperation :: Maybe (TypeDefinition OUTPUT_OBJECT s) -> [TypeDefinition ANY s]
+fromOperation :: Maybe (TypeDefinition OBJECT s) -> [TypeDefinition ANY s]
 fromOperation (Just datatype) = [toAny datatype]
 fromOperation Nothing = []
 
@@ -627,7 +642,7 @@ popByKey ::
   (Applicative m, Failure ValidationErrors m) =>
   [TypeDefinition ANY s] ->
   RootOperationTypeDefinition ->
-  m (Maybe (TypeDefinition OUTPUT_OBJECT s))
+  m (Maybe (TypeDefinition OBJECT s))
 popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     pure (fromAny dt)

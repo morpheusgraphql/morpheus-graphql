@@ -35,7 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     Fragment (..),
     Fragments,
-    OUTPUT_OBJECT,
+    IMPLEMENTABLE,
     Position,
     RAW,
     Ref (..),
@@ -124,8 +124,8 @@ resolveSpread allowedTargets ref@Ref {refName, refPosition} =
     >>= selectKnown ref
     >>= castFragmentType (Just refName) refPosition allowedTargets
 
-selectFragmentType :: Fragment RAW -> FragmentValidator s (TypeDefinition OUTPUT_OBJECT VALID)
+selectFragmentType :: Fragment RAW -> FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 selectFragmentType fr@Fragment {fragmentType, fragmentPosition} = do
   (schema :: Schema VALID) <- askSchema
   typeDef <- selectKnown (TypeNameRef fragmentType fragmentPosition) schema
-  constraint OBJECT fr typeDef
+  constraint IMPLEMENTABLE fr typeDef

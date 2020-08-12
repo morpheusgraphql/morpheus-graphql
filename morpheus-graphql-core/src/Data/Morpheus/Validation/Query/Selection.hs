@@ -38,8 +38,8 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     FieldsDefinition,
     Fragment (..),
+    IMPLEMENTABLE,
     OUT,
-    OUTPUT_OBJECT,
     Operation (..),
     OperationType (..),
     RAW,
@@ -56,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
     ValidationError (..),
     isEntNode,
     msgValidation,
+    toCategory,
     typed,
     withPosition,
   )
@@ -129,7 +130,7 @@ validateOperation
     } =
     do
       typeDef <- getOperationType rawOperation
-      selection <- validateSelectionSet typeDef operationSelection
+      selection <- validateSelectionSet (toCategory typeDef) operationSelection
       singleTopLevelSelection rawOperation selection
       directives <-
         validateDirectives
@@ -173,14 +174,15 @@ vaidateFragmentSelection f@Fragment {fragmentSelection} = do
   typeDef <- selectFragmentType f
   validateSelectionSet typeDef fragmentSelection
 
-getFields :: TypeDefinition OUTPUT_OBJECT s -> FieldsDefinition OUT s
+getFields :: TypeDefinition IMPLEMENTABLE s -> FieldsDefinition OUT s
 getFields TypeDefinition {typeContent = DataObject {objectFields}} = objectFields
 getFields TypeDefinition {typeContent = DataInterface fields} = fields
 
 validateSelectionSet ::
   forall s.
-  (ResolveFragment s) =>
-  TypeDefinition OUTPUT_OBJECT VALID ->
+  ( ResolveFragment s
+  ) =>
+  TypeDefinition IMPLEMENTABLE VALID ->
   SelectionSet RAW ->
   FragmentValidator s (SelectionSet VALID)
 validateSelectionSet typeDef =

@@ -195,7 +195,7 @@ instance Unknown (FieldsDefinition OUT s) Ref (OperationContext s1 s2) where
 class KindViolation (t :: Target) ctx where
   kindViolation :: c t -> ctx -> ValidationError
 
-instance KindViolation 'TARGET_OBJECT (Fragment s) where
+instance KindViolation 'TARGET_IMPLEMENTABLE (Fragment s) where
   kindViolation _ Fragment {fragmentName, fragmentType, fragmentPosition} =
     ValidationError
       { validationMessage =

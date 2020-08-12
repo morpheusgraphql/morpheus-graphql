@@ -82,10 +82,10 @@ import Data.Morpheus.Types.Internal.AST
     Fragments,
     GQLError (..),
     GQLErrors,
+    IMPLEMENTABLE,
     IN,
     InternalError,
     Message,
-    OUTPUT_OBJECT,
     Position,
     RAW,
     Ref (..),
@@ -205,18 +205,18 @@ data InputSource
   deriving (Show)
 
 data Target
-  = TARGET_OBJECT
+  = TARGET_IMPLEMENTABLE
   | TARGET_INPUT
 
 data Constraint (a :: Target) where
-  OBJECT :: Constraint 'TARGET_OBJECT
+  IMPLEMENTABLE :: Constraint 'TARGET_IMPLEMENTABLE
   INPUT :: Constraint 'TARGET_INPUT
 
 --  UNION  :: Constraint 'TARGET_UNION
 
 type family Resolution (s :: Stage) (a :: Target)
 
-type instance Resolution s 'TARGET_OBJECT = TypeDefinition OUTPUT_OBJECT s
+type instance Resolution s 'TARGET_IMPLEMENTABLE = TypeDefinition IMPLEMENTABLE s
 
 type instance Resolution s 'TARGET_INPUT = TypeDefinition IN s
 

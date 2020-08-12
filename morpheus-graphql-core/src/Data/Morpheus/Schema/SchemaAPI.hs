@@ -26,7 +26,7 @@ import Data.Morpheus.Schema.Schema
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     FieldName,
-    OUTPUT_OBJECT,
+    OBJECT,
     QUERY,
     ScalarValue (..),
     Schema (..),
@@ -52,7 +52,7 @@ resolveTypes schema = mkList <$> traverse render (elems schema)
 
 renderOperation ::
   Monad m =>
-  Maybe (TypeDefinition OUTPUT_OBJECT VALID) ->
+  Maybe (TypeDefinition OBJECT VALID) ->
   Resolver QUERY e m (ResModel QUERY e m)
 renderOperation (Just TypeDefinition {typeName}) = pure $ createObjectType typeName Nothing [] empty
 renderOperation Nothing = pure mkNull

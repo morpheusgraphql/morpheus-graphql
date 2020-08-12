@@ -116,9 +116,10 @@ module Data.Morpheus.Types.Internal.AST
     ANY,
     IN,
     OUT,
-    OUTPUT_OBJECT,
-    FromAny (..),
-    ToAny (..),
+    OBJECT,
+    IMPLEMENTABLE,
+    fromAny,
+    toAny,
     TRUE,
     FALSE,
     TypeName (..),
@@ -163,6 +164,9 @@ module Data.Morpheus.Types.Internal.AST
     toGQLError,
     ELEM,
     LEAF,
+    REQURE_IMPLEMENTABLE,
+    ToCategory (..),
+    FromCategory (..),
   )
 where
 

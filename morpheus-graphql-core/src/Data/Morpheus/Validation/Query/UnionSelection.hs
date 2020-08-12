@@ -25,8 +25,9 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( DataUnion,
     Fragment (..),
+    IMPLEMENTABLE,
+    OBJECT,
     OUT,
-    OUTPUT_OBJECT,
     RAW,
     Ref (..),
     Selection (..),
@@ -37,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     UnionTag (..),
     VALID,
+    toCategory,
   )
 import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
   ( join,
@@ -78,17 +80,17 @@ exploreUnionFragments f unionTags (InlineFragment fragment@Fragment {fragmentTyp
 --   ( Type for Tag Product , [ Fragment for Product] )
 -- ]
 tagUnionFragments ::
-  [TypeDefinition OUTPUT_OBJECT VALID] ->
+  [TypeDefinition OBJECT VALID] ->
   [UnionTag] ->
-  [(TypeDefinition OUTPUT_OBJECT VALID, [UnionTag])]
+  [(TypeDefinition IMPLEMENTABLE VALID, [UnionTag])]
 tagUnionFragments types fragments =
   filter notEmpty (map categorizeType types)
   where
     notEmpty = not . null . snd
     categorizeType ::
-      TypeDefinition OUTPUT_OBJECT VALID ->
-      (TypeDefinition OUTPUT_OBJECT VALID, [UnionTag])
-    categorizeType datatype@TypeDefinition {typeName} = (datatype, filter matches fragments)
+      TypeDefinition OBJECT VALID ->
+      (TypeDefinition IMPLEMENTABLE VALID, [UnionTag])
+    categorizeType datatype@TypeDefinition {typeName} = (toCategory datatype, filter matches fragments)
       where
         matches = (typeName ==) . unionTagName
 
@@ -105,18 +107,18 @@ tagUnionFragments types fragments =
  -}
 validateCluster ::
   forall s.
-  ( TypeDefinition OUTPUT_OBJECT VALID ->
+  ( TypeDefinition IMPLEMENTABLE VALID ->
     SelectionSet RAW ->
     FragmentValidator s (SelectionSet VALID)
   ) ->
   SelectionSet RAW ->
-  [(TypeDefinition OUTPUT_OBJECT VALID, [UnionTag])] ->
+  [(TypeDefinition IMPLEMENTABLE VALID, [UnionTag])] ->
   FragmentValidator s (SelectionContent VALID)
 validateCluster validator __typenameSet =
   traverse _validateCluster
     >=> fmap UnionSelection . fromElems
   where
-    _validateCluster :: (TypeDefinition OUTPUT_OBJECT VALID, [UnionTag]) -> FragmentValidator s UnionTag
+    _validateCluster :: (TypeDefinition IMPLEMENTABLE VALID, [UnionTag]) -> FragmentValidator s UnionTag
     _validateCluster (unionType@TypeDefinition {typeName}, fragmets) = do
       selSet <- validator unionType __typenameSet
       UnionTag typeName <$> MS.join (selSet : map unionTagSelection fragmets)
@@ -124,7 +126,7 @@ validateCluster validator __typenameSet =
 validateUnionSelection ::
   ResolveFragment s =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
-  (TypeDefinition OUTPUT_OBJECT VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
+  (TypeDefinition IMPLEMENTABLE VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   SelectionSet RAW ->
   DataUnion VALID ->
   FragmentValidator s (SelectionContent VALID)

@@ -88,8 +88,8 @@ import Data.Morpheus.Types.Internal.AST
     LEAF,
     MUTATION,
     Message,
+    OBJECT,
     OUT,
-    OUTPUT_OBJECT,
     QUERY,
     SUBSCRIPTION,
     Schema (..),
@@ -206,12 +206,12 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
             ( "type for subscription",
               Proxy @(subscription (Resolver SUBSCRIPTION event m))
             )
-    maybeOperator :: FieldsDefinition OUT CONST -> TypeName -> Maybe (TypeDefinition OUTPUT_OBJECT CONST)
+    maybeOperator :: FieldsDefinition OUT CONST -> TypeName -> Maybe (TypeDefinition OBJECT CONST)
     maybeOperator fields
       | null fields = const Nothing
       | otherwise = Just . operatorType fields
     -------------------------------------------------
-    operatorType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OUTPUT_OBJECT CONST
+    operatorType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
     operatorType fields typeName = mkType typeName (DataObject [] fields)
 
 introspectOUT :: forall a. (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater

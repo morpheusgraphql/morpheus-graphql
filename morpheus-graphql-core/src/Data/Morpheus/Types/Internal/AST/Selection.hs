@@ -84,7 +84,7 @@ import Data.Morpheus.Types.Internal.AST.Stage
     VALID,
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
-  ( OUTPUT_OBJECT,
+  ( OBJECT,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( Schema (..),
@@ -335,7 +335,7 @@ instance RenderGQL (Operation VALID) where
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)
 
-getOperationDataType :: Failure ValidationError m => Operation s -> Schema VALID -> m (TypeDefinition OUTPUT_OBJECT VALID)
+getOperationDataType :: Failure ValidationError m => Operation s -> Schema VALID -> m (TypeDefinition OBJECT VALID)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)
 getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
   maybe (failure $ mutationIsNotDefined operationPosition) pure (mutation lib)

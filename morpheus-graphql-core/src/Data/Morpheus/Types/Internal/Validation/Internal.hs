@@ -31,11 +31,11 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldsDefinition,
-    FromAny,
+    FromCategory,
     IN,
     InternalError,
+    OBJECT,
     OUT,
-    OUTPUT_OBJECT,
     Operation,
     Operation (..),
     Stage,
@@ -97,7 +97,7 @@ askTypeMember = askType2 . typed memberName >=> constraintObject
 
 type family TypeMemberResponse (cat :: TypeCategory) (s :: Stage)
 
-type instance TypeMemberResponse OUT s = TypeDefinition OUTPUT_OBJECT s
+type instance TypeMemberResponse OUT s = TypeDefinition OBJECT s
 
 type instance TypeMemberResponse IN s = (TypeDefinition IN s, FieldsDefinition IN s)
 
@@ -106,10 +106,10 @@ type Constraints m c cat s =
     Monad (m c),
     MonadContext m s c,
     KindErrors cat,
-    FromAny (TypeContent TRUE) cat
+    FromCategory (TypeContent TRUE) ANY cat
   )
 
-getOperationType :: Operation a -> SelectionValidator (TypeDefinition OUTPUT_OBJECT VALID)
+getOperationType :: Operation a -> SelectionValidator (TypeDefinition OBJECT VALID)
 getOperationType operation = askSchema >>= getOperationDataType operation
 
 unknownType :: TypeName -> InternalError
@@ -117,7 +117,7 @@ unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
 
 type KindConstraint f c =
   ( Failure InternalError f,
-    FromAny TypeDefinition c
+    FromCategory TypeDefinition ANY c
   )
 
 _kindConstraint ::
