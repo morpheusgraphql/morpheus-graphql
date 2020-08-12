@@ -470,7 +470,7 @@ possibleTypes
     }
   _ = typeName : objectImplements
 possibleTypes TypeDefinition {typeName = name, typeContent = DataInterface {}} schema =
-  fmap typeName (possibleInterfaceTypes name schema)
+  name : fmap typeName (possibleInterfaceTypes name schema)
 possibleTypes TypeDefinition {typeName} _ = [typeName]
 
 possibleInterfaceTypes ::
@@ -483,8 +483,8 @@ isPosibleInterfaceType ::
   TypeName ->
   TypeDefinition c s ->
   Maybe (TypeDefinition c s)
-isPosibleInterfaceType interfaceName typeDef@TypeDefinition {typeName, typeContent = DataObject {objectImplements}}
-  | interfaceName `elem` (typeName : objectImplements) = Just typeDef
+isPosibleInterfaceType name typeDef@TypeDefinition {typeName, typeContent = DataObject {objectImplements}}
+  | name `elem` (typeName : objectImplements) = Just typeDef
 isPosibleInterfaceType _ _ = Nothing
 
 instance
