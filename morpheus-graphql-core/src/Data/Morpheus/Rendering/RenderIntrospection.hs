@@ -58,12 +58,12 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value (..),
     fieldVisibility,
-    interfacePossibleTypes,
     kindOf,
     lookupDeprecated,
     lookupDeprecatedReason,
     mkInputUnionFields,
     msg,
+    possibleInterfaceTypes,
     toGQLWrapper,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -281,7 +281,7 @@ renderPossibleTypes ::
 renderPossibleTypes name =
   mkList
     <$> ( getSchema
-            >>= traverse render . interfacePossibleTypes name
+            >>= traverse render . possibleInterfaceTypes name
         )
 
 renderDeprecated ::

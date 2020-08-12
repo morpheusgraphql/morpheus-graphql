@@ -52,7 +52,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     untyped,
     typed,
     possibleTypes,
-    interfacePossibleTypes,
+    possibleInterfaceTypes,
   )
 where
 
@@ -470,14 +470,14 @@ possibleTypes
     }
   _ = typeName : objectImplements
 possibleTypes TypeDefinition {typeName = name, typeContent = DataInterface {}} schema =
-  fmap typeName (interfacePossibleTypes name schema)
+  fmap typeName (possibleInterfaceTypes name schema)
 possibleTypes TypeDefinition {typeName} _ = [typeName]
 
-interfacePossibleTypes ::
+possibleInterfaceTypes ::
   TypeName ->
   Schema s ->
   [TypeDefinition ANY s]
-interfacePossibleTypes name schema = mapMaybe (isPosibleInterfaceType name) (elems schema)
+possibleInterfaceTypes name schema = mapMaybe (isPosibleInterfaceType name) (elems schema)
 
 isPosibleInterfaceType ::
   TypeName ->
