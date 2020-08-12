@@ -51,6 +51,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     Typed (Typed),
     untyped,
     typed,
+    possibleTypes,
   )
 where
 
@@ -59,10 +60,11 @@ where
 import Control.Applicative ((<|>), Applicative (..))
 import Control.Monad (Monad (..), foldM)
 import Data.Either (Either (..))
-import Data.Foldable (concatMap)
+import Data.Foldable (concat, concatMap)
 import Data.Functor ((<$>), fmap)
+import Data.List (elem)
 import Data.List (filter, find, notElem)
-import Data.Maybe (Maybe (..), catMaybes, maybe)
+import Data.Maybe (Maybe (..), catMaybes, mapMaybe, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -459,6 +461,33 @@ instance
       { typeContent = toCategory typeContent,
         ..
       }
+
+possibleTypes :: Schema s -> TypeDefinition a s -> [TypeName]
+possibleTypes
+  _
+  TypeDefinition
+    { typeName,
+      typeContent = DataObject {objectImplements}
+    } = typeName : objectImplements
+possibleTypes schema TypeDefinition {typeName, typeContent = DataInterface {}} =
+  typeName : interfacePossibleTypes schema typeName
+possibleTypes _ TypeDefinition {typeName} = [typeName]
+
+isPosibleInterfaceType ::
+  TypeName ->
+  TypeDefinition c s ->
+  Maybe TypeName
+isPosibleInterfaceType interfaceName TypeDefinition {typeName, typeContent = DataObject {objectImplements}}
+  | interfaceName `elem` objectImplements = Just typeName
+isPosibleInterfaceType _ _ = Nothing
+
+interfacePossibleTypes ::
+  Schema s ->
+  TypeName ->
+  [TypeName]
+interfacePossibleTypes schema interfaceName =
+  mapMaybe (isPosibleInterfaceType interfaceName) $
+    elems schema
 
 instance
   (FromCategory (TypeContent TRUE) cat cat') =>

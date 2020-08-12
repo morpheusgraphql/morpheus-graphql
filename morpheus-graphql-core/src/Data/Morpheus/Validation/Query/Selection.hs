@@ -50,12 +50,12 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
     UnionTag (..),
     VALID,
     ValidationError (..),
     isEntNode,
     msgValidation,
+    possibleTypes,
     toCategory,
     typed,
     withPosition,
@@ -66,6 +66,7 @@ import Data.Morpheus.Types.Internal.AST.MergeSet
 import Data.Morpheus.Types.Internal.Validation
   ( FragmentValidator,
     SelectionValidator,
+    askSchema,
     askType,
     getOperationType,
     selectKnown,
@@ -165,10 +166,6 @@ processSelectionDirectives location rawDirectives sel = do
       then selection
       else empty
 
-possibleTypes :: TypeDefinition a s -> [TypeName]
-possibleTypes TypeDefinition {typeName, typeContent = DataObject {objectImplements}} = typeName : objectImplements
-possibleTypes TypeDefinition {typeName} = [typeName]
-
 vaidateFragmentSelection :: (ResolveFragment s) => Fragment RAW -> FragmentValidator s (SelectionSet VALID)
 vaidateFragmentSelection f@Fragment {fragmentSelection} = do
   typeDef <- selectFragmentType f
@@ -246,20 +243,22 @@ validateSelectionSet typeDef =
                     selectionDirectives = directives,
                     selectionContent = selContent
                   }
-    validateSelection (Spread dirs ref) =
+    validateSelection (Spread dirs ref) = do
+      types <- (`possibleTypes` typeDef) <$> askSchema
       processSelectionDirectives
         FRAGMENT_SPREAD
         dirs
-        (const $ unionTagSelection <$> resolveValidFragment vaidateFragmentSelection (possibleTypes typeDef) ref)
+        (const $ unionTagSelection <$> resolveValidFragment vaidateFragmentSelection types ref)
     validateSelection
       ( InlineFragment
           fragment@Fragment
             { fragmentDirectives
             }
-        ) =
+        ) = do
+        types <- (`possibleTypes` typeDef) <$> askSchema
         processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
-          const (validate fragment)
-    validate = fmap fragmentSelection . validateFragment vaidateFragmentSelection (possibleTypes typeDef)
+          const (validate types fragment)
+    validate types = fmap fragmentSelection . validateFragment vaidateFragmentSelection types
 
 validateContentLeaf ::
   Ref ->
