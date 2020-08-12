@@ -8,6 +8,8 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
     OUT,
     IN,
     ANY,
+    LEAF,
+    OUTPUT_OBJECT,
     FromAny (..),
     ToAny (..),
     IsSelected,
@@ -22,13 +24,22 @@ import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.Stage (Stage)
 import Prelude (Bool (..))
 
-data TypeCategory = In | Out | Any
+data TypeCategory
+  = IN
+  | OUT
+  | ANY
+  | LEAF
+  | OUTPUT_OBJECT
 
-type IN = 'In
+type IN = 'IN
 
-type OUT = 'Out
+type OUT = 'OUT
 
-type ANY = 'Any
+type ANY = 'ANY
+
+type OUTPUT_OBJECT = 'OUTPUT_OBJECT
+
+type LEAF = 'LEAF
 
 class ToAny a where
   toAny :: a (k :: TypeCategory) (s :: Stage) -> a ANY s
@@ -36,16 +47,35 @@ class ToAny a where
 class FromAny a (k :: TypeCategory) where
   fromAny :: a ANY (s :: Stage) -> Maybe (a k s)
 
-type family IsSelected (c :: TypeCategory) (a :: TypeCategory) :: Bool
+type family
+  IsSelected
+    (isType :: TypeCategory)
+    (canBeType :: TypeCategory) ::
+    Bool
 
+-- ANY
 type instance IsSelected ANY a = TRUE
 
-type instance IsSelected OUT OUT = TRUE
+type instance IsSelected a ANY = TRUE
 
+-- LEAF
+type instance IsSelected LEAF IN = TRUE
+
+type instance IsSelected LEAF OUT = TRUE
+
+-- IN
 type instance IsSelected IN IN = TRUE
 
 type instance IsSelected IN OUT = FALSE
 
+-- OUT
+type instance IsSelected OUT OUT = TRUE
+
 type instance IsSelected OUT IN = FALSE
 
-type instance IsSelected a ANY = TRUE
+-- OUTPUT_OBJECT
+type instance IsSelected OUTPUT_OBJECT OUTPUT_OBJECT = TRUE
+
+type instance IsSelected OUTPUT_OBJECT OUT = TRUE
+
+type instance IsSelected OUTPUT_OBJECT IN = FALSE

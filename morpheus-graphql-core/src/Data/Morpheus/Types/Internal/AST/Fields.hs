@@ -256,11 +256,11 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
   DefaultInputValue ::
     { defaultInputValue :: Value s
     } ->
-    FieldContent (IsSelected cat IN) cat s
+    FieldContent (IsSelected IN cat) cat s
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition s
     } ->
-    FieldContent (IsSelected cat OUT) cat s
+    FieldContent (IsSelected OUT cat) cat s
 
 fieldContentArgs :: FieldContent b cat s -> ArgumentsDefinition s
 fieldContentArgs (FieldArgs args) = args

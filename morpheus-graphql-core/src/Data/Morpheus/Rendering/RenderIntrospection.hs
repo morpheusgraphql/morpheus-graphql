@@ -46,6 +46,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Message,
     OUT,
+    OUTPUT_OBJECT,
     QUERY,
     Schema,
     TRUE,

@@ -134,6 +134,7 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     IN,
     IsSelected,
     OUT,
+    OUTPUT_OBJECT,
     ToAny (..),
     TypeCategory,
   )
@@ -231,9 +232,9 @@ instance RenderGQL (DataEnumValue s) where
 
 data Schema (s :: Stage) = Schema
   { types :: TypeLib s,
-    query :: TypeDefinition OUT s,
-    mutation :: Maybe (TypeDefinition OUT s),
-    subscription :: Maybe (TypeDefinition OUT s),
+    query :: TypeDefinition OUTPUT_OBJECT s,
+    mutation :: Maybe (TypeDefinition OUTPUT_OBJECT s),
+    subscription :: Maybe (TypeDefinition OUTPUT_OBJECT s),
     directiveDefinitions :: [DirectiveDefinition s]
   }
   deriving (Show, Lift)
@@ -249,18 +250,18 @@ instance Merge (Schema s) where
 
 mergeOptional ::
   (Monad m, Failure ValidationErrors m) =>
-  Maybe (TypeDefinition OUT s) ->
-  Maybe (TypeDefinition OUT s) ->
-  m (Maybe (TypeDefinition OUT s))
+  Maybe (TypeDefinition OUTPUT_OBJECT s) ->
+  Maybe (TypeDefinition OUTPUT_OBJECT s) ->
+  m (Maybe (TypeDefinition OUTPUT_OBJECT s))
 mergeOptional Nothing y = pure y
 mergeOptional (Just x) Nothing = pure (Just x)
 mergeOptional (Just x) (Just y) = Just <$> mergeOperation x y
 
 mergeOperation ::
   (Monad m, Failure ValidationErrors m) =>
-  TypeDefinition OUT s ->
-  TypeDefinition OUT s ->
-  m (TypeDefinition OUT s)
+  TypeDefinition OUTPUT_OBJECT s ->
+  TypeDefinition OUTPUT_OBJECT s ->
+  m (TypeDefinition OUTPUT_OBJECT s)
 mergeOperation
   TypeDefinition {typeContent = DataObject i1 fields1}
   TypeDefinition {typeContent = DataObject i2 fields2, ..} =
@@ -327,9 +328,9 @@ buildWith ::
     Failure ValidationErrors f
   ) =>
   [TypeDefinition cat s] ->
-  ( Maybe (TypeDefinition OUT s),
-    Maybe (TypeDefinition OUT s),
-    Maybe (TypeDefinition OUT s)
+  ( Maybe (TypeDefinition OUTPUT_OBJECT s),
+    Maybe (TypeDefinition OUTPUT_OBJECT s),
+    Maybe (TypeDefinition OUTPUT_OBJECT s)
   ) ->
   f (Schema s)
 buildWith otypes (Just query, mutation, subscription) = do
@@ -378,7 +379,7 @@ typeReference ::
   (Monad m, Failure ValidationErrors m) =>
   [TypeDefinition ANY s] ->
   RootOperationTypeDefinition ->
-  m (Maybe (TypeDefinition OUT s))
+  m (Maybe (TypeDefinition OUTPUT_OBJECT s))
 typeReference types rootOperation =
   popByKey types rootOperation
     >>= maybe
@@ -392,11 +393,11 @@ selectOperation ::
   SchemaDefinition ->
   OperationType ->
   [TypeDefinition ANY s] ->
-  f (Maybe (TypeDefinition OUT s))
+  f (Maybe (TypeDefinition OUTPUT_OBJECT s))
 selectOperation schemaDef operationType lib =
   selectOr (pure Nothing) (typeReference lib) operationType schemaDef
 
-initTypeLib :: TypeDefinition OUT s -> Schema s
+initTypeLib :: TypeDefinition OUTPUT_OBJECT s -> Schema s
 initTypeLib query =
   Schema
     { types = empty,
@@ -406,7 +407,7 @@ initTypeLib query =
       directiveDefinitions = empty
     }
 
-isType :: TypeName -> TypeDefinition OUT s -> Maybe (TypeDefinition ANY s)
+isType :: TypeName -> TypeDefinition OUTPUT_OBJECT s -> Maybe (TypeDefinition ANY s)
 isType name x
   | name == typeName x = Just (toAny x)
   | otherwise = Nothing
@@ -478,6 +479,10 @@ instance FromAny (TypeContent TRUE) OUT where
   fromAny DataInterface {..} = Just DataInterface {..}
   fromAny _ = Nothing
 
+instance FromAny (TypeContent TRUE) OUTPUT_OBJECT where
+  fromAny DataObject {..} = Just DataObject {..}
+  fromAny _ = Nothing
+
 data
   TypeContent
     (b :: Bool)
@@ -495,24 +500,24 @@ data
   DataInputObject ::
     { inputObjectFields :: FieldsDefinition IN s
     } ->
-    TypeContent (IsSelected a IN) a s
+    TypeContent (IsSelected IN a) a s
   DataInputUnion ::
     { inputUnionMembers :: DataInputUnion s
     } ->
-    TypeContent (IsSelected a IN) a s
+    TypeContent (IsSelected IN a) a s
   DataObject ::
     { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IsSelected a OUT) a s
+    TypeContent (IsSelected OUTPUT_OBJECT a) a s
   DataUnion ::
     { unionMembers :: DataUnion s
     } ->
-    TypeContent (IsSelected a OUT) a s
+    TypeContent (IsSelected OUT a) a s
   DataInterface ::
     { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IsSelected a OUT) a s
+    TypeContent (IsSelected OUT a) a s
 
 deriving instance Show (TypeContent a b s)
 
@@ -561,7 +566,7 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
 
-fromOperation :: Maybe (TypeDefinition OUT s) -> [TypeDefinition ANY s]
+fromOperation :: Maybe (TypeDefinition OUTPUT_OBJECT s) -> [TypeDefinition ANY s]
 fromOperation (Just datatype) = [toAny datatype]
 fromOperation Nothing = []
 
@@ -621,7 +626,7 @@ popByKey ::
   (Applicative m, Failure ValidationErrors m) =>
   [TypeDefinition ANY s] ->
   RootOperationTypeDefinition ->
-  m (Maybe (TypeDefinition OUT s))
+  m (Maybe (TypeDefinition OUTPUT_OBJECT s))
 popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeName name types of
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     pure (fromAny dt)

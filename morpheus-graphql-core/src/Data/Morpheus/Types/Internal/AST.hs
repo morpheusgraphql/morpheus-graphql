@@ -116,6 +116,7 @@ module Data.Morpheus.Types.Internal.AST
     ANY,
     IN,
     OUT,
+    OUTPUT_OBJECT,
     FromAny (..),
     ToAny (..),
     TRUE,
