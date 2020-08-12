@@ -130,9 +130,9 @@ import Data.Morpheus.Types.Internal.AST.Stage
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,
+    ELEM,
     FromAny (..),
     IN,
-    IsSelected,
     LEAF,
     OUT,
     OUTPUT_OBJECT,
@@ -493,32 +493,32 @@ data
   DataScalar ::
     { dataScalar :: ScalarDefinition
     } ->
-    TypeContent (IsSelected LEAF a) a s
+    TypeContent (ELEM LEAF a) a s
   DataEnum ::
     { enumMembers :: DataEnum s
     } ->
-    TypeContent (IsSelected LEAF a) a s
+    TypeContent (ELEM LEAF a) a s
   DataInputObject ::
     { inputObjectFields :: FieldsDefinition IN s
     } ->
-    TypeContent (IsSelected IN a) a s
+    TypeContent (ELEM IN a) a s
   DataInputUnion ::
     { inputUnionMembers :: DataInputUnion s
     } ->
-    TypeContent (IsSelected IN a) a s
+    TypeContent (ELEM IN a) a s
   DataObject ::
     { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IsSelected OUTPUT_OBJECT a) a s
+    TypeContent (ELEM OUTPUT_OBJECT a) a s
   DataUnion ::
     { unionMembers :: DataUnion s
     } ->
-    TypeContent (IsSelected OUT a) a s
+    TypeContent (ELEM OUT a) a s
   DataInterface ::
     { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IsSelected OUTPUT_OBJECT a) a s
+    TypeContent (ELEM OUTPUT_OBJECT a) a s
 
 deriving instance Show (TypeContent a b s)
 
@@ -534,10 +534,10 @@ mkType typeName typeContent =
       typeContent
     }
 
-createScalarType :: IsSelected LEAF a ~ TRUE => TypeName -> TypeDefinition a s
+createScalarType :: ELEM LEAF a ~ TRUE => TypeName -> TypeDefinition a s
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
-mkEnumContent :: IsSelected LEAF a ~ TRUE => [TypeName] -> TypeContent TRUE a s
+mkEnumContent :: ELEM LEAF a ~ TRUE => [TypeName] -> TypeContent TRUE a s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s

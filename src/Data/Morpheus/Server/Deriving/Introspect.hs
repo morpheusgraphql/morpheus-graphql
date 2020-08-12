@@ -76,6 +76,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     DataFingerprint (..),
     DataUnion,
+    ELEM,
     FALSE,
     FieldContent (..),
     FieldDefinition (..),
@@ -84,7 +85,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     GQLErrors,
     IN,
-    IsSelected,
     LEAF,
     MUTATION,
     Message,
@@ -508,7 +508,7 @@ buildInputUnion (baseName, baseFingerprint) cons =
     wrapInputObject = DataInputObject
 
 buildUnionType ::
-  (IsSelected LEAF cat ~ TRUE) =>
+  (ELEM LEAF cat ~ TRUE) =>
   (TypeName, DataFingerprint) ->
   (DataUnion CONST -> TypeContent TRUE cat CONST) ->
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->

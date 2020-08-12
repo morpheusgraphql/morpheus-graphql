@@ -89,8 +89,8 @@ import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
-  ( IN,
-    IsSelected,
+  ( ELEM,
+    IN,
     OUT,
     ToAny (..),
     TypeCategory,
@@ -256,11 +256,11 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
   DefaultInputValue ::
     { defaultInputValue :: Value s
     } ->
-    FieldContent (IsSelected IN cat) cat s
+    FieldContent (ELEM IN cat) cat s
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition s
     } ->
-    FieldContent (IsSelected OUT cat) cat s
+    FieldContent (ELEM OUT cat) cat s
 
 fieldContentArgs :: FieldContent b cat s -> ArgumentsDefinition s
 fieldContentArgs (FieldArgs args) = args
