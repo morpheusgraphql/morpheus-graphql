@@ -244,7 +244,7 @@ validateSelectionSet typeDef =
                     selectionContent = selContent
                   }
     validateSelection (Spread dirs ref) = do
-      types <- (`possibleTypes` typeDef) <$> askSchema
+      types <- possibleTypes typeDef <$> askSchema
       processSelectionDirectives
         FRAGMENT_SPREAD
         dirs
@@ -255,7 +255,7 @@ validateSelectionSet typeDef =
             { fragmentDirectives
             }
         ) = do
-        types <- (`possibleTypes` typeDef) <$> askSchema
+        types <- possibleTypes typeDef <$> askSchema
         processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
           const (validate types fragment)
     validate types = fmap fragmentSelection . validateFragment vaidateFragmentSelection types

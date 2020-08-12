@@ -168,6 +168,7 @@ module Data.Morpheus.Types.Internal.AST
     ToCategory (..),
     FromCategory (..),
     possibleTypes,
+    interfacePossibleTypes,
   )
 where
 

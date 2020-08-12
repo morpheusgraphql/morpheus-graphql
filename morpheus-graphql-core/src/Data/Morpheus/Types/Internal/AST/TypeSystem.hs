@@ -52,6 +52,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     untyped,
     typed,
     possibleTypes,
+    interfacePossibleTypes,
   )
 where
 
@@ -60,10 +61,9 @@ where
 import Control.Applicative ((<|>), Applicative (..))
 import Control.Monad (Monad (..), foldM)
 import Data.Either (Either (..))
-import Data.Foldable (concat, concatMap)
+import Data.Foldable (concatMap)
 import Data.Functor ((<$>), fmap)
-import Data.List (elem)
-import Data.List (filter, find, notElem)
+import Data.List (elem, filter, find, notElem)
 import Data.Maybe (Maybe (..), catMaybes, mapMaybe, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -462,16 +462,24 @@ instance
         ..
       }
 
-possibleTypes :: Schema s -> TypeDefinition a s -> [TypeName]
+possibleTypes :: TypeDefinition a s -> Schema s' -> [TypeName]
 possibleTypes
-  _
   TypeDefinition
     { typeName,
       typeContent = DataObject {objectImplements}
-    } = typeName : objectImplements
-possibleTypes schema TypeDefinition {typeName, typeContent = DataInterface {}} =
-  typeName : interfacePossibleTypes schema typeName
-possibleTypes _ TypeDefinition {typeName} = [typeName]
+    }
+  _ = typeName : objectImplements
+possibleTypes TypeDefinition {typeName, typeContent = DataInterface {}} schema =
+  typeName : interfacePossibleTypes typeName schema
+possibleTypes TypeDefinition {typeName} _ = [typeName]
+
+interfacePossibleTypes ::
+  TypeName ->
+  Schema s ->
+  [TypeName]
+interfacePossibleTypes interfaceName schema =
+  mapMaybe (isPosibleInterfaceType interfaceName) $
+    elems schema
 
 isPosibleInterfaceType ::
   TypeName ->
@@ -480,14 +488,6 @@ isPosibleInterfaceType ::
 isPosibleInterfaceType interfaceName TypeDefinition {typeName, typeContent = DataObject {objectImplements}}
   | interfaceName `elem` objectImplements = Just typeName
 isPosibleInterfaceType _ _ = Nothing
-
-interfacePossibleTypes ::
-  Schema s ->
-  TypeName ->
-  [TypeName]
-interfacePossibleTypes schema interfaceName =
-  mapMaybe (isPosibleInterfaceType interfaceName) $
-    elems schema
 
 instance
   (FromCategory (TypeContent TRUE) cat cat') =>
