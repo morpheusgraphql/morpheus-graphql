@@ -281,29 +281,29 @@ validateByTypeContent ::
   FragmentValidator s (SelectionContent VALID)
 validateByTypeContent
   typeDef@TypeDefinition {typeContent, ..}
-  currentSelectionRef
-  rawSelectionSet =
-    withScope typeDef currentSelectionRef $
-      __validate typeContent
+  currentSelectionRef =
+    withScope typeDef currentSelectionRef
+      . __validate typeContent
     where
       __validate ::
         TypeContent TRUE OUT VALID ->
+        SelectionSet RAW ->
         FragmentValidator s (SelectionContent VALID)
       -- Validate UnionSelection
       __validate DataUnion {unionMembers} =
         validateUnionSelection
           vaidateFragmentSelection
           validateSelectionSet
-          rawSelectionSet
           unionMembers
       -- Validate Regular selection set
       __validate DataObject {..} =
-        SelectionSet <$> validateSelectionSet (TypeDefinition {typeContent = DataObject {..}, ..}) rawSelectionSet
+        fmap SelectionSet . validateSelectionSet (TypeDefinition {typeContent = DataObject {..}, ..})
       -- TODO: Union Like Validation
       __validate DataInterface {..} =
-        SelectionSet <$> validateSelectionSet (TypeDefinition {typeContent = DataInterface {..}, ..}) rawSelectionSet
+        fmap SelectionSet . validateSelectionSet (TypeDefinition {typeContent = DataInterface {..}, ..})
       __validate _ =
-        failure $
-          hasNoSubfields
+        const
+          $ failure
+          $ hasNoSubfields
             currentSelectionRef
             typeDef

@@ -127,10 +127,10 @@ validateUnionSelection ::
   ResolveFragment s =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   (TypeDefinition IMPLEMENTABLE VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
-  SelectionSet RAW ->
   DataUnion VALID ->
+  SelectionSet RAW ->
   FragmentValidator s (SelectionContent VALID)
-validateUnionSelection validateFragment validate selectionSet members = do
+validateUnionSelection validateFragment validate members selectionSet = do
   let (__typename :: SelectionSet RAW) = selectOr empty singleton "__typename" selectionSet
   -- get union Types defined in GraphQL schema -> (union Tag, union Selection set)
   -- [("User", FieldsDefinition { ... }), ("Product", FieldsDefinition { ...
