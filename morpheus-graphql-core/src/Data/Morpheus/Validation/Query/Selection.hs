@@ -90,7 +90,6 @@ import Data.Morpheus.Validation.Query.UnionSelection
     validateUnionSelection,
   )
 import Data.Semigroup ((<>))
-import Debug.Trace
 import Prelude
   ( ($),
     (&&),
@@ -247,11 +246,10 @@ validateSelectionSet typeDef =
                   }
     validateSelection (Spread dirs ref) = do
       types <- possibleTypes typeDef <$> askSchema
-      traceShow ("SELECTION ", typeName typeDef, types) $
-        processSelectionDirectives
-          FRAGMENT_SPREAD
-          dirs
-          (const $ unionTagSelection <$> resolveValidFragment vaidateFragmentSelection types ref)
+      processSelectionDirectives
+        FRAGMENT_SPREAD
+        dirs
+        (const $ unionTagSelection <$> resolveValidFragment vaidateFragmentSelection types ref)
     validateSelection
       ( InlineFragment
           fragment@Fragment

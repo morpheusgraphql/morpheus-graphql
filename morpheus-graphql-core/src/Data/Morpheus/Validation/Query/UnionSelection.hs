@@ -57,7 +57,6 @@ import Data.Morpheus.Validation.Query.Fragment
   ( ResolveFragment (resolveValidFragment),
     castFragmentType,
   )
-import Debug.Trace
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
@@ -90,7 +89,7 @@ exploreInterfaceFragments ::
   Selection RAW ->
   FragmentValidator s ([UnionTag], [Selection RAW])
 exploreInterfaceFragments _ _ _ x@Selection {} = pure ([], [x])
-exploreInterfaceFragments f t types (Spread _ ref) = pureFirst <$> resolveValidFragment f (traceShowId $ typeName <$> t : types) ref
+exploreInterfaceFragments f t types (Spread _ ref) = pureFirst <$> resolveValidFragment f (typeName <$> t : types) ref
 exploreInterfaceFragments f t types (InlineFragment fragment@Fragment {fragmentType}) =
   pureFirst . UnionTag fragmentType
     <$> ( castFragmentType Nothing (fragmentPosition fragment) (typeName <$> t : types) fragment
