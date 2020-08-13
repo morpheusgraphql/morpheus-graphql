@@ -14,7 +14,6 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
-    ID,
     defineByDocumentFile,
     gql,
   )
@@ -32,13 +31,16 @@ import Network.HTTP.Req
   )
 
 defineByDocumentFile
-  "morpheus-graphql-examples-client/assets/test-interface.gql"
+  "assets/interface.gql"
   [gql|
     query MyQuery {
-      myInterface {
-        id
-        ... on Commit {
-              author
+      character {
+        name
+        ... on Deity {
+              power
+        }
+        ... on Hero {
+              name
         }
       }
     }

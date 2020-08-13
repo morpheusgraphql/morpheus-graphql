@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a770071d03cb6a1488f36fddb02c5fa79ab0f6069a88b8e34909bf48c7008a2e
+-- hash: 6372aead780a60a7513416c8e70356aae6bdcd70a4c259a52b8b1e409ba6b42c
 
 name:           morpheus-graphql-examples-client
 version:        0.1.0
@@ -19,8 +19,8 @@ copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
 build-type:     Simple
 data-files:
+    assets/interface.gql
     assets/mythology.gql
-    assets/test-interface.gql
     assets/introspection.json
 
 source-repository head
