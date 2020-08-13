@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Data.Morpheus.Validation.Query.UnionSelection
   ( validateUnionSelection,
@@ -56,6 +57,7 @@ import Data.Morpheus.Validation.Query.Fragment
   ( ResolveFragment (resolveValidFragment),
     castFragmentType,
   )
+import Debug.Trace
 
 -- returns all Fragments used in Union
 exploreUnionFragments ::
@@ -86,14 +88,24 @@ exploreInterfaceFragments ::
   TypeDefinition IMPLEMENTABLE VALID ->
   [TypeDefinition IMPLEMENTABLE VALID] ->
   Selection RAW ->
-  FragmentValidator s [UnionTag]
-exploreInterfaceFragments _ _ _ Selection {} = pure []
-exploreInterfaceFragments f t types (Spread _ ref) = pure <$> resolveValidFragment f (typeName <$> t : types) ref
+  FragmentValidator s ([UnionTag], [Selection RAW])
+exploreInterfaceFragments _ _ _ x@Selection {} = pure ([], [x])
+exploreInterfaceFragments f t types (Spread _ ref) = pureFirst <$> resolveValidFragment f (traceShowId $ typeName <$> t : types) ref
 exploreInterfaceFragments f t types (InlineFragment fragment@Fragment {fragmentType}) =
-  pure . UnionTag fragmentType
+  pureFirst . UnionTag fragmentType
     <$> ( castFragmentType Nothing (fragmentPosition fragment) (typeName <$> t : types) fragment
             >>= f
         )
+
+pureFirst :: a1 -> ([a1], [a2])
+pureFirst x = ([x], [])
+
+joinExploredSelection :: [([UnionTag], [Selection RAW])] -> FragmentValidator s ([UnionTag], SelectionSet RAW)
+joinExploredSelection i = do
+  let (x, y) = unzip i
+  let x' = concat x
+  let y' = concat y
+  (x',) <$> fromElems y'
 
 -- sorts Fragment by contitional Types
 -- [
@@ -149,6 +161,18 @@ validateCluster validator regularSelection =
       selSet <- validator unionType regularSelection
       UnionTag typeName <$> MS.join (selSet : fragmets)
 
+validateFragmentCluster ::
+  SelectionSet VALID ->
+  [(TypeDefinition IMPLEMENTABLE VALID, [SelectionSet VALID])] ->
+  FragmentValidator s (SelectionContent VALID)
+validateFragmentCluster regularSelection =
+  traverse _validateCluster
+    >=> fmap UnionSelection . fromElems
+  where
+    _validateCluster :: (TypeDefinition IMPLEMENTABLE VALID, [SelectionSet VALID]) -> FragmentValidator s UnionTag
+    _validateCluster (TypeDefinition {typeName}, fragmets) =
+      UnionTag typeName <$> MS.join (regularSelection : fragmets)
+
 validateInterfaceSelection ::
   ResolveFragment s =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
@@ -160,17 +184,18 @@ validateInterfaceSelection
   validateFragment
   validate
   typeDef
-  selectionSet = do
+  inputSelectionSet = do
     possibleTypes <- askInterfaceTypes typeDef
-    spreads <-
-      concat
-        <$> traverse
-          (exploreInterfaceFragments validateFragment typeDef possibleTypes)
-          (elems selectionSet)
+    (spreads, selectionSet) <-
+      traverse
+        (exploreInterfaceFragments validateFragment typeDef possibleTypes)
+        (elems inputSelectionSet)
+        >>= joinExploredSelection
+    validSelectionSet <- validate typeDef selectionSet
     let categories = tagUnionFragments (typeDef : possibleTypes) spreads
     if null categories
-      then SelectionSet <$> validate typeDef selectionSet
-      else validateCluster validate selectionSet categories
+      then pure (SelectionSet validSelectionSet)
+      else validateFragmentCluster validSelectionSet categories
 
 validateUnionSelection ::
   ResolveFragment s =>
