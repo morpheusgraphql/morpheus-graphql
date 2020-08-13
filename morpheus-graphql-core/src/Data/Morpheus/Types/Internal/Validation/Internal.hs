@@ -24,6 +24,7 @@ where
 
 import Control.Applicative (Applicative, pure)
 import Control.Monad ((>=>), Monad ((>>=)))
+import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -108,9 +109,11 @@ askInterfaceTypes ::
   ) =>
   TypeDefinition IMPLEMENTABLE s ->
   m c [TypeDefinition IMPLEMENTABLE s]
-askInterfaceTypes TypeDefinition {typeName} =
-  askSchema
-    >>= traverse (validate . fromCategory) . possibleInterfaceTypes typeName
+askInterfaceTypes typeDef@TypeDefinition {typeName} =
+  (typeDef :)
+    <$> ( askSchema
+            >>= traverse (validate . fromCategory) . possibleInterfaceTypes typeName
+        )
   where
     validate (Just x) = pure x
     validate Nothing = failure ("TODO: invalid interface Types" :: InternalError)

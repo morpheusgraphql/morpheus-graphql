@@ -126,12 +126,12 @@ subTypes TypeDefinition {typeName} = [typeName]
           UnionTag "T2" {<SelectionB>,<SelectionC>}
       ]
  -}
-joinCluster ::
+joinClusters ::
   forall s.
   SelectionSet VALID ->
   [(TypeDefinition IMPLEMENTABLE VALID, [SelectionSet VALID])] ->
   FragmentValidator s (SelectionContent VALID)
-joinCluster selSet =
+joinClusters selSet =
   traverse _validateCluster
     >=> fmap UnionSelection . fromElems
   where
@@ -152,12 +152,12 @@ validateInterfaceSelection
   typeDef
   inputSelectionSet = do
     possibleTypes <- askInterfaceTypes typeDef
-    (spreads, selectionSet) <- exploreFragments validateFragment (typeDef : possibleTypes) inputSelectionSet
+    (spreads, selectionSet) <- exploreFragments validateFragment possibleTypes inputSelectionSet
     validSelectionSet <- validate typeDef selectionSet
-    let categories = tagUnionFragments (typeDef : possibleTypes) spreads
+    let categories = tagUnionFragments possibleTypes spreads
     if null categories
       then pure (SelectionSet validSelectionSet)
-      else joinCluster validSelectionSet categories
+      else joinClusters validSelectionSet categories
 
 mkUnionRootType :: FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 mkUnionRootType = (`mkType` DataObject [] empty) <$> asksScope currentTypeName
@@ -177,5 +177,4 @@ validateUnionSelection validateFragment validate members selectionSet = do
   (spreads, selSet) <- exploreFragments validateFragment unionTypes selectionSet
   typeDef <- mkUnionRootType
   validSelection <- validate typeDef selSet
-  let categories = tagUnionFragments unionTypes spreads
-  joinCluster validSelection categories
+  joinClusters validSelection (tagUnionFragments unionTypes spreads)
