@@ -8,6 +8,7 @@ interface Supernatural {
 
 type Hero implements Character {
   name: String
+  nickname: String
 }
 
 type Deity implements Character & Supernatural {

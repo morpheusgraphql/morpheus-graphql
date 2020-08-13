@@ -167,7 +167,7 @@ validateInterfaceSelection
         <$> traverse
           (exploreInterfaceFragments validateFragment typeDef possibleTypes)
           (elems selectionSet)
-    let categories = tagUnionFragments possibleTypes spreads
+    let categories = tagUnionFragments (typeDef : possibleTypes) spreads
     if null categories
       then SelectionSet <$> validate typeDef selectionSet
       else validateCluster validate selectionSet categories

@@ -11,8 +11,14 @@
         "power": ["Show Only on Deity"]
       },
       {
+        "__typename": "Hero",
+        "name": "Test Character",
+        "nickname": "tets Hero NickName"
+      },
+      {
         "__typename": "Character",
         "name": "Test Character",
+        "nickname": "this should be skipped",
         "power": ["this should be skipped"]
       }
     ]
