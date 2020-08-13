@@ -1,0 +1,13 @@
+{
+  character {
+    ... on Character {
+      name
+    }
+    ... on Deity {
+      power
+    }
+    ... on Hero {
+      nickname
+    }
+  }
+}

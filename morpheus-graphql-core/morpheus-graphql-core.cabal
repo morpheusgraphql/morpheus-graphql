@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5bef6bdbe08d93e6a98bd3574b4b5c06615f910b670da366185526dc9bc357cf
+-- hash: 06b9faa359ed8d6931124b386dc6c3f07ce16239c7ff7eb0d1766e019797c0f2
 
 name:           morpheus-graphql-core
 version:        0.13.0
@@ -27,7 +27,10 @@ data-files:
     test/api/deity/schema.gql
     test/api/deity/simple/query.gql
     test/api/validation/fragment/fail-unknown-field-on-interface/query.gql
-    test/api/validation/fragment/inline-on-interface/query.gql
+    test/api/validation/fragment/on-interface-fail-without-casting/query.gql
+    test/api/validation/fragment/on-interface-inline/query.gql
+    test/api/validation/fragment/on-interface-type-casting-inline/query.gql
+    test/api/validation/fragment/on-interface-type-casting/query.gql
     test/api/validation/fragment/on-interface/query.gql
     test/api/validation/fragment/on-type/query.gql
     test/api/validation/fragment/on-union-type/query.gql
@@ -73,7 +76,10 @@ data-files:
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json
     test/api/validation/fragment/fail-unknown-field-on-interface/response.json
-    test/api/validation/fragment/inline-on-interface/response.json
+    test/api/validation/fragment/on-interface-fail-without-casting/response.json
+    test/api/validation/fragment/on-interface-inline/response.json
+    test/api/validation/fragment/on-interface-type-casting-inline/response.json
+    test/api/validation/fragment/on-interface-type-casting/response.json
     test/api/validation/fragment/on-interface/response.json
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json

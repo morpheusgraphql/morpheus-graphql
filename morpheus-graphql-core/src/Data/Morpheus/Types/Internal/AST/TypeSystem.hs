@@ -51,6 +51,8 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     Typed (Typed),
     untyped,
     typed,
+    possibleTypes,
+    possibleInterfaceTypes,
   )
 where
 
@@ -61,8 +63,8 @@ import Control.Monad (Monad (..), foldM)
 import Data.Either (Either (..))
 import Data.Foldable (concatMap)
 import Data.Functor ((<$>), fmap)
-import Data.List (filter, find, notElem)
-import Data.Maybe (Maybe (..), catMaybes, maybe)
+import Data.List (elem, filter, find, notElem)
+import Data.Maybe (Maybe (..), catMaybes, mapMaybe, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -460,6 +462,31 @@ instance
         ..
       }
 
+possibleTypes :: TypeDefinition a s -> Schema s' -> [TypeName]
+possibleTypes
+  TypeDefinition
+    { typeName,
+      typeContent = DataObject {objectImplements}
+    }
+  _ = typeName : objectImplements
+possibleTypes TypeDefinition {typeName = name, typeContent = DataInterface {}} schema =
+  name : fmap typeName (possibleInterfaceTypes name schema)
+possibleTypes TypeDefinition {typeName} _ = [typeName]
+
+possibleInterfaceTypes ::
+  TypeName ->
+  Schema s ->
+  [TypeDefinition ANY s]
+possibleInterfaceTypes name schema = mapMaybe (isPosibleInterfaceType name) (elems schema)
+
+isPosibleInterfaceType ::
+  TypeName ->
+  TypeDefinition c s ->
+  Maybe (TypeDefinition c s)
+isPosibleInterfaceType name typeDef@TypeDefinition {typeName, typeContent = DataObject {objectImplements}}
+  | name `elem` (typeName : objectImplements) = Just typeDef
+isPosibleInterfaceType _ _ = Nothing
+
 instance
   (FromCategory (TypeContent TRUE) cat cat') =>
   FromCategory TypeDefinition cat cat'
@@ -537,6 +564,11 @@ instance FromCategory (TypeContent TRUE) ANY OUT where
 
 instance FromCategory (TypeContent TRUE) ANY OBJECT where
   fromCategory DataObject {..} = Just DataObject {..}
+  fromCategory _ = Nothing
+
+instance FromCategory (TypeContent TRUE) ANY IMPLEMENTABLE where
+  fromCategory DataObject {..} = Just DataObject {..}
+  fromCategory DataInterface {..} = Just DataInterface {..}
   fromCategory _ = Nothing
 
 mkType :: TypeName -> TypeContent TRUE a s -> TypeDefinition a s

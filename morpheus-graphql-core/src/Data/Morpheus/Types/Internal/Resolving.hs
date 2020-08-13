@@ -53,8 +53,10 @@ import Control.Monad (Monad)
 import qualified Data.Aeson as A
 import Data.Functor (fmap)
 import qualified Data.HashMap.Strict as HM
-  ( toList,
+  ( lookup,
+    toList,
   )
+import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( mapTuple,
   )
@@ -62,7 +64,7 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     ScalarValue (..),
     Token,
-    TypeName,
+    TypeName (..),
     decodeScientific,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
@@ -104,13 +106,17 @@ mkUnion = ResUnion
 mkNull :: ResModel o e m
 mkNull = ResNull
 
+unPackName :: A.Value -> TypeName
+unPackName (A.String x) = TypeName x
+unPackName _ = "__JSON__"
+
 mkValue ::
   (LiftOperation o, Monad m) =>
   A.Value ->
   ResModel o e m
 mkValue (A.Object v) =
   mkObject
-    "DynamicValue"
+    (maybe "__JSON__" unPackName $ HM.lookup "__typename" v)
     $ fmap
       (mapTuple FieldName (pure . mkValue))
       (HM.toList v)

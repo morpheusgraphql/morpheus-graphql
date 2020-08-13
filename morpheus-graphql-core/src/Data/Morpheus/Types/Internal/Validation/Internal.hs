@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Internal.Validation.Internal
   ( askType,
     askTypeMember,
     getOperationType,
+    askInterfaceTypes,
   )
 where
 
@@ -23,7 +24,8 @@ where
 
 import Control.Applicative (Applicative, pure)
 import Control.Monad ((>=>), Monad ((>>=)))
-import Data.Maybe (maybe)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectBy,
@@ -32,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldsDefinition,
     FromCategory,
+    IMPLEMENTABLE,
     IN,
     InternalError,
     OBJECT,
@@ -51,8 +54,10 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     fromAny,
+    fromCategory,
     getOperationDataType,
     msgInternal,
+    possibleInterfaceTypes,
     typeConName,
     typed,
     untyped,
@@ -65,6 +70,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
 import Data.Semigroup
   ( (<>),
   )
+import Data.Traversable (traverse)
 import Prelude
   ( ($),
     (.),
@@ -94,6 +100,23 @@ askTypeMember ::
   UnionMember cat s ->
   m c (TypeMemberResponse cat s)
 askTypeMember = askType2 . typed memberName >=> constraintObject
+
+askInterfaceTypes ::
+  ( Failure InternalError (m c),
+    Monad (m c),
+    MonadContext m s c,
+    FromCategory (TypeContent TRUE) ANY IMPLEMENTABLE
+  ) =>
+  TypeDefinition IMPLEMENTABLE s ->
+  m c [TypeDefinition IMPLEMENTABLE s]
+askInterfaceTypes typeDef@TypeDefinition {typeName} =
+  (typeDef :)
+    <$> ( askSchema
+            >>= traverse (validate . fromCategory) . possibleInterfaceTypes typeName
+        )
+  where
+    validate (Just x) = pure x
+    validate Nothing = failure ("TODO: invalid interface Types" :: InternalError)
 
 type family TypeMemberResponse (cat :: TypeCategory) (s :: Stage)
 

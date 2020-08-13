@@ -167,6 +167,8 @@ module Data.Morpheus.Types.Internal.AST
     REQURE_IMPLEMENTABLE,
     ToCategory (..),
     FromCategory (..),
+    possibleTypes,
+    possibleInterfaceTypes,
   )
 where
 

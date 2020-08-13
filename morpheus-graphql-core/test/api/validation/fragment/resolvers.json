@@ -1,11 +1,29 @@
 {
   "query": {
     "deity": {
+      "__typename": "Deity",
       "name": "Morpheus",
       "power": ["Shapeshifting"]
     },
-    "character": {
-      "name": "Test Character"
-    }
+    "character": [
+      {
+        "__typename": "Deity",
+        "name": "Test Deity",
+        "power": ["Show Only on Deity"],
+        "nickname": "this should be skipped"
+      },
+      {
+        "__typename": "Hero",
+        "name": "Test Hero",
+        "power": ["this should be skipped"],
+        "nickname": "tets Hero NickName"
+      },
+      {
+        "__typename": "Character",
+        "name": "Test Character",
+        "nickname": "this should be skipped",
+        "power": ["this should be skipped"]
+      }
+    ]
   }
 }

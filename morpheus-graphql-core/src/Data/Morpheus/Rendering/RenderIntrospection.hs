@@ -17,10 +17,10 @@ where
 -- Morpheus
 
 import Control.Applicative (pure)
-import Control.Monad (Monad (..), sequence)
+import Control.Monad (Monad (..))
 import Data.Foldable (foldr)
 import Data.Functor ((<$>))
-import Data.List (elem, filter)
+import Data.List (filter)
 import Data.Maybe (Maybe (..), isJust, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure,
@@ -63,6 +63,7 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecatedReason,
     mkInputUnionFields,
     msg,
+    possibleInterfaceTypes,
     toGQLWrapper,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -83,7 +84,6 @@ import Prelude
   ( ($),
     (.),
     Bool,
-    concatMap,
     show,
   )
 
@@ -200,7 +200,7 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
           __type
             KindInterface
             [ ("fields", render fields),
-              ("possibleTypes", interfacePossibleTypes typeName)
+              ("possibleTypes", renderPossibleTypes typeName)
             ]
 
 instance RenderIntrospection (UnionMember OUT s) where
@@ -274,21 +274,15 @@ instance RenderIntrospection TypeRef where
       wrapperKind ListType = KindList
       wrapperKind NonNullType = KindNonNull
 
-interfacePossibleTypes ::
+renderPossibleTypes ::
   (Monad m) =>
   TypeName ->
   Resolver QUERY e m (ResModel QUERY e m)
-interfacePossibleTypes interfaceName =
+renderPossibleTypes name =
   mkList
     <$> ( getSchema
-            >>= sequence
-              . concatMap implements
-              . elems
+            >>= traverse render . possibleInterfaceTypes name
         )
-  where
-    implements typeDef@TypeDefinition {typeContent = DataObject {objectImplements}}
-      | interfaceName `elem` objectImplements = [render typeDef]
-    implements _ = []
 
 renderDeprecated ::
   (Monad m) =>
