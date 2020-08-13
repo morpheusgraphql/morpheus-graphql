@@ -33,9 +33,11 @@ main = do
           "api/validation/fragment"
           [ "on-type",
             "on-interface",
-            "inline-on-interface",
+            "on-interface-inline",
             "on-union-type",
             "fail-unknown-field-on-interface",
-            "on-interface-type-casting"
+            "on-interface-type-casting",
+            "on-interface-type-casting-inline",
+            "on-interface-fail-without-casting"
           ]
       ]
