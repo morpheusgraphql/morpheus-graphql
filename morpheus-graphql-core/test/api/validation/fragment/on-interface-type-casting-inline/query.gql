@@ -1,19 +1,13 @@
 {
   character {
-    ...OnCharacter
-    ...onDeity
-    ...onHero
+    ... on Character {
+      name
+    }
+    ... on Deity {
+      power
+    }
+    ... on Hero {
+      nickname
+    }
   }
-}
-
-fragment OnCharacter on Character {
-  name
-}
-
-fragment onDeity on Deity {
-  power
-}
-
-fragment onHero on Hero {
-  nickname
 }
