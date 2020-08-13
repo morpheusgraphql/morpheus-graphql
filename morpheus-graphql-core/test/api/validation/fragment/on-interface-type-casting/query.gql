@@ -2,6 +2,7 @@
   character {
     ...OnCharacter
     ...onDeity
+    ...onHero
   }
 }
 
@@ -11,4 +12,8 @@ fragment OnCharacter on Character {
 
 fragment onDeity on Deity {
   power
+}
+
+fragment onHero on Hero {
+  nickname
 }
