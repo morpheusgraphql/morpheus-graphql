@@ -14,6 +14,7 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
+    ID,
     defineByDocumentFile,
     gql,
   )
@@ -35,9 +36,10 @@ defineByDocumentFile
   [gql|
     query MyQuery {
       myInterface {
-        ... on Commit {
-              author
-        }
+        id
+        #... on Commit {
+        #      author
+        #}
       }
     }
   |]
