@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -40,7 +41,20 @@ defineByDocumentFile
               power
         }
         ... on Hero {
-              name
+
+              hoby
+        }
+      }
+      character2: character {
+        name1: name
+        name
+      }
+      character3: character {
+        ... on Hero {
+              hoby
+        }
+        ... on Character {
+              name2: name
         }
       }
     }
