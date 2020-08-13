@@ -109,7 +109,7 @@ mkNull = ResNull
 
 unPackName :: A.Value -> TypeName
 unPackName (A.String x) = TypeName x
-unPackName _ = "unknown type from JSON"
+unPackName _ = "__JSON__"
 
 mkValue ::
   (LiftOperation o, Monad m) =>
@@ -117,7 +117,7 @@ mkValue ::
   ResModel o e m
 mkValue (A.Object v) =
   mkObject
-    (maybe "unknown type from JSON" unPackName $ HM.lookup "__typename" v)
+    (maybe "__JSON__" unPackName $ HM.lookup "__typename" v)
     $ fmap
       (mapTuple FieldName (pure . mkValue))
       (HM.toList v)
