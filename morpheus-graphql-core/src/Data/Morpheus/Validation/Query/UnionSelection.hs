@@ -98,15 +98,15 @@ exploreFragments validateFragment types selectionSet =
 tagUnionFragments ::
   [TypeDefinition IMPLEMENTABLE VALID] ->
   [UnionTag] ->
-  [(TypeDefinition IMPLEMENTABLE VALID, [SelectionSet VALID])]
+  [(TypeName, [SelectionSet VALID])]
 tagUnionFragments types fragments =
   filter notEmpty (map categorizeType types)
   where
     notEmpty = not . null . snd
     categorizeType ::
       TypeDefinition IMPLEMENTABLE VALID ->
-      (TypeDefinition IMPLEMENTABLE VALID, [SelectionSet VALID])
-    categorizeType datatype = (datatype, unionTagSelection <$> filter matches fragments)
+      (TypeName, [SelectionSet VALID])
+    categorizeType datatype = (typeName datatype, unionTagSelection <$> filter matches fragments)
       where
         matches = (`elem` subTypes datatype) . unionTagName
 
@@ -129,15 +129,13 @@ subTypes TypeDefinition {typeName} = [typeName]
 joinClusters ::
   forall s.
   SelectionSet VALID ->
-  [(TypeDefinition IMPLEMENTABLE VALID, [SelectionSet VALID])] ->
+  [(TypeName, [SelectionSet VALID])] ->
   FragmentValidator s (SelectionContent VALID)
 joinClusters selSet =
-  traverse _validateCluster
+  traverse joinCluster
     >=> fmap UnionSelection . fromElems
   where
-    _validateCluster :: (TypeDefinition IMPLEMENTABLE VALID, [SelectionSet VALID]) -> FragmentValidator s UnionTag
-    _validateCluster (TypeDefinition {typeName}, fragmets) =
-      UnionTag typeName <$> MS.join (selSet : fragmets)
+    joinCluster (typeName, fragmets) = UnionTag typeName <$> MS.join (selSet : fragmets)
 
 validateInterfaceSelection ::
   ResolveFragment s =>
