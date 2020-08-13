@@ -189,14 +189,19 @@ getFieldType ::
   Converter (TypeDefinition ANY VALID, TypeRef)
 getFieldType
   path
-  TypeDefinition {typeContent = DataObject {objectFields}, typeName}
+  TypeDefinition {typeContent, typeName}
   Selection
     { selectionName,
       selectionPosition
-    } =
-    selectBy selError selectionName objectFields >>= processDeprecation
+    } = withTypeContent typeContent
     where
-      selError = compileError $ "cant find field " <> msg (show objectFields)
+      withTypeContent DataObject {objectFields} =
+        selectBy selError selectionName objectFields >>= processDeprecation
+      withTypeContent DataInterface {interfaceFields} =
+        selectBy selError selectionName interfaceFields >>= processDeprecation
+      withTypeContent dt =
+        failure (compileError $ "Type should be output Object \"" <> msg (show dt))
+      selError = compileError $ "cant find field " <> msg (show typeContent)
       processDeprecation
         FieldDefinition
           { fieldType = alias@TypeRef {typeConName},
@@ -212,5 +217,3 @@ getFieldType
               deprecationWarning
                 fieldDirectives
                 (toFieldName typeName, Ref {refName = selectionName, refPosition = selectionPosition})
-getFieldType _ dt _ =
-  failure (compileError $ "Type should be output Object \"" <> msg (show dt))

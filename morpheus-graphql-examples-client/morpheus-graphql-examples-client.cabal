@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5996da8bed0451844d60e67ac84a1f43e1df8d3efbb207c4ccc7ff69374b0277
+-- hash: ad956d5770924ece8af4e9f787fa4b63c5b0179659ac84ade618f362117ea790
 
 name:           morpheus-graphql-examples-client
 version:        0.1.0
@@ -19,7 +19,9 @@ copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
 build-type:     Simple
 data-files:
+    assets/interface.gql
     assets/mythology.gql
+    assets/interfaceRes.json
     assets/introspection.json
 
 source-repository head
@@ -30,6 +32,7 @@ executable morpheus-client-example
   main-is: Main.hs
   other-modules:
       Client.DefineByIntrospection
+      Client.Interface
       Client.Mythology
       Client.StarWarsClient
       Paths_morpheus_graphql_examples_client

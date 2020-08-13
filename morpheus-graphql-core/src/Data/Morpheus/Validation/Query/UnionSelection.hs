@@ -13,6 +13,7 @@ module Data.Morpheus.Validation.Query.UnionSelection
 where
 
 import Control.Monad ((>=>))
+import Data.Maybe (isJust)
 -- MORPHEUS
 import Data.Morpheus.Internal.Utils
   ( elems,
@@ -155,7 +156,12 @@ validateInterfaceSelection
     let categories = tagUnionFragments possibleTypes spreads
     if null categories
       then pure (SelectionSet validSelectionSet)
-      else joinClusters validSelectionSet categories
+      else joinClusters validSelectionSet (insertDefault (typeName typeDef) categories)
+
+insertDefault :: TypeName -> [(TypeName, [a])] -> [(TypeName, [a])]
+insertDefault interfaceName categories
+  | isJust (lookup interfaceName categories) = categories
+  | otherwise = (interfaceName, []) : categories
 
 mkUnionRootType :: FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 mkUnionRootType = (`mkType` DataObject [] empty) <$> asksScope currentTypeName

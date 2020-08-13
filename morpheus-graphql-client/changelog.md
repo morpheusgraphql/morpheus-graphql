@@ -4,6 +4,8 @@
 
 ### new features
 
+- supports interfaces.
+
 - supports of block string values.
 
 - support of `schema`. issue #412

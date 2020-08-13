@@ -6,6 +6,9 @@ where
 import Client.DefineByIntrospection
   ( fetchUsers,
   )
+import Client.Interface
+  ( testInterface,
+  )
 import Client.Mythology
   ( fetchHero,
   )
@@ -20,3 +23,5 @@ main = do
   fetchUsers >>= print
   putStrLn "\n"
   fetchHero >>= print
+  putStrLn "\n"
+  testInterface >>= print

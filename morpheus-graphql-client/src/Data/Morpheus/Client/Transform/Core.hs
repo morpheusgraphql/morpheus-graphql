@@ -110,6 +110,7 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
   where
     __typeFrom DataScalar {} = hsTypeName typeName
     __typeFrom DataObject {} = nameSpaceType path typeName
+    __typeFrom DataInterface {} = nameSpaceType path typeName
     __typeFrom DataUnion {} = nameSpaceType path typeName
     __typeFrom _ = typeName
 
