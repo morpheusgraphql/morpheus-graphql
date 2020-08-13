@@ -17,5 +17,5 @@ type Deity implements Character & Supernatural {
 }
 
 type Query {
-  character: [Character!]!
+  character: [Character!]
 }

@@ -6,13 +6,17 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Client.Interface
-  ( fetchFilms,
+  ( testInterface,
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+    readFile,
+  )
 import Data.Morpheus.Client
   ( Fetch (..),
     defineByDocumentFile,
@@ -29,6 +33,11 @@ import Network.HTTP.Req
     req,
     responseBody,
     runReq,
+  )
+import Prelude
+  ( Either (..),
+    IO,
+    String,
   )
 
 defineByDocumentFile
@@ -49,6 +58,7 @@ defineByDocumentFile
         name1: name
         name
       }
+      
       character3: character {
         ... on Hero {
               hoby
@@ -61,15 +71,7 @@ defineByDocumentFile
   |]
 
 resolver :: ByteString -> IO ByteString
-resolver b = runReq defaultHttpConfig $ do
-  let headers = header "Content-Type" "application/json"
-  responseBody
-    <$> req
-      POST
-      (https "swapi.graph.cool")
-      (ReqBodyLbs b)
-      lbsResponse
-      headers
+resolver _ = readFile "morpheus-graphql-examples-client/assets/interfaceRes.json"
 
-fetchFilms :: IO (Either String MyQuery)
-fetchFilms = fetch resolver ()
+testInterface :: IO (Either String MyQuery)
+testInterface = fetch resolver ()
