@@ -37,9 +37,9 @@ defineByDocumentFile
     query MyQuery {
       myInterface {
         id
-        #... on Commit {
-        #      author
-        #}
+        ... on Commit {
+              author
+        }
       }
     }
   |]
@@ -55,5 +55,5 @@ resolver b = runReq defaultHttpConfig $ do
       lbsResponse
       headers
 
-fetchFilms :: IO (Either String StarWarsFilms)
+fetchFilms :: IO (Either String MyQuery)
 fetchFilms = fetch resolver ()
