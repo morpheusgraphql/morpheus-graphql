@@ -24,7 +24,6 @@ where
 
 import Control.Applicative (Applicative, pure)
 import Control.Monad ((>=>), Monad ((>>=)))
-import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),

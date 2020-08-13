@@ -59,7 +59,6 @@ import qualified Data.HashMap.Strict as HM
 import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( mapTuple,
-    selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
