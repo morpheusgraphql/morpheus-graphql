@@ -36,6 +36,7 @@
         "__typename": "Character",
         "name2": "Character name2"
       }
-    ]
+    ],
+    "character4": []
   }
 }

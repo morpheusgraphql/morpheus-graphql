@@ -46,7 +46,7 @@ defineByDocumentFile
         name1: name
         name
       }
-      
+
       character3: character {
         ... on Hero {
               hoby
