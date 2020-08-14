@@ -51,7 +51,7 @@ where
 
 import Control.Applicative ((<*>), pure)
 import Control.Monad.Fail (fail)
-import Data.Foldable (foldl, foldr, foldr1)
+import Data.Foldable (foldl, foldr1)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
@@ -61,7 +61,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),
     FieldName (..),
-    Message,
     TypeKind (..),
     TypeName (..),
     TypeRef (..),
@@ -70,7 +69,6 @@ import Data.Morpheus.Types.Internal.AST
     isEnum,
     isNullable,
     isOutputObject,
-    msg,
     readName,
   )
 import Data.Semigroup ((<>))
@@ -304,10 +302,7 @@ decodeObjectE funName conName fields =
   uInfixE
     (toCon conName)
     (varE '(<$>))
-    (applyFields $ map (defField funName) fields)
-
-applyFields :: [ExpQ] -> ExpQ
-applyFields = foldr1 withApplicative
+    (foldr1 withApplicative $ map (defField funName) fields)
 
 withApplicative :: ExpQ -> ExpQ -> ExpQ
 withApplicative x = uInfixE x (varE '(<*>))
