@@ -25,6 +25,7 @@ import GHC.Generics (Generic)
 import Prelude
   ( ($),
     Either (..),
+    Eq,
     Show (..),
     pure,
   )
@@ -35,7 +36,7 @@ import Prelude
 newtype ID = ID
   { unpackID :: Text
   }
-  deriving (Show, Generic)
+  deriving (Show, Generic, Eq)
 
 instance GQLScalar ID where
   parseValue (Int x) = pure (ID $ pack $ show x)

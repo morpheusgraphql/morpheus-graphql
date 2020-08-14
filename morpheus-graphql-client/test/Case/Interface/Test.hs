@@ -23,17 +23,26 @@ import Data.Morpheus.Client
     gql,
   )
 import Data.Text (Text)
+import Lib
+  ( mockApi,
+    schemaUrl,
+  )
+import Test.Tasty
+  ( TestTree,
+  )
 import Test.Tasty.HUnit
   ( assertEqual,
+    testCase,
   )
 import Prelude
-  ( Either (..),
+  ( ($),
+    Either (..),
     IO,
     String,
   )
 
 defineByDocumentFile
-  "morpheus-graphql-client/test/Case/Interface/schema.gql"
+  (schemaUrl "Interface")
   [gql|
     query MyQuery {
       character {
@@ -67,22 +76,56 @@ defineByDocumentFile
   |]
 
 resolver :: ByteString -> IO ByteString
-resolver _ = readFile "morpheus-graphql-client/test/Case/Interface/response.json"
+resolver = mockApi "Interface"
 
 client :: IO (Either String MyQuery)
 client = fetch resolver ()
 
-testInterface :: IO ()
-testInterface = do
+testInterface :: TestTree
+testInterface = testCase "test interfaces" $ do
   value <- client
   assertEqual
     "test interface"
     ( Right
-        MyQuery
-          { character = [],
-            character2 = [],
-            character3 = [],
-            character4 = []
-          }
+        ( MyQuery
+            { character =
+                [ CharacterDeity
+                    { name = "Deity Name",
+                      power = "Deity Power"
+                    },
+                  CharacterCharacter
+                    { name = "Charatcer Name"
+                    },
+                  CharacterHero
+                    { name = "Hero Name",
+                      hoby = "Deity Power"
+                    }
+                ],
+              character2 =
+                [ Character2Character
+                    { name1 = "test name",
+                      name = "test name"
+                    }
+                ],
+              character3 =
+                [ Character3Hero
+                    { hoby = "Hero Hoby",
+                      name2 = "Hero name2"
+                    },
+                  Character3Deity
+                    { name2 = "Hero name2"
+                    },
+                  Character3Character
+                    { name2 = "Character name2"
+                    }
+                ],
+              character4 =
+                [ Character4Character,
+                  Character4Hero
+                    { hoby = "Hero Hoby"
+                    }
+                ]
+            }
+        )
     )
     value
