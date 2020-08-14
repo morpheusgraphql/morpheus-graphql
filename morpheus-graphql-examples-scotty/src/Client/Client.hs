@@ -28,7 +28,7 @@ data Euro
   = Euro
       Int
       Int
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance GQLScalar Euro where
   parseValue _ = pure (Euro 1 0)

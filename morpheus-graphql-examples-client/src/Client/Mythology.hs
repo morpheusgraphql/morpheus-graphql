@@ -27,7 +27,7 @@ import Data.Text (Text)
 
 newtype Lifetime
   = Lifetime Int
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance GQLScalar Lifetime where
   parseValue _ = pure (Lifetime 0)
@@ -35,7 +35,7 @@ instance GQLScalar Lifetime where
 
 newtype Power
   = Power Int
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance GQLScalar Power where
   parseValue _ = pure (Power 1)

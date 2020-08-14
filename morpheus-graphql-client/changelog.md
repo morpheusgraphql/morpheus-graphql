@@ -16,6 +16,12 @@
   }
   ```
 
+- generated types have instance of class `Eq`
+
+### breaking changes
+
+- custom scalars Should Provide instance of class `Eq`
+
 ## 0.13.0 - 22.06.2020
 
 ### breaking changes

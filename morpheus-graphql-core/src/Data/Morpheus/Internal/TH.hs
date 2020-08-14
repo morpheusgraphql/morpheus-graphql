@@ -51,7 +51,7 @@ where
 
 import Control.Applicative ((<*>), pure)
 import Control.Monad.Fail (fail)
-import Data.Foldable (foldl)
+import Data.Foldable (foldl, foldr1)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
@@ -61,7 +61,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),
     FieldName (..),
-    Message,
     TypeKind (..),
     TypeName (..),
     TypeRef (..),
@@ -70,7 +69,6 @@ import Data.Morpheus.Types.Internal.AST
     isEnum,
     isNullable,
     isOutputObject,
-    msg,
     readName,
   )
 import Data.Semigroup ((<>))
@@ -299,16 +297,15 @@ mkEntryWith f FieldDefinition {fieldName} =
     (toVar fieldName)
 
 decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat s] -> ExpQ
+decodeObjectE _ conName [] = appE (varE 'pure) (toCon conName)
 decodeObjectE funName conName fields =
   uInfixE
     (toCon conName)
     (varE '(<$>))
-    (applyFields conName funName fields)
+    (foldr1 withApplicative $ map (defField funName) fields)
 
-applyFields :: TypeName -> (Bool -> Name) -> [FieldDefinition cat s] -> ExpQ
-applyFields name _ [] = fail $ show ("No Empty fields on " <> msg name :: Message)
-applyFields _ f [x] = defField f x
-applyFields name f (x : xs) = uInfixE (defField f x) (varE '(<*>)) (applyFields name f xs)
+withApplicative :: ExpQ -> ExpQ -> ExpQ
+withApplicative x = uInfixE x (varE '(<*>))
 
 matchWith ::
   Bool ->

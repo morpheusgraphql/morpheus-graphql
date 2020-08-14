@@ -25,7 +25,8 @@ import Data.Morpheus.Client.Internal.Types
     TypeNameTH (..),
   )
 import Data.Morpheus.Internal.TH
-  ( applyCons,
+  ( _',
+    applyCons,
     decodeObjectE,
     destructRecord,
     funDSimple,
@@ -154,8 +155,8 @@ aesonUnionObject
     appE (varE 'takeValueType) $
       matchWith False f clientCons
     where
-      f cons@ConsD {cName} =
-        ( tupP [toString cName, v'],
+      f cons@ConsD {cName, cFields} =
+        ( tupP [toString cName, if null cFields then _' else v'],
           aesonObjectBody namespace cons
         )
 
