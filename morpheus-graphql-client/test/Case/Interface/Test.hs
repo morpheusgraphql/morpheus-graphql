@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Client.Interface
+module Case.Interface.Test
   ( testInterface,
   )
 where
@@ -23,6 +23,9 @@ import Data.Morpheus.Client
     gql,
   )
 import Data.Text (Text)
+import Test.Tasty.HUnit
+  ( assertEqual,
+  )
 import Prelude
   ( Either (..),
     IO,
@@ -30,7 +33,7 @@ import Prelude
   )
 
 defineByDocumentFile
-  "assets/interface.gql"
+  "morpheus-graphql-client/test/Case/Interface/schema.gql"
   [gql|
     query MyQuery {
       character {
@@ -64,7 +67,12 @@ defineByDocumentFile
   |]
 
 resolver :: ByteString -> IO ByteString
-resolver _ = readFile "morpheus-graphql-examples-client/assets/interfaceRes.json"
+resolver _ = readFile "morpheus-graphql-client/test/Case/Interface/response.json"
 
-testInterface :: IO (Either String MyQuery)
-testInterface = fetch resolver ()
+client :: IO (Either String MyQuery)
+client = fetch resolver ()
+
+testInterface :: IO ()
+testInterface = do
+  value <- client
+  assertEqual "" (Right MyQuery {}) value
