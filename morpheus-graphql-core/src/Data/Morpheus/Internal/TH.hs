@@ -61,6 +61,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),
     FieldName (..),
+    Message,
     TypeKind (..),
     TypeName (..),
     TypeRef (..),
@@ -69,6 +70,7 @@ import Data.Morpheus.Types.Internal.AST
     isEnum,
     isNullable,
     isOutputObject,
+    msg,
     readName,
   )
 import Data.Semigroup ((<>))
@@ -298,17 +300,19 @@ mkEntryWith f FieldDefinition {fieldName} =
 
 decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat s] -> ExpQ
 decodeObjectE _ conName [] = appE (varE 'pure) (toCon conName)
-decodeObjectE funName conName (field : fields) =
+decodeObjectE funName conName fields =
   uInfixE
     (toCon conName)
     (varE '(<$>))
-    (applyFields funName field fields)
+    (applyFields $ map (defField funName) fields)
 
-applyFields :: (Bool -> Name) -> FieldDefinition cat s -> [FieldDefinition cat s] -> ExpQ
-applyFields f field = foldr bindField (defField f field)
-  where
-    bindField :: FieldDefinition cat s -> ExpQ -> ExpQ
-    bindField x exp = uInfixE exp (varE '(<*>)) (defField f x)
+applyFields :: [ExpQ] -> ExpQ
+applyFields [] = fail "No Empty fields on "
+applyFields [x] = x
+applyFields (x : xs) = withApplicative x (applyFields xs)
+
+withApplicative :: ExpQ -> ExpQ -> ExpQ
+withApplicative x = uInfixE x (varE '(<*>))
 
 matchWith ::
   Bool ->
