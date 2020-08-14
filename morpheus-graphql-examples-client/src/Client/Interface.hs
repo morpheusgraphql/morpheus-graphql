@@ -23,17 +23,6 @@ import Data.Morpheus.Client
     gql,
   )
 import Data.Text (Text)
-import Network.HTTP.Req
-  ( POST (..),
-    ReqBodyLbs (..),
-    defaultHttpConfig,
-    header,
-    https,
-    lbsResponse,
-    req,
-    responseBody,
-    runReq,
-  )
 import Prelude
   ( Either (..),
     IO,
@@ -50,7 +39,6 @@ defineByDocumentFile
               power
         }
         ... on Hero {
-
               hoby
         }
       }
@@ -65,6 +53,11 @@ defineByDocumentFile
         }
         ... on Character {
               name2: name
+        }
+      }
+      character4: character {
+        ... on Hero {
+              hoby
         }
       }
     }
