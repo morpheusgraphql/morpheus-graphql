@@ -51,7 +51,7 @@ where
 
 import Control.Applicative ((<*>), pure)
 import Control.Monad.Fail (fail)
-import Data.Foldable (foldl, foldr)
+import Data.Foldable (foldl, foldr, foldr1)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
@@ -307,9 +307,7 @@ decodeObjectE funName conName fields =
     (applyFields $ map (defField funName) fields)
 
 applyFields :: [ExpQ] -> ExpQ
-applyFields [] = fail "No Empty fields on "
-applyFields [x] = x
-applyFields (x : xs) = withApplicative x (applyFields xs)
+applyFields = foldr1 withApplicative
 
 withApplicative :: ExpQ -> ExpQ -> ExpQ
 withApplicative x = uInfixE x (varE '(<*>))
