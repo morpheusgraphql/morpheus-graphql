@@ -37,6 +37,16 @@
         "name2": "Character name2"
       }
     ],
-    "character4": []
+    "character4": [
+      {
+        "__typename": "Character",
+        "name2": "Character name2"
+      },
+      {
+        "__typename": "Hero",
+        "hoby": "Hero Hoby",
+        "name2": "Hero name2"
+      }
+    ]
   }
 }
