@@ -50,7 +50,7 @@ declareType
       []
       Nothing
       (declareCons thName clientCons)
-      (map derive [''Generic, ''Show])
+      (map derive [''Generic, ''Show, ''Eq])
     where
       derive className = DerivClause Nothing [ConT className]
 

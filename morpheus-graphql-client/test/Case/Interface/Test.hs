@@ -75,4 +75,14 @@ client = fetch resolver ()
 testInterface :: IO ()
 testInterface = do
   value <- client
-  assertEqual "" (Right MyQuery {}) value
+  assertEqual
+    "test interface"
+    ( Right
+        MyQuery
+          { character = [],
+            character2 = [],
+            character3 = [],
+            character4 = []
+          }
+    )
+    value
