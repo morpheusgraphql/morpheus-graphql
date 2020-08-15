@@ -64,41 +64,41 @@ type Deity {
 _API.hs_
 
 ```haskell
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns        #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module API (api) where
 
-import qualified Data.ByteString.Lazy.Char8 as B
+import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus (interpreter)
+import Data.Morpheus.Document (importGQLDocument)
+import Data.Morpheus.Types (RootResolver (..), Undefined (..))
+import Data.Text (Text)
 
-import           Data.Morpheus              (interpreter)
-import           Data.Morpheus.Document     (importGQLDocumentWithNamespace)
-import           Data.Morpheus.Types        (RootResolver (..), ResolverQ, Undefined(..))
-import           Data.Text                  (Text)
-
-importGQLDocumentWithNamespace "schema.gql"
+importGQLDocument "schema.gql"
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
-    {
-      queryResolver = Query {queryDeity},
+    { queryResolver = Query {deity},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
   where
-    queryDeity QueryDeityArgs {queryDeityArgsName} = pure Deity
-      {
-        deityName = pure "Morpheus"
-      , deityPower = pure (Just "Shapeshifting")
-      }
+    deity DeityArgs {name} =
+      pure
+        Deity
+          { name = pure name,
+            power = pure (Just "Shapeshifting")
+          }
 
 api :: ByteString -> IO ByteString
 api = interpreter rootResolver
@@ -464,6 +464,12 @@ newtype Subscription (m ::  * -> * ) = Subscription
   { newDeity :: m  Deity
   } deriving (Generic)
 
+newtype Subscription (m :: * -> *) = Subscription
+{ newDeity :: SubscriptionField (m Deity),
+}
+deriving (Generic)
+
+
 type APIEvent = Event Channel Content
 
 rootResolver :: RootResolver IO APIEvent Query Mutation Subscription
@@ -479,13 +485,14 @@ rootResolver = RootResolver
       requireAuthorized
       publish [Event { channels = [ChannelA], content = ContentA 1 }]
       lift dbCreateDeity
-  newDeity = subscribe [ChannelA] $ do
-      requireAuthorized
-      lift deityByEvent
-   where
-    deityByEvent (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
-    deityByEvent (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
-    deityByEvent _ = fetchDeity -- Resolve Old State
+  newDeity :: SubscriptionField (ResolverS EVENT IO Deity)
+  newDeity = subscribe ChannelA $ do
+    -- executed only once
+    -- immediate response on failures
+    requireAuthorized
+    pure $ \(Event _ content) -> do
+        -- exectues on every event
+        lift (getDBAddress content)
 ```
 
 ### Interface

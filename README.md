@@ -460,6 +460,12 @@ newtype Subscription (m ::  * -> * ) = Subscription
   { newDeity :: m  Deity
   } deriving (Generic)
 
+newtype Subscription (m :: * -> *) = Subscription
+{ newDeity :: SubscriptionField (m Deity),
+}
+deriving (Generic)
+
+
 type APIEvent = Event Channel Content
 
 rootResolver :: RootResolver IO APIEvent Query Mutation Subscription
@@ -475,13 +481,14 @@ rootResolver = RootResolver
       requireAuthorized
       publish [Event { channels = [ChannelA], content = ContentA 1 }]
       lift dbCreateDeity
-  newDeity = subscribe [ChannelA] $ do
-      requireAuthorized
-      lift deityByEvent
-   where
-    deityByEvent (Event [ChannelA] (ContentA _value)) = fetchDeity  -- resolve New State
-    deityByEvent (Event [ChannelA] (ContentB _value)) = fetchDeity   -- resolve New State
-    deityByEvent _ = fetchDeity -- Resolve Old State
+  newDeity :: SubscriptionField (ResolverS EVENT IO Deity)
+  newDeity = subscribe ChannelA $ do
+    -- executed only once
+    -- immediate response on failures
+    requireAuthorized
+    pure $ \(Event _ content) -> do
+        -- exectues on every event
+        lift (getDBAddress content)
 ```
 
 ### Interface
