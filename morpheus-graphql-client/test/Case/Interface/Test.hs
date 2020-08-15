@@ -15,17 +15,15 @@ where
 
 import Data.ByteString.Lazy.Char8
   ( ByteString,
-    readFile,
   )
 import Data.Morpheus.Client
   ( Fetch (..),
-    defineByDocumentFile,
     gql,
   )
 import Data.Text (Text)
 import Lib
-  ( mockApi,
-    schemaUrl,
+  ( defineClientWith,
+    mockApi,
   )
 import Test.Tasty
   ( TestTree,
@@ -41,8 +39,8 @@ import Prelude
     String,
   )
 
-defineByDocumentFile
-  (schemaUrl "Interface")
+defineClientWith
+  "Interface"
   [gql|
     query MyQuery {
       character {

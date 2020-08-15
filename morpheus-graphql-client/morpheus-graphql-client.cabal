@@ -73,6 +73,7 @@ test-suite morpheus-client-test
       aeson
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
+    , directory >=1.0
     , morpheus-graphql-client
     , morpheus-graphql-core >=0.14.0
     , mtl >=2.0 && <=3.0
