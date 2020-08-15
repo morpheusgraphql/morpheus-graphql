@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8345ca09158d34b0e75349823b7009f02b3b11edf8c109b051345e2980c2af31
+-- hash: 8d1e49edfa571f6e0dff20aa867324523a25cd49b27fdf2a5beae8aeb9adf536
 
 name:           morpheus-graphql
-version:        0.13.0
+version:        0.14.0
 synopsis:       Morpheus GraphQL
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql
@@ -429,7 +429,7 @@ library
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
-    , morpheus-graphql-core >=0.13.0
+    , morpheus-graphql-core >=0.14.0
     , mtl >=2.0 && <=3.0
     , scientific >=0.3.6.2 && <0.4
     , template-haskell >=2.0 && <=3.0
@@ -478,7 +478,7 @@ test-suite morpheus-test
     , containers >=0.4.2.1 && <0.7
     , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql
-    , morpheus-graphql-core >=0.13.0
+    , morpheus-graphql-core >=0.14.0
     , mtl >=2.0 && <=3.0
     , scientific >=0.3.6.2 && <0.4
     , tasty
