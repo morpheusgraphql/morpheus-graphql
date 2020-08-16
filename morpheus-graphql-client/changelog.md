@@ -4,7 +4,7 @@
 
 ### minor
 
-- fixed Build error during testing https://github.com/commercialhaskell/stackage/issues/5602
+- fixed Build error during testing [#5602](https://github.com/commercialhaskell/stackage/issues/5602)
 
 ## 0.14.0 - 15.08.2020
 
