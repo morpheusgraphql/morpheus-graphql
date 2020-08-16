@@ -33,7 +33,7 @@ _stack.yml_
 resolver: lts-15.13
 
 extra-deps:
-  - morpheus-graphql-0.14.0
+  - morpheus-graphql-0.14.1
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`

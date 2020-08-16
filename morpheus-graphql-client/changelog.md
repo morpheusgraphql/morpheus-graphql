@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1 - 16.08.2020
+
+### minor
+
+- fixed Build error during testing #5602
+
 ## 0.14.0 - 15.08.2020
 
 ### new features
