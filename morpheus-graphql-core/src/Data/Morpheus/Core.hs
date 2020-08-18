@@ -90,8 +90,7 @@ data App event m = App
     appConfig :: Config
   }
 
-runApp ::
-  (Monad m) => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
+runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
 runApp App {appSchema, appResolvers, appConfig} =
   runApi appSchema appResolvers appConfig
 
