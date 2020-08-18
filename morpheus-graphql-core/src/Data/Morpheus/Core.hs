@@ -87,13 +87,11 @@ import Data.Text.Lazy.Encoding (decodeUtf8)
 
 data App event m = App
   { appSchema :: Schema VALID,
-    appResolvers :: RootResModel event m,
-    appConfig :: Config
+    appResolvers :: RootResModel event m
   }
 
-runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
-runApp App {appSchema, appResolvers, appConfig} =
-  runApi appSchema appResolvers appConfig
+runApp :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
+runApp App {appSchema, appResolvers} = runApi appSchema appResolvers
 
 runApi ::
   forall event m s.
