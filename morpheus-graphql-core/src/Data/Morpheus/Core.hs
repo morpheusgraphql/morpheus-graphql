@@ -25,6 +25,7 @@ module Data.Morpheus.Core
     defaultConfig,
     debugConfig,
     runApp,
+    App (..),
   )
 where
 
@@ -52,7 +53,8 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Operation (..),
+  ( CONST,
+    Operation (..),
     Schema (..),
     Selection (..),
     SelectionContent (..),
@@ -86,8 +88,8 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
 
 data App event m = App
-  { appSchema :: Schema VALID,
-    appResolvers :: RootResModel event m
+  { appResolvers :: RootResModel event m,
+    appSchema :: Schema CONST
   }
 
 runApp :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)

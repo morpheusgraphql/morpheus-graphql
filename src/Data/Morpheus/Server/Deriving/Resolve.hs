@@ -9,6 +9,7 @@ module Data.Morpheus.Server.Deriving.Resolve
     RootResolverConstraint,
     coreResolver,
     deriveSchema,
+    deriveApp,
   )
 where
 
@@ -16,9 +17,11 @@ import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
 import Data.Morpheus.Core
-  ( Config,
-    runApi,
+  ( App (..),
+    Config,
+    runApp,
   )
+import Data.Morpheus.Internal.Utils (Failure)
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
@@ -36,6 +39,7 @@ import Data.Morpheus.Types.IO
     GQLResponse (..),
     renderResponse,
   )
+import Data.Morpheus.Types.Internal.AST (GQLErrors)
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     QUERY,
@@ -78,5 +82,14 @@ coreResolver ::
   GQLRequest ->
   ResponseStream event m (Value VALID)
 coreResolver root config request = do
-  schema <- deriveSchema (Identity root)
-  runApi schema (deriveModel root) config request
+  app <- deriveApp root
+  runApp app config request
+
+deriveApp ::
+  ( Functor f,
+    Failure GQLErrors f,
+    RootResolverConstraint m event query mut sub
+  ) =>
+  RootResolver m event query mut sub ->
+  f (App event m)
+deriveApp root = App (deriveModel root) <$> deriveSchema (Identity root)
