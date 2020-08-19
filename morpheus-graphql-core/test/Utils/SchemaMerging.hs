@@ -9,31 +9,23 @@ module Utils.Schema
 where
 
 import Control.Applicative (pure)
-import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
+import Control.Monad ((>=>))
+import Control.Monad.Fail (fail)
 import qualified Data.ByteString.Lazy as L (readFile)
-import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Functor (fmap)
-import Data.Morpheus.Core (parseFullGQLDocument)
+import Data.Morpheus.Core
+  ( parseFullGQLDocument,
+    render,
+  )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLErrors,
-    Schema,
+  ( Schema,
     VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
+  ( resultOr,
   )
 import Data.Semigroup ((<>))
-import Data.Text (pack)
-import GHC.Generics (Generic)
-import Lib
-  ( CaseTree (..),
-    FileUrl (..),
-    scanSchemaTests,
-    toString,
-  )
-import Test.Tasty (TestTree, testGroup)
+import Data.Text (unpack)
+import Test.Tasty (TestTree)
 import Test.Tasty.HUnit (assertFailure, testCase)
 import Prelude
   ( ($),
@@ -41,39 +33,38 @@ import Prelude
     Eq (..),
     FilePath,
     IO,
-    String,
-    id,
     otherwise,
     show,
   )
 
-readSource :: FilePath -> IO ByteString
-readSource = L.readFile
+readSource :: FilePath -> IO (Schema VALID)
+readSource =
+  L.readFile
+    >=> (resultOr (fail . show) pure . parseFullGQLDocument)
 
-readSchema1 :: FilePath -> IO (Eventless (Schema VALID))
-readSchema1 = fmap parseFullGQLDocument . readSource . (<> "/schema-1.gql")
+readSchema1 :: FilePath -> IO (Schema VALID)
+readSchema1 = readSource . (<> "/schema-1.gql")
 
-readSchema2 :: FilePath -> IO (Eventless (Schema VALID))
-readSchema2 = fmap parseFullGQLDocument . readSource . (<> "/schema-2.gql")
+readSchema2 :: FilePath -> IO (Schema VALID)
+readSchema2 = readSource . (<> "/schema-2.gql")
 
-readSchemaResult :: FilePath -> IO (Eventless (Schema VALID))
-readSchemaResult = fmap parseFullGQLDocument . readSource . (<> "/schema-2.gql")
+readSchemaResult :: FilePath -> IO (Schema VALID)
+readSchemaResult = readSource . (<> "/schema-result.gql")
 
 schemaCase :: FilePath -> TestTree
 schemaCase url = testCase url $ do
   schema1 <- readSchema1 url
-  schema2 <- readSchema1 url
+  schema2 <- readSchema2 url
   expected <- readSchemaResult url
   assertion expected (schema1 <> schema2)
 
-assertion :: Schema VALID -> Eventless (Schema VALID) -> IO ()
-assertion schema Success {result}
-  | schema == result = pure ()
-  | otherwise = LB.unpack ("expected: \n " <> render expected <> " \n but got: \n OK")
-assertion expected Failure {errors} =
-  assertFailure $
-    LB.unpack
-      ("expected: \n " <> encode expected <> " \n but got: \n " <> encode (Errors errors))
+assertion :: Schema VALID -> Schema VALID -> IO ()
+assertion expectedSchema schema
+  | render expectedSchema == render schema = pure ()
+  | otherwise =
+    assertFailure
+      $ unpack
+      $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render schema
 
 testSchema :: TestTree
 testSchema = schemaCase "merge/schema"
