@@ -19,7 +19,7 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( App (..),
     Config,
-    runApp,
+    runAppWithConfig,
   )
 import Data.Morpheus.Internal.Utils (Failure)
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
@@ -39,9 +39,9 @@ import Data.Morpheus.Types.IO
     GQLResponse (..),
     renderResponse,
   )
-import Data.Morpheus.Types.Internal.AST (GQLErrors)
 import Data.Morpheus.Types.Internal.AST
-  ( MUTATION,
+  ( GQLErrors,
+    MUTATION,
     QUERY,
     SUBSCRIPTION,
     VALID,
@@ -83,7 +83,7 @@ coreResolver ::
   ResponseStream event m (Value VALID)
 coreResolver root config request = do
   app <- deriveApp root
-  runApp app config request
+  runAppWithConfig app config request
 
 deriveApp ::
   ( Functor f,

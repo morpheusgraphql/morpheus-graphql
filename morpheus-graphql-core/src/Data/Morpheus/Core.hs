@@ -24,6 +24,7 @@ module Data.Morpheus.Core
     VALIDATION_MODE (..),
     defaultConfig,
     debugConfig,
+    runAppWithConfig,
     runApp,
     debugApp,
     App (..),
@@ -92,6 +93,9 @@ data App event m = App
   { appResolvers :: RootResModel event m,
     appSchema :: Schema CONST
   }
+
+runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
+runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
 
 runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
 runApp App {appSchema, appResolvers} = runApi appSchema appResolvers defaultConfig
