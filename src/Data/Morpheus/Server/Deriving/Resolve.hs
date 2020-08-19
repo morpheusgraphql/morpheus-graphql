@@ -73,16 +73,13 @@ statelessResolver ::
   Config ->
   GQLRequest ->
   m GQLResponse
-statelessResolver root config = stateless (coreResolver root config)
+statelessResolver root config req = stateless (coreResolver root config req)
 
 stateless ::
   Functor m =>
-  ( GQLRequest ->
-    ResponseStream event m (Value VALID)
-  ) ->
-  GQLRequest ->
+  ResponseStream event m (Value VALID) ->
   m GQLResponse
-stateless f = fmap renderResponse . runResultT . f
+stateless = fmap renderResponse . runResultT
 
 coreResolver ::
   RootResolverConstraint m event query mut sub =>

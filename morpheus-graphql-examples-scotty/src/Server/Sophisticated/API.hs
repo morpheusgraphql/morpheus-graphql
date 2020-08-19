@@ -26,7 +26,9 @@ import qualified Data.Map as M
 -- MORPHEUS
 import Data.Morpheus
   ( debugInterpreter,
+    deriveApp,
     interpreter,
+    runWith,
   )
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
@@ -117,7 +119,7 @@ newtype Content = Content {contentID :: Int}
 type EVENT = Event Channel Content
 
 api :: Input api -> Stream api EVENT IO
-api = debugInterpreter gqlRoot
+api = runWith (deriveApp gqlRoot)
 
 gqlRoot :: RootResolver IO EVENT Query Mutation Subscription
 gqlRoot =
