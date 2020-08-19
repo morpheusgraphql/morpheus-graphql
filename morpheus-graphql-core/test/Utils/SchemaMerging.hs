@@ -39,7 +39,7 @@ import Prelude
 
 readSource :: FilePath -> IO (Schema VALID)
 readSource =
-  L.readFile
+  L.readFile . ("test/" <>)
     >=> (resultOr (fail . show) pure . parseFullGQLDocument)
 
 readSchema1 :: FilePath -> IO (Schema VALID)
