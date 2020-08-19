@@ -43,6 +43,7 @@ import Prelude
     IO,
     String,
     id,
+    otherwise,
     show,
   )
 
@@ -74,4 +75,5 @@ assertion expected Failure {errors} =
     LB.unpack
       ("expected: \n " <> encode expected <> " \n but got: \n " <> encode (Errors errors))
 
+testSchema :: TestTree
 testSchema = schemaCase "merge/schema"
