@@ -1,18 +1,26 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Data.Morpheus.Server.Deriving.Interpreter
   ( Interpreter (..),
+    runWith,
   )
 where
 
 -- MORPHEUS
-import Data.Morpheus.Core (debugConfig, defaultConfig)
+import Data.Morpheus.Core
+  ( App (..),
+    debugConfig,
+    defaultConfig,
+    runApp,
+  )
 import Data.Morpheus.Server.Deriving.Resolve
   ( RootResolverConstraint,
     coreResolver,
+    stateless,
     statelessResolver,
   )
 import Data.Morpheus.Types
@@ -29,6 +37,18 @@ import Data.Morpheus.Types.Internal.Subscription
     Stream,
     toOutStream,
   )
+
+class Monad m => Runner e (m :: * -> *) a b where
+  runWith :: App e m -> a -> b
+
+instance Monad m => Runner e m GQLRequest (m GQLResponse) where
+  runWith = stateless . runApp
+
+instance Monad m => Runner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
+  runWith app = toOutStream (runApp app)
+
+instance (Monad m, MapAPI a a) => Runner e m a (m a) where
+  runWith app = mapAPI (runWith app)
 
 -- | main query processor and resolver
 --  possible versions of interpreter

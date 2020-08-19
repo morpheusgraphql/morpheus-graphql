@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -89,7 +90,7 @@ import qualified Data.Text.Lazy as LT
   )
 import Data.Text.Lazy.Encoding (decodeUtf8)
 
-data App event m = App
+data App event (m :: * -> *) = App
   { appResolvers :: RootResModel event m,
     appSchema :: Schema CONST
   }

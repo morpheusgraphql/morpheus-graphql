@@ -10,6 +10,7 @@ module Data.Morpheus.Server.Deriving.Resolve
     coreResolver,
     deriveSchema,
     deriveApp,
+    stateless,
   )
 where
 
@@ -72,8 +73,16 @@ statelessResolver ::
   Config ->
   GQLRequest ->
   m GQLResponse
-statelessResolver root config req =
-  renderResponse <$> runResultT (coreResolver root config req)
+statelessResolver root config = stateless (coreResolver root config)
+
+stateless ::
+  Functor m =>
+  ( GQLRequest ->
+    ResponseStream event m (Value VALID)
+  ) ->
+  GQLRequest ->
+  m GQLResponse
+stateless f = fmap renderResponse . runResultT . f
 
 coreResolver ::
   RootResolverConstraint m event query mut sub =>
