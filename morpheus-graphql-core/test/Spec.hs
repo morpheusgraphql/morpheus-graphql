@@ -26,13 +26,12 @@ import Prelude
 
 main :: IO ()
 main = do
-  schemaMerging <- testSchemaMerging
   schema <- testSchema
   defaultMain $
     testGroup
       "core tests"
       [ schema,
-        schemaMerging,
+        testSchemaMerging,
         apiTest "api/deity" ["simple", "interface"],
         apiTest
           "api/validation/fragment"
