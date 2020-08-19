@@ -40,6 +40,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     empty,
+    failure,
   )
 import Data.Morpheus.Parser
   ( parseRequest,
@@ -57,6 +58,7 @@ import Data.Morpheus.Types.IO
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
+    GQLErrors,
     Operation (..),
     Schema (..),
     Selection (..),
@@ -90,19 +92,24 @@ import qualified Data.Text.Lazy as LT
   )
 import Data.Text.Lazy.Encoding (decodeUtf8)
 
-data App event (m :: * -> *) = App
-  { appResolvers :: RootResModel event m,
-    appSchema :: Schema CONST
-  }
+data App event (m :: * -> *)
+  = App
+      { appResolvers :: RootResModel event m,
+        appSchema :: Schema CONST
+      }
+  | InvalidApp
+      { gqlErrors :: GQLErrors
+      }
 
 runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
+runAppWithConfig InvalidApp {gqlErrors} = const $ const (failure gqlErrors)
 
 runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
-runApp App {appSchema, appResolvers} = runApi appSchema appResolvers defaultConfig
+runApp app = runAppWithConfig app defaultConfig
 
 debugApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
-debugApp App {appSchema, appResolvers} = runApi appSchema appResolvers debugConfig
+debugApp app = runAppWithConfig app debugConfig
 
 runApi ::
   forall event m s.
