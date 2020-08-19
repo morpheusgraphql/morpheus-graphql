@@ -2,8 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Schema
-  ( testSchema,
+module Utils.SchemaMerging
+  ( testSchemaMerging,
   )
 where
 
@@ -15,6 +15,7 @@ import Data.Morpheus.Core
   ( parseFullGQLDocument,
     render,
   )
+import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
     VALID,
@@ -55,7 +56,8 @@ schemaCase url = testCase url $ do
   schema1 <- readSchema1 url
   schema2 <- readSchema2 url
   expected <- readSchemaResult url
-  assertion expected (schema1 <> schema2)
+  result <- resultOr (fail . show) pure (schema1 <:> schema2)
+  assertion expected result
 
 assertion :: Schema VALID -> Schema VALID -> IO ()
 assertion expectedSchema schema
@@ -65,5 +67,5 @@ assertion expectedSchema schema
       $ unpack
       $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render schema
 
-testSchema :: TestTree
-testSchema = schemaCase "merge/schema"
+testSchemaMerging :: TestTree
+testSchemaMerging = schemaCase "merge/schema"

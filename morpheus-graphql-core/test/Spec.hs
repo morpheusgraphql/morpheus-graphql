@@ -16,6 +16,9 @@ import Utils.Api
 import Utils.Schema
   ( testSchema,
   )
+import Utils.SchemaMerging
+  ( testSchemaMerging,
+  )
 import Prelude
   ( ($),
     IO,
@@ -23,11 +26,13 @@ import Prelude
 
 main :: IO ()
 main = do
+  schemaMerging <- testSchemaMerging
   schema <- testSchema
   defaultMain $
     testGroup
       "core tests"
       [ schema,
+        schemaMerging,
         apiTest "api/deity" ["simple", "interface"],
         apiTest
           "api/validation/fragment"
