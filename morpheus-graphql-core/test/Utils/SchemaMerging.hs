@@ -12,7 +12,7 @@ import Control.Monad ((>=>))
 import Control.Monad.Fail (fail)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.Morpheus.Core
-  ( parseFullGQLDocument,
+  ( parseGQLDocument,
     render,
   )
 import Data.Morpheus.Internal.Utils ((<:>))
@@ -40,7 +40,7 @@ import Prelude
 readSource :: FilePath -> IO (Schema VALID)
 readSource =
   L.readFile . ("test/" <>)
-    >=> (resultOr (fail . show) pure . parseFullGQLDocument)
+    >=> (resultOr (fail . show) pure . parseGQLDocument)
 
 readSchema1 :: FilePath -> IO (Schema VALID)
 readSchema1 = readSource . (<> "/schema-1.gql")
