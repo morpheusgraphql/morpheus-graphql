@@ -1,3 +1,7 @@
 type Query {
   id: ID
 }
+
+type Type2 {
+  name: name
+}

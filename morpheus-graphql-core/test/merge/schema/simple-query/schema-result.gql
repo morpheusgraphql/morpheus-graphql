@@ -1,3 +1,11 @@
+type Type1 {
+  name: name
+}
+
+type Type2 {
+  name: name
+}
+
 type Query {
   name: String
   id: ID
