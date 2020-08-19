@@ -92,13 +92,18 @@ import qualified Data.Text.Lazy as LT
   )
 import Data.Text.Lazy.Encoding (decodeUtf8)
 
-data App event (m :: * -> *) = App
-  { appResolvers :: RootResModel event m,
-    appSchema :: Schema CONST
-  }
+data App event (m :: * -> *)
+  = App
+      { appResolvers :: RootResModel event m,
+        appSchema :: Schema CONST
+      }
+  | InvalidApp
+      { appErrors :: GQLErrors
+      }
 
 runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
+runAppWithConfig InvalidApp {appErrors} = const $ const $ failure appErrors
 
 runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
 runApp app = runAppWithConfig app defaultConfig
