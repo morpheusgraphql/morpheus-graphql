@@ -32,9 +32,6 @@ import Data.Morpheus.Types.IO
     GQLResponse,
     MapAPI (..),
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( ResponseStream,
-  )
 import Data.Morpheus.Types.Internal.Subscription
   ( Input,
     Stream,
@@ -42,20 +39,13 @@ import Data.Morpheus.Types.Internal.Subscription
   )
 
 class Monad m => AppRunner e (m :: * -> *) a b where
-  runWith :: ResponseStream e m (App e m) -> a -> b
+  runWith :: App e m -> a -> b
 
 instance Monad m => AppRunner e m GQLRequest (m GQLResponse) where
-  runWith appF req = stateless $ do
-    app <- appF
-    runApp app req
+  runWith app = stateless . runApp app
 
 instance Monad m => AppRunner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
-  runWith appF =
-    toOutStream
-      ( \req -> do
-          app <- appF
-          runApp app req
-      )
+  runWith app = toOutStream (runApp app)
 
 instance (Monad m, MapAPI a a) => AppRunner e m a (m a) where
   runWith app = mapAPI (runWith app)

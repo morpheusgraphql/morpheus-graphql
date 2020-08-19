@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -22,7 +23,6 @@ import Data.Morpheus.Core
     Config,
     runAppWithConfig,
   )
-import Data.Morpheus.Internal.Utils (Failure)
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
@@ -41,8 +41,7 @@ import Data.Morpheus.Types.IO
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLErrors,
-    MUTATION,
+  ( MUTATION,
     QUERY,
     SUBSCRIPTION,
     VALID,
@@ -51,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
     ResponseStream,
+    Result (..),
     ResultT (..),
   )
 
@@ -87,15 +87,12 @@ coreResolver ::
   Config ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-coreResolver root config request = do
-  app <- deriveApp root
-  runAppWithConfig app config request
+coreResolver root = runAppWithConfig (deriveApp root)
 
 deriveApp ::
-  ( Functor f,
-    Failure GQLErrors f,
-    RootResolverConstraint m event query mut sub
-  ) =>
+  RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
-  f (App event m)
-deriveApp root = App (deriveModel root) <$> deriveSchema (Identity root)
+  App event m
+deriveApp root = case deriveSchema (Identity root) of
+  Success {result} -> App (deriveModel root) result
+  Failure {errors} -> InvalidApp errors
