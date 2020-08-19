@@ -12,6 +12,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+-- MORPHEUS
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Decode
   ( decodeArguments,
@@ -20,7 +22,11 @@ module Data.Morpheus.Server.Deriving.Decode
   )
 where
 
--- MORPHEUS
+import Control.Applicative ((<*>), pure)
+import Control.Monad ((>>=))
+import Data.Functor ((<$>), Functor (..))
+import Data.List (elem)
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( elems,
   )
@@ -67,6 +73,13 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
 import GHC.Generics
+import Prelude
+  ( ($),
+    (.),
+    Eq (..),
+    Ord,
+    otherwise,
+  )
 
 -- GENERIC
 decodeArguments :: DecodeType a => Arguments VALID -> ResolverState a
