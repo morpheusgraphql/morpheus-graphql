@@ -6,7 +6,7 @@
 
 module Data.Morpheus.Server.Deriving.Interpreter
   ( Interpreter (..),
-    runWith,
+    AppRunner (..),
   )
 where
 
@@ -38,16 +38,16 @@ import Data.Morpheus.Types.Internal.Subscription
     toOutStream,
   )
 
-class Monad m => Runner e (m :: * -> *) a b where
+class Monad m => AppRunner e (m :: * -> *) a b where
   runWith :: App e m -> a -> b
 
-instance Monad m => Runner e m GQLRequest (m GQLResponse) where
+instance Monad m => AppRunner e m GQLRequest (m GQLResponse) where
   runWith = stateless . runApp
 
-instance Monad m => Runner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
+instance Monad m => AppRunner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
   runWith app = toOutStream (runApp app)
 
-instance (Monad m, MapAPI a a) => Runner e m a (m a) where
+instance (Monad m, MapAPI a a) => AppRunner e m a (m a) where
   runWith app = mapAPI (runWith app)
 
 -- | main query processor and resolver
