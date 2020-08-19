@@ -25,6 +25,7 @@ module Data.Morpheus.Core
     defaultConfig,
     debugConfig,
     runApp,
+    debugApp,
     App (..),
   )
 where
@@ -92,8 +93,11 @@ data App event m = App
     appSchema :: Schema CONST
   }
 
-runApp :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
-runApp App {appSchema, appResolvers} = runApi appSchema appResolvers
+runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
+runApp App {appSchema, appResolvers} = runApi appSchema appResolvers defaultConfig
+
+debugApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
+debugApp App {appSchema, appResolvers} = runApi appSchema appResolvers debugConfig
 
 runApi ::
   forall event m s.
