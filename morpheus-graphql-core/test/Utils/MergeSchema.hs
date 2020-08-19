@@ -2,8 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.SchemaMerging
-  ( testSchemaMerging,
+module Utils.MergeSchema
+  ( test,
   )
 where
 
@@ -25,7 +25,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
-import Test.Tasty (TestTree)
+import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
 import Prelude
   ( ($),
@@ -67,5 +67,9 @@ assertion expectedSchema schema
       $ unpack
       $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render schema
 
-testSchemaMerging :: TestTree
-testSchemaMerging = schemaCase "merge/schema"
+test :: TestTree
+test =
+  testGroup
+    "merge schema"
+    [ schemaCase "merge/schema/simple-query"
+    ]

@@ -13,11 +13,9 @@ import Test.Tasty
 import Utils.Api
   ( apiTest,
   )
+import qualified Utils.MergeSchema as MergeSchema
 import Utils.Schema
   ( testSchema,
-  )
-import Utils.SchemaMerging
-  ( testSchemaMerging,
   )
 import Prelude
   ( ($),
@@ -31,7 +29,7 @@ main = do
     testGroup
       "core tests"
       [ schema,
-        testSchemaMerging,
+        MergeSchema.test,
         apiTest "api/deity" ["simple", "interface"],
         apiTest
           "api/validation/fragment"
