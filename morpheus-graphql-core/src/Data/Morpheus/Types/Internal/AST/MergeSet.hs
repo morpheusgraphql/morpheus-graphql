@@ -38,6 +38,7 @@ import Data.Morpheus.Internal.Utils
     fromLisWithResolution,
     member,
     mergeWithResolution,
+    runResolutionT,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Ref,
@@ -125,7 +126,7 @@ instance
   ) =>
   Merge (MergeSet VALID a)
   where
-  merge path = mergeWithResolution upsert (resolveConflict path)
+  merge path x y = runResolutionT (mergeWithResolution x y) upsert (resolveConflict path)
 
 instance
   ( Listable a (MergeSet VALID a),
@@ -135,7 +136,7 @@ instance
   ) =>
   Listable a (MergeSet VALID a)
   where
-  fromElems = fromLisWithResolution upsert (resolveConflict [])
+  fromElems xs = runResolutionT (fromLisWithResolution xs) upsert (resolveConflict [])
   elems = unpack
 
 instance Merge (MergeSet RAW a) where

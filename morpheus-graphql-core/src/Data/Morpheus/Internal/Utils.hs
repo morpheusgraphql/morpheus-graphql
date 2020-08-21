@@ -1,7 +1,12 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
@@ -36,12 +41,15 @@ module Data.Morpheus.Internal.Utils
     SemigroupM (..),
     mergeWithResolution,
     fromLisWithResolution,
+    runResolutionT,
+    ResolutionT,
   )
 where
 
 import Control.Applicative (Applicative (..))
 import Control.Monad ((=<<), (>>=), foldM)
-import Control.Monad.Trans.Class (lift)
+import Control.Monad.Reader (MonadReader (..), asks)
+import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
   )
@@ -81,7 +89,6 @@ import Text.Megaparsec.Stream (Stream)
 import Prelude
   ( ($),
     (.),
-    (<$>),
     Bool (..),
     Either (..),
     Eq (..),
@@ -285,45 +292,78 @@ safeFromList values = safeUnionWith HM.empty (fmap toPair values)
 safeJoin :: (Failure ValidationErrors m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
 safeJoin hm newls = safeUnionWith hm (HM.toList newls)
 
+type RESOLUTION k a coll =
+  ( KeyOf k a,
+    Selectable k a coll,
+    Collection a coll
+  )
+
+data Resolution a coll m = Resolution
+  { resolve :: a -> a -> m a,
+    upsert :: a -> coll -> coll
+  }
+
+runResolutionT ::
+  ResolutionT e coll m a ->
+  (e -> coll -> coll) ->
+  (e -> e -> m e) ->
+  m a
+runResolutionT (ResolutionT x) upsert resolve = runReaderT x Resolution {..}
+
+newtype ResolutionT a coll m x = ResolutionT
+  { _runResolutionT :: ReaderT (Resolution a coll m) m x
+  }
+  deriving
+    ( Functor,
+      Monad,
+      Applicative,
+      MonadReader (Resolution a coll m)
+    )
+
+instance MonadTrans (ResolutionT e coll) where
+  lift = ResolutionT . lift
+
+resolveM :: Monad m => a -> a -> ResolutionT a coll m a
+resolveM old new = do
+  res <- asks resolve
+  lift (res old new)
+
+upsertM :: Monad m => a -> coll -> ResolutionT a coll m coll
+upsertM x xs = do
+  ups <- asks upsert
+  pure (ups x xs)
+
 insertWith ::
   (Monad m, KeyOf k a, Selectable k a coll) =>
-  (a -> coll -> coll) ->
-  (a -> a -> m a) ->
   a ->
   coll ->
-  m coll
-insertWith upsert resolve value ordSet =
+  ResolutionT a coll m coll
+insertWith value ordSet =
   selectOr
-    (pure $ upsert value ordSet)
+    (upsertM value ordSet)
     stitchValue
     (keyOf value)
     ordSet
   where
-    stitchValue oldValue = (`upsert` ordSet) <$> resolve oldValue value
+    stitchValue oldValue = resolveM oldValue value >>= (`upsertM` ordSet)
+
+insertElems ::
+  (Monad m, KeyOf k a, Selectable k a coll) =>
+  coll ->
+  [a] ->
+  ResolutionT a coll m coll
+insertElems smap [] = pure smap
+insertElems smap (x : xs) =
+  insertWith x smap
+    >>= flip insertElems xs
 
 fromLisWithResolution ::
   ( Monad m,
-    KeyOf k a,
-    Selectable k a coll,
-    Collection a coll
+    RESOLUTION k a coll
   ) =>
-  (a -> coll -> coll) ->
-  (a -> a -> m a) ->
   [a] ->
-  m coll
-fromLisWithResolution upsert resolve = insertElemsWithResolution upsert resolve empty
-
-insertElemsWithResolution ::
-  (Monad m, KeyOf k a, Selectable k a coll) =>
-  (a -> coll -> coll) ->
-  (a -> a -> m a) ->
-  coll ->
-  [a] ->
-  m coll
-insertElemsWithResolution _ _ smap [] = pure smap
-insertElemsWithResolution upsert resolve smap (x : xs) =
-  insertWith upsert resolve x smap
-    >>= flip (insertElemsWithResolution upsert resolve) xs
+  ResolutionT a coll m coll
+fromLisWithResolution = insertElems empty
 
 mergeWithResolution ::
   ( Monad m,
@@ -331,12 +371,10 @@ mergeWithResolution ::
     Selectable k a coll,
     Listable a coll
   ) =>
-  (a -> coll -> coll) ->
-  (a -> a -> m a) ->
   coll ->
   coll ->
-  m coll
-mergeWithResolution upsert resol c1 c2 = insertElemsWithResolution upsert resol c1 (elems c2)
+  ResolutionT a coll m coll
+mergeWithResolution c1 c2 = insertElems c1 (elems c2)
 
 safeUnionWith ::
   ( Failure ValidationErrors m,
