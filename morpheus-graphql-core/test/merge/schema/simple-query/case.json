@@ -1,4 +1,3 @@
 {
-  "schemas": ["schema-1", "schema-2"],
-  "success": true
+  "schemas": ["schema-1", "schema-2"]
 }
