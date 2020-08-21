@@ -45,17 +45,20 @@ optional Nothing y = pure y
 optional (Just x) Nothing = pure (Just x)
 optional (Just x) (Just y) = Just <$> stitch x y
 
+prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
+prop f fSel a1 a2 = f (fSel a1) (fSel a2)
+
 class Stitching a where
   stitch :: (Monad m, Failure ValidationErrors m) => a -> a -> m a
 
 instance Stitching (Schema s) where
   stitch s1 s2 =
     Schema
-      <$> stitch (types s1) (types s2)
-      <*> stitch (query s1) (query s2)
-      <*> optional (mutation s1) (mutation s2)
-      <*> optional (subscription s1) (subscription s2)
-      <*> stitch (directiveDefinitions s1) (directiveDefinitions s2)
+      <$> prop stitch types s1 s2
+      <*> prop stitch query s1 s2
+      <*> prop optional mutation s1 s2
+      <*> prop optional subscription s1 s2
+      <*> prop stitch directiveDefinitions s1 s2
 
 instance Stitching (TypeLib s) where
   stitch = (<:>)
