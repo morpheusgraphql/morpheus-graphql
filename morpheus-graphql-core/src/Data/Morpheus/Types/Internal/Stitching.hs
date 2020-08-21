@@ -33,6 +33,16 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Semigroup ((<>))
 import Prelude (($), (.))
 
+optional ::
+  (Monad m, Failure ValidationErrors m) =>
+  (a -> a -> m a) ->
+  Maybe a ->
+  Maybe a ->
+  m (Maybe a)
+optional _ Nothing y = pure y
+optional _ (Just x) Nothing = pure (Just x)
+optional f (Just x) (Just y) = Just <$> f x y
+
 class Stitching a where
   stitch :: (Monad m, Failure ValidationErrors m) => a -> a -> m a
 
@@ -41,8 +51,8 @@ instance Stitching (Schema s) where
     Schema
       <$> stitch (types s1) (types s2)
       <*> mergeOperation (query s1) (query s2)
-      <*> mergeOptional (mutation s1) (mutation s2)
-      <*> mergeOptional (subscription s1) (subscription s2)
+      <*> optional mergeOperation (mutation s1) (mutation s2)
+      <*> optional mergeOperation (subscription s1) (subscription s2)
       <*> stitch (directiveDefinitions s1) (directiveDefinitions s2)
 
 instance Stitching (TypeLib s) where
@@ -50,15 +60,6 @@ instance Stitching (TypeLib s) where
 
 instance Stitching [DirectiveDefinition s] where
   stitch x = pure . (x <>)
-
-mergeOptional ::
-  (Monad m, Failure ValidationErrors m) =>
-  Maybe (TypeDefinition OBJECT s) ->
-  Maybe (TypeDefinition OBJECT s) ->
-  m (Maybe (TypeDefinition OBJECT s))
-mergeOptional Nothing y = pure y
-mergeOptional (Just x) Nothing = pure (Just x)
-mergeOptional (Just x) (Just y) = Just <$> mergeOperation x y
 
 mergeOperation ::
   (Monad m, Failure ValidationErrors m) =>
