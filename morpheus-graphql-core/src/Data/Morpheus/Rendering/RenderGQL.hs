@@ -16,6 +16,7 @@ where
 
 -- MORPHEUS
 
+import qualified Data.Aeson as A
 import Data.Foldable (null)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe, maybe)
@@ -25,8 +26,11 @@ import Data.Text
     intercalate,
     pack,
   )
+import Data.Text.Encoding (decodeUtf8)
+import Data.ByteString.Lazy (toStrict)
 import Prelude
   ( (.),
+    ($),
     Bool (..),
     Float,
     Int,
@@ -58,6 +62,9 @@ instance RenderGQL Text where
 instance RenderGQL Bool where
   render True = "true"
   render False = "false"
+
+instance RenderGQL A.Value where
+  render x = decodeUtf8 $ toStrict $ A.encode x
 
 indent :: Rendering
 indent = "  "
