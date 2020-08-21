@@ -18,8 +18,7 @@ import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Failure (..),
-    Listable (..),
-    insertElems,
+    mergeWithResolution,
   )
 import Data.Morpheus.Types.Internal.AST
   ( DirectiveDefinition,
@@ -86,7 +85,7 @@ instance Stitching (TypeContent TRUE OBJECT s) where
     DataObject (i1 <> i2) <$> stitch fields1 fields2
 
 instance Stitching (FieldsDefinition cat s) where
-  stitch (Fields x) (Fields y) = Fields <$> insertElems upsert stitch x (elems y)
+  stitch (Fields x) (Fields y) = Fields <$> mergeWithResolution upsert stitch x y
 
 instance Stitching (FieldDefinition cat s) where
   stitch old new
