@@ -17,7 +17,8 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    mergeWithResolution,
+    mergeT,
+    runResolutionT,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Directive,
@@ -80,7 +81,7 @@ instance Stitching (Schema s) where
       <*> prop stitch directiveDefinitions s1 s2
 
 instance Stitching (TypeLib s) where
-  stitch = mergeWithResolution SHM.upsert stitch
+  stitch x y = runResolutionT (mergeT x y) SHM.upsert stitch
 
 instance Stitching [DirectiveDefinition s] where
   stitch = stitchSemiGroup
@@ -103,7 +104,7 @@ instance Stitching (TypeContent TRUE cat s) where
   stitch _ _ = failure (["schema Stitching works only for objects"] :: ValidationErrors)
 
 instance Stitching (FieldsDefinition cat s) where
-  stitch (Fields x) (Fields y) = Fields <$> mergeWithResolution OM.upsert stitch x y
+  stitch (Fields x) (Fields y) = Fields <$> runResolutionT (mergeT x y) OM.upsert stitch
 
 instance Stitching (FieldDefinition cat s) where
   stitch old new

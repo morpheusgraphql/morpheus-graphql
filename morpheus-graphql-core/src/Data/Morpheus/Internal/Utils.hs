@@ -39,8 +39,8 @@ module Data.Morpheus.Internal.Utils
     traverseCollection,
     (<.>),
     SemigroupM (..),
-    mergeWithResolution,
-    fromLisWithResolution,
+    fromListT,
+    mergeT,
     runResolutionT,
     ResolutionT,
   )
@@ -357,15 +357,15 @@ insertElems smap (x : xs) =
   insertWith x smap
     >>= flip insertElems xs
 
-fromLisWithResolution ::
+fromListT ::
   ( Monad m,
     RESOLUTION k a coll
   ) =>
   [a] ->
   ResolutionT a coll m coll
-fromLisWithResolution = insertElems empty
+fromListT = insertElems empty
 
-mergeWithResolution ::
+mergeT ::
   ( Monad m,
     KeyOf k a,
     Selectable k a coll,
@@ -374,7 +374,7 @@ mergeWithResolution ::
   coll ->
   coll ->
   ResolutionT a coll m coll
-mergeWithResolution c1 c2 = insertElems c1 (elems c2)
+mergeT c1 c2 = insertElems c1 (elems c2)
 
 safeUnionWith ::
   ( Failure ValidationErrors m,
