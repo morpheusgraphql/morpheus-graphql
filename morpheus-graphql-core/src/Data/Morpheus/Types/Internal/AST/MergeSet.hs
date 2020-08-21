@@ -35,7 +35,7 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
     elems,
-    insertElemsWithResolution,
+    fromLisWithResolution,
     member,
     mergeWithResolution,
   )
@@ -125,7 +125,7 @@ instance
   ) =>
   Merge (MergeSet VALID a)
   where
-  merge = safeJoin
+  merge path = mergeWithResolution upsert (resolveConflict path)
 
 instance
   ( Listable a (MergeSet VALID a),
@@ -135,7 +135,7 @@ instance
   ) =>
   Listable a (MergeSet VALID a)
   where
-  fromElems = safeFromList
+  fromElems = fromLisWithResolution upsert (resolveConflict [])
   elems = unpack
 
 instance Merge (MergeSet RAW a) where
@@ -144,12 +144,6 @@ instance Merge (MergeSet RAW a) where
 instance Listable a (MergeSet RAW a) where
   fromElems = pure . MergeSet
   elems = unpack
-
-safeFromList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [a] -> m (MergeSet opt a)
-safeFromList = insertElemsWithResolution upsert (resolveConflict []) empty
-
-safeJoin :: (Monad m, KeyOf k a, Eq a, Listable a (MergeSet opt a), Merge a, Failure ValidationErrors m) => [Ref] -> MergeSet opt a -> MergeSet opt a -> m (MergeSet opt a)
-safeJoin path = mergeWithResolution upsert (resolveConflict path)
 
 upsert :: (KeyOf k a) => a -> MergeSet opt a -> MergeSet opt a
 upsert value (MergeSet values)

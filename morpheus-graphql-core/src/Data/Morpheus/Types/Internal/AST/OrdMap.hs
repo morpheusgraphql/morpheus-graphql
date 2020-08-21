@@ -42,7 +42,6 @@ import Prelude
     (.),
     Eq,
     Show,
-    elem,
     error,
     otherwise,
   )

@@ -35,7 +35,7 @@ module Data.Morpheus.Internal.Utils
     (<.>),
     SemigroupM (..),
     mergeWithResolution,
-    insertElemsWithResolution,
+    fromLisWithResolution,
   )
 where
 
@@ -300,6 +300,18 @@ insertWith upsert resolve value ordSet =
     ordSet
   where
     stitchValue oldValue = (`upsert` ordSet) <$> resolve oldValue value
+
+fromLisWithResolution ::
+  ( Monad m,
+    KeyOf k a,
+    Selectable k a coll,
+    Collection a coll
+  ) =>
+  (a -> coll -> coll) ->
+  (a -> a -> m a) ->
+  [a] ->
+  m coll
+fromLisWithResolution upsert resolve = insertElemsWithResolution upsert resolve empty
 
 insertElemsWithResolution ::
   (Monad m, KeyOf k a, Selectable k a coll) =>
