@@ -44,7 +44,6 @@ import Prelude
   ( (.),
     Eq,
     Show,
-    otherwise,
   )
 
 newtype SafeHashMap k a = SafeHashMap
@@ -77,11 +76,7 @@ instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a
   elems = elems . unpackSafeHashMap
 
 upsert :: (Eq k, Hashable k, KeyOf k a) => a -> SafeHashMap k a -> SafeHashMap k a
-upsert value hm@(SafeHashMap values)
-  | key `HM.member` values = SafeHashMap (HM.insert key value values)
-  | otherwise = hm
-  where
-    key = keyOf value
+upsert value (SafeHashMap values) = SafeHashMap (HM.insert (keyOf value) value values)
 
 insert ::
   ( NameCollision a,
