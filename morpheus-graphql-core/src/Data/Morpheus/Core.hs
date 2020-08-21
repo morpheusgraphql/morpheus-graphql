@@ -41,6 +41,7 @@ import Data.Morpheus.Internal.Utils
   ( (<:>),
     empty,
     failure,
+    prop,
   )
 import Data.Morpheus.Parser
   ( parseRequest,
@@ -82,6 +83,7 @@ import Data.Morpheus.Types.Internal.Resolving
     resultOr,
     runRootResModel,
   )
+import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
 import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Data.Morpheus.Validation.Query.Validation
@@ -97,13 +99,26 @@ data App event (m :: * -> *)
       { appResolvers :: RootResModel event m,
         appSchema :: Schema CONST
       }
-  | InvalidApp
+  | AppFailures
       { appErrors :: GQLErrors
       }
 
+instance Semigroup (App event m) where
+  (AppFailures err1) <> (AppFailures err2) = AppFailures (err1 <> err2)
+  (AppFailures err) <> App {} = AppFailures err
+  App {} <> (AppFailures err) = AppFailures err
+  x@App {} <> y@App {} =
+    resultOr
+      AppFailures
+      id
+      ( App
+          <$> prop stitch appResolvers x y
+          <*> prop stitch appSchema x y
+      )
+
 runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
-runAppWithConfig InvalidApp {appErrors} = const $ const $ failure appErrors
+runAppWithConfig AppFailures {appErrors} = const $ const $ failure appErrors
 
 runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
 runApp app = runAppWithConfig app defaultConfig

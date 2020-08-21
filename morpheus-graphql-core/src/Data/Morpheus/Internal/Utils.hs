@@ -43,6 +43,7 @@ module Data.Morpheus.Internal.Utils
     mergeT,
     runResolutionT,
     ResolutionT,
+    prop,
   )
 where
 
@@ -104,6 +105,9 @@ import Prelude
     otherwise,
     snd,
   )
+
+prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
+prop f fSel a1 a2 = f (fSel a1) (fSel a2)
 
 mapText :: (String -> String) -> Token -> Token
 mapText f = T.pack . f . T.unpack

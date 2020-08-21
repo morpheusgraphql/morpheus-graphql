@@ -18,6 +18,7 @@ import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     mergeT,
+    prop,
     runResolutionT,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -35,15 +36,13 @@ import Data.Morpheus.Types.Internal.AST
   )
 import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM (upsert)
 import qualified Data.Morpheus.Types.Internal.AST.SafeHashMap as SHM (upsert)
+import Data.Morpheus.Types.Internal.Resolving (RootResModel)
 import Data.Semigroup (Semigroup (..))
 import Prelude
   ( (.),
     Eq (..),
     otherwise,
   )
-
-prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
-prop f fSel a1 a2 = f (fSel a1) (fSel a2)
 
 equal :: (Eq a, Applicative m, Failure ValidationErrors m) => ValidationErrors -> a -> a -> m a
 equal err p1 p2
@@ -100,3 +99,6 @@ instance Stitching (FieldDefinition cat s) where
   stitch old new
     | old == new = pure old
     | otherwise = failure [nameCollision new]
+
+instance Stitching (RootResModel e m) where
+  stitch _ = pure
