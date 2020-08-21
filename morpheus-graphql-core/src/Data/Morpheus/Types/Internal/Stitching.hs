@@ -20,9 +20,9 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( DirectiveDefinition,
+    Fields (..),
     FieldsDefinition,
     OBJECT,
-    OUT,
     Schema (..),
     TRUE,
     TypeContent (..),
@@ -72,5 +72,5 @@ instance Stitching (TypeContent TRUE OBJECT s) where
   stitch (DataObject i1 fields1) (DataObject i2 fields2) =
     DataObject (i1 <> i2) <$> stitch fields1 fields2
 
-instance Stitching (FieldsDefinition OUT s) where
-  stitch = (<:>)
+instance Stitching (FieldsDefinition cat s) where
+  stitch (Fields x) (Fields y) = Fields <$> x <:> y
