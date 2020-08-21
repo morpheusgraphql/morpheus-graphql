@@ -16,6 +16,7 @@
 module Data.Morpheus.Types.Internal.AST.SafeHashMap
   ( SafeHashMap,
     insert,
+    upsert,
   )
 where
 
@@ -43,6 +44,7 @@ import Prelude
   ( (.),
     Eq,
     Show,
+    otherwise,
   )
 
 newtype SafeHashMap k a = SafeHashMap
@@ -73,6 +75,13 @@ instance (NameCollision a, KeyOf k a) => Merge (SafeHashMap k a) where
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a) where
   fromElems = fmap SafeHashMap . fromElems
   elems = elems . unpackSafeHashMap
+
+upsert :: (Eq k, Hashable k, KeyOf k a) => a -> SafeHashMap k a -> SafeHashMap k a
+upsert value hm@(SafeHashMap values)
+  | key `HM.member` values = SafeHashMap (HM.insert key value values)
+  | otherwise = hm
+  where
+    key = keyOf value
 
 insert ::
   ( NameCollision a,

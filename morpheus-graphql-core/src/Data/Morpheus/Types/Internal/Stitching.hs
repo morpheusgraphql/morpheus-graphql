@@ -16,12 +16,12 @@ import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    Failure (..),
+  ( Failure (..),
     mergeWithResolution,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( DirectiveDefinition,
+  ( ANY,
+    DirectiveDefinition,
     FieldDefinition,
     Fields (..),
     FieldsDefinition,
@@ -33,7 +33,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeLib,
     ValidationErrors,
   )
-import Data.Morpheus.Types.Internal.AST.OrdMap (upsert)
+import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM (upsert)
+import qualified Data.Morpheus.Types.Internal.AST.SafeHashMap as SHM (upsert)
 import Data.Semigroup ((<>))
 import Prelude
   ( ($),
@@ -70,10 +71,13 @@ instance Stitching (Schema s) where
       <*> prop stitch directiveDefinitions s1 s2
 
 instance Stitching (TypeLib s) where
-  stitch = (<:>)
+  stitch = mergeWithResolution SHM.upsert stitch
 
 instance Stitching [DirectiveDefinition s] where
   stitch x = pure . (x <>)
+
+instance Stitching (TypeDefinition ANY s) where
+  stitch x y = failure [nameCollision y]
 
 instance Stitching (TypeDefinition OBJECT s) where
   stitch ty1 TypeDefinition {typeContent = cont2, ..} = do
@@ -85,7 +89,7 @@ instance Stitching (TypeContent TRUE OBJECT s) where
     DataObject (i1 <> i2) <$> stitch fields1 fields2
 
 instance Stitching (FieldsDefinition cat s) where
-  stitch (Fields x) (Fields y) = Fields <$> mergeWithResolution upsert stitch x y
+  stitch (Fields x) (Fields y) = Fields <$> mergeWithResolution OM.upsert stitch x y
 
 instance Stitching (FieldDefinition cat s) where
   stitch old new
