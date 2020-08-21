@@ -75,8 +75,8 @@ instance Stitching (Schema s) where
     Schema
       <$> prop stitch types s1 s2
       <*> prop stitch query s1 s2
-      <*> prop optional mutation s1 s2
-      <*> prop optional subscription s1 s2
+      <*> prop stitch mutation s1 s2
+      <*> prop stitch subscription s1 s2
       <*> prop stitch directiveDefinitions s1 s2
 
 instance Stitching (TypeLib s) where
