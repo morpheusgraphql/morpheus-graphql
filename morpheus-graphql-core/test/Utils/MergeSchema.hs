@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( resultOr,
   )
+import Data.Morpheus.Types.Internal.Stitching (Stitching (stitch))
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Data.Traversable (traverse)
@@ -84,7 +85,7 @@ readSchemaResult = readSchema . (<> "/success")
 
 joinSchemas :: [Schema VALID] -> IO (Schema VALID)
 joinSchemas [] = fail "no empty case"
-joinSchemas (x : xs) = resultOr (fail . show) pure (foldrM (<:>) x xs)
+joinSchemas (x : xs) = resultOr (fail . show) pure (foldrM stitch x xs)
 
 schemaCase :: FilePath -> TestTree
 schemaCase url = testCase url $ do
