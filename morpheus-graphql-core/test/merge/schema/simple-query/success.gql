@@ -7,6 +7,6 @@ type Type2 {
 }
 
 type Query {
-  name: String
   id: ID
+  name: String
 }
