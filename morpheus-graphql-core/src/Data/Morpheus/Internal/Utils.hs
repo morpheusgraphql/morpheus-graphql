@@ -34,11 +34,13 @@ module Data.Morpheus.Internal.Utils
     traverseCollection,
     (<.>),
     SemigroupM (..),
+    mergeWithResolution,
+    insertElemsWithResolution,
   )
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<), foldM)
+import Control.Monad ((=<<), (>>=), foldM)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -79,6 +81,7 @@ import Text.Megaparsec.Stream (Stream)
 import Prelude
   ( ($),
     (.),
+    (<$>),
     Bool (..),
     Either (..),
     Eq (..),
@@ -88,6 +91,7 @@ import Prelude
     Ord,
     String,
     const,
+    flip,
     fst,
     length,
     otherwise,
@@ -280,6 +284,47 @@ safeFromList values = safeUnionWith HM.empty (fmap toPair values)
 
 safeJoin :: (Failure ValidationErrors m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
 safeJoin hm newls = safeUnionWith hm (HM.toList newls)
+
+insertWith ::
+  (Monad m, KeyOf k a, Selectable k a coll) =>
+  (a -> coll -> coll) ->
+  (a -> a -> m a) ->
+  a ->
+  coll ->
+  m coll
+insertWith upsert resolve value ordSet =
+  selectOr
+    (pure $ upsert value ordSet)
+    stitchValue
+    (keyOf value)
+    ordSet
+  where
+    stitchValue oldValue = (`upsert` ordSet) <$> resolve oldValue value
+
+insertElemsWithResolution ::
+  (Monad m, KeyOf k a, Selectable k a coll) =>
+  (a -> coll -> coll) ->
+  (a -> a -> m a) ->
+  coll ->
+  [a] ->
+  m coll
+insertElemsWithResolution _ _ smap [] = pure smap
+insertElemsWithResolution upsert resolve smap (x : xs) =
+  insertWith upsert resolve x smap
+    >>= flip (insertElemsWithResolution upsert resolve) xs
+
+mergeWithResolution ::
+  ( Monad m,
+    KeyOf k a,
+    Selectable k a coll,
+    Listable a coll
+  ) =>
+  (a -> coll -> coll) ->
+  (a -> a -> m a) ->
+  coll ->
+  coll ->
+  m coll
+mergeWithResolution upsert resol c1 c2 = insertElemsWithResolution upsert resol c1 (elems c2)
 
 safeUnionWith ::
   ( Failure ValidationErrors m,

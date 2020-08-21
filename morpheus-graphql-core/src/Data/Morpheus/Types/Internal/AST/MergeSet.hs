@@ -23,8 +23,8 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..))
 import Data.Foldable (Foldable (..))
-import Data.Functor ((<$>), Functor (..))
-import Data.List ((\\), find)
+import Data.Functor (Functor (..))
+import Data.List (find)
 import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( (<:>),
@@ -35,6 +35,9 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
     elems,
+    insertElemsWithResolution,
+    member,
+    mergeWithResolution,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Ref,
@@ -57,7 +60,6 @@ import Prelude
     (.),
     Eq (..),
     Show,
-    flip,
     otherwise,
   )
 
@@ -144,27 +146,21 @@ instance Listable a (MergeSet RAW a) where
   elems = unpack
 
 safeFromList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [a] -> m (MergeSet opt a)
-safeFromList = insertList [] empty
+safeFromList = insertElemsWithResolution upsert (resolveConflict []) empty
 
 safeJoin :: (Monad m, KeyOf k a, Eq a, Listable a (MergeSet opt a), Merge a, Failure ValidationErrors m) => [Ref] -> MergeSet opt a -> MergeSet opt a -> m (MergeSet opt a)
-safeJoin path hm1 hm2 = insertList path hm1 (elems hm2)
+safeJoin path = mergeWithResolution upsert (resolveConflict path)
 
-insertList :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [Ref] -> MergeSet opt a -> [a] -> m (MergeSet opt a)
-insertList _ smap [] = pure smap
-insertList path smap (x : xs) = insert path smap x >>= flip (insertList path) xs
-
-insert :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [Ref] -> MergeSet opt a -> a -> m (MergeSet opt a)
-insert path mSet@(MergeSet ls) currentValue = MergeSet <$> __insert
+upsert :: (KeyOf k a) => a -> MergeSet opt a -> MergeSet opt a
+upsert value (MergeSet values)
+  | keyOf value `member` values = MergeSet (fmap replaceBy values)
+  | otherwise = MergeSet (values <> [value])
   where
-    __insert =
-      selectOr
-        (pure $ ls <> [currentValue])
-        mergeWith
-        (keyOf currentValue)
-        mSet
-    ------------------
-    mergeWith oldValue
-      | oldValue == currentValue = pure ls
-      | otherwise = do
-        mergedValue <- merge path oldValue currentValue
-        pure $ (ls \\ [oldValue]) <> [mergedValue]
+    replaceBy oldValue
+      | keyOf value == keyOf oldValue = value
+      | otherwise = oldValue
+
+resolveConflict :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
+resolveConflict path oldValue newValue
+  | oldValue == newValue = pure oldValue
+  | otherwise = merge path oldValue newValue
