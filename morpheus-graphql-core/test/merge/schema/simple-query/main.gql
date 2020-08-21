@@ -4,10 +4,8 @@ type Type1 {
 
 type Type2 {
   name: String
-  field2: String
 }
 
 type Query {
   name: String
-  id: ID
 }
