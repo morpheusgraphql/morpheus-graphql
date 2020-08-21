@@ -105,7 +105,7 @@ module Data.Morpheus.Types.Internal.AST
     GQLQuery (..),
     Variables,
     unsafeFromFields,
-    OrdMap,
+    OrdMap (..),
     GQLError (..),
     GQLErrors,
     ObjectEntry (..),

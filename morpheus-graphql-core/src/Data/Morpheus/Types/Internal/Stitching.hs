@@ -11,18 +11,25 @@ module Data.Morpheus.Types.Internal.Stitching
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad (Monad)
+import Control.Monad (Monad (..))
 import Data.Functor ((<$>))
+import Data.Hashable (Hashable)
 import Data.Maybe (Maybe (..))
+import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Failure,
+    KeyOf (..),
+    Listable (..),
+    selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( DirectiveDefinition,
+    FieldName,
     Fields (..),
     FieldsDefinition,
     OBJECT,
+    OrdMap (..),
     Schema (..),
     TRUE,
     TypeContent (..),
@@ -30,8 +37,15 @@ import Data.Morpheus.Types.Internal.AST
     TypeLib,
     ValidationErrors,
   )
+import Data.Morpheus.Types.Internal.AST.OrdMap (upsert)
 import Data.Semigroup ((<>))
-import Prelude (($), (.))
+import Prelude
+  ( ($),
+    (.),
+    Eq (..),
+    flip,
+    otherwise,
+  )
 
 optional ::
   ( Monad m,
@@ -76,4 +90,23 @@ instance Stitching (TypeContent TRUE OBJECT s) where
     DataObject (i1 <> i2) <$> stitch fields1 fields2
 
 instance Stitching (FieldsDefinition cat s) where
-  stitch (Fields x) (Fields y) = Fields <$> x <:> y
+  stitch (Fields x) (Fields y) = Fields <$> safeJoin x y
+
+safeJoin :: (Monad m, KeyOf k a, Eq a, Stitching a, Listable a (OrdMap k a), Failure ValidationErrors m) => OrdMap k a -> OrdMap k a -> m (OrdMap k a)
+safeJoin hm1 hm2 = insertList hm1 (elems hm2)
+
+insertList :: (Monad m, Eq a, KeyOf k a, Stitching a, Failure ValidationErrors m) => OrdMap k a -> [a] -> m (OrdMap k a)
+insertList smap [] = pure smap
+insertList smap (x : xs) = insert x smap >>= flip insertList xs
+
+insert :: (Monad m, Eq a, KeyOf k a, Stitching a, Failure ValidationErrors m) => a -> OrdMap k a -> m (OrdMap k a)
+insert currentValue ordSet =
+  selectOr
+    (pure (upsert currentValue ordSet))
+    stitchValue
+    (keyOf currentValue)
+    ordSet
+  where
+    stitchValue oldValue
+      | oldValue == currentValue = pure ordSet
+      | otherwise = (`upsert` ordSet) <$> stitch oldValue currentValue

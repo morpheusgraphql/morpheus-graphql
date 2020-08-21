@@ -14,6 +14,7 @@
 module Data.Morpheus.Types.Internal.AST.OrdMap
   ( OrdMap (..),
     unsafeFromValues,
+    upsert,
   )
 where
 
@@ -41,7 +42,9 @@ import Prelude
     (.),
     Eq,
     Show,
+    elem,
     error,
+    otherwise,
   )
 
 -- OrdMap
@@ -90,6 +93,14 @@ instance (NameCollision a, KeyOf k a) => Merge (OrdMap k a) where
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) where
   fromElems values = OrdMap (fmap keyOf values) <$> fromElems values
   elems = getElements
+
+upsert :: (Eq k, Hashable k, KeyOf k a) => a -> OrdMap k a -> OrdMap k a
+upsert value (OrdMap keys values)
+  | key `elem` keys = OrdMap (keys <> [key]) newValues
+  | otherwise = OrdMap keys newValues
+  where
+    key = keyOf value
+    newValues = HM.insert key value values
 
 unsafeFromValues ::
   ( KeyOf k a,
