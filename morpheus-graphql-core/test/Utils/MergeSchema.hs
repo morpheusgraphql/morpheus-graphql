@@ -1,5 +1,8 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.MergeSchema
@@ -8,9 +11,17 @@ module Utils.MergeSchema
 where
 
 import Control.Applicative (pure)
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), (>>=))
 import Control.Monad.Fail (fail)
+import Data.Aeson
+  ( FromJSON (..),
+    ToJSON (..),
+    eitherDecode,
+  )
 import qualified Data.ByteString.Lazy as L (readFile)
+import Data.Either (either)
+import Data.Foldable (foldrM)
+import Data.Functor (fmap)
 import Data.Morpheus.Core
   ( parseGQLDocument,
     render,
@@ -25,38 +36,61 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertFailure, testCase)
+import Data.Traversable (traverse)
+import GHC.Generics (Generic)
+import Test.Tasty
+  ( TestTree,
+    testGroup,
+  )
+import Test.Tasty.HUnit
+  ( assertFailure,
+    testCase,
+  )
 import Prelude
   ( ($),
     (.),
+    Bool (..),
     Eq (..),
     FilePath,
     IO,
+    Maybe (..),
     otherwise,
     show,
   )
 
-readSource :: FilePath -> IO (Schema VALID)
-readSource =
-  L.readFile . ("test/" <>)
+data Case = Case
+  { schemas :: [FilePath],
+    success :: Maybe Bool
+  }
+  deriving (Generic, FromJSON, ToJSON)
+
+readSchema :: FilePath -> IO (Schema VALID)
+readSchema =
+  L.readFile . ("test/" <>) . (<> ".gql")
     >=> (resultOr (fail . show) pure . parseGQLDocument)
 
-readSchema1 :: FilePath -> IO (Schema VALID)
-readSchema1 = readSource . (<> "/schema-1.gql")
+readSchemas :: Case -> IO [Schema VALID]
+readSchemas = traverse readSchema . schemas
 
-readSchema2 :: FilePath -> IO (Schema VALID)
-readSchema2 = readSource . (<> "/schema-2.gql")
+getCase :: FilePath -> IO Case
+getCase url =
+  L.readFile ("test/" <> url <> "/case.json")
+    >>= either fail prefix . eitherDecode
+  where
+    prefix Case {..} = pure $ Case {schemas = fmap ((url <> "/") <>) schemas, ..}
 
 readSchemaResult :: FilePath -> IO (Schema VALID)
-readSchemaResult = readSource . (<> "/schema-result.gql")
+readSchemaResult = readSchema . (<> "/success")
+
+joinSchemas :: [Schema VALID] -> IO (Schema VALID)
+joinSchemas [] = fail "no empty case"
+joinSchemas (x : xs) = resultOr (fail . show) pure (foldrM (<:>) x xs)
 
 schemaCase :: FilePath -> TestTree
 schemaCase url = testCase url $ do
-  schema1 <- readSchema1 url
-  schema2 <- readSchema2 url
+  schemas <- getCase url >>= readSchemas
   expected <- readSchemaResult url
-  result <- resultOr (fail . show) pure (schema1 <:> schema2)
+  result <- joinSchemas schemas
   assertion expected result
 
 assertion :: Schema VALID -> Schema VALID -> IO ()

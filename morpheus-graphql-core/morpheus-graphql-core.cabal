@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e541577ac34f57589cdda00342bccff4ee8125a976689dc00e54aca2f3fd2883
+-- hash: 47c8d632fa5a6b172a6dfd6941838b6f82703327bb399311f85a462f5d2cb914
 
 name:           morpheus-graphql-core
 version:        0.14.1
@@ -37,7 +37,7 @@ data-files:
     test/api/validation/fragment/schema.gql
     test/merge/schema/simple-query/schema-1.gql
     test/merge/schema/simple-query/schema-2.gql
-    test/merge/schema/simple-query/schema-result.gql
+    test/merge/schema/simple-query/success.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -87,6 +87,7 @@ data-files:
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
     test/api/validation/fragment/resolvers.json
+    test/merge/schema/simple-query/case.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
