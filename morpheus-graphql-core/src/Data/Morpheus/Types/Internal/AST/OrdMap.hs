@@ -96,8 +96,8 @@ instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) whe
 
 upsert :: (Eq k, Hashable k, KeyOf k a) => a -> OrdMap k a -> OrdMap k a
 upsert value (OrdMap keys values)
-  | key `elem` keys = OrdMap (keys <> [key]) newValues
-  | otherwise = OrdMap keys newValues
+  | key `elem` keys = OrdMap keys newValues
+  | otherwise = OrdMap (keys <> [key]) newValues
   where
     key = keyOf value
     newValues = HM.insert key value values

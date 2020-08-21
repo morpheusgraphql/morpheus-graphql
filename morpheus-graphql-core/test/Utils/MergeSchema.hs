@@ -20,13 +20,12 @@ import Data.Aeson
   )
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.Either (either)
-import Data.Foldable (foldrM)
+import Data.Foldable (foldlM)
 import Data.Functor (fmap)
 import Data.Morpheus.Core
   ( parseGQLDocument,
     render,
   )
-import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
     VALID,
@@ -85,7 +84,7 @@ readSchemaResult = readSchema . (<> "/success")
 
 joinSchemas :: [Schema VALID] -> IO (Schema VALID)
 joinSchemas [] = fail "no empty case"
-joinSchemas (x : xs) = resultOr (fail . show) pure (foldrM stitch x xs)
+joinSchemas (x : xs) = resultOr (fail . show) pure (foldlM stitch x xs)
 
 schemaCase :: FilePath -> TestTree
 schemaCase url = testCase url $ do
