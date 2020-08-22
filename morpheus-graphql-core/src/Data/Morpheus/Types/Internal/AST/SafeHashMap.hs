@@ -15,8 +15,8 @@
 
 module Data.Morpheus.Types.Internal.AST.SafeHashMap
   ( SafeHashMap,
+    unsafeFromValues,
     insert,
-    upsert,
   )
 where
 
@@ -36,6 +36,7 @@ import Data.Morpheus.Internal.Utils
     Listable (..),
     Merge (..),
     Selectable (..),
+    toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base (ValidationErrors)
 import Data.Traversable (Traversable (..))
@@ -75,8 +76,8 @@ instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a
   fromElems = fmap SafeHashMap . fromElems
   elems = elems . unpackSafeHashMap
 
-upsert :: (Eq k, Hashable k, KeyOf k a) => a -> SafeHashMap k a -> SafeHashMap k a
-upsert value (SafeHashMap values) = SafeHashMap (HM.insert (keyOf value) value values)
+unsafeFromValues :: (Eq k, KeyOf k a) => [a] -> SafeHashMap k a
+unsafeFromValues = SafeHashMap . HM.fromList . fmap toPair
 
 insert ::
   ( NameCollision a,

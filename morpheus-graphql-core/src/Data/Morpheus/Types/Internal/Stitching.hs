@@ -34,8 +34,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeLib,
     ValidationErrors,
   )
-import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM (upsert)
-import qualified Data.Morpheus.Types.Internal.AST.SafeHashMap as SHM (upsert)
+import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM (unsafeFromValues)
+import qualified Data.Morpheus.Types.Internal.AST.SafeHashMap as SHM (unsafeFromValues)
 import Data.Semigroup (Semigroup (..))
 import Prelude
   ( (.),
@@ -69,7 +69,7 @@ instance Stitching (Schema s) where
       <*> prop stitch directiveDefinitions s1 s2
 
 instance Stitching (TypeLib s) where
-  stitch x y = runResolutionT (mergeT x y) SHM.upsert stitch
+  stitch x y = runResolutionT (mergeT x y) SHM.unsafeFromValues stitch
 
 instance Stitching [DirectiveDefinition s] where
   stitch = concatM
@@ -92,7 +92,7 @@ instance Stitching (TypeContent TRUE cat s) where
   stitch _ _ = failure (["Schema Stitching works only for objects"] :: ValidationErrors)
 
 instance Stitching (FieldsDefinition cat s) where
-  stitch (Fields x) (Fields y) = Fields <$> runResolutionT (mergeT x y) OM.upsert stitch
+  stitch (Fields x) (Fields y) = Fields <$> runResolutionT (mergeT x y) OM.unsafeFromValues stitch
 
 instance Stitching (FieldDefinition cat s) where
   stitch old new

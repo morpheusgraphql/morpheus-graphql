@@ -126,7 +126,7 @@ instance
   ) =>
   Merge (MergeSet VALID a)
   where
-  merge path x y = runResolutionT (mergeT x y) upsert (resolveConflict path)
+  merge path x y = runResolutionT (mergeT x y) MergeSet (resolveConflict path)
 
 instance
   ( Listable a (MergeSet VALID a),
@@ -136,7 +136,7 @@ instance
   ) =>
   Listable a (MergeSet VALID a)
   where
-  fromElems xs = runResolutionT (fromListT xs) upsert (resolveConflict [])
+  fromElems xs = runResolutionT (fromListT xs) MergeSet (resolveConflict [])
   elems = unpack
 
 instance Merge (MergeSet RAW a) where
