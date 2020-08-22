@@ -36,7 +36,6 @@ import Data.Morpheus.Internal.Utils
     Selectable (..),
     elems,
     fromListT,
-    member,
     mergeT,
     resolveWith,
     runResolutionT,
@@ -146,15 +145,6 @@ instance Merge (MergeSet RAW a) where
 instance Listable a (MergeSet RAW a) where
   fromElems = pure . MergeSet
   elems = unpack
-
-upsert :: (KeyOf k a) => a -> MergeSet opt a -> MergeSet opt a
-upsert value (MergeSet values)
-  | keyOf value `member` values = MergeSet (fmap replaceBy values)
-  | otherwise = MergeSet (values <> [value])
-  where
-    replaceBy oldValue
-      | keyOf value == keyOf oldValue = value
-      | otherwise = oldValue
 
 resolveConflict :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 resolveConflict path oldValue newValue

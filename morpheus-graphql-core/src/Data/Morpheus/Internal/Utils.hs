@@ -327,8 +327,8 @@ resolveDupsM xs = do
   res <- asks resolveDups
   lift (res xs)
 
-fromListM :: Monad m => [a] -> ResolutionT a coll m coll
-fromListM xs = (xs &) <$> asks fromNoDups
+fromNoDupsM :: Monad m => [a] -> ResolutionT a coll m coll
+fromNoDupsM xs = (xs &) <$> asks fromNoDups
 
 insertWithList :: (Eq k, Hashable k) => (k, NonEmpty a) -> [(k, NonEmpty a)] -> [(k, NonEmpty a)]
 insertWithList (key, value) values
@@ -350,10 +350,10 @@ fromListT ::
   RESOLUTION k a coll m =>
   [a] ->
   ResolutionT a coll m coll
-fromListT = traverse (resolveDupsM . snd) . fromListDupps >=> fromListM
+fromListT = traverse (resolveDupsM . snd) . fromListDupps >=> fromNoDupsM
 
 mergeT :: RESOLUTION k a coll m => coll -> coll -> ResolutionT a coll m coll
-mergeT c1 c2 = traverse (resolveDupsM . snd) (fromListDupps (elems c1 <> elems c2)) >>= fromListM
+mergeT c1 c2 = traverse (resolveDupsM . snd) (fromListDupps (elems c1 <> elems c2)) >>= fromNoDupsM
 
 resolveWith ::
   Monad m =>
