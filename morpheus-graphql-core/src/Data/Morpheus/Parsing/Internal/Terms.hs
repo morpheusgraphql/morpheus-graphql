@@ -32,9 +32,9 @@ module Data.Morpheus.Parsing.Internal.Terms
 where
 
 import Control.Monad ((>=>))
-import Data.Functor (($>))
 -- MORPHEUS
-
+import Control.Monad.Trans (lift)
+import Data.Functor (($>))
 import Data.Morpheus.Internal.Utils
   ( Collection,
     KeyOf,
@@ -241,7 +241,7 @@ collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
 
 setOf :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
-setOf = collection >=> fromElems
+setOf = collection >=> lift . fromElems
 
 optionalCollection :: Collection a c => Parser c -> Parser c
 optionalCollection x = x <|> pure empty
@@ -259,7 +259,7 @@ uniqTuple parser =
       (char '(' *> ignoredTokens)
       (char ')' *> ignoredTokens)
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
-      >>= fromElems
+      >>= lift . fromElems
 
 uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty

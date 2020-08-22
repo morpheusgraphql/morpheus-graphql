@@ -259,9 +259,6 @@ instance Failure error (Either error) where
 instance (Monad m, Failure errors m) => Failure errors (ReaderT ctx m) where
   failure = lift . failure
 
-instance (Stream s, Ord e, Failure GQLErrors m) => Failure ValidationErrors (ParsecT e s m) where
-  failure x = ParsecT $ \_ _ _ _ _ -> failure (fmap toGQLError x)
-
 mapFst :: (a -> a') -> (a, b) -> (a', b)
 mapFst f (a, b) = (f a, b)
 

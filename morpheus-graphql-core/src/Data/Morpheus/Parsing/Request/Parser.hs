@@ -3,13 +3,13 @@
 
 module Data.Morpheus.Parsing.Request.Parser (parseGQL) where
 
+--
+-- MORPHEUS
+import Control.Monad.Trans (lift)
 import qualified Data.Aeson as Aeson
   ( Value (..),
   )
 import Data.HashMap.Lazy (toList)
---
--- MORPHEUS
-
 import Data.Morpheus.Internal.Utils
   ( fromElems,
   )
@@ -46,7 +46,7 @@ request :: Parser GQLQuery
 request = label "GQLQuery" $ do
   ignoredTokens
   operation <- parseOperation
-  fragments <- manyTill parseFragmentDefinition eof >>= fromElems
+  fragments <- manyTill parseFragmentDefinition eof >>= lift . fromElems
   pure GQLQuery {operation, fragments, inputVariables = []}
 
 parseGQL :: GQLRequest -> Eventless GQLQuery
