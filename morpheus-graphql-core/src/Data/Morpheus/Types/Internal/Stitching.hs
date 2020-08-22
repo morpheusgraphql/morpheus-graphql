@@ -112,7 +112,7 @@ rootProp f x y = do
   mergeM [] x' y'
 
 stitchSubscriptions :: Failure ValidationErrors m => Maybe a -> Maybe a -> m (Maybe a)
-stitchSubscriptions Just {} Just {} = failure (["incompatiple channels"] :: ValidationErrors)
+stitchSubscriptions Just {} Just {} = failure (["can't merge  subscription applications"] :: ValidationErrors)
 stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
 
