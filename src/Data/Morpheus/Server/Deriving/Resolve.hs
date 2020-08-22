@@ -95,4 +95,4 @@ deriveApp ::
   App event m
 deriveApp root = case deriveSchema (Identity root) of
   Success {result} -> App (deriveModel root) result
-  Failure {errors} -> InvalidApp errors
+  Failure {errors} -> AppFailures errors
