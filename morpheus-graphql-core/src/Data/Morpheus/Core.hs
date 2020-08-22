@@ -112,7 +112,10 @@ instance Eq (Channel e) => Semigroup (App e m) where
     resultOr
       AppFailure
       id
-      (App <$> prop stitch appResolvers x y <*> prop stitch appSchema x y)
+      ( App
+          <$> prop stitch appResolvers x y
+          <*> prop stitch appSchema x y
+      )
 
 runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
