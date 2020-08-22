@@ -59,7 +59,7 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Foldable (foldlM, traverse_)
+import Data.Foldable (foldlM, null, traverse_)
 import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
@@ -220,7 +220,7 @@ class Listable a coll | coll -> a where
   fromElems :: (Monad m, Failure ValidationErrors m) => [a] -> m coll
 
 instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
-  fromElems = safeFromList
+  fromElems xs = runResolutionT (fromListT xs) hmUnsafeFromValues failOnDups
   elems = HM.elems
 
 keys :: (KeyOf k a, Listable a coll) => coll -> [k]
@@ -234,7 +234,7 @@ class Merge a where
   merge :: (Monad m, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 
 instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
-  merge _ = safeJoin
+  merge _ x y = runResolutionT (fromListT $ HM.elems x <> HM.elems y) hmUnsafeFromValues failOnDups
 
 (<:>) :: (Monad m, Merge a, Failure ValidationErrors m) => a -> a -> m a
 (<:>) = merge []
@@ -366,26 +366,6 @@ hmUnsafeFromValues :: (Eq k, KeyOf k a) => [a] -> HashMap k a
 hmUnsafeFromValues = HM.fromList . fmap toPair
 
 failOnDups :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
-failOnDups (x :| []) = pure x
-failOnDups (_ :| xs) = failure $ fmap nameCollision (x : xs)
-
-safeFromList ::
-  ( Failure ValidationErrors m,
-    NameCollision a,
-    KeyOf k a,
-    Monad m
-  ) =>
-  [a] ->
-  m (HashMap k a)
-safeFromList xs = runResolutionT (fromListT xs) hmUnsafeFromValues failOnDups
-
-safeJoin ::
-  ( Failure ValidationErrors m,
-    NameCollision a,
-    KeyOf k a,
-    Monad m
-  ) =>
-  HashMap k a ->
-  HashMap k a ->
-  m (HashMap k a)
-safeJoin x y = runResolutionT (fromListT $ HM.elems x <> HM.elems y) hmUnsafeFromValues failOnDups
+failOnDups (x :| xs)
+  | null xs = pure x
+  | otherwise = failure $ fmap nameCollision (x : xs)
