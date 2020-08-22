@@ -100,23 +100,23 @@ data App event (m :: * -> *)
       { appResolvers :: RootResModel event m,
         appSchema :: Schema CONST
       }
-  | AppFailures
+  | AppFailure
       { appErrors :: GQLErrors
       }
 
 instance Eq (Channel e) => Semigroup (App e m) where
-  (AppFailures err1) <> (AppFailures err2) = AppFailures (err1 <> err2)
-  (AppFailures err) <> App {} = AppFailures err
-  App {} <> (AppFailures err) = AppFailures err
+  (AppFailure err1) <> (AppFailure err2) = AppFailure (err1 <> err2)
+  (AppFailure err) <> App {} = AppFailure err
+  App {} <> (AppFailure err) = AppFailure err
   x@App {} <> y@App {} =
     resultOr
-      AppFailures
+      AppFailure
       id
       (App (appResolvers x <> appResolvers y) <$> prop stitch appSchema x y)
 
 runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
-runAppWithConfig AppFailures {appErrors} = const $ const $ failure appErrors
+runAppWithConfig AppFailure {appErrors} = const $ const $ failure appErrors
 
 runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
 runApp app = runAppWithConfig app defaultConfig
