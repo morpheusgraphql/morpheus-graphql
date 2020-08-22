@@ -71,13 +71,11 @@ import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
-    GQLErrors,
     Ref (..),
     Token,
     TypeName (..),
     TypeNameRef (..),
     ValidationErrors,
-    toGQLError,
   )
 import Data.Semigroup (Semigroup (..))
 import qualified Data.Text as T
@@ -87,8 +85,6 @@ import qualified Data.Text as T
   )
 import Data.Traversable (traverse)
 import Instances.TH.Lift ()
-import Text.Megaparsec.Internal (ParsecT (..))
-import Text.Megaparsec.Stream (Stream)
 import Prelude
   ( ($),
     (.),
@@ -99,7 +95,6 @@ import Prelude
     Functor (..),
     Int,
     Monad,
-    Ord,
     String,
     const,
     fst,
