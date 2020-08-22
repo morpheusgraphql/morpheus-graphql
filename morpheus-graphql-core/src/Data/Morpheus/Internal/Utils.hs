@@ -90,11 +90,13 @@ import Text.Megaparsec.Stream (Stream)
 import Prelude
   ( ($),
     (.),
+    (<$>),
     Bool (..),
     Either (..),
     Eq (..),
     Functor (..),
     Int,
+    Maybe (..),
     Monad,
     Ord,
     String,

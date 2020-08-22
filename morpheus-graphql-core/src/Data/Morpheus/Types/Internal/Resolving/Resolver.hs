@@ -41,7 +41,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   )
 where
 
-import Control.Applicative (Applicative (..))
+import Control.Applicative (Applicative (..), liftA2)
 import Control.Monad (Monad (..), join)
 import Control.Monad.Fail (MonadFail (..))
 import Control.Monad.IO.Class (MonadIO (..))
@@ -422,6 +422,37 @@ data RootResModel e m = RootResModel
     subscription :: ResolverState (ResModel SUBSCRIPTION e m),
     channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
   }
+
+prop :: (Monad m, SemigroupM m b) => (a -> m b) -> a -> a -> m b
+prop f x y = do
+  x' <- f x
+  y' <- f y
+  mergeM [] x' y'
+
+mergeSubscriptions ::
+  Eq (Channel e) =>
+  (Selection VALID -> ResolverState (Channel e)) ->
+  (Selection VALID -> ResolverState (Channel e)) ->
+  Selection VALID ->
+  ResolverState (Channel e)
+mergeSubscriptions f1 f2 sel = do
+  ch1 <- f1 sel
+  ch2 <- f2 sel
+  if ch1 == ch2
+    then pure ch1
+    else failure ("incompatiple channels" :: InternalError)
+
+instance
+  Eq (Channel e) =>
+  Semigroup (RootResModel e m)
+  where
+  x <> y =
+    RootResModel
+      { query = prop query x y,
+        mutation = prop mutation x y,
+        subscription = prop subscription x y,
+        channelMap = liftA2 mergeSubscriptions (channelMap x) (channelMap y)
+      }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>

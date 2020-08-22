@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM (upsert)
 import qualified Data.Morpheus.Types.Internal.AST.SafeHashMap as SHM (upsert)
-import Data.Morpheus.Types.Internal.Resolving (RootResModel)
 import Data.Semigroup (Semigroup (..))
 import Prelude
   ( (.),
@@ -99,6 +98,3 @@ instance Stitching (FieldDefinition cat s) where
   stitch old new
     | old == new = pure old
     | otherwise = failure [nameCollision new]
-
-instance Stitching (RootResModel e m) where
-  stitch _ = pure

@@ -74,7 +74,8 @@ import Data.Morpheus.Types.Internal.Config
     defaultConfig,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
+  ( Channel,
+    Eventless,
     ResolverContext (..),
     ResponseStream,
     ResultT (..),
@@ -103,7 +104,7 @@ data App event (m :: * -> *)
       { appErrors :: GQLErrors
       }
 
-instance Semigroup (App event m) where
+instance Eq (Channel e) => Semigroup (App e m) where
   (AppFailures err1) <> (AppFailures err2) = AppFailures (err1 <> err2)
   (AppFailures err) <> App {} = AppFailures err
   App {} <> (AppFailures err) = AppFailures err
@@ -111,10 +112,7 @@ instance Semigroup (App event m) where
     resultOr
       AppFailures
       id
-      ( App
-          <$> prop stitch appResolvers x y
-          <*> prop stitch appSchema x y
-      )
+      (App (appResolvers x <> appResolvers y) <$> prop stitch appSchema x y)
 
 runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
