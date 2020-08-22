@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -17,6 +18,7 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    SemigroupM (..),
     mergeT,
     prop,
     resolveWith,
@@ -37,9 +39,12 @@ import Data.Morpheus.Types.Internal.AST
   )
 import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM (unsafeFromValues)
 import qualified Data.Morpheus.Types.Internal.AST.SafeHashMap as SHM (unsafeFromValues)
+import Data.Morpheus.Types.Internal.Resolving (RootResModel)
+import qualified Data.Morpheus.Types.Internal.Resolving as R (RootResModel (..))
 import Data.Semigroup (Semigroup (..))
 import Prelude
-  ( (.),
+  ( ($),
+    (.),
     Eq (..),
     otherwise,
   )
@@ -99,3 +104,25 @@ instance Stitching (FieldDefinition cat s) where
   stitch old new
     | old == new = pure old
     | otherwise = failure [nameCollision new]
+
+rootProp :: (Monad m, SemigroupM m b) => (a -> m b) -> a -> a -> m b
+rootProp f x y = do
+  x' <- f x
+  y' <- f y
+  mergeM [] x' y'
+
+stitchSubscriptions :: Failure ValidationErrors m => Maybe a -> Maybe a -> m (Maybe a)
+stitchSubscriptions Just {} Just {} = failure (["incompatiple channels"] :: ValidationErrors)
+stitchSubscriptions x Nothing = pure x
+stitchSubscriptions Nothing x = pure x
+
+instance Stitching (RootResModel e m) where
+  stitch x y = do
+    channelMap <- stitchSubscriptions (R.channelMap x) (R.channelMap y)
+    pure $
+      R.RootResModel
+        { R.query = rootProp R.query x y,
+          R.mutation = rootProp R.mutation x y,
+          R.subscription = rootProp R.subscription x y,
+          R.channelMap
+        }
