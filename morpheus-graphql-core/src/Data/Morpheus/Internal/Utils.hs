@@ -367,7 +367,7 @@ hmUnsafeFromValues = HM.fromList . fmap toPair
 
 failOnDups :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
 failOnDups (x :| []) = pure x
-failOnDups (x :| xs) = failure $ fmap nameCollision (x : xs)
+failOnDups (_ :| xs) = failure $ fmap nameCollision (x : xs)
 
 safeFromList ::
   ( Failure ValidationErrors m,
