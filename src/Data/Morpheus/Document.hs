@@ -16,7 +16,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Core
   ( render,
   )
-import Data.Morpheus.Server.Deriving.Api
+import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
     deriveSchema,
   )

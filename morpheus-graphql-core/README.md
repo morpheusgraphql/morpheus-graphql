@@ -43,6 +43,6 @@ resolveDeity =
         ("power", pure $ mkList [mkString "Shapeshifting"])
       ]
 
-api :: GQLRequest -> ResponseStream e Identity (Value VALID)
-api = runApi (mkApp schema resolver)
+api :: ByteString -> IO  ByteString
+api = runApp (mkApp schema resolver)
 ```

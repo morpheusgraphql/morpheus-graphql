@@ -4,21 +4,21 @@
 
 ### new features
 
-- type : `Api event m` and `deriveApi`
+- type : `App event m` and `deriveApp`
 
   ```hs
-  app :: Api EVENT IO
-  app = runApi (deriveApi root)
+  app :: App EVENT IO
+  app = runApp (deriveApp root)
 
   api :: a -> IO b
-  api = runApi (deriveApi root)
+  api = runApp (deriveApp root)
   ```
 
-- `Api` supports semigroup(`schema Stitching`): if whe have two graphq apps
+- `App` supports semigroup(`schema Stitching`): if whe have two graphq apps
 
   ```hs
   mergedApi :: a -> m b
-  mergedApi = runApi (deriveApi root <> deriveApi root2)
+  mergedApi = runApp (deriveApp root <> deriveApp root2)
   ```
 
 ### Breaking Changes

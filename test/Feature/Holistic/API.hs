@@ -15,7 +15,7 @@ module Feature.Holistic.API
   )
 where
 
-import Data.Morpheus (deriveApi, runApi)
+import Data.Morpheus (deriveApp, runApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
@@ -113,7 +113,7 @@ rootExt =
 
 api :: GQLRequest -> IO GQLResponse
 api =
-  runApi
-    ( deriveApi root
-        <> deriveApi rootExt
+  runApp
+    ( deriveApp root
+        <> deriveApp rootExt
     )

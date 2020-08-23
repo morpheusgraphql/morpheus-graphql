@@ -4,31 +4,31 @@
 
 ### new features
 
-- type : Api (..)
+- type : `App`
 
   ```hs
   api :: a -> m b
-  api = runApi (mkApp schema resolvers)
+  api = runApp (mkApp schema resolvers)
   ```
 
-- `Api` supports semigroup(`schema Stitching`):
+- `App` supports semigroup(`schema Stitching`):
 
-  if whe have two apis `api1` and `api2` with type `Api EVENT IO` we can merge it as.
+  if whe have two apps `app1` and `app2` with type `Api EVENT IO` we can merge it as.
 
   ```hs
   mergedApi :: a -> m b
-  mergedApi = runApi (api1 <> api2)
+  mergedApi = runApp (app1 <> app2)
+  ```
+
+- `runApp` changed signature to:
+
+  ```hs
+  runApp :: Api e m -> a -> m b
   ```
 
 ### Breaking Changes
 
-- `runApi` changed signature to:
-
-  ```hs
-  runApi :: Api e m -> a -> m b
-  ```
-
-where you can api is product of resolver nd schema
+- removed `runApi`.
 
 ### Minor Changes
 

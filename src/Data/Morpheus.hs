@@ -4,20 +4,20 @@
 module Data.Morpheus
   ( interpreter,
     debugInterpreter,
+    App,
     AppRunner (..),
-    deriveApi,
-    Api,
+    deriveApp,
   )
 where
 
 -- MORPHEUS
 import Data.Morpheus.Core
-  ( Api,
+  ( App,
     AppRunner (..),
   )
-import Data.Morpheus.Server.Deriving.Api
+import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
-    deriveApi,
+    deriveApp,
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
@@ -30,7 +30,7 @@ interpreter ::
   RootResolver m e query mut sub ->
   a ->
   b
-interpreter = runApi . deriveApi
+interpreter = runApp . deriveApp
 
 debugInterpreter ::
   AppRunner e m a b =>
@@ -38,4 +38,4 @@ debugInterpreter ::
   RootResolver m e query mut sub ->
   a ->
   b
-debugInterpreter = debugApi . deriveApi
+debugInterpreter = debugApp . deriveApp
