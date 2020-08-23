@@ -18,6 +18,7 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Morpheus (runApp)
 import Data.Morpheus.Server
   ( httpPlayground,
+    httpPubApp,
   )
 import Data.Morpheus.Types
   ( App,
@@ -67,7 +68,7 @@ httpEndpoint route app = do
 httpPubEndpoint ::
   RoutePattern ->
   App e IO ->
-  (EVENT -> IO ()) ->
+  (e -> IO ()) ->
   ScottyM ()
 httpPubEndpoint route app publish = do
   get route $

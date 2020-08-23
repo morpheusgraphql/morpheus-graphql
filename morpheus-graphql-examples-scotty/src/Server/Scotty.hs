@@ -46,6 +46,6 @@ scottyServer = do
   where
     httpApp :: (EVENT -> IO ()) -> ScottyM ()
     httpApp publish = do
-      httpEndpoint "/" httpPubEndpoint app publish
+      httpPubEndpoint "/" app publish
       httpEndpoint "/mythology" Mythology.app
       httpEndpoint "/th" TH.app
