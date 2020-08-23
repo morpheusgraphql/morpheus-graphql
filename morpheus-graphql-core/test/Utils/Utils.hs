@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Lib
+module Utils.Utils
   ( getGQLBody,
     expectedResponse,
     getCases,

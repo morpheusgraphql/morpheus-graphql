@@ -5,12 +5,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Api
-  ( Api (..),
-    ApiRunner (..),
+module Data.Morpheus.Types.App
+  ( App (..),
+    AppRunner (..),
     runApiWith,
     mkApi,
-    App (..),
+    AppData (..),
   )
 where
 
@@ -69,45 +69,45 @@ import Prelude
     const,
   )
 
-mkApi :: ValidateSchema s => Schema s -> RootResModel e m -> Api e m
+mkApi :: ValidateSchema s => Schema s -> RootResModel e m -> App e m
 mkApi appSchema appResolvers =
   resultOr
-    FailApi
-    (Api . App appResolvers)
+    FailApp
+    (App . AppData appResolvers)
     (validateSchema True defaultConfig appSchema)
 
-data Api event (m :: * -> *)
-  = Api {app :: App event m VALID}
-  | FailApi {appErrors :: GQLErrors}
+data App event (m :: * -> *)
+  = App {app :: AppData event m VALID}
+  | FailApp {appErrors :: GQLErrors}
 
-instance Monad m => Semigroup (Api e m) where
-  (FailApi err1) <> (FailApi err2) = FailApi (err1 <> err2)
-  FailApi {appErrors} <> Api {} = FailApi appErrors
-  Api {} <> FailApi {appErrors} = FailApi appErrors
-  (Api x) <> (Api y) = resultOr FailApi Api (stitch x y)
+instance Monad m => Semigroup (App e m) where
+  (FailApp err1) <> (FailApp err2) = FailApp (err1 <> err2)
+  FailApp {appErrors} <> App {} = FailApp appErrors
+  App {} <> FailApp {appErrors} = FailApp appErrors
+  (App x) <> (App y) = resultOr FailApp App (stitch x y)
 
-data App event (m :: * -> *) s = App
+data AppData event (m :: * -> *) s = AppData
   { appResolvers :: RootResModel event m,
     appSchema :: Schema s
   }
 
-instance Monad m => Stitching (App e m s) where
+instance Monad m => Stitching (AppData e m s) where
   stitch x y =
-    App
+    AppData
       <$> prop stitch appResolvers x y
       <*> prop stitch appSchema x y
 
-runApiWith :: Monad m => Api event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
-runApiWith Api {app} = runApp app
-runApiWith FailApi {appErrors} = const $ const $ failure appErrors
+runApiWith :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
+runApiWith App {app} = runAppData app
+runApiWith FailApp {appErrors} = const $ const $ failure appErrors
 
-runApp ::
+runAppData ::
   (Monad m, ValidateSchema s) =>
-  App event m s ->
+  AppData event m s ->
   Config ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runApp App {appSchema, appResolvers} config request = do
+runAppData AppData {appSchema, appResolvers} config request = do
   validRequest <- validateReq appSchema config request
   resovers <- withSystemFields (schema validRequest) appResolvers
   runRootResModel resovers validRequest
@@ -147,14 +147,14 @@ stateless ::
   m GQLResponse
 stateless = fmap renderResponse . runResultT
 
-class Monad m => ApiRunner e (m :: * -> *) a b where
-  runApi :: Api e m -> a -> b
-  debugApi :: Api e m -> a -> b
+class Monad m => AppRunner e (m :: * -> *) a b where
+  runApp :: App e m -> a -> b
+  debugApp :: App e m -> a -> b
 
-instance Monad m => ApiRunner e m GQLRequest (m GQLResponse) where
-  runApi api = stateless . runApiWith api defaultConfig
-  debugApi api = stateless . runApiWith api debugConfig
+instance Monad m => AppRunner e m GQLRequest (m GQLResponse) where
+  runApp api = stateless . runApiWith api defaultConfig
+  debugApp api = stateless . runApiWith api debugConfig
 
-instance (Monad m, MapAPI a a) => ApiRunner e m a (m a) where
-  runApi app = mapAPI (runApi app)
-  debugApi app = mapAPI (debugApi app)
+instance (Monad m, MapAPI a a) => AppRunner e m a (m a) where
+  runApp app = mapAPI (runApp app)
+  debugApp app = mapAPI (debugApp app)

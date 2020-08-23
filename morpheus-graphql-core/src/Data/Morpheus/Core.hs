@@ -22,9 +22,9 @@ module Data.Morpheus.Core
     VALIDATION_MODE (..),
     defaultConfig,
     debugConfig,
-    Api (..),
     App (..),
-    ApiRunner (..),
+    AppData (..),
+    AppRunner (..),
     mkApi,
     runApiWith,
   )
@@ -48,10 +48,10 @@ import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
-import Data.Morpheus.Types.Api
-  ( Api (..),
-    ApiRunner (..),
-    App (..),
+import Data.Morpheus.Types.App
+  ( App (..),
+    AppData (..),
+    AppRunner (..),
     mkApi,
     runApiWith,
   )

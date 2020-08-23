@@ -18,8 +18,8 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
-  ( Api (..),
-    App (..),
+  ( App (..),
+    AppData (..),
     defaultConfig,
     mkApi,
     mkApi,
@@ -42,11 +42,6 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Data.Traversable (traverse)
-import Lib
-  ( expectedResponse,
-    getRequest,
-    getResolver,
-  )
 import Test.Tasty
   ( TestTree,
     testGroup,
@@ -54,6 +49,11 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertFailure,
     testCase,
+  )
+import Utils.Utils
+  ( expectedResponse,
+    getRequest,
+    getResolver,
   )
 import Prelude
   ( ($),
@@ -68,20 +68,20 @@ import Prelude
 readSchema :: FieldName -> IO (Schema VALID)
 readSchema (FieldName p) = L.readFile (unpack p) >>= (resultOr (fail . show) pure . parseGQLDocument)
 
-loadApi :: FieldName -> IO (Api () Identity)
+loadApi :: FieldName -> IO (App () Identity)
 loadApi url = do
   schema <- readSchema ("test/" <> url <> ".gql")
   resolvers <- getResolver ("test/" <> url <> ".json")
   pure $ mkApi schema resolvers
 
-schemaAssertion :: Api () Identity -> Schema VALID -> IO ()
-schemaAssertion (Api App {appSchema}) expectedSchema
+schemaAssertion :: App () Identity -> Schema VALID -> IO ()
+schemaAssertion (App AppData {appSchema}) expectedSchema
   | render expectedSchema == render appSchema = pure ()
   | otherwise =
     assertFailure
       $ unpack
       $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render appSchema
-schemaAssertion (FailApi gqlerror) _ = assertFailure $ " error: " <> show gqlerror
+schemaAssertion (FailApp gqlerror) _ = assertFailure $ " error: " <> show gqlerror
 
 schemaCase :: (FieldName, [FieldName]) -> IO TestTree
 schemaCase (url, files) = do
@@ -120,7 +120,7 @@ assertion expected (ResultT (Identity actual))
     actualValue = encode (renderResponse actual)
 
 testApiRequest ::
-  Api () Identity ->
+  App () Identity ->
   FieldName ->
   FieldName ->
   TestTree

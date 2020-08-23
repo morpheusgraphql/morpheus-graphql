@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5cab27d68d2adc8ee4df759b265d4350b2f1197cc6c2e4594687ae88259397c5
+-- hash: 960d6622e75bb53796ecd98c764d1d001fda2fb2733e77953dc669143605770b
 
 name:           morpheus-graphql-core
 version:        0.14.1
@@ -182,7 +182,7 @@ library
       Data.Morpheus.Schema.DSL
       Data.Morpheus.Schema.Schema
       Data.Morpheus.Schema.SchemaAPI
-      Data.Morpheus.Types.Api
+      Data.Morpheus.Types.App
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.DirectiveLocation
       Data.Morpheus.Types.Internal.AST.Fields
@@ -240,10 +240,10 @@ test-suite morpheus-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Lib
       Utils.Api
       Utils.MergeSchema
       Utils.Schema
+      Utils.Utils
       Paths_morpheus_graphql_core
   hs-source-dirs:
       test

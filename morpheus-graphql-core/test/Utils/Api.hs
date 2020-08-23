@@ -28,12 +28,6 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
-import Lib
-  ( assertValidSchema,
-    expectedResponse,
-    getRequest,
-    getResolvers,
-  )
 import Test.Tasty
   ( TestTree,
     testGroup,
@@ -41,6 +35,12 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertFailure,
     testCase,
+  )
+import Utils.Utils
+  ( assertValidSchema,
+    expectedResponse,
+    getRequest,
+    getResolvers,
   )
 import Prelude
   ( ($),
