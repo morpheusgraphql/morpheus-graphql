@@ -14,7 +14,7 @@
 module Server.Sophisticated.API
   ( api,
     EVENT,
-    gqlRoot,
+    root,
   )
 where
 
@@ -25,10 +25,8 @@ import qualified Data.Map as M
   )
 -- MORPHEUS
 import Data.Morpheus
-  ( debugInterpreter,
-    deriveApp,
-    interpreter,
-    runWith,
+  ( deriveApi,
+    runApi,
   )
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
@@ -43,7 +41,6 @@ import Data.Morpheus.Types
     ID,
     Input,
     MUTATION,
-    QUERY,
     Resolver,
     ResolverM,
     ResolverQ,
@@ -58,7 +55,6 @@ import Data.Morpheus.Types
     publish,
     subscribe,
   )
-import Data.Proxy (Proxy (..))
 import Data.Set (Set)
 import qualified Data.Set as S
   ( fromList,
@@ -119,10 +115,10 @@ newtype Content = Content {contentID :: Int}
 type EVENT = Event Channel Content
 
 api :: Input api -> Stream api EVENT IO
-api = runWith (deriveApp gqlRoot)
+api = runApi (deriveApi root)
 
-gqlRoot :: RootResolver IO EVENT Query Mutation Subscription
-gqlRoot =
+root :: RootResolver IO EVENT Query Mutation Subscription
+root =
   RootResolver
     { queryResolver,
       mutationResolver,
