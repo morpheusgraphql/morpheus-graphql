@@ -68,7 +68,7 @@ data Api event (m :: * -> *)
   = Api {app :: App event m VALID}
   | FailApi {appErrors :: GQLErrors}
 
-instance Semigroup (Api e m) where
+instance Monad m => Semigroup (Api e m) where
   (FailApi err1) <> (FailApi err2) = FailApi (err1 <> err2)
   FailApi {appErrors} <> Api {} = FailApi appErrors
   Api {} <> FailApi {appErrors} = FailApi appErrors
@@ -79,7 +79,7 @@ data App event (m :: * -> *) s = App
     appSchema :: Schema s
   }
 
-instance Stitching (App e m s) where
+instance Monad m => Stitching (App e m s) where
   stitch x y =
     App
       <$> prop stitch appResolvers x y

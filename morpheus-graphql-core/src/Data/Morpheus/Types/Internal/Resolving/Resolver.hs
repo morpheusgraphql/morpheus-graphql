@@ -78,6 +78,7 @@ import Data.Morpheus.Types.Internal.AST
     OperationType,
     OperationType (..),
     QUERY,
+    Ref,
     SUBSCRIPTION,
     ScalarValue (..),
     Selection (..),
@@ -259,7 +260,7 @@ subscribe ch res =
     $ fromSub <$> runResolverQ res
   where
     fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
-    fromSub f = join (ReaderT $ \e -> runResolverS (f e))
+    fromSub f = join (ReaderT (runResolverS . f))
 
 withArguments ::
   (LiftOperation o, Monad m) =>
@@ -395,22 +396,49 @@ data ObjectResModel o e m = ObjectResModel
   }
   deriving (Show)
 
-instance Applicative f => SemigroupM f (ObjectResModel o e m) where
-  mergeM _ (ObjectResModel tyname x) (ObjectResModel _ y) =
-    pure $ ObjectResModel tyname (x <> y)
+instance
+  ( Monad m,
+    Applicative f,
+    LiftOperation o
+  ) =>
+  SemigroupM f (ObjectResModel o e m)
+  where
+  mergeM path (ObjectResModel tyname x) (ObjectResModel _ y) =
+    pure $ ObjectResModel tyname (HM.unionWith (mergeResolver path) x y)
+
+--mergeResolver :: Resolver o e m a -> Resolver o e m a -> Resolver o e m a
+
+mergeResolver ::
+  (Monad m, SemigroupM (ResolverStateT e m) a, LiftOperation o) =>
+  [Ref] ->
+  Resolver o e m a ->
+  Resolver o e m a ->
+  Resolver o e m a
+mergeResolver path a b = do
+  a' <- a
+  b >>= packResolver . mergeM path a'
 
 data ResModel (o :: OperationType) e (m :: * -> *)
   = ResNull
   | ResScalar ScalarValue
   | ResEnum TypeName TypeName
-  | ResList [ResModel o e m]
   | ResObject (ObjectResModel o e m)
+  | ResList [ResModel o e m]
   | ResUnion TypeName (Resolver o e m (ResModel o e m))
   deriving (Show)
 
-instance (Monad f, Failure InternalError f) => SemigroupM f (ResModel o e m) where
-  mergeM p (ResObject x) (ResObject y) =
-    ResObject <$> mergeM p x y
+instance
+  ( Monad f,
+    Monad m,
+    LiftOperation o,
+    Failure InternalError f
+  ) =>
+  SemigroupM f (ResModel o e m)
+  where
+  mergeM _ ResNull ResNull = pure ResNull
+  mergeM _ ResScalar {} x@ResScalar {} = pure x
+  mergeM _ ResEnum {} x@ResEnum {} = pure x
+  mergeM p (ResObject x) (ResObject y) = ResObject <$> mergeM p x y
   mergeM _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
 
 data RootResModel e m = RootResModel

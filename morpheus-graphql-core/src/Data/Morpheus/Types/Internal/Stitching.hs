@@ -116,7 +116,7 @@ stitchSubscriptions Just {} Just {} = failure (["can't merge  subscription appli
 stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
 
-instance Stitching (RootResModel e m) where
+instance Monad m => Stitching (RootResModel e m) where
   stitch x y = do
     channelMap <- stitchSubscriptions (R.channelMap x) (R.channelMap y)
     pure $
