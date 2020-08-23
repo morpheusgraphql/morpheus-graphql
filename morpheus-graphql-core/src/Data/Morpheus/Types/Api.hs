@@ -1,12 +1,13 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Types.Api
   ( Api,
+    ApiRunner (..),
     runApiWith,
-    runApi,
-    debugApi,
   )
 where
 
@@ -23,6 +24,9 @@ import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Schema.SchemaAPI (withSystemFields)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
+    GQLResponse,
+    MapAPI (..),
+    renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
@@ -40,7 +44,8 @@ import Data.Morpheus.Types.Internal.Config
     defaultConfig,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ResolverContext (..),
+  ( Event,
+    ResolverContext (..),
     ResponseStream,
     ResultT (..),
     RootResModel,
@@ -49,6 +54,11 @@ import Data.Morpheus.Types.Internal.Resolving
     runRootResModel,
   )
 import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
+import Data.Morpheus.Types.Internal.Subscription
+  ( Input,
+    Stream,
+    toOutStream,
+  )
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 
 data Api event (m :: * -> *)
@@ -72,23 +82,17 @@ instance Stitching (App e m s) where
       <$> prop stitch appResolvers x y
       <*> prop stitch appSchema x y
 
-runApi :: Monad m => Api event m -> GQLRequest -> ResponseStream event m (Value VALID)
-runApi api = runApiWith api defaultConfig
-
-debugApi :: Monad m => Api event m -> GQLRequest -> ResponseStream event m (Value VALID)
-debugApi app = runApiWith app debugConfig
-
 runApiWith :: Monad m => Api event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
-runApiWith Api {app} = runAppNode app
+runApiWith Api {app} = runApp app
 runApiWith FailApi {appErrors} = const $ const $ failure appErrors
 
-runAppNode ::
+runApp ::
   (Monad m, ValidateSchema s) =>
   App event m s ->
   Config ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runAppNode App {appSchema, appResolvers} config request = do
+runApp App {appSchema, appResolvers} config request = do
   validRequest <- validateReq appSchema config request
   resovers <- withSystemFields (schema validRequest) appResolvers
   runRootResModel resovers validRequest
@@ -121,3 +125,25 @@ validateReq inputSchema config request = cleanEvents $ ResultT $ pure $ do
               selectionDirectives = []
             }
       }
+
+stateless ::
+  Functor m =>
+  ResponseStream event m (Value VALID) ->
+  m GQLResponse
+stateless = fmap renderResponse . runResultT
+
+class Monad m => ApiRunner e (m :: * -> *) a b where
+  runApi :: Api e m -> a -> b
+  debugApi :: Api e m -> a -> b
+
+instance Monad m => ApiRunner e m GQLRequest (m GQLResponse) where
+  runApi api = stateless . runApiWith api defaultConfig
+  debugApi api = stateless . runApiWith api debugConfig
+
+instance Monad m => ApiRunner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
+  runApi api = toOutStream (runApiWith api defaultConfig)
+  debugApi api = toOutStream (runApiWith api debugConfig)
+
+instance (Monad m, MapAPI a a) => ApiRunner e m a (m a) where
+  runApi app = mapAPI (runApi app)
+  debugApi app = mapAPI (debugApi app)

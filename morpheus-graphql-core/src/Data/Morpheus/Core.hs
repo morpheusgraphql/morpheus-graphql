@@ -23,9 +23,7 @@ module Data.Morpheus.Core
     defaultConfig,
     debugConfig,
     Api,
-    runApi,
-    debugApi,
-    runApiWith,
+    ApiRunner (..),
   )
 where
 
@@ -49,9 +47,7 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.Api
   ( Api,
-    debugApi,
-    runApi,
-    runApiWith,
+    ApiRunner (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Schema,

@@ -19,9 +19,9 @@ import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
 import Data.Morpheus.Core
-  ( App (..),
+  ( Api (..),
+    ApiRunner (..),
     Config,
-    runAppWithConfig,
   )
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
