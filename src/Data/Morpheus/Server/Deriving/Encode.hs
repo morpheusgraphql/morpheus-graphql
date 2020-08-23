@@ -54,7 +54,6 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
-    Undefined,
   )
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
