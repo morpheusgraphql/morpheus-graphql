@@ -18,7 +18,7 @@ module Subscription.API
   )
 where
 
-import Data.Morpheus (deriveApp)
+import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
   ( Event (..),
@@ -74,5 +74,5 @@ root =
           }
     }
 
-api :: App Event m
-api = deriveApp root
+app :: App EVENT m
+app = deriveApp root
