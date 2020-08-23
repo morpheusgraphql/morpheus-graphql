@@ -53,7 +53,7 @@ simulateSubscriptions = do
   input <- connect
   state <-
     simulate
-      api
+      app
       input
       ( SimulationState
           [ apolloInit,
