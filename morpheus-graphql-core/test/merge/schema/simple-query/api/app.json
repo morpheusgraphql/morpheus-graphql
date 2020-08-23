@@ -1,5 +1,8 @@
 {
   "query": {
-    "name": "name from app"
+    "type": {
+      "name": "name from app",
+      "age": 23
+    }
   }
 }

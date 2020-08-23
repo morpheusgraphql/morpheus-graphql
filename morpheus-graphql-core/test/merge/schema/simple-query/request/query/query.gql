@@ -1,4 +1,8 @@
 query {
-  name
   id
+  type {
+    id
+    name
+    age
+  }
 }

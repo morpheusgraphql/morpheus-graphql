@@ -1,6 +1,10 @@
 {
   "data": {
-    "name": "name from app",
-    "id": "id from ext"
+    "id": "id from ext",
+    "type": {
+      "id": "id from ext",
+      "name": "name from ext",
+      "age": 23
+    }
   }
 }

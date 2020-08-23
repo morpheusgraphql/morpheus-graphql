@@ -4,8 +4,9 @@ type Type1 {
 
 type Type2 {
   name: String
+  age: Int
 }
 
 type Query {
-  name: String
+  type: Type2
 }

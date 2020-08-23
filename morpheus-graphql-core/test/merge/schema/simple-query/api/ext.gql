@@ -1,9 +1,9 @@
 type Type2 {
   name: String
-  field2: String
+  id: ID
 }
 
 type Query {
   id: ID
-  name: String
+  type: Type2
 }
