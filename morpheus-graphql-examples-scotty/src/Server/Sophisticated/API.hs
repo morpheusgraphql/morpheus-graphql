@@ -14,6 +14,7 @@
 module Server.Sophisticated.API
   ( app,
     EVENT,
+    root,
   )
 where
 

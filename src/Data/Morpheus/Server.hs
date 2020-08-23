@@ -41,11 +41,9 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Event,
   )
 import Data.Morpheus.Types.Internal.Subscription
-  ( HTTP,
-    Input (..),
+  ( Input (..),
     Scope (..),
     Store (..),
-    Stream,
     WS,
     acceptApolloRequest,
     connectionThread,
@@ -88,14 +86,14 @@ httpPubApp ::
   ( MonadIO m,
     MapAPI a b
   ) =>
-  (Input HTTP -> Stream HTTP e m) ->
+  App e m ->
   (e -> m ()) ->
   a ->
   m b
-httpPubApp api httpCallback =
+httpPubApp app httpCallback =
   mapAPI $
     runStreamHTTP ScopeHTTP {httpCallback}
-      . api
+      . streamApp app
       . Request
 
 -- | Wai WebSocket Server App for GraphQL subscriptions

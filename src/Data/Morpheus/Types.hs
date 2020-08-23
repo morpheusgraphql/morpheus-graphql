@@ -55,14 +55,17 @@ module Data.Morpheus.Types
     interface,
     SubscriptionField,
     App,
+    RenderGQL (..),
   )
 where
 
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Data.Either (either)
-import Data.Morpheus.Core (App)
 -- MORPHEUS
-
+import Data.Morpheus.Core
+  ( App,
+    RenderGQL (..),
+  )
 import Data.Morpheus.Server.Deriving.Introspect
   ( Introspect (..),
     TypeUpdater,

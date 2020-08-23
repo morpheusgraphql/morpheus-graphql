@@ -12,6 +12,7 @@ module Server.Utils
   ( startServer,
     Endpoint,
     serveEndpoint,
+    servePubEndpoint,
   )
 where
 
@@ -32,12 +33,14 @@ import Data.Morpheus.Document
   )
 import Data.Morpheus.Server
   ( httpPlayground,
+    httpPubApp,
   )
 import Data.Morpheus.Types
   ( App,
     GQLRequest,
     GQLResponse,
     RootResolver,
+    render,
   )
 import Data.Proxy (Proxy)
 import Data.Text (Text, pack)
@@ -103,10 +106,10 @@ type Playground = Get '[HTML] ByteString
 type Endpoint (name :: Symbol) = name :> (API :<|> Schema :<|> Playground)
 
 serveEndpoint :: App e IO -> Server (Endpoint name)
-serveEndpoint app = (liftIO . runApp app) :<|> withSchema root :<|> pure httpPlayground
+serveEndpoint app = (liftIO . runApp app) :<|> withSchema app :<|> pure httpPlayground
 
-withSchema ::
-  (RootResolverConstraint m o mu qu su, Applicative f) =>
-  RootResolver m o mu qu su ->
-  f Text
-withSchema schema = pure $ pack $ unpack $ toGraphQLDocument (Identity schema)
+servePubEndpoint :: App e IO -> (e -> IO ()) -> Server (Endpoint name)
+servePubEndpoint app publish = (liftIO . httpPubApp app publish) :<|> withSchema app :<|> pure httpPlayground
+
+withSchema :: (Applicative f) => App e m -> f Text
+withSchema = pure . render

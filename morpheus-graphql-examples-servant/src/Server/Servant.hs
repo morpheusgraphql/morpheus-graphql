@@ -24,6 +24,7 @@ import Server.API.Simple
 import Server.Utils
   ( Endpoint,
     serveEndpoint,
+    servePubEndpoint,
     startServer,
   )
 
@@ -37,8 +38,8 @@ proxyApi = Proxy
 
 handler :: (EVENT -> IO ()) -> Server API
 handler publish =
-  serveEndpoint rootResolver (httpPubApp app publish)
-    :<|> serveEndpoint rootResolver api
+  servePubEndpoint app publish
+    :<|> serveEndpoint app
 
 servantServer :: IO ()
 servantServer = do

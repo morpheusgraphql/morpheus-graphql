@@ -7,26 +7,23 @@
 module Server.Utils
   ( httpEndpoint,
     startServer,
+    httpPubEndpoint,
   )
 where
 
 -- examples
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
-import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Document
-  ( RootResolverConstraint,
-    toGraphQLDocument,
-  )
+import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.Morpheus (runApp)
 import Data.Morpheus.Server
   ( httpPlayground,
   )
 import Data.Morpheus.Types
-  ( RootResolver,
+  ( App,
+    render,
   )
+import qualified Data.Text as T
 import Network.Wai.Handler.Warp
   ( defaultSettings,
     runSettings,
@@ -55,19 +52,31 @@ isSchema :: ActionM String
 isSchema = param "schema"
 
 httpEndpoint ::
-  (RootResolverConstraint m o mu qu su) =>
   RoutePattern ->
-  RootResolver m o mu qu su ->
-  (ByteString -> IO ByteString) ->
+  App e IO ->
   ScottyM ()
-httpEndpoint route schema gqlApi = do
+httpEndpoint route app = do
   get route $
     ( do
         _ <- isSchema
-        raw $ toGraphQLDocument (Identity schema)
+        raw $ LBS.pack $ T.unpack $ render app
     )
       <|> raw httpPlayground
-  post route $ raw =<< (liftIO . gqlApi =<< body)
+  post route $ raw =<< (liftIO . runApp app =<< body)
+
+httpPubEndpoint ::
+  RoutePattern ->
+  App e IO ->
+  (EVENT -> IO ()) ->
+  ScottyM ()
+httpPubEndpoint route app publish = do
+  get route $
+    ( do
+        _ <- isSchema
+        raw $ LBS.pack $ T.unpack $ render app
+    )
+      <|> raw httpPlayground
+  post route $ raw =<< (liftIO . httpPubApp app publish =<< body)
 
 startServer :: ServerApp -> ScottyM () -> IO ()
 startServer wsApp app = do
