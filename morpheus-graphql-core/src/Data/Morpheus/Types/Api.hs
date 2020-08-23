@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Api
   ( Api (..),
@@ -13,6 +14,9 @@ module Data.Morpheus.Types.Api
   )
 where
 
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad)
+import Data.Functor ((<$>), Functor (..))
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     empty,
@@ -56,6 +60,14 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
+import Data.Semigroup (Semigroup (..))
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Maybe (..),
+    const,
+  )
 
 mkApi :: ValidateSchema s => Schema s -> RootResModel e m -> Api e m
 mkApi appSchema appResolvers =
