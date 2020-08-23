@@ -3,14 +3,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Core
-  ( runApi,
-    parseDSL,
+  ( parseDSL,
     parseFullGQLDocument,
     parseGQLDocument,
     parseTypeSystemDefinition,
@@ -25,10 +22,10 @@ module Data.Morpheus.Core
     VALIDATION_MODE (..),
     defaultConfig,
     debugConfig,
-    runAppWithConfig,
-    runApp,
-    debugApp,
-    App (..),
+    Api,
+    runApi,
+    debugApi,
+    runApiWith,
   )
 where
 
@@ -39,9 +36,6 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.Morpheus.Internal.Utils
   ( (<:>),
-    empty,
-    failure,
-    prop,
   )
 import Data.Morpheus.Parser
   ( parseRequest,
@@ -53,19 +47,15 @@ import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
-import Data.Morpheus.Schema.SchemaAPI (withSystemFields)
-import Data.Morpheus.Types.IO
-  ( GQLRequest (..),
+import Data.Morpheus.Types.Api
+  ( Api,
+    debugApi,
+    runApi,
+    runApiWith,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    GQLErrors,
-    Operation (..),
-    Schema (..),
-    Selection (..),
-    SelectionContent (..),
+  ( Schema,
     VALID,
-    Value,
   )
 import Data.Morpheus.Types.Internal.Config
   ( Config (..),
@@ -74,17 +64,9 @@ import Data.Morpheus.Types.Internal.Config
     defaultConfig,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Channel,
-    Eventless,
-    ResolverContext (..),
-    ResponseStream,
-    ResultT (..),
-    RootResModel,
-    cleanEvents,
+  ( Eventless,
     resultOr,
-    runRootResModel,
   )
-import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
 import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Data.Morpheus.Validation.Query.Validation
@@ -94,58 +76,6 @@ import qualified Data.Text.Lazy as LT
   ( toStrict,
   )
 import Data.Text.Lazy.Encoding (decodeUtf8)
-
-runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
-runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
-runAppWithConfig AppFailure {appErrors} = const $ const $ failure appErrors
-
-runApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
-runApp app = runAppWithConfig app defaultConfig
-
-debugApp :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
-debugApp app = runAppWithConfig app debugConfig
-
-runApi ::
-  forall event m s.
-  (Monad m, ValidateSchema s) =>
-  Schema s ->
-  RootResModel event m ->
-  Config ->
-  GQLRequest ->
-  ResponseStream event m (Value VALID)
-runApi inputSchema resModel config request = do
-  validRequest <- validateReq inputSchema config request
-  resovers <- withSystemFields (schema validRequest) resModel
-  runRootResModel resovers validRequest
-
-validateReq ::
-  ( Monad m,
-    ValidateSchema s
-  ) =>
-  Schema s ->
-  Config ->
-  GQLRequest ->
-  ResponseStream event m ResolverContext
-validateReq inputSchema config request = cleanEvents $ ResultT $ pure $ do
-  validSchema <- validateSchema True config inputSchema
-  schema <- internalSchema <:> validSchema
-  operation <- parseRequestWith config schema request
-  pure $
-    ResolverContext
-      { schema,
-        config,
-        operation,
-        currentTypeName = "Root",
-        currentSelection =
-          Selection
-            { selectionName = "Root",
-              selectionArguments = empty,
-              selectionPosition = operationPosition operation,
-              selectionAlias = Nothing,
-              selectionContent = SelectionSet (operationSelection operation),
-              selectionDirectives = []
-            }
-      }
 
 parseDSL :: ByteString -> Either String (Schema VALID)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument
