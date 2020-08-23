@@ -23,7 +23,7 @@ import Subscription.API
   ( Channel (..),
     EVENT,
     Info (..),
-    api,
+    app,
   )
 import Subscription.Utils
   ( SimulationState (..),

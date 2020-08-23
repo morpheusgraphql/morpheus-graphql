@@ -74,5 +74,5 @@ root =
           }
     }
 
-app :: App EVENT m
+app :: App EVENT (SubM EVENT)
 app = deriveApp root
