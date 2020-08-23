@@ -338,8 +338,7 @@ runDataResolver res = asks currentSelection >>= __encode res
                 $ ResObject
                 $ ObjectResModel name
                 $ HM.singleton "enum" (pure $ ResScalar $ String $ readTypeName enum)
-        encodeNode ResEnum {} _ =
-          failure ("wrong selection on enum value" :: Message)
+        encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)
         -- UNION
         encodeNode (ResUnion typename unionRef) (UnionSelection selections) =
           unionRef >>= resolveObject currentSelection
