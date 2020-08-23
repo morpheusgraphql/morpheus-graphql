@@ -106,7 +106,7 @@ test =
     <$> traverse
       schemaCase
       [ ("merge/schema/simple-query", ["query"]),
-        ("merge/schema/query-subscription-mutation", [])
+        ("merge/schema/query-subscription-mutation", ["query", "mutation"])
       ]
 
 assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
