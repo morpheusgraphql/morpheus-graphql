@@ -5,9 +5,9 @@
       "fields": [
         { "name": "user", "args": [] },
         { "name": "testUnion", "args": [] },
+        { "name": "person", "args": [] },
         { "name": "fail1", "args": [] },
         { "name": "fail2", "args": [] },
-        { "name": "person", "args": [] },
         { "name": "type", "args": [{ "name": "in" }] }
       ]
     },

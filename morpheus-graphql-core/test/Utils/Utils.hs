@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Lib
+module Utils.Utils
   ( getGQLBody,
     expectedResponse,
     getCases,
@@ -18,6 +18,7 @@ module Lib
     assertValidSchema,
     getSchema,
     getResolvers,
+    getResolver,
   )
 where
 
@@ -156,8 +157,11 @@ getRequest p = do
       }
 
 getResolvers :: Monad m => FieldName -> IO (RootResModel e m)
-getResolvers (FieldName p) = do
-  res <- fromMaybe Null . decode <$> L.readFile (path p <> "/resolvers.json")
+getResolvers p = getResolver ("test/" <> p <> "/resolvers.json")
+
+getResolver :: Monad m => FieldName -> IO (RootResModel e m)
+getResolver (FieldName p) = do
+  res <- fromMaybe Null . decode <$> L.readFile (unpack p)
   pure
     RootResModel
       { query = pure (lookupRes "query" res),

@@ -1,0 +1,12 @@
+type Type1 {
+  name: String
+}
+
+type Type2 {
+  name: String
+  age: Int
+}
+
+type Query {
+  type: Type2
+}

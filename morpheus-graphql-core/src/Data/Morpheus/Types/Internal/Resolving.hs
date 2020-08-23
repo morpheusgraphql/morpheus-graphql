@@ -20,7 +20,6 @@ module Data.Morpheus.Types.Internal.Resolving
     unpackEvents,
     ObjectResModel (..),
     ResModel (..),
-    FieldResModel,
     WithOperation,
     PushEvents (..),
     subscribe,
@@ -45,6 +44,7 @@ module Data.Morpheus.Types.Internal.Resolving
     ResolverState,
     liftResolverState,
     mkValue,
+    FieldResModel,
   )
 where
 
@@ -52,10 +52,7 @@ import Control.Applicative (pure)
 import Control.Monad (Monad)
 import qualified Data.Aeson as A
 import Data.Functor (fmap)
-import qualified Data.HashMap.Strict as HM
-  ( lookup,
-    toList,
-  )
+import qualified Data.HashMap.Lazy as HM
 import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( mapTuple,
@@ -126,14 +123,16 @@ mkValue (A.Number x) = ResScalar (decodeScientific x)
 mkValue (A.String x) = ResScalar (String x)
 mkValue (A.Bool x) = ResScalar (Boolean x)
 
+type FieldResModel o e m = (FieldName, Resolver o e m (ResModel o e m))
+
 mkObject ::
   TypeName ->
   [(FieldName, Resolver o e m (ResModel o e m))] ->
   ResModel o e m
-mkObject __typename objectFields =
+mkObject __typename fields =
   ResObject
     ( ObjectResModel
         { __typename,
-          objectFields
+          objectFields = HM.fromList fields
         }
     )

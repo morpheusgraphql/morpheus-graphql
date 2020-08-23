@@ -1,14 +1,14 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Data.Morpheus.Server.Deriving.Resolve
-  ( statelessResolver,
-    RootResolverConstraint,
-    coreResolver,
+module Data.Morpheus.Server.Deriving.App
+  ( RootResolverConstraint,
     deriveSchema,
+    deriveApp,
   )
 where
 
@@ -16,8 +16,8 @@ import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
 import Data.Morpheus.Core
-  ( Config,
-    runApi,
+  ( App (..),
+    mkApp,
   )
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
@@ -31,22 +31,14 @@ import Data.Morpheus.Server.Deriving.Introspect
 import Data.Morpheus.Types
   ( RootResolver (..),
   )
-import Data.Morpheus.Types.IO
-  ( GQLRequest (..),
-    GQLResponse (..),
-    renderResponse,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     QUERY,
     SUBSCRIPTION,
-    VALID,
-    Value,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
-    ResponseStream,
-    ResultT (..),
+    Result (..),
   )
 
 type OperationConstraint operation event m a =
@@ -62,21 +54,10 @@ type RootResolverConstraint m event query mutation subscription =
     ChannelCon event m subscription
   )
 
-statelessResolver ::
+deriveApp ::
   RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
-  Config ->
-  GQLRequest ->
-  m GQLResponse
-statelessResolver root config req =
-  renderResponse <$> runResultT (coreResolver root config req)
-
-coreResolver ::
-  RootResolverConstraint m event query mut sub =>
-  RootResolver m event query mut sub ->
-  Config ->
-  GQLRequest ->
-  ResponseStream event m (Value VALID)
-coreResolver root config request = do
-  schema <- deriveSchema (Identity root)
-  runApi schema (deriveModel root) config request
+  App event m
+deriveApp root = case deriveSchema (Identity root) of
+  Success {result} -> mkApp result (deriveModel root)
+  Failure {errors} -> FailApp errors

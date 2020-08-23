@@ -15,7 +15,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
-import Data.Morpheus.Core (defaultConfig, runApi)
+import Data.Morpheus.Core (defaultConfig, mkApp, runAppWith)
 import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -28,12 +28,6 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
-import Lib
-  ( assertValidSchema,
-    expectedResponse,
-    getRequest,
-    getResolvers,
-  )
 import Test.Tasty
   ( TestTree,
     testGroup,
@@ -41,6 +35,12 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertFailure,
     testCase,
+  )
+import Utils.Utils
+  ( assertValidSchema,
+    expectedResponse,
+    getRequest,
+    getResolvers,
   )
 import Prelude
   ( ($),
@@ -72,6 +72,7 @@ testApiRequest apiPath path = testCase (unpack $ readName path) $ do
   schema <- assertValidSchema apiPath
   resolvers <- getResolvers apiPath
   let fullPath = apiPath <> "/" <> path
-  actual <- runApi schema resolvers defaultConfig <$> getRequest fullPath
+  let api = mkApp schema resolvers
+  actual <- runAppWith api defaultConfig <$> getRequest fullPath
   expected <- expectedResponse fullPath
   assertion expected actual

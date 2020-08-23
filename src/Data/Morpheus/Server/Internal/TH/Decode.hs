@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Internal.TH.Decode
   ( withInputObject,
@@ -15,6 +16,12 @@ module Data.Morpheus.Server.Internal.TH.Decode
 where
 
 -- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad ((>>=)))
+import Data.Either (Either (..))
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( empty,
     selectBy,
@@ -43,6 +50,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
+import Prelude ((.))
 
 withInputObject ::
   Failure InternalError m =>

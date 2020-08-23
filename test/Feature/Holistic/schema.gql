@@ -100,10 +100,7 @@ input TypeInput {
 type Query {
   user: User!
   testUnion: TestUnion
-  fail1: String!
-  fail2: Int!
   person: Person!
-  type(in: TypeInput!): String!
 }
 
 type Mutation {

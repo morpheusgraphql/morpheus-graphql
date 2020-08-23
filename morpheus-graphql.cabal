@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6aa7dd94a910283c164fa2b2c2f7e12b94bd464fc93383d8c68a691f56c888b0
+-- hash: b038e854960bedd56fbf05176d32b11c0f181d449c4c97ce7077cedeef8b882d
 
 name:           morpheus-graphql
 version:        0.14.1
@@ -81,6 +81,7 @@ data-files:
     test/Feature/Holistic/parsing/numbers/query.gql
     test/Feature/Holistic/parsing/singleLineComments/query.gql
     test/Feature/Holistic/reservedNames/query.gql
+    test/Feature/Holistic/schema-ext.gql
     test/Feature/Holistic/schema.gql
     test/Feature/Holistic/selection/__typename/query.gql
     test/Feature/Holistic/selection/AliasResolve/query.gql
@@ -394,12 +395,11 @@ library
       Data.Morpheus.Document
       Data.Morpheus.Types.Internal.Subscription
   other-modules:
+      Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Channels
       Data.Morpheus.Server.Deriving.Decode
       Data.Morpheus.Server.Deriving.Encode
-      Data.Morpheus.Server.Deriving.Interpreter
       Data.Morpheus.Server.Deriving.Introspect
-      Data.Morpheus.Server.Deriving.Resolve
       Data.Morpheus.Server.Deriving.Utils
       Data.Morpheus.Server.Internal.TH.Decode
       Data.Morpheus.Server.Internal.TH.Types

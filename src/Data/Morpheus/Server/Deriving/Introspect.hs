@@ -176,43 +176,29 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
   Failure {errors} -> failure errors
   where
     querySchema =
-      resolveUpdates (initTypeLib (operatorType fields "Query")) types
+      resolveUpdates (initTypeLib query) types
       where
-        (fields, types) =
-          introspectObjectFields
-            (Proxy @(CUSTOM (query (Resolver QUERY event m))))
-            ("type for query", Proxy @(query (Resolver QUERY event m)))
+        (query, types) =
+          deriveOperationType "Query" $
+            Proxy @(query (Resolver QUERY event m))
     ------------------------------
     mutationSchema lib =
       resolveUpdates
-        (lib {mutation = maybeOperator fields "Mutation"})
+        (lib {mutation = optionalType mutation})
         types
       where
-        (fields, types) =
-          introspectObjectFields
-            (Proxy @(CUSTOM (mutation (Resolver MUTATION event m))))
-            ( "type for mutation",
-              Proxy @(mutation (Resolver MUTATION event m))
-            )
+        (mutation, types) =
+          deriveOperationType "Mutation" $
+            Proxy @(mutation (Resolver MUTATION event m))
     ------------------------------
     subscriptionSchema lib =
       resolveUpdates
-        (lib {subscription = maybeOperator fields "Subscription"})
+        (lib {subscription = optionalType subscription})
         types
       where
-        (fields, types) =
-          introspectObjectFields
-            (Proxy @(CUSTOM (subscription (Resolver SUBSCRIPTION event m))))
-            ( "type for subscription",
-              Proxy @(subscription (Resolver SUBSCRIPTION event m))
-            )
-    maybeOperator :: FieldsDefinition OUT CONST -> TypeName -> Maybe (TypeDefinition OBJECT CONST)
-    maybeOperator fields
-      | null fields = const Nothing
-      | otherwise = Just . operatorType fields
-    -------------------------------------------------
-    operatorType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
-    operatorType fields typeName = mkType typeName (DataObject [] fields)
+        (subscription, types) =
+          deriveOperationType "Subscription" $
+            Proxy @(subscription (Resolver SUBSCRIPTION event m))
 
 introspectOUT :: forall a. (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
 introspectOUT _ = introspect (ProxyRep :: ProxyRep OUT a)
@@ -363,6 +349,24 @@ introspectInputObjectFields p1 (name, proxy) =
   where
     withObject (DataInputObject {inputObjectFields}, ts) = (inputObjectFields, ts)
     withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
+
+optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
+optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
+  | null objectFields = Nothing
+  | otherwise = Just td
+
+deriveOperationType ::
+  forall proxy a.
+  DeriveTypeContent OUT (CUSTOM a) a =>
+  TypeName ->
+  proxy a ->
+  (TypeDefinition OBJECT CONST, [TypeUpdater])
+deriveOperationType name proxy = (mkOperationType fields name, types)
+  where
+    (fields, types) = introspectObjectFields (Proxy @(CUSTOM a)) (name, proxy)
+
+mkOperationType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
+mkOperationType fields typeName = mkType typeName (DataObject [] fields)
 
 introspectObjectFields ::
   DeriveTypeContent OUT custom a =>

@@ -1,0 +1,9 @@
+{
+  "query": {
+    "type": {
+      "name": "name from ext",
+      "id": "id from ext"
+    },
+    "id": "id from ext"
+  }
+}

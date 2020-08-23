@@ -25,6 +25,12 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (traverse_)
 -- MORPHEUS
+import Data.Morpheus.Core
+  ( AppRunner (..),
+    debugConfig,
+    defaultConfig,
+    runAppWith,
+  )
 import Data.Morpheus.Error
   ( globalErrorMessage,
   )
@@ -41,7 +47,8 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ResponseEvent (..),
+  ( Event,
+    ResponseEvent (..),
     ResponseStream,
     Result (..),
     ResultT (..),
@@ -225,3 +232,7 @@ unfoldRes execute Success {events, result, warnings} = do
         events = events'
       }
 unfoldRes _ Failure {errors} = ResultT $ pure $ Failure {errors}
+
+instance Monad m => AppRunner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
+  runApp app = toOutStream (runAppWith app defaultConfig)
+  debugApp app = toOutStream (runAppWith app debugConfig)

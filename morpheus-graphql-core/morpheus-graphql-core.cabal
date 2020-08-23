@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: db805940089c68c82bd542e86200950c50069afe4b4d412a9bca5a4ee8f6f8ce
+-- hash: 960d6622e75bb53796ecd98c764d1d001fda2fb2733e77953dc669143605770b
 
 name:           morpheus-graphql-core
 version:        0.14.1
@@ -35,6 +35,15 @@ data-files:
     test/api/validation/fragment/on-type/query.gql
     test/api/validation/fragment/on-union-type/query.gql
     test/api/validation/fragment/schema.gql
+    test/merge/schema/query-subscription-mutation/api/app.gql
+    test/merge/schema/query-subscription-mutation/api/ext.gql
+    test/merge/schema/query-subscription-mutation/expected/ok.gql
+    test/merge/schema/query-subscription-mutation/request/mutation/query.gql
+    test/merge/schema/query-subscription-mutation/request/query/query.gql
+    test/merge/schema/simple-query/api/app.gql
+    test/merge/schema/simple-query/api/ext.gql
+    test/merge/schema/simple-query/expected/ok.gql
+    test/merge/schema/simple-query/request/query/query.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -84,6 +93,13 @@ data-files:
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
     test/api/validation/fragment/resolvers.json
+    test/merge/schema/query-subscription-mutation/api/app.json
+    test/merge/schema/query-subscription-mutation/api/ext.json
+    test/merge/schema/query-subscription-mutation/request/mutation/response.json
+    test/merge/schema/query-subscription-mutation/request/query/response.json
+    test/merge/schema/simple-query/api/app.json
+    test/merge/schema/simple-query/api/ext.json
+    test/merge/schema/simple-query/request/query/response.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
@@ -166,6 +182,7 @@ library
       Data.Morpheus.Schema.DSL
       Data.Morpheus.Schema.Schema
       Data.Morpheus.Schema.SchemaAPI
+      Data.Morpheus.Types.App
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.DirectiveLocation
       Data.Morpheus.Types.Internal.AST.Fields
@@ -183,6 +200,7 @@ library
       Data.Morpheus.Types.Internal.Resolving.Event
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.Resolving.ResolverState
+      Data.Morpheus.Types.Internal.Stitching
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error
       Data.Morpheus.Types.Internal.Validation.Internal
@@ -222,9 +240,10 @@ test-suite morpheus-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Lib
       Utils.Api
+      Utils.MergeSchema
       Utils.Schema
+      Utils.Utils
       Paths_morpheus_graphql_core
   hs-source-dirs:
       test

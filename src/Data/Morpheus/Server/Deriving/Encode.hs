@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -68,7 +69,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( FieldResModel,
     LiftOperation,
-    ObjectResModel (..),
     ResModel (..),
     Resolver,
     ResolverState,
@@ -77,6 +77,7 @@ import Data.Morpheus.Types.Internal.Resolving
     failure,
     getArguments,
     liftResolverState,
+    mkObject,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -166,7 +167,7 @@ convertNode ::
   ResNode o e m ->
   ResModel o e m
 convertNode ResNode {resDatatypeName, resKind = REP_OBJECT, resFields} =
-  ResObject (ObjectResModel resDatatypeName $ map toFieldRes resFields)
+  mkObject resDatatypeName (map toFieldRes resFields)
 convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord} =
   encodeUnion resFields
   where
@@ -181,10 +182,9 @@ convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeNam
       ResUnion
         resTypeName
         $ pure
-        $ ResObject
-        $ ObjectResModel
+        $ mkObject
           resTypeName
-          (map toFieldRes resolvers)
+          (fmap toFieldRes resolvers)
       where
         resolvers
           | isResRecord = fields
@@ -240,7 +240,8 @@ deriveModel ::
     Con SUBSCRIPTION e m sub,
     ChannelCon e m sub,
     Applicative m,
-    Monad m
+    Monad m,
+    GQLType (sub (Resolver SUBSCRIPTION e m))
   ) =>
   RootResolver m e query mut sub ->
   RootResModel e m
@@ -254,8 +255,12 @@ deriveModel
       { query = objectResolvers queryResolver,
         mutation = objectResolvers mutationResolver,
         subscription = objectResolvers subscriptionResolver,
-        channelMap = Just (getChannels subscriptionResolver)
+        channelMap
       }
+    where
+      channelMap
+        | isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
+        | otherwise = Just (getChannels subscriptionResolver)
 
 toFieldRes :: FieldNode o e m -> FieldResModel o e m
 toFieldRes FieldNode {fieldSelName, fieldResolver} =

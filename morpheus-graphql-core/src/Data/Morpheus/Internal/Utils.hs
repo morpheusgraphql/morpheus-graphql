@@ -1,7 +1,12 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
@@ -34,12 +39,19 @@ module Data.Morpheus.Internal.Utils
     traverseCollection,
     (<.>),
     SemigroupM (..),
+    fromListT,
+    mergeT,
+    runResolutionT,
+    ResolutionT,
+    prop,
+    resolveWith,
   )
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<), foldM)
-import Control.Monad.Trans.Class (lift)
+import Control.Monad ((=<<), (>=>), (>>=), foldM)
+import Control.Monad.Reader (MonadReader (..), asks)
+import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
   )
@@ -47,24 +59,23 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Foldable (null, traverse_)
+import Data.Foldable (foldlM, null, traverse_)
 import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
-import Data.Maybe (isJust, maybe)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
-    GQLErrors,
     Ref (..),
     Token,
     TypeName (..),
     TypeNameRef (..),
     ValidationErrors,
-    toGQLError,
   )
 import Data.Semigroup (Semigroup (..))
 import qualified Data.Text as T
@@ -74,8 +85,6 @@ import qualified Data.Text as T
   )
 import Data.Traversable (traverse)
 import Instances.TH.Lift ()
-import Text.Megaparsec.Internal (ParsecT (..))
-import Text.Megaparsec.Stream (Stream)
 import Prelude
   ( ($),
     (.),
@@ -85,7 +94,6 @@ import Prelude
     Functor (..),
     Int,
     Monad,
-    Ord,
     String,
     const,
     fst,
@@ -93,6 +101,9 @@ import Prelude
     otherwise,
     snd,
   )
+
+prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
+prop f fSel a1 a2 = f (fSel a1) (fSel a2)
 
 mapText :: (String -> String) -> Token -> Token
 mapText f = T.pack . f . T.unpack
@@ -203,7 +214,7 @@ class Listable a coll | coll -> a where
   fromElems :: (Monad m, Failure ValidationErrors m) => [a] -> m coll
 
 instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
-  fromElems = safeFromList
+  fromElems xs = runResolutionT (fromListT xs) hmUnsafeFromValues failOnDups
   elems = HM.elems
 
 keys :: (KeyOf k a, Listable a coll) => coll -> [k]
@@ -217,7 +228,7 @@ class Merge a where
   merge :: (Monad m, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 
 instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
-  merge _ = safeJoin
+  merge _ x y = runResolutionT (fromListT $ HM.elems x <> HM.elems y) hmUnsafeFromValues failOnDups
 
 (<:>) :: (Monad m, Merge a, Failure ValidationErrors m) => a -> a -> m a
 (<:>) = merge []
@@ -242,9 +253,6 @@ instance Failure error (Either error) where
 instance (Monad m, Failure errors m) => Failure errors (ReaderT ctx m) where
   failure = lift . failure
 
-instance (Stream s, Ord e, Failure GQLErrors m) => Failure ValidationErrors (ParsecT e s m) where
-  failure x = ParsecT $ \_ _ _ _ _ -> failure (fmap toGQLError x)
-
 mapFst :: (a -> a') -> (a, b) -> (a', b)
 mapFst f (a, b) = (f a, b)
 
@@ -266,40 +274,87 @@ concatUpdates x = UpdateT (`resolveUpdates` x)
 resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
 resolveUpdates a = foldM (&) a . fmap updateTState
 
-safeFromList ::
-  ( Failure ValidationErrors m,
-    Applicative m,
-    NameCollision a,
-    Eq k,
-    Hashable k,
-    KeyOf k a
+type RESOLUTION k a coll m =
+  ( Monad m,
+    KeyOf k a,
+    Listable a coll
+  )
+
+data Resolution a coll m = Resolution
+  { resolveDups :: NonEmpty a -> m a,
+    fromNoDups :: [a] -> coll
+  }
+
+runResolutionT ::
+  ResolutionT a coll m b ->
+  ([a] -> coll) ->
+  (NonEmpty a -> m a) ->
+  m b
+runResolutionT (ResolutionT x) fromNoDups resolveDups = runReaderT x Resolution {..}
+
+newtype ResolutionT a coll m x = ResolutionT
+  { _runResolutionT :: ReaderT (Resolution a coll m) m x
+  }
+  deriving
+    ( Functor,
+      Monad,
+      Applicative,
+      MonadReader (Resolution a coll m)
+    )
+
+instance MonadTrans (ResolutionT e coll) where
+  lift = ResolutionT . lift
+
+instance
+  ( Monad m,
+    Failure ValidationErrors m
   ) =>
+  Failure ValidationErrors (ResolutionT a coll m)
+  where
+  failure = lift . failure
+
+resolveDupsM :: Monad m => NonEmpty a -> ResolutionT a coll m a
+resolveDupsM xs = asks resolveDups >>= lift . (xs &)
+
+fromNoDupsM :: Monad m => [a] -> ResolutionT a coll m coll
+fromNoDupsM xs = asks ((xs &) . fromNoDups)
+
+insertWithList :: (Eq k, Hashable k) => (k, NonEmpty a) -> [(k, NonEmpty a)] -> [(k, NonEmpty a)]
+insertWithList (key, value) values
+  | key `member` values = fmap replaceBy values
+  | otherwise = values <> [(key, value)]
+  where
+    replaceBy (entryKey, entryValue)
+      | key == entryKey = (key, entryValue <> value)
+      | otherwise = (entryKey, entryValue)
+
+clusterDupps :: (Eq k, Hashable k) => [(k, NonEmpty a)] -> [(k, a)] -> [(k, NonEmpty a)]
+clusterDupps collected [] = collected
+clusterDupps coll ((key, value) : xs) = clusterDupps (insertWithList (key, value :| []) coll) xs
+
+fromListDupps :: (KeyOf k a) => [a] -> [(k, NonEmpty a)]
+fromListDupps xs = clusterDupps [] (fmap toPair xs)
+
+fromListT ::
+  RESOLUTION k a coll m =>
   [a] ->
-  m (HashMap k a)
-safeFromList values = safeUnionWith HM.empty (fmap toPair values)
+  ResolutionT a coll m coll
+fromListT = traverse (resolveDupsM . snd) . fromListDupps >=> fromNoDupsM
 
-safeJoin :: (Failure ValidationErrors m, Eq k, Hashable k, Applicative m, NameCollision a) => HashMap k a -> HashMap k a -> m (HashMap k a)
-safeJoin hm newls = safeUnionWith hm (HM.toList newls)
+mergeT :: RESOLUTION k a coll m => coll -> coll -> ResolutionT a coll m coll
+mergeT c1 c2 = traverse (resolveDupsM . snd) (fromListDupps (elems c1 <> elems c2)) >>= fromNoDupsM
 
-safeUnionWith ::
-  ( Failure ValidationErrors m,
-    Applicative m,
-    Eq k,
-    Hashable k,
-    NameCollision a
-  ) =>
-  HashMap k a ->
-  [(k, a)] ->
-  m (HashMap k a)
-safeUnionWith hm names = case insertNoDups (hm, []) names of
-  (res, dupps)
-    | null dupps -> pure res
-    | otherwise -> failure $ fmap (nameCollision . snd) dupps
+resolveWith ::
+  Monad m =>
+  (a -> a -> m a) ->
+  NonEmpty a ->
+  m a
+resolveWith f (x :| xs) = foldlM f x xs
 
-type NoDupHashMap k a = (HashMap k a, [(k, a)])
+hmUnsafeFromValues :: (Eq k, KeyOf k a) => [a] -> HashMap k a
+hmUnsafeFromValues = HM.fromList . fmap toPair
 
-insertNoDups :: (Eq k, Hashable k) => NoDupHashMap k a -> [(k, a)] -> NoDupHashMap k a
-insertNoDups collected [] = collected
-insertNoDups (coll, errors) (pair@(name, value) : xs)
-  | isJust (name `HM.lookup` coll) = insertNoDups (coll, errors <> [pair]) xs
-  | otherwise = insertNoDups (HM.insert name value coll, errors) xs
+failOnDups :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
+failOnDups (x :| xs)
+  | null xs = pure x
+  | otherwise = failure $ fmap nameCollision (x : xs)

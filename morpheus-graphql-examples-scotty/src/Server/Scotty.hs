@@ -23,7 +23,7 @@ import qualified Server.Mythology.API as Mythology (api, rootResolver)
 import Server.Sophisticated.API
   ( EVENT,
     api,
-    gqlRoot,
+    root,
   )
 import qualified Server.TH.Simple as TH (api, rootResolver)
 import Server.Utils
@@ -35,7 +35,7 @@ import Web.Scotty
   )
 
 _validateSchema :: ()
-_validateSchema = $(compileTimeSchemaValidation (Identity gqlRoot))
+_validateSchema = $(compileTimeSchemaValidation (Identity root))
 
 scottyServer :: IO ()
 scottyServer = do
@@ -45,6 +45,6 @@ scottyServer = do
   where
     httpApp :: (EVENT -> IO ()) -> ScottyM ()
     httpApp publish = do
-      httpEndpoint "/" gqlRoot (httpPubApp api publish)
+      httpEndpoint "/" root (httpPubApp api publish)
       httpEndpoint "/mythology" Mythology.rootResolver Mythology.api
       httpEndpoint "/th" TH.rootResolver TH.api

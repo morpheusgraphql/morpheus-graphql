@@ -1,0 +1,10 @@
+{
+  "data": {
+    "id": "id from ext",
+    "type": {
+      "id": "id from ext",
+      "name": "name from ext",
+      "age": 23
+    }
+  }
+}
