@@ -29,8 +29,6 @@ import Control.Monad.IO.Unlift
 
 import Data.Morpheus.Core
   ( App,
-    defaultConfig,
-    runAppWith,
   )
 import Data.Morpheus.Server.Deriving.Introspect
   ( compileTimeSchemaValidation,
@@ -54,7 +52,7 @@ import Data.Morpheus.Types.Internal.Subscription
     initDefaultStore,
     publishEventWith,
     runStreamHTTP,
-    toOutStream,
+    streamApp,
   )
 import Network.WebSockets
   ( Connection,
@@ -114,7 +112,7 @@ subscriptionApp ::
 subscriptionApp appWrapper gqpApp =
   do
     store <- initDefaultStore
-    app <- appWrapper store (connectionThread (toOutStream (runAppWith gqpApp defaultConfig)))
+    app <- appWrapper store $ connectionThread $ streamApp gqpApp
     pure
       ( app,
         publishEventWith store

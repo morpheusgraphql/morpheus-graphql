@@ -9,13 +9,10 @@ module Subscription.Case.ApolloRequest
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Function ((&))
+import Data.Morpheus (App)
 import Data.Morpheus.Types
   ( Event,
-    Input,
-    Stream,
-  )
-import Data.Morpheus.Types.Internal.Subscription
-  ( WS,
   )
 import Subscription.Utils
   ( SimulationState (..),
@@ -36,9 +33,11 @@ import Test.Tasty
     testGroup,
   )
 
+type WSApp ch a = App (Event ch a) (SubM (Event ch a))
+
 testUnknownType ::
   (Eq ch) =>
-  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
+  App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
 testUnknownType =
   testSimulation
@@ -57,7 +56,7 @@ testUnknownType =
 
 testConnectionInit ::
   (Eq ch) =>
-  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
+  App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
 testConnectionInit = testSimulation test [apolloInit]
   where
@@ -75,10 +74,7 @@ testConnectionInit = testSimulation test [apolloInit]
 startSub :: ByteString -> ByteString
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
-testSubscriptionStart ::
-  (Eq ch) =>
-  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
-  IO TestTree
+testSubscriptionStart :: (Eq ch) => WSApp ch a -> IO TestTree
 testSubscriptionStart =
   testSimulation
     test
@@ -100,10 +96,7 @@ testSubscriptionStart =
             store
         ]
 
-testSubscriptionStop ::
-  (Eq ch) =>
-  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
-  IO TestTree
+testSubscriptionStop :: (Eq ch) => WSApp ch a -> IO TestTree
 testSubscriptionStop =
   testSimulation
     test
@@ -128,11 +121,14 @@ testSubscriptionStop =
 
 testApolloRequest ::
   (Eq ch) =>
-  (Input WS -> Stream WS (Event ch a) (SubM (Event ch a))) ->
+  App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
-testApolloRequest api = do
-  unknownType <- testUnknownType api
-  connection_init <- testConnectionInit api
-  start <- testSubscriptionStart api
-  stop <- testSubscriptionStop api
-  return $ testGroup "ApolloRequest" [unknownType, connection_init, start, stop]
+testApolloRequest app =
+  testGroup "ApolloRequest"
+    <$> traverse
+      (app &)
+      [ testUnknownType,
+        testConnectionInit,
+        testSubscriptionStart,
+        testSubscriptionStop
+      ]

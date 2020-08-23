@@ -25,6 +25,7 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.Functor.Identity (Identity (..))
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Morpheus (runApp)
 import Data.Morpheus.Document
   ( RootResolverConstraint,
     toGraphQLDocument,
@@ -33,7 +34,8 @@ import Data.Morpheus.Server
   ( httpPlayground,
   )
 import Data.Morpheus.Types
-  ( GQLRequest,
+  ( App,
+    GQLRequest,
     GQLResponse,
     RootResolver,
   )
@@ -64,10 +66,8 @@ import Servant
     MimeRender (..),
     PlainText,
     Post,
-    QueryParam',
     ReqBody,
     Server,
-    Strict,
     serve,
   )
 
@@ -102,12 +102,8 @@ type Playground = Get '[HTML] ByteString
 
 type Endpoint (name :: Symbol) = name :> (API :<|> Schema :<|> Playground)
 
-serveEndpoint ::
-  (RootResolverConstraint m o mu qu su) =>
-  RootResolver m o mu qu su ->
-  (GQLRequest -> IO GQLResponse) ->
-  Server (Endpoint name)
-serveEndpoint root app = (liftIO . app) :<|> withSchema root :<|> pure httpPlayground
+serveEndpoint :: App e IO -> Server (Endpoint name)
+serveEndpoint app = (liftIO . runApp app) :<|> withSchema root :<|> pure httpPlayground
 
 withSchema ::
   (RootResolverConstraint m o mu qu su, Applicative f) =>

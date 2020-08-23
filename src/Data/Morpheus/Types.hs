@@ -54,11 +54,13 @@ module Data.Morpheus.Types
     IOSubRes,
     interface,
     SubscriptionField,
+    App,
   )
 where
 
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Data.Either (either)
+import Data.Morpheus.Core (App)
 -- MORPHEUS
 
 import Data.Morpheus.Server.Deriving.Introspect

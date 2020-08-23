@@ -12,7 +12,6 @@ module Data.Morpheus.Types.Internal.Subscription
   ( connect,
     disconnect,
     connectionThread,
-    toOutStream,
     runStreamWS,
     runStreamHTTP,
     Stream,
@@ -30,6 +29,7 @@ module Data.Morpheus.Types.Internal.Subscription
     toList,
     connectionSessionIds,
     SessionID,
+    streamApp,
   )
 where
 
@@ -47,6 +47,11 @@ import Control.Monad.IO.Unlift
   )
 -- MORPHEUS
 
+import Data.Morpheus.Core
+  ( App,
+    defaultConfig,
+    runAppWith,
+  )
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -75,6 +80,9 @@ import Data.Morpheus.Types.Internal.Subscription.Stream
     toOutStream,
   )
 import Data.UUID.V4 (nextRandom)
+
+streamApp :: Monad m => App e m -> Input api -> Stream api e m
+streamApp app = toOutStream (runAppWith app defaultConfig)
 
 connect :: MonadIO m => m (Input WS)
 connect = Init <$> liftIO nextRandom

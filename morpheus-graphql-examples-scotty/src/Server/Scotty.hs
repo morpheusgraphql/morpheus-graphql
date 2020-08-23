@@ -22,8 +22,7 @@ import Data.Morpheus.Server
 import qualified Server.Mythology.API as Mythology (api, rootResolver)
 import Server.Sophisticated.API
   ( EVENT,
-    api,
-    root,
+    app,
   )
 import qualified Server.TH.Simple as TH (api, rootResolver)
 import Server.Utils
@@ -39,12 +38,12 @@ _validateSchema = $(compileTimeSchemaValidation (Identity root))
 
 scottyServer :: IO ()
 scottyServer = do
-  (wsApp, publish) <- webSocketsApp api
+  (wsApp, publish) <- webSocketsApp app
   fetchUser (httpPubApp api publish) >>= print
   startServer wsApp (httpApp publish)
   where
     httpApp :: (EVENT -> IO ()) -> ScottyM ()
     httpApp publish = do
-      httpEndpoint "/" root (httpPubApp api publish)
+      httpEndpoint "/" root (httpPubApp app publish)
       httpEndpoint "/mythology" Mythology.rootResolver Mythology.api
       httpEndpoint "/th" TH.rootResolver TH.api

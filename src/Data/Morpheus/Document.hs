@@ -14,7 +14,8 @@ import Data.ByteString.Lazy.Char8
     pack,
   )
 import Data.Morpheus.Core
-  ( render,
+  ( App,
+    render,
   )
 import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,

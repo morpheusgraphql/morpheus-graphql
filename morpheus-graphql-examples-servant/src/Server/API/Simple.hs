@@ -10,15 +10,14 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.API.Simple
-  ( api,
-    apiPubSub,
-    rootResolver,
+  ( app,
     EVENT,
   )
 where
 
 import Data.Morpheus
-  ( interpreter,
+  ( App,
+    deriveApp,
   )
 import Data.Morpheus.Document
   ( importGQLDocument,
@@ -88,8 +87,5 @@ resolveCreateDeity CreateDeityArgs {name, power} = do
         power = pure power
       }
 
-api :: GQLRequest -> IO GQLResponse
-api = interpreter rootResolver
-
-apiPubSub :: Input api -> Stream api EVENT IO
-apiPubSub = interpreter rootResolver
+app :: App EVENT IO
+app = deriveApp rootResolver
