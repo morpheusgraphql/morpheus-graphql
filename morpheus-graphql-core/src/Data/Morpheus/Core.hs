@@ -25,8 +25,8 @@ module Data.Morpheus.Core
     App (..),
     AppData (..),
     AppRunner (..),
-    mkApi,
-    runApiWith,
+    mkApp,
+    runAppWith,
   )
 where
 
@@ -52,8 +52,8 @@ import Data.Morpheus.Types.App
   ( App (..),
     AppData (..),
     AppRunner (..),
-    mkApi,
-    runApiWith,
+    mkApp,
+    runAppWith,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Schema,

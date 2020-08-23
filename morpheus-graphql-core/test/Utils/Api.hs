@@ -15,7 +15,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
-import Data.Morpheus.Core (defaultConfig, mkApi, runApiWith)
+import Data.Morpheus.Core (defaultConfig, mkApp, runAppWith)
 import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -72,7 +72,7 @@ testApiRequest apiPath path = testCase (unpack $ readName path) $ do
   schema <- assertValidSchema apiPath
   resolvers <- getResolvers apiPath
   let fullPath = apiPath <> "/" <> path
-  let api = mkApi schema resolvers
-  actual <- runApiWith api defaultConfig <$> getRequest fullPath
+  let api = mkApp schema resolvers
+  actual <- runAppWith api defaultConfig <$> getRequest fullPath
   expected <- expectedResponse fullPath
   assertion expected actual

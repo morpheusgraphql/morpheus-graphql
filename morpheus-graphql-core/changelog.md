@@ -8,7 +8,7 @@
 
   ```hs
   api :: a -> m b
-  api = runApi (mkApi schema resolvers)
+  api = runApi (mkApp schema resolvers)
   ```
 
 - `Api` supports semigroup(`schema Stitching`):

@@ -16,8 +16,8 @@ import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
 import Data.Morpheus.Core
-  ( Api (..),
-    mkApi,
+  ( App (..),
+    mkApp,
   )
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
@@ -59,5 +59,5 @@ deriveApi ::
   RootResolver m event query mut sub ->
   Api event m
 deriveApi root = case deriveSchema (Identity root) of
-  Success {result} -> mkApi result (deriveModel root)
+  Success {result} -> mkApp result (deriveModel root)
   Failure {errors} -> FailApi errors

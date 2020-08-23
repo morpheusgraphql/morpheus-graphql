@@ -26,10 +26,10 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (traverse_)
 -- MORPHEUS
 import Data.Morpheus.Core
-  ( ApiRunner (..),
+  ( AppRunner (..),
     debugConfig,
     defaultConfig,
-    runApiWith,
+    runAppWith,
   )
 import Data.Morpheus.Error
   ( globalErrorMessage,
@@ -233,6 +233,6 @@ unfoldRes execute Success {events, result, warnings} = do
       }
 unfoldRes _ Failure {errors} = ResultT $ pure $ Failure {errors}
 
-instance Monad m => ApiRunner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
-  runApi app = toOutStream (runApiWith app defaultConfig)
-  debugApi app = toOutStream (runApiWith app debugConfig)
+instance Monad m => AppRunner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
+  runApp app = toOutStream (runAppWith app defaultConfig)
+  debugApp app = toOutStream (runAppWith app debugConfig)

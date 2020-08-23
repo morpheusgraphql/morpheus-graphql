@@ -8,8 +8,8 @@
 module Data.Morpheus.Types.App
   ( App (..),
     AppRunner (..),
-    runApiWith,
-    mkApi,
+    runAppWith,
+    mkApp,
     AppData (..),
   )
 where
@@ -69,8 +69,8 @@ import Prelude
     const,
   )
 
-mkApi :: ValidateSchema s => Schema s -> RootResModel e m -> App e m
-mkApi appSchema appResolvers =
+mkApp :: ValidateSchema s => Schema s -> RootResModel e m -> App e m
+mkApp appSchema appResolvers =
   resultOr
     FailApp
     (App . AppData appResolvers)
@@ -97,9 +97,9 @@ instance Monad m => Stitching (AppData e m s) where
       <$> prop stitch appResolvers x y
       <*> prop stitch appSchema x y
 
-runApiWith :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
-runApiWith App {app} = runAppData app
-runApiWith FailApp {appErrors} = const $ const $ failure appErrors
+runAppWith :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
+runAppWith App {app} = runAppData app
+runAppWith FailApp {appErrors} = const $ const $ failure appErrors
 
 runAppData ::
   (Monad m, ValidateSchema s) =>
@@ -152,8 +152,8 @@ class Monad m => AppRunner e (m :: * -> *) a b where
   debugApp :: App e m -> a -> b
 
 instance Monad m => AppRunner e m GQLRequest (m GQLResponse) where
-  runApp api = stateless . runApiWith api defaultConfig
-  debugApp api = stateless . runApiWith api debugConfig
+  runApp api = stateless . runAppWith api defaultConfig
+  debugApp api = stateless . runAppWith api debugConfig
 
 instance (Monad m, MapAPI a a) => AppRunner e m a (m a) where
   runApp app = mapAPI (runApp app)

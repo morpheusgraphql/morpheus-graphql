@@ -4,7 +4,7 @@
 module Data.Morpheus
   ( interpreter,
     debugInterpreter,
-    ApiRunner (..),
+    AppRunner (..),
     deriveApi,
     Api,
   )
@@ -13,7 +13,7 @@ where
 -- MORPHEUS
 import Data.Morpheus.Core
   ( Api,
-    ApiRunner (..),
+    AppRunner (..),
   )
 import Data.Morpheus.Server.Deriving.Api
   ( RootResolverConstraint,
@@ -25,7 +25,7 @@ import Data.Morpheus.Types
 
 -- | main query processor and resolver
 interpreter ::
-  ApiRunner e m a b =>
+  AppRunner e m a b =>
   (RootResolverConstraint m e query mut sub) =>
   RootResolver m e query mut sub ->
   a ->
@@ -33,7 +33,7 @@ interpreter ::
 interpreter = runApi . deriveApi
 
 debugInterpreter ::
-  ApiRunner e m a b =>
+  AppRunner e m a b =>
   (RootResolverConstraint m e query mut sub) =>
   RootResolver m e query mut sub ->
   a ->

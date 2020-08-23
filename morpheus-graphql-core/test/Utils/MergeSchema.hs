@@ -21,11 +21,11 @@ import Data.Morpheus.Core
   ( App (..),
     AppData (..),
     defaultConfig,
-    mkApi,
-    mkApi,
+    mkApp,
+    mkApp,
     parseGQLDocument,
     render,
-    runApiWith,
+    runAppWith,
   )
 import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
@@ -72,7 +72,7 @@ loadApi :: FieldName -> IO (App () Identity)
 loadApi url = do
   schema <- readSchema ("test/" <> url <> ".gql")
   resolvers <- getResolver ("test/" <> url <> ".json")
-  pure $ mkApi schema resolvers
+  pure $ mkApp schema resolvers
 
 schemaAssertion :: App () Identity -> Schema VALID -> IO ()
 schemaAssertion (App AppData {appSchema}) expectedSchema
@@ -126,6 +126,6 @@ testApiRequest ::
   TestTree
 testApiRequest api base path = testCase (unpack $ readName path) $ do
   let fullPath = base <> "/request/" <> path
-  actual <- runApiWith api defaultConfig <$> getRequest fullPath
+  actual <- runAppWith api defaultConfig <$> getRequest fullPath
   expected <- expectedResponse fullPath
   assertion expected actual
