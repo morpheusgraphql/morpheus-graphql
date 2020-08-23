@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dc40eb95a5b45ba797883fea80a74119ccc18003264b67364bef058c01a8ebcd
+-- hash: 480aa08af1b502d1cb8e734abb74510595b04ddbf97bdb1accb6d764feca8706
 
 name:           morpheus-graphql
 version:        0.14.1
@@ -81,6 +81,7 @@ data-files:
     test/Feature/Holistic/parsing/numbers/query.gql
     test/Feature/Holistic/parsing/singleLineComments/query.gql
     test/Feature/Holistic/reservedNames/query.gql
+    test/Feature/Holistic/schema-ext.gql
     test/Feature/Holistic/schema.gql
     test/Feature/Holistic/selection/__typename/query.gql
     test/Feature/Holistic/selection/AliasResolve/query.gql

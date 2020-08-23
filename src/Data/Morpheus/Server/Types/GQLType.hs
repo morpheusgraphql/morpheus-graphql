@@ -127,6 +127,10 @@ class IsObject (KIND a) => GQLType a where
   isObjectKind :: Proxy a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
+  isEmptyType :: Proxy a -> Bool
+  default isEmptyType :: Proxy a -> Bool
+  isEmptyType _ = False
+
   __typeName :: Proxy a -> TypeName
   default __typeName ::
     (Typeable a) =>
@@ -152,6 +156,7 @@ instance GQLType () where
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
   type CUSTOM (Undefined m) = 'False
+  isEmptyType _ = True
 
 instance GQLType Int where
   type KIND Int = SCALAR

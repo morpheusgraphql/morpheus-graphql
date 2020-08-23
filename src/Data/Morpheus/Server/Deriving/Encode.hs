@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -53,6 +54,7 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
+    Undefined,
   )
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
@@ -239,7 +241,8 @@ deriveModel ::
     Con SUBSCRIPTION e m sub,
     ChannelCon e m sub,
     Applicative m,
-    Monad m
+    Monad m,
+    GQLType (sub (Resolver SUBSCRIPTION e m))
   ) =>
   RootResolver m e query mut sub ->
   RootResModel e m
@@ -253,8 +256,12 @@ deriveModel
       { query = objectResolvers queryResolver,
         mutation = objectResolvers mutationResolver,
         subscription = objectResolvers subscriptionResolver,
-        channelMap = Just (getChannels subscriptionResolver)
+        channelMap
       }
+    where
+      channelMap
+        | isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
+        | otherwise = Just (getChannels subscriptionResolver)
 
 toFieldRes :: FieldNode o e m -> FieldResModel o e m
 toFieldRes FieldNode {fieldSelName, fieldResolver} =

@@ -12,11 +12,10 @@
 
 module Feature.Holistic.API
   ( api,
-    rootResolver,
   )
 where
 
-import Data.Morpheus (interpreter)
+import Data.Morpheus (deriveApi, runApi)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
@@ -28,9 +27,11 @@ import Data.Morpheus.Types
     ID (..),
     RootResolver (..),
     ScalarValue (..),
+    Undefined (..),
     liftEither,
     subscribe,
   )
+import Data.Semigroup ((<>))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -55,20 +56,32 @@ type EVENT = Event Channel ()
 
 importGQLDocument "test/Feature/Holistic/schema.gql"
 
+importGQLDocument "test/Feature/Holistic/schema-ext.gql"
+
 alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail with Either"
 
-rootResolver :: RootResolver IO EVENT Query Mutation Subscription
-rootResolver =
+rootExt :: RootResolver IO EVENT ExtQuery Undefined Undefined
+rootExt =
+  RootResolver
+    { queryResolver =
+        ExtQuery
+          { fail1 = liftEither alwaysFail,
+            fail2 = fail "fail with MonadFail",
+            type' = \TypeArgs {in' = TypeInput {data'}} -> pure data'
+          },
+      mutationResolver = Undefined,
+      subscriptionResolver = Undefined
+    }
+
+root :: RootResolver IO EVENT Query Mutation Subscription
+root =
   RootResolver
     { queryResolver =
         Query
           { user,
             testUnion = Just . TestUnionUser <$> user,
-            fail1 = liftEither alwaysFail,
-            fail2 = fail "fail with MonadFail",
-            person = pure Person {name = pure (Just "test Person Name")},
-            type' = \TypeArgs {in' = TypeInput {data'}} -> pure data'
+            person = pure Person {name = pure (Just "test Person Name")}
           },
       mutationResolver = Mutation {createUser = const user},
       subscriptionResolver =
@@ -99,4 +112,4 @@ rootResolver =
           }
 
 api :: GQLRequest -> IO GQLResponse
-api = interpreter rootResolver
+api = runApi (deriveApi root <> deriveApi rootExt)
