@@ -95,28 +95,6 @@ import qualified Data.Text.Lazy as LT
   )
 import Data.Text.Lazy.Encoding (decodeUtf8)
 
-data App event (m :: * -> *)
-  = App
-      { appResolvers :: RootResModel event m,
-        appSchema :: Schema CONST
-      }
-  | AppFailure
-      { appErrors :: GQLErrors
-      }
-
-instance Eq (Channel e) => Semigroup (App e m) where
-  (AppFailure err1) <> (AppFailure err2) = AppFailure (err1 <> err2)
-  (AppFailure err) <> App {} = AppFailure err
-  App {} <> (AppFailure err) = AppFailure err
-  x@App {} <> y@App {} =
-    resultOr
-      AppFailure
-      id
-      ( App
-          <$> prop stitch appResolvers x y
-          <*> prop stitch appSchema x y
-      )
-
 runAppWithConfig :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppWithConfig App {appSchema, appResolvers} = runApi appSchema appResolvers
 runAppWithConfig AppFailure {appErrors} = const $ const $ failure appErrors
