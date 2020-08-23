@@ -68,7 +68,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( FieldResModel,
     LiftOperation,
-    ObjectResModel (..),
     ResModel (..),
     Resolver,
     ResolverState,
@@ -77,6 +76,7 @@ import Data.Morpheus.Types.Internal.Resolving
     failure,
     getArguments,
     liftResolverState,
+    mkObject,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -166,7 +166,7 @@ convertNode ::
   ResNode o e m ->
   ResModel o e m
 convertNode ResNode {resDatatypeName, resKind = REP_OBJECT, resFields} =
-  ResObject (ObjectResModel resDatatypeName $ map toFieldRes resFields)
+  mkObject resDatatypeName (map toFieldRes resFields)
 convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord} =
   encodeUnion resFields
   where
@@ -181,10 +181,9 @@ convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeNam
       ResUnion
         resTypeName
         $ pure
-        $ ResObject
-        $ ObjectResModel
+        $ mkObject
           resTypeName
-          (map toFieldRes resolvers)
+          (fmap toFieldRes resolvers)
       where
         resolvers
           | isResRecord = fields

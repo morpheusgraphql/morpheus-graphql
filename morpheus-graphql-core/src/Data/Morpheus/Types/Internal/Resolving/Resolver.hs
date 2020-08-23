@@ -406,8 +406,6 @@ instance
   mergeM path (ObjectResModel tyname x) (ObjectResModel _ y) =
     pure $ ObjectResModel tyname (HM.unionWith (mergeResolver path) x y)
 
---mergeResolver :: Resolver o e m a -> Resolver o e m a -> Resolver o e m a
-
 mergeResolver ::
   (Monad m, SemigroupM (ResolverStateT e m) a, LiftOperation o) =>
   [Ref] ->

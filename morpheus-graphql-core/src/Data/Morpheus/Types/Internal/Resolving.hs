@@ -44,6 +44,7 @@ module Data.Morpheus.Types.Internal.Resolving
     ResolverState,
     liftResolverState,
     mkValue,
+    FieldResModel,
   )
 where
 
@@ -121,6 +122,8 @@ mkValue A.Null = mkNull
 mkValue (A.Number x) = ResScalar (decodeScientific x)
 mkValue (A.String x) = ResScalar (String x)
 mkValue (A.Bool x) = ResScalar (Boolean x)
+
+type FieldResModel o e m = (FieldName, Resolver o e m (ResModel o e m))
 
 mkObject ::
   TypeName ->
