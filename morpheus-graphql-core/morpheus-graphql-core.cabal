@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2923bd469ae2c760be587f0841976435f99380dd4d1599718bffb926a0f1d6fc
+-- hash: 0858df4c7d180b2fa4e1412fe7a3ad545fbe7a62fc53faeba66e9dd3c7fc059f
 
 name:           morpheus-graphql-core
 version:        0.14.1
@@ -36,11 +36,11 @@ data-files:
     test/api/validation/fragment/on-union-type/query.gql
     test/api/validation/fragment/schema.gql
     test/merge/schema/query-subscription-mutation/expected/ok.gql
+    test/merge/schema/query-subscription-mutation/test/app.gql
     test/merge/schema/query-subscription-mutation/test/ext.gql
-    test/merge/schema/query-subscription-mutation/test/schema.gql
     test/merge/schema/simple-query/expected/ok.gql
+    test/merge/schema/simple-query/test/app.gql
     test/merge/schema/simple-query/test/ext.gql
-    test/merge/schema/simple-query/test/schema.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -90,6 +90,10 @@ data-files:
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
     test/api/validation/fragment/resolvers.json
+    test/merge/schema/query-subscription-mutation/test/app.json
+    test/merge/schema/query-subscription-mutation/test/ext.json
+    test/merge/schema/simple-query/test/app.json
+    test/merge/schema/simple-query/test/ext.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json

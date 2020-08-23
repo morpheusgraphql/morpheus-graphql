@@ -3,13 +3,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Types.Api
   ( Api (..),
     ApiRunner (..),
     runApiWith,
     mkApi,
+    App (..),
   )
 where
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,7 +13,10 @@ import Control.Monad ((>=>))
 import Control.Monad.Fail (fail)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.Morpheus.Core
-  ( parseGQLDocument,
+  ( Api (..),
+    App (..),
+    mkApi,
+    parseGQLDocument,
     render,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -22,9 +26,11 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( resultOr,
   )
-import Data.Morpheus.Types.Internal.Stitching (Stitching (stitch))
 import Data.Semigroup ((<>))
 import Data.Text (unpack)
+import Lib
+  ( getResolver,
+  )
 import Test.Tasty
   ( TestTree,
     testGroup,
@@ -44,28 +50,29 @@ import Prelude
   )
 
 readSchema :: FilePath -> IO (Schema VALID)
-readSchema =
-  L.readFile . ("test/" <>) . (<> ".gql")
-    >=> (resultOr (fail . show) pure . parseGQLDocument)
+readSchema = L.readFile >=> (resultOr (fail . show) pure . parseGQLDocument)
 
-readSchemaResult :: FilePath -> IO (Schema VALID)
-readSchemaResult = readSchema . (<> "/expected/ok")
+loadApi :: FilePath -> IO (Api () IO)
+loadApi url = do
+  schema <- readSchema ("test/" <> url <> ".gql")
+  resolvers <- getResolver ("test/" <> url <> ".json")
+  pure $ mkApi schema resolvers
 
 schemaCase :: FilePath -> TestTree
 schemaCase url = testCase url $ do
-  schema <- readSchema (url <> "/test/schema")
-  extension <- readSchema (url <> "/test/ext")
-  result <- resultOr (fail . show) pure (stitch schema extension)
-  expected <- readSchemaResult url
-  assertion expected result
+  schema <- loadApi (url <> "/test/app")
+  extension <- loadApi (url <> "/test/ext")
+  expected <- readSchema ("test/" <> url <> "/expected/ok.gql")
+  assertion expected (schema <> extension)
 
-assertion :: Schema VALID -> Schema VALID -> IO ()
-assertion expectedSchema schema
-  | render expectedSchema == render schema = pure ()
+assertion :: Schema VALID -> Api () IO -> IO ()
+assertion expectedSchema (Api App {appSchema})
+  | render expectedSchema == render appSchema = pure ()
   | otherwise =
     assertFailure
       $ unpack
-      $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render schema
+      $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render appSchema
+assertion _ (FailApi gqlerror) = assertFailure $ " error: " <> show gqlerror
 
 test :: TestTree
 test =

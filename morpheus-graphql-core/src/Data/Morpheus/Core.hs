@@ -23,6 +23,7 @@ module Data.Morpheus.Core
     defaultConfig,
     debugConfig,
     Api (..),
+    App (..),
     ApiRunner (..),
     mkApi,
     runApiWith,
@@ -50,6 +51,7 @@ import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.Api
   ( Api (..),
     ApiRunner (..),
+    App (..),
     mkApi,
     runApiWith,
   )
