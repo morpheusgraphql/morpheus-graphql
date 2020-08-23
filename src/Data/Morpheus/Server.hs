@@ -27,6 +27,11 @@ import Control.Monad.IO.Unlift
   )
 -- MORPHEUS
 
+import Data.Morpheus.Core
+  ( App,
+    defaultConfig,
+    runAppWith,
+  )
 import Data.Morpheus.Server.Deriving.Introspect
   ( compileTimeSchemaValidation,
   )
@@ -49,6 +54,7 @@ import Data.Morpheus.Types.Internal.Subscription
     initDefaultStore,
     publishEventWith,
     runStreamHTTP,
+    toOutStream,
   )
 import Network.WebSockets
   ( Connection,
@@ -103,12 +109,12 @@ subscriptionApp ::
     (Scope WS (Event channel a) m -> m ()) ->
     m app
   ) ->
-  (Input WS -> Stream WS (Event channel a) m) ->
+  App (Event channel a) m ->
   m (app, Event channel a -> m ())
-subscriptionApp appWrapper api =
+subscriptionApp appWrapper gqpApp =
   do
     store <- initDefaultStore
-    app <- appWrapper store (connectionThread api)
+    app <- appWrapper store (connectionThread (toOutStream (runAppWith gqpApp defaultConfig)))
     pure
       ( app,
         publishEventWith store
@@ -135,6 +141,6 @@ webSocketsApp ::
     MonadUnliftIO m,
     Eq channel
   ) =>
-  (Input WS -> Stream WS (Event channel a) m) ->
+  App (Event channel a) m ->
   m (ServerApp, Event channel a -> m ())
 webSocketsApp = subscriptionApp webSocketsWrapper
