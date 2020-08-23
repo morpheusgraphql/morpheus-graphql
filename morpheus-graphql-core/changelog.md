@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.15.0 - Unreleased Changes
+
+### new features
+
+- type : Api (..)
+
+  ```hs
+  api :: a -> m b
+  api = runApi (mkApi schema resolvers)
+  ```
+
+- `Api` supports semigroup(`schema Stitching`):
+
+  if whe have two apis `api1` and `api2` with type `Api EVENT IO` we can merge it as.
+
+  ```hs
+  mergedApi :: a -> m b
+  mergedApi = runApi (api1 <> api2)
+  ```
+
+### Breaking Changes
+
+- `runApi` changed signature to:
+
+  ```hs
+  runApi :: Api e m -> a -> m b
+  ```
+
+where you can api is product of resolver nd schema
+
+### Minor Changes
+
+- internal refactoring
+
 ## 0.14.1 - 16.08.2020
 
 ## 0.14.0 - 15.08.2020

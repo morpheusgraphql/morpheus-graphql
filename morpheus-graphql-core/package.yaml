@@ -48,7 +48,6 @@ library:
     - Data.Morpheus.Types.GQLScalar
     - Data.Morpheus.Types.ID
     - Data.Morpheus.Types.SelectionTree
-    - Data.Morpheus.Types.Internal.Stitching
 
   ghc-options: -Wall
 
