@@ -1,0 +1,12 @@
+type Query {
+  id: ID
+  name: String
+}
+
+type Mutation {
+  id: ID
+}
+
+type Subscription {
+  name: String
+}

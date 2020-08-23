@@ -105,5 +105,6 @@ test :: TestTree
 test =
   testGroup
     "merge schema"
-    [ schemaCase "merge/schema/simple-query"
+    [ schemaCase "merge/schema/simple-query",
+      schemaCase "merge/schema/query-subscription-mutation"
     ]
