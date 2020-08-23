@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0858df4c7d180b2fa4e1412fe7a3ad545fbe7a62fc53faeba66e9dd3c7fc059f
+-- hash: 4f9867e1a492f5413faa290930d8886bcfc57b1a2903d5e2dbf861059f45c14c
 
 name:           morpheus-graphql-core
 version:        0.14.1
@@ -35,12 +35,12 @@ data-files:
     test/api/validation/fragment/on-type/query.gql
     test/api/validation/fragment/on-union-type/query.gql
     test/api/validation/fragment/schema.gql
+    test/merge/schema/query-subscription-mutation/api/app.gql
+    test/merge/schema/query-subscription-mutation/api/ext.gql
     test/merge/schema/query-subscription-mutation/expected/ok.gql
-    test/merge/schema/query-subscription-mutation/test/app.gql
-    test/merge/schema/query-subscription-mutation/test/ext.gql
+    test/merge/schema/simple-query/api/app.gql
+    test/merge/schema/simple-query/api/ext.gql
     test/merge/schema/simple-query/expected/ok.gql
-    test/merge/schema/simple-query/test/app.gql
-    test/merge/schema/simple-query/test/ext.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -90,10 +90,10 @@ data-files:
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
     test/api/validation/fragment/resolvers.json
-    test/merge/schema/query-subscription-mutation/test/app.json
-    test/merge/schema/query-subscription-mutation/test/ext.json
-    test/merge/schema/simple-query/test/app.json
-    test/merge/schema/simple-query/test/ext.json
+    test/merge/schema/query-subscription-mutation/api/app.json
+    test/merge/schema/query-subscription-mutation/api/ext.json
+    test/merge/schema/simple-query/api/app.json
+    test/merge/schema/simple-query/api/ext.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json

@@ -60,8 +60,8 @@ loadApi url = do
 
 schemaCase :: FilePath -> TestTree
 schemaCase url = testCase url $ do
-  schema <- loadApi (url <> "/test/app")
-  extension <- loadApi (url <> "/test/ext")
+  schema <- loadApi (url <> "/api/app")
+  extension <- loadApi (url <> "/api/ext")
   expected <- readSchema ("test/" <> url <> "/expected/ok.gql")
   assertion expected (schema <> extension)
 
