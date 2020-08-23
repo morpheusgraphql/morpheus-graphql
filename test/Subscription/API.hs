@@ -10,9 +10,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Subscription.API (api, EVENT, Channel (..), Info (..)) where
+module Subscription.API
+  ( app,
+    EVENT,
+    Channel (..),
+    Info (..),
+  )
+where
 
-import Data.Morpheus (interpreter)
+import Data.Morpheus (deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
   ( Event (..),
@@ -49,8 +55,8 @@ characterSub (Event _ Info {name, age}) =
         age = pure age
       }
 
-rootResolver :: RootResolver (SubM EVENT) EVENT Query Mutation Subscription
-rootResolver =
+root :: RootResolver (SubM EVENT) EVENT Query Mutation Subscription
+root =
   RootResolver
     { queryResolver =
         Query
@@ -68,5 +74,5 @@ rootResolver =
           }
     }
 
-api :: Input api -> Stream api EVENT (SubM EVENT)
-api = interpreter rootResolver
+api :: App Event m
+api = deriveApp root
