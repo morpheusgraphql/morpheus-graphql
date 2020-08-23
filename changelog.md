@@ -25,6 +25,10 @@
 
 - removed class `Interpreter`, `interpreter` is now just regular function.
 
+  ```hs
+  interpreter = runApp . deriveApp
+  ```
+
 ### Minor Changes
 
 - internal refactoring
