@@ -61,19 +61,6 @@ importGQLDocument "test/Feature/Holistic/schema-ext.gql"
 alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail with Either"
 
-rootExt :: RootResolver IO EVENT ExtQuery Undefined Undefined
-rootExt =
-  RootResolver
-    { queryResolver =
-        ExtQuery
-          { fail1 = liftEither alwaysFail,
-            fail2 = fail "fail with MonadFail",
-            type' = \TypeArgs {in' = TypeInput {data'}} -> pure data'
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
-    }
-
 root :: RootResolver IO EVENT Query Mutation Subscription
 root =
   RootResolver
@@ -111,5 +98,22 @@ root =
             street = const $ pure Nothing
           }
 
+rootExt :: RootResolver IO EVENT ExtQuery Undefined Undefined
+rootExt =
+  RootResolver
+    { queryResolver =
+        ExtQuery
+          { fail1 = liftEither alwaysFail,
+            fail2 = fail "fail with MonadFail",
+            type' = \TypeArgs {in' = TypeInput {data'}} -> pure data'
+          },
+      mutationResolver = Undefined,
+      subscriptionResolver = Undefined
+    }
+
 api :: GQLRequest -> IO GQLResponse
-api = runApi (deriveApi root <> deriveApi rootExt)
+api =
+  runApi
+    ( deriveApi root
+        <> deriveApi rootExt
+    )
