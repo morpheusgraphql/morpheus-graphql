@@ -2,6 +2,33 @@
 
 ## 0.15.0 - Unreleased Changes
 
+### new features
+
+- type : `Api event m` and `deriveApi`
+
+  ```hs
+  app :: Api EVENT IO
+  app = runApi (deriveApi root)
+
+  api :: a -> IO b
+  api = runApi (deriveApi root)
+  ```
+
+- `Api` supports semigroup(`schema Stitching`): if whe have two graphq apps
+
+  ```hs
+  mergedApi :: a -> m b
+  mergedApi = runApi (deriveApi root <> deriveApi root2)
+  ```
+
+### Breaking Changes
+
+- removed class `Interpreter`, `interpreter` is now just regular function.
+
+### Minor Changes
+
+- internal refactoring
+
 ## 0.14.1 - 16.08.2020
 
 ## 0.14.0 - 15.08.2020
