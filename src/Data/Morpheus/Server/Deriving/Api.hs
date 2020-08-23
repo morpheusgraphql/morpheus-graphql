@@ -5,13 +5,10 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Data.Morpheus.Server.Deriving.Resolve
-  ( statelessResolver,
-    RootResolverConstraint,
-    coreResolver,
+module Data.Morpheus.Server.Deriving.Api
+  ( RootResolverConstraint,
     deriveSchema,
-    deriveApp,
-    stateless,
+    deriveApi,
   )
 where
 
@@ -20,8 +17,7 @@ import Data.Functor.Identity (Identity (..))
 
 import Data.Morpheus.Core
   ( Api (..),
-    ApiRunner (..),
-    Config,
+    mkApi,
   )
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
@@ -35,23 +31,14 @@ import Data.Morpheus.Server.Deriving.Introspect
 import Data.Morpheus.Types
   ( RootResolver (..),
   )
-import Data.Morpheus.Types.IO
-  ( GQLRequest (..),
-    GQLResponse (..),
-    renderResponse,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     QUERY,
     SUBSCRIPTION,
-    VALID,
-    Value,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
-    ResponseStream,
     Result (..),
-    ResultT (..),
   )
 
 type OperationConstraint operation event m a =
@@ -67,32 +54,10 @@ type RootResolverConstraint m event query mutation subscription =
     ChannelCon event m subscription
   )
 
-statelessResolver ::
+deriveApi ::
   RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
-  Config ->
-  GQLRequest ->
-  m GQLResponse
-statelessResolver root config req = stateless (coreResolver root config req)
-
-stateless ::
-  Functor m =>
-  ResponseStream event m (Value VALID) ->
-  m GQLResponse
-stateless = fmap renderResponse . runResultT
-
-coreResolver ::
-  RootResolverConstraint m event query mut sub =>
-  RootResolver m event query mut sub ->
-  Config ->
-  GQLRequest ->
-  ResponseStream event m (Value VALID)
-coreResolver root = runAppWithConfig (deriveApp root)
-
-deriveApp ::
-  RootResolverConstraint m event query mut sub =>
-  RootResolver m event query mut sub ->
-  App event m
-deriveApp root = case deriveSchema (Identity root) of
-  Success {result} -> App (deriveModel root) result
-  Failure {errors} -> AppFailure errors
+  Api event m
+deriveApi root = case deriveSchema (Identity root) of
+  Success {result} -> mkApi result (deriveModel root)
+  Failure {errors} -> FailApi errors

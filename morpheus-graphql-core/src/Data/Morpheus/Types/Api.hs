@@ -3,11 +3,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Types.Api
-  ( Api,
+  ( Api (..),
     ApiRunner (..),
     runApiWith,
+    mkApi,
   )
 where
 
@@ -44,8 +46,7 @@ import Data.Morpheus.Types.Internal.Config
     defaultConfig,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Event,
-    ResolverContext (..),
+  ( ResolverContext (..),
     ResponseStream,
     ResultT (..),
     RootResModel,
@@ -54,12 +55,14 @@ import Data.Morpheus.Types.Internal.Resolving
     runRootResModel,
   )
 import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
-import Data.Morpheus.Types.Internal.Subscription
-  ( Input,
-    Stream,
-    toOutStream,
-  )
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
+
+mkApi :: ValidateSchema s => Schema s -> RootResModel e m -> Api e m
+mkApi appSchema appResolvers =
+  resultOr
+    FailApi
+    (Api . App appResolvers)
+    (validateSchema True defaultConfig appSchema)
 
 data Api event (m :: * -> *)
   = Api {app :: App event m VALID}
@@ -139,10 +142,6 @@ class Monad m => ApiRunner e (m :: * -> *) a b where
 instance Monad m => ApiRunner e m GQLRequest (m GQLResponse) where
   runApi api = stateless . runApiWith api defaultConfig
   debugApi api = stateless . runApiWith api debugConfig
-
-instance Monad m => ApiRunner (Event ch cont) m (Input api) (Stream api (Event ch cont) m) where
-  runApi api = toOutStream (runApiWith api defaultConfig)
-  debugApi api = toOutStream (runApiWith api debugConfig)
 
 instance (Monad m, MapAPI a a) => ApiRunner e m a (m a) where
   runApi app = mapAPI (runApi app)

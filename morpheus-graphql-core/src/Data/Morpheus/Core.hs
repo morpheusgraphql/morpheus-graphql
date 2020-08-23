@@ -22,8 +22,10 @@ module Data.Morpheus.Core
     VALIDATION_MODE (..),
     defaultConfig,
     debugConfig,
-    Api,
+    Api (..),
     ApiRunner (..),
+    mkApi,
+    runApiWith,
   )
 where
 
@@ -46,8 +48,10 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.Api
-  ( Api,
+  ( Api (..),
     ApiRunner (..),
+    mkApi,
+    runApiWith,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Schema,

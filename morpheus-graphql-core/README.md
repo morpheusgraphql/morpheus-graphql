@@ -44,5 +44,5 @@ resolveDeity =
       ]
 
 api :: GQLRequest -> ResponseStream e Identity (Value VALID)
-api = runApi schema resolver
+api = runApi (mkApi schema resolver)
 ```
