@@ -157,19 +157,11 @@ getRequest p = do
       }
 
 getResolvers :: Monad m => FieldName -> IO (RootResModel e m)
-getResolvers (FieldName p) = do
-  res <- fromMaybe Null . decode <$> L.readFile (path p <> "/resolvers.json")
-  pure
-    RootResModel
-      { query = pure (lookupRes "query" res),
-        mutation = pure (lookupRes "mutation" res),
-        subscription = pure (lookupRes "subscription" res),
-        channelMap = Nothing
-      }
+getResolvers p = getResolver ("test/" <> p <> "/resolvers.json")
 
-getResolver :: Monad m => FilePath -> IO (RootResModel e m)
-getResolver p = do
-  res <- fromMaybe Null . decode <$> L.readFile p
+getResolver :: Monad m => FieldName -> IO (RootResModel e m)
+getResolver (FieldName p) = do
+  res <- fromMaybe Null . decode <$> L.readFile (unpack p)
   pure
     RootResModel
       { query = pure (lookupRes "query" res),
