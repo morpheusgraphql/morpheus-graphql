@@ -88,7 +88,6 @@ import Instances.TH.Lift ()
 import Prelude
   ( ($),
     (.),
-    (<$>),
     Bool (..),
     Either (..),
     Eq (..),
@@ -315,12 +314,10 @@ instance
   failure = lift . failure
 
 resolveDupsM :: Monad m => NonEmpty a -> ResolutionT a coll m a
-resolveDupsM xs = do
-  res <- asks resolveDups
-  lift (res xs)
+resolveDupsM xs = asks resolveDups >>= lift . (xs &)
 
 fromNoDupsM :: Monad m => [a] -> ResolutionT a coll m coll
-fromNoDupsM xs = (xs &) <$> asks fromNoDups
+fromNoDupsM xs = asks ((xs &) . fromNoDups)
 
 insertWithList :: (Eq k, Hashable k) => (k, NonEmpty a) -> [(k, NonEmpty a)] -> [(k, NonEmpty a)]
 insertWithList (key, value) values
