@@ -5,10 +5,10 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Data.Morpheus.Server.Deriving.Api
+module Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
     deriveSchema,
-    deriveApi,
+    deriveApp,
   )
 where
 
@@ -54,10 +54,10 @@ type RootResolverConstraint m event query mutation subscription =
     ChannelCon event m subscription
   )
 
-deriveApi ::
+deriveApp ::
   RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
-  Api event m
-deriveApi root = case deriveSchema (Identity root) of
+  App event m
+deriveApp root = case deriveSchema (Identity root) of
   Success {result} -> mkApp result (deriveModel root)
-  Failure {errors} -> FailApi errors
+  Failure {errors} -> FailApp errors
