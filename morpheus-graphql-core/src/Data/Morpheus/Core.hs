@@ -24,7 +24,8 @@ module Data.Morpheus.Core
     debugConfig,
     App (..),
     AppData (..),
-    AppRunner (..),
+    runApp,
+    debugApp,
     mkApp,
     runAppWith,
   )
@@ -51,8 +52,9 @@ import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.App
   ( App (..),
     AppData (..),
-    AppRunner (..),
+    debugApp,
     mkApp,
+    runApp,
     runAppWith,
   )
 import Data.Morpheus.Types.Internal.AST

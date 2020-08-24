@@ -7,10 +7,11 @@
 
 module Data.Morpheus.Types.App
   ( App (..),
-    AppRunner (..),
-    runAppWith,
-    mkApp,
     AppData (..),
+    debugApp,
+    mkApp,
+    runApp,
+    runAppWith,
   )
 where
 
@@ -160,14 +161,8 @@ stateless ::
   m GQLResponse
 stateless = fmap renderResponse . runResultT
 
-class Monad m => AppRunner e (m :: * -> *) a b where
-  runApp :: App e m -> a -> b
-  debugApp :: App e m -> a -> b
+runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
+runApp app = mapAPI (stateless . runAppWith app defaultConfig)
 
-instance Monad m => AppRunner e m GQLRequest (m GQLResponse) where
-  runApp api = stateless . runAppWith api defaultConfig
-  debugApp api = stateless . runAppWith api debugConfig
-
-instance (Monad m, MapAPI a a) => AppRunner e m a (m a) where
-  runApp app = mapAPI (runApp app)
-  debugApp app = mapAPI (debugApp app)
+debugApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
+debugApp app = mapAPI (stateless . runAppWith app debugConfig)
