@@ -24,9 +24,6 @@ import Data.Morpheus.Document
   )
 import Data.Morpheus.Types
   ( Event (..),
-    GQLRequest,
-    GQLResponse,
-    Input,
     ResolverM,
     RootResolver (..),
     publish,
