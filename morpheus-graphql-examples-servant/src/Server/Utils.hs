@@ -17,20 +17,12 @@ module Server.Utils
 where
 
 -- examples
-import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans (liftIO)
 import Data.ByteString.Lazy.Char8
   ( ByteString,
-    unpack,
   )
-import Data.Functor.Identity (Identity (..))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Morpheus (runApp)
-import Data.Morpheus.Document
-  ( RootResolverConstraint,
-    toGraphQLDocument,
-  )
 import Data.Morpheus.Server
   ( httpPlayground,
     httpPubApp,
@@ -39,11 +31,10 @@ import Data.Morpheus.Types
   ( App,
     GQLRequest,
     GQLResponse,
-    RootResolver,
     render,
   )
 import Data.Proxy (Proxy)
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.TypeLits
 import Network.HTTP.Media ((//), (/:))
