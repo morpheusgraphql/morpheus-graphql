@@ -20,7 +20,6 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( App (..),
     AppData (..),
-    defaultConfig,
     mkApp,
     mkApp,
     parseGQLDocument,
@@ -126,6 +125,6 @@ testApiRequest ::
   TestTree
 testApiRequest api base path = testCase (unpack $ readName path) $ do
   let fullPath = base <> "/request/" <> path
-  actual <- runAppWith api defaultConfig <$> getRequest fullPath
+  actual <- runAppWith api <$> getRequest fullPath
   expected <- expectedResponse fullPath
   assertion expected actual

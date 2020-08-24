@@ -39,4 +39,4 @@ debugInterpreter ::
   RootResolver m e query mut sub ->
   a ->
   m b
-debugInterpreter = debugApp . deriveApp
+debugInterpreter = runApp . debugApp . deriveApp
