@@ -9,7 +9,7 @@
 module Data.Morpheus.Types.App
   ( App (..),
     AppData (..),
-    debugApp,
+    withDebugger,
     mkApp,
     runApp,
     runAppStream,
@@ -164,7 +164,7 @@ runAppStream FailApp {appErrors} = const $ failure appErrors
 runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
 runApp app = mapAPI (stateless . runAppStream app)
 
-debugApp :: App e m -> App e m
-debugApp App {app = AppData {appConfig = Config {..}, ..}} =
+withDebugger :: App e m -> App e m
+withDebugger App {app = AppData {appConfig = Config {..}, ..}} =
   App {app = AppData {appConfig = Config {debug = True, ..}, ..}, ..}
-debugApp x = x
+withDebugger x = x

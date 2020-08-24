@@ -7,15 +7,15 @@ module Data.Morpheus
     App,
     deriveApp,
     runApp,
-    debugApp,
+    withDebugger,
   )
 where
 
 -- MORPHEUS
 import Data.Morpheus.Core
   ( App,
-    debugApp,
     runApp,
+    withDebugger,
   )
 import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
@@ -39,4 +39,4 @@ debugInterpreter ::
   RootResolver m e query mut sub ->
   a ->
   m b
-debugInterpreter = runApp . debugApp . deriveApp
+debugInterpreter = runApp . withDebugger . deriveApp
