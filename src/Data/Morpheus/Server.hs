@@ -13,7 +13,6 @@
 module Data.Morpheus.Server
   ( webSocketsApp,
     httpPubApp,
-    subscriptionApp,
     ServerConstraint,
     httpPlayground,
     compileTimeSchemaValidation,
@@ -97,22 +96,18 @@ httpPubApp app httpCallback =
       . Request
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
-subscriptionApp ::
+webSocketsApp ::
   ( MonadUnliftIO m,
     Eq channel
   ) =>
-  ( Store (Event channel a) m ->
-    (Scope WS (Event channel a) m -> m ()) ->
-    m app
-  ) ->
   App (Event channel a) m ->
-  m (app, Event channel a -> m ())
-subscriptionApp appWrapper gqpApp =
+  m (ServerApp, Event channel a -> m ())
+webSocketsApp app =
   do
     store <- initDefaultStore
-    app <- appWrapper store $ connectionThread $ streamApp gqpApp
+    wsApp <- webSocketsWrapper store $ connectionThread $ streamApp app
     pure
-      ( app,
+      ( wsApp,
         publishEventWith store
       )
 
@@ -130,13 +125,3 @@ webSocketsWrapper store handler =
           pingThread
             conn
             $ runIO (handler (defaultWSScope store conn))
-
--- | Wai WebSocket Server App for GraphQL subscriptions
-webSocketsApp ::
-  ( MonadIO m,
-    MonadUnliftIO m,
-    Eq channel
-  ) =>
-  App (Event channel a) m ->
-  m (ServerApp, Event channel a -> m ())
-webSocketsApp = subscriptionApp webSocketsWrapper
