@@ -12,7 +12,7 @@ module Data.Morpheus.Types.App
     debugApp,
     mkApp,
     runApp,
-    runAppWith,
+    runAppStream,
   )
 where
 
@@ -157,12 +157,12 @@ stateless ::
   m GQLResponse
 stateless = fmap renderResponse . runResultT
 
-runAppWith :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
-runAppWith App {app} = runAppData app
-runAppWith FailApp {appErrors} = const $ failure appErrors
+runAppStream :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
+runAppStream App {app} = runAppData app
+runAppStream FailApp {appErrors} = const $ failure appErrors
 
 runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
-runApp app = mapAPI (stateless . runAppWith app)
+runApp app = mapAPI (stateless . runAppStream app)
 
 debugApp :: App e m -> App e m
 debugApp App {app = AppData {appConfig = Config {..}, ..}} =

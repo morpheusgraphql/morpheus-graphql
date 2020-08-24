@@ -24,7 +24,7 @@ import Data.Morpheus.Core
     mkApp,
     parseGQLDocument,
     render,
-    runAppWith,
+    runAppStream,
   )
 import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
@@ -125,6 +125,6 @@ testApiRequest ::
   TestTree
 testApiRequest api base path = testCase (unpack $ readName path) $ do
   let fullPath = base <> "/request/" <> path
-  actual <- runAppWith api <$> getRequest fullPath
+  actual <- runAppStream api <$> getRequest fullPath
   expected <- expectedResponse fullPath
   assertion expected actual
