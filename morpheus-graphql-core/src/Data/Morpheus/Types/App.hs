@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.App
@@ -52,7 +53,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Config
   ( Config (..),
-    debugConfig,
     defaultConfig,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -80,7 +80,7 @@ mkApp :: ValidateSchema s => Schema s -> RootResModel e m -> App e m
 mkApp appSchema appResolvers =
   resultOr
     FailApp
-    (App . AppData appResolvers)
+    (App . AppData defaultConfig appResolvers)
     (validateSchema True defaultConfig appSchema)
 
 data App event (m :: * -> *)
@@ -98,7 +98,8 @@ instance Monad m => Semigroup (App e m) where
   (App x) <> (App y) = resultOr FailApp App (stitch x y)
 
 data AppData event (m :: * -> *) s = AppData
-  { appResolvers :: RootResModel event m,
+  { appConfig :: Config,
+    appResolvers :: RootResModel event m,
     appSchema :: Schema s
   }
 
@@ -107,22 +108,17 @@ instance RenderGQL (AppData e m s) where
 
 instance Monad m => Stitching (AppData e m s) where
   stitch x y =
-    AppData
+    AppData (appConfig y)
       <$> prop stitch appResolvers x y
       <*> prop stitch appSchema x y
-
-runAppWith :: Monad m => App event m -> Config -> GQLRequest -> ResponseStream event m (Value VALID)
-runAppWith App {app} = runAppData app
-runAppWith FailApp {appErrors} = const $ const $ failure appErrors
 
 runAppData ::
   (Monad m, ValidateSchema s) =>
   AppData event m s ->
-  Config ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runAppData AppData {appSchema, appResolvers} config request = do
-  validRequest <- validateReq appSchema config request
+runAppData AppData {appConfig, appSchema, appResolvers} request = do
+  validRequest <- validateReq appSchema appConfig request
   resovers <- withSystemFields (schema validRequest) appResolvers
   runRootResModel resovers validRequest
 
@@ -161,8 +157,14 @@ stateless ::
   m GQLResponse
 stateless = fmap renderResponse . runResultT
 
-runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
-runApp app = mapAPI (stateless . runAppWith app defaultConfig)
+runAppWith :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
+runAppWith App {app} = runAppData app
+runAppWith FailApp {appErrors} = const $ failure appErrors
 
-debugApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
-debugApp app = mapAPI (stateless . runAppWith app debugConfig)
+runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
+runApp app = mapAPI (stateless . runAppWith app)
+
+debugApp :: App e m -> App e m
+debugApp App {app = AppData {appConfig = Config {..}, ..}} =
+  App {app = AppData {appConfig = Config {debug = True, ..}, ..}, ..}
+debugApp x = x
