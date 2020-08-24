@@ -33,7 +33,6 @@ module Data.Morpheus.Types
     unsafeInternalContext,
     ResolverContext (..),
     Input,
-    Stream,
     WS,
     HTTP,
     -- Resolvers
@@ -54,13 +53,18 @@ module Data.Morpheus.Types
     IOSubRes,
     interface,
     SubscriptionField,
+    App,
+    RenderGQL (..),
   )
 where
 
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Data.Either (either)
 -- MORPHEUS
-
+import Data.Morpheus.Core
+  ( App,
+    RenderGQL (..),
+  )
 import Data.Morpheus.Server.Deriving.Introspect
   ( Introspect (..),
     TypeUpdater,
@@ -105,7 +109,6 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Types.Internal.Subscription
   ( HTTP,
     Input,
-    Stream,
     WS,
   )
 import Data.Proxy (Proxy (..))

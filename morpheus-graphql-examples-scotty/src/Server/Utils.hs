@@ -13,20 +13,16 @@ where
 -- examples
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
-import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Document
-  ( RootResolverConstraint,
-    toGraphQLDocument,
-  )
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Morpheus.Server
   ( httpPlayground,
+    httpPubApp,
   )
 import Data.Morpheus.Types
-  ( RootResolver,
+  ( App,
+    render,
   )
+import qualified Data.Text as T
 import Network.Wai.Handler.Warp
   ( defaultSettings,
     runSettings,
@@ -55,19 +51,18 @@ isSchema :: ActionM String
 isSchema = param "schema"
 
 httpEndpoint ::
-  (RootResolverConstraint m o mu qu su) =>
   RoutePattern ->
-  RootResolver m o mu qu su ->
-  (ByteString -> IO ByteString) ->
+  [e -> IO ()] ->
+  App e IO ->
   ScottyM ()
-httpEndpoint route schema gqlApi = do
+httpEndpoint route publish app = do
   get route $
     ( do
         _ <- isSchema
-        raw $ toGraphQLDocument (Identity schema)
+        raw $ LBS.pack $ T.unpack $ render app
     )
       <|> raw httpPlayground
-  post route $ raw =<< (liftIO . gqlApi =<< body)
+  post route $ raw =<< (liftIO . httpPubApp publish app =<< body)
 
 startServer :: ServerApp -> ScottyM () -> IO ()
 startServer wsApp app = do

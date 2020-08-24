@@ -7,15 +7,18 @@
 
 module Data.Morpheus.Types.App
   ( App (..),
-    AppRunner (..),
-    runAppWith,
-    mkApp,
     AppData (..),
+    debugApp,
+    mkApp,
+    runApp,
+    runAppWith,
   )
 where
 
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad)
+import qualified Data.Aeson as A
+import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Functor ((<$>), Functor (..))
 import Data.Morpheus.Internal.Utils
   ( (<:>),
@@ -25,6 +28,9 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Parser
   ( parseRequestWith,
+  )
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Schema.SchemaAPI (withSystemFields)
@@ -61,6 +67,7 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Data.Semigroup (Semigroup (..))
+import Data.Text (pack)
 import Prelude
   ( ($),
     (.),
@@ -80,6 +87,10 @@ data App event (m :: * -> *)
   = App {app :: AppData event m VALID}
   | FailApp {appErrors :: GQLErrors}
 
+instance RenderGQL (App e m) where
+  render App {app} = render app
+  render FailApp {appErrors} = pack $ LBS.unpack (A.encode appErrors)
+
 instance Monad m => Semigroup (App e m) where
   (FailApp err1) <> (FailApp err2) = FailApp (err1 <> err2)
   FailApp {appErrors} <> App {} = FailApp appErrors
@@ -90,6 +101,9 @@ data AppData event (m :: * -> *) s = AppData
   { appResolvers :: RootResModel event m,
     appSchema :: Schema s
   }
+
+instance RenderGQL (AppData e m s) where
+  render = render . appSchema
 
 instance Monad m => Stitching (AppData e m s) where
   stitch x y =
@@ -147,14 +161,8 @@ stateless ::
   m GQLResponse
 stateless = fmap renderResponse . runResultT
 
-class Monad m => AppRunner e (m :: * -> *) a b where
-  runApp :: App e m -> a -> b
-  debugApp :: App e m -> a -> b
+runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
+runApp app = mapAPI (stateless . runAppWith app defaultConfig)
 
-instance Monad m => AppRunner e m GQLRequest (m GQLResponse) where
-  runApp api = stateless . runAppWith api defaultConfig
-  debugApp api = stateless . runAppWith api debugConfig
-
-instance (Monad m, MapAPI a a) => AppRunner e m a (m a) where
-  runApp app = mapAPI (runApp app)
-  debugApp app = mapAPI (debugApp app)
+debugApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
+debugApp app = mapAPI (stateless . runAppWith app debugConfig)

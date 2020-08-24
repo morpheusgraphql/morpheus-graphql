@@ -5,15 +5,17 @@ module Data.Morpheus
   ( interpreter,
     debugInterpreter,
     App,
-    AppRunner (..),
     deriveApp,
+    runApp,
+    debugApp,
   )
 where
 
 -- MORPHEUS
 import Data.Morpheus.Core
   ( App,
-    AppRunner (..),
+    debugApp,
+    runApp,
   )
 import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
@@ -22,20 +24,19 @@ import Data.Morpheus.Server.Deriving.App
 import Data.Morpheus.Types
   ( RootResolver (..),
   )
+import Data.Morpheus.Types.IO (MapAPI)
 
 -- | main query processor and resolver
 interpreter ::
-  AppRunner e m a b =>
-  (RootResolverConstraint m e query mut sub) =>
+  (MapAPI a b, RootResolverConstraint m e query mut sub) =>
   RootResolver m e query mut sub ->
   a ->
-  b
+  m b
 interpreter = runApp . deriveApp
 
 debugInterpreter ::
-  AppRunner e m a b =>
-  (RootResolverConstraint m e query mut sub) =>
+  (MapAPI a b, RootResolverConstraint m e query mut sub) =>
   RootResolver m e query mut sub ->
   a ->
-  b
+  m b
 debugInterpreter = debugApp . deriveApp

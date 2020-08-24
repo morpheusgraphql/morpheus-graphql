@@ -106,6 +106,7 @@ directive @MyDirective on FIELD_DEFINITION | OBJECT
   - `FieldDefinition IN VALID`
   - ...
 - runApi requires argument config
+
   ```hs
     runApi ::
       Schema s ->

@@ -9,6 +9,6 @@ import Test.Tasty (TestTree, testGroup)
 
 testSubsriptions :: IO TestTree
 testSubsriptions = do
-  subscription <- testApolloRequest TS.api
+  subscription <- testApolloRequest TS.app
   publishing <- testPublishing
   return $ testGroup "Subscription" [subscription, publishing]

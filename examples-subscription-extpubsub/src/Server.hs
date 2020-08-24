@@ -13,7 +13,7 @@ module Server where
 import Control.Concurrent (forkIO)
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus (interpreter)
+import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Server
   ( httpPubApp,
     webSocketsApp,
@@ -27,7 +27,6 @@ import Data.Morpheus.Types
     Resolver,
     RootResolver (..),
     SUBSCRIPTION,
-    Stream,
     Undefined (Undefined),
     subscribe,
   )
@@ -62,7 +61,7 @@ scottyServer = do
   putStrLn "init sql connection"
   pgConnectionEither <- SQLC.acquire (SQLC.settings "localhost" 5432 "morpheus_user_test" "p" "morpheus_user_db")
   putStrLn "init websocket app"
-  (wsApp, publish) <- webSocketsApp makeAPI
+  (wsApp, publish) <- webSocketsApp makeApp
   case pgConnectionEither of
     Left err -> error ("erreur de connection" <> show err)
     -- spawn postgres observation in a new thread:
@@ -79,7 +78,7 @@ scottyServer = do
     app publish =
       scottyApp
         $ post "/api"
-        $ raw =<< (liftIO . httpPubApp makeAPI publish) =<< body
+        $ raw =<< (liftIO . httpPubApp makeApp publish) =<< body
 
 data EventChannel = PgChannel | RBMQChannel
   deriving (Eq, Show)
@@ -124,8 +123,8 @@ subscriptionInstance =
     subResolver (Event [PgChannel] (Dumbo _value)) = pure _value
     subResolver _ = error "This should never execute"
 
-makeAPI :: Input api -> Stream api AppEvent IO
-makeAPI = interpreter rootResolver
+makeApp :: App AppEvent IO
+makeApp = deriveApp rootResolver
 
 -- | This is the onEvent callback creator in a dedicated thread.
 postgresHandler pgConnection publish = do

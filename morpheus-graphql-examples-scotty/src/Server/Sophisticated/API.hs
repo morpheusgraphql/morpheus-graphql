@@ -12,7 +12,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.Sophisticated.API
-  ( api,
+  ( app,
     EVENT,
     root,
   )
@@ -25,7 +25,8 @@ import qualified Data.Map as M
   )
 -- MORPHEUS
 import Data.Morpheus
-  ( deriveApp,
+  ( App,
+    deriveApp,
     runApp,
   )
 import Data.Morpheus.Document
@@ -47,7 +48,6 @@ import Data.Morpheus.Types
     ResolverS,
     RootResolver (..),
     ScalarValue (..),
-    Stream,
     SubscriptionField,
     WithOperation,
     constRes,
@@ -114,8 +114,8 @@ newtype Content = Content {contentID :: Int}
 
 type EVENT = Event Channel Content
 
-api :: Input api -> Stream api EVENT IO
-api = runApp (deriveApp root)
+app :: App EVENT IO
+app = deriveApp root
 
 root :: RootResolver IO EVENT Query Mutation Subscription
 root =

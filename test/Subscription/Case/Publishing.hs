@@ -23,7 +23,7 @@ import Subscription.API
   ( Channel (..),
     EVENT,
     Info (..),
-    api,
+    app,
   )
 import Subscription.Utils
   ( SimulationState (..),
@@ -53,7 +53,7 @@ simulateSubscriptions = do
   input <- connect
   state <-
     simulate
-      api
+      app
       input
       ( SimulationState
           [ apolloInit,
