@@ -25,9 +25,9 @@ module Data.Morpheus.Core
     App (..),
     AppData (..),
     runApp,
-    debugApp,
+    withDebugger,
     mkApp,
-    runAppWith,
+    runAppStream,
   )
 where
 
@@ -52,10 +52,10 @@ import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.App
   ( App (..),
     AppData (..),
-    debugApp,
     mkApp,
     runApp,
-    runAppWith,
+    runAppStream,
+    withDebugger,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
