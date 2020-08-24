@@ -12,7 +12,6 @@ module Server.Utils
   ( startServer,
     Endpoint,
     serveEndpoint,
-    servePubEndpoint,
   )
 where
 
@@ -22,7 +21,6 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Morpheus (runApp)
 import Data.Morpheus.Server
   ( httpPlayground,
     httpPubApp,
@@ -96,11 +94,8 @@ type Playground = Get '[HTML] ByteString
 
 type Endpoint (name :: Symbol) = name :> (API :<|> Schema :<|> Playground)
 
-serveEndpoint :: App e IO -> Server (Endpoint name)
-serveEndpoint app = (liftIO . runApp app) :<|> withSchema app :<|> pure httpPlayground
-
-servePubEndpoint :: App e IO -> (e -> IO ()) -> Server (Endpoint name)
-servePubEndpoint app publish = (liftIO . httpPubApp app publish) :<|> withSchema app :<|> pure httpPlayground
+serveEndpoint :: [e -> IO ()] -> App e IO -> Server (Endpoint name)
+serveEndpoint publish app = (liftIO . httpPubApp publish app) :<|> withSchema app :<|> pure httpPlayground
 
 withSchema :: (Applicative f) => App e m -> f Text
 withSchema = pure . render

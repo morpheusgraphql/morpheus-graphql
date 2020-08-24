@@ -26,8 +26,11 @@ import Control.Monad.IO.Unlift
   )
 -- MORPHEUS
 
+import Data.Foldable (traverse_)
+import Data.Function ((&))
 import Data.Morpheus.Core
   ( App,
+    runApp,
   )
 import Data.Morpheus.Server.Deriving.Introspect
   ( compileTimeSchemaValidation,
@@ -85,15 +88,18 @@ httpPubApp ::
   ( MonadIO m,
     MapAPI a b
   ) =>
+  [e -> m ()] ->
   App e m ->
-  (e -> m ()) ->
   a ->
   m b
-httpPubApp app httpCallback =
+httpPubApp [] app = runApp app
+httpPubApp callbacks app =
   mapAPI $
     runStreamHTTP ScopeHTTP {httpCallback}
       . streamApp app
       . Request
+  where
+    httpCallback e = traverse_ (e &) callbacks
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp ::

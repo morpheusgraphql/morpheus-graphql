@@ -7,15 +7,12 @@
 module Server.Servant (servantServer) where
 
 import Data.Morpheus.Server
-  ( httpPubApp,
-    webSocketsApp,
+  ( webSocketsApp,
   )
-import Network.Wai.Handler.Warp (run)
 import Servant
   ( (:<|>) (..),
     Proxy (..),
     Server,
-    serve,
   )
 import Server.API.Simple
   ( EVENT,
@@ -24,7 +21,6 @@ import Server.API.Simple
 import Server.Utils
   ( Endpoint,
     serveEndpoint,
-    servePubEndpoint,
     startServer,
   )
 
@@ -38,8 +34,8 @@ proxyApi = Proxy
 
 handler :: (EVENT -> IO ()) -> Server API
 handler publish =
-  servePubEndpoint app publish
-    :<|> serveEndpoint app
+  serveEndpoint [publish] app
+    :<|> serveEndpoint [] app
 
 servantServer :: IO ()
 servantServer = do

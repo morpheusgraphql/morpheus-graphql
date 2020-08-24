@@ -7,7 +7,6 @@
 module Server.Utils
   ( httpEndpoint,
     startServer,
-    httpPubEndpoint,
   )
 where
 
@@ -15,7 +14,6 @@ where
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.Morpheus (runApp)
 import Data.Morpheus.Server
   ( httpPlayground,
     httpPubApp,
@@ -54,30 +52,17 @@ isSchema = param "schema"
 
 httpEndpoint ::
   RoutePattern ->
+  [e -> IO ()] ->
   App e IO ->
   ScottyM ()
-httpEndpoint route app = do
+httpEndpoint route publish app = do
   get route $
     ( do
         _ <- isSchema
         raw $ LBS.pack $ T.unpack $ render app
     )
       <|> raw httpPlayground
-  post route $ raw =<< (liftIO . runApp app =<< body)
-
-httpPubEndpoint ::
-  RoutePattern ->
-  App e IO ->
-  (e -> IO ()) ->
-  ScottyM ()
-httpPubEndpoint route app publish = do
-  get route $
-    ( do
-        _ <- isSchema
-        raw $ LBS.pack $ T.unpack $ render app
-    )
-      <|> raw httpPlayground
-  post route $ raw =<< (liftIO . httpPubApp app publish =<< body)
+  post route $ raw =<< (liftIO . httpPubApp publish app =<< body)
 
 startServer :: ServerApp -> ScottyM () -> IO ()
 startServer wsApp app = do
