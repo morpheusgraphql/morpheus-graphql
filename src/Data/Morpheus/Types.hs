@@ -33,7 +33,6 @@ module Data.Morpheus.Types
     unsafeInternalContext,
     ResolverContext (..),
     Input,
-    Stream,
     WS,
     HTTP,
     -- Resolvers
@@ -110,7 +109,6 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Types.Internal.Subscription
   ( HTTP,
     Input,
-    Stream,
     WS,
   )
 import Data.Proxy (Proxy (..))

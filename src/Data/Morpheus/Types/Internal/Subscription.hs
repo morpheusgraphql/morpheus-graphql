@@ -14,7 +14,6 @@ module Data.Morpheus.Types.Internal.Subscription
     connectionThread,
     runStreamWS,
     runStreamHTTP,
-    Stream,
     Scope (..),
     Input (..),
     WS,
@@ -128,7 +127,7 @@ finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
 connectionThread ::
   ( MonadUnliftIO m
   ) =>
-  (Input WS -> Stream WS e m) ->
+  App e m ->
   Scope WS e m ->
   m ()
 connectionThread api scope = do
@@ -139,11 +138,11 @@ connectionThread api scope = do
 
 connectionLoop ::
   Monad m =>
-  (Input WS -> Stream WS e m) ->
+  App e m ->
   Scope WS e m ->
   Input WS ->
   m ()
-connectionLoop api scope input =
+connectionLoop app scope input =
   forever
     $ runStreamWS scope
-    $ api input
+    $ streamApp app input

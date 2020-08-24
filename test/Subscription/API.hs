@@ -22,9 +22,7 @@ import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
   ( Event (..),
-    Input,
     RootResolver (..),
-    Stream,
     subscribe,
   )
 import Data.Text (Text)

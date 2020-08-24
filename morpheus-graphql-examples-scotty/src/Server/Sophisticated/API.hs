@@ -48,7 +48,6 @@ import Data.Morpheus.Types
     ResolverS,
     RootResolver (..),
     ScalarValue (..),
-    Stream,
     SubscriptionField,
     WithOperation,
     constRes,

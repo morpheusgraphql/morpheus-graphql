@@ -29,7 +29,6 @@ import Data.Morpheus.Types
     Input,
     ResolverM,
     RootResolver (..),
-    Stream,
     publish,
     subscribe,
   )

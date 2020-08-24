@@ -100,12 +100,12 @@ webSocketsApp ::
   ( MonadUnliftIO m,
     Eq channel
   ) =>
-  App (Event channel a) m ->
-  m (ServerApp, Event channel a -> m ())
+  App (Event channel cont) m ->
+  m (ServerApp, Event channel cont -> m ())
 webSocketsApp app =
   do
     store <- initDefaultStore
-    wsApp <- webSocketsWrapper store $ connectionThread $ streamApp app
+    wsApp <- webSocketsWrapper store (connectionThread app)
     pure
       ( wsApp,
         publishEventWith store
