@@ -27,7 +27,7 @@
 
   - removed `subscriptionApp`
   - changed `webSocketsApp` type to `App e m -> m (ServerApp, e -> m ())`
-  - changed `httpPubApp` type to `App e m -> (e -> m ()) -> a -> m b`
+  - changed `httpPubApp` type to `[e -> m ()] -> App e m -> a -> m b`
 
 - removed `Stream` from `Data.Morpheus.Types`
 
