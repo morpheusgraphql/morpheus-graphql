@@ -48,7 +48,7 @@ import Control.Monad.IO.Unlift
 
 import Data.Morpheus.Core
   ( App,
-    runAppWith,
+    runAppStream,
   )
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -80,7 +80,7 @@ import Data.Morpheus.Types.Internal.Subscription.Stream
 import Data.UUID.V4 (nextRandom)
 
 streamApp :: Monad m => App e m -> Input api -> Stream api e m
-streamApp app = toOutStream (runAppWith app)
+streamApp app = toOutStream (runAppStream app)
 
 connect :: MonadIO m => m (Input WS)
 connect = Init <$> liftIO nextRandom
