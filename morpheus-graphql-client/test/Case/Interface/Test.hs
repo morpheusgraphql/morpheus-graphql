@@ -21,7 +21,7 @@ import Data.Morpheus.Client
     gql,
   )
 import Data.Text (Text)
-import Lib
+import Test.Utils
   ( defineClientWith,
     mockApi,
   )
