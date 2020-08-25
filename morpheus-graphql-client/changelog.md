@@ -2,6 +2,10 @@
 
 ## 0.15.0 - Unreleased Changes
 
+### minor
+
+- fixed client error on field `__typename` [#509](https://github.com/morpheusgraphql/morpheus-graphql/issues/509)
+
 ## 0.14.1 - 16.08.2020
 
 ### minor
