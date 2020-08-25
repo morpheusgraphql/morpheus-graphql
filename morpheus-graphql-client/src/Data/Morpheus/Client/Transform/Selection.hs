@@ -53,6 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toAny,
     toFieldName,
+    mkTypeRef
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -193,7 +194,16 @@ getFieldType
   Selection
     { selectionName,
       selectionPosition
-    } = withTypeContent typeContent
+    } 
+    | selectionName == "__typename" 
+        = processDeprecation FieldDefinition {
+        fieldName = "__typename",
+        fieldDescription = Nothing,
+        fieldType = mkTypeRef "String",
+        fieldDirectives = [],
+        fieldContent = Nothing
+      }
+    | otherwise = withTypeContent typeContent
     where
       withTypeContent DataObject {objectFields} =
         selectBy selError selectionName objectFields >>= processDeprecation
@@ -201,7 +211,7 @@ getFieldType
         selectBy selError selectionName interfaceFields >>= processDeprecation
       withTypeContent dt =
         failure (compileError $ "Type should be output Object \"" <> msg (show dt))
-      selError = compileError $ "cant find field " <> msg (show typeContent)
+      selError = compileError $ "can't find field " <> msg selectionName <> " on type: " <> msg (show typeContent)
       processDeprecation
         FieldDefinition
           { fieldType = alias@TypeRef {typeConName},
