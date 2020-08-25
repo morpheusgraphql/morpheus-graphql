@@ -14,7 +14,6 @@ module Server.TH.Simple
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types (RootResolver (..), Undefined (..))
