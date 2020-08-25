@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dd43bccf11b8a9f16ca9ffdb55d03ce247b69e2afde875f73dfd3d7e65b4f3f5
+-- hash: 78af678a07ea9fbbf6cf74168a09783cdab91dd0cc70b961d9fc3ca60cdf4fe8
 
 name:           morpheus-graphql-client
 version:        0.14.1
@@ -67,7 +67,7 @@ test-suite morpheus-client-test
   main-is: Spec.hs
   other-modules:
       Case.Interface.Test
-      Lib
+      Spec.Utils
       Paths_morpheus_graphql_client
   hs-source-dirs:
       test

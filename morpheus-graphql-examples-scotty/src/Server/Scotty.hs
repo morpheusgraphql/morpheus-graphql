@@ -17,7 +17,6 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus (runApp)
 import Data.Morpheus.Server
   ( compileTimeSchemaValidation,
-    httpPubApp,
     webSocketsApp,
   )
 import qualified Server.Mythology.API as Mythology
