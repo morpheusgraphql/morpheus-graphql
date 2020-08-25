@@ -47,7 +47,6 @@ defineClientWith
         name
         __typename
         ... on Deity {
-          
               power
         }
         ... on Hero {
