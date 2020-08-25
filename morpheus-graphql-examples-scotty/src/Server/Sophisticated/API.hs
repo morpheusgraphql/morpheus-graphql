@@ -27,7 +27,6 @@ import qualified Data.Map as M
 import Data.Morpheus
   ( App,
     deriveApp,
-    runApp,
   )
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
@@ -40,7 +39,6 @@ import Data.Morpheus.Types
     GQLScalar (..),
     GQLType (..),
     ID,
-    Input,
     MUTATION,
     Resolver,
     ResolverM,

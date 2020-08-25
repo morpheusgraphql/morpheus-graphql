@@ -9,7 +9,7 @@ module Server.Mythology.API
   )
 where
 
-import qualified Data.ByteString.Lazy.Char8 as B
+
 import Data.Morpheus
   ( App,
     deriveApp,

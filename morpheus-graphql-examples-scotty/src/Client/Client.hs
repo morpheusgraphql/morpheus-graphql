@@ -18,7 +18,6 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
     defineByDocumentFile,
-    defineByIntrospectionFile,
     gql,
   )
 import Data.Morpheus.Types (GQLScalar (..), ScalarValue (..))
