@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
--- | Build GraphQL APIs with your favourite functional language!
+-- | Build GraphQL APIs with your favorite functional language!
 module Data.Morpheus
   ( interpreter,
     debugInterpreter,
