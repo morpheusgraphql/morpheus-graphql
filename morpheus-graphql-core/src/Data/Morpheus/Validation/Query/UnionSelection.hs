@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -13,17 +14,20 @@ module Data.Morpheus.Validation.Query.UnionSelection
 where
 
 import Control.Monad ((>=>))
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
 import Data.Morpheus.Internal.Utils
-  ( elems,
+  ( (<:>),
+    elems,
     empty,
     fromElems,
+    singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataUnion,
     Fragment (..),
     IMPLEMENTABLE,
+    Position (..),
     RAW,
     Selection (..),
     SelectionContent (..),
@@ -138,6 +142,23 @@ joinClusters selSet =
   where
     joinCluster (typeName, fragmets) = UnionTag typeName <$> MS.join (selSet : fragmets)
 
+withTypename ::
+  SelectionSet VALID ->
+  FragmentValidator s (SelectionSet VALID)
+withTypename sel = do
+  selectionPosition <- fromMaybe (Position 0 0) <$> asksScope position
+  sel
+    <:> singleton
+      ( Selection
+          { selectionName = "__typename",
+            selectionAlias = Nothing,
+            selectionPosition,
+            selectionArguments = empty,
+            selectionContent = SelectionField,
+            selectionDirectives = empty
+          }
+      )
+
 validateInterfaceSelection ::
   ResolveFragment s =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
@@ -156,7 +177,9 @@ validateInterfaceSelection
     let categories = tagUnionFragments possibleTypes spreads
     if null categories
       then pure (SelectionSet validSelectionSet)
-      else joinClusters validSelectionSet (insertDefault (typeName typeDef) categories)
+      else do
+        validSelectionSetWithTypename <- withTypename validSelectionSet
+        joinClusters validSelectionSetWithTypename (insertDefault (typeName typeDef) categories)
 
 insertDefault :: TypeName -> [(TypeName, [a])] -> [(TypeName, [a])]
 insertDefault interfaceName categories
