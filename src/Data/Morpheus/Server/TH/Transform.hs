@@ -102,7 +102,6 @@ toTHDefinitions namespace schema = traverse generateType schema
             InputType
               ServerTypeDefinition
                 { tName = hsTypeName typeName,
-                  tNamespace = [],
                   tCons,
                   typeArgD = empty,
                   ..
@@ -111,7 +110,6 @@ toTHDefinitions namespace schema = traverse generateType schema
             OutputType
               ServerTypeDefinition
                 { tName = hsTypeName typeName,
-                  tNamespace = [],
                   tCons,
                   ..
                 }
@@ -211,7 +209,6 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (F
     pure
       [ ServerTypeDefinition
           { tName,
-            tNamespace = empty,
             tCons = [mkCons tName (Fields arguments)],
             tKind = KindInputObject,
             typeArgD = [],

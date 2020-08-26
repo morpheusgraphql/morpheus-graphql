@@ -16,6 +16,7 @@ import Data.Morpheus.Internal.TH
     toName,
     tyConArgs,
   )
+import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -38,20 +39,26 @@ import Language.Haskell.TH
 
 declareType :: Bool -> ServerTypeDefinition cat s -> [Dec]
 declareType _ ServerTypeDefinition {tKind = KindScalar} = []
-declareType namespace ServerTypeDefinition {tName, tCons, tKind, tNamespace} =
-  [ DataD
-      []
-      (mkNamespace tNamespace tName)
-      tVars
-      Nothing
-      cons
-      (derive tKind)
-  ]
-  where
-    tVars = declareTyVar (tyConArgs tKind)
-      where
-        declareTyVar = map (PlainTV . toName)
-    cons = declareCons namespace tKind (tNamespace, tName) tCons
+declareType
+  namespace
+  ServerTypeDefinition
+    { tName,
+      tCons,
+      tKind
+    } =
+    [ DataD
+        []
+        (mkNamespace empty tName)
+        tVars
+        Nothing
+        cons
+        (derive tKind)
+    ]
+    where
+      tVars = declareTyVar (tyConArgs tKind)
+        where
+          declareTyVar = map (PlainTV . toName)
+      cons = declareCons namespace tKind tName tCons
 
 derive :: TypeKind -> [DerivClause]
 derive tKind = [deriveClasses (''Generic : derivingList)]
@@ -69,14 +76,14 @@ mkNamespace tNamespace = toName . nameSpaceType tNamespace
 declareCons ::
   Bool ->
   TypeKind ->
-  ([FieldName], TypeName) ->
+  TypeName ->
   [ConsD cat s] ->
   [Con]
-declareCons namespace tKind (tNamespace, tName) = map consR
+declareCons namespace tKind tName = map consR
   where
     consR ConsD {cName, cFields} =
       RecC
-        (mkNamespace tNamespace cName)
+        (mkNamespace empty cName)
         (map (declareField namespace tKind tName) cFields)
 
 declareField ::

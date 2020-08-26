@@ -64,11 +64,17 @@ import Data.Proxy (Proxy (..))
 import Language.Haskell.TH
 
 instanceIntrospect :: Maybe (TypeDefinition cat s) -> Q [Dec]
-instanceIntrospect (Just typeDef@TypeDefinition {typeName, typeContent = DataEnum {}}) =
-  pure <$> instanceD (cxt []) iHead [defineIntrospect]
-  where
-    iHead = pure (apply ''Introspect [cat', toCon typeName])
-    defineIntrospect = funDSimple 'introspect [_'] [|insertType (typeDef :: TypeDefinition LEAF CONST)|]
+instanceIntrospect
+  ( Just
+      typeDef@TypeDefinition
+        { typeName,
+          typeContent = DataEnum {}
+        }
+    ) =
+    pure <$> instanceD (cxt []) iHead [defineIntrospect]
+    where
+      iHead = pure (apply ''Introspect [cat', toCon typeName])
+      defineIntrospect = funDSimple 'introspect [_'] [|insertType (typeDef :: TypeDefinition LEAF CONST)|]
 instanceIntrospect _ = pure []
 
 -- [(FieldDefinition, TypeUpdater)]

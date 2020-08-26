@@ -6,7 +6,6 @@ where
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
-    FieldName,
     IN,
     TypeDefinition,
     TypeKind,
@@ -16,7 +15,6 @@ import Data.Morpheus.Types.Internal.AST
 --- Core
 data ServerTypeDefinition cat s = ServerTypeDefinition
   { tName :: TypeName,
-    tNamespace :: [FieldName],
     typeArgD :: [ServerTypeDefinition IN s],
     tCons :: [ConsD cat s],
     tKind :: TypeKind,
