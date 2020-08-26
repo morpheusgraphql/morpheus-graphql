@@ -80,7 +80,6 @@ module Data.Morpheus.Types.Internal.AST
     toNullable,
     toListField,
     isObject,
-    isInput,
     toHSWrappers,
     isNullable,
     toGQLWrapper,

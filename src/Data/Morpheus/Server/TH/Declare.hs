@@ -15,9 +15,6 @@ import Data.Morpheus.Server.Internal.TH.Types
   ( ServerDecContext (..),
     ServerTypeDefinition (..),
   )
-import Data.Morpheus.Server.TH.Declare.Channels
-  ( deriveChannels,
-  )
 import Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
   )
@@ -31,7 +28,6 @@ import Data.Morpheus.Server.TH.Declare.Type
 import Data.Morpheus.Server.TH.Transform
 import Data.Morpheus.Types.Internal.AST
   ( IN,
-    isInput,
     isObject,
   )
 import Data.Semigroup ((<>))
@@ -60,10 +56,7 @@ instance Declare (ServerTypeDefinition cat s) where
       deriveGQLInstances = concat <$> sequence gqlInstances
         where
           gqlInstances
-            | isObject tKind && isInput tKind =
-              [deriveObjectRep typeD]
-            | isObject tKind =
-              [deriveObjectRep typeD, deriveChannels typeD]
+            | isObject tKind = [deriveObjectRep typeD]
             | otherwise =
               []
 
