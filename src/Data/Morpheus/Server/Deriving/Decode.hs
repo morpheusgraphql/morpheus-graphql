@@ -126,7 +126,7 @@ class DecodeType a where
 instance {-# OVERLAPPABLE #-} (Generic a, DecodeRep (Rep a)) => DecodeType a where
   decodeType = fmap to . decodeRep . (,Cont D_CONS "")
 
--- data Inpuz  =
+-- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }
 --   | InputRecord { name :: Text, age :: Int } -- { __typename: InputRecord, InputRecord: {field: ""} }
 --   | IndexedType Int Text  -- { __typename: InputRecord, _0:2 , _1:""  }

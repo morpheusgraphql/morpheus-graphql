@@ -69,7 +69,7 @@ instance Declare (ServerTypeDefinition cat s) where
             | isObject tKind && isInput tKind =
               [deriveObjectRep typeD, deriveDecode typeD]
             | isObject tKind =
-              [deriveObjectRep typeD, deriveEncode typeD, deriveChannels typeD]
+              [deriveObjectRep typeD, deriveChannels typeD]
             | otherwise =
               []
 

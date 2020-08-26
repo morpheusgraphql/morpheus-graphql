@@ -200,7 +200,7 @@ type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
   exploreResolvers :: Proxy custom -> a -> ResolverState (ResModel o e m)
 
-instance (Generic a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers 'False a o e m where
+instance (Generic a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers any a o e m where
   exploreResolvers _ value =
     pure
       $ convertNode
@@ -217,11 +217,11 @@ objectResolvers ::
   ResolverState (ResModel o e m)
 objectResolvers value =
   exploreResolvers (Proxy @(CUSTOM a)) value
-    >>= constraintOnject
+    >>= constraintObject
   where
-    constraintOnject obj@ResObject {} =
+    constraintObject obj@ResObject {} =
       pure obj
-    constraintOnject _ =
+    constraintObject _ =
       failure ("resolver must be an object" :: InternalError)
 
 type Con o e m a =
