@@ -141,7 +141,7 @@ type IntrospectConstraint m event query mutation subscription =
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep
 
--- | normaly morpheus server validates schema at runtime (after the schema derivation).
+-- | normal morpheus server validates schema at runtime (after the schema derivation).
 --   this method allows you to validate it at compile time.
 compileTimeSchemaValidation ::
   (IntrospectConstraint m event qu mu su) =>
@@ -485,12 +485,12 @@ analyseRep baseName cons =
   ResRep
     { enumCons = map consName enumRep,
       unionRef = map fieldTypeName $ concatMap consFields unionRefRep,
-      unionRecordRep = unionRecordRep <> map setFieldNames anyonimousUnionRep
+      unionRecordRep = unionRecordRep <> map setFieldNames anonymousUnionRep
     }
   where
     (enumRep, left1) = partition isEmpty cons
     (unionRefRep, left2) = partition (isUnionRef baseName) left1
-    (unionRecordRep, anyonimousUnionRep) = partition consIsRecord left2
+    (unionRecordRep, anonymousUnionRep) = partition consIsRecord left2
 
 buildInputUnion ::
   (TypeName, DataFingerprint) -> [ConsRep IN] -> (TypeContent TRUE IN CONST, [TypeUpdater])
