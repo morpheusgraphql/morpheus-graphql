@@ -62,7 +62,7 @@ type Session = (ID, SessionID)
 data ClientConnection e (m :: * -> *) = ClientConnection
   { connectionId :: ID,
     connectionCallback :: ByteString -> m (),
-    -- one connection can have multiple subsciprion session
+    -- one connection can have multiple subscription session
     connectionSessions :: HashMap SessionID (SubEvent e m)
   }
 
@@ -125,7 +125,7 @@ startSession subscriptions (clientId, sessionId) = updateClient startSub clientI
 
 -- stores active client connections
 -- every registered client has ID
--- when client connection is closed client(including all its subsciprions) can By removed By its ID
+-- when client connection is closed client(including all its subscriptions) can By removed By its ID
 newtype ClientConnectionStore e (m :: * -> *) = ClientConnectionStore
   { unpackStore :: HashMap ID (ClientConnection e m)
   }
