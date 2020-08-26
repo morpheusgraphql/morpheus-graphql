@@ -74,9 +74,9 @@ type SetInt = Set Int
 
 type MapTextInt = Map Text Int
 
-$(importGQLDocumentWithNamespace "src/Server/Sophisticated/shared.gql")
+$(importGQLDocumentWithNamespace "morpheus-graphql-examples-scotty/src/Server/Sophisticated/shared.gql")
 
-$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
+$(importGQLDocumentWithNamespace "morpheus-graphql-examples-scotty/src/Server/Sophisticated/api.gql")
 
 data Animal
   = AnimalCat Cat
@@ -149,13 +149,13 @@ root =
     mutationResolver =
       Mutation
         { mutationCreateUser = resolveCreateUser,
-          mutationCreateAddress = resolveCreateAdress,
-          mutationSetAdress = resolveSetAdress
+          mutationCreateAddress = resolveCreateAddress,
+          mutationSetAddress = resolveSetAddress
         }
     subscriptionResolver =
       Subscription
         { subscriptionNewUser = resolveNewUser,
-          subscriptionNewAddress = const resolveNewAdress
+          subscriptionNewAddress = const resolveNewAddress
         }
 
 -- Resolve QUERY
@@ -180,15 +180,15 @@ resolveCreateUser = do
   liftEither setDBUser
 
 -- Mutation With Event Triggering : sends events to subscription
-resolveCreateAdress :: ResolverM EVENT IO Address
-resolveCreateAdress = do
+resolveCreateAddress :: ResolverM EVENT IO Address
+resolveCreateAddress = do
   requireAuthorized
   publish [addressUpdate]
   lift setDBAddress
 
 -- Mutation Without Event Triggering
-resolveSetAdress :: ResolverM EVENT IO Address
-resolveSetAdress = lift setDBAddress
+resolveSetAddress :: ResolverM EVENT IO Address
+resolveSetAddress = lift setDBAddress
 
 -- Resolve SUBSCRIPTION
 resolveNewUser :: SubscriptionField (ResolverS EVENT IO User)
@@ -198,8 +198,8 @@ resolveNewUser = subscribe USER $ do
   where
     subResolver (Event _ content) = liftEither (getDBUser content)
 
-resolveNewAdress :: SubscriptionField (ResolverS EVENT IO Address)
-resolveNewAdress = subscribe ADDRESS $ do
+resolveNewAddress :: SubscriptionField (ResolverS EVENT IO Address)
+resolveNewAddress = subscribe ADDRESS $ do
   requireAuthorized
   pure subResolver
   where
@@ -235,7 +235,7 @@ getDBUser _ = do
           userEmail = pure email,
           userAddress = const $ lift (getDBAddress (Content 12)),
           userOffice = constRes Nothing,
-          userHome = pure HH,
+          userHome = pure CityIDHH,
           userEntity =
             pure
               [ MyUnionAddress
@@ -250,7 +250,7 @@ getDBUser _ = do
                       userEmail = pure email,
                       userAddress = const $ lift (getDBAddress (Content 12)),
                       userOffice = constRes Nothing,
-                      userHome = pure HH,
+                      userHome = pure CityIDHH,
                       userEntity = pure []
                     }
               ]
@@ -278,7 +278,7 @@ setDBUser = do
         userEmail = pure email,
         userAddress = const $ lift setDBAddress,
         userOffice = constRes Nothing,
-        userHome = pure HH,
+        userHome = pure CityIDHH,
         userEntity = pure []
       }
 
