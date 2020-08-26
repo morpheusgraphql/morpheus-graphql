@@ -83,8 +83,12 @@ declareCons tKind tName = traverse consR
         <*> traverse (declareField tKind tName) cFields
 
 consName :: TypeKind -> TypeName -> TypeName -> DeclareM Name
-consName KindEnum (TypeName name) = pure . toName . nameSpaceType [FieldName name]
-consName _ _ = pure . toName
+consName KindEnum (TypeName name) conName = do
+  namespace <- asks id
+  if namespace
+    then pure $ toName $ nameSpaceType [FieldName name] conName
+    else pure (toName conName)
+consName _ _ conName = pure (toName conName)
 
 declareField ::
   TypeKind ->
