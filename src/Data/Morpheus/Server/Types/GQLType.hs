@@ -127,8 +127,10 @@ class IsObject (KIND a) => GQLType a where
   isObjectKind :: Proxy a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
+  hasNamespace :: Proxy a -> Maybe TypeName
+  hasNamespace _ = Nothing
+
   isEmptyType :: Proxy a -> Bool
-  default isEmptyType :: Proxy a -> Bool
   isEmptyType _ = False
 
   __typeName :: Proxy a -> TypeName
