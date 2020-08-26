@@ -48,19 +48,23 @@ interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () 
 introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . toName
 
-deriveGQLType :: ServerTypeDefinition cat s -> Q [Dec]
-deriveGQLType ServerTypeDefinition {tName, tKind, typeOriginal} =
+deriveGQLType :: Bool -> ServerTypeDefinition cat s -> Q [Dec]
+deriveGQLType namespace ServerTypeDefinition {tName, tKind, typeOriginal} =
   pure <$> instanceD constrains iHead (functions <> typeFamilies)
   where
     functions =
       funDProxy
         [ ('__typeName, [|tName|]),
           ('description, [|tDescription|]),
-          ('implements, implementsFunc)
+          ('implements, implementsFunc),
+          ('hasNamespace, hasNamespaceFunc)
         ]
       where
         tDescription = typeOriginal >>= typeDescription
         implementsFunc = listE $ map introspectInterface (interfacesFrom typeOriginal)
+        hasNamespaceFunc
+          | namespace = [|Just tName|]
+          | otherwise = [|Nothing|]
     --------------------------------
     typeArgs = tyConArgs tKind
     --------------------------------

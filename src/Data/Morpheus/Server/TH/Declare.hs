@@ -12,7 +12,7 @@ where
 
 import Control.Monad.Reader (runReader)
 import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerDecContext,
+  ( ServerDecContext (..),
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.TH.Declare.Channels
@@ -48,12 +48,12 @@ instance Declare (TypeDec s) where
   declare namespace (OutputType typeD) = declare namespace typeD
 
 instance Declare (ServerTypeDefinition cat s) where
-  declare namespace typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
+  declare ctx typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
     do
-      let mainType = runReader (declareType typeD) namespace
-      argTypes <- declareArgTypes namespace typeArgD
+      let mainType = runReader (declareType typeD) ctx
+      argTypes <- declareArgTypes ctx typeArgD
       gqlInstances <- deriveGQLInstances
-      typeClasses <- deriveGQLType typeD
+      typeClasses <- deriveGQLType (namespace ctx) typeD
       introspectEnum <- instanceIntrospect typeOriginal
       pure $ mainType <> typeClasses <> argTypes <> gqlInstances <> introspectEnum
     where
