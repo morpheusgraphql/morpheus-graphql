@@ -18,12 +18,6 @@ import Data.Morpheus.Server.Internal.TH.Types
 import Data.Morpheus.Server.TH.Declare.Channels
   ( deriveChannels,
   )
-import Data.Morpheus.Server.TH.Declare.Decode
-  ( deriveDecode,
-  )
-import Data.Morpheus.Server.TH.Declare.Encode
-  ( deriveEncode,
-  )
 import Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
   )
@@ -67,7 +61,7 @@ instance Declare (ServerTypeDefinition cat s) where
         where
           gqlInstances
             | isObject tKind && isInput tKind =
-              [deriveObjectRep typeD, deriveDecode typeD]
+              [deriveObjectRep typeD]
             | isObject tKind =
               [deriveObjectRep typeD, deriveChannels typeD]
             | otherwise =
@@ -76,8 +70,7 @@ instance Declare (ServerTypeDefinition cat s) where
 declareArgTypes :: ServerDecContext -> [ServerTypeDefinition IN s] -> Q [Dec]
 declareArgTypes ctx types = do
   introspectArgs <- concat <$> traverse deriveObjectRep types
-  decodeArgs <- concat <$> traverse deriveDecode types
-  return $ argsTypeDecs <> decodeArgs <> introspectArgs
+  return $ argsTypeDecs <> introspectArgs
   where
     ----------------------------------------------------
     argsTypeDecs =
