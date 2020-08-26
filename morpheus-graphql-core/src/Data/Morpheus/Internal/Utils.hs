@@ -243,7 +243,7 @@ class SemigroupM m a where
   m a
 (<.>) = mergeM []
 
--- Failure: for custome Morpheus GrapHQL errors
+-- Failure: for custom Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where
   failure :: error -> f v
 
