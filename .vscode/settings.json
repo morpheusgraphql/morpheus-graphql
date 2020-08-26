@@ -1,5 +1,4 @@
 {
-  "languageServerHaskell.enableHIE": true,
   "editor.formatOnSave": true,
   "ghcSimple.feature.rangeType": false
 }
