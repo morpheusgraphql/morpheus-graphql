@@ -42,7 +42,7 @@ import Language.Haskell.TH
   )
 
 o' :: Type
-o' = VarT $ toName ("oparation" :: TypeName)
+o' = VarT $ toName ("operation" :: TypeName)
 
 e' :: Type
 e' = VarT $ toName ("encodeEvent" :: TypeName)
