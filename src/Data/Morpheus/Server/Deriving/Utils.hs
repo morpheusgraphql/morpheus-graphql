@@ -10,7 +10,6 @@ module Data.Morpheus.Server.Deriving.Utils
     datatypeNameProxy,
     conNameProxy,
     isRecordProxy,
-    proxyFieldName,
     selNameProxy,
     withNamespace,
   )
@@ -54,9 +53,6 @@ selNameProxy _ = convertToJSONName $ FieldName $ pack $ selName (undefined :: M1
 
 withNamespace :: forall f a. GQLType a => f a -> FieldName -> FieldName
 withNamespace _ = maybe id stripNamespace (hasNamespace (Proxy @a))
-
-proxyFieldName :: forall f1 f2 a (s :: Meta). (Selector s, GQLType a) => f1 a -> f2 s -> FieldName
-proxyFieldName fa fs = withNamespace fa (selNameProxy fs)
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))

@@ -122,10 +122,13 @@ class Namespace a where
 
 instance Namespace FieldName where
   stripNamespace prefix (FieldName name) =
-    FieldName (fromMaybe name $ T.stripPrefix (nonCapital prefix) name)
+    FieldName (nonCapitalText $ fromMaybe name $ T.stripPrefix (nonCapital prefix) name)
 
 nonCapital :: TypeName -> Token
-nonCapital = mapText __nonCapital . readTypeName
+nonCapital = nonCapitalText . readTypeName
+
+nonCapitalText :: Token -> Token
+nonCapitalText = mapText __nonCapital
   where
     __nonCapital [] = []
     __nonCapital (x : xs) = toLower x : xs

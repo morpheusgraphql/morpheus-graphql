@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -163,6 +164,11 @@ instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind
 instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind INTERFACE a o e m where
   encodeKind (VContext value) = liftResolverState $ exploreResolvers (Proxy @(CUSTOM a)) value
 
+stripNamespace :: (FieldName -> FieldName) -> ResNode o e m -> ResNode o e m
+stripNamespace f ResNode {resFields = fields, ..} = ResNode {resFields = map stripFields fields, ..}
+  where
+    stripFields field = field {fieldSelName = f (fieldSelName field)}
+
 convertNode ::
   (Monad m, LiftOperation o) =>
   ResNode o e m ->
@@ -200,10 +206,11 @@ type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
 class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
   exploreResolvers :: Proxy custom -> a -> ResolverState (ResModel o e m)
 
-instance (Generic a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers any a o e m where
+instance (Generic a, GQLType a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers any a o e m where
   exploreResolvers _ value =
     pure
       $ convertNode
+      $ stripNamespace (withNamespace (Proxy @a))
       $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
 ----- HELPERS ----------------------------
@@ -327,10 +334,7 @@ instance (FieldRep f o e m, FieldRep g o e m) => FieldRep (f :*: g) o e m where
 instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
   fieldRep _ m@(M1 (K1 src)) =
     [ FieldNode
-        { fieldSelName =
-            withNamespace
-              (Proxy @a)
-              (FieldName $ pack (selName m)),
+        { fieldSelName = FieldName $ pack (selName m),
           fieldTypeName = __typeName (Proxy @a),
           fieldResolver = encode src,
           isFieldObject = isObjectKind (Proxy @a)
