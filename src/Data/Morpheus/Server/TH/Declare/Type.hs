@@ -12,11 +12,9 @@ import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
     nameSpaceField,
-    nameSpaceType,
     toName,
     tyConArgs,
   )
-import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
@@ -48,7 +46,7 @@ declareType
     } =
     [ DataD
         []
-        (mkNamespace empty tName)
+        (toName tName)
         tVars
         Nothing
         cons
@@ -70,9 +68,6 @@ derive tKind = [deriveClasses (''Generic : derivingList)]
 deriveClasses :: [Name] -> DerivClause
 deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 
-mkNamespace :: [FieldName] -> TypeName -> Name
-mkNamespace tNamespace = toName . nameSpaceType tNamespace
-
 declareCons ::
   Bool ->
   TypeKind ->
@@ -83,7 +78,7 @@ declareCons namespace tKind tName = map consR
   where
     consR ConsD {cName, cFields} =
       RecC
-        (mkNamespace empty cName)
+        (toName cName)
         (map (declareField namespace tKind tName) cFields)
 
 declareField ::
