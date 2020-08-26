@@ -60,7 +60,6 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    GQLType (CUSTOM),
     TypeUpdater,
   )
 import Data.Morpheus.Server.Types.Types
@@ -126,7 +125,11 @@ import Data.Text
 import GHC.Generics
 import Language.Haskell.TH (Exp, Q)
 
-type IntroCon a = (GQLType a, DeriveTypeContent OUT (CUSTOM a) a)
+type IntroCon a =
+  ( GQLType a,
+    TypeRep OUT (Rep a),
+    Generic a
+  )
 
 type IntrospectConstraint m event query mutation subscription =
   ( IntroCon (query (Resolver QUERY event m)),
@@ -248,7 +251,14 @@ instance Introspect cat (MapKind k v Maybe) => Introspect cat (Map k v) where
   introspect _ = introspect (ProxyRep :: ProxyRep cat (MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
-instance (GQLType b, DeriveTypeContent IN 'False a, Introspect OUT b) => Introspect OUT (a -> m b) where
+instance
+  ( GQLType b,
+    Introspect OUT b,
+    TypeRep IN (Rep a),
+    Generic a
+  ) =>
+  Introspect OUT (a -> m b)
+  where
   isObject _ = False
   field _ name = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
     where
@@ -257,15 +267,12 @@ instance (GQLType b, DeriveTypeContent IN 'False a, Introspect OUT b) => Introsp
       fieldArgs =
         fieldsToArguments
           $ fst
-          $ introspectInputObjectFields
-            (Proxy :: Proxy 'False)
-            (__typeName (Proxy @b), Proxy @a)
+          $ introspectInputObjectFields (__typeName (Proxy @b), Proxy @a)
   introspect _ = concatUpdates (introspect (ProxyRep :: ProxyRep OUT b) : inputs)
     where
       name = "Arguments for " <> __typeName (Proxy @b)
       inputs :: [TypeUpdater]
-      inputs =
-        snd $ introspectInputObjectFields (Proxy :: Proxy 'False) (name, Proxy @a)
+      inputs = snd $ introspectInputObjectFields (name, Proxy @a)
 
 instance (Introspect OUT a) => Introspect OUT (SubscriptionField a) where
   isObject _ = isObject (ProxyRep :: ProxyRep OUT a)
@@ -296,45 +303,39 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
       enumType :: Proxy a -> TypeDefinition LEAF CONST
       enumType = buildType $ mkEnumContent $ enumTags (Proxy @(Rep a))
 
-instance (GQL_TYPE a, DeriveTypeContent IN (CUSTOM a) a) => IntrospectKind INPUT a where
+instance (GQL_TYPE a, TypeRep IN (Rep a)) => IntrospectKind INPUT a where
   introspectKind _ = derivingData (Proxy @a) InputType
 
-instance (GQL_TYPE a, DeriveTypeContent OUT (CUSTOM a) a) => IntrospectKind OUTPUT a where
+instance (GQL_TYPE a, TypeRep OUT (Rep a)) => IntrospectKind OUTPUT a where
   introspectKind _ = derivingData (Proxy @a) OutputType
 
-instance (GQL_TYPE a, DeriveTypeContent OUT (CUSTOM a) a) => IntrospectKind INTERFACE a where
+instance (GQL_TYPE a, TypeRep OUT (Rep a)) => IntrospectKind INTERFACE a where
   introspectKind _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
-      (fields, types) =
-        introspectObjectFields
-          (Proxy @(CUSTOM a))
-          (baseName, Proxy @a)
+      (fields, types) = introspectObjectFields baseName (Proxy @a)
       baseName = __typeName (Proxy @a)
 
 derivingData ::
-  forall a cat.
-  (GQLType a, DeriveTypeContent cat (CUSTOM a) a) =>
-  Proxy a ->
+  forall a f cat.
+  (TypeRep cat (Rep a), GQLType a, Generic a) =>
+  f a ->
   TypeScope cat ->
   TypeUpdater
 derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
   where
     (datatypeContent, updates) =
-      deriveTypeContent
-        (Proxy @(CUSTOM a))
-        (Proxy @a, unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
+      deriveTypeContent (Proxy @a) (unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
     baseName = __typeName (Proxy @a)
     baseFingerprint = __typeFingerprint (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
 introspectInputObjectFields ::
-  DeriveTypeContent IN custom a =>
-  proxy1 (custom :: Bool) ->
-  (TypeName, proxy2 a) ->
+  (TypeRep IN (Rep a), Generic a) =>
+  (TypeName, f a) ->
   (FieldsDefinition IN CONST, [TypeUpdater])
-introspectInputObjectFields p1 (name, proxy) =
-  withObject (deriveTypeContent p1 (proxy, ([], []), InputType, "", DataFingerprint "" []))
+introspectInputObjectFields (name, proxy) =
+  withObject (deriveTypeContent proxy (([], []), InputType, "", DataFingerprint "" []))
   where
     withObject (DataInputObject {inputObjectFields}, ts) = (inputObjectFields, ts)
     withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
@@ -345,25 +346,24 @@ optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
   | otherwise = Just td
 
 deriveOperationType ::
-  forall proxy a.
-  DeriveTypeContent OUT (CUSTOM a) a =>
+  (TypeRep OUT (Rep a), Generic a) =>
   TypeName ->
   proxy a ->
   (TypeDefinition OBJECT CONST, [TypeUpdater])
 deriveOperationType name proxy = (mkOperationType fields name, types)
   where
-    (fields, types) = introspectObjectFields (Proxy @(CUSTOM a)) (name, proxy)
+    (fields, types) = introspectObjectFields name proxy
 
 mkOperationType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkOperationType fields typeName = mkType typeName (DataObject [] fields)
 
 introspectObjectFields ::
-  DeriveTypeContent OUT custom a =>
-  proxy1 (custom :: Bool) ->
-  (TypeName, proxy2 a) ->
+  (TypeRep OUT (Rep a), Generic a) =>
+  TypeName ->
+  f a ->
   (FieldsDefinition OUT CONST, [TypeUpdater])
-introspectObjectFields p1 (name, proxy) =
-  withObject (deriveTypeContent p1 (proxy, ([], []), OutputType, "", DataFingerprint "" []))
+introspectObjectFields name proxy =
+  withObject (deriveTypeContent proxy (([], []), OutputType, "", DataFingerprint "" []))
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
     withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
@@ -372,21 +372,21 @@ introspectFailure :: Message -> TypeUpdater
 introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
-class DeriveTypeContent cat (custom :: Bool) a where
-  deriveTypeContent ::
-    proxy1 custom ->
-    (proxy2 a, ([TypeName], [TypeUpdater]), TypeScope cat, TypeName, DataFingerprint) ->
-    (TypeContent TRUE cat CONST, [TypeUpdater])
 
-instance (TypeRep cat (Rep a), Generic a) => DeriveTypeContent cat any a where
-  deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
-    builder $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
-    where
-      builder [ConsRep {consFields}] = buildObject interfaces scope consFields
-      builder cons = genericUnion scope cons
-        where
-          genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
-          genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
+deriveTypeContent ::
+  forall proxy cat a.
+  (TypeRep cat (Rep a), Generic a) =>
+  proxy a ->
+  (([TypeName], [TypeUpdater]), TypeScope cat, TypeName, DataFingerprint) ->
+  (TypeContent TRUE cat CONST, [TypeUpdater])
+deriveTypeContent _ (interfaces, scope, baseName, baseFingerprint) =
+  builder $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
+  where
+    builder [ConsRep {consFields}] = buildObject interfaces scope consFields
+    builder cons = genericUnion scope cons
+      where
+        genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
+        genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
 buildField ::
   GQLType a =>
