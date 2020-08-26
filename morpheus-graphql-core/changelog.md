@@ -4,6 +4,8 @@
 
 ### new features
 
+- query validator automatically adds `__typename` to interface types
+
 - type : `App`
 
   ```hs
