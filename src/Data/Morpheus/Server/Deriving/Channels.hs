@@ -106,7 +106,7 @@ instance
   ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
     Generic (subs (Resolver SUBSCRIPTION e m))
   ) =>
-  ExploreChannels FALSE (subs (Resolver SUBSCRIPTION e m)) e
+  ExploreChannels any (subs (Resolver SUBSCRIPTION e m)) e
   where
   exploreChannels _ = typeRep (Proxy @e) . from
 

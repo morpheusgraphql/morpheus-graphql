@@ -20,11 +20,8 @@
 
 module Data.Morpheus.Server.Deriving.Introspect
   ( Introspect (..),
-    DeriveTypeContent (..),
     introspectOUT,
     IntroCon,
-    deriveCustomInputObjectType,
-    ProxyRep (..),
     TypeUpdater,
     deriveSchema,
     compileTimeSchemaValidation,
@@ -77,7 +74,6 @@ import Data.Morpheus.Types.Internal.AST
     DataFingerprint (..),
     DataUnion,
     ELEM,
-    FALSE,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
@@ -332,13 +328,6 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveCustomInputObjectType ::
-  DeriveTypeContent IN TRUE a =>
-  (TypeName, proxy a) ->
-  TypeUpdater
-deriveCustomInputObjectType (name, proxy) =
-  concatUpdates (snd $ introspectInputObjectFields (Proxy :: Proxy TRUE) (name, proxy))
-
 introspectInputObjectFields ::
   DeriveTypeContent IN custom a =>
   proxy1 (custom :: Bool) ->
@@ -389,7 +378,7 @@ class DeriveTypeContent cat (custom :: Bool) a where
     (proxy2 a, ([TypeName], [TypeUpdater]), TypeScope cat, TypeName, DataFingerprint) ->
     (TypeContent TRUE cat CONST, [TypeUpdater])
 
-instance (TypeRep cat (Rep a), Generic a) => DeriveTypeContent cat FALSE a where
+instance (TypeRep cat (Rep a), Generic a) => DeriveTypeContent cat any a where
   deriveTypeContent _ (_, interfaces, scope, baseName, baseFingerprint) =
     builder $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
     where

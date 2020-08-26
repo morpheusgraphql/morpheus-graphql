@@ -28,10 +28,13 @@ import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataFingerprint (..),
+    Description,
+    Directive,
     FALSE,
     QUERY,
     Schema,
     TypeName (..),
+    Value,
     internalFingerprint,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -132,6 +135,15 @@ class IsObject (KIND a) => GQLType a where
 
   isEmptyType :: Proxy a -> Bool
   isEmptyType _ = False
+
+  metaFields ::
+    Proxy a ->
+    [ ( Maybe Description, --description
+        [Directive CONST], -- directives
+        Maybe (Value CONST) -- defaultValue
+      )
+    ]
+  metaFields _ = []
 
   __typeName :: Proxy a -> TypeName
   default __typeName ::

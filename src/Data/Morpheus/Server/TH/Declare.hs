@@ -19,8 +19,7 @@ import Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
   )
 import Data.Morpheus.Server.TH.Declare.Introspect
-  ( deriveObjectRep,
-    instanceIntrospect,
+  ( instanceIntrospect,
   )
 import Data.Morpheus.Server.TH.Declare.Type
   ( declareType,
@@ -28,7 +27,6 @@ import Data.Morpheus.Server.TH.Declare.Type
 import Data.Morpheus.Server.TH.Transform
 import Data.Morpheus.Types.Internal.AST
   ( IN,
-    isObject,
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
@@ -44,7 +42,7 @@ instance Declare (TypeDec s) where
   declare namespace (OutputType typeD) = declare namespace typeD
 
 instance Declare (ServerTypeDefinition cat s) where
-  declare ctx typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
+  declare ctx typeD@ServerTypeDefinition {typeArgD, typeOriginal} =
     do
       let mainType = runReader (declareType typeD) ctx
       argTypes <- declareArgTypes ctx typeArgD
@@ -55,18 +53,11 @@ instance Declare (ServerTypeDefinition cat s) where
     where
       deriveGQLInstances = concat <$> sequence gqlInstances
         where
-          gqlInstances
-            | isObject tKind = [deriveObjectRep typeD]
-            | otherwise =
-              []
+          gqlInstances = []
 
 declareArgTypes :: ServerDecContext -> [ServerTypeDefinition IN s] -> Q [Dec]
-declareArgTypes ctx types = do
-  introspectArgs <- concat <$> traverse deriveObjectRep types
-  return $ argsTypeDecs <> introspectArgs
-  where
-    ----------------------------------------------------
-    argsTypeDecs =
-      concatMap
-        (\x -> runReader (declareType x) ctx)
-        types
+declareArgTypes ctx types =
+  pure $
+    concatMap
+      (\x -> runReader (declareType x) ctx)
+      types
