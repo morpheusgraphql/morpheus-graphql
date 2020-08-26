@@ -8,7 +8,7 @@ module Data.Morpheus.Server.TH.Declare.Type
   )
 where
 
-import Control.Monad.Reader (Reader, asks)
+import Control.Monad.Reader (asks)
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
@@ -17,7 +17,11 @@ import Data.Morpheus.Internal.TH
     toName,
     tyConArgs,
   )
-import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Types
+  ( ServerDec,
+    ServerDecContext (..),
+    ServerTypeDefinition (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     ConsD (..),
@@ -37,9 +41,7 @@ import Data.Morpheus.Types.Internal.Resolving
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
-type DeclareM = Reader Bool
-
-declareType :: ServerTypeDefinition cat s -> DeclareM [Dec]
+declareType :: ServerTypeDefinition cat s -> ServerDec [Dec]
 declareType ServerTypeDefinition {tKind = KindScalar} = pure []
 declareType
   ServerTypeDefinition
@@ -74,7 +76,7 @@ declareCons ::
   TypeKind ->
   TypeName ->
   [ConsD cat s] ->
-  DeclareM [Con]
+  ServerDec [Con]
 declareCons tKind tName = traverse consR
   where
     consR ConsD {cName, cFields} =
@@ -82,10 +84,10 @@ declareCons tKind tName = traverse consR
         <$> consName tKind tName cName
         <*> traverse (declareField tKind tName) cFields
 
-consName :: TypeKind -> TypeName -> TypeName -> DeclareM Name
+consName :: TypeKind -> TypeName -> TypeName -> ServerDec Name
 consName KindEnum (TypeName name) conName = do
-  namespace <- asks id
-  if namespace
+  namespace' <- asks namespace
+  if namespace'
     then pure $ toName $ nameSpaceType [FieldName name] conName
     else pure (toName conName)
 consName _ _ conName = pure (toName conName)
@@ -94,11 +96,11 @@ declareField ::
   TypeKind ->
   TypeName ->
   FieldDefinition cat s ->
-  DeclareM (Name, Bang, Type)
+  ServerDec (Name, Bang, Type)
 declareField tKind tName field@FieldDefinition {fieldName} = do
-  namespace <- asks id
+  namespace' <- asks namespace
   pure
-    ( fieldTypeName namespace tName fieldName,
+    ( fieldTypeName namespace' tName fieldName,
       Bang NoSourceUnpackedness NoSourceStrictness,
       renderFieldType tKind field
     )
