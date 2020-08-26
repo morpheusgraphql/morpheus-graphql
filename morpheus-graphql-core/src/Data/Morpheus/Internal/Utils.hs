@@ -214,7 +214,7 @@ class Listable a coll | coll -> a where
   fromElems :: (Monad m, Failure ValidationErrors m) => [a] -> m coll
 
 instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
-  fromElems xs = runResolutionT (fromListT xs) hmUnsafeFromValues failOnDups
+  fromElems xs = runResolutionT (fromListT xs) hmUnsafeFromValues failOnDuplicates
   elems = HM.elems
 
 keys :: (KeyOf k a, Listable a coll) => coll -> [k]
@@ -228,7 +228,7 @@ class Merge a where
   merge :: (Monad m, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 
 instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
-  merge _ x y = runResolutionT (fromListT $ HM.elems x <> HM.elems y) hmUnsafeFromValues failOnDups
+  merge _ x y = runResolutionT (fromListT $ HM.elems x <> HM.elems y) hmUnsafeFromValues failOnDuplicates
 
 (<:>) :: (Monad m, Merge a, Failure ValidationErrors m) => a -> a -> m a
 (<:>) = merge []
@@ -281,8 +281,8 @@ type RESOLUTION k a coll m =
   )
 
 data Resolution a coll m = Resolution
-  { resolveDups :: NonEmpty a -> m a,
-    fromNoDups :: [a] -> coll
+  { resolveDuplicates :: NonEmpty a -> m a,
+    fromNoDuplicates :: [a] -> coll
   }
 
 runResolutionT ::
@@ -290,7 +290,7 @@ runResolutionT ::
   ([a] -> coll) ->
   (NonEmpty a -> m a) ->
   m b
-runResolutionT (ResolutionT x) fromNoDups resolveDups = runReaderT x Resolution {..}
+runResolutionT (ResolutionT x) fromNoDuplicates resolveDuplicates = runReaderT x Resolution {..}
 
 newtype ResolutionT a coll m x = ResolutionT
   { _runResolutionT :: ReaderT (Resolution a coll m) m x
@@ -313,11 +313,11 @@ instance
   where
   failure = lift . failure
 
-resolveDupsM :: Monad m => NonEmpty a -> ResolutionT a coll m a
-resolveDupsM xs = asks resolveDups >>= lift . (xs &)
+resolveDuplicatesM :: Monad m => NonEmpty a -> ResolutionT a coll m a
+resolveDuplicatesM xs = asks resolveDuplicates >>= lift . (xs &)
 
-fromNoDupsM :: Monad m => [a] -> ResolutionT a coll m coll
-fromNoDupsM xs = asks ((xs &) . fromNoDups)
+fromNoDuplicatesM :: Monad m => [a] -> ResolutionT a coll m coll
+fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
 
 insertWithList :: (Eq k, Hashable k) => (k, NonEmpty a) -> [(k, NonEmpty a)] -> [(k, NonEmpty a)]
 insertWithList (key, value) values
@@ -328,21 +328,21 @@ insertWithList (key, value) values
       | key == entryKey = (key, entryValue <> value)
       | otherwise = (entryKey, entryValue)
 
-clusterDupps :: (Eq k, Hashable k) => [(k, NonEmpty a)] -> [(k, a)] -> [(k, NonEmpty a)]
-clusterDupps collected [] = collected
-clusterDupps coll ((key, value) : xs) = clusterDupps (insertWithList (key, value :| []) coll) xs
+clusterDuplicates :: (Eq k, Hashable k) => [(k, NonEmpty a)] -> [(k, a)] -> [(k, NonEmpty a)]
+clusterDuplicates collected [] = collected
+clusterDuplicates coll ((key, value) : xs) = clusterDuplicates (insertWithList (key, value :| []) coll) xs
 
-fromListDupps :: (KeyOf k a) => [a] -> [(k, NonEmpty a)]
-fromListDupps xs = clusterDupps [] (fmap toPair xs)
+fromListDuplicates :: (KeyOf k a) => [a] -> [(k, NonEmpty a)]
+fromListDuplicates xs = clusterDuplicates [] (fmap toPair xs)
 
 fromListT ::
   RESOLUTION k a coll m =>
   [a] ->
   ResolutionT a coll m coll
-fromListT = traverse (resolveDupsM . snd) . fromListDupps >=> fromNoDupsM
+fromListT = traverse (resolveDuplicatesM . snd) . fromListDuplicates >=> fromNoDuplicatesM
 
 mergeT :: RESOLUTION k a coll m => coll -> coll -> ResolutionT a coll m coll
-mergeT c1 c2 = traverse (resolveDupsM . snd) (fromListDupps (elems c1 <> elems c2)) >>= fromNoDupsM
+mergeT c1 c2 = traverse (resolveDuplicatesM . snd) (fromListDuplicates (elems c1 <> elems c2)) >>= fromNoDuplicatesM
 
 resolveWith ::
   Monad m =>
@@ -354,7 +354,7 @@ resolveWith f (x :| xs) = foldlM f x xs
 hmUnsafeFromValues :: (Eq k, KeyOf k a) => [a] -> HashMap k a
 hmUnsafeFromValues = HM.fromList . fmap toPair
 
-failOnDups :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
-failOnDups (x :| xs)
+failOnDuplicates :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
+failOnDuplicates (x :| xs)
   | null xs = pure x
   | otherwise = failure $ fmap nameCollision (x : xs)
