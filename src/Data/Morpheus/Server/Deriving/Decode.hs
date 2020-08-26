@@ -40,7 +40,7 @@ import Data.Morpheus.Kind
 import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
     datatypeNameProxy,
-    selNameProxy,
+    proxyFieldName,
   )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
@@ -242,7 +242,7 @@ instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) whe
     | otherwise = __decode value
     where
       __decode = fmap (M1 . K1) . decodeRec
-      fieldName = selNameProxy (Proxy @s)
+      fieldName = proxyFieldName (Proxy @a) (Proxy @s)
       decodeRec = withInputObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where

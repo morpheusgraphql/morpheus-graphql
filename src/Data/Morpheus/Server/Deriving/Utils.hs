@@ -9,11 +9,15 @@ module Data.Morpheus.Server.Deriving.Utils
   ( EnumRep (..),
     datatypeNameProxy,
     conNameProxy,
-    selNameProxy,
     isRecordProxy,
+    proxyFieldName,
+    selNameProxy,
+    withNamespace,
   )
 where
 
+import Data.Morpheus.Internal.Utils (stripNamespace)
+import Data.Morpheus.Server.Types.GQLType (GQLType (hasNamespace))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     FieldName (..),
@@ -47,6 +51,12 @@ conNameProxy _ = TypeName $ pack $ conName (undefined :: M1 C c U1 a)
 
 selNameProxy :: forall f (s :: Meta). Selector s => f s -> FieldName
 selNameProxy _ = convertToJSONName $ FieldName $ pack $ selName (undefined :: M1 S s f a)
+
+withNamespace :: forall f a. GQLType a => f a -> FieldName -> FieldName
+withNamespace _ = maybe id stripNamespace (hasNamespace (Proxy @a))
+
+proxyFieldName :: forall f1 f2 a (s :: Meta). (Selector s, GQLType a) => f1 a -> f2 s -> FieldName
+proxyFieldName fa fs = withNamespace fa (selNameProxy fs)
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
