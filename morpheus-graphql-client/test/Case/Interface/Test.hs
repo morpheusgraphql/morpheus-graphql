@@ -59,7 +59,6 @@ defineClientWith
       }
 
       character3: character {
-        __typename
         ... on Hero {
               hoby
         }
@@ -68,7 +67,6 @@ defineClientWith
         }
       }
       character4: character {
-        __typename
         ... on Hero {
               hoby
         }
@@ -97,7 +95,7 @@ testInterface = testCase "test interfaces" $ do
                     },
                   CharacterCharacter
                     { name = "Charatcer Name",
-                     __typename = "Character"
+                      __typename = "Character"
                     },
                   CharacterHero
                     { name = "Hero Name",
@@ -127,9 +125,9 @@ testInterface = testCase "test interfaces" $ do
                     }
                 ],
               character4 =
-                [ Character4Character{ 
-                   __typename = "Character"
-                  },
+                [ Character4Character
+                    { __typename = "Character"
+                    },
                   Character4Hero
                     { hoby = "Hero Hoby",
                       __typename = "Hero"

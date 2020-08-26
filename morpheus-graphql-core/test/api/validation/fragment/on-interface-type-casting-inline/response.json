@@ -2,14 +2,17 @@
   "data": {
     "character": [
       {
+        "__typename": "Deity",
         "name": "Test Deity",
         "power": ["Show Only on Deity"]
       },
       {
+        "__typename": "Hero",
         "name": "Test Hero",
         "nickname": "tets Hero NickName"
       },
       {
+        "__typename": "Character",
         "name": "Test Character"
       }
     ]

@@ -4,6 +4,8 @@
 
 ### new features
 
+- query validator automatically adds `__typename` to interface types
+
 - type : `App`
 
   ```hs
@@ -48,12 +50,12 @@
   - `defaultConfig`
   - `debugConfig`
 
-- for better debuging, internal errors messages will display resolving state:
+- for better debugging, internal errors messages will display resolving state:
   - `current TypeName`
   - `current Selection`
   - `OperationDefinition`
   - `SchemaDefinition`
-- rendering graphql "AST". e.g `render ( slection :: Selection VALID)` will render
+- rendering graphql "AST". e.g `render (selection :: Selection VALID)` will render
 
 ```graphql
 {
@@ -63,7 +65,7 @@
 }
 ```
 
-- quasiqouter `[dsl| <type definitions> |]` generates `Schema VALID`.
+- quasiquoter `[dsl| <type definitions> |]` generates `Schema VALID`.
 - parser supports custom directive definition. e.g
 
 ```graphql
@@ -77,9 +79,9 @@ directive @MyDirective on FIELD_DEFINITION | OBJECT
   query {
     createDeity(
       name: """
-      powerqwe
+      power
       bla \n sd
-      blu \\ dete
+      blu \\ date
       """
     ) {
       name
@@ -135,7 +137,7 @@ directive @MyDirective on FIELD_DEFINITION | OBJECT
 
 ## New features
 
-- parser supports implemnets interfaces seperated with empty spaces
+- parser supports implements interfaces separated with empty spaces
 
   ```gql
   type T implements A , B C & D {
