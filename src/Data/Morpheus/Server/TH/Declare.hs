@@ -12,7 +12,8 @@ where
 
 import Control.Monad.Reader (runReader)
 import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerTypeDefinition (..),
+  ( ServerDecContext,
+    ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.TH.Declare.Channels
   ( deriveChannels,
@@ -43,20 +44,16 @@ import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
 class Declare a where
-  type DeclareCtx a :: *
-  declare :: DeclareCtx a -> a -> Q [Dec]
+  declare :: ServerDecContext -> a -> Q [Dec]
 
 instance Declare a => Declare [a] where
-  type DeclareCtx [a] = DeclareCtx a
   declare namespace = fmap concat . traverse (declare namespace)
 
 instance Declare (TypeDec s) where
-  type DeclareCtx (TypeDec s) = Bool
   declare namespace (InputType typeD) = declare namespace typeD
   declare namespace (OutputType typeD) = declare namespace typeD
 
 instance Declare (ServerTypeDefinition cat s) where
-  type DeclareCtx (ServerTypeDefinition cat s) = Bool
   declare namespace typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
     do
       let mainType = runReader (declareType typeD) namespace
@@ -76,8 +73,8 @@ instance Declare (ServerTypeDefinition cat s) where
             | otherwise =
               []
 
-declareArgTypes :: Bool -> [ServerTypeDefinition IN s] -> Q [Dec]
-declareArgTypes namespace types = do
+declareArgTypes :: ServerDecContext -> [ServerTypeDefinition IN s] -> Q [Dec]
+declareArgTypes ctx types = do
   introspectArgs <- concat <$> traverse deriveObjectRep types
   decodeArgs <- concat <$> traverse deriveDecode types
   return $ argsTypeDecs <> decodeArgs <> introspectArgs
@@ -85,5 +82,5 @@ declareArgTypes namespace types = do
     ----------------------------------------------------
     argsTypeDecs =
       concatMap
-        (\x -> runReader (declareType x) namespace)
+        (\x -> runReader (declareType x) ctx)
         types

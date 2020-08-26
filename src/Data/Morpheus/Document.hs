@@ -20,6 +20,9 @@ import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
     deriveSchema,
   )
+import Data.Morpheus.Server.Internal.TH.Types
+  ( ServerDecContext (..),
+  )
 import Data.Morpheus.Server.TH.Compile
   ( compileDocument,
     gqlDocument,
@@ -35,11 +38,20 @@ import Data.Text.Lazy.Encoding (encodeUtf8)
 import Language.Haskell.TH
 
 importGQLDocument :: String -> Q [Dec]
-importGQLDocument src = runIO (readFile src) >>= compileDocument False
+importGQLDocument src =
+  runIO (readFile src)
+    >>= compileDocument
+      ServerDecContext
+        { namespace = False
+        }
 
 importGQLDocumentWithNamespace :: String -> Q [Dec]
 importGQLDocumentWithNamespace src =
-  runIO (readFile src) >>= compileDocument True
+  runIO (readFile src)
+    >>= compileDocument
+      ServerDecContext
+        { namespace = True
+        }
 
 -- | Generates schema.gql file from 'RootResolver'
 toGraphQLDocument ::

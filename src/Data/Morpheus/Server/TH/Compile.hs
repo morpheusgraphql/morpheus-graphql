@@ -17,6 +17,9 @@ import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
+import Data.Morpheus.Server.Internal.TH.Types
+  ( ServerDecContext (..),
+  )
 import Data.Morpheus.Server.TH.Declare
   ( declare,
   )
@@ -29,8 +32,8 @@ import Data.Morpheus.Types.Internal.Resolving
 import qualified Data.Text as T
   ( pack,
   )
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
+import Language.Haskell.TH (Dec, Q)
+import Language.Haskell.TH.Quote (QuasiQuoter (..))
 
 gqlDocumentNamespace :: QuasiQuoter
 gqlDocumentNamespace =
@@ -38,7 +41,7 @@ gqlDocumentNamespace =
     { quoteExp = notHandled "Expressions",
       quotePat = notHandled "Patterns",
       quoteType = notHandled "Types",
-      quoteDec = compileDocument True
+      quoteDec = compileDocument ServerDecContext {namespace = True}
     }
   where
     notHandled things =
@@ -50,15 +53,15 @@ gqlDocument =
     { quoteExp = notHandled "Expressions",
       quotePat = notHandled "Patterns",
       quoteType = notHandled "Types",
-      quoteDec = compileDocument False
+      quoteDec = compileDocument ServerDecContext {namespace = False}
     }
   where
     notHandled things =
       error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
-compileDocument :: Bool -> String -> Q [Dec]
-compileDocument namespace documentTXT =
+compileDocument :: ServerDecContext -> String -> Q [Dec]
+compileDocument ctx documentTXT =
   case parseTypeDefinitions (T.pack documentTXT) of
     Failure errors -> fail (renderGQLErrors errors)
     Success {result = schema, warnings} ->
-      gqlWarnings warnings >> toTHDefinitions namespace schema >>= declare namespace
+      gqlWarnings warnings >> toTHDefinitions (namespace ctx) schema >>= declare ctx
