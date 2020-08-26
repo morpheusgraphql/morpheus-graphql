@@ -122,7 +122,11 @@ class Namespace a where
 
 instance Namespace FieldName where
   stripNamespace prefix (FieldName name) =
-    FieldName (nonCapitalText $ fromMaybe name $ T.stripPrefix (nonCapital prefix) name)
+    FieldName
+      ( nonCapitalText
+          $ fromMaybe name
+          $ T.stripPrefix (nonCapital prefix) name
+      )
 
 nonCapital :: TypeName -> Token
 nonCapital = nonCapitalText . readTypeName
