@@ -13,6 +13,7 @@ import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
     nameSpaceField,
+    nameSpaceType,
     toName,
     tyConArgs,
   )
@@ -22,10 +23,10 @@ import Data.Morpheus.Types.Internal.AST
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     TRUE,
     TypeKind (..),
-    TypeName,
+    TypeName (..),
     isOutput,
     isOutputObject,
     isSubscription,
@@ -80,6 +81,10 @@ declareCons tKind tName = traverse consR
       RecC
         (toName cName)
         <$> traverse (declareField tKind tName) cFields
+
+consName :: TypeKind -> TypeName -> TypeName -> DeclareM Name
+consName KindEnum (TypeName name) = pure . toName . nameSpaceType [FieldName name]
+consName _ _ = pure . toName
 
 declareField ::
   TypeKind ->
