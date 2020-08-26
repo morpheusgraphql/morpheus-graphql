@@ -79,8 +79,8 @@ declareCons tKind tName = traverse consR
   where
     consR ConsD {cName, cFields} =
       RecC
-        (toName cName)
-        <$> traverse (declareField tKind tName) cFields
+        <$> consName tKind tName cName
+        <*> traverse (declareField tKind tName) cFields
 
 consName :: TypeKind -> TypeName -> TypeName -> DeclareM Name
 consName KindEnum (TypeName name) = pure . toName . nameSpaceType [FieldName name]
