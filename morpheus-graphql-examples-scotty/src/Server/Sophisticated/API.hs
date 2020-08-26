@@ -131,7 +131,7 @@ root =
           querySomeMap = pure $ M.fromList [("robin", 1), ("carl", 2)],
           queryWrapped1 = constRes $ A (0, "some value"),
           queryWrapped2 = pure $ A "",
-          queryFail1 = fail "fail example",
+          queryFail1 = fail "fail example!",
           queryFail2 = liftEither alwaysFail,
           queryShared =
             pure

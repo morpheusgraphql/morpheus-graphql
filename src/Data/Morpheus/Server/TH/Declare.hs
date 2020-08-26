@@ -53,7 +53,7 @@ instance Declare (ServerTypeDefinition cat s) where
       let mainType = runReader (declareType typeD) ctx
       argTypes <- declareArgTypes ctx typeArgD
       gqlInstances <- deriveGQLInstances
-      typeClasses <- deriveGQLType (namespace ctx) typeD
+      typeClasses <- deriveGQLType ctx typeD
       introspectEnum <- instanceIntrospect typeOriginal
       pure $ mainType <> typeClasses <> argTypes <> gqlInstances <> introspectEnum
     where
