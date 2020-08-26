@@ -8,6 +8,7 @@ module Data.Morpheus.Server.TH.Declare.Type
   )
 where
 
+import Control.Monad.Reader (Reader, asks)
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
@@ -35,28 +36,28 @@ import Data.Morpheus.Types.Internal.Resolving
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
-declareType :: Bool -> ServerTypeDefinition cat s -> [Dec]
-declareType _ ServerTypeDefinition {tKind = KindScalar} = []
+type DeclareM = Reader Bool
+
+declareType :: ServerTypeDefinition cat s -> DeclareM [Dec]
+declareType ServerTypeDefinition {tKind = KindScalar} = pure []
 declareType
-  namespace
   ServerTypeDefinition
     { tName,
       tCons,
       tKind
     } =
-    [ DataD
-        []
-        (toName tName)
-        tVars
-        Nothing
-        cons
-        (derive tKind)
-    ]
-    where
-      tVars = declareTyVar (tyConArgs tKind)
-        where
-          declareTyVar = map (PlainTV . toName)
-      cons = declareCons namespace tKind tName tCons
+    do
+      cons <- declareCons tKind tName tCons
+      let vars = map (PlainTV . toName) (tyConArgs tKind)
+      pure
+        [ DataD
+            []
+            (toName tName)
+            vars
+            Nothing
+            cons
+            (derive tKind)
+        ]
 
 derive :: TypeKind -> [DerivClause]
 derive tKind = [deriveClasses (''Generic : derivingList)]
@@ -69,29 +70,29 @@ deriveClasses :: [Name] -> DerivClause
 deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 
 declareCons ::
-  Bool ->
   TypeKind ->
   TypeName ->
   [ConsD cat s] ->
-  [Con]
-declareCons namespace tKind tName = map consR
+  DeclareM [Con]
+declareCons tKind tName = traverse consR
   where
     consR ConsD {cName, cFields} =
       RecC
         (toName cName)
-        (map (declareField namespace tKind tName) cFields)
+        <$> traverse (declareField tKind tName) cFields
 
 declareField ::
-  Bool ->
   TypeKind ->
   TypeName ->
   FieldDefinition cat s ->
-  (Name, Bang, Type)
-declareField namespace tKind tName field@FieldDefinition {fieldName} =
-  ( fieldTypeName namespace tName fieldName,
-    Bang NoSourceUnpackedness NoSourceStrictness,
-    renderFieldType tKind field
-  )
+  DeclareM (Name, Bang, Type)
+declareField tKind tName field@FieldDefinition {fieldName} = do
+  namespace <- asks id
+  pure
+    ( fieldTypeName namespace tName fieldName,
+      Bang NoSourceUnpackedness NoSourceStrictness,
+      renderFieldType tKind field
+    )
 
 renderFieldType ::
   TypeKind ->

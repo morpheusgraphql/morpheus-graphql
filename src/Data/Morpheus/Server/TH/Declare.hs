@@ -10,6 +10,7 @@ where
 
 -- MORPHEUS
 
+import Control.Monad.Reader (runReader)
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerTypeDefinition (..),
   )
@@ -58,7 +59,7 @@ instance Declare (ServerTypeDefinition cat s) where
   type DeclareCtx (ServerTypeDefinition cat s) = Bool
   declare namespace typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
     do
-      let mainType = declareType namespace typeD
+      let mainType = runReader (declareType typeD) namespace
       argTypes <- declareArgTypes namespace typeArgD
       gqlInstances <- deriveGQLInstances
       typeClasses <- deriveGQLType typeD
@@ -82,4 +83,7 @@ declareArgTypes namespace types = do
   return $ argsTypeDecs <> decodeArgs <> introspectArgs
   where
     ----------------------------------------------------
-    argsTypeDecs = concatMap (declareType namespace) types
+    argsTypeDecs =
+      concatMap
+        (\x -> runReader (declareType x) namespace)
+        types
