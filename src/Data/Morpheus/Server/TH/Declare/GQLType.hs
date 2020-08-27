@@ -44,6 +44,7 @@ import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition,
+    DataEnumValue (..),
     Description,
     FieldContent (..),
     FieldDefinition (..),
@@ -56,7 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     Token,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
+    TypeName (..),
     Value,
   )
 import Data.Proxy (Proxy (..))
@@ -145,6 +146,11 @@ instance Meta (TypeContent a c s) where
   desc DataObject {objectFields} = desc objectFields
   desc DataInputObject {inputObjectFields} = desc inputObjectFields
   desc DataInterface {interfaceFields} = desc interfaceFields
+  desc DataEnum {enumMembers} = concatMap desc enumMembers
+  desc _ = []
+
+instance Meta (DataEnumValue s) where
+  desc DataEnumValue {enumName, enumDescription = Just x} = [(readTypeName enumName, x)]
   desc _ = []
 
 instance Meta (FieldsDefinition c s) where

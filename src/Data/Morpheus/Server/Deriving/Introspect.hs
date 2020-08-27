@@ -79,6 +79,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     CONST,
     CONST,
+    DataEnumValue (..),
     DataFingerprint (..),
     DataUnion,
     Description,
@@ -100,6 +101,7 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Schema (..),
     TRUE,
+    Token,
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
@@ -412,18 +414,26 @@ updateContentWith proxy (DataInputObject {inputObjectFields = fields}, x) =
   (DataInputObject {inputObjectFields = fmap (updateFieldMeta proxy) fields, ..}, x)
 updateContentWith proxy (DataInterface {interfaceFields = fields}, x) =
   (DataInterface {interfaceFields = fmap (updateFieldMeta proxy) fields, ..}, x)
+updateContentWith proxy (DataEnum enums, x) =
+  (DataEnum $ fmap (updateEnumValue proxy) enums, x)
 updateContentWith _ x = x
+
+updateEnumValue :: GQLType a => f a -> DataEnumValue s -> DataEnumValue s
+updateEnumValue proxy enum =
+  enum
+    { enumDescription = getDescription (readTypeName $ enumName enum) proxy
+    }
 
 updateFieldMeta :: (GQLType a, GetFieldContent cat) => f a -> FieldDefinition cat CONST -> FieldDefinition cat CONST
 updateFieldMeta proxy f =
   f
-    { fieldDescription = getDescription (fieldName f) proxy,
+    { fieldDescription = getDescription (readName $ fieldName f) proxy,
       fieldDirectives = getDirectives (fieldName f) proxy,
       fieldContent = getFieldContent (fieldName f) (fieldContent f) proxy
     }
 
-getDescription :: GQLType a => FieldName -> f a -> Maybe Description
-getDescription (FieldName name) = (name `M.lookup`) . getDescriptions
+getDescription :: GQLType a => Token -> f a -> Maybe Description
+getDescription name = (name `M.lookup`) . getDescriptions
 
 getDirectives :: GQLType a => FieldName -> f a -> Directives CONST
 getDirectives name = fromMaybe [] . (name `M.lookup`) . getFieldDirectives
