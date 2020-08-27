@@ -37,6 +37,7 @@ import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    Namespace (..),
     concatUpdates,
     empty,
     failUpdates,
@@ -321,7 +322,7 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
   where
     (datatypeContent, updates) =
       deriveTypeContent
-        (withNamespace (Proxy @a))
+        (hasNamespace (Proxy @a))
         (Proxy @a)
         (unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
     baseName = __typeName (Proxy @a)
@@ -338,7 +339,7 @@ deriveArgumentFields ::
   f arg ->
   (ArgumentsDefinition CONST, [TypeUpdater])
 deriveArgumentFields typeProxy proxy =
-  withObject (deriveTypeContent id proxy (([], []), InputType, "", DataFingerprint "" []))
+  withObject (deriveTypeContent (hasNamespace typeProxy) proxy (([], []), InputType, "", DataFingerprint "" []))
   where
     withObject (DataInputObject {inputObjectFields}, ts) = (fieldsToArguments inputObjectFields, ts)
     withObject _ =
@@ -370,7 +371,7 @@ deriveObjectFields ::
   f a ->
   (FieldsDefinition OUT CONST, [TypeUpdater])
 deriveObjectFields name proxy =
-  withObject (deriveTypeContent (withNamespace proxy) proxy (([], []), OutputType, "", DataFingerprint "" []))
+  withObject (deriveTypeContent (hasNamespace proxy) proxy (([], []), OutputType, "", DataFingerprint "" []))
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
     withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
@@ -383,7 +384,7 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 deriveTypeContent ::
   forall proxy cat a.
   (TypeRep cat (Rep a), Generic a) =>
-  (FieldName -> FieldName) ->
+  Maybe TypeName ->
   proxy a ->
   ( ([TypeName], [TypeUpdater]),
     TypeScope cat,
@@ -442,12 +443,8 @@ updateLibOUT ::
 updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
-
-stripNamespace :: (FieldName -> FieldName) -> ConsRep c -> ConsRep c
-stripNamespace modifier ConsRep {consFields = fields, ..} = ConsRep {consFields = map stripFields fields, ..}
-  where
-    stripFields f = f {fieldData = stripFieldData (fieldData f)}
-    stripFieldData f = f {fieldName = modifier (fieldName f)}
+instance Namespace (FieldDefinition c s) where
+  stripNamespace ns f = f {fieldName = stripNamespace ns (fieldName f)}
 
 data ConsRep cat = ConsRep
   { consName :: TypeName,
@@ -455,12 +452,18 @@ data ConsRep cat = ConsRep
     consFields :: [FieldRep cat]
   }
 
+instance Namespace (ConsRep c) where
+  stripNamespace ns ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace ns) fields, ..}
+
 data FieldRep cat = FieldRep
   { fieldTypeName :: TypeName,
     fieldData :: FieldDefinition cat CONST,
     fieldTypeUpdater :: TypeUpdater,
     fieldIsObject :: Bool
   }
+
+instance Namespace (FieldRep c) where
+  stripNamespace ns f = f {fieldData = stripNamespace ns (fieldData f)}
 
 data ResRep cat = ResRep
   { enumCons :: [TypeName],
