@@ -37,6 +37,7 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    ArgumentsDefinition,
     Description,
     Directives,
     FieldContent (..),
@@ -110,7 +111,8 @@ interfacesFrom _ = []
 type Meta s =
   ( Maybe Description,
     Directives s,
-    Maybe (Value s)
+    Maybe (Value s),
+    Maybe (ArgumentsDefinition s)
   )
 
 getTypeMeta :: TypeDefinition c s -> [(FieldName, Meta s)]
@@ -130,10 +132,15 @@ getFieldMeta
     ( fieldName,
       ( fieldDescription,
         fieldDirectives,
-        fieldContent >>= getDefaultValue
+        fieldContent >>= getDefaultValue,
+        fieldContent >>= getArgsDef
       )
     )
 
 getDefaultValue :: FieldContent a c s -> Maybe (Value s)
 getDefaultValue DefaultInputValue {defaultInputValue} = Just defaultInputValue
 getDefaultValue _ = Nothing
+
+getArgsDef :: FieldContent a c s -> Maybe (ArgumentsDefinition s)
+getArgsDef (FieldArgs args) = Just args
+getArgsDef _ = Nothing

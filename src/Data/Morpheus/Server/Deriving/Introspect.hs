@@ -34,6 +34,7 @@ import Control.Monad ((>=>))
 import Data.List (partition)
 import qualified Data.Map as M
 import Data.Map (Map)
+import Data.Maybe (fromMaybe)
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
@@ -396,7 +397,7 @@ deriveTypeContent proxy scope =
         genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
         genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
-updateContentWith :: GQLType a => f a -> (TypeContent TRUE c CONST, x) -> (TypeContent TRUE c CONST, x)
+updateContentWith :: (GQLType a) => f a -> (TypeContent TRUE c CONST, x) -> (TypeContent TRUE c CONST, x)
 updateContentWith proxy (DataObject {objectFields = fields, ..}, x) =
   (DataObject {objectFields = fmap (updateFieldMeta proxy) fields, ..}, x)
 updateContentWith proxy (DataInputObject {inputObjectFields = fields}, x) =
@@ -405,18 +406,34 @@ updateContentWith proxy (DataInterface {interfaceFields = fields}, x) =
   (DataInterface {interfaceFields = fmap (updateFieldMeta proxy) fields, ..}, x)
 updateContentWith _ x = x
 
-updateFieldMeta :: GQLType a => f a -> FieldDefinition cat CONST -> FieldDefinition cat CONST
+updateFieldMeta :: (GQLType a, GetFieldContent cat) => f a -> FieldDefinition cat CONST -> FieldDefinition cat CONST
 updateFieldMeta proxy f =
   f
     { fieldDescription = getDescription (fieldName f) proxy,
-      fieldDirectives = getDirectives (fieldName f) proxy
+      fieldDirectives = getDirectives (fieldName f) proxy,
+      fieldContent = getFieldContent (fieldName f) (fieldContent f) proxy
     }
 
 getDescription :: GQLType a => FieldName -> f a -> Maybe Description
-getDescription name proxy = name `M.lookup` fieldValues proxy >>= \(x, _, _) -> x
+getDescription name proxy = name `M.lookup` fieldValues proxy >>= \(x, _, _, _) -> x
 
 getDirectives :: GQLType a => FieldName -> f a -> Directives CONST
-getDirectives name proxy = maybe [] (\(_, x, _) -> x) (name `M.lookup` fieldValues proxy)
+getDirectives name proxy = maybe [] (\(_, x, _, _) -> x) (name `M.lookup` fieldValues proxy)
+
+class GetFieldContent c where
+  getFieldContent :: GQLType a => FieldName -> Maybe (FieldContent TRUE c CONST) -> f a -> Maybe (FieldContent TRUE c CONST)
+
+instance GetFieldContent IN where
+  getFieldContent name val proxy =
+    case name `M.lookup` fieldValues proxy of
+      Just (_, _, Just x, _) -> Just (DefaultInputValue x)
+      _ -> val
+
+instance GetFieldContent OUT where
+  getFieldContent name args proxy =
+    case name `M.lookup` fieldValues proxy of
+      Just (_, _, _, Just x) -> Just (FieldArgs x)
+      _ -> args
 
 buildField ::
   GQLType a =>

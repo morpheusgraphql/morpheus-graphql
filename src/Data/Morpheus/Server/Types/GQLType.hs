@@ -26,7 +26,8 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( ArgumentsDefinition,
+    CONST,
     DataFingerprint (..),
     Description,
     Directive,
@@ -143,7 +144,8 @@ class IsObject (KIND a) => GQLType a where
       FieldName
       ( Maybe Description, --description
         [Directive CONST], -- directives
-        Maybe (Value CONST) -- defaultValue
+        Maybe (Value CONST), -- defaultValue,
+        Maybe (ArgumentsDefinition CONST)
       )
   fieldValues _ = mempty
 
