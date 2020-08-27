@@ -418,25 +418,26 @@ instance UpdateDef (TypeContent TRUE c CONST) where
   updateDef _ x = x
 
 instance GetFieldContent cat => UpdateDef (FieldDefinition cat CONST) where
-  updateDef proxy f@FieldDefinition {fieldName = fName, ..} =
-    f
+  updateDef proxy FieldDefinition {fieldName = name, ..} =
+    FieldDefinition
       { fieldName,
         fieldDescription = getDescription (readName fieldName) proxy,
         fieldDirectives = getDirectives (readName fieldName) proxy,
-        fieldContent = getFieldContent fieldName fieldContent proxy
+        fieldContent = getFieldContent fieldName fieldContent proxy,
+        ..
       }
     where
-      fieldName = stripNamespace (hasNamespace proxy) fName
+      fieldName = stripNamespace (hasNamespace proxy) name
 
 instance UpdateDef (DataEnumValue CONST) where
-  updateDef proxy DataEnumValue {enumName = eName} =
+  updateDef proxy DataEnumValue {enumName = name} =
     DataEnumValue
       { enumName,
         enumDescription = getDescription (readTypeName enumName) proxy,
         enumDirectives = getDirectives (readTypeName enumName) proxy
       }
     where
-      enumName = stripNamespace (hasNamespace proxy) eName
+      enumName = stripNamespace (hasNamespace proxy) name
 
 getDescription :: GQLType a => Token -> f a -> Maybe Description
 getDescription name = (name `M.lookup`) . getDescriptions
