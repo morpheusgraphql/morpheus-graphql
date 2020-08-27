@@ -31,7 +31,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     DataFingerprint (..),
     Description,
-    Directive,
+    Directives,
     FieldName,
     QUERY,
     Schema,
@@ -147,14 +147,20 @@ class IsObject (KIND a) => GQLType a where
   hasNamespace :: f a -> Maybe TypeName
   hasNamespace _ = mempty
 
-  fieldDescriptions :: f a -> Map FieldName Description
-  fieldDescriptions _ = mempty
+  getFieldDescriptions :: f a -> Map FieldName Description
+  getFieldDescriptions _ = mempty
 
-  fieldDirectives :: f a -> Map FieldName [Directive CONST]
-  fieldDirectives _ = mempty
+  getFieldDirectives :: f a -> Map FieldName (Directives CONST)
+  getFieldDirectives _ = mempty
 
-  fieldContents :: f a -> Map FieldName (Maybe (Value CONST), Maybe (ArgumentsDefinition CONST))
-  fieldContents _ = mempty
+  getFieldContents ::
+    f a ->
+    Map
+      FieldName
+      ( Maybe (Value CONST),
+        Maybe (ArgumentsDefinition CONST)
+      )
+  getFieldContents _ = mempty
 
   isEmptyType :: f a -> Bool
   isEmptyType _ = False

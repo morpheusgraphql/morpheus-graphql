@@ -39,7 +39,7 @@ import Data.Functor ((<$>), Functor (..))
 import Data.List (partition)
 import qualified Data.Map as M
 import Data.Map (Map)
-import Data.Maybe (Maybe (..), maybe)
+import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
@@ -423,24 +423,24 @@ updateFieldMeta proxy f =
     }
 
 getDescription :: GQLType a => FieldName -> f a -> Maybe Description
-getDescription name proxy = name `M.lookup` fieldValues proxy >>= \(x, _, _, _) -> x
+getDescription name = (name `M.lookup`) . getFieldDescriptions
 
 getDirectives :: GQLType a => FieldName -> f a -> Directives CONST
-getDirectives name proxy = maybe [] (\(_, x, _, _) -> x) (name `M.lookup` fieldValues proxy)
+getDirectives name = fromMaybe [] . (name `M.lookup`) . getFieldDirectives
 
 class GetFieldContent c where
   getFieldContent :: GQLType a => FieldName -> Maybe (FieldContent TRUE c CONST) -> f a -> Maybe (FieldContent TRUE c CONST)
 
 instance GetFieldContent IN where
   getFieldContent name val proxy =
-    case name `M.lookup` fieldValues proxy of
-      Just (_, _, Just x, _) -> Just (DefaultInputValue x)
+    case name `M.lookup` getFieldContents proxy of
+      Just (Just x, _) -> Just (DefaultInputValue x)
       _ -> val
 
 instance GetFieldContent OUT where
   getFieldContent name args proxy =
-    case name `M.lookup` fieldValues proxy of
-      Just (_, _, _, Just x) -> Just (FieldArgs x)
+    case name `M.lookup` getFieldContents proxy of
+      Just (_, Just x) -> Just (FieldArgs x)
       _ -> args
 
 buildField ::

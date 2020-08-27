@@ -83,7 +83,7 @@ deriveGQLType
             ('description, [|tDescription|]),
             ('implements, implementsFunc),
             ('hasNamespace, hasNamespaceFunc),
-            ('fieldDescriptions, fieldDescriptionsFunc)
+            ('getFieldDescriptions, fieldDescriptionsFunc)
           ]
         where
           tDescription = typeOriginal >>= typeDescription
