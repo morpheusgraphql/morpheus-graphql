@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
@@ -12,8 +13,12 @@ where
 
 --
 -- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad ((>>=)))
+import Data.Functor ((<$>), fmap)
 import Data.Map (fromList)
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.TH
   ( apply,
     applyVars,
@@ -50,8 +55,12 @@ import Data.Morpheus.Types.Internal.AST
     Value,
   )
 import Data.Proxy (Proxy (..))
-import Data.Semigroup ((<>))
 import Language.Haskell.TH
+import Prelude
+  ( ($),
+    (.),
+    otherwise,
+  )
 
 interfaceF :: Name -> ExpQ
 interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () Maybe))))|]
@@ -75,7 +84,7 @@ deriveGQLType
           ]
         where
           tDescription = typeOriginal >>= typeDescription
-          implementsFunc = listE $ map introspectInterface (interfacesFrom typeOriginal)
+          implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
           hasNamespaceFunc
             | namespace = [|Just tName|]
             | otherwise = [|Nothing|]
