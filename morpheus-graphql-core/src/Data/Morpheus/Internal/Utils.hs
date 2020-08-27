@@ -128,6 +128,11 @@ instance Namespace FieldName where
           $ T.stripPrefix (nonCapital prefix) name
       )
 
+instance Namespace TypeName where
+  stripNamespace Nothing x = x
+  stripNamespace (Just (TypeName prefix)) (TypeName name) =
+    TypeName (fromMaybe name $ T.stripPrefix prefix name)
+
 nonCapital :: TypeName -> Token
 nonCapital = nonCapitalText . readTypeName
 

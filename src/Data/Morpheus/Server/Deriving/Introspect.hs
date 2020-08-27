@@ -429,11 +429,14 @@ instance GetFieldContent cat => UpdateDef (FieldDefinition cat CONST) where
       fieldName = stripNamespace (hasNamespace proxy) fName
 
 instance UpdateDef (DataEnumValue CONST) where
-  updateDef proxy enum =
-    enum
-      { enumDescription = getDescription (readTypeName $ enumName enum) proxy,
-        enumDirectives = getDirectives (readTypeName $ enumName enum) proxy
+  updateDef proxy DataEnumValue {enumName = eName} =
+    DataEnumValue
+      { enumName,
+        enumDescription = getDescription (readTypeName enumName) proxy,
+        enumDirectives = getDirectives (readTypeName enumName) proxy
       }
+    where
+      enumName = stripNamespace (hasNamespace proxy) eName
 
 getDescription :: GQLType a => Token -> f a -> Maybe Description
 getDescription name = (name `M.lookup`) . getDescriptions
