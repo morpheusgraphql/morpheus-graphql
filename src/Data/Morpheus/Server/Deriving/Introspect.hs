@@ -58,7 +58,6 @@ import Data.Morpheus.Server.Deriving.Utils
     conNameProxy,
     isRecordProxy,
     selNameProxy,
-    withNamespace,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -443,8 +442,6 @@ updateLibOUT ::
 updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
-instance Namespace (FieldDefinition c s) where
-  stripNamespace ns f = f {fieldName = stripNamespace ns (fieldName f)}
 
 data ConsRep cat = ConsRep
   { consName :: TypeName,

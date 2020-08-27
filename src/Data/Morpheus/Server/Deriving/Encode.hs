@@ -7,7 +7,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -28,6 +27,7 @@ import qualified Data.Map as M
   )
 -- MORPHEUS
 
+import Data.Morpheus.Internal.Utils (Namespace (..))
 import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
@@ -46,7 +46,6 @@ import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
     datatypeNameProxy,
     isRecordProxy,
-    withNamespace,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
@@ -164,11 +163,6 @@ instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind
 instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind INTERFACE a o e m where
   encodeKind (VContext value) = liftResolverState $ exploreResolvers (Proxy @(CUSTOM a)) value
 
-stripNamespace :: (FieldName -> FieldName) -> ResNode o e m -> ResNode o e m
-stripNamespace f ResNode {resFields = fields, ..} = ResNode {resFields = map stripFields fields, ..}
-  where
-    stripFields field = field {fieldSelName = f (fieldSelName field)}
-
 convertNode ::
   (Monad m, LiftOperation o) =>
   ResNode o e m ->
@@ -210,7 +204,7 @@ instance (Generic a, GQLType a, Monad m, LiftOperation o, TypeRep (Rep a) o e m)
   exploreResolvers _ value =
     pure
       $ convertNode
-      $ stripNamespace (withNamespace (Proxy @a))
+      $ stripNamespace (hasNamespace (Proxy @a))
       $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
 
 ----- HELPERS ----------------------------
@@ -284,6 +278,12 @@ data ResNode o e m = ResNode
     resFields :: [FieldNode o e m],
     isResRecord :: Bool
   }
+
+instance Namespace (ResNode o e m) where
+  stripNamespace ns r = r {resFields = map (stripNamespace ns) (resFields r)}
+
+instance Namespace (FieldNode o e m) where
+  stripNamespace ns f = f {fieldSelName = stripNamespace ns (fieldSelName f)}
 
 data FieldNode o e m = FieldNode
   { fieldTypeName :: TypeName,

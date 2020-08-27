@@ -56,6 +56,7 @@ import Data.Morpheus.Internal.Utils
     KeyOf (..),
     Listable (..),
     Merge (..),
+    Namespace (..),
     Selectable (..),
     elems,
   )
@@ -253,6 +254,9 @@ data FieldDefinition (cat :: TypeCategory) (s :: Stage) = FieldDefinition
     fieldContent :: Maybe (FieldContent TRUE cat s)
   }
   deriving (Show, Lift, Eq)
+
+instance Namespace (FieldDefinition c s) where
+  stripNamespace ns f = f {fieldName = stripNamespace ns (fieldName f)}
 
 data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
   DefaultInputValue ::
