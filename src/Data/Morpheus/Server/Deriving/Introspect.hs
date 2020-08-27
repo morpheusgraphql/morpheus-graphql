@@ -380,7 +380,6 @@ introspectFailure :: Message -> TypeUpdater
 introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
-
 deriveTypeContent ::
   forall f cat a.
   (TypeRep cat (Rep a), Generic a, GQLType a) =>
@@ -388,10 +387,9 @@ deriveTypeContent ::
   TypeScope cat ->
   (TypeContent TRUE cat CONST, [TypeUpdater])
 deriveTypeContent proxy scope =
-  updateContentWith proxy
+  updateDef proxy
     $ builder
-    $ stripNamespace (hasNamespace proxy)
-      <$> typeRep (ProxyRep :: ProxyRep cat (Rep a))
+    $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
   where
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
       where
@@ -403,34 +401,39 @@ deriveTypeContent proxy scope =
         genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
         genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
-updateContentWith :: (GQLType a) => f a -> (TypeContent TRUE c CONST, x) -> (TypeContent TRUE c CONST, x)
-updateContentWith proxy (x, y) = (updateContent proxy x, y)
+class UpdateDef value where
+  updateDef :: GQLType a => f a -> value -> value
 
-updateContent :: (GQLType a) => f a -> TypeContent TRUE c CONST -> TypeContent TRUE c CONST
-updateContent proxy DataObject {objectFields = fields, ..} =
-  DataObject {objectFields = fmap (updateFieldMeta proxy) fields, ..}
-updateContent proxy DataInputObject {inputObjectFields = fields} =
-  DataInputObject {inputObjectFields = fmap (updateFieldMeta proxy) fields, ..}
-updateContent proxy DataInterface {interfaceFields = fields} =
-  DataInterface {interfaceFields = fmap (updateFieldMeta proxy) fields, ..}
-updateContent proxy (DataEnum enums) =
-  DataEnum $ fmap (updateEnumValue proxy) enums
-updateContent _ x = x
+instance UpdateDef a => UpdateDef (a, [TypeUpdater]) where
+  updateDef proxy (x, y) = (updateDef proxy x, y)
 
-updateEnumValue :: GQLType a => f a -> DataEnumValue CONST -> DataEnumValue CONST
-updateEnumValue proxy enum =
-  enum
-    { enumDescription = getDescription (readTypeName $ enumName enum) proxy,
-      enumDirectives = getDirectives (readTypeName $ enumName enum) proxy
-    }
+instance UpdateDef (TypeContent TRUE c CONST) where
+  updateDef proxy DataObject {objectFields = fields, ..} =
+    DataObject {objectFields = fmap (updateDef proxy) fields, ..}
+  updateDef proxy DataInputObject {inputObjectFields = fields} =
+    DataInputObject {inputObjectFields = fmap (updateDef proxy) fields, ..}
+  updateDef proxy DataInterface {interfaceFields = fields} =
+    DataInterface {interfaceFields = fmap (updateDef proxy) fields, ..}
+  updateDef proxy (DataEnum enums) = DataEnum $ fmap (updateDef proxy) enums
+  updateDef _ x = x
 
-updateFieldMeta :: (GQLType a, GetFieldContent cat) => f a -> FieldDefinition cat CONST -> FieldDefinition cat CONST
-updateFieldMeta proxy f =
-  f
-    { fieldDescription = getDescription (readName $ fieldName f) proxy,
-      fieldDirectives = getDirectives (readName $ fieldName f) proxy,
-      fieldContent = getFieldContent (fieldName f) (fieldContent f) proxy
-    }
+instance GetFieldContent cat => UpdateDef (FieldDefinition cat CONST) where
+  updateDef proxy f@FieldDefinition {fieldName = fName, ..} =
+    f
+      { fieldName,
+        fieldDescription = getDescription (readName fieldName) proxy,
+        fieldDirectives = getDirectives (readName fieldName) proxy,
+        fieldContent = getFieldContent fieldName fieldContent proxy
+      }
+    where
+      fieldName = stripNamespace (hasNamespace proxy) fName
+
+instance UpdateDef (DataEnumValue CONST) where
+  updateDef proxy enum =
+    enum
+      { enumDescription = getDescription (readTypeName $ enumName enum) proxy,
+        enumDirectives = getDirectives (readTypeName $ enumName enum) proxy
+      }
 
 getDescription :: GQLType a => Token -> f a -> Maybe Description
 getDescription name = (name `M.lookup`) . getDescriptions
@@ -502,18 +505,12 @@ data ConsRep cat = ConsRep
     consFields :: [FieldRep cat]
   }
 
-instance Namespace (ConsRep c) where
-  stripNamespace ns ConsRep {consFields = fields, ..} = ConsRep {consFields = fmap (stripNamespace ns) fields, ..}
-
 data FieldRep cat = FieldRep
   { fieldTypeName :: TypeName,
     fieldData :: FieldDefinition cat CONST,
     fieldTypeUpdater :: TypeUpdater,
     fieldIsObject :: Bool
   }
-
-instance Namespace (FieldRep c) where
-  stripNamespace ns f = f {fieldData = stripNamespace ns (fieldData f)}
 
 data ResRep cat = ResRep
   { enumCons :: [TypeName],
