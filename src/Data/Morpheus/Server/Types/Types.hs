@@ -25,7 +25,7 @@ data MapKind k v m = MapKind
   }
   deriving (Generic)
 
-mapKindFromList :: (Eq k, Applicative m) => [(k, v)] -> MapKind k v m
+mapKindFromList :: (Applicative m) => [(k, v)] -> MapKind k v m
 mapKindFromList inputPairs =
   MapKind
     { size = length inputPairs,

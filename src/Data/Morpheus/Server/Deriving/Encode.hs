@@ -12,6 +12,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Encode
   ( EncodeCon,
@@ -21,12 +22,19 @@ module Data.Morpheus.Server.Deriving.Encode
   )
 where
 
+-- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad ((>>=)))
+import Data.Functor (fmap)
 import Data.Map (Map)
 import qualified Data.Map as M
   ( toList,
   )
--- MORPHEUS
-
+import Data.Maybe
+  ( Maybe (..),
+    maybe,
+  )
 import Data.Morpheus.Internal.Utils (Namespace (..))
 import Data.Morpheus.Kind
   ( ENUM,
@@ -88,7 +96,32 @@ import qualified Data.Set as S
   ( toList,
   )
 import Data.Text (pack)
+import Data.Traversable (traverse)
 import GHC.Generics
+  ( (:*:) (..),
+    (:+:) (..),
+    C,
+    Constructor,
+    D,
+    Datatype,
+    Generic (..),
+    K1 (..),
+    M1 (..),
+    S,
+    Selector,
+    U1 (..),
+  )
+import Prelude
+  ( ($),
+    (&&),
+    (.),
+    Bool,
+    Eq (..),
+    Int,
+    otherwise,
+    show,
+    zipWith,
+  )
 
 class Encode resolver o e (m :: * -> *) where
   encode :: resolver -> Resolver o e m (ResModel o e m)
@@ -113,7 +146,7 @@ instance Encode [a] o e m => Encode (Set a) o e m where
   encode = encode . S.toList
 
 --  Map
-instance (Eq k, Monad m, LiftOperation o, Encode (MapKind k v (Resolver o e m)) o e m) => Encode (Map k v) o e m where
+instance (Monad m, LiftOperation o, Encode (MapKind k v (Resolver o e m)) o e m) => Encode (Map k v) o e m where
   encode value =
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
 
@@ -169,7 +202,7 @@ convertNode ::
   ResNode o e m ->
   ResModel o e m
 convertNode ResNode {resDatatypeName, resKind = REP_OBJECT, resFields} =
-  mkObject resDatatypeName (map toFieldRes resFields)
+  mkObject resDatatypeName (fmap toFieldRes resFields)
 convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord} =
   encodeUnion resFields
   where
@@ -274,7 +307,7 @@ data ResNode o e m = ResNode
   }
 
 instance Namespace (ResNode o e m) where
-  stripNamespace ns r = r {resFields = map (stripNamespace ns) (resFields r)}
+  stripNamespace ns r = r {resFields = fmap (stripNamespace ns) (resFields r)}
 
 instance Namespace (FieldNode o e m) where
   stripNamespace ns f = f {fieldSelName = stripNamespace ns (fieldSelName f)}
