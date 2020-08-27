@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module TestFeature
   ( testFeature,
@@ -22,6 +23,15 @@ import Types
     Name,
     testWith,
   )
+import Prelude
+  ( ($),
+    (<$>),
+    Eq (..),
+    IO,
+    Maybe (..),
+    otherwise,
+    pure,
+  )
 
 packGQLRequest :: ByteString -> Maybe Value -> GQLRequest
 packGQLRequest queryBS variables =
@@ -42,9 +52,8 @@ testByFiles testApi Case {path, description} = do
   actualResponse <- encode <$> testApi (packGQLRequest testCaseQuery testCaseVariables)
   case decode actualResponse of
     Nothing -> assertFailure "Bad Response"
-    Just response -> return $ testCase (unpack path ++ " | " ++ description) $ customTest expectedResponse response
+    Just response -> pure $ testCase (unpack path <> " | " <> description) $ customTest expectedResponse response
       where
         customTest expected value
-          | expected == value = return ()
-          | otherwise =
-            assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
+          | expected == value = pure ()
+          | otherwise = assertFailure $ LB.unpack $ "expected: \n " <> encode expected <> " \n but got: \n " <> actualResponse
