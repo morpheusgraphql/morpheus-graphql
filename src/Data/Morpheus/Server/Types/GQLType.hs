@@ -136,14 +136,14 @@ class IsObject (KIND a) => GQLType a where
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
-  metaFields ::
+  fieldValues ::
     Proxy a ->
     [ ( Maybe Description, --description
         [Directive CONST], -- directives
         Maybe (Value CONST) -- defaultValue
       )
     ]
-  metaFields _ = []
+  fieldValues _ = []
 
   __typeName :: f a -> TypeName
   default __typeName ::

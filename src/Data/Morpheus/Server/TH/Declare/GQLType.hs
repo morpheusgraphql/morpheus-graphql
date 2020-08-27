@@ -12,6 +12,7 @@ where
 
 --
 -- MORPHEUS
+import Data.Maybe (maybe)
 import Data.Morpheus.Internal.TH
   ( apply,
     applyVars,
@@ -20,6 +21,7 @@ import Data.Morpheus.Internal.TH
     tyConArgs,
     typeInstanceDec,
   )
+import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerDecContext (..),
     ServerTypeDefinition (..),
@@ -34,11 +36,16 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    Description,
+    Directives,
+    FieldContent (..),
+    FieldDefinition (..),
     QUERY,
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    Value,
     isObject,
   )
 import Data.Proxy (Proxy (..))
@@ -62,7 +69,8 @@ deriveGQLType
           [ ('__typeName, [|tName|]),
             ('description, [|tDescription|]),
             ('implements, implementsFunc),
-            ('hasNamespace, hasNamespaceFunc)
+            ('hasNamespace, hasNamespaceFunc),
+            ('fieldValues, fieldValuesFunc)
           ]
         where
           tDescription = typeOriginal >>= typeDescription
@@ -70,6 +78,9 @@ deriveGQLType
           hasNamespaceFunc
             | namespace = [|Just tName|]
             | otherwise = [|Nothing|]
+          fieldValuesFunc = [|value|]
+            where
+              value = maybe [] getTypeMeta typeOriginal
       --------------------------------
       typeArgs = tyConArgs tKind
       --------------------------------
@@ -94,101 +105,26 @@ interfacesFrom :: Maybe (TypeDefinition ANY s) -> [TypeName]
 interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
 interfacesFrom _ = []
 
--- [(FieldDefinition, TypeUpdater)]
--- deriveObjectRep :: ServerTypeDefinition cat s -> Q [Dec]
--- deriveObjectRep
---   ServerTypeDefinition
---     { tName,
---       tCons = [ConsD {cFields}],
---       tKind
---     } =
---     pure <$> instanceD constrains iHead methods
---     where
---       mainTypeName = applyVars tName typeArgs
---       typeArgs = tyConArgs tKind
---       constrains = mkTypeableConstraints typeArgs
---       -----------------------------------------------
---       iHead = apply ''DeriveTypeContent [instCat, conT ''TRUE, mainTypeName]
---       instCat
---         | tKind == KindInputObject =
---           conT ''IN
---         | otherwise = conT ''OUT
---       methods = [funDSimple 'deriveTypeContent [_', _2'] body]
---         where
---           body
---             | tKind == KindInputObject =
---               [|
---                 deriveInputObject
---                   $(buildFields cFields)
---                   $(buildTypes instCat cFields)
---                 |]
---             | otherwise =
---               [|
---                 deriveOutputObject
---                   $(proxy)
---                   $(buildFields cFields)
---                   $(buildTypes instCat cFields)
---                 |]
---           proxy = [|(Proxy :: Proxy $(mainTypeName))|]
--- deriveObjectRep _ = pure []
+type Meta s =
+  ( Maybe Description,
+    Directives s,
+    Maybe (Value s)
+  )
 
--- deriveInputObject ::
---   [FieldDefinition IN s] ->
---   [TypeUpdater] ->
---   ( TypeContent TRUE IN s,
---     [TypeUpdater]
---   )
--- deriveInputObject fields typeUpdates =
---   (DataInputObject (unsafeFromFields fields), typeUpdates)
+getTypeMeta :: TypeDefinition c s -> [Meta s]
+getTypeMeta TypeDefinition {typeContent = DataObject {objectFields}} = getFieldMeta <$> elems objectFields
+getTypeMeta TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = getFieldMeta <$> elems inputObjectFields
+getTypeMeta TypeDefinition {typeContent = DataInterface {interfaceFields}} = getFieldMeta <$> elems interfaceFields
+getTypeMeta _ = []
 
--- deriveOutputObject ::
---   (GQLType a) =>
---   Proxy a ->
---   [FieldDefinition OUT s] ->
---   [TypeUpdater] ->
---   ( TypeContent TRUE OUT s,
---     [TypeUpdater]
---   )
--- deriveOutputObject proxy fields typeUpdates =
---   ( DataObject
---       (interfaceNames proxy)
---       (unsafeFromFields fields),
---     interfaceTypes proxy : typeUpdates
---   )
+getFieldMeta :: FieldDefinition c s -> Meta s
+getFieldMeta
+  FieldDefinition
+    { fieldDescription,
+      fieldDirectives,
+      fieldContent
+    } = (fieldDescription, fieldDirectives, fieldContent >>= getDefaultValue)
 
--- interfaceNames :: GQLType a => Proxy a -> [TypeName]
--- interfaceNames = map fst . implements
-
--- interfaceTypes :: GQLType a => Proxy a -> TypeUpdater
--- interfaceTypes = concatUpdates . map snd . implements
-
--- buildTypes :: TypeQ -> [FieldDefinition cat s] -> ExpQ
--- buildTypes cat = listE . concatMap (introspectField cat)
-
--- introspectField :: TypeQ -> FieldDefinition cat s -> [ExpQ]
--- introspectField cat FieldDefinition {fieldType, fieldContent} =
---   [|introspect $(proxyRepT cat fieldType)|] : inputTypes fieldContent
---   where
---     inputTypes :: Maybe (FieldContent TRUE cat s) -> [ExpQ]
---     inputTypes (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypeName}))
---       | argsTypeName /= "()" = [[|deriveCustomInputObjectType (argsTypeName, $(proxyT tAlias))|]]
---       where
---         tAlias = TypeRef {typeConName = argsTypeName, typeWrappers = [], typeArgs = Nothing}
---     inputTypes _ = []
-
--- proxyRepT :: TypeQ -> TypeRef -> Q Exp
--- proxyRepT cat TypeRef {typeConName, typeArgs} = [|(ProxyRep :: ProxyRep $(cat) $(genSig typeArgs))|]
---   where
---     genSig (Just m) = appT (toCon typeConName) (toVarT m)
---     genSig _ = toCon typeConName
-
--- proxyT :: TypeRef -> Q Exp
--- proxyT TypeRef {typeConName, typeArgs} = [|(Proxy :: Proxy $(genSig typeArgs))|]
---   where
---     genSig (Just m) = appT (toCon typeConName) (toVarT m)
---     genSig _ = toCon typeConName
-
--- buildFields :: [FieldDefinition cat s] -> ExpQ
--- buildFields = listE . map buildField
---   where
---     buildField f@FieldDefinition {fieldType} = [|f {fieldType = fieldType {typeConName = __typeName $(proxyT fieldType)}}|]
+getDefaultValue :: FieldContent a c s -> Maybe (Value s)
+getDefaultValue DefaultInputValue {defaultInputValue} = Just defaultInputValue
+getDefaultValue _ = Nothing
