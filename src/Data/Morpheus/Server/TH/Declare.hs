@@ -25,9 +25,6 @@ import Data.Morpheus.Server.TH.Declare.Type
   ( declareType,
   )
 import Data.Morpheus.Server.TH.Transform
-import Data.Morpheus.Types.Internal.AST
-  ( IN,
-  )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
 
