@@ -313,7 +313,11 @@ instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
   introspectKind _ = updateLib enumType [] (Proxy @a)
     where
       enumType :: Proxy a -> TypeDefinition LEAF CONST
-      enumType = buildType $ mkEnumContent $ enumTags (Proxy @(Rep a))
+      enumType =
+        buildType
+          $ updateContent (Proxy @a)
+          $ mkEnumContent
+          $ enumTags (Proxy @(Rep a))
 
 instance (GQL_TYPE a, TypeRep IN (Rep a)) => IntrospectKind INPUT a where
   introspectKind _ = derivingData (Proxy @a) InputType
@@ -408,15 +412,18 @@ deriveTypeContent proxy scope =
         genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
 updateContentWith :: (GQLType a) => f a -> (TypeContent TRUE c CONST, x) -> (TypeContent TRUE c CONST, x)
-updateContentWith proxy (DataObject {objectFields = fields, ..}, x) =
-  (DataObject {objectFields = fmap (updateFieldMeta proxy) fields, ..}, x)
-updateContentWith proxy (DataInputObject {inputObjectFields = fields}, x) =
-  (DataInputObject {inputObjectFields = fmap (updateFieldMeta proxy) fields, ..}, x)
-updateContentWith proxy (DataInterface {interfaceFields = fields}, x) =
-  (DataInterface {interfaceFields = fmap (updateFieldMeta proxy) fields, ..}, x)
-updateContentWith proxy (DataEnum enums, x) =
-  (DataEnum $ fmap (updateEnumValue proxy) enums, x)
-updateContentWith _ x = x
+updateContentWith proxy (x, y) = (updateContent proxy x, y)
+
+updateContent :: (GQLType a) => f a -> TypeContent TRUE c CONST -> TypeContent TRUE c CONST
+updateContent proxy DataObject {objectFields = fields, ..} =
+  DataObject {objectFields = fmap (updateFieldMeta proxy) fields, ..}
+updateContent proxy DataInputObject {inputObjectFields = fields} =
+  DataInputObject {inputObjectFields = fmap (updateFieldMeta proxy) fields, ..}
+updateContent proxy DataInterface {interfaceFields = fields} =
+  DataInterface {interfaceFields = fmap (updateFieldMeta proxy) fields, ..}
+updateContent proxy (DataEnum enums) =
+  DataEnum $ fmap (updateEnumValue proxy) enums
+updateContent _ x = x
 
 updateEnumValue :: GQLType a => f a -> DataEnumValue s -> DataEnumValue s
 updateEnumValue proxy enum =
