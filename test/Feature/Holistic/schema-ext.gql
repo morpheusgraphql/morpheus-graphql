@@ -3,3 +3,7 @@ type ExtQuery {
   fail2: Int!
   type(in: TypeInput!): String!
 }
+
+input TypeInput {
+  data: String!
+}

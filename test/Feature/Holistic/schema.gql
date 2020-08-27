@@ -93,10 +93,6 @@ type User implements Person {
   friend: User
 }
 
-input TypeInput {
-  data: String!
-}
-
 type Query {
   user: User!
   testUnion: TestUnion

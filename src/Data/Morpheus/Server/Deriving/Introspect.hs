@@ -418,7 +418,7 @@ instance UpdateDef (TypeContent TRUE c CONST) where
   updateDef _ x = x
 
 instance GetFieldContent cat => UpdateDef (FieldDefinition cat CONST) where
-  updateDef proxy FieldDefinition {fieldName = name, ..} =
+  updateDef proxy FieldDefinition {fieldName = name, fieldType, fieldContent} =
     FieldDefinition
       { fieldName,
         fieldDescription = getDescription (readName fieldName) proxy,
