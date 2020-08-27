@@ -425,24 +425,25 @@ updateContent proxy (DataEnum enums) =
   DataEnum $ fmap (updateEnumValue proxy) enums
 updateContent _ x = x
 
-updateEnumValue :: GQLType a => f a -> DataEnumValue s -> DataEnumValue s
+updateEnumValue :: GQLType a => f a -> DataEnumValue CONST -> DataEnumValue CONST
 updateEnumValue proxy enum =
   enum
-    { enumDescription = getDescription (readTypeName $ enumName enum) proxy
+    { enumDescription = getDescription (readTypeName $ enumName enum) proxy,
+      enumDirectives = getDirectives (readTypeName $ enumName enum) proxy
     }
 
 updateFieldMeta :: (GQLType a, GetFieldContent cat) => f a -> FieldDefinition cat CONST -> FieldDefinition cat CONST
 updateFieldMeta proxy f =
   f
     { fieldDescription = getDescription (readName $ fieldName f) proxy,
-      fieldDirectives = getDirectives (fieldName f) proxy,
+      fieldDirectives = getDirectives (readName $ fieldName f) proxy,
       fieldContent = getFieldContent (fieldName f) (fieldContent f) proxy
     }
 
 getDescription :: GQLType a => Token -> f a -> Maybe Description
 getDescription name = (name `M.lookup`) . getDescriptions
 
-getDirectives :: GQLType a => FieldName -> f a -> Directives CONST
+getDirectives :: GQLType a => Token -> f a -> Directives CONST
 getDirectives name = fromMaybe [] . (name `M.lookup`) . getFieldDirectives
 
 class GetFieldContent c where

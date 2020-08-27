@@ -1,11 +1,13 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Declare.GQLType
@@ -46,6 +48,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition,
     DataEnumValue (..),
     Description,
+    Directives,
     FieldContent (..),
     FieldDefinition (..),
     FieldName (..),
@@ -66,6 +69,7 @@ import Prelude
   ( ($),
     (.),
     concatMap,
+    null,
     otherwise,
   )
 
@@ -99,10 +103,10 @@ deriveGQLType
             | otherwise = [|Nothing|]
           fieldDescriptionsFunc = [|value|]
             where
-              value = fromList (desc typeOriginal)
+              value = getDesc typeOriginal
           fieldDirectivesFunc = [|value|]
             where
-              value = fmapFieldValues (Just . fieldDirectives) (Just . fieldDirectives) typeOriginal
+              value = getDirs typeOriginal
           getFieldContentsFunc = [|value|]
             where
               value =
@@ -132,33 +136,64 @@ interfacesFrom _ = []
 fmapFieldValues :: (FieldDefinition IN s -> Maybe a) -> (FieldDefinition OUT s -> Maybe a) -> Maybe (TypeDefinition c s) -> Map FieldName a
 fmapFieldValues f g = maybe (fromList []) (collectFieldValues f g)
 
-class Meta a where
-  desc :: a -> [(Token, Description)]
+getDesc :: Maybe (TypeDefinition c s) -> Map Token Description
+getDesc = fromList . get
 
-instance (Meta a) => Meta (Maybe a) where
-  desc (Just x) = desc x
-  desc _ = []
+getDirs :: Maybe (TypeDefinition c s) -> Map Token (Directives s)
+getDirs = fromList . get
 
-instance Meta (TypeDefinition c s) where
-  desc TypeDefinition {typeContent} = desc typeContent
+class Meta a v where
+  get :: a -> [(Token, v)]
 
-instance Meta (TypeContent a c s) where
-  desc DataObject {objectFields} = desc objectFields
-  desc DataInputObject {inputObjectFields} = desc inputObjectFields
-  desc DataInterface {interfaceFields} = desc interfaceFields
-  desc DataEnum {enumMembers} = concatMap desc enumMembers
-  desc _ = []
+instance (Meta a v) => Meta (Maybe a) v where
+  get (Just x) = get x
+  get _ = []
 
-instance Meta (DataEnumValue s) where
-  desc DataEnumValue {enumName, enumDescription = Just x} = [(readTypeName enumName, x)]
-  desc _ = []
+instance
+  ( Meta (FieldsDefinition IN s) v,
+    Meta (FieldsDefinition OUT s) v,
+    Meta (DataEnumValue s) v
+  ) =>
+  Meta (TypeDefinition c s) v
+  where
+  get TypeDefinition {typeContent} = get typeContent
 
-instance Meta (FieldsDefinition c s) where
-  desc = concatMap desc . elems
+instance
+  ( Meta (FieldsDefinition IN s) v,
+    Meta (FieldsDefinition OUT s) v,
+    Meta (DataEnumValue s) v
+  ) =>
+  Meta (TypeContent a c s) v
+  where
+  get DataObject {objectFields} = get objectFields
+  get DataInputObject {inputObjectFields} = get inputObjectFields
+  get DataInterface {interfaceFields} = get interfaceFields
+  get DataEnum {enumMembers} = concatMap get enumMembers
+  get _ = []
 
-instance Meta (FieldDefinition c s) where
-  desc FieldDefinition {fieldName, fieldDescription = Just x} = [(readName fieldName, x)]
-  desc _ = []
+instance Meta (DataEnumValue s) Description where
+  get DataEnumValue {enumName, enumDescription = Just x} = [(readTypeName enumName, x)]
+  get _ = []
+
+instance Meta (DataEnumValue s) (Directives s) where
+  get DataEnumValue {enumName, enumDirectives}
+    | null enumDirectives = []
+    | otherwise = [(readTypeName enumName, enumDirectives)]
+
+instance
+  Meta (FieldDefinition c s) v =>
+  Meta (FieldsDefinition c s) v
+  where
+  get = concatMap get . elems
+
+instance Meta (FieldDefinition c s) Description where
+  get FieldDefinition {fieldName, fieldDescription = Just x} = [(readName fieldName, x)]
+  get _ = []
+
+instance Meta (FieldDefinition c s) (Directives s) where
+  get FieldDefinition {fieldName, fieldDirectives}
+    | null fieldDirectives = []
+    | otherwise = [(readName fieldName, fieldDirectives)]
 
 collectFieldValues ::
   (FieldDefinition IN s -> Maybe a) ->

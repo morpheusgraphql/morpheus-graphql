@@ -150,7 +150,7 @@ class IsObject (KIND a) => GQLType a where
   getDescriptions :: f a -> Map Text Description
   getDescriptions _ = mempty
 
-  getFieldDirectives :: f a -> Map FieldName (Directives CONST)
+  getFieldDirectives :: f a -> Map Text (Directives CONST)
   getFieldDirectives _ = mempty
 
   getFieldContents ::
