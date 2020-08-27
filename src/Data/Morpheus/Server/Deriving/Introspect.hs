@@ -397,6 +397,10 @@ deriveTypeContent proxy scope =
 updateContentWith :: GQLType a => f a -> (TypeContent TRUE c s, x) -> (TypeContent TRUE c s, x)
 updateContentWith proxy (DataObject {objectFields = fields, ..}, x) =
   (DataObject {objectFields = fmap (updateFieldMeta proxy) fields, ..}, x)
+updateContentWith proxy (DataInputObject {inputObjectFields = fields}, x) =
+  (DataInputObject {inputObjectFields = fmap (updateFieldMeta proxy) fields, ..}, x)
+updateContentWith proxy (DataInterface {interfaceFields = fields}, x) =
+  (DataInterface {interfaceFields = fmap (updateFieldMeta proxy) fields, ..}, x)
 updateContentWith _ x = x
 
 updateFieldMeta :: GQLType a => f a -> FieldDefinition cat s -> FieldDefinition cat s
