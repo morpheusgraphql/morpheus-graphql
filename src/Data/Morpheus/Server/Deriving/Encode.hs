@@ -46,6 +46,7 @@ import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
     datatypeNameProxy,
     isRecordProxy,
+    selNameProxy,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
@@ -325,9 +326,9 @@ instance (FieldRep f o e m, FieldRep g o e m) => FieldRep (f :*: g) o e m where
   fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
 
 instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
-  fieldRep _ m@(M1 (K1 src)) =
+  fieldRep _ (M1 (K1 src)) =
     [ FieldNode
-        { fieldSelName = FieldName $ pack (selName m),
+        { fieldSelName = selNameProxy (Proxy @s),
           fieldTypeName = __typeName (Proxy @a),
           fieldResolver = encode src,
           isFieldObject = isObjectKind (Proxy @a)
