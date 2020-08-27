@@ -15,10 +15,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Encode
-  ( EncodeCon,
-    Encode (..),
-    ExploreResolvers (..),
-    deriveModel,
+  ( deriveModel,
+    EncodeConstraints,
   )
 where
 
@@ -37,13 +35,13 @@ import Data.Maybe
   )
 import Data.Morpheus.Internal.Utils (Namespace (..))
 import Data.Morpheus.Kind
-  ( ENUM,
+  ( ContextValue (..),
+    ENUM,
     GQL_KIND,
     INTERFACE,
     OUTPUT,
     ResContext (..),
     SCALAR,
-    VContext (..),
   )
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon, getChannels)
 import Data.Morpheus.Server.Deriving.Decode
@@ -71,7 +69,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     InternalError,
     MUTATION,
-    OperationType (..),
+    OperationType,
     QUERY,
     SUBSCRIPTION,
     TypeName,
@@ -127,7 +125,7 @@ class Encode resolver o e (m :: * -> *) where
   encode :: resolver -> Resolver o e m (ResModel o e m)
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => Encode a o e m where
-  encode resolver = encodeKind (VContext resolver :: VContext (KIND a) a)
+  encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
 
 -- MAYBE
 instance (Monad m, LiftOperation o, Encode a o e m) => Encode (Maybe a) o e m where
@@ -170,32 +168,28 @@ instance
       >>= encode . f
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance
-  ( Monad m,
-    Encode b o e m,
-    LiftOperation o
-  ) =>
-  Encode (Resolver o e m b) o e m
-  where
+instance (Monad m, Encode b o e m, LiftOperation o) => Encode (Resolver o e m b) o e m where
   encode x = x >>= encode
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
-  encodeKind :: LiftOperation o => VContext kind a -> Resolver o e m (ResModel o e m)
+  encodeKind :: LiftOperation o => ContextValue kind a -> Resolver o e m (ResModel o e m)
 
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
-  encodeKind = pure . ResScalar . serialize . unVContext
+  encodeKind = pure . ResScalar . serialize . unContextValue
+
+type EncodeConstraint o e m a = (Monad m, Generic a, GQLType a, TypeRep (Rep a) o e m)
 
 -- ENUM
-instance (Generic a, ExploreResolvers a o e m, Monad m) => EncodeKind ENUM a o e m where
-  encodeKind (VContext value) = liftResolverState $ exploreResolvers value
+instance EncodeConstraint o e m a => EncodeKind ENUM a o e m where
+  encodeKind = liftResolverState . exploreResolvers . unContextValue
 
-instance (Monad m, Generic a, ExploreResolvers a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = liftResolverState $ exploreResolvers value
+instance EncodeConstraint o e m a => EncodeKind OUTPUT a o e m where
+  encodeKind = liftResolverState . exploreResolvers . unContextValue
 
-instance (Monad m, Generic a, ExploreResolvers a o e m) => EncodeKind INTERFACE a o e m where
-  encodeKind (VContext value) = liftResolverState $ exploreResolvers value
+instance EncodeConstraint o e m a => EncodeKind INTERFACE a o e m where
+  encodeKind = liftResolverState . exploreResolvers . unContextValue
 
 convertNode ::
   (Monad m, LiftOperation o) =>
@@ -226,28 +220,29 @@ convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeNam
           | otherwise = setFieldNames fields
 
 -- Types & Constrains -------------------------------------------------------
-type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeCon o e m a = (GQL_RES a, ExploreResolvers a o e m)
-
---- GENERICS ------------------------------------------------
-class ExploreResolvers a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: a -> ResolverState (ResModel o e m)
-
-instance (Generic a, GQLType a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers a o e m where
-  exploreResolvers =
-    pure
-      . convertNode
-      . stripNamespace (hasNamespace (Proxy @a))
-      . typeResolvers (ResContext :: ResContext OUTPUT o e m value)
-      . from
+exploreResolvers ::
+  forall o e m a.
+  ( EncodeConstraint o e m a,
+    LiftOperation o
+  ) =>
+  a ->
+  ResolverState (ResModel o e m)
+exploreResolvers =
+  pure
+    . convertNode
+    . stripNamespace (hasNamespace (Proxy @a))
+    . typeResolvers (ResContext :: ResContext OUTPUT o e m value)
+    . from
 
 ----- HELPERS ----------------------------
 objectResolvers ::
   forall a o e m.
-  ( ExploreResolvers a o e m,
-    Monad m,
-    LiftOperation o
+  ( Monad m,
+    LiftOperation o,
+    GQLType a,
+    Generic a,
+    TypeRep (Rep a) o e m
   ) =>
   a ->
   ResolverState (ResModel o e m)
@@ -260,18 +255,25 @@ objectResolvers value =
     constraintObject _ =
       failure ("resolver must be an object" :: InternalError)
 
-type Con o e m a = ExploreResolvers (a (Resolver o e m)) o e m
+type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
+  TypeConstraint o e m (a (Resolver o e m))
+
+type TypeConstraint (o :: OperationType) e m a =
+  ( GQLType a,
+    Generic a,
+    TypeRep (Rep a) o e m
+  )
+
+type EncodeConstraints e m query mut sub =
+  ( ChannelCon e m sub,
+    EncodeObjectConstraint QUERY e m query,
+    EncodeObjectConstraint MUTATION e m mut,
+    EncodeObjectConstraint SUBSCRIPTION e m sub
+  )
 
 deriveModel ::
   forall e m query mut sub.
-  ( Con QUERY e m query,
-    Con MUTATION e m mut,
-    Con SUBSCRIPTION e m sub,
-    ChannelCon e m sub,
-    Applicative m,
-    Monad m,
-    GQLType (sub (Resolver SUBSCRIPTION e m))
-  ) =>
+  (Monad m, EncodeConstraints e m query mut sub) =>
   RootResolver m e query mut sub ->
   RootResModel e m
 deriveModel
@@ -325,7 +327,7 @@ setFieldNames = zipWith setFieldName ([0 ..] :: [Int])
   where
     setFieldName i field = field {fieldSelName = FieldName $ "_" <> pack (show i)}
 
-class TypeRep f o e (m :: * -> *) where
+class TypeRep f (o :: OperationType) e (m :: * -> *) where
   typeResolvers :: ResContext OUTPUT o e m value -> f a -> ResNode o e m
 
 instance (Datatype d, TypeRep f o e m) => TypeRep (M1 D d f) o e m where

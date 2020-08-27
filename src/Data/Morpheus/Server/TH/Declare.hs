@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Declare
   ( declare,
@@ -9,8 +10,10 @@ module Data.Morpheus.Server.TH.Declare
 where
 
 -- MORPHEUS
-
+import Control.Applicative (pure)
 import Control.Monad.Reader (runReader)
+import Data.Foldable (concat)
+import Data.Functor (fmap)
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerDecContext (..),
     ServerTypeDefinition (..),
@@ -18,15 +21,17 @@ import Data.Morpheus.Server.Internal.TH.Types
 import Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
   )
-import Data.Morpheus.Server.TH.Declare.Introspect
-  ( instanceIntrospect,
-  )
 import Data.Morpheus.Server.TH.Declare.Type
   ( declareType,
   )
 import Data.Morpheus.Server.TH.Transform
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
 import Language.Haskell.TH
+import Prelude
+  ( ($),
+    (.),
+  )
 
 class Declare a where
   declare :: ServerDecContext -> a -> Q [Dec]
@@ -39,12 +44,11 @@ instance Declare (TypeDec s) where
   declare namespace (OutputType typeD) = declare namespace typeD
 
 instance Declare (ServerTypeDefinition cat s) where
-  declare ctx typeD@ServerTypeDefinition {typeArgD, typeOriginal} =
+  declare ctx typeD@ServerTypeDefinition {typeArgD} =
     do
       typeDef <- declareServerType ctx typeD
       argTypes <- traverse (declareServerType ctx) typeArgD
-      introspectEnum <- instanceIntrospect typeOriginal
-      pure $ typeDef <> concat argTypes <> introspectEnum
+      pure $ typeDef <> concat argTypes
 
 declareServerType :: ServerDecContext -> ServerTypeDefinition cat s -> Q [Dec]
 declareServerType ctx argType = do

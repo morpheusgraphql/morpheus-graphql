@@ -12,7 +12,7 @@ module Data.Morpheus.Kind
     INPUT_OBJECT,
     GQL_KIND,
     Context (..),
-    VContext (..),
+    ContextValue (..),
     ResContext (..),
     OUTPUT,
     INPUT,
@@ -42,8 +42,8 @@ data ResContext (kind :: GQL_KIND) (operation :: OperationType) event (m :: * ->
 data Context (kind :: GQL_KIND) a
   = Context
 
-newtype VContext (kind :: GQL_KIND) a = VContext
-  { unVContext :: a
+newtype ContextValue (kind :: GQL_KIND) a = ContextValue
+  { unContextValue :: a
   }
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type

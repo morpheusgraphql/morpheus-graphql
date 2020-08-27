@@ -66,7 +66,7 @@ import Data.Morpheus.Core
     RenderGQL (..),
   )
 import Data.Morpheus.Server.Deriving.Introspect
-  ( Introspect (..),
+  ( Introspect,
     TypeUpdater,
     introspectOUT,
   )

@@ -21,7 +21,7 @@ import Data.Morpheus.Core
   )
 import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
-  ( EncodeCon,
+  ( EncodeConstraints,
     deriveModel,
   )
 import Data.Morpheus.Server.Deriving.Introspect
@@ -42,12 +42,11 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 
 type OperationConstraint operation event m a =
-  ( EncodeCon operation event m (a (Resolver operation event m)),
-    IntroCon (a (Resolver operation event m))
-  )
+  (IntroCon (a (Resolver operation event m)))
 
 type RootResolverConstraint m event query mutation subscription =
   ( Monad m,
+    EncodeConstraints event m query mutation subscription,
     OperationConstraint QUERY event m query,
     OperationConstraint MUTATION event m mutation,
     OperationConstraint SUBSCRIPTION event m subscription,

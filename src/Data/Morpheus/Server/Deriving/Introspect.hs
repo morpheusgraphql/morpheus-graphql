@@ -17,9 +17,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Introspect
-  ( Introspect (..),
+  ( Introspect,
     introspectOUT,
     IntroCon,
     TypeUpdater,
@@ -30,11 +31,15 @@ where
 
 -- MORPHEUS
 
-import Control.Monad ((>=>))
+import Control.Applicative (Applicative (..))
+import Control.Monad ((>=>), (>>=))
+import Control.Monad.Fail (fail)
+import Data.Foldable (concatMap)
+import Data.Functor ((<$>), Functor (..))
 import Data.List (partition)
 import qualified Data.Map as M
 import Data.Map (Map)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe (..), fromMaybe, maybe)
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
@@ -130,6 +135,21 @@ import Data.Text
   )
 import GHC.Generics
 import Language.Haskell.TH (Exp, Q)
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Eq (..),
+    Int,
+    Ord,
+    Show (..),
+    fst,
+    null,
+    otherwise,
+    snd,
+    unzip,
+    zipWith,
+  )
 
 type IntroCon a =
   ( GQLType a,
@@ -373,8 +393,8 @@ deriveTypeContent ::
 deriveTypeContent proxy scope =
   updateContentWith proxy
     $ builder
-    $ map (stripNamespace (hasNamespace proxy))
-    $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
+    $ stripNamespace (hasNamespace proxy)
+      <$> typeRep (ProxyRep :: ProxyRep cat (Rep a))
   where
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
       where
@@ -474,7 +494,7 @@ data ConsRep cat = ConsRep
   }
 
 instance Namespace (ConsRep c) where
-  stripNamespace ns ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace ns) fields, ..}
+  stripNamespace ns ConsRep {consFields = fields, ..} = ConsRep {consFields = fmap (stripNamespace ns) fields, ..}
 
 data FieldRep cat = FieldRep
   { fieldTypeName :: TypeName,
@@ -514,9 +534,9 @@ setFieldNames cons@ConsRep {consFields} =
 analyseRep :: TypeName -> [ConsRep cat] -> ResRep cat
 analyseRep baseName cons =
   ResRep
-    { enumCons = map consName enumRep,
-      unionRef = map fieldTypeName $ concatMap consFields unionRefRep,
-      unionRecordRep = unionRecordRep <> map setFieldNames anonymousUnionRep
+    { enumCons = fmap consName enumRep,
+      unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
+      unionRecordRep = unionRecordRep <> fmap setFieldNames anonymousUnionRep
     }
   where
     (enumRep, left1) = partition isEmpty cons
@@ -535,10 +555,10 @@ buildInputUnion (baseName, baseFingerprint) cons =
       (DataInputUnion typeMembers, types <> unionTypes)
       where
         typeMembers :: [UnionMember IN CONST]
-        typeMembers = map mkUnionMember (unionRef <> unionMembers) <> map (`UnionMember` False) enumCons
+        typeMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
         (unionMembers, unionTypes) =
           buildUnions wrapInputObject baseFingerprint unionRecordRep
-    types = map fieldTypeUpdater $ concatMap consFields cons
+    types = fieldTypeUpdater <$> concatMap consFields cons
     wrapInputObject :: (FieldsDefinition IN CONST -> TypeContent TRUE IN CONST)
     wrapInputObject = DataInputObject
 
@@ -556,14 +576,14 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
     --datatype :: ResRep -> (TypeContent TRUE cat, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
-      (wrapUnion (map mkUnionMember typeMembers), types <> enumTypes <> unionTypes)
+      (wrapUnion (fmap mkUnionMember typeMembers), types <> enumTypes <> unionTypes)
       where
         typeMembers = unionRef <> enumMembers <> unionMembers
         (enumMembers, enumTypes) =
           buildUnionEnum wrapObject baseName baseFingerprint enumCons
         (unionMembers, unionTypes) =
           buildUnions wrapObject baseFingerprint unionRecordRep
-    types = map fieldTypeUpdater $ concatMap consFields cons
+    types = fieldTypeUpdater <$> concatMap consFields cons
 
 buildObject :: ([TypeName], [TypeUpdater]) -> TypeScope cat -> [FieldRep cat] -> (TypeContent TRUE cat CONST, [TypeUpdater])
 buildObject (interfaces, interfaceTypes) scope consFields =
@@ -580,18 +600,18 @@ buildObject (interfaces, interfaceTypes) scope consFields =
 buildDataObject :: [FieldRep cat] -> (FieldsDefinition cat CONST, [TypeUpdater])
 buildDataObject consFields = (fields, types)
   where
-    fields = unsafeFromFields $ map fieldData consFields
-    types = map fieldTypeUpdater consFields
+    fields = unsafeFromFields $ fmap fieldData consFields
+    types = fmap fieldTypeUpdater consFields
 
 buildUnions ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   DataFingerprint ->
   [ConsRep cat] ->
   ([TypeName], [TypeUpdater])
-buildUnions wrapObject baseFingerprint cons = (members, map buildURecType cons)
+buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
   where
     buildURecType = insertType . buildUnionRecord wrapObject baseFingerprint
-    members = map consName cons
+    members = fmap consName cons
 
 buildUnionRecord ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) -> DataFingerprint -> ConsRep cat -> TypeDefinition cat CONST
@@ -604,7 +624,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
       typeContent =
         wrapObject
           $ unsafeFromFields
-          $ map fieldData consFields
+          $ fmap fieldData consFields
     }
 
 buildUnionEnum ::
