@@ -45,22 +45,20 @@ defineClientWith
     query MyQuery {
       character {
         name
-        __typename
         ... on Deity {
               power
         }
         ... on Hero {
-              hoby
+              hobby
         }
       }
       character2: character {
         name1: name
         name
       }
-
       character3: character {
         ... on Hero {
-              hoby
+              hobby
         }
         ... on Character {
               name2: name
@@ -68,7 +66,7 @@ defineClientWith
       }
       character4: character {
         ... on Hero {
-              hoby
+              hobby
         }
       }
     }
@@ -94,12 +92,12 @@ testInterface = testCase "test interfaces" $ do
                       __typename = "Deity"
                     },
                   CharacterCharacter
-                    { name = "Charatcer Name",
+                    { name = "Character Name",
                       __typename = "Character"
                     },
                   CharacterHero
                     { name = "Hero Name",
-                      hoby = "Deity Power",
+                      hobby = "Deity Power",
                       __typename = "Hero"
                     }
                 ],
@@ -111,7 +109,7 @@ testInterface = testCase "test interfaces" $ do
                 ],
               character3 =
                 [ Character3Hero
-                    { hoby = "Hero Hoby",
+                    { hobby = "Hero Hobby",
                       name2 = "Hero name2",
                       __typename = "Hero"
                     },
@@ -129,7 +127,7 @@ testInterface = testCase "test interfaces" $ do
                     { __typename = "Character"
                     },
                   Character4Hero
-                    { hoby = "Hero Hoby",
+                    { hobby = "Hero Hobby",
                       __typename = "Hero"
                     }
                 ]
