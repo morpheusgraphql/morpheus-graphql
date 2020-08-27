@@ -1,6 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
@@ -9,9 +9,10 @@ module Data.Morpheus.Server.Deriving.App
   )
 where
 
-import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
+import Control.Monad (Monad)
+import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( App (..),
     mkApp,

@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Internal.TH.Utils
   ( kindName,
@@ -39,6 +40,12 @@ import Language.Haskell.TH
     Name,
     Type (..),
     cxt,
+  )
+import Prelude
+  ( ($),
+    (.),
+    map,
+    pure,
   )
 
 o' :: Type

@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Data.Morpheus.Server.Internal.TH.Types
   ( ServerTypeDefinition (..),
     ServerDec,
@@ -13,6 +15,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition,
     TypeKind,
     TypeName,
+  )
+import Prelude
+  ( Bool,
+    Maybe,
+    Show,
   )
 
 --- Core
