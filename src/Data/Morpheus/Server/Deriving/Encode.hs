@@ -43,7 +43,10 @@ import Data.Morpheus.Kind
     ResContext (..),
     SCALAR,
   )
-import Data.Morpheus.Server.Deriving.Channels (ChannelCon, getChannels)
+import Data.Morpheus.Server.Deriving.Channels
+  ( ChannelsConstraint,
+    getChannels,
+  )
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
@@ -265,7 +268,7 @@ type TypeConstraint (o :: OperationType) e m a =
   )
 
 type EncodeConstraints e m query mut sub =
-  ( ChannelCon e m sub,
+  ( ChannelsConstraint e m sub,
     EncodeObjectConstraint QUERY e m query,
     EncodeObjectConstraint MUTATION e m mut,
     EncodeObjectConstraint SUBSCRIPTION e m sub

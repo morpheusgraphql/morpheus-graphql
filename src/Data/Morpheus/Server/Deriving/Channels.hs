@@ -14,9 +14,7 @@
 
 module Data.Morpheus.Server.Deriving.Channels
   ( getChannels,
-    ChannelCon,
-    GetChannel (..),
-    ExploreChannels (..),
+    ChannelsConstraint,
   )
 where
 
@@ -58,11 +56,14 @@ import Prelude
     lookup,
   )
 
-type ChannelCon e m a = ExploreChannels (a (Resolver SUBSCRIPTION e m)) e
+type ChannelsConstraint e m (subs :: (* -> *) -> *) =
+  ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
+    Generic (subs (Resolver SUBSCRIPTION e m))
+  )
 
 getChannels ::
   forall e m subs.
-  ChannelCon e m subs =>
+  (ChannelsConstraint e m subs) =>
   subs (Resolver SUBSCRIPTION e m) ->
   Selection VALID ->
   ResolverState (Channel e)
