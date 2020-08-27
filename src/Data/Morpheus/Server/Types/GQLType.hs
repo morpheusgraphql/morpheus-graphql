@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -59,6 +60,21 @@ import Data.Typeable
     tyConName,
     typeRep,
     typeRepTyCon,
+  )
+import Prelude
+  ( ($),
+    (.),
+    (<$>),
+    Bool (..),
+    Either,
+    Eq (..),
+    Float,
+    Int,
+    Maybe (..),
+    concatMap,
+    fmap,
+    mempty,
+    show,
   )
 
 type TypeUpdater = UpdateT Eventless (Schema CONST)
@@ -152,16 +168,16 @@ class IsObject (KIND a) => GQLType a where
     TypeName
   __typeName _ = TypeName $ intercalate "_" (getName $ Proxy @a)
     where
-      getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+      getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 
   __typeFingerprint :: f a -> DataFingerprint
   default __typeFingerprint ::
     (Typeable a) =>
     f a ->
     DataFingerprint
-  __typeFingerprint _ = DataFingerprint "Typeable" $ map show $ conFingerprints (Proxy @a)
+  __typeFingerprint _ = DataFingerprint "Typeable" $ show <$> conFingerprints (Proxy @a)
     where
-      conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+      conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
 instance GQLType () where
   type KIND () = WRAPPER

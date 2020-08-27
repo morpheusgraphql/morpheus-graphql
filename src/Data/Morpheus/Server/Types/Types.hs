@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.Types
   ( Undefined (..),
@@ -9,7 +10,17 @@ module Data.Morpheus.Server.Types.Types
   )
 where
 
-import GHC.Generics (Generic)
+import Data.Functor (fmap)
+import GHC.Generics
+  ( Generic,
+  )
+import Prelude
+  ( Applicative (..),
+    Int,
+    Show,
+    length,
+    uncurry,
+  )
 
 data Undefined (m :: * -> *) = Undefined deriving (Show, Generic)
 
@@ -32,4 +43,4 @@ mapKindFromList inputPairs =
       pairs = resolvePairs
     }
   where
-    resolvePairs = pure (map (uncurry Pair) inputPairs)
+    resolvePairs = pure (fmap (uncurry Pair) inputPairs)

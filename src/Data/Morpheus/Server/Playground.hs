@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Playground
   ( httpPlayground,
@@ -10,7 +11,12 @@ module Data.Morpheus.Server.Playground
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Functor (fmap)
 import Data.Semigroup ((<>))
+import Prelude
+  ( (.),
+    mconcat,
+  )
 
 link :: ByteString -> ByteString -> ByteString
 link rel href = "<link rel=\"" <> rel <> "\"  href=\"" <> href <> "\" />"
@@ -23,7 +29,7 @@ tag tagName = t tagName []
 
 t :: ByteString -> [(ByteString, ByteString)] -> [ByteString] -> ByteString
 t tagName attr children =
-  "<" <> tagName <> " " <> mconcat (map renderAttr attr) <> " >" <> mconcat children <> "</" <> tagName <> ">"
+  "<" <> tagName <> " " <> mconcat (fmap renderAttr attr) <> " >" <> mconcat children <> "</" <> tagName <> ">"
   where
     renderAttr (name, value) = name <> "=\"" <> value <> "\" "
 
