@@ -46,18 +46,12 @@ instance Declare (ServerTypeDefinition cat s) where
     do
       let mainType = runReader (declareType typeD) ctx
       argTypes <- declareArgTypes ctx typeArgD
-      gqlInstances <- deriveGQLInstances
       typeClasses <- deriveGQLType ctx typeD
       introspectEnum <- instanceIntrospect typeOriginal
-      pure $ mainType <> typeClasses <> argTypes <> gqlInstances <> introspectEnum
-    where
-      deriveGQLInstances = concat <$> sequence gqlInstances
-        where
-          gqlInstances = []
+      pure $ mainType <> typeClasses <> argTypes <> introspectEnum
 
 declareArgTypes :: ServerDecContext -> [ServerTypeDefinition IN s] -> Q [Dec]
-declareArgTypes ctx types =
-  pure $
-    concatMap
-      (\x -> runReader (declareType x) ctx)
-      types
+declareArgTypes ctx types = do
+  typeClasses <- traverse (deriveGQLType ctx) types
+  let defs = concatMap (\x -> runReader (declareType x) ctx) types
+  pure (defs <> concat typeClasses)

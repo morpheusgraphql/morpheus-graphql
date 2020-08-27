@@ -256,6 +256,7 @@ instance
   ( GQLType b,
     Introspect OUT b,
     TypeRep IN (Rep a),
+    GQLType a,
     Generic a
   ) =>
   Introspect OUT (a -> m b)
@@ -264,11 +265,11 @@ instance
   field _ name = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
     where
       fieldObj = field (ProxyRep :: ProxyRep OUT b) name
-      fieldArgs = fst $ deriveArgumentFields (Proxy @b) (Proxy @a)
+      fieldArgs = fst $ deriveArgumentFields (Proxy @a)
   introspect _ = concatUpdates (introspect (ProxyRep :: ProxyRep OUT b) : inputs)
     where
       inputs :: [TypeUpdater]
-      inputs = snd $ deriveArgumentFields (Proxy @b) (Proxy @a)
+      inputs = snd $ deriveArgumentFields (Proxy @a)
 
 instance (Introspect OUT a) => Introspect OUT (SubscriptionField a) where
   isObject _ = isObject (ProxyRep :: ProxyRep OUT a)
@@ -330,20 +331,19 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
 type GQL_TYPE a = (Generic a, GQLType a)
 
 deriveArgumentFields ::
-  ( TypeRep IN (Rep arg),
-    Generic arg,
-    GQLType typ
+  ( TypeRep IN (Rep a),
+    GQLType a,
+    Generic a
   ) =>
-  f typ ->
-  f arg ->
+  f a ->
   (ArgumentsDefinition CONST, [TypeUpdater])
-deriveArgumentFields typeProxy proxy =
-  withObject (deriveTypeContent (hasNamespace typeProxy) proxy (([], []), InputType, "", DataFingerprint "" []))
+deriveArgumentFields proxy =
+  withObject (deriveTypeContent (hasNamespace proxy) proxy (([], []), InputType, "", DataFingerprint "" []))
   where
     withObject (DataInputObject {inputObjectFields}, ts) = (fieldsToArguments inputObjectFields, ts)
     withObject _ =
       ( empty,
-        [ introspectFailure ("Arguments for " <> msg (__typeName typeProxy) <> " should have only one nonempty constructor")
+        [ introspectFailure ("ArgumentType: " <> msg (__typeName proxy) <> " should have only one nonempty constructor")
         ]
       )
 

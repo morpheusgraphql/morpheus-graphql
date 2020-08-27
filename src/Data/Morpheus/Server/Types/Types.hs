@@ -5,7 +5,6 @@ module Data.Morpheus.Server.Types.Types
   ( Undefined (..),
     Pair (..),
     MapKind (..),
-    MapArgs (..),
     mapKindFromList,
   )
 where
@@ -20,14 +19,9 @@ data Pair k v = Pair
   }
   deriving (Generic)
 
-newtype MapArgs k = MapArgs
-  { oneOf :: Maybe [k]
-  }
-  deriving (Generic)
-
 data MapKind k v m = MapKind
   { size :: Int,
-    pairs :: MapArgs k -> m [Pair k v]
+    pairs :: m [Pair k v]
   }
   deriving (Generic)
 
@@ -38,8 +32,4 @@ mapKindFromList inputPairs =
       pairs = resolvePairs
     }
   where
-    filterBy MapArgs {oneOf = Just list} =
-      filter ((`elem` list) . fst) inputPairs
-    filterBy _ = inputPairs
-    resolvePairs = pure . (map toGQLTuple . filterBy)
-    toGQLTuple (x, y) = Pair x y
+    resolvePairs = pure (map (uncurry Pair) inputPairs)
