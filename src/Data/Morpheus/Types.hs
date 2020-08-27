@@ -6,6 +6,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
 module Data.Morpheus.Types
@@ -58,9 +59,14 @@ module Data.Morpheus.Types
   )
 where
 
+import Control.Applicative (pure)
+import Control.Monad (Monad ((>>=)))
+import Control.Monad.Fail (fail)
 import Control.Monad.Trans.Class (MonadTrans (..))
-import Data.Either (either)
--- MORPHEUS
+import Data.Either
+  ( Either (..),
+    either,
+  )
 import Data.Morpheus.Core
   ( App,
     RenderGQL (..),
@@ -111,7 +117,16 @@ import Data.Morpheus.Types.Internal.Subscription
     Input,
     WS,
   )
-import Data.Proxy (Proxy (..))
+import Data.Proxy
+  ( Proxy (..),
+  )
+import Prelude
+  ( ($),
+    (.),
+    IO,
+    String,
+    const,
+  )
 
 class FlexibleResolver (f :: * -> *) (a :: k) where
   type Flexible (m :: * -> *) a :: *

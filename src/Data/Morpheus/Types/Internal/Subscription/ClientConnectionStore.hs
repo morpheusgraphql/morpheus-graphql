@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ID,
@@ -21,6 +22,8 @@ module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   )
 where
 
+import Control.Applicative (pure)
+import Control.Monad (Monad ((>>=)))
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (traverse_)
 import Data.HashMap.Lazy (HashMap, keys)
@@ -34,9 +37,7 @@ import qualified Data.HashMap.Lazy as HM
     keys,
     toList,
   )
-import Data.List (intersect)
--- MORPHEUS
-
+import Data.List (filter, intersect)
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
     KeyOf (..),
@@ -52,6 +53,16 @@ import Data.Morpheus.Types.Internal.Subscription.Apollo
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.UUID (UUID)
+import Prelude
+  ( (.),
+    Eq (..),
+    Show (..),
+    curry,
+    not,
+    null,
+    otherwise,
+    snd,
+  )
 
 type ID = UUID
 

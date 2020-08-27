@@ -9,12 +9,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Feature.Holistic.API
   ( api,
   )
 where
 
+import Control.Monad.Fail (fail)
 import Data.Morpheus (deriveApp, runApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Kind (SCALAR)
@@ -34,6 +36,22 @@ import Data.Morpheus.Types
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Prelude
+  ( ($),
+    (*),
+    (+),
+    (.),
+    (<$>),
+    Applicative (..),
+    Either (..),
+    Eq (..),
+    IO,
+    Int,
+    Maybe (..),
+    Show (..),
+    String,
+    const,
+  )
 
 data TestScalar
   = TestScalar
