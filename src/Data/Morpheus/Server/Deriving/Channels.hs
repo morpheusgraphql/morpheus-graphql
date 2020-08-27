@@ -30,8 +30,7 @@ import Data.Morpheus.Server.Deriving.Decode
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Types.Internal.AST
-  ( FALSE,
-    FieldName (..),
+  ( FieldName (..),
     InternalError,
     SUBSCRIPTION,
     Selection (..),
@@ -51,13 +50,7 @@ import Data.Text
   )
 import GHC.Generics
 
-data CustomProxy (c :: Bool) e = CustomProxy
-
-type ChannelCon e m a =
-  ExploreChannels
-    (CUSTOM (a (Resolver SUBSCRIPTION e m)))
-    (a (Resolver SUBSCRIPTION e m))
-    e
+type ChannelCon e m a = ExploreChannels (a (Resolver SUBSCRIPTION e m)) e
 
 getChannels ::
   forall e m subs.
@@ -67,7 +60,7 @@ getChannels ::
   ResolverState (Channel e)
 getChannels value sel =
   selectBy sel $
-    exploreChannels (CustomProxy :: CustomProxy (CUSTOM (subs (Resolver SUBSCRIPTION e m))) e) value
+    exploreChannels (Proxy @e) value
 
 selectBy ::
   Failure InternalError m =>
@@ -99,14 +92,14 @@ instance
     decodeArguments selectionArguments >>= (`getChannel` sel) . f
 
 ------------------------------------------------------
-class ExploreChannels (custom :: Bool) a e where
-  exploreChannels :: CustomProxy custom e -> a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
+class ExploreChannels a e where
+  exploreChannels :: Proxy e -> a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
 
 instance
   ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
     Generic (subs (Resolver SUBSCRIPTION e m))
   ) =>
-  ExploreChannels any (subs (Resolver SUBSCRIPTION e m)) e
+  ExploreChannels (subs (Resolver SUBSCRIPTION e m)) e
   where
   exploreChannels _ = typeRep (Proxy @e) . from
 

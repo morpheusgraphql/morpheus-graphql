@@ -44,12 +44,10 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     QUERY,
-    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     Value,
-    isObject,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
@@ -65,7 +63,7 @@ deriveGQLType :: ServerDecContext -> ServerTypeDefinition cat s -> Q [Dec]
 deriveGQLType
   ServerDecContext {namespace}
   ServerTypeDefinition {tName, tKind, typeOriginal} =
-    pure <$> instanceD constrains iHead (functions <> typeFamilies)
+    pure <$> instanceD constrains iHead (typeFamilies : functions)
     where
       functions =
         funDProxy
@@ -92,13 +90,8 @@ deriveGQLType
       ---------------------------------------------------
       constrains = mkTypeableConstraints typeArgs
       -------------------------------------------------
-      typeFamilies
-        | isObject tKind = [deriveKIND, deriveCUSTOM]
-        | otherwise = [deriveKIND]
+      typeFamilies = deriveInstance ''KIND (kindName tKind)
         where
-          deriveCUSTOM = deriveInstance ''CUSTOM ''TRUE
-          deriveKIND = deriveInstance ''KIND (kindName tKind)
-          -------------------------------------------------------
           deriveInstance :: Name -> Name -> Q Dec
           deriveInstance insName tyName = do
             typeN <- headSig

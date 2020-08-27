@@ -31,7 +31,6 @@ import Data.Morpheus.Types.Internal.AST
     DataFingerprint (..),
     Description,
     Directive,
-    FALSE,
     FieldName,
     QUERY,
     Schema,
@@ -120,9 +119,6 @@ class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
 
-  type CUSTOM a :: Bool
-  type CUSTOM a = FALSE
-
   implements :: f a -> [(TypeName, TypeUpdater)]
   implements _ = []
 
@@ -169,11 +165,9 @@ class IsObject (KIND a) => GQLType a where
 
 instance GQLType () where
   type KIND () = WRAPPER
-  type CUSTOM () = 'False
 
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
-  type CUSTOM (Undefined m) = 'False
   isEmptyType _ = True
 
 instance GQLType Int where

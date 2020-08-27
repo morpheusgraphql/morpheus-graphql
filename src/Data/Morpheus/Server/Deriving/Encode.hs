@@ -154,14 +154,14 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
   encodeKind = pure . ResScalar . serialize . unVContext
 
 -- ENUM
-instance (Generic a, ExploreResolvers (CUSTOM a) a o e m, Monad m) => EncodeKind ENUM a o e m where
-  encodeKind (VContext value) = liftResolverState $ exploreResolvers (Proxy @(CUSTOM a)) value
+instance (Generic a, ExploreResolvers a o e m, Monad m) => EncodeKind ENUM a o e m where
+  encodeKind (VContext value) = liftResolverState $ exploreResolvers value
 
-instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind OUTPUT a o e m where
-  encodeKind (VContext value) = liftResolverState $ exploreResolvers (Proxy @(CUSTOM a)) value
+instance (Monad m, Generic a, ExploreResolvers a o e m) => EncodeKind OUTPUT a o e m where
+  encodeKind (VContext value) = liftResolverState $ exploreResolvers value
 
-instance (Monad m, Generic a, ExploreResolvers (CUSTOM a) a o e m) => EncodeKind INTERFACE a o e m where
-  encodeKind (VContext value) = liftResolverState $ exploreResolvers (Proxy @(CUSTOM a)) value
+instance (Monad m, Generic a, ExploreResolvers a o e m) => EncodeKind INTERFACE a o e m where
+  encodeKind (VContext value) = liftResolverState $ exploreResolvers value
 
 convertNode ::
   (Monad m, LiftOperation o) =>
@@ -194,30 +194,31 @@ convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeNam
 -- Types & Constrains -------------------------------------------------------
 type GQL_RES a = (Generic a, GQLType a)
 
-type EncodeCon o e m a = (GQL_RES a, ExploreResolvers (CUSTOM a) a o e m)
+type EncodeCon o e m a = (GQL_RES a, ExploreResolvers a o e m)
 
 --- GENERICS ------------------------------------------------
-class ExploreResolvers (custom :: Bool) a (o :: OperationType) e (m :: * -> *) where
-  exploreResolvers :: Proxy custom -> a -> ResolverState (ResModel o e m)
+class ExploreResolvers a (o :: OperationType) e (m :: * -> *) where
+  exploreResolvers :: a -> ResolverState (ResModel o e m)
 
-instance (Generic a, GQLType a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers any a o e m where
-  exploreResolvers _ value =
+instance (Generic a, GQLType a, Monad m, LiftOperation o, TypeRep (Rep a) o e m) => ExploreResolvers a o e m where
+  exploreResolvers =
     pure
-      $ convertNode
-      $ stripNamespace (hasNamespace (Proxy @a))
-      $ typeResolvers (ResContext :: ResContext OUTPUT o e m value) (from value)
+      . convertNode
+      . stripNamespace (hasNamespace (Proxy @a))
+      . typeResolvers (ResContext :: ResContext OUTPUT o e m value)
+      . from
 
 ----- HELPERS ----------------------------
 objectResolvers ::
   forall a o e m.
-  ( ExploreResolvers (CUSTOM a) a o e m,
+  ( ExploreResolvers a o e m,
     Monad m,
     LiftOperation o
   ) =>
   a ->
   ResolverState (ResModel o e m)
 objectResolvers value =
-  exploreResolvers (Proxy @(CUSTOM a)) value
+  exploreResolvers value
     >>= constraintObject
   where
     constraintObject obj@ResObject {} =
@@ -225,15 +226,7 @@ objectResolvers value =
     constraintObject _ =
       failure ("resolver must be an object" :: InternalError)
 
-type Con o e m a =
-  ExploreResolvers
-    ( CUSTOM
-        (a (Resolver o e m))
-    )
-    (a (Resolver o e m))
-    o
-    e
-    m
+type Con o e m a = ExploreResolvers (a (Resolver o e m)) o e m
 
 deriveModel ::
   forall e m query mut sub.
