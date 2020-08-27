@@ -22,7 +22,7 @@
 module Data.Morpheus.Server.Deriving.Introspect
   ( Introspect,
     introspectOUT,
-    IntroCon,
+    SchemaConstraint,
     TypeUpdater,
     deriveSchema,
     compileTimeSchemaValidation,
@@ -39,7 +39,7 @@ import Data.Functor ((<$>), Functor (..))
 import Data.List (partition)
 import qualified Data.Map as M
 import Data.Map (Map)
-import Data.Maybe (Maybe (..), fromMaybe, maybe)
+import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
@@ -151,16 +151,16 @@ import Prelude
     zipWith,
   )
 
-type IntroCon a =
+type SchemaConstraints m event query mutation subscription =
+  ( SchemaConstraint (query (Resolver QUERY event m)),
+    SchemaConstraint (mutation (Resolver MUTATION event m)),
+    SchemaConstraint (subscription (Resolver SUBSCRIPTION event m))
+  )
+
+type SchemaConstraint a =
   ( GQLType a,
     TypeRep OUT (Rep a),
     Generic a
-  )
-
-type IntrospectConstraint m event query mutation subscription =
-  ( IntroCon (query (Resolver QUERY event m)),
-    IntroCon (mutation (Resolver MUTATION event m)),
-    IntroCon (subscription (Resolver SUBSCRIPTION event m))
   )
 
 data ProxyRep (cat :: TypeCategory) a
@@ -169,7 +169,7 @@ data ProxyRep (cat :: TypeCategory) a
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
 --   this method allows you to validate it at compile time.
 compileTimeSchemaValidation ::
-  (IntrospectConstraint m event qu mu su) =>
+  (SchemaConstraints m event qu mu su) =>
   proxy (root m event qu mu su) ->
   Q Exp
 compileTimeSchemaValidation =
@@ -182,19 +182,18 @@ fromSchema Failure {errors} = fail (show errors)
 
 deriveSchema ::
   forall
-    rootResolver
+    root
     proxy
     m
     event
     query
-    mutation
-    subscription
+    mut
+    subs
     f.
-  ( IntrospectConstraint m event query mutation subscription,
-    Applicative f,
+  ( SchemaConstraints m event query mut subs,
     Failure GQLErrors f
   ) =>
-  proxy (rootResolver m event query mutation subscription) ->
+  proxy (root m event query mut subs) ->
   f (Schema CONST)
 deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
   Success {result} -> pure result
@@ -214,7 +213,7 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
       where
         (mutation, types) =
           deriveOperationType "Mutation" $
-            Proxy @(mutation (Resolver MUTATION event m))
+            Proxy @(mut (Resolver MUTATION event m))
     ------------------------------
     subscriptionSchema lib =
       resolveUpdates
@@ -223,7 +222,7 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
       where
         (subscription, types) =
           deriveOperationType "Subscription" $
-            Proxy @(subscription (Resolver SUBSCRIPTION event m))
+            Proxy @(subs (Resolver SUBSCRIPTION event m))
 
 introspectOUT :: forall a. (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
 introspectOUT _ = introspect (ProxyRep :: ProxyRep OUT a)
