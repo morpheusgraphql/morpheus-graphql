@@ -72,9 +72,11 @@ import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     CONST,
+    CONST,
     DataFingerprint (..),
     DataUnion,
     Description,
+    Directives,
     ELEM,
     FieldContent (..),
     FieldDefinition (..),
@@ -394,7 +396,7 @@ deriveTypeContent proxy scope =
         genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
         genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
-updateContentWith :: GQLType a => f a -> (TypeContent TRUE c s, x) -> (TypeContent TRUE c s, x)
+updateContentWith :: GQLType a => f a -> (TypeContent TRUE c CONST, x) -> (TypeContent TRUE c CONST, x)
 updateContentWith proxy (DataObject {objectFields = fields, ..}, x) =
   (DataObject {objectFields = fmap (updateFieldMeta proxy) fields, ..}, x)
 updateContentWith proxy (DataInputObject {inputObjectFields = fields}, x) =
@@ -403,11 +405,18 @@ updateContentWith proxy (DataInterface {interfaceFields = fields}, x) =
   (DataInterface {interfaceFields = fmap (updateFieldMeta proxy) fields, ..}, x)
 updateContentWith _ x = x
 
-updateFieldMeta :: GQLType a => f a -> FieldDefinition cat s -> FieldDefinition cat s
-updateFieldMeta proxy f = f {fieldDescription = getDescription (fieldName f) proxy}
+updateFieldMeta :: GQLType a => f a -> FieldDefinition cat CONST -> FieldDefinition cat CONST
+updateFieldMeta proxy f =
+  f
+    { fieldDescription = getDescription (fieldName f) proxy,
+      fieldDirectives = getDirectives (fieldName f) proxy
+    }
 
 getDescription :: GQLType a => FieldName -> f a -> Maybe Description
-getDescription name proxy = (name `M.lookup` fieldValues proxy) >>= \(x, _, _) -> x
+getDescription name proxy = name `M.lookup` fieldValues proxy >>= \(x, _, _) -> x
+
+getDirectives :: GQLType a => FieldName -> f a -> Directives CONST
+getDirectives name proxy = maybe [] (\(_, x, _) -> x) (name `M.lookup` fieldValues proxy)
 
 buildField ::
   GQLType a =>
