@@ -317,15 +317,9 @@ derivingData ::
   f a ->
   TypeScope cat ->
   TypeUpdater
-derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
+derivingData proxy scope = updateLib (buildType content) updates proxy
   where
-    (datatypeContent, updates) =
-      deriveTypeContent
-        (hasNamespace (Proxy @a))
-        (Proxy @a)
-        (unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
-    baseName = __typeName (Proxy @a)
-    baseFingerprint = __typeFingerprint (Proxy @a)
+    (content, updates) = deriveTypeContent proxy scope
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
@@ -336,8 +330,7 @@ deriveArgumentFields ::
   ) =>
   f a ->
   (ArgumentsDefinition CONST, [TypeUpdater])
-deriveArgumentFields proxy =
-  withObject (deriveTypeContent (hasNamespace proxy) proxy (([], []), InputType, "", DataFingerprint "" []))
+deriveArgumentFields proxy = withObject (deriveTypeContent proxy InputType)
   where
     withObject (DataInputObject {inputObjectFields}, ts) = (fieldsToArguments inputObjectFields, ts)
     withObject _ =
@@ -367,8 +360,7 @@ deriveObjectFields ::
   (TypeRep OUT (Rep a), Generic a, GQLType a) =>
   f a ->
   (FieldsDefinition OUT CONST, [TypeUpdater])
-deriveObjectFields proxy =
-  withObject (deriveTypeContent (hasNamespace proxy) proxy (([], []), OutputType, "", DataFingerprint "" []))
+deriveObjectFields proxy = withObject (deriveTypeContent proxy OutputType)
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
     withObject _ = (empty, [introspectFailure (msg (__typeName proxy) <> " should have only one nonempty constructor")])
@@ -379,22 +371,21 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 -- Object Fields
 
 deriveTypeContent ::
-  forall proxy cat a.
-  (TypeRep cat (Rep a), Generic a) =>
-  Maybe TypeName ->
-  proxy a ->
-  ( ([TypeName], [TypeUpdater]),
-    TypeScope cat,
-    TypeName,
-    DataFingerprint
-  ) ->
+  forall f cat a.
+  (TypeRep cat (Rep a), Generic a, GQLType a) =>
+  f a ->
+  TypeScope cat ->
   (TypeContent TRUE cat CONST, [TypeUpdater])
-deriveTypeContent namespace _ (interfaces, scope, baseName, baseFingerprint) =
-  builder $ map (stripNamespace namespace) $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
+deriveTypeContent proxy scope =
+  builder $ map (stripNamespace (hasNamespace proxy)) $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
   where
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
+      where
+        interfaces = unzip (implements proxy)
     builder cons = genericUnion scope cons
       where
+        baseName = __typeName proxy
+        baseFingerprint = __typeFingerprint proxy
         genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
         genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
 
@@ -413,7 +404,7 @@ buildField proxy fieldContent fieldName =
       ..
     }
 
-buildType :: GQLType a => TypeContent TRUE cat CONST -> Proxy a -> TypeDefinition cat CONST
+buildType :: GQLType a => TypeContent TRUE cat CONST -> f a -> TypeDefinition cat CONST
 buildType typeContent proxy =
   TypeDefinition
     { typeName = __typeName proxy,
@@ -425,17 +416,17 @@ buildType typeContent proxy =
 
 updateLib ::
   GQLType a =>
-  (Proxy a -> TypeDefinition cat CONST) ->
+  (f a -> TypeDefinition cat CONST) ->
   [TypeUpdater] ->
-  Proxy a ->
+  f a ->
   TypeUpdater
 updateLib f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 updateLibOUT ::
   GQLType a =>
-  (Proxy a -> TypeDefinition OUT CONST) ->
+  (f a -> TypeDefinition OUT CONST) ->
   [TypeUpdater] ->
-  Proxy a ->
+  f a ->
   TypeUpdater
 updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 

@@ -121,19 +121,19 @@ class IsObject (KIND a) => GQLType a where
   type CUSTOM a :: Bool
   type CUSTOM a = FALSE
 
-  implements :: Proxy a -> [(TypeName, TypeUpdater)]
+  implements :: f a -> [(TypeName, TypeUpdater)]
   implements _ = []
 
-  description :: Proxy a -> Maybe Text
+  description :: f a -> Maybe Text
   description _ = Nothing
 
-  isObjectKind :: Proxy a -> Bool
+  isObjectKind :: f a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
   hasNamespace :: f a -> Maybe TypeName
   hasNamespace _ = Nothing
 
-  isEmptyType :: Proxy a -> Bool
+  isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
   metaFields ::
@@ -154,10 +154,10 @@ class IsObject (KIND a) => GQLType a where
     where
       getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 
-  __typeFingerprint :: Proxy a -> DataFingerprint
+  __typeFingerprint :: f a -> DataFingerprint
   default __typeFingerprint ::
     (Typeable a) =>
-    Proxy a ->
+    f a ->
     DataFingerprint
   __typeFingerprint _ = DataFingerprint "Typeable" $ map show $ conFingerprints (Proxy @a)
     where
