@@ -1,9 +1,11 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Declare.GQLType
@@ -42,14 +44,16 @@ import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition,
+    Description,
     FieldContent (..),
     FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     FieldsDefinition,
     IN,
     OUT,
     QUERY,
     TRUE,
+    Token,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -60,6 +64,7 @@ import Language.Haskell.TH
 import Prelude
   ( ($),
     (.),
+    concatMap,
     otherwise,
   )
 
@@ -93,7 +98,7 @@ deriveGQLType
             | otherwise = [|Nothing|]
           fieldDescriptionsFunc = [|value|]
             where
-              value = fmapFieldValues fieldDescription fieldDescription typeOriginal
+              value = fromList (desc typeOriginal)
           fieldDirectivesFunc = [|value|]
             where
               value = fmapFieldValues (Just . fieldDirectives) (Just . fieldDirectives) typeOriginal
@@ -126,7 +131,34 @@ interfacesFrom _ = []
 fmapFieldValues :: (FieldDefinition IN s -> Maybe a) -> (FieldDefinition OUT s -> Maybe a) -> Maybe (TypeDefinition c s) -> Map FieldName a
 fmapFieldValues f g = maybe (fromList []) (collectFieldValues f g)
 
-collectFieldValues :: (FieldDefinition IN s -> Maybe a) -> (FieldDefinition OUT s -> Maybe a) -> TypeDefinition c s -> Map FieldName a
+class Meta a where
+  desc :: a -> [(Token, Description)]
+
+instance (Meta a) => Meta (Maybe a) where
+  desc (Just x) = desc x
+  desc _ = []
+
+instance Meta (TypeDefinition c s) where
+  desc TypeDefinition {typeContent} = desc typeContent
+
+instance Meta (TypeContent a c s) where
+  desc DataObject {objectFields} = desc objectFields
+  desc DataInputObject {inputObjectFields} = desc inputObjectFields
+  desc DataInterface {interfaceFields} = desc interfaceFields
+  desc _ = []
+
+instance Meta (FieldsDefinition c s) where
+  desc = concatMap desc . elems
+
+instance Meta (FieldDefinition c s) where
+  desc FieldDefinition {fieldName, fieldDescription = Just x} = [(readName fieldName, x)]
+  desc _ = []
+
+collectFieldValues ::
+  (FieldDefinition IN s -> Maybe a) ->
+  (FieldDefinition OUT s -> Maybe a) ->
+  TypeDefinition c s ->
+  Map FieldName a
 collectFieldValues _ g TypeDefinition {typeContent = DataObject {objectFields}} = getFieldValues g objectFields
 collectFieldValues f _ TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = getFieldValues f inputObjectFields
 collectFieldValues _ g TypeDefinition {typeContent = DataInterface {interfaceFields}} = getFieldValues g interfaceFields
@@ -135,7 +167,7 @@ collectFieldValues _ _ _ = fromList []
 getFieldValues :: (FieldDefinition c s -> Maybe a) -> FieldsDefinition c s -> Map FieldName a
 getFieldValues f = fromList . notNulls . fmap (getFieldValue f) . elems
 
-notNulls :: [(FieldName, Maybe a)] -> [(FieldName, a)]
+notNulls :: [(k, Maybe a)] -> [(k, a)]
 notNulls [] = []
 notNulls ((_, Nothing) : xs) = notNulls xs
 notNulls ((name, Just x) : xs) = (name, x) : notNulls xs
