@@ -13,10 +13,10 @@ where
 
 --
 -- MORPHEUS
-
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad ((>>=)))
 import Data.Functor ((<$>), fmap)
+import Data.Map (Map)
 import Data.Map (fromList)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.TH
@@ -48,6 +48,9 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
+    FieldsDefinition,
+    IN,
+    OUT,
     QUERY,
     TypeContent (..),
     TypeDefinition (..),
@@ -80,7 +83,7 @@ deriveGQLType
             ('description, [|tDescription|]),
             ('implements, implementsFunc),
             ('hasNamespace, hasNamespaceFunc),
-            ('fieldValues, fieldValuesFunc)
+            ('fieldDescriptions, fieldDescriptionsFunc)
           ]
         where
           tDescription = typeOriginal >>= typeDescription
@@ -88,9 +91,9 @@ deriveGQLType
           hasNamespaceFunc
             | namespace = [|Just tName|]
             | otherwise = [|Nothing|]
-          fieldValuesFunc = [|value|]
+          fieldDescriptionsFunc = [|value|]
             where
-              value = fromList (maybe [] getTypeMeta typeOriginal)
+              value = fmapFieldValues fieldDescription fieldDescription typeOriginal
       --------------------------------
       typeArgs = tyConArgs tKind
       --------------------------------
@@ -110,39 +113,30 @@ interfacesFrom :: Maybe (TypeDefinition ANY s) -> [TypeName]
 interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
 interfacesFrom _ = []
 
-type Meta s =
-  ( Maybe Description,
-    Directives s,
-    Maybe (Value s),
-    Maybe (ArgumentsDefinition s)
-  )
+fmapFieldValues :: (FieldDefinition IN s -> Maybe a) -> (FieldDefinition OUT s -> Maybe a) -> Maybe (TypeDefinition c s) -> Map FieldName a
+fmapFieldValues f g = maybe (fromList []) (collectFieldValues f g)
 
-getTypeMeta :: TypeDefinition c s -> [(FieldName, Meta s)]
-getTypeMeta TypeDefinition {typeContent = DataObject {objectFields}} = getFieldMeta <$> elems objectFields
-getTypeMeta TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = getFieldMeta <$> elems inputObjectFields
-getTypeMeta TypeDefinition {typeContent = DataInterface {interfaceFields}} = getFieldMeta <$> elems interfaceFields
-getTypeMeta _ = []
+collectFieldValues :: (FieldDefinition IN s -> Maybe a) -> (FieldDefinition OUT s -> Maybe a) -> TypeDefinition c s -> Map FieldName a
+collectFieldValues _ g TypeDefinition {typeContent = DataObject {objectFields}} = getFieldValues g objectFields
+collectFieldValues f _ TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = getFieldValues f inputObjectFields
+collectFieldValues _ g TypeDefinition {typeContent = DataInterface {interfaceFields}} = getFieldValues g interfaceFields
+collectFieldValues _ _ _ = fromList []
 
-getFieldMeta :: FieldDefinition c s -> (FieldName, Meta s)
-getFieldMeta
-  FieldDefinition
-    { fieldDescription,
-      fieldDirectives,
-      fieldContent,
-      fieldName
-    } =
-    ( fieldName,
-      ( fieldDescription,
-        fieldDirectives,
-        fieldContent >>= getDefaultValue,
-        fieldContent >>= getArgsDef
-      )
-    )
+getFieldValues :: (FieldDefinition c s -> Maybe a) -> FieldsDefinition c s -> Map FieldName a
+getFieldValues f = fromList . notNulls . fmap (getFieldValue f) . elems
 
-getDefaultValue :: FieldContent a c s -> Maybe (Value s)
-getDefaultValue DefaultInputValue {defaultInputValue} = Just defaultInputValue
-getDefaultValue _ = Nothing
+notNulls :: [(FieldName, Maybe a)] -> [(FieldName, a)]
+notNulls [] = []
+notNulls ((_, Nothing) : xs) = notNulls xs
+notNulls ((name, Just x) : xs) = (name, x) : notNulls xs
 
-getArgsDef :: FieldContent a c s -> Maybe (ArgumentsDefinition s)
-getArgsDef (FieldArgs args) = Just args
-getArgsDef _ = Nothing
+getFieldValue :: (FieldDefinition c s -> Maybe a) -> FieldDefinition c s -> (FieldName, Maybe a)
+getFieldValue f field = (fieldName field, f field)
+
+-- getDefaultValue :: FieldContent a c s -> Maybe (Value s)
+-- getDefaultValue DefaultInputValue {defaultInputValue} = Just defaultInputValue
+-- getDefaultValue _ = Nothing
+
+-- getArgsDef :: FieldContent a c s -> Maybe (ArgumentsDefinition s)
+-- getArgsDef (FieldArgs args) = Just args
+-- getArgsDef _ = Nothing

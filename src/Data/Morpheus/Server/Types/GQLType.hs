@@ -150,19 +150,14 @@ class IsObject (KIND a) => GQLType a where
   fieldDescriptions :: f a -> Map FieldName Description
   fieldDescriptions _ = mempty
 
+  fieldDirectives :: f a -> Map FieldName [Directive CONST]
+  fieldDirectives _ = mempty
+
+  fieldContents :: f a -> Map FieldName (Maybe (Value CONST), Maybe (ArgumentsDefinition CONST))
+  fieldContents _ = mempty
+
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
-
-  fieldValues ::
-    f a ->
-    Map
-      FieldName
-      ( Maybe Description, --description
-        [Directive CONST], -- directives
-        Maybe (Value CONST), -- defaultValue,
-        Maybe (ArgumentsDefinition CONST)
-      )
-  fieldValues _ = mempty
 
   __typeName :: f a -> TypeName
   default __typeName ::
