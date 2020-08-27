@@ -14,9 +14,9 @@ module Data.Morpheus.Server.Types.GQLType
   )
 where
 
-import Data.Map (Map)
 -- MORPHEUS
 
+import Data.Map (Map)
 import Data.Morpheus.Internal.Utils (UpdateT)
 import Data.Morpheus.Kind
 import Data.Morpheus.Server.Types.Types
@@ -31,6 +31,7 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directive,
     FALSE,
+    FieldName,
     QUERY,
     Schema,
     TypeName (..),
@@ -137,13 +138,14 @@ class IsObject (KIND a) => GQLType a where
   isEmptyType _ = False
 
   fieldValues ::
-    Proxy a ->
-    [ ( Maybe Description, --description
+    f a ->
+    Map
+      FieldName
+      ( Maybe Description, --description
         [Directive CONST], -- directives
         Maybe (Value CONST) -- defaultValue
       )
-    ]
-  fieldValues _ = []
+  fieldValues _ = mempty
 
   __typeName :: f a -> TypeName
   default __typeName ::

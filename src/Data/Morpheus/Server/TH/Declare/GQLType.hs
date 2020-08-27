@@ -12,6 +12,7 @@ where
 
 --
 -- MORPHEUS
+import Data.Map (fromList)
 import Data.Maybe (maybe)
 import Data.Morpheus.Internal.TH
   ( apply,
@@ -40,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldContent (..),
     FieldDefinition (..),
+    FieldName,
     QUERY,
     TRUE,
     TypeContent (..),
@@ -80,7 +82,7 @@ deriveGQLType
             | otherwise = [|Nothing|]
           fieldValuesFunc = [|value|]
             where
-              value = maybe [] getTypeMeta typeOriginal
+              value = fromList (maybe [] getTypeMeta typeOriginal)
       --------------------------------
       typeArgs = tyConArgs tKind
       --------------------------------
@@ -111,19 +113,26 @@ type Meta s =
     Maybe (Value s)
   )
 
-getTypeMeta :: TypeDefinition c s -> [Meta s]
+getTypeMeta :: TypeDefinition c s -> [(FieldName, Meta s)]
 getTypeMeta TypeDefinition {typeContent = DataObject {objectFields}} = getFieldMeta <$> elems objectFields
 getTypeMeta TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = getFieldMeta <$> elems inputObjectFields
 getTypeMeta TypeDefinition {typeContent = DataInterface {interfaceFields}} = getFieldMeta <$> elems interfaceFields
 getTypeMeta _ = []
 
-getFieldMeta :: FieldDefinition c s -> Meta s
+getFieldMeta :: FieldDefinition c s -> (FieldName, Meta s)
 getFieldMeta
   FieldDefinition
     { fieldDescription,
       fieldDirectives,
-      fieldContent
-    } = (fieldDescription, fieldDirectives, fieldContent >>= getDefaultValue)
+      fieldContent,
+      fieldName
+    } =
+    ( fieldName,
+      ( fieldDescription,
+        fieldDirectives,
+        fieldContent >>= getDefaultValue
+      )
+    )
 
 getDefaultValue :: FieldContent a c s -> Maybe (Value s)
 getDefaultValue DefaultInputValue {defaultInputValue} = Just defaultInputValue
