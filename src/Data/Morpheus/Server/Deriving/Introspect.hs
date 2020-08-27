@@ -309,8 +309,7 @@ instance (GQL_TYPE a, TypeRep OUT (Rep a)) => IntrospectKind OUTPUT a where
 instance (GQL_TYPE a, TypeRep OUT (Rep a)) => IntrospectKind INTERFACE a where
   introspectKind _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
-      (fields, types) = deriveObjectFields baseName (Proxy @a)
-      baseName = __typeName (Proxy @a)
+      (fields, types) = deriveObjectFields (Proxy @a)
 
 derivingData ::
   forall a f cat.
@@ -359,21 +358,20 @@ deriveOperationType ::
   (TypeDefinition OBJECT CONST, [TypeUpdater])
 deriveOperationType name proxy = (mkOperationType fields name, types)
   where
-    (fields, types) = deriveObjectFields name proxy
+    (fields, types) = deriveObjectFields proxy
 
 mkOperationType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkOperationType fields typeName = mkType typeName (DataObject [] fields)
 
 deriveObjectFields ::
   (TypeRep OUT (Rep a), Generic a, GQLType a) =>
-  TypeName ->
   f a ->
   (FieldsDefinition OUT CONST, [TypeUpdater])
-deriveObjectFields name proxy =
+deriveObjectFields proxy =
   withObject (deriveTypeContent (hasNamespace proxy) proxy (([], []), OutputType, "", DataFingerprint "" []))
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
-    withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
+    withObject _ = (empty, [introspectFailure (msg (__typeName proxy) <> " should have only one nonempty constructor")])
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
