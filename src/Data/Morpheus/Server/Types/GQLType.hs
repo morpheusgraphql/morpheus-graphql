@@ -138,17 +138,17 @@ class IsObject (KIND a) => GQLType a where
   implements :: f a -> [(TypeName, TypeUpdater)]
   implements _ = []
 
-  description :: f a -> Maybe Text
-  description _ = mempty
-
   isObjectKind :: f a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
   hasNamespace :: f a -> Maybe TypeName
   hasNamespace _ = mempty
 
-  getFieldDescriptions :: f a -> Map FieldName Description
-  getFieldDescriptions _ = mempty
+  description :: f a -> Maybe Text
+  description _ = mempty
+
+  getDescriptions :: f a -> Map Text Description
+  getDescriptions _ = mempty
 
   getFieldDirectives :: f a -> Map FieldName (Directives CONST)
   getFieldDirectives _ = mempty

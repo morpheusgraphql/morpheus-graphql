@@ -423,7 +423,7 @@ updateFieldMeta proxy f =
     }
 
 getDescription :: GQLType a => FieldName -> f a -> Maybe Description
-getDescription name = (name `M.lookup`) . getFieldDescriptions
+getDescription (FieldName name) = (name `M.lookup`) . getDescriptions
 
 getDirectives :: GQLType a => FieldName -> f a -> Directives CONST
 getDirectives name = fromMaybe [] . (name `M.lookup`) . getFieldDirectives

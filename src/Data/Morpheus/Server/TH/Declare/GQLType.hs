@@ -81,7 +81,7 @@ deriveGQLType
             ('description, [|tDescription|]),
             ('implements, implementsFunc),
             ('hasNamespace, hasNamespaceFunc),
-            ('getFieldDescriptions, fieldDescriptionsFunc),
+            ('getDescriptions, fieldDescriptionsFunc),
             ('getFieldDirectives, fieldDirectivesFunc),
             ('getFieldContents, getFieldContentsFunc)
           ]
