@@ -57,6 +57,7 @@ import Data.Morpheus.Server.Deriving.Utils
     conNameProxy,
     isRecordProxy,
     selNameProxy,
+    withNamespace,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -324,7 +325,10 @@ derivingData ::
 derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
   where
     (datatypeContent, updates) =
-      deriveTypeContent (Proxy @a) (unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
+      deriveTypeContent
+        (withNamespace (Proxy @a))
+        (Proxy @a)
+        (unzip $ implements (Proxy @a), scope, baseName, baseFingerprint)
     baseName = __typeName (Proxy @a)
     baseFingerprint = __typeFingerprint (Proxy @a)
 
@@ -335,7 +339,7 @@ introspectInputObjectFields ::
   (TypeName, f a) ->
   (FieldsDefinition IN CONST, [TypeUpdater])
 introspectInputObjectFields (name, proxy) =
-  withObject (deriveTypeContent proxy (([], []), InputType, "", DataFingerprint "" []))
+  withObject (deriveTypeContent id proxy (([], []), InputType, "", DataFingerprint "" []))
   where
     withObject (DataInputObject {inputObjectFields}, ts) = (inputObjectFields, ts)
     withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
@@ -346,7 +350,7 @@ optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
   | otherwise = Just td
 
 deriveOperationType ::
-  (TypeRep OUT (Rep a), Generic a) =>
+  (TypeRep OUT (Rep a), Generic a, GQLType a) =>
   TypeName ->
   proxy a ->
   (TypeDefinition OBJECT CONST, [TypeUpdater])
@@ -358,12 +362,12 @@ mkOperationType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJE
 mkOperationType fields typeName = mkType typeName (DataObject [] fields)
 
 introspectObjectFields ::
-  (TypeRep OUT (Rep a), Generic a) =>
+  (TypeRep OUT (Rep a), Generic a, GQLType a) =>
   TypeName ->
   f a ->
   (FieldsDefinition OUT CONST, [TypeUpdater])
 introspectObjectFields name proxy =
-  withObject (deriveTypeContent proxy (([], []), OutputType, "", DataFingerprint "" []))
+  withObject (deriveTypeContent (withNamespace proxy) proxy (([], []), OutputType, "", DataFingerprint "" []))
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)
     withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
@@ -376,11 +380,16 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 deriveTypeContent ::
   forall proxy cat a.
   (TypeRep cat (Rep a), Generic a) =>
+  (FieldName -> FieldName) ->
   proxy a ->
-  (([TypeName], [TypeUpdater]), TypeScope cat, TypeName, DataFingerprint) ->
+  ( ([TypeName], [TypeUpdater]),
+    TypeScope cat,
+    TypeName,
+    DataFingerprint
+  ) ->
   (TypeContent TRUE cat CONST, [TypeUpdater])
-deriveTypeContent _ (interfaces, scope, baseName, baseFingerprint) =
-  builder $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
+deriveTypeContent namespace _ (interfaces, scope, baseName, baseFingerprint) =
+  builder $ map (stripNamespace namespace) $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
   where
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
     builder cons = genericUnion scope cons
@@ -430,6 +439,12 @@ updateLibOUT ::
 updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
+
+stripNamespace :: (FieldName -> FieldName) -> ConsRep c -> ConsRep c
+stripNamespace modifier ConsRep {consFields = fields, ..} = ConsRep {consFields = map stripFields fields, ..}
+  where
+    stripFields f = f {fieldData = stripFieldData (fieldData f)}
+    stripFieldData f = f {fieldName = modifier (fieldName f)}
 
 data ConsRep cat = ConsRep
   { consName :: TypeName,
