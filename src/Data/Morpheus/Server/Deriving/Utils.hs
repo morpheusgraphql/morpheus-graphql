@@ -2,13 +2,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils
-  ( EnumRep (..),
-    datatypeNameProxy,
+  ( datatypeNameProxy,
     conNameProxy,
     isRecordProxy,
     selNameProxy,
@@ -21,8 +19,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     convertToJSONName,
   )
-import Data.Proxy (Proxy (..))
-import Data.Semigroup ((<>))
 import Data.Text
   ( pack,
   )
@@ -32,19 +28,6 @@ import Prelude
     Bool,
     undefined,
   )
-
--- MORPHEUS
-class EnumRep (f :: * -> *) where
-  enumTags :: Proxy f -> [TypeName]
-
-instance EnumRep f => EnumRep (M1 D c f) where
-  enumTags _ = enumTags (Proxy @f)
-
-instance (Constructor c) => EnumRep (M1 C c U1) where
-  enumTags _ = [conNameProxy (Proxy @c)]
-
-instance (EnumRep a, EnumRep b) => EnumRep (a :+: b) where
-  enumTags _ = enumTags (Proxy @a) <> enumTags (Proxy @b)
 
 datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
 datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))

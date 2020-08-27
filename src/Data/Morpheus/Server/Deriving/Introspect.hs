@@ -61,8 +61,7 @@ import Data.Morpheus.Kind
     SCALAR,
   )
 import Data.Morpheus.Server.Deriving.Utils
-  ( EnumRep (..),
-    conNameProxy,
+  ( conNameProxy,
     isRecordProxy,
     selNameProxy,
   )
@@ -309,15 +308,8 @@ instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
       scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
-instance (GQL_TYPE a, EnumRep (Rep a)) => IntrospectKind ENUM a where
-  introspectKind _ = updateLib enumType [] (Proxy @a)
-    where
-      enumType :: Proxy a -> TypeDefinition LEAF CONST
-      enumType =
-        buildType
-          $ updateContent (Proxy @a)
-          $ mkEnumContent
-          $ enumTags (Proxy @(Rep a))
+instance (GQL_TYPE a, TypeRep IN (Rep a)) => IntrospectKind ENUM a where
+  introspectKind _ = derivingData (Proxy @a) InputType
 
 instance (GQL_TYPE a, TypeRep IN (Rep a)) => IntrospectKind INPUT a where
   introspectKind _ = derivingData (Proxy @a) InputType
