@@ -139,13 +139,16 @@ class IsObject (KIND a) => GQLType a where
   implements _ = []
 
   description :: f a -> Maybe Text
-  description _ = Nothing
+  description _ = mempty
 
   isObjectKind :: f a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
   hasNamespace :: f a -> Maybe TypeName
-  hasNamespace _ = Nothing
+  hasNamespace _ = mempty
+
+  fieldDescriptions :: f a -> Map FieldName Description
+  fieldDescriptions _ = mempty
 
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
