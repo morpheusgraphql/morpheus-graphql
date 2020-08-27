@@ -16,8 +16,7 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad ((>>=)))
 import Data.Functor ((<$>), fmap)
-import Data.Map (Map)
-import Data.Map (fromList)
+import Data.Map (Map, fromList)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.TH
   ( apply,
@@ -43,8 +42,6 @@ import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition,
-    Description,
-    Directives,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
@@ -52,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     OUT,
     QUERY,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -83,7 +81,9 @@ deriveGQLType
             ('description, [|tDescription|]),
             ('implements, implementsFunc),
             ('hasNamespace, hasNamespaceFunc),
-            ('getFieldDescriptions, fieldDescriptionsFunc)
+            ('getFieldDescriptions, fieldDescriptionsFunc),
+            ('getFieldDirectives, fieldDirectivesFunc),
+            ('getFieldContents, getFieldContentsFunc)
           ]
         where
           tDescription = typeOriginal >>= typeDescription
@@ -94,6 +94,16 @@ deriveGQLType
           fieldDescriptionsFunc = [|value|]
             where
               value = fmapFieldValues fieldDescription fieldDescription typeOriginal
+          fieldDirectivesFunc = [|value|]
+            where
+              value = fmapFieldValues (Just . fieldDirectives) (Just . fieldDirectives) typeOriginal
+          getFieldContentsFunc = [|value|]
+            where
+              value =
+                fmapFieldValues
+                  (fmap getDefaultValue . fieldContent)
+                  (fmap getDefaultValue . fieldContent)
+                  typeOriginal
       --------------------------------
       typeArgs = tyConArgs tKind
       --------------------------------
@@ -133,10 +143,6 @@ notNulls ((name, Just x) : xs) = (name, x) : notNulls xs
 getFieldValue :: (FieldDefinition c s -> Maybe a) -> FieldDefinition c s -> (FieldName, Maybe a)
 getFieldValue f field = (fieldName field, f field)
 
--- getDefaultValue :: FieldContent a c s -> Maybe (Value s)
--- getDefaultValue DefaultInputValue {defaultInputValue} = Just defaultInputValue
--- getDefaultValue _ = Nothing
-
--- getArgsDef :: FieldContent a c s -> Maybe (ArgumentsDefinition s)
--- getArgsDef (FieldArgs args) = Just args
--- getArgsDef _ = Nothing
+getDefaultValue :: FieldContent TRUE c s -> (Maybe (Value s), Maybe (ArgumentsDefinition s))
+getDefaultValue DefaultInputValue {defaultInputValue} = (Just defaultInputValue, Nothing)
+getDefaultValue (FieldArgs args) = (Nothing, Just args)
