@@ -268,12 +268,11 @@ instance
       fieldArgs =
         fieldsToArguments
           $ fst
-          $ introspectInputObjectFields (__typeName (Proxy @b), Proxy @a)
+          $ deriveArgumentFields (Proxy @b) (Proxy @a)
   introspect _ = concatUpdates (introspect (ProxyRep :: ProxyRep OUT b) : inputs)
     where
-      name = "Arguments for " <> __typeName (Proxy @b)
       inputs :: [TypeUpdater]
-      inputs = snd $ introspectInputObjectFields (name, Proxy @a)
+      inputs = snd $ deriveArgumentFields (Proxy @b) (Proxy @a)
 
 instance (Introspect OUT a) => Introspect OUT (SubscriptionField a) where
   isObject _ = isObject (ProxyRep :: ProxyRep OUT a)
@@ -313,7 +312,7 @@ instance (GQL_TYPE a, TypeRep OUT (Rep a)) => IntrospectKind OUTPUT a where
 instance (GQL_TYPE a, TypeRep OUT (Rep a)) => IntrospectKind INTERFACE a where
   introspectKind _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
-      (fields, types) = introspectObjectFields baseName (Proxy @a)
+      (fields, types) = deriveObjectFields baseName (Proxy @a)
       baseName = __typeName (Proxy @a)
 
 derivingData ::
@@ -334,15 +333,20 @@ derivingData _ scope = updateLib (buildType datatypeContent) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-introspectInputObjectFields ::
-  (TypeRep IN (Rep a), Generic a) =>
-  (TypeName, f a) ->
+deriveArgumentFields ::
+  (TypeRep IN (Rep arg), Generic arg, GQLType typ) =>
+  f typ ->
+  f arg ->
   (FieldsDefinition IN CONST, [TypeUpdater])
-introspectInputObjectFields (name, proxy) =
+deriveArgumentFields typeProxy proxy =
   withObject (deriveTypeContent id proxy (([], []), InputType, "", DataFingerprint "" []))
   where
     withObject (DataInputObject {inputObjectFields}, ts) = (inputObjectFields, ts)
-    withObject _ = (empty, [introspectFailure (msg name <> " should have only one nonempty constructor")])
+    withObject _ =
+      ( empty,
+        [ introspectFailure ("Arguments for " <> msg (__typeName typeProxy) <> " should have only one nonempty constructor")
+        ]
+      )
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
@@ -356,17 +360,17 @@ deriveOperationType ::
   (TypeDefinition OBJECT CONST, [TypeUpdater])
 deriveOperationType name proxy = (mkOperationType fields name, types)
   where
-    (fields, types) = introspectObjectFields name proxy
+    (fields, types) = deriveObjectFields name proxy
 
 mkOperationType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkOperationType fields typeName = mkType typeName (DataObject [] fields)
 
-introspectObjectFields ::
+deriveObjectFields ::
   (TypeRep OUT (Rep a), Generic a, GQLType a) =>
   TypeName ->
   f a ->
   (FieldsDefinition OUT CONST, [TypeUpdater])
-introspectObjectFields name proxy =
+deriveObjectFields name proxy =
   withObject (deriveTypeContent (withNamespace proxy) proxy (([], []), OutputType, "", DataFingerprint "" []))
   where
     withObject (DataObject {objectFields}, ts) = (objectFields, ts)

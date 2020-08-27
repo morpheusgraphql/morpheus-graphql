@@ -145,10 +145,10 @@ class IsObject (KIND a) => GQLType a where
     ]
   metaFields _ = []
 
-  __typeName :: Proxy a -> TypeName
+  __typeName :: f a -> TypeName
   default __typeName ::
     (Typeable a) =>
-    Proxy a ->
+    f a ->
     TypeName
   __typeName _ = TypeName $ intercalate "_" (getName $ Proxy @a)
     where
