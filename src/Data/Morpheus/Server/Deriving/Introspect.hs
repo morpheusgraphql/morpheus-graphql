@@ -214,9 +214,6 @@ instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspe
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class Introspect (cat :: TypeCategory) a where
   introspect :: proxy cat a -> TypeUpdater
-  isObject :: proxy cat a -> Bool
-  default isObject :: GQLType a => proxy cat a -> Bool
-  isObject _ = isObjectKind (Proxy @a)
   field :: proxy cat a -> FieldName -> FieldDefinition cat CONST
   -----------------------------------------------
   default field ::
@@ -228,31 +225,26 @@ class Introspect (cat :: TypeCategory) a where
 
 -- Maybe
 instance Introspect cat a => Introspect cat (Maybe a) where
-  isObject _ = False
   field _ = toNullable . field (ProxyRep :: ProxyRep cat a)
   introspect _ = introspect (ProxyRep :: ProxyRep cat a)
 
 -- List
 instance Introspect cat a => Introspect cat [a] where
-  isObject _ = False
   field _ = toListField . field (ProxyRep :: ProxyRep cat a)
   introspect _ = introspect (ProxyRep :: ProxyRep cat a)
 
 -- Tuple
 instance Introspect cat (Pair k v) => Introspect cat (k, v) where
-  isObject _ = True
   field _ = field (ProxyRep :: ProxyRep cat (Pair k v))
   introspect _ = introspect (ProxyRep :: ProxyRep cat (Pair k v))
 
 -- Set
 instance Introspect cat [a] => Introspect cat (Set a) where
-  isObject _ = False
   field _ = field (ProxyRep :: ProxyRep cat [a])
   introspect _ = introspect (ProxyRep :: ProxyRep cat [a])
 
 -- Map
 instance Introspect cat (MapKind k v Maybe) => Introspect cat (Map k v) where
-  isObject _ = True
   field _ = field (ProxyRep :: ProxyRep cat (MapKind k v Maybe))
   introspect _ = introspect (ProxyRep :: ProxyRep cat (MapKind k v Maybe))
 
@@ -266,7 +258,6 @@ instance
   ) =>
   Introspect OUT (a -> m b)
   where
-  isObject _ = False
   field _ name = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
     where
       fieldObj = field (ProxyRep :: ProxyRep OUT b) name
@@ -277,13 +268,11 @@ instance
       inputs = snd $ deriveArgumentFields (Proxy @a)
 
 instance (Introspect OUT a) => Introspect OUT (SubscriptionField a) where
-  isObject _ = isObject (ProxyRep :: ProxyRep OUT a)
   field _ = field (ProxyRep :: ProxyRep OUT a)
   introspect _ = introspect (ProxyRep :: ProxyRep OUT a)
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (GQLType b, Introspect cat b) => Introspect cat (Resolver fo e m b) where
-  isObject _ = False
   field _ = field (ProxyRep :: ProxyRep cat b)
   introspect _ = introspect (ProxyRep :: ProxyRep cat b)
 
@@ -713,13 +702,13 @@ class ConRep cat f where
 instance (ConRep cat a, ConRep cat b) => ConRep cat (a :*: b) where
   conRep _ = conRep (ProxyRep :: ProxyRep cat a) <> conRep (ProxyRep :: ProxyRep cat b)
 
-instance (Selector s, Introspect cat a) => ConRep cat (M1 S s (Rec0 a)) where
+instance (Selector s, GQLType a, Introspect cat a) => ConRep cat (M1 S s (Rec0 a)) where
   conRep _ =
     [ FieldRep
         { fieldTypeName = typeConName $ fieldType fieldData,
           fieldData = fieldData,
           fieldTypeUpdater = introspect (ProxyRep :: ProxyRep cat a),
-          fieldIsObject = isObject (ProxyRep :: ProxyRep cat a)
+          fieldIsObject = isObjectKind (Proxy @a)
         }
     ]
     where
