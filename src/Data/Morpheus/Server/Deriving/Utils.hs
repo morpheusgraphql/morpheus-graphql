@@ -4,6 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils
   ( EnumRep (..),
@@ -21,10 +22,16 @@ import Data.Morpheus.Types.Internal.AST
     convertToJSONName,
   )
 import Data.Proxy (Proxy (..))
+import Data.Semigroup ((<>))
 import Data.Text
   ( pack,
   )
 import GHC.Generics
+import Prelude
+  ( ($),
+    Bool,
+    undefined,
+  )
 
 -- MORPHEUS
 class EnumRep (f :: * -> *) where
@@ -37,7 +44,7 @@ instance (Constructor c) => EnumRep (M1 C c U1) where
   enumTags _ = [conNameProxy (Proxy @c)]
 
 instance (EnumRep a, EnumRep b) => EnumRep (a :+: b) where
-  enumTags _ = enumTags (Proxy @a) ++ enumTags (Proxy @b)
+  enumTags _ = enumTags (Proxy @a) <> enumTags (Proxy @b)
 
 datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
 datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))

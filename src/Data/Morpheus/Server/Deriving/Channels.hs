@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Channels
   ( getChannels,
@@ -19,7 +20,9 @@ module Data.Morpheus.Server.Deriving.Channels
   )
 where
 
--- MORPHEUS
+import Control.Applicative (pure)
+import Control.Monad ((>>=))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
@@ -28,7 +31,6 @@ import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     InternalError,
@@ -49,6 +51,12 @@ import Data.Text
   ( pack,
   )
 import GHC.Generics
+import Prelude
+  ( ($),
+    (.),
+    const,
+    lookup,
+  )
 
 type ChannelCon e m a = ExploreChannels (a (Resolver SUBSCRIPTION e m)) e
 
