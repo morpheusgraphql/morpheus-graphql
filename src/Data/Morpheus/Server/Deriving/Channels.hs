@@ -32,7 +32,7 @@ import Data.Morpheus.Server.Deriving.Decode
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
-      ( hasNamespace
+      ( getNamespace
       ),
   )
 import Data.Morpheus.Types.Internal.AST
@@ -83,7 +83,7 @@ getChannels value sel =
   where
     stripChannel (x, y) =
       ( stripNamespace
-          (hasNamespace (Proxy @(subs (Resolver SUBSCRIPTION e m))))
+          (getNamespace (Proxy @(subs (Resolver SUBSCRIPTION e m))))
           x,
         y
       )

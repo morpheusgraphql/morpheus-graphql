@@ -390,7 +390,7 @@ deriveTypeContent ::
 deriveTypeContent proxy scope =
   updateDef proxy
     $ builder
-    $ map (stripNamespace (hasNamespace (Proxy @a)))
+    $ map (stripNamespace (getNamespace (Proxy @a)))
     $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
   where
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
@@ -423,29 +423,29 @@ instance GetFieldContent cat => UpdateDef (FieldDefinition cat CONST) where
   updateDef proxy FieldDefinition {fieldName = name, fieldType, fieldContent} =
     FieldDefinition
       { fieldName,
-        fieldDescription = getDescription (readName fieldName) proxy,
-        fieldDirectives = getDirectives (readName fieldName) proxy,
+        fieldDescription = lookupDescription (readName fieldName) proxy,
+        fieldDirectives = lookupDirectives (readName fieldName) proxy,
         fieldContent = getFieldContent fieldName fieldContent proxy,
         ..
       }
     where
-      fieldName = stripNamespace (hasNamespace proxy) name
+      fieldName = stripNamespace (getNamespace proxy) name
 
 instance UpdateDef (DataEnumValue CONST) where
   updateDef proxy DataEnumValue {enumName = name} =
     DataEnumValue
       { enumName,
-        enumDescription = getDescription (readTypeName enumName) proxy,
-        enumDirectives = getDirectives (readTypeName enumName) proxy
+        enumDescription = lookupDescription (readTypeName enumName) proxy,
+        enumDirectives = lookupDirectives (readTypeName enumName) proxy
       }
     where
-      enumName = stripNamespace (hasNamespace proxy) name
+      enumName = stripNamespace (getNamespace proxy) name
 
-getDescription :: GQLType a => Token -> f a -> Maybe Description
-getDescription name = (name `M.lookup`) . getDescriptions
+lookupDescription :: GQLType a => Token -> f a -> Maybe Description
+lookupDescription name = (name `M.lookup`) . getDescriptions
 
-getDirectives :: GQLType a => Token -> f a -> Directives CONST
-getDirectives name = fromMaybe [] . (name `M.lookup`) . getFieldDirectives
+lookupDirectives :: GQLType a => Token -> f a -> Directives CONST
+lookupDirectives name = fromMaybe [] . (name `M.lookup`) . getFieldDirectives
 
 class GetFieldContent c where
   getFieldContent :: GQLType a => FieldName -> Maybe (FieldContent TRUE c CONST) -> f a -> Maybe (FieldContent TRUE c CONST)

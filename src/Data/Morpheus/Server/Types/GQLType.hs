@@ -141,8 +141,8 @@ class IsObject (KIND a) => GQLType a where
   isObjectKind :: f a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
-  hasNamespace :: f a -> Maybe TypeName
-  hasNamespace _ = mempty
+  getNamespace :: f a -> Maybe TypeName
+  getNamespace _ = mempty
 
   description :: f a -> Maybe Text
   description _ = mempty

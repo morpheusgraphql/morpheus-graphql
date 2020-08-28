@@ -21,8 +21,12 @@
   mergedApi = runApp (deriveApp root <> deriveApp root2)
   ```
 
+- you can use `GQLType.getNamespace` to strip Namespaces
+- you can use `GQLType.getDescriptions` to document field or enum Values
+
 ### Breaking Changes
 
+- Argument types must have `GQLType` instances
 - in `Data.Morpheus.Server`:
 
   - removed `subscriptionApp`

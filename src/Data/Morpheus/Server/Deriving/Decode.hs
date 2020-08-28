@@ -54,7 +54,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
         __typeName,
-        hasNamespace
+        getNamespace
       ),
   )
 import Data.Morpheus.Types.GQLScalar
@@ -138,7 +138,7 @@ instance
   ) =>
   DecodeType a
   where
-  decodeType = fmap to . decodeRep . (hasNamespace (Proxy @a),,Cont D_CONS "")
+  decodeType = fmap to . decodeRep . (getNamespace (Proxy @a),,Cont D_CONS "")
 
 -- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }

@@ -234,8 +234,8 @@ exploreResolvers ::
   ResolverState (ResModel o e m)
 exploreResolvers =
   pure
-    . convertNode (hasNamespace (Proxy @a))
-    . stripNamespace (hasNamespace (Proxy @a))
+    . convertNode (getNamespace (Proxy @a))
+    . stripNamespace (getNamespace (Proxy @a))
     . typeResolvers (ResContext :: ResContext OUTPUT o e m value)
     . from
 
