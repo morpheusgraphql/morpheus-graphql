@@ -145,6 +145,7 @@ import Prelude
     Ord,
     Show (..),
     fst,
+    map,
     null,
     otherwise,
     snd,
@@ -389,6 +390,7 @@ deriveTypeContent ::
 deriveTypeContent proxy scope =
   updateDef proxy
     $ builder
+    $ map (stripNamespace (hasNamespace (Proxy @a)))
     $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
   where
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
@@ -509,12 +511,18 @@ data ConsRep cat = ConsRep
     consFields :: [FieldRep cat]
   }
 
+instance Namespace (ConsRep c) where
+  stripNamespace p ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace p) fields, ..}
+
 data FieldRep cat = FieldRep
   { fieldTypeName :: TypeName,
     fieldData :: FieldDefinition cat CONST,
     fieldTypeUpdater :: TypeUpdater,
     fieldIsObject :: Bool
   }
+
+instance Namespace (FieldRep c) where
+  stripNamespace p FieldRep {fieldData = fields, ..} = FieldRep {fieldData = stripNamespace p fields, ..}
 
 data ResRep cat = ResRep
   { enumCons :: [TypeName],
