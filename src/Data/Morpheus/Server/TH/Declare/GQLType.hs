@@ -92,7 +92,7 @@ deriveGQLType
             ('implements, implementsFunc),
             ('getNamespace, getNamespaceFunc),
             ('getDescriptions, fieldDescriptionsFunc),
-            ('getFieldDirectives, fieldDirectivesFunc),
+            ('getDirectives, fieldDirectivesFunc),
             ('getFieldContents, getFieldContentsFunc)
           ]
         where

@@ -445,7 +445,7 @@ lookupDescription :: GQLType a => Token -> f a -> Maybe Description
 lookupDescription name = (name `M.lookup`) . getDescriptions
 
 lookupDirectives :: GQLType a => Token -> f a -> Directives CONST
-lookupDirectives name = fromMaybe [] . (name `M.lookup`) . getFieldDirectives
+lookupDirectives name = fromMaybe [] . (name `M.lookup`) . getDirectives
 
 class GetFieldContent c where
   getFieldContent :: GQLType a => FieldName -> Maybe (FieldContent TRUE c CONST) -> f a -> Maybe (FieldContent TRUE c CONST)
