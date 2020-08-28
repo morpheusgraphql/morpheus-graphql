@@ -84,6 +84,7 @@ import Prelude
     (.),
     Eq (..),
     Ord,
+    map,
     otherwise,
   )
 
@@ -221,8 +222,8 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
           ctx = cont {contKind = kind (l1t <> r1t)}
       __decode (ns, Enum name, cxt) =
         decideUnion
-          (tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
-          (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
+          (map (stripNamespace ns) $ tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
+          (map (stripNamespace ns) $ tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
           name
           (ns, Enum name, cxt)
       __decode _ = failure ("lists and scalars are not allowed in Union" :: InternalError)
