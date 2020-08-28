@@ -142,10 +142,10 @@ class IsObject (KIND a) => GQLType a where
   isObjectKind _ = isObject (Proxy @(KIND a))
 
   getNamespace :: f a -> Maybe TypeName
-  getNamespace _ = mempty
+  getNamespace _ = Nothing
 
   description :: f a -> Maybe Text
-  description _ = mempty
+  description _ = Nothing
 
   getDescriptions :: f a -> Map Text Description
   getDescriptions _ = mempty
