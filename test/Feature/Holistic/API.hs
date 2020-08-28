@@ -93,7 +93,11 @@ root =
               pure
                 Person
                   { personName = pure (Just "test Person Name")
-                  }
+                  },
+            queryTestEnum =
+              \QueryTestEnumArgs
+                 { queryTestEnumArgsEnum
+                 } -> pure queryTestEnumArgsEnum
           },
       mutationResolver =
         Mutation

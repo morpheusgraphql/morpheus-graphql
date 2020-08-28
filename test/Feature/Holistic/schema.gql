@@ -15,6 +15,18 @@ enum TestEnum {
   EnumC @deprecated
 }
 
+enum CollidingEnum {
+  """
+  enumValue Description: EnumA
+  """
+  EnumA
+  EnumB @deprecated(reason: "test deprecation enumValue")
+  """
+  enumValue Description: EnumC
+  """
+  EnumC @deprecated
+}
+
 input NestedInputObject {
   fieldTestID: ID!
 }
@@ -97,6 +109,7 @@ type Query {
   user: User!
   testUnion: TestUnion
   person: Person!
+  testEnum(enum: CollidingEnum!): CollidingEnum!
 }
 
 type Mutation {
