@@ -196,15 +196,16 @@ instance EncodeConstraint o e m a => EncodeKind INTERFACE a o e m where
 
 convertNode ::
   (Monad m, LiftOperation o) =>
+  Maybe TypeName ->
   ResNode o e m ->
   ResModel o e m
-convertNode ResNode {resDatatypeName, resKind = REP_OBJECT, resFields} =
+convertNode _ ResNode {resDatatypeName, resKind = REP_OBJECT, resFields} =
   mkObject resDatatypeName (fmap toFieldRes resFields)
-convertNode ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord} =
+convertNode namespace ResNode {resDatatypeName, resKind = REP_UNION, resFields, resTypeName, isResRecord} =
   encodeUnion resFields
   where
     -- ENUM
-    encodeUnion [] = ResEnum resDatatypeName resTypeName
+    encodeUnion [] = ResEnum resDatatypeName (stripNamespace namespace resTypeName)
     -- Type References --------------------------------------------------------------
     encodeUnion [FieldNode {fieldTypeName, fieldResolver, isFieldObject}]
       | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName =
@@ -233,7 +234,7 @@ exploreResolvers ::
   ResolverState (ResModel o e m)
 exploreResolvers =
   pure
-    . convertNode
+    . convertNode (hasNamespace (Proxy @a))
     . stripNamespace (hasNamespace (Proxy @a))
     . typeResolvers (ResContext :: ResContext OUTPUT o e m value)
     . from
