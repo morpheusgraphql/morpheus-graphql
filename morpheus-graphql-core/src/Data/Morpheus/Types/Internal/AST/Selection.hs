@@ -145,8 +145,8 @@ instance
   where
   merge path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> merge path s1 s2
   merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
-  merge path oldC currC
-    | oldC == currC = pure oldC
+  merge path oldC currentC
+    | oldC == currentC = pure oldC
     | otherwise =
       failure
         [ ValidationError
@@ -233,8 +233,8 @@ instance KeyOf FieldName (Selection s) where
       } = fromMaybe selectionName selectionAlias
   keyOf _ = ""
 
-useDufferentAliases :: Message
-useDufferentAliases =
+useDifferentAliases :: Message
+useDifferentAliases =
   "Use different aliases on the "
     <> "fields to fetch both if this was intentional."
 
@@ -275,11 +275,11 @@ instance
                 { validationMessage =
                     "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
                       <> " are different fields. "
-                      <> useDufferentAliases,
+                      <> useDifferentAliases,
                   validationLocations = [pos1, pos2]
                 }
         ---------------------
-        -- allias name is relevant only if they collide by allias like:
+        -- alias name is relevant only if they collide by allies like:
         --   { user1: user
         --     user1: user
         --   }
@@ -292,14 +292,14 @@ instance
           | otherwise =
             failure $ mergeConflict currentPath $
               ValidationError
-                { validationMessage = "they have differing arguments. " <> useDufferentAliases,
+                { validationMessage = "they have differing arguments. " <> useDifferentAliases,
                   validationLocations = [pos1, pos2]
                 }
   merge path _ _ =
     failure $
       mergeConflict
         path
-        ("INTERNAL: can't merge. " <> msgValidation useDufferentAliases :: ValidationError)
+        ("INTERNAL: can't merge. " <> msgValidation useDifferentAliases :: ValidationError)
 
 deriving instance Show (Selection a)
 

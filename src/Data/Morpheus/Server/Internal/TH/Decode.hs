@@ -89,9 +89,9 @@ withInputUnion decoder unions =
     unions
     >>= providesValueFor . entryValue
   where
-    providesValueFor (Enum key) = selectOr notfound onFound (toFieldName key) unions
+    providesValueFor (Enum key) = selectOr notFound onFound (toFieldName key) unions
       where
-        notfound = withInputObject (decoder key unions) (Object empty)
+        notFound = withInputObject (decoder key unions) (Object empty)
         onFound = withInputObject (decoder key unions) . entryValue
     providesValueFor _ = failure ("__typename must be Enum" :: InternalError)
 

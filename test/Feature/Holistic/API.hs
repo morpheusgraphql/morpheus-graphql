@@ -9,14 +9,19 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Feature.Holistic.API
   ( api,
   )
 where
 
+import Control.Monad.Fail (fail)
 import Data.Morpheus (deriveApp, runApp)
-import Data.Morpheus.Document (importGQLDocument)
+import Data.Morpheus.Document
+  ( importGQLDocument,
+    importGQLDocumentWithNamespace,
+  )
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
   ( Event,
@@ -34,6 +39,22 @@ import Data.Morpheus.Types
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Prelude
+  ( ($),
+    (*),
+    (+),
+    (.),
+    (<$>),
+    Applicative (..),
+    Either (..),
+    Eq (..),
+    IO,
+    Int,
+    Maybe (..),
+    Show (..),
+    String,
+    const,
+  )
 
 data TestScalar
   = TestScalar
@@ -54,7 +75,7 @@ data Channel
 
 type EVENT = Event Channel ()
 
-importGQLDocument "test/Feature/Holistic/schema.gql"
+importGQLDocumentWithNamespace "test/Feature/Holistic/schema.gql"
 
 importGQLDocument "test/Feature/Holistic/schema-ext.gql"
 
@@ -66,36 +87,51 @@ root =
   RootResolver
     { queryResolver =
         Query
-          { user,
-            testUnion = Just . TestUnionUser <$> user,
-            person = pure Person {name = pure (Just "test Person Name")}
+          { queryUser,
+            queryTestUnion = Just . TestUnionUser <$> queryUser,
+            queryPerson =
+              pure
+                Person
+                  { personName = pure (Just "test Person Name")
+                  },
+            queryTestEnum =
+              \QueryTestEnumArgs
+                 { queryTestEnumArgsEnum
+                 } ->
+                  pure
+                    [ queryTestEnumArgsEnum,
+                      CollidingEnumEnumA
+                    ]
           },
-      mutationResolver = Mutation {createUser = const user},
+      mutationResolver =
+        Mutation
+          { mutationCreateUser = const queryUser
+          },
       subscriptionResolver =
         Subscription
-          { newUser = subscribe Channel (pure $ const user),
-            newAddress = subscribe Channel (pure resolveAddress)
+          { subscriptionNewUser = subscribe Channel (pure $ const queryUser),
+            subscriptionNewAddress = subscribe Channel (pure resolveAddress)
           }
     }
   where
-    user :: Applicative m => m (User m)
-    user =
+    queryUser :: Applicative m => m (User m)
+    queryUser =
       pure
         User
-          { name = pure "testName",
-            email = pure "",
-            address = resolveAddress,
-            office = resolveAddress,
-            friend = pure Nothing
+          { userName = pure "testName",
+            userEmail = pure "",
+            userAddress = resolveAddress,
+            userOffice = resolveAddress,
+            userFriend = pure Nothing
           }
     -----------------------------------------------------
     resolveAddress :: Applicative m => a -> m (Address m)
     resolveAddress _ =
       pure
         Address
-          { city = pure "",
-            houseNumber = pure 0,
-            street = const $ pure Nothing
+          { addressCity = pure "",
+            addressHouseNumber = pure 0,
+            addressStreet = const $ pure Nothing
           }
 
 rootExt :: RootResolver IO EVENT ExtQuery Undefined Undefined

@@ -8,6 +8,7 @@ module Data.Morpheus.Server.TH.Declare.Type
   )
 where
 
+import Control.Monad.Reader (asks)
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
@@ -16,16 +17,20 @@ import Data.Morpheus.Internal.TH
     toName,
     tyConArgs,
   )
-import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Types
+  ( ServerDec,
+    ServerDecContext (..),
+    ServerTypeDefinition (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     TRUE,
     TypeKind (..),
-    TypeName,
+    TypeName (..),
     isOutput,
     isOutputObject,
     isSubscription,
@@ -36,22 +41,26 @@ import Data.Morpheus.Types.Internal.Resolving
 import GHC.Generics (Generic)
 import Language.Haskell.TH
 
-declareType :: Bool -> ServerTypeDefinition cat s -> [Dec]
-declareType _ ServerTypeDefinition {tKind = KindScalar} = []
-declareType namespace ServerTypeDefinition {tName, tCons, tKind, tNamespace} =
-  [ DataD
-      []
-      (mkNamespace tNamespace tName)
-      tVars
-      Nothing
-      cons
-      (derive tKind)
-  ]
-  where
-    tVars = declareTyVar (tyConArgs tKind)
-      where
-        declareTyVar = map (PlainTV . toName)
-    cons = declareCons namespace tKind (tNamespace, tName) tCons
+declareType :: ServerTypeDefinition cat s -> ServerDec [Dec]
+declareType ServerTypeDefinition {tKind = KindScalar} = pure []
+declareType
+  ServerTypeDefinition
+    { tName,
+      tCons,
+      tKind
+    } =
+    do
+      cons <- declareCons tKind tName tCons
+      let vars = map (PlainTV . toName) (tyConArgs tKind)
+      pure
+        [ DataD
+            []
+            (toName tName)
+            vars
+            Nothing
+            cons
+            (derive tKind)
+        ]
 
 derive :: TypeKind -> [DerivClause]
 derive tKind = [deriveClasses (''Generic : derivingList)]
@@ -63,33 +72,38 @@ derive tKind = [deriveClasses (''Generic : derivingList)]
 deriveClasses :: [Name] -> DerivClause
 deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 
-mkNamespace :: [FieldName] -> TypeName -> Name
-mkNamespace tNamespace = toName . nameSpaceType tNamespace
-
 declareCons ::
-  Bool ->
   TypeKind ->
-  ([FieldName], TypeName) ->
+  TypeName ->
   [ConsD cat s] ->
-  [Con]
-declareCons namespace tKind (tNamespace, tName) = map consR
+  ServerDec [Con]
+declareCons tKind tName = traverse consR
   where
     consR ConsD {cName, cFields} =
       RecC
-        (mkNamespace tNamespace cName)
-        (map (declareField namespace tKind tName) cFields)
+        <$> consName tKind tName cName
+        <*> traverse (declareField tKind tName) cFields
+
+consName :: TypeKind -> TypeName -> TypeName -> ServerDec Name
+consName KindEnum (TypeName name) conName = do
+  namespace' <- asks namespace
+  if namespace'
+    then pure $ toName $ nameSpaceType [FieldName name] conName
+    else pure (toName conName)
+consName _ _ conName = pure (toName conName)
 
 declareField ::
-  Bool ->
   TypeKind ->
   TypeName ->
   FieldDefinition cat s ->
-  (Name, Bang, Type)
-declareField namespace tKind tName field@FieldDefinition {fieldName} =
-  ( fieldTypeName namespace tName fieldName,
-    Bang NoSourceUnpackedness NoSourceStrictness,
-    renderFieldType tKind field
-  )
+  ServerDec (Name, Bang, Type)
+declareField tKind tName field@FieldDefinition {fieldName} = do
+  namespace' <- asks namespace
+  pure
+    ( fieldTypeName namespace' tName fieldName,
+      Bang NoSourceUnpackedness NoSourceStrictness,
+      renderFieldType tKind field
+    )
 
 renderFieldType ::
   TypeKind ->

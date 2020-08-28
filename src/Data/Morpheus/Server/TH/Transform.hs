@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Transform
   ( toTHDefinitions,
@@ -12,6 +13,11 @@ module Data.Morpheus.Server.TH.Transform
 where
 
 -- MORPHEUS
+
+import Control.Applicative (pure)
+import Control.Monad ((>>=))
+import Control.Monad.Fail (fail)
+import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Internal.TH
   ( infoTyVars,
     toName,
@@ -50,6 +56,16 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Semigroup ((<>))
 import Language.Haskell.TH
+import Prelude
+  ( ($),
+    Bool (..),
+    Maybe (..),
+    concat,
+    not,
+    null,
+    otherwise,
+    traverse,
+  )
 
 m_ :: TypeName
 m_ = "m"
@@ -102,7 +118,6 @@ toTHDefinitions namespace schema = traverse generateType schema
             InputType
               ServerTypeDefinition
                 { tName = hsTypeName typeName,
-                  tNamespace = [],
                   tCons,
                   typeArgD = empty,
                   ..
@@ -111,7 +126,6 @@ toTHDefinitions namespace schema = traverse generateType schema
             OutputType
               ServerTypeDefinition
                 { tName = hsTypeName typeName,
-                  tNamespace = [],
                   tCons,
                   ..
                 }
@@ -163,7 +177,7 @@ genTypeContent ::
   TypeContent TRUE ANY s ->
   Q (BuildPlan s)
 genTypeContent _ _ _ DataScalar {} = pure (ConsIN [])
-genTypeContent _ _ _ (DataEnum tags) = pure $ ConsIN (map mkConsEnum tags)
+genTypeContent _ _ _ (DataEnum tags) = pure $ ConsIN (fmap mkConsEnum tags)
 genTypeContent _ _ typeName (DataInputObject fields) =
   pure $ ConsIN (mkObjectCons typeName fields)
 genTypeContent _ _ _ DataInputUnion {} = fail "Input Unions not Supported"
@@ -178,7 +192,7 @@ genTypeContent schema toArgsTyName typeName DataObject {objectFields} = do
       <$> traverse (mkObjectField schema toArgsTyName) objectFields
   pure $ ConsOUT typeArgD objCons
 genTypeContent _ _ typeName (DataUnion members) =
-  pure $ ConsOUT [] (map unionCon members)
+  pure $ ConsOUT [] (fmap unionCon members)
   where
     unionCon UnionMember {memberName} =
       mkCons
@@ -211,7 +225,6 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (F
     pure
       [ ServerTypeDefinition
           { tName,
-            tNamespace = empty,
             tCons = [mkCons tName (Fields arguments)],
             tKind = KindInputObject,
             typeArgD = [],

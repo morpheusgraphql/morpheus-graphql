@@ -80,7 +80,6 @@ module Data.Morpheus.Types.Internal.AST
     toNullable,
     toListField,
     isObject,
-    isInput,
     toHSWrappers,
     isNullable,
     toGQLWrapper,
@@ -99,7 +98,7 @@ module Data.Morpheus.Types.Internal.AST
     lookupDeprecated,
     lookupDeprecatedReason,
     lookupWith,
-    -- Temaplate Haskell
+    -- Template Haskell
     hsTypeName,
     -- LOCAL
     GQLQuery (..),
@@ -164,7 +163,7 @@ module Data.Morpheus.Types.Internal.AST
     toGQLError,
     ELEM,
     LEAF,
-    REQURE_IMPLEMENTABLE,
+    REQUIRE_IMPLEMENTABLE,
     ToCategory (..),
     FromCategory (..),
     possibleTypes,

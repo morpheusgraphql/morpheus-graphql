@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -14,9 +15,9 @@ module Data.Morpheus.Server.Types.GQLType
   )
 where
 
-import Data.Map (Map)
 -- MORPHEUS
 
+import Data.Map (Map)
 import Data.Morpheus.Internal.Utils (UpdateT)
 import Data.Morpheus.Kind
 import Data.Morpheus.Server.Types.Types
@@ -26,12 +27,16 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( ArgumentsDefinition,
+    CONST,
     DataFingerprint (..),
-    FALSE,
+    Description,
+    Directives,
+    FieldName,
     QUERY,
     Schema,
     TypeName (..),
+    Value,
     internalFingerprint,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -55,6 +60,21 @@ import Data.Typeable
     tyConName,
     typeRep,
     typeRepTyCon,
+  )
+import Prelude
+  ( ($),
+    (.),
+    (<$>),
+    Bool (..),
+    Either,
+    Eq (..),
+    Float,
+    Int,
+    Maybe (..),
+    concatMap,
+    fmap,
+    mempty,
+    show,
   )
 
 type TypeUpdater = UpdateT Eventless (Schema CONST)
@@ -115,47 +135,59 @@ class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
 
-  type CUSTOM a :: Bool
-  type CUSTOM a = FALSE
-
-  implements :: Proxy a -> [(TypeName, TypeUpdater)]
+  implements :: f a -> [(TypeName, TypeUpdater)]
   implements _ = []
 
-  description :: Proxy a -> Maybe Text
-  description _ = Nothing
-
-  isObjectKind :: Proxy a -> Bool
+  isObjectKind :: f a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
-  isEmptyType :: Proxy a -> Bool
-  default isEmptyType :: Proxy a -> Bool
+  getNamespace :: f a -> Maybe TypeName
+  getNamespace _ = Nothing
+
+  description :: f a -> Maybe Text
+  description _ = Nothing
+
+  getDescriptions :: f a -> Map Text Description
+  getDescriptions _ = mempty
+
+  getDirectives :: f a -> Map Text (Directives CONST)
+  getDirectives _ = mempty
+
+  getFieldContents ::
+    f a ->
+    Map
+      FieldName
+      ( Maybe (Value CONST),
+        Maybe (ArgumentsDefinition CONST)
+      )
+  getFieldContents _ = mempty
+
+  isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
-  __typeName :: Proxy a -> TypeName
+  __typeName :: f a -> TypeName
   default __typeName ::
     (Typeable a) =>
-    Proxy a ->
+    f a ->
     TypeName
   __typeName _ = TypeName $ intercalate "_" (getName $ Proxy @a)
     where
-      getName = fmap (map (pack . tyConName)) (map replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+      getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 
-  __typeFingerprint :: Proxy a -> DataFingerprint
+  __typeFingerprint :: f a -> DataFingerprint
   default __typeFingerprint ::
     (Typeable a) =>
-    Proxy a ->
+    f a ->
     DataFingerprint
-  __typeFingerprint _ = DataFingerprint "Typeable" $ map show $ conFingerprints (Proxy @a)
+  __typeFingerprint _ = DataFingerprint "Typeable" $ show <$> conFingerprints (Proxy @a)
     where
-      conFingerprints = fmap (map tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+      conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
 instance GQLType () where
   type KIND () = WRAPPER
-  type CUSTOM () = 'False
 
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
-  type CUSTOM (Undefined m) = 'False
   isEmptyType _ = True
 
 instance GQLType Int where

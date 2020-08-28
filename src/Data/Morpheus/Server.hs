@@ -32,7 +32,7 @@ import Data.Morpheus.Core
   ( App,
     runApp,
   )
-import Data.Morpheus.Server.Deriving.Introspect
+import Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,
   )
 import Data.Morpheus.Server.Playground

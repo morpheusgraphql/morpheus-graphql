@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Subscription.Utils
   ( SimulationState (..),
@@ -22,6 +23,7 @@ module Subscription.Utils
   )
 where
 
+import Control.Monad ((>>=))
 import Control.Monad.State.Lazy
   ( StateT,
     runStateT,
@@ -66,6 +68,21 @@ import Test.Tasty.HUnit
   ( assertEqual,
     assertFailure,
     testCase,
+  )
+import Prelude
+  ( ($),
+    (.),
+    (<$>),
+    Eq (..),
+    IO,
+    Maybe (..),
+    Show (..),
+    length,
+    lookup,
+    null,
+    otherwise,
+    pure,
+    snd,
   )
 
 data SimulationState e = SimulationState
@@ -128,7 +145,7 @@ testSimulation test simInputs api = do
 
 expectedResponse :: [ByteString] -> [ByteString] -> IO ()
 expectedResponse expected value
-  | expected == value = return ()
+  | expected == value = pure ()
   | otherwise =
     assertFailure $ "expected: \n " <> show expected <> " \n but got: \n " <> show value
 
@@ -149,7 +166,7 @@ inputsAreConsumed =
 storeIsEmpty :: Store e -> TestTree
 storeIsEmpty cStore
   | null (toList cStore) =
-    testCase "connectionStore: is empty" $ return ()
+    testCase "connectionStore: is empty" $ pure ()
   | otherwise =
     testCase "connectionStore: is empty"
       $ assertFailure
@@ -160,7 +177,7 @@ storeIsEmpty cStore
 storedSingle :: Store e -> TestTree
 storedSingle cStore
   | length (toList cStore) == 1 =
-    testCase "stored single connection" $ return ()
+    testCase "stored single connection" $ pure ()
   | otherwise =
     testCase "stored single connection"
       $ assertFailure
@@ -171,7 +188,7 @@ storedSingle cStore
 stored :: Input WS -> Store e -> TestTree
 stored (Init uuid) cStore
   | isJust (lookup uuid (toList cStore)) =
-    testCase "stored connection" $ return ()
+    testCase "stored connection" $ pure ()
   | otherwise =
     testCase "stored connection"
       $ assertFailure
@@ -192,7 +209,7 @@ storeSubscriptions
     where
       checkSession (Just conn)
         | sort sids == sort (connectionSessionIds conn) =
-          testCase "stored subscriptions" $ return ()
+          testCase "stored subscriptions" $ pure ()
         | otherwise =
           testCase "stored subscriptions"
             $ assertFailure

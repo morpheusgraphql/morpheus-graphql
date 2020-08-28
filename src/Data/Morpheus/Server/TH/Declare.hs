@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Declare
   ( declare,
@@ -9,77 +10,48 @@ module Data.Morpheus.Server.TH.Declare
 where
 
 -- MORPHEUS
-
+import Control.Applicative (pure)
+import Control.Monad.Reader (runReader)
+import Data.Foldable (concat)
+import Data.Functor (fmap)
 import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerTypeDefinition (..),
-  )
-import Data.Morpheus.Server.TH.Declare.Channels
-  ( deriveChannels,
-  )
-import Data.Morpheus.Server.TH.Declare.Decode
-  ( deriveDecode,
-  )
-import Data.Morpheus.Server.TH.Declare.Encode
-  ( deriveEncode,
+  ( ServerDecContext (..),
+    ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
-  )
-import Data.Morpheus.Server.TH.Declare.Introspect
-  ( deriveObjectRep,
-    instanceIntrospect,
   )
 import Data.Morpheus.Server.TH.Declare.Type
   ( declareType,
   )
 import Data.Morpheus.Server.TH.Transform
-import Data.Morpheus.Types.Internal.AST
-  ( IN,
-    isInput,
-    isObject,
-  )
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
 import Language.Haskell.TH
+import Prelude
+  ( ($),
+    (.),
+  )
 
 class Declare a where
-  type DeclareCtx a :: *
-  declare :: DeclareCtx a -> a -> Q [Dec]
+  declare :: ServerDecContext -> a -> Q [Dec]
 
 instance Declare a => Declare [a] where
-  type DeclareCtx [a] = DeclareCtx a
   declare namespace = fmap concat . traverse (declare namespace)
 
 instance Declare (TypeDec s) where
-  type DeclareCtx (TypeDec s) = Bool
   declare namespace (InputType typeD) = declare namespace typeD
   declare namespace (OutputType typeD) = declare namespace typeD
 
 instance Declare (ServerTypeDefinition cat s) where
-  type DeclareCtx (ServerTypeDefinition cat s) = Bool
-  declare namespace typeD@ServerTypeDefinition {tKind, typeArgD, typeOriginal} =
+  declare ctx typeD@ServerTypeDefinition {typeArgD} =
     do
-      let mainType = declareType namespace typeD
-      argTypes <- declareArgTypes namespace typeArgD
-      gqlInstances <- deriveGQLInstances
-      typeClasses <- deriveGQLType typeD
-      introspectEnum <- instanceIntrospect typeOriginal
-      pure $ mainType <> typeClasses <> argTypes <> gqlInstances <> introspectEnum
-    where
-      deriveGQLInstances = concat <$> sequence gqlInstances
-        where
-          gqlInstances
-            | isObject tKind && isInput tKind =
-              [deriveObjectRep typeD, deriveDecode typeD]
-            | isObject tKind =
-              [deriveObjectRep typeD, deriveEncode typeD, deriveChannels typeD]
-            | otherwise =
-              []
+      typeDef <- declareServerType ctx typeD
+      argTypes <- traverse (declareServerType ctx) typeArgD
+      pure $ typeDef <> concat argTypes
 
-declareArgTypes :: Bool -> [ServerTypeDefinition IN s] -> Q [Dec]
-declareArgTypes namespace types = do
-  introspectArgs <- concat <$> traverse deriveObjectRep types
-  decodeArgs <- concat <$> traverse deriveDecode types
-  return $ argsTypeDecs <> decodeArgs <> introspectArgs
-  where
-    ----------------------------------------------------
-    argsTypeDecs = concatMap (declareType namespace) types
+declareServerType :: ServerDecContext -> ServerTypeDefinition cat s -> Q [Dec]
+declareServerType ctx argType = do
+  typeClasses <- deriveGQLType ctx argType
+  let defs = runReader (declareType argType) ctx
+  pure (defs <> typeClasses)

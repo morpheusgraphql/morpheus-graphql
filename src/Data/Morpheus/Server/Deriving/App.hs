@@ -1,9 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
@@ -12,52 +9,41 @@ module Data.Morpheus.Server.Deriving.App
   )
 where
 
-import Data.Functor.Identity (Identity (..))
 -- MORPHEUS
 
+import Control.Monad (Monad)
+import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( App (..),
     mkApp,
   )
-import Data.Morpheus.Server.Deriving.Channels (ChannelCon)
 import Data.Morpheus.Server.Deriving.Encode
-  ( EncodeCon,
+  ( EncodeConstraints,
     deriveModel,
   )
-import Data.Morpheus.Server.Deriving.Introspect
-  ( IntroCon,
+import Data.Morpheus.Server.Deriving.Schema
+  ( SchemaConstraints,
     deriveSchema,
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
   )
-import Data.Morpheus.Types.Internal.AST
-  ( MUTATION,
-    QUERY,
-    SUBSCRIPTION,
-  )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-    Result (..),
+  ( resultOr,
   )
 
-type OperationConstraint operation event m a =
-  ( EncodeCon operation event m (a (Resolver operation event m)),
-    IntroCon (a (Resolver operation event m))
-  )
-
-type RootResolverConstraint m event query mutation subscription =
-  ( Monad m,
-    OperationConstraint QUERY event m query,
-    OperationConstraint MUTATION event m mutation,
-    OperationConstraint SUBSCRIPTION event m subscription,
-    ChannelCon event m subscription
+type RootResolverConstraint m e query mutation subscription =
+  ( EncodeConstraints e m query mutation subscription,
+    SchemaConstraints e m query mutation subscription,
+    Monad m
   )
 
 deriveApp ::
   RootResolverConstraint m event query mut sub =>
   RootResolver m event query mut sub ->
   App event m
-deriveApp root = case deriveSchema (Identity root) of
-  Success {result} -> mkApp result (deriveModel root)
-  Failure {errors} -> FailApp errors
+deriveApp root =
+  resultOr
+    FailApp
+    (`mkApp` deriveModel root)
+    (deriveSchema (Identity root))

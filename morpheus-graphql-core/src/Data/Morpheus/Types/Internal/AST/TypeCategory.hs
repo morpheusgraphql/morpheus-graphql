@@ -16,7 +16,7 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
     IMPLEMENTABLE,
     fromAny,
     toAny,
-    REQURE_IMPLEMENTABLE,
+    REQUIRE_IMPLEMENTABLE,
     ToCategory (..),
     FromCategory (..),
   )
@@ -74,7 +74,7 @@ type family
     (setOfKind :: TypeCategory) ::
     Bool
 
-type REQURE_IMPLEMENTABLE cat = ELEM cat IMPLEMENTABLE ~ TRUE
+type REQUIRE_IMPLEMENTABLE cat = ELEM cat IMPLEMENTABLE ~ TRUE
 
 -- ANY
 type instance ELEM ANY a = TRUE

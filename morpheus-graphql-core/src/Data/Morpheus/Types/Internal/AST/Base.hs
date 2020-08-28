@@ -37,7 +37,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     isOutputObject,
     isNotSystemTypeName,
     isObject,
-    isInput,
     sysFields,
     hsTypeName,
     toOperationType,
@@ -391,10 +390,6 @@ isObject (KindObject _) = True
 isObject KindInputObject = True
 isObject KindInterface = True
 isObject _ = False
-
-isInput :: TypeKind -> Bool
-isInput KindInputObject = True
-isInput _ = False
 
 -- TypeWrappers
 -----------------------------------------------------------------------------------
