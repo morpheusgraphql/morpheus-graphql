@@ -5,7 +5,7 @@
   },
   {
     "path": "arguments/unknownArguments",
-    "description": "fail when: argument on field is not recognised by the schema"
+    "description": "fail when: argument on field is not recognized by the schema"
   },
   {
     "path": "arguments/nameConflict",
@@ -73,11 +73,11 @@
   },
   {
     "path": "fragment/conditionTypeViolation",
-    "description": "fail when: condtion type is not an Object"
+    "description": "fail when: condition type is not an Object"
   },
   {
     "path": "fragment/unknownConditionType",
-    "description": "fail when: condtion type is not defined by schema"
+    "description": "fail when: condition type is not defined by schema"
   },
   {
     "path": "parsing/duplicatedFields",
@@ -225,7 +225,7 @@
   },
   {
     "path": "parsing/numbers",
-    "description": "parse signed numbers and numbers with expotential"
+    "description": "parse signed numbers and numbers with exponential"
   },
   {
     "path": "introspection/description/object",
@@ -289,7 +289,7 @@
   },
   {
     "path": "selection/directives/default/withVariable",
-    "description": "api allowes use of variable inside directives"
+    "description": "api allows use of variable inside directives"
   },
   {
     "path": "selection/directives/default/withMerge",
@@ -326,5 +326,13 @@
   {
     "path": "reservedNames",
     "description": "morpheus should handle reserved names"
+  },
+  {
+    "path": "namespace/enum",
+    "description": "check if deriving stripes enum namespaces"
+  },
+  {
+    "path": "namespace/enum-fail-on-fullname",
+    "description": "must accept only striped enums"
   }
 ]

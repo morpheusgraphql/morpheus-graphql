@@ -109,7 +109,7 @@ type Query {
   user: User!
   testUnion: TestUnion
   person: Person!
-  testEnum(enum: CollidingEnum!): CollidingEnum!
+  testEnum(enum: CollidingEnum!): [CollidingEnum!]!
 }
 
 type Mutation {

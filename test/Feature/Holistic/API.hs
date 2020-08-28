@@ -97,7 +97,11 @@ root =
             queryTestEnum =
               \QueryTestEnumArgs
                  { queryTestEnumArgsEnum
-                 } -> pure queryTestEnumArgsEnum
+                 } ->
+                  pure
+                    [ queryTestEnumArgsEnum,
+                      CollidingEnumEnumA
+                    ]
           },
       mutationResolver =
         Mutation

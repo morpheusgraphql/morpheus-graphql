@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 55e08fdda27c37a42906969b1489cdac05e9c0dd5e45943b2bea19e28a2b23fd
+-- hash: 1cb95bed396892e4f90bae23362a60af6b6db18f3f8be73c198cddf652c16df3
 
 name:           morpheus-graphql
 version:        0.14.1
@@ -62,6 +62,8 @@ data-files:
     test/Feature/Holistic/introspection/schemaTypes/__Schema/query.gql
     test/Feature/Holistic/introspection/schemaTypes/__Type/query.gql
     test/Feature/Holistic/introspection/schemaTypes/__TypeKind/query.gql
+    test/Feature/Holistic/namespace/enum-fail-on-fullname/query.gql
+    test/Feature/Holistic/namespace/enum/query.gql
     test/Feature/Holistic/parsing/AnonymousOperation/mutation/query.gql
     test/Feature/Holistic/parsing/AnonymousOperation/query/query.gql
     test/Feature/Holistic/parsing/AnonymousOperation/subscription/query.gql
@@ -230,6 +232,8 @@ data-files:
     test/Feature/Holistic/introspection/schemaTypes/__Schema/response.json
     test/Feature/Holistic/introspection/schemaTypes/__Type/response.json
     test/Feature/Holistic/introspection/schemaTypes/__TypeKind/response.json
+    test/Feature/Holistic/namespace/enum-fail-on-fullname/response.json
+    test/Feature/Holistic/namespace/enum/response.json
     test/Feature/Holistic/parsing/AnonymousOperation/mutation/response.json
     test/Feature/Holistic/parsing/AnonymousOperation/query/response.json
     test/Feature/Holistic/parsing/AnonymousOperation/subscription/response.json
