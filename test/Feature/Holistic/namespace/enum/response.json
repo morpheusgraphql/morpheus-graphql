@@ -1,6 +1,6 @@
 {
   "data": {
-    "testEnum": ["EnumA", "EnumA"],
+    "testEnum": ["EnumB", "EnumA"],
     "__type": {
       "kind": "ENUM",
       "name": "CollidingEnum",
