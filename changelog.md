@@ -24,8 +24,23 @@
 - you can use `GQLType.getNamespace` to strip Namespaces
 - you can use `GQLType.getDescriptions` to document field or enum Values
 
+- with `importGQLDocumentWithNamespace` now you can use Enums with Colliding Values:
+
+  ```graphql
+  enum X {
+    A
+  }
+
+  enum Y {
+    A
+  }
+  ```
+
+  they will be namespaced to. `XA` and `YA`
+
 ### Breaking Changes
 
+- `importGQLDocumentWithNamespace` they will be namespaced enum Values
 - Argument types must have `GQLType` instances
 - in `Data.Morpheus.Server`:
 
