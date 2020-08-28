@@ -20,7 +20,7 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad ((>>=)))
 import Data.Functor ((<$>), fmap)
-import Data.Map (Map, fromList)
+import Data.Map (Map, empty, fromList)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.TH
   ( apply,
@@ -134,7 +134,7 @@ interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}
 interfacesFrom _ = []
 
 fmapFieldValues :: (FieldDefinition IN s -> Maybe a) -> (FieldDefinition OUT s -> Maybe a) -> Maybe (TypeDefinition c s) -> Map FieldName a
-fmapFieldValues f g = maybe (fromList []) (collectFieldValues f g)
+fmapFieldValues f g = maybe empty (collectFieldValues f g)
 
 getDesc :: Maybe (TypeDefinition c s) -> Map Token Description
 getDesc = fromList . get
@@ -203,7 +203,7 @@ collectFieldValues ::
 collectFieldValues _ g TypeDefinition {typeContent = DataObject {objectFields}} = getFieldValues g objectFields
 collectFieldValues f _ TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = getFieldValues f inputObjectFields
 collectFieldValues _ g TypeDefinition {typeContent = DataInterface {interfaceFields}} = getFieldValues g interfaceFields
-collectFieldValues _ _ _ = fromList []
+collectFieldValues _ _ _ = empty
 
 getFieldValues :: (FieldDefinition c s -> Maybe a) -> FieldsDefinition c s -> Map FieldName a
 getFieldValues f = fromList . notNulls . fmap (getFieldValue f) . elems
