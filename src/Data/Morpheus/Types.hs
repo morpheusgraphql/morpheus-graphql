@@ -71,7 +71,7 @@ import Data.Morpheus.Core
   ( App,
     RenderGQL (..),
   )
-import Data.Morpheus.Server.Deriving.Introspect
+import Data.Morpheus.Server.Deriving.Schema
   ( Introspect,
     TypeUpdater,
     introspectOUT,

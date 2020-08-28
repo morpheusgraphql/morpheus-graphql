@@ -19,7 +19,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Introspect
+module Data.Morpheus.Server.Deriving.Schema
   ( Introspect,
     introspectOUT,
     SchemaConstraints,

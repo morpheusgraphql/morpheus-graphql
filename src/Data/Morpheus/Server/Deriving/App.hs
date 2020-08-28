@@ -21,7 +21,7 @@ import Data.Morpheus.Server.Deriving.Encode
   ( EncodeConstraints,
     deriveModel,
   )
-import Data.Morpheus.Server.Deriving.Introspect
+import Data.Morpheus.Server.Deriving.Schema
   ( SchemaConstraints,
     deriveSchema,
   )
