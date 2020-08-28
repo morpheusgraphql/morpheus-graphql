@@ -24,10 +24,16 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
+    stripNamespace,
   )
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
+  )
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType
+      ( hasNamespace
+      ),
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -54,6 +60,7 @@ import Prelude
     (.),
     const,
     lookup,
+    map,
   )
 
 type ChannelsConstraint e m (subs :: (* -> *) -> *) =
@@ -63,13 +70,23 @@ type ChannelsConstraint e m (subs :: (* -> *) -> *) =
 
 getChannels ::
   forall e m subs.
-  (ChannelsConstraint e m subs) =>
+  ( ChannelsConstraint e m subs,
+    GQLType (subs (Resolver SUBSCRIPTION e m))
+  ) =>
   subs (Resolver SUBSCRIPTION e m) ->
   Selection VALID ->
   ResolverState (Channel e)
 getChannels value sel =
-  selectBy sel $
-    exploreChannels (Proxy @e) value
+  selectBy sel
+    $ map stripChannel
+    $ exploreChannels (Proxy @e) value
+  where
+    stripChannel (x, y) =
+      ( stripNamespace
+          (hasNamespace (Proxy @(subs (Resolver SUBSCRIPTION e m))))
+          x,
+        y
+      )
 
 selectBy ::
   Failure InternalError m =>
