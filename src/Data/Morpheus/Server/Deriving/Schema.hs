@@ -21,7 +21,7 @@
 
 module Data.Morpheus.Server.Deriving.Schema
   ( DeriveType,
-    introspectOUT,
+    deriveOutType,
     SchemaConstraints,
     TypeUpdater,
     deriveSchema,
@@ -225,9 +225,6 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
       where
         (subscription, types) = deriveObjectType $ Proxy @(subs (Resolver SUBSCRIPTION e m))
 
-introspectOUT :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdater
-introspectOUT _ = deriveType (KindedProxy :: KindedProxy OUT a)
-
 instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
 
@@ -360,6 +357,9 @@ optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONS
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
   | null objectFields = Nothing
   | otherwise = Just td
+
+deriveOutType :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdater
+deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 deriveObjectType ::
   (TypeRep OUT (Rep a), Generic a, GQLType a) =>

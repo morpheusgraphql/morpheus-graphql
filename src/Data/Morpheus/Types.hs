@@ -74,7 +74,7 @@ import Data.Morpheus.Core
 import Data.Morpheus.Server.Deriving.Schema
   ( DeriveType,
     TypeUpdater,
-    introspectOUT,
+    deriveOutType,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types (Undefined (..))
@@ -225,4 +225,4 @@ data RootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) 
   }
 
 interface :: (GQLType a, DeriveType OUT a) => Proxy a -> (TypeName, TypeUpdater)
-interface x = (__typeName x, introspectOUT x)
+interface x = (__typeName x, deriveOutType x)
