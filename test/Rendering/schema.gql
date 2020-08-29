@@ -28,6 +28,11 @@ type MyQuery {
   testUnion: TestUnion
 }
 
+type MyMutation {
+  newUser: User!
+}
+
 schema {
   query: MyQuery
+  mutation: MyMutation
 }
