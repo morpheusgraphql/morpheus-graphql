@@ -20,7 +20,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Schema
-  ( Introspect,
+  ( DeriveType,
     introspectOUT,
     SchemaConstraints,
     TypeUpdater,
@@ -226,15 +226,15 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
           deriveOperationType "Subscription" $
             Proxy @(subs (Resolver SUBSCRIPTION e m))
 
-introspectOUT :: forall a. (GQLType a, Introspect OUT a) => Proxy a -> TypeUpdater
-introspectOUT _ = introspect (ProxyRep :: ProxyRep OUT a)
+introspectOUT :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdater
+introspectOUT _ = deriveType (ProxyRep :: ProxyRep OUT a)
 
-instance {-# OVERLAPPABLE #-} (GQLType a, IntrospectKind (KIND a) a) => Introspect cat a where
-  introspect _ = introspectKind (Context :: Context (KIND a) a)
+instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
+  deriveType _ = deriveKindedType (Context :: Context (KIND a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
-class Introspect (cat :: TypeCategory) a where
-  introspect :: proxy cat a -> TypeUpdater
+class DeriveType (cat :: TypeCategory) a where
+  deriveType :: proxy cat a -> TypeUpdater
   field :: proxy cat a -> FieldName -> FieldDefinition cat CONST
   -----------------------------------------------
   default field ::
@@ -245,81 +245,81 @@ class Introspect (cat :: TypeCategory) a where
   field _ = buildField (Proxy @a) Nothing
 
 -- Maybe
-instance Introspect cat a => Introspect cat (Maybe a) where
+instance DeriveType cat a => DeriveType cat (Maybe a) where
   field _ = toNullable . field (ProxyRep :: ProxyRep cat a)
-  introspect _ = introspect (ProxyRep :: ProxyRep cat a)
+  deriveType _ = deriveType (ProxyRep :: ProxyRep cat a)
 
 -- List
-instance Introspect cat a => Introspect cat [a] where
+instance DeriveType cat a => DeriveType cat [a] where
   field _ = toListField . field (ProxyRep :: ProxyRep cat a)
-  introspect _ = introspect (ProxyRep :: ProxyRep cat a)
+  deriveType _ = deriveType (ProxyRep :: ProxyRep cat a)
 
 -- Tuple
-instance Introspect cat (Pair k v) => Introspect cat (k, v) where
+instance DeriveType cat (Pair k v) => DeriveType cat (k, v) where
   field _ = field (ProxyRep :: ProxyRep cat (Pair k v))
-  introspect _ = introspect (ProxyRep :: ProxyRep cat (Pair k v))
+  deriveType _ = deriveType (ProxyRep :: ProxyRep cat (Pair k v))
 
 -- Set
-instance Introspect cat [a] => Introspect cat (Set a) where
+instance DeriveType cat [a] => DeriveType cat (Set a) where
   field _ = field (ProxyRep :: ProxyRep cat [a])
-  introspect _ = introspect (ProxyRep :: ProxyRep cat [a])
+  deriveType _ = deriveType (ProxyRep :: ProxyRep cat [a])
 
 -- Map
-instance Introspect cat (MapKind k v Maybe) => Introspect cat (Map k v) where
+instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
   field _ = field (ProxyRep :: ProxyRep cat (MapKind k v Maybe))
-  introspect _ = introspect (ProxyRep :: ProxyRep cat (MapKind k v Maybe))
+  deriveType _ = deriveType (ProxyRep :: ProxyRep cat (MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
 instance
   ( GQLType b,
-    Introspect OUT b,
+    DeriveType OUT b,
     TypeRep IN (Rep a),
     GQLType a,
     Generic a
   ) =>
-  Introspect OUT (a -> m b)
+  DeriveType OUT (a -> m b)
   where
   field _ name = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
     where
       fieldObj = field (ProxyRep :: ProxyRep OUT b) name
       fieldArgs = fst $ deriveArgumentFields (Proxy @a)
-  introspect _ = concatUpdates (introspect (ProxyRep :: ProxyRep OUT b) : inputs)
+  deriveType _ = concatUpdates (deriveType (ProxyRep :: ProxyRep OUT b) : inputs)
     where
       inputs :: [TypeUpdater]
       inputs = snd $ deriveArgumentFields (Proxy @a)
 
-instance (Introspect OUT a) => Introspect OUT (SubscriptionField a) where
+instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
   field _ = field (ProxyRep :: ProxyRep OUT a)
-  introspect _ = introspect (ProxyRep :: ProxyRep OUT a)
+  deriveType _ = deriveType (ProxyRep :: ProxyRep OUT a)
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (GQLType b, Introspect cat b) => Introspect cat (Resolver fo e m b) where
+instance (GQLType b, DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
   field _ = field (ProxyRep :: ProxyRep cat b)
-  introspect _ = introspect (ProxyRep :: ProxyRep cat b)
+  deriveType _ = deriveType (ProxyRep :: ProxyRep cat b)
 
--- | Introspect With specific Kind: 'kind': object, scalar, enum ...
-class IntrospectKind (kind :: GQL_KIND) a where
-  introspectKind :: Context kind a -> TypeUpdater -- Generates internal GraphQL Schema
+-- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
+class DeriveKindedType (kind :: GQL_KIND) a where
+  deriveKindedType :: Context kind a -> TypeUpdater -- Generates internal GraphQL Schema
 
 -- SCALAR
-instance (GQLType a, GQLScalar a) => IntrospectKind SCALAR a where
-  introspectKind _ = updateLib scalarType [] (Proxy @a)
+instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
+  deriveKindedType _ = updateLib scalarType [] (Proxy @a)
     where
       scalarType :: Proxy a -> TypeDefinition LEAF CONST
       scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
-instance (GQL_TYPE a, TypeRep IN (Rep a)) => IntrospectKind ENUM a where
-  introspectKind _ = derivingData (Proxy @a) InputType
+instance (GQL_TYPE a, TypeRep IN (Rep a)) => DeriveKindedType ENUM a where
+  deriveKindedType _ = derivingData (Proxy @a) InputType
 
-instance (GQL_TYPE a, TypeRep IN (Rep a)) => IntrospectKind INPUT a where
-  introspectKind _ = derivingData (Proxy @a) InputType
+instance (GQL_TYPE a, TypeRep IN (Rep a)) => DeriveKindedType INPUT a where
+  deriveKindedType _ = derivingData (Proxy @a) InputType
 
-instance (GQL_TYPE a, TypeRep OUT (Rep a)) => IntrospectKind OUTPUT a where
-  introspectKind _ = derivingData (Proxy @a) OutputType
+instance (GQL_TYPE a, TypeRep OUT (Rep a)) => DeriveKindedType OUTPUT a where
+  deriveKindedType _ = derivingData (Proxy @a) OutputType
 
-instance (GQL_TYPE a, TypeRep OUT (Rep a)) => IntrospectKind INTERFACE a where
-  introspectKind _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
+instance (GQL_TYPE a, TypeRep OUT (Rep a)) => DeriveKindedType INTERFACE a where
+  deriveKindedType _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
       (fields, types) = deriveObjectFields (Proxy @a)
 
@@ -740,12 +740,12 @@ class ConRep cat f where
 instance (ConRep cat a, ConRep cat b) => ConRep cat (a :*: b) where
   conRep _ = conRep (ProxyRep :: ProxyRep cat a) <> conRep (ProxyRep :: ProxyRep cat b)
 
-instance (Selector s, GQLType a, Introspect cat a) => ConRep cat (M1 S s (Rec0 a)) where
+instance (Selector s, GQLType a, DeriveType cat a) => ConRep cat (M1 S s (Rec0 a)) where
   conRep _ =
     [ FieldRep
         { fieldTypeName = typeConName $ fieldType fieldData,
           fieldData = fieldData,
-          fieldTypeUpdater = introspect (ProxyRep :: ProxyRep cat a),
+          fieldTypeUpdater = deriveType (ProxyRep :: ProxyRep cat a),
           fieldIsObject = isObjectKind (Proxy @a)
         }
     ]
