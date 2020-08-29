@@ -52,8 +52,7 @@ import Data.Morpheus.Internal.Utils
     singleton,
   )
 import Data.Morpheus.Kind
-  ( Context (..),
-    ENUM,
+  ( ENUM,
     GQL_KIND,
     INPUT,
     INTERFACE,
@@ -164,6 +163,12 @@ type SchemaConstraint a =
     TypeRep OUT (Rep a),
     Generic a
   )
+
+-- | context , like Proxy with multiple parameters
+-- * 'kind': object, scalar, enum ...
+-- * 'a': actual gql type
+data Context (kind :: GQL_KIND) a
+  = Context
 
 data ProxyRep (cat :: TypeCategory) a
   = ProxyRep

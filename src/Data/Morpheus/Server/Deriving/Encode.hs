@@ -35,12 +35,10 @@ import Data.Maybe
   )
 import Data.Morpheus.Internal.Utils (Namespace (..))
 import Data.Morpheus.Kind
-  ( ContextValue (..),
-    ENUM,
+  ( ENUM,
     GQL_KIND,
     INTERFACE,
     OUTPUT,
-    ResContext (..),
     SCALAR,
   )
 import Data.Morpheus.Server.Deriving.Channels
@@ -123,6 +121,12 @@ import Prelude
     show,
     zipWith,
   )
+
+data ResContext (kind :: GQL_KIND) (operation :: OperationType) event (m :: * -> *) value = ResContext
+
+newtype ContextValue (kind :: GQL_KIND) a = ContextValue
+  { unContextValue :: a
+  }
 
 class Encode resolver o e (m :: * -> *) where
   encode :: resolver -> Resolver o e m (ResModel o e m)
