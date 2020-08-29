@@ -4,6 +4,21 @@
 
 ### new features
 
+- custom operation root types: e.g
+
+  ```hs
+  RootResolver IO () MyQuery MyMutation Undefined
+  ```
+
+  creates app with:
+
+  ```graphql
+  schema {
+    query: MyQuery
+    mutation: MyMutation
+  }
+  ```
+
 - type : `App event m` and `deriveApp`
 
   ```hs
