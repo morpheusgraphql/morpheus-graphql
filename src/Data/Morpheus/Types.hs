@@ -72,9 +72,9 @@ import Data.Morpheus.Core
     RenderGQL (..),
   )
 import Data.Morpheus.Server.Deriving.Schema
-  ( Introspect,
+  ( DeriveType,
     TypeUpdater,
-    introspectOUT,
+    deriveOutType,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types (Undefined (..))
@@ -224,5 +224,5 @@ data RootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) 
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
 
-interface :: (GQLType a, Introspect OUT a) => Proxy a -> (TypeName, TypeUpdater)
-interface x = (__typeName x, introspectOUT x)
+interface :: (GQLType a, DeriveType OUT a) => Proxy a -> (TypeName, TypeUpdater)
+interface x = (__typeName x, deriveOutType x)

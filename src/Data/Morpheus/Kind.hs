@@ -11,18 +11,11 @@ module Data.Morpheus.Kind
     UNION,
     INPUT_OBJECT,
     GQL_KIND,
-    Context (..),
-    ContextValue (..),
-    ResContext (..),
     OUTPUT,
     INPUT,
     INTERFACE,
   )
 where
-
-import Data.Morpheus.Types.Internal.AST
-  ( OperationType (..),
-  )
 
 data GQL_KIND
   = SCALAR
@@ -31,20 +24,6 @@ data GQL_KIND
   | OUTPUT
   | WRAPPER
   | INTERFACE
-
-data ResContext (kind :: GQL_KIND) (operation :: OperationType) event (m :: * -> *) value = ResContext
-
---type ObjectConstraint a =
-
--- | context , like Proxy with multiple parameters
--- * 'kind': object, scalar, enum ...
--- * 'a': actual gql type
-data Context (kind :: GQL_KIND) a
-  = Context
-
-newtype ContextValue (kind :: GQL_KIND) a = ContextValue
-  { unContextValue :: a
-  }
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR

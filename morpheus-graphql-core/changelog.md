@@ -4,6 +4,14 @@
 
 ### new features
 
+- `render` renders SchemaDefinition e.g
+
+  ```graphql
+  schema {
+    query: MyQuery
+  }
+  ```
+
 - query validator automatically adds `__typename` to interface types
 
 - type : `App`

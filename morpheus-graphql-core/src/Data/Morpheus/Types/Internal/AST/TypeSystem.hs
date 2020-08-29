@@ -84,7 +84,9 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    Rendering,
     newline,
+    renderEntry,
     renderMembers,
     renderObject,
   )
@@ -164,7 +166,7 @@ import Prelude
 
 type DataEnum s = [DataEnumValue s]
 
--- used for perserving type information from untyped values
+-- used for preserving type information from untyped values
 -- e.g
 -- unionType :: UnionMember IN VALID -> Typed IN VALID TypeName
 -- unionType = typed memberName
@@ -174,7 +176,7 @@ typed f = Typed . f
 untyped :: (a -> b) -> Typed c s a -> b
 untyped f = f . _untyped
 
--- | used for perserving type information from untyped values
+-- | used for preserving type information from untyped values
 -- see function typed
 newtype Typed (cat :: TypeCategory) (s :: Stage) a = Typed
   { _untyped :: a
@@ -281,6 +283,12 @@ data SchemaDefinition = SchemaDefinition
   }
   deriving (Show)
 
+instance RenderGQL SchemaDefinition where
+  render = renderSchemaDefinition . elems . unSchemaDefinition
+
+renderSchemaDefinition :: RenderGQL a => [a] -> Rendering
+renderSchemaDefinition entries = "schema" <> renderObject entries <> newline
+
 instance Selectable OperationType RootOperationTypeDefinition SchemaDefinition where
   selectOr fallback f key SchemaDefinition {unSchemaDefinition} =
     selectOr fallback f key unSchemaDefinition
@@ -310,6 +318,13 @@ instance NameCollision RootOperationTypeDefinition where
 instance KeyOf OperationType RootOperationTypeDefinition where
   keyOf = rootOperationType
 
+instance RenderGQL RootOperationTypeDefinition where
+  render
+    RootOperationTypeDefinition
+      { rootOperationType,
+        rootOperationTypeDefinitionName
+      } = renderEntry rootOperationType rootOperationTypeDefinitionName
+
 type TypeLib s = SafeHashMap TypeName (TypeDefinition ANY s)
 
 instance Selectable TypeName (TypeDefinition ANY s) (Schema s) where
@@ -338,17 +353,17 @@ buildWith ::
     Maybe (TypeDefinition OBJECT s)
   ) ->
   f (Schema s)
-buildWith otypes (Just query, mutation, subscription) = do
-  let types = excludeTypes [Just query, mutation, subscription] otypes
+buildWith oTypes (Just query, mutation, subscription) = do
+  let types = excludeTypes [Just query, mutation, subscription] oTypes
   let schema = (initTypeLib query) {mutation, subscription}
   foldM (flip safeDefineType) schema types
 buildWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
-excludeTypes excusionTypes = filter ((`notElem` blacklist) . typeName)
+excludeTypes exclusionTypes = filter ((`notElem` blacklist) . typeName)
   where
     blacklist :: [TypeName]
-    blacklist = fmap typeName (catMaybes excusionTypes)
+    blacklist = fmap typeName (catMaybes exclusionTypes)
 
 withDirectives ::
   [DirectiveDefinition s] ->
@@ -477,15 +492,15 @@ possibleInterfaceTypes ::
   TypeName ->
   Schema s ->
   [TypeDefinition ANY s]
-possibleInterfaceTypes name schema = mapMaybe (isPosibleInterfaceType name) (elems schema)
+possibleInterfaceTypes name schema = mapMaybe (isPossibleInterfaceType name) (elems schema)
 
-isPosibleInterfaceType ::
+isPossibleInterfaceType ::
   TypeName ->
   TypeDefinition c s ->
   Maybe (TypeDefinition c s)
-isPosibleInterfaceType name typeDef@TypeDefinition {typeName, typeContent = DataObject {objectImplements}}
+isPossibleInterfaceType name typeDef@TypeDefinition {typeName, typeContent = DataObject {objectImplements}}
   | name `elem` (typeName : objectImplements) = Just typeDef
-isPosibleInterfaceType _ _ = Nothing
+isPossibleInterfaceType _ _ = Nothing
 
 instance
   (FromCategory (TypeContent TRUE) cat cat') =>
@@ -721,8 +736,15 @@ mkUnionField UnionMember {memberName} =
 --------------------------------------------------------------------------------------------------
 
 instance RenderGQL (Schema s) where
-  render schema = intercalate newline (fmap render visibleTypes)
+  render schema =
+    intercalate newline (fmap render visibleTypes <> [renderSchemaDefinition entries])
     where
+      entries =
+        RootOperationTypeDefinition Query (typeName $ query schema)
+          : catMaybes
+            [ RootOperationTypeDefinition Mutation . typeName <$> mutation schema,
+              RootOperationTypeDefinition Subscription . typeName <$> subscription schema
+            ]
       visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
 
 instance RenderGQL (TypeDefinition a s) where
