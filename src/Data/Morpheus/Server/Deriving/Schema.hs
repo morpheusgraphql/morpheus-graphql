@@ -762,7 +762,7 @@ instance (Selector s, GQLType a, DeriveType cat a) => ConRep cat (M1 S s (Rec0 a
     ]
     where
       name = selNameProxy (Proxy @s)
-      fieldData = field (KindedProxy :: KindedProxy cat a) name
+      fieldData = field name (KindedProxy :: KindedProxy cat a)
 
 instance ConRep cat U1 where
   conRep _ = []
