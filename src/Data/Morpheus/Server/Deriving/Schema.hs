@@ -209,27 +209,21 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
     querySchema =
       resolveUpdates (initTypeLib query) types
       where
-        (query, types) =
-          deriveOperationType "Query" $
-            Proxy @(query (Resolver QUERY e m))
+        (query, types) = deriveObjectType $ Proxy @(query (Resolver QUERY e m))
     ------------------------------
     mutationSchema lib =
       resolveUpdates
         (lib {mutation = optionalType mutation})
         types
       where
-        (mutation, types) =
-          deriveOperationType "Mutation" $
-            Proxy @(mut (Resolver MUTATION e m))
+        (mutation, types) = deriveObjectType $ Proxy @(mut (Resolver MUTATION e m))
     ------------------------------
     subscriptionSchema lib =
       resolveUpdates
         (lib {subscription = optionalType subscription})
         types
       where
-        (subscription, types) =
-          deriveOperationType "Subscription" $
-            Proxy @(subs (Resolver SUBSCRIPTION e m))
+        (subscription, types) = deriveObjectType $ Proxy @(subs (Resolver SUBSCRIPTION e m))
 
 introspectOUT :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdater
 introspectOUT _ = deriveType (KindedProxy :: KindedProxy OUT a)
@@ -367,17 +361,16 @@ optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
   | null objectFields = Nothing
   | otherwise = Just td
 
-deriveOperationType ::
+deriveObjectType ::
   (TypeRep OUT (Rep a), Generic a, GQLType a) =>
-  TypeName ->
   proxy a ->
   (TypeDefinition OBJECT CONST, [TypeUpdater])
-deriveOperationType name proxy = (mkOperationType fields name, types)
+deriveObjectType proxy = (mkObjectType fields (__typeName proxy), types)
   where
     (fields, types) = deriveObjectFields proxy
 
-mkOperationType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
-mkOperationType fields typeName = mkType typeName (DataObject [] fields)
+mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
+mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
 deriveObjectFields ::
   (TypeRep OUT (Rep a), Generic a, GQLType a) =>
