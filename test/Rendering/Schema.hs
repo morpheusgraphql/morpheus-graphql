@@ -41,5 +41,5 @@ importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 path :: String
 path = "test/Rendering/schema.gql"
 
-proxy :: Proxy (RootResolver IO () Query Undefined Undefined)
-proxy = Proxy @(RootResolver IO () Query Undefined Undefined)
+proxy :: Proxy (RootResolver IO () MyQuery Undefined Undefined)
+proxy = Proxy @(RootResolver IO () MyQuery Undefined Undefined)

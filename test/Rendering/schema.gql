@@ -23,7 +23,11 @@ union TestUnion = User | Address
 
 scalar TestScalar
 
-type Query {
+type MyQuery {
   user: User!
   testUnion: TestUnion
+}
+
+schema {
+  query: MyQuery
 }
