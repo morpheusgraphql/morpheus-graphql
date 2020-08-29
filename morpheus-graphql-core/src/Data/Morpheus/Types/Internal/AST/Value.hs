@@ -48,7 +48,7 @@ import qualified Data.Aeson as A
 import Data.Either (Either (..))
 import Data.Foldable (foldl, foldl1, null)
 import Data.Functor (fmap)
-import qualified Data.HashMap.Strict as M
+import qualified Data.HashMap.Lazy as M
   ( toList,
   )
 import Data.Maybe (Maybe (..))

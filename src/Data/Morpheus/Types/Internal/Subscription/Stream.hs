@@ -176,13 +176,13 @@ toOutStream ::
   ) ->
   Input api ->
   Stream api e m
-toOutStream app (Init clienId) =
+toOutStream app (Init clientId) =
   StreamWS handle
   where
     handle ws@ScopeWS {listener, callback} = do
       let runS (StreamWS x) = x ws
-      bla <- listener >>= runS . handleWSRequest app clienId
-      pure $ (Updates (insert clienId callback) :) <$> bla
+      bla <- listener >>= runS . handleWSRequest app clientId
+      pure $ (Updates (insert clientId callback) :) <$> bla
 toOutStream app (Request req) = StreamHTTP $ handleResponseHTTP (app req)
 
 handleResponseHTTP ::

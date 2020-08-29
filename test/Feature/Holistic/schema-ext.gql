@@ -1,0 +1,9 @@
+type ExtQuery {
+  fail1: String!
+  fail2: Int!
+  type(in: TypeInput!): String!
+}
+
+input TypeInput {
+  data: String!
+}

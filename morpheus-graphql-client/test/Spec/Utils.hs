@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Lib
+module Spec.Utils
   ( mockApi,
     schemaUrl,
     defineClientWith,

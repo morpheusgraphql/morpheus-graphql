@@ -16,29 +16,23 @@ module Server.Utils
 where
 
 -- examples
-import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans (liftIO)
 import Data.ByteString.Lazy.Char8
   ( ByteString,
-    unpack,
   )
-import Data.Functor.Identity (Identity (..))
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Morpheus.Document
-  ( RootResolverConstraint,
-    toGraphQLDocument,
-  )
 import Data.Morpheus.Server
   ( httpPlayground,
+    httpPubApp,
   )
 import Data.Morpheus.Types
-  ( GQLRequest,
+  ( App,
+    GQLRequest,
     GQLResponse,
-    RootResolver,
+    render,
   )
 import Data.Proxy (Proxy)
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.TypeLits
 import Network.HTTP.Media ((//), (/:))
@@ -64,10 +58,8 @@ import Servant
     MimeRender (..),
     PlainText,
     Post,
-    QueryParam',
     ReqBody,
     Server,
-    Strict,
     serve,
   )
 
@@ -102,15 +94,8 @@ type Playground = Get '[HTML] ByteString
 
 type Endpoint (name :: Symbol) = name :> (API :<|> Schema :<|> Playground)
 
-serveEndpoint ::
-  (RootResolverConstraint m o mu qu su) =>
-  RootResolver m o mu qu su ->
-  (GQLRequest -> IO GQLResponse) ->
-  Server (Endpoint name)
-serveEndpoint root app = (liftIO . app) :<|> withSchema root :<|> pure httpPlayground
+serveEndpoint :: [e -> IO ()] -> App e IO -> Server (Endpoint name)
+serveEndpoint publish app = (liftIO . httpPubApp publish app) :<|> withSchema app :<|> pure httpPlayground
 
-withSchema ::
-  (RootResolverConstraint m o mu qu su, Applicative f) =>
-  RootResolver m o mu qu su ->
-  f Text
-withSchema schema = pure $ pack $ unpack $ toGraphQLDocument (Identity schema)
+withSchema :: (Applicative f) => App e m -> f Text
+withSchema = pure . render

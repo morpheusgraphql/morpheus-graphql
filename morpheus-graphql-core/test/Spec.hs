@@ -13,6 +13,7 @@ import Test.Tasty
 import Utils.Api
   ( apiTest,
   )
+import qualified Utils.MergeSchema as MergeSchema
 import Utils.Schema
   ( testSchema,
   )
@@ -24,10 +25,12 @@ import Prelude
 main :: IO ()
 main = do
   schema <- testSchema
+  mergeSchema <- MergeSchema.test
   defaultMain $
     testGroup
       "core tests"
       [ schema,
+        mergeSchema,
         apiTest "api/deity" ["simple", "interface"],
         apiTest
           "api/validation/fragment"

@@ -270,7 +270,7 @@ parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefini
 -- 3.2 Schema
 -- SchemaDefinition:
 --    schema Directives[Const,opt]
---      { RootOperationTypeDefinitionlist }
+--      { RootOperationTypeDefinition(list) }
 --
 --  RootOperationTypeDefinition:
 --    OperationType: NamedType

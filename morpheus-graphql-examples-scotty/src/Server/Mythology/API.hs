@@ -5,13 +5,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Server.Mythology.API
-  ( api,
-    rootResolver,
+  ( app,
   )
 where
 
-import qualified Data.ByteString.Lazy.Char8 as B
-import Data.Morpheus (interpreter)
+import Data.Morpheus
+  ( App,
+    deriveApp,
+  )
 import Data.Morpheus.Types
   ( GQLType,
     ResolverQ,
@@ -56,7 +57,7 @@ data DeityArgs = DeityArgs
   { name :: Text, -- Required Argument
     bornPlace :: Maybe City -- Optional Argument
   }
-  deriving (Generic)
+  deriving (Generic, GQLType)
 
 resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
@@ -85,5 +86,5 @@ rootResolver =
       subscriptionResolver = Undefined
     }
 
-api :: B.ByteString -> IO B.ByteString
-api = interpreter rootResolver
+app :: App () IO
+app = deriveApp rootResolver

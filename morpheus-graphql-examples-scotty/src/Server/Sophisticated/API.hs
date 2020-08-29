@@ -12,9 +12,9 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.Sophisticated.API
-  ( api,
+  ( app,
     EVENT,
-    gqlRoot,
+    root,
   )
 where
 
@@ -25,8 +25,8 @@ import qualified Data.Map as M
   )
 -- MORPHEUS
 import Data.Morpheus
-  ( debugInterpreter,
-    interpreter,
+  ( App,
+    deriveApp,
   )
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
@@ -39,16 +39,13 @@ import Data.Morpheus.Types
     GQLScalar (..),
     GQLType (..),
     ID,
-    Input,
     MUTATION,
-    QUERY,
     Resolver,
     ResolverM,
     ResolverQ,
     ResolverS,
     RootResolver (..),
     ScalarValue (..),
-    Stream,
     SubscriptionField,
     WithOperation,
     constRes,
@@ -56,7 +53,6 @@ import Data.Morpheus.Types
     publish,
     subscribe,
   )
-import Data.Proxy (Proxy (..))
 import Data.Set (Set)
 import qualified Data.Set as S
   ( fromList,
@@ -106,7 +102,7 @@ instance GQLScalar Euro where
           (round (fromIntegral x / 100 :: Double))
           (mod x 100)
       )
-  parseValue _ = Left "invalid currency blue"
+  parseValue _ = Left "invalid currency blue!"
   serialize (Euro x y) = Int (x * 100 + y)
 
 data Channel = USER | ADDRESS
@@ -116,11 +112,11 @@ newtype Content = Content {contentID :: Int}
 
 type EVENT = Event Channel Content
 
-api :: Input api -> Stream api EVENT IO
-api = debugInterpreter gqlRoot
+app :: App EVENT IO
+app = deriveApp root
 
-gqlRoot :: RootResolver IO EVENT Query Mutation Subscription
-gqlRoot =
+root :: RootResolver IO EVENT Query Mutation Subscription
+root =
   RootResolver
     { queryResolver,
       mutationResolver,
@@ -135,7 +131,7 @@ gqlRoot =
           querySomeMap = pure $ M.fromList [("robin", 1), ("carl", 2)],
           queryWrapped1 = constRes $ A (0, "some value"),
           queryWrapped2 = pure $ A "",
-          queryFail1 = fail "fail example",
+          queryFail1 = fail "fail example!!",
           queryFail2 = liftEither alwaysFail,
           queryShared =
             pure
@@ -153,13 +149,13 @@ gqlRoot =
     mutationResolver =
       Mutation
         { mutationCreateUser = resolveCreateUser,
-          mutationCreateAddress = resolveCreateAdress,
-          mutationSetAdress = resolveSetAdress
+          mutationCreateAddress = resolveCreateAddress,
+          mutationSetAddress = resolveSetAddress
         }
     subscriptionResolver =
       Subscription
         { subscriptionNewUser = resolveNewUser,
-          subscriptionNewAddress = const resolveNewAdress
+          subscriptionNewAddress = const resolveNewAddress
         }
 
 -- Resolve QUERY
@@ -184,15 +180,15 @@ resolveCreateUser = do
   liftEither setDBUser
 
 -- Mutation With Event Triggering : sends events to subscription
-resolveCreateAdress :: ResolverM EVENT IO Address
-resolveCreateAdress = do
+resolveCreateAddress :: ResolverM EVENT IO Address
+resolveCreateAddress = do
   requireAuthorized
   publish [addressUpdate]
   lift setDBAddress
 
 -- Mutation Without Event Triggering
-resolveSetAdress :: ResolverM EVENT IO Address
-resolveSetAdress = lift setDBAddress
+resolveSetAddress :: ResolverM EVENT IO Address
+resolveSetAddress = lift setDBAddress
 
 -- Resolve SUBSCRIPTION
 resolveNewUser :: SubscriptionField (ResolverS EVENT IO User)
@@ -202,8 +198,8 @@ resolveNewUser = subscribe USER $ do
   where
     subResolver (Event _ content) = liftEither (getDBUser content)
 
-resolveNewAdress :: SubscriptionField (ResolverS EVENT IO Address)
-resolveNewAdress = subscribe ADDRESS $ do
+resolveNewAddress :: SubscriptionField (ResolverS EVENT IO Address)
+resolveNewAddress = subscribe ADDRESS $ do
   requireAuthorized
   pure subResolver
   where
@@ -239,7 +235,7 @@ getDBUser _ = do
           userEmail = pure email,
           userAddress = const $ lift (getDBAddress (Content 12)),
           userOffice = constRes Nothing,
-          userHome = pure HH,
+          userHome = pure CityIDHH,
           userEntity =
             pure
               [ MyUnionAddress
@@ -254,7 +250,7 @@ getDBUser _ = do
                       userEmail = pure email,
                       userAddress = const $ lift (getDBAddress (Content 12)),
                       userOffice = constRes Nothing,
-                      userHome = pure HH,
+                      userHome = pure CityIDHH,
                       userEntity = pure []
                     }
               ]
@@ -282,7 +278,7 @@ setDBUser = do
         userEmail = pure email,
         userAddress = const $ lift setDBAddress,
         userOffice = constRes Nothing,
-        userHome = pure HH,
+        userHome = pure CityIDHH,
         userEntity = pure []
       }
 

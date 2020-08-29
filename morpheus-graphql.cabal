@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6aa7dd94a910283c164fa2b2c2f7e12b94bd464fc93383d8c68a691f56c888b0
+-- hash: 1cb95bed396892e4f90bae23362a60af6b6db18f3f8be73c198cddf652c16df3
 
 name:           morpheus-graphql
 version:        0.14.1
@@ -62,6 +62,8 @@ data-files:
     test/Feature/Holistic/introspection/schemaTypes/__Schema/query.gql
     test/Feature/Holistic/introspection/schemaTypes/__Type/query.gql
     test/Feature/Holistic/introspection/schemaTypes/__TypeKind/query.gql
+    test/Feature/Holistic/namespace/enum-fail-on-fullname/query.gql
+    test/Feature/Holistic/namespace/enum/query.gql
     test/Feature/Holistic/parsing/AnonymousOperation/mutation/query.gql
     test/Feature/Holistic/parsing/AnonymousOperation/query/query.gql
     test/Feature/Holistic/parsing/AnonymousOperation/subscription/query.gql
@@ -81,6 +83,7 @@ data-files:
     test/Feature/Holistic/parsing/numbers/query.gql
     test/Feature/Holistic/parsing/singleLineComments/query.gql
     test/Feature/Holistic/reservedNames/query.gql
+    test/Feature/Holistic/schema-ext.gql
     test/Feature/Holistic/schema.gql
     test/Feature/Holistic/selection/__typename/query.gql
     test/Feature/Holistic/selection/AliasResolve/query.gql
@@ -229,6 +232,8 @@ data-files:
     test/Feature/Holistic/introspection/schemaTypes/__Schema/response.json
     test/Feature/Holistic/introspection/schemaTypes/__Type/response.json
     test/Feature/Holistic/introspection/schemaTypes/__TypeKind/response.json
+    test/Feature/Holistic/namespace/enum-fail-on-fullname/response.json
+    test/Feature/Holistic/namespace/enum/response.json
     test/Feature/Holistic/parsing/AnonymousOperation/mutation/response.json
     test/Feature/Holistic/parsing/AnonymousOperation/query/response.json
     test/Feature/Holistic/parsing/AnonymousOperation/subscription/response.json
@@ -394,12 +399,11 @@ library
       Data.Morpheus.Document
       Data.Morpheus.Types.Internal.Subscription
   other-modules:
+      Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Channels
       Data.Morpheus.Server.Deriving.Decode
       Data.Morpheus.Server.Deriving.Encode
-      Data.Morpheus.Server.Deriving.Interpreter
-      Data.Morpheus.Server.Deriving.Introspect
-      Data.Morpheus.Server.Deriving.Resolve
+      Data.Morpheus.Server.Deriving.Schema
       Data.Morpheus.Server.Deriving.Utils
       Data.Morpheus.Server.Internal.TH.Decode
       Data.Morpheus.Server.Internal.TH.Types
@@ -407,11 +411,7 @@ library
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.TH.Compile
       Data.Morpheus.Server.TH.Declare
-      Data.Morpheus.Server.TH.Declare.Channels
-      Data.Morpheus.Server.TH.Declare.Decode
-      Data.Morpheus.Server.TH.Declare.Encode
       Data.Morpheus.Server.TH.Declare.GQLType
-      Data.Morpheus.Server.TH.Declare.Introspect
       Data.Morpheus.Server.TH.Declare.Type
       Data.Morpheus.Server.TH.Transform
       Data.Morpheus.Server.Types.GQLType

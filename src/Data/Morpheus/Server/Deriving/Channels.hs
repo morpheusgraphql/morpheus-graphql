@@ -10,28 +10,33 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Channels
   ( getChannels,
-    ChannelCon,
-    GetChannel (..),
-    ExploreChannels (..),
+    ChannelsConstraint,
   )
 where
 
--- MORPHEUS
+import Control.Applicative (pure)
+import Control.Monad ((>>=))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
+    stripNamespace,
   )
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeType,
     decodeArguments,
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType
+      ( getNamespace
+      ),
+  )
 import Data.Morpheus.Types.Internal.AST
-  ( FALSE,
-    FieldName (..),
+  ( FieldName (..),
     InternalError,
     SUBSCRIPTION,
     Selection (..),
@@ -50,24 +55,38 @@ import Data.Text
   ( pack,
   )
 import GHC.Generics
+import Prelude
+  ( ($),
+    (.),
+    const,
+    lookup,
+    map,
+  )
 
-data CustomProxy (c :: Bool) e = CustomProxy
-
-type ChannelCon e m a =
-  ExploreChannels
-    (CUSTOM (a (Resolver SUBSCRIPTION e m)))
-    (a (Resolver SUBSCRIPTION e m))
-    e
+type ChannelsConstraint e m (subs :: (* -> *) -> *) =
+  ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
+    Generic (subs (Resolver SUBSCRIPTION e m))
+  )
 
 getChannels ::
   forall e m subs.
-  ChannelCon e m subs =>
+  ( ChannelsConstraint e m subs,
+    GQLType (subs (Resolver SUBSCRIPTION e m))
+  ) =>
   subs (Resolver SUBSCRIPTION e m) ->
   Selection VALID ->
   ResolverState (Channel e)
 getChannels value sel =
-  selectBy sel $
-    exploreChannels (CustomProxy :: CustomProxy (CUSTOM (subs (Resolver SUBSCRIPTION e m))) e) value
+  selectBy sel
+    $ map stripChannel
+    $ exploreChannels (Proxy @e) value
+  where
+    stripChannel (x, y) =
+      ( stripNamespace
+          (getNamespace (Proxy @(subs (Resolver SUBSCRIPTION e m))))
+          x,
+        y
+      )
 
 selectBy ::
   Failure InternalError m =>
@@ -99,14 +118,14 @@ instance
     decodeArguments selectionArguments >>= (`getChannel` sel) . f
 
 ------------------------------------------------------
-class ExploreChannels (custom :: Bool) a e where
-  exploreChannels :: CustomProxy custom e -> a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
+class ExploreChannels a e where
+  exploreChannels :: Proxy e -> a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
 
 instance
   ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
     Generic (subs (Resolver SUBSCRIPTION e m))
   ) =>
-  ExploreChannels FALSE (subs (Resolver SUBSCRIPTION e m)) e
+  ExploreChannels (subs (Resolver SUBSCRIPTION e m)) e
   where
   exploreChannels _ = typeRep (Proxy @e) . from
 

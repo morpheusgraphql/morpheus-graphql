@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.15.0 - Unreleased Changes
+
+### new features
+
+- type : `App event m` and `deriveApp`
+
+  ```hs
+  app :: App EVENT IO
+  app = runApp (deriveApp root)
+
+  api :: a -> IO b
+  api = runApp (deriveApp root)
+  ```
+
+- `App` supports semigroup(`schema Stitching`): if whe have two graphql apps
+
+  ```hs
+  mergedApi :: a -> m b
+  mergedApi = runApp (deriveApp root <> deriveApp root2)
+  ```
+
+- you can use `GQLType.getNamespace` to strip Namespaces
+- you can use `GQLType.getDescriptions` to document field or enum Values
+
+- with `importGQLDocumentWithNamespace` now you can use Enums with Colliding Values:
+
+  ```graphql
+  enum X {
+    A
+  }
+
+  enum Y {
+    A
+  }
+  ```
+
+  they will be namespaced to. `XA` and `YA`
+
+### Breaking Changes
+
+- `importGQLDocumentWithNamespace` they will be namespaced enum Values
+- Argument types must have `GQLType` instances
+- in `Data.Morpheus.Server`:
+
+  - removed `subscriptionApp`
+  - changed `webSocketsApp` type to `App e m -> m (ServerApp, e -> m ())`
+  - changed `httpPubApp` type to `[e -> m ()] -> App e m -> a -> m b`
+
+- removed `Stream` from `Data.Morpheus.Types`
+
+- removed class `Interpreter`, `interpreter` is now just regular function.
+
+  ```hs
+  interpreter = runApp . deriveApp
+  ```
+
+### Minor Changes
+
+- internal refactoring
+
 ## 0.14.1 - 16.08.2020
 
 ## 0.14.0 - 15.08.2020
@@ -7,7 +67,7 @@
 ### new features
 
 - query validation supports interfaces
-- `debugInterpreter`: displays internal context on grahql errors
+- `debugInterpreter`: displays internal context on graphql errors
 - compileTimeSchemaValidation :
   morpheus validates schema at runtime (after the schema derivation).
   to be ensure that only correct api is compiled.
@@ -27,9 +87,9 @@ _validateSchema = $(compileTimeSchemaValidation (Identity gqlRoot))
   query {
     createDeity(
       name: """
-      powerqwe
+      power qwe
       bla \n sd
-      blu \\ dete
+      blu \\ date
       """
     ) {
       name
@@ -62,7 +122,7 @@ _validateSchema = $(compileTimeSchemaValidation (Identity gqlRoot))
 
 - `Context' renamed to`ResolverContext'
 - internal refactoring: changed AST
-- root subscribtion fields must be wrapped with `SubscriptionField`. e.g:
+- root subscription fields must be wrapped with `SubscriptionField`. e.g:
 
 ```haskell
 data Subscription (m :: * -> *) = Subscription
@@ -75,13 +135,13 @@ deriving (Generic)
 - signature of `subscribe` is changed. now you can use it as followed:
 
 ```haskell
-resolveNewAdress :: SubscriptionField (ResolverS EVENT IO Address)
-resolveNewAdress = subscribe ADDRESS $ do
+resolveNewAddress :: SubscriptionField (ResolverS EVENT IO Address)
+resolveNewAddress = subscribe ADDRESS $ do
     -- executed only once
     -- immediate response on failures
     requireAuthorized
     pure $ \(Event _ content) -> do
-        -- exectues on every event
+        -- executes on every event
         lift (getDBAddress content)
 ```
 
@@ -140,27 +200,27 @@ deprecated:
 
 - `Semigroup` support for Resolver
 - `MonadFail` Support for Resolver
-- flexible resolvers: `ResolverO`, `ResolverQ` , `RwsolverM`, `ResolverS`
+- flexible resolvers: `ResolverO`, `ResolverQ` , `ResolverM`, `ResolverS`
   they can handle object and scalar types:
 
 ```hs
 -- if we have record and regular Int
 data Object m = Object { field :: m Int }
 
--- we canwrite
--- handes kind : (* -> *) -> *
+-- we can write
+-- handles kind : (* -> *) -> *
 resolveObject :: ResolverO o EVENT IO Object
 -- is alias to: Resolver o () IO (Object (Resolver o () IO))
 -- or
--- handes kind : *
+-- handles kind : *
 resolveInt :: ResolverO o EVENT IO Int
 -- is alias to: Resolver o () IO Int
 ```
 
-the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
+the resolvers : `ResolverQ` , `ResolverM`, `ResolverS` , are like
 `ResolverO` but with `QUERY` , `MUTATION` and `SUBSCRIPTION` as argument.
 
-- flexible compsed Resolver Type alias: `ComposedResolver`. extends `ResolverO` with
+- flexible composed Resolver Type alias: `ComposedResolver`. extends `ResolverO` with
   parameter `(f :: * -> *)`. so that you can compose Resolvers e.g:
 
   ```hs
@@ -182,7 +242,7 @@ the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
 
 ### minor
 
-- fixed subscription sessions, srarting new session does not affects old ones.
+- fixed subscription sessions, starting new session does not affects old ones.
 - added tests for subscriptions
 
 ## 0.11.0 - 01.05.2020
@@ -190,7 +250,7 @@ the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
 ### Breaking Changes
 
 - Client generated enum data constructors are now prefixed with with the type name to avoid name conflicts.
-- for Variant selection inputUnion uses `inputname` insead of `__typename`
+- for Variant selection inputUnion uses `inputname` instead of `__typename`
 
 - in `Data.Morpheus.Server`
 
@@ -307,7 +367,7 @@ the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
 
 ### minor
 
-- monadio instance for resolvers. thanks @dandoh
+- monad instance for resolvers. thanks @dandoh
 - example using stm, authentication, monad transformers. thanks @dandoh
 - added dependency `mtl`
 
@@ -325,7 +385,7 @@ the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
 
 - liftEither support in MutResolver (#351)
 - selection of `__typename` on object und union objects (#337)
-- auto inferece of external types in gql document (#343)
+- auto inference of external types in gql document (#343)
 
   th will generate field `m (Type m)` if type has an argument
 
@@ -367,24 +427,24 @@ the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
 - support of resolver fields `m type` for the fields without arguments
 
   ```hs
-  data Diety m = Deity {
+  data Deity m = Deity {
       name :: m Text
   }
   -- is equal to
-  data Diety m = Deity {
+  data Deity m = Deity {
       name :: () -> m Text
   }
   ```
 
-- template haskell generates `m type` insead of `() -> m type` for fields without argument (#334)
+- template haskell generates `m type` instead of `() -> m type` for fields without argument (#334)
 
   ```hs
-  data Diety m = Deity {
+  data Deity m = Deity {
       name :: (Arrow () (m Text)),
       power :: (Arrow () (m (Maybe Text)))
   }
   -- changed to
-  data Diety m = Deity {
+  data Deity m = Deity {
       name :: m Text,
       power :: m (Maybe Text)
   }
@@ -397,7 +457,7 @@ the resolvers : `ResolverQ` , `RwsolverM`, `ResolverS` , are like
 - deprecated: `INPUT_OBJECT`, `OBJECT`, `UNION`,
 
   - use `INPUT` instead of `INPUT_OBJECT`
-  - use `deriving(GQLType)` insead of `OBJECT` or `UNION`
+  - use `deriving(GQLType)` instead of `OBJECT` or `UNION`
 
 - only namespaced Unions generate regular graphql Union, other attempts will be wrapped inside an object with constructor name :
 
@@ -443,13 +503,13 @@ data Deity  = Deity{
   } deriving (Generic, GQLType)
 
 data Character  =
-    CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
+    CharacterDeity Deity -- Only <tyConName><conName> should generate direct link
   -- RECORDS
   | Creature { creatureName :: Text, creatureAge :: Int }
   --- Types
   | SomeDeity Deity
   | CharacterInt Int
-  | SomeMutli Int Text
+  | SomeMulti Int Text
   --- ENUMS
   | Zeus
   | Cronus deriving (Generic, GQLType)
@@ -476,7 +536,7 @@ union Character =
   | Creature
   | SomeDeity
   | CharacterInt
-  | SomeMutli
+  | SomeMulti
   | CharacterEnumObject
 
 type Creature {
@@ -492,7 +552,7 @@ type CharacterInt {
   _0: Int!
 }
 
-type SomeMutli {
+type SomeMulti {
   _0: Int!
   _1: String!
 }
@@ -520,7 +580,7 @@ rules:
       | ...
   ```
 
-- for union recrods (`Creature { creatureName :: Text, creatureAge :: Int }`) will be referenced in union type, plus type `Creature`will be added in schema.
+- for union records (`Creature { creatureName :: Text, creatureAge :: Int }`) will be referenced in union type, plus type `Creature`will be added in schema.
 
   e.g
 
@@ -539,7 +599,7 @@ rules:
 
   - all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and this type will be added to union `Character`. as in example above
 
-  - there is only types left with form `TypeName Type1 2Type ..`(e.g `SomeDeity Deity` ,`CharacterInt Int`, `SomeMutli Int Text`),
+  - there is only types left with form `TypeName Type1 2Type ..`(e.g `SomeDeity Deity` ,`CharacterInt Int`, `SomeMulti Int Text`),
 
     morpheus will generate objet type from it:
 
@@ -557,7 +617,7 @@ rules:
 
 ### Fixed
 
-- on filed resolver was displayed. unexhausted case exception of graphql error
+- on filed resolver was displayed. Unexhausted case exception of graphql error
 - support of signed numbers (e.g `-4`)
 - support of round floats (e.g `1.000`)
 - validation checks undefined fields on inputObject
@@ -565,7 +625,7 @@ rules:
 
 ## [0.7.1] - 26.11.2019
 
-- max bound icludes: support-megaparsec-8.0
+- max bound includes: support-megaparsec-8.0
 
 ## [0.7.0] - 24.11.2019
 
@@ -692,7 +752,7 @@ resolver _args = lift setDBAddress
 
   `ResolveM EVENT IO Address` is same as `MutRes EVENT IO (Address (MutRes EVENT IO))`
 
-  is helpfull wenn you want to resolve GraphQL object
+  is helpful when you want to resolve GraphQL object
 
 ### Fixed
 
@@ -733,7 +793,7 @@ resolver _args = lift setDBAddress
 ### Fixed
 
 - can be parsed `implements` with multiple interfaces separated by `&`
-- can be parsed default value on `inputobject`
+- can be parsed default value on `inputObject`
 - Parser supports anonymous Operation: `query` , `mutation` , `subscription`
   for example:
 
@@ -874,10 +934,10 @@ resolver _args = lift setDBAddress
   client will Generate:
 
   - `UserPerson` from `{user`
-  - `UserFriendPerson`: from `{user{freind`
+  - `UserFriendPerson`: from `{user{friend`
   - `UserParentPerson`: from `{user{parent`
-  - `UserBestFriendPerson`: from `{user{bestFrend`
-  - `UserBestFriendParentPerson`: from `{user{bestFrend{parent`
+  - `UserBestFriendPerson`: from `{user{bestFriend`
+  - `UserBestFriendParentPerson`: from `{user{bestFriend{parent`
 
 - GraphQL Client Defines enums and Input Types only once per query and they don't collide
 
@@ -902,7 +962,7 @@ resolver _args = lift setDBAddress
 
 ### Fixed
 
-- `String` defined in GQLDcoument will be converted to `Text` by template haskell
+- `String` defined in GQLDocument will be converted to `Text` by template haskell
 
 - `importGQLDocument` and `gqlDocument` supports Mutation, Subscription and Resolvers with custom Monad
 
@@ -1098,7 +1158,7 @@ resolver _args = lift setDBAddress
 
 - WebSocket subProtocol changed from `graphql-subscriptions` to `graphql-ws`
 
-- type familiy `KIND` is moved into typeClasses `GQLType`, so you should replace
+- type family `KIND` is moved into typeClasses `GQLType`, so you should replace
 
   ```haskell
   type instance KIND Deity = OBJECT

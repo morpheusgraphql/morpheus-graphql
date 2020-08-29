@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Internal.TH.Decode
   ( withInputObject,
@@ -15,6 +16,12 @@ module Data.Morpheus.Server.Internal.TH.Decode
 where
 
 -- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad ((>>=)))
+import Data.Either (Either (..))
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( empty,
     selectBy,
@@ -43,6 +50,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (traverse)
+import Prelude ((.))
 
 withInputObject ::
   Failure InternalError m =>
@@ -80,9 +89,9 @@ withInputUnion decoder unions =
     unions
     >>= providesValueFor . entryValue
   where
-    providesValueFor (Enum key) = selectOr notfound onFound (toFieldName key) unions
+    providesValueFor (Enum key) = selectOr notFound onFound (toFieldName key) unions
       where
-        notfound = withInputObject (decoder key unions) (Object empty)
+        notFound = withInputObject (decoder key unions) (Object empty)
         onFound = withInputObject (decoder key unions) . entryValue
     providesValueFor _ = failure ("__typename must be Enum" :: InternalError)
 

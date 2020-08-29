@@ -29,14 +29,14 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Semigroup ((<>))
 import Data.Text (pack)
 import GHC.Generics (Generic)
-import Lib
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (assertFailure, testCase)
+import Utils.Utils
   ( CaseTree (..),
     FileUrl (..),
     scanSchemaTests,
     toString,
   )
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertFailure, testCase)
 import Prelude
   ( ($),
     (.),

@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.15.0 - Unreleased Changes
+
+### new features
+
+- query validator automatically adds `__typename` to interface types
+
+- type : `App`
+
+  ```hs
+  api :: a -> m b
+  api = runApp (mkApp schema resolvers)
+  ```
+
+- `App` supports semigroup(`schema Stitching`):
+
+  if whe have two apps `app1` and `app2` with type `Api EVENT IO` we can merge it as.
+
+  ```hs
+  mergedApi :: a -> m b
+  mergedApi = runApp (app1 <> app2)
+  ```
+
+- `runApp` changed signature to:
+
+  ```hs
+  runApp :: Api e m -> a -> m b
+  ```
+
+### Breaking Changes
+
+- removed `runApi`.
+
+### Minor Changes
+
+- internal refactoring
+
 ## 0.14.1 - 16.08.2020
 
 ## 0.14.0 - 15.08.2020
@@ -14,12 +50,12 @@
   - `defaultConfig`
   - `debugConfig`
 
-- for better debuging, internal errors messages will display resolving state:
+- for better debugging, internal errors messages will display resolving state:
   - `current TypeName`
   - `current Selection`
   - `OperationDefinition`
   - `SchemaDefinition`
-- rendering graphql "AST". e.g `render ( slection :: Selection VALID)` will render
+- rendering graphql "AST". e.g `render (selection :: Selection VALID)` will render
 
 ```graphql
 {
@@ -29,7 +65,7 @@
 }
 ```
 
-- quasiqouter `[dsl| <type definitions> |]` generates `Schema VALID`.
+- quasiquoter `[dsl| <type definitions> |]` generates `Schema VALID`.
 - parser supports custom directive definition. e.g
 
 ```graphql
@@ -43,9 +79,9 @@ directive @MyDirective on FIELD_DEFINITION | OBJECT
   query {
     createDeity(
       name: """
-      powerqwe
+      power
       bla \n sd
-      blu \\ dete
+      blu \\ date
       """
     ) {
       name
@@ -72,6 +108,7 @@ directive @MyDirective on FIELD_DEFINITION | OBJECT
   - `FieldDefinition IN VALID`
   - ...
 - runApi requires argument config
+
   ```hs
     runApi ::
       Schema s ->
@@ -100,7 +137,7 @@ directive @MyDirective on FIELD_DEFINITION | OBJECT
 
 ## New features
 
-- parser supports implemnets interfaces seperated with empty spaces
+- parser supports implements interfaces separated with empty spaces
 
   ```gql
   type T implements A , B C & D {

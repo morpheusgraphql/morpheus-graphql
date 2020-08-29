@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Internal.TH.Utils
   ( kindName,
@@ -40,9 +41,15 @@ import Language.Haskell.TH
     Type (..),
     cxt,
   )
+import Prelude
+  ( ($),
+    (.),
+    map,
+    pure,
+  )
 
 o' :: Type
-o' = VarT $ toName ("oparation" :: TypeName)
+o' = VarT $ toName ("operation" :: TypeName)
 
 e' :: Type
 e' = VarT $ toName ("encodeEvent" :: TypeName)

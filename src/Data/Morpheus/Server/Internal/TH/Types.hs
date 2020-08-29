@@ -1,25 +1,39 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Data.Morpheus.Server.Internal.TH.Types
   ( ServerTypeDefinition (..),
+    ServerDec,
+    ServerDecContext (..),
   )
 where
 
+import Control.Monad.Reader (Reader)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
-    FieldName,
     IN,
     TypeDefinition,
     TypeKind,
     TypeName,
   )
+import Prelude
+  ( Bool,
+    Maybe,
+    Show,
+  )
 
 --- Core
 data ServerTypeDefinition cat s = ServerTypeDefinition
   { tName :: TypeName,
-    tNamespace :: [FieldName],
     typeArgD :: [ServerTypeDefinition IN s],
     tCons :: [ConsD cat s],
     tKind :: TypeKind,
     typeOriginal :: Maybe (TypeDefinition ANY s)
   }
   deriving (Show)
+
+type ServerDec = Reader ServerDecContext
+
+newtype ServerDecContext = ServerDecContext
+  { namespace :: Bool
+  }

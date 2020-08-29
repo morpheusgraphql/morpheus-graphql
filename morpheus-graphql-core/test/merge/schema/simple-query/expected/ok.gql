@@ -1,0 +1,14 @@
+type Type2 {
+  name: String
+  age: Int
+  id: ID
+}
+
+type Type1 {
+  name: String
+}
+
+type Query {
+  type: Type2
+  id: ID
+}

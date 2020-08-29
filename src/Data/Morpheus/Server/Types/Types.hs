@@ -1,16 +1,26 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.Types
   ( Undefined (..),
     Pair (..),
     MapKind (..),
-    MapArgs (..),
     mapKindFromList,
   )
 where
 
-import GHC.Generics (Generic)
+import Data.Functor (fmap)
+import GHC.Generics
+  ( Generic,
+  )
+import Prelude
+  ( Applicative (..),
+    Int,
+    Show,
+    length,
+    uncurry,
+  )
 
 data Undefined (m :: * -> *) = Undefined deriving (Show, Generic)
 
@@ -20,26 +30,17 @@ data Pair k v = Pair
   }
   deriving (Generic)
 
-newtype MapArgs k = MapArgs
-  { oneOf :: Maybe [k]
-  }
-  deriving (Generic)
-
 data MapKind k v m = MapKind
   { size :: Int,
-    pairs :: MapArgs k -> m [Pair k v]
+    pairs :: m [Pair k v]
   }
   deriving (Generic)
 
-mapKindFromList :: (Eq k, Applicative m) => [(k, v)] -> MapKind k v m
+mapKindFromList :: (Applicative m) => [(k, v)] -> MapKind k v m
 mapKindFromList inputPairs =
   MapKind
     { size = length inputPairs,
       pairs = resolvePairs
     }
   where
-    filterBy MapArgs {oneOf = Just list} =
-      filter ((`elem` list) . fst) inputPairs
-    filterBy _ = inputPairs
-    resolvePairs = pure . (map toGQLTuple . filterBy)
-    toGQLTuple (x, y) = Pair x y
+    resolvePairs = pure (fmap (uncurry Pair) inputPairs)

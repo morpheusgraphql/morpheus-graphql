@@ -10,13 +10,11 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.TH.Simple
-  ( api,
-    rootResolver,
+  ( app,
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Morpheus (interpreter)
+import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types (RootResolver (..), Undefined (..))
 import Data.Text (Text)
@@ -38,5 +36,5 @@ rootResolver =
             power = pure (Just "Shapeshifting")
           }
 
-api :: ByteString -> IO ByteString
-api = interpreter rootResolver
+app :: App () IO
+app = deriveApp rootResolver

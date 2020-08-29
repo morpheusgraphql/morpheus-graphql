@@ -56,6 +56,7 @@ import Data.Morpheus.Internal.Utils
     KeyOf (..),
     Listable (..),
     Merge (..),
+    Namespace (..),
     Selectable (..),
     elems,
   )
@@ -252,7 +253,10 @@ data FieldDefinition (cat :: TypeCategory) (s :: Stage) = FieldDefinition
     fieldDirectives :: [Directive s],
     fieldContent :: Maybe (FieldContent TRUE cat s)
   }
-  deriving (Show, Lift)
+  deriving (Show, Lift, Eq)
+
+instance Namespace (FieldDefinition c s) where
+  stripNamespace ns f = f {fieldName = stripNamespace ns (fieldName f)}
 
 data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
   DefaultInputValue ::
@@ -267,6 +271,8 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
 fieldContentArgs :: FieldContent b cat s -> ArgumentsDefinition s
 fieldContentArgs (FieldArgs args) = args
 fieldContentArgs _ = empty
+
+deriving instance Eq (FieldContent bool cat s)
 
 deriving instance Show (FieldContent bool cat s)
 
@@ -349,7 +355,7 @@ data ArgumentsDefinition s = ArgumentsDefinition
   { argumentsTypename :: Maybe TypeName,
     arguments :: OrdMap FieldName (ArgumentDefinition s)
   }
-  deriving (Show, Lift)
+  deriving (Show, Lift, Eq)
 
 instance RenderGQL (ArgumentsDefinition s) where
   render ArgumentsDefinition {arguments} = renderArguments (elems arguments)

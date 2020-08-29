@@ -14,18 +14,18 @@ import Client.Client
   ( fetchUser,
   )
 import Data.Functor.Identity (Identity (..))
+import Data.Morpheus (runApp)
 import Data.Morpheus.Server
   ( compileTimeSchemaValidation,
-    httpPubApp,
     webSocketsApp,
   )
-import qualified Server.Mythology.API as Mythology (api, rootResolver)
+import qualified Server.Mythology.API as Mythology
 import Server.Sophisticated.API
   ( EVENT,
-    api,
-    gqlRoot,
+    app,
+    root,
   )
-import qualified Server.TH.Simple as TH (api, rootResolver)
+import qualified Server.TH.Simple as TH
 import Server.Utils
   ( httpEndpoint,
     startServer,
@@ -35,16 +35,16 @@ import Web.Scotty
   )
 
 _validateSchema :: ()
-_validateSchema = $(compileTimeSchemaValidation (Identity gqlRoot))
+_validateSchema = $(compileTimeSchemaValidation (Identity root))
 
 scottyServer :: IO ()
 scottyServer = do
-  (wsApp, publish) <- webSocketsApp api
-  fetchUser (httpPubApp api publish) >>= print
+  (wsApp, publish) <- webSocketsApp app
+  fetchUser (runApp app) >>= print
   startServer wsApp (httpApp publish)
   where
     httpApp :: (EVENT -> IO ()) -> ScottyM ()
     httpApp publish = do
-      httpEndpoint "/" gqlRoot (httpPubApp api publish)
-      httpEndpoint "/mythology" Mythology.rootResolver Mythology.api
-      httpEndpoint "/th" TH.rootResolver TH.api
+      httpEndpoint "/" [publish] app
+      httpEndpoint "/mythology" [] Mythology.app
+      httpEndpoint "/th" [] TH.app

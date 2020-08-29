@@ -1,3 +1,4 @@
+# stack install --ghc-options -ddump-splices
 # ghc 8.2.2
 resolver: lts-11.10
 packages:

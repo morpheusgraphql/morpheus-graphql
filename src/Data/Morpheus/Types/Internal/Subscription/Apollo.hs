@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Subscription.Apollo
   ( ApolloAction (..),
@@ -12,6 +13,7 @@ module Data.Morpheus.Types.Internal.Subscription.Apollo
   )
 where
 
+import Control.Applicative (Applicative (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson
   ( (.:),
@@ -29,8 +31,15 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
     pack,
   )
-import Data.Maybe (maybe)
--- MORPHEUS
+import Data.Either
+  ( Either (..),
+    either,
+  )
+import Data.Functor ((<$>))
+import Data.Maybe
+  ( Maybe (..),
+    maybe,
+  )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
@@ -53,6 +62,12 @@ import Network.WebSockets
     acceptRequestWith,
     getRequestSubprotocols,
     pendingRequest,
+  )
+import Prelude
+  ( ($),
+    (.),
+    Show,
+    String,
   )
 
 type ID = Text

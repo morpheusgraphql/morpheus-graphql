@@ -12,10 +12,8 @@ module Data.Morpheus.Types.Internal.Subscription
   ( connect,
     disconnect,
     connectionThread,
-    toOutStream,
     runStreamWS,
     runStreamHTTP,
-    Stream,
     Scope (..),
     Input (..),
     WS,
@@ -30,6 +28,7 @@ module Data.Morpheus.Types.Internal.Subscription
     toList,
     connectionSessionIds,
     SessionID,
+    streamApp,
   )
 where
 
@@ -47,6 +46,10 @@ import Control.Monad.IO.Unlift
   )
 -- MORPHEUS
 
+import Data.Morpheus.Core
+  ( App,
+    runAppStream,
+  )
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -75,6 +78,9 @@ import Data.Morpheus.Types.Internal.Subscription.Stream
     toOutStream,
   )
 import Data.UUID.V4 (nextRandom)
+
+streamApp :: Monad m => App e m -> Input api -> Stream api e m
+streamApp app = toOutStream (runAppStream app)
 
 connect :: MonadIO m => m (Input WS)
 connect = Init <$> liftIO nextRandom
@@ -120,7 +126,7 @@ finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
 connectionThread ::
   ( MonadUnliftIO m
   ) =>
-  (Input WS -> Stream WS e m) ->
+  App e m ->
   Scope WS e m ->
   m ()
 connectionThread api scope = do
@@ -131,11 +137,11 @@ connectionThread api scope = do
 
 connectionLoop ::
   Monad m =>
-  (Input WS -> Stream WS e m) ->
+  App e m ->
   Scope WS e m ->
   Input WS ->
   m ()
-connectionLoop api scope input =
+connectionLoop app scope input =
   forever
     $ runStreamWS scope
-    $ api input
+    $ streamApp app input

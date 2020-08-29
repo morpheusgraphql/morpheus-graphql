@@ -13,7 +13,6 @@
 module Data.Morpheus.Server
   ( webSocketsApp,
     httpPubApp,
-    subscriptionApp,
     ServerConstraint,
     httpPlayground,
     compileTimeSchemaValidation,
@@ -27,7 +26,13 @@ import Control.Monad.IO.Unlift
   )
 -- MORPHEUS
 
-import Data.Morpheus.Server.Deriving.Introspect
+import Data.Foldable (traverse_)
+import Data.Function ((&))
+import Data.Morpheus.Core
+  ( App,
+    runApp,
+  )
+import Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,
   )
 import Data.Morpheus.Server.Playground
@@ -38,17 +43,16 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Event,
   )
 import Data.Morpheus.Types.Internal.Subscription
-  ( HTTP,
-    Input (..),
+  ( Input (..),
     Scope (..),
     Store (..),
-    Stream,
     WS,
     acceptApolloRequest,
     connectionThread,
     initDefaultStore,
     publishEventWith,
     runStreamHTTP,
+    streamApp,
   )
 import Network.WebSockets
   ( Connection,
@@ -84,33 +88,32 @@ httpPubApp ::
   ( MonadIO m,
     MapAPI a b
   ) =>
-  (Input HTTP -> Stream HTTP e m) ->
-  (e -> m ()) ->
+  [e -> m ()] ->
+  App e m ->
   a ->
   m b
-httpPubApp api httpCallback =
+httpPubApp [] app = runApp app
+httpPubApp callbacks app =
   mapAPI $
     runStreamHTTP ScopeHTTP {httpCallback}
-      . api
+      . streamApp app
       . Request
+  where
+    httpCallback e = traverse_ (e &) callbacks
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
-subscriptionApp ::
+webSocketsApp ::
   ( MonadUnliftIO m,
     Eq channel
   ) =>
-  ( Store (Event channel a) m ->
-    (Scope WS (Event channel a) m -> m ()) ->
-    m app
-  ) ->
-  (Input WS -> Stream WS (Event channel a) m) ->
-  m (app, Event channel a -> m ())
-subscriptionApp appWrapper api =
+  App (Event channel cont) m ->
+  m (ServerApp, Event channel cont -> m ())
+webSocketsApp app =
   do
     store <- initDefaultStore
-    app <- appWrapper store (connectionThread api)
+    wsApp <- webSocketsWrapper store (connectionThread app)
     pure
-      ( app,
+      ( wsApp,
         publishEventWith store
       )
 
@@ -128,13 +131,3 @@ webSocketsWrapper store handler =
           pingThread
             conn
             $ runIO (handler (defaultWSScope store conn))
-
--- | Wai WebSocket Server App for GraphQL subscriptions
-webSocketsApp ::
-  ( MonadIO m,
-    MonadUnliftIO m,
-    Eq channel
-  ) =>
-  (Input WS -> Stream WS (Event channel a) m) ->
-  m (ServerApp, Event channel a -> m ())
-webSocketsApp = subscriptionApp webSocketsWrapper

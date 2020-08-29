@@ -90,7 +90,7 @@ compileError x =
   globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
 getType :: TypeName -> Converter (TypeDefinition ANY VALID)
-getType typename = asks fst >>= selectBy (compileError $ " cant find Type" <> msg typename) typename
+getType typename = asks fst >>= selectBy (compileError $ " can't find Type" <> msg typename) typename
 
 customScalarTypes :: TypeName -> [TypeName]
 customScalarTypes typeName

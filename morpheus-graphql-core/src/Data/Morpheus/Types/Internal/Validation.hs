@@ -230,17 +230,17 @@ selectWithDefaultValue
     }
   values =
     selectOr
-      (handeNull fieldContent)
+      (handleNull fieldContent)
       validateF
       fieldName
       values
     where
       ------------------
-      handeNull ::
+      handleNull ::
         Maybe (FieldContent TRUE IN s) ->
         Validator s ctx validValue
-      handeNull (Just (DefaultInputValue value)) = f value
-      handeNull Nothing
+      handleNull (Just (DefaultInputValue value)) = f value
+      handleNull Nothing
         | isNullable field = f Null
         | otherwise = failSelection
       -----------------
@@ -288,7 +288,7 @@ constraintInputUnion tags hm = do
         )
         __inputname
         hm
-  unionMember <- isPosibeInputUnion tags enum
+  unionMember <- isPossibleInputUnion tags enum
   case size hm of
     1 -> pure (unionMember, Nothing)
     2 -> do
@@ -304,10 +304,10 @@ constraintInputUnion tags hm = do
       pure (unionMember, Just value)
     _ -> failure ("input union can have only one variant." :: Message)
 
-isPosibeInputUnion :: [UnionMember IN s] -> Value stage -> Either Message (UnionMember IN s)
-isPosibeInputUnion tags (Enum name) =
+isPossibleInputUnion :: [UnionMember IN s] -> Value stage -> Either Message (UnionMember IN s)
+isPossibleInputUnion tags (Enum name) =
   selectBy
-    (msg name <> " is not posible union type")
+    (msg name <> " is not possible union type")
     name
     tags
-isPosibeInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
+isPossibleInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"

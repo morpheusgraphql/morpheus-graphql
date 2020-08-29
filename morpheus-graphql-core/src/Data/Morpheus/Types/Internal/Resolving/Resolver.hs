@@ -28,7 +28,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     ResponseStream,
     ObjectResModel (..),
     ResModel (..),
-    FieldResModel,
     WithOperation,
     ResolverContext (..),
     unsafeInternalContext,
@@ -52,6 +51,8 @@ import Control.Monad.Trans.Reader
     mapReaderT,
   )
 import Data.Functor ((<$>), Functor (..))
+import Data.HashMap.Lazy (HashMap)
+import qualified Data.HashMap.Lazy as HM
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils
@@ -77,6 +78,7 @@ import Data.Morpheus.Types.Internal.AST
     OperationType,
     OperationType (..),
     QUERY,
+    Ref,
     SUBSCRIPTION,
     ScalarValue (..),
     Selection (..),
@@ -127,7 +129,6 @@ import Prelude
     (.),
     Eq (..),
     Show (..),
-    lookup,
     otherwise,
   )
 
@@ -259,7 +260,7 @@ subscribe ch res =
     $ fromSub <$> runResolverQ res
   where
     fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
-    fromSub f = join (ReaderT $ \e -> runResolverS (f e))
+    fromSub f = join (ReaderT (runResolverS . f))
 
 withArguments ::
   (LiftOperation o, Monad m) =>
@@ -300,7 +301,7 @@ lookupRes Selection {selectionName}
     maybe
       (pure gqlNull)
       (>>= runDataResolver)
-      . lookup selectionName
+      . HM.lookup selectionName
       . objectFields
 
 resolveObject ::
@@ -336,9 +337,9 @@ runDataResolver res = asks currentSelection >>= __encode res
               ResUnion name
                 $ pure
                 $ ResObject
-                $ ObjectResModel name [("enum", pure $ ResScalar $ String $ readTypeName enum)]
-        encodeNode ResEnum {} _ =
-          failure ("wrong selection on enum value" :: Message)
+                $ ObjectResModel name
+                $ HM.singleton "enum" (pure $ ResScalar $ String $ readTypeName enum)
+        encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)
         -- UNION
         encodeNode (ResUnion typename unionRef) (UnionSelection selections) =
           unionRef >>= resolveObject currentSelection
@@ -388,32 +389,54 @@ subscriptionEvents ctx@ResolverContext {currentSelection} (Just channelGenerator
 subscriptionEvents ctx Nothing _ = failure [resolverFailureMessage ctx "channel Resolver is not defined"]
 
 -- Resolver Models -------------------------------------------------------------------
-type FieldResModel o e m =
-  (FieldName, Resolver o e m (ResModel o e m))
 
 data ObjectResModel o e m = ObjectResModel
   { __typename :: TypeName,
-    objectFields ::
-      [FieldResModel o e m]
+    objectFields :: HashMap FieldName (Resolver o e m (ResModel o e m))
   }
   deriving (Show)
 
-instance Applicative f => SemigroupM f (ObjectResModel o e m) where
-  mergeM _ (ObjectResModel tyname x) (ObjectResModel _ y) =
-    pure $ ObjectResModel tyname (x <> y)
+instance
+  ( Monad m,
+    Applicative f,
+    LiftOperation o
+  ) =>
+  SemigroupM f (ObjectResModel o e m)
+  where
+  mergeM path (ObjectResModel tyname x) (ObjectResModel _ y) =
+    pure $ ObjectResModel tyname (HM.unionWith (mergeResolver path) x y)
+
+mergeResolver ::
+  (Monad m, SemigroupM (ResolverStateT e m) a, LiftOperation o) =>
+  [Ref] ->
+  Resolver o e m a ->
+  Resolver o e m a ->
+  Resolver o e m a
+mergeResolver path a b = do
+  a' <- a
+  b >>= packResolver . mergeM path a'
 
 data ResModel (o :: OperationType) e (m :: * -> *)
   = ResNull
   | ResScalar ScalarValue
   | ResEnum TypeName TypeName
-  | ResList [ResModel o e m]
   | ResObject (ObjectResModel o e m)
+  | ResList [ResModel o e m]
   | ResUnion TypeName (Resolver o e m (ResModel o e m))
   deriving (Show)
 
-instance (Monad f, Failure InternalError f) => SemigroupM f (ResModel o e m) where
-  mergeM p (ResObject x) (ResObject y) =
-    ResObject <$> mergeM p x y
+instance
+  ( Monad f,
+    Monad m,
+    LiftOperation o,
+    Failure InternalError f
+  ) =>
+  SemigroupM f (ResModel o e m)
+  where
+  mergeM _ ResNull ResNull = pure ResNull
+  mergeM _ ResScalar {} x@ResScalar {} = pure x
+  mergeM _ ResEnum {} x@ResEnum {} = pure x
+  mergeM p (ResObject x) (ResObject y) = ResObject <$> mergeM p x y
   mergeM _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
 
 data RootResModel e m = RootResModel
