@@ -167,11 +167,11 @@ type SchemaConstraint a =
 -- | context , like Proxy with multiple parameters
 -- * 'kind': object, scalar, enum ...
 -- * 'a': actual gql type
-data Context (kind :: GQL_KIND) a
-  = Context
+data KindedProxy k a
+  = KindedProxy
 
-data ProxyRep (cat :: TypeCategory) a
-  = ProxyRep
+setProxyType :: f b -> kinded k a -> KindedProxy k b
+setProxyType _ _ = KindedProxy
 
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
 --   this method allows you to validate it at compile time.
@@ -232,47 +232,53 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
             Proxy @(subs (Resolver SUBSCRIPTION e m))
 
 introspectOUT :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdater
-introspectOUT _ = deriveType (ProxyRep :: ProxyRep OUT a)
+introspectOUT _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
-  deriveType _ = deriveKindedType (Context :: Context (KIND a) a)
+  deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class DeriveType (cat :: TypeCategory) a where
   deriveType :: proxy cat a -> TypeUpdater
-  field :: proxy cat a -> FieldName -> FieldDefinition cat CONST
+  field :: FieldName -> proxy cat a -> FieldDefinition cat CONST
   -----------------------------------------------
   default field ::
     GQLType a =>
-    proxy cat a ->
     FieldName ->
+    proxy cat a ->
     FieldDefinition cat CONST
-  field _ = buildField (Proxy @a) Nothing
+  field fieldName _ = buildField (Proxy @a) Nothing fieldName
+
+deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> TypeUpdater
+deriveTypeWith x = deriveType . setProxyType x
+
+deriveFieldWith :: DeriveType cat a => f a -> FieldName -> kinded cat b -> FieldDefinition cat CONST
+deriveFieldWith x name = field name . setProxyType x
 
 -- Maybe
 instance DeriveType cat a => DeriveType cat (Maybe a) where
-  field _ = toNullable . field (ProxyRep :: ProxyRep cat a)
-  deriveType _ = deriveType (ProxyRep :: ProxyRep cat a)
+  field name = toNullable . deriveFieldWith (Proxy @a) name
+  deriveType = deriveTypeWith (Proxy @a)
 
 -- List
 instance DeriveType cat a => DeriveType cat [a] where
-  field _ = toListField . field (ProxyRep :: ProxyRep cat a)
-  deriveType _ = deriveType (ProxyRep :: ProxyRep cat a)
+  field name = toListField . deriveFieldWith (Proxy @a) name
+  deriveType = deriveTypeWith (Proxy @a)
 
 -- Tuple
 instance DeriveType cat (Pair k v) => DeriveType cat (k, v) where
-  field _ = field (ProxyRep :: ProxyRep cat (Pair k v))
-  deriveType _ = deriveType (ProxyRep :: ProxyRep cat (Pair k v))
+  field = deriveFieldWith (Proxy @(Pair k v))
+  deriveType = deriveTypeWith (Proxy @(Pair k v))
 
 -- Set
 instance DeriveType cat [a] => DeriveType cat (Set a) where
-  field _ = field (ProxyRep :: ProxyRep cat [a])
-  deriveType _ = deriveType (ProxyRep :: ProxyRep cat [a])
+  field = deriveFieldWith (Proxy @[a])
+  deriveType = deriveTypeWith (Proxy @[a])
 
 -- Map
 instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
-  field _ = field (ProxyRep :: ProxyRep cat (MapKind k v Maybe))
-  deriveType _ = deriveType (ProxyRep :: ProxyRep cat (MapKind k v Maybe))
+  field = deriveFieldWith (Proxy @(MapKind k v Maybe))
+  deriveType = deriveTypeWith (Proxy @(MapKind k v Maybe))
 
 -- Resolver : a -> Resolver b
 instance
@@ -284,27 +290,27 @@ instance
   ) =>
   DeriveType OUT (a -> m b)
   where
-  field _ name = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
+  field name _ = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
     where
-      fieldObj = field (ProxyRep :: ProxyRep OUT b) name
+      fieldObj = field name (KindedProxy :: KindedProxy OUT b)
       fieldArgs = fst $ deriveArgumentFields (Proxy @a)
-  deriveType _ = concatUpdates (deriveType (ProxyRep :: ProxyRep OUT b) : inputs)
+  deriveType _ = concatUpdates (deriveType (KindedProxy :: KindedProxy OUT b) : inputs)
     where
       inputs :: [TypeUpdater]
       inputs = snd $ deriveArgumentFields (Proxy @a)
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
-  field _ = field (ProxyRep :: ProxyRep OUT a)
-  deriveType _ = deriveType (ProxyRep :: ProxyRep OUT a)
+  field name _ = field name (KindedProxy :: KindedProxy OUT a)
+  deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (GQLType b, DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
-  field _ = field (ProxyRep :: ProxyRep cat b)
-  deriveType _ = deriveType (ProxyRep :: ProxyRep cat b)
+  field name _ = field name (KindedProxy :: KindedProxy cat b)
+  deriveType _ = deriveType (KindedProxy :: KindedProxy cat b)
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType (kind :: GQL_KIND) a where
-  deriveKindedType :: Context kind a -> TypeUpdater -- Generates internal GraphQL Schema
+  deriveKindedType :: proxy kind a -> TypeUpdater -- Generates internal GraphQL Schema
 
 -- SCALAR
 instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
@@ -396,7 +402,7 @@ deriveTypeContent proxy scope =
   updateDef proxy
     $ builder
     $ map (stripNamespace (getNamespace (Proxy @a)))
-    $ typeRep (ProxyRep :: ProxyRep cat (Rep a))
+    $ typeRep (KindedProxy :: KindedProxy cat (Rep a))
   where
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
       where
@@ -720,43 +726,43 @@ deriving instance Ord (TypeScope cat)
 
 --  GENERIC UNION
 class TypeRep (cat :: TypeCategory) f where
-  typeRep :: ProxyRep cat f -> [ConsRep cat]
+  typeRep :: KindedProxy cat f -> [ConsRep cat]
 
 instance TypeRep cat f => TypeRep cat (M1 D d f) where
-  typeRep _ = typeRep (ProxyRep :: ProxyRep cat f)
+  typeRep _ = typeRep (KindedProxy :: KindedProxy cat f)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (TypeRep cat a, TypeRep cat b) => TypeRep cat (a :+: b) where
-  typeRep _ = typeRep (ProxyRep :: ProxyRep cat a) <> typeRep (ProxyRep :: ProxyRep cat b)
+  typeRep _ = typeRep (KindedProxy :: KindedProxy cat a) <> typeRep (KindedProxy :: KindedProxy cat b)
 
 instance (ConRep cat f, Constructor c) => TypeRep cat (M1 C c f) where
   typeRep _ =
     [ ConsRep
         { consName = conNameProxy (Proxy @c),
-          consFields = conRep (ProxyRep :: ProxyRep cat f),
+          consFields = conRep (KindedProxy :: KindedProxy cat f),
           consIsRecord = isRecordProxy (Proxy @c)
         }
     ]
 
 class ConRep cat f where
-  conRep :: ProxyRep cat f -> [FieldRep cat]
+  conRep :: KindedProxy cat f -> [FieldRep cat]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep cat a, ConRep cat b) => ConRep cat (a :*: b) where
-  conRep _ = conRep (ProxyRep :: ProxyRep cat a) <> conRep (ProxyRep :: ProxyRep cat b)
+  conRep _ = conRep (KindedProxy :: KindedProxy cat a) <> conRep (KindedProxy :: KindedProxy cat b)
 
 instance (Selector s, GQLType a, DeriveType cat a) => ConRep cat (M1 S s (Rec0 a)) where
   conRep _ =
     [ FieldRep
         { fieldTypeName = typeConName $ fieldType fieldData,
           fieldData = fieldData,
-          fieldTypeUpdater = deriveType (ProxyRep :: ProxyRep cat a),
+          fieldTypeUpdater = deriveType (KindedProxy :: KindedProxy cat a),
           fieldIsObject = isObjectKind (Proxy @a)
         }
     ]
     where
       name = selNameProxy (Proxy @s)
-      fieldData = field (ProxyRep :: ProxyRep cat a) name
+      fieldData = field (KindedProxy :: KindedProxy cat a) name
 
 instance ConRep cat U1 where
   conRep _ = []
