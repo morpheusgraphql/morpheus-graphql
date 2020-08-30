@@ -140,8 +140,7 @@ import Data.Set (Set)
 import Data.Text
   ( pack,
   )
-import GHC.Exts (Constraint)
-import GHC.Generics
+import GHC.Generics (Generic, Rep)
 import Language.Haskell.TH (Exp, Q)
 import Prelude
   ( ($),
@@ -167,7 +166,7 @@ type SchemaConstraints event (m :: * -> *) query mutation subscription =
 
 type SchemaConstraint a =
   ( GQLType a,
-    TypeRep OUT (DeriveType OUT) (Rep a),
+    TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a),
     Generic a
   )
 
@@ -290,11 +289,16 @@ instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
   field = deriveFieldWith (Proxy @(MapKind k v Maybe))
   deriveType = deriveTypeWith (Proxy @(MapKind k v Maybe))
 
+data FieldValue c = FieldValue
+  { fieldDef :: FieldDefinition c CONST,
+    fieldTypes :: TypeUpdater
+  }
+
 -- Resolver : a -> Resolver b
 instance
   ( GQLType b,
     DeriveType OUT b,
-    TypeRep IN (DeriveType IN) (Rep a),
+    TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a),
     GQLType a,
     Generic a
   ) =>
@@ -330,23 +334,23 @@ instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
       scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
-instance (GQL_TYPE a, TypeRep IN (DeriveType IN) (Rep a)) => DeriveKindedType ENUM a where
+instance (GQL_TYPE a, TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a)) => DeriveKindedType ENUM a where
   deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep IN (DeriveType IN) (Rep a)) => DeriveKindedType INPUT a where
+instance (GQL_TYPE a, TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a)) => DeriveKindedType INPUT a where
   deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep OUT (DeriveType OUT) (Rep a)) => DeriveKindedType OUTPUT a where
+instance (GQL_TYPE a, TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a)) => DeriveKindedType OUTPUT a where
   deriveKindedType _ = derivingData $ outputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep OUT (DeriveType OUT) (Rep a)) => DeriveKindedType INTERFACE a where
+instance (GQL_TYPE a, TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a)) => DeriveKindedType INTERFACE a where
   deriveKindedType _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
       (fields, types) = deriveObjectFields (Proxy @a)
 
 derivingData ::
   forall cat a.
-  (TypeRep cat (DeriveType cat) (Rep a), GQLType a, Generic a) =>
+  (TypeRep cat (DeriveType cat) (FieldValue cat) (Rep a), GQLType a, Generic a) =>
   KindedType cat a ->
   TypeUpdater
 derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
@@ -355,14 +359,14 @@ derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentFields :: (TypeRep IN (DeriveType IN) (Rep a), GQLType a, Generic a) => f a -> (ArgumentsDefinition CONST, [TypeUpdater])
+deriveArgumentFields :: (TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a), GQLType a, Generic a) => f a -> (ArgumentsDefinition CONST, [TypeUpdater])
 deriveArgumentFields = mapFst fieldsToArguments . deriveFields . inputType
 
-deriveObjectFields :: (TypeRep OUT (DeriveType OUT) (Rep a), Generic a, GQLType a) => f a -> (FieldsDefinition OUT CONST, [TypeUpdater])
+deriveObjectFields :: (TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a), Generic a, GQLType a) => f a -> (FieldsDefinition OUT CONST, [TypeUpdater])
 deriveObjectFields = deriveFields . outputType
 
 deriveFields ::
-  (GQLType a, TypeRep k (DeriveType k) (Rep a), Generic a) =>
+  (GQLType a, TypeRep k (DeriveType k) (FieldValue k) (Rep a), Generic a) =>
   KindedType k a ->
   (FieldsDefinition k CONST, [TypeUpdater])
 deriveFields kindedType = withObject kindedType (deriveTypeContent kindedType)
@@ -386,7 +390,7 @@ deriveOutType :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdat
 deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 deriveObjectType ::
-  (TypeRep OUT (DeriveType OUT) (Rep a), Generic a, GQLType a) =>
+  (TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a), Generic a, GQLType a) =>
   proxy a ->
   (TypeDefinition OBJECT CONST, [TypeUpdater])
 deriveObjectType proxy = (mkObjectType fields (__typeName proxy), types)
@@ -402,14 +406,14 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 -- Object Fields
 deriveTypeContent ::
   forall k a.
-  (TypeRep k (DeriveType k) (Rep a), Generic a, GQLType a) =>
+  (TypeRep k (DeriveType k) (FieldValue k) (Rep a), Generic a, GQLType a) =>
   KindedType k a ->
   (TypeContent TRUE k CONST, [TypeUpdater])
 deriveTypeContent scope =
   updateDef proxy
     $ builder
     $ map (stripNamespace (getNamespace (Proxy @a)))
-    $ typeRep (TypeConstraint (field, deriveType) :: TypeConstraint cat (DeriveType cat) (Rep a))
+    $ typeRep (TypeConstraint (field, deriveType) :: TypeConstraint cat (DeriveType cat) (FieldValue cat) (Rep a))
   where
     proxy = Proxy @a
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
@@ -524,26 +528,26 @@ updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint 
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
-isEmpty :: ConsRep k -> Bool
+isEmpty :: ConsRep k (FieldValue k) -> Bool
 isEmpty ConsRep {consFields = []} = True
 isEmpty _ = False
 
-isUnionRef :: TypeName -> ConsRep k -> Bool
-isUnionRef baseName ConsRep {consName, consFields = [FieldRep {fieldIsObject = True, fieldTypeName}]} =
+isUnionRef :: TypeName -> ConsRep k (FieldValue k) -> Bool
+isUnionRef baseName ConsRep {consName, consFields = [FieldRep {fieldIsObject = True, fieldValue}]} =
   consName == baseName <> fieldTypeName
 isUnionRef _ _ = False
 
-setFieldNames :: ConsRep k -> ConsRep k
+setFieldNames :: ConsRep k (FieldValue k) -> ConsRep k (FieldValue k)
 setFieldNames cons@ConsRep {consFields} =
   cons
     { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
     }
   where
-    setFieldName i fieldR@FieldRep {fieldData = fieldD} = fieldR {fieldData = fieldD {fieldName}}
+    setFieldName i fieldR@FieldRep {fieldValue = fieldD} = fieldR {fieldValue = fieldD {fieldName}}
       where
         fieldName = FieldName ("_" <> pack (show i))
 
-analyseRep :: TypeName -> [ConsRep cat] -> ResRep cat
+analyseRep :: TypeName -> [ConsRep cat (FieldValue cat)] -> ResRep cat (FieldValue cat)
 analyseRep baseName cons =
   ResRep
     { enumCons = fmap consName enumRep,
@@ -556,12 +560,12 @@ analyseRep baseName cons =
     (unionRecordRep, anonymousUnionRep) = partition consIsRecord left2
 
 buildInputUnion ::
-  (TypeName, DataFingerprint) -> [ConsRep IN] -> (TypeContent TRUE IN CONST, [TypeUpdater])
+  (TypeName, DataFingerprint) -> [ConsRep IN (FieldValue IN)] -> (TypeContent TRUE IN CONST, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons =
   datatype
     (analyseRep baseName cons)
   where
-    datatype :: ResRep IN -> (TypeContent TRUE IN CONST, [TypeUpdater])
+    datatype :: ResRep IN (FieldValue IN) -> (TypeContent TRUE IN CONST, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (DataInputUnion typeMembers, types <> unionTypes)
@@ -570,7 +574,7 @@ buildInputUnion (baseName, baseFingerprint) cons =
         typeMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
         (unionMembers, unionTypes) =
           buildUnions wrapInputObject baseFingerprint unionRecordRep
-    types = fieldTypeUpdater <$> concatMap consFields cons
+    types = fieldTypes . fieldValue <$> concatMap consFields cons
     wrapInputObject :: (FieldsDefinition IN CONST -> TypeContent TRUE IN CONST)
     wrapInputObject = DataInputObject
 
@@ -579,7 +583,7 @@ buildUnionType ::
   (TypeName, DataFingerprint) ->
   (DataUnion CONST -> TypeContent TRUE cat CONST) ->
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
-  [ConsRep cat] ->
+  [ConsRep cat (FieldValue cat)] ->
   (TypeContent TRUE cat CONST, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
   datatype
@@ -595,9 +599,13 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
           buildUnionEnum wrapObject baseName baseFingerprint enumCons
         (unionMembers, unionTypes) =
           buildUnions wrapObject baseFingerprint unionRecordRep
-    types = fieldTypeUpdater <$> concatMap consFields cons
+    types = fieldTypes . fieldValue <$> concatMap consFields cons
 
-buildObject :: ([TypeName], [TypeUpdater]) -> KindedType cat a -> [FieldRep cat] -> (TypeContent TRUE cat CONST, [TypeUpdater])
+buildObject ::
+  ([TypeName], [TypeUpdater]) ->
+  KindedType cat a ->
+  [FieldRep cat (FieldValue cat)] ->
+  (TypeContent TRUE cat CONST, [TypeUpdater])
 buildObject (interfaces, interfaceTypes) scope consFields =
   ( wrapWith scope fields,
     types <> interfaceTypes
@@ -609,16 +617,16 @@ buildObject (interfaces, interfaceTypes) scope consFields =
     wrapWith InputType = DataInputObject
     wrapWith OutputType = DataObject interfaces
 
-buildDataObject :: [FieldRep cat] -> (FieldsDefinition cat CONST, [TypeUpdater])
+buildDataObject :: [FieldRep cat (FieldValue cat)] -> (FieldsDefinition cat CONST, [TypeUpdater])
 buildDataObject consFields = (fields, types)
   where
-    fields = unsafeFromFields $ fmap fieldData consFields
-    types = fmap fieldTypeUpdater consFields
+    fields = unsafeFromFields $ fmap (fieldDef . fieldValue) consFields
+    types = fmap (fieldTypes . fieldValue) consFields
 
 buildUnions ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   DataFingerprint ->
-  [ConsRep cat] ->
+  [ConsRep cat (FieldValue cat)] ->
   ([TypeName], [TypeUpdater])
 buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
   where
@@ -626,7 +634,7 @@ buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
     members = fmap consName cons
 
 buildUnionRecord ::
-  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) -> DataFingerprint -> ConsRep cat -> TypeDefinition cat CONST
+  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) -> DataFingerprint -> ConsRep cat (FieldValue cat) -> TypeDefinition cat CONST
 buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
   TypeDefinition
     { typeName = consName,
@@ -636,7 +644,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
       typeContent =
         wrapObject
           $ unsafeFromFields
-          $ fmap fieldData consFields
+          $ fmap (fieldDef . fieldValue) consFields
     }
 
 buildUnionEnum ::
