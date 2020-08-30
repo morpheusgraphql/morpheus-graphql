@@ -348,37 +348,27 @@ derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentFields ::
-  forall f a.
-  ( TypeRep IN (Rep a),
-    GQLType a,
-    Generic a
-  ) =>
-  f a ->
-  (ArgumentsDefinition CONST, [TypeUpdater])
-deriveArgumentFields proxy =
-  mapFst fieldsToArguments $
-    withInputObject proxy (deriveTypeContent (InputType :: KindedType IN a))
+deriveArgumentFields :: (TypeRep IN (Rep a), GQLType a, Generic a) => f a -> (ArgumentsDefinition CONST, [TypeUpdater])
+deriveArgumentFields = mapFst fieldsToArguments . deriveFields . inputType
 
-withInputObject ::
-  (GQLType a) =>
-  f a ->
-  (TypeContent TRUE c s, [TypeUpdater]) ->
-  (FieldsDefinition IN s, [TypeUpdater])
-withInputObject _ (DataInputObject {inputObjectFields}, ts) = (inputObjectFields, ts)
-withInputObject proxy _ =
-  ( empty,
-    [ introspectFailure ("Input Type: " <> msg (__typeName proxy) <> " should have only one nonempty constructor")
-    ]
-  )
+deriveObjectFields :: (TypeRep OUT (Rep a), Generic a, GQLType a) => f a -> (FieldsDefinition OUT CONST, [TypeUpdater])
+deriveObjectFields = deriveFields . outputType
+
+deriveFields ::
+  (GQLType a, TypeRep k (Rep a), Generic a) =>
+  KindedType k a ->
+  (FieldsDefinition k CONST, [TypeUpdater])
+deriveFields kindedType = withObject kindedType (deriveTypeContent kindedType)
 
 withObject ::
+  forall a c any s.
   (GQLType a) =>
-  f a ->
-  (TypeContent TRUE c s, [TypeUpdater]) ->
-  (FieldsDefinition OUT s, [TypeUpdater])
-withObject _ (DataObject {objectFields}, ts) = (objectFields, ts)
-withObject proxy _ = (empty, [introspectFailure (msg (__typeName proxy) <> " should have only one nonempty constructor")])
+  KindedType c a ->
+  (TypeContent TRUE any s, [TypeUpdater]) ->
+  (FieldsDefinition c s, [TypeUpdater])
+withObject InputType (DataInputObject {inputObjectFields}, ts) = (inputObjectFields, ts)
+withObject OutputType (DataObject {objectFields}, ts) = (objectFields, ts)
+withObject _ _ = (empty, [introspectFailure (msg (__typeName (Proxy @a)) <> " should have only one nonempty constructor")])
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
@@ -398,12 +388,6 @@ deriveObjectType proxy = (mkObjectType fields (__typeName proxy), types)
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
-
-deriveObjectFields ::
-  (TypeRep OUT (Rep a), Generic a, GQLType a) =>
-  f a ->
-  (FieldsDefinition OUT CONST, [TypeUpdater])
-deriveObjectFields proxy = withObject proxy (deriveTypeContent (outputType proxy))
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
