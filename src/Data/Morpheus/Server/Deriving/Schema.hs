@@ -134,6 +134,7 @@ import Data.Set (Set)
 import Data.Text
   ( pack,
   )
+import GHC.Exts
 import GHC.Generics
 import Language.Haskell.TH (Exp, Q)
 import Prelude
@@ -160,7 +161,7 @@ type SchemaConstraints event (m :: * -> *) query mutation subscription =
 
 type SchemaConstraint a =
   ( GQLType a,
-    TypeRep OUT (Rep a),
+    TypeRep OUT (DeriveType OUT) (Rep a),
     Generic a
   )
 
@@ -287,7 +288,7 @@ instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
 instance
   ( GQLType b,
     DeriveType OUT b,
-    TypeRep IN (Rep a),
+    TypeRep IN (DeriveType IN) (Rep a),
     GQLType a,
     Generic a
   ) =>
@@ -323,23 +324,23 @@ instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
       scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
-instance (GQL_TYPE a, TypeRep IN (Rep a)) => DeriveKindedType ENUM a where
+instance (GQL_TYPE a, TypeRep IN (DeriveType IN) (Rep a)) => DeriveKindedType ENUM a where
   deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep IN (Rep a)) => DeriveKindedType INPUT a where
+instance (GQL_TYPE a, TypeRep IN (DeriveType IN) (Rep a)) => DeriveKindedType INPUT a where
   deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep OUT (Rep a)) => DeriveKindedType OUTPUT a where
+instance (GQL_TYPE a, TypeRep OUT (DeriveType OUT) (Rep a)) => DeriveKindedType OUTPUT a where
   deriveKindedType _ = derivingData $ outputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep OUT (Rep a)) => DeriveKindedType INTERFACE a where
+instance (GQL_TYPE a, TypeRep OUT (DeriveType OUT) (Rep a)) => DeriveKindedType INTERFACE a where
   deriveKindedType _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
       (fields, types) = deriveObjectFields (Proxy @a)
 
 derivingData ::
   forall cat a.
-  (TypeRep cat (Rep a), GQLType a, Generic a) =>
+  (TypeRep cat (DeriveType cat) (Rep a), GQLType a, Generic a) =>
   KindedType cat a ->
   TypeUpdater
 derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
@@ -348,14 +349,14 @@ derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentFields :: (TypeRep IN (Rep a), GQLType a, Generic a) => f a -> (ArgumentsDefinition CONST, [TypeUpdater])
+deriveArgumentFields :: (TypeRep IN (DeriveType IN) (Rep a), GQLType a, Generic a) => f a -> (ArgumentsDefinition CONST, [TypeUpdater])
 deriveArgumentFields = mapFst fieldsToArguments . deriveFields . inputType
 
-deriveObjectFields :: (TypeRep OUT (Rep a), Generic a, GQLType a) => f a -> (FieldsDefinition OUT CONST, [TypeUpdater])
+deriveObjectFields :: (TypeRep OUT (DeriveType OUT) (Rep a), Generic a, GQLType a) => f a -> (FieldsDefinition OUT CONST, [TypeUpdater])
 deriveObjectFields = deriveFields . outputType
 
 deriveFields ::
-  (GQLType a, TypeRep k (Rep a), Generic a) =>
+  (GQLType a, TypeRep k (DeriveType k) (Rep a), Generic a) =>
   KindedType k a ->
   (FieldsDefinition k CONST, [TypeUpdater])
 deriveFields kindedType = withObject kindedType (deriveTypeContent kindedType)
@@ -379,7 +380,7 @@ deriveOutType :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdat
 deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 deriveObjectType ::
-  (TypeRep OUT (Rep a), Generic a, GQLType a) =>
+  (TypeRep OUT (DeriveType OUT) (Rep a), Generic a, GQLType a) =>
   proxy a ->
   (TypeDefinition OBJECT CONST, [TypeUpdater])
 deriveObjectType proxy = (mkObjectType fields (__typeName proxy), types)
@@ -394,15 +395,15 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
 deriveTypeContent ::
-  forall cat a.
-  (TypeRep cat (Rep a), Generic a, GQLType a) =>
-  KindedType cat a ->
-  (TypeContent TRUE cat CONST, [TypeUpdater])
+  forall k a.
+  (TypeRep k (DeriveType k) (Rep a), Generic a, GQLType a) =>
+  KindedType k a ->
+  (TypeContent TRUE k CONST, [TypeUpdater])
 deriveTypeContent scope =
   updateDef proxy
     $ builder
     $ map (stripNamespace (getNamespace (Proxy @a)))
-    $ typeRep (KindedProxy :: KindedProxy cat (Rep a))
+    $ typeRep (TypeConstraint :: TypeConstraint cat (DeriveType cat) (Rep a))
   where
     proxy = Proxy @a
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
@@ -517,41 +518,41 @@ updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint 
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
-data ConsRep cat = ConsRep
+data ConsRep kind = ConsRep
   { consName :: TypeName,
     consIsRecord :: Bool,
-    consFields :: [FieldRep cat]
+    consFields :: [FieldRep kind]
   }
 
-instance Namespace (ConsRep c) where
+instance Namespace (ConsRep kind) where
   stripNamespace p ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace p) fields, ..}
 
-data FieldRep cat = FieldRep
+data FieldRep kind = FieldRep
   { fieldTypeName :: TypeName,
-    fieldData :: FieldDefinition cat CONST,
+    fieldData :: FieldDefinition kind CONST,
     fieldTypeUpdater :: TypeUpdater,
     fieldIsObject :: Bool
   }
 
-instance Namespace (FieldRep c) where
+instance Namespace (FieldRep kind) where
   stripNamespace p FieldRep {fieldData = fields, ..} = FieldRep {fieldData = stripNamespace p fields, ..}
 
-data ResRep cat = ResRep
+data ResRep kind = ResRep
   { enumCons :: [TypeName],
     unionRef :: [TypeName],
-    unionRecordRep :: [ConsRep cat]
+    unionRecordRep :: [ConsRep kind]
   }
 
-isEmpty :: ConsRep cat -> Bool
+isEmpty :: ConsRep k -> Bool
 isEmpty ConsRep {consFields = []} = True
 isEmpty _ = False
 
-isUnionRef :: TypeName -> ConsRep cat -> Bool
+isUnionRef :: TypeName -> ConsRep k -> Bool
 isUnionRef baseName ConsRep {consName, consFields = [FieldRep {fieldIsObject = True, fieldTypeName}]} =
   consName == baseName <> fieldTypeName
 isUnionRef _ _ = False
 
-setFieldNames :: ConsRep cat -> ConsRep cat
+setFieldNames :: ConsRep k -> ConsRep k
 setFieldNames cons@ConsRep {consFields} =
   cons
     { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
@@ -715,34 +716,36 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
             $ mkInputValue "enum" [] enumTypeName
       }
 
---  GENERIC UNION
-class TypeRep (cat :: TypeCategory) f where
-  typeRep :: KindedProxy cat f -> [ConsRep cat]
+data TypeConstraint (kind :: TypeCategory) (c :: * -> Constraint) f = TypeConstraint
 
-instance TypeRep cat f => TypeRep cat (M1 D d f) where
-  typeRep _ = typeRep (KindedProxy :: KindedProxy cat f)
+--  GENERIC UNION
+class TypeRep (kind :: TypeCategory) (c :: * -> Constraint) f where
+  typeRep :: TypeConstraint kind c f -> [ConsRep kind]
+
+instance TypeRep kind c f => TypeRep kind c (M1 D d f) where
+  typeRep _ = typeRep (TypeConstraint :: TypeConstraint kind c f)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (TypeRep cat a, TypeRep cat b) => TypeRep cat (a :+: b) where
-  typeRep _ = typeRep (KindedProxy :: KindedProxy cat a) <> typeRep (KindedProxy :: KindedProxy cat b)
+instance (TypeRep kind c a, TypeRep kind c b) => TypeRep kind c (a :+: b) where
+  typeRep _ = typeRep (TypeConstraint :: TypeConstraint kind c a) <> typeRep (TypeConstraint :: TypeConstraint kind c b)
 
-instance (ConRep cat f, Constructor c) => TypeRep cat (M1 C c f) where
+instance (ConRep kind con f, Constructor c) => TypeRep kind con (M1 C c f) where
   typeRep _ =
     [ ConsRep
         { consName = conNameProxy (Proxy @c),
-          consFields = conRep (KindedProxy :: KindedProxy cat f),
+          consFields = conRep (TypeConstraint :: TypeConstraint kind con f),
           consIsRecord = isRecordProxy (Proxy @c)
         }
     ]
 
-class ConRep cat f where
-  conRep :: KindedProxy cat f -> [FieldRep cat]
+class ConRep (kind :: TypeCategory) (c :: * -> Constraint) f where
+  conRep :: TypeConstraint kind c f -> [FieldRep kind]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (ConRep cat a, ConRep cat b) => ConRep cat (a :*: b) where
-  conRep _ = conRep (KindedProxy :: KindedProxy cat a) <> conRep (KindedProxy :: KindedProxy cat b)
+instance (ConRep kind c a, ConRep kind c b) => ConRep kind c (a :*: b) where
+  conRep _ = conRep (TypeConstraint :: TypeConstraint kind c a) <> conRep (TypeConstraint :: TypeConstraint kind c b)
 
-instance (Selector s, GQLType a, DeriveType cat a) => ConRep cat (M1 S s (Rec0 a)) where
+instance (Selector s, GQLType a, DeriveKindedType (KIND a) a) => ConRep kind c (M1 S s (Rec0 a)) where
   conRep _ =
     [ FieldRep
         { fieldTypeName = typeConName $ fieldType fieldData,
@@ -753,7 +756,7 @@ instance (Selector s, GQLType a, DeriveType cat a) => ConRep cat (M1 S s (Rec0 a
     ]
     where
       name = selNameProxy (Proxy @s)
-      fieldData = field name (KindedProxy :: KindedProxy cat a)
+      fieldData = field name (KindedProxy :: KindedProxy kind a)
 
-instance ConRep cat U1 where
+instance ConRep kind c U1 where
   conRep _ = []
