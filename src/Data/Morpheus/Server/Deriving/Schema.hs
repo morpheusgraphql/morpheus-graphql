@@ -65,11 +65,7 @@ import Data.Morpheus.Server.Deriving.Utils
     FieldRep (..),
     ResRep (..),
     TypeConstraint (..),
-    TypeRep,
-    conNameProxy,
-    isRecordProxy,
-    selNameProxy,
-    typeRep,
+    TypeRep (..),
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
