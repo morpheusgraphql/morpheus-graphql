@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -27,16 +28,11 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    TypeUpdater,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    FieldDefinition (..),
-    FieldName,
-    FieldName (..),
+  ( FieldName (..),
     TypeCategory,
     TypeName (..),
-    TypeRef (..),
     convertToJSONName,
   )
 import Data.Proxy (Proxy (..))
@@ -131,8 +127,8 @@ data ConsRep kind (v :: *) = ConsRep
     consFields :: [FieldRep kind v]
   }
 
--- instance Namespace (ConsRep kind v) where
---   stripNamespace p ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace p) fields, ..}
+instance Namespace (ConsRep kind v) where
+  stripNamespace p ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace p) fields, ..}
 
 data FieldRep kind (value :: *) = FieldRep
   { fieldSelector :: FieldName,
@@ -140,8 +136,8 @@ data FieldRep kind (value :: *) = FieldRep
     fieldValue :: value
   }
 
--- instance Namespace (FieldRep kind) where
---   stripNamespace p FieldRep {fieldValue = fields, ..} = FieldRep {fieldValue = stripNamespace p fields, ..}
+instance Namespace (FieldRep kind c) where
+  stripNamespace p FieldRep {fieldSelector = fields, ..} = FieldRep {fieldSelector = stripNamespace p fields, ..}
 
 data ResRep kind (v :: *) = ResRep
   { enumCons :: [TypeName],

@@ -406,6 +406,17 @@ mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
+deriveFieldValue :: (DeriveType k a) => proxy k a -> FieldValue k
+deriveFieldValue proxy =
+  FieldValue
+    { fieldValueType = fieldType,
+      fieldValueContent = fieldContent,
+      fieldTypes
+    }
+  where
+    FieldDefinition {fieldType, fieldContent} = field "" proxy
+    fieldTypes = deriveType proxy
+
 -- Object Fields
 deriveTypeContent ::
   forall k a.
@@ -416,7 +427,7 @@ deriveTypeContent scope =
   updateDef proxy
     $ builder
     $ map (stripNamespace (getNamespace (Proxy @a)))
-    $ typeRep (TypeConstraint (field, deriveType) :: TypeConstraint cat (DeriveType cat) (FieldValue cat) (Rep a))
+    $ typeRep (TypeConstraint deriveFieldValue :: TypeConstraint cat (DeriveType cat) (FieldValue cat) (Rep a))
   where
     proxy = Proxy @a
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
