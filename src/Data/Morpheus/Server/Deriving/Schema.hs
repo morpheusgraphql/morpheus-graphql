@@ -142,7 +142,6 @@ import Prelude
     Bool (..),
     Eq (..),
     Int,
-    Ord,
     Show (..),
     fst,
     map,
@@ -175,11 +174,13 @@ data KindedType (cat :: TypeCategory) a where
   InputType :: KindedType IN a
   OutputType :: KindedType OUT a
 
+inputType :: f a -> KindedType IN a
+inputType _ = InputType
+
+outputType :: f a -> KindedType OUT a
+outputType _ = OutputType
+
 deriving instance Show (KindedType cat a)
-
-deriving instance Eq (KindedType cat a)
-
-deriving instance Ord (KindedType cat a)
 
 setProxyType :: f b -> kinded k a -> KindedProxy k b
 setProxyType _ _ = KindedProxy
@@ -323,13 +324,13 @@ instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
 
 -- ENUM
 instance (GQL_TYPE a, TypeRep IN (Rep a)) => DeriveKindedType ENUM a where
-  deriveKindedType _ = derivingData (Proxy @a) InputType
+  deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
 instance (GQL_TYPE a, TypeRep IN (Rep a)) => DeriveKindedType INPUT a where
-  deriveKindedType _ = derivingData (Proxy @a) InputType
+  deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
 instance (GQL_TYPE a, TypeRep OUT (Rep a)) => DeriveKindedType OUTPUT a where
-  deriveKindedType _ = derivingData (Proxy @a) OutputType
+  deriveKindedType _ = derivingData $ outputType (Proxy @a)
 
 instance (GQL_TYPE a, TypeRep OUT (Rep a)) => DeriveKindedType INTERFACE a where
   deriveKindedType _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
@@ -337,18 +338,18 @@ instance (GQL_TYPE a, TypeRep OUT (Rep a)) => DeriveKindedType INTERFACE a where
       (fields, types) = deriveObjectFields (Proxy @a)
 
 derivingData ::
-  forall a f cat.
+  forall cat a.
   (TypeRep cat (Rep a), GQLType a, Generic a) =>
-  f a ->
   KindedType cat a ->
   TypeUpdater
-derivingData proxy scope = updateLib (buildType content) updates proxy
+derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
   where
-    (content, updates) = deriveTypeContent proxy scope
+    (content, updates) = deriveTypeContent kindedType
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
 deriveArgumentFields ::
+  forall f a.
   ( TypeRep IN (Rep a),
     GQLType a,
     Generic a
@@ -357,7 +358,7 @@ deriveArgumentFields ::
   (ArgumentsDefinition CONST, [TypeUpdater])
 deriveArgumentFields proxy =
   mapFst fieldsToArguments $
-    withInputObject proxy (deriveTypeContent proxy InputType)
+    withInputObject proxy (deriveTypeContent (InputType :: KindedType IN a))
 
 withInputObject ::
   (GQLType a) =>
@@ -402,24 +403,24 @@ deriveObjectFields ::
   (TypeRep OUT (Rep a), Generic a, GQLType a) =>
   f a ->
   (FieldsDefinition OUT CONST, [TypeUpdater])
-deriveObjectFields proxy = withObject proxy (deriveTypeContent proxy OutputType)
+deriveObjectFields proxy = withObject proxy (deriveTypeContent (outputType proxy))
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
 -- Object Fields
 deriveTypeContent ::
-  forall f cat a.
+  forall cat a.
   (TypeRep cat (Rep a), Generic a, GQLType a) =>
-  f a ->
   KindedType cat a ->
   (TypeContent TRUE cat CONST, [TypeUpdater])
-deriveTypeContent proxy scope =
+deriveTypeContent scope =
   updateDef proxy
     $ builder
     $ map (stripNamespace (getNamespace (Proxy @a)))
     $ typeRep (KindedProxy :: KindedProxy cat (Rep a))
   where
+    proxy = Proxy @a
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
       where
         interfaces = unzip (implements proxy)
