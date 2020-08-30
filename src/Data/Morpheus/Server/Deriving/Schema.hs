@@ -134,7 +134,7 @@ import Data.Set (Set)
 import Data.Text
   ( pack,
   )
-import GHC.Exts
+import GHC.Exts (Constraint)
 import GHC.Generics
 import Language.Haskell.TH (Exp, Q)
 import Prelude
@@ -403,7 +403,7 @@ deriveTypeContent scope =
   updateDef proxy
     $ builder
     $ map (stripNamespace (getNamespace (Proxy @a)))
-    $ typeRep (TypeConstraint :: TypeConstraint cat (DeriveType cat) (Rep a))
+    $ typeRep (TypeConstraint (field, deriveType) :: TypeConstraint cat (DeriveType cat) (Rep a))
   where
     proxy = Proxy @a
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
@@ -716,24 +716,34 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
             $ mkInputValue "enum" [] enumTypeName
       }
 
-data TypeConstraint (kind :: TypeCategory) (c :: * -> Constraint) f = TypeConstraint
+newtype TypeConstraint (kind :: TypeCategory) (c :: * -> Constraint) f
+  = TypeConstraint
+      ( forall a proxy.
+        c a =>
+        ( FieldName -> proxy kind a -> FieldDefinition kind CONST,
+          proxy kind a -> TypeUpdater
+        )
+      )
+
+mapConstraint :: f b -> TypeConstraint k c a -> TypeConstraint k c b
+mapConstraint _ (TypeConstraint f) = TypeConstraint f
 
 --  GENERIC UNION
 class TypeRep (kind :: TypeCategory) (c :: * -> Constraint) f where
   typeRep :: TypeConstraint kind c f -> [ConsRep kind]
 
 instance TypeRep kind c f => TypeRep kind c (M1 D d f) where
-  typeRep _ = typeRep (TypeConstraint :: TypeConstraint kind c f)
+  typeRep = typeRep . mapConstraint (Proxy @f)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (TypeRep kind c a, TypeRep kind c b) => TypeRep kind c (a :+: b) where
-  typeRep _ = typeRep (TypeConstraint :: TypeConstraint kind c a) <> typeRep (TypeConstraint :: TypeConstraint kind c b)
+  typeRep (TypeConstraint f) = typeRep (TypeConstraint f :: TypeConstraint kind c a) <> typeRep (TypeConstraint f :: TypeConstraint kind c b)
 
 instance (ConRep kind con f, Constructor c) => TypeRep kind con (M1 C c f) where
-  typeRep _ =
+  typeRep (TypeConstraint f) =
     [ ConsRep
         { consName = conNameProxy (Proxy @c),
-          consFields = conRep (TypeConstraint :: TypeConstraint kind con f),
+          consFields = conRep (TypeConstraint f :: TypeConstraint kind con f),
           consIsRecord = isRecordProxy (Proxy @c)
         }
     ]
@@ -743,20 +753,22 @@ class ConRep (kind :: TypeCategory) (c :: * -> Constraint) f where
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep kind c a, ConRep kind c b) => ConRep kind c (a :*: b) where
-  conRep _ = conRep (TypeConstraint :: TypeConstraint kind c a) <> conRep (TypeConstraint :: TypeConstraint kind c b)
+  conRep (TypeConstraint f) =
+    conRep (TypeConstraint f :: TypeConstraint kind c a)
+      <> conRep (TypeConstraint f :: TypeConstraint kind c b)
 
-instance (Selector s, GQLType a, DeriveKindedType (KIND a) a) => ConRep kind c (M1 S s (Rec0 a)) where
-  conRep _ =
+instance (Selector s, GQLType a, c a) => ConRep kind c (M1 S s (Rec0 a)) where
+  conRep (TypeConstraint (f, t)) =
     [ FieldRep
         { fieldTypeName = typeConName $ fieldType fieldData,
           fieldData = fieldData,
-          fieldTypeUpdater = deriveType (KindedProxy :: KindedProxy cat a),
+          fieldTypeUpdater = t (KindedProxy :: KindedProxy cat a),
           fieldIsObject = isObjectKind (Proxy @a)
         }
     ]
     where
       name = selNameProxy (Proxy @s)
-      fieldData = field name (KindedProxy :: KindedProxy kind a)
+      fieldData = f name (KindedProxy :: KindedProxy kind a)
 
 instance ConRep kind c U1 where
   conRep _ = []
