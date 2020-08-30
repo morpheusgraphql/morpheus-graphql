@@ -48,6 +48,7 @@ import Data.Morpheus.Internal.Utils
     concatUpdates,
     empty,
     failUpdates,
+    mapFst,
     resolveUpdates,
     singleton,
   )
@@ -169,6 +170,16 @@ type SchemaConstraint a =
 -- * 'a': actual gql type
 data KindedProxy k a
   = KindedProxy
+
+data KindedType (cat :: TypeCategory) a where
+  InputType :: KindedType IN a
+  OutputType :: KindedType OUT a
+
+deriving instance Show (KindedType cat a)
+
+deriving instance Eq (KindedType cat a)
+
+deriving instance Ord (KindedType cat a)
 
 setProxyType :: f b -> kinded k a -> KindedProxy k b
 setProxyType _ _ = KindedProxy
@@ -329,7 +340,7 @@ derivingData ::
   forall a f cat.
   (TypeRep cat (Rep a), GQLType a, Generic a) =>
   f a ->
-  TypeScope cat ->
+  KindedType cat a ->
   TypeUpdater
 derivingData proxy scope = updateLib (buildType content) updates proxy
   where
@@ -344,14 +355,29 @@ deriveArgumentFields ::
   ) =>
   f a ->
   (ArgumentsDefinition CONST, [TypeUpdater])
-deriveArgumentFields proxy = withObject (deriveTypeContent proxy InputType)
-  where
-    withObject (DataInputObject {inputObjectFields}, ts) = (fieldsToArguments inputObjectFields, ts)
-    withObject _ =
-      ( empty,
-        [ introspectFailure ("ArgumentType: " <> msg (__typeName proxy) <> " should have only one nonempty constructor")
-        ]
-      )
+deriveArgumentFields proxy =
+  mapFst fieldsToArguments $
+    withInputObject proxy (deriveTypeContent proxy InputType)
+
+withInputObject ::
+  (GQLType a) =>
+  f a ->
+  (TypeContent TRUE c s, [TypeUpdater]) ->
+  (FieldsDefinition IN s, [TypeUpdater])
+withInputObject _ (DataInputObject {inputObjectFields}, ts) = (inputObjectFields, ts)
+withInputObject proxy _ =
+  ( empty,
+    [ introspectFailure ("Input Type: " <> msg (__typeName proxy) <> " should have only one nonempty constructor")
+    ]
+  )
+
+withObject ::
+  (GQLType a) =>
+  f a ->
+  (TypeContent TRUE c s, [TypeUpdater]) ->
+  (FieldsDefinition OUT s, [TypeUpdater])
+withObject _ (DataObject {objectFields}, ts) = (objectFields, ts)
+withObject proxy _ = (empty, [introspectFailure (msg (__typeName proxy) <> " should have only one nonempty constructor")])
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
@@ -376,10 +402,7 @@ deriveObjectFields ::
   (TypeRep OUT (Rep a), Generic a, GQLType a) =>
   f a ->
   (FieldsDefinition OUT CONST, [TypeUpdater])
-deriveObjectFields proxy = withObject (deriveTypeContent proxy OutputType)
-  where
-    withObject (DataObject {objectFields}, ts) = (objectFields, ts)
-    withObject _ = (empty, [introspectFailure (msg (__typeName proxy) <> " should have only one nonempty constructor")])
+deriveObjectFields proxy = withObject proxy (deriveTypeContent proxy OutputType)
 
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
@@ -389,7 +412,7 @@ deriveTypeContent ::
   forall f cat a.
   (TypeRep cat (Rep a), Generic a, GQLType a) =>
   f a ->
-  TypeScope cat ->
+  KindedType cat a ->
   (TypeContent TRUE cat CONST, [TypeUpdater])
 deriveTypeContent proxy scope =
   updateDef proxy
@@ -607,7 +630,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
           buildUnions wrapObject baseFingerprint unionRecordRep
     types = fieldTypeUpdater <$> concatMap consFields cons
 
-buildObject :: ([TypeName], [TypeUpdater]) -> TypeScope cat -> [FieldRep cat] -> (TypeContent TRUE cat CONST, [TypeUpdater])
+buildObject :: ([TypeName], [TypeUpdater]) -> KindedType cat a -> [FieldRep cat] -> (TypeContent TRUE cat CONST, [TypeUpdater])
 buildObject (interfaces, interfaceTypes) scope consFields =
   ( wrapWith scope fields,
     types <> interfaceTypes
@@ -615,7 +638,7 @@ buildObject (interfaces, interfaceTypes) scope consFields =
   where
     (fields, types) = buildDataObject consFields
     --- wrap with
-    wrapWith :: TypeScope cat -> FieldsDefinition cat CONST -> TypeContent TRUE cat CONST
+    wrapWith :: KindedType cat a -> FieldsDefinition cat CONST -> TypeContent TRUE cat CONST
     wrapWith InputType = DataInputObject
     wrapWith OutputType = DataObject interfaces
 
@@ -706,16 +729,6 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
             $ singleton
             $ mkInputValue "enum" [] enumTypeName
       }
-
-data TypeScope (cat :: TypeCategory) where
-  InputType :: TypeScope IN
-  OutputType :: TypeScope OUT
-
-deriving instance Show (TypeScope cat)
-
-deriving instance Eq (TypeScope cat)
-
-deriving instance Ord (TypeScope cat)
 
 --  GENERIC UNION
 class TypeRep (cat :: TypeCategory) f where
