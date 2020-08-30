@@ -168,6 +168,7 @@ module Data.Morpheus.Types.Internal.AST
     FromCategory (..),
     possibleTypes,
     possibleInterfaceTypes,
+    mkField,
   )
 where
 

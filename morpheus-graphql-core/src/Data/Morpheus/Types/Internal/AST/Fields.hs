@@ -39,6 +39,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
     fieldContentArgs,
     mkInputValue,
     mkObjectField,
+    mkField,
   )
 where
 
@@ -305,23 +306,26 @@ instance Nullable (FieldDefinition cat s) where
 fieldVisibility :: FieldDefinition cat s -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 
-createField ::
+mkField ::
   Maybe (FieldContent TRUE cat s) ->
   FieldName ->
-  [TypeWrapper] ->
-  TypeName ->
+  TypeRef ->
   FieldDefinition cat s
-createField fieldContent fieldName typeWrappers typeConName =
+mkField fieldContent fieldName fieldType =
   FieldDefinition
     { fieldName,
       fieldContent,
       fieldDescription = Nothing,
-      fieldType = TypeRef {typeConName, typeWrappers, typeArgs = Nothing},
+      fieldType,
       fieldDirectives = []
     }
 
 mkInputValue :: FieldName -> [TypeWrapper] -> TypeName -> FieldDefinition cat s
-mkInputValue = createField Nothing
+mkInputValue fieldName typeWrappers typeConName =
+  mkField
+    Nothing
+    fieldName
+    TypeRef {typeWrappers, typeConName, typeArgs = Nothing}
 
 mkObjectField ::
   ArgumentsDefinition s ->
@@ -329,7 +333,11 @@ mkObjectField ::
   [TypeWrapper] ->
   TypeName ->
   FieldDefinition OUT s
-mkObjectField args = createField (Just $ FieldArgs args)
+mkObjectField args fieldName typeWrappers typeConName =
+  mkField
+    (Just $ FieldArgs args)
+    fieldName
+    TypeRef {typeWrappers, typeConName, typeArgs = Nothing}
 
 toListField :: FieldDefinition cat s -> FieldDefinition cat s
 toListField dataField = dataField {fieldType = listW (fieldType dataField)}

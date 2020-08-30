@@ -112,12 +112,14 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     TypeRef (..),
+    TypeRef (..),
     UnionMember (..),
     VALID,
     fieldsToArguments,
     initTypeLib,
     insertType,
     mkEnumContent,
+    mkField,
     mkInputValue,
     mkType,
     mkTypeRef,
@@ -290,7 +292,8 @@ instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
   deriveType = deriveTypeWith (Proxy @(MapKind k v Maybe))
 
 data FieldValue c = FieldValue
-  { fieldDef :: FieldDefinition c CONST,
+  { fieldValueType :: TypeRef,
+    fieldValueContent :: Maybe (FieldContent TRUE c CONST),
     fieldTypes :: TypeUpdater
   }
 
@@ -491,14 +494,7 @@ buildField ::
   Maybe (FieldContent TRUE cat CONST) ->
   FieldName ->
   FieldDefinition cat CONST
-buildField proxy fieldContent fieldName =
-  FieldDefinition
-    { fieldType = mkTypeRef (__typeName proxy),
-      fieldDescription = Nothing,
-      fieldDirectives = empty,
-      fieldContent = fieldContent,
-      ..
-    }
+buildField proxy fieldContent fieldName = mkField fieldContent fieldName (mkTypeRef (__typeName proxy))
 
 buildType :: GQLType a => TypeContent TRUE cat CONST -> f a -> TypeDefinition cat CONST
 buildType typeContent proxy =
@@ -532,9 +528,12 @@ isEmpty :: ConsRep k (FieldValue k) -> Bool
 isEmpty ConsRep {consFields = []} = True
 isEmpty _ = False
 
+fieldTypeName :: FieldRep kind (FieldValue cat) -> TypeName
+fieldTypeName = typeConName . fieldValueType . fieldValue
+
 isUnionRef :: TypeName -> ConsRep k (FieldValue k) -> Bool
-isUnionRef baseName ConsRep {consName, consFields = [FieldRep {fieldIsObject = True, fieldValue}]} =
-  consName == baseName <> fieldTypeName
+isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
+  consName == baseName <> fieldTypeName fieldRep
 isUnionRef _ _ = False
 
 setFieldNames :: ConsRep k (FieldValue k) -> ConsRep k (FieldValue k)
@@ -543,9 +542,7 @@ setFieldNames cons@ConsRep {consFields} =
     { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
     }
   where
-    setFieldName i fieldR@FieldRep {fieldValue = fieldD} = fieldR {fieldValue = fieldD {fieldName}}
-      where
-        fieldName = FieldName ("_" <> pack (show i))
+    setFieldName i f = f {fieldSelector = FieldName ("_" <> pack (show i))}
 
 analyseRep :: TypeName -> [ConsRep cat (FieldValue cat)] -> ResRep cat (FieldValue cat)
 analyseRep baseName cons =
@@ -618,10 +615,16 @@ buildObject (interfaces, interfaceTypes) scope consFields =
     wrapWith OutputType = DataObject interfaces
 
 buildDataObject :: [FieldRep cat (FieldValue cat)] -> (FieldsDefinition cat CONST, [TypeUpdater])
-buildDataObject consFields = (fields, types)
+buildDataObject consFields = (mkFieldsDefinition consFields, types)
   where
-    fields = unsafeFromFields $ fmap (fieldDef . fieldValue) consFields
     types = fmap (fieldTypes . fieldValue) consFields
+
+mkFieldsDefinition :: [FieldRep kind (FieldValue cat)] -> FieldsDefinition cat CONST
+mkFieldsDefinition = unsafeFromFields . fmap fieldByRep
+
+fieldByRep :: FieldRep kind (FieldValue cat) -> FieldDefinition cat CONST
+fieldByRep FieldRep {fieldSelector, fieldValue = FieldValue {fieldValueType, fieldValueContent}} =
+  mkField fieldValueContent fieldSelector fieldValueType
 
 buildUnions ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
@@ -641,10 +644,7 @@ buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
       typeFingerprint,
       typeDescription = Nothing,
       typeDirectives = empty,
-      typeContent =
-        wrapObject
-          $ unsafeFromFields
-          $ fmap (fieldDef . fieldValue) consFields
+      typeContent = wrapObject $ mkFieldsDefinition consFields
     }
 
 buildUnionEnum ::
