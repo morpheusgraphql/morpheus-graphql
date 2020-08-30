@@ -254,7 +254,7 @@ class DeriveType (cat :: TypeCategory) a where
     FieldName ->
     proxy cat a ->
     FieldDefinition cat CONST
-  field fieldName _ = buildField (Proxy @a) Nothing fieldName
+  field fieldName _ = mkField Nothing fieldName (mkTypeRef (__typeName (Proxy @a)))
 
 deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> TypeUpdater
 deriveTypeWith x = deriveType . setProxyType x
@@ -494,14 +494,6 @@ instance GetFieldContent OUT where
     case name `M.lookup` getFieldContents proxy of
       Just (_, Just x) -> Just (FieldArgs x)
       _ -> args
-
-buildField ::
-  GQLType a =>
-  f a ->
-  Maybe (FieldContent TRUE cat CONST) ->
-  FieldName ->
-  FieldDefinition cat CONST
-buildField proxy fieldContent fieldName = mkField fieldContent fieldName (mkTypeRef (__typeName proxy))
 
 buildType :: GQLType a => TypeContent TRUE cat CONST -> f a -> TypeDefinition cat CONST
 buildType typeContent proxy =
