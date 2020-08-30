@@ -527,9 +527,7 @@ updateLibOUT ::
   [TypeUpdater] ->
   f a ->
   TypeUpdater
-updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
-
--- NEW AUTOMATIC DERIVATION SYSTEM
+updateLibOUT = updateLib
 
 isEmpty :: ConsRep k (FieldValue k) -> Bool
 isEmpty ConsRep {consFields = []} = True
@@ -622,9 +620,10 @@ buildObject (interfaces, interfaceTypes) scope consFields =
     wrapWith OutputType = DataObject interfaces
 
 buildDataObject :: [FieldRep cat (FieldValue cat)] -> (FieldsDefinition cat CONST, [TypeUpdater])
-buildDataObject consFields = (mkFieldsDefinition consFields, types)
-  where
-    types = fmap (fieldTypes . fieldValue) consFields
+buildDataObject consFields =
+  ( mkFieldsDefinition consFields,
+    fmap (fieldTypes . fieldValue) consFields
+  )
 
 mkFieldsDefinition :: [FieldRep kind (FieldValue cat)] -> FieldsDefinition cat CONST
 mkFieldsDefinition = unsafeFromFields . fmap fieldByRep
