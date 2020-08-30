@@ -61,9 +61,15 @@ import Data.Morpheus.Kind
     SCALAR,
   )
 import Data.Morpheus.Server.Deriving.Utils
-  ( conNameProxy,
+  ( ConsRep (..),
+    FieldRep (..),
+    ResRep (..),
+    TypeConstraint (..),
+    TypeRep,
+    conNameProxy,
     isRecordProxy,
     selNameProxy,
+    typeRep,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -518,31 +524,6 @@ updateLibOUT f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint 
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 
-data ConsRep kind = ConsRep
-  { consName :: TypeName,
-    consIsRecord :: Bool,
-    consFields :: [FieldRep kind]
-  }
-
-instance Namespace (ConsRep kind) where
-  stripNamespace p ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace p) fields, ..}
-
-data FieldRep kind = FieldRep
-  { fieldTypeName :: TypeName,
-    fieldData :: FieldDefinition kind CONST,
-    fieldTypeUpdater :: TypeUpdater,
-    fieldIsObject :: Bool
-  }
-
-instance Namespace (FieldRep kind) where
-  stripNamespace p FieldRep {fieldData = fields, ..} = FieldRep {fieldData = stripNamespace p fields, ..}
-
-data ResRep kind = ResRep
-  { enumCons :: [TypeName],
-    unionRef :: [TypeName],
-    unionRecordRep :: [ConsRep kind]
-  }
-
 isEmpty :: ConsRep k -> Bool
 isEmpty ConsRep {consFields = []} = True
 isEmpty _ = False
@@ -715,60 +696,3 @@ buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
             $ singleton
             $ mkInputValue "enum" [] enumTypeName
       }
-
-newtype TypeConstraint (kind :: TypeCategory) (c :: * -> Constraint) f
-  = TypeConstraint
-      ( forall a proxy.
-        c a =>
-        ( FieldName -> proxy kind a -> FieldDefinition kind CONST,
-          proxy kind a -> TypeUpdater
-        )
-      )
-
-mapConstraint :: f b -> TypeConstraint k c a -> TypeConstraint k c b
-mapConstraint _ (TypeConstraint f) = TypeConstraint f
-
---  GENERIC UNION
-class TypeRep (kind :: TypeCategory) (c :: * -> Constraint) f where
-  typeRep :: TypeConstraint kind c f -> [ConsRep kind]
-
-instance TypeRep kind c f => TypeRep kind c (M1 D d f) where
-  typeRep = typeRep . mapConstraint (Proxy @f)
-
--- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (TypeRep kind c a, TypeRep kind c b) => TypeRep kind c (a :+: b) where
-  typeRep (TypeConstraint f) = typeRep (TypeConstraint f :: TypeConstraint kind c a) <> typeRep (TypeConstraint f :: TypeConstraint kind c b)
-
-instance (ConRep kind con f, Constructor c) => TypeRep kind con (M1 C c f) where
-  typeRep (TypeConstraint f) =
-    [ ConsRep
-        { consName = conNameProxy (Proxy @c),
-          consFields = conRep (TypeConstraint f :: TypeConstraint kind con f),
-          consIsRecord = isRecordProxy (Proxy @c)
-        }
-    ]
-
-class ConRep (kind :: TypeCategory) (c :: * -> Constraint) f where
-  conRep :: TypeConstraint kind c f -> [FieldRep kind]
-
--- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (ConRep kind c a, ConRep kind c b) => ConRep kind c (a :*: b) where
-  conRep (TypeConstraint f) =
-    conRep (TypeConstraint f :: TypeConstraint kind c a)
-      <> conRep (TypeConstraint f :: TypeConstraint kind c b)
-
-instance (Selector s, GQLType a, c a) => ConRep kind c (M1 S s (Rec0 a)) where
-  conRep (TypeConstraint (f, t)) =
-    [ FieldRep
-        { fieldTypeName = typeConName $ fieldType fieldData,
-          fieldData = fieldData,
-          fieldTypeUpdater = t (KindedProxy :: KindedProxy cat a),
-          fieldIsObject = isObjectKind (Proxy @a)
-        }
-    ]
-    where
-      name = selNameProxy (Proxy @s)
-      fieldData = f name (KindedProxy :: KindedProxy kind a)
-
-instance ConRep kind c U1 where
-  conRep _ = []
