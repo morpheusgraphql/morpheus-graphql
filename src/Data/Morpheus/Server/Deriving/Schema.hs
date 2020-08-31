@@ -364,8 +364,11 @@ deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 deriveObjectType ::
   (TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a), Generic a, GQLType a) =>
   proxy a ->
-  TypeDefinition OBJECT CONST
-deriveObjectType proxy = mkObjectType (deriveObjectFields proxy) (__typeName proxy)
+  (TypeDefinition OBJECT CONST, [TypeUpdater])
+deriveObjectType proxy =
+  ( mkObjectType (deriveObjectFields proxy) (__typeName proxy),
+    []
+  )
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
@@ -386,7 +389,7 @@ deriveTypeContent scope =
   updateDef proxy
     $ builder
     $ genericTo
-      (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType cat) (Maybe (FieldContent TRUE kind CONST)) Proxy)
+      (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) Proxy)
       (Proxy @a)
   where
     proxy = Proxy @a
