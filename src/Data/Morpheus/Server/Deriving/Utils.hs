@@ -27,6 +27,7 @@ module Data.Morpheus.Server.Deriving.Utils
     enumerateFieldNames,
     genericTo,
     enumerate,
+    DataType (..),
   )
 where
 
@@ -130,6 +131,15 @@ instance (Selector s, GQLType a, c a) => ConRep c v (M1 S s (Rec0 a)) where
 
 instance ConRep c v U1 where
   conRep _ _ = []
+
+data DataType (v :: *) = DataType
+  { tyName :: TypeName,
+    tyIsUnion :: Bool,
+    tyCons :: ConsRep v
+  }
+
+instance Namespace (DataType v) where
+  stripNamespace ns r = r {tyCons = stripNamespace ns (tyCons r)}
 
 data ConsRep (v :: *) = ConsRep
   { consName :: TypeName,
