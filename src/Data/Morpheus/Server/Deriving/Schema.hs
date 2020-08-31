@@ -66,8 +66,10 @@ import Data.Morpheus.Server.Deriving.Utils
     ResRep (..),
     TypeConstraint (..),
     TypeRep (..),
+    fieldTypeName,
     genericTo,
     isEmptyConstraint,
+    isUnionRef,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -108,8 +110,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
-    TypeRef (..),
-    TypeRef (..),
     UnionMember (..),
     VALID,
     fieldsToArguments,
@@ -139,7 +139,6 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
-    Eq (..),
     Show (..),
     fst,
     null,
@@ -490,14 +489,6 @@ updateLibOUT ::
   f a ->
   TypeUpdater
 updateLibOUT = updateLib
-
-fieldTypeName :: FieldRep (FieldValue k) -> TypeName
-fieldTypeName = typeConName . fieldTypeRef
-
-isUnionRef :: TypeName -> ConsRep (FieldValue k) -> Bool
-isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
-  consName == baseName <> fieldTypeName fieldRep
-isUnionRef _ _ = False
 
 analyseRep :: TypeName -> [ConsRep (FieldValue cat)] -> ResRep (FieldValue cat)
 analyseRep baseName cons =

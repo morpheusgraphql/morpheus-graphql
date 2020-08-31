@@ -52,6 +52,7 @@ import Data.Morpheus.Server.Deriving.Utils
     FieldRep (..),
     TypeConstraint (..),
     TypeRep (..),
+    isUnionRef,
     toValue,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
@@ -86,7 +87,6 @@ import Data.Morpheus.Types.Internal.Resolving
     mkObject,
   )
 import Data.Proxy (Proxy (..))
-import Data.Semigroup ((<>))
 import Data.Set (Set)
 import qualified Data.Set as S
   ( toList,
@@ -97,10 +97,7 @@ import GHC.Generics
   )
 import Prelude
   ( ($),
-    (&&),
     (.),
-    Bool (..),
-    Eq (..),
     otherwise,
   )
 
@@ -180,22 +177,20 @@ convertNode ::
   (Monad m, LiftOperation o) =>
   DataType (Resolver o e m (ResModel o e m)) ->
   ResModel o e m
-convertNode DataType {tyName, tyIsUnion = False, tyCons = ConsRep {consFields}} =
-  mkObject tyName (fmap toFieldRes consFields)
 convertNode
   DataType
     { tyName,
-      tyIsUnion = True,
-      tyCons = ConsRep {consFields, consName}
-    } =
-    encodeUnion consFields
+      tyIsUnion,
+      tyCons = cons@ConsRep {consFields, consName}
+    }
+    | tyIsUnion = encodeUnion consFields
+    | otherwise = mkObject tyName (fmap toFieldRes consFields)
     where
       -- ENUM
       encodeUnion [] = ResEnum tyName consName
       -- Type References --------------------------------------------------------------
-      encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue, fieldIsObject}]
-        | fieldIsObject && consName == tyName <> typeConName =
-          ResUnion typeConName fieldValue
+      encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
+        | isUnionRef tyName cons = ResUnion typeConName fieldValue
       -- Inline Union Types ----------------------------------------------------------------------------
       encodeUnion fields =
         ResUnion

@@ -29,6 +29,8 @@ module Data.Morpheus.Server.Deriving.Utils
     deriveFieldRep,
     ConRep (..),
     toValue,
+    isUnionRef,
+    fieldTypeName,
   )
 where
 
@@ -75,6 +77,7 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
+    Eq (..),
     Int,
     Maybe (..),
     map,
@@ -238,3 +241,11 @@ enumerate :: [FieldRep a] -> [FieldRep a]
 enumerate = zipWith setFieldName ([0 ..] :: [Int])
   where
     setFieldName i field = field {fieldSelector = FieldName $ "_" <> pack (show i)}
+
+fieldTypeName :: FieldRep k -> TypeName
+fieldTypeName = typeConName . fieldTypeRef
+
+isUnionRef :: TypeName -> ConsRep k -> Bool
+isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
+  consName == baseName <> fieldTypeName fieldRep
+isUnionRef _ _ = False
