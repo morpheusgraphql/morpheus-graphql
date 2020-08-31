@@ -30,6 +30,7 @@ module Data.Morpheus.Server.Deriving.Utils
     DataType (..),
     deriveFieldRep,
     ConRep (..),
+    toValue,
   )
 where
 
@@ -74,6 +75,7 @@ import GHC.Generics
   )
 import Prelude
   ( ($),
+    (.),
     Bool (..),
     Int,
     Maybe (..),
@@ -108,6 +110,14 @@ genericTo ::
 genericTo f proxy =
   map (stripNamespace (getNamespace proxy)) $
     typeRep f (Proxy @(Rep a))
+
+toValue ::
+  forall constraint value (a :: *).
+  (GQLType a, Generic a, TypeRep constraint value (Rep a)) =>
+  TypeConstraint constraint value Identity ->
+  a ->
+  DataType value
+toValue f = stripNamespace (getNamespace (Proxy @a)) . toTypeRep f . from
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where

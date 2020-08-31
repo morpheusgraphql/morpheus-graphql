@@ -57,6 +57,7 @@ import Data.Morpheus.Server.Deriving.Utils
     TypeConstraint (..),
     TypeRep (..),
     enumerate,
+    toValue,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
@@ -235,9 +236,7 @@ exploreResolvers ::
 exploreResolvers =
   pure
     . convertNode (getNamespace (Proxy @a))
-    . stripNamespace (getNamespace (Proxy @a))
     . typeResolvers
-    . from
 
 ----- HELPERS ----------------------------
 objectResolvers ::
@@ -301,11 +300,14 @@ toFieldRes :: FieldRep (Resolver o e m (ResModel o e m)) -> FieldResModel o e m
 toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
 
 typeResolvers ::
-  TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) f =>
-  f a ->
+  ( GQLType a,
+    Generic a,
+    TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) (Rep a)
+  ) =>
+  a ->
   DataType (Resolver o e m (ResModel o e m))
 typeResolvers =
-  toTypeRep
+  toValue
     ( TypeConstraint (encode . runIdentity) ::
         TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
     )
