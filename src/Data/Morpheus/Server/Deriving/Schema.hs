@@ -70,6 +70,7 @@ import Data.Morpheus.Server.Deriving.Utils
     genericTo,
     isEmptyConstraint,
     isUnionRef,
+    repToValues,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -81,7 +82,8 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( ArgumentsDefinition,
+    CONST,
     CONST,
     DataEnumValue (..),
     DataFingerprint (..),
@@ -140,10 +142,8 @@ import Prelude
     (.),
     Bool (..),
     Show (..),
-    fst,
     null,
     otherwise,
-    snd,
     unzip,
   )
 
@@ -277,7 +277,7 @@ instance
   ) =>
   DeriveType OUT (a -> m b)
   where
-  deriveContent _ = Just $ deriveArgumentFields $ Proxy @a
+  deriveContent _ = Just $ FieldArgs $ deriveArgumentDefinition $ Proxy @a
   deriveType _ = concatUpdates (deriveType (KindedProxy :: KindedProxy OUT b) : inputs)
     where
       inputs :: [TypeUpdater]
@@ -304,34 +304,45 @@ instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
       scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
-instance (GQL_TYPE a, TypeRep (DeriveType IN) (Maybe (FieldContent TRUE IN CONST)) (Rep a)) => DeriveKindedType ENUM a where
+instance DeriveTypeConstraint IN a => DeriveKindedType ENUM a where
   deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep (DeriveType IN) (Maybe (FieldContent TRUE IN CONST)) (Rep a)) => DeriveKindedType INPUT a where
+instance DeriveTypeConstraint IN a => DeriveKindedType INPUT a where
   deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a)) => DeriveKindedType OUTPUT a where
+instance DeriveTypeConstraint OUT a => DeriveKindedType OUTPUT a where
   deriveKindedType _ = derivingData $ outputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a)) => DeriveKindedType INTERFACE a where
+type DeriveTypeConstraint kind a =
+  ( GQL_TYPE a,
+    TypeRep (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) (Rep a),
+    TypeRep (DeriveType kind) TypeUpdater (Rep a)
+  )
+
+instance DeriveTypeConstraint OUT a => DeriveKindedType INTERFACE a where
   deriveKindedType _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
       fields = deriveObjectFields (Proxy @a)
-      types = [] --TODO: derive types
+      types = deriveFieldTypes $ outputType (Proxy @a)
 
 derivingData ::
   forall kind a.
-  (TypeRep (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) (Rep a), GQLType a, Generic a) =>
+  ( TypeRep (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) (Rep a),
+    TypeRep (DeriveType kind) TypeUpdater (Rep a),
+    GQLType a,
+    Generic a
+  ) =>
   KindedType kind a ->
   TypeUpdater
-derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
+derivingData kindedType = updateLib (buildType content) (updates <> types) (Proxy @a)
   where
     (content, updates) = deriveTypeContent kindedType
+    types = deriveFieldTypes kindedType
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentFields :: (TypeRep (DeriveType IN) (Maybe (FieldContent TRUE IN CONST)) (Rep a), GQLType a, Generic a) => f a -> FieldContent TRUE OUT CONST
-deriveArgumentFields = (FieldArgs . fieldsToArguments) . deriveFields . inputType
+deriveArgumentDefinition :: (TypeRep (DeriveType IN) (Maybe (FieldContent TRUE IN CONST)) (Rep a), GQLType a, Generic a) => f a -> ArgumentsDefinition CONST
+deriveArgumentDefinition = fieldsToArguments . deriveFields . inputType
 
 deriveObjectFields :: (TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a), Generic a, GQLType a) => f a -> FieldsDefinition OUT CONST
 deriveObjectFields = deriveFields . outputType
@@ -378,6 +389,17 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
 deriveFieldValue :: forall f kind a. (DeriveType kind a) => f a -> Maybe (FieldContent TRUE kind CONST)
 deriveFieldValue _ = deriveContent (KindedProxy :: KindedProxy k a)
+
+deriveFieldTypes ::
+  forall kind a.
+  (GQLType a, TypeRep (DeriveType kind) TypeUpdater (Rep a), Generic a) =>
+  KindedType kind a ->
+  [TypeUpdater]
+deriveFieldTypes kinded =
+  repToValues $
+    genericTo
+      (TypeConstraint (`deriveTypeWith` kinded) :: TypeConstraint (DeriveType kind) TypeUpdater Proxy)
+      (Proxy @a)
 
 -- Object Fields
 deriveTypeContent ::
@@ -549,9 +571,6 @@ buildObject (interfaces, interfaceTypes) scope consFields =
     wrapWith :: KindedType cat a -> FieldsDefinition cat CONST -> TypeContent TRUE cat CONST
     wrapWith InputType = DataInputObject
     wrapWith OutputType = DataObject interfaces
-
-buildDataObject :: [FieldRep TypeUpdater] -> [TypeUpdater]
-buildDataObject = fmap fieldValue
 
 mkFieldsDefinition :: [FieldRep (Maybe (FieldContent TRUE kind CONST))] -> FieldsDefinition kind CONST
 mkFieldsDefinition = unsafeFromFields . fmap fieldByRep

@@ -31,6 +31,7 @@ module Data.Morpheus.Server.Deriving.Utils
     toValue,
     isUnionRef,
     fieldTypeName,
+    repToValues,
   )
 where
 
@@ -80,6 +81,7 @@ import Prelude
     Eq (..),
     Int,
     Maybe (..),
+    concatMap,
     map,
     null,
     otherwise,
@@ -249,3 +251,8 @@ isUnionRef :: TypeName -> ConsRep k -> Bool
 isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
   consName == baseName <> fieldTypeName fieldRep
 isUnionRef _ _ = False
+
+repToValues :: [ConsRep v] -> [v]
+repToValues = concatMap consToValues
+  where
+    consToValues = map fieldValue . consFields
