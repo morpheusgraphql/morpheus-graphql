@@ -50,8 +50,10 @@ import Data.Morpheus.Server.Deriving.Decode
     decodeArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils
-  ( conNameProxy,
+  ( FieldRep (..),
+    conNameProxy,
     datatypeNameProxy,
+    enumerate,
     isRecordProxy,
     selNameProxy,
   )
@@ -66,14 +68,13 @@ import Data.Morpheus.Types
   )
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    FieldName (..),
-    InternalError,
+  ( InternalError,
     MUTATION,
     OperationType,
     QUERY,
     SUBSCRIPTION,
     TypeName,
+    TypeRef (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( FieldResModel,
@@ -94,7 +95,6 @@ import Data.Set (Set)
 import qualified Data.Set as S
   ( toList,
   )
-import Data.Text (pack)
 import Data.Traversable (traverse)
 import GHC.Generics
   ( (:*:) (..),
@@ -116,10 +116,7 @@ import Prelude
     (.),
     Bool,
     Eq (..),
-    Int,
     otherwise,
-    show,
-    zipWith,
   )
 
 data ResContext (kind :: GQL_KIND) (operation :: OperationType) event (m :: * -> *) value = ResContext
@@ -211,9 +208,9 @@ convertNode namespace ResNode {resDatatypeName, resKind = REP_UNION, resFields, 
     -- ENUM
     encodeUnion [] = ResEnum resDatatypeName (stripNamespace namespace resTypeName)
     -- Type References --------------------------------------------------------------
-    encodeUnion [FieldNode {fieldTypeName, fieldResolver, isFieldObject}]
-      | isFieldObject && resTypeName == resDatatypeName <> fieldTypeName =
-        ResUnion fieldTypeName fieldResolver
+    encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue, fieldIsObject}]
+      | fieldIsObject && resTypeName == resDatatypeName <> typeConName =
+        ResUnion typeConName fieldValue
     -- Inline Union Types ----------------------------------------------------------------------------
     encodeUnion fields =
       ResUnion
@@ -225,7 +222,7 @@ convertNode namespace ResNode {resDatatypeName, resKind = REP_UNION, resFields, 
       where
         resolvers
           | isResRecord = fields
-          | otherwise = setFieldNames fields
+          | otherwise = enumerate fields
 
 -- Types & Constrains -------------------------------------------------------
 
@@ -301,9 +298,8 @@ deriveModel
         | isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
         | otherwise = Just (getChannels subscriptionResolver)
 
-toFieldRes :: FieldNode o e m -> FieldResModel o e m
-toFieldRes FieldNode {fieldSelName, fieldResolver} =
-  (fieldSelName, fieldResolver)
+toFieldRes :: FieldRep (Resolver o e m (ResModel o e m)) -> FieldResModel o e m
+toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
 
 -- NEW AUTOMATIC DERIVATION SYSTEM
 data REP_KIND = REP_UNION | REP_OBJECT
@@ -312,28 +308,12 @@ data ResNode o e m = ResNode
   { resDatatypeName :: TypeName,
     resTypeName :: TypeName,
     resKind :: REP_KIND,
-    resFields :: [FieldNode o e m],
+    resFields :: [FieldRep (Resolver o e m (ResModel o e m))],
     isResRecord :: Bool
   }
 
 instance Namespace (ResNode o e m) where
   stripNamespace ns r = r {resFields = fmap (stripNamespace ns) (resFields r)}
-
-instance Namespace (FieldNode o e m) where
-  stripNamespace ns f = f {fieldSelName = stripNamespace ns (fieldSelName f)}
-
-data FieldNode o e m = FieldNode
-  { fieldTypeName :: TypeName,
-    fieldSelName :: FieldName,
-    fieldResolver :: Resolver o e m (ResModel o e m),
-    isFieldObject :: Bool
-  }
-
--- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
-setFieldNames :: [FieldNode o e m] -> [FieldNode o e m]
-setFieldNames = zipWith setFieldName ([0 ..] :: [Int])
-  where
-    setFieldName i field = field {fieldSelName = FieldName $ "_" <> pack (show i)}
 
 class TypeRep f (o :: OperationType) e (m :: * -> *) where
   typeResolvers :: ResContext OUTPUT o e m value -> f a -> ResNode o e m
@@ -351,7 +331,7 @@ instance (TypeRep a o e m, TypeRep b o e m) => TypeRep (a :+: b) o e m where
   typeResolvers context (R1 x) =
     (typeResolvers context x) {resKind = REP_UNION}
 
-instance (FieldRep f o e m, Constructor c) => TypeRep (M1 C c f) o e m where
+instance (ConsRep f o e m, Constructor c) => TypeRep (M1 C c f) o e m where
   typeResolvers context (M1 src) =
     ResNode
       { resDatatypeName = "",
@@ -362,21 +342,26 @@ instance (FieldRep f o e m, Constructor c) => TypeRep (M1 C c f) o e m where
       }
 
 --- FIELDS
-class FieldRep f o e (m :: * -> *) where
-  fieldRep :: ResContext OUTPUT o e m value -> f a -> [FieldNode o e m]
+class ConsRep f o e (m :: * -> *) where
+  fieldRep :: ResContext OUTPUT o e m value -> f a -> [FieldRep (Resolver o e m (ResModel o e m))]
 
-instance (FieldRep f o e m, FieldRep g o e m) => FieldRep (f :*: g) o e m where
+instance (ConsRep f o e m, ConsRep g o e m) => ConsRep (f :*: g) o e m where
   fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
 
-instance (Selector s, GQLType a, Encode a o e m) => FieldRep (M1 S s (K1 s2 a)) o e m where
+instance (Selector s, GQLType a, Encode a o e m) => ConsRep (M1 S s (K1 s2 a)) o e m where
   fieldRep _ (M1 (K1 src)) =
-    [ FieldNode
-        { fieldSelName = selNameProxy (Proxy @s),
-          fieldTypeName = __typeName (Proxy @a),
-          fieldResolver = encode src,
-          isFieldObject = isObjectKind (Proxy @a)
+    [ FieldRep
+        { fieldSelector = selNameProxy (Proxy @s),
+          fieldTypeRef =
+            TypeRef
+              { typeConName = __typeName (Proxy @a),
+                typeWrappers = __wrappers (Proxy @a),
+                typeArgs = Nothing
+              },
+          fieldIsObject = isObjectKind (Proxy @a),
+          fieldValue = encode src
         }
     ]
 
-instance FieldRep U1 o e m where
+instance ConsRep U1 o e m where
   fieldRep _ _ = []

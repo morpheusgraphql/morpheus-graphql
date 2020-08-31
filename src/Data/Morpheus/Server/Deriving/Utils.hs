@@ -26,6 +26,7 @@ module Data.Morpheus.Server.Deriving.Utils
     isEmptyConstraint,
     enumerateFieldNames,
     genericTo,
+    enumerate,
   )
 where
 
@@ -160,9 +161,10 @@ isEmptyConstraint ConsRep {consFields = []} = True
 isEmptyConstraint _ = False
 
 enumerateFieldNames :: ConsRep a -> ConsRep a
-enumerateFieldNames cons@ConsRep {consFields} =
-  cons
-    { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
-    }
+enumerateFieldNames cons@ConsRep {consFields} = cons {consFields = enumerate consFields}
+
+-- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
+enumerate :: [FieldRep a] -> [FieldRep a]
+enumerate = zipWith setFieldName ([0 ..] :: [Int])
   where
-    setFieldName i f = f {fieldSelector = FieldName ("_" <> pack (show i))}
+    setFieldName i field = field {fieldSelector = FieldName $ "_" <> pack (show i)}
