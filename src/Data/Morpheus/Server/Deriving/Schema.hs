@@ -393,7 +393,7 @@ deriveTypeContent scope =
   updateDef proxy
     $ builder
     $ genericTo
-      (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType cat) (FieldValue cat))
+      (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType cat) (FieldValue cat) Proxy)
       (Proxy @a)
   where
     proxy = Proxy @a

@@ -346,9 +346,7 @@ instance (ConRep f v, ConRep g v) => ConRep (f :*: g) v where
 
 instance
   (Selector s, GQLType a, Encode a o e m) =>
-  ConRep
-    (M1 S s (Rec0 a))
-    (Resolver o e m (ResModel o e m))
+  ConRep (M1 S s (Rec0 a)) (Resolver o e m (ResModel o e m))
   where
   fieldRep (M1 (K1 src)) = [deriveFieldRep (Proxy @s) (Proxy @a) (encode src)]
 

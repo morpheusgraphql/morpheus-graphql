@@ -32,6 +32,7 @@ module Data.Morpheus.Server.Deriving.Utils
   )
 where
 
+import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Internal.Utils
   ( Namespace (..),
   )
@@ -51,6 +52,25 @@ import Data.Text
   )
 import GHC.Exts (Constraint)
 import GHC.Generics
+  ( (:*:) (..),
+    (:+:) (..),
+    C,
+    Constructor,
+    D,
+    Datatype,
+    Generic (..),
+    K1 (..),
+    M1 (..),
+    Meta,
+    Rec0,
+    S,
+    Selector,
+    U1 (..),
+    conIsRecord,
+    conName,
+    datatypeName,
+    selName,
+  )
 import Prelude
   ( ($),
     Bool (..),
@@ -74,14 +94,14 @@ selNameProxy _ = convertToJSONName $ FieldName $ pack $ selName (undefined :: M1
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
 
-newtype TypeConstraint (c :: * -> Constraint) (v :: *) = TypeConstraint
-  { typeConstraint :: forall a f. c a => f a -> v
+newtype TypeConstraint (c :: * -> Constraint) (v :: *) (f :: * -> *) = TypeConstraint
+  { typeConstraint :: forall a. c a => f a -> v
   }
 
 genericTo ::
   forall f constraint value (a :: *).
   (GQLType a, TypeRep constraint value (Rep a)) =>
-  TypeConstraint constraint value ->
+  TypeConstraint constraint value Proxy ->
   f a ->
   [ConsRep value]
 genericTo f proxy =
@@ -90,7 +110,7 @@ genericTo f proxy =
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where
-  typeRep :: TypeConstraint c v -> proxy f -> [ConsRep v]
+  typeRep :: TypeConstraint c v Proxy -> proxy f -> [ConsRep v]
 
 instance TypeRep c v f => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
@@ -109,15 +129,17 @@ instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
     ]
 
 class ConRep (c :: * -> Constraint) (v :: *) f where
-  conRep :: TypeConstraint c v -> proxy f -> [FieldRep v]
+  conRep :: TypeConstraint c v Proxy -> proxy f -> [FieldRep v]
+  toFieldRep :: TypeConstraint c v Identity -> f a -> [FieldRep v]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
   conRep fun _ = conRep fun (Proxy @a) <> conRep fun (Proxy @b)
+  toFieldRep fun (a :*: b) = toFieldRep fun a <> toFieldRep fun b
 
 instance (Selector s, GQLType a, c a) => ConRep c v (M1 S s (Rec0 a)) where
-  conRep (TypeConstraint f) _ =
-    [deriveFieldRep (Proxy @s) (Proxy @a) (f $ Proxy @a)]
+  conRep (TypeConstraint f) _ = [deriveFieldRep (Proxy @s) (Proxy @a) (f $ Proxy @a)]
+  toFieldRep (TypeConstraint f) (M1 (K1 src)) = [deriveFieldRep (Proxy @s) (Proxy @a) (f (Identity src))]
 
 deriveFieldRep ::
   forall f (s :: Meta) g a v.
@@ -141,6 +163,7 @@ deriveFieldRep pSel proxy v =
 
 instance ConRep c v U1 where
   conRep _ _ = []
+  toFieldRep _ _ = []
 
 data DataType (v :: *) = DataType
   { tyName :: TypeName,
