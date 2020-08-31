@@ -282,20 +282,18 @@ instance
   ) =>
   DeriveType OUT (a -> m b)
   where
-  deriveContent _ = Just $ fst $ deriveArgumentFields (Proxy @a)
+  deriveContent _ = Just $ fst $ deriveArgumentFields $ Proxy @a
   deriveType _ = concatUpdates (deriveType (KindedProxy :: KindedProxy OUT b) : inputs)
     where
       inputs :: [TypeUpdater]
       inputs = snd $ deriveArgumentFields (Proxy @a)
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
-  -- field name _ = field name (KindedProxy :: KindedProxy OUT a)
   deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (GQLType b, DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
-  -- field name _ = field name (KindedProxy :: KindedProxy cat b)
-  deriveType _ = deriveType (KindedProxy :: KindedProxy cat b)
+instance (DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
+  deriveType = deriveTypeWith (Proxy @b)
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType (kind :: GQL_KIND) a where
