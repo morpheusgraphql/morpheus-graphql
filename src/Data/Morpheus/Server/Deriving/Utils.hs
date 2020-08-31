@@ -35,7 +35,6 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
-    TypeCategory,
     TypeName (..),
     TypeRef (..),
     convertToJSONName,
@@ -79,46 +78,45 @@ data KindedProxy k a
 
 newtype
   TypeConstraint
-    (kind :: TypeCategory)
     (c :: * -> Constraint)
     (v :: *)
     f = TypeConstraint
-  { typeConstraintFun :: forall a proxy. c a => proxy kind a -> v
+  { typeConstraintFun :: forall a proxy. c a => proxy a -> v
   }
 
-mapConstraint :: f b -> TypeConstraint k c v a -> TypeConstraint k c v b
+mapConstraint :: f b -> TypeConstraint c v a -> TypeConstraint c v b
 mapConstraint _ (TypeConstraint f) = TypeConstraint f
 
 --  GENERIC UNION
-class TypeRep (kind :: TypeCategory) (c :: * -> Constraint) (v :: *) f where
-  typeRep :: TypeConstraint kind c v f -> [ConsRep v]
+class TypeRep (c :: * -> Constraint) (v :: *) f where
+  typeRep :: TypeConstraint c v f -> [ConsRep v]
 
-instance TypeRep kind c v f => TypeRep kind c v (M1 D d f) where
+instance TypeRep c v f => TypeRep c v (M1 D d f) where
   typeRep = typeRep . mapConstraint (Proxy @f)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (TypeRep kind c v a, TypeRep kind c v b) => TypeRep kind c v (a :+: b) where
-  typeRep (TypeConstraint f) = typeRep (TypeConstraint f :: TypeConstraint kind c v a) <> typeRep (TypeConstraint f :: TypeConstraint kind c v b)
+instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
+  typeRep (TypeConstraint f) = typeRep (TypeConstraint f :: TypeConstraint c v a) <> typeRep (TypeConstraint f :: TypeConstraint c v b)
 
-instance (ConRep kind con v f, Constructor c) => TypeRep kind con v (M1 C c f) where
+instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
   typeRep (TypeConstraint f) =
     [ ConsRep
         { consName = conNameProxy (Proxy @c),
-          consFields = conRep (TypeConstraint f :: TypeConstraint kind con v f),
+          consFields = conRep (TypeConstraint f :: TypeConstraint con v f),
           consIsRecord = isRecordProxy (Proxy @c)
         }
     ]
 
-class ConRep (kind :: TypeCategory) (c :: * -> Constraint) (v :: *) f where
-  conRep :: TypeConstraint kind c v f -> [FieldRep v]
+class ConRep (c :: * -> Constraint) (v :: *) f where
+  conRep :: TypeConstraint c v f -> [FieldRep v]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
-instance (ConRep kind c v a, ConRep kind c v b) => ConRep kind c v (a :*: b) where
+instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
   conRep (TypeConstraint f) =
-    conRep (TypeConstraint f :: TypeConstraint kind c v a)
-      <> conRep (TypeConstraint f :: TypeConstraint kind c v b)
+    conRep (TypeConstraint f :: TypeConstraint c v a)
+      <> conRep (TypeConstraint f :: TypeConstraint c v b)
 
-instance (Selector s, GQLType a, c a) => ConRep kind c v (M1 S s (Rec0 a)) where
+instance (Selector s, GQLType a, c a) => ConRep c v (M1 S s (Rec0 a)) where
   conRep (TypeConstraint f) =
     [ FieldRep
         { fieldSelector = selNameProxy (Proxy @s),
@@ -133,7 +131,7 @@ instance (Selector s, GQLType a, c a) => ConRep kind c v (M1 S s (Rec0 a)) where
         }
     ]
 
-instance ConRep kind c v U1 where
+instance ConRep c v U1 where
   conRep _ = []
 
 data ConsRep (v :: *) = ConsRep

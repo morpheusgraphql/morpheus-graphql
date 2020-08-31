@@ -157,7 +157,7 @@ type SchemaConstraints event (m :: * -> *) query mutation subscription =
 
 type SchemaConstraint a =
   ( GQLType a,
-    TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a),
+    TypeRep (DeriveType OUT) (FieldValue OUT) (Rep a),
     Generic a
   )
 
@@ -276,7 +276,7 @@ data FieldValue c = FieldValue
 instance
   ( GQLType b,
     DeriveType OUT b,
-    TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a),
+    TypeRep (DeriveType IN) (FieldValue IN) (Rep a),
     GQLType a,
     Generic a
   ) =>
@@ -309,23 +309,23 @@ instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
       scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
-instance (GQL_TYPE a, TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a)) => DeriveKindedType ENUM a where
+instance (GQL_TYPE a, TypeRep (DeriveType IN) (FieldValue IN) (Rep a)) => DeriveKindedType ENUM a where
   deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a)) => DeriveKindedType INPUT a where
+instance (GQL_TYPE a, TypeRep (DeriveType IN) (FieldValue IN) (Rep a)) => DeriveKindedType INPUT a where
   deriveKindedType _ = derivingData $ inputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a)) => DeriveKindedType OUTPUT a where
+instance (GQL_TYPE a, TypeRep (DeriveType OUT) (FieldValue OUT) (Rep a)) => DeriveKindedType OUTPUT a where
   deriveKindedType _ = derivingData $ outputType (Proxy @a)
 
-instance (GQL_TYPE a, TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a)) => DeriveKindedType INTERFACE a where
+instance (GQL_TYPE a, TypeRep (DeriveType OUT) (FieldValue OUT) (Rep a)) => DeriveKindedType INTERFACE a where
   deriveKindedType _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
       (fields, types) = deriveObjectFields (Proxy @a)
 
 derivingData ::
   forall cat a.
-  (TypeRep cat (DeriveType cat) (FieldValue cat) (Rep a), GQLType a, Generic a) =>
+  (TypeRep (DeriveType cat) (FieldValue cat) (Rep a), GQLType a, Generic a) =>
   KindedType cat a ->
   TypeUpdater
 derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
@@ -334,14 +334,14 @@ derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentFields :: (TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a), GQLType a, Generic a) => f a -> (FieldContent TRUE OUT CONST, [TypeUpdater])
+deriveArgumentFields :: (TypeRep (DeriveType IN) (FieldValue IN) (Rep a), GQLType a, Generic a) => f a -> (FieldContent TRUE OUT CONST, [TypeUpdater])
 deriveArgumentFields = mapFst (FieldArgs . fieldsToArguments) . deriveFields . inputType
 
-deriveObjectFields :: (TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a), Generic a, GQLType a) => f a -> (FieldsDefinition OUT CONST, [TypeUpdater])
+deriveObjectFields :: (TypeRep (DeriveType OUT) (FieldValue OUT) (Rep a), Generic a, GQLType a) => f a -> (FieldsDefinition OUT CONST, [TypeUpdater])
 deriveObjectFields = deriveFields . outputType
 
 deriveFields ::
-  (GQLType a, TypeRep k (DeriveType k) (FieldValue k) (Rep a), Generic a) =>
+  (GQLType a, TypeRep (DeriveType k) (FieldValue k) (Rep a), Generic a) =>
   KindedType k a ->
   (FieldsDefinition k CONST, [TypeUpdater])
 deriveFields kindedType = withObject kindedType (deriveTypeContent kindedType)
@@ -365,7 +365,7 @@ deriveOutType :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdat
 deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 deriveObjectType ::
-  (TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a), Generic a, GQLType a) =>
+  (TypeRep (DeriveType OUT) (FieldValue OUT) (Rep a), Generic a, GQLType a) =>
   proxy a ->
   (TypeDefinition OBJECT CONST, [TypeUpdater])
 deriveObjectType proxy = (mkObjectType fields (__typeName proxy), types)
@@ -378,24 +378,24 @@ mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 introspectFailure :: Message -> TypeUpdater
 introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 
-deriveFieldValue :: (DeriveType k a) => proxy k a -> FieldValue k
-deriveFieldValue proxy =
+deriveFieldValue :: forall f k a. (DeriveType k a) => f a -> FieldValue k
+deriveFieldValue _ =
   FieldValue
-    { fieldValueContent = deriveContent proxy,
-      fieldTypes = deriveType proxy
+    { fieldValueContent = deriveContent (KindedProxy :: KindedProxy k a),
+      fieldTypes = deriveType (KindedProxy :: KindedProxy k a)
     }
 
 -- Object Fields
 deriveTypeContent ::
   forall k a.
-  (TypeRep k (DeriveType k) (FieldValue k) (Rep a), Generic a, GQLType a) =>
+  (TypeRep (DeriveType k) (FieldValue k) (Rep a), Generic a, GQLType a) =>
   KindedType k a ->
   (TypeContent TRUE k CONST, [TypeUpdater])
 deriveTypeContent scope =
   updateDef proxy
     $ builder
     $ map (stripNamespace (getNamespace (Proxy @a)))
-    $ typeRep (TypeConstraint deriveFieldValue :: TypeConstraint cat (DeriveType cat) (FieldValue cat) (Rep a))
+    $ typeRep (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType cat) (FieldValue cat) (Rep a))
   where
     proxy = Proxy @a
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
