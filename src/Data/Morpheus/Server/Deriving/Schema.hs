@@ -66,6 +66,8 @@ import Data.Morpheus.Server.Deriving.Utils
     ResRep (..),
     TypeConstraint (..),
     TypeRep (..),
+    enumerateFieldNames,
+    isEmptyConstraint,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -135,9 +137,6 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Set (Set)
-import Data.Text
-  ( pack,
-  )
 import GHC.Generics (Generic, Rep)
 import Language.Haskell.TH (Exp, Q)
 import Prelude
@@ -145,7 +144,6 @@ import Prelude
     (.),
     Bool (..),
     Eq (..),
-    Int,
     Show (..),
     fst,
     map,
@@ -153,7 +151,6 @@ import Prelude
     otherwise,
     snd,
     unzip,
-    zipWith,
   )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
@@ -521,10 +518,6 @@ updateLibOUT ::
   TypeUpdater
 updateLibOUT = updateLib
 
-isEmpty :: ConsRep k (FieldValue k) -> Bool
-isEmpty ConsRep {consFields = []} = True
-isEmpty _ = False
-
 fieldTypeName :: FieldRep kind (FieldValue cat) -> TypeName
 fieldTypeName = typeConName . fieldValueType . fieldValue
 
@@ -533,23 +526,15 @@ isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsO
   consName == baseName <> fieldTypeName fieldRep
 isUnionRef _ _ = False
 
-setFieldNames :: ConsRep k (FieldValue k) -> ConsRep k (FieldValue k)
-setFieldNames cons@ConsRep {consFields} =
-  cons
-    { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
-    }
-  where
-    setFieldName i f = f {fieldSelector = FieldName ("_" <> pack (show i))}
-
 analyseRep :: TypeName -> [ConsRep cat (FieldValue cat)] -> ResRep cat (FieldValue cat)
 analyseRep baseName cons =
   ResRep
     { enumCons = fmap consName enumRep,
       unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
-      unionRecordRep = unionRecordRep <> fmap setFieldNames anonymousUnionRep
+      unionRecordRep = unionRecordRep <> fmap enumerateFieldNames anonymousUnionRep
     }
   where
-    (enumRep, left1) = partition isEmpty cons
+    (enumRep, left1) = partition isEmptyConstraint cons
     (unionRefRep, left2) = partition (isUnionRef baseName) left1
     (unionRecordRep, anonymousUnionRep) = partition consIsRecord left2
 
@@ -635,7 +620,10 @@ buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
     members = fmap consName cons
 
 buildUnionRecord ::
-  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) -> DataFingerprint -> ConsRep cat (FieldValue cat) -> TypeDefinition cat CONST
+  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
+  DataFingerprint ->
+  ConsRep cat (FieldValue cat) ->
+  TypeDefinition cat CONST
 buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
   TypeDefinition
     { typeName = consName,

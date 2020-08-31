@@ -2,6 +2,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -20,6 +22,8 @@ module Data.Morpheus.Server.Deriving.Utils
     ConsRep (..),
     TypeConstraint (..),
     FieldRep (..),
+    isEmptyConstraint,
+    enumerateFieldNames,
   )
 where
 
@@ -45,9 +49,12 @@ import GHC.Generics
 import Prelude
   ( ($),
     (.),
-    Bool,
+    Bool (..),
+    Int,
     map,
+    show,
     undefined,
+    zipWith,
   )
 
 datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
@@ -144,3 +151,15 @@ data ResRep kind (v :: *) = ResRep
     unionRef :: [TypeName],
     unionRecordRep :: [ConsRep kind v]
   }
+
+isEmptyConstraint :: ConsRep k a -> Bool
+isEmptyConstraint ConsRep {consFields = []} = True
+isEmptyConstraint _ = False
+
+enumerateFieldNames :: ConsRep k a -> ConsRep k a
+enumerateFieldNames cons@ConsRep {consFields} =
+  cons
+    { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields
+    }
+  where
+    setFieldName i f = f {fieldSelector = FieldName ("_" <> pack (show i))}
