@@ -2,7 +2,6 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -37,12 +36,9 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     Schema,
     TypeName (..),
-    TypeRef,
-    TypeRef (..),
     TypeWrapper (..),
     Value,
     internalFingerprint,
-    mkTypeRef,
     toNullable,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -85,9 +81,8 @@ import Prelude
 
 type TypeUpdater = UpdateT Eventless (Schema CONST)
 
-wrapList :: TypeRef -> TypeRef
-wrapList alias@TypeRef {typeWrappers} =
-  alias {typeWrappers = TypeList : typeWrappers}
+wrapList :: [TypeWrapper] -> [TypeWrapper]
+wrapList = (TypeList :)
 
 resolverCon :: TyCon
 resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)
@@ -175,8 +170,8 @@ class IsObject (KIND a) => GQLType a where
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
-  __typeRef :: f a -> TypeRef
-  __typeRef = mkTypeRef . __typeName
+  __wrappers :: f a -> [TypeWrapper]
+  __wrappers _ = []
 
   __typeName :: f a -> TypeName
   default __typeName ::
@@ -196,13 +191,6 @@ class IsObject (KIND a) => GQLType a where
     where
       conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
-instance GQLType () where
-  type KIND () = WRAPPER
-
-instance Typeable m => GQLType (Undefined m) where
-  type KIND (Undefined m) = WRAPPER
-  isEmptyType _ = True
-
 instance GQLType Int where
   type KIND Int = SCALAR
   __typeFingerprint _ = internalFingerprint "Int" []
@@ -221,15 +209,26 @@ instance GQLType Bool where
   __typeName _ = "Boolean"
   __typeFingerprint _ = internalFingerprint "Boolean" []
 
+instance GQLType ID where
+  type KIND ID = SCALAR
+  __typeFingerprint _ = internalFingerprint "ID" []
+
+-- WRAPPERS
+instance GQLType ()
+
+instance Typeable m => GQLType (Undefined m) where
+  type KIND (Undefined m) = WRAPPER
+  isEmptyType _ = True
+
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __typeRef _ = toNullable $ __typeRef $ Proxy @a
+  __wrappers _ = toNullable $ __wrappers $ Proxy @a
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __typeRef _ = wrapList $ __typeRef $ Proxy @a
+  __wrappers _ = wrapList $ __wrappers $ Proxy @a
   __typeName _ = __typeName $ Proxy @a
   __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
@@ -239,41 +238,33 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
-  __typeRef _ = __typeRef $ Proxy @[a]
+  __wrappers _ = __wrappers $ Proxy @[a]
   __typeName _ = __typeName $ Proxy @a
   __typeFingerprint _ = __typeFingerprint $ Proxy @a
-
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
-  type KIND (Pair a b) = OUTPUT
-
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
-  type KIND (MapKind a b m) = OUTPUT
-  __typeName _ = __typeName $ Proxy @(Map a b)
-  __typeFingerprint _ = __typeFingerprint $ Proxy @(Map a b)
 
 instance (Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = WRAPPER
 
-instance GQLType a => GQLType (Either s a) where
-  type KIND (Either s a) = WRAPPER
-  __typeName _ = __typeName $ Proxy @a
-  __typeFingerprint _ = __typeFingerprint $ Proxy @a
-
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = WRAPPER
+  __wrappers _ = __wrappers $ Proxy @a
   __typeName _ = __typeName $ Proxy @a
   __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
+  __wrappers _ = __wrappers $ Proxy @a
   __typeName _ = __typeName $ Proxy @a
   __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER
+  __wrappers _ = __wrappers $ Proxy @b
   __typeName _ = __typeName $ Proxy @b
   __typeFingerprint _ = __typeFingerprint $ Proxy @b
 
-instance GQLType ID where
-  type KIND ID = SCALAR
-  __typeFingerprint _ = internalFingerprint "ID" []
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
+
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
+  __typeName _ = __typeName $ Proxy @(Map a b)
+  __typeFingerprint _ = __typeFingerprint $ Proxy @(Map a b)
