@@ -110,7 +110,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeRef (..),
-    TypeWrapper (..),
     UnionMember (..),
     VALID,
     fieldsToArguments,
@@ -122,7 +121,6 @@ import Data.Morpheus.Types.Internal.AST
     mkType,
     mkUnionMember,
     msg,
-    toNullable,
     unsafeFromFields,
     updateSchema,
   )
@@ -243,30 +241,18 @@ instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => Derive
 class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveType :: proxy kind a -> TypeUpdater
 
-  deriveTypeWrappers :: proxy kind a -> TypeRef
-  deriveTypeWrappers _ = TypeRef "" Nothing []
-
   deriveContent :: proxy kind a -> Maybe (FieldContent TRUE kind CONST)
   deriveContent _ = Nothing
 
 deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> TypeUpdater
 deriveTypeWith x = deriveType . setProxyType x
 
-deriveWrappersWith :: DeriveType cat a => f a -> kinded cat b -> TypeRef
-deriveWrappersWith x = deriveTypeWrappers . setProxyType x
-
-wrapList :: TypeRef -> TypeRef
-wrapList alias@TypeRef {typeWrappers} =
-  alias {typeWrappers = TypeList : typeWrappers}
-
 -- Maybe
 instance DeriveType cat a => DeriveType cat (Maybe a) where
-  deriveTypeWrappers = toNullable . deriveWrappersWith (Proxy @a)
   deriveType = deriveTypeWith (Proxy @a)
 
 -- List
 instance DeriveType cat a => DeriveType cat [a] where
-  deriveTypeWrappers = wrapList . deriveWrappersWith (Proxy @a)
   deriveType = deriveTypeWith (Proxy @a)
 
 -- Tuple
@@ -275,17 +261,14 @@ instance DeriveType cat (Pair k v) => DeriveType cat (k, v) where
 
 -- Set
 instance DeriveType cat [a] => DeriveType cat (Set a) where
-  deriveTypeWrappers = deriveWrappersWith (Proxy @[a])
   deriveType = deriveTypeWith (Proxy @[a])
 
 -- Map
 instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
-  deriveTypeWrappers = deriveWrappersWith (Proxy @(MapKind k v Maybe))
   deriveType = deriveTypeWith (Proxy @(MapKind k v Maybe))
 
 data FieldValue c = FieldValue
-  { fieldValueType :: TypeRef,
-    fieldValueContent :: Maybe (FieldContent TRUE c CONST),
+  { fieldValueContent :: Maybe (FieldContent TRUE c CONST),
     fieldTypes :: TypeUpdater
   }
 
@@ -398,8 +381,7 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 deriveFieldValue :: (DeriveType k a) => proxy k a -> FieldValue k
 deriveFieldValue proxy =
   FieldValue
-    { fieldValueType = deriveTypeWrappers proxy,
-      fieldValueContent = deriveContent proxy,
+    { fieldValueContent = deriveContent proxy,
       fieldTypes = deriveType proxy
     }
 
@@ -512,7 +494,7 @@ updateLibOUT ::
 updateLibOUT = updateLib
 
 fieldTypeName :: FieldRep (FieldValue k) -> TypeName
-fieldTypeName = typeConName . fieldValueType . fieldValue
+fieldTypeName = typeConName . fieldTypeRef
 
 isUnionRef :: TypeName -> ConsRep (FieldValue k) -> Bool
 isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
@@ -599,8 +581,8 @@ mkFieldsDefinition :: [FieldRep (FieldValue kind)] -> FieldsDefinition kind CONS
 mkFieldsDefinition = unsafeFromFields . fmap fieldByRep
 
 fieldByRep :: FieldRep (FieldValue kind) -> FieldDefinition kind CONST
-fieldByRep FieldRep {fieldSelector, fieldValue = FieldValue {fieldValueType, fieldValueContent}} =
-  mkField fieldValueContent fieldSelector fieldValueType
+fieldByRep FieldRep {fieldSelector, fieldTypeRef, fieldValue = FieldValue {fieldValueContent}} =
+  mkField fieldValueContent fieldSelector fieldTypeRef
 
 buildUnions ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->

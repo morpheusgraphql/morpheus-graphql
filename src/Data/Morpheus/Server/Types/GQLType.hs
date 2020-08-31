@@ -2,6 +2,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -36,8 +37,13 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     Schema,
     TypeName (..),
+    TypeRef,
+    TypeRef (..),
+    TypeWrapper (..),
     Value,
     internalFingerprint,
+    mkTypeRef,
+    toNullable,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -78,6 +84,10 @@ import Prelude
   )
 
 type TypeUpdater = UpdateT Eventless (Schema CONST)
+
+wrapList :: TypeRef -> TypeRef
+wrapList alias@TypeRef {typeWrappers} =
+  alias {typeWrappers = TypeList : typeWrappers}
 
 resolverCon :: TyCon
 resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)
@@ -165,6 +175,9 @@ class IsObject (KIND a) => GQLType a where
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
+  __typeRef :: f a -> TypeRef
+  __typeRef = mkTypeRef . __typeName
+
   __typeName :: f a -> TypeName
   default __typeName ::
     (Typeable a) =>
@@ -210,11 +223,13 @@ instance GQLType Bool where
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
+  __typeRef _ = toNullable $ __typeRef (Proxy @a)
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
+  __typeRef _ = wrapList $ __typeRef (Proxy @a)
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
@@ -224,6 +239,7 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
+  __typeRef _ = __typeRef (Proxy @[a])
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 

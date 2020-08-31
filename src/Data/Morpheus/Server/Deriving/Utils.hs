@@ -37,6 +37,7 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     TypeCategory,
     TypeName (..),
+    TypeRef,
     convertToJSONName,
   )
 import Data.Proxy (Proxy (..))
@@ -120,8 +121,9 @@ instance (Selector s, GQLType a, c a) => ConRep kind c v (M1 S s (Rec0 a)) where
   conRep (TypeConstraint f) =
     [ FieldRep
         { fieldSelector = selNameProxy (Proxy @s),
-          fieldValue = f (KindedProxy :: KindedProxy cat a),
-          fieldIsObject = isObjectKind (Proxy @a)
+          fieldTypeRef = __typeRef (Proxy @a),
+          fieldIsObject = isObjectKind (Proxy @a),
+          fieldValue = f (KindedProxy :: KindedProxy cat a)
         }
     ]
 
@@ -139,6 +141,7 @@ instance Namespace (ConsRep v) where
 
 data FieldRep (a :: *) = FieldRep
   { fieldSelector :: FieldName,
+    fieldTypeRef :: TypeRef,
     fieldIsObject :: Bool,
     fieldValue :: a
   }
