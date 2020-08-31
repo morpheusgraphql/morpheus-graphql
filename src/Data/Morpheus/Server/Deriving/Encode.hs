@@ -75,7 +75,6 @@ import Data.Morpheus.Types.Internal.AST
     OperationType,
     QUERY,
     SUBSCRIPTION,
-    TypeName,
     TypeRef (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -184,13 +183,11 @@ instance EncodeConstraint o e m a => EncodeKind INTERFACE a o e m where
 
 convertNode ::
   (Monad m, LiftOperation o) =>
-  Maybe TypeName ->
   DataType (Resolver o e m (ResModel o e m)) ->
   ResModel o e m
-convertNode _ DataType {tyName, tyIsUnion = False, tyCons = ConsRep {consFields}} =
+convertNode DataType {tyName, tyIsUnion = False, tyCons = ConsRep {consFields}} =
   mkObject tyName (fmap toFieldRes consFields)
 convertNode
-  namespace
   DataType
     { tyName,
       tyIsUnion = True,
@@ -199,7 +196,7 @@ convertNode
     encodeUnion consFields
     where
       -- ENUM
-      encodeUnion [] = ResEnum tyName (stripNamespace namespace consName)
+      encodeUnion [] = ResEnum tyName consName
       -- Type References --------------------------------------------------------------
       encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue, fieldIsObject}]
         | fieldIsObject && consName == tyName <> typeConName =
@@ -218,7 +215,6 @@ convertNode
             | otherwise = enumerate fields
 
 -- Types & Constrains -------------------------------------------------------
-
 exploreResolvers ::
   forall o e m a.
   ( EncodeConstraint o e m a,
@@ -227,7 +223,7 @@ exploreResolvers ::
   a ->
   ResModel o e m
 exploreResolvers =
-  convertNode (getNamespace (Proxy @a))
+  convertNode
     . toValue
       ( TypeConstraint (encode . runIdentity) ::
           TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
