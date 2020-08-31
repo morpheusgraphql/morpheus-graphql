@@ -66,7 +66,6 @@ import Data.Morpheus.Server.Deriving.Utils
     ResRep (..),
     TypeConstraint (..),
     TypeRep (..),
-    enumerateFieldNames,
     genericTo,
     isEmptyConstraint,
   )
@@ -505,12 +504,11 @@ analyseRep baseName cons =
   ResRep
     { enumCons = fmap consName enumRep,
       unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
-      unionRecordRep = unionRecordRep <> fmap enumerateFieldNames anonymousUnionRep
+      unionRecordRep
     }
   where
     (enumRep, left1) = partition isEmptyConstraint cons
-    (unionRefRep, left2) = partition (isUnionRef baseName) left1
-    (unionRecordRep, anonymousUnionRep) = partition consIsRecord left2
+    (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
 
 buildInputUnion ::
   (TypeName, DataFingerprint) -> [ConsRep (FieldValue IN)] -> (TypeContent TRUE IN CONST, [TypeUpdater])

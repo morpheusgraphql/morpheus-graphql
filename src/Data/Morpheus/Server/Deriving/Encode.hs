@@ -31,7 +31,6 @@ import Data.Maybe
   ( Maybe (..),
     maybe,
   )
-import Data.Morpheus.Internal.Utils (Namespace (..))
 import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
@@ -53,7 +52,6 @@ import Data.Morpheus.Server.Deriving.Utils
     FieldRep (..),
     TypeConstraint (..),
     TypeRep (..),
-    enumerate,
     toValue,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
@@ -188,7 +186,7 @@ convertNode
   DataType
     { tyName,
       tyIsUnion = True,
-      tyCons = ConsRep {consFields, consIsRecord, consName}
+      tyCons = ConsRep {consFields, consName}
     } =
     encodeUnion consFields
     where
@@ -205,11 +203,7 @@ convertNode
           $ pure
           $ mkObject
             consName
-            (fmap toFieldRes resolvers)
-        where
-          resolvers
-            | consIsRecord = fields
-            | otherwise = enumerate fields
+            (fmap toFieldRes fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::

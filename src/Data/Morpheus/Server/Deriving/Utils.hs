@@ -24,9 +24,7 @@ module Data.Morpheus.Server.Deriving.Utils
     TypeConstraint (..),
     FieldRep (..),
     isEmptyConstraint,
-    enumerateFieldNames,
     genericTo,
-    enumerate,
     DataType (..),
     deriveFieldRep,
     ConRep (..),
@@ -140,24 +138,24 @@ instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
   toTypeRep f (R1 x) = (toTypeRep f x) {tyIsUnion = True}
 
 instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
-  typeRep fun _ =
-    [ ConsRep
-        { consName = conNameProxy (Proxy @c),
-          consFields = conRep fun (Proxy @f),
-          consIsRecord = isRecordProxy (Proxy @c)
-        }
-    ]
+  typeRep fun _ = [deriveConsRep (Proxy @c) (conRep fun (Proxy @f))]
   toTypeRep f (M1 src) =
     DataType
       { tyName = "",
         tyIsUnion = False,
-        tyCons =
-          ConsRep
-            { consName = conNameProxy (Proxy @c),
-              consIsRecord = isRecordProxy (Proxy @c),
-              consFields = toFieldRep f src
-            }
+        tyCons = deriveConsRep (Proxy @c) (toFieldRep f src)
       }
+
+deriveConsRep :: Constructor (c :: Meta) => f c -> [FieldRep v] -> ConsRep v
+deriveConsRep proxy fields =
+  ConsRep
+    { consName = conNameProxy proxy,
+      consFields
+    }
+  where
+    consFields
+      | isRecordProxy proxy = fields
+      | otherwise = enumerate fields
 
 class ConRep (c :: * -> Constraint) (v :: *) f where
   conRep :: TypeConstraint c v Proxy -> proxy f -> [FieldRep v]
@@ -207,7 +205,6 @@ instance Namespace (DataType v) where
 
 data ConsRep (v :: *) = ConsRep
   { consName :: TypeName,
-    consIsRecord :: Bool,
     consFields :: [FieldRep v]
   }
 
@@ -235,9 +232,6 @@ data ResRep (a :: *) = ResRep
 isEmptyConstraint :: ConsRep a -> Bool
 isEmptyConstraint ConsRep {consFields = []} = True
 isEmptyConstraint _ = False
-
-enumerateFieldNames :: ConsRep a -> ConsRep a
-enumerateFieldNames cons@ConsRep {consFields} = cons {consFields = enumerate consFields}
 
 -- setFieldNames ::  Power Int Text -> Power { _1 :: Int, _2 :: Text }
 enumerate :: [FieldRep a] -> [FieldRep a]
