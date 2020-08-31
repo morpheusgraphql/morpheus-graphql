@@ -28,6 +28,7 @@ module Data.Morpheus.Server.Deriving.Utils
     genericTo,
     enumerate,
     DataType (..),
+    deriveFieldRep,
   )
 where
 
@@ -116,18 +117,27 @@ instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
 
 instance (Selector s, GQLType a, c a) => ConRep c v (M1 S s (Rec0 a)) where
   conRep (TypeConstraint f) _ =
-    [ FieldRep
-        { fieldSelector = selNameProxy (Proxy @s),
-          fieldTypeRef =
-            TypeRef
-              { typeConName = __typeName (Proxy @a),
-                typeWrappers = __wrappers (Proxy @a),
-                typeArgs = Nothing
-              },
-          fieldIsObject = isObjectKind (Proxy @a),
-          fieldValue = f (Proxy @a)
-        }
-    ]
+    [deriveFieldRep (Proxy @s) (Proxy @a) (f $ Proxy @a)]
+
+deriveFieldRep ::
+  forall f (s :: Meta) g a v.
+  (Selector s, GQLType a) =>
+  f s ->
+  g a ->
+  v ->
+  FieldRep v
+deriveFieldRep pSel proxy v =
+  FieldRep
+    { fieldSelector = selNameProxy pSel,
+      fieldTypeRef =
+        TypeRef
+          { typeConName = __typeName proxy,
+            typeWrappers = __wrappers proxy,
+            typeArgs = Nothing
+          },
+      fieldIsObject = isObjectKind proxy,
+      fieldValue = v
+    }
 
 instance ConRep c v U1 where
   conRep _ _ = []

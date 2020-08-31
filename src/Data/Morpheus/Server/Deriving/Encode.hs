@@ -55,9 +55,9 @@ import Data.Morpheus.Server.Deriving.Utils
     FieldRep (..),
     conNameProxy,
     datatypeNameProxy,
+    deriveFieldRep,
     enumerate,
     isRecordProxy,
-    selNameProxy,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
@@ -350,19 +350,7 @@ instance
     (M1 S s (Rec0 a))
     (Resolver o e m (ResModel o e m))
   where
-  fieldRep (M1 (K1 src)) =
-    [ FieldRep
-        { fieldSelector = selNameProxy (Proxy @s),
-          fieldTypeRef =
-            TypeRef
-              { typeConName = __typeName (Proxy @a),
-                typeWrappers = __wrappers (Proxy @a),
-                typeArgs = Nothing
-              },
-          fieldIsObject = isObjectKind (Proxy @a),
-          fieldValue = encode src
-        }
-    ]
+  fieldRep (M1 (K1 src)) = [deriveFieldRep (Proxy @s) (Proxy @a) (encode src)]
 
 instance ConRep U1 v where
   fieldRep _ = []
