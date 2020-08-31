@@ -223,15 +223,15 @@ instance GQLType Bool where
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __typeRef _ = toNullable $ __typeRef (Proxy @a)
+  __typeRef _ = toNullable $ __typeRef $ Proxy @a
   __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+  __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __typeRef _ = wrapList $ __typeRef (Proxy @a)
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+  __typeRef _ = wrapList $ __typeRef $ Proxy @a
+  __typeName _ = __typeName $ Proxy @a
+  __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = WRAPPER
@@ -239,40 +239,40 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
-  __typeRef _ = __typeRef (Proxy @[a])
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+  __typeRef _ = __typeRef $ Proxy @[a]
+  __typeName _ = __typeName $ Proxy @a
+  __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
   type KIND (Pair a b) = OUTPUT
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
   type KIND (MapKind a b m) = OUTPUT
-  __typeName _ = __typeName (Proxy @(Map a b))
-  __typeFingerprint _ = __typeFingerprint (Proxy @(Map a b))
+  __typeName _ = __typeName $ Proxy @(Map a b)
+  __typeFingerprint _ = __typeFingerprint $ Proxy @(Map a b)
 
 instance (Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = WRAPPER
 
 instance GQLType a => GQLType (Either s a) where
   type KIND (Either s a) = WRAPPER
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+  __typeName _ = __typeName $ Proxy @a
+  __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = WRAPPER
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+  __typeName _ = __typeName $ Proxy @a
+  __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint (Proxy @a)
+  __typeName _ = __typeName $ Proxy @a
+  __typeFingerprint _ = __typeFingerprint $ Proxy @a
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER
-  __typeName _ = __typeName (Proxy @b)
-  __typeFingerprint _ = __typeFingerprint (Proxy @b)
+  __typeName _ = __typeName $ Proxy @b
+  __typeFingerprint _ = __typeFingerprint $ Proxy @b
 
 instance GQLType ID where
   type KIND ID = SCALAR
