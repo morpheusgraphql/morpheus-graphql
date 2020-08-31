@@ -29,6 +29,7 @@ module Data.Morpheus.Server.Deriving.Utils
     enumerate,
     DataType (..),
     deriveFieldRep,
+    ConRep (..),
   )
 where
 

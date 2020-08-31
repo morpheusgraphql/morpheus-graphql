@@ -25,6 +25,7 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad ((>>=)))
 import Data.Functor (fmap)
+import Data.Functor.Identity (Identity (..))
 import Data.Map (Map)
 import qualified Data.Map as M
   ( toList,
@@ -50,9 +51,11 @@ import Data.Morpheus.Server.Deriving.Decode
     decodeArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils
-  ( ConsRep (..),
+  ( ConRep (..),
+    ConsRep (..),
     DataType (..),
     FieldRep (..),
+    TypeConstraint (..),
     conNameProxy,
     datatypeNameProxy,
     deriveFieldRep,
@@ -126,35 +129,35 @@ newtype ContextValue (kind :: GQL_KIND) a = ContextValue
   { unContextValue :: a
   }
 
-class Encode resolver o e (m :: * -> *) where
+class Encode o e (m :: * -> *) resolver where
   encode :: resolver -> Resolver o e m (ResModel o e m)
 
-instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => Encode a o e m where
+instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => Encode o e m a where
   encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
 
 -- MAYBE
-instance (Monad m, LiftOperation o, Encode a o e m) => Encode (Maybe a) o e m where
+instance (Monad m, LiftOperation o, Encode o e m a) => Encode o e m (Maybe a) where
   encode = maybe (pure ResNull) encode
 
 -- LIST []
-instance (Monad m, Encode a o e m, LiftOperation o) => Encode [a] o e m where
+instance (Monad m, Encode o e m a, LiftOperation o) => Encode o e m [a] where
   encode = fmap ResList . traverse encode
 
 --  Tuple  (a,b)
-instance Encode (Pair k v) o e m => Encode (k, v) o e m where
+instance Encode o e m (Pair k v) => Encode o e m (k, v) where
   encode (key, value) = encode (Pair key value)
 
 --  Set
-instance Encode [a] o e m => Encode (Set a) o e m where
+instance Encode o e m [a] => Encode o e m (Set a) where
   encode = encode . S.toList
 
 --  Map
-instance (Monad m, LiftOperation o, Encode (MapKind k v (Resolver o e m)) o e m) => Encode (Map k v) o e m where
+instance (Monad m, LiftOperation o, Encode o e m (MapKind k v (Resolver o e m))) => Encode o e m (Map k v) where
   encode value =
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
 
 -- SUBSCRIPTION
-instance (Monad m, LiftOperation o, Encode a o e m) => Encode (SubscriptionField a) o e m where
+instance (Monad m, LiftOperation o, Encode o e m a) => Encode o e m (SubscriptionField a) where
   encode (SubscriptionField _ res) = encode res
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
@@ -163,9 +166,9 @@ instance
     Generic a,
     Monad m,
     LiftOperation o,
-    Encode b o e m
+    Encode o e m b
   ) =>
-  Encode (a -> b) o e m
+  Encode o e m (a -> b)
   where
   encode f =
     getArguments
@@ -173,7 +176,7 @@ instance
       >>= encode . f
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (Monad m, Encode b o e m, LiftOperation o) => Encode (Resolver o e m b) o e m where
+instance (Monad m, Encode o e m b, LiftOperation o) => Encode o e m (Resolver o e m b) where
   encode x = x >>= encode
 
 -- ENCODE GQL KIND
@@ -273,9 +276,9 @@ objectResolvers value =
       failure ("resolver must be an object" :: InternalError)
 
 type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
-  TypeConstraint o e m (a (Resolver o e m))
+  TypeConst o e m (a (Resolver o e m))
 
-type TypeConstraint (o :: OperationType) e m a =
+type TypeConst (o :: OperationType) e m a =
   ( GQLType a,
     Generic a,
     TypeRep (Rep a) (Resolver o e m (ResModel o e m))
@@ -324,7 +327,12 @@ instance (TypeRep a v, TypeRep b v) => TypeRep (a :+: b) v where
   typeResolvers (L1 x) = (typeResolvers x) {tyIsUnion = True}
   typeResolvers (R1 x) = (typeResolvers x) {tyIsUnion = True}
 
-instance (ConRep f v, Constructor c) => TypeRep (M1 C c f) v where
+instance
+  ( Constructor c,
+    ConRep (Encode o e m) (Resolver o e m (ResModel o e m)) f
+  ) =>
+  TypeRep (M1 C c f) (Resolver o e m (ResModel o e m))
+  where
   typeResolvers (M1 src) =
     DataType
       { tyName = "",
@@ -333,22 +341,11 @@ instance (ConRep f v, Constructor c) => TypeRep (M1 C c f) v where
           ConsRep
             { consName = conNameProxy (Proxy @c),
               consIsRecord = isRecordProxy (Proxy @c),
-              consFields = fieldRep src
+              consFields =
+                toFieldRep
+                  ( TypeConstraint (encode . runIdentity) ::
+                      TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
+                  )
+                  src
             }
       }
-
---- FIELDS
-class ConRep f v where
-  fieldRep :: f a -> [FieldRep v]
-
-instance (ConRep f v, ConRep g v) => ConRep (f :*: g) v where
-  fieldRep (a :*: b) = fieldRep a <> fieldRep b
-
-instance
-  (Selector s, GQLType a, Encode a o e m) =>
-  ConRep (M1 S s (Rec0 a)) (Resolver o e m (ResModel o e m))
-  where
-  fieldRep (M1 (K1 src)) = [deriveFieldRep (Proxy @s) (Proxy @a) (encode src)]
-
-instance ConRep U1 v where
-  fieldRep _ = []
