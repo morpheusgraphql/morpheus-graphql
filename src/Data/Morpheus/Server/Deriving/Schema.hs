@@ -239,7 +239,7 @@ instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => Derive
 class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveType :: f kind a -> TypeUpdater
 
-  deriveTypeC :: f kind a -> TypeUpdater
+  --deriveTypeC :: f kind a -> TypeUpdater
 
   deriveContent :: f kind a -> Maybe (FieldContent TRUE kind CONST)
   deriveContent _ = Nothing
@@ -271,17 +271,19 @@ instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
 instance
   ( GQLType b,
     DeriveType OUT b,
-    TypeRep (DeriveType IN) (Maybe (FieldContent TRUE c CONST)) (Rep a),
+    TypeRep (DeriveType IN) (Maybe (FieldContent TRUE IN CONST)) (Rep a),
     GQLType a,
     Generic a
   ) =>
   DeriveType OUT (a -> m b)
   where
-  deriveContent _ = Just $ fst $ deriveArgumentFields $ Proxy @a
+  deriveContent _ = Just $ deriveArgumentFields $ Proxy @a
   deriveType _ = concatUpdates (deriveType (KindedProxy :: KindedProxy OUT b) : inputs)
     where
       inputs :: [TypeUpdater]
-      inputs = snd $ deriveArgumentFields (Proxy @a)
+      inputs = []
+
+--inputs = deriveArgumentTypes (Proxy @a)
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
   deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
@@ -315,6 +317,7 @@ instance (GQL_TYPE a, TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CON
   deriveKindedType _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
     where
       fields = deriveObjectFields (Proxy @a)
+      types = [] --TODO: derive types
 
 derivingData ::
   forall kind a.
@@ -522,7 +525,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
   datatype (analyseRep baseName cons)
   where
     --datatype :: ResRep -> (TypeContent TRUE cat, [TypeUpdater])
-    datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, types)
+    datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, [])
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (wrapUnion (fmap mkUnionMember typeMembers), enumTypes <> unionTypes)
       where
