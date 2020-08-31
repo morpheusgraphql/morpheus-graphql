@@ -80,6 +80,8 @@ import Prelude
     Int,
     Maybe (..),
     map,
+    null,
+    otherwise,
     show,
     undefined,
     zipWith,
@@ -210,7 +212,9 @@ data ConsRep (v :: *) = ConsRep
   }
 
 instance Namespace (ConsRep v) where
-  stripNamespace p ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace p) fields, ..}
+  stripNamespace p ConsRep {consFields, ..}
+    | null consFields = ConsRep {consName = stripNamespace p consName, ..}
+    | otherwise = ConsRep {consFields = map (stripNamespace p) consFields, ..}
 
 data FieldRep (a :: *) = FieldRep
   { fieldSelector :: FieldName,
