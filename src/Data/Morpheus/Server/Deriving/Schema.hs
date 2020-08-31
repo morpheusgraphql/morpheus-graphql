@@ -239,9 +239,9 @@ instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => Derive
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class DeriveType (kind :: TypeCategory) (a :: *) where
-  deriveType :: proxy kind a -> TypeUpdater
+  deriveType :: f kind a -> TypeUpdater
 
-  deriveContent :: proxy kind a -> Maybe (FieldContent TRUE kind CONST)
+  deriveContent :: f kind a -> Maybe (FieldContent TRUE kind CONST)
   deriveContent _ = Nothing
 
 deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> TypeUpdater
