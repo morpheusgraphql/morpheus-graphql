@@ -117,7 +117,10 @@ toValue ::
   TypeConstraint constraint value Identity ->
   a ->
   DataType value
-toValue f = stripNamespace (getNamespace (Proxy @a)) . toTypeRep f . from
+toValue f =
+  stripNamespace (getNamespace (Proxy @a))
+    . toTypeRep f
+    . from
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where
