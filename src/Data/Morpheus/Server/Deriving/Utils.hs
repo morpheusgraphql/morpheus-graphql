@@ -112,13 +112,17 @@ genericTo f proxy =
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where
   typeRep :: TypeConstraint c v Proxy -> proxy f -> [ConsRep v]
+  toTypeRep :: TypeConstraint c v Identity -> f a -> DataType v
 
-instance TypeRep c v f => TypeRep c v (M1 D d f) where
+instance (Datatype d, TypeRep c v f) => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
+  toTypeRep fun (M1 src) = (toTypeRep fun src) {tyName = datatypeNameProxy (Proxy @d)}
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
   typeRep fun _ = typeRep fun (Proxy @a) <> typeRep fun (Proxy @b)
+  toTypeRep f (L1 x) = (toTypeRep f x) {tyIsUnion = True}
+  toTypeRep f (R1 x) = (toTypeRep f x) {tyIsUnion = True}
 
 instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
   typeRep fun _ =
@@ -128,6 +132,17 @@ instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
           consIsRecord = isRecordProxy (Proxy @c)
         }
     ]
+  toTypeRep f (M1 src) =
+    DataType
+      { tyName = "",
+        tyIsUnion = False,
+        tyCons =
+          ConsRep
+            { consName = conNameProxy (Proxy @c),
+              consIsRecord = isRecordProxy (Proxy @c),
+              consFields = toFieldRep f src
+            }
+      }
 
 class ConRep (c :: * -> Constraint) (v :: *) f where
   conRep :: TypeConstraint c v Proxy -> proxy f -> [FieldRep v]

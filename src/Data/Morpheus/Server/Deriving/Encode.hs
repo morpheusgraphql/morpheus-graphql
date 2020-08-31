@@ -51,16 +51,12 @@ import Data.Morpheus.Server.Deriving.Decode
     decodeArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils
-  ( ConRep (..),
-    ConsRep (..),
+  ( ConsRep (..),
     DataType (..),
     FieldRep (..),
     TypeConstraint (..),
-    conNameProxy,
-    datatypeNameProxy,
-    deriveFieldRep,
+    TypeRep (..),
     enumerate,
-    isRecordProxy,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
@@ -102,19 +98,7 @@ import qualified Data.Set as S
   )
 import Data.Traversable (traverse)
 import GHC.Generics
-  ( (:*:) (..),
-    (:+:) (..),
-    C,
-    Constructor,
-    D,
-    Datatype,
-    Generic (..),
-    K1 (..),
-    M1 (..),
-    Rec0,
-    S,
-    Selector,
-    U1 (..),
+  ( Generic (..),
   )
 import Prelude
   ( ($),
@@ -191,7 +175,7 @@ type EncodeConstraint o e m a =
   ( Monad m,
     Generic a,
     GQLType a,
-    TypeRep (Rep a) (Resolver o e m (ResModel o e m))
+    TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) (Rep a)
   )
 
 -- ENUM
@@ -262,7 +246,7 @@ objectResolvers ::
     LiftOperation o,
     GQLType a,
     Generic a,
-    TypeRep (Rep a) (Resolver o e m (ResModel o e m))
+    TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) (Rep a)
   ) =>
   a ->
   ResolverState (ResModel o e m)
@@ -281,7 +265,7 @@ type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
 type TypeConst (o :: OperationType) e m a =
   ( GQLType a,
     Generic a,
-    TypeRep (Rep a) (Resolver o e m (ResModel o e m))
+    TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) (Rep a)
   )
 
 type EncodeConstraints e m query mut sub =
@@ -316,36 +300,12 @@ deriveModel
 toFieldRes :: FieldRep (Resolver o e m (ResModel o e m)) -> FieldResModel o e m
 toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
 
-class TypeRep f (v :: *) where
-  typeResolvers :: f a -> DataType v
-
-instance (Datatype d, TypeRep f v) => TypeRep (M1 D d f) v where
-  typeResolvers (M1 src) = (typeResolvers src) {tyName = datatypeNameProxy (Proxy @d)}
-
---- UNION OR OBJECT
-instance (TypeRep a v, TypeRep b v) => TypeRep (a :+: b) v where
-  typeResolvers (L1 x) = (typeResolvers x) {tyIsUnion = True}
-  typeResolvers (R1 x) = (typeResolvers x) {tyIsUnion = True}
-
-instance
-  ( Constructor c,
-    ConRep (Encode o e m) (Resolver o e m (ResModel o e m)) f
-  ) =>
-  TypeRep (M1 C c f) (Resolver o e m (ResModel o e m))
-  where
-  typeResolvers (M1 src) =
-    DataType
-      { tyName = "",
-        tyIsUnion = False,
-        tyCons =
-          ConsRep
-            { consName = conNameProxy (Proxy @c),
-              consIsRecord = isRecordProxy (Proxy @c),
-              consFields =
-                toFieldRep
-                  ( TypeConstraint (encode . runIdentity) ::
-                      TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
-                  )
-                  src
-            }
-      }
+typeResolvers ::
+  TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) f =>
+  f a ->
+  DataType (Resolver o e m (ResModel o e m))
+typeResolvers =
+  toTypeRep
+    ( TypeConstraint (encode . runIdentity) ::
+        TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
+    )
