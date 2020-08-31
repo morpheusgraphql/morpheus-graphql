@@ -108,6 +108,7 @@ import GHC.Generics
     Generic (..),
     K1 (..),
     M1 (..),
+    Rec0,
     S,
     Selector,
     U1 (..),
@@ -346,7 +347,7 @@ instance (ConRep f v, ConRep g v) => ConRep (f :*: g) v where
 instance
   (Selector s, GQLType a, Encode a o e m) =>
   ConRep
-    (M1 S s (K1 s2 a))
+    (M1 S s (Rec0 a))
     (Resolver o e m (ResModel o e m))
   where
   fieldRep (M1 (K1 src)) =
