@@ -270,12 +270,9 @@ instance
   DeriveType OUT (a -> m b)
   where
   deriveContent _ = Just $ FieldArgs $ deriveArgumentDefinition $ Proxy @a
-  deriveType _ = concatUpdates (deriveType (KindedProxy :: KindedProxy OUT b) : inputs)
+  deriveType _ = concatUpdates (deriveType (outputType $ Proxy @b) : inputs)
     where
-      inputs :: [TypeUpdater]
-      inputs = []
-
---inputs = deriveArgumentTypes (Proxy @a)
+      inputs = deriveFieldTypes $ inputType $ Proxy @a
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
   deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
