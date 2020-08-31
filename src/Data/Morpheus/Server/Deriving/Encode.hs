@@ -331,25 +331,30 @@ instance (TypeRep a o e m, TypeRep b o e m) => TypeRep (a :+: b) o e m where
   typeResolvers context (R1 x) =
     (typeResolvers context x) {resKind = REP_UNION}
 
-instance (ConsRep f o e m, Constructor c) => TypeRep (M1 C c f) o e m where
-  typeResolvers context (M1 src) =
+instance (ConsRep f (Resolver o e m (ResModel o e m)), Constructor c) => TypeRep (M1 C c f) o e m where
+  typeResolvers _ (M1 src) =
     ResNode
       { resDatatypeName = "",
         resTypeName = conNameProxy (Proxy @c),
         resKind = REP_OBJECT,
-        resFields = fieldRep context src,
+        resFields = fieldRep src,
         isResRecord = isRecordProxy (Proxy @c)
       }
 
 --- FIELDS
-class ConsRep f o e (m :: * -> *) where
-  fieldRep :: ResContext OUTPUT o e m value -> f a -> [FieldRep (Resolver o e m (ResModel o e m))]
+class ConsRep f v where
+  fieldRep :: f a -> [FieldRep v]
 
-instance (ConsRep f o e m, ConsRep g o e m) => ConsRep (f :*: g) o e m where
-  fieldRep context (a :*: b) = fieldRep context a <> fieldRep context b
+instance (ConsRep f v, ConsRep g v) => ConsRep (f :*: g) v where
+  fieldRep (a :*: b) = fieldRep a <> fieldRep b
 
-instance (Selector s, GQLType a, Encode a o e m) => ConsRep (M1 S s (K1 s2 a)) o e m where
-  fieldRep _ (M1 (K1 src)) =
+instance
+  (Selector s, GQLType a, Encode a o e m) =>
+  ConsRep
+    (M1 S s (K1 s2 a))
+    (Resolver o e m (ResModel o e m))
+  where
+  fieldRep (M1 (K1 src)) =
     [ FieldRep
         { fieldSelector = selNameProxy (Proxy @s),
           fieldTypeRef =
@@ -363,5 +368,5 @@ instance (Selector s, GQLType a, Encode a o e m) => ConsRep (M1 S s (K1 s2 a)) o
         }
     ]
 
-instance ConsRep U1 o e m where
-  fieldRep _ _ = []
+instance ConsRep U1 v where
+  fieldRep _ = []
