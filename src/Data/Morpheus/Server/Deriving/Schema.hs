@@ -148,15 +148,9 @@ import Prelude
   )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
-  ( SchemaConstraint (query (Resolver QUERY event m)),
-    SchemaConstraint (mutation (Resolver MUTATION event m)),
-    SchemaConstraint (subscription (Resolver SUBSCRIPTION event m))
-  )
-
-type SchemaConstraint a =
-  ( GQLType a,
-    TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a),
-    Generic a
+  ( DeriveTypeConstraint OUT (query (Resolver QUERY event m)),
+    DeriveTypeConstraint OUT (mutation (Resolver MUTATION event m)),
+    DeriveTypeConstraint OUT (subscription (Resolver SUBSCRIPTION event m))
   )
 
 -- | context , like Proxy with multiple parameters
@@ -271,9 +265,7 @@ instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
 instance
   ( GQLType b,
     DeriveType OUT b,
-    TypeRep (DeriveType IN) (Maybe (FieldContent TRUE IN CONST)) (Rep a),
-    GQLType a,
-    Generic a
+    DeriveTypeConstraint IN a
   ) =>
   DeriveType OUT (a -> m b)
   where
@@ -341,7 +333,7 @@ derivingData kindedType = updateLib (buildType content) (updates <> types) (Prox
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentDefinition :: (TypeRep (DeriveType IN) (Maybe (FieldContent TRUE IN CONST)) (Rep a), GQLType a, Generic a) => f a -> ArgumentsDefinition CONST
+deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> ArgumentsDefinition CONST
 deriveArgumentDefinition = fieldsToArguments . deriveFields . inputType
 
 deriveObjectFields :: (TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a), Generic a, GQLType a) => f a -> FieldsDefinition OUT CONST
@@ -373,12 +365,12 @@ deriveOutType :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdat
 deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 deriveObjectType ::
-  (TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a), Generic a, GQLType a) =>
+  DeriveTypeConstraint OUT a =>
   proxy a ->
   (TypeDefinition OBJECT CONST, [TypeUpdater])
 deriveObjectType proxy =
   ( mkObjectType (deriveObjectFields proxy) (__typeName proxy),
-    []
+    deriveFieldTypes (outputType proxy)
   )
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
