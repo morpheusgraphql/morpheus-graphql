@@ -73,7 +73,7 @@ isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
 
 newtype TypeConstraint (c :: * -> Constraint) (v :: *) = TypeConstraint
-  { typeConstraintFun :: forall a proxy. c a => proxy a -> v
+  { typeConstraint :: forall a f. c a => f a -> v
   }
 
 genericTo ::
