@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -24,6 +25,7 @@ module Data.Morpheus.Server.Deriving.Utils
     FieldRep (..),
     isEmptyConstraint,
     enumerateFieldNames,
+    genericTo,
   )
 where
 
@@ -86,6 +88,15 @@ newtype
 
 mapConstraint :: f b -> TypeConstraint c v a -> TypeConstraint c v b
 mapConstraint _ (TypeConstraint f) = TypeConstraint f
+
+genericTo ::
+  forall constraint value (a :: *).
+  (GQLType a, TypeRep constraint value (Rep a)) =>
+  TypeConstraint constraint value a ->
+  [ConsRep value]
+genericTo (TypeConstraint f) =
+  map (stripNamespace (getNamespace (Proxy @a))) $
+    typeRep (TypeConstraint f :: TypeConstraint constraint value (Rep a))
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where

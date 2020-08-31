@@ -67,6 +67,7 @@ import Data.Morpheus.Server.Deriving.Utils
     TypeConstraint (..),
     TypeRep (..),
     enumerateFieldNames,
+    genericTo,
     isEmptyConstraint,
   )
 import Data.Morpheus.Server.Types.GQLType
@@ -142,7 +143,6 @@ import Prelude
     Eq (..),
     Show (..),
     fst,
-    map,
     null,
     otherwise,
     snd,
@@ -394,8 +394,7 @@ deriveTypeContent ::
 deriveTypeContent scope =
   updateDef proxy
     $ builder
-    $ map (stripNamespace (getNamespace (Proxy @a)))
-    $ typeRep (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType cat) (FieldValue cat) (Rep a))
+    $ genericTo (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType cat) (FieldValue cat) a)
   where
     proxy = Proxy @a
     builder [ConsRep {consFields}] = buildObject interfaces scope consFields
