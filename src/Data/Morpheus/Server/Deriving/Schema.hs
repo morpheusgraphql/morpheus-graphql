@@ -79,8 +79,7 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
-    CONST,
+  ( CONST,
     CONST,
     DataEnumValue (..),
     DataFingerprint (..),
@@ -111,6 +110,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     TypeRef (..),
+    TypeWrapper (..),
     UnionMember (..),
     VALID,
     fieldsToArguments,
@@ -120,10 +120,8 @@ import Data.Morpheus.Types.Internal.AST
     mkField,
     mkInputValue,
     mkType,
-    mkTypeRef,
     mkUnionMember,
     msg,
-    toListField,
     toNullable,
     unsafeFromFields,
     updateSchema,
@@ -242,46 +240,47 @@ instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => Derive
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
-class DeriveType (cat :: TypeCategory) a where
-  deriveType :: proxy cat a -> TypeUpdater
-  field :: FieldName -> proxy cat a -> FieldDefinition cat CONST
-  -----------------------------------------------
-  default field ::
-    GQLType a =>
-    FieldName ->
-    proxy cat a ->
-    FieldDefinition cat CONST
-  field fieldName _ = mkField Nothing fieldName (mkTypeRef (__typeName (Proxy @a)))
+class DeriveType (kind :: TypeCategory) (a :: *) where
+  deriveType :: proxy kind a -> TypeUpdater
+
+  deriveTypeWrappers :: proxy kind a -> TypeRef
+  deriveTypeWrappers _ = TypeRef "" Nothing []
+
+  deriveContent :: proxy kind a -> Maybe (FieldContent TRUE kind CONST)
+  deriveContent _ = Nothing
 
 deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> TypeUpdater
 deriveTypeWith x = deriveType . setProxyType x
 
-deriveFieldWith :: DeriveType cat a => f a -> FieldName -> kinded cat b -> FieldDefinition cat CONST
-deriveFieldWith x name = field name . setProxyType x
+deriveWrappersWith :: DeriveType cat a => f a -> kinded cat b -> TypeRef
+deriveWrappersWith x = deriveTypeWrappers . setProxyType x
+
+wrapList :: TypeRef -> TypeRef
+wrapList alias@TypeRef {typeWrappers} =
+  alias {typeWrappers = TypeList : typeWrappers}
 
 -- Maybe
 instance DeriveType cat a => DeriveType cat (Maybe a) where
-  field name = toNullable . deriveFieldWith (Proxy @a) name
+  deriveTypeWrappers = toNullable . deriveWrappersWith (Proxy @a)
   deriveType = deriveTypeWith (Proxy @a)
 
 -- List
 instance DeriveType cat a => DeriveType cat [a] where
-  field name = toListField . deriveFieldWith (Proxy @a) name
+  deriveTypeWrappers = wrapList . deriveWrappersWith (Proxy @a)
   deriveType = deriveTypeWith (Proxy @a)
 
 -- Tuple
 instance DeriveType cat (Pair k v) => DeriveType cat (k, v) where
-  field = deriveFieldWith (Proxy @(Pair k v))
   deriveType = deriveTypeWith (Proxy @(Pair k v))
 
 -- Set
 instance DeriveType cat [a] => DeriveType cat (Set a) where
-  field = deriveFieldWith (Proxy @[a])
+  deriveTypeWrappers = deriveWrappersWith (Proxy @[a])
   deriveType = deriveTypeWith (Proxy @[a])
 
 -- Map
 instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
-  field = deriveFieldWith (Proxy @(MapKind k v Maybe))
+  deriveTypeWrappers = deriveWrappersWith (Proxy @(MapKind k v Maybe))
   deriveType = deriveTypeWith (Proxy @(MapKind k v Maybe))
 
 data FieldValue c = FieldValue
@@ -300,22 +299,19 @@ instance
   ) =>
   DeriveType OUT (a -> m b)
   where
-  field name _ = fieldObj {fieldContent = Just (FieldArgs fieldArgs)}
-    where
-      fieldObj = field name (KindedProxy :: KindedProxy OUT b)
-      fieldArgs = fst $ deriveArgumentFields (Proxy @a)
+  deriveContent _ = Just $ fst $ deriveArgumentFields (Proxy @a)
   deriveType _ = concatUpdates (deriveType (KindedProxy :: KindedProxy OUT b) : inputs)
     where
       inputs :: [TypeUpdater]
       inputs = snd $ deriveArgumentFields (Proxy @a)
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
-  field name _ = field name (KindedProxy :: KindedProxy OUT a)
+  -- field name _ = field name (KindedProxy :: KindedProxy OUT a)
   deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (GQLType b, DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
-  field name _ = field name (KindedProxy :: KindedProxy cat b)
+  -- field name _ = field name (KindedProxy :: KindedProxy cat b)
   deriveType _ = deriveType (KindedProxy :: KindedProxy cat b)
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
@@ -355,8 +351,8 @@ derivingData kindedType = updateLib (buildType content) updates (Proxy @a)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentFields :: (TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a), GQLType a, Generic a) => f a -> (ArgumentsDefinition CONST, [TypeUpdater])
-deriveArgumentFields = mapFst fieldsToArguments . deriveFields . inputType
+deriveArgumentFields :: (TypeRep IN (DeriveType IN) (FieldValue IN) (Rep a), GQLType a, Generic a) => f a -> (FieldContent TRUE OUT CONST, [TypeUpdater])
+deriveArgumentFields = mapFst (FieldArgs . fieldsToArguments) . deriveFields . inputType
 
 deriveObjectFields :: (TypeRep OUT (DeriveType OUT) (FieldValue OUT) (Rep a), Generic a, GQLType a) => f a -> (FieldsDefinition OUT CONST, [TypeUpdater])
 deriveObjectFields = deriveFields . outputType
@@ -402,13 +398,10 @@ introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
 deriveFieldValue :: (DeriveType k a) => proxy k a -> FieldValue k
 deriveFieldValue proxy =
   FieldValue
-    { fieldValueType = fieldType,
-      fieldValueContent = fieldContent,
-      fieldTypes
+    { fieldValueType = deriveTypeWrappers proxy,
+      fieldValueContent = deriveContent proxy,
+      fieldTypes = deriveType proxy
     }
-  where
-    FieldDefinition {fieldType, fieldContent} = field "" proxy
-    fieldTypes = deriveType proxy
 
 -- Object Fields
 deriveTypeContent ::

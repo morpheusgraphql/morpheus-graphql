@@ -31,7 +31,6 @@ module Data.Morpheus.Types.Internal.AST.Fields
     Directives,
     Directive (..),
     fieldVisibility,
-    toListField,
     lookupDeprecated,
     lookupDeprecatedReason,
     unsafeFromFields,
@@ -338,12 +337,6 @@ mkObjectField args fieldName typeWrappers typeConName =
     (Just $ FieldArgs args)
     fieldName
     TypeRef {typeWrappers, typeConName, typeArgs = Nothing}
-
-toListField :: FieldDefinition cat s -> FieldDefinition cat s
-toListField dataField = dataField {fieldType = listW (fieldType dataField)}
-  where
-    listW alias@TypeRef {typeWrappers} =
-      alias {typeWrappers = TypeList : typeWrappers}
 
 -- 3.10 Input Objects: https://spec.graphql.org/June2018/#sec-Input-Objects
 ---------------------------------------------------------------------------

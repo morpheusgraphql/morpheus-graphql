@@ -78,7 +78,6 @@ module Data.Morpheus.Types.Internal.AST
     initTypeLib,
     kindOf,
     toNullable,
-    toListField,
     isObject,
     toHSWrappers,
     isNullable,
