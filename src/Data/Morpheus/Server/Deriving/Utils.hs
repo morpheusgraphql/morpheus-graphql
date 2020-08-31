@@ -89,7 +89,7 @@ mapConstraint _ (TypeConstraint f) = TypeConstraint f
 
 --  GENERIC UNION
 class TypeRep (kind :: TypeCategory) (c :: * -> Constraint) (v :: *) f where
-  typeRep :: TypeConstraint kind c v f -> [ConsRep kind v]
+  typeRep :: TypeConstraint kind c v f -> [ConsRep v]
 
 instance TypeRep kind c v f => TypeRep kind c v (M1 D d f) where
   typeRep = typeRep . mapConstraint (Proxy @f)
@@ -108,7 +108,7 @@ instance (ConRep kind con v f, Constructor c) => TypeRep kind con v (M1 C c f) w
     ]
 
 class ConRep (kind :: TypeCategory) (c :: * -> Constraint) (v :: *) f where
-  conRep :: TypeConstraint kind c v f -> [FieldRep kind v]
+  conRep :: TypeConstraint kind c v f -> [FieldRep v]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep kind c v a, ConRep kind c v b) => ConRep kind c v (a :*: b) where
@@ -128,35 +128,35 @@ instance (Selector s, GQLType a, c a) => ConRep kind c v (M1 S s (Rec0 a)) where
 instance ConRep kind c v U1 where
   conRep _ = []
 
-data ConsRep kind (v :: *) = ConsRep
+data ConsRep (v :: *) = ConsRep
   { consName :: TypeName,
     consIsRecord :: Bool,
-    consFields :: [FieldRep kind v]
+    consFields :: [FieldRep v]
   }
 
-instance Namespace (ConsRep kind v) where
+instance Namespace (ConsRep v) where
   stripNamespace p ConsRep {consFields = fields, ..} = ConsRep {consFields = map (stripNamespace p) fields, ..}
 
-data FieldRep kind (value :: *) = FieldRep
+data FieldRep (a :: *) = FieldRep
   { fieldSelector :: FieldName,
     fieldIsObject :: Bool,
-    fieldValue :: value
+    fieldValue :: a
   }
 
-instance Namespace (FieldRep kind c) where
+instance Namespace (FieldRep c) where
   stripNamespace p FieldRep {fieldSelector = fields, ..} = FieldRep {fieldSelector = stripNamespace p fields, ..}
 
-data ResRep kind (v :: *) = ResRep
+data ResRep (a :: *) = ResRep
   { enumCons :: [TypeName],
     unionRef :: [TypeName],
-    unionRecordRep :: [ConsRep kind v]
+    unionRecordRep :: [ConsRep a]
   }
 
-isEmptyConstraint :: ConsRep k a -> Bool
+isEmptyConstraint :: ConsRep a -> Bool
 isEmptyConstraint ConsRep {consFields = []} = True
 isEmptyConstraint _ = False
 
-enumerateFieldNames :: ConsRep k a -> ConsRep k a
+enumerateFieldNames :: ConsRep a -> ConsRep a
 enumerateFieldNames cons@ConsRep {consFields} =
   cons
     { consFields = zipWith setFieldName ([0 ..] :: [Int]) consFields

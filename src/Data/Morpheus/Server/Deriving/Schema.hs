@@ -518,15 +518,15 @@ updateLibOUT ::
   TypeUpdater
 updateLibOUT = updateLib
 
-fieldTypeName :: FieldRep kind (FieldValue cat) -> TypeName
+fieldTypeName :: FieldRep (FieldValue k) -> TypeName
 fieldTypeName = typeConName . fieldValueType . fieldValue
 
-isUnionRef :: TypeName -> ConsRep k (FieldValue k) -> Bool
+isUnionRef :: TypeName -> ConsRep (FieldValue k) -> Bool
 isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
   consName == baseName <> fieldTypeName fieldRep
 isUnionRef _ _ = False
 
-analyseRep :: TypeName -> [ConsRep cat (FieldValue cat)] -> ResRep cat (FieldValue cat)
+analyseRep :: TypeName -> [ConsRep (FieldValue cat)] -> ResRep (FieldValue cat)
 analyseRep baseName cons =
   ResRep
     { enumCons = fmap consName enumRep,
@@ -539,12 +539,12 @@ analyseRep baseName cons =
     (unionRecordRep, anonymousUnionRep) = partition consIsRecord left2
 
 buildInputUnion ::
-  (TypeName, DataFingerprint) -> [ConsRep IN (FieldValue IN)] -> (TypeContent TRUE IN CONST, [TypeUpdater])
+  (TypeName, DataFingerprint) -> [ConsRep (FieldValue IN)] -> (TypeContent TRUE IN CONST, [TypeUpdater])
 buildInputUnion (baseName, baseFingerprint) cons =
   datatype
     (analyseRep baseName cons)
   where
-    datatype :: ResRep IN (FieldValue IN) -> (TypeContent TRUE IN CONST, [TypeUpdater])
+    datatype :: ResRep (FieldValue IN) -> (TypeContent TRUE IN CONST, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, types)
     datatype ResRep {unionRef, unionRecordRep, enumCons} =
       (DataInputUnion typeMembers, types <> unionTypes)
@@ -562,7 +562,7 @@ buildUnionType ::
   (TypeName, DataFingerprint) ->
   (DataUnion CONST -> TypeContent TRUE cat CONST) ->
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
-  [ConsRep cat (FieldValue cat)] ->
+  [ConsRep (FieldValue cat)] ->
   (TypeContent TRUE cat CONST, [TypeUpdater])
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
   datatype
@@ -583,7 +583,7 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
 buildObject ::
   ([TypeName], [TypeUpdater]) ->
   KindedType cat a ->
-  [FieldRep cat (FieldValue cat)] ->
+  [FieldRep (FieldValue cat)] ->
   (TypeContent TRUE cat CONST, [TypeUpdater])
 buildObject (interfaces, interfaceTypes) scope consFields =
   ( wrapWith scope fields,
@@ -596,23 +596,23 @@ buildObject (interfaces, interfaceTypes) scope consFields =
     wrapWith InputType = DataInputObject
     wrapWith OutputType = DataObject interfaces
 
-buildDataObject :: [FieldRep cat (FieldValue cat)] -> (FieldsDefinition cat CONST, [TypeUpdater])
+buildDataObject :: [FieldRep (FieldValue cat)] -> (FieldsDefinition cat CONST, [TypeUpdater])
 buildDataObject consFields =
   ( mkFieldsDefinition consFields,
     fmap (fieldTypes . fieldValue) consFields
   )
 
-mkFieldsDefinition :: [FieldRep kind (FieldValue cat)] -> FieldsDefinition cat CONST
+mkFieldsDefinition :: [FieldRep (FieldValue kind)] -> FieldsDefinition kind CONST
 mkFieldsDefinition = unsafeFromFields . fmap fieldByRep
 
-fieldByRep :: FieldRep kind (FieldValue cat) -> FieldDefinition cat CONST
+fieldByRep :: FieldRep (FieldValue kind) -> FieldDefinition kind CONST
 fieldByRep FieldRep {fieldSelector, fieldValue = FieldValue {fieldValueType, fieldValueContent}} =
   mkField fieldValueContent fieldSelector fieldValueType
 
 buildUnions ::
-  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
+  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   DataFingerprint ->
-  [ConsRep cat (FieldValue cat)] ->
+  [ConsRep (FieldValue kind)] ->
   ([TypeName], [TypeUpdater])
 buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
   where
@@ -620,10 +620,10 @@ buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
     members = fmap consName cons
 
 buildUnionRecord ::
-  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
+  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   DataFingerprint ->
-  ConsRep cat (FieldValue cat) ->
-  TypeDefinition cat CONST
+  ConsRep (FieldValue kind) ->
+  TypeDefinition kind CONST
 buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
   TypeDefinition
     { typeName = consName,
