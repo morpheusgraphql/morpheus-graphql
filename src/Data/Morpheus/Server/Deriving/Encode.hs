@@ -172,22 +172,15 @@ class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
   encodeKind = pure . ResScalar . serialize . unContextValue
 
-type EncodeConstraint o e m a =
-  ( Monad m,
-    Generic a,
-    GQLType a,
-    TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) (Rep a)
-  )
-
 -- ENUM
 instance EncodeConstraint o e m a => EncodeKind ENUM a o e m where
-  encodeKind = liftResolverState . exploreResolvers . unContextValue
+  encodeKind = pure . exploreResolvers . unContextValue
 
 instance EncodeConstraint o e m a => EncodeKind OUTPUT a o e m where
-  encodeKind = liftResolverState . exploreResolvers . unContextValue
+  encodeKind = pure . exploreResolvers . unContextValue
 
 instance EncodeConstraint o e m a => EncodeKind INTERFACE a o e m where
-  encodeKind = liftResolverState . exploreResolvers . unContextValue
+  encodeKind = pure . exploreResolvers . unContextValue
 
 convertNode ::
   (Monad m, LiftOperation o) =>
@@ -232,26 +225,22 @@ exploreResolvers ::
     LiftOperation o
   ) =>
   a ->
-  ResolverState (ResModel o e m)
+  ResModel o e m
 exploreResolvers =
-  pure
-    . convertNode (getNamespace (Proxy @a))
-    . typeResolvers
+  convertNode (getNamespace (Proxy @a))
+    . toValue
+      ( TypeConstraint (encode . runIdentity) ::
+          TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
+      )
 
 ----- HELPERS ----------------------------
 objectResolvers ::
-  forall a o e m.
-  ( Monad m,
-    LiftOperation o,
-    GQLType a,
-    Generic a,
-    TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) (Rep a)
+  ( EncodeConstraint o e m a,
+    LiftOperation o
   ) =>
   a ->
   ResolverState (ResModel o e m)
-objectResolvers value =
-  exploreResolvers value
-    >>= constraintObject
+objectResolvers value = constraintObject (exploreResolvers value)
   where
     constraintObject obj@ResObject {} =
       pure obj
@@ -259,10 +248,11 @@ objectResolvers value =
       failure ("resolver must be an object" :: InternalError)
 
 type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
-  TypeConst o e m (a (Resolver o e m))
+  EncodeConstraint o e m (a (Resolver o e m))
 
-type TypeConst (o :: OperationType) e m a =
-  ( GQLType a,
+type EncodeConstraint (o :: OperationType) e (m :: * -> *) a =
+  ( Monad m,
+    GQLType a,
     Generic a,
     TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) (Rep a)
   )
@@ -273,6 +263,9 @@ type EncodeConstraints e m query mut sub =
     EncodeObjectConstraint MUTATION e m mut,
     EncodeObjectConstraint SUBSCRIPTION e m sub
   )
+
+toFieldRes :: FieldRep (Resolver o e m (ResModel o e m)) -> FieldResModel o e m
+toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
 
 deriveModel ::
   forall e m query mut sub.
@@ -295,19 +288,3 @@ deriveModel
       channelMap
         | isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
         | otherwise = Just (getChannels subscriptionResolver)
-
-toFieldRes :: FieldRep (Resolver o e m (ResModel o e m)) -> FieldResModel o e m
-toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
-
-typeResolvers ::
-  ( GQLType a,
-    Generic a,
-    TypeRep (Encode o e m) (Resolver o e m (ResModel o e m)) (Rep a)
-  ) =>
-  a ->
-  DataType (Resolver o e m (ResModel o e m))
-typeResolvers =
-  toValue
-    ( TypeConstraint (encode . runIdentity) ::
-        TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
-    )
