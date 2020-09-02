@@ -32,10 +32,10 @@ where
 -- MORPHEUS
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((>=>), (>>=))
+import Control.Monad ((>=>), (>>=), Monad)
 import Control.Monad.Fail (fail)
 import Data.Foldable (concatMap)
-import Data.Functor ((<$>), Functor (..))
+import Data.Functor (($>), (<$>), Functor (..))
 import Data.List (partition)
 import qualified Data.Map as M
 import Data.Map (Map)
@@ -45,13 +45,7 @@ import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     Namespace (..),
-    UpdateT,
-    concatUpdates,
-    concatUpdates,
     empty,
-    failUpdates,
-    mapFst,
-    resolveUpdates,
     singleton,
   )
 import Data.Morpheus.Kind
@@ -66,9 +60,13 @@ import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     FieldRep (..),
     ResRep (..),
+    SchemaT,
     TypeConstraint (..),
     TypeRep (..),
+    closeWith,
+    concatSchemaT,
     fieldTypeName,
+    formTypeUpdates,
     genericTo,
     isEmptyConstraint,
     isUnionRef,
@@ -99,6 +97,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     FieldsDefinition,
     GQLErrors,
+    IMPLEMENTABLE,
     IN,
     LEAF,
     MUTATION,
@@ -210,37 +209,29 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
   Failure {errors} -> failure errors
   where
     querySchema =
-      resolveUpdates (initTypeLib query) types
-      where
-        (query, types) = deriveObjectType $ Proxy @(query (Resolver QUERY e m))
+      closeWith $
+        initTypeLib
+          <$> deriveObjectType (Proxy @(query (Resolver QUERY e m)))
     ------------------------------
-    mutationSchema lib =
-      resolveUpdates
-        (lib {mutation = optionalType mutation})
-        types
-      where
-        (mutation, types) = deriveObjectType $ Proxy @(mut (Resolver MUTATION e m))
+    mutationSchema lib = closeWith $ do
+      mutation <- deriveObjectType $ Proxy @(mut (Resolver MUTATION e m))
+      pure $ lib {mutation = optionalType mutation}
     ------------------------------
-    subscriptionSchema lib =
-      resolveUpdates
-        (lib {subscription = optionalType subscription})
-        types
-      where
-        (subscription, types) = deriveObjectType $ Proxy @(subs (Resolver SUBSCRIPTION e m))
+    subscriptionSchema lib = closeWith $ do
+      subscription <- deriveObjectType $ Proxy @(subs (Resolver SUBSCRIPTION e m))
+      pure (lib {subscription = optionalType subscription})
 
 instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class DeriveType (kind :: TypeCategory) (a :: *) where
-  deriveType :: f kind a -> TypeUpdater
-
-  --deriveTypeC :: f kind a -> TypeUpdater
+  deriveType :: f kind a -> SchemaT m ()
 
   deriveContent :: f kind a -> Maybe (FieldContent TRUE kind CONST)
   deriveContent _ = Nothing
 
-deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> TypeUpdater
+deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> SchemaT m ()
 deriveTypeWith x = deriveType . setProxyType x
 
 -- Maybe
@@ -272,9 +263,9 @@ instance
   DeriveType OUT (a -> m b)
   where
   deriveContent _ = Just $ FieldArgs $ deriveArgumentDefinition $ Proxy @a
-  deriveType _ = concatUpdates (deriveType (outputType $ Proxy @b) : inputs)
-    where
-      inputs = deriveFieldTypes $ inputType $ Proxy @a
+  deriveType _ = do
+    deriveType $ outputType $ Proxy @b
+    deriveFieldTypes $ inputType $ Proxy @a
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
   deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
@@ -285,14 +276,14 @@ instance (DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType (kind :: GQL_KIND) a where
-  deriveKindedType :: proxy kind a -> TypeUpdater -- Generates internal GraphQL Schema
+  deriveKindedType :: proxy kind a -> SchemaT m ()
 
 -- SCALAR
 instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
-  deriveKindedType _ = updateLib scalarType [] (Proxy @a)
+  deriveKindedType _ = updateLib scalarType (pure ()) (Proxy @a)
     where
-      scalarType :: Proxy a -> TypeDefinition LEAF CONST
-      scalarType = buildType $ DataScalar $ scalarValidator (Proxy @a)
+      scalarType :: Proxy a -> SchemaT m (TypeDefinition LEAF CONST)
+      scalarType = buildType $ pure $ DataScalar $ scalarValidator (Proxy @a)
 
 -- ENUM
 instance DeriveTypeConstraint IN a => DeriveKindedType ENUM a where
@@ -311,43 +302,46 @@ type DeriveTypeConstraint kind a =
   )
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType INTERFACE a where
-  deriveKindedType _ = updateLibOUT (buildType (DataInterface fields)) types (Proxy @a)
+  deriveKindedType _ = updateLibOUT (buildType intDef) types (Proxy @a)
     where
-      fields = deriveObjectFields (Proxy @a)
+      intDef = deriveInterfaceContent (Proxy @a)
       types = deriveFieldTypes $ outputType (Proxy @a)
 
+deriveInterfaceContent :: Monad m => f (a :: *) -> SchemaT m (TypeContent TRUE OUT CONST)
+deriveInterfaceContent x = fmap DataInterface (deriveObjectFields x)
+
 derivingData ::
-  forall kind a.
+  forall kind m a.
   ( TypeRep (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) (Rep a),
     TypeRep (DeriveType kind) TypeUpdater (Rep a),
     GQLType a,
     Generic a
   ) =>
   KindedType kind a ->
-  TypeUpdater
-derivingData kindedType = updateLib (buildType content) (updates <> types) (Proxy @a)
+  SchemaT m ()
+derivingData kindedType = updateLib (buildType content) types (Proxy @a)
   where
-    (content, updates) = deriveTypeContent kindedType
+    content = deriveTypeContent kindedType
     types = deriveFieldTypes kindedType
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> UpdateT m (ArgumentsDefinition CONST)
+deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> SchemaT m (ArgumentsDefinition CONST)
 deriveArgumentDefinition = fmap fieldsToArguments . deriveFields . inputType
 
 deriveObjectFields ::
   (TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a), Generic a, GQLType a) =>
   f a ->
-  UpdateT m (FieldsDefinition OUT CONST)
+  SchemaT m (FieldsDefinition OUT CONST)
 deriveObjectFields = deriveFields . outputType
 
 deriveFields ::
   (GQLType a, TypeRep (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) (Rep a), Generic a) =>
   KindedType kind a ->
-  UpdateT m (FieldsDefinition kind CONST)
+  SchemaT m (FieldsDefinition kind CONST)
 deriveFields kindedType = deriveTypeContent kindedType >>= withObject kindedType
 
-withObject :: GQLType a => KindedType c a -> TypeContent TRUE any s -> UpdateT m (FieldsDefinition c s)
+withObject :: GQLType a => KindedType c a -> TypeContent TRUE any s -> SchemaT m (FieldsDefinition c s)
 withObject InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject OutputType DataObject {objectFields} = pure objectFields
 withObject x _ = failureOnlyObject x
@@ -357,21 +351,22 @@ optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
   | null objectFields = Nothing
   | otherwise = Just td
 
-deriveOutType :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> TypeUpdater
+deriveOutType :: forall a m. (GQLType a, DeriveType OUT a) => Proxy a -> SchemaT m ()
 deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 deriveObjectType ::
   DeriveTypeConstraint OUT a =>
   proxy a ->
-  UpdateT m (TypeDefinition OBJECT CONST)
+  SchemaT m (TypeDefinition OBJECT CONST)
 deriveObjectType proxy = do
   value <- (`mkObjectType` __typeName proxy) <$> deriveObjectFields proxy
-  resolveUpdates value $ deriveFieldTypes (outputType proxy)
+  deriveFieldTypes (outputType proxy)
+  pure value
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
-failureOnlyObject :: forall c a m b. (GQLType a, Applicative m) => KindedType c a -> m b
+failureOnlyObject :: forall c a m b. (GQLType a, Applicative m) => KindedType c a -> SchemaT m b
 failureOnlyObject _ =
   failure
     $ globalErrorMessage
@@ -381,14 +376,15 @@ deriveFieldValue :: forall f kind a. (DeriveType kind a) => f a -> Maybe (FieldC
 deriveFieldValue _ = deriveContent (KindedProxy :: KindedProxy k a)
 
 deriveFieldTypes ::
-  forall kind a.
-  (GQLType a, TypeRep (DeriveType kind) TypeUpdater (Rep a), Generic a) =>
+  forall kind m a.
+  (GQLType a, TypeRep (DeriveType kind) (SchemaT m ()) (Rep a), Generic a) =>
   KindedType kind a ->
-  [TypeUpdater]
+  SchemaT m ()
 deriveFieldTypes kinded =
-  repToValues $
-    genericTo
-      (TypeConstraint (`deriveTypeWith` kinded) :: TypeConstraint (DeriveType kind) TypeUpdater Proxy)
+  concatSchemaT
+    $ repToValues
+    $ genericTo
+      (TypeConstraint (`deriveTypeWith` kinded) :: TypeConstraint (DeriveType kind) (SchemaT m ()) Proxy)
       (Proxy @a)
 
 -- Object Fields
@@ -396,9 +392,9 @@ deriveTypeContent ::
   forall kind m a.
   (TypeRep (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) (Rep a), Generic a, GQLType a) =>
   KindedType kind a ->
-  UpdateT m (TypeContent TRUE kind CONST)
+  SchemaT m (TypeContent TRUE kind CONST)
 deriveTypeContent scope =
-  updateDef proxy
+  updateD proxy
     $ builder
     $ genericTo
       (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) Proxy)
@@ -414,6 +410,9 @@ deriveTypeContent scope =
         baseFingerprint = __typeFingerprint proxy
         genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
         genericUnion OutputType = buildUnionType (baseName, baseFingerprint) DataUnion (DataObject [])
+
+updateD :: GQLType a => f a -> (b, [TypeUpdater]) -> SchemaT m b
+updateD proxy (v, updates) = formTypeUpdates updates $> updateDef proxy v
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -474,30 +473,32 @@ instance GetFieldContent OUT where
       Just (_, Just x) -> Just (FieldArgs x)
       _ -> args
 
-buildType :: GQLType a => TypeContent TRUE cat CONST -> f a -> TypeDefinition cat CONST
-buildType typeContent proxy =
-  TypeDefinition
-    { typeName = __typeName proxy,
-      typeFingerprint = __typeFingerprint proxy,
-      typeDescription = description proxy,
-      typeDirectives = [],
-      typeContent
-    }
+buildType :: (GQLType a, Monad m) => m (TypeContent TRUE cat CONST) -> f a -> m (TypeDefinition cat CONST)
+buildType cType proxy = do
+  typeContent <- cType
+  pure $
+    TypeDefinition
+      { typeName = __typeName proxy,
+        typeFingerprint = __typeFingerprint proxy,
+        typeDescription = description proxy,
+        typeDirectives = [],
+        typeContent
+      }
 
 updateLib ::
   GQLType a =>
-  (f a -> TypeDefinition cat CONST) ->
-  [TypeUpdater] ->
+  (f a -> SchemaT m (TypeDefinition cat CONST)) ->
+  SchemaT m () ->
   f a ->
-  TypeUpdater
+  SchemaT m ()
 updateLib f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 updateLibOUT ::
   GQLType a =>
-  (f a -> TypeDefinition OUT CONST) ->
-  [TypeUpdater] ->
+  (f a -> SchemaT m (TypeDefinition cat CONST)) ->
+  SchemaT m () ->
   f a ->
-  TypeUpdater
+  SchemaT m ()
 updateLibOUT = updateLib
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))

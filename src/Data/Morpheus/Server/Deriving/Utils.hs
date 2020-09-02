@@ -32,6 +32,10 @@ module Data.Morpheus.Server.Deriving.Utils
     isUnionRef,
     fieldTypeName,
     repToValues,
+    SchemaT,
+    formTypeUpdates,
+    closeWith,
+    concatSchemaT,
   )
 where
 
@@ -41,9 +45,14 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    TypeUpdater,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
+  ( CONST,
+    FieldName (..),
+    Message,
+    Message,
+    Schema,
     TypeName (..),
     TypeRef (..),
     convertToJSONName,
@@ -78,6 +87,7 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
+    Either (..),
     Eq (..),
     Int,
     Maybe (..),
@@ -101,6 +111,30 @@ selNameProxy _ = convertToJSONName $ FieldName $ pack $ selName (undefined :: M1
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
+
+-- Helper Functions
+data SchemaT (m :: * -> *) a = SchemaT
+  { typeUpdates :: Schema CONST -> m (Schema CONST),
+    currentValue :: Either Message a
+  }
+
+closeWith :: SchemaT m (Schema CONST) -> m (Schema CONST)
+closeWith SchemaT {typeUpdates, currentValue = Right schema} = typeUpdates schema
+
+formTypeUpdates :: [TypeUpdater] -> SchemaT m ()
+formTypeUpdates = undefined
+
+concatSchemaT :: [SchemaT m ()] -> SchemaT m ()
+concatSchemaT = undefined
+
+-- failUpdates :: (Failure e m) => e -> UpdateT m a
+-- failUpdates = UpdateT . const . failure
+
+-- concatUpdates :: Monad m => [UpdateT m a] -> UpdateT m a
+-- concatUpdates x = UpdateT (`resolveUpdates` x)
+
+-- resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
+-- resolveUpdates a = foldM (&) a . fmap updateTState
 
 newtype TypeConstraint (c :: * -> Constraint) (v :: *) (f :: * -> *) = TypeConstraint
   { typeConstraint :: forall a. c a => f a -> v
