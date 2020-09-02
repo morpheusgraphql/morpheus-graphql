@@ -45,6 +45,8 @@ import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     Namespace (..),
+    UpdateT,
+    concatUpdates,
     concatUpdates,
     empty,
     failUpdates,
@@ -330,28 +332,25 @@ derivingData kindedType = updateLib (buildType content) (updates <> types) (Prox
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
-deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> ArgumentsDefinition CONST
-deriveArgumentDefinition = fieldsToArguments . deriveFields . inputType
+deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> UpdateT m (ArgumentsDefinition CONST)
+deriveArgumentDefinition = fmap fieldsToArguments . deriveFields . inputType
 
-deriveObjectFields :: (TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a), Generic a, GQLType a) => f a -> FieldsDefinition OUT CONST
+deriveObjectFields ::
+  (TypeRep (DeriveType OUT) (Maybe (FieldContent TRUE OUT CONST)) (Rep a), Generic a, GQLType a) =>
+  f a ->
+  UpdateT m (FieldsDefinition OUT CONST)
 deriveObjectFields = deriveFields . outputType
 
 deriveFields ::
   (GQLType a, TypeRep (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) (Rep a), Generic a) =>
   KindedType kind a ->
-  FieldsDefinition kind CONST
-deriveFields kindedType = withObject kindedType (deriveTypeContent kindedType)
+  UpdateT m (FieldsDefinition kind CONST)
+deriveFields kindedType = deriveTypeContent kindedType >>= withObject kindedType
 
-withObject ::
-  forall a c any s.
-  (GQLType a) =>
-  KindedType c a ->
-  (TypeContent TRUE any s, [TypeUpdater]) ->
-  FieldsDefinition c s
-withObject InputType (DataInputObject {inputObjectFields}, ts) = inputObjectFields
-withObject OutputType (DataObject {objectFields}, ts) = objectFields
-
---withObject _ _ = (empty, [introspectFailure (msg (__typeName (Proxy @a)) <> " should have only one nonempty constructor")])
+withObject :: GQLType a => KindedType c a -> TypeContent TRUE any s -> UpdateT m (FieldsDefinition c s)
+withObject InputType DataInputObject {inputObjectFields} = pure inputObjectFields
+withObject OutputType DataObject {objectFields} = pure objectFields
+withObject x _ = failureOnlyObject x
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
@@ -364,17 +363,19 @@ deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 deriveObjectType ::
   DeriveTypeConstraint OUT a =>
   proxy a ->
-  (TypeDefinition OBJECT CONST, [TypeUpdater])
-deriveObjectType proxy =
-  ( mkObjectType (deriveObjectFields proxy) (__typeName proxy),
-    deriveFieldTypes (outputType proxy)
-  )
+  UpdateT m (TypeDefinition OBJECT CONST)
+deriveObjectType proxy = do
+  value <- (`mkObjectType` __typeName proxy) <$> deriveObjectFields proxy
+  resolveUpdates value $ deriveFieldTypes (outputType proxy)
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
-introspectFailure :: Message -> TypeUpdater
-introspectFailure = failUpdates . globalErrorMessage . ("invalid schema: " <>)
+failureOnlyObject :: forall c a m b. (GQLType a, Applicative m) => KindedType c a -> m b
+failureOnlyObject _ =
+  failure
+    $ globalErrorMessage
+    $ msg (__typeName (Proxy @a)) <> " should have only one nonempty constructor"
 
 deriveFieldValue :: forall f kind a. (DeriveType kind a) => f a -> Maybe (FieldContent TRUE kind CONST)
 deriveFieldValue _ = deriveContent (KindedProxy :: KindedProxy k a)
@@ -392,10 +393,10 @@ deriveFieldTypes kinded =
 
 -- Object Fields
 deriveTypeContent ::
-  forall kind a.
+  forall kind m a.
   (TypeRep (DeriveType kind) (Maybe (FieldContent TRUE kind CONST)) (Rep a), Generic a, GQLType a) =>
   KindedType kind a ->
-  (TypeContent TRUE kind CONST, [TypeUpdater])
+  UpdateT m (TypeContent TRUE kind CONST)
 deriveTypeContent scope =
   updateDef proxy
     $ builder

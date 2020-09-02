@@ -1,13 +1,11 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -26,7 +24,7 @@ import Data.Morpheus.Internal.Utils
     elems,
   )
 import Data.Morpheus.Server.Deriving.Decode
-  ( DecodeType,
+  ( DecodeConstraint,
     decodeArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils
@@ -93,7 +91,7 @@ instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel SubscriptionField {channel} = const (pure channel)
 
 instance
-  (Generic arg, DecodeType arg) =>
+  DecodeConstraint arg =>
   GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a))
   where
   getChannel f sel@Selection {selectionArguments} =

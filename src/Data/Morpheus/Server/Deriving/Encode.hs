@@ -43,7 +43,7 @@ import Data.Morpheus.Server.Deriving.Channels
     getChannels,
   )
 import Data.Morpheus.Server.Deriving.Decode
-  ( DecodeType,
+  ( DecodeConstraint,
     decodeArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils
@@ -138,7 +138,7 @@ instance (Monad m, LiftOperation o, Encode o e m a) => Encode o e m (Subscriptio
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
-  ( DecodeType a,
+  ( DecodeConstraint a,
     Generic a,
     Monad m,
     LiftOperation o,
