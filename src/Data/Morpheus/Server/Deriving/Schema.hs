@@ -542,8 +542,7 @@ buildInputUnion ::
   [ConsRep (Maybe (FieldContent TRUE IN CONST))] ->
   SchemaT m (TypeContent TRUE IN CONST)
 buildInputUnion (baseName, baseFingerprint) cons =
-  datatype
-    (analyseRep baseName cons)
+  datatype $ analyseRep baseName cons
   where
     datatype :: ResRep (Maybe (FieldContent TRUE IN CONST)) -> (TypeContent TRUE IN CONST, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, [])
@@ -564,8 +563,8 @@ buildUnionType ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT m (TypeContent TRUE kind CONST)
-buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
-  datatype (analyseRep baseName cons)
+buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject =
+  datatype . analyseRep baseName
   where
     --datatype :: ResRep -> (TypeContent TRUE cat, [TypeUpdater])
     datatype ResRep {unionRef = [], unionRecordRep = [], enumCons} = (mkEnumContent enumCons, [])
