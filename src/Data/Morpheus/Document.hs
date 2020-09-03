@@ -37,7 +37,7 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Language.Haskell.TH
 
-importGQLDocument :: String -> Q [Dec]
+importGQLDocument :: FilePath -> Q [Dec]
 importGQLDocument src =
   runIO (readFile src)
     >>= compileDocument
@@ -45,7 +45,7 @@ importGQLDocument src =
         { namespace = False
         }
 
-importGQLDocumentWithNamespace :: String -> Q [Dec]
+importGQLDocumentWithNamespace :: FilePath -> Q [Dec]
 importGQLDocumentWithNamespace src =
   runIO (readFile src)
     >>= compileDocument
