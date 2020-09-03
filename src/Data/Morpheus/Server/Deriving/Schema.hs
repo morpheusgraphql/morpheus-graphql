@@ -538,7 +538,9 @@ analyseRep baseName cons =
     (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
 
 buildInputUnion ::
-  (TypeName, DataFingerprint) -> [ConsRep (Maybe (FieldContent TRUE IN CONST))] -> (TypeContent TRUE IN CONST, [TypeUpdater])
+  (TypeName, DataFingerprint) ->
+  [ConsRep (Maybe (FieldContent TRUE IN CONST))] ->
+  SchemaT m (TypeContent TRUE IN CONST)
 buildInputUnion (baseName, baseFingerprint) cons =
   datatype
     (analyseRep baseName cons)
@@ -561,7 +563,7 @@ buildUnionType ::
   (DataUnion CONST -> TypeContent TRUE kind CONST) ->
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
-  (TypeContent TRUE kind CONST, [TypeUpdater])
+  SchemaT m (TypeContent TRUE kind CONST)
 buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
   datatype (analyseRep baseName cons)
   where
@@ -571,16 +573,14 @@ buildUnionType (baseName, baseFingerprint) wrapUnion wrapObject cons =
       (wrapUnion (fmap mkUnionMember typeMembers), enumTypes <> unionTypes)
       where
         typeMembers = unionRef <> enumMembers <> unionMembers
-        (enumMembers, enumTypes) =
-          buildUnionEnum wrapObject baseName baseFingerprint enumCons
-        (unionMembers, unionTypes) =
-          buildUnions wrapObject baseFingerprint unionRecordRep
+        enumMembers = buildUnionEnum wrapObject baseName baseFingerprint enumCons
+        unionMembers = buildUnions wrapObject baseFingerprint unionRecordRep
 
 buildObject ::
-  ([TypeName], [TypeUpdater]) ->
+  SchemaT m [TypeName] ->
   KindedType kind a ->
   [FieldRep (Maybe (FieldContent TRUE kind CONST))] ->
-  (TypeContent TRUE kind CONST, [TypeUpdater])
+  SchemaT m (TypeContent TRUE kind CONST)
 buildObject (interfaces, interfaceTypes) scope consFields =
   (wrapWith scope (mkFieldsDefinition consFields), interfaceTypes)
   where
@@ -599,7 +599,7 @@ buildUnions ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   DataFingerprint ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
-  ([TypeName], [TypeUpdater])
+  SchemaT m [TypeName]
 buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
   where
     buildURecType = insertType . buildUnionRecord wrapObject baseFingerprint
@@ -608,7 +608,7 @@ buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
 insertType ::
   (Monad m, Failure ValidationErrors m) =>
   TypeDefinition cat s ->
-  SchemaT m (Schema s)
+  SchemaT m ()
 insertType datatype@TypeDefinition {typeName, typeFingerprint} =
   updateSchema typeName typeFingerprint [] (const datatype) ()
 
@@ -631,7 +631,7 @@ buildUnionEnum ::
   TypeName ->
   DataFingerprint ->
   [TypeName] ->
-  ([TypeName], [TypeUpdater])
+  SchemaT m [TypeName]
 buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
   where
     members
@@ -653,7 +653,7 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = (members, updates)
           buildEnum enumTypeName baseFingerprint enums
         ]
 
-buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> TypeUpdater
+buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> SchemaT m ()
 buildEnum typeName typeFingerprint tags =
   insertType
     ( TypeDefinition
@@ -670,7 +670,7 @@ buildEnumObject ::
   TypeName ->
   DataFingerprint ->
   TypeName ->
-  TypeUpdater
+  SchemaT m ()
 buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
   insertType
     TypeDefinition
