@@ -42,6 +42,7 @@ import Data.Map (Map)
 import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
+import Data.Morpheus.Error.Schema (nameCollisionError)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     Namespace (..),
@@ -115,17 +116,19 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     UnionMember (..),
     VALID,
+    ValidationErrors,
     fieldsToArguments,
     initTypeLib,
-    insertType,
+    isNotSystemTypeName,
+    isTypeDefined,
     mkEnumContent,
     mkField,
     mkInputValue,
     mkType,
     mkUnionMember,
     msg,
+    safeDefineType,
     unsafeFromFields,
-    updateSchema,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -143,6 +146,7 @@ import Prelude
     (.),
     Bool (..),
     Show (..),
+    const,
     null,
     otherwise,
     unzip,
@@ -228,8 +232,8 @@ instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => Derive
 class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveType :: f kind a -> SchemaT m ()
 
-  deriveContent :: f kind a -> Maybe (FieldContent TRUE kind CONST)
-  deriveContent _ = Nothing
+  deriveContent :: f kind a -> SchemaT m (Maybe (FieldContent TRUE kind CONST))
+  deriveContent _ = pure Nothing
 
 deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> SchemaT m ()
 deriveTypeWith x = deriveType . setProxyType x
@@ -262,7 +266,7 @@ instance
   ) =>
   DeriveType OUT (a -> m b)
   where
-  deriveContent _ = Just $ FieldArgs $ deriveArgumentDefinition $ Proxy @a
+  deriveContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
   deriveType _ = do
     deriveType $ outputType $ Proxy @b
     deriveFieldTypes $ inputType $ Proxy @a
@@ -372,7 +376,7 @@ failureOnlyObject _ =
     $ globalErrorMessage
     $ msg (__typeName (Proxy @a)) <> " should have only one nonempty constructor"
 
-deriveFieldValue :: forall f kind a. (DeriveType kind a) => f a -> Maybe (FieldContent TRUE kind CONST)
+deriveFieldValue :: forall f kind m a. (DeriveType kind a) => f a -> SchemaT m (Maybe (FieldContent TRUE kind CONST))
 deriveFieldValue _ = deriveContent (KindedProxy :: KindedProxy k a)
 
 deriveFieldTypes ::
@@ -485,13 +489,34 @@ buildType cType proxy = do
         typeContent
       }
 
+updateSchema ::
+  (Monad m, Failure ValidationErrors m) =>
+  TypeName ->
+  DataFingerprint ->
+  [SchemaT m ()] ->
+  (a -> TypeDefinition cat s) ->
+  a ->
+  SchemaT m (Schema s)
+updateSchema name fingerprint stack f x
+  | isNotSystemTypeName name = UpdateT $ \lib ->
+    case isTypeDefined name lib of
+      Nothing -> do
+        t <- safeDefineType (f x) lib
+        resolveUpdates t stack
+      Just fingerprint' | fingerprint' == fingerprint -> pure lib
+      -- throw error if 2 different types has same name
+      Just _ -> failure [nameCollisionError name]
+  | otherwise = concatUpdates stack
+
 updateLib ::
   GQLType a =>
   (f a -> SchemaT m (TypeDefinition cat CONST)) ->
   SchemaT m () ->
   f a ->
   SchemaT m ()
-updateLib f stack proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
+updateLib f stack proxy = do
+  _ <- stack
+  updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 updateLibOUT ::
   GQLType a =>
@@ -579,6 +604,13 @@ buildUnions wrapObject baseFingerprint cons = (members, fmap buildURecType cons)
   where
     buildURecType = insertType . buildUnionRecord wrapObject baseFingerprint
     members = fmap consName cons
+
+insertType ::
+  (Monad m, Failure ValidationErrors m) =>
+  TypeDefinition cat s ->
+  SchemaT m (Schema s)
+insertType datatype@TypeDefinition {typeName, typeFingerprint} =
+  updateSchema typeName typeFingerprint [] (const datatype) ()
 
 buildUnionRecord ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->

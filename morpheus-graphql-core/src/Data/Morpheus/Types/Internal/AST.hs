@@ -93,7 +93,6 @@ module Data.Morpheus.Types.Internal.AST
     mkTypeRef,
     mkInputUnionFields,
     fieldVisibility,
-    insertType,
     lookupDeprecated,
     lookupDeprecatedReason,
     lookupWith,
@@ -109,7 +108,6 @@ module Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     UnionTag (..),
     __inputname,
-    updateSchema,
     internalFingerprint,
     ANY,
     IN,
@@ -168,6 +166,8 @@ module Data.Morpheus.Types.Internal.AST
     possibleTypes,
     possibleInterfaceTypes,
     mkField,
+    isTypeDefined,
+    safeDefineType,
   )
 where
 
