@@ -36,12 +36,20 @@ module Data.Morpheus.Server.Deriving.Utils
     formTypeUpdates,
     closeWith,
     concatSchemaT,
+    updateSchema,
+    updateExperimental,
+    fromUpdates,
   )
 where
 
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad (..), foldM)
+import Data.Function ((&))
+import Data.Functor (Functor (..))
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Internal.Utils
-  ( Namespace (..),
+  ( Failure (..),
+    Namespace (..),
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -49,13 +57,23 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
+    DataFingerprint,
     FieldName (..),
+    GQLErrors,
     Message,
     Message,
     Schema,
+    TypeDefinition,
     TypeName (..),
     TypeRef (..),
+    ValidationErrors,
     convertToJSONName,
+    isNotSystemTypeName,
+    isTypeDefined,
+    safeDefineType,
+  )
+import Data.Morpheus.Types.Internal.Resolving
+  ( Eventless,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
@@ -113,19 +131,62 @@ isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
 
 -- Helper Functions
-data SchemaT (m :: * -> *) a = SchemaT
-  { typeUpdates :: Schema CONST -> m (Schema CONST),
-    currentValue :: Either Message a
+data SchemaT (a :: *) = SchemaT
+  { typeUpdates :: Schema CONST -> Eventless (Schema CONST),
+    currentValue :: Eventless a
   }
 
-closeWith :: SchemaT m (Schema CONST) -> m (Schema CONST)
-closeWith SchemaT {typeUpdates, currentValue = Right schema} = typeUpdates schema
+instance Failure GQLErrors SchemaT
 
-formTypeUpdates :: [TypeUpdater] -> SchemaT m ()
+instance Functor SchemaT
+
+instance Applicative SchemaT
+
+instance Monad SchemaT
+
+injectUpdate :: (Schema CONST -> Eventless (Schema CONST)) -> SchemaT ()
+injectUpdate f = SchemaT f $ pure ()
+
+closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
+closeWith SchemaT {typeUpdates, currentValue} = currentValue >>= typeUpdates
+
+fromUpdates :: [(a, TypeUpdater)] -> SchemaT [a]
+fromUpdates = undefined
+
+formTypeUpdates :: [TypeUpdater] -> SchemaT ()
 formTypeUpdates = undefined
 
-concatSchemaT :: [SchemaT m ()] -> SchemaT m ()
+concatSchemaT :: [SchemaT ()] -> SchemaT ()
 concatSchemaT = undefined
+
+execUpdates :: Monad m => a -> [a -> m a] -> m a
+execUpdates = foldM (&)
+
+updateExperimental ::
+  SchemaT (TypeDefinition cat CONST) ->
+  SchemaT ()
+updateExperimental x = undefined
+
+--updateSchema (__typeName proxy) (__typeFingerprint proxy) [] x proxy
+
+updateSchema ::
+  TypeName ->
+  DataFingerprint ->
+  [SchemaT ()] ->
+  (a -> TypeDefinition cat CONST) ->
+  a ->
+  SchemaT ()
+updateSchema name fingerprint stack f x
+  | isNotSystemTypeName name = SchemaT upLib (pure ())
+  | otherwise = concatSchemaT stack
+  where
+    updates = map typeUpdates stack
+    upLib lib = case isTypeDefined name lib of
+      Nothing -> execUpdates lib (safeDefineType (f x) : updates)
+      Just fingerprint'
+        | fingerprint' == fingerprint -> pure lib
+        -- throw error if 2 different types has same name
+        | otherwise -> failure (["bla"] :: ValidationErrors)
 
 -- failUpdates :: (Failure e m) => e -> UpdateT m a
 -- failUpdates = UpdateT . const . failure

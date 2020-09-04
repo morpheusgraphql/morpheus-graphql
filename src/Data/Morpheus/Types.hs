@@ -73,10 +73,12 @@ import Data.Morpheus.Core
   )
 import Data.Morpheus.Server.Deriving.Schema
   ( DeriveType,
-    TypeUpdater,
+    SchemaT,
     deriveOutType,
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType (..),
+  )
 import Data.Morpheus.Server.Types.Types (Undefined (..))
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar
@@ -224,5 +226,7 @@ data RootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) 
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
 
-interface :: (GQLType a, DeriveType OUT a) => Proxy a -> (TypeName, TypeUpdater)
-interface x = (__typeName x, deriveOutType x)
+interface :: (GQLType a, DeriveType OUT a) => Proxy a -> SchemaT TypeName
+interface x = do
+  deriveOutType x
+  pure (__typeName x)
