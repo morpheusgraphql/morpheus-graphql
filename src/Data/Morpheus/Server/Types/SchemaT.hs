@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -51,10 +52,9 @@ data SchemaT a = SchemaT
   { typeUpdates :: Schema CONST -> Eventless (Schema CONST),
     currentValue :: Eventless a
   }
+  deriving (Functor)
 
 instance Failure [GQLError] SchemaT
-
-instance Functor SchemaT
 
 instance Applicative SchemaT
 
