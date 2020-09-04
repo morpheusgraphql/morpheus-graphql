@@ -99,7 +99,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldName (..),
     FieldsDefinition,
     GQLErrors,
-    IMPLEMENTABLE,
     IN,
     LEAF,
     MUTATION,
@@ -352,7 +351,7 @@ optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
   | null objectFields = Nothing
   | otherwise = Just td
 
-deriveOutType :: forall a m. (GQLType a, DeriveType OUT a) => Proxy a -> SchemaT ()
+deriveOutType :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> SchemaT ()
 deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 deriveObjectType ::
@@ -373,11 +372,11 @@ failureOnlyObject _ =
     $ globalErrorMessage
     $ msg (__typeName (Proxy @a)) <> " should have only one nonempty constructor"
 
-deriveFieldValue :: forall f kind m a. (DeriveType kind a) => f a -> SchemaT (Maybe (FieldContent TRUE kind CONST))
+deriveFieldValue :: forall f kind a. (DeriveType kind a) => f a -> SchemaT (Maybe (FieldContent TRUE kind CONST))
 deriveFieldValue _ = deriveContent (KindedProxy :: KindedProxy k a)
 
 deriveFieldTypes ::
-  forall kind m a.
+  forall kind a.
   (GQLType a, TypeRep (DeriveType kind) (SchemaT ()) (Rep a), Generic a) =>
   KindedType kind a ->
   SchemaT ()
@@ -512,15 +511,7 @@ updateLib ::
   SchemaT ()
 updateLib f stack proxy = do
   _ <- stack
-  updateSchema (__typeName proxy) (__typeFingerprint proxy) [stack] f proxy
-
-updateLibOUT ::
-  GQLType a =>
-  (f a -> TypeDefinition cat CONST) ->
-  SchemaT () ->
-  f a ->
-  SchemaT ()
-updateLibOUT = updateLib
+  updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))
 analyseRep baseName cons =
@@ -612,9 +603,8 @@ buildUnions wrapObject baseFingerprint cons = do
 insertType ::
   TypeDefinition cat CONST ->
   SchemaT ()
-insertType datatype@TypeDefinition {typeName, typeFingerprint} = do
-  updateSchema typeName typeFingerprint [] (const datatype) ()
-  pure ()
+insertType dt@TypeDefinition {typeName, typeFingerprint} =
+  updateSchema typeName typeFingerprint (pure ()) (const dt) ()
 
 buildUnionRecord ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->

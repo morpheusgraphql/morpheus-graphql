@@ -1,8 +1,11 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.SchemaT
@@ -11,21 +14,19 @@ module Data.Morpheus.Server.Types.SchemaT
     concatSchemaT,
     updateSchema,
     updateExperimental,
-    injectUpdate,
   )
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..), foldM)
+import Control.Monad ((>=>), Monad (..), foldM)
 import Data.Function ((&))
-import Data.Functor (Functor (..))
+import Data.Functor (($>), Functor (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataFingerprint,
-    GQLError,
     Schema,
     TypeDefinition,
     TypeName (..),
@@ -44,27 +45,46 @@ import Prelude
     Maybe (..),
     map,
     otherwise,
+    snd,
     undefined,
   )
 
 -- Helper Functions
-data SchemaT a = SchemaT
-  { typeUpdates :: Schema CONST -> Eventless (Schema CONST),
-    currentValue :: Eventless a
+newtype SchemaT a = SchemaT
+  { runSchemaT ::
+      Eventless
+        ( a,
+          Schema CONST -> Eventless (Schema CONST)
+        )
   }
   deriving (Functor)
 
-instance Failure [GQLError] SchemaT
+instance
+  Failure err Eventless =>
+  Failure err SchemaT
+  where
+  failure = SchemaT . failure
 
-instance Applicative SchemaT
+instance Applicative SchemaT where
+  pure = SchemaT . pure . (,pure)
+  (SchemaT v1) <*> (SchemaT v2) =
+    SchemaT $ do
+      (f, u1) <- v1
+      (a, u2) <- v2
+      pure (f a, u1 >=> u2)
 
-instance Monad SchemaT
-
-injectUpdate :: (Schema CONST -> Eventless (Schema CONST)) -> SchemaT ()
-injectUpdate f = SchemaT f $ pure ()
+instance Monad SchemaT where
+  return = pure
+  (SchemaT v1) >>= f =
+    SchemaT $ do
+      (x, up1) <- v1
+      (y, up2) <- runSchemaT (f x)
+      pure (y, up1 >=> up2)
 
 closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
-closeWith SchemaT {typeUpdates, currentValue} = currentValue >>= typeUpdates
+closeWith (SchemaT v) = do
+  (schema, updater) <- v
+  updater schema
 
 concatSchemaT :: [SchemaT ()] -> SchemaT ()
 concatSchemaT = undefined
@@ -80,17 +100,19 @@ updateExperimental x = undefined
 updateSchema ::
   TypeName ->
   DataFingerprint ->
-  [SchemaT ()] ->
+  SchemaT () ->
   (a -> TypeDefinition cat CONST) ->
   a ->
   SchemaT ()
-updateSchema name fingerprint stack f x
-  | isNotSystemTypeName name = SchemaT upLib (pure ())
-  | otherwise = concatSchemaT stack
+updateSchema name fingerprint prev f x
+  | isNotSystemTypeName name = SchemaT (pure ((), upLib))
+  | otherwise = prev
   where
-    updates = map typeUpdates stack
+    upLib :: Schema CONST -> Eventless (Schema CONST)
     upLib lib = case isTypeDefined name lib of
-      Nothing -> execUpdates lib (safeDefineType (f x) : updates)
+      Nothing -> do
+        (_, updater) <- runSchemaT prev
+        execUpdates lib [safeDefineType (f x), updater]
       Just fingerprint'
         | fingerprint' == fingerprint -> pure lib
         -- throw error if 2 different types has same name
