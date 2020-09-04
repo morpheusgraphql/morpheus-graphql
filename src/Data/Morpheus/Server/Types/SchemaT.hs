@@ -11,7 +11,6 @@
 module Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     closeWith,
-    concatSchemaT,
     updateSchema,
     updateExperimental,
   )
@@ -85,9 +84,6 @@ closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
 closeWith (SchemaT v) = do
   (schema, updater) <- v
   updater schema
-
-concatSchemaT :: [SchemaT ()] -> SchemaT ()
-concatSchemaT = undefined
 
 execUpdates :: Monad m => a -> [a -> m a] -> m a
 execUpdates = foldM (&)

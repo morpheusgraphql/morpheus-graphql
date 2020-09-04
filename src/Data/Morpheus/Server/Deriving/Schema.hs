@@ -32,7 +32,7 @@ where
 -- MORPHEUS
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((>=>), (>>=), Monad)
+import Control.Monad ((>=>), (>>=), Monad, sequence_)
 import Control.Monad.Fail (fail)
 import Data.Foldable (concatMap, traverse_)
 import Data.Functor (($>), (<$>), Functor (..))
@@ -74,7 +74,6 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     closeWith,
-    concatSchemaT,
     updateExperimental,
     updateSchema,
   )
@@ -381,7 +380,7 @@ deriveFieldTypes ::
   KindedType kind a ->
   SchemaT ()
 deriveFieldTypes kinded =
-  concatSchemaT
+  sequence_
     $ repToValues
     $ genericTo
       (TypeConstraint (`deriveTypeWith` kinded) :: TypeConstraint (DeriveType kind) (SchemaT ()) Proxy)
