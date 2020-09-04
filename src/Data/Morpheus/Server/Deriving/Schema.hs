@@ -60,24 +60,23 @@ import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     FieldRep (..),
     ResRep (..),
-    SchemaT,
     TypeConstraint (..),
     TypeRep (..),
-    closeWith,
-    concatSchemaT,
     fieldTypeName,
-    formTypeUpdates,
-    fromUpdates,
     genericTo,
     isEmptyConstraint,
     isUnionRef,
     repToValues,
-    updateExperimental,
-    updateSchema,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    TypeUpdater,
+  )
+import Data.Morpheus.Server.Types.SchemaT
+  ( SchemaT,
+    closeWith,
+    concatSchemaT,
+    updateExperimental,
+    updateSchema,
   )
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
@@ -154,7 +153,6 @@ import Prelude
     null,
     otherwise,
     sequence,
-    unzip,
   )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
@@ -431,7 +429,7 @@ builder ::
   SchemaT (TypeContent TRUE kind CONST)
 builder scope [ConsRep {consFields}] = buildObject interfaces scope consFields
   where
-    interfaces = fromUpdates $ implements (Proxy @a)
+    interfaces = sequence $ implements (Proxy @a)
 builder scope cons = genericUnion scope cons
   where
     proxy = Proxy @a
@@ -442,9 +440,6 @@ builder scope cons = genericUnion scope cons
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
-
-instance UpdateDef a => UpdateDef (a, [TypeUpdater]) where
-  updateDef proxy (x, y) = (updateDef proxy x, y)
 
 instance UpdateDef (TypeContent TRUE c CONST) where
   updateDef proxy DataObject {objectFields = fields, ..} =

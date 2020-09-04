@@ -11,15 +11,14 @@
 
 module Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    TypeUpdater,
   )
 where
 
 -- MORPHEUS
-
+import Control.Applicative (Applicative (..))
 import Data.Map (Map)
-import Data.Morpheus.Internal.Utils (UpdateT)
 import Data.Morpheus.Kind
+import Data.Morpheus.Server.Types.SchemaT (SchemaT)
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
     Pair,
@@ -34,7 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldName,
     QUERY,
-    Schema,
     TypeName (..),
     TypeWrapper (..),
     Value,
@@ -42,8 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     toNullable,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Resolver,
+  ( Resolver,
     SubscriptionField,
   )
 import Data.Proxy (Proxy (..))
@@ -68,7 +65,6 @@ import Prelude
     (.),
     (<$>),
     Bool (..),
-    Either,
     Eq (..),
     Float,
     Int,
@@ -78,8 +74,6 @@ import Prelude
     mempty,
     show,
   )
-
-type TypeUpdater = UpdateT Eventless (Schema CONST)
 
 wrapList :: [TypeWrapper] -> [TypeWrapper]
 wrapList = (TypeList :)
@@ -140,7 +134,7 @@ class IsObject (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
 
-  implements :: f a -> [(TypeName, TypeUpdater)]
+  implements :: f a -> [SchemaT TypeName]
   implements _ = []
 
   isObjectKind :: f a -> Bool

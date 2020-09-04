@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.SchemaT
+module Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     closeWith,
     concatSchemaT,

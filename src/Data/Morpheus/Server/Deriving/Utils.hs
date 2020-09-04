@@ -32,13 +32,6 @@ module Data.Morpheus.Server.Deriving.Utils
     isUnionRef,
     fieldTypeName,
     repToValues,
-    SchemaT,
-    formTypeUpdates,
-    closeWith,
-    concatSchemaT,
-    updateSchema,
-    updateExperimental,
-    fromUpdates,
   )
 where
 
@@ -53,7 +46,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    TypeUpdater,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -129,73 +121,6 @@ selNameProxy _ = convertToJSONName $ FieldName $ pack $ selName (undefined :: M1
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
-
--- Helper Functions
-data SchemaT (a :: *) = SchemaT
-  { typeUpdates :: Schema CONST -> Eventless (Schema CONST),
-    currentValue :: Eventless a
-  }
-
-instance Failure GQLErrors SchemaT
-
-instance Functor SchemaT
-
-instance Applicative SchemaT
-
-instance Monad SchemaT
-
-injectUpdate :: (Schema CONST -> Eventless (Schema CONST)) -> SchemaT ()
-injectUpdate f = SchemaT f $ pure ()
-
-closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
-closeWith SchemaT {typeUpdates, currentValue} = currentValue >>= typeUpdates
-
-fromUpdates :: [(a, TypeUpdater)] -> SchemaT [a]
-fromUpdates = undefined
-
-formTypeUpdates :: [TypeUpdater] -> SchemaT ()
-formTypeUpdates = undefined
-
-concatSchemaT :: [SchemaT ()] -> SchemaT ()
-concatSchemaT = undefined
-
-execUpdates :: Monad m => a -> [a -> m a] -> m a
-execUpdates = foldM (&)
-
-updateExperimental ::
-  SchemaT (TypeDefinition cat CONST) ->
-  SchemaT ()
-updateExperimental x = undefined
-
---updateSchema (__typeName proxy) (__typeFingerprint proxy) [] x proxy
-
-updateSchema ::
-  TypeName ->
-  DataFingerprint ->
-  [SchemaT ()] ->
-  (a -> TypeDefinition cat CONST) ->
-  a ->
-  SchemaT ()
-updateSchema name fingerprint stack f x
-  | isNotSystemTypeName name = SchemaT upLib (pure ())
-  | otherwise = concatSchemaT stack
-  where
-    updates = map typeUpdates stack
-    upLib lib = case isTypeDefined name lib of
-      Nothing -> execUpdates lib (safeDefineType (f x) : updates)
-      Just fingerprint'
-        | fingerprint' == fingerprint -> pure lib
-        -- throw error if 2 different types has same name
-        | otherwise -> failure (["bla"] :: ValidationErrors)
-
--- failUpdates :: (Failure e m) => e -> UpdateT m a
--- failUpdates = UpdateT . const . failure
-
--- concatUpdates :: Monad m => [UpdateT m a] -> UpdateT m a
--- concatUpdates x = UpdateT (`resolveUpdates` x)
-
--- resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
--- resolveUpdates a = foldM (&) a . fmap updateTState
 
 newtype TypeConstraint (c :: * -> Constraint) (v :: *) (f :: * -> *) = TypeConstraint
   { typeConstraint :: forall a. c a => f a -> v
