@@ -69,15 +69,15 @@ instance Applicative SchemaT where
     SchemaT $ do
       (f, u1) <- v1
       (a, u2) <- v2
-      pure (f a, [])
+      pure (f a, u1 <> u2)
 
--- instance Monad SchemaT where
---   return = pure
---   (SchemaT v1) >>= f =
---     SchemaT $ do
---       (x, up1) <- v1
---       (y, up2) <- runSchemaT (f x)
---       pure (y, [])
+instance Monad SchemaT where
+  return = pure
+  (SchemaT v1) >>= f =
+    SchemaT $ do
+      (x, up1) <- v1
+      (y, up2) <- runSchemaT (f x)
+      pure (y, up1 <> up2)
 
 closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
 closeWith (SchemaT v) = v >>= uncurry execUpdates
@@ -98,7 +98,7 @@ updateExperimental (SchemaT v) = SchemaT $ run <$> v
         [Schema CONST -> Eventless (Schema CONST)]
       )
     run (td@TypeDefinition {typeName, typeFingerprint}, updater)
-      | isNotSystemTypeName typeName = ((), [])
+      | isNotSystemTypeName typeName = ((), [upLib])
       | otherwise = ((), [])
       where
         upLib :: Schema CONST -> Eventless (Schema CONST)
