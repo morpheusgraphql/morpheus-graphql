@@ -13,14 +13,14 @@ module Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     closeWith,
     updateSchema,
-    updateExperimental,
+    insertType,
   )
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((>=>), Monad (..), foldM)
+import Control.Monad (Monad (..), foldM)
 import Data.Function ((&))
-import Data.Functor (($>), (<$>), Functor (..))
+import Data.Functor ((<$>), Functor (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -44,6 +44,7 @@ import Prelude
     (.),
     Eq (..),
     Maybe (..),
+    const,
     otherwise,
     uncurry,
   )
@@ -86,35 +87,28 @@ closeWith (SchemaT v) = v >>= uncurry execUpdates
 execUpdates :: Monad m => a -> [a -> m a] -> m a
 execUpdates = foldM (&)
 
-updateExperimental ::
-  SchemaT (TypeDefinition cat CONST) ->
-  SchemaT ()
-updateExperimental (SchemaT v) = SchemaT $ run <$> v
-  where
-    run (x, y) = ((), runSchema x y)
-
-runSchema ::
+insertType ::
   TypeDefinition cat CONST ->
-  [Schema CONST -> Eventless (Schema CONST)] ->
-  [Schema CONST -> Eventless (Schema CONST)]
-runSchema td@TypeDefinition {typeName, typeFingerprint} updater
-  | isNotSystemTypeName typeName = [upLib]
-  | otherwise = []
-  where
-    upLib :: Schema CONST -> Eventless (Schema CONST)
-    upLib lib = case isTypeDefined typeName lib of
-      Nothing -> execUpdates lib (safeDefineType td : updater)
-      Just fingerprint'
-        | fingerprint' == typeFingerprint -> pure lib
-        -- throw error if 2 different types has same name
-        | otherwise -> failure (["bla"] :: ValidationErrors)
+  SchemaT ()
+insertType dt@TypeDefinition {typeName, typeFingerprint} =
+  updateSchema typeName typeFingerprint (const $ pure dt) ()
 
 updateSchema ::
   TypeName ->
   DataFingerprint ->
-  SchemaT () ->
-  (a -> TypeDefinition cat CONST) ->
+  (a -> SchemaT (TypeDefinition cat CONST)) ->
   a ->
   SchemaT ()
-updateSchema _ _ prev f x =
-  updateExperimental $ prev $> f x
+updateSchema typeName typeFingerprint f x
+  | isNotSystemTypeName typeName = SchemaT (pure ((), [upLib]))
+  | otherwise = SchemaT (pure ((), []))
+  where
+    upLib :: Schema CONST -> Eventless (Schema CONST)
+    upLib lib = case isTypeDefined typeName lib of
+      Nothing -> do
+        (tyDef, updater) <- runSchemaT (f x)
+        execUpdates lib (safeDefineType tyDef : updater)
+      Just fingerprint'
+        | fingerprint' == typeFingerprint -> pure lib
+        -- throw error if 2 different types has same name
+        | otherwise -> failure (["bla"] :: ValidationErrors)
