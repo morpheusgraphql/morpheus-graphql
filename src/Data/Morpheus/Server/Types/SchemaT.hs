@@ -69,15 +69,15 @@ instance Applicative SchemaT where
     SchemaT $ do
       (f, u1) <- v1
       (a, u2) <- v2
-      pure (f a, u1 <> u2)
+      pure (f a, [])
 
-instance Monad SchemaT where
-  return = pure
-  (SchemaT v1) >>= f =
-    SchemaT $ do
-      (x, up1) <- v1
-      (y, up2) <- runSchemaT (f x)
-      pure (y, up1 <> up2)
+-- instance Monad SchemaT where
+--   return = pure
+--   (SchemaT v1) >>= f =
+--     SchemaT $ do
+--       (x, up1) <- v1
+--       (y, up2) <- runSchemaT (f x)
+--       pure (y, [])
 
 closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
 closeWith (SchemaT v) = v >>= uncurry execUpdates

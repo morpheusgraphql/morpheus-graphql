@@ -218,13 +218,16 @@ deriveSchema _ = case querySchema >>= mutationSchema >>= subscriptionSchema of
         initTypeLib
           <$> deriveObjectType (Proxy @(query (Resolver QUERY e m)))
     ------------------------------
-    mutationSchema lib = closeWith $ do
-      mutation <- deriveObjectType $ Proxy @(mut (Resolver MUTATION e m))
-      pure $ lib {mutation = optionalType mutation}
+    mutationSchema schema =
+      closeWith $
+        (\mut -> schema {mutation = optionalType mut})
+          <$> deriveObjectType
+            (Proxy @(mut (Resolver MUTATION e m)))
     ------------------------------
-    subscriptionSchema lib = closeWith $ do
-      subscription <- deriveObjectType $ Proxy @(subs (Resolver SUBSCRIPTION e m))
-      pure (lib {subscription = optionalType subscription})
+    subscriptionSchema lib =
+      closeWith $
+        (\sub -> lib {subscription = optionalType sub})
+          <$> deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m)))
 
 instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
@@ -268,9 +271,9 @@ instance
   DeriveType OUT (a -> m b)
   where
   deriveContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
-  deriveType _ = do
-    deriveType $ outputType $ Proxy @b
-    deriveFieldTypes $ inputType $ Proxy @a
+  deriveType _ =
+    deriveType (outputType $ Proxy @b)
+      *> deriveFieldTypes (inputType $ Proxy @a)
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
   deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
@@ -309,9 +312,9 @@ type DeriveTypeConstraint kind a =
 instance DeriveTypeConstraint OUT a => DeriveKindedType INTERFACE a where
   deriveKindedType _ = updateExperimental (interface $ Proxy @a)
     where
-      interface proxy = do
-        deriveFieldTypes $ outputType proxy
-        (`buildType` proxy) <$> deriveInterfaceContent proxy
+      interface proxy =
+        deriveFieldTypes (outputType proxy)
+          *> ((`buildType` proxy) <$> deriveInterfaceContent proxy)
 
 deriveInterfaceContent :: DeriveTypeConstraint OUT a => f (a :: *) -> SchemaT (TypeContent TRUE OUT CONST)
 deriveInterfaceContent x = fmap DataInterface (deriveObjectFields x)
@@ -321,9 +324,10 @@ derivingData ::
   DeriveTypeConstraint kind a =>
   KindedType kind a ->
   SchemaT ()
-derivingData kindedType = updateExperimental $ do
-  deriveFieldTypes kindedType
-  (`buildType` Proxy @a) <$> deriveTypeContent kindedType
+derivingData kindedType =
+  updateExperimental $
+    deriveFieldTypes kindedType
+      *> ((`buildType` Proxy @a) <$> deriveTypeContent kindedType)
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
@@ -357,10 +361,9 @@ deriveObjectType ::
   DeriveTypeConstraint OUT a =>
   proxy a ->
   SchemaT (TypeDefinition OBJECT CONST)
-deriveObjectType proxy = do
-  value <- (`mkObjectType` __typeName proxy) <$> deriveObjectFields proxy
+deriveObjectType proxy =
   deriveFieldTypes (outputType proxy)
-  pure value
+    *> ((`mkObjectType` __typeName proxy) <$> deriveObjectFields proxy)
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
@@ -508,8 +511,7 @@ updateLib ::
   SchemaT () ->
   f a ->
   SchemaT ()
-updateLib f stack proxy = do
-  _ <- stack
+updateLib f stack proxy =
   updateSchema (__typeName proxy) (__typeFingerprint proxy) stack f proxy
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))
