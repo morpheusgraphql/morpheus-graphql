@@ -271,9 +271,7 @@ instance
   DeriveType OUT (a -> m b)
   where
   deriveContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
-  deriveType _ =
-    deriveType (outputType $ Proxy @b)
-      *> deriveFieldTypes (inputType $ Proxy @a)
+  deriveType _ = deriveType (outputType $ Proxy @b)
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
   deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
@@ -312,9 +310,7 @@ type DeriveTypeConstraint kind a =
 instance DeriveTypeConstraint OUT a => DeriveKindedType INTERFACE a where
   deriveKindedType _ = updateExperimental (interface $ Proxy @a)
     where
-      interface proxy =
-        deriveFieldTypes (outputType proxy)
-          *> ((`buildType` proxy) <$> deriveInterfaceContent proxy)
+      interface proxy = (`buildType` proxy) <$> deriveInterfaceContent proxy
 
 deriveInterfaceContent :: DeriveTypeConstraint OUT a => f (a :: *) -> SchemaT (TypeContent TRUE OUT CONST)
 deriveInterfaceContent x = fmap DataInterface (deriveObjectFields x)
@@ -325,9 +321,7 @@ derivingData ::
   KindedType kind a ->
   SchemaT ()
 derivingData kindedType =
-  updateExperimental $
-    deriveFieldTypes kindedType
-      *> ((`buildType` Proxy @a) <$> deriveTypeContent kindedType)
+  updateExperimental $ (`buildType` Proxy @a) <$> deriveTypeContent kindedType
 
 type GQL_TYPE a = (Generic a, GQLType a)
 
@@ -361,9 +355,7 @@ deriveObjectType ::
   DeriveTypeConstraint OUT a =>
   proxy a ->
   SchemaT (TypeDefinition OBJECT CONST)
-deriveObjectType proxy =
-  deriveFieldTypes (outputType proxy)
-    *> ((`mkObjectType` __typeName proxy) <$> deriveObjectFields proxy)
+deriveObjectType proxy = (`mkObjectType` __typeName proxy) <$> deriveObjectFields proxy
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
@@ -396,15 +388,16 @@ type TyContent kind = Maybe (FieldContent TRUE kind CONST)
 -- Object Fields
 deriveTypeContent ::
   forall kind a.
-  (TypeRep (DeriveType kind) (TyContentM kind) (Rep a), Generic a, GQLType a) =>
+  DeriveTypeConstraint kind a =>
   KindedType kind a ->
   SchemaT (TypeContent TRUE kind CONST)
 deriveTypeContent scope =
-  unpackMs
-    ( genericTo
-        (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType kind) (TyContentM kind) Proxy)
-        proxy
-    )
+  deriveFieldTypes scope
+    *> unpackMs
+      ( genericTo
+          (TypeConstraint deriveFieldValue :: TypeConstraint (DeriveType kind) (TyContentM kind) Proxy)
+          proxy
+      )
     >>= fmap (updateDef proxy) . builder scope
   where
     proxy = Proxy @a

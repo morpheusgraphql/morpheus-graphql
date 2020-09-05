@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -90,24 +91,23 @@ updateExperimental ::
   SchemaT ()
 updateExperimental (SchemaT v) = SchemaT $ run <$> v
   where
-    run ::
-      ( TypeDefinition cat CONST,
-        [Schema CONST -> Eventless (Schema CONST)]
-      ) ->
-      ( (),
-        [Schema CONST -> Eventless (Schema CONST)]
-      )
-    run (td@TypeDefinition {typeName, typeFingerprint}, updater)
-      | isNotSystemTypeName typeName = ((), [upLib])
-      | otherwise = ((), [])
-      where
-        upLib :: Schema CONST -> Eventless (Schema CONST)
-        upLib lib = case isTypeDefined typeName lib of
-          Nothing -> execUpdates lib (safeDefineType td : updater)
-          Just fingerprint'
-            | fingerprint' == typeFingerprint -> pure lib
-            -- throw error if 2 different types has same name
-            | otherwise -> failure (["bla"] :: ValidationErrors)
+    run (x, y) = ((), runSchema x y)
+
+runSchema ::
+  TypeDefinition cat CONST ->
+  [Schema CONST -> Eventless (Schema CONST)] ->
+  [Schema CONST -> Eventless (Schema CONST)]
+runSchema td@TypeDefinition {typeName, typeFingerprint} updater
+  | isNotSystemTypeName typeName = [upLib]
+  | otherwise = []
+  where
+    upLib :: Schema CONST -> Eventless (Schema CONST)
+    upLib lib = case isTypeDefined typeName lib of
+      Nothing -> execUpdates lib (safeDefineType td : updater)
+      Just fingerprint'
+        | fingerprint' == typeFingerprint -> pure lib
+        -- throw error if 2 different types has same name
+        | otherwise -> failure (["bla"] :: ValidationErrors)
 
 updateSchema ::
   TypeName ->
