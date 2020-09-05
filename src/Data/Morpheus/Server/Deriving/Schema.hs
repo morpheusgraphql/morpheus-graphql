@@ -47,14 +47,13 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
     TyContentM,
     UpdateDef (..),
     asObjectType,
-    buildType,
     builder,
     fromSchema,
     inputType,
     outputType,
     setProxyType,
     unpackMs,
-    updateLib,
+    updateByContent,
     withObject,
   )
 import Data.Morpheus.Server.Deriving.Utils
@@ -112,6 +111,7 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
+    const,
   )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
@@ -209,10 +209,10 @@ class DeriveKindedType (kind :: GQL_KIND) a where
 
 -- SCALAR
 instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
-  deriveKindedType _ = updateLib scalarType (Proxy @a)
+  deriveKindedType _ = updateByContent scalarType (Proxy @a)
     where
-      scalarType :: Proxy a -> SchemaT (TypeDefinition LEAF CONST)
-      scalarType p = pure $ buildType p (DataScalar $ scalarValidator p)
+      scalarType :: Proxy a -> SchemaT (TypeContent TRUE LEAF CONST)
+      scalarType = pure . DataScalar . scalarValidator
 
 -- ENUM
 instance DeriveTypeConstraint IN a => DeriveKindedType ENUM a where
@@ -232,10 +232,10 @@ type DeriveTypeConstraint kind a =
   )
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType INTERFACE a where
-  deriveKindedType _ = updateLib deriveInterfaceType (Proxy @a)
+  deriveKindedType _ = updateByContent deriveInterface (Proxy @a)
 
-deriveInterfaceType :: DeriveTypeConstraint OUT a => f (a :: *) -> SchemaT (TypeDefinition OUT CONST)
-deriveInterfaceType proxy = buildType proxy . DataInterface <$> deriveObjectFields proxy
+deriveInterface :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeContent TRUE OUT CONST)
+deriveInterface = fmap DataInterface . deriveObjectFields
 
 derivingData ::
   forall kind a.
@@ -243,9 +243,9 @@ derivingData ::
   KindedType kind a ->
   SchemaT ()
 derivingData kindedType =
-  updateLib deriveD (Proxy @a)
-  where
-    deriveD proxy = buildType proxy <$> deriveTypeContent kindedType
+  updateByContent
+    (const $ deriveTypeContent kindedType)
+    (Proxy @a)
 
 deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> SchemaT (ArgumentsDefinition CONST)
 deriveArgumentDefinition = fmap fieldsToArguments . deriveFields . inputType
