@@ -15,7 +15,6 @@ module Data.Morpheus.Server.Types.GQLType
 where
 
 -- MORPHEUS
-import Control.Applicative (Applicative (..))
 import Data.Map (Map)
 import Data.Morpheus.Kind
 import Data.Morpheus.Server.Types.SchemaT (SchemaT)

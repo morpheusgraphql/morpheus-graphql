@@ -36,37 +36,19 @@ module Data.Morpheus.Server.Deriving.Utils
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..), foldM)
-import Data.Function ((&))
 import Data.Functor (Functor (..))
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    Namespace (..),
+  ( Namespace (..),
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    DataFingerprint,
-    FieldName (..),
-    GQLErrors,
-    Message,
-    Message,
-    Schema,
-    TypeDefinition,
+  ( FieldName (..),
     TypeName (..),
     TypeRef (..),
-    ValidationErrors,
     convertToJSONName,
-    isNotSystemTypeName,
-    isTypeDefined,
-    safeDefineType,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
@@ -98,7 +80,6 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
-    Either (..),
     Eq (..),
     Int,
     Maybe (..),
