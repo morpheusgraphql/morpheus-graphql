@@ -32,7 +32,7 @@ where
 -- MORPHEUS
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((>=>), (>>=), Monad, sequence_)
+import Control.Monad ((>=>), (>>=), sequence_)
 import Control.Monad.Fail (fail)
 import Data.Foldable (concatMap, traverse_)
 import Data.Functor (($>), (<$>), Functor (..))
