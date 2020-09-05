@@ -36,12 +36,10 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     createScalarType,
     mkInputUnionFields,
     initTypeLib,
-    insertType,
     kindOf,
     isEntNode,
     lookupWith,
     __inputname,
-    updateSchema,
     UnionMember (..),
     mkUnionMember,
     RawTypeDefinition (..),
@@ -53,6 +51,8 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     typed,
     possibleTypes,
     possibleInterfaceTypes,
+    isTypeDefined,
+    safeDefineType,
   )
 where
 
@@ -68,7 +68,6 @@ import Data.Maybe (Maybe (..), catMaybes, mapMaybe, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
-import Data.Morpheus.Error.Schema (nameCollisionError)
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Collection (..),
@@ -77,10 +76,7 @@ import Data.Morpheus.Internal.Utils
     Listable (..),
     Merge (..),
     Selectable (..),
-    UpdateT (..),
-    concatUpdates,
     elems,
-    resolveUpdates,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -159,7 +155,6 @@ import Prelude
     Bool (..),
     Eq (..),
     Show (..),
-    const,
     flip,
     otherwise,
   )
@@ -655,32 +650,6 @@ safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKey
 safeDefineType datatype lib = do
   types <- insert (toAny datatype) (types lib)
   pure lib {types}
-
-insertType ::
-  (Monad m, Failure ValidationErrors m) =>
-  TypeDefinition cat s ->
-  UpdateT m (Schema s)
-insertType datatype@TypeDefinition {typeName, typeFingerprint} =
-  updateSchema typeName typeFingerprint [] (const datatype) ()
-
-updateSchema ::
-  (Monad m, Failure ValidationErrors m) =>
-  TypeName ->
-  DataFingerprint ->
-  [UpdateT m (Schema s)] ->
-  (a -> TypeDefinition cat s) ->
-  a ->
-  UpdateT m (Schema s)
-updateSchema name fingerprint stack f x
-  | isNotSystemTypeName name = UpdateT $ \lib ->
-    case isTypeDefined name lib of
-      Nothing -> do
-        t <- safeDefineType (f x) lib
-        resolveUpdates t stack
-      Just fingerprint' | fingerprint' == fingerprint -> pure lib
-      -- throw error if 2 different types has same name
-      Just _ -> failure [nameCollisionError name]
-  | otherwise = concatUpdates stack
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)

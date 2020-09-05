@@ -1,14 +1,11 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -20,21 +17,25 @@ where
 
 import Control.Applicative (pure)
 import Control.Monad ((>>=))
+import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
-    stripNamespace,
   )
 import Data.Morpheus.Server.Deriving.Decode
-  ( DecodeType,
+  ( DecodeConstraint,
     decodeArguments,
   )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType
-      ( getNamespace
-      ),
+import Data.Morpheus.Server.Deriving.Utils
+  ( ConsRep (..),
+    DataType (..),
+    FieldRep (..),
+    TypeConstraint (..),
+    TypeRep (..),
+    toValue,
   )
+import Data.Morpheus.Server.Types.GQLType (GQLType)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     InternalError,
@@ -49,44 +50,23 @@ import Data.Morpheus.Types.Internal.Resolving
     ResolverState,
     SubscriptionField (..),
   )
-import Data.Proxy (Proxy (..))
-import Data.Semigroup ((<>))
-import Data.Text
-  ( pack,
-  )
 import GHC.Generics
 import Prelude
-  ( ($),
-    (.),
+  ( (.),
     const,
     lookup,
     map,
   )
 
 type ChannelsConstraint e m (subs :: (* -> *) -> *) =
-  ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
-    Generic (subs (Resolver SUBSCRIPTION e m))
-  )
+  ExploreConstraint e (subs (Resolver SUBSCRIPTION e m))
 
 getChannels ::
-  forall e m subs.
-  ( ChannelsConstraint e m subs,
-    GQLType (subs (Resolver SUBSCRIPTION e m))
-  ) =>
+  ChannelsConstraint e m subs =>
   subs (Resolver SUBSCRIPTION e m) ->
   Selection VALID ->
   ResolverState (Channel e)
-getChannels value sel =
-  selectBy sel
-    $ map stripChannel
-    $ exploreChannels (Proxy @e) value
-  where
-    stripChannel (x, y) =
-      ( stripNamespace
-          (getNamespace (Proxy @(subs (Resolver SUBSCRIPTION e m))))
-          x,
-        y
-      )
+getChannels value sel = selectBy sel (exploreChannels value)
 
 selectBy ::
   Failure InternalError m =>
@@ -111,43 +91,31 @@ instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel SubscriptionField {channel} = const (pure channel)
 
 instance
-  (Generic arg, DecodeType arg) =>
+  DecodeConstraint arg =>
   GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a))
   where
   getChannel f sel@Selection {selectionArguments} =
     decodeArguments selectionArguments >>= (`getChannel` sel) . f
 
 ------------------------------------------------------
-class ExploreChannels a e where
-  exploreChannels :: Proxy e -> a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
 
-instance
-  ( TypeRep e (Rep (subs (Resolver SUBSCRIPTION e m))),
-    Generic (subs (Resolver SUBSCRIPTION e m))
-  ) =>
-  ExploreChannels (subs (Resolver SUBSCRIPTION e m)) e
+type ChannelRes e = Selection VALID -> ResolverState (Channel e)
+
+type ExploreConstraint e a =
+  ( GQLType a,
+    Generic a,
+    TypeRep (GetChannel e) (Selection VALID -> ResolverState (Channel e)) (Rep a)
+  )
+
+exploreChannels :: forall e a. ExploreConstraint e a => a -> [(FieldName, ChannelRes e)]
+exploreChannels =
+  convertNode
+    . toValue
+      ( TypeConstraint (getChannel . runIdentity) ::
+          TypeConstraint (GetChannel e) (Selection VALID -> ResolverState (Channel e)) Identity
+      )
+
+convertNode :: DataType (ChannelRes e) -> [(FieldName, ChannelRes e)]
+convertNode DataType {tyCons = ConsRep {consFields}} = map toChannels consFields
   where
-  exploreChannels _ = typeRep (Proxy @e) . from
-
-------------------------------------------------------
-class TypeRep e f where
-  typeRep :: Proxy e -> f a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
-
-instance TypeRep e f => TypeRep e (M1 D d f) where
-  typeRep c (M1 src) = typeRep c src
-
-instance FieldRep e f => TypeRep e (M1 C c f) where
-  typeRep c (M1 src) = fieldRep c src
-
---- FIELDS
-class FieldRep e f where
-  fieldRep :: Proxy e -> f a -> [(FieldName, Selection VALID -> ResolverState (Channel e))]
-
-instance (FieldRep e f, FieldRep e g) => FieldRep e (f :*: g) where
-  fieldRep e (a :*: b) = fieldRep e a <> fieldRep e b
-
-instance (Selector s, GetChannel e a) => FieldRep e (M1 S s (K1 s2 a)) where
-  fieldRep _ m@(M1 (K1 src)) = [(FieldName $ pack (selName m), getChannel src)]
-
-instance FieldRep e U1 where
-  fieldRep _ _ = []
+    toChannels FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
