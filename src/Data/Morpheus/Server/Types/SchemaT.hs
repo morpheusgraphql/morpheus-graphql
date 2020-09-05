@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
@@ -12,6 +13,8 @@ module Data.Morpheus.Server.Types.SchemaT
     closeWith,
     updateSchema,
     insertType,
+    setMutation,
+    setSubscription,
   )
 where
 
@@ -26,7 +29,9 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataFingerprint,
-    Schema,
+    OBJECT,
+    Schema (..),
+    TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
     isNotSystemTypeName,
@@ -43,6 +48,7 @@ import Prelude
     Eq (..),
     Maybe (..),
     const,
+    null,
     otherwise,
     uncurry,
   )
@@ -81,6 +87,20 @@ instance Monad SchemaT where
 
 closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
 closeWith (SchemaT v) = v >>= uncurry execUpdates
+
+init :: (Schema CONST -> Eventless (Schema CONST)) -> SchemaT ()
+init f = SchemaT $ pure ((), [f])
+
+setMutation :: TypeDefinition OBJECT CONST -> SchemaT ()
+setMutation mut = init (\schema -> pure $ schema {mutation = optionalType mut})
+
+setSubscription :: TypeDefinition OBJECT CONST -> SchemaT ()
+setSubscription x = init (\schema -> pure $ schema {subscription = optionalType x})
+
+optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
+optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
+  | null objectFields = Nothing
+  | otherwise = Just td
 
 execUpdates :: Monad m => a -> [a -> m a] -> m a
 execUpdates = foldM (&)
