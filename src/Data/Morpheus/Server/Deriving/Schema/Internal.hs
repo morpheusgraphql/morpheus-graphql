@@ -29,24 +29,23 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     setProxyType,
     unpackMs,
     updateLib,
-    mkObjectType,
     UpdateDef (..),
     withObject,
+    TyContentM,
+    asObjectType,
+    fromSchema,
   )
 where
 
 -- MORPHEUS
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((>=>), (>>=), sequence_)
 import Control.Monad.Fail (fail)
 import Data.Foldable (concatMap, traverse_)
 import Data.Functor (($>), (<$>), Functor (..))
 import Data.List (partition)
 import qualified Data.Map as M
-import Data.Map (Map)
 import Data.Maybe (Maybe (..), fromMaybe)
-import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -54,43 +53,24 @@ import Data.Morpheus.Internal.Utils
     empty,
     singleton,
   )
-import Data.Morpheus.Kind
-  ( ENUM,
-    GQL_KIND,
-    INPUT,
-    INTERFACE,
-    OUTPUT,
-    SCALAR,
-  )
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     FieldRep (..),
     ResRep (..),
-    TypeConstraint (..),
-    TypeRep (..),
     fieldTypeName,
-    genericTo,
     isEmptyConstraint,
     isUnionRef,
-    repToValues,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
-    closeWith,
     insertType,
     updateSchema,
   )
-import Data.Morpheus.Server.Types.Types
-  ( MapKind,
-    Pair,
-  )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition,
-    CONST,
-    CONST,
+  ( CONST,
     DataEnumValue (..),
     DataFingerprint (..),
     DataUnion,
@@ -102,14 +82,10 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     FieldName (..),
     FieldsDefinition,
-    GQLErrors,
     IN,
     LEAF,
-    MUTATION,
     OBJECT,
     OUT,
-    QUERY,
-    SUBSCRIPTION,
     Schema (..),
     TRUE,
     Token,
@@ -119,8 +95,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     UnionMember (..),
     VALID,
-    fieldsToArguments,
-    initTypeLib,
     mkEnumContent,
     mkField,
     mkInputValue,
@@ -131,15 +105,11 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    Resolver,
     Result (..),
-    SubscriptionField (..),
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
-import Data.Set (Set)
 import Data.Traversable (traverse)
-import GHC.Generics (Generic, Rep)
 import Language.Haskell.TH (Exp, Q)
 import Prelude
   ( ($),
@@ -177,19 +147,17 @@ fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-deriveArgumentDefinition f = fmap fieldsToArguments . f . inputType
-
 withObject :: (GQLType a) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
 withObject InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject OutputType DataObject {objectFields} = pure objectFields
 withObject x _ = failureOnlyObject x
 
-deriveObjectType ::
-  (Functor f1, GQLType a) =>
-  (f2 a -> f1 (FieldsDefinition OUT CONST)) ->
+asObjectType ::
+  GQLType a =>
+  (f2 a -> SchemaT (FieldsDefinition OUT CONST)) ->
   f2 a ->
-  f1 (TypeDefinition OBJECT CONST)
-deriveObjectType f proxy = (`mkObjectType` __typeName proxy) <$> f proxy
+  SchemaT (TypeDefinition OBJECT CONST)
+asObjectType f proxy = (`mkObjectType` __typeName proxy) <$> f proxy
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)

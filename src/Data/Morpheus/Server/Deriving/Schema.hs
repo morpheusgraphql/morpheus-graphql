@@ -1,18 +1,12 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -33,7 +27,6 @@ where
 
 import Control.Applicative (Applicative (..))
 import Control.Monad ((>=>), (>>=), sequence_)
-import Control.Monad.Fail (fail)
 import Data.Functor ((<$>), Functor (..))
 import Data.Map (Map)
 import Data.Maybe (Maybe (..))
@@ -52,11 +45,13 @@ import Data.Morpheus.Kind
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedProxy (..),
     KindedType (..),
+    TyContentM,
     UpdateDef (..),
+    asObjectType,
     buildType,
     builder,
+    fromSchema,
     inputType,
-    mkObjectType,
     outputType,
     setProxyType,
     unpackMs,
@@ -102,15 +97,13 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
-    VALID,
     fieldsToArguments,
     initTypeLib,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Resolver,
-    Result (..),
+  ( Resolver,
     SubscriptionField (..),
+    resultOr,
   )
 import Data.Proxy (Proxy (..))
 import Data.Set (Set)
@@ -120,7 +113,6 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
-    Show (..),
   )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
@@ -139,10 +131,6 @@ compileTimeSchemaValidation =
   fromSchema
     . (deriveSchema >=> validateSchema True defaultConfig)
 
-fromSchema :: Eventless (Schema VALID) -> Q Exp
-fromSchema Success {} = [|()|]
-fromSchema Failure {errors} = fail (show errors)
-
 deriveSchema ::
   forall
     root
@@ -158,17 +146,12 @@ deriveSchema ::
   ) =>
   proxy (root m e query mut subs) ->
   f (Schema CONST)
-deriveSchema _ = case schema of
-  Success {result} -> pure result
-  Failure {errors} -> failure errors
+deriveSchema _ = resultOr failure pure schema
   where
-    schema = closeWith (initTypeLib <$> query <* mutation <* subscription)
-    query = deriveObjectType (Proxy @(query (Resolver QUERY e m)))
-    mutation = deriveObjectType (Proxy @(mut (Resolver MUTATION e m))) >>= setMutation
-    ------------------------------
-    subscription =
-      deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m)))
-        >>= setSubscription
+    schema = closeWith (initTypeLib <$> queryDef <* mutationDef <* subscriptionDef)
+    queryDef = deriveObjectType (Proxy @(query (Resolver QUERY e m)))
+    mutationDef = deriveObjectType (Proxy @(mut (Resolver MUTATION e m))) >>= setMutation
+    subscriptionDef = deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m))) >>= setSubscription
 
 instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
@@ -243,7 +226,8 @@ instance DeriveTypeConstraint OUT a => DeriveKindedType OUTPUT a where
   deriveKindedType _ = derivingData $ outputType (Proxy @a)
 
 type DeriveTypeConstraint kind a =
-  ( GQL_TYPE a,
+  ( Generic a,
+    GQLType a,
     TypeRep (DeriveType kind) (TyContentM kind) (Rep a),
     TypeRep (DeriveType kind) (SchemaT ()) (Rep a)
   )
@@ -260,11 +244,9 @@ derivingData ::
   KindedType kind a ->
   SchemaT ()
 derivingData kindedType =
-  updateLib bla (Proxy @a)
+  updateLib deriveD (Proxy @a)
   where
-    bla proxy = buildType proxy <$> deriveTypeContent kindedType
-
-type GQL_TYPE a = (Generic a, GQLType a)
+    deriveD proxy = buildType proxy <$> deriveTypeContent kindedType
 
 deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> SchemaT (ArgumentsDefinition CONST)
 deriveArgumentDefinition = fmap fieldsToArguments . deriveFields . inputType
@@ -284,9 +266,9 @@ deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
 
 deriveObjectType ::
   DeriveTypeConstraint OUT a =>
-  proxy a ->
+  f a ->
   SchemaT (TypeDefinition OBJECT CONST)
-deriveObjectType proxy = (`mkObjectType` __typeName proxy) <$> deriveObjectFields proxy
+deriveObjectType = asObjectType deriveObjectFields
 
 deriveFieldValue :: forall f kind a. (DeriveType kind a) => f a -> SchemaT (Maybe (FieldContent TRUE kind CONST))
 deriveFieldValue _ = deriveContent (KindedProxy :: KindedProxy k a)
@@ -302,8 +284,6 @@ deriveFieldTypes kinded =
     $ genericTo
       (TypeConstraint (`deriveTypeWith` kinded) :: TypeConstraint (DeriveType kind) (SchemaT ()) Proxy)
       (Proxy @a)
-
-type TyContentM kind = (SchemaT (Maybe (FieldContent TRUE kind CONST)))
 
 -- Object Fields
 deriveTypeContent ::
