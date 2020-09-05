@@ -210,9 +210,9 @@ class DeriveKindedType (kind :: GQL_KIND) a where
 -- SCALAR
 instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
   deriveKindedType _ = updateByContent scalarType (Proxy @a)
-    where
-      scalarType :: Proxy a -> SchemaT (TypeContent TRUE LEAF CONST)
-      scalarType = pure . DataScalar . scalarValidator
+
+scalarType :: (GQLScalar a) => Proxy a -> SchemaT (TypeContent TRUE LEAF CONST)
+scalarType = pure . DataScalar . scalarValidator
 
 -- ENUM
 instance DeriveTypeConstraint IN a => DeriveKindedType ENUM a where
