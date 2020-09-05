@@ -46,10 +46,10 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Language.Haskell.TH
 
-defineByDocumentFile :: String -> (GQLQuery, String) -> Q [Dec]
+defineByDocumentFile :: FilePath -> (GQLQuery, String) -> Q [Dec]
 defineByDocumentFile = defineByDocument . L.readFile
 
-defineByIntrospectionFile :: String -> (GQLQuery, String) -> Q [Dec]
+defineByIntrospectionFile :: FilePath -> (GQLQuery, String) -> Q [Dec]
 defineByIntrospectionFile = defineByIntrospection . L.readFile
 
 defineByDocument :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
