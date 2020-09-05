@@ -3,8 +3,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -20,7 +18,8 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..), foldM)
 import Data.Function ((&))
-import Data.Functor ((<$>), Functor (..))
+import Data.Functor (Functor (..))
+import Data.Morpheus.Error (nameCollisionError)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -30,7 +29,6 @@ import Data.Morpheus.Types.Internal.AST
     Schema,
     TypeDefinition (..),
     TypeName (..),
-    ValidationErrors,
     isNotSystemTypeName,
     isTypeDefined,
     safeDefineType,
@@ -111,4 +109,4 @@ updateSchema typeName typeFingerprint f x
       Just fingerprint'
         | fingerprint' == typeFingerprint -> pure lib
         -- throw error if 2 different types has same name
-        | otherwise -> failure (["bla"] :: ValidationErrors)
+        | otherwise -> failure [nameCollisionError typeName]
