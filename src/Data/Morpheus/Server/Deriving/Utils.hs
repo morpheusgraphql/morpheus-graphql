@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -244,6 +245,7 @@ data FieldRep (a :: *) = FieldRep
     fieldIsObject :: Bool,
     fieldValue :: a
   }
+  deriving (Functor)
 
 instance Namespace (FieldRep c) where
   stripNamespace p FieldRep {fieldSelector = fields, ..} = FieldRep {fieldSelector = stripNamespace p fields, ..}

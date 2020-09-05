@@ -403,14 +403,12 @@ deriveTypeContent scope =
     proxy = Proxy @a
 
 unpackM :: FieldRep (TyContentM k) -> SchemaT (FieldRep (TyContent k))
-unpackM FieldRep {fieldValue = v, ..} = do
-  fieldValue <- v
-  pure $ FieldRep {..}
+unpackM FieldRep {..} =
+  FieldRep fieldSelector fieldTypeRef fieldIsObject
+    <$> fieldValue
 
 unpackCons :: ConsRep (TyContentM k) -> SchemaT (ConsRep (TyContent k))
-unpackCons ConsRep {consFields = v, ..} = do
-  consFields <- traverse unpackM v
-  pure $ ConsRep {..}
+unpackCons ConsRep {..} = ConsRep consName <$> traverse unpackM consFields
 
 unpackMs :: [ConsRep (TyContentM k)] -> SchemaT [ConsRep (TyContent k)]
 unpackMs = traverse unpackCons
@@ -530,9 +528,9 @@ buildInputUnion (baseName, baseFingerprint) cons =
     datatype ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
       where
         typeMembers :: SchemaT [UnionMember IN CONST]
-        typeMembers = do
-          unionMembers <- buildUnions wrapInputObject baseFingerprint unionRecordRep
-          pure $ fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
+        typeMembers = withMembers <$> buildUnions wrapInputObject baseFingerprint unionRecordRep
+          where
+            withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
     wrapInputObject :: (FieldsDefinition IN CONST -> TypeContent TRUE IN CONST)
     wrapInputObject = DataInputObject
 
@@ -568,9 +566,9 @@ buildObject ::
   KindedType kind a ->
   [FieldRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT (TypeContent TRUE kind CONST)
-buildObject interfaceM scope consFields = do
-  interfaces <- interfaceM
-  pure $ wrapWith interfaces scope $ mkFieldsDefinition consFields
+buildObject interfaceM scope consFields =
+  (\interfaces -> wrapWith interfaces scope $ mkFieldsDefinition consFields)
+    <$> interfaceM
   where
     wrapWith :: [TypeName] -> KindedType cat a -> FieldsDefinition cat CONST -> TypeContent TRUE cat CONST
     wrapWith _ InputType = DataInputObject
@@ -588,9 +586,8 @@ buildUnions ::
   DataFingerprint ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT [TypeName]
-buildUnions wrapObject baseFingerprint cons = do
-  traverse_ buildURecType cons
-  pure $ fmap consName cons
+buildUnions wrapObject baseFingerprint cons =
+  traverse_ buildURecType cons $> fmap consName cons
   where
     buildURecType = insertType . buildUnionRecord wrapObject baseFingerprint
 
@@ -631,9 +628,9 @@ buildUnionEnum wrapObject baseName baseFingerprint enums = updates $> members
     updates :: SchemaT ()
     updates
       | null enums = pure ()
-      | otherwise = do
+      | otherwise =
         buildEnumObject wrapObject enumTypeWrapperName baseFingerprint enumTypeName
-        buildEnum enumTypeName baseFingerprint enums
+          *> buildEnum enumTypeName baseFingerprint enums
 
 buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> SchemaT ()
 buildEnum typeName typeFingerprint tags =
