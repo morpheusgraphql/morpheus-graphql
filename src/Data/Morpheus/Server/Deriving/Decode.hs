@@ -17,7 +17,7 @@
 module Data.Morpheus.Server.Deriving.Decode
   ( decodeArguments,
     Decode (..),
-    DecodeType (..),
+    DecodeConstraint,
   )
 where
 
@@ -88,8 +88,14 @@ import Prelude
     otherwise,
   )
 
+type DecodeConstraint a =
+  ( Generic a,
+    GQLType a,
+    DecodeRep (Rep a)
+  )
+
 -- GENERIC
-decodeArguments :: DecodeType a => Arguments VALID -> ResolverState a
+decodeArguments :: DecodeConstraint a => Arguments VALID -> ResolverState a
 decodeArguments = decodeType . Object . fmap toEntry
   where
     toEntry Argument {..} = ObjectEntry argumentName argumentValue
@@ -116,29 +122,19 @@ instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
   decodeKind _ = withScalar (__typeName (Proxy @a)) parseValue
 
 -- ENUM
-instance DecodeType a => DecodeKind ENUM a where
+instance DecodeConstraint a => DecodeKind ENUM a where
   decodeKind _ = decodeType
 
 -- TODO: remove
-instance DecodeType a => DecodeKind OUTPUT a where
+instance DecodeConstraint a => DecodeKind OUTPUT a where
   decodeKind _ = decodeType
 
 -- INPUT_OBJECT and  INPUT_UNION
-instance DecodeType a => DecodeKind INPUT a where
+instance DecodeConstraint a => DecodeKind INPUT a where
   decodeKind _ = decodeType
 
-class DecodeType a where
-  decodeType :: ValidValue -> ResolverState a
-
-instance
-  {-# OVERLAPPABLE #-}
-  ( Generic a,
-    GQLType a,
-    DecodeRep (Rep a)
-  ) =>
-  DecodeType a
-  where
-  decodeType = fmap to . decodeRep . (getNamespace (Proxy @a),,Cont D_CONS "")
+decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
+decodeType = fmap to . decodeRep . (getNamespace (Proxy @a),,Cont D_CONS "")
 
 -- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }

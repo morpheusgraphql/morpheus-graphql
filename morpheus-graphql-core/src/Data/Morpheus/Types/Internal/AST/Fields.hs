@@ -31,7 +31,6 @@ module Data.Morpheus.Types.Internal.AST.Fields
     Directives,
     Directive (..),
     fieldVisibility,
-    toListField,
     lookupDeprecated,
     lookupDeprecatedReason,
     unsafeFromFields,
@@ -39,6 +38,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
     fieldContentArgs,
     mkInputValue,
     mkObjectField,
+    mkField,
   )
 where
 
@@ -305,23 +305,26 @@ instance Nullable (FieldDefinition cat s) where
 fieldVisibility :: FieldDefinition cat s -> Bool
 fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
 
-createField ::
+mkField ::
   Maybe (FieldContent TRUE cat s) ->
   FieldName ->
-  [TypeWrapper] ->
-  TypeName ->
+  TypeRef ->
   FieldDefinition cat s
-createField fieldContent fieldName typeWrappers typeConName =
+mkField fieldContent fieldName fieldType =
   FieldDefinition
     { fieldName,
       fieldContent,
       fieldDescription = Nothing,
-      fieldType = TypeRef {typeConName, typeWrappers, typeArgs = Nothing},
+      fieldType,
       fieldDirectives = []
     }
 
 mkInputValue :: FieldName -> [TypeWrapper] -> TypeName -> FieldDefinition cat s
-mkInputValue = createField Nothing
+mkInputValue fieldName typeWrappers typeConName =
+  mkField
+    Nothing
+    fieldName
+    TypeRef {typeWrappers, typeConName, typeArgs = Nothing}
 
 mkObjectField ::
   ArgumentsDefinition s ->
@@ -329,13 +332,11 @@ mkObjectField ::
   [TypeWrapper] ->
   TypeName ->
   FieldDefinition OUT s
-mkObjectField args = createField (Just $ FieldArgs args)
-
-toListField :: FieldDefinition cat s -> FieldDefinition cat s
-toListField dataField = dataField {fieldType = listW (fieldType dataField)}
-  where
-    listW alias@TypeRef {typeWrappers} =
-      alias {typeWrappers = TypeList : typeWrappers}
+mkObjectField args fieldName typeWrappers typeConName =
+  mkField
+    (Just $ FieldArgs args)
+    fieldName
+    TypeRef {typeWrappers, typeConName, typeArgs = Nothing}
 
 -- 3.10 Input Objects: https://spec.graphql.org/June2018/#sec-Input-Objects
 ---------------------------------------------------------------------------
