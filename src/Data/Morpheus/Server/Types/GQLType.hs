@@ -14,6 +14,7 @@ module Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     defaultTypeOptions,
+    TypeData (..),
   )
 where
 

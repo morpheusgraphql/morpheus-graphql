@@ -39,6 +39,7 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
+    TypeData (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -78,7 +79,6 @@ import Prelude
     Bool (..),
     Eq (..),
     Int,
-    Maybe (..),
     otherwise,
     show,
     undefined,
@@ -183,12 +183,7 @@ deriveFieldRep ::
 deriveFieldRep opt pSel proxy v =
   FieldRep
     { fieldSelector = selNameProxy opt pSel,
-      fieldTypeRef =
-        TypeRef
-          { typeConName = __typeName proxy,
-            typeWrappers = __wrappers proxy,
-            typeArgs = Nothing
-          },
+      fieldTypeRef = gqlRef (__type proxy),
       fieldIsObject = isObjectKind proxy,
       fieldValue = v
     }
