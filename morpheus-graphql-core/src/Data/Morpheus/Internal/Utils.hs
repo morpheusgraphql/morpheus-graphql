@@ -46,6 +46,8 @@ module Data.Morpheus.Internal.Utils
     prop,
     resolveWith,
     TextTool (..),
+    stripFieldNamespace,
+    stripConstructorNamespace,
   )
 where
 
@@ -67,7 +69,7 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (find)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Maybe (maybe)
+import Data.Maybe (fromMaybe, maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
@@ -80,10 +82,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Semigroup (Semigroup (..))
 import qualified Data.Text as T
-  ( concat,
-    pack,
-    unpack,
-  )
 import Data.Traversable (traverse)
 import Instances.TH.Lift ()
 import Prelude
@@ -111,6 +109,15 @@ nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capital (fmap re
 
 nameSpaceField :: TypeName -> FieldName -> FieldName
 nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capital name)
+
+stripConstructorNamespace :: TypeName -> Token -> Token
+stripConstructorNamespace (TypeName prefix) name = fromMaybe name $ T.stripPrefix prefix name
+
+stripFieldNamespace :: TypeName -> Token -> Token
+stripFieldNamespace prefix name =
+  nonCapitalText
+    $ fromMaybe name
+    $ T.stripPrefix (nonCapital prefix) name
 
 mapText :: (String -> String) -> Token -> Token
 mapText f = T.pack . f . T.unpack

@@ -54,6 +54,7 @@ import Prelude
     Show (..),
     String,
     const,
+    id,
   )
 
 data TestScalar

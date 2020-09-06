@@ -30,7 +30,10 @@ import Data.Morpheus.Internal.TH
     tyConArgs,
     typeInstanceDec,
   )
-import Data.Morpheus.Internal.Utils (elems)
+import Data.Morpheus.Internal.Utils
+  ( elems,
+    stripFieldNamespace,
+  )
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerDecContext (..),
     ServerTypeDefinition (..),
@@ -99,7 +102,7 @@ deriveGQLType
           tDescription = typeOriginal >>= typeDescription
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
           labelModifierFunc
-            | namespace = [|Just tName|]
+            | namespace = [|stripFieldNamespace tName|]
             | otherwise = [|id|]
           fieldDescriptionsFunc = [|value|]
             where
