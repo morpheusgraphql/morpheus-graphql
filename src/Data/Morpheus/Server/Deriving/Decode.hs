@@ -28,7 +28,7 @@ import Data.List (elem)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( elems,
-    stripNamespace,
+    mapText,
   )
 import Data.Morpheus.Kind
   ( ENUM,
@@ -54,7 +54,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
         __typeName,
-        getNamespace
+        labelModifier
       ),
   )
 import Data.Morpheus.Types.GQLScalar
@@ -84,6 +84,7 @@ import Prelude
     (.),
     Eq (..),
     Ord,
+    String,
     map,
     otherwise,
   )
@@ -134,7 +135,7 @@ instance DecodeConstraint a => DecodeKind INPUT a where
   decodeKind _ = decodeType
 
 decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
-decodeType = fmap to . decodeRep . (getNamespace (Proxy @a),,Cont D_CONS "")
+decodeType = fmap to . decodeRep . (labelModifier (Proxy @a),,Cont D_CONS "")
 
 -- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }
@@ -182,7 +183,7 @@ instance Semigroup Info where
 --
 class DecodeRep f where
   tags :: Proxy f -> TypeName -> Info
-  decodeRep :: (Maybe TypeName, ValidValue, Cont) -> ResolverState (f a)
+  decodeRep :: (String -> String, ValidValue, Cont) -> ResolverState (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
@@ -200,26 +201,26 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
     where
-      __decode (ns, Object obj, cont) = withInputUnion handleUnion obj
+      __decode (f, Object obj, cont) = withInputUnion handleUnion obj
         where
           handleUnion name unions object
             | name == typeName cont <> "EnumObject" =
-              getEnumTag object >>= __decode . (ns,,ctx) . Enum
+              getEnumTag object >>= __decode . (f,,ctx) . Enum
             | [name] == l1 =
-              L1 <$> decodeRep (ns, Object object, ctx)
+              L1 <$> decodeRep (f, Object object, ctx)
             | [name] == r1 =
-              R1 <$> decodeRep (ns, Object object, ctx)
+              R1 <$> decodeRep (f, Object object, ctx)
             | otherwise =
-              decideUnion (l1, decodeRep) (r1, decodeRep) name (ns, Object unions, ctx)
+              decideUnion (l1, decodeRep) (r1, decodeRep) name (f, Object unions, ctx)
           l1 = tagName l1t
           r1 = tagName r1t
           l1t = tags (Proxy @a) (typeName cont)
           r1t = tags (Proxy @b) (typeName cont)
           ctx = cont {contKind = kind (l1t <> r1t)}
-      __decode (ns, Enum name, cxt) =
+      __decode (f, Enum name, cxt) =
         decideUnion
-          (map (stripNamespace ns) $ tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
-          (map (stripNamespace ns) $ tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
+          (map (mapText f) $ tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
+          (map (mapText f) $ tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
           name
           (ns, Enum name, cxt)
       __decode _ = failure ("lists and scalars are not allowed in Union" :: InternalError)
@@ -239,7 +240,7 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
 
 class DecodeFields f where
   refType :: Proxy f -> Maybe TypeName
-  decodeFields :: (Maybe TypeName, ValidValue, Cont) -> ResolverState (f a)
+  decodeFields :: (String -> String, ValidValue, Cont) -> ResolverState (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing
@@ -247,12 +248,12 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
   refType _ = Just $ __typeName (Proxy @a)
-  decodeFields (namespace, value, Cont {contKind})
+  decodeFields (f, value, Cont {contKind})
     | contKind == D_UNION = M1 . K1 <$> decode value
     | otherwise = __decode value
     where
       __decode = fmap (M1 . K1) . decodeRec
-      fieldName = stripNamespace namespace $ selNameProxy (Proxy @s)
+      fieldName = mapText f $ selNameProxy (Proxy @s)
       decodeRec = withInputObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where

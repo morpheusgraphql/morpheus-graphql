@@ -37,14 +37,13 @@ where
 
 import Data.Functor (Functor (..))
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Internal.Utils
-  ( Namespace (..),
-  )
+import Data.Morpheus.Internal.Utils (mapText)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
+    Token,
     TypeName (..),
     TypeRef (..),
     convertToJSONName,
@@ -82,6 +81,7 @@ import Prelude
     Eq (..),
     Int,
     Maybe (..),
+    String,
     map,
     null,
     otherwise,
@@ -106,6 +106,28 @@ newtype TypeConstraint (c :: * -> Constraint) (v :: *) (f :: * -> *) = TypeConst
   { typeConstraint :: forall a. c a => f a -> v
   }
 
+class MapRep a where
+  mapLabel :: (String -> String) -> a -> a
+
+instance MapRep (DataType v) where
+  mapLabel ns r = r {tyCons = mapLabel ns (tyCons r)}
+
+instance MapRep (ConsRep v) where
+  mapLabel f ConsRep {consFields, ..} =
+    ConsRep
+      { consName =
+          mapText f consName,
+        ..
+      }
+
+instance MapRep (FieldRep c) where
+  mapLabel f FieldRep {fieldSelector = fields, ..} =
+    FieldRep
+      { fieldSelector =
+          mapText f fields,
+        ..
+      }
+
 genericTo ::
   forall f constraint value (a :: *).
   (GQLType a, TypeRep constraint value (Rep a)) =>
@@ -113,7 +135,7 @@ genericTo ::
   f a ->
   [ConsRep value]
 genericTo f proxy =
-  map (stripNamespace (getNamespace proxy)) $
+  map (mapLabel (labelModifier proxy)) $
     typeRep f (Proxy @(Rep a))
 
 toValue ::
@@ -123,7 +145,7 @@ toValue ::
   a ->
   DataType value
 toValue f =
-  stripNamespace (getNamespace (Proxy @a))
+  mapLabel (labelModifier (Proxy @a))
     . toTypeRep f
     . from
 
@@ -205,18 +227,10 @@ data DataType (v :: *) = DataType
     tyCons :: ConsRep v
   }
 
-instance Namespace (DataType v) where
-  stripNamespace ns r = r {tyCons = stripNamespace ns (tyCons r)}
-
 data ConsRep (v :: *) = ConsRep
   { consName :: TypeName,
     consFields :: [FieldRep v]
   }
-
-instance Namespace (ConsRep v) where
-  stripNamespace p ConsRep {consFields, ..}
-    | null consFields = ConsRep {consName = stripNamespace p consName, ..}
-    | otherwise = ConsRep {consFields = map (stripNamespace p) consFields, ..}
 
 data FieldRep (a :: *) = FieldRep
   { fieldSelector :: FieldName,
@@ -225,9 +239,6 @@ data FieldRep (a :: *) = FieldRep
     fieldValue :: a
   }
   deriving (Functor)
-
-instance Namespace (FieldRep c) where
-  stripNamespace p FieldRep {fieldSelector = fields, ..} = FieldRep {fieldSelector = stripNamespace p fields, ..}
 
 data ResRep (a :: *) = ResRep
   { enumCons :: [TypeName],

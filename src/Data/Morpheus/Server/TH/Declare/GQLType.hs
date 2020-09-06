@@ -90,7 +90,7 @@ deriveGQLType
           [ ('__typeName, [|tName|]),
             ('description, [|tDescription|]),
             ('implements, implementsFunc),
-            ('getNamespace, getNamespaceFunc),
+            ('labelModifier, labelModifierFunc),
             ('getDescriptions, fieldDescriptionsFunc),
             ('getDirectives, fieldDirectivesFunc),
             ('getFieldContents, getFieldContentsFunc)
@@ -98,7 +98,7 @@ deriveGQLType
         where
           tDescription = typeOriginal >>= typeDescription
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
-          getNamespaceFunc
+          labelModifierFunc
             | namespace = [|Just tName|]
             | otherwise = [|Nothing|]
           fieldDescriptionsFunc = [|value|]

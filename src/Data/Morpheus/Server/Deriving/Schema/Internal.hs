@@ -48,7 +48,6 @@ import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    Namespace (..),
     empty,
     singleton,
   )
@@ -217,7 +216,7 @@ instance UpdateDef (TypeContent TRUE c CONST) where
   updateDef _ x = x
 
 instance GetFieldContent cat => UpdateDef (FieldDefinition cat CONST) where
-  updateDef proxy FieldDefinition {fieldName = name, fieldType, fieldContent} =
+  updateDef proxy FieldDefinition {fieldName, fieldType, fieldContent} =
     FieldDefinition
       { fieldName,
         fieldDescription = lookupDescription (readName fieldName) proxy,
@@ -225,18 +224,14 @@ instance GetFieldContent cat => UpdateDef (FieldDefinition cat CONST) where
         fieldContent = getFieldContent fieldName fieldContent proxy,
         ..
       }
-    where
-      fieldName = stripNamespace (getNamespace proxy) name
 
 instance UpdateDef (DataEnumValue CONST) where
-  updateDef proxy DataEnumValue {enumName = name} =
+  updateDef proxy DataEnumValue {enumName} =
     DataEnumValue
       { enumName,
         enumDescription = lookupDescription (readTypeName enumName) proxy,
         enumDirectives = lookupDirectives (readTypeName enumName) proxy
       }
-    where
-      enumName = stripNamespace (getNamespace proxy) name
 
 lookupDescription :: GQLType a => Token -> f a -> Maybe Description
 lookupDescription name = (name `M.lookup`) . getDescriptions
