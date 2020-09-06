@@ -65,6 +65,7 @@ import Data.Morpheus.Types.Internal.AST
     Token,
     TypeContent (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName (..),
     Value,
   )
@@ -72,7 +73,9 @@ import Data.Proxy (Proxy (..))
 import Language.Haskell.TH
 import Prelude
   ( ($),
+    (&&),
     (.),
+    Eq (..),
     concatMap,
     null,
     otherwise,
@@ -105,6 +108,7 @@ deriveGQLType
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
           typeOptionsFunc
             | namespace = [|GQLTypeOptions (stripFieldNamespace tName) id|]
+            | namespace && tKind == KindEnum = [|GQLTypeOptions id (stripConstructorNamespace tName)|]
             | otherwise = [|defaultTypeOptions|]
           fieldDescriptionsFunc = [|value|]
             where
