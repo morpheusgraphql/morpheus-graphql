@@ -32,6 +32,7 @@ import Data.Morpheus.Internal.TH
   )
 import Data.Morpheus.Internal.Utils
   ( elems,
+    stripConstructorNamespace,
     stripFieldNamespace,
   )
 import Data.Morpheus.Server.Internal.TH.Types
@@ -107,8 +108,8 @@ deriveGQLType
           tDescription = typeOriginal >>= typeDescription
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
           typeOptionsFunc
-            | namespace = [|GQLTypeOptions (stripFieldNamespace tName) id|]
             | namespace && tKind == KindEnum = [|GQLTypeOptions id (stripConstructorNamespace tName)|]
+            | namespace = [|GQLTypeOptions (stripFieldNamespace tName) id|]
             | otherwise = [|defaultTypeOptions|]
           fieldDescriptionsFunc = [|value|]
             where
