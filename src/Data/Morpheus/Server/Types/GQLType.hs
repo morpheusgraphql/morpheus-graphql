@@ -70,6 +70,7 @@ import Prelude
     Float,
     Int,
     Maybe (..),
+    String,
     concatMap,
     fmap,
     id,
@@ -78,8 +79,8 @@ import Prelude
   )
 
 data GQLTypeOptions = GQLTypeOptions
-  { fieldLabelModifier :: Text -> Text,
-    constructorTagModifier :: Text -> Text
+  { fieldLabelModifier :: String -> String,
+    constructorTagModifier :: String -> String
   }
 
 defaultTypeOptions :: GQLTypeOptions
