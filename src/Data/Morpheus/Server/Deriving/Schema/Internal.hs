@@ -33,7 +33,6 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     asObjectType,
     fromSchema,
     updateByContent,
-    toTypeProxy,
   )
 where
 
@@ -132,9 +131,10 @@ data KindedType (cat :: TypeCategory) a where
   InputType :: KindedType IN a
   OutputType :: KindedType OUT a
 
-toTypeProxy :: f k a -> Proxy a
-toTypeProxy _ = Proxy
-
+-- converts:
+--   f a -> KindedType IN a
+-- or
+--  f k a -> KindedType IN a
 inputType :: f a -> KindedType IN a
 inputType _ = InputType
 

@@ -52,7 +52,6 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
     inputType,
     outputType,
     setProxyType,
-    toTypeProxy,
     unpackMs,
     updateByContent,
     withObject,
@@ -216,13 +215,13 @@ scalarType = pure . DataScalar . scalarValidator
 
 -- ENUM
 instance DeriveTypeConstraint IN a => DeriveKindedType ENUM a where
-  deriveKindedType _ = derivingData $ inputType (Proxy @a)
+  deriveKindedType = derivingData . inputType
 
 instance DeriveTypeConstraint IN a => DeriveKindedType INPUT a where
-  deriveKindedType _ = derivingData $ inputType (Proxy @a)
+  deriveKindedType = derivingData . inputType
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType OUTPUT a where
-  deriveKindedType _ = derivingData $ outputType (Proxy @a)
+  deriveKindedType = derivingData . outputType
 
 type DeriveTypeConstraint kind a =
   ( Generic a,
@@ -237,11 +236,7 @@ instance DeriveTypeConstraint OUT a => DeriveKindedType INTERFACE a where
 deriveInterface :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeContent TRUE OUT CONST)
 deriveInterface = fmap DataInterface . deriveObjectFields
 
-derivingData ::
-  forall kind a.
-  DeriveTypeConstraint kind a =>
-  KindedType kind a ->
-  SchemaT ()
+derivingData :: DeriveTypeConstraint kind a => KindedType kind a -> SchemaT ()
 derivingData = updateByContent deriveTypeContent
 
 deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> SchemaT (ArgumentsDefinition CONST)
@@ -257,8 +252,8 @@ deriveFields ::
   SchemaT (FieldsDefinition kind CONST)
 deriveFields kindedType = deriveTypeContent kindedType >>= withObject kindedType
 
-deriveOutType :: forall a. (GQLType a, DeriveType OUT a) => Proxy a -> SchemaT ()
-deriveOutType _ = deriveType (KindedProxy :: KindedProxy OUT a)
+deriveOutType :: (GQLType a, DeriveType OUT a) => f a -> SchemaT ()
+deriveOutType = deriveType . outputType
 
 deriveObjectType ::
   DeriveTypeConstraint OUT a =>
