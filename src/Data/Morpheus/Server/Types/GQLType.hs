@@ -66,7 +66,6 @@ import Data.Typeable
 import Prelude
   ( ($),
     (.),
-    (<$>),
     Bool (..),
     Eq (..),
     Float,
@@ -98,13 +97,13 @@ defaultTypeOptions =
       constructorTagModifier = id
     }
 
-getTypename :: forall f a. Typeable a => f a -> TypeName
-getTypename _ = TypeName $ intercalate "_" (getName $ Proxy @a)
+getTypename :: Typeable a => f a -> TypeName
+getTypename = TypeName . intercalate "_" . getName
   where
     getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 
-getFingerprint :: forall f a. Typeable a => f a -> DataFingerprint
-getFingerprint _ = DataFingerprint "Typeable" $ show <$> conFingerprints (Proxy @a)
+getFingerprint :: Typeable a => f a -> DataFingerprint
+getFingerprint = DataFingerprint "Typeable" . fmap show . conFingerprints
   where
     conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
@@ -161,28 +160,7 @@ ignoreResolver (con, args) =
 --     instance GQLType ... where
 --       description = const "your description ..."
 --  @
-class IsObject (a :: GQL_KIND) where
-  isObject :: Proxy a -> Bool
-
-instance IsObject SCALAR where
-  isObject _ = False
-
-instance IsObject ENUM where
-  isObject _ = False
-
-instance IsObject WRAPPER where
-  isObject _ = False
-
-instance IsObject INPUT where
-  isObject _ = True
-
-instance IsObject OUTPUT where
-  isObject _ = True
-
-instance IsObject INTERFACE where
-  isObject _ = True
-
-class IsObject (KIND a) => GQLType a where
+class ToValue (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
 
@@ -190,7 +168,7 @@ class IsObject (KIND a) => GQLType a where
   implements _ = []
 
   isObjectKind :: f a -> Bool
-  isObjectKind _ = isObject (Proxy @(KIND a))
+  isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 
   description :: f a -> Maybe Text
   description _ = Nothing
@@ -217,7 +195,7 @@ class IsObject (KIND a) => GQLType a where
   isEmptyType _ = False
 
   __type :: f a -> TypeData
-  default __type :: (Typeable a) => f a -> TypeData
+  default __type :: Typeable a => f a -> TypeData
   __type _ = deriveTypeData (Proxy @a)
 
 instance GQLType Int where
@@ -249,36 +227,36 @@ instance Typeable m => GQLType (Undefined m) where
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __type _ = wrapper toNullable $ __type (Proxy @a)
+  __type _ = wrapper toNullable $ __type $ Proxy @a
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __type _ = wrapper list $ __type (Proxy @a)
+  __type _ = wrapper list $ __type $ Proxy @a
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = WRAPPER
-  __type _ = __type (Proxy @(Pair a b))
+  __type _ = __type $ Proxy @(Pair a b)
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
-  __type _ = __type (Proxy @[a])
+  __type _ = __type $ Proxy @[a]
 
 instance (Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = WRAPPER
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = WRAPPER
-  __type _ = __type (Proxy @a)
+  __type _ = __type $ Proxy @a
 
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
-  __type _ = __type (Proxy @a)
+  __type _ = __type $ Proxy @a
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER
-  __type _ = __type (Proxy @b)
+  __type _ = __type $ Proxy @b
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
-  __type _ = __type (Proxy @(Map a b))
+  __type _ = __type $ Proxy @(Map a b)
