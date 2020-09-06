@@ -222,7 +222,7 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
           (map (mapText f) $ tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
           (map (mapText f) $ tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
           name
-          (ns, Enum name, cxt)
+          (f, Enum name, cxt)
       __decode _ = failure ("lists and scalars are not allowed in Union" :: InternalError)
 
 instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
