@@ -180,7 +180,7 @@ instance Semigroup Info where
 -- GENERICS
 --
 class DecodeRep f where
-  tags :: Proxy f -> TypeName -> Info
+  tags :: Proxy f -> (GQLTypeOptions, TypeName) -> Info
   decodeRep :: (GQLTypeOptions, ValidValue, Cont) -> ResolverState (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
@@ -199,40 +199,40 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
   decodeRep = __decode
     where
-      __decode (f, Object obj, cont) = withInputUnion handleUnion obj
+      __decode (opt, Object obj, cont) = withInputUnion handleUnion obj
         where
           handleUnion name unions object
             | name == typeName cont <> "EnumObject" =
-              getEnumTag object >>= __decode . (f,,ctx) . Enum
+              getEnumTag object >>= __decode . (opt,,ctx) . Enum
             | [name] == l1 =
-              L1 <$> decodeRep (f, Object object, ctx)
+              L1 <$> decodeRep (opt, Object object, ctx)
             | [name] == r1 =
-              R1 <$> decodeRep (f, Object object, ctx)
+              R1 <$> decodeRep (opt, Object object, ctx)
             | otherwise =
-              decideUnion (l1, decodeRep) (r1, decodeRep) name (f, Object unions, ctx)
+              decideUnion (l1, decodeRep) (r1, decodeRep) name (opt, Object unions, ctx)
           l1 = tagName l1t
           r1 = tagName r1t
-          l1t = tags (Proxy @a) (typeName cont)
-          r1t = tags (Proxy @b) (typeName cont)
+          l1t = tags (Proxy @a) (opt, typeName cont)
+          r1t = tags (Proxy @b) (opt, typeName cont)
           ctx = cont {contKind = kind (l1t <> r1t)}
-      __decode (f, Enum name, cxt) =
+      __decode (opt, Enum name, cxt) =
         decideUnion
-          (tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
-          (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
+          (tagName $ tags (Proxy @a) (opt, typeName cxt), decodeRep)
+          (tagName $ tags (Proxy @b) (opt, typeName cxt), decodeRep)
           name
-          (f, Enum name, cxt)
+          (opt, Enum name, cxt)
       __decode _ = failure ("lists and scalars are not allowed in Union" :: InternalError)
 
 instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
   decodeRep = fmap M1 . decodeFields
-  tags _ baseName = getTag (refType (Proxy @a))
+  tags _ (opt, baseName) = getTag (refType (Proxy @a))
     where
       getTag (Just memberRef)
         | isUnionRef memberRef = Info {kind = D_UNION, tagName = [memberRef]}
         | otherwise = Info {kind = D_CONS, tagName = [consName]}
       getTag Nothing = Info {kind = D_CONS, tagName = [consName]}
       --------
-      consName = conNameProxy (Proxy @c)
+      consName = conNameProxy opt (Proxy @c)
       ----------
       isUnionRef x = baseName <> x == consName
 

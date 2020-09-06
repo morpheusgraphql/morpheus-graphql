@@ -88,8 +88,9 @@ import Prelude
 datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
 datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))
 
-conNameProxy :: forall f (c :: Meta). Constructor c => f c -> TypeName
-conNameProxy _ = TypeName $ pack $ conName (undefined :: M1 C c U1 a)
+conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
+conNameProxy GQLTypeOptions {constructorTagModifier} _ =
+  TypeName $ constructorTagModifier $ pack $ conName (undefined :: M1 C c U1 a)
 
 selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
 selNameProxy GQLTypeOptions {fieldLabelModifier} _ =
@@ -134,18 +135,23 @@ instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
   toTypeRep f (R1 x) = (toTypeRep f x) {tyIsUnion = True}
 
 instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
-  typeRep f _ = [deriveConsRep (Proxy @c) (conRep f (Proxy @f))]
-  toTypeRep f (M1 src) =
+  typeRep f@(opt, _) _ = [deriveConsRep opt (Proxy @c) (conRep f (Proxy @f))]
+  toTypeRep f@(opt, _) (M1 src) =
     DataType
       { tyName = "",
         tyIsUnion = False,
-        tyCons = deriveConsRep (Proxy @c) (toFieldRep f src)
+        tyCons = deriveConsRep opt (Proxy @c) (toFieldRep f src)
       }
 
-deriveConsRep :: Constructor (c :: Meta) => f c -> [FieldRep v] -> ConsRep v
-deriveConsRep proxy fields =
+deriveConsRep ::
+  Constructor (c :: Meta) =>
+  GQLTypeOptions ->
+  f c ->
+  [FieldRep v] ->
+  ConsRep v
+deriveConsRep opt proxy fields =
   ConsRep
-    { consName = conNameProxy proxy,
+    { consName = conNameProxy opt proxy,
       consFields
     }
   where
