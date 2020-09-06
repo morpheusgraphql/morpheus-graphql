@@ -30,7 +30,11 @@ import Data.Morpheus.Internal.TH
     tyConArgs,
     typeInstanceDec,
   )
-import Data.Morpheus.Internal.Utils (elems)
+import Data.Morpheus.Internal.Utils
+  ( elems,
+    stripConstructorNamespace,
+    stripFieldNamespace,
+  )
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerDecContext (..),
     ServerTypeDefinition (..),
@@ -41,6 +45,8 @@ import Data.Morpheus.Server.Internal.TH.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    GQLTypeOptions (..),
+    defaultTypeOptions,
   )
 import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
@@ -60,6 +66,7 @@ import Data.Morpheus.Types.Internal.AST
     Token,
     TypeContent (..),
     TypeDefinition (..),
+    TypeKind (..),
     TypeName (..),
     Value,
   )
@@ -67,7 +74,9 @@ import Data.Proxy (Proxy (..))
 import Language.Haskell.TH
 import Prelude
   ( ($),
+    (&&),
     (.),
+    Eq (..),
     concatMap,
     null,
     otherwise,
@@ -90,7 +99,7 @@ deriveGQLType
           [ ('__typeName, [|tName|]),
             ('description, [|tDescription|]),
             ('implements, implementsFunc),
-            ('getNamespace, getNamespaceFunc),
+            ('typeOptions, typeOptionsFunc),
             ('getDescriptions, fieldDescriptionsFunc),
             ('getDirectives, fieldDirectivesFunc),
             ('getFieldContents, getFieldContentsFunc)
@@ -98,9 +107,10 @@ deriveGQLType
         where
           tDescription = typeOriginal >>= typeDescription
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
-          getNamespaceFunc
-            | namespace = [|Just tName|]
-            | otherwise = [|Nothing|]
+          typeOptionsFunc
+            | namespace && tKind == KindEnum = [|GQLTypeOptions id (stripConstructorNamespace tName)|]
+            | namespace = [|GQLTypeOptions (stripFieldNamespace tName) id|]
+            | otherwise = [|defaultTypeOptions|]
           fieldDescriptionsFunc = [|value|]
             where
               value = getDesc typeOriginal

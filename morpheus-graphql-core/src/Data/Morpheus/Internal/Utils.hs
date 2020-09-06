@@ -45,7 +45,8 @@ module Data.Morpheus.Internal.Utils
     ResolutionT,
     prop,
     resolveWith,
-    Namespace (..),
+    stripFieldNamespace,
+    stripConstructorNamespace,
   )
 where
 
@@ -65,9 +66,9 @@ import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
-import Data.List (find)
+import Data.List (drop, find)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Maybe (Maybe (..), fromMaybe, maybe)
+import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
@@ -80,11 +81,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Semigroup (Semigroup (..))
 import qualified Data.Text as T
-  ( concat,
-    pack,
-    stripPrefix,
-    unpack,
-  )
 import Data.Traversable (traverse)
 import Instances.TH.Lift ()
 import Prelude
@@ -107,40 +103,33 @@ import Prelude
 prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
 prop f fSel a1 a2 = f (fSel a1) (fSel a2)
 
-mapText :: (String -> String) -> Token -> Token
-mapText f = T.pack . f . T.unpack
-
 nameSpaceType :: [FieldName] -> TypeName -> TypeName
 nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capital (fmap readName list <> [name])
 
 nameSpaceField :: TypeName -> FieldName -> FieldName
 nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capital name)
 
-class Namespace a where
-  stripNamespace :: Maybe TypeName -> a -> a
+dropPrefix :: TypeName -> String -> String
+dropPrefix (TypeName name) = drop (length (T.unpack name))
 
-instance Namespace FieldName where
-  stripNamespace Nothing x = x
-  stripNamespace (Just prefix) (FieldName name) =
-    FieldName
-      ( nonCapitalText
-          $ fromMaybe name
-          $ T.stripPrefix (nonCapital prefix) name
-      )
+stripConstructorNamespace :: TypeName -> String -> String
+stripConstructorNamespace = dropPrefix
 
-instance Namespace TypeName where
-  stripNamespace Nothing x = x
-  stripNamespace (Just (TypeName prefix)) (TypeName name) =
-    TypeName (fromMaybe name $ T.stripPrefix prefix name)
+stripFieldNamespace :: TypeName -> String -> String
+stripFieldNamespace prefix = nonCapitalString . dropPrefix prefix
+
+mapText :: (String -> String) -> Token -> Token
+mapText f = T.pack . f . T.unpack
 
 nonCapital :: TypeName -> Token
 nonCapital = nonCapitalText . readTypeName
 
+nonCapitalString :: String -> String
+nonCapitalString [] = []
+nonCapitalString (x : xs) = toLower x : xs
+
 nonCapitalText :: Token -> Token
-nonCapitalText = mapText __nonCapital
-  where
-    __nonCapital [] = []
-    __nonCapital (x : xs) = toLower x : xs
+nonCapitalText = mapText nonCapitalString
 
 capital :: Token -> Token
 capital = mapText __capital

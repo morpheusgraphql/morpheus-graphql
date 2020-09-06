@@ -8,7 +8,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -37,11 +36,9 @@ where
 
 import Data.Functor (Functor (..))
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Internal.Utils
-  ( Namespace (..),
-  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    GQLTypeOptions (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -82,8 +79,6 @@ import Prelude
     Eq (..),
     Int,
     Maybe (..),
-    map,
-    null,
     otherwise,
     show,
     undefined,
@@ -93,11 +88,13 @@ import Prelude
 datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
 datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))
 
-conNameProxy :: forall f (c :: Meta). Constructor c => f c -> TypeName
-conNameProxy _ = TypeName $ pack $ conName (undefined :: M1 C c U1 a)
+conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
+conNameProxy GQLTypeOptions {constructorTagModifier} _ =
+  TypeName $ pack $ constructorTagModifier $ conName (undefined :: M1 C c U1 a)
 
-selNameProxy :: forall f (s :: Meta). Selector s => f s -> FieldName
-selNameProxy _ = convertToJSONName $ FieldName $ pack $ selName (undefined :: M1 S s f a)
+selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
+selNameProxy GQLTypeOptions {fieldLabelModifier} _ =
+  convertToJSONName $ FieldName $ pack $ fieldLabelModifier $ selName (undefined :: M1 S s f a)
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
@@ -112,9 +109,7 @@ genericTo ::
   TypeConstraint constraint value Proxy ->
   f a ->
   [ConsRep value]
-genericTo f proxy =
-  map (stripNamespace (getNamespace proxy)) $
-    typeRep f (Proxy @(Rep a))
+genericTo f proxy = typeRep (typeOptions proxy, f) (Proxy @(Rep a))
 
 toValue ::
   forall constraint value (a :: *).
@@ -122,15 +117,12 @@ toValue ::
   TypeConstraint constraint value Identity ->
   a ->
   DataType value
-toValue f =
-  stripNamespace (getNamespace (Proxy @a))
-    . toTypeRep f
-    . from
+toValue f = toTypeRep (typeOptions (Proxy @a), f) . from
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where
-  typeRep :: TypeConstraint c v Proxy -> proxy f -> [ConsRep v]
-  toTypeRep :: TypeConstraint c v Identity -> f a -> DataType v
+  typeRep :: (GQLTypeOptions, TypeConstraint c v Proxy) -> proxy f -> [ConsRep v]
+  toTypeRep :: (GQLTypeOptions, TypeConstraint c v Identity) -> f a -> DataType v
 
 instance (Datatype d, TypeRep c v f) => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
@@ -143,18 +135,23 @@ instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
   toTypeRep f (R1 x) = (toTypeRep f x) {tyIsUnion = True}
 
 instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
-  typeRep fun _ = [deriveConsRep (Proxy @c) (conRep fun (Proxy @f))]
-  toTypeRep f (M1 src) =
+  typeRep f@(opt, _) _ = [deriveConsRep opt (Proxy @c) (conRep f (Proxy @f))]
+  toTypeRep f@(opt, _) (M1 src) =
     DataType
       { tyName = "",
         tyIsUnion = False,
-        tyCons = deriveConsRep (Proxy @c) (toFieldRep f src)
+        tyCons = deriveConsRep opt (Proxy @c) (toFieldRep f src)
       }
 
-deriveConsRep :: Constructor (c :: Meta) => f c -> [FieldRep v] -> ConsRep v
-deriveConsRep proxy fields =
+deriveConsRep ::
+  Constructor (c :: Meta) =>
+  GQLTypeOptions ->
+  f c ->
+  [FieldRep v] ->
+  ConsRep v
+deriveConsRep opt proxy fields =
   ConsRep
-    { consName = conNameProxy proxy,
+    { consName = conNameProxy opt proxy,
       consFields
     }
   where
@@ -163,8 +160,8 @@ deriveConsRep proxy fields =
       | otherwise = enumerate fields
 
 class ConRep (c :: * -> Constraint) (v :: *) f where
-  conRep :: TypeConstraint c v Proxy -> proxy f -> [FieldRep v]
-  toFieldRep :: TypeConstraint c v Identity -> f a -> [FieldRep v]
+  conRep :: (GQLTypeOptions, TypeConstraint c v Proxy) -> proxy f -> [FieldRep v]
+  toFieldRep :: (GQLTypeOptions, TypeConstraint c v Identity) -> f a -> [FieldRep v]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
@@ -172,19 +169,20 @@ instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
   toFieldRep fun (a :*: b) = toFieldRep fun a <> toFieldRep fun b
 
 instance (Selector s, GQLType a, c a) => ConRep c v (M1 S s (Rec0 a)) where
-  conRep (TypeConstraint f) _ = [deriveFieldRep (Proxy @s) (Proxy @a) (f $ Proxy @a)]
-  toFieldRep (TypeConstraint f) (M1 (K1 src)) = [deriveFieldRep (Proxy @s) (Proxy @a) (f (Identity src))]
+  conRep (opt, TypeConstraint f) _ = [deriveFieldRep opt (Proxy @s) (Proxy @a) (f $ Proxy @a)]
+  toFieldRep (opt, TypeConstraint f) (M1 (K1 src)) = [deriveFieldRep opt (Proxy @s) (Proxy @a) (f (Identity src))]
 
 deriveFieldRep ::
   forall f (s :: Meta) g a v.
   (Selector s, GQLType a) =>
+  GQLTypeOptions ->
   f s ->
   g a ->
   v ->
   FieldRep v
-deriveFieldRep pSel proxy v =
+deriveFieldRep opt pSel proxy v =
   FieldRep
-    { fieldSelector = selNameProxy pSel,
+    { fieldSelector = selNameProxy opt pSel,
       fieldTypeRef =
         TypeRef
           { typeConName = __typeName proxy,
@@ -205,18 +203,10 @@ data DataType (v :: *) = DataType
     tyCons :: ConsRep v
   }
 
-instance Namespace (DataType v) where
-  stripNamespace ns r = r {tyCons = stripNamespace ns (tyCons r)}
-
 data ConsRep (v :: *) = ConsRep
   { consName :: TypeName,
     consFields :: [FieldRep v]
   }
-
-instance Namespace (ConsRep v) where
-  stripNamespace p ConsRep {consFields, ..}
-    | null consFields = ConsRep {consName = stripNamespace p consName, ..}
-    | otherwise = ConsRep {consFields = map (stripNamespace p) consFields, ..}
 
 data FieldRep (a :: *) = FieldRep
   { fieldSelector :: FieldName,
@@ -225,9 +215,6 @@ data FieldRep (a :: *) = FieldRep
     fieldValue :: a
   }
   deriving (Functor)
-
-instance Namespace (FieldRep c) where
-  stripNamespace p FieldRep {fieldSelector = fields, ..} = FieldRep {fieldSelector = stripNamespace p fields, ..}
 
 data ResRep (a :: *) = ResRep
   { enumCons :: [TypeName],
