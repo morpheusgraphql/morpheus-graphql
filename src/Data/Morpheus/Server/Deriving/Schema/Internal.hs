@@ -22,18 +22,17 @@
 module Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedProxy (..),
     KindedType (..),
-    buildType,
     builder,
     inputType,
     outputType,
     setProxyType,
     unpackMs,
-    updateLib,
     UpdateDef (..),
     withObject,
     TyContentM,
     asObjectType,
     fromSchema,
+    updateByContent,
   )
 where
 
@@ -132,6 +131,10 @@ data KindedType (cat :: TypeCategory) a where
   InputType :: KindedType IN a
   OutputType :: KindedType OUT a
 
+-- converts:
+--   f a -> KindedType IN a
+-- or
+--  f k a -> KindedType IN a
 inputType :: f a -> KindedType IN a
 inputType _ = InputType
 
@@ -256,13 +259,14 @@ instance GetFieldContent OUT where
       Just (_, Just x) -> Just (FieldArgs x)
       _ -> args
 
-updateLib ::
+updateByContent ::
   GQLType a =>
-  (f a -> SchemaT (TypeDefinition cat CONST)) ->
-  f a ->
+  (f kind a -> SchemaT (TypeContent TRUE cat CONST)) ->
+  f kind a ->
   SchemaT ()
-updateLib f proxy =
-  updateSchema (__typeName proxy) (__typeFingerprint proxy) f proxy
+updateByContent f proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) deriveD proxy
+  where
+    deriveD _ = buildType proxy <$> f proxy
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))
 analyseRep baseName cons =
