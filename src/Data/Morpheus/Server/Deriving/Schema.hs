@@ -63,6 +63,7 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    TypeData (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -252,7 +253,7 @@ deriveObjectType :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeDefinition
 deriveObjectType = asObjectType (deriveFields . outputType)
 
 deriveImplementsInterface :: (GQLType a, DeriveType OUT a) => f a -> SchemaT TypeName
-deriveImplementsInterface x = deriveType (outputType x) $> __typeName x
+deriveImplementsInterface x = deriveType (outputType x) $> gqlTypeName (__type x)
 
 fieldContentConstraint :: f kind a -> TypeConstraint (DeriveType kind) (TyContentM kind) Proxy
 fieldContentConstraint _ = TypeConstraint deriveFieldContent

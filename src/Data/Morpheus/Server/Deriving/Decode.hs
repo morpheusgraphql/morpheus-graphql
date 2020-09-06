@@ -52,10 +52,11 @@ import Data.Morpheus.Server.Internal.TH.Decode
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
-        __typeName,
+        __type,
         typeOptions
       ),
     GQLTypeOptions (..),
+    TypeData (..),
   )
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
@@ -118,7 +119,7 @@ class DecodeKind (kind :: GQL_KIND) a where
 
 -- SCALAR
 instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ = withScalar (__typeName (Proxy @a)) parseValue
+  decodeKind _ = withScalar (gqlTypeName $ __type (Proxy @a)) parseValue
 
 -- ENUM
 instance DecodeConstraint a => DecodeKind ENUM a where
@@ -245,7 +246,7 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   decodeFields gql = (:*:) <$> decodeFields gql <*> decodeFields gql
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
-  refType _ = Just $ __typeName (Proxy @a)
+  refType _ = Just $ gqlTypeName $ __type (Proxy @a)
   decodeFields (opt, value, Cont {contKind})
     | contKind == D_UNION = M1 . K1 <$> decode value
     | otherwise = __decode value

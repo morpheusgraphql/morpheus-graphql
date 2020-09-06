@@ -39,6 +39,7 @@ import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
+    TypeData (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -185,13 +186,15 @@ deriveFieldRep opt pSel proxy v =
     { fieldSelector = selNameProxy opt pSel,
       fieldTypeRef =
         TypeRef
-          { typeConName = __typeName proxy,
-            typeWrappers = __wrappers proxy,
+          { typeConName = gqlTypeName,
+            typeWrappers = gqlWrappers,
             typeArgs = Nothing
           },
       fieldIsObject = isObjectKind proxy,
       fieldValue = v
     }
+  where
+    TypeData {gqlTypeName, gqlWrappers} = __type proxy
 
 instance ConRep c v U1 where
   conRep _ _ = []

@@ -61,6 +61,7 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    TypeData (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -159,7 +160,7 @@ asObjectType ::
   (f2 a -> SchemaT (FieldsDefinition OUT CONST)) ->
   f2 a ->
   SchemaT (TypeDefinition OBJECT CONST)
-asObjectType f proxy = (`mkObjectType` __typeName proxy) <$> f proxy
+asObjectType f proxy = (`mkObjectType` gqlTypeName (__type proxy)) <$> f proxy
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
@@ -168,7 +169,7 @@ failureOnlyObject :: forall c a b. (GQLType a) => KindedType c a -> SchemaT b
 failureOnlyObject _ =
   failure
     $ globalErrorMessage
-    $ msg (__typeName (Proxy @a)) <> " should have only one nonempty constructor"
+    $ msg (gqlTypeName $ __type (Proxy @a)) <> " should have only one nonempty constructor"
 
 type TyContentM kind = (SchemaT (Maybe (FieldContent TRUE kind CONST)))
 
@@ -197,10 +198,9 @@ builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements (Proxy 
 builder scope cons = genericUnion scope cons
   where
     proxy = Proxy @a
-    baseName = __typeName proxy
-    baseFingerprint = __typeFingerprint proxy
-    genericUnion InputType = buildInputUnion (baseName, baseFingerprint)
-    genericUnion OutputType = buildUnionType baseName baseFingerprint DataUnion (DataObject [])
+    typeData = __type proxy
+    genericUnion InputType = buildInputUnion typeData
+    genericUnion OutputType = buildUnionType typeData DataUnion (DataObject [])
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -259,7 +259,12 @@ updateByContent ::
   (f kind a -> SchemaT (TypeContent TRUE cat CONST)) ->
   f kind a ->
   SchemaT ()
-updateByContent f proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) deriveD proxy
+updateByContent f proxy =
+  updateSchema
+    (gqlTypeName $ __type proxy)
+    (gqlFingerprint $ __type proxy)
+    deriveD
+    proxy
   where
     deriveD _ = buildType proxy <$> f proxy
 
@@ -275,22 +280,21 @@ analyseRep baseName cons =
     (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
 
 buildInputUnion ::
-  (TypeName, DataFingerprint) ->
+  TypeData ->
   [ConsRep (Maybe (FieldContent TRUE IN CONST))] ->
   SchemaT (TypeContent TRUE IN CONST)
-buildInputUnion (baseName, baseFingerprint) =
-  mkInputUnionType baseFingerprint . analyseRep baseName
+buildInputUnion TypeData {gqlTypeName, gqlFingerprint} =
+  mkInputUnionType gqlFingerprint . analyseRep gqlTypeName
 
 buildUnionType ::
   (ELEM LEAF kind ~ TRUE) =>
-  TypeName ->
-  DataFingerprint ->
+  TypeData ->
   (DataUnion CONST -> TypeContent TRUE kind CONST) ->
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT (TypeContent TRUE kind CONST)
-buildUnionType baseName baseFingerprint wrapUnion wrapObject =
-  mkUnionType baseName baseFingerprint wrapUnion wrapObject . analyseRep baseName
+buildUnionType typeData wrapUnion wrapObject =
+  mkUnionType typeData wrapUnion wrapObject . analyseRep (gqlTypeName typeData)
 
 mkInputUnionType :: DataFingerprint -> ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
 mkInputUnionType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
@@ -305,18 +309,17 @@ mkInputUnionType baseFingerprint ResRep {unionRef, unionRecordRep, enumCons} = D
 
 mkUnionType ::
   (ELEM LEAF kind ~ TRUE) =>
-  TypeName ->
-  DataFingerprint ->
+  TypeData ->
   (DataUnion CONST -> TypeContent TRUE kind CONST) ->
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
-mkUnionType _ _ _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType baseName baseFingerprint wrapUnion wrapObject ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
+mkUnionType _ _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkUnionType typeData@TypeData {gqlFingerprint} wrapUnion wrapObject ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
   where
     typeMembers = do
-      enums <- buildUnionEnum wrapObject baseName baseFingerprint enumCons
-      unions <- buildUnions wrapObject baseFingerprint unionRecordRep
+      enums <- buildUnionEnum wrapObject typeData enumCons
+      unions <- buildUnions wrapObject gqlFingerprint unionRecordRep
       pure (unionRef <> enums <> unions)
 
 wrapFields :: [TypeName] -> KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
@@ -342,34 +345,35 @@ buildUnions wrapObject baseFingerprint cons =
 
 buildUnionEnum ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
-  TypeName ->
-  DataFingerprint ->
+  TypeData ->
   [TypeName] ->
   SchemaT [TypeName]
-buildUnionEnum wrapObject baseName baseFingerprint enums = updates $> members
+buildUnionEnum wrapObject TypeData {gqlTypeName, gqlFingerprint} enums = updates $> members
   where
     members
       | null enums = []
       | otherwise = [enumTypeWrapperName]
-    enumTypeName = baseName <> "Enum"
+    enumTypeName = gqlTypeName <> "Enum"
     enumTypeWrapperName = enumTypeName <> "Object"
     -------------------------
     updates :: SchemaT ()
     updates
       | null enums = pure ()
       | otherwise =
-        buildEnumObject wrapObject enumTypeWrapperName baseFingerprint enumTypeName
-          *> buildEnum enumTypeName baseFingerprint enums
+        buildEnumObject wrapObject enumTypeWrapperName gqlFingerprint enumTypeName
+          *> buildEnum enumTypeName gqlFingerprint enums
 
 buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
 buildType proxy typeContent =
   TypeDefinition
-    { typeName = __typeName proxy,
-      typeFingerprint = __typeFingerprint proxy,
+    { typeName = gqlTypeName typeData,
+      typeFingerprint = gqlFingerprint typeData,
       typeDescription = description proxy,
       typeDirectives = [],
       typeContent
     }
+  where
+    typeData = __type proxy
 
 buildUnionRecord ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
