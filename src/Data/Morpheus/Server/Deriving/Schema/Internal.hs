@@ -33,6 +33,7 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     asObjectType,
     fromSchema,
     updateByContent,
+    toTypeProxy,
   )
 where
 
@@ -130,6 +131,9 @@ data KindedProxy k a
 data KindedType (cat :: TypeCategory) a where
   InputType :: KindedType IN a
   OutputType :: KindedType OUT a
+
+toTypeProxy :: f k a -> Proxy a
+toTypeProxy _ = Proxy
 
 inputType :: f a -> KindedType IN a
 inputType _ = InputType
@@ -257,8 +261,8 @@ instance GetFieldContent OUT where
 
 updateByContent ::
   GQLType a =>
-  (f a -> SchemaT (TypeContent TRUE cat CONST)) ->
-  f a ->
+  (f kind a -> SchemaT (TypeContent TRUE cat CONST)) ->
+  f kind a ->
   SchemaT ()
 updateByContent f proxy = updateSchema (__typeName proxy) (__typeFingerprint proxy) deriveD proxy
   where

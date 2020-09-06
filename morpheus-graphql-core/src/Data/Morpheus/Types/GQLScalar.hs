@@ -22,7 +22,6 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     replaceValue,
   )
-import Data.Proxy (Proxy (..))
 import Data.Text (Text, unpack)
 import Prelude
   ( ($),
@@ -60,7 +59,7 @@ class GQLScalar a where
   -- | serialization of haskell type into scalar value
   serialize :: a -> ScalarValue
 
-  scalarValidator :: Proxy a -> ScalarDefinition
+  scalarValidator :: f a -> ScalarDefinition
   scalarValidator _ = ScalarDefinition {validateValue = validator}
     where
       validator value = do

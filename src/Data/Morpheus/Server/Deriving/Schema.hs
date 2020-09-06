@@ -52,6 +52,7 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
     inputType,
     outputType,
     setProxyType,
+    toTypeProxy,
     unpackMs,
     updateByContent,
     withObject,
@@ -111,7 +112,6 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
-    const,
   )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
@@ -209,9 +209,9 @@ class DeriveKindedType (kind :: GQL_KIND) a where
 
 -- SCALAR
 instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
-  deriveKindedType _ = updateByContent scalarType (Proxy @a)
+  deriveKindedType = updateByContent scalarType
 
-scalarType :: (GQLScalar a) => Proxy a -> SchemaT (TypeContent TRUE LEAF CONST)
+scalarType :: (GQLScalar a) => f a -> SchemaT (TypeContent TRUE LEAF CONST)
 scalarType = pure . DataScalar . scalarValidator
 
 -- ENUM
@@ -232,7 +232,7 @@ type DeriveTypeConstraint kind a =
   )
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType INTERFACE a where
-  deriveKindedType _ = updateByContent deriveInterface (Proxy @a)
+  deriveKindedType = updateByContent deriveInterface
 
 deriveInterface :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeContent TRUE OUT CONST)
 deriveInterface = fmap DataInterface . deriveObjectFields
@@ -242,10 +242,7 @@ derivingData ::
   DeriveTypeConstraint kind a =>
   KindedType kind a ->
   SchemaT ()
-derivingData kindedType =
-  updateByContent
-    (const $ deriveTypeContent kindedType)
-    (Proxy @a)
+derivingData = updateByContent deriveTypeContent
 
 deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> SchemaT (ArgumentsDefinition CONST)
 deriveArgumentDefinition = fmap fieldsToArguments . deriveFields . inputType
