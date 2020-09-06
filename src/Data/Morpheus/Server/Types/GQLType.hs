@@ -11,6 +11,8 @@
 
 module Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    GQLTypeOptions (..),
+    defaultTypeOptions,
   )
 where
 
@@ -74,6 +76,18 @@ import Prelude
     mempty,
     show,
   )
+
+data GQLTypeOptions = GQLTypeOptions
+  { fieldLabelModifier :: Text -> Text,
+    constructorTagModifier :: Text -> Text
+  }
+
+defaultTypeOptions :: GQLTypeOptions
+defaultTypeOptions =
+  GQLTypeOptions
+    { fieldLabelModifier = id,
+      constructorTagModifier = id
+    }
 
 wrapList :: [TypeWrapper] -> [TypeWrapper]
 wrapList = (TypeList :)
@@ -140,14 +154,14 @@ class IsObject (KIND a) => GQLType a where
   isObjectKind :: f a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
-  labelModifier :: f a -> Text -> Text
-  labelModifier _ = id
-
   description :: f a -> Maybe Text
   description _ = Nothing
 
   getDescriptions :: f a -> Map Text Description
   getDescriptions _ = mempty
+
+  typeOptions :: f a -> GQLTypeOptions
+  typeOptions _ = defaultTypeOptions
 
   getDirectives :: f a -> Map Text (Directives CONST)
   getDirectives _ = mempty

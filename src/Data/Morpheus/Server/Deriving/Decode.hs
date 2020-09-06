@@ -28,7 +28,6 @@ import Data.List (elem)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( elems,
-    mapName,
   )
 import Data.Morpheus.Kind
   ( ENUM,
@@ -54,8 +53,9 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
         __typeName,
-        labelModifier
+        typeOptions
       ),
+    GQLTypeOptions (..),
   )
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
@@ -65,7 +65,6 @@ import Data.Morpheus.Types.Internal.AST
     Arguments,
     InternalError,
     ObjectEntry (..),
-    Token,
     TypeName (..),
     VALID,
     ValidObject,
@@ -85,7 +84,6 @@ import Prelude
     (.),
     Eq (..),
     Ord,
-    map,
     otherwise,
   )
 
@@ -135,7 +133,7 @@ instance DecodeConstraint a => DecodeKind INPUT a where
   decodeKind _ = decodeType
 
 decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
-decodeType = fmap to . decodeRep . (labelModifier (Proxy @a),,Cont D_CONS "")
+decodeType = fmap to . decodeRep . (typeOptions (Proxy @a),,Cont D_CONS "")
 
 -- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }
@@ -183,7 +181,7 @@ instance Semigroup Info where
 --
 class DecodeRep f where
   tags :: Proxy f -> TypeName -> Info
-  decodeRep :: (Token -> Token, ValidValue, Cont) -> ResolverState (f a)
+  decodeRep :: (GQLTypeOptions, ValidValue, Cont) -> ResolverState (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
@@ -219,8 +217,8 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
           ctx = cont {contKind = kind (l1t <> r1t)}
       __decode (f, Enum name, cxt) =
         decideUnion
-          (map (mapName f) $ tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
-          (map (mapName f) $ tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
+          (tagName $ tags (Proxy @a) (typeName cxt), decodeRep)
+          (tagName $ tags (Proxy @b) (typeName cxt), decodeRep)
           name
           (f, Enum name, cxt)
       __decode _ = failure ("lists and scalars are not allowed in Union" :: InternalError)
@@ -240,7 +238,7 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
 
 class DecodeFields f where
   refType :: Proxy f -> Maybe TypeName
-  decodeFields :: (Token -> Token, ValidValue, Cont) -> ResolverState (f a)
+  decodeFields :: (GQLTypeOptions, ValidValue, Cont) -> ResolverState (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing
@@ -248,12 +246,12 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
   refType _ = Just $ __typeName (Proxy @a)
-  decodeFields (f, value, Cont {contKind})
+  decodeFields (opt, value, Cont {contKind})
     | contKind == D_UNION = M1 . K1 <$> decode value
     | otherwise = __decode value
     where
       __decode = fmap (M1 . K1) . decodeRec
-      fieldName = mapName f $ selNameProxy (Proxy @s)
+      fieldName = selNameProxy opt (Proxy @s)
       decodeRec = withInputObject (decodeFieldWith decode fieldName)
 
 instance DecodeFields U1 where

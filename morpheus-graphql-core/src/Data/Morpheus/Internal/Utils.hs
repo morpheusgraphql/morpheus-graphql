@@ -45,7 +45,6 @@ module Data.Morpheus.Internal.Utils
     ResolutionT,
     prop,
     resolveWith,
-    TextTool (..),
     stripFieldNamespace,
     stripConstructorNamespace,
   )
@@ -121,15 +120,6 @@ stripFieldNamespace prefix name =
 
 mapText :: (String -> String) -> Token -> Token
 mapText f = T.pack . f . T.unpack
-
-class TextTool a where
-  mapName :: (Token -> Token) -> a -> a
-
-instance TextTool FieldName where
-  mapName f (FieldName name) = FieldName (f name)
-
-instance TextTool TypeName where
-  mapName f (TypeName name) = TypeName (f name)
 
 nonCapital :: TypeName -> Token
 nonCapital = nonCapitalText . readTypeName

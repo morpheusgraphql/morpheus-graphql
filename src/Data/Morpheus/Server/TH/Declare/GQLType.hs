@@ -44,6 +44,8 @@ import Data.Morpheus.Server.Internal.TH.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    GQLTypeOptions (..),
+    defaultTypeOptions,
   )
 import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
@@ -93,7 +95,7 @@ deriveGQLType
           [ ('__typeName, [|tName|]),
             ('description, [|tDescription|]),
             ('implements, implementsFunc),
-            ('labelModifier, labelModifierFunc),
+            ('typeOptions, typeOptionsFunc),
             ('getDescriptions, fieldDescriptionsFunc),
             ('getDirectives, fieldDirectivesFunc),
             ('getFieldContents, getFieldContentsFunc)
@@ -101,9 +103,9 @@ deriveGQLType
         where
           tDescription = typeOriginal >>= typeDescription
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
-          labelModifierFunc
-            | namespace = [|stripFieldNamespace tName|]
-            | otherwise = [|id|]
+          typeOptionsFunc
+            | namespace = [|GQLTypeOptions (stripFieldNamespace tName) id|]
+            | otherwise = [|defaultTypeOptions|]
           fieldDescriptionsFunc = [|value|]
             where
               value = getDesc typeOriginal
