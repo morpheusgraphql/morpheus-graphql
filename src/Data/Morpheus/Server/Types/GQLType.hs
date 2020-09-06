@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -35,9 +36,11 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     QUERY,
     TypeName (..),
+    TypeRef (..),
     TypeWrapper (..),
     Value,
     internalFingerprint,
+    mkTypeRef,
     toNullable,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -78,6 +81,11 @@ import Prelude
     show,
   )
 
+data TypeData = TypeData
+  { gqlRef :: TypeRef,
+    gqlFingerprint :: DataFingerprint
+  }
+
 data GQLTypeOptions = GQLTypeOptions
   { fieldLabelModifier :: String -> String,
     constructorTagModifier :: String -> String
@@ -90,8 +98,36 @@ defaultTypeOptions =
       constructorTagModifier = id
     }
 
-wrapList :: [TypeWrapper] -> [TypeWrapper]
-wrapList = (TypeList :)
+getTypename :: forall f a. Typeable a => f a -> TypeName
+getTypename _ = TypeName $ intercalate "_" (getName $ Proxy @a)
+  where
+    getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+
+getFingerprint :: forall f a. Typeable a => f a -> DataFingerprint
+getFingerprint _ = DataFingerprint "Typeable" $ show <$> conFingerprints (Proxy @a)
+  where
+    conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+
+deriveTypeData :: Typeable a => f a -> TypeData
+deriveTypeData proxy =
+  TypeData
+    { gqlRef = mkTypeRef (getTypename proxy),
+      gqlFingerprint = getFingerprint proxy
+    }
+
+mkTypeData :: TypeName -> TypeData
+mkTypeData name =
+  TypeData
+    { gqlRef = mkTypeRef name,
+      gqlFingerprint = internalFingerprint "Int" []
+    }
+
+list :: [TypeWrapper] -> [TypeWrapper]
+list = (TypeList :)
+
+wrapper :: ([TypeWrapper] -> [TypeWrapper]) -> TypeData -> TypeData
+wrapper f TypeData {gqlRef = TypeRef {..}, ..} =
+  TypeData {gqlRef = TypeRef {typeWrappers = f typeWrappers, ..}, ..}
 
 resolverCon :: TyCon
 resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)
@@ -179,48 +215,29 @@ class IsObject (KIND a) => GQLType a where
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
-  __wrappers :: f a -> [TypeWrapper]
-  __wrappers _ = []
-
-  __typeName :: f a -> TypeName
-  default __typeName ::
-    (Typeable a) =>
-    f a ->
-    TypeName
-  __typeName _ = TypeName $ intercalate "_" (getName $ Proxy @a)
-    where
-      getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
-
-  __typeFingerprint :: f a -> DataFingerprint
-  default __typeFingerprint ::
-    (Typeable a) =>
-    f a ->
-    DataFingerprint
-  __typeFingerprint _ = DataFingerprint "Typeable" $ show <$> conFingerprints (Proxy @a)
-    where
-      conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+  __type :: f a -> TypeData
+  default __type :: (Typeable a) => f a -> TypeData
+  __type _ = deriveTypeData (Proxy @a)
 
 instance GQLType Int where
   type KIND Int = SCALAR
-  __typeFingerprint _ = internalFingerprint "Int" []
+  __type _ = mkTypeData "Int"
 
 instance GQLType Float where
   type KIND Float = SCALAR
-  __typeFingerprint _ = internalFingerprint "Float" []
+  __type _ = mkTypeData "Float"
 
 instance GQLType Text where
   type KIND Text = SCALAR
-  __typeName _ = "String"
-  __typeFingerprint _ = internalFingerprint "String" []
+  __type _ = mkTypeData "String"
 
 instance GQLType Bool where
   type KIND Bool = SCALAR
-  __typeName _ = "Boolean"
-  __typeFingerprint _ = internalFingerprint "Boolean" []
+  __type _ = mkTypeData "Boolean"
 
 instance GQLType ID where
   type KIND ID = SCALAR
-  __typeFingerprint _ = internalFingerprint "ID" []
+  __type _ = mkTypeData "ID"
 
 -- WRAPPERS
 instance GQLType ()
@@ -231,49 +248,36 @@ instance Typeable m => GQLType (Undefined m) where
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __wrappers _ = toNullable $ __wrappers $ Proxy @a
-  __typeName _ = __typeName (Proxy @a)
-  __typeFingerprint _ = __typeFingerprint $ Proxy @a
+  __type _ = wrapper toNullable $ __type (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __wrappers _ = wrapList $ __wrappers $ Proxy @a
-  __typeName _ = __typeName $ Proxy @a
-  __typeFingerprint _ = __typeFingerprint $ Proxy @a
+  __type _ = wrapper list $ __type (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = WRAPPER
-  __typeName _ = __typeName $ Proxy @(Pair a b)
+  __type _ = __type (Proxy @(Pair a b))
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
-  __wrappers _ = __wrappers $ Proxy @[a]
-  __typeName _ = __typeName $ Proxy @a
-  __typeFingerprint _ = __typeFingerprint $ Proxy @a
+  __type _ = __type (Proxy @[a])
 
 instance (Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = WRAPPER
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = WRAPPER
-  __wrappers _ = __wrappers $ Proxy @a
-  __typeName _ = __typeName $ Proxy @a
-  __typeFingerprint _ = __typeFingerprint $ Proxy @a
+  __type _ = __type (Proxy @a)
 
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
-  __wrappers _ = __wrappers $ Proxy @a
-  __typeName _ = __typeName $ Proxy @a
-  __typeFingerprint _ = __typeFingerprint $ Proxy @a
+  __type _ = __type (Proxy @a)
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER
-  __wrappers _ = __wrappers $ Proxy @b
-  __typeName _ = __typeName $ Proxy @b
-  __typeFingerprint _ = __typeFingerprint $ Proxy @b
+  __type _ = __type (Proxy @b)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
-  __typeName _ = __typeName $ Proxy @(Map a b)
-  __typeFingerprint _ = __typeFingerprint $ Proxy @(Map a b)
+  __type _ = __type (Proxy @(Map a b))
