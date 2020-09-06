@@ -14,6 +14,8 @@ module Data.Morpheus.Kind
     OUTPUT,
     INPUT,
     INTERFACE,
+    ToValue (..),
+    isObject,
   )
 where
 
@@ -24,6 +26,33 @@ data GQL_KIND
   | OUTPUT
   | WRAPPER
   | INTERFACE
+
+class ToValue (a :: GQL_KIND) where
+  toValue :: f a -> GQL_KIND
+
+instance ToValue 'SCALAR where
+  toValue _ = SCALAR
+
+instance ToValue 'ENUM where
+  toValue _ = ENUM
+
+instance ToValue 'WRAPPER where
+  toValue _ = WRAPPER
+
+instance ToValue 'INPUT where
+  toValue _ = INPUT
+
+instance ToValue 'OUTPUT where
+  toValue _ = OUTPUT
+
+instance ToValue 'INTERFACE where
+  toValue _ = INTERFACE
+
+isObject :: GQL_KIND -> Bool
+isObject INPUT = True
+isObject OUTPUT = True
+isObject INTERFACE = True
+isObject _ = False
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR

@@ -161,28 +161,7 @@ ignoreResolver (con, args) =
 --     instance GQLType ... where
 --       description = const "your description ..."
 --  @
-class IsObject (a :: GQL_KIND) where
-  isObject :: Proxy a -> Bool
-
-instance IsObject SCALAR where
-  isObject _ = False
-
-instance IsObject ENUM where
-  isObject _ = False
-
-instance IsObject WRAPPER where
-  isObject _ = False
-
-instance IsObject INPUT where
-  isObject _ = True
-
-instance IsObject OUTPUT where
-  isObject _ = True
-
-instance IsObject INTERFACE where
-  isObject _ = True
-
-class IsObject (KIND a) => GQLType a where
+class ToValue (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
   type KIND a = OUTPUT
 
@@ -190,7 +169,7 @@ class IsObject (KIND a) => GQLType a where
   implements _ = []
 
   isObjectKind :: f a -> Bool
-  isObjectKind _ = isObject (Proxy @(KIND a))
+  isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 
   description :: f a -> Maybe Text
   description _ = Nothing
