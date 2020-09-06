@@ -195,7 +195,7 @@ class ToValue (KIND a) => GQLType a where
   isEmptyType _ = False
 
   __type :: f a -> TypeData
-  default __type :: (Typeable a) => f a -> TypeData
+  default __type :: Typeable a => f a -> TypeData
   __type _ = deriveTypeData (Proxy @a)
 
 instance GQLType Int where
@@ -227,36 +227,36 @@ instance Typeable m => GQLType (Undefined m) where
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __type _ = wrapper toNullable $ __type (Proxy @a)
+  __type _ = wrapper toNullable $ __type $ Proxy @a
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __type _ = wrapper list $ __type (Proxy @a)
+  __type _ = wrapper list $ __type $ Proxy @a
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = WRAPPER
-  __type _ = __type (Proxy @(Pair a b))
+  __type _ = __type $ Proxy @(Pair a b)
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
-  __type _ = __type (Proxy @[a])
+  __type _ = __type $ Proxy @[a]
 
 instance (Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = WRAPPER
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = WRAPPER
-  __type _ = __type (Proxy @a)
+  __type _ = __type $ Proxy @a
 
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
-  __type _ = __type (Proxy @a)
+  __type _ = __type $ Proxy @a
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = WRAPPER
-  __type _ = __type (Proxy @b)
+  __type _ = __type $ Proxy @b
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
-  __type _ = __type (Proxy @(Map a b))
+  __type _ = __type $ Proxy @(Map a b)
