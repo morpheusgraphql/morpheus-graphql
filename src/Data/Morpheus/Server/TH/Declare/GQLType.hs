@@ -96,8 +96,7 @@ deriveGQLType
     where
       functions =
         funDProxy
-          [ ('__typeName, [|tName|]),
-            ('description, [|tDescription|]),
+          [ ('description, [|tDescription|]),
             ('implements, implementsFunc),
             ('typeOptions, typeOptionsFunc),
             ('getDescriptions, fieldDescriptionsFunc),
