@@ -81,9 +81,7 @@ import Prelude
     Eq (..),
     Int,
     Maybe (..),
-    String,
     map,
-    null,
     otherwise,
     show,
     undefined,
@@ -113,10 +111,11 @@ instance MapRep (DataType v) where
   mapLabel ns r = r {tyCons = mapLabel ns (tyCons r)}
 
 instance MapRep (ConsRep v) where
-  mapLabel f ConsRep {consFields, ..} =
+  mapLabel f ConsRep {..} =
     ConsRep
       { consName =
           mapName f consName,
+        consFields = map (mapLabel f) consFields,
         ..
       }
 
