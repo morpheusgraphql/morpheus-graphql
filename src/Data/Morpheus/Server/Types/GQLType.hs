@@ -68,7 +68,6 @@ import Prelude
     Float,
     Int,
     Maybe (..),
-    String,
     concatMap,
     fmap,
     id,
@@ -141,7 +140,7 @@ class IsObject (KIND a) => GQLType a where
   isObjectKind :: f a -> Bool
   isObjectKind _ = isObject (Proxy @(KIND a))
 
-  labelModifier :: f a -> String -> String
+  labelModifier :: f a -> Text -> Text
   labelModifier _ = id
 
   description :: f a -> Maybe Text

@@ -100,7 +100,7 @@ deriveGQLType
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
           labelModifierFunc
             | namespace = [|Just tName|]
-            | otherwise = [|Nothing|]
+            | otherwise = [|id|]
           fieldDescriptionsFunc = [|value|]
             where
               value = getDesc typeOriginal

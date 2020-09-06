@@ -112,17 +112,17 @@ nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capital (fmap re
 nameSpaceField :: TypeName -> FieldName -> FieldName
 nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capital name)
 
-class TextTool a where
-  mapText :: (String -> String) -> a -> a
+mapText :: (String -> String) -> Token -> Token
+mapText f = T.pack . f . T.unpack
 
-instance TextTool Token where
-  mapText f = T.pack . f . T.unpack
+class TextTool a where
+  mapName :: (Token -> Token) -> a -> a
 
 instance TextTool FieldName where
-  mapText f (FieldName name) = FieldName (mapText f name)
+  mapName f (FieldName name) = FieldName (f name)
 
 instance TextTool TypeName where
-  mapText f (TypeName name) = TypeName (mapText f name)
+  mapName f (TypeName name) = TypeName (f name)
 
 nonCapital :: TypeName -> Token
 nonCapital = nonCapitalText . readTypeName

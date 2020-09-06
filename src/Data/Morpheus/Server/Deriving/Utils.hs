@@ -37,7 +37,7 @@ where
 
 import Data.Functor (Functor (..))
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Internal.Utils (mapText)
+import Data.Morpheus.Internal.Utils (mapName)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
   )
@@ -107,7 +107,7 @@ newtype TypeConstraint (c :: * -> Constraint) (v :: *) (f :: * -> *) = TypeConst
   }
 
 class MapRep a where
-  mapLabel :: (String -> String) -> a -> a
+  mapLabel :: (Token -> Token) -> a -> a
 
 instance MapRep (DataType v) where
   mapLabel ns r = r {tyCons = mapLabel ns (tyCons r)}
@@ -116,7 +116,7 @@ instance MapRep (ConsRep v) where
   mapLabel f ConsRep {consFields, ..} =
     ConsRep
       { consName =
-          mapText f consName,
+          mapName f consName,
         ..
       }
 
@@ -124,7 +124,7 @@ instance MapRep (FieldRep c) where
   mapLabel f FieldRep {fieldSelector = fields, ..} =
     FieldRep
       { fieldSelector =
-          mapText f fields,
+          mapName f fields,
         ..
       }
 
