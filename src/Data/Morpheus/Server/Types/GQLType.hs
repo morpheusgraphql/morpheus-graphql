@@ -37,11 +37,9 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     QUERY,
     TypeName (..),
-    TypeRef (..),
     TypeWrapper (..),
     Value,
     internalFingerprint,
-    mkTypeRef,
     toNullable,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -83,7 +81,8 @@ import Prelude
   )
 
 data TypeData = TypeData
-  { gqlRef :: TypeRef,
+  { gqlTypeName :: TypeName,
+    gqlWrappers :: [TypeWrapper],
     gqlFingerprint :: DataFingerprint
   }
 
@@ -112,23 +111,24 @@ getFingerprint _ = DataFingerprint "Typeable" $ show <$> conFingerprints (Proxy 
 deriveTypeData :: Typeable a => f a -> TypeData
 deriveTypeData proxy =
   TypeData
-    { gqlRef = mkTypeRef (getTypename proxy),
+    { gqlTypeName = getTypename proxy,
+      gqlWrappers = [],
       gqlFingerprint = getFingerprint proxy
     }
 
 mkTypeData :: TypeName -> TypeData
 mkTypeData name =
   TypeData
-    { gqlRef = mkTypeRef name,
-      gqlFingerprint = internalFingerprint "Int" []
+    { gqlTypeName = name,
+      gqlFingerprint = internalFingerprint name [],
+      gqlWrappers = []
     }
 
 list :: [TypeWrapper] -> [TypeWrapper]
 list = (TypeList :)
 
 wrapper :: ([TypeWrapper] -> [TypeWrapper]) -> TypeData -> TypeData
-wrapper f TypeData {gqlRef = TypeRef {..}, ..} =
-  TypeData {gqlRef = TypeRef {typeWrappers = f typeWrappers, ..}, ..}
+wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 
 resolverCon :: TyCon
 resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)

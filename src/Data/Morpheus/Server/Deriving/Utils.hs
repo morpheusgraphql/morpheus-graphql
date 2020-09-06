@@ -79,6 +79,7 @@ import Prelude
     Bool (..),
     Eq (..),
     Int,
+    Maybe (..),
     otherwise,
     show,
     undefined,
@@ -183,10 +184,17 @@ deriveFieldRep ::
 deriveFieldRep opt pSel proxy v =
   FieldRep
     { fieldSelector = selNameProxy opt pSel,
-      fieldTypeRef = gqlRef (__type proxy),
+      fieldTypeRef =
+        TypeRef
+          { typeConName = gqlTypeName,
+            typeWrappers = gqlWrappers,
+            typeArgs = Nothing
+          },
       fieldIsObject = isObjectKind proxy,
       fieldValue = v
     }
+  where
+    TypeData {gqlTypeName, gqlWrappers} = __type proxy
 
 instance ConRep c v U1 where
   conRep _ _ = []
