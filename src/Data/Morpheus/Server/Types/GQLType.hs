@@ -66,7 +66,6 @@ import Data.Typeable
 import Prelude
   ( ($),
     (.),
-    (<$>),
     Bool (..),
     Eq (..),
     Float,
@@ -98,13 +97,13 @@ defaultTypeOptions =
       constructorTagModifier = id
     }
 
-getTypename :: forall f a. Typeable a => f a -> TypeName
-getTypename _ = TypeName $ intercalate "_" (getName $ Proxy @a)
+getTypename :: Typeable a => f a -> TypeName
+getTypename = TypeName . intercalate "_" . getName
   where
     getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 
-getFingerprint :: forall f a. Typeable a => f a -> DataFingerprint
-getFingerprint _ = DataFingerprint "Typeable" $ show <$> conFingerprints (Proxy @a)
+getFingerprint :: Typeable a => f a -> DataFingerprint
+getFingerprint = DataFingerprint "Typeable" . fmap show . conFingerprints
   where
     conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
