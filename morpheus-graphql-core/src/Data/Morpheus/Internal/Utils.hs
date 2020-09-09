@@ -128,15 +128,19 @@ class Capitalize a where
   capitalize :: a -> a
   uncapitalize :: a -> a
 
-instance Capitalize Token where
-  capitalize = mapText capitalize
-  uncapitalize = mapText uncapitalize
-
 instance Capitalize String where
   capitalize [] = []
   capitalize (x : xs) = toUpper x : xs
   uncapitalize [] = []
   uncapitalize (x : xs) = toLower x : xs
+
+instance Capitalize Token where
+  capitalize = mapText capitalize
+  uncapitalize = mapText uncapitalize
+
+instance Capitalize TypeName where
+  capitalize = TypeName . capitalize . readTypeName
+  uncapitalize = TypeName . uncapitalize . readTypeName
 
 capitalTypeName :: FieldName -> TypeName
 capitalTypeName = TypeName . capitalize . readName
