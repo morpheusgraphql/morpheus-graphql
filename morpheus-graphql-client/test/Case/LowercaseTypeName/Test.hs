@@ -13,11 +13,14 @@ module Case.LowercaseTypeName.Test
   )
 where
 
+import Control.Applicative (pure)
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.Morpheus.Client
   ( Fetch (..),
+    GQLScalar (..),
+    ScalarValue (..),
     gql,
   )
 import Data.Text (Text)
@@ -34,16 +37,29 @@ import Test.Tasty.HUnit
   )
 import Prelude
   ( ($),
+    (.),
     Either (..),
+    Eq,
     IO,
+    Show,
     String,
   )
+
+newtype Uuid = Uuid
+  { uuid :: Text
+  }
+  deriving (Show, Eq)
+
+instance GQLScalar Uuid where
+  parseValue (String x) = pure (Uuid x)
+  parseValue _ = Left "not valid uid"
+  serialize = String . uuid
 
 defineClientWith
   "LowercaseTypeName"
   [gql|
     query MyQuery {
-      user(id: "123gzzfz2") {
+      user(id: "11343135") {
         id
       }
     }
@@ -62,43 +78,10 @@ testInterface = testCase "test interfaces" $ do
     "test interface"
     ( Right
         ( MyQuery
-            { character =
-                [ CharacterDeity
-                    { name = "Deity Name",
-                      power = "Deity Power",
-                      __typename = "Deity"
-                    },
-                  CharacterCharacter
-                    { name = "Character Name",
-                      __typename = "Character"
-                    },
-                  CharacterHero
-                    { name = "Hero Name",
-                      hobby = "Deity Power",
-                      __typename = "Hero"
-                    }
-                ],
-              character2 =
-                [ Character2Character
-                    { name1 = "test name",
-                      name = "test name"
-                    }
-                ],
-              character3 =
-                [ Character3Hero
-                    { hobby = "Hero Hobby",
-                      name2 = "Hero name2",
-                      __typename = "Hero"
-                    },
-                  Character3Deity
-                    { name2 = "Hero name2",
-                      __typename = "Deity"
-                    },
-                  Character3Character
-                    { name2 = "Character name2",
-                      __typename = "Character"
-                    }
-                ]
+            { user =
+                UserUser
+                  { id = Uuid ""
+                  }
             }
         )
     )
