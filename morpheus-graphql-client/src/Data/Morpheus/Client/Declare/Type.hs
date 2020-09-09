@@ -23,7 +23,7 @@ import Data.Morpheus.Internal.TH
     toName,
   )
 import Data.Morpheus.Internal.Utils
-  ( capital,
+  ( capitalize,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -77,4 +77,4 @@ declareField FieldDefinition {fieldName, fieldType} =
   )
 
 mkConName :: [FieldName] -> TypeName -> Name
-mkConName namespace = toName . capital . nameSpaceType namespace
+mkConName namespace = toName . capitalize . nameSpaceType namespace

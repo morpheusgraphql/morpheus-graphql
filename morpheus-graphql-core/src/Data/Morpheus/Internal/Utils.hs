@@ -11,7 +11,6 @@
 
 module Data.Morpheus.Internal.Utils
   ( capitalize,
-    nonCapital,
     nameSpaceField,
     nameSpaceType,
     capitalTypeName,
