@@ -72,7 +72,7 @@ client :: IO (Either String MyQuery)
 client = fetch resolver ()
 
 testLowercaseTypeName :: TestTree
-testLowercaseTypeName = testCase "test interfaces" $ do
+testLowercaseTypeName = testCase "test lowercase type names" $ do
   value <- client
   assertEqual
     "test interface"
