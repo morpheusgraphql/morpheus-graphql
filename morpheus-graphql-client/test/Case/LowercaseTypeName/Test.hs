@@ -50,7 +50,7 @@ defineClientWith
   |]
 
 resolver :: ByteString -> IO ByteString
-resolver = mockApi "Interface"
+resolver = mockApi "LowercaseTypeName"
 
 client :: IO (Either String MyQuery)
 client = fetch resolver ()

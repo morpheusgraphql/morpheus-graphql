@@ -11,6 +11,7 @@ where
 
 --
 -- MORPHEUS
+
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -20,6 +21,9 @@ import Data.Morpheus.Internal.TH
     isEnum,
     nameSpaceType,
     toName,
+  )
+import Data.Morpheus.Internal.Utils
+  ( capital,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -73,4 +77,4 @@ declareField FieldDefinition {fieldName, fieldType} =
   )
 
 mkConName :: [FieldName] -> TypeName -> Name
-mkConName namespace = toName . nameSpaceType namespace
+mkConName namespace = toName . capital . nameSpaceType namespace
