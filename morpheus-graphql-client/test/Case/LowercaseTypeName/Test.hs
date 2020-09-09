@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Case.LowercaseTypeName.Test
-  ( testInterface,
+  ( testLowercaseTypeName,
   )
 where
 
@@ -71,8 +71,8 @@ resolver = mockApi "LowercaseTypeName"
 client :: IO (Either String MyQuery)
 client = fetch resolver ()
 
-testInterface :: TestTree
-testInterface = testCase "test interfaces" $ do
+testLowercaseTypeName :: TestTree
+testLowercaseTypeName = testCase "test interfaces" $ do
   value <- client
   assertEqual
     "test interface"
@@ -80,7 +80,7 @@ testInterface = testCase "test interfaces" $ do
         ( MyQuery
             { user =
                 UserUser
-                  { id = Uuid ""
+                  { id = Uuid "11343135"
                   }
             }
         )
