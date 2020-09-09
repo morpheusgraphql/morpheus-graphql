@@ -38,7 +38,8 @@ import Data.Morpheus.Internal.TH
     v',
   )
 import Data.Morpheus.Internal.Utils
-  ( nameSpaceType,
+  ( capitalize,
+    nameSpaceType,
   )
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,
@@ -98,7 +99,7 @@ deriveScalarToJSON
     { clientTypeName = TypeNameTH {typename}
     } = instanceD (cxt []) typeDef body
     where
-      typeDef = applyCons ''ToJSON [typename]
+      typeDef = applyCons ''ToJSON [capitalize typename]
       body = [funDSimple 'toJSON [] (varE 'scalarToJSON)]
 
 -- FromJSON
