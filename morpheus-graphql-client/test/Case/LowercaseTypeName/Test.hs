@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Case.Interface.Test
+module Case.LowercaseTypeName.Test
   ( testInterface,
   )
 where
@@ -97,15 +97,6 @@ testInterface = testCase "test interfaces" $ do
                   Character3Character
                     { name2 = "Character name2",
                       __typename = "Character"
-                    }
-                ],
-              character4 =
-                [ Character4Character
-                    { __typename = "Character"
-                    },
-                  Character4Hero
-                    { hobby = "Hero Hobby",
-                      __typename = "Hero"
                     }
                 ]
             }
