@@ -38,8 +38,7 @@ import Data.Morpheus.Internal.TH
     v',
   )
 import Data.Morpheus.Internal.Utils
-  ( capitalize,
-    nameSpaceType,
+  ( nameSpaceType,
   )
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,
