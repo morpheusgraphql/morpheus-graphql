@@ -22,9 +22,6 @@ import Data.Morpheus.Internal.TH
     nameSpaceType,
     toName,
   )
-import Data.Morpheus.Internal.Utils
-  ( capitalize,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
