@@ -11,7 +11,6 @@ where
 
 --
 -- MORPHEUS
-
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
