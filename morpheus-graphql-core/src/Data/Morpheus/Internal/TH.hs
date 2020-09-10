@@ -142,7 +142,7 @@ instance ToName Name where
   toName = id
 
 instance ToName TypeName where
-  toName = mkName . unpack . readTypeName
+  toName = mkName . unpack . capitalize . readTypeName
 
 instance ToName FieldName where
   toName = mkName . unpack . readName . convertToHaskellName
