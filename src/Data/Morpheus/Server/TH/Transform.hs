@@ -20,7 +20,6 @@ import Control.Monad.Fail (fail)
 import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Internal.TH
   ( infoTyVars,
-    m_,
     toName,
   )
 import Data.Morpheus.Internal.Utils
@@ -61,6 +60,7 @@ import Prelude
   ( ($),
     Bool (..),
     Maybe (..),
+    String,
     concat,
     not,
     null,
@@ -68,7 +68,10 @@ import Prelude
     traverse,
   )
 
-getTypeArgs :: TypeName -> [TypeDefinition ANY s] -> Q (Maybe TypeName)
+m_ :: String
+m_ = "m"
+
+getTypeArgs :: TypeName -> [TypeDefinition ANY s] -> Q (Maybe String)
 getTypeArgs "__TypeKind" _ = pure Nothing
 getTypeArgs "Boolean" _ = pure Nothing
 getTypeArgs "String" _ = pure Nothing
@@ -78,12 +81,12 @@ getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
   Just x -> pure (kindToTyArgs x)
   Nothing -> getTyArgs <$> reify (toName key)
 
-getTyArgs :: Info -> Maybe TypeName
+getTyArgs :: Info -> Maybe String
 getTyArgs x
   | null (infoTyVars x) = Nothing
   | otherwise = Just m_
 
-kindToTyArgs :: TypeContent TRUE ANY s -> Maybe TypeName
+kindToTyArgs :: TypeContent TRUE ANY s -> Maybe String
 kindToTyArgs DataObject {} = Just m_
 kindToTyArgs DataUnion {} = Just m_
 kindToTyArgs DataInterface {} = Just m_

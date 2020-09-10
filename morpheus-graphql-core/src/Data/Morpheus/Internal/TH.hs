@@ -25,7 +25,6 @@ module Data.Morpheus.Internal.TH
     infoTyVars,
     isEnum,
     m',
-    m_,
     mkFieldsE,
     nameSpaceField,
     nameSpaceType,
@@ -86,9 +85,6 @@ import Prelude
     show,
     (||),
   )
-
-m_ :: TypeName
-m_ = "m"
 
 m' :: Type
 m' = VarT (mkName "m")
