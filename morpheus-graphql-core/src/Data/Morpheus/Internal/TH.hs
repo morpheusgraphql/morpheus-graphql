@@ -79,6 +79,7 @@ import Prelude
     (.),
     (==),
     Bool (..),
+    String,
     id,
     map,
     otherwise,
@@ -117,12 +118,13 @@ declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT [] = decType typeArgs
     --------------------------------------------
+    decType :: Maybe String -> Type
     decType (Just par) = apply (capitalize typeConName) [toVar par]
     decType _ = toCon (capitalize typeConName)
 
-tyConArgs :: TypeKind -> [TypeName]
+tyConArgs :: TypeKind -> [String]
 tyConArgs kindD
-  | isOutputObject kindD || kindD == KindUnion = [m_]
+  | isOutputObject kindD || kindD == KindUnion = ["m"]
   | otherwise = []
 
 cons :: ToCon a b => [a] -> [b]
@@ -133,6 +135,9 @@ vars = map toVar
 
 class ToName a where
   toName :: a -> Name
+
+instance ToName String where
+  toName = mkName
 
 instance ToName Name where
   toName = id
