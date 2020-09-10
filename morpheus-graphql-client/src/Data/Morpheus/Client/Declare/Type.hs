@@ -77,4 +77,4 @@ declareField FieldDefinition {fieldName, fieldType} =
   )
 
 mkConName :: [FieldName] -> TypeName -> Name
-mkConName namespace = toName . capitalize . nameSpaceType namespace
+mkConName namespace = toName . nameSpaceType namespace

@@ -99,7 +99,7 @@ deriveScalarToJSON
     { clientTypeName = TypeNameTH {typename}
     } = instanceD (cxt []) typeDef body
     where
-      typeDef = applyCons ''ToJSON [capitalize typename]
+      typeDef = applyCons ''ToJSON [typename]
       body = [funDSimple 'toJSON [] (varE 'scalarToJSON)]
 
 -- FromJSON
