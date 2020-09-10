@@ -20,6 +20,7 @@ import Control.Monad.Fail (fail)
 import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Internal.TH
   ( infoTyVars,
+    m_,
     toName,
   )
 import Data.Morpheus.Internal.Utils
@@ -66,9 +67,6 @@ import Prelude
     otherwise,
     traverse,
   )
-
-m_ :: TypeName
-m_ = "m"
 
 getTypeArgs :: TypeName -> [TypeDefinition ANY s] -> Q (Maybe TypeName)
 getTypeArgs "__TypeKind" _ = pure Nothing
