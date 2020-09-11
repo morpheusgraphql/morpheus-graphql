@@ -1,4 +1,4 @@
-name: Deploy-test
+name: Deploy-tests
 
 on: [push]
 
