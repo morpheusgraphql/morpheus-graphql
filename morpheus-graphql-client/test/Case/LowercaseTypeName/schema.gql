@@ -1,0 +1,9 @@
+scalar uuid
+
+type user {
+  id: uuid!
+}
+
+type Query {
+  user(id: uuid): user!
+}
