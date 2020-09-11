@@ -1,5 +1,6 @@
 # ghc 8.4.4
 resolver: lts-12.16
+save-hackage-creds: false
 packages:
   - morpheus-graphql-examples-scotty
   - morpheus-graphql-examples-servant
