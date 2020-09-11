@@ -23,5 +23,5 @@ jobs:
           stack upload morpheus-graphql-client
           stack upload .
         env:
-          STACK_USERNAME: ${{ secrets.USERNAME }}
-          STACK_PASSWORD: ${{ secrets.PASSWORD }}
+          HACKAGE_USERNAME: ${{ secrets.USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.PASSWORD }}
