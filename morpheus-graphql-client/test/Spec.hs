@@ -7,6 +7,9 @@ module Main
 where
 
 import Case.Interface.Test (testInterface)
+import Case.LowercaseTypeName.Test
+  ( testLowercaseTypeName,
+  )
 import Test.Tasty
   ( defaultMain,
     testGroup,
@@ -21,4 +24,6 @@ main =
   defaultMain $
     testGroup
       "client tests"
-      [testInterface]
+      [ testInterface,
+        testLowercaseTypeName
+      ]

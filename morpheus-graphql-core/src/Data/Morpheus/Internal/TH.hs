@@ -25,7 +25,6 @@ module Data.Morpheus.Internal.TH
     infoTyVars,
     isEnum,
     m',
-    m_,
     mkFieldsE,
     nameSpaceField,
     nameSpaceType,
@@ -55,7 +54,8 @@ import Data.Foldable (foldl, foldr1)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
-  ( nameSpaceField,
+  ( capitalize,
+    nameSpaceField,
     nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -79,15 +79,13 @@ import Prelude
     (.),
     (==),
     Bool (..),
+    String,
     id,
     map,
     otherwise,
     show,
     (||),
   )
-
-m_ :: TypeName
-m_ = "m"
 
 m' :: Type
 m' = VarT (mkName "m")
@@ -120,12 +118,13 @@ declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
     wrappedT [] = decType typeArgs
     --------------------------------------------
-    decType (Just par) = apply typeConName [toVar par]
-    decType _ = toCon typeConName
+    decType :: Maybe String -> Type
+    decType (Just par) = apply (capitalize typeConName) [toVar par]
+    decType _ = toCon (capitalize typeConName)
 
-tyConArgs :: TypeKind -> [TypeName]
+tyConArgs :: TypeKind -> [String]
 tyConArgs kindD
-  | isOutputObject kindD || kindD == KindUnion = [m_]
+  | isOutputObject kindD || kindD == KindUnion = ["m"]
   | otherwise = []
 
 cons :: ToCon a b => [a] -> [b]
@@ -137,11 +136,14 @@ vars = map toVar
 class ToName a where
   toName :: a -> Name
 
+instance ToName String where
+  toName = mkName
+
 instance ToName Name where
   toName = id
 
 instance ToName TypeName where
-  toName = mkName . unpack . readTypeName
+  toName = mkName . unpack . capitalize . readTypeName
 
 instance ToName FieldName where
   toName = mkName . unpack . readName . convertToHaskellName

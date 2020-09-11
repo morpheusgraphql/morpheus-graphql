@@ -4,6 +4,8 @@
 
 ### minor
 
+- client capitalizes type names [#519](https://github.com/morpheusgraphql/morpheus-graphql/issues/519)
+
 - fixed client error on field `__typename` [#509](https://github.com/morpheusgraphql/morpheus-graphql/issues/509)
 
 ## 0.14.1 - 16.08.2020

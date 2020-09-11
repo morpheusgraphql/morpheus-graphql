@@ -10,8 +10,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
-  ( capital,
-    nonCapital,
+  ( capitalize,
     nameSpaceField,
     nameSpaceType,
     capitalTypeName,
@@ -104,10 +103,10 @@ prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
 prop f fSel a1 a2 = f (fSel a1) (fSel a2)
 
 nameSpaceType :: [FieldName] -> TypeName -> TypeName
-nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capital (fmap readName list <> [name])
+nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capitalize (fmap readName list <> [name])
 
 nameSpaceField :: TypeName -> FieldName -> FieldName
-nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capital name)
+nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capitalize name)
 
 dropPrefix :: TypeName -> String -> String
 dropPrefix (TypeName name) = drop (length (T.unpack name))
@@ -116,29 +115,34 @@ stripConstructorNamespace :: TypeName -> String -> String
 stripConstructorNamespace = dropPrefix
 
 stripFieldNamespace :: TypeName -> String -> String
-stripFieldNamespace prefix = nonCapitalString . dropPrefix prefix
+stripFieldNamespace prefix = uncapitalize . dropPrefix prefix
 
 mapText :: (String -> String) -> Token -> Token
 mapText f = T.pack . f . T.unpack
 
 nonCapital :: TypeName -> Token
-nonCapital = nonCapitalText . readTypeName
+nonCapital = uncapitalize . readTypeName
 
-nonCapitalString :: String -> String
-nonCapitalString [] = []
-nonCapitalString (x : xs) = toLower x : xs
+class Capitalize a where
+  capitalize :: a -> a
+  uncapitalize :: a -> a
 
-nonCapitalText :: Token -> Token
-nonCapitalText = mapText nonCapitalString
+instance Capitalize String where
+  capitalize [] = []
+  capitalize (x : xs) = toUpper x : xs
+  uncapitalize [] = []
+  uncapitalize (x : xs) = toLower x : xs
 
-capital :: Token -> Token
-capital = mapText __capital
-  where
-    __capital [] = []
-    __capital (x : xs) = toUpper x : xs
+instance Capitalize Token where
+  capitalize = mapText capitalize
+  uncapitalize = mapText uncapitalize
+
+instance Capitalize TypeName where
+  capitalize = TypeName . capitalize . readTypeName
+  uncapitalize = TypeName . uncapitalize . readTypeName
 
 capitalTypeName :: FieldName -> TypeName
-capitalTypeName = TypeName . capital . readName
+capitalTypeName = TypeName . capitalize . readName
 
 --(KEY v ~ k) =>
 class Collection a coll | coll -> a where
