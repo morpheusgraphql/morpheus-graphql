@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.15.0 - Unreleased Changes
+## 0.15.0 - 12.09.2020
 
 ### new features
 
