@@ -1,0 +1,25 @@
+name: Deploy
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare OS
+        uses: actions/checkout@v1
+      - name: Setup stack
+        uses: mstksg/setup-stack@v1
+      - name: Install dependencies
+        run: |
+          stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+      - name: Build
+        run: |
+          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+      - name: Build
+        run: |
+          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+        env:
+          HOST: ${{ secrets.HOST }}
+          USERNAME: ${{ secrets.USERNAME }}
