@@ -44,6 +44,7 @@ import Language.Haskell.TH
 import Prelude
   ( ($),
     (.),
+    String,
     map,
     pure,
   )
@@ -63,7 +64,7 @@ typeNameStringE = LitE . StringL . (unpack . readTypeName)
 constraintTypeable :: Type -> Type
 constraintTypeable name = apply ''Typeable [name]
 
-mkTypeableConstraints :: [TypeName] -> CxtQ
+mkTypeableConstraints :: [String] -> CxtQ
 mkTypeableConstraints args = cxt $ map (pure . constraintTypeable) (vars args)
 
 kindName :: TypeKind -> Name

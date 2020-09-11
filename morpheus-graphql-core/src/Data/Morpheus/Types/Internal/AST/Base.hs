@@ -232,7 +232,15 @@ newtype TypeName = TypeName {readTypeName :: Text}
   deriving
     (Generic)
   deriving newtype
-    (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
+    ( Show,
+      Ord,
+      Eq,
+      IsString,
+      Hashable,
+      Semigroup,
+      FromJSON,
+      ToJSON
+    )
 
 instance Lift TypeName where
   lift = liftString . readTypeName
@@ -326,7 +334,7 @@ anonymousRef refName = Ref {refName, refPosition = Position 0 0}
 -------------------------------------------------------------------
 data TypeRef = TypeRef
   { typeConName :: TypeName,
-    typeArgs :: Maybe TypeName,
+    typeArgs :: Maybe String,
     typeWrappers :: [TypeWrapper]
   }
   deriving (Show, Eq, Lift)
