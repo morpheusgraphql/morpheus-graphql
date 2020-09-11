@@ -16,9 +16,12 @@ jobs:
       - name: Build
         run: |
           stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
-      - name: Build
+      - name: sdist
         run: |
-          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+          stack sdist
+          stack upload morpheus-graphql-core
+          stack upload morpheus-graphql-client
+          stack upload .
         env:
           HOST: ${{ secrets.HOST }}
           USERNAME: ${{ secrets.USERNAME }}
