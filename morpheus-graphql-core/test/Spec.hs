@@ -50,6 +50,7 @@ main = do
             "nested",
             "query",
             "mutation",
-            "subscription"
+            "subscription",
+            "variables"
           ]
       ]

@@ -1,0 +1,9 @@
+query($name: String!) {
+  deity(name: $name) {
+    name
+    power
+    friends {
+      name
+    }
+  }
+}
