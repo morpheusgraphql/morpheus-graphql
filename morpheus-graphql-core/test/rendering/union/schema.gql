@@ -1,0 +1,42 @@
+interface Character {
+  name: String
+}
+
+interface Supernatural {
+  power: [String!]!
+}
+
+type Hero implements Character {
+  name: String
+  hobby: String
+}
+
+type Deity implements Character & Supernatural {
+  name: String!
+  power: [String!]!
+  friends: [Deity!]!
+}
+
+type Animal {
+  name: String
+  weight: Int
+}
+
+type Human {
+  name: String
+  age: Int
+}
+
+union Mortal = Human | Animal
+
+type Query {
+  deity: Deity!
+  mortal: Mortal!
+  character: Character!
+}
+
+schema {
+  query: Query
+  mutation: Query
+  subscription: Query
+}

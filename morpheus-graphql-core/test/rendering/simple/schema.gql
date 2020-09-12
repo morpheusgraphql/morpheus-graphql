@@ -6,23 +6,9 @@ schema {
 
 type Query {
   deity(name: String): Deity!
-  character: Character!
 }
 
-interface Character {
-  name: String
-}
-
-interface Supernatural {
-  power: [String!]!
-}
-
-type Hero implements Character {
-  name: String
-  hobby: String
-}
-
-type Deity implements Character & Supernatural {
+type Deity {
   name: String!
   power: [String!]!
   friends: [Deity!]!

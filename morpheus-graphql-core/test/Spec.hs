@@ -51,7 +51,11 @@ main = do
             "query",
             "mutation",
             "subscription",
-            "variables",
-            "interface"
+            "variables"
+          ],
+        Rendering.test
+          "rendering/union"
+          [ "interface",
+            "union"
           ]
       ]
