@@ -118,6 +118,8 @@ import Prelude
     Show,
     filter,
     notElem,
+    null,
+    otherwise,
   )
 
 -- scalar
@@ -171,8 +173,14 @@ instance RenderGQL (Directive s) where
 type Directives s = [Directive s]
 
 renderDirectives :: Directives s -> Rendering
-renderDirectives [] = ""
-renderDirectives xs = space <> intercalate space (fmap render xs)
+renderDirectives xs
+  | null dirs = ""
+  | otherwise = space <> intercalate space (fmap render dirs)
+  where
+    dirs = (filter notSystem xs)
+    notSystem Directive {directiveName = "include"} = False
+    notSystem Directive {directiveName = "skip"} = False
+    notSystem _ = True
 
 data DirectiveDefinition s = DirectiveDefinition
   { directiveDefinitionName :: FieldName,
