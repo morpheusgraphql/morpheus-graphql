@@ -51,6 +51,7 @@ import Data.Functor (fmap)
 import qualified Data.HashMap.Lazy as M
   ( toList,
   )
+import Data.Maybe (fromMaybe)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -60,7 +61,7 @@ import Data.Morpheus.Internal.Utils
     elems,
     mapTuple,
   )
-import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), Rendering, fromText, renderGQL)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -194,7 +195,7 @@ data ObjectEntry (s :: Stage) = ObjectEntry
   deriving (Eq, Show)
 
 instance RenderGQL (ObjectEntry a) where
-  render (ObjectEntry (FieldName name) value) = name <> ": " <> render value
+  render (ObjectEntry (FieldName name) value) = fromText name <> ": " <> render value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision ObjectEntry {entryName} =
@@ -222,27 +223,28 @@ deriving instance Lift (Value a)
 deriving instance Lift (ObjectEntry a)
 
 instance RenderGQL (Value a) where
-  render (ResolvedVariable Ref {refName} _) =
-    "$" <> readName refName
-  render (VariableValue Ref {refName}) = "$" <> readName refName <> " "
+  render (ResolvedVariable Ref {refName} _) = "$" <> render refName
+  render (VariableValue Ref {refName}) = "$" <> render refName <> " "
   render Null = "null"
-  render (Enum x) = readTypeName x
+  render (Enum x) = render x
   render (Scalar x) = render x
-  render (Object keys) = "{" <> foldl toEntry "" (elems keys) <> "}"
+  render (Object keys) = "{" <> (fromMaybe "" renderX) <> "}"
     where
-      toEntry :: Text -> ObjectEntry a -> Text
-      toEntry "" value = render value
-      toEntry txt value = txt <> ", " <> render value
-  render (List list) = "[" <> foldl toEntry "" list <> "]"
+      renderX = foldl toEntry Nothing (elems keys)
+      toEntry :: Maybe Rendering -> ObjectEntry a -> Maybe Rendering
+      toEntry Nothing value = Just (render value)
+      toEntry (Just txt) value = Just (txt <> ", " <> render value)
+  render (List list) = "[" <> (fromMaybe "" renderX) <> "]"
     where
-      toEntry :: Text -> Value a -> Text
-      toEntry "" value = render value
-      toEntry txt value = txt <> ", " <> render value
+      renderX = foldl toEntry Nothing list
+      toEntry :: Maybe Rendering -> Value a -> Maybe Rendering
+      toEntry Nothing value = Just (render value)
+      toEntry (Just txt) value = Just (txt <> ", " <> render value)
 
 -- render = pack . BS.unpack . A.encode
 
 instance Msg (Value a) where
-  msg = msg . render
+  msg = msg . renderGQL
 
 instance A.ToJSON (Value a) where
   toJSON (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
