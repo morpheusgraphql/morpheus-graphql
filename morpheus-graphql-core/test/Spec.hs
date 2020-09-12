@@ -62,6 +62,7 @@ main = do
           [ "simple",
             "input",
             "enum",
-            "list"
+            "list",
+            "include-exclude"
           ]
       ]
