@@ -32,6 +32,7 @@ where
 import Control.Applicative (pure)
 import Data.Foldable (all, foldr)
 import Data.Functor ((<$>), fmap)
+import Data.List (filter)
 import Data.Maybe (Maybe (..), fromMaybe, isJust, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -69,7 +70,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     readName,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
-  ( Arguments,
+  ( Argument (..),
+    Arguments,
     Directives,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
@@ -92,6 +94,7 @@ import Data.Morpheus.Types.Internal.AST.TypeSystem
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ResolvedValue,
+    Value (..),
     Variable (..),
     VariableDefinitions,
   )
@@ -100,6 +103,7 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
   ( ($),
     (.),
+    Bool (..),
     Eq (..),
     Show (..),
     otherwise,
@@ -222,8 +226,11 @@ instance RenderGQL (Selection VALID) where
       { ..
       } =
       render (fromMaybe selectionName selectionAlias)
-        <> renderArguments (elems selectionArguments)
+        <> renderArguments (filter notNull (elems selectionArguments))
         <> render selectionContent
+      where
+        notNull Argument {argumentValue = Null} = False
+        notNull _ = True
 
 instance KeyOf FieldName (Selection s) where
   keyOf

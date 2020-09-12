@@ -17,6 +17,7 @@ where
 -- MORPHEUS
 
 import qualified Data.Aeson as A
+import Data.ByteString.Lazy (toStrict)
 import Data.Foldable (null)
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe, maybe)
@@ -27,10 +28,9 @@ import Data.Text
     pack,
   )
 import Data.Text.Encoding (decodeUtf8)
-import Data.ByteString.Lazy (toStrict)
 import Prelude
-  ( (.),
-    ($),
+  ( ($),
+    (.),
     Bool (..),
     Float,
     Int,
