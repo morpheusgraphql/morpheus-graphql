@@ -287,7 +287,7 @@ instance NameCollision (FieldDefinition cat s) where
 
 instance RenderGQL (FieldDefinition cat s) where
   render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = Just (FieldArgs args)} =
-    name <> render args <> ": " <> render fieldType
+    render name <> render args <> ": " <> render fieldType
   render FieldDefinition {fieldName, fieldType} =
     renderEntry fieldName fieldType
 

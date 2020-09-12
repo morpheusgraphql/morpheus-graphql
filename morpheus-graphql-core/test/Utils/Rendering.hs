@@ -15,7 +15,7 @@ import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Core
   ( defaultConfig,
     parseRequestWith,
-    render,
+    renderGQL,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -52,13 +52,13 @@ import Prelude
 
 assertion :: Token -> Eventless (Operation VALID) -> IO ()
 assertion expected Success {result = actual}
-  | expected == render actualValue = pure ()
+  | expected == renderGQL actualValue = pure ()
   | otherwise =
     assertFailure $
       T.unpack
         ("expected: \n\n " <> expected <> " \n\n but got: \n\n " <> actualValue)
   where
-    actualValue = render actual
+    actualValue = renderGQL actual
 assertion _ Failure {errors} = assertFailure $ LB.unpack (encode errors)
 
 test :: FieldName -> [FieldName] -> TestTree

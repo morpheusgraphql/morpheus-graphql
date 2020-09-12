@@ -28,6 +28,7 @@ module Data.Morpheus.Core
     withDebugger,
     mkApp,
     runAppStream,
+    renderGQL,
   )
 where
 
@@ -47,6 +48,7 @@ import Data.Morpheus.Parser
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    renderGQL,
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.App

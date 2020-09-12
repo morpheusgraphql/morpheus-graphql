@@ -81,6 +81,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     Rendering,
+    intercalate,
     newline,
     renderEntry,
     renderMembers,
@@ -146,7 +147,6 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
   )
 import Data.Semigroup (Semigroup (..))
-import Data.Text (intercalate)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude

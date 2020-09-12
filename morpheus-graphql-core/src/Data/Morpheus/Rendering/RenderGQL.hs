@@ -13,6 +13,7 @@ module Data.Morpheus.Rendering.RenderGQL
     Rendering,
     fromText,
     renderGQL,
+    intercalate,
   )
 where
 
@@ -31,6 +32,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Prelude
   ( ($),
+    (*),
     (+),
     (.),
     Bool (..),
@@ -94,16 +96,19 @@ space :: Rendering
 space = " "
 
 newline :: Rendering
-newline = Rendering $ \n -> ("\n" <> (stimes n " "))
+newline = Rendering __newline
+
+__newline :: (Semigroup a, IsString a) => Int -> a
+__newline n = ("\n" <> (stimes (n * 2) " "))
 
 intercalate :: Rendering -> [Rendering] -> Rendering
 intercalate (Rendering f) fs = Rendering $ \x -> T.intercalate (f x) (map ((x &) . runRendering) fs)
 
-indentNewline :: Rendering
-indentNewline = newline
+indentNewline :: Rendering -> Rendering
+indentNewline (Rendering f) = Rendering $ \n -> __newline (n + 1) <> f (n + 1)
 
 renderAtNewLine :: (RenderGQL a) => [a] -> Rendering
-renderAtNewLine elems = indentNewline <> intercalate indentNewline (fmap render elems)
+renderAtNewLine elems = indentNewline $ intercalate newline (fmap render elems)
 
 renderObject :: (RenderGQL a) => [a] -> Rendering
 renderObject fields = " {" <> renderAtNewLine fields <> "\n}"
