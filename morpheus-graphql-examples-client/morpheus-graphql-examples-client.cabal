@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f5cfd3c73e5d52f8e62a7adab8d03d1f6abe47616a9a856855730ccf647add83
+-- hash: 989d7ed7e7a5a2daa8b8cdaabed4bdad14fa570c8914f0e5541d3ab47ab8e799
 
 name:           morpheus-graphql-examples-client
 version:        0.1.0
@@ -39,7 +39,7 @@ executable morpheus-client-example
   build-depends:
       base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
-    , morpheus-graphql-client >=0.14.0
+    , morpheus-graphql-client >=0.15.0
     , req >=2.1.0
     , text >=1.2.3.0 && <1.3
   default-language: Haskell2010

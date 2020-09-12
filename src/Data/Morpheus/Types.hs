@@ -56,6 +56,7 @@ module Data.Morpheus.Types
     SubscriptionField,
     App,
     RenderGQL (..),
+    GQLTypeOptions (..),
   )
 where
 
@@ -78,6 +79,7 @@ import Data.Morpheus.Server.Deriving.Schema
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    GQLTypeOptions (..),
   )
 import Data.Morpheus.Server.Types.Types (Undefined (..))
 import Data.Morpheus.Types.GQLScalar

@@ -36,7 +36,17 @@
   mergedApi = runApp (deriveApp root <> deriveApp root2)
   ```
 
-- you can use `GQLType.getNamespace` to strip Namespaces
+- `GQLType` exposes `typeOptions` to modify labels: `typeOptions :: f a -> GQLTypeOptions`
+
+  where
+
+  ```haskell
+   GQLTypeOptions {
+      fieldLabelModifier :: String -> String,
+      constructorTagModifier :: String -> String
+    }
+  ```
+
 - you can use `GQLType.getDescriptions` to document field or enum Values
 
 - with `importGQLDocumentWithNamespace` now you can use Enums with Colliding Values:
