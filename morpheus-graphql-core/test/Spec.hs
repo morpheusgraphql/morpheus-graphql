@@ -50,12 +50,16 @@ main = do
             "nested",
             "query",
             "mutation",
-            "subscription",
-            "variables"
+            "subscription"
           ],
         Rendering.test
           "rendering/union"
           [ "interface",
             "union"
+          ],
+        Rendering.test
+          "rendering/variable"
+          [ "simple",
+            "input"
           ]
       ]

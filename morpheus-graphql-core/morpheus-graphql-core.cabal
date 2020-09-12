@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 58287b0c770c1b1c13f010b6b469ad38f22840605f6170b2cccf95821e984bc3
+-- hash: e75ce792f01702dd410f47416cacd048b2ecfcf0cb2cc407fb040ae347379cf7
 
 name:           morpheus-graphql-core
 version:        0.15.0
@@ -57,13 +57,16 @@ data-files:
     test/rendering/simple/simple/rendering.gql
     test/rendering/simple/subscription/query.gql
     test/rendering/simple/subscription/rendering.gql
-    test/rendering/simple/variables/query.gql
-    test/rendering/simple/variables/rendering.gql
     test/rendering/union/interface/query.gql
     test/rendering/union/interface/rendering.gql
     test/rendering/union/schema.gql
     test/rendering/union/union/query.gql
     test/rendering/union/union/rendering.gql
+    test/rendering/variable/input/query.gql
+    test/rendering/variable/input/rendering.gql
+    test/rendering/variable/schema.gql
+    test/rendering/variable/simple/query.gql
+    test/rendering/variable/simple/rendering.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -121,9 +124,10 @@ data-files:
     test/merge/schema/simple-query/api/ext.json
     test/merge/schema/simple-query/request/query/response.json
     test/rendering/simple/fragment/variables.json
-    test/rendering/simple/variables/variables.json
     test/rendering/union/interface/variables.json
     test/rendering/union/union/variables.json
+    test/rendering/variable/input/variables.json
+    test/rendering/variable/simple/variables.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json

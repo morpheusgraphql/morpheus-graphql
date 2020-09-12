@@ -51,8 +51,7 @@ import Data.Functor (fmap)
 import qualified Data.HashMap.Lazy as M
   ( toList,
   )
-import Data.Maybe (fromMaybe)
-import Data.Maybe (Maybe (..))
+import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -61,7 +60,13 @@ import Data.Morpheus.Internal.Utils
     elems,
     mapTuple,
   )
-import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), Rendering, fromText, renderGQL)
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+    Rendering,
+    fromText,
+    renderGQL,
+    space,
+  )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -228,7 +233,7 @@ instance RenderGQL (Value a) where
   render Null = "null"
   render (Enum x) = render x
   render (Scalar x) = render x
-  render (Object keys) = "{" <> (fromMaybe "" renderX) <> "}"
+  render (Object keys) = "{" <> space <> (fromMaybe "" renderX) <> space <> "}"
     where
       renderX = foldl toEntry Nothing (elems keys)
       toEntry :: Maybe Rendering -> ObjectEntry a -> Maybe Rendering

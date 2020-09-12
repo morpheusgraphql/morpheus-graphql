@@ -1,9 +1,0 @@
-query {
-  deity(name: "value 1") {
-    name
-    power
-    friends {
-      name
-    }
-  }
-}

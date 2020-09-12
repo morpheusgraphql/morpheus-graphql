@@ -1,0 +1,19 @@
+input Input {
+  id: String = "def value"
+  int: Int!
+}
+
+type Deity {
+  name(i: Input): String!
+  power: [String!]!
+}
+
+type Query {
+  simple(name: String): Deity!
+}
+
+schema {
+  query: Query
+  mutation: Query
+  subscription: Query
+}
