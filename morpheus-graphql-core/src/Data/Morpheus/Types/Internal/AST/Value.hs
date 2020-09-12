@@ -233,8 +233,11 @@ instance RenderGQL (Value a) where
   render Null = "null"
   render (Enum x) = render x
   render (Scalar x) = render x
-  render (Object keys) = "{" <> space <> (fromMaybe "" renderX) <> space <> "}"
+  render (Object keys) = "{" <> entries <> "}"
     where
+      entries
+        | null (elems keys) = ""
+        | otherwise = space <> (fromMaybe "" renderX) <> space
       renderX = foldl toEntry Nothing (elems keys)
       toEntry :: Maybe Rendering -> ObjectEntry a -> Maybe Rendering
       toEntry Nothing value = Just (render value)
