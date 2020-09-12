@@ -179,7 +179,6 @@ instance RenderGQL UnionTag where
   render UnionTag {unionTagName, unionTagSelection} =
     "... on "
       <> render unionTagName
-      <> space
       <> renderSelectionSet unionTagSelection
 
 mergeConflict :: [Ref] -> ValidationError -> ValidationErrors
