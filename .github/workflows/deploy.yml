@@ -1,0 +1,32 @@
+name: Deploy
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare OS
+        uses: actions/checkout@v1
+      - name: Setup stack
+        uses: mstksg/setup-stack@v1
+      - name: Install dependencies
+        run: |
+          stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+      - name: Build
+        run: |
+          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+      - name: prepare
+        run: |
+          stack sdist
+      - name: upload
+        run: |
+          stack upload morpheus-graphql-core
+          stack upload morpheus-graphql-client
+          stack upload .
+        env:
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
