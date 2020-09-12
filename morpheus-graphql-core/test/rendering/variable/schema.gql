@@ -1,10 +1,17 @@
+scalar MyScalar
+
+enum MyEnum {
+  A
+  B
+}
+
 input Input {
   id: String = "def value"
-  int: Int!
+  int: MyScalar!
 }
 
 type Deity {
-  name(i: Input): String!
+  name(i: Input, enum: MyEnum, list: [Input]): String!
   power: [String!]!
 }
 

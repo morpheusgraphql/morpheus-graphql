@@ -60,6 +60,7 @@ main = do
         Rendering.test
           "rendering/variable"
           [ "simple",
-            "input"
+            "input",
+            "enum"
           ]
       ]
