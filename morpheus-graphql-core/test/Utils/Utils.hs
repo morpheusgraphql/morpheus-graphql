@@ -32,11 +32,15 @@ import Data.Foldable (foldl)
 import Data.Functor ((<$>))
 import Data.HashMap.Lazy (lookup)
 import Data.Maybe (Maybe (..), fromMaybe, maybe)
-import Data.Morpheus.Core (parseGQLDocument, parseRequest)
+import Data.Morpheus.Core (parseGQLDocument)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
-import Data.Morpheus.Types.Internal.AST (FieldName (..), GQLQuery (..), Schema (..), VALID)
+import Data.Morpheus.Types.Internal.AST
+  ( FieldName (..),
+    Schema (..),
+    VALID,
+  )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     ResModel,

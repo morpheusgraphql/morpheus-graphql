@@ -39,7 +39,6 @@ import Prelude
     Float,
     Int,
     Show (..),
-    String,
     const,
     fmap,
     map,
