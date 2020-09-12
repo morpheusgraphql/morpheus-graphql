@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ebd1f0c440c7d4a9763d3f02298a0363f420bdd63dac255fb293176f6024ad19
+-- hash: 13a17d08fbc7ae3bac2e3d68edd67acdbbcf781e391153b2670753ca9a9a8e83
 
 name:           morpheus-graphql-client
-version:        0.15.0
+version:        0.15.1
 synopsis:       Morpheus GraphQL Client
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql, client
