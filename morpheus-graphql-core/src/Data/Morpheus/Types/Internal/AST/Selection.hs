@@ -334,9 +334,7 @@ instance RenderGQL (Operation VALID) where
         operationSelection
       } =
       render operationType
-        <> space
-        <> render operationName
-        <> space
+        <> maybe "" ((space <>) . render) operationName
         <> renderSelectionSet operationSelection
 
 getOperationName :: Maybe FieldName -> TypeName
