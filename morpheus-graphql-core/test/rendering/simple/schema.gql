@@ -6,6 +6,7 @@ schema {
 
 type Query {
   deity(name: String): Deity!
+  character: Character!
 }
 
 interface Character {
@@ -18,6 +19,7 @@ interface Supernatural {
 
 type Hero implements Character {
   name: String
+  hobby: String
 }
 
 type Deity implements Character & Supernatural {

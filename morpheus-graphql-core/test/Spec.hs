@@ -51,6 +51,7 @@ main = do
             "query",
             "mutation",
             "subscription",
-            "variables"
+            "variables",
+            "interface"
           ]
       ]
