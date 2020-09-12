@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.1 - 12.09.2020
+
+relaxed upper boundary of `megaparsec` up to 10.0.0
+
 ## 0.15.0 - 12.09.2020
 
 ### new features
