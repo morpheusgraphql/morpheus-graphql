@@ -46,5 +46,7 @@ main = do
           ],
         Rendering.test
           "rendering/simple"
-          ["simple"]
+          [ "simple",
+            "nested"
+          ]
       ]

@@ -1,0 +1,22 @@
+{
+  deity {
+    name
+    power
+    friends {
+      name
+      friends {
+        power
+        name
+        friends {
+          name
+          friends {
+            name
+            friends {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}
