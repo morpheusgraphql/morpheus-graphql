@@ -49,5 +49,6 @@ main = do
           [ "simple",
             "nested",
             "mutation",
+            "subscription"
           ]
       ]
