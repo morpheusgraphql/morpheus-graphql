@@ -14,8 +14,8 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Core
   ( defaultConfig,
+    parseRequestWith,
     render,
-    validateRequest,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -39,7 +39,7 @@ import Test.Tasty.HUnit
   )
 import Utils.Utils
   ( assertValidSchema,
-    getQuery,
+    getRequest,
     readSource,
   )
 import Prelude
@@ -76,6 +76,6 @@ testValidator ::
 testValidator apiPath path = testCase (T.unpack $ readName path) $ do
   schema <- assertValidSchema apiPath
   let fullPath = apiPath <> "/" <> path
-  actual <- validateRequest defaultConfig schema <$> getQuery fullPath
+  actual <- parseRequestWith defaultConfig schema <$> getRequest fullPath
   expected <- getExpectedRendering fullPath
   assertion expected actual

@@ -133,7 +133,7 @@ validateReq ::
 validateReq inputSchema config request = cleanEvents $ ResultT $ pure $ do
   validSchema <- validateSchema True config inputSchema
   schema <- internalSchema <:> validSchema
-  operation <- parseRequestWith config schema request
+  operation <- parseRequestWith config validSchema request
   pure $
     ResolverContext
       { schema,

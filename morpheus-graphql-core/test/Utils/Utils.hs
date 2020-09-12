@@ -19,7 +19,6 @@ module Utils.Utils
     getSchema,
     getResolvers,
     getResolver,
-    getQuery,
   )
 where
 
@@ -145,11 +144,6 @@ assertValidSchema = getSchema >=> resultOr failedSchema pure
 
 expectedResponse :: FieldName -> IO Value
 expectedResponse (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib p)
-
-getQuery :: FieldName -> IO GQLQuery
-getQuery = getRequest >=> resultOr failedParsing pure . parseRequest
-  where
-    failedParsing err = assertFailure ("unexpected parser Failure: \n " <> show err)
 
 getRequest :: FieldName -> IO GQLRequest
 getRequest p = do
