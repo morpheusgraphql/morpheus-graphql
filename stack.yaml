@@ -1,5 +1,6 @@
 # 8.10.1
 resolver: nightly-2020-06-29
+save-hackage-creds: false
 packages:
   - morpheus-graphql-examples-scotty
   - morpheus-graphql-examples-servant
