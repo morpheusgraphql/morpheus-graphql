@@ -17,6 +17,7 @@ import qualified Utils.MergeSchema as MergeSchema
 import Utils.Schema
   ( testSchema,
   )
+import qualified Utils.Validator as Validator
 import Prelude
   ( ($),
     IO,
@@ -42,5 +43,8 @@ main = do
             "on-interface-type-casting",
             "on-interface-type-casting-inline",
             "on-interface-fail-without-casting"
-          ]
+          ],
+        Validator.test
+          "validator/simple"
+          ["simple"]
       ]

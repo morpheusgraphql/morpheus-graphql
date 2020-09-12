@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 86d5e4403854206d64515012362fe3a9de3dd470eee59d69d1f621d09ba830f8
+-- hash: 425621d28c0584e67706f23d8aae2be17361d5e4735ed085fe3110db31023dc1
 
 name:           morpheus-graphql-core
 version:        0.15.0
@@ -44,6 +44,9 @@ data-files:
     test/merge/schema/simple-query/api/ext.gql
     test/merge/schema/simple-query/expected/ok.gql
     test/merge/schema/simple-query/request/query/query.gql
+    test/rendering/simple/schema.gql
+    test/rendering/simple/simple/query.gql
+    test/rendering/simple/simple/validated.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -81,9 +84,6 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
-    test/validator/rendering/schema.gql
-    test/validator/rendering/simple/query.gql
-    test/validator/rendering/simple/validated.gql
     test/api/deity/interface/response.json
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json

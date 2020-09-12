@@ -3,8 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.Validator
-  ( apiTest,
-    assertion,
+  ( test,
   )
 where
 
@@ -60,16 +59,16 @@ assertion expected Success {result = actual}
     actualValue = render actual
 assertion _ _ = assertFailure "TODO:"
 
-apiTest :: FieldName -> [FieldName] -> TestTree
-apiTest apiPath requestPath =
+test :: FieldName -> [FieldName] -> TestTree
+test apiPath requestPath =
   testGroup (T.unpack $ readName apiPath) $
-    fmap (testApiRequest apiPath) requestPath
+    fmap (testValidator apiPath) requestPath
 
-testApiRequest ::
+testValidator ::
   FieldName ->
   FieldName ->
   TestTree
-testApiRequest apiPath path = testCase (T.unpack $ readName path) $ do
+testValidator apiPath path = testCase (T.unpack $ readName path) $ do
   schema <- assertValidSchema apiPath
   let fullPath = apiPath <> "/" <> path
   actual <- validateRequest defaultConfig schema <$> getQuery fullPath
