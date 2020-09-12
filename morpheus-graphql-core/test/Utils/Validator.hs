@@ -11,7 +11,6 @@ where
 import Control.Applicative (pure)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor ((<$>), fmap)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core
   ( defaultConfig,
     render,
@@ -25,7 +24,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    ResponseStream,
     Result (..),
   )
 import Data.Semigroup ((<>))
@@ -40,10 +38,7 @@ import Test.Tasty.HUnit
   )
 import Utils.Utils
   ( assertValidSchema,
-    expectedResponse,
     getQuery,
-    getRequest,
-    getResolvers,
     readSource,
   )
 import Prelude
