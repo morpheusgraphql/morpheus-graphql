@@ -64,6 +64,9 @@ test apiPath requestPath =
   testGroup (T.unpack $ readName apiPath) $
     fmap (testValidator apiPath) requestPath
 
+getExpectedRendering :: FieldName -> IO Token
+getExpectedRendering = fmap (T.pack . LB.unpack) . readSource . (<> "/rendering.gql")
+
 testValidator ::
   FieldName ->
   FieldName ->
@@ -72,5 +75,5 @@ testValidator apiPath path = testCase (T.unpack $ readName path) $ do
   schema <- assertValidSchema apiPath
   let fullPath = apiPath <> "/" <> path
   actual <- validateRequest defaultConfig schema <$> getQuery fullPath
-  expected <- T.pack . LB.unpack <$> readSource fullPath
+  expected <- getExpectedRendering fullPath
   assertion expected actual

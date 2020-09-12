@@ -45,6 +45,6 @@ main = do
             "on-interface-fail-without-casting"
           ],
         Validator.test
-          "validator/simple"
+          "rendering/simple"
           ["simple"]
       ]
