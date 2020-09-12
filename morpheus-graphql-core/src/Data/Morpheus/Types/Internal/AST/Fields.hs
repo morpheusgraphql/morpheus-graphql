@@ -286,8 +286,8 @@ instance NameCollision (FieldDefinition cat s) where
     "There can Be only One field Named " <> msgValidation fieldName
 
 instance RenderGQL (FieldDefinition cat s) where
-  render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = Just (FieldArgs args)} =
-    render name <> render args <> ": " <> render fieldType
+  render FieldDefinition {fieldName, fieldType, fieldContent = Just (FieldArgs args)} =
+    render fieldName <> render args <> ": " <> render fieldType
   render FieldDefinition {fieldName, fieldType} =
     renderEntry fieldName fieldType
 
