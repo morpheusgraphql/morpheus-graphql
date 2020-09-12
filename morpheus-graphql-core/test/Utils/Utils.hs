@@ -19,6 +19,7 @@ module Utils.Utils
     getSchema,
     getResolvers,
     getResolver,
+    getQuery,
   )
 where
 
@@ -32,11 +33,11 @@ import Data.Foldable (foldl)
 import Data.Functor ((<$>))
 import Data.HashMap.Lazy (lookup)
 import Data.Maybe (Maybe (..), fromMaybe, maybe)
-import Data.Morpheus.Core (parseGQLDocument)
+import Data.Morpheus.Core (parseGQLDocument, parseRequest)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
-import Data.Morpheus.Types.Internal.AST (FieldName (..), Schema (..), VALID)
+import Data.Morpheus.Types.Internal.AST (FieldName (..), GQLQuery (..), Schema (..), VALID)
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     ResModel,
@@ -144,6 +145,11 @@ assertValidSchema = getSchema >=> resultOr failedSchema pure
 
 expectedResponse :: FieldName -> IO Value
 expectedResponse (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib p)
+
+getQuery :: FieldName -> IO GQLQuery
+getQuery = getRequest >=> resultOr failedParsing pure . parseRequest
+  where
+    failedParsing err = assertFailure ("unexpected parser Failure: \n " <> show err)
 
 getRequest :: FieldName -> IO GQLRequest
 getRequest p = do

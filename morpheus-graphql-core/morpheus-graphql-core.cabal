@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7aaaf3d4b4dab94a5938e6284d262fadabee300b225a623e93fa0d703192a48f
+-- hash: 86d5e4403854206d64515012362fe3a9de3dd470eee59d69d1f621d09ba830f8
 
 name:           morpheus-graphql-core
 version:        0.15.0
@@ -81,6 +81,9 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
+    test/validator/rendering/schema.gql
+    test/validator/rendering/simple/query.gql
+    test/validator/rendering/simple/validated.gql
     test/api/deity/interface/response.json
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json
@@ -244,6 +247,7 @@ test-suite morpheus-test
       Utils.MergeSchema
       Utils.Schema
       Utils.Utils
+      Utils.Validator
       Paths_morpheus_graphql_core
   hs-source-dirs:
       test
