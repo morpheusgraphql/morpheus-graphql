@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -8,6 +9,7 @@ module Utils.Validator
 where
 
 import Control.Applicative (pure)
+import Data.Aeson (encode)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Core
@@ -57,7 +59,7 @@ assertion expected Success {result = actual}
         ("expected: \n\n " <> expected <> " \n\n but got: \n\n " <> actualValue)
   where
     actualValue = render actual
-assertion _ _ = assertFailure "TODO:"
+assertion _ Failure {errors} = assertFailure $ LB.unpack (encode errors)
 
 test :: FieldName -> [FieldName] -> TestTree
 test apiPath requestPath =
