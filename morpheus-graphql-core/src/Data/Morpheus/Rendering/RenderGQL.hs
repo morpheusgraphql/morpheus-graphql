@@ -89,9 +89,6 @@ instance RenderGQL Bool where
 instance RenderGQL A.Value where
   render x = fromText $ decodeUtf8 $ toStrict $ A.encode x
 
-indent :: Rendering
-indent = "  "
-
 space :: Rendering
 space = " "
 
@@ -99,6 +96,7 @@ newline :: Rendering
 newline = Rendering __newline
 
 __newline :: (Semigroup a, IsString a) => Int -> a
+__newline 0 = "\n"
 __newline n = ("\n" <> (stimes (n * 2) " "))
 
 intercalate :: Rendering -> [Rendering] -> Rendering
@@ -111,7 +109,7 @@ renderAtNewLine :: (RenderGQL a) => [a] -> Rendering
 renderAtNewLine elems = indentNewline $ intercalate newline (fmap render elems)
 
 renderObject :: (RenderGQL a) => [a] -> Rendering
-renderObject fields = " {" <> renderAtNewLine fields <> "\n}"
+renderObject fields = space <> "{" <> renderAtNewLine fields <> newline <> "}"
 
 renderMembers :: (RenderGQL a) => [a] -> Rendering
 renderMembers members = intercalate (space <> "|" <> space) (fmap render members)

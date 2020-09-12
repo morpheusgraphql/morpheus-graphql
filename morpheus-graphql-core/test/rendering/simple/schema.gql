@@ -17,4 +17,5 @@ type Hero implements Character {
 type Deity implements Character & Supernatural {
   name: String!
   power: [String!]!
+  friends: [Deity!]!
 }
