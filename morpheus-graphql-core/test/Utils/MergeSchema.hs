@@ -23,7 +23,7 @@ import Data.Morpheus.Core
     mkApp,
     mkApp,
     parseGQLDocument,
-    renderGQL,
+    render,
     runAppStream,
   )
 import Data.Morpheus.Types.IO
@@ -75,11 +75,11 @@ loadApi url = do
 
 schemaAssertion :: App () Identity -> Schema VALID -> IO ()
 schemaAssertion (App AppData {appSchema}) expectedSchema
-  | renderGQL expectedSchema == renderGQL appSchema = pure ()
+  | render expectedSchema == render appSchema = pure ()
   | otherwise =
     assertFailure
       $ unpack
-      $ "expected: \n " <> renderGQL expectedSchema <> " \n but got: \n " <> renderGQL appSchema
+      $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render appSchema
 schemaAssertion (FailApp gqlerror) _ = assertFailure $ " error: " <> show gqlerror
 
 schemaCase :: (FieldName, [FieldName]) -> IO TestTree

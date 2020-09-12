@@ -15,7 +15,7 @@ import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Core
   ( defaultConfig,
     parseRequestWith,
-    renderGQL,
+    render,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -58,7 +58,7 @@ assertion expected Success {result = actual}
     assertFailure
       ("expected: \n\n " <> show expected <> " \n\n but got: \n\n " <> show actualValue)
   where
-    actualValue = renderGQL actual
+    actualValue = render actual
 assertion _ Failure {errors} = assertFailure $ LB.unpack (encode errors)
 
 test :: FieldName -> [FieldName] -> TestTree
