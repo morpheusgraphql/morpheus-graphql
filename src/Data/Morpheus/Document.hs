@@ -14,7 +14,7 @@ import Data.ByteString.Lazy.Char8
     pack,
   )
 import Data.Morpheus.Core
-  ( render,
+  ( renderGQL,
   )
 import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
@@ -59,5 +59,5 @@ toGraphQLDocument ::
   proxy (RootResolver m event query mut sub) ->
   ByteString
 toGraphQLDocument =
-  resultOr (pack . show) (encodeUtf8 . LT.fromStrict . render)
+  resultOr (pack . show) (encodeUtf8 . LT.fromStrict . renderGQL)
     . deriveSchema
