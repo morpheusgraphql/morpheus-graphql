@@ -166,7 +166,6 @@ instance KeyOf FieldName (Directive s) where
 instance RenderGQL (Directive s) where
   render Directive {..} =
     "@" <> render directiveName
-      <> space
       <> renderArgumentValues directiveArgs
 
 type Directives s = [Directive s]

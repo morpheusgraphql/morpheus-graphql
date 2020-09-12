@@ -1,5 +1,5 @@
 query {
   deity @MyDirective {
-    name
+    name @MyDirective(name: "Some Name")
   }
 }
