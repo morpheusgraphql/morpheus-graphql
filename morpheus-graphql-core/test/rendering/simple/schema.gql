@@ -1,15 +1,17 @@
-schema {
-  query: Query
-  mutation: Query
-  subscription: Query
+directive @MyDirective on FIELD
+
+type Deity {
+  name: String!
+  power: [String!]!
+  friends: [Deity!]!
 }
 
 type Query {
   deity(name: String): Deity!
 }
 
-type Deity {
-  name: String!
-  power: [String!]!
-  friends: [Deity!]!
+schema {
+  query: Query
+  mutation: Query
+  subscription: Query
 }

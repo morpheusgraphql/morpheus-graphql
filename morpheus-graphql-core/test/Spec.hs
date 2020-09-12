@@ -50,7 +50,8 @@ main = do
             "nested",
             "query",
             "mutation",
-            "subscription"
+            "subscription",
+            "directive"
           ],
         Rendering.test
           "rendering/union"
