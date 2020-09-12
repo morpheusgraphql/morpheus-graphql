@@ -14,10 +14,10 @@ import Utils.Api
   ( apiTest,
   )
 import qualified Utils.MergeSchema as MergeSchema
+import qualified Utils.Rendering as Rendering
 import Utils.Schema
   ( testSchema,
   )
-import qualified Utils.Validator as Validator
 import Prelude
   ( ($),
     IO,
@@ -44,7 +44,7 @@ main = do
             "on-interface-type-casting-inline",
             "on-interface-fail-without-casting"
           ],
-        Validator.test
+        Rendering.test
           "rendering/simple"
           ["simple"]
       ]

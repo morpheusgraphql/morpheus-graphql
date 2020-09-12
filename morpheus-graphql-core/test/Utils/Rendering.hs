@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Validator
+module Utils.Rendering
   ( test,
   )
 where
@@ -64,16 +64,16 @@ assertion _ Failure {errors} = assertFailure $ LB.unpack (encode errors)
 test :: FieldName -> [FieldName] -> TestTree
 test apiPath requestPath =
   testGroup (T.unpack $ readName apiPath) $
-    fmap (testValidator apiPath) requestPath
+    fmap (testRendering apiPath) requestPath
 
 getExpectedRendering :: FieldName -> IO Token
 getExpectedRendering = fmap (T.pack . LB.unpack) . readSource . (<> "/rendering.gql")
 
-testValidator ::
+testRendering ::
   FieldName ->
   FieldName ->
   TestTree
-testValidator apiPath path = testCase (T.unpack $ readName path) $ do
+testRendering apiPath path = testCase (T.unpack $ readName path) $ do
   schema <- assertValidSchema apiPath
   let fullPath = apiPath <> "/" <> path
   actual <- parseRequestWith defaultConfig schema <$> getRequest fullPath

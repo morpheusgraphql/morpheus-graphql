@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8aebb4201449535f1c84f2c58d8c61a7223f0f4839df506f4a5945b948e377da
+-- hash: 9a5cc42d27a3b3e4d9875699527b4210486dcd7faf199a46d7c2892f4e58723b
 
 name:           morpheus-graphql-core
 version:        0.15.0
@@ -245,9 +245,9 @@ test-suite morpheus-test
   other-modules:
       Utils.Api
       Utils.MergeSchema
+      Utils.Rendering
       Utils.Schema
       Utils.Utils
-      Utils.Validator
       Paths_morpheus_graphql_core
   hs-source-dirs:
       test
