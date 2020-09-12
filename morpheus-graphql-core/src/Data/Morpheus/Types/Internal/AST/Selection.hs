@@ -32,7 +32,6 @@ where
 import Control.Applicative (pure)
 import Data.Foldable (all, foldr)
 import Data.Functor ((<$>), fmap)
-import Data.List (filter)
 import Data.Maybe (Maybe (..), fromMaybe, isJust, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -51,7 +50,6 @@ import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     Rendering,
     newline,
-    renderArguments,
     renderObject,
     space,
   )
@@ -71,9 +69,10 @@ import Data.Morpheus.Types.Internal.AST.Base
     readName,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
-  ( Argument (..),
-    Arguments,
+  ( Arguments,
     Directives,
+    renderArgumentValues,
+    renderDirectives,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( MergeSet,
@@ -95,7 +94,6 @@ import Data.Morpheus.Types.Internal.AST.TypeSystem
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ResolvedValue,
-    Value (..),
     Variable (..),
     VariableDefinitions,
   )
@@ -104,7 +102,6 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
   ( ($),
     (.),
-    Bool (..),
     Eq (..),
     Show (..),
     otherwise,
@@ -213,8 +210,8 @@ data Selection (s :: Stage) where
       selectionAlias :: Maybe FieldName,
       selectionPosition :: Position,
       selectionArguments :: Arguments s,
-      selectionContent :: SelectionContent s,
-      selectionDirectives :: Directives s
+      selectionDirectives :: Directives s,
+      selectionContent :: SelectionContent s
     } ->
     Selection s
   InlineFragment :: Fragment RAW -> Selection RAW
@@ -226,11 +223,9 @@ instance RenderGQL (Selection VALID) where
       { ..
       } =
       render (fromMaybe selectionName selectionAlias)
-        <> renderArguments (filter notNull (elems selectionArguments))
+        <> renderArgumentValues selectionArguments
+        <> renderDirectives selectionDirectives
         <> render selectionContent
-      where
-        notNull Argument {argumentValue = Null} = False
-        notNull _ = True
 
 instance KeyOf FieldName (Selection s) where
   keyOf

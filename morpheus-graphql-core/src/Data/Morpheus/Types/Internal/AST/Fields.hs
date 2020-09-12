@@ -39,6 +39,8 @@ module Data.Morpheus.Types.Internal.AST.Fields
     mkInputValue,
     mkObjectField,
     mkField,
+    renderArgumentValues,
+    renderDirectives,
   )
 where
 
@@ -61,9 +63,12 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    Rendering,
+    intercalate,
     renderArguments,
     renderEntry,
     renderObject,
+    space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
@@ -140,6 +145,12 @@ instance NameCollision (Argument s) where
 
 type Arguments (s :: Stage) = OrdMap FieldName (Argument s)
 
+renderArgumentValues :: Arguments s -> Rendering
+renderArgumentValues = renderArguments . filter notNull . elems
+  where
+    notNull Argument {argumentValue = Null} = False
+    notNull _ = True
+
 -- directive
 ------------------------------------------------------------------
 data Directive (s :: Stage) = Directive
@@ -152,7 +163,17 @@ data Directive (s :: Stage) = Directive
 instance KeyOf FieldName (Directive s) where
   keyOf = directiveName
 
+instance RenderGQL (Directive s) where
+  render Directive {..} =
+    "@" <> render directiveName
+      <> space
+      <> renderArgumentValues directiveArgs
+
 type Directives s = [Directive s]
+
+renderDirectives :: Directives s -> Rendering
+renderDirectives [] = ""
+renderDirectives xs = space <> intercalate space (fmap render xs)
 
 data DirectiveDefinition s = DirectiveDefinition
   { directiveDefinitionName :: FieldName,
