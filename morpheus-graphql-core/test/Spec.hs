@@ -61,6 +61,7 @@ main = do
           "rendering/variable"
           [ "simple",
             "input",
-            "enum"
+            "enum",
+            "list"
           ]
       ]
