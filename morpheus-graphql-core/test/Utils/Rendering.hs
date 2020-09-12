@@ -48,15 +48,15 @@ import Prelude
     (==),
     IO,
     otherwise,
+    show,
   )
 
 assertion :: Token -> Eventless (Operation VALID) -> IO ()
 assertion expected Success {result = actual}
-  | expected == renderGQL actualValue = pure ()
+  | expected == actualValue = pure ()
   | otherwise =
-    assertFailure $
-      T.unpack
-        ("expected: \n\n " <> expected <> " \n\n but got: \n\n " <> actualValue)
+    assertFailure
+      ("expected: \n\n " <> show expected <> " \n\n but got: \n\n " <> show actualValue)
   where
     actualValue = renderGQL actual
 assertion _ Failure {errors} = assertFailure $ LB.unpack (encode errors)

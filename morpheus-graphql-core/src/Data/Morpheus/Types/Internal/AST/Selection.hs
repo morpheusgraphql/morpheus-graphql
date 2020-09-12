@@ -50,6 +50,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     Rendering,
+    newline,
     renderArguments,
     renderObject,
     space,
@@ -336,6 +337,7 @@ instance RenderGQL (Operation VALID) where
       render operationType
         <> maybe "" ((space <>) . render) operationName
         <> renderSelectionSet operationSelection
+        <> newline
 
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)
