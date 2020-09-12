@@ -48,6 +48,7 @@ main = do
           "rendering/simple"
           [ "simple",
             "nested",
+            "query",
             "mutation",
             "subscription"
           ]
