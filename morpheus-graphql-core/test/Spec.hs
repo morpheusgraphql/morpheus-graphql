@@ -56,8 +56,7 @@ main = do
         Rendering.test
           "rendering/union"
           [ "interface",
-            "union",
-            "inline-directive"
+            "union"
           ],
         Rendering.test
           "rendering/variable"
