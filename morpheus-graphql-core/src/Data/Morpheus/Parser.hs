@@ -62,5 +62,5 @@ parseRequest = parseGQL
 parseRequestWith :: Config -> Schema VALID -> GQLRequest -> Eventless (Operation VALID)
 parseRequestWith config schema req = do
   qu <- parseRequest req
-  fuillSchema <- (internalSchema <:> schema)
+  fuillSchema <- internalSchema <:> schema
   validateRequest config fuillSchema qu
