@@ -1,0 +1,10 @@
+query {
+  character {
+    ... on Character @Turbo @Speed {
+      name
+    }
+    ... on Hero @Turbo {
+      hobby
+    }
+  }
+}

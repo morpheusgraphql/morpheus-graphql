@@ -1,3 +1,7 @@
+directive @Turbo(name: String) on FIELD | QUERY
+
+directive @Speed(name: String) on FIELD | QUERY
+
 interface Character {
   name: String
 }
