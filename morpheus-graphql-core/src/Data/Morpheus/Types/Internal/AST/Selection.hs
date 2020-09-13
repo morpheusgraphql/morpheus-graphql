@@ -326,10 +326,12 @@ instance RenderGQL (Operation VALID) where
     Operation
       { operationName,
         operationType,
+        operationDirectives,
         operationSelection
       } =
       render operationType
         <> maybe "" ((space <>) . render) operationName
+        <> renderDirectives operationDirectives
         <> renderSelectionSet operationSelection
         <> newline
 
