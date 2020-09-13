@@ -177,7 +177,7 @@ renderDirectives xs
   | null dirs = ""
   | otherwise = space <> intercalate space (fmap render dirs)
   where
-    dirs = (filter notSystem xs)
+    dirs = filter notSystem xs
     notSystem Directive {directiveName = "include"} = False
     notSystem Directive {directiveName = "skip"} = False
     notSystem _ = True

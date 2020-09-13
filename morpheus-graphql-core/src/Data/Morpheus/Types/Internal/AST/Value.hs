@@ -46,12 +46,12 @@ import qualified Data.Aeson as A
     pairs,
   )
 import Data.Either (Either (..))
-import Data.Foldable (foldl, foldl1, null)
+import Data.Foldable (foldl1, null)
 import Data.Functor (fmap)
 import qualified Data.HashMap.Lazy as M
   ( toList,
   )
-import Data.Maybe (Maybe (..), fromMaybe)
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -62,9 +62,9 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
-    Rendering,
     fromText,
     renderGQL,
+    renderInputSeq,
     space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -233,21 +233,12 @@ instance RenderGQL (Value a) where
   render Null = "null"
   render (Enum x) = render x
   render (Scalar x) = render x
-  render (Object keys) = "{" <> entries <> "}"
+  render (Object xs) = "{" <> entries <> "}"
     where
       entries
-        | null (elems keys) = ""
-        | otherwise = space <> (fromMaybe "" renderX) <> space
-      renderX = foldl toEntry Nothing (elems keys)
-      toEntry :: Maybe Rendering -> ObjectEntry a -> Maybe Rendering
-      toEntry Nothing value = Just (render value)
-      toEntry (Just txt) value = Just (txt <> ", " <> render value)
-  render (List list) = "[" <> (fromMaybe "" renderX) <> "]"
-    where
-      renderX = foldl toEntry Nothing list
-      toEntry :: Maybe Rendering -> Value a -> Maybe Rendering
-      toEntry Nothing value = Just (render value)
-      toEntry (Just txt) value = Just (txt <> ", " <> render value)
+        | null (elems xs) = ""
+        | otherwise = space <> renderInputSeq (elems xs) <> space
+  render (List list) = "[" <> renderInputSeq list <> "]"
 
 -- render = pack . BS.unpack . A.encode
 

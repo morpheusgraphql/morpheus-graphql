@@ -14,6 +14,7 @@ module Data.Morpheus.Rendering.RenderGQL
     fromText,
     renderGQL,
     intercalate,
+    renderInputSeq,
   )
 where
 
@@ -21,10 +22,10 @@ where
 
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy (toStrict)
-import Data.Foldable (null)
+import Data.Foldable (Foldable, foldl, null)
 import Data.Function ((&))
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe, maybe)
+import Data.Maybe (Maybe (..), fromMaybe, maybe)
 import Data.Semigroup (Semigroup (..), stimes)
 import Data.String (IsString (..))
 import Data.Text (Text)
@@ -48,11 +49,12 @@ import Prelude
 renderGQL :: RenderGQL a => a -> Text
 renderGQL x = runRendering (render x) 0
 
-data Rendering = Rendering
-  {runRendering :: Int -> Text}
+newtype Rendering = Rendering
+  { runRendering :: Int -> Text
+  }
 
 instance Semigroup Rendering where
-  Rendering f <> Rendering g = Rendering (\x -> (f x) <> (g x))
+  Rendering f <> Rendering g = Rendering $ \x -> f x <> g x
 
 instance IsString Rendering where
   fromString = Rendering . const . T.pack
@@ -96,7 +98,7 @@ newline = Rendering __newline
 
 __newline :: (Semigroup a, IsString a) => Int -> a
 __newline 0 = "\n"
-__newline n = ("\n" <> (stimes (n * 2) " "))
+__newline n = "\n" <> stimes (n * 2) " "
 
 intercalate :: Rendering -> [Rendering] -> Rendering
 intercalate (Rendering f) fs = Rendering $ \x -> T.intercalate (f x) (map ((x &) . runRendering) fs)
@@ -124,3 +126,13 @@ renderEntry ::
   value ->
   Rendering
 renderEntry name value = render name <> ": " <> render value
+
+renderInputSeq ::
+  (Foldable t, RenderGQL a) =>
+  t a ->
+  Rendering
+renderInputSeq = fromMaybe "" . foldl renderValue Nothing
+  where
+    renderValue :: RenderGQL a => Maybe Rendering -> a -> Maybe Rendering
+    renderValue Nothing value = Just (render value)
+    renderValue (Just txt) value = Just (txt <> ", " <> render value)
