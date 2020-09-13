@@ -1,4 +1,4 @@
-query {
+query MyQuery @MyDirective {
   deity @MyDirective {
     name @MyDirective(name: "Some Name")
   }

@@ -1,4 +1,4 @@
-directive @MyDirective(name: String) on FIELD
+directive @MyDirective(name: String) on FIELD | QUERY
 
 type Deity {
   name: String!
