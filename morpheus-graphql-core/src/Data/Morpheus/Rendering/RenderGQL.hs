@@ -94,17 +94,20 @@ space :: Rendering
 space = " "
 
 newline :: Rendering
-newline = Rendering __newline
+newline = "\n" <> Rendering indentionSize
 
-__newline :: (Semigroup a, IsString a) => Int -> a
-__newline 0 = "\n"
-__newline n = "\n" <> stimes (n * 2) " "
+indentionSize :: (Semigroup a, IsString a) => Int -> a
+indentionSize 0 = ""
+indentionSize n = stimes (n * 2) " "
+
+indent :: Rendering -> Rendering
+indent (Rendering f) = Rendering $ f . (+ 1)
 
 intercalate :: Rendering -> [Rendering] -> Rendering
 intercalate (Rendering f) fs = Rendering $ \x -> T.intercalate (f x) (map ((x &) . runRendering) fs)
 
 indentNewline :: Rendering -> Rendering
-indentNewline (Rendering f) = Rendering $ \n -> __newline (n + 1) <> f (n + 1)
+indentNewline rendering = indent (newline <> rendering)
 
 renderAtNewLine :: (RenderGQL a) => [a] -> Rendering
 renderAtNewLine elems = indentNewline $ intercalate newline (fmap render elems)
