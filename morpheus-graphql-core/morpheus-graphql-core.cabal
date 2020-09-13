@@ -44,6 +44,37 @@ data-files:
     test/merge/schema/simple-query/api/ext.gql
     test/merge/schema/simple-query/expected/ok.gql
     test/merge/schema/simple-query/request/query/query.gql
+    test/rendering/simple/directive/query.gql
+    test/rendering/simple/directive/rendering.gql
+    test/rendering/simple/fragment/query.gql
+    test/rendering/simple/fragment/rendering.gql
+    test/rendering/simple/mutation/query.gql
+    test/rendering/simple/mutation/rendering.gql
+    test/rendering/simple/nested/query.gql
+    test/rendering/simple/nested/rendering.gql
+    test/rendering/simple/query/query.gql
+    test/rendering/simple/query/rendering.gql
+    test/rendering/simple/schema.gql
+    test/rendering/simple/simple/query.gql
+    test/rendering/simple/simple/rendering.gql
+    test/rendering/simple/subscription/query.gql
+    test/rendering/simple/subscription/rendering.gql
+    test/rendering/union/interface/query.gql
+    test/rendering/union/interface/rendering.gql
+    test/rendering/union/schema.gql
+    test/rendering/union/union/query.gql
+    test/rendering/union/union/rendering.gql
+    test/rendering/variable/enum/query.gql
+    test/rendering/variable/enum/rendering.gql
+    test/rendering/variable/include-exclude/query.gql
+    test/rendering/variable/include-exclude/rendering.gql
+    test/rendering/variable/input/query.gql
+    test/rendering/variable/input/rendering.gql
+    test/rendering/variable/list/query.gql
+    test/rendering/variable/list/rendering.gql
+    test/rendering/variable/schema.gql
+    test/rendering/variable/simple/query.gql
+    test/rendering/variable/simple/rendering.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -100,6 +131,14 @@ data-files:
     test/merge/schema/simple-query/api/app.json
     test/merge/schema/simple-query/api/ext.json
     test/merge/schema/simple-query/request/query/response.json
+    test/rendering/simple/fragment/variables.json
+    test/rendering/union/interface/variables.json
+    test/rendering/union/union/variables.json
+    test/rendering/variable/enum/variables.json
+    test/rendering/variable/include-exclude/variables.json
+    test/rendering/variable/input/variables.json
+    test/rendering/variable/list/variables.json
+    test/rendering/variable/simple/variables.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
@@ -242,6 +281,7 @@ test-suite morpheus-test
   other-modules:
       Utils.Api
       Utils.MergeSchema
+      Utils.Rendering
       Utils.Schema
       Utils.Utils
       Paths_morpheus_graphql_core

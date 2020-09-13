@@ -1,0 +1,6 @@
+query($list: [Input!]!) {
+  simple {
+    name(list: $list)
+    power
+  }
+}

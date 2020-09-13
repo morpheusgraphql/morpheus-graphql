@@ -39,6 +39,8 @@ module Data.Morpheus.Types.Internal.AST.Fields
     mkInputValue,
     mkObjectField,
     mkField,
+    renderArgumentValues,
+    renderDirectives,
   )
 where
 
@@ -61,9 +63,12 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    Rendering,
+    intercalate,
     renderArguments,
     renderEntry,
     renderObject,
+    space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
@@ -113,6 +118,8 @@ import Prelude
     Show,
     filter,
     notElem,
+    null,
+    otherwise,
   )
 
 -- scalar
@@ -140,6 +147,12 @@ instance NameCollision (Argument s) where
 
 type Arguments (s :: Stage) = OrdMap FieldName (Argument s)
 
+renderArgumentValues :: Arguments s -> Rendering
+renderArgumentValues = renderArguments . filter notNull . elems
+  where
+    notNull Argument {argumentValue = Null} = False
+    notNull _ = True
+
 -- directive
 ------------------------------------------------------------------
 data Directive (s :: Stage) = Directive
@@ -152,7 +165,22 @@ data Directive (s :: Stage) = Directive
 instance KeyOf FieldName (Directive s) where
   keyOf = directiveName
 
+instance RenderGQL (Directive s) where
+  render Directive {..} =
+    "@" <> render directiveName
+      <> renderArgumentValues directiveArgs
+
 type Directives s = [Directive s]
+
+renderDirectives :: Directives s -> Rendering
+renderDirectives xs
+  | null dirs = ""
+  | otherwise = space <> intercalate space (fmap render dirs)
+  where
+    dirs = filter notSystem xs
+    notSystem Directive {directiveName = "include"} = False
+    notSystem Directive {directiveName = "skip"} = False
+    notSystem _ = True
 
 data DirectiveDefinition s = DirectiveDefinition
   { directiveDefinitionName :: FieldName,
@@ -286,8 +314,8 @@ instance NameCollision (FieldDefinition cat s) where
     "There can Be only One field Named " <> msgValidation fieldName
 
 instance RenderGQL (FieldDefinition cat s) where
-  render FieldDefinition {fieldName = FieldName name, fieldType, fieldContent = Just (FieldArgs args)} =
-    name <> render args <> ": " <> render fieldType
+  render FieldDefinition {fieldName, fieldType, fieldContent = Just (FieldArgs args)} =
+    render fieldName <> render args <> ": " <> render fieldType
   render FieldDefinition {fieldName, fieldType} =
     renderEntry fieldName fieldType
 

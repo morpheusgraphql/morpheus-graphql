@@ -76,7 +76,7 @@ import Data.ByteString.Lazy.Char8 (ByteString, unpack)
 import Data.Char (toLower)
 import Data.Hashable (Hashable)
 import Data.Maybe (Maybe (..), maybeToList)
-import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..))
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), Rendering, fromText, renderGQL)
 import Data.Semigroup (Semigroup (..))
 import Data.String (IsString (..))
 import Data.Text (Text, intercalate, pack)
@@ -219,7 +219,7 @@ instance Msg FieldName where
   msg FieldName {readName} = Message $ "\"" <> readName <> "\""
 
 instance RenderGQL FieldName where
-  render = readName
+  render = fromText . readName
 
 intercalateName :: FieldName -> [FieldName] -> FieldName
 intercalateName (FieldName x) = FieldName . intercalate x . fmap readName
@@ -259,7 +259,7 @@ instance Msg TypeName where
   msg TypeName {readTypeName} = Message $ "\"" <> readTypeName <> "\""
 
 instance RenderGQL TypeName where
-  render = readTypeName
+  render = fromText . readTypeName
 
 -- Description
 type Description = Text
@@ -295,7 +295,7 @@ data OperationType
   deriving (Show, Eq, Lift, Generic, Hashable)
 
 instance RenderGQL OperationType where
-  render = pack . fmap toLower . show
+  render = fromText . pack . fmap toLower . show
 
 instance Msg OperationType where
   msg Query = msg ("query" :: TypeName)
@@ -351,7 +351,7 @@ instance RenderGQL TypeRef where
   render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
 
 instance Msg TypeRef where
-  msg = msg . FieldName . render
+  msg = msg . FieldName . renderGQL
 
 -- Kind
 -----------------------------------------------------------------------------------
@@ -438,7 +438,7 @@ toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
 toHSWrappers [] = [TypeMaybe]
 toHSWrappers [NonNullType] = []
 
-renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Token
+renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Rendering
 renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
   where
     showGQLWrapper [] = render x

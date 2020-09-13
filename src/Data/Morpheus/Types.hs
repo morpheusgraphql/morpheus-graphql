@@ -55,7 +55,8 @@ module Data.Morpheus.Types
     interface,
     SubscriptionField,
     App,
-    RenderGQL (..),
+    RenderGQL,
+    render,
     GQLTypeOptions (..),
   )
 where
@@ -70,7 +71,8 @@ import Data.Either
   )
 import Data.Morpheus.Core
   ( App,
-    RenderGQL (..),
+    RenderGQL,
+    render,
   )
 import Data.Morpheus.Server.Deriving.Schema
   ( DeriveType,

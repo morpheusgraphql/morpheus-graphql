@@ -16,7 +16,6 @@ module Data.Morpheus.Core
     parseRequestWith,
     validateSchema,
     parseRequest,
-    RenderGQL (..),
     SelectionTree (..),
     Config (..),
     VALIDATION_MODE (..),
@@ -28,6 +27,8 @@ module Data.Morpheus.Core
     withDebugger,
     mkApp,
     runAppStream,
+    render,
+    RenderGQL,
   )
 where
 
@@ -45,9 +46,8 @@ import Data.Morpheus.Parser
     parseTypeDefinitions,
     parseTypeSystemDefinition,
   )
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
-  )
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL)
+import qualified Data.Morpheus.Rendering.RenderGQL as R
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.App
   ( App (..),
@@ -59,6 +59,7 @@ import Data.Morpheus.Types.App
   )
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
+    Token,
     VALID,
   )
 import Data.Morpheus.Types.Internal.Config
@@ -80,6 +81,9 @@ import qualified Data.Text.Lazy as LT
   ( toStrict,
   )
 import Data.Text.Lazy.Encoding (decodeUtf8)
+
+render :: RenderGQL a => a -> Token
+render = R.renderGQL
 
 parseDSL :: ByteString -> Either String (Schema VALID)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument

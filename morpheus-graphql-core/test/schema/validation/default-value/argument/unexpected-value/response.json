@@ -9,7 +9,7 @@
       "locations": []
     },
     {
-      "message": "Field Query.field(i2:) got invalid default value. in field \"field1\": Expected type \"ID\" found {field3: 2344}.",
+      "message": "Field Query.field(i2:) got invalid default value. in field \"field1\": Expected type \"ID\" found { field3: 2344 }.",
       "locations": []
     },
     {

@@ -32,6 +32,7 @@ import Data.Morpheus.Parser
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    fromText,
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Schema.SchemaAPI (withSystemFields)
@@ -89,7 +90,7 @@ data App event (m :: * -> *)
 
 instance RenderGQL (App e m) where
   render App {app} = render app
-  render FailApp {appErrors} = pack $ LBS.unpack (A.encode appErrors)
+  render FailApp {appErrors} = fromText $ pack $ LBS.unpack (A.encode appErrors)
 
 instance Monad m => Semigroup (App e m) where
   (FailApp err1) <> (FailApp err2) = FailApp (err1 <> err2)
@@ -133,7 +134,7 @@ validateReq ::
 validateReq inputSchema config request = cleanEvents $ ResultT $ pure $ do
   validSchema <- validateSchema True config inputSchema
   schema <- internalSchema <:> validSchema
-  operation <- parseRequestWith config schema request
+  operation <- parseRequestWith config validSchema request
   pure $
     ResolverContext
       { schema,

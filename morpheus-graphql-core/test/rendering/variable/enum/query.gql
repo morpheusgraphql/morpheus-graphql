@@ -1,0 +1,6 @@
+query($enum: MyEnum!) {
+  simple {
+    name(enum: $enum)
+    power
+  }
+}

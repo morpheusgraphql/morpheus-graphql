@@ -49,7 +49,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     Rendering,
-    renderArguments,
+    newline,
     renderObject,
     space,
   )
@@ -71,6 +71,8 @@ import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.Fields
   ( Arguments,
     Directives,
+    renderArgumentValues,
+    renderDirectives,
   )
 import Data.Morpheus.Types.Internal.AST.MergeSet
   ( MergeSet,
@@ -174,7 +176,6 @@ instance RenderGQL UnionTag where
   render UnionTag {unionTagName, unionTagSelection} =
     "... on "
       <> render unionTagName
-      <> space
       <> renderSelectionSet unionTagSelection
 
 mergeConflict :: [Ref] -> ValidationError -> ValidationErrors
@@ -209,8 +210,8 @@ data Selection (s :: Stage) where
       selectionAlias :: Maybe FieldName,
       selectionPosition :: Position,
       selectionArguments :: Arguments s,
-      selectionContent :: SelectionContent s,
-      selectionDirectives :: Directives s
+      selectionDirectives :: Directives s,
+      selectionContent :: SelectionContent s
     } ->
     Selection s
   InlineFragment :: Fragment RAW -> Selection RAW
@@ -222,7 +223,8 @@ instance RenderGQL (Selection VALID) where
       { ..
       } =
       render (fromMaybe selectionName selectionAlias)
-        <> renderArguments (elems selectionArguments)
+        <> renderArgumentValues selectionArguments
+        <> renderDirectives selectionDirectives
         <> render selectionContent
 
 instance KeyOf FieldName (Selection s) where
@@ -324,13 +326,14 @@ instance RenderGQL (Operation VALID) where
     Operation
       { operationName,
         operationType,
+        operationDirectives,
         operationSelection
       } =
       render operationType
-        <> space
-        <> render operationName
-        <> space
+        <> maybe "" ((space <>) . render) operationName
+        <> renderDirectives operationDirectives
         <> renderSelectionSet operationSelection
+        <> newline
 
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" (TypeName . readName)

@@ -18,7 +18,7 @@
                   "ofType": null
                 }
               },
-              "defaultValue": "{inputField2: \"value from argument inputCompound\", inputField3: [{fieldWithDefault: \"value2 from inputField3\", simpleField: EnumA}, {fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumA}], inputField4: [{fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumB}]}"
+              "defaultValue": "{ inputField2: \"value from argument inputCompound\", inputField3: [{ fieldWithDefault: \"value2 from inputField3\", simpleField: EnumA }, { fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumA }], inputField4: [{ fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumB }] }"
             },
             {
               "name": "input",

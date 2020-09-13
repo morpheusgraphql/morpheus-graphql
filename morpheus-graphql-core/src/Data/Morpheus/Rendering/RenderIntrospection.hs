@@ -28,7 +28,7 @@ import Data.Morpheus.Internal.Utils
     failure,
     selectBy,
   )
-import qualified Data.Morpheus.Rendering.RenderGQL as GQL (RenderGQL (..))
+import qualified Data.Morpheus.Rendering.RenderGQL as GQL
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -133,7 +133,7 @@ instance RenderIntrospection Bool where
   render = pure . mkBoolean
 
 instance RenderIntrospection TypeKind where
-  render = pure . mkString . GQL.render
+  render = pure . mkString . GQL.renderGQL
 
 instance RenderIntrospection (DirectiveDefinition VALID) where
   render
@@ -217,7 +217,7 @@ instance RenderIntrospection (FieldContent TRUE IN VALID) where
 
 instance RenderIntrospection (Value VALID) where
   render Null = pure mkNull
-  render x = pure $ mkString $ GQL.render x
+  render x = pure $ mkString $ GQL.renderGQL x
 
 instance
   RenderIntrospection

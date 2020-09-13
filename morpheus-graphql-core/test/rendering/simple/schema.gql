@@ -1,0 +1,17 @@
+directive @MyDirective(name: String) on FIELD | QUERY
+
+type Deity {
+  name: String!
+  power: [String!]!
+  friends: [Deity!]!
+}
+
+type Query {
+  deity(name: String): Deity!
+}
+
+schema {
+  query: Query
+  mutation: Query
+  subscription: Query
+}

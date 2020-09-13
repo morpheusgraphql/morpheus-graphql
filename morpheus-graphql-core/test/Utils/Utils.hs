@@ -36,7 +36,11 @@ import Data.Morpheus.Core (parseGQLDocument)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
-import Data.Morpheus.Types.Internal.AST (FieldName (..), Schema (..), VALID)
+import Data.Morpheus.Types.Internal.AST
+  ( FieldName (..),
+    Schema (..),
+    VALID,
+  )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     ResModel,
