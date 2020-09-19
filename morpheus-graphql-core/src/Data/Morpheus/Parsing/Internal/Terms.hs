@@ -150,7 +150,7 @@ nameContinue = many (letterChar <|> _' <|> digitChar)
 variable :: Parser Ref
 variable =
   label "variable" $
-    (flip Ref <$> getLocation <*> (char '$' *> parseName))
+    (flip Ref <$> getLocation <*> (char "$" *> parseName))
       <* ignoredTokens
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
@@ -170,7 +170,7 @@ blockString :: Parser Token
 blockString = stringWith (string "\"\"\"") (printChar <|> newline)
 
 singleLineString :: Parser Token
-singleLineString = stringWith (char '"') escapedChar
+singleLineString = stringWith (char "\"") escapedChar
 
 stringWith :: Parser quote -> Parser Char -> Parser Token
 stringWith quote parser =
@@ -236,10 +236,10 @@ comma = label "Comma" $ char "," *> space
 ------------------------------------------------------------------------
 
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (optional (symbol '&') *> ignoredTokens)
+sepByAnd entry = entry `sepBy` (optional (symbol "&") *> ignoredTokens)
 
 pipe :: Parser a -> Parser [a]
-pipe x = optional (symbol '|') *> (x `sepBy1` symbol '|')
+pipe x = optional (symbol "|") *> (x `sepBy1` symbol "|")
 
 -----------------------------
 collection :: Parser a -> Parser [a]
@@ -269,7 +269,7 @@ uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf k a) => Parser a -> P
 uniqTupleOpt x = uniqTuple x <|> pure empty
 
 assignedFieldName :: Parser FieldName
-assignedFieldName = parseName <* symbol ':'
+assignedFieldName = parseName <* symbol ":"
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --
