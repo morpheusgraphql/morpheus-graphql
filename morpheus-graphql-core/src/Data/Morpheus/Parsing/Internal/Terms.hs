@@ -118,11 +118,11 @@ braces =
 --  NameStart NameContinue[list,opt]
 --
 name :: Parser Token
-name = label "Name" $ do
-  start <- nameStart
-  continue <- nameContinue
-  ignoredTokens
-  pure $ pack (start : continue)
+name =
+  label "Name" $
+    pack
+      <$> ((:) <$> nameStart <*> nameContinue)
+      <* ignoredTokens
 
 -- NameStart::
 --   Letter
@@ -247,10 +247,9 @@ optionalCollection :: Collection a c => Parser c -> Parser c
 optionalCollection x = x <|> pure empty
 
 parseNonNull :: Parser [DataTypeWrapper]
-parseNonNull = do
-  wrapper <- (char '!' $> [NonNullType]) <|> pure []
-  ignoredTokens
-  pure wrapper
+parseNonNull =
+  ((char '!' $> [NonNullType]) <|> pure [])
+    <* ignoredTokens
 
 uniqTuple :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTuple parser =
@@ -265,11 +264,9 @@ uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf k a) => Parser a -> P
 uniqTupleOpt x = uniqTuple x <|> pure empty
 
 parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
-parseAssignment nameParser valueParser = label "assignment" $ do
-  name' <- nameParser
-  symbol ':'
-  value' <- valueParser
-  pure (name', value')
+parseAssignment nameParser valueParser =
+  label "assignment" $
+    (,) <$> (nameParser <* symbol ':') <*> valueParser
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --
@@ -277,9 +274,7 @@ parseAssignment nameParser valueParser = label "assignment" $ do
 --    on NamedType
 --
 parseTypeCondition :: Parser TypeName
-parseTypeCondition = do
-  keyword "on"
-  parseTypeName
+parseTypeCondition = keyword "on" *> parseTypeName
 
 spreadLiteral :: Parser Position
 spreadLiteral = do
