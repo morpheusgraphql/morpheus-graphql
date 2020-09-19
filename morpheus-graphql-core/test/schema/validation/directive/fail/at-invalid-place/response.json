@@ -25,12 +25,12 @@
       "locations": [{ "line": 21, "column": 12 }]
     },
     {
-      "message": "Directive \"include\" may not to be used on FIELD_DEFINITION",
-      "locations": [{ "line": 22, "column": 35 }]
-    },
-    {
       "message": "Directive \"DirectiveD\" may not to be used on ARGUMENT_DEFINITION",
       "locations": [{ "line": 22, "column": 17 }]
+    },
+    {
+      "message": "Directive \"include\" may not to be used on FIELD_DEFINITION",
+      "locations": [{ "line": 22, "column": 35 }]
     }
   ]
 }
