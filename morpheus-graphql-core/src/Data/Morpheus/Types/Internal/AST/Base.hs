@@ -63,6 +63,8 @@ module Data.Morpheus.Types.Internal.AST.Base
     ValidationErrors,
     withPosition,
     toGQLError,
+    toLBS,
+    fromLBS,
   )
 where
 
@@ -73,8 +75,8 @@ import Data.Aeson
     encode,
   )
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy as LB
-import Data.ByteString.Lazy.Char8 (ByteString, unpack)
+import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Char (toLower)
 import Data.Hashable (Hashable)
 import Data.Maybe (Maybe (..), maybeToList)
@@ -83,6 +85,8 @@ import Data.Semigroup (Semigroup (..))
 import Data.String (IsString (..))
 import Data.Text (Text, intercalate, pack)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import Data.Text.Lazy.Encoding (decodeUtf8)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
   ( ExpQ,
@@ -112,6 +116,12 @@ import Prelude
     notElem,
     otherwise,
   )
+
+toLBS :: Text -> ByteString
+toLBS = LB.pack . T.unpack
+
+fromLBS :: ByteString -> Text
+fromLBS = LT.toStrict . decodeUtf8
 
 type TRUE = 'True
 
@@ -191,7 +201,7 @@ instance Msg String where
   msg = Message . pack
 
 instance Msg ByteString where
-  msg = msg . unpack
+  msg = msg . LB.unpack
 
 instance Msg Text where
   msg = Message
