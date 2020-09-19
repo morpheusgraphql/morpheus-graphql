@@ -74,7 +74,7 @@ import Data.Morpheus.Error.Utils
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
-import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), renderGQL)
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), renderGQLText)
 import Data.Morpheus.Types.Internal.AST
   ( Directive (..),
     FieldDefinition (..),
@@ -528,18 +528,18 @@ renderScope
     renderSection
       "Scope"
       ( "referenced by type "
-          <> renderGQL currentTypeName
+          <> renderGQLText currentTypeName
           <> " of kind "
-          <> renderGQL currentTypeKind
+          <> renderGQLText currentTypeKind
           <> " in field "
-          <> renderGQL fieldname
+          <> renderGQLText fieldname
       )
 
 renderSection :: RenderGQL a => Message -> a -> Message
 renderSection label content =
   "\n\n" <> label <> ":\n" <> line
     <> "\n\n"
-    <> msg (renderGQL content)
+    <> msg (renderGQLText content)
     <> "\n\n"
   where
     line = stimes (50 :: Int) "-"

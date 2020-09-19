@@ -34,6 +34,10 @@ where
 import Control.Monad ((>=>))
 -- MORPHEUS
 import Control.Monad.Trans (lift)
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+    pack,
+  )
 import Data.Functor (($>))
 import Data.Morpheus.Internal.Utils
   ( Collection,
@@ -58,9 +62,9 @@ import Data.Morpheus.Types.Internal.AST
     toHSWrappers,
   )
 import Data.Text
-  ( pack,
-    strip,
+  ( strip,
   )
+import GHC.Word (Word8)
 import Text.Megaparsec
   ( (<?>),
     (<|>),
@@ -76,7 +80,7 @@ import Text.Megaparsec
     skipManyTill,
     try,
   )
-import Text.Megaparsec.Char
+import Text.Megaparsec.Byte
   ( char,
     digitChar,
     letterChar,
@@ -88,7 +92,7 @@ import Text.Megaparsec.Char
   )
 
 parseNegativeSign :: Parser Bool
-parseNegativeSign = (char '-' $> True <* ignoredTokens) <|> pure False
+parseNegativeSign = (char "-" $> True <* ignoredTokens) <|> pure False
 
 parseName :: Parser FieldName
 parseName = FieldName <$> name
@@ -99,15 +103,15 @@ parseTypeName = label "TypeName" $ TypeName <$> name
 keyword :: FieldName -> Parser ()
 keyword (FieldName word) = string word *> space1 *> ignoredTokens
 
-symbol :: Char -> Parser ()
+symbol :: Word8 -> Parser ()
 symbol x = char x *> ignoredTokens
 
 -- LITERALS
 braces :: Parser [a] -> Parser [a]
 braces =
   between
-    (char '{' *> ignoredTokens)
-    (char '}' *> ignoredTokens)
+    (char "{" *> ignoredTokens)
+    (char "}" *> ignoredTokens)
 
 -- PRIMITIVE
 ------------------------------------
@@ -124,17 +128,20 @@ name =
       <$> ((:) <$> nameStart <*> nameContinue)
       <* ignoredTokens
 
+_' :: Parser Word8
+_' = char "_"
+
 -- NameStart::
 --   Letter
 --   _
-nameStart :: Parser Char
-nameStart = letterChar <|> char '_'
+nameStart :: Parser Word8
+nameStart = letterChar <|> _'
 
 --  NameContinue::
 --   Letter
 --   Digit
-nameContinue :: Parser String
-nameContinue = many (letterChar <|> char '_' <|> digitChar)
+nameContinue :: Parser [Word8]
+nameContinue = many (letterChar <|> _' <|> digitChar)
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
 --
@@ -221,10 +228,10 @@ ignored =
 comment :: Parser ()
 comment =
   label "Comment" $
-    char '#' *> skipManyTill printChar newline *> space
+    char "#" *> skipManyTill printChar newline *> space
 
 comma :: Parser ()
-comma = label "Comma" $ char ',' *> space
+comma = label "Comma" $ char "," *> space
 
 ------------------------------------------------------------------------
 
@@ -246,15 +253,15 @@ optionalCollection x = x <|> pure empty
 
 parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull =
-  ((char '!' $> [NonNullType]) <|> pure [])
+  ((char "!" $> [NonNullType]) <|> pure [])
     <* ignoredTokens
 
 uniqTuple :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTuple parser =
   label "Tuple" $
     between
-      (char '(' *> ignoredTokens)
-      (char ')' *> ignoredTokens)
+      (char "(" *> ignoredTokens)
+      (char ")" *> ignoredTokens)
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
       >>= lift . fromElems
 
@@ -281,7 +288,7 @@ spreadLiteral = getLocation <* string "..." <* space
 parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
-    alias = label "alias" $ parseName <* char ':' <* ignoredTokens
+    alias = label "alias" $ assignedFieldName <* ignoredTokens
 
 parseType :: Parser TypeRef
 parseType = parseTypeW <$> parseWrappedType <*> parseNonNull
@@ -303,8 +310,8 @@ parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
     wrapped :: Parser ([DataTypeWrapper], TypeName)
     wrapped =
       between
-        (char '[' *> ignoredTokens)
-        (char ']' *> ignoredTokens)
+        (char "[" *> ignoredTokens)
+        (char "]" *> ignoredTokens)
         (wrapAsList <$> (unwrapped <|> wrapped) <*> parseNonNull)
 
 wrapAsList :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> ([DataTypeWrapper], TypeName)
