@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -54,13 +55,17 @@ import Data.Morpheus.Types.Internal.AST
     DataFingerprint (..),
     Description,
     DirectiveDefinition (..),
+    Directives,
+    ELEM,
     IN,
+    LEAF,
     OUT,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     ScalarDefinition (..),
     Schema,
     SchemaDefinition (..),
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -86,6 +91,31 @@ import Prelude
     (.),
   )
 
+mkType ::
+  Maybe Description ->
+  TypeName ->
+  Directives s ->
+  TypeContent TRUE a s ->
+  TypeDefinition a s
+mkType typeDescription typeName typeDirectives typeContent =
+  TypeDefinition
+    { typeFingerprint = DataFingerprint typeName [],
+      ..
+    }
+
+mkScalar ::
+  ELEM LEAF a ~ TRUE =>
+  Maybe Description ->
+  TypeName ->
+  Directives s ->
+  TypeDefinition a s
+mkScalar typeDescription typeName typeDirectives =
+  TypeDefinition
+    { typeFingerprint = DataFingerprint typeName [],
+      typeContent = DataScalar (ScalarDefinition pure),
+      ..
+    }
+
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
 --
 --  ScalarTypeDefinition:
@@ -95,15 +125,11 @@ scalarTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
-scalarTypeDefinition typeDescription = label "ScalarTypeDefinition" $ do
-  typeName <- typeDeclaration "scalar"
-  typeDirectives <- optionalDirectives
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        typeContent = DataScalar $ ScalarDefinition pure,
-        ..
-      }
+scalarTypeDefinition typeDescription =
+  label "ScalarTypeDefinition" $
+    mkScalar typeDescription
+      <$> typeDeclaration "scalar"
+      <*> optionalDirectives
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 --
@@ -152,15 +178,12 @@ interfaceTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
   Parser (TypeDefinition OUT s)
-interfaceTypeDefinition typeDescription = label "InterfaceTypeDefinition" $ do
-  typeName <- typeDeclaration "interface"
-  typeDirectives <- optionalDirectives
-  typeContent <- DataInterface <$> fieldsDefinition
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        ..
-      }
+interfaceTypeDefinition typeDescription =
+  label "InterfaceTypeDefinition" $
+    mkType typeDescription
+      <$> typeDeclaration "interface"
+      <*> optionalDirectives
+      <*> (DataInterface <$> fieldsDefinition)
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
 --
@@ -175,15 +198,12 @@ unionTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
   Parser (TypeDefinition OUT s)
-unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
-  typeName <- typeDeclaration "union"
-  typeDirectives <- optionalDirectives
-  typeContent <- DataUnion <$> unionMemberTypes
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        ..
-      }
+unionTypeDefinition typeDescription =
+  label "UnionTypeDefinition" $
+    mkType typeDescription
+      <$> typeDeclaration "union"
+      <*> optionalDirectives
+      <*> (DataUnion <$> unionMemberTypes)
   where
     unionMemberTypes =
       symbol '='
@@ -204,15 +224,12 @@ enumTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
-enumTypeDefinition typeDescription = label "EnumTypeDefinition" $ do
-  typeName <- typeDeclaration "enum"
-  typeDirectives <- optionalDirectives
-  typeContent <- DataEnum <$> collection enumValueDefinition
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        ..
-      }
+enumTypeDefinition typeDescription =
+  label "EnumTypeDefinition" $
+    mkType typeDescription
+      <$> typeDeclaration "enum"
+      <*> optionalDirectives
+      <*> (DataEnum <$> collection enumValueDefinition)
 
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
 --
@@ -227,16 +244,12 @@ inputObjectTypeDefinition ::
   Maybe Description ->
   Parser (TypeDefinition IN s)
 inputObjectTypeDefinition typeDescription =
-  label "InputObjectTypeDefinition" $ do
-    typeName <- typeDeclaration "input"
-    typeDirectives <- optionalDirectives
-    typeContent <- DataInputObject <$> inputFieldsDefinition
-    -- build input
-    pure
-      TypeDefinition
-        { typeFingerprint = DataFingerprint typeName [],
-          ..
-        }
+  label "InputObjectTypeDefinition" $
+    mkType
+      typeDescription
+      <$> typeDeclaration "input"
+      <*> optionalDirectives
+      <*> (DataInputObject <$> inputFieldsDefinition)
 
 -- 3.13 DirectiveDefinition
 --
@@ -290,10 +303,10 @@ parseSchemaDefinition _schemaDescription =
          )
 
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
-parseRootOperationTypeDefinition = do
-  operationType <- parseOperationType
-  symbol ':'
-  RootOperationTypeDefinition operationType <$> parseTypeName
+parseRootOperationTypeDefinition =
+  RootOperationTypeDefinition
+    <$> (parseOperationType <* symbol ':')
+    <*> parseTypeName
 
 parseTypeSystemUnit ::
   Parser RawTypeDefinition
