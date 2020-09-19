@@ -173,10 +173,10 @@ typeDeclaration kind = keyword kind *> parseTypeName
 parseOperationType :: Parser OperationType
 parseOperationType =
   label "OperationType" $
-    (string "query" $> Query)
-      <|> (string "mutation" $> Mutation)
-      <|> ( string "subscription" $> Subscription
-          )
+    ( (string "query" $> Query)
+        <|> (string "mutation" $> Mutation)
+        <|> (string "subscription" $> Subscription)
+    )
       <* ignoredTokens
 
 parseDirectiveLocation :: Parser DirectiveLocation

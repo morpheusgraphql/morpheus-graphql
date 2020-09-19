@@ -236,11 +236,11 @@ validateField field@FieldDefinition {..} =
   inField
     fieldName
     ( FieldDefinition
-        fieldName
         fieldDescription
+        fieldName
         fieldType
-        <$> validateDirectives (directiveLocation (Proxy @cat)) fieldDirectives
-          <*> validateOptional (checkFieldContent field) fieldContent
+        <$> validateOptional (checkFieldContent field) fieldContent
+        <*> validateDirectives (directiveLocation (Proxy @cat)) fieldDirectives
     )
 
 checkFieldContent ::
@@ -269,11 +269,11 @@ validateArgumentDefinition ::
   SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
 validateArgumentDefinition FieldDefinition {..} =
   FieldDefinition
-    fieldName
     fieldDescription
+    fieldName
     fieldType
-    <$> validateDirectives ARGUMENT_DEFINITION fieldDirectives
-    <*> validateOptional (validateArgumentDefaultValue fieldName fieldType) fieldContent
+    <$> validateOptional (validateArgumentDefaultValue fieldName fieldType) fieldContent
+    <*> validateDirectives ARGUMENT_DEFINITION fieldDirectives
 
 validateArgumentDefaultValue ::
   FieldName ->

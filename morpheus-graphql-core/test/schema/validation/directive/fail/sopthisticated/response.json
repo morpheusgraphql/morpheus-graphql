@@ -21,20 +21,20 @@
       "locations": [{ "line": 9, "column": 13 }]
     },
     {
-      "message": "Directive \"DirectiveC\" may not to be used on FIELD_DEFINITION",
-      "locations": [{ "line": 10, "column": 62 }]
-    },
-    {
-      "message": "Directive \"@DirectiveC\" argument \"arg\" is required but not provided.",
-      "locations": [{ "line": 10, "column": 62 }]
-    },
-    {
       "message": "Unknown Argument \"someargs\" on Directive \"DirectiveC\".",
       "locations": [{ "line": 10, "column": 40 }]
     },
     {
       "message": "Argument \"arg\" got invalid value. Expected type \"Int!\" found True.",
       "locations": [{ "line": 10, "column": 29 }]
+    },
+    {
+      "message": "Directive \"DirectiveC\" may not to be used on FIELD_DEFINITION",
+      "locations": [{ "line": 10, "column": 62 }]
+    },
+    {
+      "message": "Directive \"@DirectiveC\" argument \"arg\" is required but not provided.",
+      "locations": [{ "line": 10, "column": 62 }]
     },
     {
       "message": "Directive \"DirectiveA\" may not to be used on ENUM_VALUE",

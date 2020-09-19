@@ -274,11 +274,11 @@ type FieldsDefinition cat s = Fields (FieldDefinition cat s)
 --   Description(opt) Name: Type DefaultValue(opt) Directives[Const](opt)
 
 data FieldDefinition (cat :: TypeCategory) (s :: Stage) = FieldDefinition
-  { fieldName :: FieldName,
-    fieldDescription :: Maybe Description,
+  { fieldDescription :: Maybe Description,
+    fieldName :: FieldName,
     fieldType :: TypeRef,
-    fieldDirectives :: [Directive s],
-    fieldContent :: Maybe (FieldContent TRUE cat s)
+    fieldContent :: Maybe (FieldContent TRUE cat s),
+    fieldDirectives :: [Directive s]
   }
   deriving (Show, Lift, Eq)
 
