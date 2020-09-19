@@ -40,8 +40,7 @@ import Control.Monad ((>=>))
 -- MORPHEUS
 import Control.Monad.Trans (lift)
 import Data.ByteString.Lazy
-  ( ByteString,
-    pack,
+  ( pack,
   )
 import Data.Functor (($>))
 import Data.Morpheus.Internal.Utils
@@ -132,8 +131,8 @@ underscore :: Parser Word8
 underscore = char 95
 
 -- dollar :: $
-dollar :: Parser Word8
-dollar = char 36
+dollar :: Parser ()
+dollar = label "$" $ symbol 36
 
 -- equal :: '='
 equal :: Parser ()
