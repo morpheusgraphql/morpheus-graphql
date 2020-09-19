@@ -36,6 +36,8 @@ import Test.Tasty.HUnit
   )
 import Prelude
   ( ($),
+    (.),
+    Applicative (..),
     Bool (..),
     Either (..),
     Eq (..),
@@ -52,7 +54,7 @@ newtype GitTimestamp = GitTimestamp
   deriving (Eq, Show)
 
 instance GQLScalar GitTimestamp where
-  parseValue = GitTimestamp . show
+  parseValue = pure . GitTimestamp . show
   serialize (GitTimestamp x) = String (pack x)
 
 defineClientWith
