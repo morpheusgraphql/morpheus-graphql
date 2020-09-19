@@ -109,7 +109,7 @@ nameSpaceField :: TypeName -> FieldName -> FieldName
 nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capitalize name)
 
 dropPrefix :: TypeName -> String -> String
-dropPrefix (TypeName name) = drop (length (T.unpack name))
+dropPrefix (TypeName name) = drop (T.length name)
 
 stripConstructorNamespace :: TypeName -> String -> String
 stripConstructorNamespace = dropPrefix
@@ -136,10 +136,6 @@ instance Capitalize String where
 instance Capitalize Token where
   capitalize = mapText capitalize
   uncapitalize = mapText uncapitalize
-
-instance Capitalize TypeName where
-  capitalize = TypeName . capitalize . readTypeName
-  uncapitalize = TypeName . uncapitalize . readTypeName
 
 capitalTypeName :: FieldName -> TypeName
 capitalTypeName = TypeName . capitalize . readName
