@@ -32,7 +32,6 @@ import Data.Morpheus.Types.Internal.AST
     GQLQuery (..),
     ResolvedValue,
     replaceValue,
-    toLBS,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
