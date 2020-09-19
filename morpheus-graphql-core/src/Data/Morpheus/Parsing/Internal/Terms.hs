@@ -286,15 +286,15 @@ parseAlias = try (optional alias) <|> pure Nothing
     alias = label "alias" $ parseName <* char ':' <* ignoredTokens
 
 parseType :: Parser TypeRef
-parseType = do
-  (wrappers, typeConName) <- parseWrappedType
-  nonNull <- parseNonNull
-  pure
-    TypeRef
-      { typeConName,
-        typeArgs = Nothing,
-        typeWrappers = toHSWrappers $ nonNull ++ wrappers
-      }
+parseType = parseTypeW <$> parseWrappedType <*> parseNonNull
+
+parseTypeW :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> TypeRef
+parseTypeW (wrappers, typeConName) nonNull =
+  TypeRef
+    { typeConName,
+      typeArgs = Nothing,
+      typeWrappers = toHSWrappers (nonNull <> wrappers)
+    }
 
 parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
@@ -307,8 +307,7 @@ parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
       between
         (char '[' *> ignoredTokens)
         (char ']' *> ignoredTokens)
-        ( do
-            (wrappers, tName) <- unwrapped <|> wrapped
-            nonNull' <- parseNonNull
-            pure ((ListType : nonNull') ++ wrappers, tName)
-        )
+        (wrapAsList <$> (unwrapped <|> wrapped) <*> parseNonNull)
+
+wrapAsList :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> ([DataTypeWrapper], TypeName)
+wrapAsList (wrappers, tName) nonNull = (ListType : nonNull <> wrappers, tName)
