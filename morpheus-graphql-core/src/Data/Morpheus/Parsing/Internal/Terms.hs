@@ -114,21 +114,22 @@ symbol x = char x *> ignoredTokens
 
 -- braces: {}
 braces :: Parser a -> Parser a
-braces =
-  between
-    (char 123 *> ignoredTokens)
-    (char 125 *> ignoredTokens)
+braces = between (symbol 123) (symbol 125)
 
 -- brackets: []
 brackets :: Parser a -> Parser a
-brackets =
-  between
-    (char 91 *> ignoredTokens)
-    (char 93 *> ignoredTokens)
+brackets = between (symbol 91) (symbol 93)
+
+-- parens : '()'
+parens :: Parser a -> Parser a
+parens = between (symbol 40) (symbol 41)
 
 -- underscore : '_'
 underscore :: Parser Word8
 underscore = char 95
+
+comma :: Parser ()
+comma = label "," $ char 44 *> space
 
 -- dollar :: $
 dollar :: Parser ()
@@ -142,6 +143,7 @@ equal = label "=" $ symbol 61
 colon :: Parser ()
 colon = symbol 58
 
+-- minus: '-'
 minus :: Parser ()
 minus = label "-" $ symbol 45
 
@@ -267,16 +269,6 @@ ignored =
 
 comment :: Parser ()
 comment = label "Comment" $ octothorpe *> skipManyTill printChar newline *> space
-
-comma :: Parser ()
-comma = label "," $ char 44 *> space
-
--- parens : '()'
-parens :: Parser a -> Parser a
-parens =
-  between
-    (char 40 *> ignoredTokens)
-    (char 41 *> ignoredTokens)
 
 -- exclamationMark: '!'
 exclamationMark :: Parser ()
