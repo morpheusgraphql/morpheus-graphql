@@ -52,8 +52,6 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
-import qualified Data.Text.Lazy as LT (toStrict)
-import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Traversable (traverse)
 import System.Directory (doesDirectoryExist, listDirectory)
 import Test.Tasty.HUnit
@@ -151,7 +149,7 @@ expectedResponse (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib 
 
 getRequest :: FieldName -> IO GQLRequest
 getRequest p = do
-  queryBS <- LT.toStrict . decodeUtf8 <$> getGQLBody p
+  queryBS <- getGQLBody p
   variables <- maybeVariables p
   pure $
     GQLRequest
