@@ -17,7 +17,6 @@ import Data.Morpheus.Parsing.Internal.Internal
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( brackets,
-    comma,
     equal,
     fieldNameColon,
     ignoredTokens,
@@ -25,7 +24,6 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseString,
     parseTypeName,
     setOf,
-    symbol,
     variable,
   )
 import Data.Morpheus.Types.Internal.AST
