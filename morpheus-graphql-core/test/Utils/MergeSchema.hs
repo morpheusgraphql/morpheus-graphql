@@ -78,7 +78,7 @@ schemaAssertion (App AppData {appSchema}) expectedSchema
   | render expectedSchema == render appSchema = pure ()
   | otherwise =
     assertFailure
-      $ unpack
+      $ LB.unpack
       $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render appSchema
 schemaAssertion (FailApp gqlerror) _ = assertFailure $ " error: " <> show gqlerror
 

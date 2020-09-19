@@ -10,6 +10,9 @@ where
 
 import Control.Applicative (pure)
 import Data.Aeson (encode)
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+  )
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Core
@@ -51,7 +54,7 @@ import Prelude
     show,
   )
 
-assertion :: Token -> Eventless (Operation VALID) -> IO ()
+assertion :: ByteString -> Eventless (Operation VALID) -> IO ()
 assertion expected Success {result = actual}
   | expected == actualValue = pure ()
   | otherwise =
@@ -66,8 +69,8 @@ test apiPath requestPath =
   testGroup (T.unpack $ readName apiPath) $
     fmap (testRendering apiPath) requestPath
 
-getExpectedRendering :: FieldName -> IO Token
-getExpectedRendering = fmap (T.pack . LB.unpack) . readSource . (<> "/rendering.gql")
+getExpectedRendering :: FieldName -> IO ByteString
+getExpectedRendering = readSource . (<> "/rendering.gql")
 
 testRendering ::
   FieldName ->
