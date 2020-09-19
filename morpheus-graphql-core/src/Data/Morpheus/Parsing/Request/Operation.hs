@@ -18,9 +18,9 @@ import Data.Morpheus.Parsing.Internal.Pattern
     parseOperationType,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( parseName,
+  ( colon,
+    parseName,
     parseType,
-    symbol,
     uniqTupleOpt,
     variable,
   )
@@ -53,7 +53,7 @@ import Text.Megaparsec
 variableDefinition :: Parser (Variable RAW)
 variableDefinition = label "VariableDefinition" $ do
   (Ref variableName variablePosition) <- variable
-  symbol ':'
+  colon
   variableType <- parseType
   variableValue <- DefaultValue <$> optional parseDefaultValue
   pure Variable {..}

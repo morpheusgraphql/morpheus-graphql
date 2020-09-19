@@ -25,7 +25,9 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( ignoredTokens,
+  ( at,
+    colon,
+    ignoredTokens,
     keyword,
     optDescription,
     parseName,
@@ -58,6 +60,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef,
     Value,
   )
+import Data.String (fromString)
 import Data.Text (pack)
 import Text.Megaparsec
   ( (<|>),
@@ -66,7 +69,7 @@ import Text.Megaparsec
     many,
     optional,
   )
-import Text.Megaparsec.Char (string)
+import Text.Megaparsec.Byte (string)
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
 --
@@ -96,7 +99,7 @@ inputValueDefinition =
     FieldDefinition
       <$> optDescription
       <*> parseName
-      <*> (symbol ':' *> parseType)
+      <*> (colon *> parseType)
       <*> optional (DefaultInputValue <$> parseDefaultValue)
       <*> optionalDirectives
 
@@ -132,7 +135,7 @@ fieldDefinition =
       <$> optDescription
       <*> parseName
       <*> optional (FieldArgs <$> argumentsDefinition)
-      <*> (symbol ':' *> parseType)
+      <*> (colon *> parseType)
       <*> optionalDirectives
 
 mkField ::
@@ -172,7 +175,7 @@ directive =
   label "Directive" $
     Directive
       <$> getLocation
-      <*> (symbol '@' *> parseName)
+      <*> (at *> parseName)
       <*> maybeArguments
 
 -- typDeclaration : Not in spec ,start part of type definitions
@@ -221,4 +224,4 @@ parseDirectiveLocation =
     <* ignoredTokens
 
 toKeyword :: Show a => a -> Parser a
-toKeyword x = string (pack $ show x) $> x
+toKeyword x = string (fromString $ show x) $> x

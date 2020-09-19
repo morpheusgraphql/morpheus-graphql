@@ -17,6 +17,9 @@ import Data.Morpheus.Parsing.Internal.Internal
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( assignedFieldName,
+    brackets,
+    comma,
+    equal,
     ignoredTokens,
     parseNegativeSign,
     parseString,
@@ -42,11 +45,11 @@ import Text.Megaparsec
     many,
     sepBy,
   )
-import Text.Megaparsec.Char
+import Text.Megaparsec.Byte
   ( char,
     string,
   )
-import Text.Megaparsec.Char.Lexer (scientific)
+import Text.Megaparsec.Byte.Lexer (scientific)
 
 valueNull :: Parser (Value a)
 valueNull = string "null" $> Null
@@ -74,11 +77,10 @@ stringValue = label "stringValue" $ Scalar . String <$> parseString
 
 listValue :: Parser a -> Parser [a]
 listValue parser =
-  label "ListValue" $
-    between
-      (char '[' *> ignoredTokens)
-      (char ']' *> ignoredTokens)
-      (parser `sepBy` (many (char ',') *> ignoredTokens))
+  label
+    "ListValue"
+    $ brackets
+      (parser `sepBy` (comma *> ignoredTokens))
 
 objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
 objectEntry parser =
@@ -93,7 +95,7 @@ parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
 
 parseDefaultValue :: Parser (Value s)
-parseDefaultValue = symbol '=' *> parseV
+parseDefaultValue = equal *> parseV
   where
     parseV :: Parser (Value s)
     parseV = structValue parseV

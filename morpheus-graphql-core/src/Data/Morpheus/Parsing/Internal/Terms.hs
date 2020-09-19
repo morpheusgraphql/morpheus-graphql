@@ -28,6 +28,11 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseTypeName,
     pipe,
     assignedFieldName,
+    brackets,
+    equal,
+    comma,
+    colon,
+    at,
   )
 where
 
@@ -95,7 +100,7 @@ import Text.Megaparsec.Byte
   )
 
 parseNegativeSign :: Parser Bool
-parseNegativeSign = (char "-" $> True <* ignoredTokens) <|> pure False
+parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
 
 parseName :: Parser FieldName
 parseName = FieldName <$> name
@@ -138,6 +143,20 @@ equal = char 61
 -- colon :: ':'
 colon :: Parser ()
 colon = symbol 58
+
+minus :: Parser ()
+minus = label "-" $ symbol 45
+
+-- verticalPipe: '|'
+verticalPipe :: Parser ()
+verticalPipe = label "|" $ symbol 124
+
+ampersand :: Parser ()
+ampersand = label "&" $ symbol 38
+
+-- at: '@'
+at :: Parser ()
+at = label "@" $ symbol 64
 
 -- PRIMITIVE
 ------------------------------------
@@ -193,7 +212,7 @@ blockString :: Parser Token
 blockString = stringWith (string "\"\"\"") (printChar <|> newline)
 
 singleLineString :: Parser Token
-singleLineString = stringWith (char "\"") escapedChar
+singleLineString = stringWith (string "\"") escapedChar
 
 stringWith :: Parser quote -> Parser Word8 -> Parser Token
 stringWith quote parser =
@@ -249,9 +268,7 @@ ignored =
       <|> comma
 
 comment :: Parser ()
-comment =
-  label "Comment" $
-    char "#" *> skipManyTill printChar newline *> space
+comment = label "Comment" $ octothorpe *> skipManyTill printChar newline *> space
 
 comma :: Parser ()
 comma = label "," $ char 44 *> space
@@ -267,13 +284,17 @@ parens =
 exclamationMark :: Parser ()
 exclamationMark = symbol 33
 
+-- octothorpe: '#'
+octothorpe :: Parser ()
+octothorpe = label "#" $ symbol 35
+
 ------------------------------------------------------------------------
 
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (optional (symbol "&") *> ignoredTokens)
+sepByAnd entry = entry `sepBy` (optional ampersand *> ignoredTokens)
 
 pipe :: Parser a -> Parser [a]
-pipe x = optional (symbol "|") *> (x `sepBy1` symbol "|")
+pipe x = optional verticalPipe *> (x `sepBy1` verticalPipe)
 
 -----------------------------
 collection :: Parser a -> Parser [a]

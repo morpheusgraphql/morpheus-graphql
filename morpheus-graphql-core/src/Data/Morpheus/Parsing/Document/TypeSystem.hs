@@ -15,6 +15,7 @@ where
 
 import Control.Applicative ((*>), Applicative (..))
 import Control.Monad ((>=>))
+import Data.ByteString.Lazy (ByteString)
 import Data.Foldable (foldr)
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..))
@@ -34,7 +35,10 @@ import Data.Morpheus.Parsing.Internal.Pattern
     typeDeclaration,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( collection,
+  ( at,
+    collection,
+    colon,
+    equal,
     ignoredTokens,
     keyword,
     optDescription,
@@ -44,7 +48,6 @@ import Data.Morpheus.Parsing.Internal.Terms
     pipe,
     sepByAnd,
     setOf,
-    symbol,
   )
 import Data.Morpheus.Parsing.Internal.Value
   ( Parse (..),
@@ -80,7 +83,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     failure,
   )
-import Data.Text (Text)
 import Text.Megaparsec
   ( (<|>),
     eof,
@@ -220,7 +222,7 @@ unionTypeDefinition typeDescription =
       <*> (DataUnion <$> unionMemberTypes)
   where
     unionMemberTypes =
-      symbol '='
+      equal
         *> pipe (mkUnionMember <$> parseTypeName)
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
@@ -281,7 +283,7 @@ parseDirectiveDefinition directiveDefinitionDescription =
   label "DirectiveDefinition" $
     DirectiveDefinition
       <$> ( keyword "directive"
-              *> symbol '@'
+              *> at
               *> parseName
           )
         <*> pure directiveDefinitionDescription
@@ -313,7 +315,7 @@ parseSchemaDefinition _schemaDescription =
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition =
   RootOperationTypeDefinition
-    <$> (parseOperationType <* symbol ':')
+    <$> (parseOperationType <* colon)
     <*> parseTypeName
 
 parseTypeSystemUnit ::
@@ -379,7 +381,7 @@ parseTypeSystemDefinition =
       *> manyTill parseTypeSystemUnit eof
 
 typeSystemDefinition ::
-  Text ->
+  ByteString ->
   Eventless
     ( Maybe SchemaDefinition,
       [TypeDefinition ANY CONST],
@@ -389,14 +391,14 @@ typeSystemDefinition =
   processParser parseTypeSystemDefinition
     >=> withSchemaDefinition . typePartition
 
-parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY CONST]
+parseTypeDefinitions :: ByteString -> Eventless [TypeDefinition ANY CONST]
 parseTypeDefinitions = fmap snd3 . typeSystemDefinition
 
 snd3 :: (a, b, c) -> b
 snd3 (_, x, _) = x
 
 parseSchema ::
-  Text ->
+  ByteString ->
   Eventless (Schema CONST)
 parseSchema =
   typeSystemDefinition
