@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Parsing.Internal.Arguments (maybeArguments) where
 

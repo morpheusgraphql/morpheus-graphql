@@ -87,9 +87,8 @@ renderArguments variables cName
 renderOperationArguments ::
   Operation VALID ->
   Converter (Maybe ClientTypeDefinition)
-renderOperationArguments Operation {operationName} = do
-  variables <- asks snd
-  pure $ renderArguments variables (getOperationName operationName <> "Args")
+renderOperationArguments Operation {operationName} =
+  (`renderArguments` (getOperationName operationName <> "Args")) <$> asks snd
 
 -- INPUTS
 renderNonOutputTypes ::

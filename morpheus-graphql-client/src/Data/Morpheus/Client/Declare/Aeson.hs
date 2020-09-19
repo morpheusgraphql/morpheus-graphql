@@ -7,6 +7,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Aeson
   ( aesonDeclarations,
@@ -15,11 +16,17 @@ where
 
 --
 -- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Control.Monad ((>>=))
+import Control.Monad.Fail (fail)
 import Data.Aeson
 import Data.Aeson.Types
+import Data.Functor ((<$>))
 import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -74,6 +81,17 @@ import Language.Haskell.TH
     tupP,
     varE,
   )
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Eq (..),
+    Show (..),
+    String,
+    null,
+    otherwise,
+    (||),
+  )
 
 aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> DecQ]
 aesonDeclarations KindEnum = [deriveFromJSON, deriveToJSON]
@@ -124,13 +142,14 @@ deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
       aesonUnionObject typeD
 
 aesonObject :: [FieldName] -> ConsD cat VALID -> ExpQ
-aesonObject tNamespace con@ConsD {cName} = do
-  body <- aesonObjectBody tNamespace con
-  pure $
-    AppE
-      (AppE (VarE 'withObject) name)
-      (LamE [v'] body)
+aesonObject tNamespace con@ConsD {cName} =
+  withBody
+    <$> aesonObjectBody tNamespace con
   where
+    withBody body =
+      AppE
+        (AppE (VarE 'withObject) name)
+        (LamE [v'] body)
     name :: Exp
     name = toString (nameSpaceType tNamespace cName)
 
