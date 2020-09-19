@@ -77,7 +77,7 @@ enumValueDefinition = label "EnumValueDefinition" $ do
   enumDescription <- optDescription
   enumName <- parseTypeName
   enumDirectives <- optionalDirectives
-  return DataEnumValue {..}
+  pure DataEnumValue {..}
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
 --
@@ -178,7 +178,7 @@ parseOperationType = label "OperationType" $ do
       <|> (string "mutation" $> Mutation)
       <|> (string "subscription" $> Subscription)
   ignoredTokens
-  return kind
+  pure kind
 
 parseDirectiveLocation :: Parser DirectiveLocation
 parseDirectiveLocation =

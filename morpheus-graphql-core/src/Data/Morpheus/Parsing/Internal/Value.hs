@@ -72,7 +72,7 @@ enumValue :: Parser (Value a)
 enumValue = do
   enum <- Enum <$> parseTypeName
   ignoredTokens
-  return enum
+  pure enum
 
 stringValue :: Parser (Value a)
 stringValue = label "stringValue" $ Scalar . String <$> parseString

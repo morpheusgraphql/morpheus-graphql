@@ -250,7 +250,7 @@ parseNonNull :: Parser [DataTypeWrapper]
 parseNonNull = do
   wrapper <- (char '!' $> [NonNullType]) <|> pure []
   ignoredTokens
-  return wrapper
+  pure wrapper
 
 uniqTuple :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTuple parser =
@@ -286,7 +286,7 @@ spreadLiteral = do
   index <- getLocation
   _ <- string "..."
   space
-  return index
+  pure index
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
@@ -321,5 +321,5 @@ parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
         ( do
             (wrappers, tName) <- unwrapped <|> wrapped
             nonNull' <- parseNonNull
-            return ((ListType : nonNull') ++ wrappers, tName)
+            pure ((ListType : nonNull') ++ wrappers, tName)
         )
