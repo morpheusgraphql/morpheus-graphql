@@ -36,13 +36,11 @@ import Test.Tasty.HUnit
   )
 import Prelude
   ( ($),
-    (.),
     Applicative (..),
     Bool (..),
     Either (..),
     Eq (..),
     IO,
-    Int,
     Maybe (..),
     Show,
     String,
