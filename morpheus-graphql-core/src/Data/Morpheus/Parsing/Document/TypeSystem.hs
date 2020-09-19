@@ -57,8 +57,10 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition (..),
     Directives,
     ELEM,
+    FieldsDefinition,
     IN,
     LEAF,
+    OBJECT,
     OUT,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
@@ -90,6 +92,21 @@ import Prelude
   ( ($),
     (.),
   )
+
+mkObject ::
+  (ELEM OBJECT a ~ TRUE) =>
+  Maybe Description ->
+  TypeName ->
+  [TypeName] ->
+  Directives s ->
+  FieldsDefinition OUT s ->
+  TypeDefinition a s
+mkObject typeDescription typeName objectImplements typeDirectives objectFields =
+  TypeDefinition
+    { typeFingerprint = DataFingerprint typeName [],
+      typeContent = DataObject {objectImplements, objectFields},
+      ..
+    }
 
 mkType ::
   Maybe Description ->
@@ -150,18 +167,15 @@ objectTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
   Parser (TypeDefinition OUT s)
-objectTypeDefinition typeDescription = label "ObjectTypeDefinition" $ do
-  typeName <- typeDeclaration "type"
-  objectImplements <- optionalImplementsInterfaces
-  typeDirectives <- optionalDirectives
-  objectFields <- fieldsDefinition
-  -- build object
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        typeContent = DataObject {objectImplements, objectFields},
-        ..
-      }
+objectTypeDefinition typeDescription =
+  label "ObjectTypeDefinition" $
+    mkObject typeDescription
+      <$> typeDeclaration "type"
+      <*> optionalImplementsInterfaces
+      <*> optionalDirectives
+      <*> fieldsDefinition
+
+-- build object
 
 optionalImplementsInterfaces :: Parser [TypeName]
 optionalImplementsInterfaces = implements <|> pure []
