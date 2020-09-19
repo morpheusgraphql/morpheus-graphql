@@ -5,6 +5,7 @@
 module Data.Morpheus.Parsing.Internal.Terms
   ( name,
     variable,
+    varName,
     ignoredTokens,
     parseString,
     -------------
@@ -185,6 +186,9 @@ nameStart = letterChar <|> underscore
 nameContinue :: Parser [Word8]
 nameContinue = many (letterChar <|> underscore <|> digitChar)
 
+varName :: Parser FieldName
+varName = dollar *> parseName <* ignoredTokens
+
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
 --
 -- Variable :  $Name
@@ -192,8 +196,9 @@ nameContinue = many (letterChar <|> underscore <|> digitChar)
 variable :: Parser Ref
 variable =
   label "variable" $
-    (flip Ref <$> getLocation <*> (dollar *> parseName))
-      <* ignoredTokens
+    flip Ref
+      <$> getLocation
+      <*> varName
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
 --

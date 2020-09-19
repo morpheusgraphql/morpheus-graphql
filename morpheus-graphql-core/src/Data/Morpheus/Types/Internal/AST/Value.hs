@@ -161,9 +161,9 @@ deriving instance Show (VariableContent a)
 deriving instance Eq (VariableContent a)
 
 data Variable (stage :: Stage) = Variable
-  { variableName :: FieldName,
+  { variablePosition :: Position,
+    variableName :: FieldName,
     variableType :: TypeRef,
-    variablePosition :: Position,
     variableValue :: VariableContent (CONST_OR_VALID stage)
   }
   deriving (Show, Eq, Lift)

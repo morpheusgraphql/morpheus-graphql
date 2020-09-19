@@ -22,7 +22,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseName,
     parseType,
     uniqTupleOpt,
-    variable,
+    varName,
   )
 import Data.Morpheus.Parsing.Internal.Value
   ( parseDefaultValue,
@@ -34,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
   ( Operation (..),
     OperationType (..),
     RAW,
-    Ref (..),
     Variable (..),
     VariableContent (..),
   )
@@ -51,12 +50,13 @@ import Text.Megaparsec
 --    Variable : Type DefaultValue(opt)
 --
 variableDefinition :: Parser (Variable RAW)
-variableDefinition = label "VariableDefinition" $ do
-  (Ref variableName variablePosition) <- variable
-  colon
-  variableType <- parseType
-  variableValue <- DefaultValue <$> optional parseDefaultValue
-  pure Variable {..}
+variableDefinition =
+  label "VariableDefinition" $
+    Variable
+      <$> getLocation
+      <*> (varName <* colon)
+      <*> parseType
+      <*> (DefaultValue <$> optional parseDefaultValue)
 
 -- Operations : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Operations
 --
