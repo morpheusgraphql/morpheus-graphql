@@ -31,11 +31,11 @@ import Text.Megaparsec (label)
 --  Name : Value[Const]
 valueArgument :: Parse (Value s) => Parser (Argument s)
 valueArgument =
-  label "Argument" $ do
-    argumentPosition <- getLocation
-    argumentName <- assignedFieldName
-    argumentValue <- parse
-    pure $ Argument {argumentName, argumentValue, argumentPosition}
+  label "Argument" $
+    Argument
+      <$> getLocation
+      <*> assignedFieldName
+      <*> parse
 
 maybeArguments :: Parse (Value s) => Parser (Arguments s)
 maybeArguments =
