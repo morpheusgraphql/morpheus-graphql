@@ -36,12 +36,17 @@ import Prelude
   ( ($),
     Bool (..),
     Either (..),
+    Eq (..),
     IO,
     Int,
     String,
   )
 
-newtype GitTimestamp = GitTimestamp {int :: Int}
+newtype GitTimestamp = GitTimestamp
+  { unGitTimestamp ::
+      Int
+  }
+  deriving (Eq)
 
 defineClientWith
   "Github"
@@ -76,7 +81,7 @@ defineClientWith
 resolver :: ByteString -> IO ByteString
 resolver = mockApi "Interface"
 
-client :: IO (Either String MyQuery)
+client :: IO (Either String GetTags)
 client = fetch resolver ()
 
 testInterface :: TestTree
@@ -85,53 +90,8 @@ testInterface = testCase "test interfaces" $ do
   assertEqual
     "test interface"
     ( Right
-        ( MyQuery
-            { character =
-                [ CharacterDeity
-                    { name = "Deity Name",
-                      power = "Deity Power",
-                      __typename = "Deity"
-                    },
-                  CharacterCharacter
-                    { name = "Character Name",
-                      __typename = "Character"
-                    },
-                  CharacterHero
-                    { name = "Hero Name",
-                      hobby = "Deity Power",
-                      __typename = "Hero"
-                    }
-                ],
-              character2 =
-                [ Character2Character
-                    { name1 = "test name",
-                      name = "test name"
-                    }
-                ],
-              character3 =
-                [ Character3Hero
-                    { hobby = "Hero Hobby",
-                      name2 = "Hero name2",
-                      __typename = "Hero"
-                    },
-                  Character3Deity
-                    { name2 = "Hero name2",
-                      __typename = "Deity"
-                    },
-                  Character3Character
-                    { name2 = "Character name2",
-                      __typename = "Character"
-                    }
-                ],
-              character4 =
-                [ Character4Character
-                    { __typename = "Character"
-                    },
-                  Character4Hero
-                    { hobby = "Hero Hobby",
-                      __typename = "Hero"
-                    }
-                ]
+        ( GetTags
+            {
             }
         )
     )
