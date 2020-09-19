@@ -42,7 +42,6 @@ import Control.Monad.Trans (lift)
 import Data.ByteString.Lazy
   ( ByteString,
     pack,
-    unpack,
   )
 import Data.Functor (($>))
 import Data.Morpheus.Internal.Utils
