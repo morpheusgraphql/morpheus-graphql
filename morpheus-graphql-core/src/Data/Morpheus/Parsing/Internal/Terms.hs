@@ -141,12 +141,10 @@ nameContinue = many (letterChar <|> char '_' <|> digitChar)
 -- Variable :  $Name
 --
 variable :: Parser Ref
-variable = label "variable" $ do
-  refPosition <- getLocation
-  _ <- char '$'
-  refName <- parseName
-  ignoredTokens
-  pure $ Ref {refName, refPosition}
+variable =
+  label "variable" $
+    (flip Ref <$> getLocation <*> (char '$' *> parseName))
+      <* ignoredTokens
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
 --
@@ -277,11 +275,7 @@ parseTypeCondition :: Parser TypeName
 parseTypeCondition = keyword "on" *> parseTypeName
 
 spreadLiteral :: Parser Position
-spreadLiteral = do
-  index <- getLocation
-  _ <- string "..."
-  space
-  pure index
+spreadLiteral = getLocation <* string "..." <* space
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
