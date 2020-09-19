@@ -312,12 +312,12 @@ deriving instance Eq (Selection a)
 type DefaultValue = Maybe ResolvedValue
 
 data Operation (s :: Stage) = Operation
-  { operationName :: Maybe FieldName,
+  { operationPosition :: Position,
     operationType :: OperationType,
+    operationName :: Maybe FieldName,
     operationArguments :: VariableDefinitions s,
-    operationSelection :: SelectionSet s,
-    operationPosition :: Position,
-    operationDirectives :: Directives s
+    operationDirectives :: Directives s,
+    operationSelection :: SelectionSet s
   }
   deriving (Show, Lift)
 

@@ -66,14 +66,15 @@ variableDefinition = label "VariableDefinition" $ do
 --   OperationType: one of
 --     query, mutation,    subscription
 parseOperationDefinition :: Parser (Operation RAW)
-parseOperationDefinition = label "OperationDefinition" $ do
-  operationPosition <- getLocation
-  operationType <- parseOperationType
-  operationName <- optional parseName
-  operationArguments <- uniqTupleOpt variableDefinition
-  operationDirectives <- optionalDirectives
-  operationSelection <- parseSelectionSet
-  pure Operation {..}
+parseOperationDefinition =
+  label "OperationDefinition" $
+    Operation
+      <$> getLocation
+      <*> parseOperationType
+      <*> optional parseName
+      <*> uniqTupleOpt variableDefinition
+      <*> optionalDirectives
+      <*> parseSelectionSet
 
 parseAnonymousQuery :: Parser (Operation RAW)
 parseAnonymousQuery = label "AnonymousQuery" $ do
