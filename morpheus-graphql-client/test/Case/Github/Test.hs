@@ -90,7 +90,13 @@ resolver :: ByteString -> IO ByteString
 resolver = mockApi "Interface"
 
 client :: IO (Either String GetTags)
-client = fetch resolver GetTagsArgs {owner = "", repo = ""}
+client =
+  fetch
+    resolver
+    GetTagsArgs
+      { owner = "user1",
+        repo = "repo1"
+      }
 
 testInterface :: TestTree
 testInterface = testCase "test interfaces" $ do
