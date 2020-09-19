@@ -18,9 +18,11 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.Morpheus.Client
   ( Fetch (..),
+    GQLScalar (..),
+    ScalarValue (..),
     gql,
   )
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Spec.Utils
   ( defineClientWith,
     mockApi,
@@ -39,14 +41,19 @@ import Prelude
     Eq (..),
     IO,
     Int,
+    Maybe (..),
+    Show,
     String,
   )
 
 newtype GitTimestamp = GitTimestamp
-  { unGitTimestamp ::
-      Int
+  { unGitTimestamp :: String
   }
-  deriving (Eq)
+  deriving (Eq, Show)
+
+instance GQLScalar GitTimestamp where
+  parseValue = GitTimestamp . show
+  serialize (GitTimestamp x) = String (pack x)
 
 defineClientWith
   "Github"
@@ -82,7 +89,7 @@ resolver :: ByteString -> IO ByteString
 resolver = mockApi "Interface"
 
 client :: IO (Either String GetTags)
-client = fetch resolver ()
+client = fetch resolver GetTagsArgs {owner = "", repo = ""}
 
 testInterface :: TestTree
 testInterface = testCase "test interfaces" $ do
