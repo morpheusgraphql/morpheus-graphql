@@ -73,11 +73,12 @@ import Text.Megaparsec.Char (string)
 enumValueDefinition ::
   Parse (Value s) =>
   Parser (DataEnumValue s)
-enumValueDefinition = label "EnumValueDefinition" $ do
-  enumDescription <- optDescription
-  enumName <- parseTypeName
-  enumDirectives <- optionalDirectives
-  pure DataEnumValue {..}
+enumValueDefinition =
+  label "EnumValueDefinition" $
+    DataEnumValue
+      <$> optDescription
+      <*> parseTypeName
+      <*> optionalDirectives
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
 --
@@ -167,18 +168,16 @@ directive = label "Directive" $ do
 --   Description(opt) scalar Name
 --
 typeDeclaration :: FieldName -> Parser TypeName
-typeDeclaration kind = do
-  keyword kind
-  parseTypeName
+typeDeclaration kind = keyword kind *> parseTypeName
 
 parseOperationType :: Parser OperationType
-parseOperationType = label "OperationType" $ do
-  kind <-
+parseOperationType =
+  label "OperationType" $
     (string "query" $> Query)
       <|> (string "mutation" $> Mutation)
-      <|> (string "subscription" $> Subscription)
-  ignoredTokens
-  pure kind
+      <|> ( string "subscription" $> Subscription
+          )
+      <* ignoredTokens
 
 parseDirectiveLocation :: Parser DirectiveLocation
 parseDirectiveLocation =

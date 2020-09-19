@@ -216,8 +216,8 @@ instance Lift ScalarDefinition where
 
 -- ENUM VALUE
 data DataEnumValue s = DataEnumValue
-  { enumName :: TypeName,
-    enumDescription :: Maybe Description,
+  { enumDescription :: Maybe Description,
+    enumName :: TypeName,
     enumDirectives :: [Directive s]
   }
   deriving (Show, Lift)
