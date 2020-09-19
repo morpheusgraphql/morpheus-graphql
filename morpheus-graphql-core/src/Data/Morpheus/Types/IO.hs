@@ -56,7 +56,6 @@ import Data.Morpheus.Error.Utils (badRequestError)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError (..),
-    Token,
     ValidValue,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
