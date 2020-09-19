@@ -137,8 +137,8 @@ dollar :: Parser Word8
 dollar = char 36
 
 -- equal :: '='
-equal :: Parser Word8
-equal = char 61
+equal :: Parser ()
+equal = label "=" $ symbol 61
 
 -- colon :: ':'
 colon :: Parser ()
