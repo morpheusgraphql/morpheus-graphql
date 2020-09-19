@@ -12,7 +12,7 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative ((*>), pure)
+import Control.Applicative ((*>), Applicative (..))
 import Control.Monad ((>=>))
 import Data.Foldable (foldr)
 import Data.Functor ((<$>), fmap)
@@ -280,15 +280,14 @@ parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefini
 --     mutation :: Maybe TypeName,
 --     subscription :: Maybe TypeName
 --   }
-
-parseSchemaDefinition :: Maybe Description -> Parser RawTypeDefinition
-parseSchemaDefinition _schemaDescription = label "SchemaDefinition" $ do
-  keyword "schema"
-  schemaDirectives <- optionalDirectives
-  unSchemaDefinition <- setOf parseRootOperationTypeDefinition
-  pure
-    $ RawSchemaDefinition
-    $ SchemaDefinition {schemaDirectives, unSchemaDefinition}
+parseSchemaDefinition :: Maybe Description -> Parser SchemaDefinition
+parseSchemaDefinition _schemaDescription =
+  label "SchemaDefinition" $
+    keyword "schema"
+      *> ( SchemaDefinition
+             <$> optionalDirectives
+             <*> setOf parseRootOperationTypeDefinition
+         )
 
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition = do
@@ -304,7 +303,7 @@ parseTypeSystemUnit =
       description <- optDescription
       -- scalar | enum |  input | object | union | interface
       types description
-        <|> parseSchemaDefinition description
+        <|> RawSchemaDefinition <$> parseSchemaDefinition description
         <|> parseDirectiveDefinition description
   where
     types description =
