@@ -98,7 +98,7 @@ testInterface = testCase "test interfaces" $ do
     "test interface"
     ( Right
         ( GetTags
-            {
+            { repository = Nothing
             }
         )
     )
