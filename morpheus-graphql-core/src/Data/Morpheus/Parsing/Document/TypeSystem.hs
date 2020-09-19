@@ -259,26 +259,20 @@ inputObjectTypeDefinition typeDescription =
 --  DirectiveLocations:
 --    DirectiveLocations | DirectiveLocation
 --    |[opt] DirectiveLocation
-
 parseDirectiveDefinition ::
+  Parse (Value s) =>
   Maybe Description ->
-  Parser RawTypeDefinition
-parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefinition" $ do
-  keyword "directive"
-  symbol '@'
-  directiveDefinitionName <- parseName
-  directiveDefinitionArgs <- optionalCollection argumentsDefinition
-  _ <- optional (keyword "repeatable")
-  keyword "on"
-  directiveDefinitionLocations <- pipe parseDirectiveLocation
-  pure
-    $ RawDirectiveDefinition
-    $ DirectiveDefinition
-      { directiveDefinitionName,
-        directiveDefinitionDescription,
-        directiveDefinitionLocations,
-        directiveDefinitionArgs
-      }
+  Parser (DirectiveDefinition s)
+parseDirectiveDefinition directiveDefinitionDescription =
+  label "DirectiveDefinition" $
+    DirectiveDefinition
+      <$> ( keyword "directive"
+              *> symbol '@'
+              *> parseName
+          )
+        <*> pure directiveDefinitionDescription
+        <*> optionalCollection argumentsDefinition
+        <*> (optional (keyword "repeatable") *> keyword "on" *> pipe parseDirectiveLocation)
 
 -- 3.2 Schema
 -- SchemaDefinition:
@@ -317,7 +311,7 @@ parseTypeSystemUnit =
       -- scalar | enum |  input | object | union | interface
       types description
         <|> RawSchemaDefinition <$> parseSchemaDefinition description
-        <|> parseDirectiveDefinition description
+        <|> RawDirectiveDefinition <$> parseDirectiveDefinition description
   where
     types description =
       RawTypeDefinition

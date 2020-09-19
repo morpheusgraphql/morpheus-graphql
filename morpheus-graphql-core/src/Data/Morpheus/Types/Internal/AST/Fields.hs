@@ -185,8 +185,8 @@ renderDirectives xs
 data DirectiveDefinition s = DirectiveDefinition
   { directiveDefinitionName :: FieldName,
     directiveDefinitionDescription :: Maybe Description,
-    directiveDefinitionLocations :: [DirectiveLocation],
-    directiveDefinitionArgs :: ArgumentsDefinition s
+    directiveDefinitionArgs :: ArgumentsDefinition s,
+    directiveDefinitionLocations :: [DirectiveLocation]
   }
   deriving (Show, Lift)
 
