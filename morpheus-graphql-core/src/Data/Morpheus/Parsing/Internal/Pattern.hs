@@ -42,6 +42,7 @@ import Data.Morpheus.Parsing.Internal.Value
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DataEnumValue (..),
+    Description,
     Directive (..),
     DirectiveLocation (..),
     FieldContent (..),
@@ -52,7 +53,9 @@ import Data.Morpheus.Types.Internal.AST
     InputFieldsDefinition,
     OUT,
     OperationType (..),
+    TRUE,
     TypeName,
+    TypeRef,
     Value,
   )
 import Data.Text (pack)
@@ -88,14 +91,14 @@ enumValueDefinition =
 inputValueDefinition ::
   Parse (Value s) =>
   Parser (FieldDefinition IN s)
-inputValueDefinition = label "InputValueDefinition" $ do
-  fieldDescription <- optDescription
-  fieldName <- parseName
-  symbol ':'
-  fieldType <- parseType
-  fieldContent <- optional (DefaultInputValue <$> parseDefaultValue)
-  fieldDirectives <- optionalDirectives
-  pure FieldDefinition {..}
+inputValueDefinition =
+  label "InputValueDefinition" $
+    FieldDefinition
+      <$> optDescription
+      <*> parseName
+      <*> (symbol ':' *> parseType)
+      <*> optional (DefaultInputValue <$> parseDefaultValue)
+      <*> optionalDirectives
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 --
@@ -123,14 +126,24 @@ fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 fieldDefinition :: Parse (Value s) => Parser (FieldDefinition OUT s)
-fieldDefinition = label "FieldDefinition" $ do
-  fieldDescription <- optDescription
-  fieldName <- parseName
-  fieldContent <- optional (FieldArgs <$> argumentsDefinition)
-  symbol ':'
-  fieldType <- parseType
-  fieldDirectives <- optionalDirectives
-  pure FieldDefinition {..}
+fieldDefinition =
+  label "FieldDefinition" $
+    mkField
+      <$> optDescription
+      <*> parseName
+      <*> optional (FieldArgs <$> argumentsDefinition)
+      <*> (symbol ':' *> parseType)
+      <*> optionalDirectives
+
+mkField ::
+  Maybe Description ->
+  FieldName ->
+  Maybe (FieldContent TRUE cat s) ->
+  TypeRef ->
+  [Directive s] ->
+  FieldDefinition cat s
+mkField fieldDescription fieldName fieldContent fieldType fieldDirectives =
+  FieldDefinition {..}
 
 -- InputFieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --   InputFieldsDefinition:
@@ -155,12 +168,12 @@ optionalDirectives = label "Directives" $ many directive
 --
 -- @ Name Arguments[Const](opt)
 directive :: Parse (Value s) => Parser (Directive s)
-directive = label "Directive" $ do
-  directivePosition <- getLocation
-  symbol '@'
-  directiveName <- parseName
-  directiveArgs <- maybeArguments
-  pure Directive {..}
+directive =
+  label "Directive" $
+    Directive
+      <$> getLocation
+      <*> (symbol '@' *> parseName)
+      <*> maybeArguments
 
 -- typDeclaration : Not in spec ,start part of type definitions
 --

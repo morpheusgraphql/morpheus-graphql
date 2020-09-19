@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -60,19 +59,16 @@ booleanValue = boolTrue <|> boolFalse
     boolFalse = string "false" $> Scalar (Boolean False)
 
 valueNumber :: Parser (Value a)
-valueNumber = do
-  isNegative <- parseNegativeSign
-  Scalar . decodeScientific . signedNumber isNegative <$> scientific
+valueNumber =
+  Scalar . decodeScientific
+    <$> (signedNumber <$> parseNegativeSign <*> scientific)
   where
     signedNumber isNegative number
       | isNegative = - number
       | otherwise = number
 
 enumValue :: Parser (Value a)
-enumValue = do
-  enum <- Enum <$> parseTypeName
-  ignoredTokens
-  pure enum
+enumValue = Enum <$> parseTypeName <* ignoredTokens
 
 stringValue :: Parser (Value a)
 stringValue = label "stringValue" $ Scalar . String <$> parseString
@@ -86,9 +82,9 @@ listValue parser =
       (parser `sepBy` (many (char ',') *> ignoredTokens))
 
 objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
-objectEntry parser = label "ObjectEntry" $ do
-  (entryName, entryValue) <- parseAssignment parseName parser
-  pure ObjectEntry {entryName, entryValue}
+objectEntry parser =
+  label "ObjectEntry" $
+    uncurry ObjectEntry <$> parseAssignment parseName parser
 
 objectValue :: Parser (Value a) -> Parser (OrdMap FieldName (ObjectEntry a))
 objectValue = label "ObjectValue" . setOf . objectEntry
@@ -98,9 +94,7 @@ parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
 
 parseDefaultValue :: Parser (Value s)
-parseDefaultValue = do
-  symbol '='
-  parseV
+parseDefaultValue = symbol '=' *> parseV
   where
     parseV :: Parser (Value s)
     parseV = structValue parseV

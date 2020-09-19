@@ -156,8 +156,8 @@ renderArgumentValues = renderArguments . filter notNull . elems
 -- directive
 ------------------------------------------------------------------
 data Directive (s :: Stage) = Directive
-  { directiveName :: FieldName,
-    directivePosition :: Position,
+  { directivePosition :: Position,
+    directiveName :: FieldName,
     directiveArgs :: Arguments s
   }
   deriving (Show, Lift, Eq)
