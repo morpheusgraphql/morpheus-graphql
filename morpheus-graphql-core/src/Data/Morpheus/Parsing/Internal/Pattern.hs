@@ -34,7 +34,6 @@ import Data.Morpheus.Parsing.Internal.Terms
     parseType,
     parseTypeName,
     setOf,
-    symbol,
     uniqTuple,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -61,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST
     Value,
   )
 import Data.String (fromString)
-import Data.Text (pack)
 import Text.Megaparsec
   ( (<|>),
     choice,
