@@ -19,10 +19,10 @@ module Data.Morpheus.Validation.Document.Validation
 where
 
 import Control.Applicative ((*>), (<*>), Applicative (..), pure)
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), (>>=))
 import Control.Monad.Reader (asks)
 import Data.Foldable (traverse_)
-import Data.Functor ((<$>), fmap)
+import Data.Functor (($>), (<$>), fmap)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
@@ -195,9 +195,9 @@ validateTypeContent
     { objectImplements,
       objectFields
     } =
-    do
-      validateImplements objectImplements objectFields
-      DataObject objectImplements <$> ordTraverse validateField objectFields
+    DataObject
+      <$> validateImplements objectImplements objectFields
+      <*> ordTraverse validateField objectFields
 validateTypeContent DataInputObject {inputObjectFields} =
   DataInputObject <$> ordTraverse validateField inputObjectFields
 validateTypeContent DataScalar {..} = pure DataScalar {..}
@@ -210,9 +210,9 @@ validateTypeContent (DataInterface fields) =
 
 validateEnumMember ::
   DataEnumValue CONST -> SchemaValidator TypeName (DataEnumValue VALID)
-validateEnumMember DataEnumValue {enumDirectives = directives, ..} = do
-  enumDirectives <- validateDirectives ENUM_VALUE directives
-  pure DataEnumValue {..}
+validateEnumMember DataEnumValue {enumDirectives = directives, ..} =
+  DataEnumValue enumDescription enumName
+    <$> validateDirectives ENUM_VALUE directives
 
 validateUnionMember ::
   UnionMember cat CONST -> SchemaValidator TypeName (UnionMember cat VALID)
@@ -294,10 +294,12 @@ validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
 validateImplements ::
   [TypeName] ->
   FieldsDefinition OUT CONST ->
-  SchemaValidator TypeName ()
-validateImplements objectImplements objectFields = do
-  interface <- traverse selectInterface objectImplements
-  traverse_ (mustBeSubset objectFields) interface
+  SchemaValidator TypeName [TypeName]
+validateImplements objectImplements objectFields =
+  ( traverse selectInterface objectImplements
+      >>= traverse_ (mustBeSubset objectFields)
+  )
+    $> objectImplements
 
 mustBeSubset ::
   FieldsDefinition OUT CONST ->
@@ -318,9 +320,8 @@ checkInterfaceField
       fieldDirectives
     } =
     inField fieldName $
-      do
-        _ <- validateDirectives FIELD_DEFINITION fieldDirectives
-        selectOr err (isSuptype interfaceField) fieldName objFields
+      validateDirectives FIELD_DEFINITION fieldDirectives
+        *> selectOr err (isSuptype interfaceField) fieldName objFields
     where
       err = failImplements Missing
 
@@ -401,7 +402,6 @@ validateDefaultValue ::
 validateDefaultValue typeRef =
   validateInputByTypeRef (Typed typeRef)
 
--- TODO: validate directives
 validateDirectiveDefinition :: DirectiveDefinition CONST -> SchemaValidator () (DirectiveDefinition VALID)
 validateDirectiveDefinition DirectiveDefinition {directiveDefinitionArgs = args, ..} =
   inType "Directive" $ inField directiveDefinitionName $ do
