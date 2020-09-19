@@ -74,7 +74,13 @@ import Data.Text.Lazy.Encoding
     encodeUtf8,
   )
 import GHC.Generics (Generic)
-import Prelude (($), (.), Show, String)
+import Prelude
+  ( ($),
+    (.),
+    Show,
+    String,
+    undefined,
+  )
 
 decodeNoDup :: Failure String m => LB.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
@@ -118,11 +124,22 @@ data JSONResponse a = JSONResponse
 
 -- | GraphQL HTTP Request Body
 data GQLRequest = GQLRequest
-  { query :: Token,
+  { query :: LB.ByteString,
     operationName :: Maybe FieldName,
     variables :: Maybe Aeson.Value
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic)
+
+instance FromJSON GQLRequest where
+  parseJSON = undefined
+
+-- parseJSON (Aeson.Object hm) =  GQLRequest <$> parseJSON value
+--   [("errors", value)] -> Errors <$> parseJSON value
+--   _ -> fail "Invalid GraphQL Response"
+
+-- instance ToJSON GQLRequest where
+--   toJSON GQLRequest {query, operationName, variables} =
+--     object ["query" .= query]
 
 -- | GraphQL Response
 data GQLResponse

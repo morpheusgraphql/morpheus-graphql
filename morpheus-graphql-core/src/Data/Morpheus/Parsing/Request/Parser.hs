@@ -51,7 +51,7 @@ request = label "GQLQuery" $ do
   pure GQLQuery {operation, fragments, inputVariables = []}
 
 parseGQL :: GQLRequest -> Eventless GQLQuery
-parseGQL GQLRequest {query, variables} = setVariables <$> processParser request (toLBS query)
+parseGQL GQLRequest {query, variables} = setVariables <$> processParser request query
   where
     setVariables root = root {inputVariables = toVariableMap variables}
     toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolvedValue)]

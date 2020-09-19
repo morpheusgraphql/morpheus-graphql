@@ -13,6 +13,11 @@ module Data.Morpheus.QuasiQuoter
   )
 where
 
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+    pack,
+    unpack,
+  )
 import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
@@ -24,11 +29,6 @@ import Data.Morpheus.Parser
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Result (..),
-  )
-import Data.Text
-  ( Text,
-    pack,
-    unpack,
   )
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
@@ -45,7 +45,7 @@ gql =
     notHandled things =
       error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
-gqlExpression :: Text -> Q Exp
+gqlExpression :: ByteString -> Q Exp
 gqlExpression queryText = case parseRequest request of
   Failure errors -> fail (renderGQLErrors errors)
   Success {result, warnings} ->
@@ -71,7 +71,7 @@ dsl =
     notHandled things =
       error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
-dslExpression :: Text -> Q Exp
+dslExpression :: ByteString -> Q Exp
 dslExpression doc = case parseTypeSystemDefinition doc of
   Failure errors -> fail (renderGQLErrors errors)
   Success {result, warnings} ->
