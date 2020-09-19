@@ -49,13 +49,14 @@ import Prelude
   )
 
 newtype GitTimestamp = GitTimestamp
-  { unGitTimestamp :: String
+  { unGitTimestamp :: Text
   }
   deriving (Eq, Show)
 
 instance GQLScalar GitTimestamp where
-  parseValue = pure . GitTimestamp . show
-  serialize (GitTimestamp x) = String (pack x)
+  parseValue (String x) = pure (GitTimestamp x)
+  parseValue _ = Left ""
+  serialize (GitTimestamp x) = String x
 
 defineClientWith
   "Github"
