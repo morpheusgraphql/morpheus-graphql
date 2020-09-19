@@ -7,6 +7,7 @@ module Data.Morpheus.Parser
 where
 
 import Control.Monad ((>=>))
+import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Internal.Utils ((<:>))
 import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
   ( parseSchema,
@@ -39,10 +40,9 @@ import Data.Morpheus.Validation.Document.Validation
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
-import Data.Text (Text)
 
 parseTypeSystemDefinition ::
-  Text -> Eventless (Schema VALID)
+  ByteString -> Eventless (Schema VALID)
 parseTypeSystemDefinition =
   P.parseSchema
     >=> validateSchema
@@ -53,7 +53,7 @@ parseTypeSystemDefinition =
         }
 
 parseTypeDefinitions ::
-  Text -> Eventless [TypeDefinition ANY CONST]
+  ByteString -> Eventless [TypeDefinition ANY CONST]
 parseTypeDefinitions = P.parseTypeDefinitions
 
 parseRequest :: GQLRequest -> Eventless GQLQuery
