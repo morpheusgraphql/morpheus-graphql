@@ -226,26 +226,26 @@ escapedChar :: Parser Word8
 escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 
 handleEscape :: Word8 -> Parser Word8
---handleEscape 92 = choice escape
+handleEscape 92 = choice escape
 handleEscape x = pure x
 
--- escape :: [Parser Word8]
--- escape = map escapeCh escapeOptions
---   where
---     escapeCh :: (Char, Char) -> Parser Char
---     escapeCh (code, replacement) = char code $> replacement
+escape :: [Parser Word8]
+escape = map escapeCh escapeOptions
+  where
+    escapeCh :: (Word8, Word8) -> Parser Word8
+    escapeCh (code, replacement) = char code $> replacement
 
--- escapeOptions :: [(Char, Char)]
--- escapeOptions =
---   [ (98, 8),
---     ('n', '\n'),
---     ('f', '\f'),
---     ('r', '\r'),
---     ('t', '\t'),
---     ('\\', '\\'),
---     ('\"', '\"'),
---     ('/', '/')
---   ]
+escapeOptions :: [(Word8, Word8)]
+escapeOptions =
+  [ (98, 8),
+    (110, 10),
+    (102, 12),
+    (114, 13),
+    (116, 9),
+    (92, 92),
+    (34, 34),
+    (47, 47)
+  ]
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
 --  Ignored:

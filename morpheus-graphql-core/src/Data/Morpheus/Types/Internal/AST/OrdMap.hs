@@ -67,7 +67,7 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (OrdMap k a) where
 #endif
 
 instance (Eq k, Hashable k) => Foldable (OrdMap k) where
-  foldMap f = foldMap f . getElements
+  foldMap f = foldMap f . mapEntries
 
 getElements :: (Eq k, Hashable k) => OrdMap k b -> [b]
 getElements OrdMap {mapKeys, mapEntries} = fmap takeValue mapKeys
