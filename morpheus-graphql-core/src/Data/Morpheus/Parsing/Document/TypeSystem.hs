@@ -373,9 +373,10 @@ withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
 withSchemaDefinition (_ : xs, _, _) = failure (fmap nameCollision xs)
 
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
-parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
-  ignoredTokens
-  manyTill parseTypeSystemUnit eof
+parseTypeSystemDefinition =
+  label "TypeSystemDefinitions" $
+    ignoredTokens
+      *> manyTill parseTypeSystemUnit eof
 
 typeSystemDefinition ::
   Text ->
