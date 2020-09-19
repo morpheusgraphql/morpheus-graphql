@@ -125,8 +125,8 @@ import Prelude
 -- scalar
 ------------------------------------------------------------------
 data Argument (valid :: Stage) = Argument
-  { argumentName :: FieldName,
-    argumentPosition :: Position,
+  { argumentPosition :: Position,
+    argumentName :: FieldName,
     argumentValue :: Value valid
   }
   deriving (Show, Eq, Lift)

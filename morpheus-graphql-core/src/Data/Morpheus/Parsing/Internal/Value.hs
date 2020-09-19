@@ -16,9 +16,8 @@ import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( ignoredTokens,
-    parseAssignment,
-    parseName,
+  ( assignedFieldName,
+    ignoredTokens,
     parseNegativeSign,
     parseString,
     parseTypeName,
@@ -84,7 +83,7 @@ listValue parser =
 objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
 objectEntry parser =
   label "ObjectEntry" $
-    uncurry ObjectEntry <$> parseAssignment parseName parser
+    ObjectEntry <$> assignedFieldName <*> parser
 
 objectValue :: Parser (Value a) -> Parser (OrdMap FieldName (ObjectEntry a))
 objectValue = label "ObjectValue" . setOf . objectEntry

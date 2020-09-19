@@ -15,7 +15,6 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseTypeCondition,
     spreadLiteral,
     parseNonNull,
-    parseAssignment,
     parseWrappedType,
     parseAlias,
     sepByAnd,
@@ -28,6 +27,7 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseNegativeSign,
     parseTypeName,
     pipe,
+    assignedFieldName,
   )
 where
 
@@ -261,10 +261,8 @@ uniqTuple parser =
 uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 
-parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
-parseAssignment nameParser valueParser =
-  label "assignment" $
-    (,) <$> (nameParser <* symbol ':') <*> valueParser
+assignedFieldName :: Parser FieldName
+assignedFieldName = parseName <* symbol ':'
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --

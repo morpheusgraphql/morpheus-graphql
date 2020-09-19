@@ -9,8 +9,7 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( parseAssignment,
-    parseName,
+  ( assignedFieldName,
     uniqTupleOpt,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -34,7 +33,8 @@ valueArgument :: Parse (Value s) => Parser (Argument s)
 valueArgument =
   label "Argument" $ do
     argumentPosition <- getLocation
-    (argumentName, argumentValue) <- parseAssignment parseName parse
+    argumentName <- assignedFieldName
+    argumentValue <- parse
     pure $ Argument {argumentName, argumentValue, argumentPosition}
 
 maybeArguments :: Parse (Value s) => Parser (Arguments s)
