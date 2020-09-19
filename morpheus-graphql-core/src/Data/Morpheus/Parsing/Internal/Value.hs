@@ -16,10 +16,10 @@ import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( assignedFieldName,
-    brackets,
+  ( brackets,
     comma,
     equal,
+    fieldNameColon,
     ignoredTokens,
     parseNegativeSign,
     parseString,
@@ -40,14 +40,11 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Text.Megaparsec
   ( (<|>),
-    between,
     label,
-    many,
     sepBy,
   )
 import Text.Megaparsec.Byte
-  ( char,
-    string,
+  ( string,
   )
 import Text.Megaparsec.Byte.Lexer (scientific)
 
@@ -76,16 +73,12 @@ stringValue :: Parser (Value a)
 stringValue = label "stringValue" $ Scalar . String <$> parseString
 
 listValue :: Parser a -> Parser [a]
-listValue parser =
-  label
-    "ListValue"
-    $ brackets
-      (parser `sepBy` (comma *> ignoredTokens))
+listValue parser = label "list" $ brackets (parser `sepBy` ignoredTokens)
 
 objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
 objectEntry parser =
   label "ObjectEntry" $
-    ObjectEntry <$> assignedFieldName <*> parser
+    ObjectEntry <$> fieldNameColon <*> parser
 
 objectValue :: Parser (Value a) -> Parser (OrdMap FieldName (ObjectEntry a))
 objectValue = label "ObjectValue" . setOf . objectEntry

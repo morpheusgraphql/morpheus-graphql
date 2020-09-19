@@ -27,7 +27,7 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseNegativeSign,
     parseTypeName,
     pipe,
-    assignedFieldName,
+    fieldNameColon,
     brackets,
     equal,
     comma,
@@ -141,7 +141,7 @@ equal = label "=" $ symbol 61
 
 -- colon :: ':'
 colon :: Parser ()
-colon = symbol 58
+colon = label ":" $ symbol 58
 
 -- minus: '-'
 minus :: Parser ()
@@ -262,10 +262,7 @@ ignoredTokens =
       *> space
 
 ignored :: Parser ()
-ignored =
-  label "Ignored" $
-    comment
-      <|> comma
+ignored = label "Ignored" (comment <|> comma)
 
 comment :: Parser ()
 comment = label "Comment" $ octothorpe *> skipManyTill printChar newline *> space
@@ -311,8 +308,8 @@ uniqTuple parser =
 uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 
-assignedFieldName :: Parser FieldName
-assignedFieldName = parseName <* colon
+fieldNameColon :: Parser FieldName
+fieldNameColon = parseName <* colon
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --
@@ -331,7 +328,7 @@ spreadLiteral = getLocation <* string "..." <* space
 parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
-    alias = label "alias" $ assignedFieldName <* ignoredTokens
+    alias = label "alias" fieldNameColon
 
 parseType :: Parser TypeRef
 parseType = parseTypeW <$> parseWrappedType <*> parseNonNull
