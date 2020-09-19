@@ -63,8 +63,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     ValidationErrors,
     withPosition,
     toGQLError,
-    toLBS,
-    fromLBS,
   )
 where
 
@@ -85,8 +83,6 @@ import Data.Semigroup (Semigroup (..))
 import Data.String (IsString (..))
 import Data.Text (Text, intercalate, pack)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import Data.Text.Lazy.Encoding (decodeUtf8)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
   ( ExpQ,
@@ -116,12 +112,6 @@ import Prelude
     notElem,
     otherwise,
   )
-
-toLBS :: Text -> ByteString
-toLBS = LB.pack . T.unpack
-
-fromLBS :: ByteString -> Text
-fromLBS = LT.toStrict . decodeUtf8
 
 type TRUE = 'True
 

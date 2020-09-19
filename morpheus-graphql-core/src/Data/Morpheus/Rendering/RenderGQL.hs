@@ -15,7 +15,6 @@ module Data.Morpheus.Rendering.RenderGQL
     renderGQL,
     intercalate,
     renderInputSeq,
-    renderGQLText,
   )
 where
 
@@ -33,15 +32,6 @@ import Data.Semigroup (Semigroup (..), stimes)
 import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-  ( Text,
-    fromStrict,
-    toStrict,
-  )
-import Data.Text.Lazy.Encoding
-  ( decodeUtf8,
-    encodeUtf8,
-  )
 import Prelude
   ( ($),
     (*),
@@ -60,9 +50,6 @@ import Prelude
 renderGQL :: RenderGQL a => a -> ByteString
 renderGQL x = runRendering (render x) 0
 
-renderGQLText :: RenderGQL a => a -> Text
-renderGQLText = LT.toStrict . decodeUtf8 . renderGQL
-
 newtype Rendering = Rendering
   { runRendering :: Int -> ByteString
   }
@@ -79,9 +66,6 @@ fromShow = fromString . show
 fromText :: Text -> Rendering
 fromText = fromString . T.unpack
 
-fromByteString :: ByteString -> Rendering
-fromByteString = Rendering . const
-
 class RenderGQL a where
   render :: a -> Rendering
 
@@ -90,6 +74,9 @@ instance
   RenderGQL (Maybe a)
   where
   render = maybe (fromText "") render
+
+instance RenderGQL ByteString where
+  render = Rendering . const
 
 instance RenderGQL Int where
   render = fromShow
@@ -105,7 +92,7 @@ instance RenderGQL Bool where
   render False = "false"
 
 instance RenderGQL A.Value where
-  render = fromByteString . A.encode
+  render = render . A.encode
 
 space :: Rendering
 space = " "

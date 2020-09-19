@@ -168,8 +168,6 @@ module Data.Morpheus.Types.Internal.AST
     mkField,
     isTypeDefined,
     safeDefineType,
-    toLBS,
-    fromLBS,
   )
 where
 

@@ -49,6 +49,8 @@ import Data.Morpheus.Internal.Utils
     Listable (..),
     empty,
     fromElems,
+    fromLBS,
+    toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -63,9 +65,7 @@ import Data.Morpheus.Types.Internal.AST
     Token,
     TypeName (..),
     TypeRef (..),
-    fromLBS,
     toHSWrappers,
-    toLBS,
   )
 import Data.Text
   ( strip,

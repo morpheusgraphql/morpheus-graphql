@@ -46,6 +46,8 @@ module Data.Morpheus.Internal.Utils
     resolveWith,
     stripFieldNamespace,
     stripConstructorNamespace,
+    fromLBS,
+    toLBS,
   )
 where
 
@@ -56,6 +58,8 @@ import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
   )
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
   ( toLower,
     toUpper,
@@ -79,7 +83,10 @@ import Data.Morpheus.Types.Internal.AST.Base
     ValidationErrors,
   )
 import Data.Semigroup (Semigroup (..))
+import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Traversable (traverse)
 import Instances.TH.Lift ()
 import Prelude
@@ -98,6 +105,12 @@ import Prelude
     otherwise,
     snd,
   )
+
+toLBS :: Text -> ByteString
+toLBS = LB.pack . T.unpack
+
+fromLBS :: ByteString -> Text
+fromLBS = LT.toStrict . decodeUtf8
 
 prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
 prop f fSel a1 a2 = f (fSel a1) (fSel a2)
