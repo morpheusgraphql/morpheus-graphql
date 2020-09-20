@@ -4,7 +4,18 @@
 
 ### Breaking Changes
 
-- changed signature `render :: a -> Text` to `render :: a -> ByteString`
+- signature changes:
+
+  - `render`:
+    `a -> Text`
+    to `a -> ByteString`
+  - parseTypeSystemDefinition :
+    `Text -> Eventless (Schema VALID)`
+    to `ByteString -> Eventless (Schema VALID)`
+
+  - parseTypeDefinitions:
+    `Text -> Eventless [TypeDefinition ANY CONST]`
+    to `ByteString -> Eventless [TypeDefinition ANY CONST]`
 
 ### new features
 

@@ -73,7 +73,7 @@ instance
   RenderGQL a =>
   RenderGQL (Maybe a)
   where
-  render = maybe (fromText "") render
+  render = maybe "" render
 
 instance RenderGQL ByteString where
   render = Rendering . const

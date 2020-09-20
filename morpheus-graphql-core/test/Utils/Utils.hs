@@ -18,6 +18,7 @@ module Utils.Utils
     getSchema,
     getResolvers,
     getResolver,
+    caseFailure,
   )
 where
 
@@ -25,6 +26,7 @@ import Control.Applicative ((<*>), (<|>), pure)
 import Control.Monad ((>=>), Monad)
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
+import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Either (Either (..))
 import Data.Foldable (foldl)
@@ -177,3 +179,9 @@ lookupRes ::
   ResModel o e m
 lookupRes name (Object fields) = maybe mkNull mkValue (lookup name fields)
 lookupRes _ _ = mkNull
+
+caseFailure :: ByteString -> ByteString -> IO a
+caseFailure expected actualValue =
+  assertFailure $
+    LB.unpack
+      ("expected: \n\n " <> expected <> " \n\n but got: \n\n " <> actualValue)

@@ -14,7 +14,6 @@ import Control.Monad.Fail (fail)
 import Data.Aeson (decode, encode)
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as L (readFile)
-import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
@@ -50,7 +49,8 @@ import Test.Tasty.HUnit
     testCase,
   )
 import Utils.Utils
-  ( expectedResponse,
+  ( caseFailure,
+    expectedResponse,
     getRequest,
     getResolver,
   )
@@ -76,10 +76,7 @@ loadApi url = do
 schemaAssertion :: App () Identity -> Schema VALID -> IO ()
 schemaAssertion (App AppData {appSchema}) expectedSchema
   | render expectedSchema == render appSchema = pure ()
-  | otherwise =
-    assertFailure
-      $ LB.unpack
-      $ "expected: \n " <> render expectedSchema <> " \n but got: \n " <> render appSchema
+  | otherwise = caseFailure (render expectedSchema) (render appSchema)
 schemaAssertion (FailApp gqlerror) _ = assertFailure $ " error: " <> show gqlerror
 
 schemaCase :: (FieldName, [FieldName]) -> IO TestTree
@@ -111,10 +108,7 @@ test =
 assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
 assertion expected (ResultT (Identity actual))
   | Just expected == decode actualValue = pure ()
-  | otherwise =
-    assertFailure $
-      LB.unpack
-        ("expected: \n\n " <> encode expected <> " \n\n but got: \n\n " <> actualValue)
+  | otherwise = caseFailure (encode expected) actualValue
   where
     actualValue = encode (renderResponse actual)
 

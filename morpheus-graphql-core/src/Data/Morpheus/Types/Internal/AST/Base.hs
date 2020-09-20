@@ -83,6 +83,8 @@ import Data.Semigroup (Semigroup (..))
 import Data.String (IsString (..))
 import Data.Text (Text, intercalate, pack)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import Data.Text.Lazy.Encoding (decodeUtf8)
 import GHC.Generics (Generic)
 import Language.Haskell.TH
   ( ExpQ,
@@ -191,7 +193,7 @@ instance Msg String where
   msg = Message . pack
 
 instance Msg ByteString where
-  msg = msg . LB.unpack
+  msg = Message . LT.toStrict . decodeUtf8
 
 instance Msg Text where
   msg = Message
@@ -297,7 +299,7 @@ data OperationType
   deriving (Show, Eq, Lift, Generic, Hashable)
 
 instance RenderGQL OperationType where
-  render = fromText . pack . fmap toLower . show
+  render = fromString . fmap toLower . show
 
 instance Msg OperationType where
   msg Query = msg ("query" :: TypeName)

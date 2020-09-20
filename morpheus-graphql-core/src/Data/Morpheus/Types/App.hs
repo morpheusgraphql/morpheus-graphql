@@ -19,7 +19,6 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad)
 import qualified Data.Aeson as A
-import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Functor ((<$>), Functor (..))
 import Data.Morpheus.Internal.Utils
   ( (<:>),
@@ -32,7 +31,6 @@ import Data.Morpheus.Parser
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
-    fromText,
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Schema.SchemaAPI (withSystemFields)
@@ -68,7 +66,6 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Data.Semigroup (Semigroup (..))
-import Data.Text (pack)
 import Prelude
   ( ($),
     (.),
@@ -90,7 +87,7 @@ data App event (m :: * -> *)
 
 instance RenderGQL (App e m) where
   render App {app} = render app
-  render FailApp {appErrors} = fromText $ pack $ LBS.unpack (A.encode appErrors)
+  render FailApp {appErrors} = render (A.encode appErrors)
 
 instance Monad m => Semigroup (App e m) where
   (FailApp err1) <> (FailApp err2) = FailApp (err1 <> err2)
