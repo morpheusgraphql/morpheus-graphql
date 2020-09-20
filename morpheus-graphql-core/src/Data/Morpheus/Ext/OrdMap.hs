@@ -14,6 +14,7 @@
 module Data.Morpheus.Ext.OrdMap
   ( OrdMap (..),
     unsafeFromValues,
+    unsafeFromList,
   )
 where
 
@@ -96,6 +97,12 @@ unsafeFromValues ::
   ) =>
   [a] ->
   OrdMap k a
-unsafeFromValues = OrdMap . HM.fromList . fmap withKey . indexed . fmap toPair
+unsafeFromValues = unsafeFromList . fmap toPair
+
+unsafeFromList ::
+  (Hashable k, Eq k) =>
+  [(k, a)] ->
+  OrdMap k a
+unsafeFromList = OrdMap . HM.fromList . fmap withKey . indexed
   where
     withKey idx = (indexedKey idx, idx)

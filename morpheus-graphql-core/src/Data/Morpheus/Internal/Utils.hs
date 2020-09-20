@@ -225,11 +225,11 @@ class Listable a coll | coll -> a where
   elems :: coll -> [a]
   fromElems :: (Monad m, Failure ValidationErrors m) => [a] -> m coll
 
-mergeT :: (KeyOf k a, Monad m, Listable a coll) => coll -> coll -> ResolutionT a coll m coll
+mergeT :: (KeyOf k a, Monad m, Listable a c) => c -> c -> ResolutionT k a c m c
 mergeT x y = fromListT (toPair <$> (elems x <> elems y))
 
 instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
-  fromElems xs = runResolutionT (fromListT (toPair <$> xs)) hmUnsafeFromValues failOnDuplicates
+  fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
   elems = HM.elems
 
 keys :: (KeyOf k a, Listable a coll) => coll -> [k]
@@ -243,7 +243,7 @@ class Merge a where
   merge :: (Monad m, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 
 instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
-  merge _ x y = runResolutionT (fromListT $ HM.toList x <> HM.toList y) hmUnsafeFromValues failOnDuplicates
+  merge _ x y = runResolutionT (fromListT $ HM.toList x <> HM.toList y) HM.fromList failOnDuplicates
 
 (<:>) :: (Monad m, Merge a, Failure ValidationErrors m) => a -> a -> m a
 (<:>) = merge []
@@ -276,9 +276,6 @@ mapSnd f (a, b) = (a, f b)
 
 mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
 mapTuple f1 f2 (a, b) = (f1 a, f2 b)
-
-hmUnsafeFromValues :: (Eq k, KeyOf k a) => [a] -> HashMap k a
-hmUnsafeFromValues = HM.fromList . fmap toPair
 
 failOnDuplicates :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
 failOnDuplicates (x :| xs)

@@ -64,6 +64,7 @@ import Prelude
     Eq (..),
     Show,
     otherwise,
+    snd,
   )
 
 -- set with mergeable components
@@ -140,7 +141,7 @@ resolveMergable ::
   [Ref] ->
   [a] ->
   m (MergeSet dups a)
-resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) MergeSet (resolveWith (resolveConflict path))
+resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) (MergeSet . fmap snd) (resolveWith (resolveConflict path))
 
 instance
   ( Listable a (MergeSet VALID a),
