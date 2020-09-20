@@ -40,7 +40,7 @@ module Data.Morpheus.Internal.Utils
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<), foldM)
+import Control.Monad ((=<<))
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -52,7 +52,6 @@ import Data.Char
     toUpper,
   )
 import Data.Foldable (traverse_)
-import Data.Function ((&))
 import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
