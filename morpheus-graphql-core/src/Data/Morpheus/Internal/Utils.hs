@@ -68,7 +68,7 @@ import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
-import Data.List (drop, find)
+import Data.List (drop, find, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
@@ -90,6 +90,7 @@ import Data.Traversable (traverse)
 import Instances.TH.Lift ()
 import Prelude
   ( ($),
+    (+),
     (.),
     Bool (..),
     Either (..),
@@ -341,17 +342,26 @@ fromNoDuplicatesM :: Monad m => [a] -> ResolutionT a coll m coll
 fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
 
 insertWithList :: (Eq k, Hashable k) => k -> (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a)
-insertWithList key value = HM.alter (Just . updater) key
+insertWithList key (i, value) = HM.alter (Just . updater) key
   where
-    updater Nothing = value
-    updater (Just x) = x <> value
+    updater Nothing = (i, value)
+    updater (Just (i2, x)) = (i2, x <> value)
 
 clusterDuplicates :: (Eq k, Hashable k) => [(k, (Int, a))] -> HashMap k (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a)
 clusterDuplicates [] coll = coll
 clusterDuplicates ((key, (i, value)) : xs) coll = clusterDuplicates xs (insertWithList key (i, value :| []) coll)
 
 fromListDuplicates :: (KeyOf k a) => [a] -> [(k, NonEmpty a)]
-fromListDuplicates xs = HM.toList $ clusterDuplicates HM.empty (fmap toPair xs)
+fromListDuplicates xs = sorted $ HM.toList $ clusterDuplicates (prepare 0 xs) HM.empty
+
+prepare :: KeyOf k a => Int -> [a] -> [(k, (Int, a))]
+prepare _ [] = []
+prepare i (x : xs) = (keyOf x, (i, x)) : prepare (i + 1) xs
+
+sorted :: [(k, (Int, NonEmpty a))] -> [(k, NonEmpty a)]
+sorted = fmap f . sortOn (fst . snd)
+  where
+    f (k, (_, a)) = (k, a)
 
 fromListT ::
   RESOLUTION k a coll m =>
