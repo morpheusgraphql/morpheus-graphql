@@ -13,7 +13,6 @@ where
 -- examples
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Morpheus.Server
   ( httpPlayground,
     httpPubApp,
@@ -22,7 +21,6 @@ import Data.Morpheus.Types
   ( App,
     render,
   )
-import qualified Data.Text as T
 import Network.Wai.Handler.Warp
   ( defaultSettings,
     runSettings,
@@ -57,10 +55,7 @@ httpEndpoint ::
   ScottyM ()
 httpEndpoint route publish app = do
   get route $
-    ( do
-        _ <- isSchema
-        raw $ LBS.pack $ T.unpack $ render app
-    )
+    (isSchema *> raw (render app))
       <|> raw httpPlayground
   post route $ raw =<< (liftIO . httpPubApp publish app =<< body)
 
