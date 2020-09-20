@@ -64,14 +64,14 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (drop, find)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Map.Exts
+import Data.Maybe (maybe)
+import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Map
   ( Indexed (..),
     ResolutionT,
     fromListT,
     runResolutionT,
   )
-import Data.Maybe (maybe)
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),

@@ -25,12 +25,12 @@ import Control.Monad (Monad (..))
 import Data.Foldable (Foldable (..))
 import Data.Functor ((<$>), Functor (..))
 import Data.List (find)
-import Data.Map.Exts
+import Data.Maybe (maybe)
+import Data.Morpheus.Ext.Map
   ( fromListT,
     resolveWith,
     runResolutionT,
   )
-import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Collection (..),

@@ -14,13 +14,13 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..))
 import Data.Functor ((<$>))
-import Data.Map.Exts
+import Data.Maybe (Maybe (..))
+import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Map
   ( fromListT,
     resolveWith,
     runResolutionT,
   )
-import Data.Maybe (Maybe (..))
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     SemigroupM (..),

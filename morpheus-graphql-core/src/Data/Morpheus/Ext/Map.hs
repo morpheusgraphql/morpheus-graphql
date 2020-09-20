@@ -6,7 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Map.Exts
+module Data.Morpheus.Ext.Map
   ( sortedEntries,
     Indexed (..),
     indexed,
@@ -53,10 +53,7 @@ sortedEntries = fmap f . sortOn (index . snd)
   where
     f (k, a) = (k, value a)
 
-fromListT ::
-  RESOLUTION k a coll m =>
-  [(k, a)] ->
-  ResolutionT a coll m coll
+fromListT :: (Monad m, Eq k, Hashable k) => [(k, a)] -> ResolutionT a coll m coll
 fromListT = traverse (resolveDuplicatesM . snd) . fromListDuplicates >=> fromNoDuplicatesM
 
 resolveWith ::
@@ -108,12 +105,6 @@ insertWithList (Indexed i1 key value) = HM.alter (Just . updater) key
 clusterDuplicates :: (Eq k, Hashable k) => [Indexed k a] -> HashMap k (Indexed k (NonEmpty a)) -> HashMap k (Indexed k (NonEmpty a))
 clusterDuplicates [] = id
 clusterDuplicates xs = flip (foldl (\coll x -> insertWithList (fmap (:| []) x) coll)) xs
-
-type RESOLUTION k a coll m =
-  ( Monad m,
-    Eq k,
-    Hashable k
-  )
 
 data Resolution a coll m = Resolution
   { resolveDuplicates :: NonEmpty a -> m a,
