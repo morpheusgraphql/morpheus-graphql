@@ -17,14 +17,12 @@ import Control.Monad ((>=>))
 import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
 
-import qualified Data.Morpheus.Ext.MergeSet as MS
-  ( join,
-  )
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     elems,
     empty,
     fromElems,
+    join,
     singleton,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -141,7 +139,7 @@ joinClusters selSet =
   traverse joinCluster
     >=> fmap UnionSelection . fromElems
   where
-    joinCluster (typeName, fragmets) = UnionTag typeName <$> MS.join (selSet : fragmets)
+    joinCluster (typeName, fragmets) = UnionTag typeName <$> join (selSet : fragmets)
 
 withTypename ::
   SelectionSet VALID ->

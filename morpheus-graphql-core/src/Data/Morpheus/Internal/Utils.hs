@@ -36,11 +36,13 @@ module Data.Morpheus.Internal.Utils
     fromLBS,
     toLBS,
     mergeT,
+    concatTraverse,
+    join,
   )
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<))
+import Control.Monad ((=<<), (>>=))
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -231,6 +233,33 @@ mergeT x y = fromListT (toPair <$> (elems x <> elems y))
 instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
   fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
   elems = HM.elems
+
+concatTraverse ::
+  ( Monad m,
+    Failure ValidationErrors m,
+    Listable a ca,
+    Collection b cb,
+    Merge cb
+  ) =>
+  (a -> m cb) ->
+  ca ->
+  m cb
+concatTraverse f smap =
+  traverse f (elems smap)
+    >>= join
+
+join ::
+  ( Collection e a,
+    Monad m,
+    Failure ValidationErrors m,
+    Merge a
+  ) =>
+  [a] ->
+  m a
+join = __join empty
+  where
+    __join acc [] = pure acc
+    __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
 keys :: (KeyOf k a, Listable a coll) => coll -> [k]
 keys = fmap keyOf . elems

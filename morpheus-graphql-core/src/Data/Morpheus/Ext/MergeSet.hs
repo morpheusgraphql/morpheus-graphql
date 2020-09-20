@@ -12,13 +12,8 @@
 
 module Data.Morpheus.Ext.MergeSet
   ( MergeSet,
-    toOrdMap,
-    concatTraverse,
-    join,
   )
 where
-
--- MORPHEUS
 
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..))
@@ -31,13 +26,8 @@ import Data.Morpheus.Ext.Map
     resolveWith,
     runResolutionT,
   )
-import Data.Morpheus.Ext.OrdMap
-  ( OrdMap (..),
-  )
-import qualified Data.Morpheus.Ext.OrdMap as OM
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    Collection (..),
+  ( Collection (..),
     Failure (..),
     KeyOf (..),
     Listable (..),
@@ -81,45 +71,8 @@ newtype MergeSet (dups :: Stage) a = MergeSet
       Collection a
     )
 
-concatTraverse ::
-  ( Eq a,
-    Eq b,
-    Merge a,
-    Merge b,
-    KeyOf k b,
-    Monad m,
-    Failure ValidationErrors m
-  ) =>
-  (a -> m (MergeSet VALID b)) ->
-  MergeSet RAW a ->
-  m (MergeSet VALID b)
-concatTraverse f smap =
-  traverse f (elems smap)
-    >>= join
-
-join ::
-  ( Eq a,
-    KeyOf k a,
-    Merge a,
-    Monad m,
-    Failure ValidationErrors m,
-    Listable a (MergeSet opt a),
-    Merge (MergeSet opt a)
-  ) =>
-  [MergeSet opt a] ->
-  m (MergeSet opt a)
-join = __join empty
-  where
-    __join acc [] = pure acc
-    __join acc (x : xs) = acc <:> x >>= (`__join` xs)
-
-toOrdMap :: (KeyOf k a) => MergeSet opt a -> OrdMap k a
-toOrdMap = OM.unsafeFromValues . unpack
-
 instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
-
--- must merge files on collision
 
 instance
   ( KeyOf k a,

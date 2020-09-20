@@ -46,13 +46,14 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
-    InternalError,
+    InternalError (..),
     Message,
     Operation,
     Schema,
     Selection (..),
     TypeName,
     VALID,
+    ValidationError (..),
     msg,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
@@ -119,6 +120,11 @@ instance (Monad m) => Failure InternalError (ResolverStateT e m) where
   failure message = do
     ctx <- asks id
     failure [renderInternalResolverError ctx message]
+
+instance Monad m => Failure [ValidationError] (ResolverStateT e m) where
+  failure messages = do
+    ctx <- asks id
+    failure $ fmap (resolverFailureMessage ctx . validationMessage) messages
 
 instance (Monad m) => Failure GQLErrors (ResolverStateT e m) where
   failure = ResolverStateT . lift . failure
