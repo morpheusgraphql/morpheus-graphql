@@ -312,8 +312,5 @@ failOnDuplicates (x :| xs)
   | null xs = pure x
   | otherwise = failure $ fmap nameCollision (x : xs)
 
-instance NameCollision a => NameCollision (Indexed k a) where
-  nameCollision = nameCollision . value
-
 instance KeyOf k a => KeyOf k (Indexed k a) where
   keyOf = keyOf . value
