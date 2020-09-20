@@ -8,7 +8,6 @@
 
 module Data.Morpheus.Ext.Map
   ( Indexed (..),
-    sortedEntries,
     indexed,
     fromListT,
     resolveWith,
@@ -48,10 +47,10 @@ import Prelude
     snd,
   )
 
-sortedEntries :: [(k, Indexed k a)] -> [(k, a)]
-sortedEntries = fmap f . sortOn (index . snd)
+sortedEntries :: [Indexed k a] -> [(k, a)]
+sortedEntries = fmap f . sortOn index
   where
-    f (k, a) = (k, indexedValue a)
+    f a = (indexedKey a, indexedValue a)
 
 fromListT :: (Monad m, Eq k, Hashable k) => [(k, a)] -> ResolutionT a coll m coll
 fromListT = traverse (resolveDuplicatesM . snd) . fromListDuplicates >=> fromNoDuplicatesM
@@ -80,7 +79,7 @@ data Indexed k a = Indexed
 fromListDuplicates :: (Eq k, Hashable k) => [(k, a)] -> [(k, NonEmpty a)]
 fromListDuplicates xs =
   sortedEntries
-    $ HM.toList
+    $ HM.elems
     $ clusterDuplicates (indexed xs) HM.empty
 
 indexed :: [(k, a)] -> [Indexed k a]
