@@ -21,7 +21,7 @@
 
 ### Minor Changes
 
-- parser performance boosting (around 10x)
+- parser performance optimization
 
 ## 0.15.1 - 12.09.2020
 

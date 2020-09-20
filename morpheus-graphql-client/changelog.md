@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.0 - unreleased
+
+### Minor Changes
+
+- parser performance optimization
+
 ## 0.15.1 - 12.09.2020
 
 ## 0.15.0 - 12.09.2020
