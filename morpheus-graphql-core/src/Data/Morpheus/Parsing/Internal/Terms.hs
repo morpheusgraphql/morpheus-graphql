@@ -270,7 +270,9 @@ ignored :: Parser ()
 ignored = label "Ignored" (comment <|> comma)
 
 comment :: Parser ()
-comment = label "Comment" $ octothorpe *> skipManyTill printChar newline *> space
+comment =
+  label "Comment" $
+    octothorpe *> skipManyTill printChar newline *> space
 
 -- exclamationMark: '!'
 exclamationMark :: Parser ()
@@ -278,7 +280,7 @@ exclamationMark = symbol 33
 
 -- octothorpe: '#'
 octothorpe :: Parser ()
-octothorpe = label "#" $ symbol 35
+octothorpe = label "#" $ char 35 $> ()
 
 ------------------------------------------------------------------------
 
