@@ -61,7 +61,6 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     ELEM,
     FieldsDefinition,
-    IN,
     LEAF,
     OBJECT,
     OUT,
@@ -77,7 +76,6 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     buildSchema,
     mkUnionMember,
-    toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -168,7 +166,7 @@ scalarTypeDefinition typeDescription =
 objectTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
-  Parser (TypeDefinition OUT s)
+  Parser (TypeDefinition ANY s)
 objectTypeDefinition typeDescription =
   label "ObjectTypeDefinition" $
     mkObject typeDescription
@@ -193,7 +191,7 @@ optionalImplementsInterfaces = implements <|> pure []
 interfaceTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
-  Parser (TypeDefinition OUT s)
+  Parser (TypeDefinition ANY s)
 interfaceTypeDefinition typeDescription =
   label "InterfaceTypeDefinition" $
     mkType typeDescription
@@ -213,7 +211,7 @@ interfaceTypeDefinition typeDescription =
 unionTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
-  Parser (TypeDefinition OUT s)
+  Parser (TypeDefinition ANY s)
 unionTypeDefinition typeDescription =
   label "UnionTypeDefinition" $
     mkType typeDescription
@@ -258,7 +256,7 @@ enumTypeDefinition typeDescription =
 inputObjectTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
-  Parser (TypeDefinition IN s)
+  Parser (TypeDefinition ANY s)
 inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $
     mkType
@@ -325,18 +323,18 @@ parseTypeSystemUnit =
     do
       description <- optDescription
       -- scalar | enum |  input | object | union | interface
-      types description
+      parseTypeDef description
         <|> RawSchemaDefinition <$> parseSchemaDefinition description
         <|> RawDirectiveDefinition <$> parseDirectiveDefinition description
   where
-    types description =
+    parseTypeDef description =
       RawTypeDefinition
-        <$> ( (toAny <$> inputObjectTypeDefinition description)
-                <|> (toAny <$> unionTypeDefinition description)
+        <$> ( objectTypeDefinition description
+                <|> inputObjectTypeDefinition description
+                <|> interfaceTypeDefinition description
+                <|> unionTypeDefinition description
                 <|> enumTypeDefinition description
                 <|> scalarTypeDefinition description
-                <|> (toAny <$> objectTypeDefinition description)
-                <|> (toAny <$> interfaceTypeDefinition description)
             )
 
 typePartition ::
