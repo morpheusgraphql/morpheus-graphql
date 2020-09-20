@@ -23,8 +23,13 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..))
 import Data.Foldable (Foldable (..))
-import Data.Functor (Functor (..))
+import Data.Functor ((<$>), Functor (..))
 import Data.List (find)
+import Data.Map.Exts
+  ( fromListT,
+    resolveWith,
+    runResolutionT,
+  )
 import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( (<:>),
@@ -35,10 +40,7 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
     elems,
-    fromListT,
-    mergeT,
-    resolveWith,
-    runResolutionT,
+    toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Ref,
@@ -126,7 +128,19 @@ instance
   ) =>
   Merge (MergeSet VALID a)
   where
-  merge path x y = runResolutionT (mergeT x y) MergeSet (resolveWith (resolveConflict path))
+  merge path (MergeSet x) (MergeSet y) = resolveMergable path (x <> y)
+
+resolveMergable ::
+  ( KeyOf k a,
+    Monad m,
+    Eq a,
+    Merge a,
+    Failure ValidationErrors m
+  ) =>
+  [Ref] ->
+  [a] ->
+  m (MergeSet dups a)
+resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) MergeSet (resolveWith (resolveConflict path))
 
 instance
   ( Listable a (MergeSet VALID a),
@@ -136,7 +150,7 @@ instance
   ) =>
   Listable a (MergeSet VALID a)
   where
-  fromElems xs = runResolutionT (fromListT xs) MergeSet (resolveWith (resolveConflict []))
+  fromElems = resolveMergable []
   elems = unpack
 
 instance Merge (MergeSet RAW a) where

@@ -26,17 +26,19 @@ import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (sortOn)
+import Data.Map.Exts
+  ( Indexed (..),
+    indexed,
+  )
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
-    Indexed (..),
     KeyOf (..),
     Listable (..),
     Merge (..),
     Selectable (..),
-    indexed,
-    indexedEntries,
+    toPair,
   )
 import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
@@ -44,13 +46,12 @@ import Prelude
   ( ($),
     (.),
     Eq,
-    Int,
     Show,
   )
 
 -- OrdMap
 newtype OrdMap k a = OrdMap
-  { mapEntries :: HashMap k (Indexed a)
+  { mapEntries :: HashMap k (Indexed k a)
   }
   deriving
     ( Show,
@@ -78,7 +79,7 @@ getElements = fmap value . sortOn index . toList . mapEntries
 
 instance (KeyOf k a, Hashable k) => Collection a (OrdMap k a) where
   empty = OrdMap HM.empty
-  singleton x = OrdMap $ HM.singleton (keyOf x) (Indexed 0 x)
+  singleton x = OrdMap $ HM.singleton (keyOf x) (Indexed 0 (keyOf x) x)
 
 instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
   selectOr fb f key OrdMap {mapEntries} = maybe fb (f . value) (HM.lookup key mapEntries)
@@ -87,7 +88,7 @@ instance (NameCollision a, KeyOf k a) => Merge (OrdMap k a) where
   merge ref (OrdMap x) (OrdMap y) = OrdMap <$> merge ref x y
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) where
-  fromElems values = OrdMap <$> fromElems (indexed values)
+  fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
   elems = getElements
 
 unsafeFromValues ::
@@ -96,4 +97,6 @@ unsafeFromValues ::
   ) =>
   [a] ->
   OrdMap k a
-unsafeFromValues = OrdMap . HM.fromList . indexedEntries 0
+unsafeFromValues = OrdMap . HM.fromList . fmap withKey . indexed . fmap toPair
+  where
+    withKey idx = (key idx, idx)

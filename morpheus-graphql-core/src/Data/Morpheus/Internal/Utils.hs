@@ -1,14 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveLift #-}
-{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -40,26 +35,17 @@ module Data.Morpheus.Internal.Utils
     traverseCollection,
     (<.>),
     SemigroupM (..),
-    fromListT,
-    mergeT,
-    runResolutionT,
-    ResolutionT,
     prop,
-    resolveWith,
     stripFieldNamespace,
     stripConstructorNamespace,
     fromLBS,
     toLBS,
-    indexedEntries,
-    sortedEntries,
-    Indexed (..),
-    indexed,
+    toList,
   )
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<), (>=>), (>>=), foldM)
-import Control.Monad.Reader (MonadReader (..), asks)
+import Control.Monad ((=<<), foldM)
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
@@ -70,13 +56,15 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Foldable (foldlM, traverse_)
+import Data.Foldable (traverse_)
 import Data.Function ((&))
+import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
-import Data.List (drop, find, sortOn)
+import Data.List (drop, find)
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Map.Exts (Indexed (..), fromListT, runResolutionT)
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
@@ -95,27 +83,20 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Traversable (traverse)
 import Instances.TH.Lift ()
-import Language.Haskell.TH.Syntax (Lift)
 import Prelude
   ( ($),
-    (+),
     (.),
     Bool (..),
     Either (..),
     Eq (..),
     Foldable (..),
-    Functor (..),
     Int,
-    Maybe (..),
     Monad,
-    Show,
     String,
-    Traversable,
     const,
     fst,
     length,
     otherwise,
-    snd,
   )
 
 toLBS :: Text -> ByteString
@@ -246,8 +227,11 @@ class Listable a coll | coll -> a where
   elems :: coll -> [a]
   fromElems :: (Monad m, Failure ValidationErrors m) => [a] -> m coll
 
+toList :: (KeyOf k a, Listable a coll) => coll -> [(k, a)]
+toList = fmap toPair . elems
+
 instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
-  fromElems xs = runResolutionT (fromListT xs) hmUnsafeFromValues failOnDuplicates
+  fromElems xs = runResolutionT (fromListT (toPair <$> xs)) hmUnsafeFromValues failOnDuplicates
   elems = HM.elems
 
 keys :: (KeyOf k a, Listable a coll) => coll -> [k]
@@ -261,7 +245,7 @@ class Merge a where
   merge :: (Monad m, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 
 instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
-  merge _ x y = runResolutionT (fromListT $ HM.elems x <> HM.elems y) hmUnsafeFromValues failOnDuplicates
+  merge _ x y = runResolutionT (fromListT $ HM.toList x <> HM.toList y) hmUnsafeFromValues failOnDuplicates
 
 (<:>) :: (Monad m, Merge a, Failure ValidationErrors m) => a -> a -> m a
 (<:>) = merge []
@@ -307,114 +291,13 @@ concatUpdates x = UpdateT (`resolveUpdates` x)
 resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
 resolveUpdates a = foldM (&) a . fmap updateTState
 
-type RESOLUTION k a coll m =
-  ( Monad m,
-    KeyOf k a,
-    Listable a coll
-  )
-
-data Resolution a coll m = Resolution
-  { resolveDuplicates :: NonEmpty a -> m a,
-    fromNoDuplicates :: [a] -> coll
-  }
-
-runResolutionT ::
-  ResolutionT a coll m b ->
-  ([a] -> coll) ->
-  (NonEmpty a -> m a) ->
-  m b
-runResolutionT (ResolutionT x) fromNoDuplicates resolveDuplicates = runReaderT x Resolution {..}
-
-newtype ResolutionT a coll m x = ResolutionT
-  { _runResolutionT :: ReaderT (Resolution a coll m) m x
-  }
-  deriving
-    ( Functor,
-      Monad,
-      Applicative,
-      MonadReader (Resolution a coll m)
-    )
-
-instance MonadTrans (ResolutionT e coll) where
-  lift = ResolutionT . lift
-
-instance
-  ( Monad m,
-    Failure ValidationErrors m
-  ) =>
-  Failure ValidationErrors (ResolutionT a coll m)
-  where
-  failure = lift . failure
-
-resolveDuplicatesM :: Monad m => NonEmpty a -> ResolutionT a coll m a
-resolveDuplicatesM xs = asks resolveDuplicates >>= lift . (xs &)
-
-fromNoDuplicatesM :: Monad m => [a] -> ResolutionT a coll m coll
-fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
-
-insertWithList :: (Eq k, Hashable k) => k -> Indexed (NonEmpty a) -> HashMap k (Indexed (NonEmpty a)) -> HashMap k (Indexed (NonEmpty a))
-insertWithList key (Indexed i value) = HM.alter (Just . updater) key
-  where
-    updater Nothing = Indexed i value
-    updater (Just (Indexed i2 x)) = Indexed i2 (x <> value)
-
-clusterDuplicates :: (Eq k, Hashable k) => [(k, Indexed a)] -> HashMap k (Indexed (NonEmpty a)) -> HashMap k (Indexed (NonEmpty a))
-clusterDuplicates [] coll = coll
-clusterDuplicates ((key, x) : xs) coll = clusterDuplicates xs (insertWithList key (fmap (:| []) x) coll)
-
-fromListDuplicates :: (KeyOf k a) => [a] -> [(k, NonEmpty a)]
-fromListDuplicates xs =
-  sortedEntries
-    $ HM.toList
-    $ clusterDuplicates (indexedEntries 0 xs) HM.empty
-
-indexed :: KeyOf k a => [a] -> [Indexed a]
-indexed = __indexed 0
-
-__indexed :: KeyOf k a => Int -> [a] -> [Indexed a]
-__indexed _ [] = []
-__indexed i (x : xs) = Indexed i x : __indexed (i + 1) xs
-
-indexedEntries :: KeyOf k a => Int -> [a] -> [(k, Indexed a)]
-indexedEntries _ [] = []
-indexedEntries i (x : xs) = (keyOf x, Indexed i x) : indexedEntries (i + 1) xs
-
-data Indexed a = Indexed {index :: Int, value :: a}
-  deriving
-    ( Show,
-      Eq,
-      Functor,
-      Traversable,
-      Foldable,
-      Lift
-    )
-
-instance NameCollision a => NameCollision (Indexed a) where
-  nameCollision = nameCollision . value
-
-instance KeyOf k a => KeyOf k (Indexed a) where
-  keyOf = keyOf . value
-
-sortedEntries :: [(k, Indexed a)] -> [(k, a)]
-sortedEntries = fmap f . sortOn (index . snd)
-  where
-    f (k, a) = (k, value a)
-
-fromListT ::
-  RESOLUTION k a coll m =>
-  [a] ->
-  ResolutionT a coll m coll
-fromListT = traverse (resolveDuplicatesM . snd) . fromListDuplicates >=> fromNoDuplicatesM
-
-mergeT :: RESOLUTION k a coll m => coll -> coll -> ResolutionT a coll m coll
-mergeT c1 c2 = traverse (resolveDuplicatesM . snd) (fromListDuplicates (elems c1 <> elems c2)) >>= fromNoDuplicatesM
-
-resolveWith ::
-  Monad m =>
-  (a -> a -> m a) ->
-  NonEmpty a ->
-  m a
-resolveWith f (x :| xs) = foldlM f x xs
+-- instance
+--   ( Monad m,
+--     Failure ValidationErrors m
+--   ) =>
+--   Failure ValidationErrors (ResolutionT a coll m)
+--   where
+--   failure = lift . failure
 
 hmUnsafeFromValues :: (Eq k, KeyOf k a) => [a] -> HashMap k a
 hmUnsafeFromValues = HM.fromList . fmap toPair
@@ -423,3 +306,9 @@ failOnDuplicates :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a 
 failOnDuplicates (x :| xs)
   | null xs = pure x
   | otherwise = failure $ fmap nameCollision (x : xs)
+
+instance NameCollision a => NameCollision (Indexed k a) where
+  nameCollision = nameCollision . value
+
+instance KeyOf k a => KeyOf k (Indexed k a) where
+  keyOf = keyOf . value
