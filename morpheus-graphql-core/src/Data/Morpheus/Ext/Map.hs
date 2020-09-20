@@ -7,8 +7,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.Map
-  ( sortedEntries,
-    Indexed (..),
+  ( Indexed (..),
+    sortedEntries,
     indexed,
     fromListT,
     resolveWith,
