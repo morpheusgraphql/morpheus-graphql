@@ -109,7 +109,7 @@ spread = label "FragmentSpread" $ do
 --   fragment FragmentName TypeCondition Directives(opt) SelectionSet
 --
 parseFragmentDefinition :: Parser (Fragment RAW)
-parseFragmentDefinition = label "FragmentDefinition" $ do
+parseFragmentDefinition = label "Fragment" $ do
   keyword "fragment"
   fragmentPosition <- getLocation
   fragmentName <- parseName

@@ -40,15 +40,18 @@ import Data.Morpheus.Types.Internal.Resolving
 import Text.Megaparsec
   ( eof,
     label,
-    manyTill,
+    many,
   )
 
 request :: Parser GQLQuery
 request =
   label "GQLQuery" $
-    GQLQuery []
-      <$> (ignoredTokens *> parseOperation)
-      <*> (manyTill parseFragmentDefinition eof >>= lift . fromElems)
+    ( GQLQuery []
+        <$> (ignoredTokens *> parseOperation)
+        <*> (many parseFragmentDefinition >>= lift . fromElems)
+    )
+      <* ignoredTokens
+      <* eof
 
 parseGQL :: GQLRequest -> Eventless GQLQuery
 parseGQL GQLRequest {query, variables} =
