@@ -22,7 +22,7 @@ import Data.Morpheus.Client
     ScalarValue (..),
     gql,
   )
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Spec.Utils
   ( defineClientWith,
     mockApi,
