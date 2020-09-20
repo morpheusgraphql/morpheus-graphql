@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -22,7 +21,7 @@ module Utils.Utils
   )
 where
 
-import Control.Applicative ((<|>), pure)
+import Control.Applicative ((<*>), (<|>), pure)
 import Control.Monad ((>=>), Monad)
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
@@ -148,15 +147,11 @@ expectedResponse :: FieldName -> IO Value
 expectedResponse (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib p)
 
 getRequest :: FieldName -> IO GQLRequest
-getRequest p = do
-  queryBS <- getGQLBody p
-  variables <- maybeVariables p
-  pure $
-    GQLRequest
-      { operationName = Nothing,
-        query = queryBS,
-        variables
-      }
+getRequest p =
+  GQLRequest
+    Nothing
+    <$> getGQLBody p
+    <*> maybeVariables p
 
 getResolvers :: Monad m => FieldName -> IO (RootResModel e m)
 getResolvers p = getResolver ("test/" <> p <> "/resolvers.json")

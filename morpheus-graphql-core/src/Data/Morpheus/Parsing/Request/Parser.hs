@@ -12,6 +12,7 @@ import qualified Data.Aeson as Aeson
 import Data.HashMap.Lazy (toList)
 import Data.Morpheus.Internal.Utils
   ( fromElems,
+    toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -50,7 +51,9 @@ request = label "GQLQuery" $ do
   pure GQLQuery {operation, fragments, inputVariables = []}
 
 parseGQL :: GQLRequest -> Eventless GQLQuery
-parseGQL GQLRequest {query, variables} = setVariables <$> processParser request query
+parseGQL GQLRequest {query, variables} =
+  setVariables
+    <$> processParser request (toLBS query)
   where
     setVariables root = root {inputVariables = toVariableMap variables}
     toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolvedValue)]

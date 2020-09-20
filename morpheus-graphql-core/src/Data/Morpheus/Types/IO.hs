@@ -78,7 +78,6 @@ import Prelude
     (.),
     Show,
     String,
-    undefined,
   )
 
 decodeNoDup :: Failure String m => LB.ByteString -> m GQLRequest
@@ -123,22 +122,11 @@ data JSONResponse a = JSONResponse
 
 -- | GraphQL HTTP Request Body
 data GQLRequest = GQLRequest
-  { query :: LB.ByteString,
-    operationName :: Maybe FieldName,
+  { operationName :: Maybe FieldName,
+    query :: Text,
     variables :: Maybe Aeson.Value
   }
-  deriving (Show, Generic)
-
-instance FromJSON GQLRequest where
-  parseJSON = undefined
-
--- parseJSON (Aeson.Object hm) =  GQLRequest <$> parseJSON value
---   [("errors", value)] -> Errors <$> parseJSON value
---   _ -> fail "Invalid GraphQL Response"
-
--- instance ToJSON GQLRequest where
---   toJSON GQLRequest {query, operationName, variables} =
---     object ["query" .= query]
+  deriving (Show, Generic, FromJSON)
 
 -- | GraphQL Response
 data GQLResponse

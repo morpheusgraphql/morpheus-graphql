@@ -22,6 +22,9 @@ import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
+import Data.Morpheus.Internal.Utils
+  ( fromLBS,
+  )
 import Data.Morpheus.Parser
   ( parseRequest,
     parseTypeSystemDefinition,
@@ -54,7 +57,7 @@ gqlExpression queryText = case parseRequest request of
     query = unpack queryText
     request =
       GQLRequest
-        { query = queryText,
+        { query = fromLBS queryText,
           operationName = Nothing,
           variables = Nothing
         }
