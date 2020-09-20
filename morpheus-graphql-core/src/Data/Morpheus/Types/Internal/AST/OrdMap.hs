@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -18,77 +19,77 @@ module Data.Morpheus.Types.Internal.AST.OrdMap
 where
 
 -- MORPHEUS
+
 import Data.Foldable (Foldable (..))
 import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
-import Data.Maybe (fromMaybe, maybe)
+import Data.List (sortOn)
+import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
+    Indexed (..),
     KeyOf (..),
     Listable (..),
     Merge (..),
     Selectable (..),
-    toPair,
+    indexed,
+    indexedEntries,
   )
-import Data.Semigroup ((<>))
 import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
   ( ($),
     (.),
     Eq,
+    Int,
     Show,
     error,
+    fst,
   )
 
 -- OrdMap
-data OrdMap k a = OrdMap
-  { mapKeys :: [k],
-    mapEntries :: HashMap k a
+newtype OrdMap k a = OrdMap
+  { mapEntries :: HashMap k (Indexed a)
   }
   deriving
     ( Show,
       Eq,
-      Functor
+      Functor,
+      Traversable
     )
 
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (OrdMap k a) where
-  lift (OrdMap names x) = [|OrdMap names (HM.fromList ls)|]
+  lift (OrdMap x) = [|OrdMap (HM.fromList ls)|]
     where
       ls = HM.toList x
 
 #if MIN_VERSION_template_haskell(2,16,0)
-  liftTyped (OrdMap names x) = [||OrdMap names (HM.fromList ls)||]
+  liftTyped (OrdMap x) = [||OrdMap (HM.fromList ls)||]
     where
       ls = HM.toList x
 #endif
 
 instance (Eq k, Hashable k) => Foldable (OrdMap k) where
-  foldMap f = foldMap f . mapEntries
+  foldMap f = foldMap f . getElements
 
 getElements :: (Eq k, Hashable k) => OrdMap k b -> [b]
-getElements OrdMap {mapKeys, mapEntries} = fmap takeValue mapKeys
-  where
-    takeValue key = fromMaybe (error "TODO: invalid Ordered Map") (key `HM.lookup` mapEntries)
-
-instance (Eq k, Hashable k) => Traversable (OrdMap k) where
-  traverse f (OrdMap names values) = OrdMap names <$> traverse f values
+getElements = fmap value . sortOn index . toList . mapEntries
 
 instance (KeyOf k a, Hashable k) => Collection a (OrdMap k a) where
-  empty = OrdMap [] HM.empty
-  singleton x = OrdMap [keyOf x] $ HM.singleton (keyOf x) x
+  empty = OrdMap HM.empty
+  singleton x = OrdMap $ HM.singleton (keyOf x) (Indexed 0 x)
 
 instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
-  selectOr fb f key OrdMap {mapEntries} = maybe fb f (HM.lookup key mapEntries)
+  selectOr fb f key OrdMap {mapEntries} = maybe fb (f . value) (HM.lookup key mapEntries)
 
 instance (NameCollision a, KeyOf k a) => Merge (OrdMap k a) where
-  merge ref (OrdMap k1 x) (OrdMap k2 y) = OrdMap (k1 <> k2) <$> merge ref x y
+  merge ref (OrdMap x) (OrdMap y) = OrdMap <$> merge ref x y
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) where
-  fromElems values = OrdMap (fmap keyOf values) <$> fromElems values
+  fromElems values = OrdMap <$> fromElems (indexed values)
   elems = getElements
 
 unsafeFromValues ::
@@ -97,4 +98,4 @@ unsafeFromValues ::
   ) =>
   [a] ->
   OrdMap k a
-unsafeFromValues x = OrdMap (fmap keyOf x) $ HM.fromList $ fmap toPair x
+unsafeFromValues = OrdMap . HM.fromList . indexedEntries 0

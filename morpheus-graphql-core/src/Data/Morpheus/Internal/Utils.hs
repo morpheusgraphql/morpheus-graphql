@@ -1,5 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -7,6 +9,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
@@ -47,6 +50,10 @@ module Data.Morpheus.Internal.Utils
     stripConstructorNamespace,
     fromLBS,
     toLBS,
+    indexedEntries,
+    sortedEntries,
+    Indexed (..),
+    indexed,
   )
 where
 
@@ -63,7 +70,7 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Foldable (foldlM, null, traverse_)
+import Data.Foldable (foldlM, traverse_)
 import Data.Function ((&))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
@@ -88,6 +95,7 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Traversable (traverse)
 import Instances.TH.Lift ()
+import Language.Haskell.TH.Syntax (Lift)
 import Prelude
   ( ($),
     (+),
@@ -95,11 +103,14 @@ import Prelude
     Bool (..),
     Either (..),
     Eq (..),
+    Foldable (..),
     Functor (..),
     Int,
     Maybe (..),
     Monad,
+    Show,
     String,
+    Traversable,
     const,
     fst,
     length,
@@ -341,27 +352,53 @@ resolveDuplicatesM xs = asks resolveDuplicates >>= lift . (xs &)
 fromNoDuplicatesM :: Monad m => [a] -> ResolutionT a coll m coll
 fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
 
-insertWithList :: (Eq k, Hashable k) => k -> (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a)
-insertWithList key (i, value) = HM.alter (Just . updater) key
+insertWithList :: (Eq k, Hashable k) => k -> Indexed (NonEmpty a) -> HashMap k (Indexed (NonEmpty a)) -> HashMap k (Indexed (NonEmpty a))
+insertWithList key (Indexed i value) = HM.alter (Just . updater) key
   where
-    updater Nothing = (i, value)
-    updater (Just (i2, x)) = (i2, x <> value)
+    updater Nothing = Indexed i value
+    updater (Just (Indexed i2 x)) = Indexed i2 (x <> value)
 
-clusterDuplicates :: (Eq k, Hashable k) => [(k, (Int, a))] -> HashMap k (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a)
+clusterDuplicates :: (Eq k, Hashable k) => [(k, Indexed a)] -> HashMap k (Indexed (NonEmpty a)) -> HashMap k (Indexed (NonEmpty a))
 clusterDuplicates [] coll = coll
-clusterDuplicates ((key, (i, value)) : xs) coll = clusterDuplicates xs (insertWithList key (i, value :| []) coll)
+clusterDuplicates ((key, x) : xs) coll = clusterDuplicates xs (insertWithList key (fmap (:| []) x) coll)
 
 fromListDuplicates :: (KeyOf k a) => [a] -> [(k, NonEmpty a)]
-fromListDuplicates xs = sorted $ HM.toList $ clusterDuplicates (prepare 0 xs) HM.empty
+fromListDuplicates xs =
+  sortedEntries
+    $ HM.toList
+    $ clusterDuplicates (indexedEntries 0 xs) HM.empty
 
-prepare :: KeyOf k a => Int -> [a] -> [(k, (Int, a))]
-prepare _ [] = []
-prepare i (x : xs) = (keyOf x, (i, x)) : prepare (i + 1) xs
+indexed :: KeyOf k a => [a] -> [Indexed a]
+indexed = __indexed 0
 
-sorted :: [(k, (Int, NonEmpty a))] -> [(k, NonEmpty a)]
-sorted = fmap f . sortOn (fst . snd)
+__indexed :: KeyOf k a => Int -> [a] -> [Indexed a]
+__indexed _ [] = []
+__indexed i (x : xs) = Indexed i x : __indexed (i + 1) xs
+
+indexedEntries :: KeyOf k a => Int -> [a] -> [(k, Indexed a)]
+indexedEntries _ [] = []
+indexedEntries i (x : xs) = (keyOf x, Indexed i x) : indexedEntries (i + 1) xs
+
+data Indexed a = Indexed {index :: Int, value :: a}
+  deriving
+    ( Show,
+      Eq,
+      Functor,
+      Traversable,
+      Foldable,
+      Lift
+    )
+
+instance NameCollision a => NameCollision (Indexed a) where
+  nameCollision = nameCollision . value
+
+instance KeyOf k a => KeyOf k (Indexed a) where
+  keyOf = keyOf . value
+
+sortedEntries :: [(k, Indexed a)] -> [(k, a)]
+sortedEntries = fmap f . sortOn (index . snd)
   where
-    f (k, (_, a)) = (k, a)
+    f (k, a) = (k, value a)
 
 fromListT ::
   RESOLUTION k a coll m =>
