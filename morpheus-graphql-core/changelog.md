@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.16.0 - unreleased
+
+### Breaking Changes
+
+- changed signature `render :: a -> Text` to `render :: a -> ByteString`
+
+### new features
+
+### Minor Changes
+
+- parser performance boosting (around 10x)
+
 ## 0.15.1 - 12.09.2020
 
 relaxed upper boundary of `megaparsec` up to 10.0.0
