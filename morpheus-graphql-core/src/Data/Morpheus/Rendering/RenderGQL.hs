@@ -21,9 +21,8 @@ where
 -- MORPHEUS
 
 import qualified Data.Aeson as A
-import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy as LB
 import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Foldable (Foldable, foldl, null)
 import Data.Function ((&))
 import Data.Functor ((<$>))
@@ -58,7 +57,7 @@ instance Semigroup Rendering where
   Rendering f <> Rendering g = Rendering $ \x -> f x <> g x
 
 instance IsString Rendering where
-  fromString = Rendering . const . LB.fromStrict . B.pack
+  fromString = Rendering . const . LB.pack
 
 fromShow :: Show a => a -> Rendering
 fromShow = fromString . show

@@ -72,9 +72,7 @@ import Data.Aeson
     Value,
     encode,
   )
-import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.ByteString.Lazy (ByteString)
 import Data.Char (toLower)
 import Data.Hashable (Hashable)
 import Data.Maybe (Maybe (..), maybeToList)
@@ -355,7 +353,7 @@ instance RenderGQL TypeRef where
   render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
 
 instance Msg TypeRef where
-  msg = msg . FieldName . pack . B.unpack . LB.toStrict . renderGQL
+  msg = msg . FieldName . LT.toStrict . decodeUtf8 . renderGQL
 
 -- Kind
 -----------------------------------------------------------------------------------

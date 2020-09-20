@@ -46,7 +46,6 @@ import Control.Monad.Trans.Reader
   ( ReaderT (..),
   )
 import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
   ( toLower,
     toUpper,
@@ -79,7 +78,7 @@ import Data.Semigroup (Semigroup (..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import Data.Text.Lazy.Encoding (decodeUtf8)
+import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
 import Data.Traversable (traverse)
 import Instances.TH.Lift ()
 import Prelude
@@ -99,7 +98,7 @@ import Prelude
   )
 
 toLBS :: Text -> ByteString
-toLBS = LB.pack . T.unpack
+toLBS = encodeUtf8 . LT.fromStrict
 
 fromLBS :: ByteString -> Text
 fromLBS = LT.toStrict . decodeUtf8
