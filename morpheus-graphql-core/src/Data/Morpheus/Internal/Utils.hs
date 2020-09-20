@@ -168,7 +168,8 @@ instance KeyOf k v => Collection v (HashMap k v) where
 
 class Selectable k a c | c -> a where
   selectOr :: d -> (a -> d) -> k -> c -> d
-  member :: Selectable k a c => k -> c -> Bool
+
+  member :: k -> c -> Bool
   member = selectOr False (const True)
 
 instance KeyOf k a => Selectable k a [a] where
