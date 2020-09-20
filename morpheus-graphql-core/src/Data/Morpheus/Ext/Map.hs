@@ -85,10 +85,10 @@ fromListDuplicates xs =
 
 indexed :: [(k, a)] -> [Indexed k a]
 indexed = __indexed 0
-
-__indexed :: Int -> [(k, a)] -> [Indexed k a]
-__indexed _ [] = []
-__indexed i ((k, x) : xs) = Indexed i k x : __indexed (i + 1) xs
+  where
+    __indexed :: Int -> [(k, a)] -> [Indexed k a]
+    __indexed _ [] = []
+    __indexed i ((k, x) : xs) = Indexed i k x : __indexed (i + 1) xs
 
 resolveDuplicatesM :: Monad m => NonEmpty a -> ResolutionT a coll m a
 resolveDuplicatesM xs = asks resolveDuplicates >>= lift . (xs &)
