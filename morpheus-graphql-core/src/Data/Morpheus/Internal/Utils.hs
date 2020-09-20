@@ -340,33 +340,18 @@ resolveDuplicatesM xs = asks resolveDuplicates >>= lift . (xs &)
 fromNoDuplicatesM :: Monad m => [a] -> ResolutionT a coll m coll
 fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
 
-class UpdateByKey k a c | c -> a, c -> k where
-  updatByKey :: (Maybe a -> a) -> k -> c -> c
-
-instance (Eq k, Hashable k) => UpdateByKey k a (HashMap k a) where
-  updatByKey f = HM.alter (Just . f)
-
-instance (Eq k, Hashable k) => UpdateByKey k a [(k, a)] where
-  updatByKey f key values
-    | key `member` values = fmap replaceBy values
-    | otherwise = values <> [(key, f Nothing)]
-    where
-      replaceBy (entryKey, entryValue)
-        | key == entryKey = (key, f (Just entryValue))
-        | otherwise = (entryKey, entryValue)
-
-insertWithList :: (Eq k, Hashable k) => (k, NonEmpty a) -> [(k, NonEmpty a)] -> [(k, NonEmpty a)]
-insertWithList (key, value) = updatByKey updater key
+insertWithList :: (Eq k, Hashable k) => k -> (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a)
+insertWithList key value = HM.alter (Just . updater) key
   where
     updater Nothing = value
     updater (Just x) = x <> value
 
-clusterDuplicates :: (Eq k, Hashable k) => [(k, NonEmpty a)] -> [(k, a)] -> [(k, NonEmpty a)]
-clusterDuplicates collected [] = collected
-clusterDuplicates coll ((key, value) : xs) = clusterDuplicates (insertWithList (key, value :| []) coll) xs
+clusterDuplicates :: (Eq k, Hashable k) => [(k, (Int, a))] -> HashMap k (Int, NonEmpty a) -> HashMap k (Int, NonEmpty a)
+clusterDuplicates [] coll = coll
+clusterDuplicates ((key, (i, value)) : xs) coll = clusterDuplicates xs (insertWithList key (i, value :| []) coll)
 
 fromListDuplicates :: (KeyOf k a) => [a] -> [(k, NonEmpty a)]
-fromListDuplicates xs = clusterDuplicates [] (fmap toPair xs)
+fromListDuplicates xs = HM.toList $ clusterDuplicates HM.empty (fmap toPair xs)
 
 fromListT ::
   RESOLUTION k a coll m =>
