@@ -276,7 +276,7 @@ comment =
 
 -- exclamationMark: '!'
 exclamationMark :: Parser ()
-exclamationMark = symbol 33
+exclamationMark = label "!" $symbol 33
 
 -- octothorpe: '#'
 octothorpe :: Parser ()
