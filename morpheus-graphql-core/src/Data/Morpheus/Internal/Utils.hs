@@ -96,6 +96,7 @@ import Prelude
     Eq (..),
     Functor (..),
     Int,
+    Maybe (..),
     Monad,
     String,
     const,
@@ -338,14 +339,23 @@ resolveDuplicatesM xs = asks resolveDuplicates >>= lift . (xs &)
 fromNoDuplicatesM :: Monad m => [a] -> ResolutionT a coll m coll
 fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
 
+class UpdateByKey k a c | c -> a, c -> k where
+  updatByKey :: k -> (Maybe a -> a) -> c -> c
+
+instance (Eq k, Hashable k) => UpdateByKey k a [(k, a)] where
+  updatByKey key f values
+    | key `member` values = fmap replaceBy values
+    | otherwise = values <> [(key, f Nothing)]
+    where
+      replaceBy (entryKey, entryValue)
+        | key == entryKey = (key, f (Just entryValue))
+        | otherwise = (entryKey, entryValue)
+
 insertWithList :: (Eq k, Hashable k) => (k, NonEmpty a) -> [(k, NonEmpty a)] -> [(k, NonEmpty a)]
-insertWithList (key, value) values
-  | key `member` values = fmap replaceBy values
-  | otherwise = values <> [(key, value)]
+insertWithList (key, value) = updatByKey key updater
   where
-    replaceBy (entryKey, entryValue)
-      | key == entryKey = (key, entryValue <> value)
-      | otherwise = (entryKey, entryValue)
+    updater Nothing = value
+    updater (Just x) = x <> value
 
 clusterDuplicates :: (Eq k, Hashable k) => [(k, NonEmpty a)] -> [(k, a)] -> [(k, NonEmpty a)]
 clusterDuplicates collected [] = collected
