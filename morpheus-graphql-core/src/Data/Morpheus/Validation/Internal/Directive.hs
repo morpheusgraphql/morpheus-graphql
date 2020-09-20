@@ -81,7 +81,7 @@ validate location directive@Directive {..} =
   withDirective directive $ do
     Schema {directiveDefinitions} <- askSchema
     directiveDef <- selectKnown directive directiveDefinitions
-    Directive directiveName directivePosition
+    Directive directivePosition directiveName
       <$> ( validateDirectiveLocation location directive directiveDef
               *> validateDirectiveArguments directiveDef directiveArgs
           )

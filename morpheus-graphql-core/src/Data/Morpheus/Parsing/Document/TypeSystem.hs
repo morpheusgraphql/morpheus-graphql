@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -12,8 +13,9 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative ((*>), pure)
+import Control.Applicative ((*>), Applicative (..))
 import Control.Monad ((>=>))
+import Data.ByteString.Lazy (ByteString)
 import Data.Foldable (foldr)
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..))
@@ -33,7 +35,10 @@ import Data.Morpheus.Parsing.Internal.Pattern
     typeDeclaration,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( collection,
+  ( at,
+    collection,
+    colon,
+    equal,
     ignoredTokens,
     keyword,
     optDescription,
@@ -43,7 +48,6 @@ import Data.Morpheus.Parsing.Internal.Terms
     pipe,
     sepByAnd,
     setOf,
-    symbol,
   )
 import Data.Morpheus.Parsing.Internal.Value
   ( Parse (..),
@@ -54,26 +58,29 @@ import Data.Morpheus.Types.Internal.AST
     DataFingerprint (..),
     Description,
     DirectiveDefinition (..),
-    IN,
+    Directives,
+    ELEM,
+    FieldsDefinition,
+    LEAF,
+    OBJECT,
     OUT,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     ScalarDefinition (..),
     Schema,
     SchemaDefinition (..),
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     Value,
     buildSchema,
     mkUnionMember,
-    toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     failure,
   )
-import Data.Text (Text)
 import Text.Megaparsec
   ( (<|>),
     eof,
@@ -86,6 +93,46 @@ import Prelude
     (.),
   )
 
+mkObject ::
+  (ELEM OBJECT a ~ TRUE) =>
+  Maybe Description ->
+  TypeName ->
+  [TypeName] ->
+  Directives s ->
+  FieldsDefinition OUT s ->
+  TypeDefinition a s
+mkObject typeDescription typeName objectImplements typeDirectives objectFields =
+  TypeDefinition
+    { typeFingerprint = DataFingerprint typeName [],
+      typeContent = DataObject {objectImplements, objectFields},
+      ..
+    }
+
+mkType ::
+  Maybe Description ->
+  TypeName ->
+  Directives s ->
+  TypeContent TRUE a s ->
+  TypeDefinition a s
+mkType typeDescription typeName typeDirectives typeContent =
+  TypeDefinition
+    { typeFingerprint = DataFingerprint typeName [],
+      ..
+    }
+
+mkScalar ::
+  ELEM LEAF a ~ TRUE =>
+  Maybe Description ->
+  TypeName ->
+  Directives s ->
+  TypeDefinition a s
+mkScalar typeDescription typeName typeDirectives =
+  TypeDefinition
+    { typeFingerprint = DataFingerprint typeName [],
+      typeContent = DataScalar (ScalarDefinition pure),
+      ..
+    }
+
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
 --
 --  ScalarTypeDefinition:
@@ -95,15 +142,11 @@ scalarTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
-scalarTypeDefinition typeDescription = label "ScalarTypeDefinition" $ do
-  typeName <- typeDeclaration "scalar"
-  typeDirectives <- optionalDirectives
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        typeContent = DataScalar $ ScalarDefinition pure,
-        ..
-      }
+scalarTypeDefinition typeDescription =
+  label "ScalarTypeDefinition" $
+    mkScalar typeDescription
+      <$> typeDeclaration "scalar"
+      <*> optionalDirectives
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 --
@@ -123,19 +166,16 @@ scalarTypeDefinition typeDescription = label "ScalarTypeDefinition" $ do
 objectTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
-  Parser (TypeDefinition OUT s)
-objectTypeDefinition typeDescription = label "ObjectTypeDefinition" $ do
-  typeName <- typeDeclaration "type"
-  objectImplements <- optionalImplementsInterfaces
-  typeDirectives <- optionalDirectives
-  objectFields <- fieldsDefinition
-  -- build object
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        typeContent = DataObject {objectImplements, objectFields},
-        ..
-      }
+  Parser (TypeDefinition ANY s)
+objectTypeDefinition typeDescription =
+  label "ObjectTypeDefinition" $
+    mkObject typeDescription
+      <$> typeDeclaration "type"
+      <*> optionalImplementsInterfaces
+      <*> optionalDirectives
+      <*> fieldsDefinition
+
+-- build object
 
 optionalImplementsInterfaces :: Parser [TypeName]
 optionalImplementsInterfaces = implements <|> pure []
@@ -151,16 +191,13 @@ optionalImplementsInterfaces = implements <|> pure []
 interfaceTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
-  Parser (TypeDefinition OUT s)
-interfaceTypeDefinition typeDescription = label "InterfaceTypeDefinition" $ do
-  typeName <- typeDeclaration "interface"
-  typeDirectives <- optionalDirectives
-  typeContent <- DataInterface <$> fieldsDefinition
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        ..
-      }
+  Parser (TypeDefinition ANY s)
+interfaceTypeDefinition typeDescription =
+  label "InterfaceTypeDefinition" $
+    mkType typeDescription
+      <$> typeDeclaration "interface"
+      <*> optionalDirectives
+      <*> (DataInterface <$> fieldsDefinition)
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
 --
@@ -174,19 +211,16 @@ interfaceTypeDefinition typeDescription = label "InterfaceTypeDefinition" $ do
 unionTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
-  Parser (TypeDefinition OUT s)
-unionTypeDefinition typeDescription = label "UnionTypeDefinition" $ do
-  typeName <- typeDeclaration "union"
-  typeDirectives <- optionalDirectives
-  typeContent <- DataUnion <$> unionMemberTypes
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        ..
-      }
+  Parser (TypeDefinition ANY s)
+unionTypeDefinition typeDescription =
+  label "UnionTypeDefinition" $
+    mkType typeDescription
+      <$> typeDeclaration "union"
+      <*> optionalDirectives
+      <*> (DataUnion <$> unionMemberTypes)
   where
     unionMemberTypes =
-      symbol '='
+      equal
         *> pipe (mkUnionMember <$> parseTypeName)
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
@@ -204,15 +238,12 @@ enumTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
-enumTypeDefinition typeDescription = label "EnumTypeDefinition" $ do
-  typeName <- typeDeclaration "enum"
-  typeDirectives <- optionalDirectives
-  typeContent <- DataEnum <$> collection enumValueDefinition
-  pure
-    TypeDefinition
-      { typeFingerprint = DataFingerprint typeName [],
-        ..
-      }
+enumTypeDefinition typeDescription =
+  label "EnumTypeDefinition" $
+    mkType typeDescription
+      <$> typeDeclaration "enum"
+      <*> optionalDirectives
+      <*> (DataEnum <$> collection enumValueDefinition)
 
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
 --
@@ -225,18 +256,14 @@ enumTypeDefinition typeDescription = label "EnumTypeDefinition" $ do
 inputObjectTypeDefinition ::
   Parse (Value s) =>
   Maybe Description ->
-  Parser (TypeDefinition IN s)
+  Parser (TypeDefinition ANY s)
 inputObjectTypeDefinition typeDescription =
-  label "InputObjectTypeDefinition" $ do
-    typeName <- typeDeclaration "input"
-    typeDirectives <- optionalDirectives
-    typeContent <- DataInputObject <$> inputFieldsDefinition
-    -- build input
-    pure
-      TypeDefinition
-        { typeFingerprint = DataFingerprint typeName [],
-          ..
-        }
+  label "InputObjectTypeDefinition" $
+    mkType
+      typeDescription
+      <$> typeDeclaration "input"
+      <*> optionalDirectives
+      <*> (DataInputObject <$> inputFieldsDefinition)
 
 -- 3.13 DirectiveDefinition
 --
@@ -246,26 +273,20 @@ inputObjectTypeDefinition typeDescription =
 --  DirectiveLocations:
 --    DirectiveLocations | DirectiveLocation
 --    |[opt] DirectiveLocation
-
 parseDirectiveDefinition ::
+  Parse (Value s) =>
   Maybe Description ->
-  Parser RawTypeDefinition
-parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefinition" $ do
-  keyword "directive"
-  symbol '@'
-  directiveDefinitionName <- parseName
-  directiveDefinitionArgs <- optionalCollection argumentsDefinition
-  _ <- optional (keyword "repeatable")
-  keyword "on"
-  directiveDefinitionLocations <- pipe parseDirectiveLocation
-  pure
-    $ RawDirectiveDefinition
-    $ DirectiveDefinition
-      { directiveDefinitionName,
-        directiveDefinitionDescription,
-        directiveDefinitionLocations,
-        directiveDefinitionArgs
-      }
+  Parser (DirectiveDefinition s)
+parseDirectiveDefinition directiveDefinitionDescription =
+  label "DirectiveDefinition" $
+    DirectiveDefinition
+      <$> ( keyword "directive"
+              *> at
+              *> parseName
+          )
+        <*> pure directiveDefinitionDescription
+        <*> optionalCollection argumentsDefinition
+        <*> (optional (keyword "repeatable") *> keyword "on" *> pipe parseDirectiveLocation)
 
 -- 3.2 Schema
 -- SchemaDefinition:
@@ -280,21 +301,20 @@ parseDirectiveDefinition directiveDefinitionDescription = label "DirectiveDefini
 --     mutation :: Maybe TypeName,
 --     subscription :: Maybe TypeName
 --   }
-
-parseSchemaDefinition :: Maybe Description -> Parser RawTypeDefinition
-parseSchemaDefinition _schemaDescription = label "SchemaDefinition" $ do
-  keyword "schema"
-  schemaDirectives <- optionalDirectives
-  unSchemaDefinition <- setOf parseRootOperationTypeDefinition
-  pure
-    $ RawSchemaDefinition
-    $ SchemaDefinition {schemaDirectives, unSchemaDefinition}
+parseSchemaDefinition :: Maybe Description -> Parser SchemaDefinition
+parseSchemaDefinition _schemaDescription =
+  label "SchemaDefinition" $
+    keyword "schema"
+      *> ( SchemaDefinition
+             <$> optionalDirectives
+             <*> setOf parseRootOperationTypeDefinition
+         )
 
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
-parseRootOperationTypeDefinition = do
-  operationType <- parseOperationType
-  symbol ':'
-  RootOperationTypeDefinition operationType <$> parseTypeName
+parseRootOperationTypeDefinition =
+  RootOperationTypeDefinition
+    <$> (parseOperationType <* colon)
+    <*> parseTypeName
 
 parseTypeSystemUnit ::
   Parser RawTypeDefinition
@@ -303,18 +323,18 @@ parseTypeSystemUnit =
     do
       description <- optDescription
       -- scalar | enum |  input | object | union | interface
-      types description
-        <|> parseSchemaDefinition description
-        <|> parseDirectiveDefinition description
+      parseTypeDef description
+        <|> RawSchemaDefinition <$> parseSchemaDefinition description
+        <|> RawDirectiveDefinition <$> parseDirectiveDefinition description
   where
-    types description =
+    parseTypeDef description =
       RawTypeDefinition
-        <$> ( (toAny <$> inputObjectTypeDefinition description)
-                <|> (toAny <$> unionTypeDefinition description)
+        <$> ( objectTypeDefinition description
+                <|> inputObjectTypeDefinition description
+                <|> interfaceTypeDefinition description
+                <|> unionTypeDefinition description
                 <|> enumTypeDefinition description
                 <|> scalarTypeDefinition description
-                <|> (toAny <$> objectTypeDefinition description)
-                <|> (toAny <$> interfaceTypeDefinition description)
             )
 
 typePartition ::
@@ -353,12 +373,13 @@ withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
 withSchemaDefinition (_ : xs, _, _) = failure (fmap nameCollision xs)
 
 parseTypeSystemDefinition :: Parser [RawTypeDefinition]
-parseTypeSystemDefinition = label "TypeSystemDefinitions" $ do
-  ignoredTokens
-  manyTill parseTypeSystemUnit eof
+parseTypeSystemDefinition =
+  label "TypeSystemDefinitions" $
+    ignoredTokens
+      *> manyTill parseTypeSystemUnit eof
 
 typeSystemDefinition ::
-  Text ->
+  ByteString ->
   Eventless
     ( Maybe SchemaDefinition,
       [TypeDefinition ANY CONST],
@@ -368,14 +389,14 @@ typeSystemDefinition =
   processParser parseTypeSystemDefinition
     >=> withSchemaDefinition . typePartition
 
-parseTypeDefinitions :: Text -> Eventless [TypeDefinition ANY CONST]
+parseTypeDefinitions :: ByteString -> Eventless [TypeDefinition ANY CONST]
 parseTypeDefinitions = fmap snd3 . typeSystemDefinition
 
 snd3 :: (a, b, c) -> b
 snd3 (_, x, _) = x
 
 parseSchema ::
-  Text ->
+  ByteString ->
   Eventless (Schema CONST)
 parseSchema =
   typeSystemDefinition

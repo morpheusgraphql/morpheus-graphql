@@ -119,8 +119,8 @@ declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
     wrappedT [] = decType typeArgs
     --------------------------------------------
     decType :: Maybe String -> Type
-    decType (Just par) = apply (capitalize typeConName) [toVar par]
-    decType _ = toCon (capitalize typeConName)
+    decType (Just par) = apply typeConName [toVar par]
+    decType _ = toCon typeConName
 
 tyConArgs :: TypeKind -> [String]
 tyConArgs kindD

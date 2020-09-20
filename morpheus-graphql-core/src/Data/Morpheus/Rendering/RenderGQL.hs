@@ -21,7 +21,8 @@ where
 -- MORPHEUS
 
 import qualified Data.Aeson as A
-import Data.ByteString.Lazy (toStrict)
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Foldable (Foldable, foldl, null)
 import Data.Function ((&))
 import Data.Functor ((<$>))
@@ -30,7 +31,6 @@ import Data.Semigroup (Semigroup (..), stimes)
 import Data.String (IsString (..))
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
 import Prelude
   ( ($),
     (*),
@@ -46,24 +46,24 @@ import Prelude
     otherwise,
   )
 
-renderGQL :: RenderGQL a => a -> Text
+renderGQL :: RenderGQL a => a -> ByteString
 renderGQL x = runRendering (render x) 0
 
 newtype Rendering = Rendering
-  { runRendering :: Int -> Text
+  { runRendering :: Int -> ByteString
   }
 
 instance Semigroup Rendering where
   Rendering f <> Rendering g = Rendering $ \x -> f x <> g x
 
 instance IsString Rendering where
-  fromString = Rendering . const . T.pack
+  fromString = Rendering . const . LB.pack
 
 fromShow :: Show a => a -> Rendering
-fromShow x = Rendering (const $ T.pack (show x))
+fromShow = fromString . show
 
 fromText :: Text -> Rendering
-fromText = Rendering . const
+fromText = fromString . T.unpack
 
 class RenderGQL a where
   render :: a -> Rendering
@@ -72,7 +72,10 @@ instance
   RenderGQL a =>
   RenderGQL (Maybe a)
   where
-  render = maybe (fromText "") render
+  render = maybe "" render
+
+instance RenderGQL ByteString where
+  render = Rendering . const
 
 instance RenderGQL Int where
   render = fromShow
@@ -88,7 +91,7 @@ instance RenderGQL Bool where
   render False = "false"
 
 instance RenderGQL A.Value where
-  render x = fromText $ decodeUtf8 $ toStrict $ A.encode x
+  render = render . A.encode
 
 space :: Rendering
 space = " "
@@ -104,7 +107,7 @@ indent :: Rendering -> Rendering
 indent (Rendering f) = Rendering $ f . (+ 1)
 
 intercalate :: Rendering -> [Rendering] -> Rendering
-intercalate (Rendering f) fs = Rendering $ \x -> T.intercalate (f x) (map ((x &) . runRendering) fs)
+intercalate (Rendering f) fs = Rendering $ \x -> LB.intercalate (f x) (map ((x &) . runRendering) fs)
 
 indentNewline :: Rendering -> Rendering
 indentNewline rendering = indent (newline <> rendering)

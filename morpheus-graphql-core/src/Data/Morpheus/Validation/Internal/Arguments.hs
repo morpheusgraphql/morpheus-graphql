@@ -70,7 +70,6 @@ import Data.Traversable (traverse)
 import Prelude
   ( ($),
     (.),
-    flip,
   )
 
 type VariableConstraints ctx =
@@ -103,7 +102,9 @@ validateArgument
 toArgument :: FieldDefinition IN s -> Value schemaS -> Validator schemaStage ctx (Argument schemaS)
 toArgument
   FieldDefinition {fieldName}
-  value = flip (Argument fieldName) value . fromMaybe (Position 0 0) <$> asksScope position
+  value = mkArg . fromMaybe (Position 0 0) <$> asksScope position
+    where
+      mkArg pos = Argument pos fieldName value
 
 validateArgumentValue ::
   (ValidateWithDefault ctx schemaS valueS) =>
@@ -116,8 +117,8 @@ validateArgumentValue
     withPosition argumentPosition
       $ startInput (SourceArgument argumentName)
       $ Argument
-        argumentName
         argumentPosition
+        argumentName
         <$> validateInputByTypeRef (typed fieldType field) argumentValue
 
 validateFieldArguments ::

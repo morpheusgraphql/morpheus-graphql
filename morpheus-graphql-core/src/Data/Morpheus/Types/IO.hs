@@ -56,7 +56,6 @@ import Data.Morpheus.Error.Utils (badRequestError)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError (..),
-    Token,
     ValidValue,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
@@ -74,7 +73,12 @@ import Data.Text.Lazy.Encoding
     encodeUtf8,
   )
 import GHC.Generics (Generic)
-import Prelude (($), (.), Show, String)
+import Prelude
+  ( ($),
+    (.),
+    Show,
+    String,
+  )
 
 decodeNoDup :: Failure String m => LB.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
@@ -118,8 +122,8 @@ data JSONResponse a = JSONResponse
 
 -- | GraphQL HTTP Request Body
 data GQLRequest = GQLRequest
-  { query :: Token,
-    operationName :: Maybe FieldName,
+  { operationName :: Maybe FieldName,
+    query :: Text,
     variables :: Maybe Aeson.Value
   }
   deriving (Show, Generic, FromJSON, ToJSON)

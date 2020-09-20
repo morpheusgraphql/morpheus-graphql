@@ -25,14 +25,15 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( ignoredTokens,
+  ( at,
+    colon,
+    ignoredTokens,
     keyword,
     optDescription,
     parseName,
     parseType,
     parseTypeName,
     setOf,
-    symbol,
     uniqTuple,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -42,6 +43,7 @@ import Data.Morpheus.Parsing.Internal.Value
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
     DataEnumValue (..),
+    Description,
     Directive (..),
     DirectiveLocation (..),
     FieldContent (..),
@@ -52,10 +54,12 @@ import Data.Morpheus.Types.Internal.AST
     InputFieldsDefinition,
     OUT,
     OperationType (..),
+    TRUE,
     TypeName,
+    TypeRef,
     Value,
   )
-import Data.Text (pack)
+import Data.String (fromString)
 import Text.Megaparsec
   ( (<|>),
     choice,
@@ -63,7 +67,7 @@ import Text.Megaparsec
     many,
     optional,
   )
-import Text.Megaparsec.Char (string)
+import Text.Megaparsec.Byte (string)
 
 --  EnumValueDefinition: https://graphql.github.io/graphql-spec/June2018/#EnumValueDefinition
 --
@@ -73,11 +77,12 @@ import Text.Megaparsec.Char (string)
 enumValueDefinition ::
   Parse (Value s) =>
   Parser (DataEnumValue s)
-enumValueDefinition = label "EnumValueDefinition" $ do
-  enumDescription <- optDescription
-  enumName <- parseTypeName
-  enumDirectives <- optionalDirectives
-  return DataEnumValue {..}
+enumValueDefinition =
+  label "EnumValueDefinition" $
+    DataEnumValue
+      <$> optDescription
+      <*> parseTypeName
+      <*> optionalDirectives
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
 --
@@ -87,14 +92,14 @@ enumValueDefinition = label "EnumValueDefinition" $ do
 inputValueDefinition ::
   Parse (Value s) =>
   Parser (FieldDefinition IN s)
-inputValueDefinition = label "InputValueDefinition" $ do
-  fieldDescription <- optDescription
-  fieldName <- parseName
-  symbol ':'
-  fieldType <- parseType
-  fieldContent <- optional (DefaultInputValue <$> parseDefaultValue)
-  fieldDirectives <- optionalDirectives
-  pure FieldDefinition {..}
+inputValueDefinition =
+  label "InputValueDefinition" $
+    FieldDefinition
+      <$> optDescription
+      <*> parseName
+      <*> (colon *> parseType)
+      <*> optional (DefaultInputValue <$> parseDefaultValue)
+      <*> optionalDirectives
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 --
@@ -122,14 +127,24 @@ fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 fieldDefinition :: Parse (Value s) => Parser (FieldDefinition OUT s)
-fieldDefinition = label "FieldDefinition" $ do
-  fieldDescription <- optDescription
-  fieldName <- parseName
-  fieldContent <- optional (FieldArgs <$> argumentsDefinition)
-  symbol ':'
-  fieldType <- parseType
-  fieldDirectives <- optionalDirectives
-  pure FieldDefinition {..}
+fieldDefinition =
+  label "FieldDefinition" $
+    mkField
+      <$> optDescription
+      <*> parseName
+      <*> optional (FieldArgs <$> argumentsDefinition)
+      <*> (colon *> parseType)
+      <*> optionalDirectives
+
+mkField ::
+  Maybe Description ->
+  FieldName ->
+  Maybe (FieldContent TRUE cat s) ->
+  TypeRef ->
+  [Directive s] ->
+  FieldDefinition cat s
+mkField fieldDescription fieldName fieldContent fieldType fieldDirectives =
+  FieldDefinition {..}
 
 -- InputFieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --   InputFieldsDefinition:
@@ -154,12 +169,12 @@ optionalDirectives = label "Directives" $ many directive
 --
 -- @ Name Arguments[Const](opt)
 directive :: Parse (Value s) => Parser (Directive s)
-directive = label "Directive" $ do
-  directivePosition <- getLocation
-  symbol '@'
-  directiveName <- parseName
-  directiveArgs <- maybeArguments
-  pure Directive {..}
+directive =
+  label "Directive" $
+    Directive
+      <$> getLocation
+      <*> (at *> parseName)
+      <*> maybeArguments
 
 -- typDeclaration : Not in spec ,start part of type definitions
 --
@@ -167,18 +182,16 @@ directive = label "Directive" $ do
 --   Description(opt) scalar Name
 --
 typeDeclaration :: FieldName -> Parser TypeName
-typeDeclaration kind = do
-  keyword kind
-  parseTypeName
+typeDeclaration kind = keyword kind *> parseTypeName
 
 parseOperationType :: Parser OperationType
-parseOperationType = label "OperationType" $ do
-  kind <-
-    (string "query" $> Query)
-      <|> (string "mutation" $> Mutation)
-      <|> (string "subscription" $> Subscription)
-  ignoredTokens
-  return kind
+parseOperationType =
+  label "OperationType" $
+    ( (string "query" $> Query)
+        <|> (string "mutation" $> Mutation)
+        <|> (string "subscription" $> Subscription)
+    )
+      <* ignoredTokens
 
 parseDirectiveLocation :: Parser DirectiveLocation
 parseDirectiveLocation =
@@ -209,4 +222,4 @@ parseDirectiveLocation =
     <* ignoredTokens
 
 toKeyword :: Show a => a -> Parser a
-toKeyword x = string (pack $ show x) $> x
+toKeyword x = string (fromString $ show x) $> x

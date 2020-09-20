@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ce18cb316044bb79be32544a1626da5772a8ed0cc0d17214179d77c1d9c6f8f4
+-- hash: 8c50628617cc67c0fc111a0c8da97103a08ad879ac6504f2a513528fba92863e
 
 name:           morpheus-graphql-core
 version:        0.15.1
@@ -104,6 +104,7 @@ data-files:
     test/schema/validation/interface/field-args/ok/schema.gql
     test/schema/validation/interface/field-type/fail/schema.gql
     test/schema/validation/interface/field-type/ok/schema.gql
+    test/schema/validation/performance-check/schema.gql
     test/schema/validation/schema-definition/fail/non-object-kind/from-schema/schema.gql
     test/schema/validation/schema-definition/fail/non-object-kind/without-schema/schema.gql
     "test/schema/validation/schema-definition/fail/required query/empty/schema.gql"
@@ -168,6 +169,7 @@ data-files:
     test/schema/validation/interface/field-args/ok/response.json
     test/schema/validation/interface/field-type/fail/response.json
     test/schema/validation/interface/field-type/ok/response.json
+    test/schema/validation/performance-check/response.json
     test/schema/validation/schema-definition/fail/non-object-kind/from-schema/response.json
     test/schema/validation/schema-definition/fail/non-object-kind/without-schema/response.json
     "test/schema/validation/schema-definition/fail/required query/empty/response.json"
@@ -205,6 +207,10 @@ library
       Data.Morpheus.Error.Utils
       Data.Morpheus.Error.Variable
       Data.Morpheus.Error.Warning
+      Data.Morpheus.Ext.Map
+      Data.Morpheus.Ext.MergeSet
+      Data.Morpheus.Ext.OrdMap
+      Data.Morpheus.Ext.SafeHashMap
       Data.Morpheus.Internal.Graph
       Data.Morpheus.Parser
       Data.Morpheus.Parsing.Document.TypeSystem
@@ -225,9 +231,6 @@ library
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.DirectiveLocation
       Data.Morpheus.Types.Internal.AST.Fields
-      Data.Morpheus.Types.Internal.AST.MergeSet
-      Data.Morpheus.Types.Internal.AST.OrdMap
-      Data.Morpheus.Types.Internal.AST.SafeHashMap
       Data.Morpheus.Types.Internal.AST.Selection
       Data.Morpheus.Types.Internal.AST.Stage
       Data.Morpheus.Types.Internal.AST.TH

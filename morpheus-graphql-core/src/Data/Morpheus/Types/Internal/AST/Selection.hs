@@ -40,6 +40,12 @@ import Data.Morpheus.Error.Operation
   ( mutationIsNotDefined,
     subscriptionIsNotDefined,
   )
+import Data.Morpheus.Ext.MergeSet
+  ( MergeSet,
+  )
+import Data.Morpheus.Ext.OrdMap
+  ( OrdMap,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
@@ -73,12 +79,6 @@ import Data.Morpheus.Types.Internal.AST.Fields
     Directives,
     renderArgumentValues,
     renderDirectives,
-  )
-import Data.Morpheus.Types.Internal.AST.MergeSet
-  ( MergeSet,
-  )
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( OrdMap,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,
@@ -206,9 +206,9 @@ type SelectionSet (s :: Stage) = MergeSet s (Selection s)
 
 data Selection (s :: Stage) where
   Selection ::
-    { selectionName :: FieldName,
+    { selectionPosition :: Position,
       selectionAlias :: Maybe FieldName,
-      selectionPosition :: Position,
+      selectionName :: FieldName,
       selectionArguments :: Arguments s,
       selectionDirectives :: Directives s,
       selectionContent :: SelectionContent s
@@ -312,12 +312,12 @@ deriving instance Eq (Selection a)
 type DefaultValue = Maybe ResolvedValue
 
 data Operation (s :: Stage) = Operation
-  { operationName :: Maybe FieldName,
+  { operationPosition :: Position,
     operationType :: OperationType,
+    operationName :: Maybe FieldName,
     operationArguments :: VariableDefinitions s,
-    operationSelection :: SelectionSet s,
-    operationPosition :: Position,
-    operationDirectives :: Directives s
+    operationDirectives :: Directives s,
+    operationSelection :: SelectionSet s
   }
   deriving (Show, Lift)
 

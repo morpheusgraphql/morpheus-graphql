@@ -59,7 +59,6 @@ import Data.Morpheus.Types.App
   )
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
-    Token,
     VALID,
   )
 import Data.Morpheus.Types.Internal.Config
@@ -77,19 +76,15 @@ import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
-import qualified Data.Text.Lazy as LT
-  ( toStrict,
-  )
-import Data.Text.Lazy.Encoding (decodeUtf8)
 
-render :: RenderGQL a => a -> Token
+render :: RenderGQL a => a -> ByteString
 render = R.renderGQL
 
 parseDSL :: ByteString -> Either String (Schema VALID)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument
 
 parseGQLDocument :: ByteString -> Eventless (Schema VALID)
-parseGQLDocument = parseTypeSystemDefinition . LT.toStrict . decodeUtf8
+parseGQLDocument = parseTypeSystemDefinition
 
 parseFullGQLDocument :: ByteString -> Eventless (Schema VALID)
 parseFullGQLDocument = parseGQLDocument >=> (internalSchema <:>)

@@ -11,7 +11,6 @@ where
 import Control.Applicative (pure)
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
-import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.Functor ((<$>), fmap)
 import Data.Functor.Identity (Identity (..))
 import Data.Maybe (Maybe (..))
@@ -33,11 +32,11 @@ import Test.Tasty
     testGroup,
   )
 import Test.Tasty.HUnit
-  ( assertFailure,
-    testCase,
+  ( testCase,
   )
 import Utils.Utils
   ( assertValidSchema,
+    caseFailure,
     expectedResponse,
     getRequest,
     getResolvers,
@@ -52,10 +51,7 @@ import Prelude
 assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
 assertion expected (ResultT (Identity actual))
   | Just expected == decode actualValue = pure ()
-  | otherwise =
-    assertFailure $
-      LB.unpack
-        ("expected: \n\n " <> encode expected <> " \n\n but got: \n\n " <> actualValue)
+  | otherwise = caseFailure (encode expected) actualValue
   where
     actualValue = encode (renderResponse actual)
 

@@ -12,7 +12,6 @@ where
 import Control.Applicative (pure)
 import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
 import qualified Data.ByteString.Lazy as L (readFile)
-import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Either (Either (..), either)
 import Data.Functor ((<$>), fmap)
@@ -30,10 +29,11 @@ import Data.Semigroup ((<>))
 import Data.Text (pack)
 import GHC.Generics (Generic)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertFailure, testCase)
+import Test.Tasty.HUnit (testCase)
 import Utils.Utils
   ( CaseTree (..),
     FileUrl (..),
+    caseFailure,
     scanSchemaTests,
     toString,
   )
@@ -96,11 +96,8 @@ assertion Errors {errors = err} Failure {errors}
   | err == errors =
     pure
       ()
-assertion expected Success {} =
-  assertFailure $
-    LB.unpack
-      ("expected: \n " <> encode expected <> " \n but got: \n OK")
+assertion expected Success {} = caseFailure (encode expected) "OK"
 assertion expected Failure {errors} =
-  assertFailure $
-    LB.unpack
-      ("expected: \n " <> encode expected <> " \n but got: \n " <> encode (Errors errors))
+  caseFailure
+    (encode expected)
+    (encode (Errors errors))

@@ -53,6 +53,10 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
+import Data.Morpheus.Ext.OrdMap
+  ( OrdMap,
+    unsafeFromValues,
+  )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
     KeyOf (..),
@@ -86,10 +90,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     sysFields,
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( OrdMap,
-    unsafeFromValues,
-  )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,
   )
@@ -125,8 +125,8 @@ import Prelude
 -- scalar
 ------------------------------------------------------------------
 data Argument (valid :: Stage) = Argument
-  { argumentName :: FieldName,
-    argumentPosition :: Position,
+  { argumentPosition :: Position,
+    argumentName :: FieldName,
     argumentValue :: Value valid
   }
   deriving (Show, Eq, Lift)
@@ -156,8 +156,8 @@ renderArgumentValues = renderArguments . filter notNull . elems
 -- directive
 ------------------------------------------------------------------
 data Directive (s :: Stage) = Directive
-  { directiveName :: FieldName,
-    directivePosition :: Position,
+  { directivePosition :: Position,
+    directiveName :: FieldName,
     directiveArgs :: Arguments s
   }
   deriving (Show, Lift, Eq)
@@ -185,8 +185,8 @@ renderDirectives xs
 data DirectiveDefinition s = DirectiveDefinition
   { directiveDefinitionName :: FieldName,
     directiveDefinitionDescription :: Maybe Description,
-    directiveDefinitionLocations :: [DirectiveLocation],
-    directiveDefinitionArgs :: ArgumentsDefinition s
+    directiveDefinitionArgs :: ArgumentsDefinition s,
+    directiveDefinitionLocations :: [DirectiveLocation]
   }
   deriving (Show, Lift)
 
@@ -274,11 +274,11 @@ type FieldsDefinition cat s = Fields (FieldDefinition cat s)
 --   Description(opt) Name: Type DefaultValue(opt) Directives[Const](opt)
 
 data FieldDefinition (cat :: TypeCategory) (s :: Stage) = FieldDefinition
-  { fieldName :: FieldName,
-    fieldDescription :: Maybe Description,
+  { fieldDescription :: Maybe Description,
+    fieldName :: FieldName,
     fieldType :: TypeRef,
-    fieldDirectives :: [Directive s],
-    fieldContent :: Maybe (FieldContent TRUE cat s)
+    fieldContent :: Maybe (FieldContent TRUE cat s),
+    fieldDirectives :: [Directive s]
   }
   deriving (Show, Lift, Eq)
 

@@ -16,13 +16,17 @@ import Control.Monad (Monad (..))
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Map
+  ( resolveWith,
+    runResolutionT,
+  )
+import qualified Data.Morpheus.Ext.OrdMap as OM (unsafeFromValues)
+import qualified Data.Morpheus.Ext.SafeHashMap as SHM (unsafeFromValues)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     SemigroupM (..),
     mergeT,
     prop,
-    resolveWith,
-    runResolutionT,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Directive,
@@ -37,8 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeLib,
     ValidationErrors,
   )
-import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM (unsafeFromValues)
-import qualified Data.Morpheus.Types.Internal.AST.SafeHashMap as SHM (unsafeFromValues)
 import Data.Morpheus.Types.Internal.Resolving (RootResModel)
 import qualified Data.Morpheus.Types.Internal.Resolving as R (RootResModel (..))
 import Data.Semigroup (Semigroup (..))

@@ -1,10 +1,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
   ( name,
     variable,
+    varName,
     ignoredTokens,
     parseString,
     -------------
@@ -15,7 +17,6 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseTypeCondition,
     spreadLiteral,
     parseNonNull,
-    parseAssignment,
     parseWrappedType,
     parseAlias,
     sepByAnd,
@@ -28,19 +29,31 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseNegativeSign,
     parseTypeName,
     pipe,
+    fieldNameColon,
+    brackets,
+    equal,
+    comma,
+    colon,
+    at,
   )
 where
 
-import Control.Monad ((>=>))
+import Control.Applicative ((*>), Applicative (..))
+import Control.Monad ((>=>), (>>=))
 -- MORPHEUS
 import Control.Monad.Trans (lift)
-import Data.Functor (($>))
+import Data.ByteString.Lazy
+  ( pack,
+  )
+import Data.Functor (($>), (<$>))
 import Data.Morpheus.Internal.Utils
   ( Collection,
     KeyOf,
     Listable (..),
     empty,
     fromElems,
+    fromLBS,
+    toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -57,10 +70,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
+import Data.Semigroup ((<>))
 import Data.Text
-  ( pack,
-    strip,
+  ( strip,
   )
+import GHC.Word (Word8)
 import Text.Megaparsec
   ( (<?>),
     (<|>),
@@ -76,7 +90,7 @@ import Text.Megaparsec
     skipManyTill,
     try,
   )
-import Text.Megaparsec.Char
+import Text.Megaparsec.Byte
   ( char,
     digitChar,
     letterChar,
@@ -86,9 +100,16 @@ import Text.Megaparsec.Char
     space1,
     string,
   )
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Maybe (..),
+    flip,
+  )
 
 parseNegativeSign :: Parser Bool
-parseNegativeSign = (char '-' $> True <* ignoredTokens) <|> pure False
+parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
 
 parseName :: Parser FieldName
 parseName = FieldName <$> name
@@ -97,17 +118,56 @@ parseTypeName :: Parser TypeName
 parseTypeName = label "TypeName" $ TypeName <$> name
 
 keyword :: FieldName -> Parser ()
-keyword (FieldName word) = string word *> space1 *> ignoredTokens
+keyword (FieldName word) = string (toLBS word) *> space1 *> ignoredTokens
 
-symbol :: Char -> Parser ()
+symbol :: Word8 -> Parser ()
 symbol x = char x *> ignoredTokens
 
--- LITERALS
-braces :: Parser [a] -> Parser [a]
-braces =
-  between
-    (char '{' *> ignoredTokens)
-    (char '}' *> ignoredTokens)
+-- braces: {}
+braces :: Parser a -> Parser a
+braces = between (symbol 123) (symbol 125)
+
+-- brackets: []
+brackets :: Parser a -> Parser a
+brackets = between (symbol 91) (symbol 93)
+
+-- parens : '()'
+parens :: Parser a -> Parser a
+parens = between (symbol 40) (symbol 41)
+
+-- underscore : '_'
+underscore :: Parser Word8
+underscore = char 95
+
+comma :: Parser ()
+comma = label "," $ char 44 *> space
+
+-- dollar :: $
+dollar :: Parser ()
+dollar = label "$" $ symbol 36
+
+-- equal :: '='
+equal :: Parser ()
+equal = label "=" $ symbol 61
+
+-- colon :: ':'
+colon :: Parser ()
+colon = label ":" $ symbol 58
+
+-- minus: '-'
+minus :: Parser ()
+minus = label "-" $ symbol 45
+
+-- verticalPipe: '|'
+verticalPipe :: Parser ()
+verticalPipe = label "|" $ symbol 124
+
+ampersand :: Parser ()
+ampersand = label "&" $ symbol 38
+
+-- at: '@'
+at :: Parser ()
+at = label "@" $ symbol 64
 
 -- PRIMITIVE
 ------------------------------------
@@ -118,35 +178,37 @@ braces =
 --  NameStart NameContinue[list,opt]
 --
 name :: Parser Token
-name = label "Name" $ do
-  start <- nameStart
-  continue <- nameContinue
-  ignoredTokens
-  pure $ pack (start : continue)
+name =
+  label "Name" $
+    fromLBS . pack
+      <$> ((:) <$> nameStart <*> nameContinue)
+      <* ignoredTokens
 
 -- NameStart::
 --   Letter
 --   _
-nameStart :: Parser Char
-nameStart = letterChar <|> char '_'
+nameStart :: Parser Word8
+nameStart = letterChar <|> underscore
 
 --  NameContinue::
 --   Letter
 --   Digit
-nameContinue :: Parser String
-nameContinue = many (letterChar <|> char '_' <|> digitChar)
+nameContinue :: Parser [Word8]
+nameContinue = many (letterChar <|> underscore <|> digitChar)
+
+varName :: Parser FieldName
+varName = dollar *> parseName <* ignoredTokens
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
 --
 -- Variable :  $Name
 --
 variable :: Parser Ref
-variable = label "variable" $ do
-  refPosition <- getLocation
-  _ <- char '$'
-  refName <- parseName
-  ignoredTokens
-  pure $ Ref {refName, refPosition}
+variable =
+  label "variable" $
+    flip Ref
+      <$> getLocation
+      <*> varName
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
 --
@@ -165,39 +227,39 @@ blockString :: Parser Token
 blockString = stringWith (string "\"\"\"") (printChar <|> newline)
 
 singleLineString :: Parser Token
-singleLineString = stringWith (char '"') escapedChar
+singleLineString = stringWith (string "\"") escapedChar
 
-stringWith :: Parser quote -> Parser Char -> Parser Token
+stringWith :: Parser quote -> Parser Word8 -> Parser Token
 stringWith quote parser =
-  pack
+  fromLBS . pack
     <$> ( quote
             *> manyTill parser quote
             <* ignoredTokens
         )
 
-escapedChar :: Parser Char
+escapedChar :: Parser Word8
 escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 
-handleEscape :: Char -> Parser Char
-handleEscape '\\' = choice escape
+handleEscape :: Word8 -> Parser Word8
+handleEscape 92 = choice escape
 handleEscape x = pure x
 
-escape :: [Parser Char]
-escape = map escapeCh escapeOptions
+escape :: [Parser Word8]
+escape = escapeCh <$> escapeOptions
   where
-    escapeCh :: (Char, Char) -> Parser Char
+    escapeCh :: (Word8, Word8) -> Parser Word8
     escapeCh (code, replacement) = char code $> replacement
 
-escapeOptions :: [(Char, Char)]
+escapeOptions :: [(Word8, Word8)]
 escapeOptions =
-  [ ('b', '\b'),
-    ('n', '\n'),
-    ('f', '\f'),
-    ('r', '\r'),
-    ('t', '\t'),
-    ('\\', '\\'),
-    ('\"', '\"'),
-    ('/', '/')
+  [ (98, 8),
+    (110, 10),
+    (102, 12),
+    (114, 13),
+    (116, 9),
+    (92, 92),
+    (34, 34),
+    (47, 47)
   ]
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
@@ -215,26 +277,28 @@ ignoredTokens =
       *> space
 
 ignored :: Parser ()
-ignored =
-  label "Ignored" $
-    comment
-      <|> comma
+ignored = label "Ignored" (comment <|> comma)
 
 comment :: Parser ()
 comment =
   label "Comment" $
-    char '#' *> skipManyTill printChar newline *> space
+    octothorpe *> skipManyTill printChar newline *> space
 
-comma :: Parser ()
-comma = label "Comma" $ char ',' *> space
+-- exclamationMark: '!'
+exclamationMark :: Parser ()
+exclamationMark = label "!" $symbol 33
+
+-- octothorpe: '#'
+octothorpe :: Parser ()
+octothorpe = label "#" $ char 35 $> ()
 
 ------------------------------------------------------------------------
 
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (optional (symbol '&') *> ignoredTokens)
+sepByAnd entry = entry `sepBy` (optional ampersand *> ignoredTokens)
 
 pipe :: Parser a -> Parser [a]
-pipe x = optional (symbol '|') *> (x `sepBy1` symbol '|')
+pipe x = optional verticalPipe *> (x `sepBy1` verticalPipe)
 
 -----------------------------
 collection :: Parser a -> Parser [a]
@@ -247,29 +311,22 @@ optionalCollection :: Collection a c => Parser c -> Parser c
 optionalCollection x = x <|> pure empty
 
 parseNonNull :: Parser [DataTypeWrapper]
-parseNonNull = do
-  wrapper <- (char '!' $> [NonNullType]) <|> pure []
-  ignoredTokens
-  return wrapper
+parseNonNull =
+  (exclamationMark $> [NonNullType])
+    <|> pure []
 
 uniqTuple :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTuple parser =
   label "Tuple" $
-    between
-      (char '(' *> ignoredTokens)
-      (char ')' *> ignoredTokens)
+    parens
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
       >>= lift . fromElems
 
 uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 
-parseAssignment :: (Show a, Show b) => Parser a -> Parser b -> Parser (a, b)
-parseAssignment nameParser valueParser = label "assignment" $ do
-  name' <- nameParser
-  symbol ':'
-  value' <- valueParser
-  pure (name', value')
+fieldNameColon :: Parser FieldName
+fieldNameColon = parseName <* colon
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --
@@ -277,16 +334,10 @@ parseAssignment nameParser valueParser = label "assignment" $ do
 --    on NamedType
 --
 parseTypeCondition :: Parser TypeName
-parseTypeCondition = do
-  keyword "on"
-  parseTypeName
+parseTypeCondition = keyword "on" *> parseTypeName
 
 spreadLiteral :: Parser Position
-spreadLiteral = do
-  index <- getLocation
-  _ <- string "..."
-  space
-  return index
+spreadLiteral = getLocation <* string "..." <* space
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
@@ -294,18 +345,18 @@ spreadLiteral = do
 parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
-    alias = label "alias" $ parseName <* char ':' <* ignoredTokens
+    alias = label "alias" fieldNameColon
 
 parseType :: Parser TypeRef
-parseType = do
-  (wrappers, typeConName) <- parseWrappedType
-  nonNull <- parseNonNull
-  pure
-    TypeRef
-      { typeConName,
-        typeArgs = Nothing,
-        typeWrappers = toHSWrappers $ nonNull ++ wrappers
-      }
+parseType = parseTypeW <$> parseWrappedType <*> parseNonNull
+
+parseTypeW :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> TypeRef
+parseTypeW (wrappers, typeConName) nonNull =
+  TypeRef
+    { typeConName,
+      typeArgs = Nothing,
+      typeWrappers = toHSWrappers (nonNull <> wrappers)
+    }
 
 parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
@@ -314,12 +365,7 @@ parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
     unwrapped = ([],) <$> parseTypeName <* ignoredTokens
     ----------------------------------------------
     wrapped :: Parser ([DataTypeWrapper], TypeName)
-    wrapped =
-      between
-        (char '[' *> ignoredTokens)
-        (char ']' *> ignoredTokens)
-        ( do
-            (wrappers, tName) <- unwrapped <|> wrapped
-            nonNull' <- parseNonNull
-            return ((ListType : nonNull') ++ wrappers, tName)
-        )
+    wrapped = brackets (wrapAsList <$> (unwrapped <|> wrapped) <*> parseNonNull)
+
+wrapAsList :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> ([DataTypeWrapper], TypeName)
+wrapAsList (wrappers, tName) nonNull = (ListType : nonNull <> wrappers, tName)

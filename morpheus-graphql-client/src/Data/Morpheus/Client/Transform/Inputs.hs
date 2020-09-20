@@ -20,15 +20,15 @@ import Data.Morpheus.Client.Internal.Types
   )
 import Data.Morpheus.Client.Transform.Core
   ( Converter (..),
+    UpdateT (..),
     customScalarTypes,
     getType,
+    resolveUpdates,
     typeFrom,
   )
 import Data.Morpheus.Internal.Utils
-  ( UpdateT (..),
-    elems,
+  ( elems,
     empty,
-    resolveUpdates,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -87,9 +87,8 @@ renderArguments variables cName
 renderOperationArguments ::
   Operation VALID ->
   Converter (Maybe ClientTypeDefinition)
-renderOperationArguments Operation {operationName} = do
-  variables <- asks snd
-  pure $ renderArguments variables (getOperationName operationName <> "Args")
+renderOperationArguments Operation {operationName} =
+  asks ((`renderArguments` (getOperationName operationName <> "Args")) . snd)
 
 -- INPUTS
 renderNonOutputTypes ::

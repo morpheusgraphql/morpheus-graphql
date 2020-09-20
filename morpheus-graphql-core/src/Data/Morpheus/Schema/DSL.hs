@@ -8,6 +8,10 @@
 
 module Data.Morpheus.Schema.DSL (dsl) where
 
+import Data.ByteString.Lazy.Char8
+  ( ByteString,
+    pack,
+  )
 import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
@@ -17,10 +21,6 @@ import Data.Morpheus.Parsing.Document.TypeSystem
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Result (..),
-  )
-import Data.Text
-  ( Text,
-    pack,
   )
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
@@ -37,7 +37,7 @@ dsl =
     notHandled things =
       error $ things ++ " are not supported by the GraphQL QuasiQuoter"
 
-dslExpression :: Text -> Q Exp
+dslExpression :: ByteString -> Q Exp
 dslExpression doc = case parseSchema doc of
   Failure errors -> fail (renderGQLErrors errors)
   Success {result, warnings} -> gqlWarnings warnings >> [|result|]

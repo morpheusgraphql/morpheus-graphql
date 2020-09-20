@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.16.0 - unreleased
+
+### Breaking Changes
+
+- signature changes:
+
+  - `render`:
+    `a -> Text`
+    to `a -> ByteString`
+  - parseTypeSystemDefinition :
+    `Text -> Eventless (Schema VALID)`
+    to `ByteString -> Eventless (Schema VALID)`
+
+  - parseTypeDefinitions:
+    `Text -> Eventless [TypeDefinition ANY CONST]`
+    to `ByteString -> Eventless [TypeDefinition ANY CONST]`
+
+### new features
+
+### Minor Changes
+
+- parser performance optimization
+
 ## 0.15.1 - 12.09.2020
 
 relaxed upper boundary of `megaparsec` up to 10.0.0

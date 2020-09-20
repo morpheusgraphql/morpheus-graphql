@@ -16,6 +16,10 @@ where
 import Control.Monad ((>=>))
 import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
+
+import qualified Data.Morpheus.Ext.MergeSet as MS
+  ( join,
+  )
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     elems,
@@ -40,9 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     mkType,
     toCategory,
-  )
-import qualified Data.Morpheus.Types.Internal.AST.MergeSet as MS
-  ( join,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( FragmentValidator,

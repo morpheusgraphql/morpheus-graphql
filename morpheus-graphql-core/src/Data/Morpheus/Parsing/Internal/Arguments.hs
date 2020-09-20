@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Morpheus.Parsing.Internal.Arguments (maybeArguments) where
 
@@ -9,8 +8,7 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( parseAssignment,
-    parseName,
+  ( fieldNameColon,
     uniqTupleOpt,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -32,10 +30,11 @@ import Text.Megaparsec (label)
 --  Name : Value[Const]
 valueArgument :: Parse (Value s) => Parser (Argument s)
 valueArgument =
-  label "Argument" $ do
-    argumentPosition <- getLocation
-    (argumentName, argumentValue) <- parseAssignment parseName parse
-    pure $ Argument {argumentName, argumentValue, argumentPosition}
+  label "Argument" $
+    Argument
+      <$> getLocation
+      <*> fieldNameColon
+      <*> parse
 
 maybeArguments :: Parse (Value s) => Parser (Arguments s)
 maybeArguments =

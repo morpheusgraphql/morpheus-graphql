@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Client
   ( declareClient,
@@ -27,19 +28,26 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName,
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (Traversable (..))
 import Language.Haskell.TH
+import Prelude
+  ( ($),
+    (<$>),
+    Applicative (..),
+    Maybe (..),
+    String,
+    concat,
+  )
 
 declareClient :: String -> ClientDefinition -> Q [Dec]
-declareClient _ ClientDefinition {clientTypes = []} = return []
+declareClient _ ClientDefinition {clientTypes = []} = pure []
 declareClient src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
-  do
-    root <-
-      defineOperationType
-        (queryArgumentType clientArguments)
-        src
-        rootType
-    types <- concat <$> traverse declareType subTypes
-    pure (root <> types)
+  (<>)
+    <$> defineOperationType
+      (queryArgumentType clientArguments)
+      src
+      rootType
+    <*> (concat <$> traverse declareType subTypes)
 
 declareType :: ClientTypeDefinition -> Q [Dec]
 declareType clientType@ClientTypeDefinition {clientKind} =

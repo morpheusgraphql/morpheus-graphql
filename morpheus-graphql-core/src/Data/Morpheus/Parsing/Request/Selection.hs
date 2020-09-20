@@ -61,7 +61,7 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
     parseSelection =
       label "Selection" $
         try inlineFragment
-          <|> try spread
+          <|> spread
           <|> parseSelectionField
 
 -- Fields: https://graphql.github.io/graphql-spec/June2018/#sec-Language.Fields
@@ -72,14 +72,13 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
 parseSelectionField :: Parser (Selection RAW)
 parseSelectionField =
   label "SelectionField" $
-    do
-      selectionPosition <- getLocation
-      selectionAlias <- parseAlias
-      selectionName <- parseName
-      selectionArguments <- maybeArguments
-      selectionDirectives <- optionalDirectives
-      selectionContent <- parseSelectionContent
-      pure Selection {..}
+    Selection
+      <$> getLocation
+      <*> parseAlias
+      <*> parseName
+      <*> maybeArguments
+      <*> optionalDirectives
+      <*> parseSelectionContent
 
 parseSelectionContent :: Parser (SelectionContent RAW)
 parseSelectionContent =
@@ -109,7 +108,7 @@ spread = label "FragmentSpread" $ do
 --   fragment FragmentName TypeCondition Directives(opt) SelectionSet
 --
 parseFragmentDefinition :: Parser (Fragment RAW)
-parseFragmentDefinition = label "FragmentDefinition" $ do
+parseFragmentDefinition = label "Fragment" $ do
   keyword "fragment"
   fragmentPosition <- getLocation
   fragmentName <- parseName

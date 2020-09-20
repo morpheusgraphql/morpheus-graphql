@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -19,13 +18,15 @@ module Utils.Utils
     getSchema,
     getResolvers,
     getResolver,
+    caseFailure,
   )
 where
 
-import Control.Applicative ((<|>), pure)
+import Control.Applicative ((<*>), (<|>), pure)
 import Control.Monad ((>=>), Monad)
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
+import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Either (Either (..))
 import Data.Foldable (foldl)
@@ -52,8 +53,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
-import qualified Data.Text.Lazy as LT (toStrict)
-import Data.Text.Lazy.Encoding (decodeUtf8)
+import qualified Data.Text.IO as T
 import Data.Traversable (traverse)
 import System.Directory (doesDirectoryExist, listDirectory)
 import Test.Tasty.HUnit
@@ -150,15 +150,11 @@ expectedResponse :: FieldName -> IO Value
 expectedResponse (FieldName p) = fromMaybe Null . decode <$> L.readFile (resLib p)
 
 getRequest :: FieldName -> IO GQLRequest
-getRequest p = do
-  queryBS <- LT.toStrict . decodeUtf8 <$> getGQLBody p
-  variables <- maybeVariables p
-  pure $
-    GQLRequest
-      { operationName = Nothing,
-        query = queryBS,
-        variables
-      }
+getRequest p =
+  GQLRequest
+    Nothing
+    <$> T.readFile (gqlLib $ readName p)
+    <*> maybeVariables p
 
 getResolvers :: Monad m => FieldName -> IO (RootResModel e m)
 getResolvers p = getResolver ("test/" <> p <> "/resolvers.json")
@@ -183,3 +179,9 @@ lookupRes ::
   ResModel o e m
 lookupRes name (Object fields) = maybe mkNull mkValue (lookup name fields)
 lookupRes _ _ = mkNull
+
+caseFailure :: ByteString -> ByteString -> IO a
+caseFailure expected actualValue =
+  assertFailure $
+    LB.unpack
+      ("expected: \n\n " <> expected <> " \n\n but got: \n\n " <> actualValue)

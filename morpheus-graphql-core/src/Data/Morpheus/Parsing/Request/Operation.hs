@@ -18,11 +18,11 @@ import Data.Morpheus.Parsing.Internal.Pattern
     parseOperationType,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( parseName,
+  ( colon,
+    parseName,
     parseType,
-    symbol,
     uniqTupleOpt,
-    variable,
+    varName,
   )
 import Data.Morpheus.Parsing.Internal.Value
   ( parseDefaultValue,
@@ -34,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
   ( Operation (..),
     OperationType (..),
     RAW,
-    Ref (..),
     Variable (..),
     VariableContent (..),
   )
@@ -51,12 +50,13 @@ import Text.Megaparsec
 --    Variable : Type DefaultValue(opt)
 --
 variableDefinition :: Parser (Variable RAW)
-variableDefinition = label "VariableDefinition" $ do
-  (Ref variableName variablePosition) <- variable
-  symbol ':'
-  variableType <- parseType
-  variableValue <- DefaultValue <$> optional parseDefaultValue
-  pure Variable {..}
+variableDefinition =
+  label "VariableDefinition" $
+    Variable
+      <$> getLocation
+      <*> (varName <* colon)
+      <*> parseType
+      <*> (DefaultValue <$> optional parseDefaultValue)
 
 -- Operations : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Operations
 --
@@ -66,14 +66,15 @@ variableDefinition = label "VariableDefinition" $ do
 --   OperationType: one of
 --     query, mutation,    subscription
 parseOperationDefinition :: Parser (Operation RAW)
-parseOperationDefinition = label "OperationDefinition" $ do
-  operationPosition <- getLocation
-  operationType <- parseOperationType
-  operationName <- optional parseName
-  operationArguments <- uniqTupleOpt variableDefinition
-  operationDirectives <- optionalDirectives
-  operationSelection <- parseSelectionSet
-  pure Operation {..}
+parseOperationDefinition =
+  label "OperationDefinition" $
+    Operation
+      <$> getLocation
+      <*> parseOperationType
+      <*> optional parseName
+      <*> uniqTupleOpt variableDefinition
+      <*> optionalDirectives
+      <*> parseSelectionSet
 
 parseAnonymousQuery :: Parser (Operation RAW)
 parseAnonymousQuery = label "AnonymousQuery" $ do

@@ -33,6 +33,8 @@ import Data.Morpheus.Types
   )
 import Data.Proxy (Proxy)
 import Data.Text (Text)
+import qualified Data.Text.Lazy as LT
+import Data.Text.Lazy.Encoding (decodeUtf8)
 import Data.Typeable (Typeable)
 import GHC.TypeLits
 import Network.HTTP.Media ((//), (/:))
@@ -98,4 +100,4 @@ serveEndpoint :: [e -> IO ()] -> App e IO -> Server (Endpoint name)
 serveEndpoint publish app = (liftIO . httpPubApp publish app) :<|> withSchema app :<|> pure httpPlayground
 
 withSchema :: (Applicative f) => App e m -> f Text
-withSchema = pure . render
+withSchema = pure . LT.toStrict . decodeUtf8 . render

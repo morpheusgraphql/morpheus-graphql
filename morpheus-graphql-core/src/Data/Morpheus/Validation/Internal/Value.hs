@@ -21,6 +21,9 @@ import Data.List (any, elem)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
+import Data.Morpheus.Ext.OrdMap
+  ( unsafeFromValues,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     ordTraverse_,
@@ -61,9 +64,6 @@ import Data.Morpheus.Types.Internal.AST
     typed,
     untyped,
     withPosition,
-  )
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputContext,

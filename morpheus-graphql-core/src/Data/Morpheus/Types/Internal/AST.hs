@@ -174,10 +174,10 @@ where
 import Data.HashMap.Lazy (HashMap)
 -- Morpheus
 
+import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Fields
-import Data.Morpheus.Types.Internal.AST.OrdMap
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH
@@ -190,8 +190,8 @@ import Prelude (Show)
 type Variables = HashMap FieldName ResolvedValue
 
 data GQLQuery = GQLQuery
-  { fragments :: Fragments RAW,
+  { inputVariables :: [(FieldName, ResolvedValue)],
     operation :: Operation RAW,
-    inputVariables :: [(FieldName, ResolvedValue)]
+    fragments :: Fragments RAW
   }
   deriving (Show, Lift)

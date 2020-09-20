@@ -7,6 +7,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Aeson
   ( aesonDeclarations,
@@ -15,11 +16,17 @@ where
 
 --
 -- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Control.Monad ((>>=))
+import Control.Monad.Fail (fail)
 import Data.Aeson
 import Data.Aeson.Types
+import Data.Functor ((<$>))
 import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -57,9 +64,7 @@ import Data.Morpheus.Types.Internal.AST
     toFieldName,
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( unpack,
-  )
+import qualified Data.Text as T
 import Language.Haskell.TH
   ( DecQ,
     Exp (..),
@@ -73,6 +78,17 @@ import Language.Haskell.TH
     instanceD,
     tupP,
     varE,
+  )
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Eq (..),
+    Show (..),
+    String,
+    null,
+    otherwise,
+    (||),
   )
 
 aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> DecQ]
@@ -124,13 +140,14 @@ deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
       aesonUnionObject typeD
 
 aesonObject :: [FieldName] -> ConsD cat VALID -> ExpQ
-aesonObject tNamespace con@ConsD {cName} = do
-  body <- aesonObjectBody tNamespace con
-  pure $
-    AppE
-      (AppE (VarE 'withObject) name)
-      (LamE [v'] body)
+aesonObject tNamespace con@ConsD {cName} =
+  withBody
+    <$> aesonObjectBody tNamespace con
   where
+    withBody body =
+      AppE
+        (AppE (VarE 'withObject) name)
+        (LamE [v'] body)
     name :: Exp
     name = toString (nameSpaceType tNamespace cName)
 
@@ -163,7 +180,7 @@ aesonUnionObject
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
 takeValueType f (Object hMap) = case H.lookup "__typename" hMap of
   Nothing -> fail "key \"__typename\" not found on object"
-  Just (String x) -> pure (unpack x, hMap) >>= f
+  Just (String x) -> pure (T.unpack x, hMap) >>= f
   Just val ->
     fail $ "key \"__typename\" should be string but found: " <> show val
 takeValueType _ _ = fail "expected Object"

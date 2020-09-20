@@ -104,7 +104,7 @@ instance Monad m => Monad (ResultT event m) where
         result2 <- runResultT (mFunc value1)
         case result2 of
           Failure errors -> pure $ Failure (errors <> w1)
-          Success v2 w2 e2 -> return $ Success v2 (w1 <> w2) (e1 <> e2)
+          Success v2 w2 e2 -> pure $ Success v2 (w1 <> w2) (e1 <> e2)
 
 instance MonadTrans (ResultT event) where
   lift = ResultT . fmap pure

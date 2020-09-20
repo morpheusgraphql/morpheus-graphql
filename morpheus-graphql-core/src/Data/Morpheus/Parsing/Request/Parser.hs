@@ -12,6 +12,7 @@ import qualified Data.Aeson as Aeson
 import Data.HashMap.Lazy (toList)
 import Data.Morpheus.Internal.Utils
   ( fromElems,
+    toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -39,18 +40,23 @@ import Data.Morpheus.Types.Internal.Resolving
 import Text.Megaparsec
   ( eof,
     label,
-    manyTill,
+    many,
   )
 
 request :: Parser GQLQuery
-request = label "GQLQuery" $ do
-  ignoredTokens
-  operation <- parseOperation
-  fragments <- manyTill parseFragmentDefinition eof >>= lift . fromElems
-  pure GQLQuery {operation, fragments, inputVariables = []}
+request =
+  label "GQLQuery" $
+    ( GQLQuery []
+        <$> (ignoredTokens *> parseOperation)
+        <*> (many parseFragmentDefinition >>= lift . fromElems)
+    )
+      <* ignoredTokens
+      <* eof
 
 parseGQL :: GQLRequest -> Eventless GQLQuery
-parseGQL GQLRequest {query, variables} = setVariables <$> processParser request query
+parseGQL GQLRequest {query, variables} =
+  setVariables
+    <$> processParser request (toLBS query)
   where
     setVariables root = root {inputVariables = toVariableMap variables}
     toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolvedValue)]
