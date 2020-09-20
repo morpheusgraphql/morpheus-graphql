@@ -69,7 +69,6 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldName,
-    GQLErrors,
     GQLValue (..),
     InternalError,
     MUTATION,
