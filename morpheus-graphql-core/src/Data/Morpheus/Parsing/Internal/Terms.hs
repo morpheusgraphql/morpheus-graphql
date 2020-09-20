@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
   ( name,
@@ -37,13 +38,14 @@ module Data.Morpheus.Parsing.Internal.Terms
   )
 where
 
-import Control.Monad ((>=>))
+import Control.Applicative ((*>), Applicative (..))
+import Control.Monad ((>=>), (>>=))
 -- MORPHEUS
 import Control.Monad.Trans (lift)
 import Data.ByteString.Lazy
   ( pack,
   )
-import Data.Functor (($>))
+import Data.Functor (($>), (<$>))
 import Data.Morpheus.Internal.Utils
   ( Collection,
     KeyOf,
@@ -68,6 +70,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
+import Data.Semigroup ((<>))
 import Data.Text
   ( strip,
   )
@@ -96,6 +99,13 @@ import Text.Megaparsec.Byte
     space,
     space1,
     string,
+  )
+import Prelude
+  ( ($),
+    (.),
+    Bool (..),
+    Maybe (..),
+    flip,
   )
 
 parseNegativeSign :: Parser Bool
@@ -235,7 +245,7 @@ handleEscape 92 = choice escape
 handleEscape x = pure x
 
 escape :: [Parser Word8]
-escape = map escapeCh escapeOptions
+escape = escapeCh <$> escapeOptions
   where
     escapeCh :: (Word8, Word8) -> Parser Word8
     escapeCh (code, replacement) = char code $> replacement
