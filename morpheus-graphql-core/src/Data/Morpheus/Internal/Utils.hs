@@ -4,7 +4,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
@@ -296,14 +295,6 @@ concatUpdates x = UpdateT (`resolveUpdates` x)
 resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
 resolveUpdates a = foldM (&) a . fmap updateTState
 
--- instance
---   ( Monad m,
---     Failure ValidationErrors m
---   ) =>
---   Failure ValidationErrors (ResolutionT a coll m)
---   where
---   failure = lift . failure
-
 hmUnsafeFromValues :: (Eq k, KeyOf k a) => [a] -> HashMap k a
 hmUnsafeFromValues = HM.fromList . fmap toPair
 
@@ -312,5 +303,5 @@ failOnDuplicates (x :| xs)
   | null xs = pure x
   | otherwise = failure $ fmap nameCollision (x : xs)
 
-instance KeyOf k a => KeyOf k (Indexed k a) where
-  keyOf = keyOf . value
+instance (Eq k, Hashable k) => KeyOf k (Indexed k a) where
+  keyOf = indexedKey

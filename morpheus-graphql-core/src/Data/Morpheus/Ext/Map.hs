@@ -65,8 +65,8 @@ resolveWith f (x :| xs) = foldlM f x xs
 
 data Indexed k a = Indexed
   { index :: Int,
-    key :: k,
-    value :: a
+    indexedKey :: k,
+    indexedValue :: a
   }
   deriving
     ( Show,
