@@ -24,8 +24,8 @@ import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     SemigroupM (..),
+    mergeT,
     prop,
-    toList,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Directive,
@@ -79,7 +79,7 @@ instance Stitching (Schema s) where
       <*> prop stitch directiveDefinitions s1 s2
 
 instance Stitching (TypeLib s) where
-  stitch x y = runResolutionT (fromListT $ toList x <> toList y) SHM.unsafeFromValues (resolveWith stitch)
+  stitch x y = runResolutionT (mergeT x y) SHM.unsafeFromValues (resolveWith stitch)
 
 instance Stitching [DirectiveDefinition s] where
   stitch = concatM
@@ -120,7 +120,7 @@ instance Stitching (TypeContent TRUE cat s) where
   stitch _ _ = failure (["Schema Stitching works only for objects"] :: ValidationErrors)
 
 instance Stitching (FieldsDefinition cat s) where
-  stitch (Fields x) (Fields y) = Fields <$> runResolutionT (fromListT (toList x <> toList y)) OM.unsafeFromValues (resolveWith stitch)
+  stitch (Fields x) (Fields y) = Fields <$> runResolutionT (mergeT x y) OM.unsafeFromValues (resolveWith stitch)
 
 instance Stitching (FieldDefinition cat s) where
   stitch old new

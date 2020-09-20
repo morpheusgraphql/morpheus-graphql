@@ -40,7 +40,7 @@ module Data.Morpheus.Internal.Utils
     stripConstructorNamespace,
     fromLBS,
     toLBS,
-    toList,
+    mergeT,
   )
 where
 
@@ -64,7 +64,12 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.List (drop, find)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Map.Exts (Indexed (..), fromListT, runResolutionT)
+import Data.Map.Exts
+  ( Indexed (..),
+    ResolutionT,
+    fromListT,
+    runResolutionT,
+  )
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Types.Internal.AST.Base
@@ -227,8 +232,8 @@ class Listable a coll | coll -> a where
   elems :: coll -> [a]
   fromElems :: (Monad m, Failure ValidationErrors m) => [a] -> m coll
 
-toList :: (KeyOf k a, Listable a coll) => coll -> [(k, a)]
-toList = fmap toPair . elems
+mergeT :: (KeyOf k a, Monad m, Listable a coll) => coll -> coll -> ResolutionT a coll m coll
+mergeT x y = fromListT (toPair <$> (elems x <> elems y))
 
 instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
   fromElems xs = runResolutionT (fromListT (toPair <$> xs)) hmUnsafeFromValues failOnDuplicates
