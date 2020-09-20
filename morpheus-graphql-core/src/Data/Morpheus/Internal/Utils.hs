@@ -341,10 +341,13 @@ fromNoDuplicatesM :: Monad m => [a] -> ResolutionT a coll m coll
 fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
 
 class UpdateByKey k a c | c -> a, c -> k where
-  updatByKey :: k -> (Maybe a -> a) -> c -> c
+  updatByKey :: (Maybe a -> a) -> k -> c -> c
+
+instance (Eq k, Hashable k) => UpdateByKey k a (HashMap k a) where
+  updatByKey f = HM.alter (Just . f)
 
 instance (Eq k, Hashable k) => UpdateByKey k a [(k, a)] where
-  updatByKey key f values
+  updatByKey f key values
     | key `member` values = fmap replaceBy values
     | otherwise = values <> [(key, f Nothing)]
     where
@@ -353,7 +356,7 @@ instance (Eq k, Hashable k) => UpdateByKey k a [(k, a)] where
         | otherwise = (entryKey, entryValue)
 
 insertWithList :: (Eq k, Hashable k) => (k, NonEmpty a) -> [(k, NonEmpty a)] -> [(k, NonEmpty a)]
-insertWithList (key, value) = updatByKey key updater
+insertWithList (key, value) = updatByKey updater key
   where
     updater Nothing = value
     updater (Just x) = x <> value
