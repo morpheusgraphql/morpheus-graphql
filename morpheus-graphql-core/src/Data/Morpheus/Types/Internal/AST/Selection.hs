@@ -206,9 +206,9 @@ type SelectionSet (s :: Stage) = MergeSet s (Selection s)
 
 data Selection (s :: Stage) where
   Selection ::
-    { selectionName :: FieldName,
+    { selectionPosition :: Position,
       selectionAlias :: Maybe FieldName,
-      selectionPosition :: Position,
+      selectionName :: FieldName,
       selectionArguments :: Arguments s,
       selectionDirectives :: Directives s,
       selectionContent :: SelectionContent s

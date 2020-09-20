@@ -72,14 +72,13 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
 parseSelectionField :: Parser (Selection RAW)
 parseSelectionField =
   label "SelectionField" $
-    do
-      selectionPosition <- getLocation
-      selectionAlias <- parseAlias
-      selectionName <- parseName
-      selectionArguments <- maybeArguments
-      selectionDirectives <- optionalDirectives
-      selectionContent <- parseSelectionContent
-      pure Selection {..}
+    Selection
+      <$> getLocation
+      <*> parseAlias
+      <*> parseName
+      <*> maybeArguments
+      <*> optionalDirectives
+      <*> parseSelectionContent
 
 parseSelectionContent :: Parser (SelectionContent RAW)
 parseSelectionContent =
