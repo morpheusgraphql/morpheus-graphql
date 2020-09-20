@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}

@@ -88,7 +88,7 @@ renderOperationArguments ::
   Operation VALID ->
   Converter (Maybe ClientTypeDefinition)
 renderOperationArguments Operation {operationName} =
-  (`renderArguments` (getOperationName operationName <> "Args")) <$> asks snd
+  asks ((`renderArguments` (getOperationName operationName <> "Args")) . snd)
 
 -- INPUTS
 renderNonOutputTypes ::
