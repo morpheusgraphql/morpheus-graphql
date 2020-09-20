@@ -44,11 +44,11 @@ import Text.Megaparsec
   )
 
 request :: Parser GQLQuery
-request = label "GQLQuery" $ do
-  ignoredTokens
-  operation <- parseOperation
-  fragments <- manyTill parseFragmentDefinition eof >>= lift . fromElems
-  pure GQLQuery {operation, fragments, inputVariables = []}
+request =
+  label "GQLQuery" $
+    GQLQuery []
+      <$> (ignoredTokens *> parseOperation)
+      <*> (manyTill parseFragmentDefinition eof >>= lift . fromElems)
 
 parseGQL :: GQLRequest -> Eventless GQLQuery
 parseGQL GQLRequest {query, variables} =

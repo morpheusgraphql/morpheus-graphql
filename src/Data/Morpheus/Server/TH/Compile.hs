@@ -10,6 +10,9 @@ where
 --
 --  Morpheus
 
+import qualified Data.ByteString.Lazy.Char8 as LB
+  ( pack,
+  )
 import Data.Morpheus.Core
   ( parseTypeDefinitions,
   )
@@ -28,9 +31,6 @@ import Data.Morpheus.Server.TH.Transform
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Result (..),
-  )
-import qualified Data.Text as T
-  ( pack,
   )
 import Language.Haskell.TH (Dec, Q)
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
@@ -61,7 +61,7 @@ gqlDocument =
 
 compileDocument :: ServerDecContext -> String -> Q [Dec]
 compileDocument ctx documentTXT =
-  case parseTypeDefinitions (T.pack documentTXT) of
+  case parseTypeDefinitions (LB.pack documentTXT) of
     Failure errors -> fail (renderGQLErrors errors)
     Success {result = schema, warnings} ->
       gqlWarnings warnings >> toTHDefinitions (namespace ctx) schema >>= declare ctx

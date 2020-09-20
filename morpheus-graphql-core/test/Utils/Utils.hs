@@ -51,6 +51,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Semigroup ((<>))
 import Data.Text (Text, unpack)
+import qualified Data.Text.IO as T
 import Data.Traversable (traverse)
 import System.Directory (doesDirectoryExist, listDirectory)
 import Test.Tasty.HUnit
@@ -150,7 +151,7 @@ getRequest :: FieldName -> IO GQLRequest
 getRequest p =
   GQLRequest
     Nothing
-    <$> getGQLBody p
+    <$> T.readFile (gqlLib $ readName p)
     <*> maybeVariables p
 
 getResolvers :: Monad m => FieldName -> IO (RootResModel e m)

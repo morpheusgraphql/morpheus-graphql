@@ -190,8 +190,8 @@ import Prelude (Show)
 type Variables = HashMap FieldName ResolvedValue
 
 data GQLQuery = GQLQuery
-  { fragments :: Fragments RAW,
+  { inputVariables :: [(FieldName, ResolvedValue)],
     operation :: Operation RAW,
-    inputVariables :: [(FieldName, ResolvedValue)]
+    fragments :: Fragments RAW
   }
   deriving (Show, Lift)

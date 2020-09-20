@@ -126,7 +126,7 @@ data GQLRequest = GQLRequest
     query :: Text,
     variables :: Maybe Aeson.Value
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show, Generic, FromJSON, ToJSON)
 
 -- | GraphQL Response
 data GQLResponse

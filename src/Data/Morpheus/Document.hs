@@ -31,10 +31,6 @@ import Data.Morpheus.Types (RootResolver)
 import Data.Morpheus.Types.Internal.Resolving
   ( resultOr,
   )
-import qualified Data.Text.Lazy as LT
-  ( fromStrict,
-  )
-import Data.Text.Lazy.Encoding (encodeUtf8)
 import Language.Haskell.TH
 
 importGQLDocument :: FilePath -> Q [Dec]
@@ -59,5 +55,5 @@ toGraphQLDocument ::
   proxy (RootResolver m event query mut sub) ->
   ByteString
 toGraphQLDocument =
-  resultOr (pack . show) (encodeUtf8 . LT.fromStrict . render)
+  resultOr (pack . show) render
     . deriveSchema
