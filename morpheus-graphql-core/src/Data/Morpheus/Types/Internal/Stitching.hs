@@ -17,8 +17,7 @@ import Data.Functor ((<$>))
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Map
-  ( fromListT,
-    resolveWith,
+  ( resolveWith,
     runResolutionT,
   )
 import qualified Data.Morpheus.Ext.OrdMap as OM (unsafeFromValues)

@@ -23,7 +23,6 @@ import Data.Morpheus.Core
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     Operation,
-    Token,
     VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
