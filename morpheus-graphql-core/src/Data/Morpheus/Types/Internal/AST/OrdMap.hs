@@ -46,8 +46,6 @@ import Prelude
     Eq,
     Int,
     Show,
-    error,
-    fst,
   )
 
 -- OrdMap
