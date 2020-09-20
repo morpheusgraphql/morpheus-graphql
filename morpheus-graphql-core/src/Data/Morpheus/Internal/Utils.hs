@@ -25,10 +25,6 @@ module Data.Morpheus.Internal.Utils
     mapFst,
     mapSnd,
     mapTuple,
-    UpdateT (..),
-    resolveUpdates,
-    concatUpdates,
-    failUpdates,
     ordTraverse,
     ordTraverse_,
     traverseCollection,
@@ -282,18 +278,6 @@ mapSnd f (a, b) = (a, f b)
 
 mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
 mapTuple f1 f2 (a, b) = (f1 a, f2 b)
-
--- Helper Functions
-newtype UpdateT m a = UpdateT {updateTState :: a -> m a}
-
-failUpdates :: (Failure e m) => e -> UpdateT m a
-failUpdates = UpdateT . const . failure
-
-concatUpdates :: Monad m => [UpdateT m a] -> UpdateT m a
-concatUpdates x = UpdateT (`resolveUpdates` x)
-
-resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
-resolveUpdates a = foldM (&) a . fmap updateTState
 
 hmUnsafeFromValues :: (Eq k, KeyOf k a) => [a] -> HashMap k a
 hmUnsafeFromValues = HM.fromList . fmap toPair

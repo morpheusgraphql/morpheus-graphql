@@ -14,16 +14,21 @@ module Data.Morpheus.Client.Transform.Core
     typeFrom,
     deprecationWarning,
     customScalarTypes,
+    UpdateT (..),
+    resolveUpdates,
   )
 where
 
 --
 -- MORPHEUS
+
+import Control.Monad (foldM)
 import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
   )
+import Data.Function ((&))
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
   )
@@ -84,6 +89,11 @@ newtype Converter a = Converter
 
 instance Failure ValidationError Converter where
   failure err = failure [toGQLError err]
+
+newtype UpdateT m a = UpdateT {updateTState :: a -> m a}
+
+resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
+resolveUpdates a = foldM (&) a . fmap updateTState
 
 compileError :: Message -> GQLErrors
 compileError x =
