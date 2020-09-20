@@ -61,7 +61,7 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
     parseSelection =
       label "Selection" $
         try inlineFragment
-          <|> try spread
+          <|> spread
           <|> parseSelectionField
 
 -- Fields: https://graphql.github.io/graphql-spec/June2018/#sec-Language.Fields
