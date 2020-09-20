@@ -17,4 +17,4 @@ class NameCollision a where
   nameCollision :: a -> ValidationError
 
 instance NameCollision a => NameCollision (Indexed k a) where
-  nameCollision = nameCollision . value
+  nameCollision = nameCollision . indexedValue

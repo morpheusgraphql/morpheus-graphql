@@ -51,7 +51,7 @@ import Prelude
 sortedEntries :: [(k, Indexed k a)] -> [(k, a)]
 sortedEntries = fmap f . sortOn (index . snd)
   where
-    f (k, a) = (k, value a)
+    f (k, a) = (k, indexedValue a)
 
 fromListT :: (Monad m, Eq k, Hashable k) => [(k, a)] -> ResolutionT a coll m coll
 fromListT = traverse (resolveDuplicatesM . snd) . fromListDuplicates >=> fromNoDuplicatesM
