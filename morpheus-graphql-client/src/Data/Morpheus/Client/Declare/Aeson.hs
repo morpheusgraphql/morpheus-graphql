@@ -64,9 +64,7 @@ import Data.Morpheus.Types.Internal.AST
     toFieldName,
   )
 import Data.Semigroup ((<>))
-import Data.Text
-  ( unpack,
-  )
+import qualified Data.Text as T
 import Language.Haskell.TH
   ( DecQ,
     Exp (..),
@@ -182,7 +180,7 @@ aesonUnionObject
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
 takeValueType f (Object hMap) = case H.lookup "__typename" hMap of
   Nothing -> fail "key \"__typename\" not found on object"
-  Just (String x) -> pure (unpack x, hMap) >>= f
+  Just (String x) -> pure (T.unpack x, hMap) >>= f
   Just val ->
     fail $ "key \"__typename\" should be string but found: " <> show val
 takeValueType _ _ = fail "expected Object"

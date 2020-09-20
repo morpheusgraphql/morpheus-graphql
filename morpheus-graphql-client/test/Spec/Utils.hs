@@ -20,7 +20,7 @@ import Data.Morpheus.Types.Internal.AST
     GQLQuery,
   )
 import Data.Semigroup ((<>))
-import Data.Text (unpack)
+import qualified Data.Text as T
 import Language.Haskell.TH
   ( Dec,
     Q,
@@ -35,7 +35,7 @@ import Prelude
   )
 
 path :: FieldName -> FilePath
-path (FieldName name) = "test/Case/" <> unpack name
+path (FieldName name) = "test/Case/" <> T.unpack name
 
 schemaUrl :: FieldName -> FilePath
 schemaUrl p = path p <> "/schema.gql"
