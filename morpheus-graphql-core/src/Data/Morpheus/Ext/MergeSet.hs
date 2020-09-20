@@ -10,7 +10,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.AST.MergeSet
+module Data.Morpheus.Ext.MergeSet
   ( MergeSet,
     toOrdMap,
     concatTraverse,
@@ -31,6 +31,10 @@ import Data.Morpheus.Ext.Map
     resolveWith,
     runResolutionT,
   )
+import Data.Morpheus.Ext.OrdMap
+  ( OrdMap (..),
+  )
+import qualified Data.Morpheus.Ext.OrdMap as OM
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Collection (..),
@@ -46,10 +50,6 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( Ref,
     ValidationErrors,
   )
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( OrdMap (..),
-  )
-import qualified Data.Morpheus.Types.Internal.AST.OrdMap as OM
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,
     Stage,

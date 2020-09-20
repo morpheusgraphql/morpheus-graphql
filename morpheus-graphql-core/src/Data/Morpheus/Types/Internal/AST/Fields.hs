@@ -53,6 +53,10 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
+import Data.Morpheus.Ext.OrdMap
+  ( OrdMap,
+    unsafeFromValues,
+  )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
     KeyOf (..),
@@ -86,10 +90,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     sysFields,
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( OrdMap,
-    unsafeFromValues,
-  )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,
   )

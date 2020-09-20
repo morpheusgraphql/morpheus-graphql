@@ -55,6 +55,10 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
+import Data.Morpheus.Ext.OrdMap
+  ( OrdMap,
+    unsafeFromValues,
+  )
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
     elems,
@@ -77,10 +81,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeRef,
     ValidationError (..),
     msgValidation,
-  )
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( OrdMap,
-    unsafeFromValues,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,

@@ -174,10 +174,10 @@ where
 import Data.HashMap.Lazy (HashMap)
 -- Morpheus
 
+import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Fields
-import Data.Morpheus.Types.Internal.AST.OrdMap
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH

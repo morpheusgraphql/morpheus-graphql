@@ -68,6 +68,13 @@ import Data.Maybe (Maybe (..), catMaybes, mapMaybe, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
+import Data.Morpheus.Ext.OrdMap
+  ( OrdMap,
+  )
+import Data.Morpheus.Ext.SafeHashMap
+  ( SafeHashMap,
+    insert,
+  )
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Collection (..),
@@ -116,13 +123,6 @@ import Data.Morpheus.Types.Internal.AST.Fields
     FieldDefinition (..),
     FieldsDefinition,
     unsafeFromFields,
-  )
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( OrdMap,
-  )
-import Data.Morpheus.Types.Internal.AST.SafeHashMap
-  ( SafeHashMap,
-    insert,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,

@@ -55,6 +55,9 @@ import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
+import Data.Morpheus.Ext.MergeSet
+  ( toOrdMap,
+  )
 import Data.Morpheus.Internal.Utils
   ( SemigroupM (..),
     empty,
@@ -92,9 +95,6 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     msg,
     toGQLError,
-  )
-import Data.Morpheus.Types.Internal.AST.MergeSet
-  ( toOrdMap,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,

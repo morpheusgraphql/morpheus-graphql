@@ -12,7 +12,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.AST.OrdMap
+module Data.Morpheus.Ext.OrdMap
   ( OrdMap (..),
     unsafeFromValues,
   )

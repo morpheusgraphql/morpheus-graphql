@@ -40,6 +40,12 @@ import Data.Morpheus.Error.Operation
   ( mutationIsNotDefined,
     subscriptionIsNotDefined,
   )
+import Data.Morpheus.Ext.MergeSet
+  ( MergeSet,
+  )
+import Data.Morpheus.Ext.OrdMap
+  ( OrdMap,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
@@ -73,12 +79,6 @@ import Data.Morpheus.Types.Internal.AST.Fields
     Directives,
     renderArgumentValues,
     renderDirectives,
-  )
-import Data.Morpheus.Types.Internal.AST.MergeSet
-  ( MergeSet,
-  )
-import Data.Morpheus.Types.Internal.AST.OrdMap
-  ( OrdMap,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,

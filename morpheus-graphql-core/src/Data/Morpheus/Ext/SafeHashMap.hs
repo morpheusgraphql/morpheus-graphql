@@ -13,7 +13,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.AST.SafeHashMap
+module Data.Morpheus.Ext.SafeHashMap
   ( SafeHashMap,
     unsafeFromValues,
     insert,
