@@ -75,14 +75,14 @@ instance (Eq k, Hashable k) => Foldable (OrdMap k) where
   foldMap f = foldMap f . getElements
 
 getElements :: (Eq k, Hashable k) => OrdMap k b -> [b]
-getElements = fmap value . sortOn index . toList . mapEntries
+getElements = fmap indexedValue . sortOn index . toList . mapEntries
 
 instance (KeyOf k a, Hashable k) => Collection a (OrdMap k a) where
   empty = OrdMap HM.empty
   singleton x = OrdMap $ HM.singleton (keyOf x) (Indexed 0 (keyOf x) x)
 
 instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
-  selectOr fb f key OrdMap {mapEntries} = maybe fb (f . value) (HM.lookup key mapEntries)
+  selectOr fb f key OrdMap {mapEntries} = maybe fb (f . indexedValue) (HM.lookup key mapEntries)
 
 instance (NameCollision a, KeyOf k a) => Merge (OrdMap k a) where
   merge ref (OrdMap x) (OrdMap y) = OrdMap <$> merge ref x y
@@ -99,4 +99,4 @@ unsafeFromValues ::
   OrdMap k a
 unsafeFromValues = OrdMap . HM.fromList . fmap withKey . indexed . fmap toPair
   where
-    withKey idx = (key idx, idx)
+    withKey idx = (indexedKey idx, idx)
