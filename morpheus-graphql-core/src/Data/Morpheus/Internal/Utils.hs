@@ -22,7 +22,6 @@ module Data.Morpheus.Internal.Utils
     KeyOf (..),
     toPair,
     selectBy,
-    member,
     keys,
     size,
     (<:>),
@@ -168,6 +167,8 @@ instance KeyOf k v => Collection v (HashMap k v) where
 
 class Selectable k a c | c -> a where
   selectOr :: d -> (a -> d) -> k -> c -> d
+  member :: Selectable k a c => k -> c -> Bool
+  member = selectOr False (const True)
 
 instance KeyOf k a => Selectable k a [a] where
   selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
@@ -177,12 +178,6 @@ instance KeyOf k a => Selectable k a (HashMap k a) where
 
 selectBy :: (Failure e m, Selectable k a c, Monad m) => e -> k -> c -> m a
 selectBy err = selectOr (failure err) pure
-
-member :: Selectable k a c => k -> c -> Bool
-member = selectOr False toTrue
-  where
-    toTrue :: a -> Bool
-    toTrue _ = True
 
 ordTraverse ::
   ( Monad f,
