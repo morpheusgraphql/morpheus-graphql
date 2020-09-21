@@ -69,7 +69,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Semigroup ((<>))
 import qualified Data.Text as T
-import Debug.Trace
 import Language.Haskell.TH
   ( DecQ,
     Exp (..),
@@ -172,21 +171,15 @@ aesonUnionObject :: ClientTypeDefinition -> ExpQ
 aesonUnionObject
   ClientTypeDefinition
     { clientCons,
-      clientTypeName = TypeNameTH {namespace, typename},
-      clientKind
+      clientTypeName = TypeNameTH {namespace, typename}
     } =
     appE (varE 'takeValueType) $
       matchWith elseCond f clientCons
     where
-      elseCond
-        | True =
-          traceShow
-            (clientKind, typename)
-            ( aesonObjectBody
-                namespace
-                <$> find ((typename ==) . cName) clientCons
-            )
-        | otherwise = Nothing
+      elseCond =
+        aesonObjectBody
+          namespace
+          <$> find ((typename ==) . cName) clientCons
       f cons@ConsD {cName, cFields} =
         ( tupP [toString cName, if null cFields then _' else v'],
           aesonObjectBody namespace cons

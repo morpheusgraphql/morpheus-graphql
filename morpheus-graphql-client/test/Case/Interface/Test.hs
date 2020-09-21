@@ -53,7 +53,6 @@ defineClientWith
               hobby
         }
       }
-
       character2: character {
         name1: name
         name
