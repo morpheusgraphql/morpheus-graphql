@@ -21,42 +21,31 @@ where
 
 import Control.Applicative ((<*>), pure)
 import Control.Monad.Fail (fail)
-import Data.Foldable (foldl, foldr1)
+import Data.Foldable (foldr1)
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..))
-import Data.Morpheus.Internal.TH (toCon, toString, toVarE, v')
-import Data.Morpheus.Internal.Utils
-  ( capitalize,
-    nameSpaceField,
-    nameSpaceType,
+import Data.Morpheus.Internal.TH
+  ( toCon,
+    toName,
+    toString,
+    toVar,
+    toVarE,
+    v',
+    vars,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),
-    FieldName (..),
-    TypeKind (..),
     TypeName (..),
-    TypeRef (..),
-    TypeWrapper (..),
-    convertToHaskellName,
-    isEnum,
     isNullable,
-    isOutputObject,
-    readName,
   )
 import Data.Semigroup ((<>))
-import Data.Text (unpack)
 import Language.Haskell.TH
 import Prelude
   ( ($),
     (.),
-    (==),
     Bool (..),
-    String,
-    id,
     map,
     otherwise,
     show,
-    (||),
   )
 
 matchWith ::

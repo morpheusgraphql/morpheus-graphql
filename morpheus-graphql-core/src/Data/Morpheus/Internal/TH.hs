@@ -29,6 +29,7 @@ module Data.Morpheus.Internal.TH
     toCon,
     toConE,
     toConT,
+    toVar,
     ToName (..),
     toString,
     toVarE,
