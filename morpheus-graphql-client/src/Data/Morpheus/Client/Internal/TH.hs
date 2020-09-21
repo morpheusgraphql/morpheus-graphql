@@ -16,6 +16,7 @@ module Data.Morpheus.Client.Internal.TH
     decodeObjectE,
     mkFieldsE,
     destructRecord,
+    failExp,
   )
 where
 
@@ -43,37 +44,33 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
+    Maybe (..),
     map,
-    otherwise,
     show,
   )
 
 matchWith ::
-  Bool ->
+  Maybe ExpQ ->
   (t -> (PatQ, ExpQ)) ->
   [t] ->
   ExpQ
-matchWith isClosed f xs = lamCaseE (map buildMatch xs <> fallback)
+matchWith fbexp f xs = lamCaseE (map buildMatch xs <> fallback fbexp)
   where
-    fallback
-      | isClosed = []
-      | otherwise = [elseCaseEXP]
+    fallback (Just fb) = [match v' (normalB fb) []]
+    fallback _ = []
     buildMatch x = match pat (normalB body) []
       where
         (pat, body) = f x
 
-elseCaseEXP :: MatchQ
-elseCaseEXP = match v' body []
-  where
-    body =
-      normalB $
-        appE
-          (toVarE 'fail)
-          ( uInfixE
-              (appE (varE 'show) v')
-              (varE '(<>))
-              (stringE " is Not Valid Union Constructor")
-          )
+failExp :: ExpQ
+failExp =
+  appE
+    (toVarE 'fail)
+    ( uInfixE
+        (appE (varE 'show) v')
+        (varE '(<>))
+        (stringE " is Not Valid Union Constructor")
+    )
 
 decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat s] -> ExpQ
 decodeObjectE _ conName [] = appE (varE 'pure) (toCon conName)

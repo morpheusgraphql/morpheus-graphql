@@ -30,6 +30,7 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.TH
   ( decodeObjectE,
     destructRecord,
+    failExp,
     matchWith,
     mkFieldsE,
   )
@@ -172,7 +173,7 @@ aesonUnionObject
       clientTypeName = TypeNameTH {namespace}
     } =
     appE (varE 'takeValueType) $
-      matchWith False f clientCons
+      matchWith Nothing f clientCons
     where
       f cons@ConsD {cName, cFields} =
         ( tupP [toString cName, if null cFields then _' else v'],
@@ -198,7 +199,7 @@ defineFromJSON name expr = instanceD (cxt []) typeDef body
     body = [funDSimple 'parseJSON [] expr]
 
 aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
-aesonFromJSONEnumBody TypeNameTH {typename} = matchWith False f
+aesonFromJSONEnumBody TypeNameTH {typename} = matchWith (Just failExp) f
   where
     f :: ConsD cat VALID -> (PatQ, ExpQ)
     f ConsD {cName} =
@@ -207,7 +208,7 @@ aesonFromJSONEnumBody TypeNameTH {typename} = matchWith False f
       )
 
 aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
-aesonToJSONEnumBody TypeNameTH {typename} = matchWith True f
+aesonToJSONEnumBody TypeNameTH {typename} = matchWith Nothing f
   where
     f :: ConsD cat VALID -> (PatQ, ExpQ)
     f ConsD {cName} =
