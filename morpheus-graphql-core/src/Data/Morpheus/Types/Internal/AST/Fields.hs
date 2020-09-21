@@ -55,7 +55,7 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
-    unsafeFromValues,
+    unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
@@ -64,6 +64,7 @@ import Data.Morpheus.Internal.Utils
     Merge (..),
     Selectable (..),
     elems,
+    toPair,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -244,7 +245,7 @@ instance Selectable FieldName (FieldDefinition cat s) (Fields (FieldDefinition c
   selectOr fb f name (Fields lib) = selectOr fb f name lib
 
 unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
-unsafeFromFields = Fields . unsafeFromValues
+unsafeFromFields = Fields . unsafeFromList . fmap toPair
 
 fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
 fieldsToArguments = ArgumentsDefinition Nothing . unFields

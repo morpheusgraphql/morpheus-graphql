@@ -23,11 +23,9 @@ import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
   )
-import Data.Morpheus.Ext.MergeSet
-  ( concatTraverse,
-  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    concatTraverse,
     elems,
     empty,
     keyOf,

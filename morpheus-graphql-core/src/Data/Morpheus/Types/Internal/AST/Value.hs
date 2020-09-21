@@ -57,7 +57,7 @@ import Data.Morpheus.Error.NameCollision
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
-    unsafeFromValues,
+    unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
@@ -309,6 +309,6 @@ instance GQLValue (Value a) where
   gqlBoolean = Scalar . Boolean
   gqlString = Scalar . String
   gqlList = List
-  gqlObject = Object . unsafeFromValues . fmap toEntry
+  gqlObject = Object . unsafeFromList . fmap toEntry
     where
-      toEntry (key, value) = ObjectEntry key value
+      toEntry (key, value) = (key, ObjectEntry key value)

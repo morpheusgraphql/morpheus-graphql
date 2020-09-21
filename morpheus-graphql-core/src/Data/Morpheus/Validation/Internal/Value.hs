@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -14,6 +15,7 @@ module Data.Morpheus.Validation.Internal.Value
 where
 
 import Control.Applicative ((*>), pure)
+import Control.Monad (Monad)
 import Data.Either (Either (..))
 import Data.Function ((&))
 import Data.Functor ((<$>), fmap)
@@ -21,11 +23,9 @@ import Data.List (any, elem)
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
-import Data.Morpheus.Ext.OrdMap
-  ( unsafeFromValues,
-  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    fromElems,
     ordTraverse_,
     traverseCollection,
   )
@@ -52,6 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     ValidValue,
+    ValidationErrors,
     Value (..),
     Variable (..),
     Variable (..),
@@ -224,7 +225,7 @@ validatInputUnion ::
 validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> violation (Just message) (Object rawFields)
-    Right (UnionMember {memberName}, Nothing) -> pure (mkInputObject memberName [])
+    Right (UnionMember {memberName}, Nothing) -> mkInputObject memberName []
     Right (name, Just value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
@@ -235,10 +236,10 @@ validatInputUnionMember ::
 validatInputUnionMember member@UnionMember {memberName} value = do
   inputDef <- fst <$> askTypeMember member
   validValue <- validateInputByType [TypeMaybe] inputDef value
-  pure $ mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
+  mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
 
-mkInputObject :: TypeName -> [ObjectEntry s] -> Value s
-mkInputObject name xs = Object $ unsafeFromValues $ ObjectEntry "__typename" (Enum name) : xs
+mkInputObject :: (Monad m, Failure ValidationErrors m) => TypeName -> [ObjectEntry s] -> m (Value s)
+mkInputObject name xs = Object <$> fromElems (ObjectEntry "__typename" (Enum name) : xs)
 
 -- INUT Object
 validateInputObject ::

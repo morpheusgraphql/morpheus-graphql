@@ -13,7 +13,7 @@
 
 module Data.Morpheus.Ext.OrdMap
   ( OrdMap (..),
-    unsafeFromValues,
+    unsafeFromList,
   )
 where
 
@@ -90,12 +90,10 @@ instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) whe
   fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
   elems = getElements
 
-unsafeFromValues ::
-  ( KeyOf k a,
-    Hashable k
-  ) =>
-  [a] ->
+unsafeFromList ::
+  (Hashable k, Eq k) =>
+  [(k, a)] ->
   OrdMap k a
-unsafeFromValues = OrdMap . HM.fromList . fmap withKey . indexed . fmap toPair
+unsafeFromList = OrdMap . HM.fromList . fmap withKey . indexed
   where
     withKey idx = (indexedKey idx, idx)

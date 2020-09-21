@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.Map
@@ -43,7 +44,6 @@ import Prelude
     Show,
     flip,
     id,
-    snd,
   )
 
 sortedEntries :: [Indexed k a] -> [(k, a)]
@@ -51,8 +51,8 @@ sortedEntries = fmap f . sortOn index
   where
     f a = (indexedKey a, indexedValue a)
 
-fromListT :: (Monad m, Eq k, Hashable k) => [(k, a)] -> ResolutionT a coll m coll
-fromListT = traverse (resolveDuplicatesM . snd) . fromListDuplicates >=> fromNoDuplicatesM
+fromListT :: (Monad m, Eq k, Hashable k) => [(k, a)] -> ResolutionT k a coll m coll
+fromListT = traverse resolveDuplicatesM . fromListDuplicates >=> fromNoDuplicatesM
 
 resolveWith ::
   Monad m =>
@@ -88,10 +88,10 @@ indexed = __indexed 0
     __indexed _ [] = []
     __indexed i ((k, x) : xs) = Indexed i k x : __indexed (i + 1) xs
 
-resolveDuplicatesM :: Monad m => NonEmpty a -> ResolutionT a coll m a
-resolveDuplicatesM xs = asks resolveDuplicates >>= lift . (xs &)
+resolveDuplicatesM :: Monad m => (k, NonEmpty a) -> ResolutionT k a coll m (k, a)
+resolveDuplicatesM (k, xs) = asks resolveDuplicates >>= lift . fmap (k,) . (xs &)
 
-fromNoDuplicatesM :: Monad m => [a] -> ResolutionT a coll m coll
+fromNoDuplicatesM :: Monad m => [(k, a)] -> ResolutionT k a coll m coll
 fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
 
 insertWithList :: (Eq k, Hashable k) => Indexed k (NonEmpty a) -> HashMap k (Indexed k (NonEmpty a)) -> HashMap k (Indexed k (NonEmpty a))
@@ -104,27 +104,27 @@ clusterDuplicates :: (Eq k, Hashable k) => [Indexed k a] -> HashMap k (Indexed k
 clusterDuplicates [] = id
 clusterDuplicates xs = flip (foldl (\coll x -> insertWithList (fmap (:| []) x) coll)) xs
 
-data Resolution a coll m = Resolution
+data Resolution k a coll m = Resolution
   { resolveDuplicates :: NonEmpty a -> m a,
-    fromNoDuplicates :: [a] -> coll
+    fromNoDuplicates :: [(k, a)] -> coll
   }
 
 runResolutionT ::
-  ResolutionT a coll m b ->
-  ([a] -> coll) ->
+  ResolutionT k a coll m b ->
+  ([(k, a)] -> coll) ->
   (NonEmpty a -> m a) ->
   m b
 runResolutionT (ResolutionT x) fromNoDuplicates resolveDuplicates = runReaderT x Resolution {..}
 
-newtype ResolutionT a coll m x = ResolutionT
-  { _runResolutionT :: ReaderT (Resolution a coll m) m x
+newtype ResolutionT k a coll m x = ResolutionT
+  { _runResolutionT :: ReaderT (Resolution k a coll m) m x
   }
   deriving
     ( Functor,
       Monad,
       Applicative,
-      MonadReader (Resolution a coll m)
+      MonadReader (Resolution k a coll m)
     )
 
-instance MonadTrans (ResolutionT e coll) where
+instance MonadTrans (ResolutionT k a coll) where
   lift = ResolutionT . lift

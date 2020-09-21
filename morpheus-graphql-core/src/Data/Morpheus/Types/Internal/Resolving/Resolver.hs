@@ -55,14 +55,12 @@ import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
-import Data.Morpheus.Ext.MergeSet
-  ( toOrdMap,
-  )
 import Data.Morpheus.Internal.Utils
   ( SemigroupM (..),
     empty,
     keyOf,
     selectOr,
+    traverseCollection,
   )
 import Data.Morpheus.Types.IO
   ( GQLResponse,
@@ -71,7 +69,6 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldName,
-    GQLErrors,
     GQLValue (..),
     InternalError,
     MUTATION,
@@ -204,10 +201,7 @@ instance (LiftOperation o) => MonadTrans (Resolver o e) where
   lift = packResolver . lift
 
 -- Failure
-instance (LiftOperation o, Monad m) => Failure Message (Resolver o e m) where
-  failure = packResolver . failure
-
-instance (LiftOperation o, Monad m) => Failure GQLErrors (Resolver o e m) where
+instance (LiftOperation o, Monad m, Failure err (ResolverStateT e m)) => Failure err (Resolver o e m) where
   failure = packResolver . failure
 
 instance (Monad m, LiftOperation o) => MonadFail (Resolver o e m) where
@@ -311,7 +305,7 @@ resolveObject ::
   ResModel o e m ->
   Resolver o e m ValidValue
 resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
-  Object . toOrdMap <$> traverse resolver selectionSet
+  Object <$> traverseCollection resolver selectionSet
   where
     resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
     resolver currentSelection =
