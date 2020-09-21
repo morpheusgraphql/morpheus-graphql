@@ -46,6 +46,10 @@
         "__typename": "Hero",
         "hobby": "Hero Hobby",
         "name2": "Hero name2"
+      },
+      {
+        "__typename": "Deity",
+        "name": "Deity name"
       }
     ]
   }
