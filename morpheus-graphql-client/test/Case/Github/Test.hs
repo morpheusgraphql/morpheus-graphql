@@ -105,7 +105,20 @@ testInterface = testCase "test interfaces" $ do
     "test interface"
     ( Right
         ( GetTags
-            { repository = Nothing
+            { repository =
+                Just
+                  RepositoryRepository
+                    { refs =
+                        Just
+                          RepositoryRefsRefConnection
+                            { pageInfo =
+                                RepositoryRefsPageInfoPageInfo
+                                  { endCursor = Just "",
+                                    hasNextPage = False
+                                  },
+                              edges = Just [Just RepositoryRefsEdgesRefEdge {}]
+                            }
+                    }
             }
         )
     )
