@@ -116,7 +116,23 @@ testInterface = testCase "test interfaces" $ do
                                   { endCursor = Just "",
                                     hasNextPage = False
                                   },
-                              edges = Just [Just RepositoryRefsEdgesRefEdge {}]
+                              edges =
+                                Just
+                                  [ Just
+                                      RepositoryRefsEdgesRefEdge
+                                        { cursor = "",
+                                          node =
+                                            Just
+                                              RepositoryRefsEdgesNodeRef
+                                                { name = "",
+                                                  target =
+                                                    Just
+                                                      RepositoryRefsEdgesNodeTargetGitObject
+                                                        { __typename = ""
+                                                        }
+                                                }
+                                        }
+                                  ]
                             }
                     }
             }
