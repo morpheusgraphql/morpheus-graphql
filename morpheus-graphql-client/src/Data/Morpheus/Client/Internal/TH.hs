@@ -25,7 +25,8 @@ import Control.Monad.Fail (fail)
 import Data.Foldable (foldr1)
 import Data.Functor ((<$>))
 import Data.Morpheus.Internal.TH
-  ( toCon,
+  ( _',
+    toCon,
     toName,
     toString,
     toVar,
@@ -56,7 +57,7 @@ matchWith ::
   ExpQ
 matchWith fbexp f xs = lamCaseE (map buildMatch xs <> fallback fbexp)
   where
-    fallback (Just fb) = [match v' (normalB fb) []]
+    fallback (Just fb) = [match (tupP [_', v']) (normalB fb) []]
     fallback _ = []
     buildMatch x = match pat (normalB body) []
       where

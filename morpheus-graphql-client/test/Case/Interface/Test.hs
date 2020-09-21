@@ -48,10 +48,12 @@ defineClientWith
         ... on Deity {
               power
         }
+
         ... on Hero {
               hobby
         }
       }
+
       character2: character {
         name1: name
         name
@@ -129,6 +131,9 @@ testInterface = testCase "test interfaces" $ do
                   Character4Hero
                     { hobby = "Hero Hobby",
                       __typename = "Hero"
+                    },
+                  Character4Character
+                    { __typename = "Deity"
                     }
                 ]
             }
