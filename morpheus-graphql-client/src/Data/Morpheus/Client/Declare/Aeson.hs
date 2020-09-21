@@ -27,6 +27,12 @@ import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
 import Data.Maybe (Maybe (..))
+import Data.Morpheus.Client.Internal.TH
+  ( decodeObjectE,
+    destructRecord,
+    matchWith,
+    mkFieldsE,
+  )
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -34,11 +40,7 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Internal.TH
   ( _',
     applyCons,
-    decodeObjectE,
-    destructRecord,
     funDSimple,
-    matchWith,
-    mkFieldsE,
     toConE,
     toName,
     toString,

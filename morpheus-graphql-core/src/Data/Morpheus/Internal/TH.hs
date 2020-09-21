@@ -19,13 +19,11 @@ module Data.Morpheus.Internal.TH
     applyVars,
     decArgs,
     declareTypeRef,
-    destructRecord,
     funDProxy,
     funDSimple,
     infoTyVars,
     isEnum,
     m',
-    mkFieldsE,
     nameSpaceField,
     nameSpaceType,
     toCon,
@@ -43,15 +41,11 @@ module Data.Morpheus.Internal.TH
     o',
     e',
     vars,
-    decodeObjectE,
-    matchWith,
   )
 where
 
-import Control.Applicative ((<*>), pure)
-import Control.Monad.Fail (fail)
-import Data.Foldable (foldl, foldr1)
-import Data.Functor ((<$>))
+import Control.Applicative (pure)
+import Data.Foldable (foldl)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( capitalize,
@@ -59,31 +53,26 @@ import Data.Morpheus.Internal.Utils
     nameSpaceType,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldDefinition (..),
-    FieldName (..),
+  ( FieldName (..),
     TypeKind (..),
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
     convertToHaskellName,
     isEnum,
-    isNullable,
     isOutputObject,
     readName,
   )
-import Data.Semigroup ((<>))
 import Data.Text (unpack)
 import Language.Haskell.TH
 import Prelude
   ( ($),
     (.),
     (==),
-    Bool (..),
     String,
     id,
     map,
     otherwise,
-    show,
     (||),
   )
 
@@ -234,21 +223,6 @@ funDProxy = map fun
 funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
 funDSimple name args body = funD name [clause args (normalB body) []]
 
--- |
--- input:
--- >>>
--- destructRecord "User" ["name","id"]
--- >>>
---
--- expression:
--- >>>
--- (User name id)
--- >>>
-destructRecord :: TypeName -> [FieldDefinition cat s] -> PatQ
-destructRecord conName fields = conP (toName conName) (vars names)
-  where
-    names = map fieldName fields
-
 infoTyVars :: Info -> [TyVarBndr]
 infoTyVars (TyConI x) = decArgs x
 infoTyVars _ = []
@@ -271,75 +245,7 @@ toVarE = toVar
 toConE :: ToCon a Exp => a -> ExpQ
 toConE = toCon
 
--- | 'mkFieldsE'
---
---  input :
---  >>>
---       mkFieldsE 'mkValue [FieldDefinition { fieldName = \"field1" ,..} ,..]
---  >>>
---
---  expression :
---  >>>
---    [ mkValue \"field1\" field1,
---    ..
---    ]
--- >>>
-mkFieldsE :: Name -> [FieldDefinition cat s] -> Exp
-mkFieldsE name = ListE . map (mkEntryWith name)
-
---  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
---  expression: mkValue "field1"  field1
-mkEntryWith ::
-  Name ->
-  FieldDefinition cat s ->
-  Exp
-mkEntryWith f FieldDefinition {fieldName} =
-  AppE
-    (AppE (VarE f) (toString fieldName))
-    (toVar fieldName)
-
-decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat s] -> ExpQ
-decodeObjectE _ conName [] = appE (varE 'pure) (toCon conName)
-decodeObjectE funName conName fields =
-  uInfixE
-    (toCon conName)
-    (varE '(<$>))
-    (foldr1 withApplicative $ map (defField funName) fields)
-
-withApplicative :: ExpQ -> ExpQ -> ExpQ
-withApplicative x = uInfixE x (varE '(<*>))
-
-matchWith ::
-  Bool ->
-  (t -> (PatQ, ExpQ)) ->
-  [t] ->
-  ExpQ
-matchWith isClosed f xs = lamCaseE (map buildMatch xs <> fallback)
-  where
-    fallback
-      | isClosed = []
-      | otherwise = [elseCaseEXP]
-    buildMatch x = match pat (normalB body) []
-      where
-        (pat, body) = f x
-
-elseCaseEXP :: MatchQ
-elseCaseEXP = match v' body []
-  where
-    body =
-      normalB $
-        appE
-          (toVarE 'fail)
-          ( uInfixE
-              (appE (varE 'show) v')
-              (varE '(<>))
-              (stringE " is Not Valid Union Constructor")
-          )
-
-defField :: (Bool -> Name) -> FieldDefinition cat s -> ExpQ
-defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable field)) (toString fieldName)
-
-#if MIN_VERSION_template_haskell(2,15,0)
+#if MIN_VERSION_template_haskell(2,15,0)r
 -- fix breaking changes
 typeInstanceDec :: Name -> Type -> Type -> Dec
 typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
