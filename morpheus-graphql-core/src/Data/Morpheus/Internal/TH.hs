@@ -245,7 +245,7 @@ toVarE = toVar
 toConE :: ToCon a Exp => a -> ExpQ
 toConE = toCon
 
-#if MIN_VERSION_template_haskell(2,15,0)r
+#if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes
 typeInstanceDec :: Name -> Type -> Type -> Dec
 typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT typeFamily) arg) res)
