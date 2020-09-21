@@ -59,9 +59,9 @@ instance GQLScalar GitTimestamp where
 defineClientWith
   "Github"
   [gql|
-    query GetTags ($owner: String!, $repo: String!)
+    query GetTags ($user: String!, $repo: String!)
       {
-        repository(owner: $owner, name: $repo) {
+        repository(owner: $user, name: $repo) {
           refs(refPrefix: "refs/tags/", first: 100) {
             pageInfo {
               endCursor
@@ -94,8 +94,8 @@ client =
   fetch
     resolver
     GetTagsArgs
-      { owner = "user1",
-        repo = "repo1"
+      { user = "UserName",
+        repo = "repoName"
       }
 
 testInterface :: TestTree
