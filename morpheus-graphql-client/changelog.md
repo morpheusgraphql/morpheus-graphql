@@ -5,6 +5,7 @@
 ### Minor Changes
 
 - parser performance optimization
+- fixed #514: json parser selects interface type as fallback
 
 ## 0.15.1 - 12.09.2020
 
