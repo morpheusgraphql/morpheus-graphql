@@ -26,6 +26,7 @@ import Data.Functor ((<$>))
 import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
+import Data.List (find)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.TH
   ( decodeObjectE,
@@ -170,11 +171,15 @@ aesonUnionObject :: ClientTypeDefinition -> ExpQ
 aesonUnionObject
   ClientTypeDefinition
     { clientCons,
-      clientTypeName = TypeNameTH {namespace}
+      clientTypeName = TypeNameTH {namespace, typename},
+      clientKind
     } =
     appE (varE 'takeValueType) $
-      matchWith Nothing f clientCons
+      matchWith elseCond f clientCons
     where
+      elseCond
+        | clientKind == KindInterface = aesonObjectBody namespace <$> find ((typename ==) . cName) clientCons
+        | otherwise = Nothing
       f cons@ConsD {cName, cFields} =
         ( tupP [toString cName, if null cFields then _' else v'],
           aesonObjectBody namespace cons
