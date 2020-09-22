@@ -7,6 +7,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Client.DefineByIntrospection
   ( fetchUsers,
@@ -23,6 +24,20 @@ import Data.Morpheus.Client
   )
 import Data.Semigroup ((<>))
 import Data.Text (Text)
+import Prelude
+  ( Int,
+    Show,
+    Eq,
+    IO,
+    String,
+    Either,
+    Applicative(..),
+    print,
+    (+),
+    putStrLn,
+    ($),
+    (*)
+  )
 
 data Euro
   = Euro
