@@ -14,9 +14,13 @@ where
 
 
 -- MORPHEUS
+import Control.Monad((>>=))
+import Data.Functor((<$>),Functor(..))
 import Control.Applicative (pure)
-import Data.Foldable (null)
+import Data.Foldable (null, concat)
 import Control.Monad.Reader (asks)
+import Data.Traversable(Traversable(..))
+import Data.List (elem)
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -58,9 +62,9 @@ import Data.Semigroup ((<>))
 import Prelude(
     Maybe(..),
     otherwise,
-    map,
     snd,
-    (.)
+    (.),
+    ($)
   )
 
 renderArguments ::
@@ -79,7 +83,7 @@ renderArguments variables cName
           clientCons =
             [ ConsD
                 { cName,
-                  cFields = map fieldD (elems variables)
+                  cFields = fieldD <$> elems variables
                 }
             ]
         }
@@ -106,7 +110,7 @@ renderNonOutputTypes ::
   Converter [ClientTypeDefinition]
 renderNonOutputTypes leafTypes = do
   variables <- asks (elems . snd)
-  inputTypeRequests <- resolveUpdates [] $ map (UpdateT . exploreInputTypeNames . typeConName . variableType) variables
+  inputTypeRequests <- resolveUpdates [] $ fmap (UpdateT . exploreInputTypeNames . typeConName . variableType) variables
   concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> leafTypes)
 
 exploreInputTypeNames :: TypeName -> [TypeName] -> Converter [TypeName]
@@ -119,7 +123,7 @@ exploreInputTypeNames name collected
         scanType (DataInputObject fields) =
           resolveUpdates
             (name : collected)
-            (map toInputTypeD $ elems fields)
+            (fmap toInputTypeD $ elems fields)
           where
             toInputTypeD :: FieldDefinition IN VALID -> UpdateT Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
@@ -153,7 +157,7 @@ buildInputType name = getType name >>= generateTypes
             [ mkInputType
                 typeName
                 KindEnum
-                (map mkConsEnum enumTags)
+                (fmap mkConsEnum enumTags)
             ]
         subTypes DataScalar {} =
           pure
