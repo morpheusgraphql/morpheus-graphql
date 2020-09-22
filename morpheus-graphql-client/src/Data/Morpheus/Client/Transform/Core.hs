@@ -22,15 +22,16 @@ where
 
 --
 -- MORPHEUS
-import Control.Applicative(Applicative(..))
-import Control.Monad (foldM, Monad((>>=)))
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad ((>>=)), foldM)
 import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader
   ( ReaderT (..),
   )
 import Data.Function ((&))
-import Data.Functor(Functor(..))
+import Data.Functor (Functor (..))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
   )
@@ -71,12 +72,11 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
   )
 import Data.Semigroup ((<>))
-import Data.Maybe(Maybe(..))
-import Prelude(
-  ($),
-  (.),
-  fst,
-  otherwise
+import Prelude
+  ( ($),
+    (.),
+    fst,
+    otherwise,
   )
 
 type Env = (Schema VALID, VariableDefinitions RAW)

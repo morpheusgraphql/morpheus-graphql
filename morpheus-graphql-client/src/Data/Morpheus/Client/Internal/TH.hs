@@ -24,7 +24,6 @@ import Control.Applicative ((<*>), pure)
 import Control.Monad.Fail (fail)
 import Data.Foldable (foldr1)
 import Data.Functor ((<$>))
-import Data.Morpheus.Internal.Utils(nameSpaceField)
 import Data.Morpheus.Internal.TH
   ( toCon,
     toName,
@@ -34,6 +33,7 @@ import Data.Morpheus.Internal.TH
     v',
     vars,
   )
+import Data.Morpheus.Internal.Utils (nameSpaceField)
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),
     TypeName (..),
@@ -51,13 +51,13 @@ import Prelude
   )
 
 matchWith ::
-  Maybe (PatQ,ExpQ) ->
+  Maybe (PatQ, ExpQ) ->
   (t -> (PatQ, ExpQ)) ->
   [t] ->
   ExpQ
 matchWith fbexp f xs = lamCaseE (map buildMatch xs <> fallback fbexp)
   where
-    fallback (Just (pat,fb)) = [match pat (normalB fb) []]
+    fallback (Just (pat, fb)) = [match pat (normalB fb) []]
     fallback _ = []
     buildMatch x = match pat (normalB body) []
       where
@@ -101,7 +101,7 @@ defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable 
 --    ]
 -- >>>
 mkFieldsE :: TypeName -> Name -> [FieldDefinition cat s] -> Exp
-mkFieldsE conName name = ListE . map (mkEntryWith  conName name)
+mkFieldsE conName name = ListE . map (mkEntryWith conName name)
 
 --  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
 --  expression: mkValue "field1"  field1

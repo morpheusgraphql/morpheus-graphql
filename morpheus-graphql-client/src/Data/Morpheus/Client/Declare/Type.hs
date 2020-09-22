@@ -12,7 +12,8 @@ where
 
 --
 -- MORPHEUS
-import Control.Applicative(pure)
+import Control.Applicative (pure)
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -35,13 +36,12 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Semigroup ((<>))
 import GHC.Generics (Generic)
 import Language.Haskell.TH
-import Data.Maybe(Maybe(..))
-import Prelude(
-    Show,
+import Prelude
+  ( (.),
     Eq,
-    (.),
+    Show,
+    map,
     otherwise,
-    map
   )
 
 typeDeclarations :: TypeKind -> [ClientTypeDefinition -> Q Dec]

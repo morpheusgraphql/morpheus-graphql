@@ -12,14 +12,13 @@ module Data.Morpheus.Client.Transform.Inputs
   )
 where
 
-
 -- MORPHEUS
-import Control.Monad((>>=))
-import Data.Functor((<$>),Functor(..))
+
 import Control.Applicative (pure)
-import Data.Foldable (null, concat)
+import Control.Monad ((>>=))
 import Control.Monad.Reader (asks)
-import Data.Traversable(Traversable(..))
+import Data.Foldable (concat, null)
+import Data.Functor ((<$>), Functor (..))
 import Data.List (elem)
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
@@ -59,12 +58,13 @@ import Data.Morpheus.Types.Internal.AST
     toAny,
   )
 import Data.Semigroup ((<>))
-import Prelude(
-    Maybe(..),
+import Data.Traversable (Traversable (..))
+import Prelude
+  ( ($),
+    (.),
+    Maybe (..),
     otherwise,
     snd,
-    (.),
-    ($)
   )
 
 renderArguments ::
@@ -123,7 +123,7 @@ exploreInputTypeNames name collected
         scanType (DataInputObject fields) =
           resolveUpdates
             (name : collected)
-            (fmap toInputTypeD $ elems fields)
+            (toInputTypeD <$> elems fields)
           where
             toInputTypeD :: FieldDefinition IN VALID -> UpdateT Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =

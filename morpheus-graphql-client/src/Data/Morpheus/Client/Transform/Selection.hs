@@ -14,11 +14,12 @@ where
 
 --
 -- MORPHEUS
-import Data.Functor((<$>))
-import Control.Monad((>>=))
-import Control.Applicative(Applicative(..))
-import Data.Maybe(Maybe(..))
+
+import Control.Applicative (Applicative (..))
+import Control.Monad ((>>=))
 import Control.Monad.Reader (asks, runReaderT)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
     ClientTypeDefinition (..),
@@ -55,26 +56,26 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationDataType,
     getOperationName,
+    mkTypeRef,
     msg,
     toAny,
     toFieldName,
-    mkTypeRef,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup ((<>))
 import Prelude
-  ( flip,
+  ( ($),
     (.),
-    fst,
+    Eq (..),
     concat,
-    traverse,
-    unzip3,
-    ($),
+    flip,
+    fst,
     otherwise,
     show,
-    Eq(..)
+    traverse,
+    unzip3,
   )
 
 toClientDefinition ::
@@ -211,15 +212,16 @@ getFieldType
   Selection
     { selectionName,
       selectionPosition
-    } 
-    | selectionName == "__typename" 
-        = processDeprecation FieldDefinition {
-        fieldName = "__typename",
-        fieldDescription = Nothing,
-        fieldType = mkTypeRef "String",
-        fieldDirectives = [],
-        fieldContent = Nothing
-      }
+    }
+    | selectionName == "__typename" =
+      processDeprecation
+        FieldDefinition
+          { fieldName = "__typename",
+            fieldDescription = Nothing,
+            fieldType = mkTypeRef "String",
+            fieldDirectives = [],
+            fieldContent = Nothing
+          }
     | otherwise = withTypeContent typeContent
     where
       withTypeContent DataObject {objectFields} =
