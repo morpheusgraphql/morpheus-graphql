@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Selection
   ( toClientDefinition,
@@ -13,6 +14,10 @@ where
 
 --
 -- MORPHEUS
+import Data.Functor((<$>))
+import Control.Monad((>>=))
+import Control.Applicative(Applicative(..))
+import Data.Maybe(Maybe(..))
 import Control.Monad.Reader (asks, runReaderT)
 import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
@@ -53,12 +58,24 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toAny,
     toFieldName,
-    mkTypeRef
+    mkTypeRef,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup ((<>))
+import Prelude
+  ( flip,
+    (.),
+    fst,
+    concat,
+    traverse,
+    unzip3,
+    ($),
+    otherwise,
+    show,
+    Eq(..)
+  )
 
 toClientDefinition ::
   Schema VALID ->
@@ -217,7 +234,7 @@ getFieldType
           { fieldType = alias@TypeRef {typeConName},
             fieldDirectives
           } =
-          checkDeprecated >> (trans <$> getType typeConName)
+          checkDeprecated *> (trans <$> getType typeConName)
           where
             trans x =
               (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})
