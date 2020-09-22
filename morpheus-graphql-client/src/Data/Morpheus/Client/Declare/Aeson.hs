@@ -7,7 +7,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, TupleSections #-}
 
 module Data.Morpheus.Client.Declare.Aeson
   ( aesonDeclarations,
@@ -177,7 +177,7 @@ aesonUnionObject
       matchWith elseCond f clientCons
     where
       elseCond =
-        aesonObjectBody
+       (tupP [_', v'],) . aesonObjectBody
           namespace
           <$> find ((typename ==) . cName) clientCons
       f cons@ConsD {cName, cFields} =
@@ -204,7 +204,7 @@ defineFromJSON name expr = instanceD (cxt []) typeDef body
     body = [funDSimple 'parseJSON [] expr]
 
 aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
-aesonFromJSONEnumBody TypeNameTH {typename} = matchWith (Just failExp) f
+aesonFromJSONEnumBody TypeNameTH {typename} = matchWith (Just (v',failExp)) f
   where
     f :: ConsD cat VALID -> (PatQ, ExpQ)
     f ConsD {cName} =

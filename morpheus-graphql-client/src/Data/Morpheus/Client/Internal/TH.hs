@@ -51,13 +51,13 @@ import Prelude
   )
 
 matchWith ::
-  Maybe ExpQ ->
+  Maybe (PatQ,ExpQ) ->
   (t -> (PatQ, ExpQ)) ->
   [t] ->
   ExpQ
 matchWith fbexp f xs = lamCaseE (map buildMatch xs <> fallback fbexp)
   where
-    fallback (Just fb) = [match (tupP [_', v']) (normalB fb) []]
+    fallback (Just (pat,fb)) = [match pat (normalB fb) []]
     fallback _ = []
     buildMatch x = match pat (normalB body) []
       where
