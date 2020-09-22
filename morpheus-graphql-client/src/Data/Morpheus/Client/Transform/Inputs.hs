@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Inputs
   ( renderNonOutputTypes,
@@ -11,8 +12,10 @@ module Data.Morpheus.Client.Transform.Inputs
   )
 where
 
---
+
 -- MORPHEUS
+import Control.Applicative (pure)
+import Data.Foldable (null)
 import Control.Monad.Reader (asks)
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
@@ -52,6 +55,13 @@ import Data.Morpheus.Types.Internal.AST
     toAny,
   )
 import Data.Semigroup ((<>))
+import Prelude(
+    Maybe(..),
+    otherwise,
+    map,
+    snd,
+    (.)
+  )
 
 renderArguments ::
   VariableDefinitions RAW ->

@@ -1,3 +1,4 @@
+
 module Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),

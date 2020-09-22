@@ -9,7 +9,6 @@ where
 
 --
 -- MORPHEUS
-
 import Data.Morpheus.Client.Declare.Client
   ( declareClient,
   )
