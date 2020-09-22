@@ -245,7 +245,7 @@ deriveToJSON
             pure $
               AppE
                 (VarE 'object)
-                (mkFieldsE '(.=) cFields)
+                (mkFieldsE typename '(.=) cFields)
 deriveToJSON
   ClientTypeDefinition
     { clientTypeName = clientTypeName@TypeNameTH {typename},

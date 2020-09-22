@@ -24,9 +24,9 @@ import Control.Applicative ((<*>), pure)
 import Control.Monad.Fail (fail)
 import Data.Foldable (foldr1)
 import Data.Functor ((<$>))
+import Data.Morpheus.Internal.Utils(nameSpaceField)
 import Data.Morpheus.Internal.TH
-  ( _',
-    toCon,
+  ( toCon,
     toName,
     toString,
     toVar,
@@ -100,19 +100,20 @@ defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable 
 --    ..
 --    ]
 -- >>>
-mkFieldsE :: Name -> [FieldDefinition cat s] -> Exp
-mkFieldsE name = ListE . map (mkEntryWith name)
+mkFieldsE :: TypeName -> Name -> [FieldDefinition cat s] -> Exp
+mkFieldsE conName name = ListE . map (mkEntryWith  conName name)
 
 --  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
 --  expression: mkValue "field1"  field1
 mkEntryWith ::
+  TypeName ->
   Name ->
   FieldDefinition cat s ->
   Exp
-mkEntryWith f FieldDefinition {fieldName} =
+mkEntryWith conName f FieldDefinition {fieldName} =
   AppE
     (AppE (VarE f) (toString fieldName))
-    (toVar fieldName)
+    (toVar $ nameSpaceField conName fieldName)
 
 -- |
 -- input:
@@ -127,4 +128,4 @@ mkEntryWith f FieldDefinition {fieldName} =
 destructRecord :: TypeName -> [FieldDefinition cat s] -> PatQ
 destructRecord conName fields = conP (toName conName) (vars names)
   where
-    names = map fieldName fields
+    names = map (nameSpaceField conName . fieldName) fields

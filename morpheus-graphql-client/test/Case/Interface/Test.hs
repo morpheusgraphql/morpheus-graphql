@@ -67,7 +67,7 @@ defineClientWith
       }
       character4: character {
         ... on Hero {
-              hobby
+          hobby
         }
       }
     }

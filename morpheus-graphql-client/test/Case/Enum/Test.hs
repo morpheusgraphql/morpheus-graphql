@@ -39,17 +39,18 @@ import Prelude
 defineClientWith
   "Enum"
   [gql|
-    query MyQuery( $varCity: City!) {
-      city(city:$varCity)
+    query MyQuery( $inputCity: City!) {
+      city(city:$inputCity)
       cities
     }
   |]
+
 
 resolver :: ByteString -> IO ByteString
 resolver = mockApi "Enum"
 
 client :: IO (Either String MyQuery)
-client = fetch resolver MyQueryArgs {varCity = CityAthens}
+client = fetch resolver MyQueryArgs {inputCity = CityAthens}
 
 test :: TestTree
 test = testCase "test interfaces" $ do
