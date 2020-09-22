@@ -8,8 +8,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Case.Interface.Test
-  ( testInterface,
+module Case.Enum.Test
+  ( test,
   )
 where
 
@@ -43,24 +43,33 @@ defineClientWith
   [gql|
     query MyQuery( $varCity: City!) {
       city(city:$varCity)
+      cities
     }
   |]
 
 resolver :: ByteString -> IO ByteString
-resolver = mockApi "Interface"
+resolver = mockApi "Enum"
 
 client :: IO (Either String MyQuery)
 client = fetch resolver MyQueryArgs {varCity = CityAthens}
 
-testInterface :: TestTree
-testInterface = testCase "test interfaces" $ do
+test :: TestTree
+test = testCase "test interfaces" $ do
   value <- client
   assertEqual
     "test interface"
     ( Right
-        ( MyQuery
-            { city = CityAthens
-            }
+        ( MyQuery 
+          {
+            city = CityAthens, 
+            cities = [
+              CityAthens,
+              CitySparta,
+              CityCorinth,
+              CityDelphi,
+              CityArgos
+              ]
+          }
         )
     )
     value

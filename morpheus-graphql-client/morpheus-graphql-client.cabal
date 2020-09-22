@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3bcb8aee8532e41c62573f481607c3ada2b21d28973fe5c99c87679d49f083c2
+-- hash: faf094fee70ec88c9bf2ac3dd58d1aaafbfd1c6d36539d1a21f069b510ae9f2a
 
 name:           morpheus-graphql-client
 version:        0.15.1
@@ -23,9 +23,11 @@ extra-source-files:
     changelog.md
     README.md
 data-files:
+    test/Case/Enum/schema.gql
     test/Case/Github/schema.gql
     test/Case/Interface/schema.gql
     test/Case/LowercaseTypeName/schema.gql
+    test/Case/Enum/response.json
     test/Case/Github/response.json
     test/Case/Interface/response.json
     test/Case/LowercaseTypeName/response.json
@@ -71,6 +73,7 @@ test-suite morpheus-client-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Case.Enum.Test
       Case.Github.Test
       Case.Interface.Test
       Case.LowercaseTypeName.Test

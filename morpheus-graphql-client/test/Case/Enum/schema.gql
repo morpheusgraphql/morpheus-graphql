@@ -8,4 +8,5 @@ enum City {
 
 type Query {
   city(city: City!): City!
+  cities: [City!]!
 }

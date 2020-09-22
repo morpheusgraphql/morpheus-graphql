@@ -7,6 +7,7 @@ module Main
 where
 
 import Case.Interface.Test (testInterface)
+import qualified Case.Enum.Test as Enum 
 import Case.LowercaseTypeName.Test
   ( testLowercaseTypeName,
   )
@@ -25,5 +26,6 @@ main =
     testGroup
       "client tests"
       [ testInterface,
-        testLowercaseTypeName
+        testLowercaseTypeName,
+        Enum.test
       ]
