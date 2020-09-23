@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Selection
   ( toClientDefinition,
@@ -13,7 +14,12 @@ where
 
 --
 -- MORPHEUS
+
+import Control.Applicative (Applicative (..))
+import Control.Monad ((>>=))
 import Control.Monad.Reader (asks, runReaderT)
+import Data.Functor ((<$>))
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
     ClientTypeDefinition (..),
@@ -50,15 +56,27 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationDataType,
     getOperationName,
+    mkTypeRef,
     msg,
     toAny,
     toFieldName,
-    mkTypeRef
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup ((<>))
+import Prelude
+  ( ($),
+    (.),
+    Eq (..),
+    concat,
+    flip,
+    fst,
+    otherwise,
+    show,
+    traverse,
+    unzip3,
+  )
 
 toClientDefinition ::
   Schema VALID ->
@@ -194,15 +212,16 @@ getFieldType
   Selection
     { selectionName,
       selectionPosition
-    } 
-    | selectionName == "__typename" 
-        = processDeprecation FieldDefinition {
-        fieldName = "__typename",
-        fieldDescription = Nothing,
-        fieldType = mkTypeRef "String",
-        fieldDirectives = [],
-        fieldContent = Nothing
-      }
+    }
+    | selectionName == "__typename" =
+      processDeprecation
+        FieldDefinition
+          { fieldName = "__typename",
+            fieldDescription = Nothing,
+            fieldType = mkTypeRef "String",
+            fieldDirectives = [],
+            fieldContent = Nothing
+          }
     | otherwise = withTypeContent typeContent
     where
       withTypeContent DataObject {objectFields} =
@@ -217,7 +236,7 @@ getFieldType
           { fieldType = alias@TypeRef {typeConName},
             fieldDirectives
           } =
-          checkDeprecated >> (trans <$> getType typeConName)
+          checkDeprecated *> (trans <$> getType typeConName)
           where
             trans x =
               (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})

@@ -1,0 +1,12 @@
+enum City {
+  Athens
+  Sparta
+  Corinth
+  Delphi
+  Argos
+}
+
+type Query {
+  city(city: City!): City!
+  cities: [City!]!
+}

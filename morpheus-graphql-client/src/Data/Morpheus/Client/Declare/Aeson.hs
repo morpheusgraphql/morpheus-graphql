@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -26,7 +27,15 @@ import Data.Functor ((<$>))
 import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
+import Data.List (find)
 import Data.Maybe (Maybe (..))
+import Data.Morpheus.Client.Internal.TH
+  ( decodeObjectE,
+    destructRecord,
+    failExp,
+    matchWith,
+    mkFieldsE,
+  )
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -34,11 +43,7 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Internal.TH
   ( _',
     applyCons,
-    decodeObjectE,
-    destructRecord,
     funDSimple,
-    matchWith,
-    mkFieldsE,
     toConE,
     toName,
     toString,
@@ -167,11 +172,16 @@ aesonUnionObject :: ClientTypeDefinition -> ExpQ
 aesonUnionObject
   ClientTypeDefinition
     { clientCons,
-      clientTypeName = TypeNameTH {namespace}
+      clientTypeName = TypeNameTH {namespace, typename}
     } =
     appE (varE 'takeValueType) $
-      matchWith False f clientCons
+      matchWith elseCond f clientCons
     where
+      elseCond =
+        (tupP [_', v'],)
+          . aesonObjectBody
+            namespace
+          <$> find ((typename ==) . cName) clientCons
       f cons@ConsD {cName, cFields} =
         ( tupP [toString cName, if null cFields then _' else v'],
           aesonObjectBody namespace cons
@@ -196,7 +206,7 @@ defineFromJSON name expr = instanceD (cxt []) typeDef body
     body = [funDSimple 'parseJSON [] expr]
 
 aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
-aesonFromJSONEnumBody TypeNameTH {typename} = matchWith False f
+aesonFromJSONEnumBody TypeNameTH {typename} = matchWith (Just (v', failExp)) f
   where
     f :: ConsD cat VALID -> (PatQ, ExpQ)
     f ConsD {cName} =
@@ -205,7 +215,7 @@ aesonFromJSONEnumBody TypeNameTH {typename} = matchWith False f
       )
 
 aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
-aesonToJSONEnumBody TypeNameTH {typename} = matchWith True f
+aesonToJSONEnumBody TypeNameTH {typename} = matchWith Nothing f
   where
     f :: ConsD cat VALID -> (PatQ, ExpQ)
     f ConsD {cName} =
@@ -237,7 +247,7 @@ deriveToJSON
             pure $
               AppE
                 (VarE 'object)
-                (mkFieldsE '(.=) cFields)
+                (mkFieldsE typename '(.=) cFields)
 deriveToJSON
   ClientTypeDefinition
     { clientTypeName = clientTypeName@TypeNameTH {typename},

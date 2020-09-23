@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Inputs
   ( renderNonOutputTypes,
@@ -11,9 +12,14 @@ module Data.Morpheus.Client.Transform.Inputs
   )
 where
 
---
 -- MORPHEUS
+
+import Control.Applicative (pure)
+import Control.Monad ((>>=))
 import Control.Monad.Reader (asks)
+import Data.Foldable (concat, null)
+import Data.Functor ((<$>), Functor (..))
+import Data.List (elem)
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -52,6 +58,14 @@ import Data.Morpheus.Types.Internal.AST
     toAny,
   )
 import Data.Semigroup ((<>))
+import Data.Traversable (Traversable (..))
+import Prelude
+  ( ($),
+    (.),
+    Maybe (..),
+    otherwise,
+    snd,
+  )
 
 renderArguments ::
   VariableDefinitions RAW ->
@@ -69,7 +83,7 @@ renderArguments variables cName
           clientCons =
             [ ConsD
                 { cName,
-                  cFields = map fieldD (elems variables)
+                  cFields = fieldD <$> elems variables
                 }
             ]
         }
@@ -96,7 +110,7 @@ renderNonOutputTypes ::
   Converter [ClientTypeDefinition]
 renderNonOutputTypes leafTypes = do
   variables <- asks (elems . snd)
-  inputTypeRequests <- resolveUpdates [] $ map (UpdateT . exploreInputTypeNames . typeConName . variableType) variables
+  inputTypeRequests <- resolveUpdates [] $ fmap (UpdateT . exploreInputTypeNames . typeConName . variableType) variables
   concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> leafTypes)
 
 exploreInputTypeNames :: TypeName -> [TypeName] -> Converter [TypeName]
@@ -109,7 +123,7 @@ exploreInputTypeNames name collected
         scanType (DataInputObject fields) =
           resolveUpdates
             (name : collected)
-            (map toInputTypeD $ elems fields)
+            (toInputTypeD <$> elems fields)
           where
             toInputTypeD :: FieldDefinition IN VALID -> UpdateT Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
@@ -143,7 +157,7 @@ buildInputType name = getType name >>= generateTypes
             [ mkInputType
                 typeName
                 KindEnum
-                (map mkConsEnum enumTags)
+                (fmap mkConsEnum enumTags)
             ]
         subTypes DataScalar {} =
           pure
