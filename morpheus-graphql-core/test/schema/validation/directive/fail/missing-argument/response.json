@@ -1,11 +1,11 @@
 {
   "errors": [
     {
-      "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
+      "message": "Directive \"@DirectiveA\" argument \"a2\" is required but not provided.",
       "locations": [{ "line": 9, "column": 17 }]
     },
     {
-      "message": "Directive \"@DirectiveA\" argument \"a2\" is required but not provided.",
+      "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
       "locations": [{ "line": 9, "column": 17 }]
     },
     {
@@ -38,11 +38,11 @@
     },
     {
       "message": "Directive \"@DirectiveC\" argument \"arg\" is required but not provided.",
-      "locations": [{ "line": 20, "column": 38 }]
+      "locations": [{ "line": 20, "column": 17 }]
     },
     {
       "message": "Directive \"@DirectiveC\" argument \"arg\" is required but not provided.",
-      "locations": [{ "line": 20, "column": 17 }]
+      "locations": [{ "line": 20, "column": 38 }]
     }
   ]
 }
