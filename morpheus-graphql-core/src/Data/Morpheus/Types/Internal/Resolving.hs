@@ -45,6 +45,7 @@ module Data.Morpheus.Types.Internal.Resolving
     liftResolverState,
     mkValue,
     FieldResModel,
+    sortErrors,
   )
 where
 

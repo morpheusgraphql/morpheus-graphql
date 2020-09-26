@@ -25,19 +25,19 @@
       "locations": []
     },
     {
-      "message": "Field Input1.field2 got invalid default value. Expected type \"String!\" found EnumA.",
-      "locations": []
-    },
-    {
-      "message": "Field Input1.field3 got invalid default value. Expected type \"TestEnum\" found UnknownEnum.",
-      "locations": []
-    },
-    {
       "message": "Field Input1.field4 got invalid default value. Expected type \"TestEnum!\" found 1.",
       "locations": []
     },
     {
       "message": "Field Input1.field5 got invalid default value. Expected type \"TestEnum\" found \"some text\".",
+      "locations": []
+    },
+    {
+      "message": "Field Input1.field2 got invalid default value. Expected type \"String!\" found EnumA.",
+      "locations": []
+    },
+    {
+      "message": "Field Input1.field3 got invalid default value. Expected type \"TestEnum\" found UnknownEnum.",
       "locations": []
     }
   ]

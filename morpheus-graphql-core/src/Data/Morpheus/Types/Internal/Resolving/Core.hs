@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Internal.Resolving.Core
     cleanEvents,
     PushEvents (..),
     resultOr,
+    sortErrors,
   )
 where
 
@@ -23,6 +24,7 @@ import Control.Applicative (Applicative (..), liftA2)
 import Control.Monad (Monad (..))
 import Control.Monad.Trans.Class (MonadTrans (..))
 import Data.Functor ((<$>), Functor (..))
+import Data.List (sortOn)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -83,6 +85,10 @@ instance Failure [ValidationError] (Result ev) where
 resultOr :: (GQLErrors -> a') -> (a -> a') -> Result e a -> a'
 resultOr _ f (Success x _ _) = f x
 resultOr f _ (Failure e) = f e
+
+sortErrors :: Result e a -> Result e a
+sortErrors (Failure errors) = Failure (sortOn locations errors)
+sortErrors x = x
 
 -- ResultT
 newtype ResultT event (m :: * -> *) a = ResultT
