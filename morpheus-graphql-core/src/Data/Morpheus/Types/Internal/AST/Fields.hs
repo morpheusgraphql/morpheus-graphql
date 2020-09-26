@@ -1,10 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
-{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -45,8 +43,6 @@ module Data.Morpheus.Types.Internal.AST.Fields
 where
 
 -- MORPHEUS
-
-import Data.Foldable (Foldable)
 import Data.Functor ((<$>), Functor (..))
 import Data.List (find)
 import Data.Maybe (Maybe (..))
@@ -61,7 +57,6 @@ import Data.Morpheus.Internal.Utils
   ( Collection (..),
     KeyOf (..),
     Listable (..),
-    Merge (..),
     Selectable (..),
     elems,
     toPair,
@@ -108,7 +103,6 @@ import Data.Morpheus.Types.Internal.AST.Value
     Value (..),
   )
 import Data.Semigroup (Semigroup ((<>)))
-import Data.Traversable (Traversable)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
@@ -226,33 +220,13 @@ instance ToCategory (FieldContent TRUE) a ANY where
   toCategory (FieldArgs x) = FieldArgs x
   toCategory (DefaultInputValue x) = DefaultInputValue x
 
-newtype Fields def = Fields
-  {unFields :: OrdMap FieldName def}
-  deriving
-    ( Show,
-      Lift,
-      Functor,
-      Foldable,
-      Traversable
-    )
-
-deriving instance (KeyOf FieldName def) => Collection def (Fields def)
-
-instance Merge (FieldsDefinition cat s) where
-  merge path (Fields x) (Fields y) = Fields <$> merge path x y
-
-instance Selectable FieldName (FieldDefinition cat s) (Fields (FieldDefinition cat s)) where
-  selectOr fb f name (Fields lib) = selectOr fb f name lib
+type Fields = OrdMap FieldName
 
 unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
-unsafeFromFields = Fields . unsafeFromList . fmap toPair
+unsafeFromFields = unsafeFromList . fmap toPair
 
 fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
-fieldsToArguments = ArgumentsDefinition Nothing . unFields
-
-instance (KeyOf FieldName def, NameCollision def) => Listable def (Fields def) where
-  fromElems = fmap Fields . fromElems
-  elems = elems . unFields
+fieldsToArguments = ArgumentsDefinition Nothing
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
