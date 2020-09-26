@@ -91,6 +91,7 @@ import Prelude
     Int,
     Monad,
     String,
+    Traversable,
     const,
     fst,
     length,
@@ -175,14 +176,13 @@ selectBy err = selectOr (failure err) pure
 ordTraverse ::
   ( Monad f,
     KeyOf k b,
-    Listable a (t a),
-    Listable b (t b),
-    Failure ValidationErrors f
+    Failure ValidationErrors f,
+    Traversable t
   ) =>
   (a -> f b) ->
   t a ->
   f (t b)
-ordTraverse = traverseCollection
+ordTraverse = traverse
 
 traverseCollection ::
   ( Monad f,
