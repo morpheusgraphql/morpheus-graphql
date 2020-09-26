@@ -125,7 +125,6 @@ module Data.Morpheus.Types.Internal.AST
     toFieldName,
     TypeNameRef (..),
     isEnum,
-    Fields (..),
     fieldsToArguments,
     mkCons,
     mkConsEnum,

@@ -21,7 +21,6 @@ module Data.Morpheus.Types.Internal.AST.Fields
     ArgumentsDefinition (..),
     FieldDefinition (..),
     FieldsDefinition,
-    Fields (..),
     FieldContent (..),
     InputFieldsDefinition,
     DirectiveDefinitions,
@@ -220,8 +219,6 @@ instance ToCategory (FieldContent TRUE) a ANY where
   toCategory (FieldArgs x) = FieldArgs x
   toCategory (DefaultInputValue x) = DefaultInputValue x
 
-type Fields = OrdMap FieldName
-
 unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
 unsafeFromFields = unsafeFromList . fmap toPair
 
@@ -240,7 +237,7 @@ fieldsToArguments = ArgumentsDefinition Nothing
 --  FieldsDefinition
 --    { FieldDefinition(list) }
 --
-type FieldsDefinition cat s = Fields (FieldDefinition cat s)
+type FieldsDefinition cat s = OrdMap FieldName (FieldDefinition cat s)
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -342,7 +339,7 @@ mkObjectField args fieldName typeWrappers typeConName =
 --- InputFieldsDefinition
 -- { InputValueDefinition(list) }
 
-type InputFieldsDefinition s = Fields (InputValueDefinition s)
+type InputFieldsDefinition s = OrdMap FieldName (InputValueDefinition s)
 
 type InputValueDefinition = FieldDefinition IN
 
