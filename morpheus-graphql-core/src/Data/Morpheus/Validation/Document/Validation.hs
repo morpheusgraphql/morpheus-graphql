@@ -35,7 +35,6 @@ import Data.Morpheus.Internal.Utils
     elems,
     empty,
     failure,
-    ordTraverse,
   )
 import Data.Morpheus.Schema.Schema
   ( internalSchema,
@@ -197,16 +196,16 @@ validateTypeContent
     } =
     DataObject
       <$> validateImplements objectImplements objectFields
-      <*> ordTraverse validateField objectFields
+      <*> traverse validateField objectFields
 validateTypeContent DataInputObject {inputObjectFields} =
-  DataInputObject <$> ordTraverse validateField inputObjectFields
+  DataInputObject <$> traverse validateField inputObjectFields
 validateTypeContent DataScalar {..} = pure DataScalar {..}
 validateTypeContent DataEnum {enumMembers} = DataEnum <$> traverse validateEnumMember enumMembers
 validateTypeContent DataInputUnion {inputUnionMembers} =
   DataInputUnion <$> traverse validateUnionMember inputUnionMembers
 validateTypeContent DataUnion {unionMembers} = DataUnion <$> traverse validateUnionMember unionMembers
 validateTypeContent (DataInterface fields) =
-  DataInterface <$> ordTraverse validateField fields
+  DataInterface <$> traverse validateField fields
 
 validateEnumMember ::
   DataEnumValue CONST -> SchemaValidator TypeName (DataEnumValue VALID)
@@ -260,7 +259,7 @@ validateArgumentsDefinition ::
   SchemaValidator (TypeName, FieldName) (ArgumentsDefinition VALID)
 validateArgumentsDefinition (ArgumentsDefinition meta args) =
   ArgumentsDefinition meta
-    <$> ordTraverse
+    <$> traverse
       validateArgumentDefinition
       args
 

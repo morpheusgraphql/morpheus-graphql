@@ -20,12 +20,11 @@ where
 
 import Control.Applicative ((*>), pure)
 import Control.Monad ((>=>), (>>=))
+import Data.Foldable (traverse_)
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (fromMaybe, maybe)
 import Data.Morpheus.Internal.Utils
   ( empty,
-    ordTraverse,
-    ordTraverse_,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -152,9 +151,9 @@ validateArguments ::
   Arguments s ->
   Validator schemaStage ctx (Arguments VALID)
 validateArguments checkUnknown argsDef rawArgs = do
-  args <- ordTraverse resolve rawArgs
-  ordTraverse_ checkUnknown args
-    *> ordTraverse (validateArgument args) (arguments argsDef)
+  args <- traverse resolve rawArgs
+  traverse_ checkUnknown args
+    *> traverse (validateArgument args) (arguments argsDef)
 
 class Resolve f s ctx where
   resolve :: f s -> Validator schemaS ctx (f CONST)

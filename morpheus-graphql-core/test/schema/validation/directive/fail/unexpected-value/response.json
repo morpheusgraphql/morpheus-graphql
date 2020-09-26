@@ -5,6 +5,14 @@
       "locations": [{ "line": 9, "column": 29 }]
     },
     {
+      "message": "Argument \"a1\" got invalid value. Expected type \"Int!\" found \"some string\".",
+      "locations": [{ "line": 10, "column": 30 }]
+    },
+    {
+      "message": "Argument \"a1\" got invalid value. Expected type \"Int!\" found True.",
+      "locations": [{ "line": 11, "column": 30 }]
+    },
+    {
       "message": "Argument \"reason\" got invalid value. Expected type \"String\" found EnumA.",
       "locations": [{ "line": 14, "column": 21 }]
     },
@@ -23,14 +31,6 @@
     {
       "message": "Argument \"a1\" got invalid value. Expected type \"MyInput!\" found [\"some deprication\"].",
       "locations": [{ "line": 21, "column": 30 }]
-    },
-    {
-      "message": "Argument \"a1\" got invalid value. Expected type \"Int!\" found \"some string\".",
-      "locations": [{ "line": 10, "column": 30 }]
-    },
-    {
-      "message": "Argument \"a1\" got invalid value. Expected type \"Int!\" found True.",
-      "locations": [{ "line": 11, "column": 30 }]
     }
   ]
 }

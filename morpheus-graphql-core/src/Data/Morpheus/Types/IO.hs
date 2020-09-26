@@ -51,6 +51,7 @@ import Data.Functor ((<$>), fmap)
 import qualified Data.HashMap.Lazy as LH
   ( toList,
   )
+import Data.List (sortOn)
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils (badRequestError)
 import Data.Morpheus.Types.Internal.AST
@@ -106,7 +107,7 @@ instance MapAPI Text Text where
   mapAPI api = fmap LT.toStrict . mapAPI api . LT.fromStrict
 
 renderResponse :: Result e ValidValue -> GQLResponse
-renderResponse (Failure errors) = Errors errors
+renderResponse (Failure errors) = Errors (sortOn locations errors)
 renderResponse Success {result} = Data result
 
 instance FromJSON a => FromJSON (JSONResponse a) where

@@ -70,6 +70,7 @@ import Data.Morpheus.Types.Internal.Config
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     resultOr,
+    sortErrors,
   )
 import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
@@ -84,7 +85,7 @@ parseDSL :: ByteString -> Either String (Schema VALID)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument
 
 parseGQLDocument :: ByteString -> Eventless (Schema VALID)
-parseGQLDocument = parseTypeSystemDefinition
+parseGQLDocument = sortErrors . parseTypeSystemDefinition
 
 parseFullGQLDocument :: ByteString -> Eventless (Schema VALID)
 parseFullGQLDocument = parseGQLDocument >=> (internalSchema <:>)

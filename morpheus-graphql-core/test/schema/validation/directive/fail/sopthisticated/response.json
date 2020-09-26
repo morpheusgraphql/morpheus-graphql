@@ -1,20 +1,12 @@
 {
   "errors": [
     {
-      "message": "Directive \"include\" may not to be used on INPUT_OBJECT",
-      "locations": [{ "line": 13, "column": 13 }]
+      "message": "Directive \"DirectiveA\" may not to be used on ENUM_VALUE",
+      "locations": [{ "line": 6, "column": 9 }]
     },
     {
-      "message": "Directive \"@include\" argument \"if\" is required but not provided.",
-      "locations": [{ "line": 13, "column": 13 }]
-    },
-    {
-      "message": "Directive \"skip\" may not to be used on INPUT_FIELD_DEFINITION",
-      "locations": [{ "line": 14, "column": 13 }]
-    },
-    {
-      "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
-      "locations": [{ "line": 14, "column": 13 }]
+      "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
+      "locations": [{ "line": 6, "column": 9 }]
     },
     {
       "message": "Unknown Directive \"SomeDirective\".",
@@ -37,12 +29,20 @@
       "locations": [{ "line": 10, "column": 62 }]
     },
     {
-      "message": "Directive \"DirectiveA\" may not to be used on ENUM_VALUE",
-      "locations": [{ "line": 6, "column": 9 }]
+      "message": "Directive \"include\" may not to be used on INPUT_OBJECT",
+      "locations": [{ "line": 13, "column": 13 }]
     },
     {
-      "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
-      "locations": [{ "line": 6, "column": 9 }]
+      "message": "Directive \"@include\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 13, "column": 13 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on INPUT_FIELD_DEFINITION",
+      "locations": [{ "line": 14, "column": 13 }]
+    },
+    {
+      "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 14, "column": 13 }]
     },
     {
       "message": "Directive \"DirectiveC\" may not to be used on OBJECT",

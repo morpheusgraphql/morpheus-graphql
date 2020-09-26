@@ -17,6 +17,7 @@ where
 import Control.Applicative ((*>), pure)
 import Control.Monad (Monad)
 import Data.Either (Either (..))
+import Data.Foldable (traverse_)
 import Data.Function ((&))
 import Data.Functor ((<$>), fmap)
 import Data.List (any, elem)
@@ -26,7 +27,6 @@ import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     fromElems,
-    ordTraverse_,
     traverseCollection,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -248,7 +248,7 @@ validateInputObject ::
   Object valueS ->
   InputValidator schemaS ctx (Object VALID)
 validateInputObject fieldsDef object =
-  ordTraverse_ (`selectKnown` fieldsDef) object
+  traverse_ (`selectKnown` fieldsDef) object
     *> traverseCollection (validateWithDefault object) fieldsDef
 
 class ValidateWithDefault c schemaS s where

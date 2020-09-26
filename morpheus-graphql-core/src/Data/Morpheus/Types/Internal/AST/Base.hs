@@ -272,6 +272,9 @@ data Position = Position
   }
   deriving (Show, Generic, FromJSON, ToJSON, Lift)
 
+instance Ord Position where
+  compare x y = compare (line x) (line y)
+
 -- Positions 2 Value withs same structire
 -- but different Positions should be Equal
 instance Eq Position where

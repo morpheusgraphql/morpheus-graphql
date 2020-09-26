@@ -9,11 +9,7 @@
       "locations": []
     },
     {
-      "message": "Field Query.field(i2:) got invalid default value. in field \"field1\": Expected type \"ID\" found { field3: 2344 }.",
-      "locations": []
-    },
-    {
-      "message": "Field Query.field(i2:) got invalid default value. in field \"field2\": Expected type \"String\" found 123.",
+      "message": "Field Query.field(i5:) got invalid default value. Expected type \"Int\" found \"some text\".",
       "locations": []
     },
     {
@@ -25,7 +21,11 @@
       "locations": []
     },
     {
-      "message": "Field Query.field(i5:) got invalid default value. Expected type \"Int\" found \"some text\".",
+      "message": "Field Query.field(i2:) got invalid default value. in field \"field1\": Expected type \"ID\" found { field3: 2344 }.",
+      "locations": []
+    },
+    {
+      "message": "Field Query.field(i2:) got invalid default value. in field \"field2\": Expected type \"String\" found 123.",
       "locations": []
     }
   ]

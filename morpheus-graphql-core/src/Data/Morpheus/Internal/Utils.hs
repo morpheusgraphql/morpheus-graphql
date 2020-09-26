@@ -25,8 +25,6 @@ module Data.Morpheus.Internal.Utils
     mapFst,
     mapSnd,
     mapTuple,
-    ordTraverse,
-    ordTraverse_,
     traverseCollection,
     (<.>),
     SemigroupM (..),
@@ -52,7 +50,6 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Foldable (traverse_)
 import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
@@ -174,18 +171,6 @@ instance KeyOf k a => Selectable k a (HashMap k a) where
 selectBy :: (Failure e m, Selectable k a c, Monad m) => e -> k -> c -> m a
 selectBy err = selectOr (failure err) pure
 
-ordTraverse ::
-  ( Monad f,
-    KeyOf k b,
-    Listable a (t a),
-    Listable b (t b),
-    Failure ValidationErrors f
-  ) =>
-  (a -> f b) ->
-  t a ->
-  f (t b)
-ordTraverse = traverseCollection
-
 traverseCollection ::
   ( Monad f,
     KeyOf k b,
@@ -197,15 +182,6 @@ traverseCollection ::
   t a ->
   f (t' b)
 traverseCollection f a = fromElems =<< traverse f (elems a)
-
-ordTraverse_ ::
-  ( Monad f,
-    Listable a (t a)
-  ) =>
-  (a -> f b) ->
-  t a ->
-  f ()
-ordTraverse_ f a = traverse_ f (elems a)
 
 class (Eq k, Hashable k) => KeyOf k a | a -> k where
   keyOf :: a -> k
