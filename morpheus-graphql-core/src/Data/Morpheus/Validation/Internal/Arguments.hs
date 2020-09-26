@@ -25,7 +25,6 @@ import Data.Functor ((<$>), fmap)
 import Data.Maybe (fromMaybe, maybe)
 import Data.Morpheus.Internal.Utils
   ( empty,
-    ordTraverse,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -152,9 +151,9 @@ validateArguments ::
   Arguments s ->
   Validator schemaStage ctx (Arguments VALID)
 validateArguments checkUnknown argsDef rawArgs = do
-  args <- ordTraverse resolve rawArgs
+  args <- traverse resolve rawArgs
   traverse_ checkUnknown args
-    *> ordTraverse (validateArgument args) (arguments argsDef)
+    *> traverse (validateArgument args) (arguments argsDef)
 
 class Resolve f s ctx where
   resolve :: f s -> Validator schemaS ctx (f CONST)
