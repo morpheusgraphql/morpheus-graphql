@@ -25,7 +25,6 @@ module Data.Morpheus.Internal.Utils
     mapFst,
     mapSnd,
     mapTuple,
-    ordTraverse,
     traverseCollection,
     (<.>),
     SemigroupM (..),
@@ -91,7 +90,6 @@ import Prelude
     Int,
     Monad,
     String,
-    Traversable,
     const,
     fst,
     length,
@@ -172,17 +170,6 @@ instance KeyOf k a => Selectable k a (HashMap k a) where
 
 selectBy :: (Failure e m, Selectable k a c, Monad m) => e -> k -> c -> m a
 selectBy err = selectOr (failure err) pure
-
-ordTraverse ::
-  ( Monad f,
-    KeyOf k b,
-    Failure ValidationErrors f,
-    Traversable t
-  ) =>
-  (a -> f b) ->
-  t a ->
-  f (t b)
-ordTraverse = traverse
 
 traverseCollection ::
   ( Monad f,
