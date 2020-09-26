@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
-    Fields (..),
     FieldsDefinition,
     IN,
     OUT,
@@ -226,7 +225,7 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (F
     pure
       [ ServerTypeDefinition
           { tName,
-            tCons = [mkCons tName (Fields arguments)],
+            tCons = [mkCons tName arguments],
             tKind = KindInputObject,
             typeArgD = [],
             typeOriginal = Nothing
