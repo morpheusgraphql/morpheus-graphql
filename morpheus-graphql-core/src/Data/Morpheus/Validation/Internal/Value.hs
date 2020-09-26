@@ -27,7 +27,6 @@ import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     fromElems,
-    traverseCollection,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -249,7 +248,7 @@ validateInputObject ::
   InputValidator schemaS ctx (Object VALID)
 validateInputObject fieldsDef object =
   traverse_ (`selectKnown` fieldsDef) object
-    *> traverseCollection (validateWithDefault object) fieldsDef
+    *> traverse (validateWithDefault object) fieldsDef
 
 class ValidateWithDefault c schemaS s where
   validateWithDefault ::
