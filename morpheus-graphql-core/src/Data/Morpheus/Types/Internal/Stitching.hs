@@ -32,7 +32,6 @@ import Data.Morpheus.Types.Internal.AST
   ( Directive,
     DirectiveDefinition,
     FieldDefinition,
-    Fields (..),
     FieldsDefinition,
     Schema (..),
     TRUE,
@@ -119,7 +118,7 @@ instance Stitching (TypeContent TRUE cat s) where
   stitch _ _ = failure (["Schema Stitching works only for objects"] :: ValidationErrors)
 
 instance Stitching (FieldsDefinition cat s) where
-  stitch (Fields x) (Fields y) = Fields <$> runResolutionT (mergeT x y) OM.unsafeFromList (resolveWith stitch)
+  stitch x y = runResolutionT (mergeT x y) OM.unsafeFromList (resolveWith stitch)
 
 instance Stitching (FieldDefinition cat s) where
   stitch old new
