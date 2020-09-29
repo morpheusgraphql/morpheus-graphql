@@ -55,12 +55,16 @@ import Prelude
     undefined,
   )
 
+type Value = (Set DataFingerprint, Schema CONST)
+
+type Value2 = (Set DataFingerprint, Eventless (Schema CONST))
+
 -- Helper Functions
 newtype SchemaT a = SchemaT
   { runSchemaT ::
       Eventless
         ( a,
-          [(Set DataFingerprint, Schema CONST) -> Eventless (Set DataFingerprint, Schema CONST)]
+          [Value -> Value2]
         )
   }
   deriving (Functor)
@@ -90,14 +94,14 @@ instance Monad SchemaT where
 closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
 closeWith (SchemaT v) = v >>= uncurry execUpdates
 
-init :: ((Set DataFingerprint, Schema CONST) -> (Set DataFingerprint, Eventless (Schema CONST))) -> SchemaT ()
+init :: (Value -> Value2) -> SchemaT ()
 init f = SchemaT $ pure ((), [f])
 
 setMutation :: TypeDefinition OBJECT CONST -> SchemaT ()
-setMutation mut = init (\schema -> pure $ schema {mutation = optionalType mut})
+setMutation mut = init (\(fps, schema) -> (fps, pure $ schema {mutation = optionalType mut}))
 
 setSubscription :: TypeDefinition OBJECT CONST -> SchemaT ()
-setSubscription x = init (\schema -> pure $ schema {subscription = optionalType x})
+setSubscription x = init (\(fps, schema) -> (fps, pure $ schema {subscription = optionalType x}))
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
@@ -124,9 +128,9 @@ updateSchema ::
 updateSchema typeFingerprint f x =
   SchemaT $ pure ((), [upLib])
   where
-    upLib :: (Set DataFingerprint, Schema CONST) -> Eventless (Set DataFingerprint, Schema CONST)
-    upLib (fps, schema)
-      | isTypeDefined typeFingerprint fps = pure (fps, schema)
+    upLib :: Value -> Value2
+    upLib lib@(fps, schema)
+      | isTypeDefined typeFingerprint fps = (fps, pure schema)
       | otherwise = do
         (tyDef, updater) <- runSchemaT (f x)
         execUpdates lib (safeDefineType tyDef : updater)
