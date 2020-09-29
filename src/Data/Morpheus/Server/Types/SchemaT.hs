@@ -22,12 +22,13 @@ import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..), foldM)
 import Data.Function ((&))
 import Data.Functor (Functor (..))
-import Data.Morpheus.Error (nameCollisionError)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( ANY,
+    CONST,
+    CONST,
     DataFingerprint,
     OBJECT,
     Schema (..),
@@ -36,12 +37,13 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     isNotSystemTypeName,
     safeDefineType,
+    toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup (Semigroup (..))
-import Data.Set (Set, empty)
+import Data.Set (Set, empty, insert)
 import Prelude
   ( ($),
     (.),
@@ -55,17 +57,11 @@ import Prelude
     undefined,
   )
 
-type Value = (Set DataFingerprint, Schema CONST)
-
-type Value2 = (Set DataFingerprint, Eventless (Schema CONST))
+type Value = (Set DataFingerprint, [TypeDefinition ANY CONST])
 
 -- Helper Functions
 newtype SchemaT a = SchemaT
-  { runSchemaT ::
-      Eventless
-        ( a,
-          [Value -> Value2]
-        )
+  { runSchemaT :: (a, [Value -> Value])
   }
   deriving (Functor)
 
@@ -76,29 +72,25 @@ instance
   failure = SchemaT . failure
 
 instance Applicative SchemaT where
-  pure = SchemaT . pure . (,[])
-  (SchemaT v1) <*> (SchemaT v2) =
-    SchemaT $ do
-      (f, u1) <- v1
-      (a, u2) <- v2
-      pure (f a, u1 <> u2)
+  pure = SchemaT . (,[])
+  (SchemaT (f, u1)) <*> (SchemaT (a, u2)) =
+    SchemaT (f a, u1 <> u2)
 
 instance Monad SchemaT where
   return = pure
-  (SchemaT v1) >>= f =
-    SchemaT $ do
-      (x, up1) <- v1
-      (y, up2) <- runSchemaT (f x)
-      pure (y, up1 <> up2)
+  (SchemaT (x, up1)) >>= f =
+    SchemaT $
+      let (y, up2) = runSchemaT (f x)
+       in (y, up1 <> up2)
 
 closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
 closeWith (SchemaT v) = v >>= uncurry execUpdates
 
-init :: (Value -> Value2) -> SchemaT ()
-init f = SchemaT $ pure ((), [f])
+init :: (Value -> Value) -> SchemaT ()
+init f = SchemaT ((), [f])
 
 setMutation :: TypeDefinition OBJECT CONST -> SchemaT ()
-setMutation mut = init (\(fps, schema) -> (fps, pure $ schema {mutation = optionalType mut}))
+setMutation mut = init (\(fps, schema) -> (fps, schema {mutation = optionalType mut}))
 
 setSubscription :: TypeDefinition OBJECT CONST -> SchemaT ()
 setSubscription x = init (\(fps, schema) -> (fps, pure $ schema {subscription = optionalType x}))
@@ -122,15 +114,15 @@ isTypeDefined _ _ = False
 
 updateSchema ::
   DataFingerprint ->
-  (a -> SchemaT (TypeDefinition cat CONST)) ->
+  (a -> SchemaT (TypeDefinition ANY CONST)) ->
   a ->
   SchemaT ()
 updateSchema typeFingerprint f x =
   SchemaT $ pure ((), [upLib])
   where
-    upLib :: Value -> Value2
-    upLib lib@(fps, schema)
-      | isTypeDefined typeFingerprint fps = (fps, pure schema)
+    upLib :: Value -> Value
+    upLib (fps, typeDef)
+      | isTypeDefined typeFingerprint fps = (fps, typeDef)
       | otherwise = do
         (tyDef, updater) <- runSchemaT (f x)
-        execUpdates lib (safeDefineType tyDef : updater)
+        (insert typeFingerprint fps, tyDef : updater)
