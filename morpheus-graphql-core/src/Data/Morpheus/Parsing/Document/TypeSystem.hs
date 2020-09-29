@@ -106,17 +106,6 @@ mkObject typeDescription typeName objectImplements typeDirectives objectFields =
       ..
     }
 
-mkType ::
-  Maybe Description ->
-  TypeName ->
-  Directives s ->
-  TypeContent TRUE a s ->
-  TypeDefinition a s
-mkType typeDescription typeName typeDirectives typeContent =
-  TypeDefinition
-    { ..
-    }
-
 mkScalar ::
   ELEM LEAF a ~ TRUE =>
   Maybe Description ->
@@ -190,7 +179,7 @@ interfaceTypeDefinition ::
   Parser (TypeDefinition ANY s)
 interfaceTypeDefinition typeDescription =
   label "InterfaceTypeDefinition" $
-    mkType typeDescription
+    TypeDefinition typeDescription
       <$> typeDeclaration "interface"
       <*> optionalDirectives
       <*> (DataInterface <$> fieldsDefinition)
@@ -210,7 +199,7 @@ unionTypeDefinition ::
   Parser (TypeDefinition ANY s)
 unionTypeDefinition typeDescription =
   label "UnionTypeDefinition" $
-    mkType typeDescription
+    TypeDefinition typeDescription
       <$> typeDeclaration "union"
       <*> optionalDirectives
       <*> (DataUnion <$> unionMemberTypes)
@@ -236,7 +225,7 @@ enumTypeDefinition ::
   Parser (TypeDefinition ANY s)
 enumTypeDefinition typeDescription =
   label "EnumTypeDefinition" $
-    mkType typeDescription
+    TypeDefinition typeDescription
       <$> typeDeclaration "enum"
       <*> optionalDirectives
       <*> (DataEnum <$> collection enumValueDefinition)
@@ -255,7 +244,7 @@ inputObjectTypeDefinition ::
   Parser (TypeDefinition ANY s)
 inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $
-    mkType
+    TypeDefinition
       typeDescription
       <$> typeDeclaration "input"
       <*> optionalDirectives

@@ -443,8 +443,8 @@ lookupDataType name Schema {types, query, mutation, subscription} =
 --   InputObjectTypeDefinition
 
 data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
-  { typeName :: TypeName,
-    typeDescription :: Maybe Description,
+  { typeDescription :: Maybe Description,
+    typeName :: TypeName,
     typeDirectives :: Directives s,
     typeContent :: TypeContent TRUE a s
   }

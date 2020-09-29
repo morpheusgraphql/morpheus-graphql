@@ -170,8 +170,8 @@ validateType
     } =
     inType typeName $
       TypeDefinition
-        typeName
         typeDescription
+        typeName
         <$> validateDirectives (typeDirectiveLocation typeContent) typeDirectives
         <*> validateTypeContent typeContent
 
