@@ -35,22 +35,24 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName (..),
     isNotSystemTypeName,
-    isTypeDefined,
     safeDefineType,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup (Semigroup (..))
+import Data.Set (Set, empty)
 import Prelude
   ( ($),
     (.),
+    Bool (..),
     Eq (..),
     Maybe (..),
     const,
     null,
     otherwise,
     uncurry,
+    undefined,
   )
 
 -- Helper Functions
@@ -58,7 +60,7 @@ newtype SchemaT a = SchemaT
   { runSchemaT ::
       Eventless
         ( a,
-          [Schema CONST -> Eventless (Schema CONST)]
+          [(Set DataFingerprint, Schema CONST) -> Eventless (Set DataFingerprint, Schema CONST)]
         )
   }
   deriving (Functor)
@@ -88,7 +90,7 @@ instance Monad SchemaT where
 closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
 closeWith (SchemaT v) = v >>= uncurry execUpdates
 
-init :: (Schema CONST -> Eventless (Schema CONST)) -> SchemaT ()
+init :: ((Set DataFingerprint, Schema CONST) -> (Set DataFingerprint, Eventless (Schema CONST))) -> SchemaT ()
 init f = SchemaT $ pure ((), [f])
 
 setMutation :: TypeDefinition OBJECT CONST -> SchemaT ()
@@ -108,25 +110,23 @@ execUpdates = foldM (&)
 insertType ::
   TypeDefinition cat CONST ->
   SchemaT ()
-insertType dt@TypeDefinition {typeName, typeFingerprint} =
-  updateSchema typeName typeFingerprint (const $ pure dt) ()
+insertType dt@TypeDefinition {typeName} =
+  updateSchema typeName undefined (const $ pure dt) ()
+
+isTypeDefined :: DataFingerprint -> Set DataFingerprint -> Bool
+isTypeDefined _ _ = False
 
 updateSchema ::
-  TypeName ->
   DataFingerprint ->
   (a -> SchemaT (TypeDefinition cat CONST)) ->
   a ->
   SchemaT ()
-updateSchema typeName typeFingerprint f x
-  | isNotSystemTypeName typeName = SchemaT (pure ((), [upLib]))
-  | otherwise = SchemaT (pure ((), []))
+updateSchema typeFingerprint f x =
+  SchemaT $ pure ((), [upLib])
   where
-    upLib :: Schema CONST -> Eventless (Schema CONST)
-    upLib lib = case isTypeDefined typeName lib of
-      Nothing -> do
+    upLib :: (Set DataFingerprint, Schema CONST) -> Eventless (Set DataFingerprint, Schema CONST)
+    upLib (fps, schema)
+      | isTypeDefined typeFingerprint fps = pure (fps, schema)
+      | otherwise = do
         (tyDef, updater) <- runSchemaT (f x)
         execUpdates lib (safeDefineType tyDef : updater)
-      Just fingerprint'
-        | fingerprint' == typeFingerprint -> pure lib
-        -- throw error if 2 different types has same name
-        | otherwise -> failure [nameCollisionError typeName]
