@@ -165,7 +165,6 @@ module Data.Morpheus.Types.Internal.AST
     possibleTypes,
     possibleInterfaceTypes,
     mkField,
-    isTypeDefined,
     safeDefineType,
   )
 where

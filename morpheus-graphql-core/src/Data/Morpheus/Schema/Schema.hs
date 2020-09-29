@@ -18,26 +18,12 @@ where
 
 import Data.Morpheus.Schema.DSL (dsl)
 import Data.Morpheus.Types.Internal.AST
-  ( DataFingerprint (..),
-    Schema (..),
-    TypeDefinition (..),
-    internalFingerprint,
+  ( Schema,
   )
-
-toInternalSchema :: Schema s -> Schema s
-toInternalSchema Schema {..} = Schema {types = fmap toInternalType types, ..}
-
-toInternalType :: TypeDefinition a s -> TypeDefinition a s
-toInternalType
-  tyDef@TypeDefinition
-    { typeFingerprint = DataFingerprint name xs
-    } =
-    tyDef {typeFingerprint = internalFingerprint name xs}
 
 internalSchema :: Schema s
 internalSchema =
-  toInternalSchema
-    [dsl|
+  [dsl|
 
 """
 Directs the executor to skip this field or fragment when the `if` argument is true.

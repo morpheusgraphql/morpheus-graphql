@@ -55,7 +55,6 @@ import Data.Morpheus.Parsing.Internal.Value
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
-    DataFingerprint (..),
     Description,
     DirectiveDefinition (..),
     Directives,
@@ -103,8 +102,7 @@ mkObject ::
   TypeDefinition a s
 mkObject typeDescription typeName objectImplements typeDirectives objectFields =
   TypeDefinition
-    { typeFingerprint = DataFingerprint typeName [],
-      typeContent = DataObject {objectImplements, objectFields},
+    { typeContent = DataObject {objectImplements, objectFields},
       ..
     }
 
@@ -116,8 +114,7 @@ mkType ::
   TypeDefinition a s
 mkType typeDescription typeName typeDirectives typeContent =
   TypeDefinition
-    { typeFingerprint = DataFingerprint typeName [],
-      ..
+    { ..
     }
 
 mkScalar ::
@@ -128,8 +125,7 @@ mkScalar ::
   TypeDefinition a s
 mkScalar typeDescription typeName typeDirectives =
   TypeDefinition
-    { typeFingerprint = DataFingerprint typeName [],
-      typeContent = DataScalar (ScalarDefinition pure),
+    { typeContent = DataScalar (ScalarDefinition pure),
       ..
     }
 

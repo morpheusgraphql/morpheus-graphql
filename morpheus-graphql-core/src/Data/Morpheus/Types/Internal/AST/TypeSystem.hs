@@ -51,7 +51,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     typed,
     possibleTypes,
     possibleInterfaceTypes,
-    isTypeDefined,
     safeDefineType,
   )
 where
@@ -95,8 +94,7 @@ import Data.Morpheus.Rendering.RenderGQL
     renderObject,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( DataFingerprint (..),
-    Description,
+  ( Description,
     FieldName,
     FieldName (..),
     Msg (..),
@@ -434,9 +432,6 @@ lookupDataType name Schema {types, query, mutation, subscription} =
     <|> (subscription >>= isType name)
     <|> selectOr Nothing Just name types
 
-isTypeDefined :: TypeName -> Schema s -> Maybe DataFingerprint
-isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
-
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
 -------------------------------------------------------------------------
 -- TypeDefinition :
@@ -449,7 +444,6 @@ isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 
 data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
   { typeName :: TypeName,
-    typeFingerprint :: DataFingerprint,
     typeDescription :: Maybe Description,
     typeDirectives :: Directives s,
     typeContent :: TypeContent TRUE a s
@@ -586,7 +580,6 @@ mkType typeName typeContent =
   TypeDefinition
     { typeName,
       typeDescription = Nothing,
-      typeFingerprint = DataFingerprint typeName [],
       typeDirectives = [],
       typeContent
     }
@@ -635,14 +628,13 @@ safeDefineType ::
   TypeDefinition cat s ->
   Schema s ->
   m (Schema s)
-safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib = do
+safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys} lib = do
   types <- insert unionTags (types lib) >>= insert (toAny dt)
   pure lib {types}
   where
     unionTags =
       TypeDefinition
         { typeName = typeName <> "Tags",
-          typeFingerprint,
           typeDescription = Nothing,
           typeDirectives = [],
           typeContent = mkEnumContent (fmap memberName enumKeys)
