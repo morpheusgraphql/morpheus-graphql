@@ -6,7 +6,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,8 +14,7 @@ module Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     updateSchema,
     insertType,
-    DataFingerprint (..),
-    internalFingerprint,
+    TypeFingerprint (..),
     toSchema,
   )
 where
@@ -66,13 +64,18 @@ import Prelude
     otherwise,
   )
 
-data DataFingerprint = DataFingerprint TypeName [String]
-  deriving (Generic, Show, Eq, Ord, Hashable)
+data TypeFingerprint
+  = TypeFingerprint TypeName [String]
+  | InternalFingerprint TypeName
+  deriving
+    ( Generic,
+      Show,
+      Eq,
+      Ord,
+      Hashable
+    )
 
-internalFingerprint :: TypeName -> [String] -> DataFingerprint
-internalFingerprint name = DataFingerprint ("SYSTEM.INTERNAL." <> name)
-
-type MyMap = HashMap DataFingerprint (TypeDefinition ANY CONST)
+type MyMap = HashMap TypeFingerprint (TypeDefinition ANY CONST)
 
 -- Helper Functions
 newtype SchemaT a = SchemaT
@@ -126,13 +129,13 @@ execUpdates :: Monad m => a -> [a -> m a] -> m a
 execUpdates = foldM (&)
 
 insertType ::
-  DataFingerprint ->
+  TypeFingerprint ->
   TypeDefinition cat CONST ->
   SchemaT ()
 insertType fp dt = updateSchema fp (const $ pure dt) ()
 
 updateSchema ::
-  DataFingerprint ->
+  TypeFingerprint ->
   (a -> SchemaT (TypeDefinition cat CONST)) ->
   a ->
   SchemaT ()

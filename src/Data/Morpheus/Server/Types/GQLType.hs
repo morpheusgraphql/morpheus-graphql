@@ -22,9 +22,8 @@ where
 import Data.Map (Map)
 import Data.Morpheus.Kind
 import Data.Morpheus.Server.Types.SchemaT
-  ( DataFingerprint (..),
-    SchemaT,
-    internalFingerprint,
+  ( SchemaT,
+    TypeFingerprint (..),
   )
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
@@ -84,7 +83,7 @@ import Prelude
 data TypeData = TypeData
   { gqlTypeName :: TypeName,
     gqlWrappers :: [TypeWrapper],
-    gqlFingerprint :: DataFingerprint
+    gqlFingerprint :: TypeFingerprint
   }
 
 data GQLTypeOptions = GQLTypeOptions
@@ -104,8 +103,8 @@ getTypename = TypeName . intercalate "_" . getName
   where
     getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 
-getFingerprint :: Typeable a => f a -> DataFingerprint
-getFingerprint = DataFingerprint "Typeable" . fmap show . conFingerprints
+getFingerprint :: Typeable a => f a -> TypeFingerprint
+getFingerprint = TypeFingerprint "Typeable" . fmap show . conFingerprints
   where
     conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
@@ -121,7 +120,7 @@ mkTypeData :: TypeName -> TypeData
 mkTypeData name =
   TypeData
     { gqlTypeName = name,
-      gqlFingerprint = internalFingerprint name [],
+      gqlFingerprint = InternalFingerprint name,
       gqlWrappers = []
     }
 
