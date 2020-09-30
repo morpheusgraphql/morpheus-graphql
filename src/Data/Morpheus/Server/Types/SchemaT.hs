@@ -139,6 +139,7 @@ updateSchema ::
   (a -> SchemaT (TypeDefinition cat CONST)) ->
   a ->
   SchemaT ()
+updateSchema InternalFingerprint {} _ _ = SchemaT $ pure ((), [])
 updateSchema fingerprint f x =
   SchemaT $ pure ((), [upLib])
   where

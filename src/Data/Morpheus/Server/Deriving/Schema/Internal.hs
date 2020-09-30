@@ -64,8 +64,8 @@ import Data.Morpheus.Server.Types.GQLType
     TypeData (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
-  ( DataFingerprint (..),
-    SchemaT,
+  ( SchemaT,
+    TypeFingerprint (..),
     insertType,
     updateSchema,
   )
@@ -295,7 +295,7 @@ buildUnionType ::
 buildUnionType typeData wrapUnion wrapObject =
   mkUnionType typeData wrapUnion wrapObject . analyseRep (gqlTypeName typeData)
 
-mkInputUnionType :: DataFingerprint -> ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
+mkInputUnionType :: TypeFingerprint -> ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
 mkInputUnionType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
 mkInputUnionType baseFingerprint ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
   where
@@ -334,7 +334,7 @@ fieldByRep FieldRep {fieldSelector, fieldTypeRef, fieldValue} =
 
 buildUnions ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
-  DataFingerprint ->
+  TypeFingerprint ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT [TypeName]
 buildUnions wrapObject baseFingerprint cons =
@@ -378,7 +378,7 @@ buildUnionRecord ::
 buildUnionRecord wrapObject ConsRep {consName, consFields} =
   mkSubType consName (wrapObject $ mkFieldsDefinition consFields)
 
-buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> SchemaT ()
+buildEnum :: TypeName -> TypeFingerprint -> [TypeName] -> SchemaT ()
 buildEnum typeName typeFingerprint tags =
   insertType
     typeFingerprint
@@ -389,7 +389,7 @@ buildEnum typeName typeFingerprint tags =
 buildEnumObject ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   TypeName ->
-  DataFingerprint ->
+  TypeFingerprint ->
   TypeName ->
   SchemaT ()
 buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
