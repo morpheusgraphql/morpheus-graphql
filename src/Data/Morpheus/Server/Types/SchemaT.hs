@@ -50,6 +50,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup (Semigroup (..))
+import GHC.Fingerprint.Type (Fingerprint)
 import GHC.Generics (Generic)
 import Prelude
   ( ($),
@@ -58,16 +59,15 @@ import Prelude
     Maybe (..),
     Ord,
     Show,
-    String,
     const,
     null,
     otherwise,
   )
 
 data TypeFingerprint
-  = TypeFingerprint TypeName [String]
+  = TypeableFingerprint [Fingerprint]
   | InternalFingerprint TypeName
-  | CustomFingerprint TypeName TypeFingerprint
+  | CustomFingerprint TypeName
   deriving
     ( Generic,
       Show,
@@ -129,11 +129,8 @@ optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
 execUpdates :: Monad m => a -> [a -> m a] -> m a
 execUpdates = foldM (&)
 
-insertType ::
-  TypeFingerprint ->
-  TypeDefinition cat CONST ->
-  SchemaT ()
-insertType fp dt = updateSchema (CustomFingerprint (typeName dt) fp) (const $ pure dt) ()
+insertType :: TypeDefinition cat CONST -> SchemaT ()
+insertType dt = updateSchema (CustomFingerprint (typeName dt)) (const $ pure dt) ()
 
 updateSchema ::
   TypeFingerprint ->

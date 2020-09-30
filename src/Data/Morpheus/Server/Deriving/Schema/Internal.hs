@@ -48,7 +48,6 @@ import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    empty,
     singleton,
   )
 import Data.Morpheus.Server.Deriving.Utils
@@ -65,7 +64,6 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
-    TypeFingerprint (..),
     insertType,
     updateSchema,
   )
@@ -282,8 +280,8 @@ buildInputUnion ::
   TypeData ->
   [ConsRep (Maybe (FieldContent TRUE IN CONST))] ->
   SchemaT (TypeContent TRUE IN CONST)
-buildInputUnion TypeData {gqlTypeName, gqlFingerprint} =
-  mkInputUnionType gqlFingerprint . analyseRep gqlTypeName
+buildInputUnion TypeData {gqlTypeName} =
+  mkInputUnionType . analyseRep gqlTypeName
 
 buildUnionType ::
   (ELEM LEAF kind ~ TRUE) =>
@@ -295,12 +293,12 @@ buildUnionType ::
 buildUnionType typeData wrapUnion wrapObject =
   mkUnionType typeData wrapUnion wrapObject . analyseRep (gqlTypeName typeData)
 
-mkInputUnionType :: TypeFingerprint -> ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
-mkInputUnionType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkInputUnionType baseFingerprint ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
+mkInputUnionType :: ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
+mkInputUnionType ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkInputUnionType ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
   where
     typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = withMembers <$> buildUnions wrapInputObject baseFingerprint unionRecordRep
+    typeMembers = withMembers <$> buildUnions wrapInputObject unionRecordRep
       where
         withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
     wrapInputObject :: (FieldsDefinition IN CONST -> TypeContent TRUE IN CONST)
@@ -314,11 +312,11 @@ mkUnionType ::
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
 mkUnionType _ _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType typeData@TypeData {gqlFingerprint} wrapUnion wrapObject ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
+mkUnionType typeData wrapUnion wrapObject ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
   where
     typeMembers = do
       enums <- buildUnionEnum wrapObject typeData enumCons
-      unions <- buildUnions wrapObject gqlFingerprint unionRecordRep
+      unions <- buildUnions wrapObject unionRecordRep
       pure (unionRef <> enums <> unions)
 
 wrapFields :: [TypeName] -> KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
@@ -334,20 +332,19 @@ fieldByRep FieldRep {fieldSelector, fieldTypeRef, fieldValue} =
 
 buildUnions ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
-  TypeFingerprint ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT [TypeName]
-buildUnions wrapObject baseFingerprint cons =
+buildUnions wrapObject cons =
   traverse_ buildURecType cons $> fmap consName cons
   where
-    buildURecType = insertType baseFingerprint . buildUnionRecord wrapObject
+    buildURecType = insertType . buildUnionRecord wrapObject
 
 buildUnionEnum ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   TypeData ->
   [TypeName] ->
   SchemaT [TypeName]
-buildUnionEnum wrapObject TypeData {gqlTypeName, gqlFingerprint} enums = updates $> members
+buildUnionEnum wrapObject TypeData {gqlTypeName} enums = updates $> members
   where
     members
       | null enums = []
@@ -359,8 +356,8 @@ buildUnionEnum wrapObject TypeData {gqlTypeName, gqlFingerprint} enums = updates
     updates
       | null enums = pure ()
       | otherwise =
-        buildEnumObject wrapObject enumTypeWrapperName gqlFingerprint enumTypeName
-          *> buildEnum enumTypeName gqlFingerprint enums
+        buildEnumObject wrapObject enumTypeWrapperName enumTypeName
+          *> buildEnum enumTypeName enums
 
 buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
 buildType proxy typeContent =
@@ -376,37 +373,25 @@ buildUnionRecord ::
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
   TypeDefinition kind CONST
 buildUnionRecord wrapObject ConsRep {consName, consFields} =
-  mkSubType consName (wrapObject $ mkFieldsDefinition consFields)
+  mkType consName (wrapObject $ mkFieldsDefinition consFields)
 
-buildEnum :: TypeName -> TypeFingerprint -> [TypeName] -> SchemaT ()
-buildEnum typeName typeFingerprint tags =
+buildEnum :: TypeName -> [TypeName] -> SchemaT ()
+buildEnum typeName tags =
   insertType
-    typeFingerprint
-    ( mkSubType typeName (mkEnumContent tags) ::
+    ( mkType typeName (mkEnumContent tags) ::
         TypeDefinition LEAF CONST
     )
 
 buildEnumObject ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   TypeName ->
-  TypeFingerprint ->
   TypeName ->
   SchemaT ()
-buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
-  insertType
-    typeFingerprint
-    $ mkSubType
+buildEnumObject wrapObject typeName enumTypeName =
+  insertType $
+    mkType
       typeName
       ( wrapObject
           $ singleton
           $ mkInputValue "enum" [] enumTypeName
       )
-
-mkSubType :: TypeName -> TypeContent TRUE k CONST -> TypeDefinition k CONST
-mkSubType typeName typeContent =
-  TypeDefinition
-    { typeName,
-      typeDescription = Nothing,
-      typeDirectives = empty,
-      typeContent
-    }

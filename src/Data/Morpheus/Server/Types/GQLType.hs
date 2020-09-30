@@ -77,7 +77,6 @@ import Prelude
     fmap,
     id,
     mempty,
-    show,
   )
 
 data TypeData = TypeData
@@ -104,7 +103,7 @@ getTypename = TypeName . intercalate "_" . getName
     getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 
 getFingerprint :: Typeable a => f a -> TypeFingerprint
-getFingerprint = TypeFingerprint "Typeable" . fmap show . conFingerprints
+getFingerprint = TypeableFingerprint . conFingerprints
   where
     conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
 
