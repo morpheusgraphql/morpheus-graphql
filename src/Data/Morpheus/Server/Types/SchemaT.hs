@@ -67,6 +67,7 @@ import Prelude
 data TypeFingerprint
   = TypeFingerprint TypeName [String]
   | InternalFingerprint TypeName
+  | CustomFingerprint TypeFingerprint
   deriving
     ( Generic,
       Show,
@@ -132,7 +133,7 @@ insertType ::
   TypeFingerprint ->
   TypeDefinition cat CONST ->
   SchemaT ()
-insertType fp dt = updateSchema fp (const $ pure dt) ()
+insertType fp dt = updateSchema (CustomFingerprint fp) (const $ pure dt) ()
 
 updateSchema ::
   TypeFingerprint ->
