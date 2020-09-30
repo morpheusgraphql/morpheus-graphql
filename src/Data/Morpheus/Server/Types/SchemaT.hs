@@ -30,6 +30,7 @@ import Data.HashMap.Lazy
     elems,
     empty,
     insert,
+    member,
   )
 import Data.Hashable (Hashable)
 import Data.Morpheus.Internal.Utils
@@ -55,7 +56,6 @@ import GHC.Generics (Generic)
 import Prelude
   ( ($),
     (.),
-    Bool (..),
     Eq (..),
     Maybe (..),
     Ord,
@@ -131,20 +131,17 @@ insertType ::
   SchemaT ()
 insertType fp dt = updateSchema fp (const $ pure dt) ()
 
-isTypeDefined :: DataFingerprint -> HashMap DataFingerprint a -> Bool
-isTypeDefined _ _ = False
-
 updateSchema ::
   DataFingerprint ->
   (a -> SchemaT (TypeDefinition cat CONST)) ->
   a ->
   SchemaT ()
-updateSchema typeFingerprint f x =
+updateSchema fingerprint f x =
   SchemaT $ pure ((), [upLib])
   where
     upLib :: MyMap -> Eventless MyMap
     upLib lib
-      | isTypeDefined typeFingerprint lib = pure lib
+      | member fingerprint lib = pure lib
       | otherwise = do
         (type', updates) <- runSchemaT (f x)
-        execUpdates lib ((pure . insert typeFingerprint (toAny type')) : updates)
+        execUpdates lib ((pure . insert fingerprint (toAny type')) : updates)
