@@ -284,12 +284,12 @@ analyseRep baseName cons =
     (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
 
 mkUnionType ::
-  ELEM LEAF kind ~ TRUE =>
   KindedType kind a ->
   TypeData ->
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
-mkUnionType _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkUnionType InputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkUnionType OutputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
 mkUnionType InputType _ ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
   where
     typeMembers :: SchemaT [UnionMember IN CONST]
