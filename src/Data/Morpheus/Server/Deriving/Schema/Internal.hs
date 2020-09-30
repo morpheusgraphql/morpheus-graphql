@@ -315,7 +315,7 @@ mkUnionType _ _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $
 mkUnionType typeData wrapUnion wrapObject ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
   where
     typeMembers = do
-      enums <- buildUnionEnum wrapObject typeData enumCons
+      enums <- buildUnionEnum typeData enumCons
       unions <- buildUnions wrapObject unionRecordRep
       pure (unionRef <> enums <> unions)
 
@@ -340,11 +340,10 @@ buildUnions wrapObject cons =
     buildURecType = insertType . buildUnionRecord wrapObject
 
 buildUnionEnum ::
-  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   TypeData ->
   [TypeName] ->
   SchemaT [TypeName]
-buildUnionEnum wrapObject TypeData {gqlTypeName} enums = updates $> members
+buildUnionEnum TypeData {gqlTypeName} enums = updates $> members
   where
     members
       | null enums = []
@@ -356,7 +355,7 @@ buildUnionEnum wrapObject TypeData {gqlTypeName} enums = updates $> members
     updates
       | null enums = pure ()
       | otherwise =
-        buildEnumObject wrapObject enumTypeWrapperName enumTypeName
+        buildEnumObject enumTypeWrapperName enumTypeName
           *> buildEnum enumTypeName enums
 
 buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
@@ -382,16 +381,14 @@ buildEnum typeName tags =
         TypeDefinition LEAF CONST
     )
 
-buildEnumObject ::
-  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
-  TypeName ->
-  TypeName ->
-  SchemaT ()
-buildEnumObject wrapObject typeName enumTypeName =
-  insertType $
-    mkType
-      typeName
-      ( wrapObject
-          $ singleton
-          $ mkInputValue "enum" [] enumTypeName
-      )
+buildEnumObject :: TypeName -> TypeName -> SchemaT ()
+buildEnumObject typeName enumTypeName =
+  insertType
+    ( mkType
+        typeName
+        ( DataObject []
+            $ singleton
+            $ mkInputValue "enum" [] enumTypeName
+        ) ::
+        TypeDefinition OBJECT CONST
+    )
