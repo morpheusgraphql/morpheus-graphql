@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -23,14 +22,13 @@ import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..), foldM)
 import Data.Function ((&))
 import Data.Functor ((<$>), Functor (..))
-import Data.HashMap.Lazy
-  ( HashMap,
+import Data.Map
+  ( Map,
     elems,
     empty,
     insert,
     member,
   )
-import Data.Hashable (Hashable)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -72,11 +70,10 @@ data TypeFingerprint
     ( Generic,
       Show,
       Eq,
-      Ord,
-      Hashable
+      Ord
     )
 
-type MyMap = HashMap TypeFingerprint (TypeDefinition ANY CONST)
+type MyMap = Map TypeFingerprint (TypeDefinition ANY CONST)
 
 -- Helper Functions
 newtype SchemaT a = SchemaT
