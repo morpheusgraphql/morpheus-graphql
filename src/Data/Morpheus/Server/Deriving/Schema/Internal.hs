@@ -64,14 +64,14 @@ import Data.Morpheus.Server.Types.GQLType
     TypeData (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
+  ( DataFingerprint (..),
+    SchemaT,
     insertType,
     updateSchema,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataEnumValue (..),
-    DataFingerprint (..),
     DataUnion,
     Description,
     Directives,
@@ -261,7 +261,6 @@ updateByContent ::
   SchemaT ()
 updateByContent f proxy =
   updateSchema
-    (gqlTypeName $ __type proxy)
     (gqlFingerprint $ __type proxy)
     deriveD
     proxy
@@ -341,7 +340,7 @@ buildUnions ::
 buildUnions wrapObject baseFingerprint cons =
   traverse_ buildURecType cons $> fmap consName cons
   where
-    buildURecType = insertType . buildUnionRecord wrapObject baseFingerprint
+    buildURecType = insertType baseFingerprint . buildUnionRecord wrapObject
 
 buildUnionEnum ::
   (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
@@ -366,27 +365,24 @@ buildUnionEnum wrapObject TypeData {gqlTypeName, gqlFingerprint} enums = updates
 buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
 buildType proxy typeContent =
   TypeDefinition
-    { typeName = gqlTypeName typeData,
-      typeFingerprint = gqlFingerprint typeData,
+    { typeName = gqlTypeName (__type proxy),
       typeDescription = description proxy,
       typeDirectives = [],
       typeContent
     }
-  where
-    typeData = __type proxy
 
 buildUnionRecord ::
   (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
-  DataFingerprint ->
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
   TypeDefinition kind CONST
-buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
-  mkSubType consName typeFingerprint (wrapObject $ mkFieldsDefinition consFields)
+buildUnionRecord wrapObject ConsRep {consName, consFields} =
+  mkSubType consName (wrapObject $ mkFieldsDefinition consFields)
 
 buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> SchemaT ()
 buildEnum typeName typeFingerprint tags =
   insertType
-    ( mkSubType typeName typeFingerprint (mkEnumContent tags) ::
+    typeFingerprint
+    ( mkSubType typeName (mkEnumContent tags) ::
         TypeDefinition LEAF CONST
     )
 
@@ -397,20 +393,19 @@ buildEnumObject ::
   TypeName ->
   SchemaT ()
 buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
-  insertType $
-    mkSubType
+  insertType
+    typeFingerprint
+    $ mkSubType
       typeName
-      typeFingerprint
       ( wrapObject
           $ singleton
           $ mkInputValue "enum" [] enumTypeName
       )
 
-mkSubType :: TypeName -> DataFingerprint -> TypeContent TRUE k CONST -> TypeDefinition k CONST
-mkSubType typeName typeFingerprint typeContent =
+mkSubType :: TypeName -> TypeContent TRUE k CONST -> TypeDefinition k CONST
+mkSubType typeName typeContent =
   TypeDefinition
     { typeName,
-      typeFingerprint,
       typeDescription = Nothing,
       typeDirectives = empty,
       typeContent

@@ -15,18 +15,21 @@ module Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     updateSchema,
     insertType,
-    -- setMutation,
-    -- setSubscription,
+    DataFingerprint (..),
+    internalFingerprint,
+    optionalType,
+    closeWith,
   )
 where
 
 import Control.Applicative (Applicative (..))
 import Control.Monad (Monad (..), foldM)
-import Data.Foldable (fold, foldl, foldr)
 import Data.Function ((&))
-import Data.Functor (Functor (..))
+import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy
   ( HashMap,
+    elems,
+    empty,
     insert,
     singleton,
   )
@@ -43,6 +46,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -103,17 +107,14 @@ instance Monad SchemaT where
       (y, up2) <- runSchemaT (f x)
       pure (y, up1 <> up2)
 
--- closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
--- closeWith (SchemaT v) = v >>= uncurry execUpdates
+closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
+closeWith (SchemaT v) = do
+  (schema, typeDefs) <- v
+  types <- elems <$> execUpdates empty typeDefs
+  pure schema
 
 init :: DataFingerprint -> TypeDefinition ANY CONST -> SchemaT ()
 init fingerprint ty = SchemaT $ pure ((), [const $ pure (singleton fingerprint ty)])
-
--- setMutation :: TypeDefinition OBJECT CONST -> SchemaT ()
--- setMutation mut = init (\(fps, schema) -> (fps, schema {mutation = optionalType mut}))
-
--- setSubscription :: TypeDefinition OBJECT CONST -> SchemaT ()
--- setSubscription x = init (\(fps, schema) -> (fps, pure $ schema {subscription = optionalType x}))
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
@@ -125,7 +126,7 @@ execUpdates = foldM (&)
 
 insertType ::
   DataFingerprint ->
-  TypeDefinition ANY CONST ->
+  TypeDefinition cat CONST ->
   SchemaT ()
 insertType fp dt = updateSchema fp (const $ pure dt) ()
 
@@ -134,7 +135,7 @@ isTypeDefined _ _ = False
 
 updateSchema ::
   DataFingerprint ->
-  (a -> SchemaT (TypeDefinition ANY CONST)) ->
+  (a -> SchemaT (TypeDefinition cat CONST)) ->
   a ->
   SchemaT ()
 updateSchema typeFingerprint f x =
@@ -145,4 +146,4 @@ updateSchema typeFingerprint f x =
       | isTypeDefined typeFingerprint lib = pure lib
       | otherwise = do
         (type', updates) <- runSchemaT (f x)
-        execUpdates lib ((pure . insert typeFingerprint type') : updates)
+        execUpdates lib ((pure . insert typeFingerprint (toAny type')) : updates)

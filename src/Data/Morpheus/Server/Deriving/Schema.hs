@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -32,6 +33,7 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    empty,
   )
 import Data.Morpheus.Kind
   ( ENUM,
@@ -68,8 +70,7 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     closeWith,
-    setMutation,
-    setSubscription,
+    optionalType,
   )
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
@@ -147,10 +148,21 @@ deriveSchema ::
   f (Schema CONST)
 deriveSchema _ = resultOr failure pure schema
   where
-    schema = closeWith (initTypeLib <$> queryDef <* mutationDef <* subscriptionDef)
-    queryDef = deriveObjectType (Proxy @(query (Resolver QUERY e m)))
-    mutationDef = deriveObjectType (Proxy @(mut (Resolver MUTATION e m))) >>= setMutation
-    subscriptionDef = deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m))) >>= setSubscription
+    schema = closeWith schemaT
+    -- schema = closeWith (initTypeLib <$> queryDef <* mutationDef <* subscriptionDef)
+    schemaT :: SchemaT (Schema CONST)
+    schemaT = do
+      query <- deriveObjectType (Proxy @(query (Resolver QUERY e m)))
+      mutation <- optionalType <$> deriveObjectType (Proxy @(mut (Resolver MUTATION e m)))
+      subscription <- optionalType <$> deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m)))
+      pure
+        Schema
+          { query,
+            mutation,
+            subscription,
+            types = empty,
+            directiveDefinitions = empty
+          }
 
 instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)

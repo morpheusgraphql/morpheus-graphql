@@ -21,7 +21,11 @@ where
 -- MORPHEUS
 import Data.Map (Map)
 import Data.Morpheus.Kind
-import Data.Morpheus.Server.Types.SchemaT (SchemaT)
+import Data.Morpheus.Server.Types.SchemaT
+  ( DataFingerprint (..),
+    SchemaT,
+    internalFingerprint,
+  )
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
     Pair,
@@ -31,7 +35,6 @@ import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
-    DataFingerprint (..),
     Description,
     Directives,
     FieldName,
@@ -39,7 +42,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeWrapper (..),
     Value,
-    internalFingerprint,
     toNullable,
   )
 import Data.Morpheus.Types.Internal.Resolving
