@@ -10,7 +10,6 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -72,7 +71,6 @@ import Data.Morpheus.Types.Internal.AST
     DataEnumValue (..),
     Description,
     Directives,
-    ELEM,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
@@ -103,7 +101,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Language.Haskell.TH (Exp, Q)
@@ -163,10 +160,10 @@ mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT 
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
 failureOnlyObject :: forall c a b. (GQLType a) => KindedType c a -> SchemaT b
-failureOnlyObject _ =
+failureOnlyObject proxy =
   failure
     $ globalErrorMessage
-    $ msg (gqlTypeName $ __type (Proxy @a)) <> " should have only one nonempty constructor"
+    $ msg (gqlTypeName $ __type proxy) <> " should have only one nonempty constructor"
 
 type TyContentM kind = (SchemaT (Maybe (FieldContent TRUE kind CONST)))
 
@@ -184,18 +181,16 @@ unpackMs :: [ConsRep (TyContentM k)] -> SchemaT [ConsRep (TyContent k)]
 unpackMs = traverse unpackCons
 
 builder ::
-  forall kind (a :: *).
-  (GQLType a, ELEM LEAF kind ~ TRUE) =>
+  GQLType a =>
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT (TypeContent TRUE kind CONST)
-builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements (Proxy @a))
+builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements scope)
   where
     buildObj interfaces = wrapFields interfaces scope (mkFieldsDefinition consFields)
 builder scope cons = genericUnion cons
   where
-    proxy = Proxy @a
-    typeData = __type proxy
+    typeData = __type scope
     genericUnion =
       mkUnionType scope typeData
         . analyseRep (gqlTypeName typeData)
