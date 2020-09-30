@@ -339,6 +339,22 @@ buildUnions wrapObject cons =
   where
     buildURecType = insertType . buildUnionRecord wrapObject
 
+buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
+buildType proxy typeContent =
+  TypeDefinition
+    { typeName = gqlTypeName (__type proxy),
+      typeDescription = description proxy,
+      typeDirectives = [],
+      typeContent
+    }
+
+buildUnionRecord ::
+  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
+  ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
+  TypeDefinition kind CONST
+buildUnionRecord wrapObject ConsRep {consName, consFields} =
+  mkType consName (wrapObject $ mkFieldsDefinition consFields)
+
 buildUnionEnum ::
   TypeData ->
   [TypeName] ->
@@ -357,22 +373,6 @@ buildUnionEnum TypeData {gqlTypeName} enums = updates $> members
       | otherwise =
         buildEnumObject enumTypeWrapperName enumTypeName
           *> buildEnum enumTypeName enums
-
-buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
-buildType proxy typeContent =
-  TypeDefinition
-    { typeName = gqlTypeName (__type proxy),
-      typeDescription = description proxy,
-      typeDirectives = [],
-      typeContent
-    }
-
-buildUnionRecord ::
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
-  ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
-  TypeDefinition kind CONST
-buildUnionRecord wrapObject ConsRep {consName, consFields} =
-  mkType consName (wrapObject $ mkFieldsDefinition consFields)
 
 buildEnum :: TypeName -> [TypeName] -> SchemaT ()
 buildEnum typeName tags =
