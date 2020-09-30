@@ -198,7 +198,7 @@ builder scope cons = genericUnion scope cons
     proxy = Proxy @a
     typeData = __type proxy
     genericUnion InputType = buildInputUnion typeData
-    genericUnion OutputType = buildUnionType typeData DataUnion
+    genericUnion OutputType = buildUnionType typeData
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -286,11 +286,10 @@ buildInputUnion TypeData {gqlTypeName} =
 buildUnionType ::
   (ELEM LEAF kind ~ TRUE, PackObject kind) =>
   TypeData ->
-  (DataUnion CONST -> TypeContent TRUE kind CONST) ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT (TypeContent TRUE kind CONST)
-buildUnionType typeData wrapUnion =
-  mkUnionType typeData wrapUnion . analyseRep (gqlTypeName typeData)
+buildUnionType typeData =
+  mkUnionType typeData . analyseRep (gqlTypeName typeData)
 
 mkInputUnionType :: ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
 mkInputUnionType ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
@@ -304,11 +303,10 @@ mkInputUnionType ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$
 mkUnionType ::
   (ELEM LEAF kind ~ TRUE, PackObject kind) =>
   TypeData ->
-  (DataUnion CONST -> TypeContent TRUE kind CONST) ->
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
-mkUnionType _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType typeData wrapUnion ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
+mkUnionType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkUnionType typeData ResRep {unionRef, unionRecordRep, enumCons} = packUnion . map mkUnionMember <$> typeMembers
   where
     typeMembers = do
       enums <- buildUnionEnum typeData enumCons
@@ -353,6 +351,7 @@ buildUnionRecord ConsRep {consName, consFields} =
 
 class PackObject kind where
   packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
+  packUnion :: DataUnion CONST -> TypeContent TRUE kind CONST
 
 instance PackObject OUT where
   packObject = DataObject []
