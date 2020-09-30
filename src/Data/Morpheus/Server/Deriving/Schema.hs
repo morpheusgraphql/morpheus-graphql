@@ -69,8 +69,8 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
-    closeWith,
     optionalType,
+    toSchema,
   )
 import Data.Morpheus.Server.Types.Types
   ( MapKind,
@@ -97,8 +97,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    defineSchemaWith,
     fieldsToArguments,
-    initTypeLib,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
@@ -148,21 +148,18 @@ deriveSchema ::
   f (Schema CONST)
 deriveSchema _ = resultOr failure pure schema
   where
-    schema = closeWith schemaT
-    -- schema = closeWith (initTypeLib <$> queryDef <* mutationDef <* subscriptionDef)
-    schemaT :: SchemaT (Schema CONST)
+    schema = toSchema schemaT
+    schemaT ::
+      SchemaT
+        ( Maybe (TypeDefinition OBJECT CONST),
+          Maybe (TypeDefinition OBJECT CONST),
+          Maybe (TypeDefinition OBJECT CONST)
+        )
     schemaT = do
       query <- deriveObjectType (Proxy @(query (Resolver QUERY e m)))
       mutation <- optionalType <$> deriveObjectType (Proxy @(mut (Resolver MUTATION e m)))
       subscription <- optionalType <$> deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m)))
-      pure
-        Schema
-          { query,
-            mutation,
-            subscription,
-            types = empty,
-            directiveDefinitions = empty
-          }
+      pure (Just query, mutation, subscription)
 
 instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)

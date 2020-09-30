@@ -52,6 +52,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     possibleTypes,
     possibleInterfaceTypes,
     safeDefineType,
+    defineSchemaWith,
   )
 where
 
@@ -334,9 +335,9 @@ instance Listable (TypeDefinition ANY s) (Schema s) where
         RootOperationTypeDefinition Mutation "Mutation",
         RootOperationTypeDefinition Subscription "Subscription"
       )
-      >>= buildWith types
+      >>= defineSchemaWith types
 
-buildWith ::
+defineSchemaWith ::
   ( Monad f,
     Failure ValidationErrors f
   ) =>
@@ -346,11 +347,11 @@ buildWith ::
     Maybe (TypeDefinition OBJECT s)
   ) ->
   f (Schema s)
-buildWith oTypes (Just query, mutation, subscription) = do
+defineSchemaWith oTypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] oTypes
   let schema = (initTypeLib query) {mutation, subscription}
   foldM (flip safeDefineType) schema types
-buildWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
+defineSchemaWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
 excludeTypes exclusionTypes = filter ((`notElem` blacklist) . typeName)
@@ -380,7 +381,7 @@ buildSchema (Just schemaDef, types, dirs) =
   withDirectives
     dirs
     <$> ( traverse3 selectOp (Query, Mutation, Subscription)
-            >>= buildWith types
+            >>= defineSchemaWith types
         )
   where
     selectOp op = selectOperation schemaDef op types

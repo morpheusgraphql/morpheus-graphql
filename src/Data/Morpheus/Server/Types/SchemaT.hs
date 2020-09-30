@@ -18,7 +18,7 @@ module Data.Morpheus.Server.Types.SchemaT
     DataFingerprint (..),
     internalFingerprint,
     optionalType,
-    closeWith,
+    toSchema,
   )
 where
 
@@ -46,6 +46,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    defineSchemaWith,
     toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -107,14 +108,17 @@ instance Monad SchemaT where
       (y, up2) <- runSchemaT (f x)
       pure (y, up1 <> up2)
 
-closeWith :: SchemaT (Schema CONST) -> Eventless (Schema CONST)
-closeWith (SchemaT v) = do
-  (schema, typeDefs) <- v
+toSchema ::
+  SchemaT
+    ( Maybe (TypeDefinition OBJECT CONST),
+      Maybe (TypeDefinition OBJECT CONST),
+      Maybe (TypeDefinition OBJECT CONST)
+    ) ->
+  Eventless (Schema CONST)
+toSchema (SchemaT v) = do
+  (rootTypes, typeDefs) <- v
   types <- elems <$> execUpdates empty typeDefs
-  pure schema
-
-init :: DataFingerprint -> TypeDefinition ANY CONST -> SchemaT ()
-init fingerprint ty = SchemaT $ pure ((), [const $ pure (singleton fingerprint ty)])
+  defineSchemaWith types rootTypes
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
