@@ -55,13 +55,11 @@ import Data.Morpheus.Parsing.Internal.Value
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
-    DataFingerprint (..),
     Description,
     DirectiveDefinition (..),
     Directives,
     ELEM,
     FieldsDefinition,
-    LEAF,
     OBJECT,
     OUT,
     RawTypeDefinition (..),
@@ -103,33 +101,7 @@ mkObject ::
   TypeDefinition a s
 mkObject typeDescription typeName objectImplements typeDirectives objectFields =
   TypeDefinition
-    { typeFingerprint = DataFingerprint typeName [],
-      typeContent = DataObject {objectImplements, objectFields},
-      ..
-    }
-
-mkType ::
-  Maybe Description ->
-  TypeName ->
-  Directives s ->
-  TypeContent TRUE a s ->
-  TypeDefinition a s
-mkType typeDescription typeName typeDirectives typeContent =
-  TypeDefinition
-    { typeFingerprint = DataFingerprint typeName [],
-      ..
-    }
-
-mkScalar ::
-  ELEM LEAF a ~ TRUE =>
-  Maybe Description ->
-  TypeName ->
-  Directives s ->
-  TypeDefinition a s
-mkScalar typeDescription typeName typeDirectives =
-  TypeDefinition
-    { typeFingerprint = DataFingerprint typeName [],
-      typeContent = DataScalar (ScalarDefinition pure),
+    { typeContent = DataObject {objectImplements, objectFields},
       ..
     }
 
@@ -144,9 +116,10 @@ scalarTypeDefinition ::
   Parser (TypeDefinition ANY s)
 scalarTypeDefinition typeDescription =
   label "ScalarTypeDefinition" $
-    mkScalar typeDescription
+    TypeDefinition typeDescription
       <$> typeDeclaration "scalar"
       <*> optionalDirectives
+      <*> pure (DataScalar (ScalarDefinition pure))
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 --
@@ -194,7 +167,7 @@ interfaceTypeDefinition ::
   Parser (TypeDefinition ANY s)
 interfaceTypeDefinition typeDescription =
   label "InterfaceTypeDefinition" $
-    mkType typeDescription
+    TypeDefinition typeDescription
       <$> typeDeclaration "interface"
       <*> optionalDirectives
       <*> (DataInterface <$> fieldsDefinition)
@@ -214,7 +187,7 @@ unionTypeDefinition ::
   Parser (TypeDefinition ANY s)
 unionTypeDefinition typeDescription =
   label "UnionTypeDefinition" $
-    mkType typeDescription
+    TypeDefinition typeDescription
       <$> typeDeclaration "union"
       <*> optionalDirectives
       <*> (DataUnion <$> unionMemberTypes)
@@ -240,7 +213,7 @@ enumTypeDefinition ::
   Parser (TypeDefinition ANY s)
 enumTypeDefinition typeDescription =
   label "EnumTypeDefinition" $
-    mkType typeDescription
+    TypeDefinition typeDescription
       <$> typeDeclaration "enum"
       <*> optionalDirectives
       <*> (DataEnum <$> collection enumValueDefinition)
@@ -259,7 +232,7 @@ inputObjectTypeDefinition ::
   Parser (TypeDefinition ANY s)
 inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $
-    mkType
+    TypeDefinition
       typeDescription
       <$> typeDeclaration "input"
       <*> optionalDirectives

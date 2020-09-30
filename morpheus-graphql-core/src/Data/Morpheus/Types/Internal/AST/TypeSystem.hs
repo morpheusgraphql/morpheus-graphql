@@ -51,8 +51,8 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     typed,
     possibleTypes,
     possibleInterfaceTypes,
-    isTypeDefined,
     safeDefineType,
+    defineSchemaWith,
   )
 where
 
@@ -95,8 +95,7 @@ import Data.Morpheus.Rendering.RenderGQL
     renderObject,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( DataFingerprint (..),
-    Description,
+  ( Description,
     FieldName,
     FieldName (..),
     Msg (..),
@@ -336,9 +335,9 @@ instance Listable (TypeDefinition ANY s) (Schema s) where
         RootOperationTypeDefinition Mutation "Mutation",
         RootOperationTypeDefinition Subscription "Subscription"
       )
-      >>= buildWith types
+      >>= defineSchemaWith types
 
-buildWith ::
+defineSchemaWith ::
   ( Monad f,
     Failure ValidationErrors f
   ) =>
@@ -348,11 +347,11 @@ buildWith ::
     Maybe (TypeDefinition OBJECT s)
   ) ->
   f (Schema s)
-buildWith oTypes (Just query, mutation, subscription) = do
+defineSchemaWith oTypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] oTypes
   let schema = (initTypeLib query) {mutation, subscription}
   foldM (flip safeDefineType) schema types
-buildWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
+defineSchemaWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
 excludeTypes exclusionTypes = filter ((`notElem` blacklist) . typeName)
@@ -382,7 +381,7 @@ buildSchema (Just schemaDef, types, dirs) =
   withDirectives
     dirs
     <$> ( traverse3 selectOp (Query, Mutation, Subscription)
-            >>= buildWith types
+            >>= defineSchemaWith types
         )
   where
     selectOp op = selectOperation schemaDef op types
@@ -434,9 +433,6 @@ lookupDataType name Schema {types, query, mutation, subscription} =
     <|> (subscription >>= isType name)
     <|> selectOr Nothing Just name types
 
-isTypeDefined :: TypeName -> Schema s -> Maybe DataFingerprint
-isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
-
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
 -------------------------------------------------------------------------
 -- TypeDefinition :
@@ -448,9 +444,8 @@ isTypeDefined name lib = typeFingerprint <$> lookupDataType name lib
 --   InputObjectTypeDefinition
 
 data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
-  { typeName :: TypeName,
-    typeFingerprint :: DataFingerprint,
-    typeDescription :: Maybe Description,
+  { typeDescription :: Maybe Description,
+    typeName :: TypeName,
     typeDirectives :: Directives s,
     typeContent :: TypeContent TRUE a s
   }
@@ -586,7 +581,6 @@ mkType typeName typeContent =
   TypeDefinition
     { typeName,
       typeDescription = Nothing,
-      typeFingerprint = DataFingerprint typeName [],
       typeDirectives = [],
       typeContent
     }
@@ -635,14 +629,13 @@ safeDefineType ::
   TypeDefinition cat s ->
   Schema s ->
   m (Schema s)
-safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys, typeFingerprint} lib = do
+safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys} lib = do
   types <- insert unionTags (types lib) >>= insert (toAny dt)
   pure lib {types}
   where
     unionTags =
       TypeDefinition
         { typeName = typeName <> "Tags",
-          typeFingerprint,
           typeDescription = Nothing,
           typeDirectives = [],
           typeContent = mkEnumContent (fmap memberName enumKeys)

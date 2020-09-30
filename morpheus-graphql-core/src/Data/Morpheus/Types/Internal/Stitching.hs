@@ -97,18 +97,16 @@ stitchOperation ::
   m (TypeDefinition c s)
 stitchOperation x y =
   TypeDefinition
-    <$> prop fstM typeName x y
-    <*> prop fstM typeFingerprint x y
-    <*> prop concatM typeDescription x y
+    <$> prop concatM typeDescription x y
+    <*> prop fstM typeName x y
     <*> prop stitch typeDirectives x y
     <*> prop stitch typeContent x y
 
 instance Stitching (TypeDefinition cat s) where
   stitch x y =
     TypeDefinition
-      <$> prop (equal [nameCollision y]) typeName x y
-      <*> prop (equal [nameCollision y]) typeFingerprint x y
-      <*> prop concatM typeDescription x y
+      <$> prop concatM typeDescription x y
+      <*> prop (equal [nameCollision y]) typeName x y
       <*> prop stitch typeDirectives x y
       <*> prop stitch typeContent x y
 

@@ -1,9 +1,12 @@
 {
   "errors": [
     {
-      "message": "Schema Validation Error, Name collision: \"A\" is used for different dataTypes in two separate modules",
-      "locations": [
-      ]
+      "message": "There can Be only One TypeDefinition Named \"A\".",
+      "locations": []
+    },
+    {
+      "message": "There can Be only One TypeDefinition Named \"A\".",
+      "locations": []
     }
   ]
 }

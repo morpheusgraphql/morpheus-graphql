@@ -61,7 +61,6 @@ module Data.Morpheus.Types.Internal.AST
     Schema (..),
     DataTypeWrapper (..),
     TypeKind (..),
-    DataFingerprint (..),
     TypeWrapper (..),
     TypeRef (..),
     DataEnumValue (..),
@@ -108,7 +107,6 @@ module Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     UnionTag (..),
     __inputname,
-    internalFingerprint,
     ANY,
     IN,
     OUT,
@@ -165,8 +163,8 @@ module Data.Morpheus.Types.Internal.AST
     possibleTypes,
     possibleInterfaceTypes,
     mkField,
-    isTypeDefined,
     safeDefineType,
+    defineSchemaWith,
   )
 where
 

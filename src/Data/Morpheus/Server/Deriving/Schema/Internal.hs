@@ -10,7 +10,6 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -48,7 +47,6 @@ import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    empty,
     singleton,
   )
 import Data.Morpheus.Server.Deriving.Utils
@@ -71,11 +69,8 @@ import Data.Morpheus.Server.Types.SchemaT
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataEnumValue (..),
-    DataFingerprint (..),
-    DataUnion,
     Description,
     Directives,
-    ELEM,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
@@ -106,7 +101,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Language.Haskell.TH (Exp, Q)
@@ -166,10 +160,10 @@ mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT 
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
 failureOnlyObject :: forall c a b. (GQLType a) => KindedType c a -> SchemaT b
-failureOnlyObject _ =
+failureOnlyObject proxy =
   failure
     $ globalErrorMessage
-    $ msg (gqlTypeName $ __type (Proxy @a)) <> " should have only one nonempty constructor"
+    $ msg (gqlTypeName $ __type proxy) <> " should have only one nonempty constructor"
 
 type TyContentM kind = (SchemaT (Maybe (FieldContent TRUE kind CONST)))
 
@@ -187,20 +181,19 @@ unpackMs :: [ConsRep (TyContentM k)] -> SchemaT [ConsRep (TyContent k)]
 unpackMs = traverse unpackCons
 
 builder ::
-  forall kind (a :: *).
   GQLType a =>
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT (TypeContent TRUE kind CONST)
-builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements (Proxy @a))
+builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements scope)
   where
     buildObj interfaces = wrapFields interfaces scope (mkFieldsDefinition consFields)
-builder scope cons = genericUnion scope cons
+builder scope cons = genericUnion cons
   where
-    proxy = Proxy @a
-    typeData = __type proxy
-    genericUnion InputType = buildInputUnion typeData
-    genericUnion OutputType = buildUnionType typeData DataUnion (DataObject [])
+    typeData = __type scope
+    genericUnion =
+      mkUnionType scope typeData
+        . analyseRep (gqlTypeName typeData)
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -261,12 +254,18 @@ updateByContent ::
   SchemaT ()
 updateByContent f proxy =
   updateSchema
-    (gqlTypeName $ __type proxy)
     (gqlFingerprint $ __type proxy)
     deriveD
     proxy
   where
-    deriveD _ = buildType proxy <$> f proxy
+    deriveD =
+      fmap
+        ( TypeDefinition
+            (description proxy)
+            (gqlTypeName (__type proxy))
+            []
+        )
+        . f
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))
 analyseRep baseName cons =
@@ -279,47 +278,24 @@ analyseRep baseName cons =
     (enumRep, left1) = partition isEmptyConstraint cons
     (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
 
-buildInputUnion ::
-  TypeData ->
-  [ConsRep (Maybe (FieldContent TRUE IN CONST))] ->
-  SchemaT (TypeContent TRUE IN CONST)
-buildInputUnion TypeData {gqlTypeName, gqlFingerprint} =
-  mkInputUnionType gqlFingerprint . analyseRep gqlTypeName
-
-buildUnionType ::
-  (ELEM LEAF kind ~ TRUE) =>
-  TypeData ->
-  (DataUnion CONST -> TypeContent TRUE kind CONST) ->
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
-  [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
-  SchemaT (TypeContent TRUE kind CONST)
-buildUnionType typeData wrapUnion wrapObject =
-  mkUnionType typeData wrapUnion wrapObject . analyseRep (gqlTypeName typeData)
-
-mkInputUnionType :: DataFingerprint -> ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
-mkInputUnionType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkInputUnionType baseFingerprint ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
-  where
-    typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = withMembers <$> buildUnions wrapInputObject baseFingerprint unionRecordRep
-      where
-        withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
-    wrapInputObject :: (FieldsDefinition IN CONST -> TypeContent TRUE IN CONST)
-    wrapInputObject = DataInputObject
-
 mkUnionType ::
-  (ELEM LEAF kind ~ TRUE) =>
+  KindedType kind a ->
   TypeData ->
-  (DataUnion CONST -> TypeContent TRUE kind CONST) ->
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
-mkUnionType _ _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType typeData@TypeData {gqlFingerprint} wrapUnion wrapObject ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
+mkUnionType InputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkUnionType OutputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkUnionType InputType _ ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
+  where
+    typeMembers :: SchemaT [UnionMember IN CONST]
+    typeMembers = withMembers <$> buildUnions unionRecordRep
+      where
+        withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
+mkUnionType OutputType typeData ResRep {unionRef, unionRecordRep, enumCons} = DataUnion . map mkUnionMember <$> typeMembers
   where
     typeMembers = do
-      enums <- buildUnionEnum wrapObject typeData enumCons
-      unions <- buildUnions wrapObject gqlFingerprint unionRecordRep
+      enums <- buildUnionEnum typeData enumCons
+      unions <- buildUnions unionRecordRep
       pure (unionRef <> enums <> unions)
 
 wrapFields :: [TypeName] -> KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
@@ -334,21 +310,35 @@ fieldByRep FieldRep {fieldSelector, fieldTypeRef, fieldValue} =
   mkField fieldValue fieldSelector fieldTypeRef
 
 buildUnions ::
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
-  DataFingerprint ->
+  PackObject kind =>
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT [TypeName]
-buildUnions wrapObject baseFingerprint cons =
+buildUnions cons =
   traverse_ buildURecType cons $> fmap consName cons
   where
-    buildURecType = insertType . buildUnionRecord wrapObject baseFingerprint
+    buildURecType = insertType . buildUnionRecord
+
+buildUnionRecord ::
+  PackObject kind =>
+  ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
+  TypeDefinition kind CONST
+buildUnionRecord ConsRep {consName, consFields} =
+  mkType consName (packObject $ mkFieldsDefinition consFields)
+
+class PackObject kind where
+  packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
+
+instance PackObject OUT where
+  packObject = DataObject []
+
+instance PackObject IN where
+  packObject = DataInputObject
 
 buildUnionEnum ::
-  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
   TypeData ->
   [TypeName] ->
   SchemaT [TypeName]
-buildUnionEnum wrapObject TypeData {gqlTypeName, gqlFingerprint} enums = updates $> members
+buildUnionEnum TypeData {gqlTypeName} enums = updates $> members
   where
     members
       | null enums = []
@@ -360,58 +350,24 @@ buildUnionEnum wrapObject TypeData {gqlTypeName, gqlFingerprint} enums = updates
     updates
       | null enums = pure ()
       | otherwise =
-        buildEnumObject wrapObject enumTypeWrapperName gqlFingerprint enumTypeName
-          *> buildEnum enumTypeName gqlFingerprint enums
+        buildEnumObject enumTypeWrapperName enumTypeName
+          *> buildEnum enumTypeName enums
 
-buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
-buildType proxy typeContent =
-  TypeDefinition
-    { typeName = gqlTypeName typeData,
-      typeFingerprint = gqlFingerprint typeData,
-      typeDescription = description proxy,
-      typeDirectives = [],
-      typeContent
-    }
-  where
-    typeData = __type proxy
-
-buildUnionRecord ::
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
-  DataFingerprint ->
-  ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
-  TypeDefinition kind CONST
-buildUnionRecord wrapObject typeFingerprint ConsRep {consName, consFields} =
-  mkSubType consName typeFingerprint (wrapObject $ mkFieldsDefinition consFields)
-
-buildEnum :: TypeName -> DataFingerprint -> [TypeName] -> SchemaT ()
-buildEnum typeName typeFingerprint tags =
+buildEnum :: TypeName -> [TypeName] -> SchemaT ()
+buildEnum typeName tags =
   insertType
-    ( mkSubType typeName typeFingerprint (mkEnumContent tags) ::
+    ( mkType typeName (mkEnumContent tags) ::
         TypeDefinition LEAF CONST
     )
 
-buildEnumObject ::
-  (FieldsDefinition cat CONST -> TypeContent TRUE cat CONST) ->
-  TypeName ->
-  DataFingerprint ->
-  TypeName ->
-  SchemaT ()
-buildEnumObject wrapObject typeName typeFingerprint enumTypeName =
-  insertType $
-    mkSubType
-      typeName
-      typeFingerprint
-      ( wrapObject
-          $ singleton
-          $ mkInputValue "enum" [] enumTypeName
-      )
-
-mkSubType :: TypeName -> DataFingerprint -> TypeContent TRUE k CONST -> TypeDefinition k CONST
-mkSubType typeName typeFingerprint typeContent =
-  TypeDefinition
-    { typeName,
-      typeFingerprint,
-      typeDescription = Nothing,
-      typeDirectives = empty,
-      typeContent
-    }
+buildEnumObject :: TypeName -> TypeName -> SchemaT ()
+buildEnumObject typeName enumTypeName =
+  insertType
+    ( mkType
+        typeName
+        ( DataObject []
+            $ singleton
+            $ mkInputValue "enum" [] enumTypeName
+        ) ::
+        TypeDefinition OBJECT CONST
+    )

@@ -164,16 +164,14 @@ validateType ::
 validateType
   TypeDefinition
     { typeName,
-      typeFingerprint,
       typeDescription,
       typeDirectives,
       typeContent
     } =
     inType typeName $
       TypeDefinition
-        typeName
-        typeFingerprint
         typeDescription
+        typeName
         <$> validateDirectives (typeDirectiveLocation typeContent) typeDirectives
         <*> validateTypeContent typeContent
 

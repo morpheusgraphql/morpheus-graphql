@@ -25,7 +25,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     MUTATION,
     SUBSCRIPTION,
     TypeKind (..),
-    DataFingerprint (..),
     DataTypeWrapper (..),
     Token,
     anonymousRef,
@@ -44,7 +43,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     removeDuplicates,
     GQLError (..),
     GQLErrors,
-    internalFingerprint,
     TRUE,
     FALSE,
     TypeName (..),
@@ -287,11 +285,6 @@ data GQLError = GQLError
   deriving (Show, Eq, Generic, FromJSON, ToJSON)
 
 type GQLErrors = [GQLError]
-
-data DataFingerprint = DataFingerprint TypeName [String] deriving (Show, Eq, Ord, Lift)
-
-internalFingerprint :: TypeName -> [String] -> DataFingerprint
-internalFingerprint name = DataFingerprint ("SYSTEM.INTERNAL." <> name)
 
 data OperationType
   = Query
