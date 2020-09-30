@@ -11,7 +11,7 @@
 -- | GQL Types
 module Data.Morpheus.Types
   ( Event (..),
-    GQLType (KIND, description, implements),
+    GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives),
     GQLScalar (parseValue, serialize),
     GQLRequest (..),
     GQLResponse (..),
