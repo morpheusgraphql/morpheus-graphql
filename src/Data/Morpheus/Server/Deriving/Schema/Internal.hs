@@ -197,8 +197,9 @@ builder scope cons = genericUnion scope cons
   where
     proxy = Proxy @a
     typeData = __type proxy
-    genericUnion InputType = buildInputUnion typeData
-    genericUnion OutputType = buildUnionType typeData
+    name = gqlTypeName typeData
+    genericUnion InputType = mkInputUnionType . analyseRep name
+    genericUnion OutputType = mkUnionType typeData . analyseRep name
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -276,21 +277,6 @@ analyseRep baseName cons =
     (enumRep, left1) = partition isEmptyConstraint cons
     (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
 
-buildInputUnion ::
-  TypeData ->
-  [ConsRep (Maybe (FieldContent TRUE IN CONST))] ->
-  SchemaT (TypeContent TRUE IN CONST)
-buildInputUnion TypeData {gqlTypeName} =
-  mkInputUnionType . analyseRep gqlTypeName
-
-buildUnionType ::
-  (ELEM LEAF kind ~ TRUE, PackObject kind) =>
-  TypeData ->
-  [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
-  SchemaT (TypeContent TRUE kind CONST)
-buildUnionType typeData =
-  mkUnionType typeData . analyseRep (gqlTypeName typeData)
-
 mkInputUnionType :: ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
 mkInputUnionType ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
 mkInputUnionType ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
@@ -355,6 +341,7 @@ class PackObject kind where
 
 instance PackObject OUT where
   packObject = DataObject []
+  packUnion = DataUnion
 
 instance PackObject IN where
   packObject = DataInputObject
