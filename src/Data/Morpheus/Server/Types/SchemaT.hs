@@ -31,7 +31,6 @@ import Data.HashMap.Lazy
     elems,
     empty,
     insert,
-    singleton,
   )
 import Data.Hashable (Hashable)
 import Data.Morpheus.Internal.Utils
@@ -66,7 +65,6 @@ import Prelude
     const,
     null,
     otherwise,
-    uncurry,
   )
 
 data DataFingerprint = DataFingerprint TypeName [String]
@@ -110,15 +108,15 @@ instance Monad SchemaT where
 
 toSchema ::
   SchemaT
-    ( Maybe (TypeDefinition OBJECT CONST),
-      Maybe (TypeDefinition OBJECT CONST),
-      Maybe (TypeDefinition OBJECT CONST)
+    ( TypeDefinition OBJECT CONST,
+      TypeDefinition OBJECT CONST,
+      TypeDefinition OBJECT CONST
     ) ->
   Eventless (Schema CONST)
 toSchema (SchemaT v) = do
-  (rootTypes, typeDefs) <- v
+  ((q, m, s), typeDefs) <- v
   types <- elems <$> execUpdates empty typeDefs
-  defineSchemaWith types rootTypes
+  defineSchemaWith types (optionalType q, optionalType m, optionalType s)
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
