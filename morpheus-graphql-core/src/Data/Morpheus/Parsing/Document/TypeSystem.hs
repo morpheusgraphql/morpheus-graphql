@@ -60,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     ELEM,
     FieldsDefinition,
-    LEAF,
     OBJECT,
     OUT,
     RawTypeDefinition (..),
@@ -106,18 +105,6 @@ mkObject typeDescription typeName objectImplements typeDirectives objectFields =
       ..
     }
 
-mkScalar ::
-  ELEM LEAF a ~ TRUE =>
-  Maybe Description ->
-  TypeName ->
-  Directives s ->
-  TypeDefinition a s
-mkScalar typeDescription typeName typeDirectives =
-  TypeDefinition
-    { typeContent = DataScalar (ScalarDefinition pure),
-      ..
-    }
-
 -- Scalars : https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
 --
 --  ScalarTypeDefinition:
@@ -129,9 +116,10 @@ scalarTypeDefinition ::
   Parser (TypeDefinition ANY s)
 scalarTypeDefinition typeDescription =
   label "ScalarTypeDefinition" $
-    mkScalar typeDescription
+    TypeDefinition typeDescription
       <$> typeDeclaration "scalar"
       <*> optionalDirectives
+      <*> pure (DataScalar (ScalarDefinition pure))
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 --
