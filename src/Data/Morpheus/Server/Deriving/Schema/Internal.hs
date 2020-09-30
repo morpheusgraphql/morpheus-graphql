@@ -186,20 +186,20 @@ unpackMs = traverse unpackCons
 
 builder ::
   forall kind (a :: *).
-  GQLType a =>
+  (GQLType a, ELEM LEAF kind ~ TRUE) =>
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT (TypeContent TRUE kind CONST)
 builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements (Proxy @a))
   where
     buildObj interfaces = wrapFields interfaces scope (mkFieldsDefinition consFields)
-builder scope cons = genericUnion scope cons
+builder scope cons = genericUnion cons
   where
     proxy = Proxy @a
     typeData = __type proxy
-    name = gqlTypeName typeData
-    genericUnion InputType = mkInputUnionType . analyseRep name
-    genericUnion OutputType = mkUnionType typeData . analyseRep name
+    genericUnion =
+      mkUnionType scope typeData
+        . analyseRep (gqlTypeName typeData)
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -277,22 +277,20 @@ analyseRep baseName cons =
     (enumRep, left1) = partition isEmptyConstraint cons
     (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
 
-mkInputUnionType :: ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
-mkInputUnionType ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkInputUnionType ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
+mkUnionType ::
+  ELEM LEAF kind ~ TRUE =>
+  KindedType kind a ->
+  TypeData ->
+  ResRep (Maybe (FieldContent TRUE kind CONST)) ->
+  SchemaT (TypeContent TRUE kind CONST)
+mkUnionType _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkUnionType InputType _ ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
   where
     typeMembers :: SchemaT [UnionMember IN CONST]
     typeMembers = withMembers <$> buildUnions unionRecordRep
       where
         withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
-
-mkUnionType ::
-  (ELEM LEAF kind ~ TRUE, PackObject kind) =>
-  TypeData ->
-  ResRep (Maybe (FieldContent TRUE kind CONST)) ->
-  SchemaT (TypeContent TRUE kind CONST)
-mkUnionType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType typeData ResRep {unionRef, unionRecordRep, enumCons} = packUnion . map mkUnionMember <$> typeMembers
+mkUnionType OutputType typeData ResRep {unionRef, unionRecordRep, enumCons} = packUnion . map mkUnionMember <$> typeMembers
   where
     typeMembers = do
       enums <- buildUnionEnum typeData enumCons
