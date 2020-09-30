@@ -198,7 +198,7 @@ builder scope cons = genericUnion scope cons
     proxy = Proxy @a
     typeData = __type proxy
     genericUnion InputType = buildInputUnion typeData
-    genericUnion OutputType = buildUnionType typeData DataUnion (DataObject [])
+    genericUnion OutputType = buildUnionType typeData DataUnion
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -284,39 +284,35 @@ buildInputUnion TypeData {gqlTypeName} =
   mkInputUnionType . analyseRep gqlTypeName
 
 buildUnionType ::
-  (ELEM LEAF kind ~ TRUE) =>
+  (ELEM LEAF kind ~ TRUE, PackObject kind) =>
   TypeData ->
   (DataUnion CONST -> TypeContent TRUE kind CONST) ->
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT (TypeContent TRUE kind CONST)
-buildUnionType typeData wrapUnion wrapObject =
-  mkUnionType typeData wrapUnion wrapObject . analyseRep (gqlTypeName typeData)
+buildUnionType typeData wrapUnion =
+  mkUnionType typeData wrapUnion . analyseRep (gqlTypeName typeData)
 
 mkInputUnionType :: ResRep (Maybe (FieldContent TRUE IN CONST)) -> SchemaT (TypeContent TRUE IN CONST)
 mkInputUnionType ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
 mkInputUnionType ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
   where
     typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = withMembers <$> buildUnions wrapInputObject unionRecordRep
+    typeMembers = withMembers <$> buildUnions unionRecordRep
       where
         withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
-    wrapInputObject :: (FieldsDefinition IN CONST -> TypeContent TRUE IN CONST)
-    wrapInputObject = DataInputObject
 
 mkUnionType ::
-  (ELEM LEAF kind ~ TRUE) =>
+  (ELEM LEAF kind ~ TRUE, PackObject kind) =>
   TypeData ->
   (DataUnion CONST -> TypeContent TRUE kind CONST) ->
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
-mkUnionType _ _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType typeData wrapUnion wrapObject ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
+mkUnionType _ _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
+mkUnionType typeData wrapUnion ResRep {unionRef, unionRecordRep, enumCons} = wrapUnion . map mkUnionMember <$> typeMembers
   where
     typeMembers = do
       enums <- buildUnionEnum typeData enumCons
-      unions <- buildUnions wrapObject unionRecordRep
+      unions <- buildUnions unionRecordRep
       pure (unionRef <> enums <> unions)
 
 wrapFields :: [TypeName] -> KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
@@ -331,13 +327,13 @@ fieldByRep FieldRep {fieldSelector, fieldTypeRef, fieldValue} =
   mkField fieldValue fieldSelector fieldTypeRef
 
 buildUnions ::
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
+  PackObject kind =>
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT [TypeName]
-buildUnions wrapObject cons =
+buildUnions cons =
   traverse_ buildURecType cons $> fmap consName cons
   where
-    buildURecType = insertType . buildUnionRecord wrapObject
+    buildURecType = insertType . buildUnionRecord
 
 buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
 buildType proxy typeContent =
@@ -349,11 +345,20 @@ buildType proxy typeContent =
     }
 
 buildUnionRecord ::
-  (FieldsDefinition kind CONST -> TypeContent TRUE kind CONST) ->
+  PackObject kind =>
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
   TypeDefinition kind CONST
-buildUnionRecord wrapObject ConsRep {consName, consFields} =
-  mkType consName (wrapObject $ mkFieldsDefinition consFields)
+buildUnionRecord ConsRep {consName, consFields} =
+  mkType consName (packObject $ mkFieldsDefinition consFields)
+
+class PackObject kind where
+  packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
+
+instance PackObject OUT where
+  packObject = DataObject []
+
+instance PackObject IN where
+  packObject = DataInputObject
 
 buildUnionEnum ::
   TypeData ->
