@@ -70,7 +70,6 @@ import Data.Morpheus.Server.Types.SchemaT
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataEnumValue (..),
-    DataUnion,
     Description,
     Directives,
     ELEM,
@@ -264,7 +263,14 @@ updateByContent f proxy =
     deriveD
     proxy
   where
-    deriveD _ = buildType proxy <$> f proxy
+    deriveD =
+      fmap
+        ( TypeDefinition
+            (description proxy)
+            (gqlTypeName (__type proxy))
+            []
+        )
+        . f
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))
 analyseRep baseName cons =
@@ -290,7 +296,7 @@ mkUnionType InputType _ ResRep {unionRef, unionRecordRep, enumCons} = DataInputU
     typeMembers = withMembers <$> buildUnions unionRecordRep
       where
         withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
-mkUnionType OutputType typeData ResRep {unionRef, unionRecordRep, enumCons} = packUnion . map mkUnionMember <$> typeMembers
+mkUnionType OutputType typeData ResRep {unionRef, unionRecordRep, enumCons} = DataUnion . map mkUnionMember <$> typeMembers
   where
     typeMembers = do
       enums <- buildUnionEnum typeData enumCons
@@ -317,15 +323,6 @@ buildUnions cons =
   where
     buildURecType = insertType . buildUnionRecord
 
-buildType :: GQLType a => f a -> TypeContent TRUE cat CONST -> TypeDefinition cat CONST
-buildType proxy typeContent =
-  TypeDefinition
-    { typeName = gqlTypeName (__type proxy),
-      typeDescription = description proxy,
-      typeDirectives = [],
-      typeContent
-    }
-
 buildUnionRecord ::
   PackObject kind =>
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
@@ -335,11 +332,9 @@ buildUnionRecord ConsRep {consName, consFields} =
 
 class PackObject kind where
   packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
-  packUnion :: DataUnion CONST -> TypeContent TRUE kind CONST
 
 instance PackObject OUT where
   packObject = DataObject []
-  packUnion = DataUnion
 
 instance PackObject IN where
   packObject = DataInputObject
