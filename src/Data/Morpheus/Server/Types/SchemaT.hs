@@ -17,7 +17,6 @@ module Data.Morpheus.Server.Types.SchemaT
     insertType,
     DataFingerprint (..),
     internalFingerprint,
-    optionalType,
     toSchema,
   )
 where
