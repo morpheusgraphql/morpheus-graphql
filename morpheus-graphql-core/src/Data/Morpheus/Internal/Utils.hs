@@ -250,7 +250,7 @@ size = length . elems
 
 -- Merge Object with of Failure as an Option
 
-(<:>) :: (Monad m, SemigroupM m a, Failure ValidationErrors m) => a -> a -> m a
+(<:>) :: SemigroupM m a => a -> a -> m a
 (<:>) = mergeM []
 
 class SemigroupM m a where
