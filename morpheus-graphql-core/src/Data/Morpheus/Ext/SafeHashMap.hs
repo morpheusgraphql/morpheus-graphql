@@ -28,10 +28,10 @@ import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Elems (Elems)
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Collection (..),
-    Elems (..),
     Failure (..),
     FromElems (..),
     KeyOf (..),
