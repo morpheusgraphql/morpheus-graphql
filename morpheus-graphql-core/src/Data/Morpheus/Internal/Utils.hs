@@ -109,7 +109,7 @@ nameSpaceType :: [FieldName] -> TypeName -> TypeName
 nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capitalize (fmap readName list <> [name])
 
 nameSpaceField :: TypeName -> FieldName -> FieldName
-nameSpaceField nSpace (FieldName name) = FieldName (nonCapital nSpace <> capitalize name)
+nameSpaceField (TypeName nSpace) (FieldName name) = FieldName (uncapitalize nSpace <> capitalize name)
 
 dropPrefix :: TypeName -> String -> String
 dropPrefix (TypeName name) = drop (T.length name)
@@ -122,9 +122,6 @@ stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
   where
     __uncapitalize [] = []
     __uncapitalize (x : xs) = toLower x : xs
-
-nonCapital :: TypeName -> Token
-nonCapital = uncapitalize . readTypeName
 
 capitalize :: Text -> Text
 capitalize = mapFstChar toUpper
