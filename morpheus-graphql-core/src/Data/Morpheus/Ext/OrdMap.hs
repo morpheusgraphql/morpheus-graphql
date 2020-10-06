@@ -33,9 +33,10 @@ import Data.Morpheus.Ext.Map
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
+    Elems (..),
     Failure,
+    FromElems (..),
     KeyOf (..),
-    Listable (..),
     Selectable (..),
     SemigroupM (..),
     toPair,
@@ -88,8 +89,10 @@ instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
 instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => SemigroupM m (OrdMap k a) where
   mergeM ref (OrdMap x) (OrdMap y) = OrdMap <$> mergeM ref x y
 
-instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) where
+instance (NameCollision a, Monad m, Failure ValidationErrors m, KeyOf k a, Hashable k) => FromElems m a (OrdMap k a) where
   fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
+
+instance (NameCollision a, KeyOf k a, Hashable k) => Elems a (OrdMap k a) where
   elems = getElements
 
 unsafeFromList ::
