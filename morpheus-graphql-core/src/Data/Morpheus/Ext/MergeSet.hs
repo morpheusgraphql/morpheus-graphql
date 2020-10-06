@@ -28,12 +28,12 @@ import Data.Morpheus.Ext.Map
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
+    Elems,
     Failure (..),
+    FromElems (..),
     KeyOf (..),
-    Listable (..),
-    Merge (..),
     Selectable (..),
-    elems,
+    SemigroupM (..),
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -68,7 +68,8 @@ newtype MergeSet (dups :: Stage) a = MergeSet
       Foldable,
       Lift,
       Traversable,
-      Collection a
+      Collection a,
+      Elems a
     )
 
 instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
@@ -76,19 +77,20 @@ instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
 
 instance
   ( KeyOf k a,
-    Listable a (MergeSet VALID a),
-    Merge a,
+    SemigroupM m a,
+    Monad m,
+    Failure ValidationErrors m,
     Eq a
   ) =>
-  Merge (MergeSet VALID a)
+  SemigroupM m (MergeSet VALID a)
   where
-  merge path (MergeSet x) (MergeSet y) = resolveMergable path (x <> y)
+  mergeM path (MergeSet x) (MergeSet y) = resolveMergable path (x <> y)
 
 resolveMergable ::
   ( KeyOf k a,
     Monad m,
     Eq a,
-    Merge a,
+    SemigroupM m a,
     Failure ValidationErrors m
   ) =>
   [Ref] ->
@@ -97,24 +99,23 @@ resolveMergable ::
 resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) (MergeSet . fmap snd) (resolveWith (resolveConflict path))
 
 instance
-  ( Listable a (MergeSet VALID a),
-    KeyOf k a,
-    Merge a,
+  ( KeyOf k a,
+    SemigroupM m a,
+    Monad m,
+    Failure ValidationErrors m,
     Eq a
   ) =>
-  Listable a (MergeSet VALID a)
+  FromElems m a (MergeSet VALID a)
   where
   fromElems = resolveMergable []
-  elems = unpack
 
-instance Merge (MergeSet RAW a) where
-  merge _ (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
+instance Applicative m => SemigroupM m (MergeSet RAW a) where
+  mergeM _ (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
 
-instance Listable a (MergeSet RAW a) where
+instance Applicative m => FromElems m a (MergeSet RAW a) where
   fromElems = pure . MergeSet
-  elems = unpack
 
-resolveConflict :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
+resolveConflict :: (Monad m, Eq a, KeyOf k a, SemigroupM m a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 resolveConflict path oldValue newValue
   | oldValue == newValue = pure oldValue
-  | otherwise = merge path oldValue newValue
+  | otherwise = mergeM path oldValue newValue

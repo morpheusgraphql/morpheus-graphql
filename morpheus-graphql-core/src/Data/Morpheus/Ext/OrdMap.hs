@@ -18,7 +18,7 @@ module Data.Morpheus.Ext.OrdMap
 where
 
 -- MORPHEUS
-
+import Control.Monad (Monad)
 import Data.Foldable (Foldable (..))
 import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
@@ -33,12 +33,15 @@ import Data.Morpheus.Ext.Map
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
+    Elems (..),
+    Failure,
+    FromElems (..),
     KeyOf (..),
-    Listable (..),
-    Merge (..),
     Selectable (..),
+    SemigroupM (..),
     toPair,
   )
+import Data.Morpheus.Types.Internal.AST.Base (ValidationErrors)
 import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prelude
@@ -83,11 +86,13 @@ instance (KeyOf k a, Hashable k) => Collection a (OrdMap k a) where
 instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
   selectOr fb f key OrdMap {mapEntries} = maybe fb (f . indexedValue) (HM.lookup key mapEntries)
 
-instance (NameCollision a, KeyOf k a) => Merge (OrdMap k a) where
-  merge ref (OrdMap x) (OrdMap y) = OrdMap <$> merge ref x y
+instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => SemigroupM m (OrdMap k a) where
+  mergeM ref (OrdMap x) (OrdMap y) = OrdMap <$> mergeM ref x y
 
-instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (OrdMap k a) where
+instance (NameCollision a, Monad m, Failure ValidationErrors m, KeyOf k a, Hashable k) => FromElems m a (OrdMap k a) where
   fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
+
+instance (Eq k, Hashable k) => Elems a (OrdMap k a) where
   elems = getElements
 
 unsafeFromList ::

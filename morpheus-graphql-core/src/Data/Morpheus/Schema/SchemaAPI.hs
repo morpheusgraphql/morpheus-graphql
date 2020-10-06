@@ -11,7 +11,7 @@ where
 
 -- MORPHEUS
 import Data.Morpheus.Internal.Utils
-  ( (<.>),
+  ( (<:>),
     elems,
     empty,
     selectOr,
@@ -103,6 +103,6 @@ withSystemFields ::
 withSystemFields schema RootResModel {query, ..} =
   pure $
     RootResModel
-      { query = query >>= (<.> schemaAPI schema),
+      { query = query >>= (<:> schemaAPI schema),
         ..
       }

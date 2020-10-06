@@ -78,12 +78,12 @@ import Data.Morpheus.Ext.SafeHashMap
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Collection (..),
+    Elems (..),
     Failure (..),
+    FromElems (..),
     KeyOf (..),
-    Listable (..),
-    Merge (..),
     Selectable (..),
-    elems,
+    SemigroupM (..),
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -241,8 +241,15 @@ data Schema (s :: Stage) = Schema
   }
   deriving (Show, Lift)
 
-instance Merge (Schema s) where
-  merge _ s1 s2 =
+instance
+  ( Monad m,
+    Failure ValidationErrors m
+  ) =>
+  SemigroupM
+    m
+    (Schema s)
+  where
+  mergeM _ s1 s2 =
     Schema
       <$> (types s1 <:> types s2)
       <*> mergeOperation (query s1) (query s2)
@@ -324,10 +331,17 @@ type TypeLib s = SafeHashMap TypeName (TypeDefinition ANY s)
 instance Selectable TypeName (TypeDefinition ANY s) (Schema s) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-instance Listable (TypeDefinition ANY s) (Schema s) where
+instance Elems (TypeDefinition ANY s) (Schema s) where
   elems Schema {..} =
     elems types
       <> concatMap fromOperation [Just query, mutation, subscription]
+
+instance
+  ( Monad m,
+    Failure ValidationErrors m
+  ) =>
+  FromElems m (TypeDefinition ANY s) (Schema s)
+  where
   fromElems types =
     traverse3
       (popByKey types)
