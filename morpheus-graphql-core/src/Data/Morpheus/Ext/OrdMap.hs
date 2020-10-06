@@ -27,13 +27,13 @@ import Data.Hashable (Hashable)
 import Data.List (sortOn)
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Elems (Elems (..))
 import Data.Morpheus.Ext.Map
   ( Indexed (..),
     indexed,
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
-    Elems (..),
     Failure,
     FromElems (..),
     KeyOf (..),
