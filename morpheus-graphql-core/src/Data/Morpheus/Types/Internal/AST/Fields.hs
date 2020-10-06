@@ -42,6 +42,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
 where
 
 -- MORPHEUS
+import Control.Monad (Monad)
 import Data.Functor ((<$>), Functor (..))
 import Data.List (find)
 import Data.Maybe (Maybe (..))
@@ -54,10 +55,11 @@ import Data.Morpheus.Ext.OrdMap
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
+    Elems (..),
+    Failure,
+    FromElems (..),
     KeyOf (..),
-    Listable (..),
     Selectable (..),
-    elems,
     toPair,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -81,6 +83,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeRef (..),
     TypeWrapper (..),
     ValidationError (..),
+    ValidationErrors,
     msgValidation,
     sysFields,
   )
@@ -366,6 +369,8 @@ instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where
   empty = ArgumentsDefinition Nothing empty
   singleton = ArgumentsDefinition Nothing . singleton
 
-instance Listable (ArgumentDefinition s) (ArgumentsDefinition s) where
-  elems (ArgumentsDefinition _ args) = elems args
+instance (Monad m, Failure ValidationErrors m) => FromElems m (ArgumentDefinition s) (ArgumentsDefinition s) where
   fromElems args = ArgumentsDefinition Nothing <$> fromElems args
+
+instance Elems (ArgumentDefinition s) (ArgumentsDefinition s) where
+  elems (ArgumentsDefinition _ args) = elems args

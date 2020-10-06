@@ -29,7 +29,8 @@ module Data.Morpheus.Types.Internal.AST.Selection
   )
 where
 
-import Control.Applicative (pure)
+import Control.Applicative (Applicative (..))
+import Control.Monad (Monad)
 import Data.Foldable (all, foldr)
 import Data.Functor ((<$>), fmap)
 import Data.Maybe (Maybe (..), fromMaybe, isJust, maybe)
@@ -49,7 +50,7 @@ import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
-    Merge (..),
+    SemigroupM (..),
     elems,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -142,12 +143,15 @@ instance RenderGQL (SelectionContent VALID) where
   render (UnionSelection unionSets) = renderObject (elems unionSets)
 
 instance
-  Merge (SelectionSet s) =>
-  Merge (SelectionContent s)
+  ( Monad m,
+    Failure ValidationErrors m,
+    SemigroupM m (SelectionSet s)
+  ) =>
+  SemigroupM m (SelectionContent s)
   where
-  merge path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> merge path s1 s2
-  merge path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> merge path u1 u2
-  merge path oldC currentC
+  mergeM path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> mergeM path s1 s2
+  mergeM path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> mergeM path u1 u2
+  mergeM path oldC currentC
     | oldC == currentC = pure oldC
     | otherwise =
       failure
@@ -196,9 +200,9 @@ mergeConflict refs@(rootField : xs) err =
         renderStart
         xs
 
-instance Merge UnionTag where
-  merge path (UnionTag oldTag oldSel) (UnionTag _ currentSel) =
-    UnionTag oldTag <$> merge path oldSel currentSel
+instance (Monad m, Failure ValidationErrors m) => SemigroupM m UnionTag where
+  mergeM path (UnionTag oldTag oldSel) (UnionTag _ currentSel) =
+    UnionTag oldTag <$> mergeM path oldSel currentSel
 
 type UnionSelection (s :: Stage) = MergeSet s UnionTag
 
@@ -241,10 +245,13 @@ useDifferentAliases =
     <> "fields to fetch both if this was intentional."
 
 instance
-  Merge (SelectionSet a) =>
-  Merge (Selection a)
+  ( Monad m,
+    SemigroupM m (SelectionSet a),
+    Failure ValidationErrors m
+  ) =>
+  SemigroupM m (Selection a)
   where
-  merge
+  mergeM
     path
     old@Selection {selectionPosition = pos1}
     current@Selection {selectionPosition = pos2} =
@@ -252,7 +259,7 @@ instance
         selectionName <- mergeName
         let currentPath = path <> [Ref selectionName pos1]
         selectionArguments <- mergeArguments currentPath
-        selectionContent <- merge currentPath (selectionContent old) (selectionContent current)
+        selectionContent <- mergeM currentPath (selectionContent old) (selectionContent current)
         pure $
           Selection
             { selectionAlias = mergeAlias,
@@ -297,7 +304,7 @@ instance
                 { validationMessage = "they have differing arguments. " <> useDifferentAliases,
                   validationLocations = [pos1, pos2]
                 }
-  merge path _ _ =
+  mergeM path _ _ =
     failure $
       mergeConflict
         path

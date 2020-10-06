@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
@@ -48,8 +49,8 @@ import Data.ByteString.Lazy
 import Data.Functor (($>), (<$>))
 import Data.Morpheus.Internal.Utils
   ( Collection,
+    FromElems (..),
     KeyOf,
-    Listable (..),
     empty,
     fromElems,
     fromLBS,
@@ -70,6 +71,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
+import Data.Morpheus.Types.Internal.Resolving (Eventless)
 import Data.Semigroup ((<>))
 import Data.Text
   ( strip,
@@ -304,7 +306,7 @@ pipe x = optional verticalPipe *> (x `sepBy1` verticalPipe)
 collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
 
-setOf :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
+setOf :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
 setOf = collection >=> lift . fromElems
 
 optionalCollection :: Collection a c => Parser c -> Parser c
@@ -315,14 +317,14 @@ parseNonNull =
   (exclamationMark $> [NonNullType])
     <|> pure []
 
-uniqTuple :: (Listable a coll, KeyOf k a) => Parser a -> Parser coll
+uniqTuple :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTuple parser =
   label "Tuple" $
     parens
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
       >>= lift . fromElems
 
-uniqTupleOpt :: (Listable a coll, Collection a coll, KeyOf k a) => Parser a -> Parser coll
+uniqTupleOpt :: (FromElems Eventless a coll, Collection a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 
 fieldNameColon :: Parser FieldName
