@@ -92,7 +92,7 @@ instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => Se
 instance (NameCollision a, Monad m, Failure ValidationErrors m, KeyOf k a, Hashable k) => FromElems m a (OrdMap k a) where
   fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
 
-instance (NameCollision a, KeyOf k a, Hashable k) => Elems a (OrdMap k a) where
+instance (Eq k, Hashable k) => Elems a (OrdMap k a) where
   elems = getElements
 
 unsafeFromList ::

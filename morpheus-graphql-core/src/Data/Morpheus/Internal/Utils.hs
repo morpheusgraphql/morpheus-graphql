@@ -91,6 +91,7 @@ import Prelude
     String,
     const,
     fst,
+    id,
     length,
     otherwise,
   )
@@ -217,8 +218,11 @@ instance
   where
   fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
 
-instance (NameCollision a, KeyOf k a) => Elems a (HashMap k a) where
+instance Elems a (HashMap k a) where
   elems = HM.elems
+
+instance Elems a [a] where
+  elems = id
 
 concatTraverse ::
   ( Monad m,

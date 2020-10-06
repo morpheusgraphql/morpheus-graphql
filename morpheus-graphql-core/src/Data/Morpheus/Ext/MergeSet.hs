@@ -28,12 +28,12 @@ import Data.Morpheus.Ext.Map
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
+    Elems,
     Failure (..),
+    FromElems (..),
     KeyOf (..),
-    Listable (..),
     Selectable (..),
     SemigroupM (..),
-    elems,
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -68,7 +68,8 @@ newtype MergeSet (dups :: Stage) a = MergeSet
       Foldable,
       Lift,
       Traversable,
-      Collection a
+      Collection a,
+      Elems a
     )
 
 instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
@@ -76,8 +77,9 @@ instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
 
 instance
   ( KeyOf k a,
-    Listable a (MergeSet VALID a),
     SemigroupM m a,
+    Monad m,
+    Failure ValidationErrors m,
     Eq a
   ) =>
   SemigroupM m (MergeSet VALID a)
@@ -97,22 +99,21 @@ resolveMergable ::
 resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) (MergeSet . fmap snd) (resolveWith (resolveConflict path))
 
 instance
-  ( Listable a (MergeSet VALID a),
-    KeyOf k a,
+  ( KeyOf k a,
     SemigroupM m a,
+    Monad m,
+    Failure ValidationErrors m,
     Eq a
   ) =>
-  Listable a (MergeSet VALID a)
+  FromElems m a (MergeSet VALID a)
   where
   fromElems = resolveMergable []
-  elems = unpack
 
 instance Applicative m => SemigroupM m (MergeSet RAW a) where
   mergeM _ (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
 
-instance Listable a (MergeSet RAW a) where
+instance Applicative m => FromElems m a (MergeSet RAW a) where
   fromElems = pure . MergeSet
-  elems = unpack
 
 resolveConflict :: (Monad m, Eq a, KeyOf k a, SemigroupM m a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 resolveConflict path oldValue newValue
