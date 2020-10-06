@@ -21,6 +21,7 @@ import Data.Foldable (Foldable (..))
 import Data.Functor ((<$>), Functor (..))
 import Data.List (find)
 import Data.Maybe (maybe)
+import Data.Morpheus.Ext.Elems (Elems (..))
 import Data.Morpheus.Ext.Map
   ( fromListT,
     resolveWith,
@@ -28,7 +29,6 @@ import Data.Morpheus.Ext.Map
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
-    Elems,
     Failure (..),
     FromElems (..),
     KeyOf (..),
