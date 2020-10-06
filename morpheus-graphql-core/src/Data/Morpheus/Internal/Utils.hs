@@ -19,7 +19,6 @@ module Data.Morpheus.Internal.Utils
     KeyOf (..),
     toPair,
     selectBy,
-    keys,
     size,
     (<:>),
     mapFst,
@@ -83,6 +82,7 @@ import Prelude
   ( ($),
     (.),
     Bool (..),
+    Char,
     Either (..),
     Eq (..),
     Foldable (..),
@@ -118,27 +118,24 @@ stripConstructorNamespace :: TypeName -> String -> String
 stripConstructorNamespace = dropPrefix
 
 stripFieldNamespace :: TypeName -> String -> String
-stripFieldNamespace prefix = uncapitalize . dropPrefix prefix
-
-mapText :: (String -> String) -> Token -> Token
-mapText f = T.pack . f . T.unpack
+stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
+  where
+    __uncapitalize [] = []
+    __uncapitalize (x : xs) = toLower x : xs
 
 nonCapital :: TypeName -> Token
 nonCapital = uncapitalize . readTypeName
 
-class Capitalize a where
-  capitalize :: a -> a
-  uncapitalize :: a -> a
+capitalize :: Text -> Text
+capitalize = mapFstChar toUpper
 
-instance Capitalize String where
-  capitalize [] = []
-  capitalize (x : xs) = toUpper x : xs
-  uncapitalize [] = []
-  uncapitalize (x : xs) = toLower x : xs
+uncapitalize :: Text -> Text
+uncapitalize = mapFstChar toLower
 
-instance Capitalize Token where
-  capitalize = mapText capitalize
-  uncapitalize = mapText uncapitalize
+mapFstChar :: (Char -> Char) -> Token -> Token
+mapFstChar f x
+  | T.null x = x
+  | otherwise = T.singleton (f $ T.head x) <> T.tail x
 
 capitalTypeName :: FieldName -> TypeName
 capitalTypeName = TypeName . capitalize . readName
@@ -250,9 +247,6 @@ join = __join empty
   where
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
-
-keys :: (KeyOf k a, Elems a coll) => coll -> [k]
-keys = fmap keyOf . elems
 
 size :: Elems a coll => coll -> Int
 size = length . elems
