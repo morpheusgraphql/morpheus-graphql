@@ -13,13 +13,11 @@ module Data.Morpheus.Internal.Utils
     capitalTypeName,
     Collection (..),
     Selectable (..),
-    Elems (..),
     FromElems (..),
     Failure (..),
     KeyOf (..),
     toPair,
     selectBy,
-    size,
     (<:>),
     mapFst,
     mapSnd,
@@ -56,6 +54,7 @@ import Data.List (drop, find)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Elems (Elems (..))
 import Data.Morpheus.Ext.Map
   ( Indexed (..),
     ResolutionT,
@@ -86,13 +85,10 @@ import Prelude
     Either (..),
     Eq (..),
     Foldable (..),
-    Int,
     Monad,
     String,
     const,
     fst,
-    id,
-    length,
     otherwise,
   )
 
@@ -192,9 +188,6 @@ instance KeyOf TypeName TypeNameRef where
 toPair :: KeyOf k a => a -> (k, a)
 toPair x = (keyOf x, x)
 
-class Elems a coll | coll -> a where
-  elems :: coll -> [a]
-
 -- list Like Collections
 class FromElems m a coll | coll -> a where
   fromElems :: [a] -> m coll
@@ -211,12 +204,6 @@ instance
   FromElems m a (HashMap k a)
   where
   fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
-
-instance Elems a (HashMap k a) where
-  elems = HM.elems
-
-instance Elems a [a] where
-  elems = id
 
 concatTraverse ::
   ( Monad m,
@@ -244,9 +231,6 @@ join = __join empty
   where
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
-
-size :: Elems a coll => coll -> Int
-size = length . elems
 
 -- Merge Object with of Failure as an Option
 
