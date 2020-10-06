@@ -49,15 +49,14 @@ import Data.Char
 import Data.Functor ((<$>), Functor (..))
 import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
-import Data.Hashable (Hashable)
 import Data.List (drop, find)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Elems (Elems (..))
+import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
 import Data.Morpheus.Ext.Map
-  ( Indexed (..),
-    ResolutionT,
+  ( ResolutionT,
     fromListT,
     runResolutionT,
   )
@@ -67,7 +66,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     Ref (..),
     Token,
     TypeName (..),
-    TypeNameRef (..),
     ValidationErrors,
   )
 import Data.Semigroup (Semigroup (..))
@@ -88,7 +86,6 @@ import Prelude
     Monad,
     String,
     const,
-    fst,
     otherwise,
   )
 
@@ -172,21 +169,6 @@ traverseCollection ::
   t a ->
   f (t' b)
 traverseCollection f a = fromElems =<< traverse f (elems a)
-
-class (Eq k, Hashable k) => KeyOf k a | a -> k where
-  keyOf :: a -> k
-
-instance (Eq k, Hashable k) => KeyOf k (k, a) where
-  keyOf = fst
-
-instance KeyOf FieldName Ref where
-  keyOf = refName
-
-instance KeyOf TypeName TypeNameRef where
-  keyOf = typeNameRef
-
-toPair :: KeyOf k a => a -> (k, a)
-toPair x = (keyOf x, x)
 
 -- list Like Collections
 class FromElems m a coll | coll -> a where
@@ -273,6 +255,3 @@ failOnDuplicates :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a 
 failOnDuplicates (x :| xs)
   | null xs = pure x
   | otherwise = failure $ fmap nameCollision (x : xs)
-
-instance (Eq k, Hashable k) => KeyOf k (Indexed k a) where
-  keyOf = indexedKey
