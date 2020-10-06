@@ -34,8 +34,8 @@ import Data.Morpheus.Internal.Utils
     Failure (..),
     KeyOf (..),
     Listable (..),
-    Merge (..),
     Selectable (..),
+    SemigroupM (..),
   )
 import Data.Morpheus.Types.Internal.AST.Base (ValidationErrors)
 import Data.Traversable (Traversable (..))
@@ -68,8 +68,8 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
   liftTyped (SafeHashMap x) = let ls = HM.toList x in [||SafeHashMap (HM.fromList ls)||]
 #endif
 
-instance (NameCollision a, KeyOf k a) => Merge (SafeHashMap k a) where
-  merge ref (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> merge ref x y
+instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => SemigroupM m (SafeHashMap k a) where
+  mergeM ref (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> mergeM ref x y
 
 instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a) where
   fromElems = fmap SafeHashMap . fromElems

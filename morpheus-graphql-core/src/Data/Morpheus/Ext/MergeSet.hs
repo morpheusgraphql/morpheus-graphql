@@ -31,8 +31,8 @@ import Data.Morpheus.Internal.Utils
     Failure (..),
     KeyOf (..),
     Listable (..),
-    Merge (..),
     Selectable (..),
+    SemigroupM (..),
     elems,
     toPair,
   )
@@ -77,18 +77,18 @@ instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
 instance
   ( KeyOf k a,
     Listable a (MergeSet VALID a),
-    Merge a,
+    SemigroupM m a,
     Eq a
   ) =>
-  Merge (MergeSet VALID a)
+  SemigroupM m (MergeSet VALID a)
   where
-  merge path (MergeSet x) (MergeSet y) = resolveMergable path (x <> y)
+  mergeM path (MergeSet x) (MergeSet y) = resolveMergable path (x <> y)
 
 resolveMergable ::
   ( KeyOf k a,
     Monad m,
     Eq a,
-    Merge a,
+    SemigroupM m a,
     Failure ValidationErrors m
   ) =>
   [Ref] ->
@@ -99,7 +99,7 @@ resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) (MergeSet .
 instance
   ( Listable a (MergeSet VALID a),
     KeyOf k a,
-    Merge a,
+    SemigroupM m a,
     Eq a
   ) =>
   Listable a (MergeSet VALID a)
@@ -107,14 +107,14 @@ instance
   fromElems = resolveMergable []
   elems = unpack
 
-instance Merge (MergeSet RAW a) where
-  merge _ (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
+instance Applicative m => SemigroupM m (MergeSet RAW a) where
+  mergeM _ (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
 
 instance Listable a (MergeSet RAW a) where
   fromElems = pure . MergeSet
   elems = unpack
 
-resolveConflict :: (Monad m, Eq a, KeyOf k a, Merge a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
+resolveConflict :: (Monad m, Eq a, KeyOf k a, SemigroupM m a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 resolveConflict path oldValue newValue
   | oldValue == newValue = pure oldValue
-  | otherwise = merge path oldValue newValue
+  | otherwise = mergeM path oldValue newValue

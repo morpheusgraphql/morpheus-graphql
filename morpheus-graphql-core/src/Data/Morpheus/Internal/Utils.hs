@@ -13,8 +13,8 @@ module Data.Morpheus.Internal.Utils
     capitalTypeName,
     Collection (..),
     Selectable (..),
-    Listable (..),
-    Merge (..),
+    Elems (..),
+    FromElems (..),
     Failure (..),
     KeyOf (..),
     toPair,
@@ -26,7 +26,6 @@ module Data.Morpheus.Internal.Utils
     mapSnd,
     mapTuple,
     traverseCollection,
-    (<.>),
     SemigroupM (..),
     prop,
     stripFieldNamespace,
@@ -174,8 +173,8 @@ selectBy err = selectOr (failure err) pure
 traverseCollection ::
   ( Monad f,
     KeyOf k b,
-    Listable a (t a),
-    Listable b (t' b),
+    Elems a (t a),
+    FromElems f b (t' b),
     Failure ValidationErrors f
   ) =>
   (a -> f b) ->
@@ -198,24 +197,35 @@ instance KeyOf TypeName TypeNameRef where
 toPair :: KeyOf k a => a -> (k, a)
 toPair x = (keyOf x, x)
 
--- list Like Collections
-class Listable a coll | coll -> a where
+class Elems a coll | coll -> a where
   elems :: coll -> [a]
-  fromElems :: (Monad m, Failure ValidationErrors m) => [a] -> m coll
 
-mergeT :: (KeyOf k a, Monad m, Listable a c) => c -> c -> ResolutionT k a c m c
+-- list Like Collections
+class FromElems m a coll | coll -> a where
+  fromElems :: [a] -> m coll
+
+mergeT :: (KeyOf k a, Monad m, Elems a c) => c -> c -> ResolutionT k a c m c
 mergeT x y = fromListT (toPair <$> (elems x <> elems y))
 
-instance (NameCollision a, KeyOf k a) => Listable a (HashMap k a) where
+instance
+  ( NameCollision a,
+    Failure ValidationErrors m,
+    KeyOf k a,
+    Monad m
+  ) =>
+  FromElems m a (HashMap k a)
+  where
   fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
+
+instance (NameCollision a, KeyOf k a) => Elems a (HashMap k a) where
   elems = HM.elems
 
 concatTraverse ::
   ( Monad m,
     Failure ValidationErrors m,
-    Listable a ca,
     Collection b cb,
-    Merge cb
+    Elems a ca,
+    SemigroupM m cb
   ) =>
   (a -> m cb) ->
   ca ->
@@ -228,7 +238,7 @@ join ::
   ( Collection e a,
     Monad m,
     Failure ValidationErrors m,
-    Merge a
+    SemigroupM m a
   ) =>
   [a] ->
   m a
@@ -237,31 +247,29 @@ join = __join empty
     __join acc [] = pure acc
     __join acc (x : xs) = acc <:> x >>= (`__join` xs)
 
-keys :: (KeyOf k a, Listable a coll) => coll -> [k]
+keys :: (KeyOf k a, Elems a coll) => coll -> [k]
 keys = fmap keyOf . elems
 
-size :: Listable a coll => coll -> Int
+size :: Elems a coll => coll -> Int
 size = length . elems
 
 -- Merge Object with of Failure as an Option
-class Merge a where
-  merge :: (Monad m, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
 
-instance (NameCollision a, KeyOf k a) => Merge (HashMap k a) where
-  merge _ x y = runResolutionT (fromListT $ HM.toList x <> HM.toList y) HM.fromList failOnDuplicates
-
-(<:>) :: (Monad m, Merge a, Failure ValidationErrors m) => a -> a -> m a
-(<:>) = merge []
+(<:>) :: (Monad m, SemigroupM m a, Failure ValidationErrors m) => a -> a -> m a
+(<:>) = mergeM []
 
 class SemigroupM m a where
   mergeM :: [Ref] -> a -> a -> m a
 
-(<.>) ::
-  (SemigroupM m a) =>
-  a ->
-  a ->
-  m a
-(<.>) = mergeM []
+instance
+  ( NameCollision a,
+    Monad m,
+    KeyOf k a,
+    Failure ValidationErrors m
+  ) =>
+  SemigroupM m (HashMap k a)
+  where
+  mergeM _ x y = runResolutionT (fromListT $ HM.toList x <> HM.toList y) HM.fromList failOnDuplicates
 
 -- Failure: for custom Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where
