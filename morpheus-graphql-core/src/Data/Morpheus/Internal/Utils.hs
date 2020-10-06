@@ -32,6 +32,7 @@ module Data.Morpheus.Internal.Utils
     mergeT,
     concatTraverse,
     join,
+    Elems (..),
   )
 where
 
