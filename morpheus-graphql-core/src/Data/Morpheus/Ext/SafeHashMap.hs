@@ -31,9 +31,10 @@ import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Collection (..),
+    Elems (..),
     Failure (..),
+    FromElems (..),
     KeyOf (..),
-    Listable (..),
     Selectable (..),
     SemigroupM (..),
   )
@@ -58,7 +59,8 @@ newtype SafeHashMap k a = SafeHashMap
     )
   deriving newtype
     ( Collection a,
-      Selectable k a
+      Selectable k a,
+      Elems a
     )
 
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
@@ -71,9 +73,8 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
 instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => SemigroupM m (SafeHashMap k a) where
   mergeM ref (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> mergeM ref x y
 
-instance (NameCollision a, KeyOf k a, Hashable k) => Listable a (SafeHashMap k a) where
+instance (NameCollision a, Failure ValidationErrors m, Monad m, KeyOf k a, Hashable k) => FromElems m a (SafeHashMap k a) where
   fromElems = fmap SafeHashMap . fromElems
-  elems = elems . unpackSafeHashMap
 
 unsafeFromList :: (Eq k, KeyOf k a) => [(k, a)] -> SafeHashMap k a
 unsafeFromList = SafeHashMap . HM.fromList
