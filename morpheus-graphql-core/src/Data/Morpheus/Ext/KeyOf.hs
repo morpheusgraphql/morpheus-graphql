@@ -15,10 +15,7 @@ where
 import Data.Hashable (Hashable)
 import Data.Morpheus.Ext.Map
   ( Indexed (..),
-    ResolutionT,
-    fromListT,
   )
-import Data.Morpheus.Ext.Map (Indexed (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName (..),
     Ref (..),
