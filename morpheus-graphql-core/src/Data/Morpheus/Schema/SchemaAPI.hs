@@ -10,9 +10,9 @@ module Data.Morpheus.Schema.SchemaAPI
 where
 
 -- MORPHEUS
+import Data.Morpheus.Ext.SemigroupM ((<:>))
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    elems,
+  ( elems,
     empty,
     selectOr,
   )

@@ -75,15 +75,17 @@ import Data.Morpheus.Ext.SafeHashMap
   ( SafeHashMap,
     insert,
   )
-import Data.Morpheus.Internal.Utils
+import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
-    Collection (..),
+    SemigroupM (..),
+  )
+import Data.Morpheus.Internal.Utils
+  ( Collection (..),
     Elems (..),
     Failure (..),
     FromElems (..),
     KeyOf (..),
     Selectable (..),
-    SemigroupM (..),
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),

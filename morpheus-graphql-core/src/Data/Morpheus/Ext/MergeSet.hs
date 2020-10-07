@@ -27,13 +27,15 @@ import Data.Morpheus.Ext.Map
     resolveWith,
     runResolutionT,
   )
+import Data.Morpheus.Ext.SemigroupM
+  ( SemigroupM (..),
+  )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
     Failure (..),
     FromElems (..),
     KeyOf (..),
     Selectable (..),
-    SemigroupM (..),
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base

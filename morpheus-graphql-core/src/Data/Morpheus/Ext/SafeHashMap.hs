@@ -29,14 +29,16 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Hashable (Hashable)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Elems (Elems)
-import Data.Morpheus.Internal.Utils
+import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
-    Collection (..),
+    SemigroupM (..),
+  )
+import Data.Morpheus.Internal.Utils
+  ( Collection (..),
     Failure (..),
     FromElems (..),
     KeyOf (..),
     Selectable (..),
-    SemigroupM (..),
   )
 import Data.Morpheus.Types.Internal.AST.Base (ValidationErrors)
 import Data.Traversable (Traversable (..))

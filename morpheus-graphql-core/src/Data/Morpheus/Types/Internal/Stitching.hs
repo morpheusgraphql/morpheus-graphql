@@ -22,9 +22,9 @@ import Data.Morpheus.Ext.Map
   )
 import qualified Data.Morpheus.Ext.OrdMap as OM
 import qualified Data.Morpheus.Ext.SafeHashMap as SHM
+import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    SemigroupM (..),
     mergeT,
     prop,
   )

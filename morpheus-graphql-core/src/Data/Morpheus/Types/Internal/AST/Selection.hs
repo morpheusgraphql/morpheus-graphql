@@ -47,10 +47,10 @@ import Data.Morpheus.Ext.MergeSet
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
   )
+import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
-    SemigroupM (..),
     elems,
   )
 import Data.Morpheus.Rendering.RenderGQL

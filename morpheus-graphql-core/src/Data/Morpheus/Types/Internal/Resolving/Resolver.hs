@@ -55,9 +55,9 @@ import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
+import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
-  ( SemigroupM (..),
-    empty,
+  ( empty,
     keyOf,
     selectOr,
     traverseCollection,

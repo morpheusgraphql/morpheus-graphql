@@ -28,9 +28,11 @@ import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     PartialImplements (..),
   )
-import Data.Morpheus.Internal.Utils
+import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
-    KeyOf (..),
+  )
+import Data.Morpheus.Internal.Utils
+  ( KeyOf (..),
     Selectable (..),
     elems,
     empty,
