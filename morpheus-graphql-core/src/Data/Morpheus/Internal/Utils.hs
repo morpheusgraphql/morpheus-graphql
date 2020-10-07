@@ -18,26 +18,24 @@ module Data.Morpheus.Internal.Utils
     KeyOf (..),
     toPair,
     selectBy,
-    (<:>),
     mapFst,
     mapSnd,
     mapTuple,
     traverseCollection,
-    SemigroupM (..),
     prop,
     stripFieldNamespace,
     stripConstructorNamespace,
     fromLBS,
     toLBS,
     mergeT,
-    concatTraverse,
-    join,
     Elems (..),
+    size,
+    failOnDuplicates,
   )
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<), (>>=))
+import Control.Monad ((=<<))
 import Data.ByteString.Lazy (ByteString)
 import Data.Char
   ( toLower,
@@ -50,7 +48,7 @@ import Data.List (drop, find)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Ext.Elems (Elems (..))
+import Data.Morpheus.Ext.Elems (Elems (..), size)
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
 import Data.Morpheus.Ext.Map
@@ -61,7 +59,6 @@ import Data.Morpheus.Ext.Map
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
-    Ref (..),
     Token,
     TypeName (..),
     ValidationErrors,
@@ -184,50 +181,7 @@ instance
   where
   fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
 
-concatTraverse ::
-  ( Monad m,
-    Failure ValidationErrors m,
-    Collection b cb,
-    Elems a ca,
-    SemigroupM m cb
-  ) =>
-  (a -> m cb) ->
-  ca ->
-  m cb
-concatTraverse f smap =
-  traverse f (elems smap)
-    >>= join
-
-join ::
-  ( Collection e a,
-    Monad m,
-    Failure ValidationErrors m,
-    SemigroupM m a
-  ) =>
-  [a] ->
-  m a
-join = __join empty
-  where
-    __join acc [] = pure acc
-    __join acc (x : xs) = acc <:> x >>= (`__join` xs)
-
 -- Merge Object with of Failure as an Option
-
-(<:>) :: SemigroupM m a => a -> a -> m a
-(<:>) = mergeM []
-
-class SemigroupM m a where
-  mergeM :: [Ref] -> a -> a -> m a
-
-instance
-  ( NameCollision a,
-    Monad m,
-    KeyOf k a,
-    Failure ValidationErrors m
-  ) =>
-  SemigroupM m (HashMap k a)
-  where
-  mergeM _ x y = runResolutionT (fromListT $ HM.toList x <> HM.toList y) HM.fromList failOnDuplicates
 
 mapFst :: (a -> a') -> (a, b) -> (a', b)
 mapFst f (a, b) = (f a, b)
