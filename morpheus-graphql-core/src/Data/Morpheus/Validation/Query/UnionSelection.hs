@@ -16,7 +16,10 @@ where
 import Control.Monad ((>=>))
 import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
-import Data.Morpheus.Ext.SemigroupM ((<:>), join)
+import Data.Morpheus.Ext.SemigroupM
+  ( (<:>),
+    join,
+  )
 import Data.Morpheus.Internal.Utils
   ( elems,
     empty,

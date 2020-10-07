@@ -8,7 +8,7 @@ where
 
 import Control.Monad ((>=>))
 import Data.ByteString.Lazy (ByteString)
-import Data.Morpheus.Internal.Utils ((<:>))
+import Data.Morpheus.Ext.SemigroupM ((<:>))
 import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
   ( parseSchema,
     parseTypeDefinitions,
