@@ -20,9 +20,9 @@ import Control.Applicative (Applicative (..))
 import Control.Monad (Monad)
 import qualified Data.Aeson as A
 import Data.Functor ((<$>), Functor (..))
+import Data.Morpheus.Ext.SemigroupM ((<:>))
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    empty,
+  ( empty,
     failure,
     prop,
   )

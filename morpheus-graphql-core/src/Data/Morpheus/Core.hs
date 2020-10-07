@@ -37,7 +37,7 @@ import Control.Monad ((>=>))
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
-import Data.Morpheus.Internal.Utils
+import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
   )
 import Data.Morpheus.Parser
