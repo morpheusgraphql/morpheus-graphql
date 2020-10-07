@@ -38,10 +38,6 @@ where
 
 import Control.Applicative (Applicative (..))
 import Control.Monad ((=<<), (>>=))
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-  )
 import Data.ByteString.Lazy (ByteString)
 import Data.Char
   ( toLower,
@@ -55,6 +51,7 @@ import Data.List.NonEmpty (NonEmpty (..))
 import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Elems (Elems (..))
+import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
 import Data.Morpheus.Ext.Map
   ( ResolutionT,
@@ -81,7 +78,6 @@ import Prelude
     (.),
     Bool (..),
     Char,
-    Either (..),
     Eq (..),
     Foldable (..),
     Monad,
@@ -232,16 +228,6 @@ instance
   SemigroupM m (HashMap k a)
   where
   mergeM _ x y = runResolutionT (fromListT $ HM.toList x <> HM.toList y) HM.fromList failOnDuplicates
-
--- Failure: for custom Morpheus GrapHQL errors
-class Applicative f => Failure error (f :: * -> *) where
-  failure :: error -> f v
-
-instance Failure error (Either error) where
-  failure = Left
-
-instance (Monad m, Failure errors m) => Failure errors (ReaderT ctx m) where
-  failure = lift . failure
 
 mapFst :: (a -> a') -> (a, b) -> (a', b)
 mapFst f (a, b) = (f a, b)
