@@ -4,7 +4,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
   ( capitalize,
@@ -34,19 +33,12 @@ module Data.Morpheus.Internal.Utils
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<))
 import Data.ByteString.Lazy (ByteString)
 import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Functor ((<$>), Functor (..))
-import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
-import Data.List (drop, find)
-import Data.List.NonEmpty (NonEmpty (..))
-import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Elems (Elems (..), size)
 import Data.Morpheus.Ext.Failure (Failure (..))
@@ -63,24 +55,14 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeName (..),
     ValidationErrors,
   )
-import Data.Semigroup (Semigroup (..))
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
-import Data.Traversable (traverse)
 import Instances.TH.Lift ()
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Char,
-    Eq (..),
-    Foldable (..),
-    Monad,
-    String,
-    const,
-    otherwise,
+import Relude hiding
+  ( ByteString,
+    decodeUtf8,
+    encodeUtf8,
   )
 
 toLBS :: Text -> ByteString
