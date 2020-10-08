@@ -6,7 +6,6 @@ module Data.Morpheus.Parser
   )
 where
 
-import Control.Monad ((>=>))
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Ext.SemigroupM ((<:>))
 import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
