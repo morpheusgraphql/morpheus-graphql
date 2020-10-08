@@ -17,10 +17,6 @@ module Data.Morpheus.Validation.Internal.Directive
   )
 where
 
-import Control.Applicative ((*>), pure)
-import Control.Monad ((>>=))
-import Data.Functor ((<$>))
-import Data.List (elem)
 import Data.Morpheus.Error.Utils
   ( validationErrorMessage,
   )
@@ -53,16 +49,7 @@ import Data.Morpheus.Validation.Internal.Arguments
   ( ArgumentsConstraints,
     validateDirectiveArguments,
   )
-import Data.Semigroup ((<>))
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (&&),
-    (==),
-    Bool (..),
-    Maybe (..),
-    otherwise,
-  )
+import Relude
 
 validateDirectives ::
   ArgumentsConstraints ctx schemaS s =>

@@ -13,14 +13,6 @@ module Data.Morpheus.Validation.Internal.Value
   )
 where
 
-import Control.Applicative ((*>), pure)
-import Control.Monad (Monad)
-import Data.Either (Either (..))
-import Data.Foldable (traverse_)
-import Data.Function ((&))
-import Data.Functor ((<$>), fmap)
-import Data.List (any, elem)
-import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Input (typeViolation)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
@@ -81,20 +73,7 @@ import Data.Morpheus.Types.Internal.Validation
     selectWithDefaultValue,
     withScopeType,
   )
-import Data.Semigroup ((<>))
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (&&),
-    (.),
-    Bool (..),
-    Eq (..),
-    const,
-    fst,
-    id,
-    not,
-    otherwise,
-  )
+import Relude
 
 violation ::
   Maybe Message ->

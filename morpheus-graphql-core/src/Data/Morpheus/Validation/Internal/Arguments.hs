@@ -17,11 +17,6 @@ module Data.Morpheus.Validation.Internal.Arguments
   )
 where
 
-import Control.Applicative ((*>), pure)
-import Control.Monad ((>=>), (>>=))
-import Data.Foldable (traverse_)
-import Data.Functor ((<$>), fmap)
-import Data.Maybe (fromMaybe, maybe)
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -64,11 +59,7 @@ import Data.Morpheus.Validation.Internal.Value
   ( ValidateWithDefault,
     validateInputByTypeRef,
   )
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (.),
-  )
+import Relude hiding (empty)
 
 type VariableConstraints ctx =
   ( GetWith ctx (VariableDefinitions VALID),
