@@ -8,12 +8,9 @@ module Utils.Schema
   )
 where
 
-import Control.Applicative (pure)
 import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Either (Either (..), either)
-import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Core (parseFullGQLDocument)
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
@@ -24,9 +21,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Semigroup ((<>))
 import Data.Text (pack)
-import GHC.Generics (Generic)
+import Relude hiding (ByteString, toString)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)
 import Utils.Utils
@@ -35,16 +31,6 @@ import Utils.Utils
     caseFailure,
     scanSchemaTests,
     toString,
-  )
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    FilePath,
-    IO,
-    String,
-    id,
-    show,
   )
 
 readSource :: FilePath -> IO ByteString

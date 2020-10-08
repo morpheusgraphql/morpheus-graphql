@@ -7,9 +7,7 @@ import Data.Morpheus.Ext.Map (Indexed (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( ValidationError,
   )
-import Prelude
-  ( (.),
-  )
+import Relude
 
 class NameCollision a where
   nameCollision :: a -> ValidationError

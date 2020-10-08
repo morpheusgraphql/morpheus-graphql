@@ -7,13 +7,11 @@ module Utils.Rendering
   )
 where
 
-import Control.Applicative (pure)
 import Data.Aeson (encode)
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Core
   ( defaultConfig,
     parseRequestWith,
@@ -28,8 +26,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Semigroup ((<>))
 import qualified Data.Text as T
+import Relude hiding (ByteString)
 import Test.Tasty
   ( TestTree,
     testGroup,
@@ -42,14 +40,6 @@ import Utils.Utils
   ( assertValidSchema,
     getRequest,
     readSource,
-  )
-import Prelude
-  ( ($),
-    (.),
-    (==),
-    IO,
-    otherwise,
-    show,
   )
 
 assertion :: ByteString -> Eventless (Operation VALID) -> IO ()

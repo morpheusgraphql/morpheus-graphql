@@ -7,12 +7,8 @@ module Utils.Api
   )
 where
 
-import Control.Applicative (pure)
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
-import Data.Functor ((<$>), fmap)
-import Data.Functor.Identity (Identity (..))
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Core (mkApp, runAppStream)
 import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
@@ -24,8 +20,8 @@ import Data.Morpheus.Types.Internal.Resolving
   ( ResponseStream,
     ResultT (..),
   )
-import Data.Semigroup ((<>))
 import Data.Text (unpack)
+import Relude
 import Test.Tasty
   ( TestTree,
     testGroup,
@@ -39,12 +35,6 @@ import Utils.Utils
     expectedResponse,
     getRequest,
     getResolvers,
-  )
-import Prelude
-  ( ($),
-    (==),
-    IO,
-    otherwise,
   )
 
 assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()

@@ -11,10 +11,6 @@ where
 
 import Data.Aeson (encode)
 import Data.ByteString.Lazy.Char8 (unpack)
-import Data.Foldable (traverse_)
--- MORPHEUS
-
-import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
@@ -23,17 +19,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     Ref (..),
     msg,
   )
-import Data.Semigroup ((<>))
-import Language.Haskell.TH
-  ( Q,
-    reportWarning,
-  )
-import Prelude
-  ( ($),
-    (.),
-    String,
-    pure,
-  )
+import Language.Haskell.TH (Q, reportWarning)
+import Relude
 
 renderGQLErrors :: GQLErrors -> String
 renderGQLErrors = unpack . encode

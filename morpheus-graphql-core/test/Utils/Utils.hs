@@ -21,17 +21,12 @@ module Utils.Utils
   )
 where
 
-import Control.Applicative ((<*>), (<|>), pure)
-import Control.Monad ((>=>), Monad)
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Either (Either (..))
 import Data.Foldable (foldl)
-import Data.Functor ((<$>))
 import Data.HashMap.Lazy (lookup)
-import Data.Maybe (Maybe (..), fromMaybe, maybe)
 import Data.Morpheus.Core (parseGQLDocument)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -50,24 +45,12 @@ import Data.Morpheus.Types.Internal.Resolving
     mkValue,
     resultOr,
   )
-import Data.Semigroup ((<>))
-import Data.Text (Text, unpack)
+import Data.Text (unpack)
 import qualified Data.Text.IO as T
-import Data.Traversable (traverse)
+import Relude hiding (ByteString, toString)
 import System.Directory (doesDirectoryExist, listDirectory)
 import Test.Tasty.HUnit
   ( assertFailure,
-  )
-import Prelude
-  ( ($),
-    (.),
-    Bool,
-    FilePath,
-    IO,
-    Show,
-    and,
-    map,
-    show,
   )
 
 readSource :: FieldName -> IO ByteString

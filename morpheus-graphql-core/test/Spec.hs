@@ -5,6 +5,7 @@ module Main
   )
 where
 
+import Relude
 import Test.Tasty
   ( defaultMain,
     testGroup,
@@ -16,10 +17,6 @@ import qualified Utils.MergeSchema as MergeSchema
 import qualified Utils.Rendering as Rendering
 import Utils.Schema
   ( testSchema,
-  )
-import Prelude
-  ( ($),
-    IO,
   )
 
 main :: IO ()

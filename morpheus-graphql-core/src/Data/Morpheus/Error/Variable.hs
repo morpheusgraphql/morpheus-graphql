@@ -15,8 +15,7 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     msg,
   )
-import Data.Semigroup ((<>))
-import Prelude (($), Maybe (..))
+import Relude
 
 -- query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
 incompatibleVariableType :: Ref -> Variable s -> TypeRef -> ValidationError

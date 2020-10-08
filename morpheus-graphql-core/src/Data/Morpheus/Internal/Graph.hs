@@ -22,7 +22,7 @@ type Graph = [Edges]
 
 cycleChecking ::
   Applicative m =>
-  ([Ref] -> m ()) ->
+  (NonEmpty Ref -> m ()) ->
   Graph ->
   m ()
 cycleChecking fail' graph = traverse_ checkNode graph
@@ -34,7 +34,7 @@ cycleCheckingWith ::
   Graph ->
   Ref ->
   [Ref] ->
-  ([Ref] -> m ()) ->
+  (NonEmpty Ref -> m ()) ->
   m ()
 cycleCheckingWith graph parentNode history fail' =
   case lookup parentNode graph of
@@ -43,7 +43,7 @@ cycleCheckingWith graph parentNode history fail' =
   where
     checkNode node
       | node `elem` history =
-        fail' (node : history)
+        fail' (node :| history)
       | otherwise =
         cycleCheckingWith
           graph
