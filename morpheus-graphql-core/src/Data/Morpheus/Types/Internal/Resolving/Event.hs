@@ -10,10 +10,7 @@ module Data.Morpheus.Types.Internal.Resolving.Event
   )
 where
 
-import Prelude
-  ( Eq (..),
-    fmap,
-  )
+import Relude
 
 -- Channel
 data Channel (event :: *) where

@@ -28,16 +28,7 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverState
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..))
-import Control.Monad.Reader (MonadReader (..), asks)
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-    mapReaderT,
-  )
-import Data.Functor (Functor (..))
-import Data.Functor.Identity (Identity (..))
+import Control.Monad.Trans.Reader (mapReaderT)
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     renderGQL,
@@ -64,17 +55,7 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     ResultT (..),
     cleanEvents,
   )
-import Data.Semigroup
-  ( Semigroup (..),
-  )
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Int,
-    Show (..),
-    id,
-  )
+import Relude
 
 data ResolverContext = ResolverContext
   { currentSelection :: Selection VALID,

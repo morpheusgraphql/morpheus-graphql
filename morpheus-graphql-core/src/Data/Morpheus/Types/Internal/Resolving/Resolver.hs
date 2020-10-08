@@ -39,20 +39,8 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..), join)
-import Control.Monad.Fail (MonadFail (..))
-import Control.Monad.IO.Class (MonadIO (..))
-import Control.Monad.Reader (MonadReader (..), asks)
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-    mapReaderT,
-  )
-import Data.Functor ((<$>), Functor (..))
-import Data.HashMap.Lazy (HashMap)
+import Control.Monad.Trans.Reader (mapReaderT)
 import qualified Data.HashMap.Lazy as HM
-import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
@@ -116,17 +104,12 @@ import Data.Morpheus.Types.Internal.Resolving.ResolverState
     runResolverStateT,
     toResolverStateT,
   )
-import Data.Semigroup
-  ( Semigroup (..),
+import Relude hiding
+  ( Show,
+    empty,
+    show,
   )
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    Show (..),
-    otherwise,
-  )
+import Prelude (Show (..))
 
 type WithOperation (o :: OperationType) = LiftOperation o
 

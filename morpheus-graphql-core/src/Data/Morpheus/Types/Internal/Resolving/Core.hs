@@ -19,11 +19,6 @@ module Data.Morpheus.Types.Internal.Resolving.Core
   )
 where
 
-import Control.Applicative (Applicative (..), liftA2)
-import Control.Monad (Monad (..))
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Data.Functor ((<$>), Functor (..))
-import Data.List (sortOn)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -33,11 +28,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     ValidationError (..),
     toGQLError,
   )
-import Data.Semigroup ((<>))
-import Prelude
-  ( ($),
-    (.),
-  )
+import Relude
 
 type Eventless = Result ()
 
