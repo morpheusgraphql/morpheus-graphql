@@ -17,12 +17,6 @@ module Data.Morpheus.Validation.Query.Fragment
   )
 where
 
-import Control.Applicative ((<*>), pure)
-import Control.Monad ((>>=))
-import Data.Functor ((<$>))
-import Data.List (elem)
-import Data.Maybe (Maybe (..))
--- MORPHEUS
 import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
   )
@@ -56,11 +50,7 @@ import Data.Morpheus.Types.Internal.Validation
     constraint,
     selectKnown,
   )
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    otherwise,
-  )
+import Relude
 
 class ResolveFragment (s :: Stage) where
   resolveValidFragment ::

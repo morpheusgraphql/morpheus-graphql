@@ -11,11 +11,6 @@ module Data.Morpheus.Validation.Query.FragmentPreconditions
   )
 where
 
-import Control.Applicative ((*>))
-import Control.Monad ((>>=))
-import Data.Foldable (concatMap)
-import Data.Functor ((<$>), fmap)
--- MORPHEUS
 import Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself,
   )
@@ -44,10 +39,7 @@ import Data.Morpheus.Types.Internal.Validation
     askFragments,
     checkUnused,
   )
-import Data.Semigroup ((<>))
-import Prelude
-  ( (.),
-  )
+import Relude
 
 checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do

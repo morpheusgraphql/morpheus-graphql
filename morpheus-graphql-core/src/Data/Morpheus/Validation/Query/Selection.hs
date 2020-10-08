@@ -13,11 +13,6 @@ module Data.Morpheus.Validation.Query.Selection
   )
 where
 
-import Control.Applicative ((<*>), pure)
-import Data.Foldable (null)
-import Data.Functor ((<$>), fmap)
-import Data.List (filter)
-import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
@@ -88,16 +83,7 @@ import Data.Morpheus.Validation.Query.UnionSelection
   ( validateInterfaceSelection,
     validateUnionSelection,
   )
-import Data.Semigroup ((<>))
-import Prelude
-  ( ($),
-    (&&),
-    (.),
-    Eq (..),
-    const,
-    not,
-    otherwise,
-  )
+import Relude hiding (empty)
 
 selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
 selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . elems
