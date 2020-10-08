@@ -17,12 +17,6 @@ module Data.Morpheus.Validation.Document.Validation
   )
 where
 
-import Control.Applicative ((*>), (<*>), Applicative (..), pure)
-import Control.Monad ((>=>), (>>=))
-import Control.Monad.Reader (asks)
-import Data.Foldable (traverse_)
-import Data.Functor (($>), (<$>), fmap)
-import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     PartialImplements (..),
@@ -98,17 +92,7 @@ import Data.Morpheus.Validation.Internal.Directive
 import Data.Morpheus.Validation.Internal.Value
   ( validateInputByTypeRef,
   )
-import Data.Proxy (Proxy (..))
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (&&),
-    (.),
-    (==),
-    Bool,
-    not,
-    otherwise,
-  )
+import Relude hiding (empty, local)
 
 class ValidateSchema s where
   validateSchema :: Bool -> Config -> Schema s -> Eventless (Schema VALID)

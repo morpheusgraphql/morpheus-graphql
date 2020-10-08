@@ -15,10 +15,7 @@ module Data.Morpheus.Types.App
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad)
 import qualified Data.Aeson as A
-import Data.Functor ((<$>), Functor (..))
 import Data.Morpheus.Ext.SemigroupM ((<:>))
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -64,14 +61,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
-import Data.Semigroup (Semigroup (..))
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Maybe (..),
-    const,
-  )
+import Relude hiding (empty)
 
 mkApp :: ValidateSchema s => Schema s -> RootResModel e m -> App e m
 mkApp appSchema appResolvers =

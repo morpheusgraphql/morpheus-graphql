@@ -56,18 +56,6 @@ module Data.Morpheus.Types.Internal.Validation
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (pure)
-import Control.Monad ((>>=))
-import Control.Monad.Trans.Reader
-  ( ask,
-  )
-import Data.Either (Either)
-import Data.Foldable (null)
-import Data.Functor ((<$>), fmap)
-import Data.List (filter)
-import Data.Maybe (Maybe (..), fromMaybe, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
@@ -151,14 +139,9 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     withScope,
     withScopeType,
   )
-import Data.Semigroup
-  ( (<>),
-  )
-import Prelude
-  ( ($),
-    (.),
-    not,
-    otherwise,
+import Relude hiding
+  ( Constraint,
+    asks,
   )
 
 getUnused :: (KeyOf k b, Selectable k a c) => c -> [b] -> [b]

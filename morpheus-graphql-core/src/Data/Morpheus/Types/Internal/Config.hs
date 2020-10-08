@@ -6,11 +6,7 @@ module Data.Morpheus.Types.Internal.Config
   )
 where
 
-import Prelude
-  ( Bool (..),
-    Eq,
-    Show,
-  )
+import Relude
 
 data VALIDATION_MODE
   = WITHOUT_VARIABLES

@@ -25,11 +25,6 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
   )
 where
 
---import Data.Morpheus.Error.Document.Interface (unknownInterface)
-
--- MORPHEUS
-
-import Control.Applicative (pure)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -50,15 +45,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     renderField,
     withContext,
   )
-import Data.Semigroup
-  ( (<>),
-    Semigroup (..),
-  )
-import Prelude
-  ( (.),
-    Show (..),
-    const,
-  )
+import Relude hiding (local)
 
 newtype TypeSystemContext c = TypeSystemContext
   {local :: c}

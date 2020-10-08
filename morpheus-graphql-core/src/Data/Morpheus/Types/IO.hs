@@ -14,10 +14,6 @@ module Data.Morpheus.Types.IO
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad.Fail (fail)
 import Data.Aeson
   ( (.:?),
     (.=),
@@ -39,19 +35,12 @@ import Data.Aeson.Parser
   ( eitherDecodeWith,
     jsonNoDup,
   )
-import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
   ( ByteString,
     fromStrict,
     toStrict,
   )
-import Data.Either (Either (..))
-import Data.Functor ((<$>), fmap)
 import qualified Data.HashMap.Lazy as LH
-  ( toList,
-  )
-import Data.List (sortOn)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils (badRequestError)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -62,7 +51,6 @@ import Data.Morpheus.Types.Internal.Resolving.Core
   ( Failure (..),
     Result (..),
   )
-import Data.Text (Text)
 import qualified Data.Text.Lazy as LT
   ( Text,
     fromStrict,
@@ -72,12 +60,9 @@ import Data.Text.Lazy.Encoding
   ( decodeUtf8,
     encodeUtf8,
   )
-import GHC.Generics (Generic)
-import Prelude
-  ( ($),
-    (.),
-    Show,
-    String,
+import Relude hiding
+  ( decodeUtf8,
+    encodeUtf8,
   )
 
 decodeNoDup :: Failure String m => LB.ByteString -> m GQLRequest

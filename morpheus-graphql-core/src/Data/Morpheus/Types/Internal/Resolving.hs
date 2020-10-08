@@ -48,12 +48,8 @@ module Data.Morpheus.Types.Internal.Resolving
   )
 where
 
-import Control.Applicative (pure)
-import Control.Monad (Monad)
 import qualified Data.Aeson as A
-import Data.Functor (fmap)
 import qualified Data.HashMap.Lazy as HM
-import Data.Maybe (maybe)
 import Data.Morpheus.Internal.Utils
   ( mapTuple,
   )
@@ -71,13 +67,7 @@ import Data.Morpheus.Types.Internal.Resolving.ResolverState
 import qualified Data.Vector as V
   ( toList,
   )
-import Prelude
-  ( ($),
-    (.),
-    Bool,
-    Float,
-    Int,
-  )
+import Relude
 
 mkString :: Token -> ResModel o e m
 mkString = ResScalar . String

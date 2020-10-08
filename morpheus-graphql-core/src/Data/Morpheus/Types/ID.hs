@@ -16,18 +16,8 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( ScalarValue (..),
   )
-import Data.Text
-  ( Text,
-    pack,
-  )
-import GHC.Generics (Generic)
-import Prelude
-  ( ($),
-    Either (..),
-    Eq,
-    Show (..),
-    pure,
-  )
+import Data.Text (pack)
+import Relude
 
 -- | default GraphQL type,
 -- parses only 'String' and 'Int' values,

@@ -10,10 +10,6 @@ module Data.Morpheus.Types.Internal.Stitching
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..))
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Map
   ( resolveWith,
@@ -41,13 +37,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving (RootResModel)
 import qualified Data.Morpheus.Types.Internal.Resolving as R (RootResModel (..))
-import Data.Semigroup (Semigroup (..))
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    otherwise,
-  )
+import Relude hiding (optional)
 
 equal :: (Eq a, Applicative m, Failure ValidationErrors m) => ValidationErrors -> a -> a -> m a
 equal err p1 p2

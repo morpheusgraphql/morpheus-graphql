@@ -15,8 +15,6 @@ module Data.Morpheus.Types.Internal.Validation.Error
   )
 where
 
--- MORPHEUS
-import Data.Maybe (maybeToList)
 import Data.Morpheus.Error.Selection (unknownSelectionField)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -54,8 +52,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     Target (..),
     renderInputPrefix,
   )
-import Data.Semigroup ((<>))
-import Prelude (($))
+import Relude
 
 class Unused ctx c where
   unused :: ctx -> c -> ValidationError
