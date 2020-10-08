@@ -4,23 +4,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.Failure
   ( Failure (..),
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..))
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-  )
-import Prelude
-  ( (.),
-    Either (..),
-  )
+import Relude
 
 -- Failure: for custom Morpheus GrapHQL errors
 class Applicative f => Failure error (f :: * -> *) where

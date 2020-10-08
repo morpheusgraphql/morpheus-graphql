@@ -11,7 +11,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.SafeHashMap
   ( SafeHashMap,
@@ -20,13 +19,7 @@ module Data.Morpheus.Ext.SafeHashMap
   )
 where
 
--- MORPHEUS
-import Control.Monad (Monad)
-import Data.Foldable (Foldable (..))
-import Data.Functor ((<$>), Functor (..))
-import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
-import Data.Hashable (Hashable)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Elems (Elems)
 import Data.Morpheus.Ext.SemigroupM
@@ -41,13 +34,8 @@ import Data.Morpheus.Internal.Utils
     Selectable (..),
   )
 import Data.Morpheus.Types.Internal.AST.Base (ValidationErrors)
-import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prelude
-  ( (.),
-    Eq,
-    Show,
-  )
+import Relude
 
 newtype SafeHashMap k a = SafeHashMap
   { unpackSafeHashMap :: HashMap k a

@@ -4,7 +4,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.KeyOf
   ( KeyOf (..),
@@ -12,7 +11,6 @@ module Data.Morpheus.Ext.KeyOf
   )
 where
 
-import Data.Hashable (Hashable)
 import Data.Morpheus.Ext.Map
   ( Indexed (..),
   )
@@ -22,10 +20,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeName (..),
     TypeNameRef (..),
   )
-import Prelude
-  ( Eq (..),
-    fst,
-  )
+import Relude
 
 class (Eq k, Hashable k) => KeyOf k a | a -> k where
   keyOf :: a -> k

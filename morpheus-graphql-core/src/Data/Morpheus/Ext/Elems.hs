@@ -4,7 +4,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.Elems
   ( Elems (..),
@@ -12,15 +11,9 @@ module Data.Morpheus.Ext.Elems
   )
 where
 
-import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
 import Instances.TH.Lift ()
-import Prelude
-  ( (.),
-    Int,
-    id,
-    length,
-  )
+import Relude
 
 class Elems a coll | coll -> a where
   elems :: coll -> [a]
