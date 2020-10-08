@@ -29,6 +29,13 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( Ref,
     ValidationErrors,
   )
+import Relude
+  ( ($),
+    Applicative (..),
+    Monad (..),
+    Semigroup (..),
+    Traversable (..),
+  )
 
 class SemigroupM (m :: * -> *) a where
   mergeM :: [Ref] -> a -> a -> m a

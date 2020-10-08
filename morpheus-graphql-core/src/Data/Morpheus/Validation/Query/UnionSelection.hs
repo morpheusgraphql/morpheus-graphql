@@ -14,8 +14,10 @@ module Data.Morpheus.Validation.Query.UnionSelection
 where
 
 import Control.Monad ((>=>))
-import Data.Maybe (fromMaybe, isJust)
 -- MORPHEUS
+
+import Data.List (lookup)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
     join,
@@ -54,6 +56,23 @@ import Data.Morpheus.Types.Internal.Validation
 import Data.Morpheus.Validation.Query.Fragment
   ( ResolveFragment (resolveValidFragment),
     castFragmentType,
+  )
+import Relude
+  ( (.),
+    (<$>),
+    Applicative (..),
+    Functor (..),
+    Maybe (..),
+    Monad (..),
+    Traversable (..),
+    concat,
+    elem,
+    filter,
+    not,
+    null,
+    otherwise,
+    snd,
+    unzip,
   )
 
 -- returns all Fragments used for Possible Types
@@ -104,8 +123,7 @@ tagUnionFragments ::
   [TypeDefinition IMPLEMENTABLE VALID] ->
   [UnionTag] ->
   [(TypeName, [SelectionSet VALID])]
-tagUnionFragments types fragments =
-  filter notEmpty (map categorizeType types)
+tagUnionFragments types fragments = filter notEmpty (categorizeType <$> types)
   where
     notEmpty = not . null . snd
     categorizeType ::

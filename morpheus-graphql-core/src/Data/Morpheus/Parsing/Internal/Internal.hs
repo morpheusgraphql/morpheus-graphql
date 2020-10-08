@@ -8,9 +8,6 @@ module Data.Morpheus.Parsing.Internal.Internal
   )
 where
 
-import Data.ByteString.Lazy
-  ( ByteString,
-  )
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
@@ -23,7 +20,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
     failure,
   )
-import Data.Void (Void)
+import Relude
 import Text.Megaparsec
   ( ParseError,
     ParseErrorBundle
