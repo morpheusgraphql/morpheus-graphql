@@ -32,8 +32,6 @@ module Data.Morpheus.Core
   )
 where
 
--- MORPHEUS
-import Control.Monad ((>=>))
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
@@ -77,6 +75,7 @@ import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
+import Relude hiding (ByteString)
 
 render :: RenderGQL a => a -> ByteString
 render = R.renderGQL
