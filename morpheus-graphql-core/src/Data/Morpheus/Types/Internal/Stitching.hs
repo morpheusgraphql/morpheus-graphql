@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Stitching
   ( Stitching (..),

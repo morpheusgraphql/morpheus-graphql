@@ -10,7 +10,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Selection
   ( Selection (..),
@@ -29,11 +28,6 @@ module Data.Morpheus.Types.Internal.AST.Selection
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad)
-import Data.Foldable (all, foldr)
-import Data.Functor ((<$>), fmap)
-import Data.Maybe (Maybe (..), fromMaybe, isJust, maybe)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -98,15 +92,8 @@ import Data.Morpheus.Types.Internal.AST.Value
     Variable (..),
     VariableDefinitions,
   )
-import Data.Semigroup ((<>))
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    Show (..),
-    otherwise,
-  )
+import Relude
 
 data Fragment (stage :: Stage) = Fragment
   { fragmentName :: FieldName,

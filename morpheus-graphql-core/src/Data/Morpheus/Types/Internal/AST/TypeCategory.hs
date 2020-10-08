@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
   ( TypeCategory,
@@ -22,13 +21,12 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
   )
 where
 
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FALSE,
     TRUE,
   )
 import Data.Morpheus.Types.Internal.AST.Stage (Stage)
-import Prelude (Bool (..))
+import Relude
 
 data TypeCategory
   = IN

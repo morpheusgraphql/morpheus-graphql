@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 module Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )

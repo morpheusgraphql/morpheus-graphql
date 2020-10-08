@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 module Data.Morpheus.Types.Internal.Config
   ( Config (..),
     VALIDATION_MODE (..),
