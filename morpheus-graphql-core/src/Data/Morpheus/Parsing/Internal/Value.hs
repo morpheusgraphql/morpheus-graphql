@@ -9,9 +9,6 @@ module Data.Morpheus.Parsing.Internal.Value
   )
 where
 
-import Data.Functor (($>))
---
--- MORPHEUS
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
   )
@@ -36,9 +33,9 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     decodeScientific,
   )
+import Relude
 import Text.Megaparsec
-  ( (<|>),
-    label,
+  ( label,
     sepBy,
   )
 import Text.Megaparsec.Byte
