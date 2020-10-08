@@ -40,6 +40,7 @@ import Data.Morpheus.Validation.Document.Validation
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
+import Relude hiding (ByteString)
 
 parseTypeSystemDefinition ::
   ByteString -> Eventless (Schema VALID)

@@ -45,6 +45,7 @@ import Data.Morpheus.Types.Internal.Resolving
     mkObject,
     withArguments,
   )
+import Relude hiding (empty)
 
 resolveTypes ::
   Monad m => Schema VALID -> Resolver QUERY e m (ResModel QUERY e m)

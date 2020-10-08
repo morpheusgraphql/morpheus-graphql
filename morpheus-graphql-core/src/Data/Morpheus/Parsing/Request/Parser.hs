@@ -5,7 +5,6 @@ module Data.Morpheus.Parsing.Request.Parser (parseGQL) where
 
 --
 -- MORPHEUS
-import Control.Monad.Trans (lift)
 import qualified Data.Aeson as Aeson
   ( Value (..),
   )
@@ -36,6 +35,10 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
+  )
+import Relude hiding
+  ( many,
+    toList,
   )
 import Text.Megaparsec
   ( eof,
