@@ -58,9 +58,11 @@ tests:
     main: Spec.hs
     source-dirs: test
     ghc-options: -Wall
+      -XNoImplicitPrelude
     dependencies:
       - morpheus-graphql-core
       - tasty
       - tasty-hunit
       - aeson
       - directory >= 1.0
+      - relude
