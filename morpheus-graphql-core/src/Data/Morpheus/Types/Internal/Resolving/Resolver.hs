@@ -160,10 +160,6 @@ instance (Monad m, LiftOperation o) => Monad (Resolver o e m) where
   (ResolverM x) >>= m2 = ResolverM (x >>= runResolverM . m2)
   (ResolverS res) >>= m2 = ResolverS (liftSubResolver m2 <$> res)
 
-#if __GLASGOW_HASKELL__ < 808
-  fail = failure . msg
-# endif
-
 liftSubResolver ::
   (Monad m) =>
   (t -> Resolver SUBSCRIPTION r m a) ->
