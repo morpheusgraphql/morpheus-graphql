@@ -3,11 +3,9 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Ext.MergeSet
   ( MergeSet,
@@ -32,7 +30,8 @@ import Data.Morpheus.Internal.Utils
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( Ref,
+  ( FieldName,
+    Ref,
     ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
@@ -62,7 +61,7 @@ instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
 
 instance
-  ( KeyOf k a,
+  ( KeyOf FieldName a,
     SemigroupM m a,
     Monad m,
     Failure ValidationErrors m,
@@ -85,7 +84,7 @@ resolveMergable ::
 resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) (MergeSet . fmap snd) (resolveWith (resolveConflict path))
 
 instance
-  ( KeyOf k a,
+  ( KeyOf FieldName a,
     SemigroupM m a,
     Monad m,
     Failure ValidationErrors m,
