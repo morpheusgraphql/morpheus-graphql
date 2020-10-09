@@ -4,17 +4,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Stitching
   ( Stitching (..),
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..))
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Map
   ( resolveWith,
@@ -22,9 +17,9 @@ import Data.Morpheus.Ext.Map
   )
 import qualified Data.Morpheus.Ext.OrdMap as OM
 import qualified Data.Morpheus.Ext.SafeHashMap as SHM
+import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    SemigroupM (..),
     mergeT,
     prop,
   )
@@ -42,13 +37,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving (RootResModel)
 import qualified Data.Morpheus.Types.Internal.Resolving as R (RootResModel (..))
-import Data.Semigroup (Semigroup (..))
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    otherwise,
-  )
+import Relude hiding (optional)
 
 equal :: (Eq a, Applicative m, Failure ValidationErrors m) => ValidationErrors -> a -> a -> m a
 equal err p1 p2

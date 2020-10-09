@@ -1,6 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Utils
   ( errorMessage,
@@ -14,7 +13,6 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
     pack,
   )
-import Data.Maybe (Maybe, maybeToList)
 import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
@@ -22,8 +20,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Position (..),
     ValidationError (..),
   )
-import Data.Semigroup ((<>))
-import Prelude ((.), String)
+import Relude hiding (ByteString)
 
 validationErrorMessage :: Maybe Position -> Message -> ValidationError
 validationErrorMessage pos message = ValidationError message (maybeToList pos)

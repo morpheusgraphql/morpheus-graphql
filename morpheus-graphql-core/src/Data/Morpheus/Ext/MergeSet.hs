@@ -8,32 +8,27 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.MergeSet
   ( MergeSet,
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..))
-import Data.Foldable (Foldable (..))
-import Data.Functor ((<$>), Functor (..))
-import Data.List (find)
-import Data.Maybe (maybe)
+import Data.Morpheus.Ext.Elems (Elems (..))
 import Data.Morpheus.Ext.Map
   ( fromListT,
     resolveWith,
     runResolutionT,
   )
+import Data.Morpheus.Ext.SemigroupM
+  ( SemigroupM (..),
+  )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
-    Elems,
     Failure (..),
     FromElems (..),
     KeyOf (..),
     Selectable (..),
-    SemigroupM (..),
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
@@ -45,17 +40,8 @@ import Data.Morpheus.Types.Internal.AST.Stage
     Stage,
     VALID,
   )
-import Data.Semigroup (Semigroup (..))
-import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    Show,
-    otherwise,
-    snd,
-  )
+import Relude
 
 -- set with mergeable components
 newtype MergeSet (dups :: Stage) a = MergeSet

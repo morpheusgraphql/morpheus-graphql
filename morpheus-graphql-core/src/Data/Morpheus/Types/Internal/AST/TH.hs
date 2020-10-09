@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TH
   ( ConsD (..),
@@ -25,14 +24,7 @@ import Data.Morpheus.Types.Internal.AST.Fields
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( DataEnumValue (..),
   )
-import Prelude
-  ( (.),
-    Bool (..),
-    Show,
-    all,
-    fmap,
-    null,
-  )
+import Relude
 
 toHSFieldDefinition :: FieldDefinition cat s -> FieldDefinition cat s
 toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConName}} =

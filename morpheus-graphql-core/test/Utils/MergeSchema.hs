@@ -1,21 +1,15 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.MergeSchema
   ( test,
   )
 where
 
-import Control.Applicative (pure)
-import Control.Monad ((>>=))
-import Control.Monad.Fail (fail)
 import Data.Aeson (decode, encode)
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as L (readFile)
-import Data.Functor ((<$>), fmap)
-import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Core
   ( App (..),
     AppData (..),
@@ -37,9 +31,8 @@ import Data.Morpheus.Types.Internal.Resolving
     ResultT (..),
     resultOr,
   )
-import Data.Semigroup ((<>))
 import Data.Text (unpack)
-import Data.Traversable (traverse)
+import Relude
 import Test.Tasty
   ( TestTree,
     testGroup,
@@ -53,15 +46,6 @@ import Utils.Utils
     expectedResponse,
     getRequest,
     getResolver,
-  )
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    IO,
-    Maybe (..),
-    otherwise,
-    show,
   )
 
 readSchema :: FieldName -> IO (Schema VALID)

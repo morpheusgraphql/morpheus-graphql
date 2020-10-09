@@ -2,21 +2,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Query.Variable
   ( resolveOperationVariables,
   )
 where
 
-import Control.Applicative ((*>), pure)
-import Control.Monad (Monad ((>>=)))
-import Data.Foldable (concat, concatMap)
-import Data.Functor ((<$>), fmap)
 import qualified Data.HashMap.Lazy as M
-  ( lookup,
-  )
-import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Error.Variable (uninitializedVariable)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -68,19 +60,7 @@ import Data.Morpheus.Types.Internal.Validation
 import Data.Morpheus.Validation.Internal.Value
   ( validateInputByType,
   )
-import Data.Semigroup ((<>))
-import Data.Traversable
-  ( traverse,
-  )
-import Prelude
-  ( ($),
-    (&&),
-    (.),
-    Bool (..),
-    Eq (..),
-    not,
-    otherwise,
-  )
+import Relude
 
 class ExploreRefs a where
   exploreRefs :: a -> [Ref]

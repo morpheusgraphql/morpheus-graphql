@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Document.TypeSystem
   ( parseSchema,
@@ -11,14 +10,7 @@ module Data.Morpheus.Parsing.Document.TypeSystem
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative ((*>), Applicative (..))
-import Control.Monad ((>=>))
 import Data.ByteString.Lazy (ByteString)
-import Data.Foldable (foldr)
-import Data.Functor ((<$>), fmap)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -79,16 +71,11 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     failure,
   )
+import Relude hiding (ByteString)
 import Text.Megaparsec
-  ( (<|>),
-    eof,
+  ( eof,
     label,
     manyTill,
-    optional,
-  )
-import Prelude
-  ( ($),
-    (.),
   )
 
 mkObject ::

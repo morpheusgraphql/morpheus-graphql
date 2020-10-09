@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveLift #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.DirectiveLocation
   ( DirectiveLocation (..),
@@ -8,7 +7,8 @@ where
 
 import Data.Morpheus.Types.Internal.AST.Base (Msg (..))
 import Language.Haskell.TH.Syntax (Lift)
-import Prelude ((.), Eq, Show (..))
+import Relude hiding (Show, show)
+import Prelude (Show (..))
 
 data DirectiveLocation
   = QUERY

@@ -10,7 +10,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation.Internal
   ( askType,
@@ -20,12 +19,6 @@ module Data.Morpheus.Types.Internal.Validation.Internal
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (Applicative, pure)
-import Control.Monad ((>=>), Monad ((>>=)))
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     selectBy,
@@ -67,14 +60,7 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     SelectionValidator,
     askSchema,
   )
-import Data.Semigroup
-  ( (<>),
-  )
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (.),
-  )
+import Relude
 
 askType ::
   Constraints m c cat s =>

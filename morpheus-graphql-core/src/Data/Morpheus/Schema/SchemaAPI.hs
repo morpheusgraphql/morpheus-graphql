@@ -10,9 +10,9 @@ module Data.Morpheus.Schema.SchemaAPI
 where
 
 -- MORPHEUS
+import Data.Morpheus.Ext.SemigroupM ((<:>))
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    elems,
+  ( elems,
     empty,
     selectOr,
   )
@@ -45,6 +45,7 @@ import Data.Morpheus.Types.Internal.Resolving
     mkObject,
     withArguments,
   )
+import Relude hiding (empty)
 
 resolveTypes ::
   Monad m => Schema VALID -> Resolver QUERY e m (ResModel QUERY e m)

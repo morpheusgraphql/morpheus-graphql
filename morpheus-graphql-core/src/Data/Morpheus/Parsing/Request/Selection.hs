@@ -39,9 +39,9 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
   )
+import Relude
 import Text.Megaparsec
-  ( (<|>),
-    label,
+  ( label,
     try,
   )
 

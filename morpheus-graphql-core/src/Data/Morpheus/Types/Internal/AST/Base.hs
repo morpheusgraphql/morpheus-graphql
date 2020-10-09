@@ -10,7 +10,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Ref (..),
@@ -72,16 +71,11 @@ import Data.Aeson
   )
 import Data.ByteString.Lazy (ByteString)
 import Data.Char (toLower)
-import Data.Hashable (Hashable)
-import Data.Maybe (Maybe (..), maybeToList)
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), Rendering, fromText, renderGQL)
-import Data.Semigroup (Semigroup (..))
-import Data.String (IsString (..))
-import Data.Text (Text, intercalate, pack)
+import Data.Text (intercalate, pack)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
-import GHC.Generics (Generic)
 import Language.Haskell.TH
   ( ExpQ,
     stringE,
@@ -92,23 +86,10 @@ import Language.Haskell.TH.Syntax
     TExp,
     unsafeTExpCoerce,
   )
-import Prelude
-  ( ($),
-    (&&),
-    (.),
-    Bool (..),
-    Eq (..),
-    Functor (..),
-    Int,
-    Ord (..),
-    Show (..),
-    String,
-    elem,
-    fst,
-    id,
-    not,
-    notElem,
-    otherwise,
+import Relude hiding
+  ( ByteString,
+    decodeUtf8,
+    intercalate,
   )
 
 type TRUE = 'True

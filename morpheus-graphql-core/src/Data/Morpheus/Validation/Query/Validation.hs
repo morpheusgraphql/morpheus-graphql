@@ -42,6 +42,10 @@ import Data.Morpheus.Validation.Query.Selection
 import Data.Morpheus.Validation.Query.Variable
   ( resolveOperationVariables,
   )
+import Relude hiding
+  ( empty,
+    fromList,
+  )
 
 validateRequest ::
   Config ->

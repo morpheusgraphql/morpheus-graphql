@@ -15,8 +15,6 @@ module Data.Morpheus.Parsing.Internal.Pattern
   )
 where
 
-import Data.Functor (($>))
--- MORPHEUS
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
   )
@@ -59,13 +57,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef,
     Value,
   )
-import Data.String (fromString)
+import Relude hiding (many)
 import Text.Megaparsec
-  ( (<|>),
-    choice,
+  ( choice,
     label,
     many,
-    optional,
   )
 import Text.Megaparsec.Byte (string)
 

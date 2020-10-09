@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -23,27 +22,11 @@ where
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Foldable (Foldable, foldl, null)
-import Data.Function ((&))
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..), fromMaybe, maybe)
-import Data.Semigroup (Semigroup (..), stimes)
-import Data.String (IsString (..))
-import Data.Text (Text)
+import Data.Foldable (foldl)
 import qualified Data.Text as T
-import Prelude
-  ( ($),
-    (*),
-    (+),
-    (.),
-    Bool (..),
-    Float,
-    Int,
-    Show (..),
-    const,
-    fmap,
-    map,
-    otherwise,
+import Relude hiding
+  ( ByteString,
+    intercalate,
   )
 
 renderGQL :: RenderGQL a => a -> ByteString

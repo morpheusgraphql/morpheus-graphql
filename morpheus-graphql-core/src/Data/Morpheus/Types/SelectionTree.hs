@@ -1,16 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
 -- Module      : Data.Morpheus.Types.SelectionTree
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
-import Data.Bool (Bool (..))
-import Data.Foldable (concatMap)
-import Data.Monoid (mempty)
 import Data.Morpheus.Internal.Utils (elems, keyOf)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -20,11 +16,8 @@ import Data.Morpheus.Types.Internal.AST
     UnionTag (..),
     VALID,
   )
-import Data.String
-  ( IsString (..),
-  )
 import Data.Text (unpack)
-import Prelude ((.))
+import Relude
 
 -- | The 'SelectionTree' instance is a simple interface for interacting
 -- with morpheus's internal AST while keeping the ability to safely change the concrete

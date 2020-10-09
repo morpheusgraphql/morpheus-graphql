@@ -12,7 +12,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Fields
   ( Arguments,
@@ -41,11 +40,6 @@ module Data.Morpheus.Types.Internal.AST.Fields
   )
 where
 
--- MORPHEUS
-import Control.Monad (Monad)
-import Data.Functor ((<$>), Functor (..))
-import Data.List (find)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -104,20 +98,9 @@ import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
     Value (..),
   )
-import Data.Semigroup (Semigroup ((<>)))
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Eq,
-    Show,
-    filter,
-    notElem,
-    null,
-    otherwise,
-  )
+import Relude hiding (empty, intercalate)
 
 -- scalar
 ------------------------------------------------------------------

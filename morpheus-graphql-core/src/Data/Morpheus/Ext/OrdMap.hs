@@ -9,7 +9,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.OrdMap
   ( OrdMap (..),
@@ -17,39 +16,27 @@ module Data.Morpheus.Ext.OrdMap
   )
 where
 
--- MORPHEUS
-import Control.Monad (Monad)
-import Data.Foldable (Foldable (..))
-import Data.Functor ((<$>), Functor (..))
-import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
-import Data.Hashable (Hashable)
-import Data.List (sortOn)
-import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Elems (Elems (..))
 import Data.Morpheus.Ext.Map
   ( Indexed (..),
     indexed,
   )
+import Data.Morpheus.Ext.SemigroupM
+  ( SemigroupM (..),
+  )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
-    Elems (..),
     Failure,
     FromElems (..),
     KeyOf (..),
     Selectable (..),
-    SemigroupM (..),
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base (ValidationErrors)
-import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prelude
-  ( ($),
-    (.),
-    Eq,
-    Show,
-  )
+import Relude
 
 -- OrdMap
 newtype OrdMap k a = OrdMap

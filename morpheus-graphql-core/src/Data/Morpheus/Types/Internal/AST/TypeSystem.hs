@@ -17,7 +17,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeSystem
   ( ScalarDefinition (..),
@@ -57,14 +56,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
 where
 
 -- MORPHEUS
-
-import Control.Applicative ((<|>), Applicative (..))
-import Control.Monad (Monad (..), foldM)
-import Data.Either (Either (..))
-import Data.Foldable (concatMap)
-import Data.Functor ((<$>), fmap)
-import Data.List (elem, filter, find, notElem)
-import Data.Maybe (Maybe (..), catMaybes, mapMaybe, maybe)
+import Control.Monad (foldM)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -75,15 +67,17 @@ import Data.Morpheus.Ext.SafeHashMap
   ( SafeHashMap,
     insert,
   )
-import Data.Morpheus.Internal.Utils
+import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
-    Collection (..),
+    SemigroupM (..),
+  )
+import Data.Morpheus.Internal.Utils
+  ( Collection (..),
     Elems (..),
     Failure (..),
     FromElems (..),
     KeyOf (..),
     Selectable (..),
-    SemigroupM (..),
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -145,18 +139,14 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
   )
-import Data.Semigroup (Semigroup (..))
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Eq (..),
-    Show (..),
-    flip,
-    otherwise,
+import Relude hiding
+  ( empty,
+    intercalate,
+    show,
   )
+import Prelude (Show (..))
 
 type DataEnum s = [DataEnumValue s]
 

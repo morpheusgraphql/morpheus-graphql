@@ -13,7 +13,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Validation.Validator
   ( Validator (..),
@@ -56,18 +55,6 @@ module Data.Morpheus.Types.Internal.Validation.Validator
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (Applicative)
-import Control.Monad (Monad)
-import Control.Monad.Reader (MonadReader (..))
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-    withReaderT,
-  )
-import Data.Functor ((<$>), Functor (..))
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils
   ( validationErrorMessage,
   )
@@ -109,17 +96,10 @@ import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
-import Data.Semigroup
-  ( (<>),
-    stimes,
-  )
-import Prelude
-  ( ($),
-    (.),
-    Bool,
-    Int,
-    Show,
-    otherwise,
+import Relude hiding
+  ( Constraint,
+    asks,
+    get,
   )
 
 data Prop = Prop

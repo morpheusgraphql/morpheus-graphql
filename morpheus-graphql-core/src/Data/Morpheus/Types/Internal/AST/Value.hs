@@ -11,7 +11,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
@@ -34,9 +33,6 @@ module Data.Morpheus.Types.Internal.AST.Value
 where
 
 -- MORPHEUS
-
-import Control.Applicative (pure)
-import Control.Monad.Fail (MonadFail (fail))
 import qualified Data.Aeson as A
   ( (.=),
     FromJSON (..),
@@ -45,13 +41,8 @@ import qualified Data.Aeson as A
     object,
     pairs,
   )
-import Data.Either (Either (..))
-import Data.Foldable (foldl1, null)
-import Data.Functor (fmap)
+import Data.Foldable (foldl1)
 import qualified Data.HashMap.Lazy as M
-  ( toList,
-  )
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -93,26 +84,10 @@ import Data.Scientific
   ( Scientific,
     floatingOrInteger,
   )
-import Data.Semigroup ((<>))
-import Data.Text
-  ( Text,
-  )
 import qualified Data.Vector as V
-  ( toList,
-  )
-import GHC.Generics (Generic)
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prelude
-  ( ($),
-    (.),
-    Bool,
-    Eq,
-    Float,
-    Int,
-    Show (..),
-    otherwise,
-  )
+import Relude
 
 -- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
 -- for performance reason type 'Text' represents GraphQl 'String' value

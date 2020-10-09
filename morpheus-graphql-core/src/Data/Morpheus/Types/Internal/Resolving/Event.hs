@@ -2,7 +2,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Event
   ( Event (..),
@@ -11,10 +10,7 @@ module Data.Morpheus.Types.Internal.Resolving.Event
   )
 where
 
-import Prelude
-  ( Eq (..),
-    fmap,
-  )
+import Relude
 
 -- Channel
 data Channel (event :: *) where

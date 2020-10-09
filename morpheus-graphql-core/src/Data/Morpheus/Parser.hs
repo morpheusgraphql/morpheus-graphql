@@ -6,9 +6,8 @@ module Data.Morpheus.Parser
   )
 where
 
-import Control.Monad ((>=>))
 import Data.ByteString.Lazy (ByteString)
-import Data.Morpheus.Internal.Utils ((<:>))
+import Data.Morpheus.Ext.SemigroupM ((<:>))
 import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
   ( parseSchema,
     parseTypeDefinitions,
@@ -40,6 +39,7 @@ import Data.Morpheus.Validation.Document.Validation
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
+import Relude hiding (ByteString)
 
 parseTypeSystemDefinition ::
   ByteString -> Eventless (Schema VALID)

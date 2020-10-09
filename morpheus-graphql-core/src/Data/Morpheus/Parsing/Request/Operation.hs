@@ -37,11 +37,10 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableContent (..),
   )
+import Relude hiding (empty)
 import Text.Megaparsec
   ( (<?>),
-    (<|>),
     label,
-    optional,
   )
 
 -- Variables :  https://graphql.github.io/graphql-spec/June2018/#VariableDefinition

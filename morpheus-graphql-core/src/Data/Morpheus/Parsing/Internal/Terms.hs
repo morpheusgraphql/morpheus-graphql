@@ -2,7 +2,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
   ( name,
@@ -39,14 +38,9 @@ module Data.Morpheus.Parsing.Internal.Terms
   )
 where
 
-import Control.Applicative ((*>), Applicative (..))
-import Control.Monad ((>=>), (>>=))
--- MORPHEUS
-import Control.Monad.Trans (lift)
 import Data.ByteString.Lazy
   ( pack,
   )
-import Data.Functor (($>), (<$>))
 import Data.Morpheus.Internal.Utils
   ( Collection,
     FromElems (..),
@@ -72,20 +66,17 @@ import Data.Morpheus.Types.Internal.AST
     toHSWrappers,
   )
 import Data.Morpheus.Types.Internal.Resolving (Eventless)
-import Data.Semigroup ((<>))
 import Data.Text
   ( strip,
   )
-import GHC.Word (Word8)
+import Relude hiding (empty, many)
 import Text.Megaparsec
   ( (<?>),
-    (<|>),
     between,
     choice,
     label,
     many,
     manyTill,
-    optional,
     sepBy,
     sepBy1,
     sepEndBy,
@@ -101,13 +92,6 @@ import Text.Megaparsec.Byte
     space,
     space1,
     string,
-  )
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Maybe (..),
-    flip,
   )
 
 parseNegativeSign :: Parser Bool

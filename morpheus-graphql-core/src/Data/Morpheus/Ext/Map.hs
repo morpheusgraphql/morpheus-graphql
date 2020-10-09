@@ -4,7 +4,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.Map
   ( Indexed (..),
@@ -16,35 +15,10 @@ module Data.Morpheus.Ext.Map
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad ((>=>), (>>=), Monad)
-import Control.Monad.Reader (MonadReader (..), asks)
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-  )
-import Data.Foldable (Foldable, foldl, foldlM)
-import Data.Function ((&))
-import Data.Functor (Functor (..))
-import Data.HashMap.Lazy (HashMap)
+import Data.Foldable (foldl)
 import qualified Data.HashMap.Lazy as HM
-import Data.Hashable (Hashable)
-import Data.List (sortOn)
-import Data.List.NonEmpty (NonEmpty (..))
-import Data.Maybe (Maybe (..))
-import Data.Semigroup (Semigroup ((<>)))
-import Data.Traversable (Traversable (..))
 import Language.Haskell.TH.Syntax (Lift)
-import Prelude
-  ( ($),
-    (+),
-    (.),
-    Eq,
-    Int,
-    Show,
-    flip,
-    id,
-  )
+import Relude
 
 sortedEntries :: [Indexed k a] -> [(k, a)]
 sortedEntries = fmap f . sortOn index

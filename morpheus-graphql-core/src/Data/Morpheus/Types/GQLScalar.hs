@@ -2,7 +2,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
@@ -12,9 +11,7 @@ module Data.Morpheus.Types.GQLScalar
   )
 where
 
-import Control.Monad.Fail (MonadFail (..))
 import qualified Data.Aeson as A
-import Data.Either (Either (..), either)
 import Data.Morpheus.Types.Internal.AST
   ( ScalarDefinition (..),
     ScalarValue (..),
@@ -22,18 +19,8 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     replaceValue,
   )
-import Data.Text (Text, unpack)
-import Prelude
-  ( ($),
-    (.),
-    Bool,
-    Float,
-    Int,
-    Monad,
-    fromInteger,
-    pure,
-    toInteger,
-  )
+import Data.Text (unpack)
+import Relude
 
 toScalar :: ValidValue -> Either Text ScalarValue
 toScalar (Scalar x) = pure x

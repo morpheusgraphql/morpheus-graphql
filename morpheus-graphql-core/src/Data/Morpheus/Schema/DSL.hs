@@ -24,6 +24,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
+import Relude hiding (ByteString)
 
 dsl :: QuasiQuoter
 dsl =
@@ -34,8 +35,7 @@ dsl =
       quoteDec = notHandled "Declarations"
     }
   where
-    notHandled things =
-      error $ things ++ " are not supported by the GraphQL QuasiQuoter"
+    notHandled things = error $ things <> " are not supported by the GraphQL QuasiQuoter"
 
 dslExpression :: ByteString -> Q Exp
 dslExpression doc = case parseSchema doc of

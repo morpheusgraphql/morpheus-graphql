@@ -33,6 +33,7 @@ dependencies:
   - th-lift-instances     >= 0.1.1     && <= 0.3
   - hashable              >= 1.0.0
   - mtl                   >= 2.0       && <= 3.0
+  - relude                >= 0.3.0
 
 library:
   source-dirs: src
@@ -50,15 +51,18 @@ library:
     - Data.Morpheus.Types.SelectionTree
 
   ghc-options: -Wall
+    -XNoImplicitPrelude
 
 tests:
   morpheus-test:
     main: Spec.hs
     source-dirs: test
     ghc-options: -Wall
+      -XNoImplicitPrelude
     dependencies:
       - morpheus-graphql-core
       - tasty
       - tasty-hunit
       - aeson
       - directory >= 1.0
+      - relude    >= 0.3.0

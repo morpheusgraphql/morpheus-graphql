@@ -78,7 +78,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
     CONST,
-    ELEM,
     FieldContent (..),
     FieldsDefinition,
     GQLErrors,

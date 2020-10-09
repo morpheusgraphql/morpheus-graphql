@@ -4,7 +4,6 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
   ( capitalize,
@@ -13,87 +12,57 @@ module Data.Morpheus.Internal.Utils
     capitalTypeName,
     Collection (..),
     Selectable (..),
-    Elems (..),
     FromElems (..),
     Failure (..),
     KeyOf (..),
     toPair,
     selectBy,
-    size,
-    (<:>),
     mapFst,
     mapSnd,
     mapTuple,
     traverseCollection,
-    SemigroupM (..),
     prop,
     stripFieldNamespace,
     stripConstructorNamespace,
     fromLBS,
     toLBS,
     mergeT,
-    concatTraverse,
-    join,
+    Elems (..),
+    size,
+    failOnDuplicates,
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad ((=<<), (>>=))
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-  )
 import Data.ByteString.Lazy (ByteString)
 import Data.Char
   ( toLower,
     toUpper,
   )
-import Data.Functor ((<$>), Functor (..))
-import Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as HM
-import Data.Hashable (Hashable)
-import Data.List (drop, find)
-import Data.List.NonEmpty (NonEmpty (..))
-import Data.Maybe (maybe)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Elems (Elems (..), size)
+import Data.Morpheus.Ext.Failure (Failure (..))
+import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
 import Data.Morpheus.Ext.Map
-  ( Indexed (..),
-    ResolutionT,
+  ( ResolutionT,
     fromListT,
     runResolutionT,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
-    Ref (..),
     Token,
     TypeName (..),
-    TypeNameRef (..),
     ValidationErrors,
   )
-import Data.Semigroup (Semigroup (..))
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
-import Data.Traversable (traverse)
 import Instances.TH.Lift ()
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Char,
-    Either (..),
-    Eq (..),
-    Foldable (..),
-    Int,
-    Monad,
-    String,
-    const,
-    fst,
-    id,
-    length,
-    otherwise,
+import Relude hiding
+  ( ByteString,
+    decodeUtf8,
+    encodeUtf8,
   )
 
 toLBS :: Text -> ByteString
@@ -177,24 +146,6 @@ traverseCollection ::
   f (t' b)
 traverseCollection f a = fromElems =<< traverse f (elems a)
 
-class (Eq k, Hashable k) => KeyOf k a | a -> k where
-  keyOf :: a -> k
-
-instance (Eq k, Hashable k) => KeyOf k (k, a) where
-  keyOf = fst
-
-instance KeyOf FieldName Ref where
-  keyOf = refName
-
-instance KeyOf TypeName TypeNameRef where
-  keyOf = typeNameRef
-
-toPair :: KeyOf k a => a -> (k, a)
-toPair x = (keyOf x, x)
-
-class Elems a coll | coll -> a where
-  elems :: coll -> [a]
-
 -- list Like Collections
 class FromElems m a coll | coll -> a where
   fromElems :: [a] -> m coll
@@ -212,69 +163,7 @@ instance
   where
   fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
 
-instance Elems a (HashMap k a) where
-  elems = HM.elems
-
-instance Elems a [a] where
-  elems = id
-
-concatTraverse ::
-  ( Monad m,
-    Failure ValidationErrors m,
-    Collection b cb,
-    Elems a ca,
-    SemigroupM m cb
-  ) =>
-  (a -> m cb) ->
-  ca ->
-  m cb
-concatTraverse f smap =
-  traverse f (elems smap)
-    >>= join
-
-join ::
-  ( Collection e a,
-    Monad m,
-    Failure ValidationErrors m,
-    SemigroupM m a
-  ) =>
-  [a] ->
-  m a
-join = __join empty
-  where
-    __join acc [] = pure acc
-    __join acc (x : xs) = acc <:> x >>= (`__join` xs)
-
-size :: Elems a coll => coll -> Int
-size = length . elems
-
 -- Merge Object with of Failure as an Option
-
-(<:>) :: SemigroupM m a => a -> a -> m a
-(<:>) = mergeM []
-
-class SemigroupM m a where
-  mergeM :: [Ref] -> a -> a -> m a
-
-instance
-  ( NameCollision a,
-    Monad m,
-    KeyOf k a,
-    Failure ValidationErrors m
-  ) =>
-  SemigroupM m (HashMap k a)
-  where
-  mergeM _ x y = runResolutionT (fromListT $ HM.toList x <> HM.toList y) HM.fromList failOnDuplicates
-
--- Failure: for custom Morpheus GrapHQL errors
-class Applicative f => Failure error (f :: * -> *) where
-  failure :: error -> f v
-
-instance Failure error (Either error) where
-  failure = Left
-
-instance (Monad m, Failure errors m) => Failure errors (ReaderT ctx m) where
-  failure = lift . failure
 
 mapFst :: (a -> a') -> (a, b) -> (a', b)
 mapFst f (a, b) = (f a, b)
@@ -289,6 +178,3 @@ failOnDuplicates :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a 
 failOnDuplicates (x :| xs)
   | null xs = pure x
   | otherwise = failure $ fmap nameCollision (x : xs)
-
-instance (Eq k, Hashable k) => KeyOf k (Indexed k a) where
-  keyOf = indexedKey

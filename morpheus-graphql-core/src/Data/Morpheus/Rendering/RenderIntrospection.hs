@@ -6,7 +6,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Rendering.RenderIntrospection
   ( render,
@@ -14,14 +13,6 @@ module Data.Morpheus.Rendering.RenderIntrospection
   )
 where
 
--- Morpheus
-
-import Control.Applicative (pure)
-import Control.Monad (Monad (..))
-import Data.Foldable (foldr)
-import Data.Functor ((<$>))
-import Data.List (filter)
-import Data.Maybe (Maybe (..), isJust, maybe)
 import Data.Morpheus.Internal.Utils
   ( Failure,
     elems,
@@ -78,15 +69,8 @@ import Data.Morpheus.Types.Internal.Resolving
     mkString,
     unsafeInternalContext,
   )
-import Data.Semigroup ((<>))
 import Data.Text (pack)
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (.),
-    Bool,
-    show,
-  )
+import Relude
 
 class
   ( Monad m,

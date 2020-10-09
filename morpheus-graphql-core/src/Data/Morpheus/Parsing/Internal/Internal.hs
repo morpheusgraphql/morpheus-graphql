@@ -8,9 +8,7 @@ module Data.Morpheus.Parsing.Internal.Internal
   )
 where
 
-import Data.ByteString.Lazy
-  ( ByteString,
-  )
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
@@ -23,7 +21,15 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
     failure,
   )
-import Data.Void (Void)
+import Relude
+  ( ($),
+    (.),
+    Applicative (..),
+    Either (..),
+    Functor (..),
+    Void,
+    fst,
+  )
 import Text.Megaparsec
   ( ParseError,
     ParseErrorBundle
@@ -63,19 +69,20 @@ processParser parser txt = case runParserT parser [] txt of
   Failure {errors} -> failure errors
 
 processErrorBundle :: ErrorBundle -> GQLErrors
-processErrorBundle = map parseErrorToGQLError . bundleToErrors
-  where
-    parseErrorToGQLError :: (ParseError ByteString MyError, SourcePos) -> GQLError
-    parseErrorToGQLError (err, position) =
-      GQLError
-        { message = msg (parseErrorPretty err),
-          locations = [toLocation position]
-        }
-    bundleToErrors ::
-      ErrorBundle -> [(ParseError ByteString MyError, SourcePos)]
-    bundleToErrors ParseErrorBundle {bundleErrors, bundlePosState} =
-      NonEmpty.toList $ fst $
-        attachSourcePos
-          errorOffset
-          bundleErrors
-          bundlePosState
+processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
+
+parseErrorToGQLError :: (ParseError ByteString MyError, SourcePos) -> GQLError
+parseErrorToGQLError (err, position) =
+  GQLError
+    { message = msg (parseErrorPretty err),
+      locations = [toLocation position]
+    }
+
+bundleToErrors ::
+  ErrorBundle -> [(ParseError ByteString MyError, SourcePos)]
+bundleToErrors ParseErrorBundle {bundleErrors, bundlePosState} =
+  NonEmpty.toList $ fst $
+    attachSourcePos
+      errorOffset
+      bundleErrors
+      bundlePosState

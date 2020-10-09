@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself,
@@ -8,8 +7,6 @@ module Data.Morpheus.Error.Fragment
 where
 
 -- MORPHEUS
-
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Error.Utils (validationErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
@@ -20,8 +17,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     msg,
     msgSepBy,
   )
-import Data.Semigroup ((<>))
-import Prelude (($), fmap, head)
+import Relude
 
 {-
   FRAGMENT:
@@ -35,14 +31,14 @@ import Prelude (($), fmap, head)
     {...H} -> "Unknown fragment \"H\"."
 -}
 
-cannotSpreadWithinItself :: [Ref] -> ValidationError
-cannotSpreadWithinItself fragments = ValidationError text (fmap refPosition fragments)
+cannotSpreadWithinItself :: NonEmpty Ref -> ValidationError
+cannotSpreadWithinItself (fr :| frs) = ValidationError text (fmap refPosition (fr : frs))
   where
     text =
       "Cannot spread fragment "
-        <> msg (refName $ head fragments)
+        <> msg (refName fr)
         <> " within itself via "
-        <> msgSepBy ", " (fmap refName fragments)
+        <> msgSepBy ", " (fmap refName (fr : frs))
         <> "."
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."

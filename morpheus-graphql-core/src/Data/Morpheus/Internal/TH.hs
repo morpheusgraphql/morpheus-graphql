@@ -9,8 +9,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
--- MORPHEUS
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.TH
   ( _',
@@ -45,9 +43,7 @@ module Data.Morpheus.Internal.TH
   )
 where
 
-import Control.Applicative (pure)
 import Data.Foldable (foldl)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( capitalize,
     nameSpaceField,
@@ -66,16 +62,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Text (unpack)
 import Language.Haskell.TH
-import Prelude
-  ( ($),
-    (.),
-    (==),
-    String,
-    id,
-    map,
-    otherwise,
-    (||),
-  )
+import Relude hiding (ToString (..), Type)
 
 m' :: Type
 m' = VarT (mkName "m")
