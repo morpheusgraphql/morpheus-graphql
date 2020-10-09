@@ -30,8 +30,7 @@ import Data.Morpheus.Internal.Utils
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    Ref,
+  ( Ref,
     ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
@@ -43,7 +42,7 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import Relude
 
 -- set with mergeable components
-newtype MergeSet (dups :: Stage) a = MergeSet
+newtype MergeSet (dups :: Stage) k a = MergeSet
   { unpack :: [a]
   }
   deriving
@@ -57,17 +56,17 @@ newtype MergeSet (dups :: Stage) a = MergeSet
       Elems a
     )
 
-instance (KeyOf k a) => Selectable k a (MergeSet opt a) where
+instance (KeyOf k a) => Selectable k a (MergeSet opt k a) where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
 
 instance
-  ( KeyOf FieldName a,
+  ( KeyOf k a,
     SemigroupM m a,
     Monad m,
     Failure ValidationErrors m,
     Eq a
   ) =>
-  SemigroupM m (MergeSet VALID a)
+  SemigroupM m (MergeSet VALID k a)
   where
   mergeM path (MergeSet x) (MergeSet y) = resolveMergable path (x <> y)
 
@@ -80,24 +79,24 @@ resolveMergable ::
   ) =>
   [Ref] ->
   [a] ->
-  m (MergeSet dups a)
+  m (MergeSet dups k a)
 resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) (MergeSet . fmap snd) (resolveWith (resolveConflict path))
 
 instance
-  ( KeyOf FieldName a,
+  ( KeyOf k a,
     SemigroupM m a,
     Monad m,
     Failure ValidationErrors m,
     Eq a
   ) =>
-  FromElems m a (MergeSet VALID a)
+  FromElems m a (MergeSet VALID k a)
   where
   fromElems = resolveMergable []
 
-instance Applicative m => SemigroupM m (MergeSet RAW a) where
+instance Applicative m => SemigroupM m (MergeSet RAW k a) where
   mergeM _ (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
 
-instance Applicative m => FromElems m a (MergeSet RAW a) where
+instance Applicative m => FromElems m a (MergeSet RAW k a) where
   fromElems = pure . MergeSet
 
 resolveConflict :: (Monad m, Eq a, KeyOf k a, SemigroupM m a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a

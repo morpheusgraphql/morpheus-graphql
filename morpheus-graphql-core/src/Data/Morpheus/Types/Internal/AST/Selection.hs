@@ -191,9 +191,9 @@ instance (Monad m, Failure ValidationErrors m) => SemigroupM m UnionTag where
   mergeM path (UnionTag oldTag oldSel) (UnionTag _ currentSel) =
     UnionTag oldTag <$> mergeM path oldSel currentSel
 
-type UnionSelection (s :: Stage) = MergeSet s UnionTag
+type UnionSelection (s :: Stage) = MergeSet s TypeName UnionTag
 
-type SelectionSet (s :: Stage) = MergeSet s (Selection s)
+type SelectionSet (s :: Stage) = MergeSet s FieldName (Selection s)
 
 data Selection (s :: Stage) where
   Selection ::
