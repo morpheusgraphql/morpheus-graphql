@@ -13,7 +13,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Morpheus.Types.Internal.Resolving.ResolverState
   ( ResolverContext (..),
