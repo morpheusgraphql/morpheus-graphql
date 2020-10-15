@@ -43,6 +43,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Language.Haskell.TH
+import Relude hiding (ByteString)
 
 defineByDocumentFile :: FilePath -> (GQLQuery, String) -> Q [Dec]
 defineByDocumentFile = defineByDocument . L.readFile

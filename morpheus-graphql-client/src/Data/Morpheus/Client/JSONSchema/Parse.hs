@@ -12,9 +12,7 @@ where
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind (..))
-import qualified Data.Morpheus.Client.JSONSchema.Types as Ref
-  ( TypeRef (..),
-  )
+import qualified Data.Morpheus.Client.JSONSchema.TypeRef as Ref
 import Data.Morpheus.Client.JSONSchema.Types
   ( EnumValue (..),
     Field (..),

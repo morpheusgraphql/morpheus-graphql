@@ -12,14 +12,6 @@ module Data.Morpheus.Client.Transform.Inputs
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (pure)
-import Control.Monad ((>>=))
-import Control.Monad.Reader (asks)
-import Data.Foldable (concat, null)
-import Data.Functor ((<$>), Functor (..))
-import Data.List (elem)
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -57,15 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     removeDuplicates,
     toAny,
   )
-import Data.Semigroup ((<>))
-import Data.Traversable (Traversable (..))
-import Prelude
-  ( ($),
-    (.),
-    Maybe (..),
-    otherwise,
-    snd,
-  )
+import Relude hiding (empty)
 
 renderArguments ::
   VariableDefinitions RAW ->

@@ -12,14 +12,6 @@ module Data.Morpheus.Client.Transform.Selection
   )
 where
 
---
--- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad ((>>=))
-import Control.Monad.Reader (asks, runReaderT)
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
     ClientTypeDefinition (..),
@@ -64,19 +56,8 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
-import Data.Semigroup ((<>))
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    concat,
-    flip,
-    fst,
-    otherwise,
-    show,
-    traverse,
-    unzip3,
-  )
+import Relude hiding (empty, show)
+import Prelude (show)
 
 toClientDefinition ::
   Schema VALID ->

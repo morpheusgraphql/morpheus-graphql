@@ -11,7 +11,6 @@ module Data.Morpheus.Client.JSONSchema.Types
     Field (..),
     InputValue (..),
     EnumValue (..),
-    TypeRef (..),
   )
 where
 
@@ -19,6 +18,7 @@ import Data.Aeson
 --
 -- MORPHEUS
 import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind)
+import Data.Morpheus.Client.JSONSchema.TypeRef (TypeRef)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
@@ -40,9 +40,6 @@ data Schema = Schema
     -- TODO: directives
     --directives: [__Directive]
   }
-  deriving (Generic, Show, FromJSON)
-
-newtype TypeRef = TypeRef {name :: TypeName}
   deriving (Generic, Show, FromJSON)
 
 data Type = Type
