@@ -4,8 +4,8 @@
 
 module Spec.Utils
   ( mockApi,
-    schemaUrl,
     defineClientWith,
+    defineClientWithJSON,
   )
 where
 
@@ -14,6 +14,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Functor ((<$>))
 import Data.Morpheus.Client
   ( defineByDocumentFile,
+    defineByIntrospectionFile,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -37,9 +38,6 @@ import Prelude
 path :: FieldName -> FilePath
 path (FieldName name) = "test/Case/" <> T.unpack name
 
-schemaUrl :: FieldName -> FilePath
-schemaUrl p = path p <> "/schema.gql"
-
 withProject :: FilePath -> FilePath
 withProject = ("morpheus-graphql-client/" <>)
 
@@ -57,5 +55,13 @@ defineClientWith ::
   (GQLQuery, String) ->
   Q [Dec]
 defineClientWith url exp = do
-  p <- fixFilePath (schemaUrl url)
+  p <- fixFilePath (path url <> "/schema.gql")
   defineByDocumentFile p exp
+
+defineClientWithJSON ::
+  FieldName ->
+  (GQLQuery, String) ->
+  Q [Dec]
+defineClientWithJSON url exp = do
+  p <- fixFilePath (path url <> "/schema.json")
+  defineByIntrospectionFile p exp
