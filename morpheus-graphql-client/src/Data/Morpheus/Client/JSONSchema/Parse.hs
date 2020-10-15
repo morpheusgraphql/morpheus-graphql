@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -27,7 +28,8 @@ import Data.Morpheus.Core
   )
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
-  ( fromElems,
+  ( Failure (..),
+    fromElems,
   )
 import Data.Morpheus.Types.IO (JSONResponse (..))
 import qualified Data.Morpheus.Types.Internal.AST as AST
@@ -42,11 +44,16 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Message,
     OUT,
+    OperationType (..),
+    RootOperationTypeDefinition (..),
+    SchemaDefinition (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     TypeWrapper,
     VALID,
+    ValidationErrors,
+    buildSchema,
     createScalarType,
     mkEnumContent,
     mkInputValue,
@@ -59,11 +66,11 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    failure,
   )
 import Relude hiding
   ( ByteString,
     Type,
+    fromList,
     show,
   )
 import Prelude (show)
@@ -80,21 +87,36 @@ decodeIntrospection jsonDoc = case jsonSchema of
           Just
             Introspection
               { __schema =
-                  Schema
-                    { types,
-                      queryType,
-                      mutationType,
-                      subscriptionType
-                    }
+                  schema@Schema {types}
               }
-      } ->
-      traverse parse types >>= fromElems . concat >>= validate
+      } -> do
+      schemaDef <- mkSchemaDef schema
+      gqlTypes <- concat <$> traverse parse types
+      buildSchema (Just schemaDef, gqlTypes, empty) >>= validate
   Right res -> decoderError (msg $ show res)
   where
     validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
     validate = validateSchema False defaultConfig
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
+
+mkSchemaDef ::
+  (Monad m, Failure ValidationErrors m) =>
+  Schema ->
+  m SchemaDefinition
+mkSchemaDef
+  Schema
+    { queryType,
+      mutationType,
+      subscriptionType
+    } =
+    SchemaDefinition empty
+      <$> fromElems
+        [ RootOperationTypeDefinition
+            { rootOperationType = Query,
+              rootOperationTypeDefinitionName = Ref.name queryType
+            }
+        ]
 
 class ParseJSONSchema a b where
   parse :: a -> Eventless b
