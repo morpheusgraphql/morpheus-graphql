@@ -18,8 +18,6 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
--- MORPHEUS
-
 import Data.Morpheus.Client.Build
   ( defineQuery,
   )

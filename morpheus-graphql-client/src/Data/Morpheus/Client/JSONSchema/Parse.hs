@@ -3,22 +3,18 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.JSONSchema.Parse
   ( decodeIntrospection,
   )
 where
 
-import Control.Applicative (pure)
-import Control.Monad ((>>=))
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
-import Data.Either (Either (..))
-import Data.Functor ((<$>), fmap)
-import Data.List (concat)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind (..))
+import qualified Data.Morpheus.Client.JSONSchema.Types as Ref
+  ( TypeRef (..),
+  )
 import Data.Morpheus.Client.JSONSchema.Types
   ( EnumValue (..),
     Field (..),
@@ -67,16 +63,12 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     failure,
   )
-import Data.Semigroup ((<>))
-import Data.String (String)
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Show (..),
-    uncurry,
+import Relude hiding
+  ( ByteString,
+    Type,
+    show,
   )
+import Prelude (show)
 
 decoderError :: Message -> Eventless a
 decoderError = failure . globalErrorMessage
@@ -84,8 +76,21 @@ decoderError = failure . globalErrorMessage
 decodeIntrospection :: ByteString -> Eventless (AST.Schema VALID)
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> decoderError $ msg errors
-  Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
-    traverse parse types >>= fromElems . concat >>= validate
+  Right
+    JSONResponse
+      { responseData =
+          Just
+            Introspection
+              { __schema =
+                  Schema
+                    { types,
+                      queryType,
+                      mutationType,
+                      subscriptionType
+                    }
+              }
+      } ->
+      traverse parse types >>= fromElems . concat >>= validate
   Right res -> decoderError (msg $ show res)
   where
     validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)

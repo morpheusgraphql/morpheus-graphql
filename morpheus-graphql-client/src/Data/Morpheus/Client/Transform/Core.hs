@@ -5,7 +5,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Core
   ( Converter (..),
@@ -72,12 +71,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
   )
 import Data.Semigroup ((<>))
-import Prelude
-  ( ($),
-    (.),
-    fst,
-    otherwise,
-  )
+import Relude
 
 type Env = (Schema VALID, VariableDefinitions RAW)
 

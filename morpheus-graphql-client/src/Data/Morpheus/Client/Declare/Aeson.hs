@@ -8,27 +8,17 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Aeson
   ( aesonDeclarations,
   )
 where
 
---
--- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad ((>>=))
-import Control.Monad.Fail (fail)
 import Data.Aeson
 import Data.Aeson.Types
-import Data.Functor ((<$>))
 import qualified Data.HashMap.Lazy as H
   ( lookup,
   )
-import Data.List (find)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.TH
   ( decodeObjectE,
     destructRecord,
@@ -68,7 +58,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toFieldName,
   )
-import Data.Semigroup ((<>))
 import qualified Data.Text as T
 import Language.Haskell.TH
   ( DecQ,
@@ -84,17 +73,7 @@ import Language.Haskell.TH
     tupP,
     varE,
   )
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Eq (..),
-    Show (..),
-    String,
-    null,
-    otherwise,
-    (||),
-  )
+import Relude hiding (toString)
 
 aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> DecQ]
 aesonDeclarations KindEnum = [deriveFromJSON, deriveToJSON]

@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
   )
 import Language.Haskell.TH
+import Relude
 
 defineQuery :: IO (Eventless (Schema VALID)) -> (GQLQuery, String) -> Q [Dec]
 defineQuery ioSchema (query, src) = do

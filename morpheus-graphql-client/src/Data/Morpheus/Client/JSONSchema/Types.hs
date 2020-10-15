@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -10,6 +11,7 @@ module Data.Morpheus.Client.JSONSchema.Types
     Field (..),
     InputValue (..),
     EnumValue (..),
+    TypeRef (..),
   )
 where
 
@@ -21,7 +23,7 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
   )
-import GHC.Generics (Generic)
+import Relude hiding (Type)
 
 -- TYPES FOR DECODING JSON INTROSPECTION
 --
@@ -30,12 +32,19 @@ newtype Introspection = Introspection
   }
   deriving (Generic, Show, FromJSON)
 
-newtype Schema = Schema
-  { types :: [Type]
+data Schema = Schema
+  { types :: [Type],
+    queryType :: TypeRef,
+    mutationType :: Maybe TypeRef,
+    subscriptionType :: Maybe TypeRef
+    -- TODO: directives
+    --directives: [__Directive]
   }
   deriving (Generic, Show, FromJSON)
 
--- TYPE
+newtype TypeRef = TypeRef {name :: TypeName}
+  deriving (Generic, Show, FromJSON)
+
 data Type = Type
   { kind :: TypeKind,
     name :: Maybe TypeName,

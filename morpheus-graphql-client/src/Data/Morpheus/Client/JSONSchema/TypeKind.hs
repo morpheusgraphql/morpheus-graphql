@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.JSONSchema.TypeKind
   ( TypeKind (..),
@@ -10,7 +9,7 @@ where
 
 import Data.Aeson (FromJSON (..))
 import GHC.Generics
-import Prelude (Eq, Show)
+import Relude
 
 data TypeKind
   = SCALAR

@@ -9,7 +9,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Internal.TH
   ( matchWith,
@@ -20,10 +19,7 @@ module Data.Morpheus.Client.Internal.TH
   )
 where
 
-import Control.Applicative ((<*>), pure)
-import Control.Monad.Fail (fail)
 import Data.Foldable (foldr1)
-import Data.Functor ((<$>))
 import Data.Morpheus.Internal.TH
   ( toCon,
     toName,
@@ -39,16 +35,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     isNullable,
   )
-import Data.Semigroup ((<>))
 import Language.Haskell.TH
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Maybe (..),
-    map,
-    show,
-  )
+import Relude hiding (toString)
 
 matchWith ::
   Maybe (PatQ, ExpQ) ->
