@@ -112,11 +112,12 @@ mkSchemaDef
     } =
     SchemaDefinition empty
       <$> fromElems
-        [ RootOperationTypeDefinition
-            { rootOperationType = Query,
-              rootOperationTypeDefinitionName = Ref.name queryType
-            }
-        ]
+        ( catMaybes
+            [ Just (RootOperationTypeDefinition Query $ Ref.name queryType),
+              RootOperationTypeDefinition Mutation . Ref.name <$> mutationType,
+              RootOperationTypeDefinition Subscription . Ref.name <$> subscriptionType
+            ]
+        )
 
 class ParseJSONSchema a b where
   parse :: a -> Eventless b
