@@ -8,3 +8,10 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql-core
   - .
+
+extra-deps:
+  - fraxl-0.3.0.0
+  - dependent-map-0.2.4.0
+  - dependent-sum-0.4
+  - fastsum-0.1.1.1
+  - type-aligned-0.9.6
