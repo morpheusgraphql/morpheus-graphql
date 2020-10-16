@@ -5,8 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
-  ( ID,
-    Session,
+  ( Session,
     SessionID,
     ClientConnectionStore,
     ClientConnection,
@@ -33,8 +32,10 @@ import Data.Morpheus.Internal.Utils
   ( Collection (..),
     KeyOf (..),
   )
+import Data.Morpheus.Types.IO (GQLResponse)
 import Data.Morpheus.Types.Internal.Resolving
-  ( Event (..),
+  ( Channel,
+    Event (..),
     SubEvent,
     eventChannels,
   )
@@ -49,6 +50,7 @@ import Prelude
     Eq (..),
     Show (..),
     const,
+    elem,
     id,
     not,
     null,
@@ -56,28 +58,37 @@ import Prelude
     snd,
   )
 
-type ID = UUID
-
 type SessionID = Text
 
-type Session = (ID, SessionID)
+type Session = (UUID, SessionID)
 
 data ClientConnection e (m :: * -> *) = ClientConnection
-  { connectionId :: ID,
+  { connectionId :: UUID,
     connectionCallback :: ByteString -> m (),
     -- one connection can have multiple subscription session
-    connectionSessions :: HashMap SessionID (SubEvent e m)
+    connectionSessionIds :: [SessionID]
   }
 
-connectionSessionIds :: ClientConnection e m -> [SessionID]
-connectionSessionIds = HM.keys . connectionSessions
+data ClientSession e (m :: * -> *) = ClientSession
+  { sessionId :: SessionID,
+    sessionChannel :: Channel e,
+    sessionCallback :: e -> m ()
+  }
+
+instance Show (ClientSession e m) where
+  show ClientSession {sessionId, sessionChannel} =
+    "ClientSession { id = "
+      <> show sessionId
+      <> ", sessions = "
+      <> show sessionChannel
+      <> " }"
 
 instance Show (ClientConnection e m) where
-  show ClientConnection {connectionId, connectionSessions} =
-    "Connection { id: "
+  show ClientConnection {connectionId, connectionSessionIds} =
+    "ClientConnection { id = "
       <> show connectionId
-      <> ", sessions: "
-      <> show (keys connectionSessions)
+      <> ", sessions = "
+      <> show connectionSessionIds
       <> " }"
 
 publish ::
@@ -87,24 +98,11 @@ publish ::
   Event channel content ->
   ClientConnectionStore (Event channel content) m ->
   m ()
-publish event = traverse_ sendMessage . elems
+publish event = traverse_ sendMessage . clientSessions
   where
-    sendMessage ClientConnection {connectionSessions, connectionCallback}
-      | null connectionSessions = pure ()
-      | otherwise = traverse_ send (filterByChannels connectionSessions)
-      where
-        send (sid, Event {content = subscriptionRes}) =
-          subscriptionRes event >>= connectionCallback . toApolloResponse sid
-        ---------------------------
-        filterByChannels =
-          filter
-            ( not
-                . null
-                . intersect (eventChannels event)
-                . channels
-                . snd
-            )
-            . HM.toList
+    sendMessage ClientSession {sessionChannel, sessionCallback}
+      | sessionChannel `elem` eventChannels event = sessionCallback event
+      | otherwise = pure ()
 
 newtype Updates e (m :: * -> *) = Updates
   { _runUpdate :: ClientConnectionStore e m -> ClientConnectionStore e m
@@ -112,25 +110,26 @@ newtype Updates e (m :: * -> *) = Updates
 
 updateClient ::
   (ClientConnection e m -> ClientConnection e m) ->
-  ID ->
+  UUID ->
   Updates e m
 updateClient f cid = Updates (adjust f cid)
 
 endSession :: Session -> Updates e m
 endSession (clientId, sessionId) = updateClient endSub clientId
   where
-    endSub client = client {connectionSessions = HM.delete sessionId (connectionSessions client)}
+    endSub client = client {connectionSessionIds = HM.delete sessionId (connectionSessions client)}
 
 startSession :: SubEvent e m -> Session -> Updates e m
 startSession subscriptions (clientId, sessionId) = updateClient startSub clientId
   where
-    startSub client = client {connectionSessions = HM.insert sessionId subscriptions (connectionSessions client)}
+    startSub client = client {connectionSessionIds = HM.insert sessionId subscriptions (connectionSessions client)}
 
 -- stores active client connections
 -- every registered client has ID
 -- when client connection is closed client(including all its subscriptions) can By removed By its ID
-newtype ClientConnectionStore e (m :: * -> *) = ClientConnectionStore
-  { unpackStore :: HashMap ID (ClientConnection e m)
+data ClientConnectionStore e (m :: * -> *) = ClientConnectionStore
+  { clientConnections :: HashMap UUID (ClientConnection e m),
+    clientSessions :: HashMap SessionID (ClientSession e m)
   }
   deriving (Show)
 
@@ -139,8 +138,8 @@ type StoreMap e m =
   ClientConnectionStore e m
 
 mapStore ::
-  ( HashMap ID (ClientConnection e m) ->
-    HashMap ID (ClientConnection e m)
+  ( HashMap UUID (ClientConnection e m) ->
+    HashMap UUID (ClientConnection e m)
   ) ->
   StoreMap e m
 mapStore f = ClientConnectionStore . f . unpackStore
@@ -160,7 +159,7 @@ instance Collection (ClientConnection e m) (ClientConnectionStore e m) where
 
 -- returns original store, if connection with same id already exist
 insert ::
-  ID ->
+  UUID ->
   (ByteString -> m ()) ->
   StoreMap e m
 insert connectionId connectionCallback = mapStore (HM.insertWith (const id) connectionId c)
@@ -169,16 +168,16 @@ insert connectionId connectionCallback = mapStore (HM.insertWith (const id) conn
       ClientConnection
         { connectionId,
           connectionCallback,
-          connectionSessions = HM.empty
+          connectionSessionIds = empty
         }
 
 adjust ::
   (ClientConnection e m -> ClientConnection e m) ->
-  ID ->
+  UUID ->
   StoreMap e m
 adjust f key = mapStore (HM.adjust f key)
 
 delete ::
-  ID ->
+  UUID ->
   StoreMap e m
 delete key = mapStore (HM.delete key)
