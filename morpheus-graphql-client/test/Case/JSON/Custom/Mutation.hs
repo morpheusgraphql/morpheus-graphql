@@ -8,8 +8,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Case.JSON.CustomOperation.Test
-  ( testInterface,
+module Case.JSON.Custom.Mutation
+  ( test,
   )
 where
 
@@ -18,8 +18,6 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.Morpheus.Client
   ( Fetch (..),
-    GQLScalar (..),
-    ScalarValue (..),
     gql,
   )
 import Data.Text (Text)
@@ -36,48 +34,35 @@ import Test.Tasty.HUnit
   )
 import Prelude
   ( ($),
-    Applicative (..),
     Either (..),
-    Eq (..),
     IO,
     Maybe (..),
-    Show,
     String,
   )
 
-newtype GitTimestamp = GitTimestamp
-  { unGitTimestamp :: Text
-  }
-  deriving (Eq, Show)
-
-instance GQLScalar GitTimestamp where
-  parseValue (String x) = pure (GitTimestamp x)
-  parseValue _ = Left ""
-  serialize (GitTimestamp x) = String x
-
 defineClientWithJSON
-  "JSON/CustomQuery"
+  "JSON/Custom"
   [gql|
-    query QueryTest
+    query MutationTest
       {
         queryTypeName
       }
   |]
 
 resolver :: ByteString -> IO ByteString
-resolver = mockApi "Interface"
+resolver = mockApi "JSON/Custom/Mutation"
 
-client :: IO (Either String QueryTest)
+client :: IO (Either String MutationTest)
 client = fetch resolver ()
 
-testInterface :: TestTree
-testInterface = testCase "test interfaces" $ do
+test :: TestTree
+test = testCase "test interfaces" $ do
   value <- client
   assertEqual
     "test interface"
     ( Right
-        ( QueryTest
-            { queryTypeName = Just ""
+        ( MutationTest
+            { queryTypeName = Just "TestSubscription"
             }
         )
     )
