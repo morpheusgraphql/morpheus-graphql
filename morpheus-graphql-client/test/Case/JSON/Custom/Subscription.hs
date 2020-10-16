@@ -43,16 +43,16 @@ import Prelude
 defineClientWithJSON
   "JSON/Custom"
   [gql|
-    query MutationTest
+    subscription SubscriptionTest
       {
-        queryTypeName
+        subscriptionTypeName
       }
   |]
 
 resolver :: ByteString -> IO ByteString
 resolver = mockApi "JSON/Custom/Subscription"
 
-client :: IO (Either String MutationTest)
+client :: IO (Either String SubscriptionTest)
 client = fetch resolver ()
 
 test :: TestTree
@@ -61,8 +61,9 @@ test = testCase "test interfaces" $ do
   assertEqual
     "test interface"
     ( Right
-        ( MutationTest
-            { queryTypeName = Just "TestSubscription"
+        ( SubscriptionTest
+            { subscriptionTypeName =
+                Just "TestSubscription"
             }
         )
     )

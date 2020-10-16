@@ -43,9 +43,9 @@ import Prelude
 defineClientWithJSON
   "JSON/Custom"
   [gql|
-    query MutationTest
+    mutation MutationTest
       {
-        queryTypeName
+        mutationTypeName
       }
   |]
 
@@ -62,7 +62,7 @@ test = testCase "test interfaces" $ do
     "test interface"
     ( Right
         ( MutationTest
-            { queryTypeName = Just "TestSubscription"
+            { mutationTypeName = Just "TestSubscription"
             }
         )
     )
