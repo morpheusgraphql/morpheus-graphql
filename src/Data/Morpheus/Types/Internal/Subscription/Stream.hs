@@ -23,8 +23,6 @@ module Data.Morpheus.Types.Internal.Subscription.Stream
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Foldable (traverse_)
--- MORPHEUS
 import Data.Morpheus.Error
   ( globalErrorMessage,
   )
@@ -41,7 +39,8 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ResponseEvent (..),
+  ( Event (..),
+    ResponseEvent (..),
     ResponseStream,
     Result (..),
     ResultT (..),
@@ -54,13 +53,14 @@ import Data.Morpheus.Types.Internal.Subscription.Apollo
   )
 import Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ClientConnectionStore,
-    ID,
     Session,
     Updates (..),
     endSession,
     insert,
     startSession,
   )
+import Data.UUID (UUID)
+import Relude hiding (ByteString)
 
 data API = HTTP | WS
 
@@ -72,7 +72,7 @@ data
   Input
     (api :: API)
   where
-  Init :: ID -> Input WS
+  Init :: UUID -> Input WS
   Request :: GQLRequest -> Input HTTP
 
 run :: Scope WS e m -> Updates e m -> m ()
@@ -115,7 +115,8 @@ handleResponseStream session (ResultT res) =
   StreamWS $ const $ unfoldR <$> res
   where
     execute Publish {} = apolloError $ globalErrorMessage "websocket can only handle subscriptions, not mutations"
-    execute (Subscribe sub) = Right $ startSession sub session
+    execute (Subscribe (Event [ch] res)) = Right $ startSession ch res session
+    execute (Subscribe (Event (ch : _) res)) = Right $ startSession ch res session
     --------------------------
     unfoldR Success {events} = traverse execute events
     unfoldR Failure {errors} = apolloError errors
@@ -130,7 +131,7 @@ handleWSRequest ::
   ( GQLRequest ->
     ResponseStream e m (Value VALID)
   ) ->
-  ID ->
+  UUID ->
   ByteString ->
   Stream WS e m
 handleWSRequest gqlApp clientId = handle . apolloFormat
