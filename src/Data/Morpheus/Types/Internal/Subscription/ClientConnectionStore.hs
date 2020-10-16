@@ -165,7 +165,12 @@ insert ::
   StoreMap e m
 insert connectionId connectionCallback = mapStore (HM.insertWith (const id) connectionId c)
   where
-    c = ClientConnection {connectionId, connectionCallback, connectionSessions = HM.empty}
+    c =
+      ClientConnection
+        { connectionId,
+          connectionCallback,
+          connectionSessions = HM.empty
+        }
 
 adjust ::
   (ClientConnection e m -> ClientConnection e m) ->
