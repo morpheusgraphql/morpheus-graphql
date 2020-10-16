@@ -78,6 +78,7 @@ import Data.Morpheus.Types.Internal.Subscription.Stream
     toOutStream,
   )
 import Data.UUID.V4 (nextRandom)
+import Relude
 
 streamApp :: Monad m => App e m -> Input api -> Stream api e m
 streamApp app = toOutStream (runAppStream app)

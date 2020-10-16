@@ -169,9 +169,9 @@ toList = HM.toList . clientConnections
 instance KeyOf UUID (ClientConnection e m) where
   keyOf = connectionId
 
--- instance Collection (ClientConnection e m) (ClientConnectionStore e m) where
---   empty = ClientConnectionStore empty
---   singleton = ClientConnectionStore . singleton
+instance Collection (ClientConnection e m) (ClientConnectionStore e m) where
+  empty = ClientConnectionStore empty HM.empty
+  singleton x = ClientConnectionStore (singleton x) HM.empty
 
 -- returns original store, if connection with same id already exist
 insert ::
