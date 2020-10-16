@@ -58,7 +58,7 @@ instance GQLScalar GitTimestamp where
 defineClientWithJSON
   "JSON/Custom"
   [gql|
-    query QueryTest
+    query TestQuery
       {
         queryTypeName
       }
@@ -67,7 +67,7 @@ defineClientWithJSON
 resolver :: ByteString -> IO ByteString
 resolver = mockApi "JSON/Custom/Query"
 
-client :: IO (Either String QueryTest)
+client :: IO (Either String TestQuery)
 client = fetch resolver ()
 
 test :: TestTree
@@ -76,8 +76,8 @@ test = testCase "test interfaces" $ do
   assertEqual
     "test interface"
     ( Right
-        ( QueryTest
-            { queryTypeName = Just ""
+        ( TestQuery
+            { queryTypeName = Just "TestQuery"
             }
         )
     )

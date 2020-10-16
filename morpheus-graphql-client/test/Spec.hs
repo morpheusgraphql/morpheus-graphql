@@ -6,8 +6,11 @@ module Main
   )
 where
 
+import qualified Case.Enum.Test as Enum
 import Case.Interface.Test (testInterface)
-import qualified Case.Enum.Test as Enum 
+import qualified Case.JSON.Custom.Mutation as JSONCustomMutation
+import qualified Case.JSON.Custom.Query as JSONCustomQuery
+import qualified Case.JSON.Custom.Subscription as JSONCustomSubscription
 import Case.LowercaseTypeName.Test
   ( testLowercaseTypeName,
   )
@@ -27,5 +30,8 @@ main =
       "client tests"
       [ testInterface,
         testLowercaseTypeName,
-        Enum.test
+        Enum.test,
+        JSONCustomMutation.test,
+        JSONCustomQuery.test,
+        JSONCustomSubscription.test
       ]
