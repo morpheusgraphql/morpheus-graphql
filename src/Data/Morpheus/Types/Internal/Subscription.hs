@@ -76,7 +76,7 @@ import Data.Morpheus.Types.Internal.Subscription.Stream
 import Data.UUID.V4 (nextRandom)
 import Relude hiding (empty, toList)
 
-streamApp :: Monad m => App e m -> Input api -> Stream api e m
+streamApp :: Monad m => App (Event ch con) m -> Input api -> Stream api (Event ch con) m
 streamApp app = toOutStream (runAppStream app)
 
 connect :: MonadIO m => m (Input WS)
@@ -108,7 +108,7 @@ initDefaultStore ::
   ( MonadIO m,
     MonadIO m2
   ) =>
-  m2 (Store event m)
+  m2 (Store (Event ch con) m)
 initDefaultStore = do
   store <- liftIO $ newMVar empty
   pure
@@ -123,8 +123,8 @@ finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
 connectionThread ::
   ( MonadUnliftIO m
   ) =>
-  App e m ->
-  Scope WS e m ->
+  App (Event ch con) m ->
+  Scope WS (Event ch con) m ->
   m ()
 connectionThread api scope = do
   input <- connect
@@ -134,8 +134,8 @@ connectionThread api scope = do
 
 connectionLoop ::
   Monad m =>
-  App e m ->
-  Scope WS e m ->
+  App (Event ch con) m ->
+  Scope WS (Event ch con) m ->
   Input WS ->
   m ()
 connectionLoop app scope input =

@@ -88,8 +88,8 @@ httpPubApp ::
   ( MonadIO m,
     MapAPI a b
   ) =>
-  [e -> m ()] ->
-  App e m ->
+  [Event ch con -> m ()] ->
+  App (Event ch con) m ->
   a ->
   m b
 httpPubApp [] app = runApp app

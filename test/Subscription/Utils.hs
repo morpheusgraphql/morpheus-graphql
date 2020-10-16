@@ -61,6 +61,7 @@ import Data.Morpheus.Types.Internal.Subscription
 import Data.Semigroup
   ( (<>),
   )
+import Data.Text (Text)
 import Test.Tasty
   ( TestTree,
   )
@@ -198,7 +199,7 @@ stored (Init uuid) cStore
 
 storeSubscriptions ::
   Input WS ->
-  [SessionID] ->
+  [Text] ->
   Store e ->
   TestTree
 storeSubscriptions

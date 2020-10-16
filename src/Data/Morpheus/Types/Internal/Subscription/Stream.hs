@@ -53,7 +53,7 @@ import Data.Morpheus.Types.Internal.Subscription.Apollo
   )
 import Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
   ( ClientConnectionStore,
-    Session,
+    SessionID (..),
     Updates (..),
     endSession,
     insert,
@@ -108,7 +108,7 @@ data
 handleResponseStream ::
   ( Monad m
   ) =>
-  Session ->
+  SessionID ->
   ResponseStream e m (Value VALID) ->
   Stream WS e m
 handleResponseStream session (ResultT res) =
@@ -122,18 +122,18 @@ handleResponseStream session (ResultT res) =
     unfoldR Failure {errors} = apolloError errors
     --------------------------
     apolloError :: GQLErrors -> Either ByteString a
-    apolloError = Left . toApolloResponse (snd session) . Errors
+    apolloError = Left . toApolloResponse (sid session) . Errors
 
 handleWSRequest ::
   ( Monad m,
     Functor m
   ) =>
   ( GQLRequest ->
-    ResponseStream e m (Value VALID)
+    ResponseStream (Event ch con) m (Value VALID)
   ) ->
   UUID ->
   ByteString ->
-  Stream WS e m
+  Stream WS (Event ch con) m
 handleWSRequest gqlApp clientId = handle . apolloFormat
   where
     --handle :: Applicative m => Validation ApolloAction -> Stream WS e m
@@ -142,10 +142,10 @@ handleWSRequest gqlApp clientId = handle . apolloFormat
     -- handleAction :: ApolloAction -> Stream WS e m
     handleAction ConnectionInit = liftWS $ Right []
     handleAction (SessionStart sessionId request) =
-      handleResponseStream (clientId, sessionId) (gqlApp request)
+      handleResponseStream (SessionID clientId sessionId) (gqlApp request)
     handleAction (SessionStop sessionId) =
       liftWS $
-        Right [endSession (clientId, sessionId)]
+        Right [endSession (SessionID clientId sessionId)]
 
 liftWS ::
   Applicative m =>
@@ -173,10 +173,10 @@ runStreamHTTP scope StreamHTTP {streamHTTP} =
 toOutStream ::
   (Monad m) =>
   ( GQLRequest ->
-    ResponseStream e m (Value VALID)
+    ResponseStream (Event ch con) m (Value VALID)
   ) ->
   Input api ->
-  Stream api e m
+  Stream api (Event ch con) m
 toOutStream app (Init clientId) =
   StreamWS handle
   where
