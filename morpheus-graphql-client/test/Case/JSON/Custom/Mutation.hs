@@ -59,7 +59,7 @@ test :: TestTree
 test = testCase "test Mutation" $ do
   value <- client
   assertEqual
-    "test Mutation"
+    "test custom Mutation"
     ( Right
         ( TestMutation
             { mutationTypeName = Just "TestMutation"

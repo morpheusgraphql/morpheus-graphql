@@ -74,7 +74,7 @@ test :: TestTree
 test = testCase "test Query" $ do
   value <- client
   assertEqual
-    "test Query"
+    "test custom Query"
     ( Right
         ( TestQuery
             { queryTypeName = Just "TestQuery"

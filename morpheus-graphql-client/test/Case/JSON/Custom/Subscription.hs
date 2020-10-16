@@ -59,7 +59,7 @@ test :: TestTree
 test = testCase "test Subscription" $ do
   value <- client
   assertEqual
-    "test Subscription"
+    "test custom Subscription"
     ( Right
         ( TestSubscription
             { subscriptionTypeName =
