@@ -28,15 +28,6 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (traverse_)
 import Data.HashMap.Lazy (HashMap, keys)
 import qualified Data.HashMap.Lazy as HM
-  ( adjust,
-    delete,
-    elems,
-    empty,
-    insert,
-    insertWith,
-    keys,
-    toList,
-  )
 import Data.List (filter, intersect)
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
@@ -57,7 +48,6 @@ import Prelude
   ( (.),
     Eq (..),
     Show (..),
-    curry,
     not,
     null,
     otherwise,
@@ -171,7 +161,7 @@ insert ::
   ID ->
   (ByteString -> m ()) ->
   StoreMap e m
-insert connectionId connectionCallback = mapStore (HM.insertWith (curry snd) connectionId c)
+insert connectionId connectionCallback = mapStore (HM.insert connectionId c)
   where
     c = ClientConnection {connectionId, connectionCallback, connectionSessions = HM.empty}
 
