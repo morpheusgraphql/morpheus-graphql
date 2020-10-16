@@ -6,6 +6,7 @@
 
 - parser performance optimization
 - fixed #514: json parser selects interface type as fallback
+- fixed #546: `defineByIntrospectionFile` support custom (Query,Mutation,Subscription)
 
 ## 0.15.1 - 12.09.2020
 
