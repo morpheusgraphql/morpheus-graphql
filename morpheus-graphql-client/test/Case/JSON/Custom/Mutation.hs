@@ -56,10 +56,10 @@ client :: IO (Either String TestMutation)
 client = fetch resolver ()
 
 test :: TestTree
-test = testCase "test interfaces" $ do
+test = testCase "test Mutation" $ do
   value <- client
   assertEqual
-    "test interface"
+    "test Mutation"
     ( Right
         ( TestMutation
             { mutationTypeName = Just "TestMutation"

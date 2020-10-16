@@ -45,7 +45,6 @@ defineClientWith
     }
   |]
 
-
 resolver :: ByteString -> IO ByteString
 resolver = mockApi "Enum"
 
@@ -53,22 +52,21 @@ client :: IO (Either String MyQuery)
 client = fetch resolver MyQueryArgs {inputCity = CityAthens}
 
 test :: TestTree
-test = testCase "test interfaces" $ do
+test = testCase "test Enum" $ do
   value <- client
   assertEqual
-    "test interface"
+    "test Enum"
     ( Right
-        ( MyQuery 
-          {
-            city = CityAthens, 
-            cities = [
-              CityAthens,
-              CitySparta,
-              CityCorinth,
-              CityDelphi,
-              CityArgos
-              ]
-          }
+        ( MyQuery
+            { city = CityAthens,
+              cities =
+                [ CityAthens,
+                  CitySparta,
+                  CityCorinth,
+                  CityDelphi,
+                  CityArgos
+                ]
+            }
         )
     )
     value

@@ -99,10 +99,10 @@ client =
       }
 
 testInterface :: TestTree
-testInterface = testCase "test interfaces" $ do
+testInterface = testCase "test Github interfaces" $ do
   value <- client
   assertEqual
-    "test interface"
+    "test Github interface"
     ( Right
         ( GetTags
             { repository =

@@ -56,10 +56,10 @@ client :: IO (Either String TestSubscription)
 client = fetch resolver ()
 
 test :: TestTree
-test = testCase "test interfaces" $ do
+test = testCase "test Subscription" $ do
   value <- client
   assertEqual
-    "test interface"
+    "test Subscription"
     ( Right
         ( TestSubscription
             { subscriptionTypeName =

@@ -71,10 +71,10 @@ client :: IO (Either String TestQuery)
 client = fetch resolver ()
 
 test :: TestTree
-test = testCase "test interfaces" $ do
+test = testCase "test Query" $ do
   value <- client
   assertEqual
-    "test interface"
+    "test Query"
     ( Right
         ( TestQuery
             { queryTypeName = Just "TestQuery"
