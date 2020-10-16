@@ -34,12 +34,8 @@ where
 
 import Control.Concurrent
   ( modifyMVar_,
-    newMVar,
-    readMVar,
   )
 import Control.Exception (finally)
-import Control.Monad (forever)
-import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.IO.Unlift
   ( MonadUnliftIO,
     withRunInIO,
@@ -78,7 +74,7 @@ import Data.Morpheus.Types.Internal.Subscription.Stream
     toOutStream,
   )
 import Data.UUID.V4 (nextRandom)
-import Relude
+import Relude hiding (empty, toList)
 
 streamApp :: Monad m => App e m -> Input api -> Stream api e m
 streamApp app = toOutStream (runAppStream app)
