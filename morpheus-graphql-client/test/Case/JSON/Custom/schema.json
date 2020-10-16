@@ -1,0 +1,70 @@
+{
+  "data": {
+    "__schema": {
+      "queryType": {
+        "name": "CustomQueryType"
+      },
+      "mutationType": {
+        "name": "CustomMutationType"
+      },
+      "subscriptionType": {
+        "name": "CustomSubscriptionType"
+      },
+      "types": [
+        {
+          "kind": "OBJECT",
+          "name": "CustomQueryType",
+          "fields": [
+            {
+              "name": "queryTypeName",
+              "args": [],
+              "type": {
+                "kind": "SCALAR",
+                "name": "String"
+              },
+              "isDeprecated": false
+            }
+          ],
+          "interfaces": []
+        },
+        {
+          "kind": "OBJECT",
+          "name": "CustomMutationType",
+          "fields": [
+            {
+              "name": "mutationTypeName",
+              "args": [],
+              "type": {
+                "kind": "SCALAR",
+                "name": "String"
+              },
+              "isDeprecated": false
+            }
+          ],
+          "interfaces": []
+        },
+        {
+          "kind": "OBJECT",
+          "name": "CustomSubscriptionType",
+          "fields": [
+            {
+              "name": "subscriptionTypeName",
+              "args": [],
+              "type": {
+                "kind": "SCALAR",
+                "name": "String"
+              },
+              "isDeprecated": false
+            }
+          ],
+          "interfaces": []
+        },
+        {
+          "kind": "SCALAR",
+          "name": "String"
+        }
+      ],
+      "directives": []
+    }
+  }
+}

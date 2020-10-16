@@ -2,7 +2,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Client
   ( declareClient,
@@ -12,7 +11,9 @@ where
 import Data.Morpheus.Client.Declare.Aeson
   ( aesonDeclarations,
   )
-import Data.Morpheus.Client.Declare.Type (typeDeclarations)
+import Data.Morpheus.Client.Declare.Type
+  ( typeDeclarations,
+  )
 import Data.Morpheus.Client.Fetch
   ( deriveFetch,
   )
@@ -21,23 +22,9 @@ import Data.Morpheus.Client.Internal.Types
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.Internal.TH
-  ( toCon,
-  )
-import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-  )
-import Data.Semigroup ((<>))
-import Data.Traversable (Traversable (..))
+import Data.Morpheus.Internal.TH (toCon)
 import Language.Haskell.TH
-import Prelude
-  ( ($),
-    (<$>),
-    Applicative (..),
-    Maybe (..),
-    String,
-    concat,
-  )
+import Relude hiding (Type)
 
 declareClient :: String -> ClientDefinition -> Q [Dec]
 declareClient _ ClientDefinition {clientTypes = []} = pure []
@@ -57,7 +44,7 @@ apply :: Applicative f => a -> [a -> f b] -> f [b]
 apply a = traverse (\f -> f a)
 
 queryArgumentType :: Maybe ClientTypeDefinition -> (Type, Q [Dec])
-queryArgumentType Nothing = (toCon ("()" :: FieldName), pure [])
+queryArgumentType Nothing = (toCon ("()" :: String), pure [])
 queryArgumentType (Just client@ClientTypeDefinition {clientTypeName}) =
   (toCon (typename clientTypeName), declareType client)
 

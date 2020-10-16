@@ -12,6 +12,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeNameTH (..),
     VALID,
   )
+import Relude
 
 data ClientTypeDefinition = ClientTypeDefinition
   { clientTypeName :: TypeNameTH,

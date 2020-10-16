@@ -1,12 +1,14 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Case.Enum.Test
+module Case.JSON.Custom.Subscription
   ( test,
   )
 where
@@ -18,8 +20,9 @@ import Data.Morpheus.Client
   ( Fetch (..),
     gql,
   )
+import Data.Text (Text)
 import Spec.Utils
-  ( defineClientWith,
+  ( defineClientWithJSON,
     mockApi,
   )
 import Test.Tasty
@@ -33,39 +36,34 @@ import Prelude
   ( ($),
     Either (..),
     IO,
+    Maybe (..),
     String,
   )
 
-defineClientWith
-  "Enum"
+defineClientWithJSON
+  "JSON/Custom"
   [gql|
-    query MyQuery( $inputCity: City!) {
-      city(city:$inputCity)
-      cities
-    }
+    subscription TestSubscription
+      {
+        subscriptionTypeName
+      }
   |]
 
 resolver :: ByteString -> IO ByteString
-resolver = mockApi "Enum"
+resolver = mockApi "JSON/Custom/Subscription"
 
-client :: IO (Either String MyQuery)
-client = fetch resolver MyQueryArgs {inputCity = CityAthens}
+client :: IO (Either String TestSubscription)
+client = fetch resolver ()
 
 test :: TestTree
-test = testCase "test Enum" $ do
+test = testCase "test Subscription" $ do
   value <- client
   assertEqual
-    "test Enum"
+    "test custom Subscription"
     ( Right
-        ( MyQuery
-            { city = CityAthens,
-              cities =
-                [ CityAthens,
-                  CitySparta,
-                  CityCorinth,
-                  CityDelphi,
-                  CityArgos
-                ]
+        ( TestSubscription
+            { subscriptionTypeName =
+                Just "TestSubscription"
             }
         )
     )

@@ -11,7 +11,6 @@ module Data.Morpheus.Client.Fetch
   )
 where
 
-import Control.Monad ((>=>))
 import Data.Aeson
   ( FromJSON,
     ToJSON (..),
@@ -21,9 +20,6 @@ import Data.Aeson
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A
 import Data.ByteString.Lazy (ByteString)
---
--- MORPHEUS
-
 import Data.Morpheus.Internal.TH
   ( applyCons,
     toCon,
@@ -41,6 +37,7 @@ import Data.Text
   ( pack,
   )
 import Language.Haskell.TH
+import Relude hiding (ByteString, Type)
 
 fixVars :: A.Value -> Maybe A.Value
 fixVars x

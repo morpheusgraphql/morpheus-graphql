@@ -18,8 +18,6 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
--- MORPHEUS
-
 import Data.Morpheus.Client.Build
   ( defineQuery,
   )
@@ -45,6 +43,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Language.Haskell.TH
+import Relude hiding (ByteString)
 
 defineByDocumentFile :: FilePath -> (GQLQuery, String) -> Q [Dec]
 defineByDocumentFile = defineByDocument . L.readFile

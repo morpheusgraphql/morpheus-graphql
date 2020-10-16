@@ -1,24 +1,19 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.JSONSchema.Parse
   ( decodeIntrospection,
   )
 where
 
-import Control.Applicative (pure)
-import Control.Monad ((>>=))
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
-import Data.Either (Either (..))
-import Data.Functor ((<$>), fmap)
-import Data.List (concat)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind (..))
+import qualified Data.Morpheus.Client.JSONSchema.TypeRef as Ref
 import Data.Morpheus.Client.JSONSchema.Types
   ( EnumValue (..),
     Field (..),
@@ -33,7 +28,8 @@ import Data.Morpheus.Core
   )
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
-  ( fromElems,
+  ( Failure (..),
+    fromElems,
   )
 import Data.Morpheus.Types.IO (JSONResponse (..))
 import qualified Data.Morpheus.Types.Internal.AST as AST
@@ -48,11 +44,16 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Message,
     OUT,
+    OperationType (..),
+    RootOperationTypeDefinition (..),
+    SchemaDefinition (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     TypeWrapper,
     VALID,
+    ValidationErrors,
+    buildSchema,
     createScalarType,
     mkEnumContent,
     mkInputValue,
@@ -65,18 +66,14 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    failure,
   )
-import Data.Semigroup ((<>))
-import Data.String (String)
-import Data.Traversable (traverse)
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Show (..),
-    uncurry,
+import Relude hiding
+  ( ByteString,
+    Type,
+    fromList,
+    show,
   )
+import Prelude (show)
 
 decoderError :: Message -> Eventless a
 decoderError = failure . globalErrorMessage
@@ -84,14 +81,43 @@ decoderError = failure . globalErrorMessage
 decodeIntrospection :: ByteString -> Eventless (AST.Schema VALID)
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> decoderError $ msg errors
-  Right JSONResponse {responseData = Just Introspection {__schema = Schema {types}}} ->
-    traverse parse types >>= fromElems . concat >>= validate
+  Right
+    JSONResponse
+      { responseData =
+          Just
+            Introspection
+              { __schema =
+                  schema@Schema {types}
+              }
+      } -> do
+      schemaDef <- mkSchemaDef schema
+      gqlTypes <- concat <$> traverse parse types
+      buildSchema (Just schemaDef, gqlTypes, empty) >>= validate
   Right res -> decoderError (msg $ show res)
   where
     validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
     validate = validateSchema False defaultConfig
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
+
+mkSchemaDef ::
+  (Monad m, Failure ValidationErrors m) =>
+  Schema ->
+  m SchemaDefinition
+mkSchemaDef
+  Schema
+    { queryType,
+      mutationType,
+      subscriptionType
+    } =
+    SchemaDefinition empty
+      <$> fromElems
+        ( catMaybes
+            [ Just (RootOperationTypeDefinition Query $ Ref.name queryType),
+              RootOperationTypeDefinition Mutation . Ref.name <$> mutationType,
+              RootOperationTypeDefinition Subscription . Ref.name <$> subscriptionType
+            ]
+        )
 
 class ParseJSONSchema a b where
   parse :: a -> Eventless b
