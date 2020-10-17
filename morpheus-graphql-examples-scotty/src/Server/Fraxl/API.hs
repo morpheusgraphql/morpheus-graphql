@@ -12,7 +12,7 @@ where
 
 import Control.Applicative ((<|>))
 import Control.Monad.Fraxl (ASeq (..), Fetch, FreerT, dataFetch, runFraxl, traverseASeq)
-import Control.Monad.Reader (Reader, ask, runReader)
+import Control.Monad.Reader (Reader, asks, runReader)
 import Control.Monad.State (State, execState, modify)
 import Control.Monad.Trans (MonadTrans, lift)
 import Data.Map (Map, lookup)
@@ -91,9 +91,9 @@ batchSource :: ASeq Source a -> BatchedReq
 batchSource = flip execState (BatchedReq mempty mempty mempty) . traverseASeq batch
   where
     batch :: Source a -> State BatchedReq (Source a)
-    batch x@(GetBandMemberByInstrumentID y) = modify (\b -> b {memberInstrumentIDs = (singleton y) <> memberInstrumentIDs b}) >> pure x
-    batch x@(GetBandMemberByBandID y) = modify (\b -> b {memberBandIDs = (singleton y) <> memberBandIDs b}) >> pure x
-    batch x@(GetBandByID y) = modify (\b -> b {bandIDs = (singleton y) <> bandIDs b}) >> pure x
+    batch x@(GetBandMemberByInstrumentID y) = modify (\b -> b {memberInstrumentIDs = singleton y <> memberInstrumentIDs b}) >> pure x
+    batch x@(GetBandMemberByBandID y) = modify (\b -> b {memberBandIDs = singleton y <> memberBandIDs b}) >> pure x
+    batch x@(GetBandByID y) = modify (\b -> b {bandIDs = singleton y <> bandIDs b}) >> pure x
     batch x = pure x
 
 runBatch :: BatchedReq -> DB.Query BatchedRes
@@ -104,17 +104,18 @@ runBatch BatchedReq {memberInstrumentIDs, memberBandIDs, bandIDs} =
     <*> DB.getBandsByID bandIDs
 
 doFetch :: Source a -> Reader BatchedRes (DB.Query a)
-doFetch GetInstruments = pure $ DB.getInstruments
+doFetch GetInstruments = pure DB.getInstruments
 doFetch (GetBandMemberByInstrumentID i) =
-  (pure . fromJust . Data.Map.lookup i . memberByInstrumentIDs) <$> ask
+  asks (pure . fromJust . Data.Map.lookup i . memberByInstrumentIDs)
 doFetch (GetBandMemberByBandID i) =
-  (pure . fromJust . Data.Map.lookup i . memberByBandIDs) <$> ask
-doFetch (GetBandByID i) = (pure . fromJust . Data.Map.lookup i . bands) <$> ask
+  asks (pure . fromJust . Data.Map.lookup i . memberByBandIDs)
+doFetch (GetBandByID i) =
+  asks (pure . fromJust . Data.Map.lookup i . bands)
 
 fetchSource :: Fetch Source DB.Query a
 fetchSource as = runReader (traverseASeq doFetch as) <$> runBatch (batchSource as)
 
-data Query m
+newtype Query m
   = Query
       { instruments :: m [Instrument m]
       }

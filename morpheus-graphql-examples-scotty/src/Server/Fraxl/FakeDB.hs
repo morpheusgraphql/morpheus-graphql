@@ -78,16 +78,16 @@ getInstruments :: Query [Instrument]
 getInstruments = pure instrumentDB
 
 lookupOneToMany :: (Ord b) => (a -> b) -> [a] -> Set b -> Map b [a]
-lookupOneToMany x ys xs = fold (((\x' -> M.singleton x' (filter (\y -> x y == x') ys))) <$> toList xs)
+lookupOneToMany x ys xs = fold ((\x' -> M.singleton x' (filter (\y -> x y == x') ys)) <$> toList xs)
 
 lookupOneToOne :: (Ord b) => (a -> b) -> [a] -> Set b -> Map b a
-lookupOneToOne x ys xs = fold (((\y -> M.singleton (x y) y)) <$> filter (\y -> x y `elem` xs) ys)
+lookupOneToOne x ys xs = fold ((\y -> M.singleton (x y) y) <$> filter (\y -> x y `elem` xs) ys)
 
 getBandMembersByInstrumentID :: Set Int -> Query (Map Int [Member])
-getBandMembersByInstrumentID = pure . (lookupOneToMany instrumentID memberDB)
+getBandMembersByInstrumentID = pure . lookupOneToMany instrumentID memberDB
 
 getBandMembersByBandID :: Set Int -> Query (Map Int [Member])
-getBandMembersByBandID = pure . (lookupOneToMany bandID memberDB)
+getBandMembersByBandID = pure . lookupOneToMany bandID memberDB
 
 getBandsByID :: Set Int -> Query (Map Int Band)
-getBandsByID = pure . (lookupOneToOne (\Band {id = i} -> i) bandDB)
+getBandsByID = pure . lookupOneToOne (\Band {id = i} -> i) bandDB
