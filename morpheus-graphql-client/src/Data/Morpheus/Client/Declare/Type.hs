@@ -3,17 +3,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Type
   ( typeDeclarations,
   )
 where
 
---
--- MORPHEUS
-import Control.Applicative (pure)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -33,16 +28,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     VALID,
   )
-import Data.Semigroup ((<>))
-import GHC.Generics (Generic)
 import Language.Haskell.TH
-import Prelude
-  ( (.),
-    Eq,
-    Show,
-    map,
-    otherwise,
-  )
+import Relude hiding (Type)
 
 typeDeclarations :: TypeKind -> [ClientTypeDefinition -> Q Dec]
 typeDeclarations KindScalar = []

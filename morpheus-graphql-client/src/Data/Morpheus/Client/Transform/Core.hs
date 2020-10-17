@@ -5,7 +5,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Core
   ( Converter (..),
@@ -20,18 +19,7 @@ module Data.Morpheus.Client.Transform.Core
   )
 where
 
---
--- MORPHEUS
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad ((>>=)), foldM)
-import Control.Monad.Reader (MonadReader, asks)
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Reader
-  ( ReaderT (..),
-  )
-import Data.Function ((&))
-import Data.Functor (Functor (..))
-import Data.Maybe (Maybe (..))
+import Control.Monad (foldM)
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
   )
@@ -71,13 +59,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Semigroup ((<>))
-import Prelude
-  ( ($),
-    (.),
-    fst,
-    otherwise,
-  )
+import Relude
 
 type Env = (Schema VALID, VariableDefinitions RAW)
 

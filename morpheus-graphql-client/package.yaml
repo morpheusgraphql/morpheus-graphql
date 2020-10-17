@@ -29,12 +29,14 @@ dependencies:
   - template-haskell      >= 2.0       && <= 3.0
   - transformers          >= 0.3.0.0   && <  1.0
   - mtl                   >= 2.0       && <= 3.0
+  - relude                >= 0.3.0
 
 library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Client
   ghc-options: -Wall
+    -XNoImplicitPrelude
 
 tests:
   morpheus-client-test:
