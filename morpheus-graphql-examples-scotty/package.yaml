@@ -28,6 +28,7 @@ dependencies:
   - extra
   - http-types
   - stm
+  - fraxl
 
 data-files:
   - assets/**/*.json
