@@ -30,6 +30,8 @@ module Data.Morpheus.Subscription.Internal
     SessionID,
     -- streamApp,
     SubscriptionApp (..),
+    storedSessions,
+    storedChannels,
   )
 where
 
@@ -59,6 +61,8 @@ import Data.Morpheus.Subscription.ClientConnectionStore
     connectionSessionIds,
     delete,
     publish,
+    storedChannels,
+    storedSessions,
     toList,
   )
 import Data.Morpheus.Subscription.Event

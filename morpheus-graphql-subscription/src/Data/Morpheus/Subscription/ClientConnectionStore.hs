@@ -18,11 +18,13 @@ module Data.Morpheus.Subscription.ClientConnectionStore
     startSession,
     endSession,
     empty,
-    insert,
+    insertConnection,
     delete,
     publish,
     toList,
     connectionSessionIds,
+    storedChannels,
+    storedSessions,
   )
 where
 
@@ -121,7 +123,7 @@ startSession ::
   (e -> m GQLResponse) ->
   SessionID ->
   Updates e m
-startSession sessionChannel resolver sessionId = Updates startSub
+startSession sessionChannel resolver sessionId@SessionID {cid, sid} = Updates startSub
   where
     startSub ClientConnectionStore {..} =
       ClientConnectionStore
@@ -130,15 +132,15 @@ startSession sessionChannel resolver sessionId = Updates startSub
               sessionId
               ClientSession
                 { sessionChannel,
-                  sessionCallback =
-                    resolver
-                      >=> upd . toApolloResponse (sid sessionId)
+                  sessionCallback = resolver >=> upd . toApolloResponse sid
                 }
               clientSessions,
+          clientConnections = HM.update updateConnection cid clientConnections,
           ..
         }
       where
-        upd = mapAt (const (pure ())) connectionCallback (cid sessionId) clientConnections
+        upd = mapAt (const (pure ())) connectionCallback cid clientConnections
+        updateConnection ClientConnection {..} = Just ClientConnection {connectionSessionIds = connectionSessionIds <> [sid], ..}
 
 -- stores active client connections
 -- every registered client has ID
@@ -162,6 +164,12 @@ type StoreMap e m =
 toList :: ClientConnectionStore (Event channel content) m -> [(UUID, ClientConnection m)]
 toList = HM.toList . clientConnections
 
+storedSessions :: ClientConnectionStore (Event channel content) m -> [(SessionID, ClientSession (Event channel content) m)]
+storedSessions = HM.toList . clientSessions
+
+storedChannels :: ClientConnectionStore (Event channel content) m -> [(channel, SessionID)]
+storedChannels = HM.toList . activeChannels
+
 instance KeyOf UUID (ClientConnection m) where
   keyOf = connectionId
 
@@ -181,11 +189,11 @@ mapConnections f ClientConnectionStore {..} =
     }
 
 -- returns original store, if connection with same id already exist
-insert ::
+insertConnection ::
   UUID ->
   (ByteString -> m ()) ->
   StoreMap e m
-insert connectionId connectionCallback =
+insertConnection connectionId connectionCallback =
   mapConnections (HM.insertWith (const id) connectionId c)
   where
     c =

@@ -39,7 +39,7 @@ import Data.Morpheus.Subscription.ClientConnectionStore
     SessionID (..),
     Updates (..),
     endSession,
-    insert,
+    insertConnection,
     startSession,
   )
 import Data.Morpheus.Subscription.Event (Event (..))
@@ -182,7 +182,7 @@ toOutStream app (Init clientId) =
     handle ws@ScopeWS {listener, callback} = do
       let runS (StreamWS x) = x ws
       bla <- listener >>= runS . handleWSRequest app clientId
-      pure $ (Updates (insert clientId callback) :) <$> bla
+      pure $ (Updates (insertConnection clientId callback) :) <$> bla
 toOutStream app (Request req) = StreamHTTP $ handleResponseHTTP (app req)
 
 handleResponseHTTP ::
