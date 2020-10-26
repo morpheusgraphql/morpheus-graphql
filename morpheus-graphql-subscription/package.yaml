@@ -1,4 +1,4 @@
-name: morpheus-graphql-subscription-store
+name: morpheus-graphql-subscription
 version: 0.15.1
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
@@ -34,7 +34,7 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Data.Morpheus.Client
+    - Data.Morpheus.Subscription
   ghc-options: -Wall
     -XNoImplicitPrelude
 

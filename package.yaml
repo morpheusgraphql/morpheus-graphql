@@ -46,7 +46,6 @@ library:
     - Data.Morpheus.Types
     - Data.Morpheus.Server
     - Data.Morpheus.Document
-    - Data.Morpheus.Types.Internal.Subscription
 
   ghc-options: -Wall
     -XNoImplicitPrelude
