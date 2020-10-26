@@ -49,6 +49,7 @@ import Data.Morpheus.Types.Internal.Subscription
     Input (..),
     Scope (..),
     SessionID,
+    SubscriptionApp,
     WS,
     connect,
     connectionSessionIds,
@@ -107,6 +108,7 @@ readInput (SimulationState (i : ins) o s) = (i, SimulationState ins o s)
 readInput (SimulationState [] o s) = ("<Error>", SimulationState [] o s)
 
 wsApp ::
+  SubscriptionApp e =>
   App e (SubM e) ->
   Input WS ->
   SubM e ()
@@ -127,6 +129,7 @@ simulatePublish ::
 simulatePublish event s = snd <$> runStateT (publish event (store s)) s
 
 simulate ::
+  SubscriptionApp e =>
   App e (SubM e) ->
   Input WS ->
   SimulationState e ->
@@ -135,9 +138,10 @@ simulate _ _ s@SimulationState {inputs = []} = pure s
 simulate api input s = runStateT (wsApp api input) s >>= simulate api input . snd
 
 testSimulation ::
-  (Input WS -> SimulationState e -> TestTree) ->
+  SubscriptionApp (Event ch con) =>
+  (Input WS -> SimulationState (Event ch con) -> TestTree) ->
   [ByteString] ->
-  App e (SubM e) ->
+  App (Event ch con) (SubM (Event ch con)) ->
   IO TestTree
 testSimulation test simInputs api = do
   input <- connect
@@ -164,7 +168,7 @@ inputsAreConsumed =
       "input stream should be consumed"
       []
 
-storeIsEmpty :: Store e -> TestTree
+storeIsEmpty :: (Show ch) => Store (Event ch con) -> TestTree
 storeIsEmpty cStore
   | null (toList cStore) =
     testCase "connectionStore: is empty" $ pure ()
@@ -175,7 +179,7 @@ storeIsEmpty cStore
         <> show
           cStore
 
-storedSingle :: Store e -> TestTree
+storedSingle :: (Show ch) => Store (Event ch con) -> TestTree
 storedSingle cStore
   | length (toList cStore) == 1 =
     testCase "stored single connection" $ pure ()
@@ -186,7 +190,7 @@ storedSingle cStore
         <> show
           cStore
 
-stored :: Input WS -> Store e -> TestTree
+stored :: (Show ch) => Input WS -> Store (Event ch con) -> TestTree
 stored (Init uuid) cStore
   | isJust (lookup uuid (toList cStore)) =
     testCase "stored connection" $ pure ()
@@ -198,9 +202,10 @@ stored (Init uuid) cStore
           cStore
 
 storeSubscriptions ::
+  (Show ch) =>
   Input WS ->
   [Text] ->
-  Store e ->
+  Store (Event ch con) ->
   TestTree
 storeSubscriptions
   (Init uuid)

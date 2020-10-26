@@ -14,7 +14,8 @@ where
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Morpheus.Server
-  ( httpPlayground,
+  ( SubscriptionApp,
+    httpPlayground,
     httpPubApp,
   )
 import Data.Morpheus.Types
@@ -44,11 +45,13 @@ import Web.Scotty
     raw,
     scottyApp,
   )
+import Prelude
 
 isSchema :: ActionM String
 isSchema = param "schema"
 
 httpEndpoint ::
+  SubscriptionApp e =>
   RoutePattern ->
   [e -> IO ()] ->
   App e IO ->

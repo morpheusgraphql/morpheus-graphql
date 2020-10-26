@@ -22,7 +22,8 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Morpheus.Server
-  ( httpPlayground,
+  ( SubscriptionApp,
+    httpPlayground,
     httpPubApp,
   )
 import Data.Morpheus.Types
@@ -64,6 +65,7 @@ import Servant
     Server,
     serve,
   )
+import Prelude
 
 startServer ::
   HasServer api '[] =>
@@ -96,7 +98,7 @@ type Playground = Get '[HTML] ByteString
 
 type Endpoint (name :: Symbol) = name :> (API :<|> Schema :<|> Playground)
 
-serveEndpoint :: [e -> IO ()] -> App e IO -> Server (Endpoint name)
+serveEndpoint :: SubscriptionApp e => [e -> IO ()] -> App e IO -> Server (Endpoint name)
 serveEndpoint publish app = (liftIO . httpPubApp publish app) :<|> withSchema app :<|> pure httpPlayground
 
 withSchema :: (Applicative f) => App e m -> f Text

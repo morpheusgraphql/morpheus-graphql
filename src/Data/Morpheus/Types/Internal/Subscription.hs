@@ -28,7 +28,8 @@ module Data.Morpheus.Types.Internal.Subscription
     toList,
     connectionSessionIds,
     SessionID,
-    streamApp,
+    -- streamApp,
+    SubscriptionApp (..),
   )
 where
 
@@ -75,9 +76,6 @@ import Data.Morpheus.Types.Internal.Subscription.Stream
   )
 import Data.UUID.V4 (nextRandom)
 import Relude hiding (empty, toList)
-
-streamApp :: Monad m => App (Event ch con) m -> Input api -> Stream api (Event ch con) m
-streamApp app = toOutStream (runAppStream app)
 
 connect :: MonadIO m => m (Input WS)
 connect = Init <$> liftIO nextRandom
@@ -142,3 +140,12 @@ connectionLoop app scope input =
   forever
     $ runStreamWS scope
     $ streamApp app input
+
+-- streamApp :: Monad m => App (Event ch con) m -> Input api -> Stream api (Event ch con) m
+-- streamApp app = toOutStream (runAppStream app)
+
+class SubscriptionApp (e :: *) where
+  streamApp :: Monad m => App e m -> Input api -> Stream api e m
+
+instance SubscriptionApp (Event ch con) where
+  streamApp app = toOutStream (runAppStream app)

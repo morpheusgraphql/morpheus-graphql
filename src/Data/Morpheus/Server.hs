@@ -16,18 +16,14 @@ module Data.Morpheus.Server
     ServerConstraint,
     httpPlayground,
     compileTimeSchemaValidation,
+    SubscriptionApp (..),
   )
 where
 
-import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.IO.Unlift
   ( MonadUnliftIO,
     withRunInIO,
   )
--- MORPHEUS
-
-import Data.Foldable (traverse_)
-import Data.Function ((&))
 import Data.Morpheus.Core
   ( App,
     runApp,
@@ -46,6 +42,7 @@ import Data.Morpheus.Types.Internal.Subscription
   ( Input (..),
     Scope (..),
     Store (..),
+    SubscriptionApp (..),
     WS,
     acceptApolloRequest,
     connectionThread,
@@ -61,6 +58,7 @@ import Network.WebSockets
     sendTextData,
   )
 import qualified Network.WebSockets as WS
+import Relude
 
 type ServerConstraint e m =
   ( MonadIO m,
@@ -85,11 +83,12 @@ defaultWSScope Store {writeStore} connection =
     }
 
 httpPubApp ::
+  SubscriptionApp e =>
   ( MonadIO m,
     MapAPI a b
   ) =>
-  [Event ch con -> m ()] ->
-  App (Event ch con) m ->
+  [e -> m ()] ->
+  App e m ->
   a ->
   m b
 httpPubApp [] app = runApp app
