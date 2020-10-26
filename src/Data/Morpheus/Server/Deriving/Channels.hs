@@ -10,18 +10,15 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Channels
-  ( getChannels,
+  ( channelResolver,
     ChannelsConstraint,
   )
 where
 
-import Control.Applicative (pure)
-import Control.Monad ((>>=))
-import Data.Functor.Identity (Identity (..))
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
+    selectBy,
   )
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeConstraint,
@@ -51,68 +48,84 @@ import Data.Morpheus.Types.Internal.Resolving
     SubscriptionField (..),
   )
 import GHC.Generics
-import Prelude
-  ( (.),
-    const,
-    lookup,
-    map,
-  )
+import Relude
+
+newtype DerivedChannel e = DerivedChannel
+  { _unpackChannel :: Channel e
+  }
+
+type ChannelRes (e :: *) = Selection VALID -> ResolverState (DerivedChannel e)
 
 type ChannelsConstraint e m (subs :: (* -> *) -> *) =
   ExploreConstraint e (subs (Resolver SUBSCRIPTION e m))
 
-getChannels ::
+channelResolver ::
+  forall e m subs.
   ChannelsConstraint e m subs =>
   subs (Resolver SUBSCRIPTION e m) ->
   Selection VALID ->
   ResolverState (Channel e)
-getChannels value sel = selectBy sel (exploreChannels value)
+channelResolver value = fmap _unpackChannel . channelSelector
+  where
+    channelSelector ::
+      Selection VALID ->
+      ResolverState (DerivedChannel e)
+    channelSelector = selectBySelection (exploreChannels value)
 
-selectBy ::
-  Failure InternalError m =>
+selectBySelection ::
+  [(FieldName, ChannelRes e)] ->
   Selection VALID ->
-  [ ( FieldName,
-      Selection VALID -> m (Channel e)
-    )
-  ] ->
-  m (Channel e)
-selectBy Selection {selectionContent = SelectionSet selSet} ch =
+  ResolverState (DerivedChannel e)
+selectBySelection channels = withSubscriptionSelection >=> selectSubscription channels
+
+selectSubscription ::
+  [(FieldName, ChannelRes e)] ->
+  Selection VALID ->
+  ResolverState (DerivedChannel e)
+selectSubscription channels sel@Selection {selectionName} =
+  selectBy
+    onFail
+    selectionName
+    channels
+    >>= onSucc
+  where
+    onFail = "invalid subscription: no channel is selected." :: InternalError
+    onSucc (_, f) = f sel
+
+withSubscriptionSelection :: Selection VALID -> ResolverState (Selection VALID)
+withSubscriptionSelection Selection {selectionContent = SelectionSet selSet} =
   case elems selSet of
-    [sel@Selection {selectionName}] -> case lookup selectionName ch of
-      Nothing -> failure ("invalid subscription: no channel is selected." :: InternalError)
-      Just f -> f sel
+    [sel] -> pure sel
     _ -> failure ("invalid subscription: there can be only one top level selection" :: InternalError)
-selectBy _ _ = failure ("invalid subscription: expected selectionSet" :: InternalError)
+withSubscriptionSelection _ = failure ("invalid subscription: expected selectionSet" :: InternalError)
 
 class GetChannel e a | a -> e where
-  getChannel :: a -> Selection VALID -> ResolverState (Channel e)
+  getChannel :: a -> ChannelRes e
 
 instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
-  getChannel SubscriptionField {channel} = const (pure channel)
+  getChannel = const . pure . DerivedChannel . channel
 
 instance
   DecodeConstraint arg =>
   GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a))
   where
   getChannel f sel@Selection {selectionArguments} =
-    decodeArguments selectionArguments >>= (`getChannel` sel) . f
+    decodeArguments selectionArguments >>= (`getChannel` sel)
+      . f
 
 ------------------------------------------------------
-
-type ChannelRes e = Selection VALID -> ResolverState (Channel e)
 
 type ExploreConstraint e a =
   ( GQLType a,
     Generic a,
-    TypeRep (GetChannel e) (Selection VALID -> ResolverState (Channel e)) (Rep a)
+    TypeRep (GetChannel e) (ChannelRes e) (Rep a)
   )
 
 exploreChannels :: forall e a. ExploreConstraint e a => a -> [(FieldName, ChannelRes e)]
 exploreChannels =
   convertNode
     . toValue
-      ( TypeConstraint (getChannel . runIdentity) ::
-          TypeConstraint (GetChannel e) (Selection VALID -> ResolverState (Channel e)) Identity
+      ( TypeConstraint (getChannel . runIdentity) :: TypeConstraint (GetChannel e) (ChannelRes e) Identity
       )
 
 convertNode :: DataType (ChannelRes e) -> [(FieldName, ChannelRes e)]

@@ -20,9 +20,11 @@ where
 
 import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
-import Data.Morpheus.Types
+import Data.Morpheus.Subscription
   ( Event (..),
-    RootResolver (..),
+  )
+import Data.Morpheus.Types
+  ( RootResolver (..),
     subscribe,
   )
 import Data.Text (Text)

@@ -14,6 +14,7 @@ module Data.Morpheus.Subscription
   ( webSocketsApp,
     httpPubApp,
     SubscriptionApp (..),
+    Event (..),
   )
 where
 
@@ -26,7 +27,7 @@ import Data.Morpheus.Core
     runApp,
   )
 import Data.Morpheus.Subscription.Event
-  ( Event,
+  ( Event (..),
   )
 import Data.Morpheus.Subscription.Internal
   ( Input (..),

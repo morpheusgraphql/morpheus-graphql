@@ -10,14 +10,14 @@ where
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
+import Data.Morpheus.Subscription
+  ( Event (..),
+  )
 import Data.Morpheus.Subscription.Internal
   ( Input,
     WS,
     connect,
     empty,
-  )
-import Data.Morpheus.Types
-  ( Event (..),
   )
 import Subscription.API
   ( Channel (..),

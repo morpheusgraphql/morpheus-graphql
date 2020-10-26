@@ -9,9 +9,9 @@ module Feature.WrappedTypeName.API
 where
 
 import Data.Morpheus (interpreter)
+import Data.Morpheus.Subscription (Event)
 import Data.Morpheus.Types
-  ( Event,
-    GQLRequest,
+  ( GQLRequest,
     GQLResponse,
     GQLType (..),
     RootResolver (..),
@@ -19,8 +19,7 @@ import Data.Morpheus.Types
     constRes,
     subscribe,
   )
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Relude
 
 data Wrapped a b = Wrapped
   { fieldA :: a,

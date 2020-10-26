@@ -40,7 +40,7 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.Server.Deriving.Channels
   ( ChannelsConstraint,
-    getChannels,
+    channelResolver,
   )
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeConstraint,
@@ -269,4 +269,4 @@ deriveModel
     where
       channelMap
         | isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
-        | otherwise = Just (getChannels subscriptionResolver)
+        | otherwise = Just (channelResolver subscriptionResolver)

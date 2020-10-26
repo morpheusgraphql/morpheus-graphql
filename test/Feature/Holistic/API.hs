@@ -23,9 +23,9 @@ import Data.Morpheus.Document
     importGQLDocumentWithNamespace,
   )
 import Data.Morpheus.Kind (SCALAR)
+import Data.Morpheus.Subscription (Event)
 import Data.Morpheus.Types
-  ( Event,
-    GQLRequest,
+  ( GQLRequest,
     GQLResponse,
     GQLScalar (..),
     GQLType (..),
