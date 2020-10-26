@@ -93,17 +93,17 @@ import Data.Set (Set)
 import qualified Data.Set as S
   ( toList,
   )
-import Data.Traversable (traverse)
 import Data.Text (pack)
+import Data.Traversable (traverse)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import GHC.Generics
   ( Generic (..),
   )
 import Prelude
-  ( ($),
+  ( otherwise,
+    ($),
     (.),
-    otherwise,
   )
 
 newtype ContextValue (kind :: GQL_KIND) a = ContextValue
@@ -129,11 +129,11 @@ instance Encode o e m (Pair k v) => Encode o e m (k, v) where
   encode (key, value) = encode (Pair key value)
 
 --  NonEmpty
-instance Encode [a] o e m => Encode (NonEmpty a) o e m where
+instance Encode o e m [a] => Encode o e m (NonEmpty a) where
   encode = encode . NonEmpty.toList
 
 --  Vector
-instance Encode [a] o e m => Encode (Vector a) o e m where
+instance Encode o e m [a] => Encode o e m (Vector a) where
   encode = encode . Vector.toList
 
 --  Set
@@ -208,10 +208,10 @@ convertNode
       encodeUnion fields =
         ResUnion
           consName
-          $ pure
-          $ mkObject
-            consName
-            (fmap toFieldRes fields)
+          $ pure $
+            mkObject
+              consName
+              (fmap toFieldRes fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::

@@ -75,13 +75,18 @@ withList decode (List li) = traverse decode li
 withList _ isType = failure (typeMismatch "List" isType)
 
 -- | Useful for more restrictive instances of lists (non empty, size indexed etc)
-withRefinedList :: ([a] -> Either Message (rList a)) -> (ValidValue -> Eventless a) -> ValidValue -> Eventless (rList a)
+withRefinedList ::
+  (Failure InternalError m, Monad m) =>
+  ([a] -> Either Message (rList a)) ->
+  (ValidValue -> m a) ->
+  ValidValue ->
+  m (rList a)
 withRefinedList refiner decode (List li) = do
   listRes <- traverse decode li
   case refiner listRes of
-    Left err -> failure err
+    Left err -> failure (typeMismatch err (List li))
     Right value -> pure value
-withRefinedList _ _ isType = internalTypeMismatch "List" isType
+withRefinedList _ _ isType = failure (typeMismatch "List" isType)
 
 withEnum :: Failure InternalError m => (TypeName -> m a) -> Value VALID -> m a
 withEnum decode (Enum value) = decode value

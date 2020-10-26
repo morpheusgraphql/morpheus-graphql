@@ -21,20 +21,13 @@ module Data.Morpheus.Server.Deriving.Decode
   )
 where
 
-import Control.Applicative ((<*>), pure)
+import Control.Applicative (pure, (<*>))
 import Control.Monad ((>>=))
-import Data.Functor ((<$>), Functor (..))
+import Data.Functor (Functor (..), (<$>))
 import Data.List (elem)
-import Data.Maybe (Maybe (..))
-
-  -- MORPHEUS
-
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Morpheus.Error
-  ( internalError,
-    internalTypeMismatch,
-  )
+import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( elems,
   )
@@ -50,25 +43,15 @@ import Data.Morpheus.Server.Deriving.Utils
     datatypeNameProxy,
     selNameProxy,
   )
-import Data.Morpheus.Server.Internal.TH.Decode
-  ( decodeFieldWith,
-    withInputObject,
-    withInputUnion,
-    withList,
-    withMaybe,
-    withScalar,
-  )
+import Data.Morpheus.Server.Internal.TH.Decode (decodeFieldWith, withInputObject, withInputUnion, withList, withMaybe, withRefinedList, withScalar)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
-        __type,
-        typeOptions
+        typeOptions,
+        __type
       ),
     GQLTypeOptions (..),
     TypeData (..),
-    withObject,
-    withRefinedList,
-    withUnion,
   )
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
@@ -99,11 +82,13 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import GHC.Generics
 import Prelude
-  ( ($),
-    (.),
+  ( Either (Left, Right),
     Eq (..),
     Ord,
+    maybe,
     otherwise,
+    ($),
+    (.),
   )
 
 type DecodeConstraint a =
