@@ -36,7 +36,7 @@ import Test.Tasty
 type WSApp ch a = App (Event ch a) (SubM (Event ch a))
 
 testUnknownType ::
-  (Eq ch, Show ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
 testUnknownType =
@@ -55,7 +55,7 @@ testUnknownType =
         ]
 
 testConnectionInit ::
-  (Eq ch, Show ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
 testConnectionInit = testSimulation test [apolloInit]
@@ -75,7 +75,7 @@ startSub :: ByteString -> ByteString
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
 testSubscriptionStart ::
-  (Eq ch, Show ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   WSApp ch a ->
   IO TestTree
 testSubscriptionStart =
@@ -100,7 +100,7 @@ testSubscriptionStart =
         ]
 
 testSubscriptionStop ::
-  (Eq ch, Show ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   WSApp ch a ->
   IO TestTree
 testSubscriptionStop =
@@ -126,7 +126,7 @@ testSubscriptionStop =
         ]
 
 testApolloRequest ::
-  (Eq ch, Show ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
 testApolloRequest app =

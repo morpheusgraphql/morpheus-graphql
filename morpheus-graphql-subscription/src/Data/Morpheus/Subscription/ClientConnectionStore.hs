@@ -65,6 +65,14 @@ data ClientConnection (m :: * -> *) = ClientConnection
     connectionSessionIds :: [Text]
   }
 
+addConnectionSession ::
+  Text ->
+  ClientConnection m ->
+  ClientConnection m
+addConnectionSession
+  sid
+  ClientConnection {..} = ClientConnection {connectionSessionIds = connectionSessionIds <> [sid], ..}
+
 data ClientSession e (m :: * -> *) = ClientSession
   { sessionChannel :: Channel e,
     sessionCallback :: e -> m ()
@@ -92,8 +100,9 @@ publish ::
   ClientConnectionStore (Event channel content) m ->
   m ()
 publish event ClientConnectionStore {activeChannels, clientSessions} =
-  traverse_ sendByChannel activeChannels
+  traverse_ sendBy activeChannels
   where
+    sendBy = traverse_ sendByChannel
     sendByChannel sid = mapAt (pure ()) sendMessage sid clientSessions
     sendMessage ClientSession {sessionChannel, sessionCallback}
       | sessionChannel `elem` getChannels event = sessionCallback event
@@ -118,7 +127,10 @@ endSession sessionID@SessionID {sid, cid} = Updates endSub
         }
 
 startSession ::
-  Monad m =>
+  ( Monad m,
+    Eq (Channel e),
+    Hashable (Channel e)
+  ) =>
   Channel e ->
   (e -> m GQLResponse) ->
   SessionID ->
@@ -135,12 +147,12 @@ startSession sessionChannel resolver sessionId@SessionID {cid, sid} = Updates st
                   sessionCallback = resolver >=> upd . toApolloResponse sid
                 }
               clientSessions,
-          clientConnections = HM.update updateConnection cid clientConnections,
-          ..
+          clientConnections = HM.adjust (addConnectionSession sid) cid clientConnections,
+          activeChannels = HM.adjust addChannel sessionChannel activeChannels
         }
       where
         upd = mapAt (const (pure ())) connectionCallback cid clientConnections
-        updateConnection ClientConnection {..} = Just ClientConnection {connectionSessionIds = connectionSessionIds <> [sid], ..}
+        addChannel = (<> [sessionId])
 
 -- stores active client connections
 -- every registered client has ID
@@ -149,7 +161,7 @@ data ClientConnectionStore e (m :: * -> *) where
   ClientConnectionStore ::
     { clientConnections :: HashMap UUID (ClientConnection m),
       clientSessions :: HashMap SessionID (ClientSession (Event channel content) m),
-      activeChannels :: HashMap channel SessionID
+      activeChannels :: HashMap channel [SessionID]
     } ->
     ClientConnectionStore (Event channel content) m
 
@@ -167,7 +179,7 @@ toList = HM.toList . clientConnections
 storedSessions :: ClientConnectionStore (Event channel content) m -> [(SessionID, ClientSession (Event channel content) m)]
 storedSessions = HM.toList . clientSessions
 
-storedChannels :: ClientConnectionStore (Event channel content) m -> [(channel, SessionID)]
+storedChannels :: ClientConnectionStore (Event channel content) m -> [(channel, [SessionID])]
 storedChannels = HM.toList . activeChannels
 
 instance KeyOf UUID (ClientConnection m) where

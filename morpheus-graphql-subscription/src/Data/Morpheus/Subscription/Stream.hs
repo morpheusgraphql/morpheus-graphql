@@ -53,7 +53,8 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ResponseEvent (..),
+  ( Channel,
+    ResponseEvent (..),
     ResponseStream,
     Result (..),
     ResultT (..),
@@ -106,7 +107,9 @@ data
     Stream HTTP e m
 
 handleResponseStream ::
-  ( Monad m
+  ( Monad m,
+    Eq (Channel e),
+    Hashable (Channel e)
   ) =>
   SessionID ->
   ResponseStream e m (Value VALID) ->
@@ -125,7 +128,9 @@ handleResponseStream session (ResultT res) =
 
 handleWSRequest ::
   ( Monad m,
-    Functor m
+    Functor m,
+    Eq ch,
+    Hashable ch
   ) =>
   ( GQLRequest ->
     ResponseStream (Event ch con) m (Value VALID)
@@ -170,7 +175,10 @@ runStreamHTTP scope StreamHTTP {streamHTTP} =
   streamHTTP scope
 
 toOutStream ::
-  (Monad m) =>
+  ( Monad m,
+    Eq ch,
+    Hashable ch
+  ) =>
   ( GQLRequest ->
     ResponseStream (Event ch con) m (Value VALID)
   ) ->

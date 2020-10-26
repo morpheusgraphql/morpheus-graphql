@@ -123,7 +123,9 @@ finallyM :: MonadUnliftIO m => m () -> m () -> m ()
 finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
 
 connectionThread ::
-  ( MonadUnliftIO m
+  ( MonadUnliftIO m,
+    Eq ch,
+    Hashable ch
   ) =>
   App (Event ch con) m ->
   Scope WS (Event ch con) m ->
@@ -135,7 +137,7 @@ connectionThread api scope = do
     (disconnect scope input)
 
 connectionLoop ::
-  Monad m =>
+  (Monad m, Eq ch, Hashable ch) =>
   App (Event ch con) m ->
   Scope WS (Event ch con) m ->
   Input WS ->
@@ -151,7 +153,7 @@ connectionLoop app scope input =
 class SubscriptionApp (e :: *) where
   streamApp :: Monad m => App e m -> Input api -> Stream api e m
 
-instance SubscriptionApp (Event ch con) where
+instance (Eq ch, Hashable ch) => SubscriptionApp (Event ch con) where
   streamApp app = toOutStream (runAppStream app)
 
 instance SubscriptionApp () where

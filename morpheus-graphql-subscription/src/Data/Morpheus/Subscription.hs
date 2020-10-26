@@ -90,7 +90,8 @@ httpPubApp callbacks app =
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp ::
   ( MonadUnliftIO m,
-    Eq channel
+    Eq channel,
+    Hashable channel
   ) =>
   App (Event channel cont) m ->
   m (ServerApp, Event channel cont -> m ())

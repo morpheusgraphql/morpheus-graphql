@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -27,14 +28,18 @@ import Data.Morpheus.Types
   ( RootResolver (..),
     subscribe,
   )
-import Data.Text (Text)
+import Relude
 import Subscription.Utils (SubM)
-import Prelude
 
 data Channel
   = DEITY
   | HUMAN
-  deriving (Show, Eq)
+  deriving
+    ( Show,
+      Eq,
+      Generic,
+      Hashable
+    )
 
 importGQLDocument "test/Subscription/schema.gql"
 
