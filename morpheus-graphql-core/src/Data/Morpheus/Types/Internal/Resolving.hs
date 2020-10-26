@@ -2,14 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Types.Internal.Resolving
-  ( Event (..),
-    Resolver,
+  ( Resolver,
     LiftOperation,
     runRootResModel,
     lift,
     Eventless,
     Failure (..),
-    eventChannels,
     ResponseEvent (..),
     ResponseStream,
     cleanEvents,
@@ -38,12 +36,12 @@ module Data.Morpheus.Types.Internal.Resolving
     mkString,
     SubscriptionField (..),
     getArguments,
-    Channel (..),
     ResolverState,
     liftResolverState,
     mkValue,
     FieldResModel,
     sortErrors,
+    EventHandler (..),
   )
 where
 

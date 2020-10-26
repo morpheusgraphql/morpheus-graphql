@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 25b16b77422eeca74c987eccda4c736fe4631ab46c8cdd1499ec4ba95e180ae3
+-- hash: 59e3816f6f2b78e475144a9a2c5516a4e568d0ecd3a7a9150b9a03eecb4c8fa4
 
 name:           morpheus-graphql-subscription
 version:        0.15.1
@@ -34,6 +34,7 @@ library
   other-modules:
       Data.Morpheus.Subscription.Apollo
       Data.Morpheus.Subscription.ClientConnectionStore
+      Data.Morpheus.Subscription.Event
       Data.Morpheus.Subscription.Stream
       Paths_morpheus_graphql_subscription
   hs-source-dirs:

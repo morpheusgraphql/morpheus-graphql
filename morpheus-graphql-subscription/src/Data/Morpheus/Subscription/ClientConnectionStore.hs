@@ -35,11 +35,10 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Subscription.Apollo
   ( toApolloResponse,
   )
+import Data.Morpheus.Subscription.Event (Event (..))
 import Data.Morpheus.Types.IO (GQLResponse)
 import Data.Morpheus.Types.Internal.Resolving
-  ( Channel (..),
-    Event (..),
-    eventChannels,
+  ( EventHandler (..),
   )
 import Data.UUID (UUID)
 import Relude hiding
@@ -95,7 +94,7 @@ publish event ClientConnectionStore {activeChannels, clientSessions} =
   where
     sendByChannel sid = mapAt (pure ()) sendMessage sid clientSessions
     sendMessage ClientSession {sessionChannel, sessionCallback}
-      | sessionChannel `elem` eventChannels event = sessionCallback event
+      | sessionChannel `elem` getChannels event = sessionCallback event
       | otherwise = pure ()
 
 newtype Updates e (m :: * -> *) = Updates

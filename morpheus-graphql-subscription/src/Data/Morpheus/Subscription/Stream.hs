@@ -42,6 +42,7 @@ import Data.Morpheus.Subscription.ClientConnectionStore
     insert,
     startSession,
   )
+import Data.Morpheus.Subscription.Event (Event (..))
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -52,8 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Event (..),
-    ResponseEvent (..),
+  ( ResponseEvent (..),
     ResponseStream,
     Result (..),
     ResultT (..),

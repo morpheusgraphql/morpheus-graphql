@@ -1,28 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Event
-  ( Event (..),
-    Channel (..),
-    eventChannels,
+  ( EventHandler (..),
   )
 where
 
-import Relude
-
--- Channel
-data Channel (event :: *) where
-  Channel :: a -> Channel (Event a c)
-
-data Event e c = Event
-  { channels :: [e],
-    content :: c
-  }
-
-eventChannels :: Event e c -> [Channel (Event e c)]
-eventChannels Event {channels} = fmap Channel channels
-
-instance (Eq ch) => Eq (Channel (Event ch con)) where
-  Channel x == Channel y = x == y
+class EventHandler e where
+  type Channel e
+  getChannels :: e -> [Channel e]

@@ -16,8 +16,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
-  ( Event (..),
-    Resolver,
+  ( Resolver,
     LiftOperation,
     lift,
     subscribe,
@@ -88,8 +87,7 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     mapEvent,
   )
 import Data.Morpheus.Types.Internal.Resolving.Event
-  ( Channel (..),
-    Event (..),
+  ( EventHandler (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
   ( ResolverContext (..),
@@ -115,7 +113,10 @@ type ResponseStream event (m :: * -> *) = ResultT (ResponseEvent event m) m
 
 data ResponseEvent event (m :: * -> *)
   = Publish event
-  | Subscribe (Channel event) (event -> m GQLResponse)
+  | Subscribe
+      { subChannel :: Channel event,
+        subRes :: event -> m GQLResponse
+      }
 
 data SubscriptionField (a :: *) where
   SubscriptionField ::
@@ -217,17 +218,16 @@ instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
 
 subscribe ::
-  forall e channel cont m a.
-  (Monad m, Event channel cont ~ e) =>
-  channel ->
+  (Monad m) =>
+  Channel e ->
   Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
 subscribe ch res =
-  SubscriptionField (Channel ch)
+  SubscriptionField ch
     $ ResolverS
     $ fromSub <$> runResolverQ res
   where
-    fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
+    fromSub :: Monad m => (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
     fromSub f = join (ReaderT (runResolverS . f))
 
 withArguments ::
