@@ -23,21 +23,10 @@ module Subscription.Utils
   )
 where
 
-import Control.Monad ((>>=))
-import Control.Monad.State.Lazy
-  ( StateT,
-    runStateT,
-    state,
-  )
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
-import Data.List
-  ( sort,
-  )
-import Data.Maybe
-  ( isJust,
-  )
+import Data.List (lookup)
 import Data.Morpheus
   ( App,
   )
@@ -58,10 +47,11 @@ import Data.Morpheus.Subscription.Internal
     streamApp,
     toList,
   )
-import Data.Semigroup
-  ( (<>),
+import Relude hiding
+  ( ByteString,
+    empty,
+    toList,
   )
-import Data.Text (Text)
 import Test.Tasty
   ( TestTree,
   )
@@ -69,21 +59,6 @@ import Test.Tasty.HUnit
   ( assertEqual,
     assertFailure,
     testCase,
-  )
-import Prelude
-  ( ($),
-    (.),
-    (<$>),
-    Eq (..),
-    IO,
-    Maybe (..),
-    Show (..),
-    length,
-    lookup,
-    null,
-    otherwise,
-    pure,
-    snd,
   )
 
 data SimulationState e = SimulationState
@@ -121,7 +96,7 @@ wsApp app =
     . streamApp app
 
 simulatePublish ::
-  (Eq ch, Show ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   Event ch con ->
   SimulationState (Event ch con) ->
   IO (SimulationState (Event ch con))

@@ -99,7 +99,11 @@ data Store e m = Store
   }
 
 publishEventWith ::
-  (MonadIO m, Eq channel, Show channel) =>
+  ( MonadIO m,
+    Eq channel,
+    Hashable channel,
+    Show channel
+  ) =>
   Store (Event channel cont) m ->
   Event channel cont ->
   m ()

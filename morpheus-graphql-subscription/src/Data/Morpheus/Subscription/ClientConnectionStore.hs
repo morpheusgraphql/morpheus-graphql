@@ -95,14 +95,16 @@ mapAt fallback f key = maybe fallback f . HM.lookup key
 publish ::
   ( Monad m,
     Eq channel,
+    Hashable channel,
     Show channel
   ) =>
   Event channel content ->
   ClientConnectionStore (Event channel content) m ->
   m ()
-publish event ClientConnectionStore {activeChannels, clientSessions} =
-  traverse_ sendBy activeChannels
+publish event@Event {channels} ClientConnectionStore {activeChannels, clientSessions} =
+  traverse_ onChannel channels
   where
+    onChannel ch = mapAt (pure ()) sendBy ch activeChannels
     sendBy = traverse_ sendByChannel
     sendByChannel sid = mapAt (pure ()) sendMessage sid clientSessions
     sendMessage ClientSession {sessionCallback} = sessionCallback event
@@ -111,14 +113,19 @@ newtype Updates e (m :: * -> *) = Updates
   { _runUpdate :: ClientConnectionStore e m -> ClientConnectionStore e m
   }
 
-endSession :: SessionID -> Updates (Event ch con) m
-endSession sessionID@SessionID {sid, cid} = Updates endSub
+endSession ::
+  ( Eq ch,
+    Hashable ch
+  ) =>
+  SessionID ->
+  Updates (Event ch con) m
+endSession sessionId@SessionID {sid, cid} = Updates endSub
   where
     endSub ClientConnectionStore {..} =
       ClientConnectionStore
         { clientConnections = HM.adjust f cid clientConnections,
-          clientSessions = HM.delete sessionID clientSessions,
-          ..
+          clientSessions = HM.delete sessionId clientSessions,
+          activeChannels = removeActiveChannel sessionId activeChannels
         }
     f conn =
       conn
