@@ -94,13 +94,14 @@ mapAt fallback f key = maybe fallback f . HM.lookup key
 
 publish ::
   ( Monad m,
-    Eq channel
+    Eq channel,
+    Show channel
   ) =>
   Event channel content ->
   ClientConnectionStore (Event channel content) m ->
   m ()
 publish event ClientConnectionStore {activeChannels, clientSessions} =
-  traverse_ sendBy activeChannels
+  traceShow activeChannels (traverse_ sendBy activeChannels)
   where
     sendBy = traverse_ sendByChannel
     sendByChannel sid = mapAt (pure ()) sendMessage sid clientSessions

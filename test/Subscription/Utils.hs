@@ -121,7 +121,7 @@ wsApp app =
     . streamApp app
 
 simulatePublish ::
-  Eq ch =>
+  (Eq ch, Show ch) =>
   Event ch con ->
   SimulationState (Event ch con) ->
   IO (SimulationState (Event ch con))

@@ -91,7 +91,8 @@ httpPubApp callbacks app =
 webSocketsApp ::
   ( MonadUnliftIO m,
     Eq channel,
-    Hashable channel
+    Hashable channel,
+    Show channel
   ) =>
   App (Event channel cont) m ->
   m (ServerApp, Event channel cont -> m ())
