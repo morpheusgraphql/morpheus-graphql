@@ -88,6 +88,7 @@ import Data.Morpheus.Types.Internal.Resolving.Core
   )
 import Data.Morpheus.Types.Internal.Resolving.Event
   ( EventHandler (..),
+    ResponseEvent (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
   ( ResolverContext (..),
@@ -110,13 +111,6 @@ import Prelude (Show (..))
 type WithOperation (o :: OperationType) = LiftOperation o
 
 type ResponseStream event (m :: * -> *) = ResultT (ResponseEvent event m) m
-
-data ResponseEvent event (m :: * -> *)
-  = Publish event
-  | Subscribe
-      { subChannel :: Channel event,
-        subRes :: event -> m GQLResponse
-      }
 
 data SubscriptionField (a :: *) where
   SubscriptionField ::
