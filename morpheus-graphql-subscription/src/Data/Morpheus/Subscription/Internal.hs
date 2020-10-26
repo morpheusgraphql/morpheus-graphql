@@ -61,6 +61,9 @@ import Data.Morpheus.Subscription.ClientConnectionStore
     publish,
     toList,
   )
+import Data.Morpheus.Subscription.Event
+  ( Event,
+  )
 import Data.Morpheus.Subscription.Stream
   ( HTTP,
     Input (..),
@@ -70,9 +73,6 @@ import Data.Morpheus.Subscription.Stream
     runStreamHTTP,
     runStreamWS,
     toOutStream,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Event,
   )
 import Data.UUID.V4 (nextRandom)
 import Relude hiding (empty, toList)

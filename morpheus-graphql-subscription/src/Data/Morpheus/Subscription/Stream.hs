@@ -115,8 +115,7 @@ handleResponseStream session (ResultT res) =
   StreamWS $ const $ unfoldR <$> res
   where
     execute Publish {} = apolloError $ globalErrorMessage "websocket can only handle subscriptions, not mutations"
-    execute (Subscribe (Event [ch] res)) = Right $ startSession ch res session
-    execute (Subscribe (Event (ch : _) res)) = Right $ startSession ch res session
+    execute (Subscribe ch subRes) = Right $ startSession ch subRes session
     --------------------------
     unfoldR Success {events} = traverse execute events
     unfoldR Failure {errors} = apolloError errors
