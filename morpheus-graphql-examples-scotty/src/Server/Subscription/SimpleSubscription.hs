@@ -6,9 +6,9 @@
 
 module Server.Subscription.SimpleSubscription where
 
+import Data.Morpheus.Subscription (Event (..))
 import Data.Morpheus.Types
-  ( Event (..),
-    Resolver,
+  ( Resolver,
     RootResolver (..),
     SubscriptionField,
     WithOperation,

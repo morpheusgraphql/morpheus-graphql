@@ -22,9 +22,11 @@ import Data.Morpheus
 import Data.Morpheus.Document
   ( importGQLDocument,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Subscription
   ( Event (..),
-    ResolverM,
+  )
+import Data.Morpheus.Types
+  ( ResolverM,
     RootResolver (..),
     publish,
     subscribe,

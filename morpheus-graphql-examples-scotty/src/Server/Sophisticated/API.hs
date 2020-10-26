@@ -34,9 +34,11 @@ import Data.Morpheus.Document
 import Data.Morpheus.Kind
   ( INPUT,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Subscription
   ( Event (..),
-    GQLScalar (..),
+  )
+import Data.Morpheus.Types
+  ( GQLScalar (..),
     GQLType (..),
     ID,
     MUTATION,
