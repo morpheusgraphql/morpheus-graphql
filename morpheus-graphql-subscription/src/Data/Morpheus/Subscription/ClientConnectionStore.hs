@@ -101,7 +101,7 @@ publish ::
   ClientConnectionStore (Event channel content) m ->
   m ()
 publish event ClientConnectionStore {activeChannels, clientSessions} =
-  traceShow activeChannels (traverse_ sendBy activeChannels)
+  traverse_ sendBy activeChannels
   where
     sendBy = traverse_ sendByChannel
     sendByChannel sid = mapAt (pure ()) sendMessage sid clientSessions
@@ -114,11 +114,11 @@ newtype Updates e (m :: * -> *) = Updates
 endSession :: SessionID -> Updates (Event ch con) m
 endSession sessionID@SessionID {sid, cid} = Updates endSub
   where
-    endSub (ClientConnectionStore connections sessions channels) =
+    endSub ClientConnectionStore {..} =
       ClientConnectionStore
-        { clientConnections = HM.adjust f cid connections,
-          clientSessions = HM.delete sessionID sessions,
-          activeChannels = channels
+        { clientConnections = HM.adjust f cid clientConnections,
+          clientSessions = HM.delete sessionID clientSessions,
+          ..
         }
     f conn =
       conn
@@ -147,11 +147,30 @@ startSession sessionChannel resolver sessionId@SessionID {cid, sid} = Updates st
                 }
               clientSessions,
           clientConnections = HM.adjust (addConnectionSession sid) cid clientConnections,
-          activeChannels = HM.adjust addChannel sessionChannel activeChannels
+          activeChannels = addActiveChannel sessionChannel sessionId activeChannels
         }
       where
         upd = mapAt (const (pure ())) connectionCallback cid clientConnections
-        addChannel = (<> [sessionId])
+
+addActiveChannel ::
+  (Eq ch, Hashable ch) =>
+  ch ->
+  SessionID ->
+  HashMap ch [SessionID] ->
+  HashMap ch [SessionID]
+addActiveChannel sessionChannel sessionId = HM.alter update sessionChannel
+  where
+    update Nothing = Just [sessionId]
+    update (Just ids) = Just (ids <> [sessionId])
+
+removeActiveChannel ::
+  (Eq ch, Hashable ch) =>
+  SessionID ->
+  HashMap ch [SessionID] ->
+  HashMap ch [SessionID]
+removeActiveChannel sessionId = fmap update
+  where
+    update = filter (/= sessionId)
 
 -- stores active client connections
 -- every registered client has ID
