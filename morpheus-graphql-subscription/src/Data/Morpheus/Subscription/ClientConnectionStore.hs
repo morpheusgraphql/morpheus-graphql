@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
+module Data.Morpheus.Subscription.ClientConnectionStore
   ( SessionID (..),
     ClientConnectionStore,
     ClientConnection,
@@ -32,14 +32,14 @@ import Data.Morpheus.Internal.Utils
   ( Collection (..),
     KeyOf (..),
   )
+import Data.Morpheus.Subscription.Apollo
+  ( toApolloResponse,
+  )
 import Data.Morpheus.Types.IO (GQLResponse)
 import Data.Morpheus.Types.Internal.Resolving
   ( Channel (..),
     Event (..),
     eventChannels,
-  )
-import Data.Morpheus.Types.Internal.Subscription.Apollo
-  ( toApolloResponse,
   )
 import Data.UUID (UUID)
 import Relude hiding

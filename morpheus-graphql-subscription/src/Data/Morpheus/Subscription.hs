@@ -1,154 +1,118 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
-module Data.Morpheus.Types.Internal.Subscription
-  ( connect,
-    disconnect,
-    connectionThread,
-    runStreamWS,
-    runStreamHTTP,
-    Scope (..),
-    Input (..),
-    WS,
-    HTTP,
-    acceptApolloRequest,
-    publish,
-    Store (..),
-    initDefaultStore,
-    publishEventWith,
-    ClientConnectionStore,
-    empty,
-    toList,
-    connectionSessionIds,
-    SessionID,
-    -- streamApp,
+-- |  GraphQL Wai Server Applications
+module Data.Morpheus.Subscription
+  ( webSocketsApp,
+    httpPubApp,
     SubscriptionApp (..),
   )
 where
 
-import Control.Concurrent
-  ( modifyMVar_,
-  )
-import Control.Exception (finally)
 import Control.Monad.IO.Unlift
   ( MonadUnliftIO,
     withRunInIO,
   )
--- MORPHEUS
-
 import Data.Morpheus.Core
   ( App,
-    runAppStream,
+    runApp,
   )
-import Data.Morpheus.Internal.Utils
-  ( empty,
+import Data.Morpheus.Subscription.Internal
+  ( Input (..),
+    Scope (..),
+    Store (..),
+    SubscriptionApp (..),
+    WS,
+    acceptApolloRequest,
+    connectionThread,
+    initDefaultStore,
+    publishEventWith,
+    runStreamHTTP,
+    streamApp,
   )
+import Data.Morpheus.Types.IO (MapAPI (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Event,
   )
-import Data.Morpheus.Types.Internal.Subscription.Apollo
-  ( acceptApolloRequest,
+import Network.WebSockets
+  ( Connection,
+    ServerApp,
+    receiveData,
+    sendTextData,
   )
-import Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
-  ( ClientConnectionStore,
-    SessionID,
-    connectionSessionIds,
-    delete,
-    publish,
-    toList,
-  )
-import Data.Morpheus.Types.Internal.Subscription.Stream
-  ( HTTP,
-    Input (..),
-    Scope (..),
-    Stream,
-    WS,
-    runStreamHTTP,
-    runStreamWS,
-    toOutStream,
-  )
-import Data.UUID.V4 (nextRandom)
-import Relude hiding (empty, toList)
+import qualified Network.WebSockets as WS
+import Relude
 
-connect :: MonadIO m => m (Input WS)
-connect = Init <$> liftIO nextRandom
+-- support old version of Websockets
+pingThread :: Connection -> IO () -> IO ()
 
-disconnect :: Scope WS e m -> Input WS -> m ()
-disconnect ScopeWS {update} (Init clientID) = update (delete clientID)
+#if MIN_VERSION_websockets(0,12,6)
+pingThread connection = WS.withPingThread connection 30 (return ())
+#else
+pingThread connection = (WS.forkPingThread connection 30 >>)
+#endif
 
--- | PubSubStore interface
--- shared GraphQL state between __websocket__ and __http__ server,
--- you can define your own store if you provide write and read methods
--- to work properly Morpheus needs all entries of ClientConnectionStore (+ client Callbacks)
--- that why it is recomended that you use many local ClientStores on evenry server node
--- rathen then single centralized Store.
-data Store e m = Store
-  { readStore :: m (ClientConnectionStore e m),
-    writeStore :: (ClientConnectionStore e m -> ClientConnectionStore e m) -> m ()
-  }
+defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope WS e m
+defaultWSScope Store {writeStore} connection =
+  ScopeWS
+    { listener = liftIO (receiveData connection),
+      callback = liftIO . sendTextData connection,
+      update = writeStore
+    }
 
-publishEventWith ::
-  (MonadIO m, Eq channel) =>
-  Store (Event channel cont) m ->
-  Event channel cont ->
-  m ()
-publishEventWith store event = readStore store >>= publish event
-
--- | initializes empty GraphQL state
-initDefaultStore ::
+httpPubApp ::
+  SubscriptionApp e =>
   ( MonadIO m,
-    MonadIO m2
+    MapAPI a b
   ) =>
-  m2 (Store (Event ch con) m)
-initDefaultStore = do
-  store <- liftIO $ newMVar empty
-  pure
-    Store
-      { readStore = liftIO $ readMVar store,
-        writeStore = \changes -> liftIO $ modifyMVar_ store (return . changes)
-      }
+  [e -> m ()] ->
+  App e m ->
+  a ->
+  m b
+httpPubApp [] app = runApp app
+httpPubApp callbacks app =
+  mapAPI $
+    runStreamHTTP ScopeHTTP {httpCallback}
+      . streamApp app
+      . Request
+  where
+    httpCallback e = traverse_ (e &) callbacks
 
-finallyM :: MonadUnliftIO m => m () -> m () -> m ()
-finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
-
-connectionThread ::
-  ( MonadUnliftIO m
+-- | Wai WebSocket Server App for GraphQL subscriptions
+webSocketsApp ::
+  ( MonadUnliftIO m,
+    Eq channel
   ) =>
-  App (Event ch con) m ->
-  Scope WS (Event ch con) m ->
-  m ()
-connectionThread api scope = do
-  input <- connect
-  finallyM
-    (connectionLoop api scope input)
-    (disconnect scope input)
+  App (Event channel cont) m ->
+  m (ServerApp, Event channel cont -> m ())
+webSocketsApp app =
+  do
+    store <- initDefaultStore
+    wsApp <- webSocketsWrapper store (connectionThread app)
+    pure
+      ( wsApp,
+        publishEventWith store
+      )
 
-connectionLoop ::
-  Monad m =>
-  App (Event ch con) m ->
-  Scope WS (Event ch con) m ->
-  Input WS ->
-  m ()
-connectionLoop app scope input =
-  forever
-    $ runStreamWS scope
-    $ streamApp app input
-
--- streamApp :: Monad m => App (Event ch con) m -> Input api -> Stream api (Event ch con) m
--- streamApp app = toOutStream (runAppStream app)
-
-class SubscriptionApp (e :: *) where
-  streamApp :: Monad m => App e m -> Input api -> Stream api e m
-
-instance SubscriptionApp (Event ch con) where
-  streamApp app = toOutStream (runAppStream app)
-
-instance SubscriptionApp () where
-  streamApp app = undefined
+webSocketsWrapper ::
+  (MonadUnliftIO m, MonadIO m) =>
+  Store e m ->
+  (Scope WS e m -> m ()) ->
+  m ServerApp
+webSocketsWrapper store handler =
+  withRunInIO $
+    \runIO ->
+      pure $
+        \pending -> do
+          conn <- acceptApolloRequest pending
+          pingThread
+            conn
+            $ runIO (handler (defaultWSScope store conn))

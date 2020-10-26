@@ -41,14 +41,10 @@ import Data.Maybe
 import Data.Morpheus
   ( App,
   )
-import Data.Morpheus.Types
-  ( Event,
-  )
-import Data.Morpheus.Types.Internal.Subscription
+import Data.Morpheus.Subscription.Internal
   ( ClientConnectionStore,
     Input (..),
     Scope (..),
-    SessionID,
     SubscriptionApp,
     WS,
     connect,
@@ -58,6 +54,9 @@ import Data.Morpheus.Types.Internal.Subscription
     runStreamWS,
     streamApp,
     toList,
+  )
+import Data.Morpheus.Types
+  ( Event,
   )
 import Data.Semigroup
   ( (<>),

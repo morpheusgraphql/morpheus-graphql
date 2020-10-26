@@ -14,8 +14,10 @@ where
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Morpheus.Server
+  ( httpPlayground,
+  )
+import Data.Morpheus.Subscription
   ( SubscriptionApp,
-    httpPlayground,
     httpPubApp,
   )
 import Data.Morpheus.Types

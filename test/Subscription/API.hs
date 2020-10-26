@@ -27,6 +27,7 @@ import Data.Morpheus.Types
   )
 import Data.Text (Text)
 import Subscription.Utils (SubM)
+import Prelude
 
 data Channel
   = DEITY

@@ -6,7 +6,7 @@
 
 module Server.Servant (servantServer) where
 
-import Data.Morpheus.Server
+import Data.Morpheus.Subscription
   ( webSocketsApp,
   )
 import Servant

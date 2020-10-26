@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Subscription.Apollo
+module Data.Morpheus.Subscription.Apollo
   ( ApolloAction (..),
     apolloFormat,
     acceptApolloRequest,

@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Morpheus.Types.Internal.Subscription.Stream
+module Data.Morpheus.Subscription.Stream
   ( toOutStream,
     runStreamWS,
     runStreamHTTP,
@@ -29,6 +29,19 @@ import Data.Morpheus.Error
 import Data.Morpheus.Internal.Utils
   ( failure,
   )
+import Data.Morpheus.Subscription.Apollo
+  ( ApolloAction (..),
+    apolloFormat,
+    toApolloResponse,
+  )
+import Data.Morpheus.Subscription.ClientConnectionStore
+  ( ClientConnectionStore,
+    SessionID (..),
+    Updates (..),
+    endSession,
+    insert,
+    startSession,
+  )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -45,19 +58,6 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
     ResultT (..),
     runResultT,
-  )
-import Data.Morpheus.Types.Internal.Subscription.Apollo
-  ( ApolloAction (..),
-    apolloFormat,
-    toApolloResponse,
-  )
-import Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
-  ( ClientConnectionStore,
-    SessionID (..),
-    Updates (..),
-    endSession,
-    insert,
-    startSession,
   )
 import Data.UUID (UUID)
 import Relude hiding (ByteString)

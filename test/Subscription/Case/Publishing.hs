@@ -10,14 +10,14 @@ where
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
-import Data.Morpheus.Types
-  ( Event (..),
-    Input,
-  )
-import Data.Morpheus.Types.Internal.Subscription
-  ( WS,
+import Data.Morpheus.Subscription.Internal
+  ( Input,
+    WS,
     connect,
     empty,
+  )
+import Data.Morpheus.Types
+  ( Event (..),
   )
 import Subscription.API
   ( Channel (..),
@@ -41,6 +41,7 @@ import Test.Tasty
   ( TestTree,
     testGroup,
   )
+import Prelude
 
 startNewDeity :: ByteString -> ByteString
 startNewDeity = apolloStart "subscription MySubscription { newDeity { name , age }}"

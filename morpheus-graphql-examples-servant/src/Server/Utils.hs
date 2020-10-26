@@ -22,8 +22,10 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Morpheus.Server
+  ( httpPlayground,
+  )
+import Data.Morpheus.Subscription
   ( SubscriptionApp,
-    httpPlayground,
     httpPubApp,
   )
 import Data.Morpheus.Types
