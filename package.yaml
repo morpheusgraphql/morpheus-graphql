@@ -32,7 +32,6 @@ dependencies:
   - vector                          >= 0.12.0.1  && <  0.13
   - mtl                             >= 2.0       && <= 3.0
   - morpheus-graphql-core           >= 0.15.0    && <  0.16.0
-  - morpheus-graphql-subscription   >= 0.15.0    && <  0.16.0
   - template-haskell                >= 2.0       && <= 3.0
   - relude                          >= 0.3.0
 
@@ -58,3 +57,4 @@ tests:
       - tasty
       - tasty-hunit
       - aeson
+      - morpheus-graphql-subscription   >= 0.15.0    && <  0.16.0
