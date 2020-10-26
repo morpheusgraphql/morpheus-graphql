@@ -84,6 +84,11 @@ import Data.Morpheus.Server.Types.GQLType
     GQLTypeOptions (..),
   )
 import Data.Morpheus.Server.Types.Types (Undefined (..))
+import Data.Morpheus.Subscription.Types
+  ( HTTP,
+    Input,
+    WS,
+  )
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar
       ( parseValue,
@@ -117,11 +122,6 @@ import Data.Morpheus.Types.Internal.Resolving
     pushEvents,
     subscribe,
     unsafeInternalContext,
-  )
-import Data.Morpheus.Types.Internal.Subscription
-  ( HTTP,
-    Input,
-    WS,
   )
 import Data.Proxy
   ( Proxy (..),

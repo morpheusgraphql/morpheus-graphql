@@ -15,10 +15,6 @@ extra-source-files:
   - changelog.md
   - README.md
 
-data-files:
-  - test/**/*.gql
-  - test/**/*.json
-
 dependencies:
   - base                  >= 4.7       && <  5
   - bytestring            >= 0.10.4    && <  0.11
@@ -39,12 +35,11 @@ library:
     -XNoImplicitPrelude
 
 tests:
-  morpheus-client-test:
+  morpheus-subscription-test:
     main: Spec.hs
     source-dirs: test
     ghc-options: -Wall
     dependencies:
-      - morpheus-graphql-client
       - tasty
       - tasty-hunit
       - aeson
