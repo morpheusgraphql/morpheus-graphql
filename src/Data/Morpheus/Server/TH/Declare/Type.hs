@@ -40,6 +40,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import GHC.Generics (Generic)
 import Language.Haskell.TH
+import Relude hiding (Type)
 
 declareType :: ServerTypeDefinition cat s -> ServerDec [Dec]
 declareType ServerTypeDefinition {tKind = KindScalar} = pure []

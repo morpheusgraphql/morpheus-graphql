@@ -32,6 +32,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( resultOr,
   )
 import Language.Haskell.TH
+import Relude hiding (ByteString)
 
 importGQLDocument :: FilePath -> Q [Dec]
 importGQLDocument src =
