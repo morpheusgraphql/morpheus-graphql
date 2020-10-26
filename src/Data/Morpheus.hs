@@ -25,6 +25,7 @@ import Data.Morpheus.Types
   ( RootResolver (..),
   )
 import Data.Morpheus.Types.IO (MapAPI)
+import Relude
 
 -- | main query processor and resolver
 interpreter ::

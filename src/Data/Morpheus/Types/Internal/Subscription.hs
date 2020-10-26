@@ -149,3 +149,6 @@ class SubscriptionApp (e :: *) where
 
 instance SubscriptionApp (Event ch con) where
   streamApp app = toOutStream (runAppStream app)
+
+instance SubscriptionApp () where
+  streamApp app = undefined

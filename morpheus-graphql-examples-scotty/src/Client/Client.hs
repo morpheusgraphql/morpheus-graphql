@@ -22,6 +22,7 @@ import Data.Morpheus.Client
   )
 import Data.Morpheus.Types (GQLScalar (..), ScalarValue (..))
 import Data.Text (Text)
+import Prelude
 
 data Euro
   = Euro

@@ -47,7 +47,9 @@ library:
     - Data.Morpheus.Server
     - Data.Morpheus.Document
     - Data.Morpheus.Types.Internal.Subscription
+
   ghc-options: -Wall
+    -XNoImplicitPrelude
 
 tests:
   morpheus-test:

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9946d91c0df4668904d6bb4328c0454e94a1c647ff033c1917c35d301f8e0ce0
+-- hash: 3c41bb1f89209fada8dfffd15bb22e05d83350a11ad9aa1d566ab7185284551d
 
 name:           morpheus-graphql
 version:        0.15.1
@@ -424,7 +424,7 @@ library
       Paths_morpheus_graphql
   hs-source-dirs:
       src
-  ghc-options: -Wall
+  ghc-options: -Wall -XNoImplicitPrelude
   build-depends:
       aeson >=1.4.4.0 && <=1.6
     , base >=4.7 && <5
