@@ -7,7 +7,6 @@ module Data.Morpheus.Types.Internal.Resolving
     LiftOperation,
     runRootResModel,
     lift,
-    SubEvent,
     Eventless,
     Failure (..),
     eventChannels,

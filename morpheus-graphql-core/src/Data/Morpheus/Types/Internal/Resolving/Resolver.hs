@@ -21,7 +21,6 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     LiftOperation,
     lift,
     subscribe,
-    SubEvent,
     ResponseEvent (..),
     ResponseStream,
     ObjectResModel (..),
@@ -116,9 +115,7 @@ type ResponseStream event (m :: * -> *) = ResultT (ResponseEvent event m) m
 
 data ResponseEvent event (m :: * -> *)
   = Publish event
-  | Subscribe (SubEvent event m)
-
-type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
+  | Subscribe (Channel event) (event -> m GQLResponse)
 
 data SubscriptionField (a :: *) where
   SubscriptionField ::
@@ -356,7 +353,7 @@ subscriptionEvents ctx@ResolverContext {currentSelection} (Just channelGenerator
   where
     handle = do
       channel <- channelGenerator currentSelection
-      pure $ Subscribe (Event [channel] res)
+      pure $ Subscribe channel res
 subscriptionEvents ctx Nothing _ = failure [resolverFailureMessage ctx "channel Resolver is not defined"]
 
 -- Resolver Models -------------------------------------------------------------------
