@@ -34,7 +34,6 @@ dependencies:
   - morpheus-graphql-core           >= 0.15.0    && <  0.16.0
   - morpheus-graphql-subscription   >= 0.15.0    && <  0.16.0
   - template-haskell                >= 2.0       && <= 3.0
-  - unliftio-core                   >= 0.0.1     && <= 0.4
   - relude                          >= 0.3.0
 
 library:

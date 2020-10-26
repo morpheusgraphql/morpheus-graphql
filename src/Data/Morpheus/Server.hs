@@ -10,24 +10,14 @@
 
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Server
-  ( ServerConstraint,
-    httpPlayground,
+  ( httpPlayground,
     compileTimeSchemaValidation,
   )
 where
 
-import Control.Monad.IO.Unlift
-  ( MonadUnliftIO,
-  )
 import Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,
   )
 import Data.Morpheus.Server.Playground
   ( httpPlayground,
-  )
-import Relude
-
-type ServerConstraint e m =
-  ( MonadIO m,
-    MonadUnliftIO m
   )
