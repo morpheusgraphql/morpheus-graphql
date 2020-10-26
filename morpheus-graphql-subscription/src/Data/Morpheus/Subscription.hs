@@ -25,6 +25,9 @@ import Data.Morpheus.Core
   ( App,
     runApp,
   )
+import Data.Morpheus.Subscription.Event
+  ( Event,
+  )
 import Data.Morpheus.Subscription.Internal
   ( Input (..),
     Scope (..),
@@ -39,9 +42,6 @@ import Data.Morpheus.Subscription.Internal
     streamApp,
   )
 import Data.Morpheus.Types.IO (MapAPI (..))
-import Data.Morpheus.Types.Internal.Resolving
-  ( Event,
-  )
 import Network.WebSockets
   ( Connection,
     ServerApp,

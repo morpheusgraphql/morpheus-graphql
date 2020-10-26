@@ -10,8 +10,7 @@
 
 -- | GQL Types
 module Data.Morpheus.Types
-  ( Event (..),
-    GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives),
+  ( GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives),
     GQLScalar (parseValue, serialize),
     GQLRequest (..),
     GQLResponse (..),
@@ -103,8 +102,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( Event (..),
-    Failure,
+  ( Failure,
     PushEvents (..),
     Resolver,
     ResolverContext (..),
