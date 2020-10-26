@@ -104,9 +104,7 @@ publish event ClientConnectionStore {activeChannels, clientSessions} =
   where
     sendBy = traverse_ sendByChannel
     sendByChannel sid = mapAt (pure ()) sendMessage sid clientSessions
-    sendMessage ClientSession {sessionChannel, sessionCallback}
-      | sessionChannel `elem` getChannels event = sessionCallback event
-      | otherwise = pure ()
+    sendMessage ClientSession {sessionCallback} = sessionCallback event
 
 newtype Updates e (m :: * -> *) = Updates
   { _runUpdate :: ClientConnectionStore e m -> ClientConnectionStore e m
