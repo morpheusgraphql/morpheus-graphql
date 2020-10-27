@@ -30,11 +30,11 @@ import Data.Morpheus.Subscription.Event
   ( Event (..),
   )
 import Data.Morpheus.Subscription.Internal
-  ( Input (..),
-    Scope (..),
+  ( ApiContext (..),
+    Input (..),
+    SUB,
     Store (..),
     SubscriptionApp (..),
-    WS,
     acceptApolloRequest,
     connectionThread,
     initDefaultStore,
@@ -61,12 +61,12 @@ pingThread connection = WS.withPingThread connection 30 (return ())
 pingThread connection = (WS.forkPingThread connection 30 >>)
 #endif
 
-defaultWSScope :: MonadIO m => Store e m -> Connection -> Scope WS e m
+defaultWSScope :: MonadIO m => Store e m -> Connection -> ApiContext SUB e m
 defaultWSScope Store {writeStore} connection =
-  ScopeWS
+  SubContext
     { listener = liftIO (receiveData connection),
       callback = liftIO . sendTextData connection,
-      update = writeStore
+      updateStore = writeStore
     }
 
 httpPubApp ::
@@ -81,11 +81,11 @@ httpPubApp ::
 httpPubApp [] app = runApp app
 httpPubApp callbacks app =
   mapAPI $
-    runStreamHTTP ScopeHTTP {httpCallback}
+    runStreamHTTP PubContext {eventPublisher}
       . streamApp app
       . Request
   where
-    httpCallback e = traverse_ (e &) callbacks
+    eventPublisher e = traverse_ (e &) callbacks
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp ::
@@ -108,7 +108,7 @@ webSocketsApp app =
 webSocketsWrapper ::
   (MonadUnliftIO m, MonadIO m) =>
   Store e m ->
-  (Scope WS e m -> m ()) ->
+  (ApiContext SUB e m -> m ()) ->
   m ServerApp
 webSocketsWrapper store handler =
   withRunInIO $

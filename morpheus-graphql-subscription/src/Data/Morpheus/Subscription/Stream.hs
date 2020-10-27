@@ -13,12 +13,12 @@ module Data.Morpheus.Subscription.Stream
   ( toOutStream,
     runStreamWS,
     runStreamHTTP,
-    Stream,
-    Scope (..),
+    ApiContext (..),
     Input (..),
+    Output,
     API (..),
-    HTTP,
-    WS,
+    PUB,
+    SUB,
   )
 where
 
@@ -63,48 +63,48 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.UUID (UUID)
 import Relude hiding (ByteString)
 
-data API = HTTP | WS
+data API = PUB | SUB
 
-type WS = 'WS
+type SUB = 'SUB
 
-type HTTP = 'HTTP
+type PUB = 'PUB
 
 data
   Input
     (api :: API)
   where
-  Init :: UUID -> Input WS
-  Request :: GQLRequest -> Input HTTP
+  InitConnection :: UUID -> Input SUB
+  Request :: GQLRequest -> Input PUB
 
-run :: Scope WS e m -> Updates e m -> m ()
-run ScopeWS {update} (Updates changes) = update changes
+run :: ApiContext SUB e m -> Updates e m -> m ()
+run SubContext {updateStore} (Updates changes) = updateStore changes
 
-data Scope (api :: API) event (m :: * -> *) where
-  ScopeHTTP ::
-    { httpCallback :: event -> m ()
+data ApiContext (api :: API) event (m :: * -> *) where
+  PubContext ::
+    { eventPublisher :: event -> m ()
     } ->
-    Scope HTTP event m
-  ScopeWS ::
+    ApiContext PUB event m
+  SubContext ::
     { listener :: m ByteString,
       callback :: ByteString -> m (),
-      update :: (ClientConnectionStore event m -> ClientConnectionStore event m) -> m ()
+      updateStore :: (ClientConnectionStore event m -> ClientConnectionStore event m) -> m ()
     } ->
-    Scope WS event m
+    ApiContext SUB event m
 
 data
-  Stream
+  Output
     (api :: API)
     e
     (m :: * -> *)
   where
-  StreamWS ::
-    { streamWS :: Scope WS e m -> m (Either ByteString [Updates e m])
+  SubOutput ::
+    { streamWS :: ApiContext SUB e m -> m (Either ByteString [Updates e m])
     } ->
-    Stream WS e m
-  StreamHTTP ::
-    { streamHTTP :: Scope HTTP e m -> m GQLResponse
+    Output SUB e m
+  PubOutput ::
+    { streamHTTP :: ApiContext PUB e m -> m GQLResponse
     } ->
-    Stream HTTP e m
+    Output PUB e m
 
 handleResponseStream ::
   ( Monad m,
@@ -113,9 +113,9 @@ handleResponseStream ::
   ) =>
   SessionID ->
   ResponseStream e m (Value VALID) ->
-  Stream WS e m
+  Output SUB e m
 handleResponseStream session (ResultT res) =
-  StreamWS $ const $ unfoldR <$> res
+  SubOutput $ const $ unfoldR <$> res
   where
     execute Publish {} = apolloError $ globalErrorMessage "websocket can only handle subscriptions, not mutations"
     execute (Subscribe ch subRes) = Right $ startSession ch subRes session
@@ -137,13 +137,13 @@ handleWSRequest ::
   ) ->
   UUID ->
   ByteString ->
-  Stream WS (Event ch con) m
+  Output SUB (Event ch con) m
 handleWSRequest gqlApp clientId = handle . apolloFormat
   where
-    --handle :: Applicative m => Validation ApolloAction -> Stream WS e m
+    --handle :: Applicative m => Validation ApolloAction -> Stream SUB e m
     handle = either (liftWS . Left) handleAction
     --------------------------------------------------
-    -- handleAction :: ApolloAction -> Stream WS e m
+    -- handleAction :: ApolloAction -> Stream SUB e m
     handleAction ConnectionInit = liftWS $ Right []
     handleAction (SessionStart sessionId request) =
       handleResponseStream (SessionID clientId sessionId) (gqlApp request)
@@ -154,24 +154,24 @@ handleWSRequest gqlApp clientId = handle . apolloFormat
 liftWS ::
   Applicative m =>
   Either ByteString [Updates e m] ->
-  Stream WS e m
-liftWS = StreamWS . const . pure
+  Output SUB e m
+liftWS = SubOutput . const . pure
 
 runStreamWS ::
   (Monad m) =>
-  Scope WS e m ->
-  Stream WS e m ->
+  ApiContext SUB e m ->
+  Output SUB e m ->
   m ()
-runStreamWS scope@ScopeWS {callback} StreamWS {streamWS} =
+runStreamWS scope@SubContext {callback} SubOutput {streamWS} =
   streamWS scope
     >>= either callback (traverse_ (run scope))
 
 runStreamHTTP ::
   (Monad m) =>
-  Scope HTTP e m ->
-  Stream HTTP e m ->
+  ApiContext PUB e m ->
+  Output PUB e m ->
   m GQLResponse
-runStreamHTTP scope StreamHTTP {streamHTTP} =
+runStreamHTTP scope PubOutput {streamHTTP} =
   streamHTTP scope
 
 toOutStream ::
@@ -183,29 +183,30 @@ toOutStream ::
     ResponseStream (Event ch con) m (Value VALID)
   ) ->
   Input api ->
-  Stream api (Event ch con) m
-toOutStream app (Init clientId) =
-  StreamWS handle
+  Output api (Event ch con) m
+toOutStream app (InitConnection clientId) =
+  SubOutput handle
   where
-    handle ws@ScopeWS {listener, callback} = do
-      let runS (StreamWS x) = x ws
+    handle ws@SubContext {listener, callback} = do
+      let runS (SubOutput x) = x ws
       bla <- listener >>= runS . handleWSRequest app clientId
       pure $ (Updates (insertConnection clientId callback) :) <$> bla
-toOutStream app (Request req) = StreamHTTP $ handleResponseHTTP (app req)
+toOutStream app (Request req) =
+  PubOutput $ handleResponseHTTP (app req)
 
 handleResponseHTTP ::
   ( Monad m
   ) =>
   ResponseStream e m (Value VALID) ->
-  Scope HTTP e m ->
+  ApiContext PUB e m ->
   m GQLResponse
 handleResponseHTTP
   res
-  ScopeHTTP {httpCallback} = do
+  PubContext {eventPublisher} = do
     x <- runResultT (handleRes res execute)
     case x of
       Success r _ events -> do
-        traverse_ httpCallback events
+        traverse_ eventPublisher events
         pure $ Data r
       Failure err -> pure (Errors err)
     where

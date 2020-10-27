@@ -14,10 +14,10 @@ module Data.Morpheus.Subscription.Internal
     connectionThread,
     runStreamWS,
     runStreamHTTP,
-    Scope (..),
+    ApiContext (..),
     Input (..),
-    WS,
-    HTTP,
+    PUB,
+    SUB,
     acceptApolloRequest,
     publish,
     Store (..),
@@ -69,11 +69,11 @@ import Data.Morpheus.Subscription.Event
   ( Event,
   )
 import Data.Morpheus.Subscription.Stream
-  ( HTTP,
+  ( ApiContext (..),
     Input (..),
-    Scope (..),
-    Stream,
-    WS,
+    Output,
+    PUB,
+    SUB,
     runStreamHTTP,
     runStreamWS,
     toOutStream,
@@ -81,11 +81,12 @@ import Data.Morpheus.Subscription.Stream
 import Data.UUID.V4 (nextRandom)
 import Relude hiding (empty, toList)
 
-connect :: MonadIO m => m (Input WS)
-connect = Init <$> liftIO nextRandom
+connect :: MonadIO m => m (Input SUB)
+connect = InitConnection <$> liftIO nextRandom
 
-disconnect :: Scope WS e m -> Input WS -> m ()
-disconnect ScopeWS {update} (Init clientID) = update (delete clientID)
+disconnect :: ApiContext SUB e m -> Input SUB -> m ()
+disconnect SubContext {updateStore} (InitConnection clientID) =
+  updateStore (delete clientID)
 
 -- | PubSubStore interface
 -- shared GraphQL state between __websocket__ and __http__ server,
@@ -132,7 +133,7 @@ connectionThread ::
     Hashable ch
   ) =>
   App (Event ch con) m ->
-  Scope WS (Event ch con) m ->
+  ApiContext SUB (Event ch con) m ->
   m ()
 connectionThread api scope = do
   input <- connect
@@ -143,8 +144,8 @@ connectionThread api scope = do
 connectionLoop ::
   (Monad m, Eq ch, Hashable ch) =>
   App (Event ch con) m ->
-  Scope WS (Event ch con) m ->
-  Input WS ->
+  ApiContext SUB (Event ch con) m ->
+  Input SUB ->
   m ()
 connectionLoop app scope input =
   forever
@@ -155,7 +156,7 @@ connectionLoop app scope input =
 -- streamApp app = toOutStream (runAppStream app)
 
 class SubscriptionApp (e :: *) where
-  streamApp :: Monad m => App e m -> Input api -> Stream api e m
+  streamApp :: Monad m => App e m -> Input api -> Output api e m
 
 instance (Eq ch, Hashable ch) => SubscriptionApp (Event ch con) where
   streamApp app = toOutStream (runAppStream app)
