@@ -121,13 +121,13 @@ instance Decode a => Decode (NonEmpty.NonEmpty a) where
 
 -- | Should this instance dedupe silently or fail on dupes ?
 instance (Ord a, Decode a) => Decode (Set a) where
-  decode = (fmap Set.fromList) . (withList decode)
+  decode = fmap Set.fromList . withList decode
 
 instance (Decode a) => Decode (Seq a) where
-  decode = (fmap Seq.fromList) . (withList decode)
+  decode = fmap Seq.fromList . withList decode
 
 instance (Decode a) => Decode (Vector a) where
-  decode = (fmap Vector.fromList) . (withList decode)
+  decode = fmap Vector.fromList . withList decode
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
