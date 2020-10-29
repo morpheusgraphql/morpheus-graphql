@@ -12,7 +12,7 @@
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Subscription
   ( webSocketsApp,
-    httpPubApp,
+    runPubApp,
     SubscriptionApp (..),
     Event (..),
   )
@@ -69,7 +69,7 @@ defaultWSScope Store {writeStore} connection =
       updateStore = writeStore
     }
 
-httpPubApp ::
+runPubApp ::
   SubscriptionApp e =>
   ( MonadIO m,
     MapAPI a b
@@ -78,8 +78,8 @@ httpPubApp ::
   App e m ->
   a ->
   m b
-httpPubApp [] app = runApp app
-httpPubApp callbacks app =
+runPubApp [] app = runApp app
+runPubApp callbacks app =
   mapAPI $
     runStreamHTTP PubContext {eventPublisher}
       . streamApp app
