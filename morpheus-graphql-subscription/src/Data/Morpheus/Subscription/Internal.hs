@@ -30,6 +30,7 @@ module Data.Morpheus.Subscription.Internal
     connectionSessionIds,
     storedSessions,
     storedChannels,
+    streamApp,
   )
 where
 

@@ -12,8 +12,9 @@
 -- |  GraphQL Wai Server Applications
 module Data.Morpheus.Subscription
   ( webSocketsApp,
-    runPubApp,
-    SubscriptionApp (..),
+    httpPubApp,
+    PubApp (..),
+    SubApp (..),
     Event (..),
   )
 where
@@ -34,7 +35,6 @@ import Data.Morpheus.Subscription.Internal
     Input (..),
     SUB,
     Store (..),
-    SubscriptionApp (..),
     acceptApolloRequest,
     connectionThread,
     initDefaultStore,
@@ -70,22 +70,15 @@ defaultWSScope Store {writeStore} connection =
     }
 
 httpPubApp ::
-  SubscriptionApp e =>
-  ( MonadIO m,
-    MapAPI a b
+  ( PubApp e,
+    MapAPI a b,
+    MonadIO m
   ) =>
   [e -> m ()] ->
   App e m ->
   a ->
   m b
-httpPubApp [] app = runApp app
-httpPubApp callbacks app =
-  mapAPI $
-    runStreamHTTP PubContext {eventPublisher}
-      . streamApp app
-      . Request
-  where
-    eventPublisher e = traverse_ (e &) callbacks
+httpPubApp = runPubApp
 
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp ::
@@ -96,14 +89,7 @@ webSocketsApp ::
   ) =>
   App (Event channel cont) m ->
   m (ServerApp, Event channel cont -> m ())
-webSocketsApp app =
-  do
-    store <- initDefaultStore
-    wsApp <- webSocketsWrapper store (connectionThread app)
-    pure
-      ( wsApp,
-        publishEventWith store
-      )
+webSocketsApp = runSubApp
 
 webSocketsWrapper ::
   (MonadUnliftIO m, MonadIO m) =>
@@ -127,10 +113,28 @@ class PubApp e where
   runPubApp :: (MonadIO m, MapAPI a b) => [e -> m ()] -> App e m -> a -> m b
 
 instance (Show ch, Eq ch, Hashable ch) => SubApp (Event ch con) ServerApp where
-  runSubApp = webSocketsApp
+  runSubApp app = do
+    store <- initDefaultStore
+    wsApp <- webSocketsWrapper store (connectionThread app)
+    pure
+      ( wsApp,
+        publishEventWith store
+      )
 
 instance (Show ch, Eq ch, Hashable ch) => PubApp (Event ch con) where
-  runPubApp = httpPubApp
+  runPubApp [] app = runApp app
+  runPubApp callbacks app =
+    mapAPI $
+      runStreamHTTP PubContext {eventPublisher = runEvents callbacks}
+        . streamApp app
+        . Request
+
+runEvents ::
+  (Foldable t, Applicative f) =>
+  t (event -> f b) ->
+  event ->
+  f ()
+runEvents fs e = traverse_ (e &) fs
 
 --
 --
