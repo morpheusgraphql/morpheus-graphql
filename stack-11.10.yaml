@@ -20,3 +20,8 @@ extra-deps:
   - modern-uri-0.3.0.0
   - retry-0.8.1.0
   - relude-0.3.0
+  - fraxl-0.3.0.0
+  - dependent-map-0.2.4.0
+  - dependent-sum-0.4
+  - fastsum-0.1.0.0
+  - type-aligned-0.9.6

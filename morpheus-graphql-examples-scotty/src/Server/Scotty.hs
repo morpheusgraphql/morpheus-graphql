@@ -19,6 +19,7 @@ import Data.Morpheus.Server
   ( compileTimeSchemaValidation,
     webSocketsApp,
   )
+import qualified Server.Fraxl.API as Fraxl
 import qualified Server.Mythology.API as Mythology
 import Server.Sophisticated.API
   ( EVENT,
@@ -47,4 +48,5 @@ scottyServer = do
     httpApp publish = do
       httpEndpoint "/" [publish] app
       httpEndpoint "/mythology" [] Mythology.app
+      Fraxl.httpEndpoint "/fraxl"
       httpEndpoint "/th" [] TH.app
