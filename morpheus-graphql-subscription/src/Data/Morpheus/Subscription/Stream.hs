@@ -225,12 +225,11 @@ unfoldRes ::
   (e -> ResultT e' m e') ->
   Result e a ->
   ResultT e' m a
-unfoldRes execute Success {events, result, warnings} = do
-  events' <- traverse execute events
-  ResultT $ pure $
-    Success
-      { result,
-        warnings,
-        events = events'
-      }
+unfoldRes execute Success {events, result, warnings} =
+  traverse execute events
+    >>= ( ResultT . pure
+            . Success
+              result
+              warnings
+        )
 unfoldRes _ Failure {errors} = ResultT $ pure $ Failure {errors}
