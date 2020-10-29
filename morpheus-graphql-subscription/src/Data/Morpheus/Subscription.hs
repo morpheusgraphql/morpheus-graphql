@@ -69,7 +69,7 @@ defaultWSScope Store {writeStore} connection =
       updateStore = writeStore
     }
 
-runPubApp ::
+httpPubApp ::
   SubscriptionApp e =>
   ( MonadIO m,
     MapAPI a b
@@ -78,8 +78,8 @@ runPubApp ::
   App e m ->
   a ->
   m b
-runPubApp [] app = runApp app
-runPubApp callbacks app =
+httpPubApp [] app = runApp app
+httpPubApp callbacks app =
   mapAPI $
     runStreamHTTP PubContext {eventPublisher}
       . streamApp app
@@ -119,3 +119,24 @@ webSocketsWrapper store handler =
           pingThread
             conn
             $ runIO (handler (defaultWSScope store conn))
+
+class SubApp e app where
+  runSubApp :: (MonadIO m, MonadUnliftIO m) => App e m -> m (app, e -> m ())
+
+class PubApp e where
+  runPubApp :: (MonadIO m, MapAPI a b) => [e -> m ()] -> App e m -> a -> m b
+
+instance (Show ch, Eq ch, Hashable ch) => SubApp (Event ch con) ServerApp where
+  runSubApp = webSocketsApp
+
+instance (Show ch, Eq ch, Hashable ch) => PubApp (Event ch con) where
+  runPubApp = httpPubApp
+
+--
+--
+--
+instance SubApp () () where
+  runSubApp _ = pure ((), const $ pure ())
+
+instance PubApp () where
+  runPubApp _ = runApp

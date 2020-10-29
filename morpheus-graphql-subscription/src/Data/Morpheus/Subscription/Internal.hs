@@ -20,9 +20,8 @@ module Data.Morpheus.Subscription.Internal
     SUB,
     Store (..),
     ClientConnectionStore,
-    SubscriptionApp (..),
-    SessionID,
     acceptApolloRequest,
+    SessionID,
     publish,
     initDefaultStore,
     publishEventWith,
@@ -151,11 +150,9 @@ connectionLoop app scope =
     . runStreamWS scope
     . streamApp app
 
-class SubscriptionApp (e :: *) where
-  streamApp :: Monad m => App e m -> Input api -> Output api e m
-
-instance (Eq ch, Hashable ch) => SubscriptionApp (Event ch con) where
-  streamApp app = toOutStream (runAppStream app)
-
-instance SubscriptionApp () where
-  streamApp _ = undefined
+streamApp ::
+  (Eq ch, Monad m, Hashable ch) =>
+  App (Event ch con) m ->
+  Input api ->
+  Output api (Event ch con) m
+streamApp app = toOutStream (runAppStream app)
