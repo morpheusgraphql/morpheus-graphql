@@ -83,12 +83,11 @@ httpPubApp = runPubApp
 -- | Wai WebSocket Server App for GraphQL subscriptions
 webSocketsApp ::
   ( MonadUnliftIO m,
-    Eq channel,
-    Hashable channel,
-    Show channel
+    MonadIO m,
+    SubApp e ServerApp
   ) =>
-  App (Event channel cont) m ->
-  m (ServerApp, Event channel cont -> m ())
+  App e m ->
+  m (ServerApp, e -> m ())
 webSocketsApp = runSubApp
 
 webSocketsWrapper ::
