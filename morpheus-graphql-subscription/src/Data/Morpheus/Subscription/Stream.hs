@@ -202,14 +202,10 @@ handleResponseHTTP ::
   m GQLResponse
 handleResponseHTTP
   res
-  PubContext {eventPublisher} = do
-    x <- runResultT (handleRes res execute)
-    case x of
-      Success r _ events -> do
-        traverse_ eventPublisher events
-        pure $ Data r
-      Failure err -> pure (Errors err)
+  PubContext {eventPublisher} = runResultT (handleRes res execute) >>= runResult
     where
+      runResult Success {result, events} = traverse_ eventPublisher events $> Data result
+      runResult Failure {errors} = pure $ Errors errors
       execute (Publish event) = pure event
       execute Subscribe {} = failure (globalErrorMessage "http server can't handle subscription")
 
