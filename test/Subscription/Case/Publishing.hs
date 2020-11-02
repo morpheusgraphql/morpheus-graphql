@@ -10,12 +10,12 @@ where
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Subscriptions
   ( Event (..),
-    Input,
   )
-import Data.Morpheus.Types.Internal.Subscription
-  ( WS,
+import Data.Morpheus.Subscriptions.Internal
+  ( Input,
+    SUB,
     connect,
     empty,
   )
@@ -41,6 +41,7 @@ import Test.Tasty
   ( TestTree,
     testGroup,
   )
+import Prelude
 
 startNewDeity :: ByteString -> ByteString
 startNewDeity = apolloStart "subscription MySubscription { newDeity { name , age }}"
@@ -48,7 +49,7 @@ startNewDeity = apolloStart "subscription MySubscription { newDeity { name , age
 startNewHuman :: ByteString -> ByteString
 startNewHuman = apolloStart "subscription MySubscription { newHuman { name , age }}"
 
-simulateSubscriptions :: IO (Input WS, SimulationState EVENT)
+simulateSubscriptions :: IO (Input SUB, SimulationState EVENT)
 simulateSubscriptions = do
   input <- connect
   state <-

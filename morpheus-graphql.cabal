@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5ddd838022cbad8d2916bd481dda961537851981070c4556c00e3b9e61d2307c
+-- hash: 89f57fdc50bcf0883d6aa9067aa644eac118a4b8be54c68c6ea12f24ce7db8ed
 
 name:           morpheus-graphql
 version:        0.15.1
@@ -397,7 +397,6 @@ library
       Data.Morpheus.Types
       Data.Morpheus.Server
       Data.Morpheus.Document
-      Data.Morpheus.Types.Internal.Subscription
   other-modules:
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Channels
@@ -418,30 +417,23 @@ library
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.Types
-      Data.Morpheus.Types.Internal.Subscription.Apollo
-      Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
-      Data.Morpheus.Types.Internal.Subscription.Stream
       Paths_morpheus_graphql
   hs-source-dirs:
       src
-  ghc-options: -Wall
+  ghc-options: -Wall -XNoImplicitPrelude
   build-depends:
       aeson >=1.4.4.0 && <=1.6
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
-    , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql-core >=0.15.0 && <0.16.0
     , mtl >=2.0 && <=3.0
-    , scientific >=0.3.6.2 && <0.4
+    , relude >=0.3.0
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , transformers >=0.3.0.0 && <0.6
-    , unliftio-core >=0.0.1 && <=0.4
     , unordered-containers >=0.2.8.0 && <0.3
-    , uuid >=1.0 && <=1.4
     , vector >=0.12.0.1 && <0.13
-    , websockets >=0.11.0 && <=1.0
   default-language: Haskell2010
 
 test-suite morpheus-test
@@ -478,19 +470,16 @@ test-suite morpheus-test
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
-    , megaparsec >=7.0.0 && <9.0.0
     , morpheus-graphql
     , morpheus-graphql-core >=0.15.0 && <0.16.0
+    , morpheus-graphql-subscriptions >=0.15.0 && <0.16.0
     , mtl >=2.0 && <=3.0
-    , scientific >=0.3.6.2 && <0.4
+    , relude >=0.3.0
     , tasty
     , tasty-hunit
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , transformers >=0.3.0.0 && <0.6
-    , unliftio-core >=0.0.1 && <=0.4
     , unordered-containers >=0.2.8.0 && <0.3
-    , uuid >=1.0 && <=1.4
     , vector >=0.12.0.1 && <0.13
-    , websockets >=0.11.0 && <=1.0
   default-language: Haskell2010

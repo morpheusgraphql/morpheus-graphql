@@ -1,28 +1,24 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Event
-  ( Event (..),
-    Channel (..),
-    eventChannels,
+  ( EventHandler (..),
+    ResponseEvent (..),
   )
 where
 
-import Relude
+import Data.Morpheus.Types.IO
+  ( GQLResponse,
+  )
 
--- Channel
-data Channel (event :: *) where
-  Channel :: a -> Channel (Event a c)
+class EventHandler e where
+  type Channel e
+  getChannels :: e -> [Channel e]
 
-data Event e c = Event
-  { channels :: [e],
-    content :: c
-  }
-
-eventChannels :: Event e c -> [Channel (Event e c)]
-eventChannels Event {channels} = fmap Channel channels
-
-instance (Eq ch) => Eq (Channel (Event ch con)) where
-  Channel x == Channel y = x == y
+data ResponseEvent event (m :: * -> *)
+  = Publish event
+  | Subscribe
+      { subChannel :: Channel event,
+        subRes :: event -> m GQLResponse
+      }

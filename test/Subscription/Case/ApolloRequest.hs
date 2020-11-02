@@ -9,11 +9,11 @@ module Subscription.Case.ApolloRequest
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Function ((&))
 import Data.Morpheus (App)
-import Data.Morpheus.Types
+import Data.Morpheus.Subscriptions
   ( Event,
   )
+import Relude hiding (ByteString)
 import Subscription.Utils
   ( SimulationState (..),
     SubM,
@@ -36,7 +36,7 @@ import Test.Tasty
 type WSApp ch a = App (Event ch a) (SubM (Event ch a))
 
 testUnknownType ::
-  (Eq ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
 testUnknownType =
@@ -55,7 +55,7 @@ testUnknownType =
         ]
 
 testConnectionInit ::
-  (Eq ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
 testConnectionInit = testSimulation test [apolloInit]
@@ -74,7 +74,10 @@ testConnectionInit = testSimulation test [apolloInit]
 startSub :: ByteString -> ByteString
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
-testSubscriptionStart :: (Eq ch) => WSApp ch a -> IO TestTree
+testSubscriptionStart ::
+  (Eq ch, Show ch, Hashable ch) =>
+  WSApp ch a ->
+  IO TestTree
 testSubscriptionStart =
   testSimulation
     test
@@ -96,7 +99,10 @@ testSubscriptionStart =
             store
         ]
 
-testSubscriptionStop :: (Eq ch) => WSApp ch a -> IO TestTree
+testSubscriptionStop ::
+  (Eq ch, Show ch, Hashable ch) =>
+  WSApp ch a ->
+  IO TestTree
 testSubscriptionStop =
   testSimulation
     test
@@ -120,7 +126,7 @@ testSubscriptionStop =
         ]
 
 testApolloRequest ::
-  (Eq ch) =>
+  (Eq ch, Show ch, Hashable ch) =>
   App (Event ch a) (SubM (Event ch a)) ->
   IO TestTree
 testApolloRequest app =

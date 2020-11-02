@@ -19,6 +19,8 @@ module Data.Morpheus.Kind
   )
 where
 
+import Relude
+
 data GQL_KIND
   = SCALAR
   | ENUM

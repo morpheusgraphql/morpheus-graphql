@@ -16,12 +16,10 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Types.Internal.Resolving.Resolver
-  ( Event (..),
-    Resolver,
+  ( Resolver,
     LiftOperation,
     lift,
     subscribe,
-    SubEvent,
     ResponseEvent (..),
     ResponseStream,
     ObjectResModel (..),
@@ -89,8 +87,8 @@ import Data.Morpheus.Types.Internal.Resolving.Core
     mapEvent,
   )
 import Data.Morpheus.Types.Internal.Resolving.Event
-  ( Channel (..),
-    Event (..),
+  ( EventHandler (..),
+    ResponseEvent (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
   ( ResolverContext (..),
@@ -113,12 +111,6 @@ import Prelude (Show (..))
 type WithOperation (o :: OperationType) = LiftOperation o
 
 type ResponseStream event (m :: * -> *) = ResultT (ResponseEvent event m) m
-
-data ResponseEvent event (m :: * -> *)
-  = Publish event
-  | Subscribe (SubEvent event m)
-
-type SubEvent event m = Event (Channel event) (event -> m GQLResponse)
 
 data SubscriptionField (a :: *) where
   SubscriptionField ::
@@ -220,17 +212,16 @@ instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
 
 subscribe ::
-  forall e channel cont m a.
-  (Monad m, Event channel cont ~ e) =>
-  channel ->
+  (Monad m) =>
+  Channel e ->
   Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
 subscribe ch res =
-  SubscriptionField (Channel ch)
+  SubscriptionField ch
     $ ResolverS
     $ fromSub <$> runResolverQ res
   where
-    fromSub :: (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
+    fromSub :: Monad m => (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
     fromSub f = join (ReaderT (runResolverS . f))
 
 withArguments ::
@@ -356,7 +347,7 @@ subscriptionEvents ctx@ResolverContext {currentSelection} (Just channelGenerator
   where
     handle = do
       channel <- channelGenerator currentSelection
-      pure $ Subscribe (Event [channel] res)
+      pure $ Subscribe channel res
 subscriptionEvents ctx Nothing _ = failure [resolverFailureMessage ctx "channel Resolver is not defined"]
 
 -- Resolver Models -------------------------------------------------------------------

@@ -16,6 +16,10 @@ import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Morpheus.Server
   ( httpPlayground,
+  )
+import Data.Morpheus.Subscriptions
+  ( PubApp,
+    SubApp,
     httpPubApp,
   )
 import Data.Morpheus.Types
@@ -45,11 +49,15 @@ import Web.Scotty
     raw,
     scottyApp,
   )
+import Prelude
 
 isSchema :: ActionM String
 isSchema = param "schema"
 
 httpEndpoint ::
+  ( SubApp ServerApp e,
+    PubApp e
+  ) =>
   RoutePattern ->
   [e -> IO ()] ->
   App e IO ->

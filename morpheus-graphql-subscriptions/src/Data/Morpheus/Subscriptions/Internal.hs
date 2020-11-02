@@ -8,38 +8,36 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Morpheus.Types.Internal.Subscription
+module Data.Morpheus.Subscriptions.Internal
   ( connect,
     disconnect,
     connectionThread,
     runStreamWS,
     runStreamHTTP,
-    Scope (..),
+    ApiContext (..),
     Input (..),
-    WS,
-    HTTP,
-    acceptApolloRequest,
-    publish,
+    PUB,
+    SUB,
     Store (..),
+    ClientConnectionStore,
+    acceptApolloRequest,
+    SessionID,
+    publish,
     initDefaultStore,
     publishEventWith,
-    ClientConnectionStore,
     empty,
     toList,
     connectionSessionIds,
-    SessionID,
+    storedSessions,
+    storedChannels,
     streamApp,
   )
 where
 
 import Control.Concurrent
   ( modifyMVar_,
-    newMVar,
-    readMVar,
   )
 import Control.Exception (finally)
-import Control.Monad (forever)
-import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.IO.Unlift
   ( MonadUnliftIO,
     withRunInIO,
@@ -53,40 +51,41 @@ import Data.Morpheus.Core
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Event,
-  )
-import Data.Morpheus.Types.Internal.Subscription.Apollo
+import Data.Morpheus.Subscriptions.Apollo
   ( acceptApolloRequest,
   )
-import Data.Morpheus.Types.Internal.Subscription.ClientConnectionStore
+import Data.Morpheus.Subscriptions.ClientConnectionStore
   ( ClientConnectionStore,
     SessionID,
     connectionSessionIds,
     delete,
     publish,
+    storedChannels,
+    storedSessions,
     toList,
   )
-import Data.Morpheus.Types.Internal.Subscription.Stream
-  ( HTTP,
+import Data.Morpheus.Subscriptions.Event
+  ( Event,
+  )
+import Data.Morpheus.Subscriptions.Stream
+  ( ApiContext (..),
     Input (..),
-    Scope (..),
-    Stream,
-    WS,
+    Output,
+    PUB,
+    SUB,
     runStreamHTTP,
     runStreamWS,
     toOutStream,
   )
 import Data.UUID.V4 (nextRandom)
+import Relude hiding (empty, toList)
 
-streamApp :: Monad m => App e m -> Input api -> Stream api e m
-streamApp app = toOutStream (runAppStream app)
+connect :: MonadIO m => m (Input SUB)
+connect = InitConnection <$> liftIO nextRandom
 
-connect :: MonadIO m => m (Input WS)
-connect = Init <$> liftIO nextRandom
-
-disconnect :: Scope WS e m -> Input WS -> m ()
-disconnect ScopeWS {update} (Init clientID) = update (delete clientID)
+disconnect :: ApiContext SUB e m -> Input SUB -> m ()
+disconnect SubContext {updateStore} (InitConnection clientID) =
+  updateStore (delete clientID)
 
 -- | PubSubStore interface
 -- shared GraphQL state between __websocket__ and __http__ server,
@@ -100,7 +99,11 @@ data Store e m = Store
   }
 
 publishEventWith ::
-  (MonadIO m, Eq channel) =>
+  ( MonadIO m,
+    Eq channel,
+    Hashable channel,
+    Show channel
+  ) =>
   Store (Event channel cont) m ->
   Event channel cont ->
   m ()
@@ -111,7 +114,7 @@ initDefaultStore ::
   ( MonadIO m,
     MonadIO m2
   ) =>
-  m2 (Store event m)
+  m2 (Store (Event ch con) m)
 initDefaultStore = do
   store <- liftIO $ newMVar empty
   pure
@@ -124,10 +127,12 @@ finallyM :: MonadUnliftIO m => m () -> m () -> m ()
 finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
 
 connectionThread ::
-  ( MonadUnliftIO m
+  ( MonadUnliftIO m,
+    Eq ch,
+    Hashable ch
   ) =>
-  App e m ->
-  Scope WS e m ->
+  App (Event ch con) m ->
+  ApiContext SUB (Event ch con) m ->
   m ()
 connectionThread api scope = do
   input <- connect
@@ -136,12 +141,19 @@ connectionThread api scope = do
     (disconnect scope input)
 
 connectionLoop ::
-  Monad m =>
-  App e m ->
-  Scope WS e m ->
-  Input WS ->
+  (Monad m, Eq ch, Hashable ch) =>
+  App (Event ch con) m ->
+  ApiContext SUB (Event ch con) m ->
+  Input SUB ->
   m ()
-connectionLoop app scope input =
+connectionLoop app scope =
   forever
-    $ runStreamWS scope
-    $ streamApp app input
+    . runStreamWS scope
+    . streamApp app
+
+streamApp ::
+  (Eq ch, Monad m, Hashable ch) =>
+  App (Event ch con) m ->
+  Input api ->
+  Output api (Event ch con) m
+streamApp app = toOutStream (runAppStream app)

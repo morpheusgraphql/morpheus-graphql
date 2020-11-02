@@ -23,33 +23,21 @@ module Subscription.Utils
   )
 where
 
-import Control.Monad ((>>=))
-import Control.Monad.State.Lazy
-  ( StateT,
-    runStateT,
-    state,
-  )
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
-import Data.List
-  ( sort,
-  )
-import Data.Maybe
-  ( isJust,
-  )
+import Data.List (lookup)
 import Data.Morpheus
   ( App,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Subscriptions
   ( Event,
   )
-import Data.Morpheus.Types.Internal.Subscription
-  ( ClientConnectionStore,
+import Data.Morpheus.Subscriptions.Internal
+  ( ApiContext (..),
+    ClientConnectionStore,
     Input (..),
-    Scope (..),
-    SessionID,
-    WS,
+    SUB,
     connect,
     connectionSessionIds,
     empty,
@@ -58,8 +46,10 @@ import Data.Morpheus.Types.Internal.Subscription
     streamApp,
     toList,
   )
-import Data.Semigroup
-  ( (<>),
+import Relude hiding
+  ( ByteString,
+    empty,
+    toList,
   )
 import Test.Tasty
   ( TestTree,
@@ -68,21 +58,6 @@ import Test.Tasty.HUnit
   ( assertEqual,
     assertFailure,
     testCase,
-  )
-import Prelude
-  ( ($),
-    (.),
-    (<$>),
-    Eq (..),
-    IO,
-    Maybe (..),
-    Show (..),
-    length,
-    lookup,
-    null,
-    otherwise,
-    pure,
-    snd,
   )
 
 data SimulationState e = SimulationState
@@ -98,45 +73,48 @@ type SubM e = StateT (SimulationState e) IO
 addOutput :: ByteString -> SimulationState e -> ((), SimulationState e)
 addOutput x (SimulationState i xs st) = ((), SimulationState i (xs <> [x]) st)
 
-updateStore :: (Store e -> Store e) -> SimulationState e -> ((), SimulationState e)
-updateStore up (SimulationState i o st) = ((), SimulationState i o (up st))
+mockUpdateStore :: (Store e -> Store e) -> SimulationState e -> ((), SimulationState e)
+mockUpdateStore up (SimulationState i o st) = ((), SimulationState i o (up st))
 
 readInput :: SimulationState e -> (ByteString, SimulationState e)
 readInput (SimulationState (i : ins) o s) = (i, SimulationState ins o s)
 readInput (SimulationState [] o s) = ("<Error>", SimulationState [] o s)
 
 wsApp ::
-  App e (SubM e) ->
-  Input WS ->
-  SubM e ()
+  (Eq ch, Hashable ch) =>
+  App (Event ch e) (SubM (Event ch e)) ->
+  Input SUB ->
+  SubM (Event ch e) ()
 wsApp app =
   runStreamWS
-    ScopeWS
-      { update = state . updateStore,
+    SubContext
+      { updateStore = state . mockUpdateStore,
         listener = state readInput,
         callback = state . addOutput
       }
     . streamApp app
 
 simulatePublish ::
-  Eq ch =>
+  (Eq ch, Show ch, Hashable ch) =>
   Event ch con ->
   SimulationState (Event ch con) ->
   IO (SimulationState (Event ch con))
 simulatePublish event s = snd <$> runStateT (publish event (store s)) s
 
 simulate ::
-  App e (SubM e) ->
-  Input WS ->
-  SimulationState e ->
-  IO (SimulationState e)
+  (Eq ch, Hashable ch) =>
+  App (Event ch con) (SubM (Event ch con)) ->
+  Input SUB ->
+  SimulationState (Event ch con) ->
+  IO (SimulationState (Event ch con))
 simulate _ _ s@SimulationState {inputs = []} = pure s
 simulate api input s = runStateT (wsApp api input) s >>= simulate api input . snd
 
 testSimulation ::
-  (Input WS -> SimulationState e -> TestTree) ->
+  (Eq ch, Hashable ch) =>
+  (Input SUB -> SimulationState (Event ch con) -> TestTree) ->
   [ByteString] ->
-  App e (SubM e) ->
+  App (Event ch con) (SubM (Event ch con)) ->
   IO TestTree
 testSimulation test simInputs api = do
   input <- connect
@@ -163,7 +141,7 @@ inputsAreConsumed =
       "input stream should be consumed"
       []
 
-storeIsEmpty :: Store e -> TestTree
+storeIsEmpty :: (Show ch) => Store (Event ch con) -> TestTree
 storeIsEmpty cStore
   | null (toList cStore) =
     testCase "connectionStore: is empty" $ pure ()
@@ -174,7 +152,7 @@ storeIsEmpty cStore
         <> show
           cStore
 
-storedSingle :: Store e -> TestTree
+storedSingle :: (Show ch) => Store (Event ch con) -> TestTree
 storedSingle cStore
   | length (toList cStore) == 1 =
     testCase "stored single connection" $ pure ()
@@ -185,8 +163,8 @@ storedSingle cStore
         <> show
           cStore
 
-stored :: Input WS -> Store e -> TestTree
-stored (Init uuid) cStore
+stored :: (Show ch) => Input SUB -> Store (Event ch con) -> TestTree
+stored (InitConnection uuid) cStore
   | isJust (lookup uuid (toList cStore)) =
     testCase "stored connection" $ pure ()
   | otherwise =
@@ -197,12 +175,13 @@ stored (Init uuid) cStore
           cStore
 
 storeSubscriptions ::
-  Input WS ->
-  [SessionID] ->
-  Store e ->
+  (Show ch) =>
+  Input SUB ->
+  [Text] ->
+  Store (Event ch con) ->
   TestTree
 storeSubscriptions
-  (Init uuid)
+  (InitConnection uuid)
   sids
   cStore =
     checkSession (lookup uuid (toList cStore))

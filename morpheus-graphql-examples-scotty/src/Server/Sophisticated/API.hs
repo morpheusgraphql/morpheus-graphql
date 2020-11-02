@@ -19,11 +19,12 @@ module Server.Sophisticated.API
 where
 
 import Control.Monad.Trans (lift)
+-- MORPHEUS
+
 import Data.Map (Map)
 import qualified Data.Map as M
   ( fromList,
   )
--- MORPHEUS
 import Data.Morpheus
   ( App,
     deriveApp,
@@ -34,9 +35,12 @@ import Data.Morpheus.Document
 import Data.Morpheus.Kind
   ( INPUT,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Subscriptions
   ( Event (..),
-    GQLScalar (..),
+    Hashable,
+  )
+import Data.Morpheus.Types
+  ( GQLScalar (..),
     GQLType (..),
     ID,
     MUTATION,
@@ -106,7 +110,13 @@ instance GQLScalar Euro where
   serialize (Euro x y) = Int (x * 100 + y)
 
 data Channel = USER | ADDRESS
-  deriving (Show, Eq, Ord)
+  deriving
+    ( Show,
+      Eq,
+      Ord,
+      Generic,
+      Hashable
+    )
 
 newtype Content = Content {contentID :: Int}
 

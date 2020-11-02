@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -22,23 +23,32 @@ import Data.Morpheus
 import Data.Morpheus.Document
   ( importGQLDocument,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Subscriptions
   ( Event (..),
-    ResolverM,
+    Hashable,
+  )
+import Data.Morpheus.Types
+  ( ResolverM,
     RootResolver (..),
     publish,
     subscribe,
   )
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 importGQLDocument "src/Server/API/simple.gql"
 
-type EVENT = Event Label Contet
+type EVENT = Event Channel Contet
 
-data Label
+data Channel
   = Update
   | New
-  deriving (Eq, Show)
+  deriving
+    ( Eq,
+      Show,
+      Generic,
+      Hashable
+    )
 
 data Contet = Contet
   { deityName :: Text,

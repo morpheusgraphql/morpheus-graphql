@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Server.TH.Compile
   ( compileDocument,
@@ -34,6 +35,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Language.Haskell.TH (Dec, Q)
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
+import Relude
 
 gqlDocumentNamespace :: QuasiQuoter
 gqlDocumentNamespace =
@@ -45,7 +47,7 @@ gqlDocumentNamespace =
     }
   where
     notHandled things =
-      error $ things ++ " are not supported by the GraphQL QuasiQuoter"
+      error $ things <> " are not supported by the GraphQL QuasiQuoter"
 
 gqlDocument :: QuasiQuoter
 gqlDocument =
@@ -57,7 +59,7 @@ gqlDocument =
     }
   where
     notHandled things =
-      error $ things ++ " are not supported by the GraphQL QuasiQuoter"
+      error $ things <> " are not supported by the GraphQL QuasiQuoter"
 
 compileDocument :: ServerDecContext -> String -> Q [Dec]
 compileDocument ctx documentTXT =

@@ -3,7 +3,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Fraxl.API
   ( httpEndpoint,
@@ -55,31 +54,27 @@ import Web.Scotty
 -- plays a single instrument.  The user can query for a list of all instruments
 -- in the database.
 
-newtype Query m
-  = Query
-      { instruments :: m [Instrument m]
-      }
+newtype Query m = Query
+  { instruments :: m [Instrument m]
+  }
   deriving (Generic, GQLType)
 
-data Instrument m
-  = Instrument
-      { name :: Text,
-        players :: m [BandMember m]
-      }
+data Instrument m = Instrument
+  { name :: Text,
+    players :: m [BandMember m]
+  }
   deriving (Generic, GQLType)
 
-data BandMember m
-  = BandMember
-      { name :: Text,
-        band :: m (Band m)
-      }
+data BandMember m = BandMember
+  { name :: Text,
+    band :: m (Band m)
+  }
   deriving (Generic, GQLType)
 
-data Band m
-  = Band
-      { name :: Text,
-        members :: m [BandMember m]
-      }
+data Band m = Band
+  { name :: Text,
+    members :: m [BandMember m]
+  }
   deriving (Generic, GQLType)
 
 -- Now, imagine we have a database structure with an `instrument` table, a
@@ -110,12 +105,11 @@ data Source a where
 -- Now, we define a type that represents a "batched" request, containing
 -- potentially multiple different queries.
 
-data BatchedReq
-  = BatchedReq
-      { memberInstrumentIDs :: Set Int,
-        memberBandIDs :: Set Int,
-        bandIDs :: Set Int
-      }
+data BatchedReq = BatchedReq
+  { memberInstrumentIDs :: Set Int,
+    memberBandIDs :: Set Int,
+    bandIDs :: Set Int
+  }
 
 -- Then, we define how to combine many `Source a` into a single `BatchedReq`.
 -- Here `ASeq` is a heterogenous list type over `Source`.
@@ -131,12 +125,11 @@ batchSource = flip execState (BatchedReq mempty mempty mempty) . traverseASeq ba
 
 -- Next, we define a result of the batched request.
 
-data BatchedRes
-  = BatchedRes
-      { memberByInstrumentIDs :: Map Int [DB.Member],
-        memberByBandIDs :: Map Int [DB.Member],
-        bands :: Map Int DB.Band
-      }
+data BatchedRes = BatchedRes
+  { memberByInstrumentIDs :: Map Int [DB.Member],
+    memberByBandIDs :: Map Int [DB.Member],
+    bands :: Map Int DB.Band
+  }
 
 -- And, how to run the batched request to get a batched result - here `DB.Query`
 -- is a monad that tracks the effect of accessing the database.

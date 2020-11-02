@@ -8,7 +8,6 @@ module Data.Morpheus.Server.TH.Declare.Type
   )
 where
 
-import Control.Monad.Reader (asks)
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
@@ -38,8 +37,8 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( SubscriptionField,
   )
-import GHC.Generics (Generic)
 import Language.Haskell.TH
+import Relude hiding (Type)
 
 declareType :: ServerTypeDefinition cat s -> ServerDec [Dec]
 declareType ServerTypeDefinition {tKind = KindScalar} = pure []
