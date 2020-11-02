@@ -25,7 +25,7 @@ import Data.Morpheus.Server
   ( httpPlayground,
   )
 import Data.Morpheus.Subscriptions
-  ( SubscriptionApp,
+  ( SubApp,
     httpPubApp,
   )
 import Data.Morpheus.Types
