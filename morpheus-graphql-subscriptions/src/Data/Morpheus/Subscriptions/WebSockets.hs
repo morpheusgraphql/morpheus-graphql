@@ -22,10 +22,10 @@ import Data.Morpheus.Core
   ( App,
     runApp,
   )
-import Data.Morpheus.Subscription.Event
+import Data.Morpheus.Subscriptions.Event
   ( Event (..),
   )
-import Data.Morpheus.Subscription.Internal
+import Data.Morpheus.Subscriptions.Internal
   ( ApiContext (..),
     Input (..),
     SUB,

@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Morpheus.Subscription.Internal
+module Data.Morpheus.Subscriptions.Internal
   ( connect,
     disconnect,
     connectionThread,

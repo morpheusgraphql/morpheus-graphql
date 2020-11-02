@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Subscription.ClientConnectionStore
+module Data.Morpheus.Subscriptions.ClientConnectionStore
   ( SessionID (..),
     ClientConnectionStore,
     ClientConnection,

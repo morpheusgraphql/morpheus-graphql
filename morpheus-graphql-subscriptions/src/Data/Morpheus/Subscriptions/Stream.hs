@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Data.Morpheus.Subscription.Stream
+module Data.Morpheus.Subscriptions.Stream
   ( toOutStream,
     runStreamWS,
     runStreamHTTP,

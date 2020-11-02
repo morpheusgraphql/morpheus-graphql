@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Data.Morpheus.Subscription.Event
+module Data.Morpheus.Subscriptions.Event
   ( Event (..),
     runEvents,
   )

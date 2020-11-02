@@ -7,7 +7,7 @@ packages:
   - morpheus-graphql-examples-client
   - morpheus-graphql-client
   - morpheus-graphql-core
-  - morpheus-graphql-subscription
+  - morpheus-graphql-subscriptions
   - .
 
 extra-deps:

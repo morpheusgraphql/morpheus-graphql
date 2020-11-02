@@ -55,4 +55,4 @@ tests:
       - tasty
       - tasty-hunit
       - aeson
-      - morpheus-graphql-subscription   >= 0.15.0    && <  0.16.0
+      - morpheus-graphql-subscriptions   >= 0.15.0    && <  0.16.0
