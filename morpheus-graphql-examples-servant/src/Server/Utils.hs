@@ -25,7 +25,8 @@ import Data.Morpheus.Server
   ( httpPlayground,
   )
 import Data.Morpheus.Subscriptions
-  ( SubApp,
+  ( PubApp,
+    SubApp,
     httpPubApp,
   )
 import Data.Morpheus.Types
@@ -100,7 +101,13 @@ type Playground = Get '[HTML] ByteString
 
 type Endpoint (name :: Symbol) = name :> (API :<|> Schema :<|> Playground)
 
-serveEndpoint :: SubApp ServerApp e => [e -> IO ()] -> App e IO -> Server (Endpoint name)
+serveEndpoint ::
+  ( SubApp ServerApp e,
+    PubApp e
+  ) =>
+  [e -> IO ()] ->
+  App e IO ->
+  Server (Endpoint name)
 serveEndpoint publish app = (liftIO . httpPubApp publish app) :<|> withSchema app :<|> pure httpPlayground
 
 withSchema :: (Applicative f) => App e m -> f Text

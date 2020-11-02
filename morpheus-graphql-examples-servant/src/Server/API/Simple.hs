@@ -24,6 +24,7 @@ import Data.Morpheus.Document
   )
 import Data.Morpheus.Subscriptions
   ( Event (..),
+    Hashable,
   )
 import Data.Morpheus.Types
   ( ResolverM,
@@ -32,15 +33,21 @@ import Data.Morpheus.Types
     subscribe,
   )
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 importGQLDocument "src/Server/API/simple.gql"
 
-type EVENT = Event Label Contet
+type EVENT = Event Channel Contet
 
-data Label
+data Channel
   = Update
   | New
-  deriving (Eq, Show)
+  deriving
+    ( Eq,
+      Show,
+      Generic,
+      Hashable
+    )
 
 data Contet = Contet
   { deityName :: Text,

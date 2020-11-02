@@ -15,6 +15,8 @@ module Data.Morpheus.Subscriptions
     PubApp (..),
     SubApp (..),
     Event (..),
+    ServerApp,
+    Hashable,
   )
 where
 
@@ -91,8 +93,12 @@ instance (Show ch, Eq ch, Hashable ch) => PubApp (Event ch con) where
         . streamApp app
         . Request
 
-instance SubApp () () where
-  runSubApp _ = pure ((), const $ pure ())
+instance SubApp ServerApp () where
+  runSubApp _ =
+    pure
+      ( const $ pure (),
+        const $ pure ()
+      )
 
 instance PubApp () where
   runPubApp _ = runApp

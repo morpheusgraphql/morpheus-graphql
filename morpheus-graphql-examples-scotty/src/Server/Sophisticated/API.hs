@@ -21,7 +21,6 @@ where
 import Control.Monad.Trans (lift)
 -- MORPHEUS
 
-import Data.Hashable (Hashable)
 import Data.Map (Map)
 import qualified Data.Map as M
   ( fromList,
@@ -38,6 +37,7 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.Subscriptions
   ( Event (..),
+    Hashable,
   )
 import Data.Morpheus.Types
   ( GQLScalar (..),
@@ -114,6 +114,7 @@ data Channel = USER | ADDRESS
     ( Show,
       Eq,
       Ord,
+      Generic,
       Hashable
     )
 
