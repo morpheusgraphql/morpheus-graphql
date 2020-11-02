@@ -5,7 +5,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -21,7 +20,6 @@ where
 
 import Control.Monad.IO.Unlift
   ( MonadUnliftIO,
-    withRunInIO,
   )
 import Data.Morpheus.Core
   ( App,
@@ -29,45 +27,25 @@ import Data.Morpheus.Core
   )
 import Data.Morpheus.Subscription.Event
   ( Event (..),
+    runEvents,
   )
 import Data.Morpheus.Subscription.Internal
   ( ApiContext (..),
     Input (..),
-    SUB,
-    Store (..),
-    acceptApolloRequest,
     connectionThread,
     initDefaultStore,
     publishEventWith,
     runStreamHTTP,
     streamApp,
   )
+import Data.Morpheus.Subscription.WebSockets
+  ( webSocketsWrapper,
+  )
 import Data.Morpheus.Types.IO (MapAPI (..))
 import Network.WebSockets
-  ( Connection,
-    ServerApp,
-    receiveData,
-    sendTextData,
+  ( ServerApp,
   )
-import qualified Network.WebSockets as WS
 import Relude
-
--- support old version of Websockets
-pingThread :: Connection -> IO () -> IO ()
-
-#if MIN_VERSION_websockets(0,12,6)
-pingThread connection = WS.withPingThread connection 30 (return ())
-#else
-pingThread connection = (WS.forkPingThread connection 30 >>)
-#endif
-
-defaultWSScope :: MonadIO m => Store e m -> Connection -> ApiContext SUB e m
-defaultWSScope Store {writeStore} connection =
-  SubContext
-    { listener = liftIO (receiveData connection),
-      callback = liftIO . sendTextData connection,
-      updateStore = writeStore
-    }
 
 httpPubApp ::
   ( PubApp e,
@@ -89,21 +67,6 @@ webSocketsApp ::
   App e m ->
   m (ServerApp, e -> m ())
 webSocketsApp = runSubApp
-
-webSocketsWrapper ::
-  (MonadUnliftIO m, MonadIO m) =>
-  Store e m ->
-  (ApiContext SUB e m -> m ()) ->
-  m ServerApp
-webSocketsWrapper store handler =
-  withRunInIO $
-    \runIO ->
-      pure $
-        \pending -> do
-          conn <- acceptApolloRequest pending
-          pingThread
-            conn
-            $ runIO (handler (defaultWSScope store conn))
 
 class SubApp e app where
   runSubApp :: (MonadIO m, MonadUnliftIO m) => App e m -> m (app, e -> m ())
@@ -128,16 +91,6 @@ instance (Show ch, Eq ch, Hashable ch) => PubApp (Event ch con) where
         . streamApp app
         . Request
 
-runEvents ::
-  (Foldable t, Applicative f) =>
-  t (event -> f b) ->
-  event ->
-  f ()
-runEvents fs e = traverse_ (e &) fs
-
---
---
---
 instance SubApp () () where
   runSubApp _ = pure ((), const $ pure ())
 
