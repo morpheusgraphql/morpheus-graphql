@@ -62,19 +62,19 @@ httpPubApp = runPubApp
 webSocketsApp ::
   ( MonadUnliftIO m,
     MonadIO m,
-    SubApp e ServerApp
+    SubApp ServerApp e
   ) =>
   App e m ->
   m (ServerApp, e -> m ())
 webSocketsApp = runSubApp
 
-class SubApp e app where
+class SubApp app e where
   runSubApp :: (MonadIO m, MonadUnliftIO m) => App e m -> m (app, e -> m ())
 
 class PubApp e where
   runPubApp :: (MonadIO m, MapAPI a b) => [e -> m ()] -> App e m -> a -> m b
 
-instance (Show ch, Eq ch, Hashable ch) => SubApp (Event ch con) ServerApp where
+instance (Show ch, Eq ch, Hashable ch) => SubApp ServerApp (Event ch con) where
   runSubApp app = do
     store <- initDefaultStore
     wsApp <- webSocketsWrapper store (connectionThread app)

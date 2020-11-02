@@ -18,7 +18,8 @@ import Data.Morpheus.Server
   ( httpPlayground,
   )
 import Data.Morpheus.Subscriptions
-  ( SubApp,
+  ( PubApp,
+    SubApp,
     httpPubApp,
   )
 import Data.Morpheus.Types
@@ -54,7 +55,9 @@ isSchema :: ActionM String
 isSchema = param "schema"
 
 httpEndpoint ::
-  SubApp e =>
+  ( SubApp ServerApp e,
+    PubApp e
+  ) =>
   RoutePattern ->
   [e -> IO ()] ->
   App e IO ->
