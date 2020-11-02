@@ -6,8 +6,7 @@ module Main
 where
 
 import Prelude
-  ( ($),
-    IO,
+  ( IO,
     pure,
   )
 

@@ -18,26 +18,12 @@ import Control.Monad.IO.Unlift
   ( MonadUnliftIO,
     withRunInIO,
   )
-import Data.Morpheus.Core
-  ( App,
-    runApp,
-  )
-import Data.Morpheus.Subscriptions.Event
-  ( Event (..),
-  )
 import Data.Morpheus.Subscriptions.Internal
   ( ApiContext (..),
-    Input (..),
     SUB,
     Store (..),
     acceptApolloRequest,
-    connectionThread,
-    initDefaultStore,
-    publishEventWith,
-    runStreamHTTP,
-    streamApp,
   )
-import Data.Morpheus.Types.IO (MapAPI (..))
 import Network.WebSockets
   ( Connection,
     ServerApp,
