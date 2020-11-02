@@ -111,7 +111,7 @@ publish event@Event {channels} ClientConnectionStore {activeChannels, clientConn
       where
         sendMessage ClientSession {sessionCallback} = sessionCallback event >>= upd
         upd = mapAt cantFindConnection connectionCallback (cid sid) clientConnections
-        cantFindConnection = error "client connection already closed"
+        cantFindConnection _ = pure ()
 
 newtype Updates e (m :: * -> *) = Updates
   { _runUpdate :: ClientConnectionStore e m -> ClientConnectionStore e m
