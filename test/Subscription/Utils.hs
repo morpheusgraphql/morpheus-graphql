@@ -30,7 +30,7 @@ import Data.List (lookup)
 import Data.Morpheus
   ( App,
   )
-import Data.Morpheus.Subscription
+import Data.Morpheus.Subscriptions
   ( Event,
   )
 import Data.Morpheus.Subscriptions.Internal

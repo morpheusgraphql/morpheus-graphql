@@ -24,7 +24,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Morpheus.Server
   ( httpPlayground,
   )
-import Data.Morpheus.Subscription
+import Data.Morpheus.Subscriptions
   ( SubscriptionApp,
     httpPubApp,
   )

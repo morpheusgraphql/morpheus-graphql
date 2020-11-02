@@ -22,7 +22,7 @@ import Data.Morpheus
 import Data.Morpheus.Document
   ( importGQLDocument,
   )
-import Data.Morpheus.Subscription
+import Data.Morpheus.Subscriptions
   ( Event (..),
   )
 import Data.Morpheus.Types

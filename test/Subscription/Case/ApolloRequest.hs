@@ -10,7 +10,7 @@ where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus (App)
-import Data.Morpheus.Subscription
+import Data.Morpheus.Subscriptions
   ( Event,
   )
 import Relude hiding (ByteString)

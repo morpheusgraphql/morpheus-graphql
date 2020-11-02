@@ -34,7 +34,7 @@ import Data.Morpheus.Document
 import Data.Morpheus.Kind
   ( INPUT,
   )
-import Data.Morpheus.Subscription
+import Data.Morpheus.Subscriptions
   ( Event (..),
   )
 import Data.Morpheus.Types

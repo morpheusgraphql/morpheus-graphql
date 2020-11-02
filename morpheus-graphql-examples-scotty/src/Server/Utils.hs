@@ -17,7 +17,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Morpheus.Server
   ( httpPlayground,
   )
-import Data.Morpheus.Subscription
+import Data.Morpheus.Subscriptions
   ( SubscriptionApp,
     httpPubApp,
   )
