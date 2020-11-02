@@ -9,7 +9,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Data.Morpheus.Subscription.WebSockets
+module Data.Morpheus.Subscriptions.WebSockets
   ( webSocketsWrapper,
   )
 where

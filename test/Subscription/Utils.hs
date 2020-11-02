@@ -33,7 +33,7 @@ import Data.Morpheus
 import Data.Morpheus.Subscription
   ( Event,
   )
-import Data.Morpheus.Subscription.Internal
+import Data.Morpheus.Subscriptions.Internal
   ( ClientConnectionStore,
     Input (..),
     Scope (..),

@@ -34,10 +34,10 @@ import Data.Morpheus.Internal.Utils
   ( Collection (..),
     KeyOf (..),
   )
-import Data.Morpheus.Subscription.Apollo
+import Data.Morpheus.Subscriptions.Apollo
   ( toApolloResponse,
   )
-import Data.Morpheus.Subscription.Event (Event (..))
+import Data.Morpheus.Subscriptions.Event (Event (..))
 import Data.Morpheus.Types.IO (GQLResponse)
 import Data.Morpheus.Types.Internal.Resolving
   ( EventHandler (..),

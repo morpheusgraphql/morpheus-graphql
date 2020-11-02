@@ -9,7 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- |  GraphQL Wai Server Applications
-module Data.Morpheus.Subscription
+module Data.Morpheus.Subscriptions
   ( webSocketsApp,
     httpPubApp,
     PubApp (..),
@@ -25,11 +25,11 @@ import Data.Morpheus.Core
   ( App,
     runApp,
   )
-import Data.Morpheus.Subscription.Event
+import Data.Morpheus.Subscriptions.Event
   ( Event (..),
     runEvents,
   )
-import Data.Morpheus.Subscription.Internal
+import Data.Morpheus.Subscriptions.Internal
   ( ApiContext (..),
     Input (..),
     connectionThread,
@@ -38,7 +38,7 @@ import Data.Morpheus.Subscription.Internal
     runStreamHTTP,
     streamApp,
   )
-import Data.Morpheus.Subscription.WebSockets
+import Data.Morpheus.Subscriptions.WebSockets
   ( webSocketsWrapper,
   )
 import Data.Morpheus.Types.IO (MapAPI (..))

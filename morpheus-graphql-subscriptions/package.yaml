@@ -32,8 +32,8 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Data.Morpheus.Subscription
-    - Data.Morpheus.Subscription.Internal
+    - Data.Morpheus.Subscriptions
+    - Data.Morpheus.Subscriptions.Internal
   ghc-options: -Wall
     -XNoImplicitPrelude
 

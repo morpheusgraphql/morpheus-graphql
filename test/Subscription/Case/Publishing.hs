@@ -13,7 +13,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Subscription
   ( Event (..),
   )
-import Data.Morpheus.Subscription.Internal
+import Data.Morpheus.Subscriptions.Internal
   ( Input,
     WS,
     connect,

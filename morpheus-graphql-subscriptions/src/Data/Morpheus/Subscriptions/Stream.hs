@@ -29,12 +29,12 @@ import Data.Morpheus.Error
 import Data.Morpheus.Internal.Utils
   ( failure,
   )
-import Data.Morpheus.Subscription.Apollo
+import Data.Morpheus.Subscriptions.Apollo
   ( ApolloAction (..),
     apolloFormat,
     toApolloResponse,
   )
-import Data.Morpheus.Subscription.ClientConnectionStore
+import Data.Morpheus.Subscriptions.ClientConnectionStore
   ( ClientConnectionStore,
     SessionID (..),
     Updates (..),
@@ -42,7 +42,7 @@ import Data.Morpheus.Subscription.ClientConnectionStore
     insertConnection,
     startSession,
   )
-import Data.Morpheus.Subscription.Event (Event (..))
+import Data.Morpheus.Subscriptions.Event (Event (..))
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),

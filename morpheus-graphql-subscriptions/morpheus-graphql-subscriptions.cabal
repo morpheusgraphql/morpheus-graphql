@@ -4,9 +4,9 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 59e3816f6f2b78e475144a9a2c5516a4e568d0ecd3a7a9150b9a03eecb4c8fa4
+-- hash: 1fa89ec075355fb17adb1cab99f273a784953877b9f65d45827d09dd13e54f37
 
-name:           morpheus-graphql-subscription
+name:           morpheus-graphql-subscriptions
 version:        0.15.1
 synopsis:       Morpheus GraphQL Subscriptions
 description:    Build GraphQL APIs with your favourite functional language!
@@ -29,14 +29,15 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.Subscription
-      Data.Morpheus.Subscription.Internal
+      Data.Morpheus.Subscriptions
+      Data.Morpheus.Subscriptions.Internal
   other-modules:
-      Data.Morpheus.Subscription.Apollo
-      Data.Morpheus.Subscription.ClientConnectionStore
-      Data.Morpheus.Subscription.Event
-      Data.Morpheus.Subscription.Stream
-      Paths_morpheus_graphql_subscription
+      Data.Morpheus.Subscriptions.Apollo
+      Data.Morpheus.Subscriptions.ClientConnectionStore
+      Data.Morpheus.Subscriptions.Event
+      Data.Morpheus.Subscriptions.Stream
+      Data.Morpheus.Subscriptions.WebSockets
+      Paths_morpheus_graphql_subscriptions
   hs-source-dirs:
       src
   ghc-options: -Wall -XNoImplicitPrelude
@@ -59,7 +60,7 @@ test-suite morpheus-subscription-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_morpheus_graphql_subscription
+      Paths_morpheus_graphql_subscriptions
   hs-source-dirs:
       test
   ghc-options: -Wall

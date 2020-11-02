@@ -9,7 +9,7 @@ module Feature.WrappedTypeName.API
 where
 
 import Data.Morpheus (interpreter)
-import Data.Morpheus.Subscription (Event)
+import Data.Morpheus.Subscriptions (Event)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,

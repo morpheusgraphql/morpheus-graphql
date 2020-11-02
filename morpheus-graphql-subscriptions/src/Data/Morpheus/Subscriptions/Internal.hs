@@ -51,10 +51,10 @@ import Data.Morpheus.Core
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
-import Data.Morpheus.Subscription.Apollo
+import Data.Morpheus.Subscriptions.Apollo
   ( acceptApolloRequest,
   )
-import Data.Morpheus.Subscription.ClientConnectionStore
+import Data.Morpheus.Subscriptions.ClientConnectionStore
   ( ClientConnectionStore,
     SessionID,
     connectionSessionIds,
@@ -64,10 +64,10 @@ import Data.Morpheus.Subscription.ClientConnectionStore
     storedSessions,
     toList,
   )
-import Data.Morpheus.Subscription.Event
+import Data.Morpheus.Subscriptions.Event
   ( Event,
   )
-import Data.Morpheus.Subscription.Stream
+import Data.Morpheus.Subscriptions.Stream
   ( ApiContext (..),
     Input (..),
     Output,

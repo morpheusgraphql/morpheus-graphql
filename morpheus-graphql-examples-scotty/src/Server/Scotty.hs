@@ -18,7 +18,7 @@ import Data.Morpheus (runApp)
 import Data.Morpheus.Server
   ( compileTimeSchemaValidation,
   )
-import Data.Morpheus.Subscription (webSocketsApp)
+import Data.Morpheus.Subscriptions (webSocketsApp)
 import qualified Server.Mythology.API as Mythology
 import Server.Sophisticated.API
   ( EVENT,
