@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -75,7 +76,7 @@ addConnectionSession
 
 data ClientSession e (m :: * -> *) = ClientSession
   { sessionChannel :: Channel e,
-    sessionCallback :: e -> m ()
+    sessionCallback :: e -> m ByteString
   }
 
 instance Show (ClientSession e m) where
@@ -101,13 +102,16 @@ publish ::
   Event channel content ->
   ClientConnectionStore (Event channel content) m ->
   m ()
-publish event@Event {channels} ClientConnectionStore {activeChannels, clientSessions} =
+publish event@Event {channels} ClientConnectionStore {activeChannels, clientConnections, clientSessions} =
   traverse_ onChannel channels
   where
     onChannel ch = mapAt (pure ()) sendBy ch activeChannels
     sendBy = traverse_ sendByChannel
     sendByChannel sid = mapAt (pure ()) sendMessage sid clientSessions
-    sendMessage ClientSession {sessionCallback} = sessionCallback event
+      where
+        sendMessage ClientSession {sessionCallback} = sessionCallback event >>= upd
+        upd = mapAt cantFindConnection connectionCallback (cid sid) clientConnections
+        cantFindConnection = error "client connection already closed"
 
 newtype Updates e (m :: * -> *) = Updates
   { _runUpdate :: ClientConnectionStore e m -> ClientConnectionStore e m
@@ -150,14 +154,12 @@ startSession sessionChannel resolver sessionId@SessionID {cid, sid} = Updates st
               sessionId
               ClientSession
                 { sessionChannel,
-                  sessionCallback = resolver >=> upd . toApolloResponse sid
+                  sessionCallback = fmap (toApolloResponse sid) . resolver
                 }
               clientSessions,
           clientConnections = HM.adjust (addConnectionSession sid) cid clientConnections,
           activeChannels = addActiveChannel sessionChannel sessionId activeChannels
         }
-      where
-        upd = mapAt (const (pure ())) connectionCallback cid clientConnections
 
 addActiveChannel ::
   (Eq ch, Hashable ch) =>
