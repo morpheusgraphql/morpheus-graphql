@@ -34,11 +34,10 @@ import Data.Morpheus.Subscriptions
   ( Event,
   )
 import Data.Morpheus.Subscriptions.Internal
-  ( ClientConnectionStore,
+  ( ApiContext (..),
+    ClientConnectionStore,
     Input (..),
-    Scope (..),
-    SubscriptionApp,
-    WS,
+    SUB,
     connect,
     connectionSessionIds,
     empty,
@@ -74,22 +73,22 @@ type SubM e = StateT (SimulationState e) IO
 addOutput :: ByteString -> SimulationState e -> ((), SimulationState e)
 addOutput x (SimulationState i xs st) = ((), SimulationState i (xs <> [x]) st)
 
-updateStore :: (Store e -> Store e) -> SimulationState e -> ((), SimulationState e)
-updateStore up (SimulationState i o st) = ((), SimulationState i o (up st))
+mockUpdateStore :: (Store e -> Store e) -> SimulationState e -> ((), SimulationState e)
+mockUpdateStore up (SimulationState i o st) = ((), SimulationState i o (up st))
 
 readInput :: SimulationState e -> (ByteString, SimulationState e)
 readInput (SimulationState (i : ins) o s) = (i, SimulationState ins o s)
 readInput (SimulationState [] o s) = ("<Error>", SimulationState [] o s)
 
 wsApp ::
-  SubscriptionApp e =>
-  App e (SubM e) ->
-  Input WS ->
-  SubM e ()
+  (Eq ch, Hashable ch) =>
+  App (Event ch e) (SubM (Event ch e)) ->
+  Input SUB ->
+  SubM (Event ch e) ()
 wsApp app =
   runStreamWS
-    ScopeWS
-      { update = state . updateStore,
+    SubContext
+      { updateStore = state . mockUpdateStore,
         listener = state readInput,
         callback = state . addOutput
       }
@@ -103,17 +102,17 @@ simulatePublish ::
 simulatePublish event s = snd <$> runStateT (publish event (store s)) s
 
 simulate ::
-  SubscriptionApp e =>
-  App e (SubM e) ->
-  Input WS ->
-  SimulationState e ->
-  IO (SimulationState e)
+  (Eq ch, Hashable ch) =>
+  App (Event ch con) (SubM (Event ch con)) ->
+  Input SUB ->
+  SimulationState (Event ch con) ->
+  IO (SimulationState (Event ch con))
 simulate _ _ s@SimulationState {inputs = []} = pure s
 simulate api input s = runStateT (wsApp api input) s >>= simulate api input . snd
 
 testSimulation ::
-  SubscriptionApp (Event ch con) =>
-  (Input WS -> SimulationState (Event ch con) -> TestTree) ->
+  (Eq ch, Hashable ch) =>
+  (Input SUB -> SimulationState (Event ch con) -> TestTree) ->
   [ByteString] ->
   App (Event ch con) (SubM (Event ch con)) ->
   IO TestTree
@@ -164,8 +163,8 @@ storedSingle cStore
         <> show
           cStore
 
-stored :: (Show ch) => Input WS -> Store (Event ch con) -> TestTree
-stored (Init uuid) cStore
+stored :: (Show ch) => Input SUB -> Store (Event ch con) -> TestTree
+stored (InitConnection uuid) cStore
   | isJust (lookup uuid (toList cStore)) =
     testCase "stored connection" $ pure ()
   | otherwise =
@@ -177,12 +176,12 @@ stored (Init uuid) cStore
 
 storeSubscriptions ::
   (Show ch) =>
-  Input WS ->
+  Input SUB ->
   [Text] ->
   Store (Event ch con) ->
   TestTree
 storeSubscriptions
-  (Init uuid)
+  (InitConnection uuid)
   sids
   cStore =
     checkSession (lookup uuid (toList cStore))
