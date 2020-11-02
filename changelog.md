@@ -2,6 +2,17 @@
 
 ## 0.16.0 - unreleased
 
+## Breaking changes
+
+- subscriptions are extracted in `morpheus-graphql-subscriptions`.
+- `Event`, `httpPubApp` and `webSocketsApp` moved `Data.Morpheus.Subscriptions`
+
+## New Features
+
+- `Data.Morpheus.Subscriptions` provides:
+  - runPubApp: generalized version of `httpPubApp`
+  - runSubApp: generalized version of `webSocketsApp`
+
 ### Minor Changes
 
 - parser performance optimization
