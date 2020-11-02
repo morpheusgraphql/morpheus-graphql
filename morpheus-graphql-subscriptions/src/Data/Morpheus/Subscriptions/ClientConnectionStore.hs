@@ -125,16 +125,24 @@ endSession ::
   Updates (Event ch con) m
 endSession sessionId@SessionID {sid, cid} = Updates endSub
   where
+    endSub ::
+      ( Eq ch,
+        Hashable ch
+      ) =>
+      ClientConnectionStore (Event ch con) m ->
+      ClientConnectionStore (Event ch con) m
     endSub ClientConnectionStore {..} =
       ClientConnectionStore
-        { clientConnections = HM.adjust f cid clientConnections,
+        { clientConnections = HM.adjust (removeSessionId sid) cid clientConnections,
           clientSessions = HM.delete sessionId clientSessions,
           activeChannels = removeActiveChannel sessionId activeChannels
         }
-    f conn =
-      conn
-        { connectionSessionIds = filter (/= sid) (connectionSessionIds conn)
-        }
+
+removeSessionId :: Text -> ClientConnection m -> ClientConnection m
+removeSessionId sid conn =
+  conn
+    { connectionSessionIds = filter (/= sid) (connectionSessionIds conn)
+    }
 
 startSession ::
   ( Monad m,
