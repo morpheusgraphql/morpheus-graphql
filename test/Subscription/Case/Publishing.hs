@@ -15,7 +15,7 @@ import Data.Morpheus.Subscriptions
   )
 import Data.Morpheus.Subscriptions.Internal
   ( Input,
-    WS,
+    SUB,
     connect,
     empty,
   )
@@ -49,7 +49,7 @@ startNewDeity = apolloStart "subscription MySubscription { newDeity { name , age
 startNewHuman :: ByteString -> ByteString
 startNewHuman = apolloStart "subscription MySubscription { newHuman { name , age }}"
 
-simulateSubscriptions :: IO (Input WS, SimulationState EVENT)
+simulateSubscriptions :: IO (Input SUB, SimulationState EVENT)
 simulateSubscriptions = do
   input <- connect
   state <-
