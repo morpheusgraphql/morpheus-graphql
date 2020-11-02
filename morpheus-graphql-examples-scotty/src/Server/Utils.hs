@@ -7,6 +7,7 @@
 module Server.Utils
   ( httpEndpoint,
     startServer,
+    isSchema,
   )
 where
 

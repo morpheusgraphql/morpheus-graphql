@@ -32,6 +32,8 @@ executable scotty-server
   other-modules:
       Client.Client
       Files
+      Server.Fraxl.API
+      Server.Fraxl.FakeDB
       Server.MonadIO.API
       Server.Mythology.API
       Server.Mythology.Character
@@ -51,6 +53,7 @@ executable scotty-server
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
     , extra
+    , fraxl
     , http-types
     , morpheus-graphql >=0.15.0
     , morpheus-graphql-client >=0.15.0
