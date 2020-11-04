@@ -78,18 +78,11 @@ import Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.String (IsString (fromString))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import GHC.Generics
-import Prelude
-  ( Either (Left, Right),
-    Eq (..),
-    Ord,
-    maybe,
-    otherwise,
-    ($),
-    (.),
-  )
+import Prelude (Either (Left, Right), Eq (..), Foldable (length), Ord, maybe, otherwise, show, ($), (-), (.))
 
 type DecodeConstraint a =
   ( Generic a,
@@ -116,12 +109,19 @@ instance Decode a => Decode (Maybe a) where
 instance Decode a => Decode [a] where
   decode = withList decode
 
-instance Decode a => Decode (NonEmpty.NonEmpty a) where
+instance Decode a => Decode (NonEmpty a) where
   decode = withRefinedList (maybe (Left "Expected a NonEmpty list") Right . NonEmpty.nonEmpty) decode
 
 -- | Should this instance dedupe silently or fail on dupes ?
 instance (Ord a, Decode a) => Decode (Set a) where
-  decode = fmap Set.fromList . withList decode
+  decode val = do
+    listVal <- withList (decode @a) val
+    let setVal = Set.fromList listVal
+    let setLength = length setVal
+    let listLength = length setVal
+    if listLength == setLength
+      then pure setVal
+      else failure (fromString ("Expected a List without duplicates, found " <> show (setLength - listLength) <> " duplicates") :: InternalError)
 
 instance (Decode a) => Decode (Seq a) where
   decode = fmap Seq.fromList . withList decode
