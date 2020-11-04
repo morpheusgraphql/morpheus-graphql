@@ -13,6 +13,12 @@
   - runPubApp: generalized version of `httpPubApp`
   - runSubApp: generalized version of `webSocketsApp`
 
+- New encode and decode instances for `Set`, `NonEmpty`, `Seq` and `Vector`
+  `Set` and `NonEmpty` throw a graphql error when a duplicate is found (Set)
+  or when an empty list is sent (NonEmpty).
+  **Beware**: Right now, all these types are advertised as lists in the introspection query.
+    This is something we are trying to change by submitting a proposal to the graphql spec.
+
 ### Minor Changes
 
 - parser performance optimization
