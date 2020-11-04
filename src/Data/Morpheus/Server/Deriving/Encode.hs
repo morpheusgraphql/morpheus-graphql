@@ -23,6 +23,8 @@ import Control.Applicative (Applicative (..))
 import Control.Monad (Monad ((>>=)))
 import Data.Functor (fmap)
 import Data.Functor.Identity (Identity (..))
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NonEmpty
 import Data.Map (Map)
 import qualified Data.Map as M
   ( toList,
@@ -91,14 +93,17 @@ import Data.Set (Set)
 import qualified Data.Set as S
   ( toList,
   )
+import Data.Text (pack)
 import Data.Traversable (traverse)
+import Data.Vector (Vector)
+import qualified Data.Vector as Vector
 import GHC.Generics
   ( Generic (..),
   )
 import Prelude
-  ( ($),
+  ( otherwise,
+    ($),
     (.),
-    otherwise,
   )
 
 newtype ContextValue (kind :: GQL_KIND) a = ContextValue
@@ -122,6 +127,14 @@ instance (Monad m, Encode o e m a, LiftOperation o) => Encode o e m [a] where
 --  Tuple  (a,b)
 instance Encode o e m (Pair k v) => Encode o e m (k, v) where
   encode (key, value) = encode (Pair key value)
+
+--  NonEmpty
+instance Encode o e m [a] => Encode o e m (NonEmpty a) where
+  encode = encode . NonEmpty.toList
+
+--  Vector
+instance Encode o e m [a] => Encode o e m (Vector a) where
+  encode = encode . Vector.toList
 
 --  Set
 instance Encode o e m [a] => Encode o e m (Set a) where
@@ -195,10 +208,10 @@ convertNode
       encodeUnion fields =
         ResUnion
           consName
-          $ pure
-          $ mkObject
-            consName
-            (fmap toFieldRes fields)
+          $ pure $
+            mkObject
+              consName
+              (fmap toFieldRes fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::

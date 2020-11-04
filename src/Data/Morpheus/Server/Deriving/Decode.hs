@@ -21,10 +21,12 @@ module Data.Morpheus.Server.Deriving.Decode
   )
 where
 
-import Control.Applicative ((<*>), pure)
+import Control.Applicative (pure, (<*>))
 import Control.Monad ((>>=))
-import Data.Functor ((<$>), Functor (..))
+import Data.Functor (Functor (..), (<$>))
 import Data.List (elem)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NonEmpty
 import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
   ( elems,
@@ -41,19 +43,12 @@ import Data.Morpheus.Server.Deriving.Utils
     datatypeNameProxy,
     selNameProxy,
   )
-import Data.Morpheus.Server.Internal.TH.Decode
-  ( decodeFieldWith,
-    withInputObject,
-    withInputUnion,
-    withList,
-    withMaybe,
-    withScalar,
-  )
+import Data.Morpheus.Server.Internal.TH.Decode (decodeFieldWith, withInputObject, withInputUnion, withList, withMaybe, withRefinedList, withScalar)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
-        __type,
-        typeOptions
+        typeOptions,
+        __type
       ),
     GQLTypeOptions (..),
     TypeData (..),
@@ -79,14 +74,15 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
+import Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
+import Data.Set (Set)
+import qualified Data.Set as Set
+import Data.String (IsString (fromString))
+import Data.Vector (Vector)
+import qualified Data.Vector as Vector
 import GHC.Generics
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    Ord,
-    otherwise,
-  )
+import Prelude (Either (Left, Right), Eq (..), Foldable (length), Ord, maybe, otherwise, show, ($), (-), (.))
 
 type DecodeConstraint a =
   ( Generic a,
@@ -112,6 +108,26 @@ instance Decode a => Decode (Maybe a) where
 
 instance Decode a => Decode [a] where
   decode = withList decode
+
+instance Decode a => Decode (NonEmpty a) where
+  decode = withRefinedList (maybe (Left "Expected a NonEmpty list") Right . NonEmpty.nonEmpty) decode
+
+-- | Should this instance dedupe silently or fail on dupes ?
+instance (Ord a, Decode a) => Decode (Set a) where
+  decode val = do
+    listVal <- withList (decode @a) val
+    let setVal = Set.fromList listVal
+    let setLength = length setVal
+    let listLength = length setVal
+    if listLength == setLength
+      then pure setVal
+      else failure (fromString ("Expected a List without duplicates, found " <> show (setLength - listLength) <> " duplicates") :: InternalError)
+
+instance (Decode a) => Decode (Seq a) where
+  decode = fmap Seq.fromList . withList decode
+
+instance (Decode a) => Decode (Vector a) where
+  decode = fmap Vector.fromList . withList decode
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
