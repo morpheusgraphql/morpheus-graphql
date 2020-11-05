@@ -93,7 +93,6 @@ import Data.Set (Set)
 import qualified Data.Set as S
   ( toList,
   )
-import Data.Text (pack)
 import Data.Traversable (traverse)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
