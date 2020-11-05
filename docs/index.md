@@ -4,10 +4,10 @@ layout: home
 
 # Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 
-Build GraphQL APIs with your favourite functional language!
+Build GraphQL APIs with your favorite functional language!
 
 Morpheus GraphQL (Server & Client) helps you to build GraphQL APIs in Haskell with native Haskell types.
-Morpheus will convert your Haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Mopheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
+Morpheus will convert your Haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Morpheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
 
 Morpheus is still in an early stage of development, so any feedback is more than welcome, and we appreciate any contribution!
 Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-graphql-slack-invite.herokuapp.com/) to get in touch.
@@ -30,10 +30,10 @@ Additionally, you should tell stack which version to pick:
 _stack.yml_
 
 ```yaml
-resolver: lts-15.13
+resolver: lts-16.2
 
 extra-deps:
-  - morpheus-graphql-0.14.1
+  - morpheus-graphql-0.16.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
@@ -108,12 +108,12 @@ Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be us
 
 `descriptions` and `deprecations` will be displayed in introspection.
 
-`importGQLDocumentWithNamespace` will generate Types with namespaced fields. If you don't need napespacing use `importGQLDocument`
+`importGQLDocumentWithNamespace` will generate Types with namespaced fields. If you don't need namespace use `importGQLDocument`
 
 ### with Native Haskell Types
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
-which derives the `Generic` typeclass. Lazily resolvable fields on this `Query` type are defined via `a -> ResolverQ () IO b`, representing resolving a set of arguments `a` to a concrete value `b`.
+which derives the `Generic` typeClass. Lazily resolvable fields on this `Query` type are defined via `a -> ResolverQ () IO b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
 data Query m = Query
@@ -236,13 +236,13 @@ To use union type, all you have to do is derive the `GQLType` class. Using Graph
 
 ```haskell
 data Character
-  = CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
+  = CharacterDeity Deity -- Only <tyConName><conName> should generate direct link
   -- RECORDS
   | Creature { creatureName :: Text, creatureAge :: Int }
   --- Types
   | SomeDeity Deity
   | CharacterInt Int
-  | SomeMutli Int Text
+  | SomeMulti Int Text
   --- ENUMS
   | Zeus
   | Cronus
@@ -261,7 +261,7 @@ union Character =
   | Creature
   | SomeDeity # wrapped union: because "Character" <> "Deity" /= SomeDeity
   | CharacterInt
-  | SomeMutli
+  | SomeMulti
   | CharacterEnumObject # no-argument constructors all wrapped into an enum
 type Creature {
   creatureName: String!
@@ -276,7 +276,7 @@ type CharacterInt {
   _0: Int!
 }
 
-type SomeMutli {
+type SomeMulti {
   _0: Int!
   _1: String!
 }
@@ -293,7 +293,7 @@ enum CharacterEnum {
 ```
 
 By default, union members will be generated with wrapper objects.
-There is one exception to this: if a constructor of a type is the type name concatinated with the name of the contained type, it will be referenced directly.
+There is one exception to this: if a constructor of a type is the type name concatenated with the name of the contained type, it will be referenced directly.
 That is, given:
 
 ```haskell
@@ -341,7 +341,7 @@ type Skit {
 }
 ```
 
-- for all other unions will be generated new object type. for types without record syntax, fields will be automatally indexed.
+- for all other unions will be generated new object type. for types without record syntax, fields will be automatically indexed.
 
 - all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and added to union members.
 
@@ -491,7 +491,7 @@ rootResolver = RootResolver
     -- immediate response on failures
     requireAuthorized
     pure $ \(Event _ content) -> do
-        -- exectues on every event
+        -- executes on every event
         lift (getDBAddress content)
 ```
 

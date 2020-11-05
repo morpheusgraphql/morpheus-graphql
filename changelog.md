@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.16.0 - unreleased
+## 0.16.0 - 05.11.2020
 
 ## Breaking changes
 
@@ -10,6 +10,7 @@
 ## New Features
 
 - `Data.Morpheus.Subscriptions` provides:
+
   - runPubApp: generalized version of `httpPubApp`
   - runSubApp: generalized version of `webSocketsApp`
 
@@ -17,7 +18,7 @@
   `Set` and `NonEmpty` throw a graphql error when a duplicate is found (Set)
   or when an empty list is sent (NonEmpty).
   **Beware**: Right now, all these types are advertised as lists in the introspection query.
-    This is something we are trying to change by submitting a proposal to the graphql spec.
+  This is something we are trying to change by submitting a proposal to the graphql spec.
 
 ### Minor Changes
 

@@ -13,10 +13,10 @@ dependencies:
   - bytestring                        >= 0.10.4    && <  0.11
   - text                              >= 1.2.3.0   && <  1.3
   - mtl                               >= 2.0       && <= 2.3
-  - morpheus-graphql                  >= 0.15.0
-  - morpheus-graphql-subscriptions     >= 0.15.0
-  - wai-websockets          >= 1.0       &&  <= 3.5
-  - websockets              >= 0.11.0    &&  <= 0.13
+  - morpheus-graphql                  >= 0.16.0
+  - morpheus-graphql-subscriptions    >= 0.16.0
+  - wai-websockets                    >= 1.0       &&  <= 3.5
+  - websockets                        >= 0.11.0    &&  <= 0.13
   - warp
   - servant-server
   - http-media
