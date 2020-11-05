@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
   ( name,
@@ -9,7 +10,6 @@ module Data.Morpheus.Parsing.Internal.Terms
     varName,
     ignoredTokens,
     parseString,
-    -------------
     collection,
     setOf,
     uniqTuple,

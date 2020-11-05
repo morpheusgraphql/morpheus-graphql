@@ -43,7 +43,6 @@ library:
     - Data.Morpheus.Document
 
   ghc-options: -Wall
-    -XNoImplicitPrelude
 
 tests:
   morpheus-test:

@@ -93,7 +93,6 @@ import Data.Set (Set)
 import qualified Data.Set as S
   ( toList,
   )
-import Data.Text (pack)
 import Data.Traversable (traverse)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
@@ -101,9 +100,9 @@ import GHC.Generics
   ( Generic (..),
   )
 import Prelude
-  ( otherwise,
-    ($),
+  ( ($),
     (.),
+    otherwise,
   )
 
 newtype ContextValue (kind :: GQL_KIND) a = ContextValue
@@ -208,10 +207,10 @@ convertNode
       encodeUnion fields =
         ResUnion
           consName
-          $ pure $
-            mkObject
-              consName
-              (fmap toFieldRes fields)
+          $ pure
+          $ mkObject
+            consName
+            (fmap toFieldRes fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::

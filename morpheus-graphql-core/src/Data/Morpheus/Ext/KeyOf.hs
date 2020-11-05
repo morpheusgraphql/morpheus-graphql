@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.KeyOf
   ( KeyOf (..),

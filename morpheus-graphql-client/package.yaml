@@ -36,7 +36,6 @@ library:
   exposed-modules:
     - Data.Morpheus.Client
   ghc-options: -Wall
-    -XNoImplicitPrelude
 
 tests:
   morpheus-client-test:

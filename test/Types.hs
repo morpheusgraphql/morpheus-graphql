@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Types
   ( Case (..),
@@ -10,10 +11,11 @@ module Types
 where
 
 import Data.Aeson (FromJSON)
-import Data.Text (Text, unpack)
+import Data.Text (unpack)
 import qualified Data.Text as T (concat)
 import GHC.Generics
 import Lib (getCases)
+import Relude
 import Test.Tasty (TestTree, testGroup)
 
 type Name = Text
