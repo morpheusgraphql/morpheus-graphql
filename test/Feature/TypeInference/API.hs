@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Feature.TypeInference.API
   ( api,
