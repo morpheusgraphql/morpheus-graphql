@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Build GraphQL APIs with your favorite functional language!
 module Data.Morpheus
