@@ -51,14 +51,12 @@ library:
     - Data.Morpheus.Types.SelectionTree
 
   ghc-options: -Wall
-    -XNoImplicitPrelude
 
 tests:
   morpheus-test:
     main: Spec.hs
     source-dirs: test
     ghc-options: -Wall
-      -XNoImplicitPrelude
     dependencies:
       - morpheus-graphql-core
       - tasty

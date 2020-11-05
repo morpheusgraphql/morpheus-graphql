@@ -35,7 +35,6 @@ library:
     - Data.Morpheus.Subscriptions
     - Data.Morpheus.Subscriptions.Internal
   ghc-options: -Wall
-    -XNoImplicitPrelude
 
 tests:
   morpheus-subscription-test:
