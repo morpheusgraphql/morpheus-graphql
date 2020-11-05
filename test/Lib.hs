@@ -9,12 +9,11 @@ module Lib
   )
 where
 
-import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Maybe (fromMaybe)
-import Data.Text (Text, unpack)
+import Data.Text (unpack)
+import Relude hiding (ByteString)
 
 path :: Text -> String
 path name = "test/" ++ unpack name
