@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Data.Morpheus.Parser
   ( parseTypeDefinitions,
     parseTypeSystemDefinition,

@@ -2,10 +2,10 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST
-  ( -- BASE
-    Ref (..),
+  ( Ref (..),
     Position (..),
     Message,
     anonymousRef,
@@ -15,7 +15,6 @@ module Data.Morpheus.Types.Internal.AST
     CONST,
     VALID,
     RAW,
-    -- VALUE
     Value (..),
     ScalarValue (..),
     Object,
@@ -32,7 +31,6 @@ module Data.Morpheus.Types.Internal.AST
     ResolvedValue,
     splitDuplicates,
     removeDuplicates,
-    -- Selection
     Argument (..),
     Arguments,
     SelectionSet,
@@ -40,13 +38,11 @@ module Data.Morpheus.Types.Internal.AST
     Selection (..),
     Fragments,
     Fragment (..),
-    -- OPERATION
     Operation (..),
     Variable (..),
     VariableDefinitions,
     DefaultValue,
     getOperationName,
-    -- DSL
     ScalarDefinition (..),
     DataEnum,
     FieldsDefinition,
@@ -94,9 +90,7 @@ module Data.Morpheus.Types.Internal.AST
     lookupDeprecated,
     lookupDeprecatedReason,
     lookupWith,
-    -- Template Haskell
     hsTypeName,
-    -- LOCAL
     GQLQuery (..),
     Variables,
     unsafeFromFields,
@@ -168,8 +162,6 @@ module Data.Morpheus.Types.Internal.AST
 where
 
 import Data.HashMap.Lazy (HashMap)
--- Morpheus
-
 import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))

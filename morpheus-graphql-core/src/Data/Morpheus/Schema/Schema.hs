@@ -8,13 +8,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Schema.Schema
   ( internalSchema,
   )
 where
-
--- MORPHEUS
 
 import Data.Morpheus.Schema.DSL (dsl)
 import Data.Morpheus.Types.Internal.AST
