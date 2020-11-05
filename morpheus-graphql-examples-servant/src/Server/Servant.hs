@@ -20,8 +20,9 @@ import Server.API.Simple
   )
 import Server.Utils
   ( Endpoint,
+    ServantAPI (..),
+    runServer,
     serveEndpoint,
-    startServer,
   )
 
 -- Server
@@ -40,4 +41,4 @@ handler publish =
 servantServer :: IO ()
 servantServer = do
   (wsApp, publish) <- webSocketsApp app
-  startServer wsApp proxyApi (handler publish)
+  runServer wsApp (ServantAPI (proxyApi, handler publish))

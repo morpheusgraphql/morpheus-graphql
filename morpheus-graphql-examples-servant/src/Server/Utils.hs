@@ -7,11 +7,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Server.Utils
-  ( startServer,
+  ( runServer,
     Endpoint,
     serveEndpoint,
+    ServantAPI (..),
   )
 where
 
@@ -70,20 +72,39 @@ import Servant
   )
 import Prelude
 
-startServer ::
-  HasServer api '[] =>
-  ServerApp ->
-  Proxy api ->
-  Server api ->
-  IO ()
-startServer wsApp proxy api =
-  runSettings settings $
-    websocketsOr
-      defaultConnectionOptions
-      wsApp
-      (serve proxy api)
-  where
-    settings = setPort 3000 defaultSettings
+class ServerRunner a where
+  runServer :: ServerApp -> a -> IO ()
+
+class HttpEndpoint e m server where
+  httpEndpoint :: [e -> m ()] -> App e m -> server
+
+newtype ServantAPI api = ServantAPI {unS :: (Proxy api, Server api)}
+
+newtype Path name = Path {_unPath :: Server (Endpoint name)}
+
+instance PubApp e => HttpEndpoint e IO (Path name) where
+  httpEndpoint publish app =
+    Path $
+      (liftIO . httpPubApp publish app) :<|> withSchema app :<|> pure httpPlayground
+
+serveEndpoint ::
+  ( SubApp ServerApp e,
+    PubApp e
+  ) =>
+  [e -> IO ()] ->
+  App e IO ->
+  Server (Endpoint name)
+serveEndpoint events = _unPath . httpEndpoint events
+
+instance HasServer api '[] => ServerRunner (ServantAPI api) where
+  runServer wsApp ServantAPI {unS = (proxy, api)} =
+    runSettings settings $
+      websocketsOr
+        defaultConnectionOptions
+        wsApp
+        (serve proxy api)
+    where
+      settings = setPort 3000 defaultSettings
 
 data HTML deriving (Typeable)
 
@@ -100,15 +121,6 @@ type Schema = "schema" :> Get '[PlainText] Text
 type Playground = Get '[HTML] ByteString
 
 type Endpoint (name :: Symbol) = name :> (API :<|> Schema :<|> Playground)
-
-serveEndpoint ::
-  ( SubApp ServerApp e,
-    PubApp e
-  ) =>
-  [e -> IO ()] ->
-  App e IO ->
-  Server (Endpoint name)
-serveEndpoint publish app = (liftIO . httpPubApp publish app) :<|> withSchema app :<|> pure httpPlayground
 
 withSchema :: (Applicative f) => App e m -> f Text
 withSchema = pure . LT.toStrict . decodeUtf8 . render
