@@ -3,11 +3,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
   ( TypeCategory,
-    ELEM,
+    type (<=?),
+    type (<=!),
     OUT,
     IN,
     ANY,
@@ -67,21 +69,23 @@ class ToCategory a (k :: TypeCategory) (k' :: TypeCategory) where
 class FromCategory a (k :: TypeCategory) (k' :: TypeCategory) where
   fromCategory :: a k (s :: Stage) -> Maybe (a k' s)
 
-type family ELEM (elemKind :: TypeCategory) (setOfKind :: TypeCategory) :: Bool where
--- same types
-  ELEM a a = TRUE
--- any
-  ELEM ANY a = TRUE
-  ELEM a ANY = FALSE
--- leaf
-  ELEM LEAF IN = TRUE
-  ELEM LEAF OUT = TRUE
--- implementable
-  ELEM IMPLEMENTABLE OUT = TRUE
--- object
-  ELEM OBJECT IMPLEMENTABLE = TRUE
-  ELEM OBJECT OUT = TRUE
--- all other cases are false
-  ELEM a b = FALSE
+type (a :: TypeCategory) <=? (b :: TypeCategory) = a <=! b ~ TRUE
 
-type REQUIRE_IMPLEMENTABLE cat = ELEM cat IMPLEMENTABLE ~ TRUE
+type family (elemKind :: TypeCategory) <=! (setOfKind :: TypeCategory) :: Bool where
+-- same types
+  a <=! a = TRUE
+-- any
+  ANY <=! a = TRUE
+  a <=! ANY = TRUE
+-- leaf
+  LEAF <=! IN = TRUE
+  LEAF <=! OUT = TRUE
+-- implementable
+  IMPLEMENTABLE <=! OUT = TRUE
+-- object
+  OBJECT <=! IMPLEMENTABLE = TRUE
+  OBJECT <=! OUT = TRUE
+-- all other cases are false
+  a <=! b = FALSE
+
+type REQUIRE_IMPLEMENTABLE cat = cat <=? IMPLEMENTABLE

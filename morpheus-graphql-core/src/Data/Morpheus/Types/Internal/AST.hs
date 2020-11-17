@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -148,7 +149,6 @@ module Data.Morpheus.Types.Internal.AST
     withPosition,
     ValidationErrors,
     toGQLError,
-    ELEM,
     LEAF,
     REQUIRE_IMPLEMENTABLE,
     ToCategory (..),
@@ -158,6 +158,7 @@ module Data.Morpheus.Types.Internal.AST
     mkField,
     safeDefineType,
     defineSchemaWith,
+    type (<=?),
   )
 where
 

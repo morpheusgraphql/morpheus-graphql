@@ -16,6 +16,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -125,7 +126,6 @@ import Data.Morpheus.Types.Internal.AST.Stage
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,
-    ELEM,
     FromCategory (..),
     IMPLEMENTABLE,
     IN,
@@ -136,6 +136,8 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     TypeCategory,
     fromAny,
     toAny,
+    type (<=!),
+    type (<=?),
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
@@ -514,32 +516,32 @@ data
   DataScalar ::
     { dataScalar :: ScalarDefinition
     } ->
-    TypeContent (ELEM LEAF a) a s
+    TypeContent (LEAF <=! a) a s
   DataEnum ::
     { enumMembers :: DataEnum s
     } ->
-    TypeContent (ELEM LEAF a) a s
+    TypeContent (LEAF <=! a) a s
   DataInputObject ::
     { inputObjectFields :: FieldsDefinition IN s
     } ->
-    TypeContent (ELEM IN a) a s
+    TypeContent (IN <=! a) a s
   DataInputUnion ::
     { inputUnionMembers :: DataInputUnion s
     } ->
-    TypeContent (ELEM IN a) a s
+    TypeContent (IN <=! a) a s
   DataObject ::
     { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (ELEM OBJECT a) a s
+    TypeContent (OBJECT <=! a) a s
   DataUnion ::
     { unionMembers :: DataUnion s
     } ->
-    TypeContent (ELEM OUT a) a s
+    TypeContent (OUT <=! a) a s
   DataInterface ::
     { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (ELEM IMPLEMENTABLE a) a s
+    TypeContent (IMPLEMENTABLE <=! a) a s
 
 deriving instance Show (TypeContent a b s)
 
@@ -590,10 +592,10 @@ mkType typeName typeContent =
       typeContent
     }
 
-createScalarType :: ELEM LEAF a ~ TRUE => TypeName -> TypeDefinition a s
+createScalarType :: (LEAF <=? a) => TypeName -> TypeDefinition a s
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
-mkEnumContent :: ELEM LEAF a ~ TRUE => [TypeName] -> TypeContent TRUE a s
+mkEnumContent :: (LEAF <=? a) => [TypeName] -> TypeContent TRUE a s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s
