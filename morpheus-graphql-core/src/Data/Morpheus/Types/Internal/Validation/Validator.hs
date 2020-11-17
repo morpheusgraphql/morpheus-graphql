@@ -195,11 +195,9 @@ data Constraint (a :: Target) where
 
 --  UNION  :: Constraint 'TARGET_UNION
 
-type family Resolution (s :: Stage) (a :: Target)
-
-type instance Resolution s 'TARGET_IMPLEMENTABLE = TypeDefinition IMPLEMENTABLE s
-
-type instance Resolution s 'TARGET_INPUT = TypeDefinition IN s
+type family Resolution (s :: Stage) (a :: Target) where
+  Resolution s 'TARGET_IMPLEMENTABLE = TypeDefinition IMPLEMENTABLE s
+  Resolution s 'TARGET_INPUT = TypeDefinition IN s
 
 inField :: FieldDefinition IN s -> InputValidator s c a -> InputValidator s c a
 inField

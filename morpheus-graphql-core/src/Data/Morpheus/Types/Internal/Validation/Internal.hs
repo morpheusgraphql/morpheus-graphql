@@ -105,11 +105,9 @@ askInterfaceTypes typeDef@TypeDefinition {typeName} =
     validate (Just x) = pure x
     validate Nothing = failure ("TODO: invalid interface Types" :: InternalError)
 
-type family TypeMemberResponse (cat :: TypeCategory) (s :: Stage)
-
-type instance TypeMemberResponse OUT s = TypeDefinition OBJECT s
-
-type instance TypeMemberResponse IN s = (TypeDefinition IN s, FieldsDefinition IN s)
+type family TypeMemberResponse (cat :: TypeCategory) (s :: Stage) where
+  TypeMemberResponse OUT s = TypeDefinition OBJECT s
+  TypeMemberResponse IN s = (TypeDefinition IN s, FieldsDefinition IN s)
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),

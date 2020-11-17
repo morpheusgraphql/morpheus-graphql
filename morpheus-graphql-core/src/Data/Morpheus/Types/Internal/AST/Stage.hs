@@ -22,10 +22,6 @@ data Stage
   | CONST
   | VALID
 
-type family CONST_OR_VALID (a :: Stage) :: Stage
-
-type instance CONST_OR_VALID RAW = CONST
-
-type instance CONST_OR_VALID CONST = CONST
-
-type instance CONST_OR_VALID VALID = VALID
+type family CONST_OR_VALID (a :: Stage) :: Stage where
+  CONST_OR_VALID VALID = VALID
+  CONST_OR_VALID a = CONST
