@@ -158,7 +158,7 @@ module Data.Morpheus.Types.Internal.AST
     mkField,
     safeDefineType,
     defineSchemaWith,
-    type (<=?),
+    type (<=&),
   )
 where
 

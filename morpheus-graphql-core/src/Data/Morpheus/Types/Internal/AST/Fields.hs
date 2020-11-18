@@ -93,7 +93,7 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     ToCategory (..),
     TypeCategory,
     toAny,
-    type (<=!),
+    type (<=?),
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
@@ -245,11 +245,11 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
   DefaultInputValue ::
     { defaultInputValue :: Value s
     } ->
-    FieldContent (IN <=! cat) cat s
+    FieldContent (IN <=? cat) cat s
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition s
     } ->
-    FieldContent (OUT <=! cat) cat s
+    FieldContent (OUT <=? cat) cat s
 
 fieldContentArgs :: FieldContent b cat s -> ArgumentsDefinition s
 fieldContentArgs (FieldArgs args) = args

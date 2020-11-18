@@ -136,7 +136,7 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     TypeCategory,
     fromAny,
     toAny,
-    type (<=!),
+    type (<=&),
     type (<=?),
   )
 import Data.Morpheus.Types.Internal.AST.Value
@@ -516,32 +516,32 @@ data
   DataScalar ::
     { dataScalar :: ScalarDefinition
     } ->
-    TypeContent (LEAF <=! a) a s
+    TypeContent (LEAF <=? a) a s
   DataEnum ::
     { enumMembers :: DataEnum s
     } ->
-    TypeContent (LEAF <=! a) a s
+    TypeContent (LEAF <=? a) a s
   DataInputObject ::
     { inputObjectFields :: FieldsDefinition IN s
     } ->
-    TypeContent (IN <=! a) a s
+    TypeContent (IN <=? a) a s
   DataInputUnion ::
     { inputUnionMembers :: DataInputUnion s
     } ->
-    TypeContent (IN <=! a) a s
+    TypeContent (IN <=? a) a s
   DataObject ::
     { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (OBJECT <=! a) a s
+    TypeContent (OBJECT <=? a) a s
   DataUnion ::
     { unionMembers :: DataUnion s
     } ->
-    TypeContent (OUT <=! a) a s
+    TypeContent (OUT <=? a) a s
   DataInterface ::
     { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IMPLEMENTABLE <=! a) a s
+    TypeContent (IMPLEMENTABLE <=? a) a s
 
 deriving instance Show (TypeContent a b s)
 
@@ -592,10 +592,10 @@ mkType typeName typeContent =
       typeContent
     }
 
-createScalarType :: (LEAF <=? a) => TypeName -> TypeDefinition a s
+createScalarType :: (LEAF <=& a) => TypeName -> TypeDefinition a s
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
-mkEnumContent :: (LEAF <=? a) => [TypeName] -> TypeContent TRUE a s
+mkEnumContent :: (LEAF <=& a) => [TypeName] -> TypeContent TRUE a s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s
