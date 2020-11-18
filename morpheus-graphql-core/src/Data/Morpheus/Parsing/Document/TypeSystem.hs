@@ -66,7 +66,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     buildSchema,
     mkUnionMember,
-    type (<=&),
+    type (<=!),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -80,7 +80,7 @@ import Text.Megaparsec
   )
 
 mkObject ::
-  (OBJECT <=& a) =>
+  (OBJECT <=! a) =>
   Maybe Description ->
   TypeName ->
   [TypeName] ->

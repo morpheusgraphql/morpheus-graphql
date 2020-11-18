@@ -136,7 +136,7 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     TypeCategory,
     fromAny,
     toAny,
-    type (<=&),
+    type (<=!),
     type (<=?),
   )
 import Data.Morpheus.Types.Internal.AST.Value
@@ -592,10 +592,10 @@ mkType typeName typeContent =
       typeContent
     }
 
-createScalarType :: (LEAF <=& a) => TypeName -> TypeDefinition a s
+createScalarType :: (LEAF <=! a) => TypeName -> TypeDefinition a s
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
-mkEnumContent :: (LEAF <=& a) => [TypeName] -> TypeContent TRUE a s
+mkEnumContent :: (LEAF <=! a) => [TypeName] -> TypeContent TRUE a s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s

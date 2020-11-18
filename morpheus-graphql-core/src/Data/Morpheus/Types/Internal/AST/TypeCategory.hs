@@ -8,7 +8,7 @@
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
   ( TypeCategory,
-    type (<=&),
+    type (<=!),
     type (<=?),
     OUT,
     IN,
@@ -18,7 +18,6 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
     IMPLEMENTABLE,
     fromAny,
     toAny,
-    REQUIRE_IMPLEMENTABLE,
     ToCategory (..),
     FromCategory (..),
   )
@@ -69,7 +68,7 @@ class ToCategory a (k :: TypeCategory) (k' :: TypeCategory) where
 class FromCategory a (k :: TypeCategory) (k' :: TypeCategory) where
   fromCategory :: a k (s :: Stage) -> Maybe (a k' s)
 
-type (a :: TypeCategory) <=& (b :: TypeCategory) = a <=? b ~ TRUE
+type (a :: TypeCategory) <=! (b :: TypeCategory) = a <=? b ~ TRUE
 
 -- <=
 type family (elem :: TypeCategory) <=? (cat :: TypeCategory) :: Bool where
@@ -86,5 +85,3 @@ type family (elem :: TypeCategory) <=? (cat :: TypeCategory) :: Bool where
   a <=? ANY = TRUE
   a <=? a = TRUE
   a <=? b = FALSE
-
-type REQUIRE_IMPLEMENTABLE cat = cat <=& IMPLEMENTABLE

@@ -150,7 +150,6 @@ module Data.Morpheus.Types.Internal.AST
     ValidationErrors,
     toGQLError,
     LEAF,
-    REQUIRE_IMPLEMENTABLE,
     ToCategory (..),
     FromCategory (..),
     possibleTypes,
@@ -158,7 +157,7 @@ module Data.Morpheus.Types.Internal.AST
     mkField,
     safeDefineType,
     defineSchemaWith,
-    type (<=&),
+    type (<=!),
   )
 where
 
