@@ -150,6 +150,7 @@ module Data.Morpheus.Types.Internal.AST
     ValidationErrors,
     toGQLError,
     LEAF,
+    INPUT_OBJECT,
     ToCategory (..),
     FromCategory (..),
     possibleTypes,

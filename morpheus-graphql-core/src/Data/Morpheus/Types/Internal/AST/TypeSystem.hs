@@ -129,6 +129,7 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     FromCategory (..),
     IMPLEMENTABLE,
     IN,
+    INPUT_OBJECT,
     LEAF,
     OBJECT,
     OUT,
@@ -526,7 +527,7 @@ data
   DataInputObject ::
     { inputObjectFields :: FieldsDefinition IN s
     } ->
-    CondTypeContent IN a s
+    CondTypeContent INPUT_OBJECT a s
   DataInputUnion ::
     { inputUnionMembers :: DataInputUnion s
     } ->

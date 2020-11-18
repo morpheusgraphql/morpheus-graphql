@@ -15,6 +15,7 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
     ANY,
     LEAF,
     OBJECT,
+    INPUT_OBJECT,
     IMPLEMENTABLE,
     fromAny,
     toAny,
@@ -36,6 +37,7 @@ data TypeCategory
   | ANY
   | LEAF
   | OBJECT
+  | INPUT_OBJECT
   | IMPLEMENTABLE
 
 type IN = 'IN
@@ -49,6 +51,8 @@ type OBJECT = 'OBJECT
 type IMPLEMENTABLE = 'IMPLEMENTABLE
 
 type LEAF = 'LEAF
+
+type INPUT_OBJECT = 'INPUT_OBJECT
 
 toAny ::
   (ToCategory a k ANY) =>
@@ -75,10 +79,11 @@ type family (elem :: TypeCategory) <=? (cat :: TypeCategory) :: Bool where
 -- leaf
   LEAF <=? IN = TRUE
   LEAF <=? OUT = TRUE
--- object
+-- input
+  INPUT_OBJECT <=? IN = TRUE
+-- output
   OBJECT <=? IMPLEMENTABLE = TRUE
   OBJECT <=? OUT = TRUE
--- implementable
   IMPLEMENTABLE <=? OUT = TRUE
 -- all other cases are false
   ANY <=? a = TRUE
