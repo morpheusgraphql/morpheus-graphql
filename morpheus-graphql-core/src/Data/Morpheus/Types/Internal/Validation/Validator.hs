@@ -32,9 +32,8 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     OperationContext (..),
     CurrentSelection (..),
     renderInputPrefix,
-    Target (..),
     Prop (..),
-    Resolution,
+    --  Resolution,
     ScopeKind (..),
     inputValueSource,
     Scope (..),
@@ -79,6 +78,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Schema,
     Stage,
+    TypeCategory,
     TypeDefinition (..),
     TypeKind (..),
     TypeName (..),
@@ -185,19 +185,9 @@ data InputSource
       }
   deriving (Show)
 
-data Target
-  = TARGET_IMPLEMENTABLE
-  | TARGET_INPUT
-
-data Constraint (a :: Target) where
-  IMPLEMENTABLE :: Constraint 'TARGET_IMPLEMENTABLE
-  INPUT :: Constraint 'TARGET_INPUT
-
---  UNION  :: Constraint 'TARGET_UNION
-
-type family Resolution (s :: Stage) (a :: Target) where
-  Resolution s 'TARGET_IMPLEMENTABLE = TypeDefinition IMPLEMENTABLE s
-  Resolution s 'TARGET_INPUT = TypeDefinition IN s
+data Constraint (a :: TypeCategory) where
+  IMPLEMENTABLE :: Constraint IMPLEMENTABLE
+  INPUT :: Constraint IN
 
 inField :: FieldDefinition IN s -> InputValidator s c a -> InputValidator s c a
 inField
