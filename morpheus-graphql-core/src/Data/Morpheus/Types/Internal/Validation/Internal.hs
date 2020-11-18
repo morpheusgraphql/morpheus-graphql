@@ -26,10 +26,10 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    FieldsDefinition,
     FromCategory,
     IMPLEMENTABLE,
     IN,
+    INPUT_OBJECT,
     InternalError,
     OBJECT,
     OUT,
@@ -107,7 +107,7 @@ askInterfaceTypes typeDef@TypeDefinition {typeName} =
 
 type family TypeMemberResponse (cat :: TypeCategory) (s :: Stage) where
   TypeMemberResponse OUT s = TypeDefinition OBJECT s
-  TypeMemberResponse IN s = (TypeDefinition IN s, FieldsDefinition IN s)
+  TypeMemberResponse IN s = TypeDefinition INPUT_OBJECT s
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),
@@ -150,7 +150,7 @@ class KindErrors c where
 
 instance KindErrors IN where
   kindConstraint = _kindConstraint "input type"
-  constraintObject typeDef@TypeDefinition {typeContent = DataInputObject inputFields} = pure (typeDef, inputFields)
+  constraintObject TypeDefinition {typeContent = DataInputObject {..}, ..} = pure TypeDefinition {typeContent = DataInputObject {..}, ..}
   constraintObject TypeDefinition {typeName} = failure (violation "input object" typeName)
 
 instance KindErrors OUT where
