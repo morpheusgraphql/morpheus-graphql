@@ -159,6 +159,7 @@ module Data.Morpheus.Types.Internal.AST
     safeDefineType,
     defineSchemaWith,
     type (<=!),
+    ToOBJECT,
   )
 where
 

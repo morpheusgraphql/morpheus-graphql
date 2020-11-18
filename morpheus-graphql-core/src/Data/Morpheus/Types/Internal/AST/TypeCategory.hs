@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
     toAny,
     ToCategory (..),
     FromCategory (..),
+    ToOBJECT,
   )
 where
 
@@ -90,3 +91,7 @@ type family (elem :: TypeCategory) <=? (cat :: TypeCategory) :: Bool where
   a <=? ANY = TRUE
   a <=? a = TRUE
   a <=? b = FALSE
+
+type family ToOBJECT (s :: TypeCategory) :: TypeCategory where
+  ToOBJECT OUT = OBJECT
+  ToOBJECT IN = INPUT_OBJECT
