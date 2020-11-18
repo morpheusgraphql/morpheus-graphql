@@ -71,21 +71,20 @@ class FromCategory a (k :: TypeCategory) (k' :: TypeCategory) where
 
 type (a :: TypeCategory) <=? (b :: TypeCategory) = a <=! b ~ TRUE
 
-type family (elemKind :: TypeCategory) <=! (setOfKind :: TypeCategory) :: Bool where
--- same types
-  a <=! a = TRUE
--- any
-  ANY <=! a = TRUE
-  a <=! ANY = TRUE
+-- <=
+type family (elem :: TypeCategory) <=! (cat :: TypeCategory) :: Bool where
 -- leaf
   LEAF <=! IN = TRUE
   LEAF <=! OUT = TRUE
--- implementable
-  IMPLEMENTABLE <=! OUT = TRUE
 -- object
   OBJECT <=! IMPLEMENTABLE = TRUE
   OBJECT <=! OUT = TRUE
+-- implementable
+  IMPLEMENTABLE <=! OUT = TRUE
 -- all other cases are false
+  ANY <=! a = TRUE
+  a <=! ANY = TRUE
+  a <=! a = TRUE
   a <=! b = FALSE
 
 type REQUIRE_IMPLEMENTABLE cat = cat <=? IMPLEMENTABLE
