@@ -562,6 +562,9 @@ instance ToCategory (TypeContent TRUE) a ANY where
 instance ToCategory (TypeContent TRUE) OBJECT IMPLEMENTABLE where
   toCategory DataObject {..} = DataObject {..}
 
+instance ToCategory (TypeContent TRUE) INPUT_OBJECT IN where
+  toCategory DataInputObject {..} = DataInputObject {..}
+
 instance FromCategory (TypeContent TRUE) ANY IN where
   fromCategory DataScalar {..} = Just DataScalar {..}
   fromCategory DataEnum {..} = Just DataEnum {..}
