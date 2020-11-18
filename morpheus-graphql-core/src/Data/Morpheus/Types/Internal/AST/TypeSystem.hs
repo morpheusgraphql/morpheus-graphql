@@ -507,6 +507,8 @@ instance
     where
       bla x = TypeDefinition {typeContent = x, ..}
 
+type CondTypeContent r a s = TypeContent (r <=? a) a s
+
 data
   TypeContent
     (b :: Bool)
@@ -516,32 +518,32 @@ data
   DataScalar ::
     { dataScalar :: ScalarDefinition
     } ->
-    TypeContent (LEAF <=? a) a s
+    CondTypeContent LEAF a s
   DataEnum ::
     { enumMembers :: DataEnum s
     } ->
-    TypeContent (LEAF <=? a) a s
+    CondTypeContent LEAF a s
   DataInputObject ::
     { inputObjectFields :: FieldsDefinition IN s
     } ->
-    TypeContent (IN <=? a) a s
+    CondTypeContent IN a s
   DataInputUnion ::
     { inputUnionMembers :: DataInputUnion s
     } ->
-    TypeContent (IN <=? a) a s
+    CondTypeContent IN a s
   DataObject ::
     { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (OBJECT <=? a) a s
+    CondTypeContent OBJECT a s
   DataUnion ::
     { unionMembers :: DataUnion s
     } ->
-    TypeContent (OUT <=? a) a s
+    CondTypeContent OUT a s
   DataInterface ::
     { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (IMPLEMENTABLE <=? a) a s
+    CondTypeContent IMPLEMENTABLE a s
 
 deriving instance Show (TypeContent a b s)
 
