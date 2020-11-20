@@ -1,5 +1,12 @@
 # Changelog
 
+## (next version)
+
+### Minor Changes
+
+- more likely to rebuild when a file loaded by `defineByDocumentFile` or
+  `defineByIntrospectionFile` is changed
+
 ## 0.16.0 - 05.11.2020
 
 ### Minor Changes

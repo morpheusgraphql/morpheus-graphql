@@ -1,5 +1,12 @@
 # Changelog
 
+## (next version)
+
+### Minor Changes
+
+- more likely to rebuild when a file loaded by `importGQLDocument` or
+  `importGQLDocumentWithNamespace` is changed
+
 ## 0.16.0 - 05.11.2020
 
 ## Breaking changes
