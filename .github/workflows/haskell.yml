@@ -19,7 +19,6 @@ jobs:
         uses: mstksg/get-package@v1
         with:
           apt-get: ${{ matrix.apt-get }}
-          brew: ${{ matrix.brew }}
       - uses: actions/checkout@v1
 
       - name: Setup stack
@@ -39,11 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: actions/setup-haskell@v1
-        with:
-          ghc-version: "8.6.5"
-          cabal-version: "3.0"
-      - name: install
+      - name: lint
         run: |
           curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
   # lint:
