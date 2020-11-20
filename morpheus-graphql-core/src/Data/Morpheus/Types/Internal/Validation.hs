@@ -78,6 +78,7 @@ import Data.Morpheus.Types.Internal.AST
     Position (..),
     Ref (..),
     TRUE,
+    TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -117,12 +118,11 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     MonadContext (..),
     OperationContext (..),
     Prop (..),
-    Resolution,
+    -- Resolution,
     Scope (..),
     ScopeKind (..),
     SelectionValidator,
     SetWith (..),
-    Target (..),
     Validator (..),
     ValidatorContext (..),
     askFragments,
@@ -166,11 +166,11 @@ checkUnused ::
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
-  KindViolation a inp =>
-  Constraint (a :: Target) ->
+  KindViolation k inp =>
+  Constraint (k :: TypeCategory) ->
   inp ->
   TypeDefinition ANY s ->
-  Validator s ctx (Resolution s a)
+  Validator s ctx (TypeDefinition k s)
 constraint IMPLEMENTABLE _ TypeDefinition {typeContent = DataObject {objectFields, ..}, ..} =
   pure TypeDefinition {typeContent = DataObject {objectFields, ..}, ..}
 constraint IMPLEMENTABLE _ TypeDefinition {typeContent = DataInterface fields, ..} =

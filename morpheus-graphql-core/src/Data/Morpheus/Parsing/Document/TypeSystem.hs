@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Document.TypeSystem
@@ -51,7 +52,6 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     DirectiveDefinition (..),
     Directives,
-    ELEM,
     FieldsDefinition,
     OBJECT,
     OUT,
@@ -60,13 +60,13 @@ import Data.Morpheus.Types.Internal.AST
     ScalarDefinition (..),
     Schema,
     SchemaDefinition (..),
-    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     Value,
     buildSchema,
     mkUnionMember,
+    type (<=!),
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
@@ -80,7 +80,7 @@ import Text.Megaparsec
   )
 
 mkObject ::
-  (ELEM OBJECT a ~ TRUE) =>
+  (OBJECT <=! a) =>
   Maybe Description ->
   TypeName ->
   [TypeName] ->

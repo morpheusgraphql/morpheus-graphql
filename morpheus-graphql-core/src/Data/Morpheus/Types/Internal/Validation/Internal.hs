@@ -26,7 +26,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    FieldsDefinition,
     FromCategory,
     IMPLEMENTABLE,
     IN,
@@ -35,10 +34,9 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Operation,
     Operation (..),
-    Stage,
     TRUE,
+    ToOBJECT,
     Token,
-    TypeCategory,
     TypeContent (..),
     TypeContent,
     TypeDefinition (..),
@@ -85,7 +83,7 @@ __askType name =
 askTypeMember ::
   Constraints m c cat s =>
   UnionMember cat s ->
-  m c (TypeMemberResponse cat s)
+  m c (TypeDefinition (ToOBJECT cat) s)
 askTypeMember = askType2 . typed memberName >=> constraintObject
 
 askInterfaceTypes ::
@@ -104,12 +102,6 @@ askInterfaceTypes typeDef@TypeDefinition {typeName} =
   where
     validate (Just x) = pure x
     validate Nothing = failure ("TODO: invalid interface Types" :: InternalError)
-
-type family TypeMemberResponse (cat :: TypeCategory) (s :: Stage)
-
-type instance TypeMemberResponse OUT s = TypeDefinition OBJECT s
-
-type instance TypeMemberResponse IN s = (TypeDefinition IN s, FieldsDefinition IN s)
 
 type Constraints m c cat s =
   ( Failure InternalError (m c),
@@ -148,11 +140,11 @@ class KindErrors c where
       Failure InternalError f
     ) =>
     TypeDefinition c s ->
-    f (TypeMemberResponse c s)
+    f (TypeDefinition (ToOBJECT c) s)
 
 instance KindErrors IN where
   kindConstraint = _kindConstraint "input type"
-  constraintObject typeDef@TypeDefinition {typeContent = DataInputObject inputFields} = pure (typeDef, inputFields)
+  constraintObject TypeDefinition {typeContent = DataInputObject {..}, ..} = pure TypeDefinition {typeContent = DataInputObject {..}, ..}
   constraintObject TypeDefinition {typeName} = failure (violation "input object" typeName)
 
 instance KindErrors OUT where
