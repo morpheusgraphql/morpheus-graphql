@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Prepare OS
-        uses: mstksg/get-package@v1
+        uses: nalchevanidze/setup-stack@v1
         with:
           apt-get: ${{ matrix.apt-get }}
       - uses: actions/checkout@v1
