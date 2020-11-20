@@ -52,6 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     isWeaker,
     msg,
     msgValidation,
+    toCategory,
     toFieldName,
     typed,
     untyped,
@@ -212,8 +213,8 @@ validatInputUnionMember ::
   Value valueS ->
   InputValidator schemaS ctx (Value VALID)
 validatInputUnionMember member@UnionMember {memberName} value = do
-  inputDef <- fst <$> askTypeMember member
-  validValue <- validateInputByType [TypeMaybe] inputDef value
+  inputDef <- askTypeMember member
+  validValue <- validateInputByType [TypeMaybe] (toCategory inputDef) value
   mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
 
 mkInputObject :: (Monad m, Failure ValidationErrors m) => TypeName -> [ObjectEntry s] -> m (Value s)

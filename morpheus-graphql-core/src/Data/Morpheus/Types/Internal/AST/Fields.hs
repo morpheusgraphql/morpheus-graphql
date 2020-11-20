@@ -11,6 +11,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Fields
@@ -87,12 +88,12 @@ import Data.Morpheus.Types.Internal.AST.Stage
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,
-    ELEM,
     IN,
     OUT,
     ToCategory (..),
     TypeCategory,
     toAny,
+    type (<=?),
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( ScalarValue (..),
@@ -244,11 +245,11 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
   DefaultInputValue ::
     { defaultInputValue :: Value s
     } ->
-    FieldContent (ELEM IN cat) cat s
+    FieldContent (IN <=? cat) cat s
   FieldArgs ::
     { fieldArgsDef :: ArgumentsDefinition s
     } ->
-    FieldContent (ELEM OUT cat) cat s
+    FieldContent (OUT <=? cat) cat s
 
 fieldContentArgs :: FieldContent b cat s -> ArgumentsDefinition s
 fieldContentArgs (FieldArgs args) = args

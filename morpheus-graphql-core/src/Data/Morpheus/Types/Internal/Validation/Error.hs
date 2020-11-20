@@ -11,7 +11,6 @@ module Data.Morpheus.Types.Internal.Validation.Error
   ( MissingRequired (..),
     KindViolation (..),
     Unknown (..),
-    Target (..),
     Unused (..),
   )
 where
@@ -28,12 +27,14 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     Fragment (..),
     Fragments,
+    IMPLEMENTABLE,
     IN,
     OUT,
     Object,
     ObjectEntry (..),
     Ref (..),
     Schema,
+    TypeCategory,
     TypeNameRef (..),
     TypeRef (..),
     ValidationError (..),
@@ -50,7 +51,6 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     OperationContext (..),
     Scope (..),
     ScopeKind (..),
-    Target (..),
     renderInputPrefix,
   )
 import Relude
@@ -189,10 +189,10 @@ instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
 instance Unknown (FieldsDefinition OUT s) Ref (OperationContext s1 s2) where
   unknown Scope {currentTypeName} _ _ = unknownSelectionField currentTypeName
 
-class KindViolation (t :: Target) ctx where
+class KindViolation (t :: TypeCategory) ctx where
   kindViolation :: c t -> ctx -> ValidationError
 
-instance KindViolation 'TARGET_IMPLEMENTABLE (Fragment s) where
+instance KindViolation IMPLEMENTABLE (Fragment s) where
   kindViolation _ Fragment {fragmentName, fragmentType, fragmentPosition} =
     ValidationError
       { validationMessage =
@@ -204,7 +204,7 @@ instance KindViolation 'TARGET_IMPLEMENTABLE (Fragment s) where
         validationLocations = [fragmentPosition]
       }
 
-instance KindViolation 'TARGET_INPUT (Variable s) where
+instance KindViolation IN (Variable s) where
   kindViolation
     _
     Variable

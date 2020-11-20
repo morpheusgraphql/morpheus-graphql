@@ -3,22 +3,25 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
   ( TypeCategory,
-    ELEM,
+    type (<=!),
+    type (<=?),
     OUT,
     IN,
     ANY,
     LEAF,
     OBJECT,
+    INPUT_OBJECT,
     IMPLEMENTABLE,
     fromAny,
     toAny,
-    REQUIRE_IMPLEMENTABLE,
     ToCategory (..),
     FromCategory (..),
+    ToOBJECT,
   )
 where
 
@@ -35,6 +38,7 @@ data TypeCategory
   | ANY
   | LEAF
   | OBJECT
+  | INPUT_OBJECT
   | IMPLEMENTABLE
 
 type IN = 'IN
@@ -48,6 +52,8 @@ type OBJECT = 'OBJECT
 type IMPLEMENTABLE = 'IMPLEMENTABLE
 
 type LEAF = 'LEAF
+
+type INPUT_OBJECT = 'INPUT_OBJECT
 
 toAny ::
   (ToCategory a k ANY) =>
@@ -67,66 +73,25 @@ class ToCategory a (k :: TypeCategory) (k' :: TypeCategory) where
 class FromCategory a (k :: TypeCategory) (k' :: TypeCategory) where
   fromCategory :: a k (s :: Stage) -> Maybe (a k' s)
 
-type family
-  ELEM
-    (elemKind :: TypeCategory)
-    (setOfKind :: TypeCategory) ::
-    Bool
+type (a :: TypeCategory) <=! (b :: TypeCategory) = a <=? b ~ TRUE
 
-type REQUIRE_IMPLEMENTABLE cat = ELEM cat IMPLEMENTABLE ~ TRUE
+-- <=
+type family (elem :: TypeCategory) <=? (cat :: TypeCategory) :: Bool where
+-- leaf
+  LEAF <=? IN = TRUE
+  LEAF <=? OUT = TRUE
+-- input
+  INPUT_OBJECT <=? IN = TRUE
+-- output
+  OBJECT <=? IMPLEMENTABLE = TRUE
+  OBJECT <=? OUT = TRUE
+  IMPLEMENTABLE <=? OUT = TRUE
+-- all other cases are false
+  ANY <=? a = TRUE
+  a <=? ANY = TRUE
+  a <=? a = TRUE
+  a <=? b = FALSE
 
--- ANY
-type instance ELEM ANY a = TRUE
-
-type instance ELEM a ANY = TRUE
-
--- LEAF
-type instance ELEM LEAF LEAF = TRUE
-
-type instance ELEM LEAF IN = TRUE
-
-type instance ELEM LEAF OUT = TRUE
-
-type instance ELEM LEAF OBJECT = FALSE
-
-type instance ELEM LEAF IMPLEMENTABLE = FALSE
-
--- IN
-type instance ELEM IN IN = TRUE
-
-type instance ELEM IN OUT = FALSE
-
-type instance ELEM IN OBJECT = FALSE
-
-type instance ELEM IN IMPLEMENTABLE = FALSE
-
--- OUT
-type instance ELEM OUT OUT = TRUE
-
-type instance ELEM OUT IN = FALSE
-
-type instance ELEM OUT OBJECT = FALSE
-
-type instance ELEM OUT IMPLEMENTABLE = FALSE
-
--- IMPLEMENTABLE
-type instance ELEM IMPLEMENTABLE IMPLEMENTABLE = TRUE
-
-type instance ELEM IMPLEMENTABLE OUT = TRUE
-
-type instance ELEM IMPLEMENTABLE IN = FALSE
-
-type instance ELEM IMPLEMENTABLE LEAF = FALSE
-
-type instance ELEM IMPLEMENTABLE OBJECT = FALSE
-
--- OUTPUT_OBJECT
-type instance ELEM OBJECT OBJECT = TRUE
-
-type instance ELEM OBJECT IMPLEMENTABLE = TRUE
-
-type instance ELEM OBJECT OUT = TRUE
-
-type instance ELEM OBJECT IN = FALSE
-
-type instance ELEM OBJECT LEAF = FALSE
+type family ToOBJECT (s :: TypeCategory) :: TypeCategory where
+  ToOBJECT OUT = OBJECT
+  ToOBJECT IN = INPUT_OBJECT

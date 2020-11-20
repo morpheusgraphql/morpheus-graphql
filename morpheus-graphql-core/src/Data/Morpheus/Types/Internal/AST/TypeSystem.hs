@@ -16,6 +16,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -125,10 +126,10 @@ import Data.Morpheus.Types.Internal.AST.Stage
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,
-    ELEM,
     FromCategory (..),
     IMPLEMENTABLE,
     IN,
+    INPUT_OBJECT,
     LEAF,
     OBJECT,
     OUT,
@@ -136,6 +137,8 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     TypeCategory,
     fromAny,
     toAny,
+    type (<=!),
+    type (<=?),
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
@@ -505,6 +508,8 @@ instance
     where
       bla x = TypeDefinition {typeContent = x, ..}
 
+type CondTypeContent r a s = TypeContent (r <=? a) a s
+
 data
   TypeContent
     (b :: Bool)
@@ -514,32 +519,32 @@ data
   DataScalar ::
     { dataScalar :: ScalarDefinition
     } ->
-    TypeContent (ELEM LEAF a) a s
+    CondTypeContent LEAF a s
   DataEnum ::
     { enumMembers :: DataEnum s
     } ->
-    TypeContent (ELEM LEAF a) a s
+    CondTypeContent LEAF a s
   DataInputObject ::
     { inputObjectFields :: FieldsDefinition IN s
     } ->
-    TypeContent (ELEM IN a) a s
+    CondTypeContent INPUT_OBJECT a s
   DataInputUnion ::
     { inputUnionMembers :: DataInputUnion s
     } ->
-    TypeContent (ELEM IN a) a s
+    CondTypeContent IN a s
   DataObject ::
     { objectImplements :: [TypeName],
       objectFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (ELEM OBJECT a) a s
+    CondTypeContent OBJECT a s
   DataUnion ::
     { unionMembers :: DataUnion s
     } ->
-    TypeContent (ELEM OUT a) a s
+    CondTypeContent OUT a s
   DataInterface ::
     { interfaceFields :: FieldsDefinition OUT s
     } ->
-    TypeContent (ELEM IMPLEMENTABLE a) a s
+    CondTypeContent IMPLEMENTABLE a s
 
 deriving instance Show (TypeContent a b s)
 
@@ -556,6 +561,9 @@ instance ToCategory (TypeContent TRUE) a ANY where
 
 instance ToCategory (TypeContent TRUE) OBJECT IMPLEMENTABLE where
   toCategory DataObject {..} = DataObject {..}
+
+instance ToCategory (TypeContent TRUE) INPUT_OBJECT IN where
+  toCategory DataInputObject {..} = DataInputObject {..}
 
 instance FromCategory (TypeContent TRUE) ANY IN where
   fromCategory DataScalar {..} = Just DataScalar {..}
@@ -590,10 +598,10 @@ mkType typeName typeContent =
       typeContent
     }
 
-createScalarType :: ELEM LEAF a ~ TRUE => TypeName -> TypeDefinition a s
+createScalarType :: (LEAF <=! a) => TypeName -> TypeDefinition a s
 createScalarType typeName = mkType typeName $ DataScalar (ScalarDefinition pure)
 
-mkEnumContent :: ELEM LEAF a ~ TRUE => [TypeName] -> TypeContent TRUE a s
+mkEnumContent :: (LEAF <=! a) => [TypeName] -> TypeContent TRUE a s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s
