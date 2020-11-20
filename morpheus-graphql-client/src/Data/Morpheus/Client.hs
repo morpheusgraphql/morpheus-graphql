@@ -44,13 +44,20 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
+  ( qAddDependentFile,
+  )
 import Relude hiding (ByteString)
 
 defineByDocumentFile :: FilePath -> (GQLQuery, String) -> Q [Dec]
-defineByDocumentFile = defineByDocument . L.readFile
+defineByDocumentFile filePath args = do
+  qAddDependentFile filePath
+  defineByDocument (L.readFile filePath) args
 
 defineByIntrospectionFile :: FilePath -> (GQLQuery, String) -> Q [Dec]
-defineByIntrospectionFile = defineByIntrospection . L.readFile
+defineByIntrospectionFile filePath args = do
+  qAddDependentFile filePath
+  defineByIntrospection (L.readFile filePath) args
 
 defineByDocument :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
 defineByDocument doc = defineQuery (schemaByDocument doc)

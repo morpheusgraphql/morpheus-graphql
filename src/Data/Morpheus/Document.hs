@@ -33,10 +33,14 @@ import Data.Morpheus.Types.Internal.Resolving
   ( resultOr,
   )
 import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
+  ( qAddDependentFile,
+  )
 import Relude hiding (ByteString)
 
 importGQLDocument :: FilePath -> Q [Dec]
-importGQLDocument src =
+importGQLDocument src = do
+  qAddDependentFile src
   runIO (readFile src)
     >>= compileDocument
       ServerDecContext
@@ -44,7 +48,8 @@ importGQLDocument src =
         }
 
 importGQLDocumentWithNamespace :: FilePath -> Q [Dec]
-importGQLDocumentWithNamespace src =
+importGQLDocumentWithNamespace src = do
+  qAddDependentFile src
   runIO (readFile src)
     >>= compileDocument
       ServerDecContext
