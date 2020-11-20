@@ -2,6 +2,8 @@
 
 ## (next version)
 
+### Minor Changes
+
 - more likely to rebuild when a file loaded by `importGQLDocument` or
   `importGQLDocumentWithNamespace` is changed
 
