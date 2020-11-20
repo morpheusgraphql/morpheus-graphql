@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v1
 
       - name: Setup stack
-        uses: nalchevanidze/setup-stack@v2.3
+        uses: nalchevanidze/setup-stack@v2.4
 
       - name: Install dependencies
         run: |
