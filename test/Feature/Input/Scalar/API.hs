@@ -31,7 +31,7 @@ testRes Arg {value} = pure value
 
 -- resolver
 data Query m = Query
-  { testFloat :: Arg Float -> m Float,
+  { testFloat :: Arg Double -> m Double,
     testInt :: Arg Int -> m Int,
     testString :: Arg Text -> m Text
   }

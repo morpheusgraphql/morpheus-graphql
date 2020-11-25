@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.0 - Unreleased
+
+### Breaking Changes
+
+- `Value.Float` is now `Double` instead of `Float`.
+
 ## 0.16.0 - 05.11.2020
 
 ### Breaking Changes

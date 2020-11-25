@@ -94,7 +94,7 @@ import Relude
 -- for performance reason type 'Text' represents GraphQl 'String' value
 data ScalarValue
   = Int Int
-  | Float Float
+  | Float Double
   | String Text
   | Boolean Bool
   | Value A.Value

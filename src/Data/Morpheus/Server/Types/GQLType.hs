@@ -19,7 +19,6 @@ module Data.Morpheus.Server.Types.GQLType
 where
 
 -- MORPHEUS
-import Data.Map (Map)
 import Data.Morpheus.Kind
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -47,37 +46,20 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
     SubscriptionField,
   )
-import Data.Proxy (Proxy (..))
-import Data.Set (Set)
 import Data.Text
-  ( Text,
-    intercalate,
+  ( intercalate,
     pack,
   )
 import Data.Typeable
   ( TyCon,
     TypeRep,
-    Typeable,
     splitTyConApp,
     tyConFingerprint,
     tyConName,
     typeRep,
     typeRepTyCon,
   )
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Eq (..),
-    Float,
-    Int,
-    Maybe (..),
-    String,
-    concatMap,
-    fmap,
-    id,
-    mempty,
-  )
+import Relude hiding (Undefined, intercalate)
 
 data TypeData = TypeData
   { gqlTypeName :: TypeName,
@@ -98,14 +80,16 @@ defaultTypeOptions =
     }
 
 getTypename :: Typeable a => f a -> TypeName
-getTypename = TypeName . intercalate "_" . getName
-  where
-    getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+getTypename = TypeName . intercalate "" . getTypeConstructorNames
+
+getTypeConstructorNames :: Typeable a => f a -> [Text]
+getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeConstructors
 
 getFingerprint :: Typeable a => f a -> TypeFingerprint
-getFingerprint = TypeableFingerprint . conFingerprints
-  where
-    conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+getFingerprint = TypeableFingerprint . fmap tyConFingerprint . getTypeConstructors
+
+getTypeConstructors :: Typeable a => f a -> [TyCon]
+getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
 deriveTypeData :: Typeable a => f a -> TypeData
 deriveTypeData proxy =
@@ -202,9 +186,13 @@ instance GQLType Int where
   type KIND Int = SCALAR
   __type _ = mkTypeData "Int"
 
+instance GQLType Double where
+  type KIND Double = SCALAR
+  __type _ = mkTypeData "Float"
+
 instance GQLType Float where
   type KIND Float = SCALAR
-  __type _ = mkTypeData "Float"
+  __type _ = mkTypeData "Float32"
 
 instance GQLType Text where
   type KIND Text = SCALAR

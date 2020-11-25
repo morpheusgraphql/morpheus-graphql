@@ -1,6 +1,12 @@
 # Changelog
 
-## (next version)
+## 0.17.0 - 05.11.2020
+
+### Breaking Changes
+
+- Type name for parametrized types like `One (Two Three)` will be generated directly, concatenating them `OneTwoThree` instead of `One_Two_Three.`
+- Haskell `Float` was renamed to custom scalar type `Float32.`
+- Haskell `Double` now represents GraphQL `Float`.
 
 ### Minor Changes
 
