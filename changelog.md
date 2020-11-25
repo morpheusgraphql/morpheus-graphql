@@ -4,7 +4,7 @@
 
 ### Breaking Changes
 
-- typename for parametrized types like `One (Two Three)` will be generated directly concatenating them `OneTwoThree` instead of `One_Two_Three`.
+- Type name for parametrized types like `One (Two Three)` will be generated directly, concatenating them `OneTwoThree` instead of `One_Two_Three.`
 
 ### Minor Changes
 
