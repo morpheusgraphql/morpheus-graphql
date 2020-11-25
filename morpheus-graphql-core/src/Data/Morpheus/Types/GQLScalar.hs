@@ -21,6 +21,7 @@ import Data.Morpheus.Types.Internal.AST
     replaceValue,
   )
 import Data.Text (unpack)
+import GHC.Float (double2Float, float2Double)
 import Relude
 
 toScalar :: ValidValue -> Either Text ScalarValue
@@ -71,6 +72,12 @@ instance GQLScalar Int where
   serialize = Int
 
 instance GQLScalar Float where
+  parseValue (Float x) = pure (double2Float x)
+  parseValue (Int x) = pure $ fromInteger $ toInteger x
+  parseValue _ = Left ""
+  serialize = Float . float2Double
+
+instance GQLScalar Double where
   parseValue (Float x) = pure x
   parseValue (Int x) = pure $ fromInteger $ toInteger x
   parseValue _ = Left ""
