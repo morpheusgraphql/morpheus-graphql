@@ -19,7 +19,6 @@ module Data.Morpheus.Server.Types.GQLType
 where
 
 -- MORPHEUS
-import Data.Map (Map)
 import Data.Morpheus.Kind
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -47,37 +46,21 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
     SubscriptionField,
   )
-import Data.Proxy (Proxy (..))
-import Data.Set (Set)
 import Data.Text
-  ( Text,
-    intercalate,
+  ( intercalate,
     pack,
+    toTitle,
   )
 import Data.Typeable
   ( TyCon,
     TypeRep,
-    Typeable,
     splitTyConApp,
     tyConFingerprint,
     tyConName,
     typeRep,
     typeRepTyCon,
   )
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Eq (..),
-    Float,
-    Int,
-    Maybe (..),
-    String,
-    concatMap,
-    fmap,
-    id,
-    mempty,
-  )
+import Relude hiding (Undefined, intercalate)
 
 data TypeData = TypeData
   { gqlTypeName :: TypeName,
@@ -98,9 +81,9 @@ defaultTypeOptions =
     }
 
 getTypename :: Typeable a => f a -> TypeName
-getTypename = TypeName . intercalate "_" . getName
+getTypename = TypeName . intercalate "" . getName
   where
-    getName = fmap (fmap (pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+    getName = fmap (fmap (toTitle . pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
 
 getFingerprint :: Typeable a => f a -> TypeFingerprint
 getFingerprint = TypeableFingerprint . conFingerprints
@@ -202,8 +185,8 @@ instance GQLType Int where
   type KIND Int = SCALAR
   __type _ = mkTypeData "Int"
 
-instance GQLType Float where
-  type KIND Float = SCALAR
+instance GQLType Double where
+  type KIND Double = SCALAR
   __type _ = mkTypeData "Float"
 
 instance GQLType Text where
