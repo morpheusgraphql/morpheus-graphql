@@ -70,7 +70,7 @@ import Relude
 mkString :: Token -> ResModel o e m
 mkString = ResScalar . String
 
-mkFloat :: Float -> ResModel o e m
+mkFloat :: Double -> ResModel o e m
 mkFloat = ResScalar . Float
 
 mkInt :: Int -> ResModel o e m
