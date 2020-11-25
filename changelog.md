@@ -1,6 +1,10 @@
 # Changelog
 
-## (next version)
+## 0.17.0 - 05.11.2020
+
+### Breaking Changes
+
+- typename for parametrized types like `One (Two Three)` will be generated directly concatenating them `OneTwoThree` instead of `One_Two_Three`.
 
 ### Minor Changes
 

@@ -49,7 +49,6 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Text
   ( intercalate,
     pack,
-    toTitle,
   )
 import Data.Typeable
   ( TyCon,
@@ -81,14 +80,16 @@ defaultTypeOptions =
     }
 
 getTypename :: Typeable a => f a -> TypeName
-getTypename = TypeName . intercalate "" . getName
-  where
-    getName = fmap (fmap (toTitle . pack . tyConName)) (fmap replacePairCon . ignoreResolver . splitTyConApp . typeRep)
+getTypename = TypeName . intercalate "" . getTypeConstructorNames
+
+getTypeConstructorNames :: Typeable a => f a -> [Text]
+getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeConstructors
 
 getFingerprint :: Typeable a => f a -> TypeFingerprint
-getFingerprint = TypeableFingerprint . conFingerprints
-  where
-    conFingerprints = fmap (fmap tyConFingerprint) (ignoreResolver . splitTyConApp . typeRep)
+getFingerprint = TypeableFingerprint . fmap tyConFingerprint . getTypeConstructors
+
+getTypeConstructors :: Typeable a => f a -> [TyCon]
+getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
 deriveTypeData :: Typeable a => f a -> TypeData
 deriveTypeData proxy =
@@ -188,6 +189,10 @@ instance GQLType Int where
 instance GQLType Double where
   type KIND Double = SCALAR
   __type _ = mkTypeData "Float"
+
+instance GQLType Float where
+  type KIND Float = SCALAR
+  __type _ = mkTypeData "Float32"
 
 instance GQLType Text where
   type KIND Text = SCALAR
