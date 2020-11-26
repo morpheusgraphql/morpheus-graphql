@@ -32,8 +32,7 @@ import Data.Morpheus.Internal.Utils
   ( elems,
   )
 import Data.Morpheus.Kind
-  ( ENUM,
-    GQL_KIND,
+  ( GQL_KIND,
     SCALAR,
     TYPE,
   )
@@ -136,10 +135,6 @@ class DecodeKind (kind :: GQL_KIND) a where
 -- SCALAR
 instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
   decodeKind _ = withScalar (gqlTypeName $ __type (Proxy @a)) parseValue
-
--- ENUM
-instance DecodeConstraint a => DecodeKind ENUM a where
-  decodeKind _ = decodeType
 
 -- INPUT_OBJECT and  INPUT_UNION
 instance DecodeConstraint a => DecodeKind TYPE a where

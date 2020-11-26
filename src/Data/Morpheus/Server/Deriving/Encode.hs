@@ -34,8 +34,7 @@ import Data.Maybe
     maybe,
   )
 import Data.Morpheus.Kind
-  ( ENUM,
-    GQL_KIND,
+  ( GQL_KIND,
     INTERFACE,
     SCALAR,
     TYPE,
@@ -174,10 +173,6 @@ class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
 -- SCALAR
 instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
   encodeKind = pure . ResScalar . serialize . unContextValue
-
--- ENUM
-instance EncodeConstraint o e m a => EncodeKind ENUM a o e m where
-  encodeKind = pure . exploreResolvers . unContextValue
 
 instance EncodeConstraint o e m a => EncodeKind TYPE a o e m where
   encodeKind = pure . exploreResolvers . unContextValue

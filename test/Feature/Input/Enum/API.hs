@@ -9,20 +9,19 @@ module Feature.Input.Enum.API
 where
 
 import Data.Morpheus (interpreter)
-import Data.Morpheus.Kind (ENUM)
 import Data.Morpheus.Types (GQLRequest, GQLResponse, GQLType (..), RootResolver (..), Undefined (..))
 import GHC.Generics (Generic)
 
 data TwoCon
   = LA
   | LB
-  deriving (Show, Generic)
+  deriving (Show, Generic, GQLType)
 
 data ThreeCon
   = T1
   | T2
   | T3
-  deriving (Show, Generic)
+  deriving (Show, Generic, GQLType)
 
 data Level
   = L0
@@ -32,22 +31,13 @@ data Level
   | L4
   | L5
   | L6
-  deriving (Show, Generic)
+  deriving (Show, Generic, GQLType)
 
 -- types & args
 newtype TestArgs a = TestArgs
   { level :: a
   }
   deriving (Generic, Show, GQLType)
-
-instance GQLType Level where
-  type KIND Level = ENUM
-
-instance GQLType TwoCon where
-  type KIND TwoCon = ENUM
-
-instance GQLType ThreeCon where
-  type KIND ThreeCon = ENUM
 
 -- query
 testRes :: Applicative m => TestArgs a -> m a

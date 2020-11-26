@@ -34,8 +34,7 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
 import Data.Morpheus.Kind
-  ( ENUM,
-    GQL_KIND,
+  ( GQL_KIND,
     INTERFACE,
     SCALAR,
     TYPE,
@@ -221,10 +220,6 @@ type DeriveTypeConstraint kind a =
 -- SCALAR
 instance (GQLType a, GQLScalar a) => DeriveKindedType cat SCALAR a where
   deriveKindedType _ = updateByContent deriveScalarContent
-
--- ENUM
-instance DeriveTypeConstraint IN a => DeriveKindedType cat ENUM a where
-  deriveKindedType _ = deriveInputType
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType cat INTERFACE a where
   deriveKindedType _ = updateByContent deriveInterfaceContent
