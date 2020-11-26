@@ -75,6 +75,7 @@ import Prelude
   ( ($),
     (.),
     concatMap,
+    id,
     null,
     otherwise,
   )
@@ -109,7 +110,7 @@ deriveGQLType
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
           typeOptionsFunc
             | namespace = [|dropNamespaceOptions tKind tName|]
-            | otherwise = [|id|]
+            | otherwise = varE 'id
           fieldDescriptionsFunc = [|value|]
             where
               value = getDesc typeOriginal
