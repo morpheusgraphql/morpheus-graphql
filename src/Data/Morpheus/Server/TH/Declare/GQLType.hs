@@ -86,8 +86,8 @@ introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . toName
 
 dropNamespaceOptions :: TypeKind -> TypeName -> GQLTypeOptions -> GQLTypeOptions
-dropNamespaceOptions KindEnum tName opt = opt {fieldLabelModifier = stripConstructorNamespace tName}
-dropNamespaceOptions _ tName opt = opt {constructorTagModifier = stripFieldNamespace tName}
+dropNamespaceOptions KindEnum tName opt = opt {constructorTagModifier = stripFieldNamespace tName}
+dropNamespaceOptions _ tName opt = opt {fieldLabelModifier = stripConstructorNamespace tName}
 
 deriveGQLType :: ServerDecContext -> ServerTypeDefinition cat s -> Q [Dec]
 deriveGQLType
