@@ -21,10 +21,9 @@ import Data.Morpheus.Internal.TH
   )
 import Data.Morpheus.Kind
   ( ENUM,
-    INPUT,
     INTERFACE,
-    OUTPUT,
     SCALAR,
+    TYPE,
     WRAPPER,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -68,12 +67,9 @@ mkTypeableConstraints :: [String] -> CxtQ
 mkTypeableConstraints args = cxt $ map (pure . constraintTypeable) (vars args)
 
 kindName :: TypeKind -> Name
-kindName KindObject {} = ''OUTPUT
 kindName KindScalar = ''SCALAR
 kindName KindEnum = ''ENUM
-kindName KindUnion = ''OUTPUT
-kindName KindInputObject = ''INPUT
 kindName KindList = ''WRAPPER
 kindName KindNonNull = ''WRAPPER
-kindName KindInputUnion = ''INPUT
 kindName KindInterface = ''INTERFACE
+kindName _ = ''TYPE

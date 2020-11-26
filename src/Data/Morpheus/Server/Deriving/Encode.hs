@@ -37,8 +37,8 @@ import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
     INTERFACE,
-    OUTPUT,
     SCALAR,
+    TYPE,
   )
 import Data.Morpheus.Server.Deriving.Channels
   ( ChannelsConstraint,
@@ -179,7 +179,7 @@ instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
 instance EncodeConstraint o e m a => EncodeKind ENUM a o e m where
   encodeKind = pure . exploreResolvers . unContextValue
 
-instance EncodeConstraint o e m a => EncodeKind OUTPUT a o e m where
+instance EncodeConstraint o e m a => EncodeKind TYPE a o e m where
   encodeKind = pure . exploreResolvers . unContextValue
 
 instance EncodeConstraint o e m a => EncodeKind INTERFACE a o e m where

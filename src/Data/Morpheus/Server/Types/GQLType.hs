@@ -20,6 +20,14 @@ where
 
 -- MORPHEUS
 import Data.Morpheus.Kind
+  ( GQL_KIND,
+    SCALAR,
+    TYPE,
+    ToValue,
+    WRAPPER,
+    isObject,
+    toValue,
+  )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     TypeFingerprint (..),
@@ -150,7 +158,7 @@ ignoreResolver (con, args) =
 --  @
 class ToValue (KIND a) => GQLType a where
   type KIND a :: GQL_KIND
-  type KIND a = OUTPUT
+  type KIND a = TYPE
 
   implements :: f a -> [SchemaT TypeName]
   implements _ = []

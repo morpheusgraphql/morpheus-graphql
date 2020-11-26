@@ -28,10 +28,7 @@ data InputObject = InputObject
     nullableField :: Maybe Int,
     recursive :: Maybe InputObject
   }
-  deriving (Generic, Show)
-
-instance GQLType InputObject where
-  type KIND InputObject = INPUT
+  deriving (Generic, Show, GQLType)
 
 -- types & args
 newtype Arg a = Arg
