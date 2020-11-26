@@ -25,11 +25,9 @@ import Relude
 data GQL_KIND
   = SCALAR
   | ENUM
-  | INPUT
-  | OUTPUT
+  | AUTO
   | WRAPPER
   | INTERFACE
-  | AUTO
 
 class ToValue (a :: GQL_KIND) where
   toValue :: f a -> GQL_KIND
@@ -43,18 +41,14 @@ instance ToValue 'ENUM where
 instance ToValue 'WRAPPER where
   toValue _ = WRAPPER
 
-instance ToValue 'INPUT where
-  toValue _ = INPUT
-
-instance ToValue 'OUTPUT where
-  toValue _ = OUTPUT
+instance ToValue 'AUTO where
+  toValue _ = AUTO
 
 instance ToValue 'INTERFACE where
   toValue _ = INTERFACE
 
 isObject :: GQL_KIND -> Bool
-isObject INPUT = True
-isObject OUTPUT = True
+isObject AUTO = True
 isObject INTERFACE = True
 isObject _ = False
 
@@ -67,29 +61,29 @@ type ENUM = 'ENUM
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
-{-# DEPRECATED OUTPUT "use more generalized kind: AUTO" #-}
+{-# DEPRECATED OUTPUT "use: deriving(GQLType), will be automatically inferred" #-}
 
 -- | GraphQL Object and union
-type OUTPUT = 'OUTPUT
+type OUTPUT = 'AUTO
 
-{-# DEPRECATED INPUT "use more generalized kind: AUTO" #-}
+{-# DEPRECATED INPUT "use: deriving(GQLType), will be automatically inferred" #-}
 
 -- | GraphQL input Object and input union
-type INPUT = 'INPUT
+type INPUT = 'AUTO
 
-{-# DEPRECATED INPUT_OBJECT "use more generalized kind: AUTO" #-}
+{-# DEPRECATED INPUT_OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
 
 -- | GraphQL input Object
-type INPUT_OBJECT = 'INPUT
+type INPUT_OBJECT = 'AUTO
 
 {-# DEPRECATED UNION "use: deriving(GQLType), IMPORTANT: only types with <type constructor name><constructor name> will sustain their form, other union constructors will be wrapped inside an new object" #-}
 
 -- | GraphQL Union
-type UNION = 'OUTPUT
+type UNION = 'AUTO
 
 {-# DEPRECATED OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
 
 -- | GraphQL Object
-type OBJECT = 'OUTPUT
+type OBJECT = 'AUTO
 
 type INTERFACE = 'INTERFACE
