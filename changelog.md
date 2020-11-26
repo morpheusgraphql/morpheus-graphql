@@ -4,14 +4,14 @@
 
 ### Breaking Changes
 
-- deprecated kinds `INPUT`, `ENUM` and `OUTPUT` in favor of more generalized kind `TYPE`.
-  now you can derive INPUT, ENUM and OUTPUT automatically with `deriving (Generic, GQLType)`.
 - Type name for parametrized types like `One (Two Three)` will be generated directly, concatenating them `OneTwoThree` instead of `One_Two_Three.`
 - Haskell `Float` was renamed to custom scalar type `Float32.`
 - Haskell `Double` now represents GraphQL `Float`.
 
 ### Minor Changes
 
+- deprecated kinds `INPUT`, `ENUM` and `OUTPUT` in favor of more generalized kind `TYPE`.
+  now you can derive INPUT, ENUM and OUTPUT automatically with `deriving (Generic, GQLType)`.
 - more likely to rebuild when a file loaded by `importGQLDocument` or
   `importGQLDocumentWithNamespace` is changed
 
