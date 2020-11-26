@@ -29,6 +29,7 @@ data GQL_KIND
   | OUTPUT
   | WRAPPER
   | INTERFACE
+  | AUTO
 
 class ToValue (a :: GQL_KIND) where
   toValue :: f a -> GQL_KIND
@@ -66,13 +67,17 @@ type ENUM = 'ENUM
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
+{-# DEPRECATED OUTPUT "use more generalized kind: AUTO" #-}
+
 -- | GraphQL Object and union
 type OUTPUT = 'OUTPUT
+
+{-# DEPRECATED INPUT "use more generalized kind: AUTO" #-}
 
 -- | GraphQL input Object and input union
 type INPUT = 'INPUT
 
-{-# DEPRECATED INPUT_OBJECT "use more generalized kind: INPUT" #-}
+{-# DEPRECATED INPUT_OBJECT "use more generalized kind: AUTO" #-}
 
 -- | GraphQL input Object
 type INPUT_OBJECT = 'INPUT
