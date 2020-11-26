@@ -34,9 +34,8 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
-    INPUT,
-    OUTPUT,
     SCALAR,
+    TYPE,
   )
 import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
@@ -143,7 +142,7 @@ instance DecodeConstraint a => DecodeKind ENUM a where
   decodeKind _ = decodeType
 
 -- INPUT_OBJECT and  INPUT_UNION
-instance DecodeConstraint a => DecodeKind INPUT a where
+instance DecodeConstraint a => DecodeKind TYPE a where
   decodeKind _ = decodeType
 
 decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a

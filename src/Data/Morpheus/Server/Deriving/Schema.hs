@@ -156,8 +156,8 @@ deriveSchema _ = resultOr failure pure schema
         <*> deriveObjectType (Proxy @(mut (Resolver MUTATION e m)))
         <*> deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m)))
 
-instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType (KIND a) a) => DeriveType cat a where
-  deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
+instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
+  deriveType _ = deriveKindedType (Proxy @cat) (KindedProxy :: KindedProxy (KIND a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class DeriveType (kind :: TypeCategory) (a :: *) where
@@ -208,19 +208,8 @@ instance (DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
   deriveType = deriveTypeWith (Proxy @b)
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
-class DeriveKindedType (kind :: GQL_KIND) a where
-  deriveKindedType :: proxy kind a -> SchemaT ()
-
--- SCALAR
-instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
-  deriveKindedType = updateByContent deriveScalarContent
-
--- ENUM
-instance DeriveTypeConstraint IN a => DeriveKindedType ENUM a where
-  deriveKindedType = deriveInputType
-
-instance DeriveTypeConstraint OUT a => DeriveKindedType TYPE a where
-  deriveKindedType = deriveOutputType
+class DeriveKindedType (cat :: TypeCategory) (kind :: GQL_KIND) a where
+  deriveKindedType :: f cat -> proxy kind a -> SchemaT ()
 
 type DeriveTypeConstraint kind a =
   ( Generic a,
@@ -229,8 +218,22 @@ type DeriveTypeConstraint kind a =
     TypeRep (DeriveType kind) (SchemaT ()) (Rep a)
   )
 
-instance DeriveTypeConstraint OUT a => DeriveKindedType INTERFACE a where
-  deriveKindedType = updateByContent deriveInterfaceContent
+-- SCALAR
+instance (GQLType a, GQLScalar a) => DeriveKindedType cat SCALAR a where
+  deriveKindedType _ = updateByContent deriveScalarContent
+
+-- ENUM
+instance DeriveTypeConstraint IN a => DeriveKindedType cat ENUM a where
+  deriveKindedType _ = deriveInputType
+
+instance DeriveTypeConstraint OUT a => DeriveKindedType cat INTERFACE a where
+  deriveKindedType _ = updateByContent deriveInterfaceContent
+
+instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
+  deriveKindedType _ = deriveOutputType
+
+instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
+  deriveKindedType _ = deriveInputType
 
 deriveScalarContent :: (GQLScalar a) => f a -> SchemaT (TypeContent TRUE LEAF CONST)
 deriveScalarContent = pure . DataScalar . scalarValidator
