@@ -53,6 +53,7 @@ import GHC.Generics (Generic)
 import Prelude
   ( ($),
     (.),
+    Bool,
     Eq (..),
     Maybe (..),
     Ord,
@@ -63,7 +64,7 @@ import Prelude
   )
 
 data TypeFingerprint
-  = TypeableFingerprint [Fingerprint]
+  = TypeableFingerprint Bool [Fingerprint]
   | InternalFingerprint TypeName
   | CustomFingerprint TypeName
   deriving

@@ -101,9 +101,6 @@ getTypename = TypeName . intercalate "" . getTypeConstructorNames
 getTypeConstructorNames :: Typeable a => f a -> [Text]
 getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeConstructors
 
-getFingerprint :: Typeable a => f a -> TypeFingerprint
-getFingerprint = TypeableFingerprint . fmap tyConFingerprint . getTypeConstructors
-
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
@@ -114,6 +111,10 @@ deriveTypeData proxy =
       gqlWrappers = [],
       gqlFingerprint = getFingerprint proxy
     }
+
+-- TODO: contiunue here
+getFingerprint :: Typeable a => f a -> TypeFingerprint
+getFingerprint = TypeableFingerprint . fmap tyConFingerprint . getTypeConstructors
 
 mkTypeData :: TypeName -> TypeData
 mkTypeData name =
