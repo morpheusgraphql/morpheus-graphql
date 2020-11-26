@@ -60,6 +60,7 @@ import Data.Morpheus.Types.Internal.AST
     Arguments,
     InternalError,
     ObjectEntry (..),
+    TypeCategory (IN),
     TypeName (..),
     VALID,
     ValidObject,
@@ -134,7 +135,7 @@ class DecodeKind (kind :: GQL_KIND) a where
 
 -- SCALAR
 instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ = withScalar (gqlTypeName $ __type (Proxy @a)) parseValue
+  decodeKind _ = withScalar (gqlTypeName $ __type (Proxy @a) IN) parseValue
 
 -- INPUT_OBJECT and  INPUT_UNION
 instance DecodeConstraint a => DecodeKind TYPE a where
@@ -253,7 +254,7 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   decodeFields gql = (:*:) <$> decodeFields gql <*> decodeFields gql
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
-  refType _ = Just $ gqlTypeName $ __type (Proxy @a)
+  refType _ = Just $ gqlTypeName $ __type (Proxy @a) IN
   decodeFields (opt, value, Cont {contKind})
     | contKind == D_UNION = M1 . K1 <$> decode value
     | otherwise = __decode value

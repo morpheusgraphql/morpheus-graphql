@@ -33,6 +33,7 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     asObjectType,
     fromSchema,
     updateByContent,
+    ToValue (..),
   )
 where
 
@@ -50,6 +51,7 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     singleton,
   )
+import Data.Morpheus.Kind (INTERFACE, SCALAR)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     FieldRep (..),
@@ -135,6 +137,12 @@ instance ToValue OUT where
 
 instance ToValue IN where
   toValue _ = IN
+
+instance ToValue SCALAR where
+  toValue _ = OUT
+
+instance ToValue INTERFACE where
+  toValue _ = OUT
 
 -- converts:
 --   f a -> KindedType IN a

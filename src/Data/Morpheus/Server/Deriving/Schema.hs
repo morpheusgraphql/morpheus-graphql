@@ -42,6 +42,7 @@ import Data.Morpheus.Kind
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedProxy (..),
     KindedType (..),
+    ToValue,
     TyContentM,
     UpdateDef (..),
     asObjectType,
@@ -88,7 +89,7 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Schema (..),
     TRUE,
-    TypeCategory,
+    TypeCategory (OUT),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -214,7 +215,8 @@ type DeriveTypeConstraint kind a =
   ( Generic a,
     GQLType a,
     TypeRep (DeriveType kind) (TyContentM kind) (Rep a),
-    TypeRep (DeriveType kind) (SchemaT ()) (Rep a)
+    TypeRep (DeriveType kind) (SchemaT ()) (Rep a),
+    ToValue kind
   )
 
 -- SCALAR
@@ -252,7 +254,7 @@ deriveObjectType :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeDefinition
 deriveObjectType = asObjectType (deriveFields . outputType)
 
 deriveImplementsInterface :: (GQLType a, DeriveType OUT a) => f a -> SchemaT TypeName
-deriveImplementsInterface x = deriveType (outputType x) $> gqlTypeName (__type x)
+deriveImplementsInterface x = deriveType (outputType x) $> gqlTypeName (__type x OUT)
 
 fieldContentConstraint :: f kind a -> TypeConstraint (DeriveType kind) (TyContentM kind) Proxy
 fieldContentConstraint _ = TypeConstraint deriveFieldContent
