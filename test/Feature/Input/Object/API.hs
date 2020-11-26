@@ -9,7 +9,6 @@ module Feature.Input.Object.API
 where
 
 import Data.Morpheus (interpreter)
-import Data.Morpheus.Kind (INPUT)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
