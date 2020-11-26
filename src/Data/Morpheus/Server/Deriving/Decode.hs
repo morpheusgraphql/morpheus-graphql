@@ -142,10 +142,6 @@ instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
 instance DecodeConstraint a => DecodeKind ENUM a where
   decodeKind _ = decodeType
 
--- TODO: remove
-instance DecodeConstraint a => DecodeKind OUTPUT a where
-  decodeKind _ = decodeType
-
 -- INPUT_OBJECT and  INPUT_UNION
 instance DecodeConstraint a => DecodeKind INPUT a where
   decodeKind _ = decodeType

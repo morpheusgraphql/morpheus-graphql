@@ -36,10 +36,9 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Kind
   ( ENUM,
     GQL_KIND,
-    INPUT,
     INTERFACE,
-    OUTPUT,
     SCALAR,
+    TYPE,
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedProxy (..),
@@ -220,10 +219,7 @@ instance (GQLType a, GQLScalar a) => DeriveKindedType SCALAR a where
 instance DeriveTypeConstraint IN a => DeriveKindedType ENUM a where
   deriveKindedType = deriveInputType
 
-instance DeriveTypeConstraint IN a => DeriveKindedType INPUT a where
-  deriveKindedType = deriveInputType
-
-instance DeriveTypeConstraint OUT a => DeriveKindedType OUTPUT a where
+instance DeriveTypeConstraint OUT a => DeriveKindedType TYPE a where
   deriveKindedType = deriveOutputType
 
 type DeriveTypeConstraint kind a =
