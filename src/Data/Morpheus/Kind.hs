@@ -25,7 +25,6 @@ import Relude
 
 data GQL_KIND
   = SCALAR
-  | ENUM
   | TYPE
   | WRAPPER
   | INTERFACE
@@ -35,9 +34,6 @@ class ToValue (a :: GQL_KIND) where
 
 instance ToValue 'SCALAR where
   toValue _ = SCALAR
-
-instance ToValue 'ENUM where
-  toValue _ = ENUM
 
 instance ToValue 'WRAPPER where
   toValue _ = WRAPPER
@@ -53,40 +49,40 @@ isObject TYPE = True
 isObject INTERFACE = True
 isObject _ = False
 
+-- | GraphQL input, type, union , enum
 type TYPE = 'TYPE
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR
 
--- | GraphQL Enum
-type ENUM = 'ENUM
+-- | GraphQL interface
+type INTERFACE = 'INTERFACE
 
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
+-- deprecated types
+
+{-# DEPRECATED ENUM "use: deriving(GQLType), will be automatically inferred" #-}
+
+type ENUM = 'TYPE
+
 {-# DEPRECATED OUTPUT "use: deriving(GQLType), will be automatically inferred" #-}
 
--- | GraphQL Object and union
 type OUTPUT = 'TYPE
 
 {-# DEPRECATED INPUT "use: deriving(GQLType), will be automatically inferred" #-}
 
--- | GraphQL input Object and input union
 type INPUT = 'TYPE
 
 {-# DEPRECATED INPUT_OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
 
--- | GraphQL input Object
 type INPUT_OBJECT = 'TYPE
 
 {-# DEPRECATED UNION "use: deriving(GQLType), IMPORTANT: only types with <type constructor name><constructor name> will sustain their form, other union constructors will be wrapped inside an new object" #-}
 
--- | GraphQL Union
 type UNION = 'TYPE
 
 {-# DEPRECATED OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
 
--- | GraphQL Object
 type OBJECT = 'TYPE
-
-type INTERFACE = 'INTERFACE
