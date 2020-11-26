@@ -49,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldName,
     QUERY,
+    TypeCategory,
     TypeName (..),
     TypeWrapper (..),
     Value,
@@ -104,20 +105,20 @@ getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeCons
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
-deriveTypeData :: Typeable a => f a -> TypeData
-deriveTypeData proxy =
+deriveTypeData :: Typeable a => f a -> TypeCategory -> TypeData
+deriveTypeData proxy cat =
   TypeData
     { gqlTypeName = getTypename proxy,
       gqlWrappers = [],
-      gqlFingerprint = getFingerprint proxy
+      gqlFingerprint = getFingerprint cat proxy
     }
 
 -- TODO: contiunue here
-getFingerprint :: Typeable a => f a -> TypeFingerprint
-getFingerprint = TypeableFingerprint . fmap tyConFingerprint . getTypeConstructors
+getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
+getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
 
-mkTypeData :: TypeName -> TypeData
-mkTypeData name =
+mkTypeData :: TypeName -> TypeCategory -> TypeData
+mkTypeData name _ =
   TypeData
     { gqlTypeName = name,
       gqlFingerprint = InternalFingerprint name,
@@ -195,8 +196,8 @@ class ToValue (KIND a) => GQLType a where
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
-  __type :: f a -> TypeData
-  default __type :: Typeable a => f a -> TypeData
+  __type :: f a -> TypeCategory -> TypeData
+  default __type :: Typeable a => f a -> TypeCategory -> TypeData
   __type _ = deriveTypeData (Proxy @a)
 
 instance GQLType Int where
@@ -232,11 +233,11 @@ instance Typeable m => GQLType (Undefined m) where
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __type _ = wrapper toNullable $ __type $ Proxy @a
+  __type _ = wrapper toNullable . __type (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __type _ = wrapper list $ __type $ Proxy @a
+  __type _ = wrapper list . __type (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = WRAPPER

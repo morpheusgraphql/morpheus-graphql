@@ -44,6 +44,7 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
+    TypeCategory (OUT),
     TypeName (..),
     TypeRef (..),
     convertToJSONName,
@@ -195,7 +196,7 @@ deriveFieldRep opt pSel proxy v =
       fieldValue = v
     }
   where
-    TypeData {gqlTypeName, gqlWrappers} = __type proxy
+    TypeData {gqlTypeName, gqlWrappers} = __type proxy OUT
 
 instance ConRep c v U1 where
   conRep _ _ = []

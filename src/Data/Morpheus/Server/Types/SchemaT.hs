@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     OBJECT,
     Schema (..),
+    TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -64,7 +65,7 @@ import Prelude
   )
 
 data TypeFingerprint
-  = TypeableFingerprint Bool [Fingerprint]
+  = TypeableFingerprint TypeCategory [Fingerprint]
   | InternalFingerprint TypeName
   | CustomFingerprint TypeName
   deriving
