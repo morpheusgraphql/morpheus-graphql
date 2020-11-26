@@ -17,6 +17,7 @@ module Data.Morpheus.Kind
     INTERFACE,
     ToValue (..),
     isObject,
+    TYPE,
   )
 where
 
@@ -24,9 +25,7 @@ import Relude
 
 data GQL_KIND
   = SCALAR
-  | ENUM
-  | INPUT
-  | OUTPUT
+  | TYPE
   | WRAPPER
   | INTERFACE
 
@@ -36,55 +35,54 @@ class ToValue (a :: GQL_KIND) where
 instance ToValue 'SCALAR where
   toValue _ = SCALAR
 
-instance ToValue 'ENUM where
-  toValue _ = ENUM
-
 instance ToValue 'WRAPPER where
   toValue _ = WRAPPER
 
-instance ToValue 'INPUT where
-  toValue _ = INPUT
-
-instance ToValue 'OUTPUT where
-  toValue _ = OUTPUT
+instance ToValue 'TYPE where
+  toValue _ = TYPE
 
 instance ToValue 'INTERFACE where
   toValue _ = INTERFACE
 
 isObject :: GQL_KIND -> Bool
-isObject INPUT = True
-isObject OUTPUT = True
+isObject TYPE = True
 isObject INTERFACE = True
 isObject _ = False
+
+-- | GraphQL input, type, union , enum
+type TYPE = 'TYPE
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR
 
--- | GraphQL Enum
-type ENUM = 'ENUM
+-- | GraphQL interface
+type INTERFACE = 'INTERFACE
 
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
--- | GraphQL Object and union
-type OUTPUT = 'OUTPUT
+-- deprecated types
 
--- | GraphQL input Object and input union
-type INPUT = 'INPUT
+{-# DEPRECATED ENUM "use: deriving(GQLType), will be automatically inferred" #-}
 
-{-# DEPRECATED INPUT_OBJECT "use more generalized kind: INPUT" #-}
+type ENUM = 'TYPE
 
--- | GraphQL input Object
-type INPUT_OBJECT = 'INPUT
+{-# DEPRECATED OUTPUT "use: deriving(GQLType), will be automatically inferred" #-}
+
+type OUTPUT = 'TYPE
+
+{-# DEPRECATED INPUT "use: deriving(GQLType), will be automatically inferred" #-}
+
+type INPUT = 'TYPE
+
+{-# DEPRECATED INPUT_OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
+
+type INPUT_OBJECT = 'TYPE
 
 {-# DEPRECATED UNION "use: deriving(GQLType), IMPORTANT: only types with <type constructor name><constructor name> will sustain their form, other union constructors will be wrapped inside an new object" #-}
 
--- | GraphQL Union
-type UNION = 'OUTPUT
+type UNION = 'TYPE
 
 {-# DEPRECATED OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
 
--- | GraphQL Object
-type OBJECT = 'OUTPUT
-
-type INTERFACE = 'INTERFACE
+type OBJECT = 'TYPE

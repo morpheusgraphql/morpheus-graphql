@@ -40,6 +40,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     TypeData (..),
+    defaultTypeOptions,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -90,12 +91,12 @@ datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
 datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))
 
 conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
-conNameProxy GQLTypeOptions {constructorTagModifier} _ =
-  TypeName $ pack $ constructorTagModifier $ conName (undefined :: M1 C c U1 a)
+conNameProxy options _ =
+  TypeName $ pack $ constructorTagModifier options $ conName (undefined :: M1 C c U1 a)
 
 selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
-selNameProxy GQLTypeOptions {fieldLabelModifier} _ =
-  convertToJSONName $ FieldName $ pack $ fieldLabelModifier $ selName (undefined :: M1 S s f a)
+selNameProxy options _ =
+  convertToJSONName $ FieldName $ pack $ fieldLabelModifier options $ selName (undefined :: M1 S s f a)
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
@@ -110,7 +111,7 @@ genericTo ::
   TypeConstraint constraint value Proxy ->
   f a ->
   [ConsRep value]
-genericTo f proxy = typeRep (typeOptions proxy, f) (Proxy @(Rep a))
+genericTo f proxy = typeRep (typeOptions proxy defaultTypeOptions, f) (Proxy @(Rep a))
 
 toValue ::
   forall constraint value (a :: *).
@@ -118,7 +119,7 @@ toValue ::
   TypeConstraint constraint value Identity ->
   a ->
   DataType value
-toValue f = toTypeRep (typeOptions (Proxy @a), f) . from
+toValue f = toTypeRep (typeOptions (Proxy @a) defaultTypeOptions, f) . from
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where

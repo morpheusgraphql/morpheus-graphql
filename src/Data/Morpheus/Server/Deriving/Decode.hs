@@ -21,9 +21,9 @@ module Data.Morpheus.Server.Deriving.Decode
   )
 where
 
-import Control.Applicative (pure, (<*>))
+import Control.Applicative ((<*>), pure)
 import Control.Monad ((>>=))
-import Data.Functor (Functor (..), (<$>))
+import Data.Functor ((<$>), Functor (..))
 import Data.List (elem)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
@@ -32,11 +32,9 @@ import Data.Morpheus.Internal.Utils
   ( elems,
   )
 import Data.Morpheus.Kind
-  ( ENUM,
-    GQL_KIND,
-    INPUT,
-    OUTPUT,
+  ( GQL_KIND,
     SCALAR,
+    TYPE,
   )
 import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
@@ -47,11 +45,12 @@ import Data.Morpheus.Server.Internal.TH.Decode (decodeFieldWith, withInputObject
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
-        typeOptions,
-        __type
+        __type,
+        typeOptions
       ),
     GQLTypeOptions (..),
     TypeData (..),
+    defaultTypeOptions,
   )
 import Data.Morpheus.Types.GQLScalar
   ( GQLScalar (..),
@@ -82,7 +81,7 @@ import Data.String (IsString (fromString))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import GHC.Generics
-import Prelude (Either (Left, Right), Eq (..), Foldable (length), Ord, maybe, otherwise, show, ($), (-), (.))
+import Prelude (($), (-), (.), Either (Left, Right), Eq (..), Foldable (length), Ord, maybe, otherwise, show)
 
 type DecodeConstraint a =
   ( Generic a,
@@ -137,20 +136,12 @@ class DecodeKind (kind :: GQL_KIND) a where
 instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
   decodeKind _ = withScalar (gqlTypeName $ __type (Proxy @a)) parseValue
 
--- ENUM
-instance DecodeConstraint a => DecodeKind ENUM a where
-  decodeKind _ = decodeType
-
--- TODO: remove
-instance DecodeConstraint a => DecodeKind OUTPUT a where
-  decodeKind _ = decodeType
-
 -- INPUT_OBJECT and  INPUT_UNION
-instance DecodeConstraint a => DecodeKind INPUT a where
+instance DecodeConstraint a => DecodeKind TYPE a where
   decodeKind _ = decodeType
 
 decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
-decodeType = fmap to . decodeRep . (typeOptions (Proxy @a),,Cont D_CONS "")
+decodeType = fmap to . decodeRep . (typeOptions (Proxy @a) defaultTypeOptions,,Cont D_CONS "")
 
 -- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }

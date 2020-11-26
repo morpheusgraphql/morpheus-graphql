@@ -11,7 +11,6 @@ module Feature.TypeInference.API
 where
 
 import Data.Morpheus (interpreter)
-import Data.Morpheus.Kind (INPUT)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
@@ -41,19 +40,13 @@ data Hydra = Hydra
   { name :: Text,
     age :: Int
   }
-  deriving (Show, Generic)
-
-instance GQLType Hydra where
-  type KIND Hydra = INPUT
+  deriving (Show, Generic, GQLType)
 
 data Monster
   = MonsterHydra Hydra
   | Cerberus {name :: Text}
   | UnidentifiedMonster
-  deriving (Show, Generic)
-
-instance GQLType Monster where
-  type KIND Monster = INPUT
+  deriving (Show, Generic, GQLType)
 
 data Character (m :: * -> *)
   = CharacterDeity (Deity m) -- Only <tycon name><type ref name> should generate direct link

@@ -32,9 +32,6 @@ import Data.Morpheus
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
   )
-import Data.Morpheus.Kind
-  ( INPUT,
-  )
 import Data.Morpheus.Subscriptions
   ( Event (..),
     Hashable,
@@ -88,10 +85,7 @@ data Animal
   | AnimalBird Bird
   | Giraffe {giraffeName :: Text}
   | UnidentifiedSpecie
-  deriving (Show, Generic)
-
-instance GQLType Animal where
-  type KIND Animal = INPUT
+  deriving (Show, Generic, GQLType)
 
 data Euro
   = Euro

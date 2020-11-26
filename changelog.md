@@ -2,14 +2,31 @@
 
 ## 0.17.0 - 05.11.2020
 
+## new features
+
+- TODO: prefixTypeCategory :: Bool
+
 ### Breaking Changes
 
+- changed signature of `GQLType.typeOptions` from `f a -> GQLTypeOptions` to `f a -> GQLTypeOptions -> GQLTypeOptions`.
+
+  now you can write:
+
+  ```hs
+    typeOptions _ options = options { fieldLabelModifier = <my function> }
+  ```
+
+  whre argument options is default gql options.
+
+- deexposed constructor of `GQLTypeOptions`.
 - Type name for parametrized types like `One (Two Three)` will be generated directly, concatenating them `OneTwoThree` instead of `One_Two_Three.`
 - Haskell `Float` was renamed to custom scalar type `Float32.`
 - Haskell `Double` now represents GraphQL `Float`.
 
 ### Minor Changes
 
+- deprecated kinds `INPUT`, `ENUM` and `OUTPUT` in favor of more generalized kind `TYPE`.
+  now you can derive INPUT, ENUM and OUTPUT automatically with `deriving (Generic, GQLType)`.
 - more likely to rebuild when a file loaded by `importGQLDocument` or
   `importGQLDocumentWithNamespace` is changed
 
