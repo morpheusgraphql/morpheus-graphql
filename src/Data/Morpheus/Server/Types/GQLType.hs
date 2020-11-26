@@ -12,7 +12,11 @@
 
 module Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    GQLTypeOptions (..),
+    GQLTypeOptions
+      ( fieldLabelModifier,
+        constructorTagModifier,
+        prefixTypeCategory
+      ),
     defaultTypeOptions,
     TypeData (..),
   )
