@@ -91,12 +91,12 @@ datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
 datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))
 
 conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
-conNameProxy GQLTypeOptions {constructorTagModifier} _ =
-  TypeName $ pack $ constructorTagModifier $ conName (undefined :: M1 C c U1 a)
+conNameProxy options _ =
+  TypeName $ pack $ constructorTagModifier options $ conName (undefined :: M1 C c U1 a)
 
 selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
-selNameProxy GQLTypeOptions {fieldLabelModifier} _ =
-  convertToJSONName $ FieldName $ pack $ fieldLabelModifier $ selName (undefined :: M1 S s f a)
+selNameProxy options _ =
+  convertToJSONName $ FieldName $ pack $ fieldLabelModifier options $ selName (undefined :: M1 S s f a)
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
