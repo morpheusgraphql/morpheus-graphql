@@ -69,14 +69,18 @@ data TypeData = TypeData
 
 data GQLTypeOptions = GQLTypeOptions
   { fieldLabelModifier :: String -> String,
-    constructorTagModifier :: String -> String
+    constructorTagModifier :: String -> String,
+    -- Type used as Input will be prefixed with: Input<TypeName>
+    -- type used as output will be prefixed with: Output<TypeName>
+    prefixTypeCategory :: Bool
   }
 
 defaultTypeOptions :: GQLTypeOptions
 defaultTypeOptions =
   GQLTypeOptions
     { fieldLabelModifier = id,
-      constructorTagModifier = id
+      constructorTagModifier = id,
+      prefixTypeCategory = False
     }
 
 getTypename :: Typeable a => f a -> TypeName
@@ -160,8 +164,8 @@ class ToValue (KIND a) => GQLType a where
   getDescriptions :: f a -> Map Text Description
   getDescriptions _ = mempty
 
-  typeOptions :: f a -> GQLTypeOptions
-  typeOptions _ = defaultTypeOptions
+  typeOptions :: f a -> GQLTypeOptions -> GQLTypeOptions
+  typeOptions _ = id
 
   getDirectives :: f a -> Map Text (Directives CONST)
   getDirectives _ = mempty

@@ -40,6 +40,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     TypeData (..),
+    defaultTypeOptions,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
@@ -110,7 +111,7 @@ genericTo ::
   TypeConstraint constraint value Proxy ->
   f a ->
   [ConsRep value]
-genericTo f proxy = typeRep (typeOptions proxy, f) (Proxy @(Rep a))
+genericTo f proxy = typeRep (typeOptions proxy defaultTypeOptions, f) (Proxy @(Rep a))
 
 toValue ::
   forall constraint value (a :: *).
@@ -118,7 +119,7 @@ toValue ::
   TypeConstraint constraint value Identity ->
   a ->
   DataType value
-toValue f = toTypeRep (typeOptions (Proxy @a), f) . from
+toValue f = toTypeRep (typeOptions (Proxy @a) defaultTypeOptions, f) . from
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where
