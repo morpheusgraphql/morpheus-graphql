@@ -8,7 +8,15 @@
 
 ### Breaking Changes
 
-- TODO: typeOptions :: f a -> GQLTypeOptions -> GQLTypeOptions
+- changed signature of `GQLType.typeOptions` from `f a -> GQLTypeOptions` to `f a -> GQLTypeOptions -> GQLTypeOptions`.
+
+  now you can write:
+
+  ```hs
+    typeOptions _ options = options { fieldLabelModifier = <my function> }
+  ```
+
+  whre argument options is default gql options.
 
 - deexposed constructor of `GQLTypeOptions`.
 - Type name for parametrized types like `One (Two Three)` will be generated directly, concatenating them `OneTwoThree` instead of `One_Two_Three.`
