@@ -197,6 +197,9 @@ instance KeyOf TypeName (UnionMember cat s) where
 newtype ScalarDefinition = ScalarDefinition
   {validateValue :: Value VALID -> Either Token (Value VALID)}
 
+instance Eq ScalarDefinition where
+  _ == _ = False
+
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
 
@@ -213,7 +216,7 @@ data DataEnumValue s = DataEnumValue
     enumName :: TypeName,
     enumDirectives :: [Directive s]
   }
-  deriving (Show, Lift)
+  deriving (Show, Lift, Eq)
 
 instance RenderGQL (DataEnumValue s) where
   render DataEnumValue {enumName} = render enumName
@@ -457,7 +460,7 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
     typeDirectives :: Directives s,
     typeContent :: TypeContent TRUE a s
   }
-  deriving (Show, Lift)
+  deriving (Show, Lift, Eq)
 
 instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName
@@ -547,6 +550,8 @@ data
     CondTypeContent IMPLEMENTABLE a s
 
 deriving instance Show (TypeContent a b s)
+
+deriving instance Eq (TypeContent a b s)
 
 deriving instance Lift (TypeContent a b s)
 

@@ -49,6 +49,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
 import Data.Semigroup (Semigroup (..))
+import qualified Data.Set as Set
 import GHC.Fingerprint.Type (Fingerprint)
 import GHC.Generics (Generic)
 import Prelude
@@ -60,6 +61,7 @@ import Prelude
     Ord,
     Show,
     const,
+    elem,
     null,
     otherwise,
   )
@@ -117,8 +119,16 @@ toSchema ::
   Eventless (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
-  types <- elems <$> execUpdates empty typeDefs
+  types <- noDups . elems <$> execUpdates empty typeDefs
   defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+
+noDups :: [TypeDefinition k a] -> [TypeDefinition k a]
+noDups = collectTypes []
+  where
+    collectTypes :: [TypeDefinition k a] -> [TypeDefinition k a] -> [TypeDefinition k a]
+    collectTypes accum (typ@TypeDefinition {typeContent = DataEnum {}} : xs) | typ `elem` accum = collectTypes accum xs
+    collectTypes accum (typ : xs) = collectTypes (typ : accum) xs
+    collectTypes accum [] = accum
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
