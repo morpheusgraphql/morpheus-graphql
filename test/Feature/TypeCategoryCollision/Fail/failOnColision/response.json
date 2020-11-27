@@ -1,11 +1,7 @@
 {
   "errors": [
     {
-      "message": "There can Be only One TypeDefinition Named \"Deity\".",
-      "locations": []
-    },
-    {
-      "message": "There can Be only One TypeDefinition Named \"Deity\".",
+      "message": "It appears that the Haskell type \"Deity\"was used both as input and output type, which is not allowed by GraphQL specifications.\n\n If you enable \"{ prefixInputType = True }\" in \"GQLType.typeOptions\", the compiler can generate a new input type \"InputDeity\" to solve this problem.",
       "locations": []
     }
   ]
