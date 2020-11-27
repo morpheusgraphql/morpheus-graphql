@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -67,7 +68,8 @@ import Data.Morpheus.Types
   )
 import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
 import Data.Morpheus.Types.Internal.AST
-  ( InternalError,
+  ( IN,
+    InternalError,
     MUTATION,
     OperationType,
     QUERY,
@@ -221,6 +223,7 @@ exploreResolvers =
       ( TypeConstraint (encode . runIdentity) ::
           TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
       )
+      (Proxy @IN)
 
 ----- HELPERS ----------------------------
 objectResolvers ::
@@ -275,5 +278,5 @@ deriveModel
       }
     where
       channelMap
-        | isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
+        | __isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
         | otherwise = Just (channelResolver subscriptionResolver)

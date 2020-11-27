@@ -66,7 +66,7 @@ module Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Directive (..),
     ConsD (..),
-    TypeCategory,
+    TypeCategory (..),
     DataInputUnion,
     VariableContent (..),
     TypeLib,

@@ -1,0 +1,6 @@
+[
+  {
+    "path": "prefixed",
+    "description": "prefixed type used as input and output does not fails"
+  }
+]

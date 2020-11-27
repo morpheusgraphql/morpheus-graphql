@@ -45,11 +45,11 @@ import Data.Morpheus.Server.Internal.TH.Decode (decodeFieldWith, withInputObject
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
-        __type,
         typeOptions
       ),
     GQLTypeOptions (..),
     TypeData (..),
+    __typeData,
     defaultTypeOptions,
   )
 import Data.Morpheus.Types.GQLScalar
@@ -58,7 +58,9 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
+    IN,
     InternalError,
+    LEAF,
     ObjectEntry (..),
     TypeName (..),
     VALID,
@@ -70,6 +72,9 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
     ResolverState,
+  )
+import Data.Morpheus.Utils.Kinded
+  ( KindedProxy (..),
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
@@ -134,7 +139,7 @@ class DecodeKind (kind :: GQL_KIND) a where
 
 -- SCALAR
 instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ = withScalar (gqlTypeName $ __type (Proxy @a)) parseValue
+  decodeKind _ = withScalar (gqlTypeName $ __typeData (KindedProxy :: KindedProxy LEAF a)) parseValue
 
 -- INPUT_OBJECT and  INPUT_UNION
 instance DecodeConstraint a => DecodeKind TYPE a where
@@ -253,7 +258,7 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   decodeFields gql = (:*:) <$> decodeFields gql <*> decodeFields gql
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
-  refType _ = Just $ gqlTypeName $ __type (Proxy @a)
+  refType _ = Just $ gqlTypeName $ __typeData (KindedProxy :: KindedProxy IN a)
   decodeFields (opt, value, Cont {contKind})
     | contKind == D_UNION = M1 . K1 <$> decode value
     | otherwise = __decode value

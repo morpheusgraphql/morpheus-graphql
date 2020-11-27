@@ -7,9 +7,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -19,12 +19,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Schema.Internal
-  ( KindedProxy (..),
-    KindedType (..),
+  ( KindedType (..),
     builder,
-    inputType,
-    outputType,
-    setProxyType,
     unpackMs,
     UpdateDef (..),
     withObject,
@@ -60,6 +56,7 @@ import Data.Morpheus.Server.Deriving.Utils
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
+    __typeData,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -83,7 +80,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TRUE,
     Token,
-    TypeCategory,
+    TypeCategory (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
@@ -101,6 +98,11 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
+import Data.Morpheus.Utils.Kinded
+  ( CategoryValue (..),
+    KindedType (..),
+    outputType,
+  )
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Language.Haskell.TH (Exp, Q)
@@ -115,55 +117,30 @@ import Prelude
     sequence,
   )
 
--- | context , like Proxy with multiple parameters
--- * 'kind': object, scalar, enum ...
--- * 'a': actual gql type
-data KindedProxy k a
-  = KindedProxy
-
-data KindedType (cat :: TypeCategory) a where
-  InputType :: KindedType IN a
-  OutputType :: KindedType OUT a
-
--- converts:
---   f a -> KindedType IN a
--- or
---  f k a -> KindedType IN a
-inputType :: f a -> KindedType IN a
-inputType _ = InputType
-
-outputType :: f a -> KindedType OUT a
-outputType _ = OutputType
-
-deriving instance Show (KindedType cat a)
-
-setProxyType :: f b -> kinded k a -> KindedProxy k b
-setProxyType _ _ = KindedProxy
-
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-withObject :: (GQLType a) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
+withObject :: (GQLType a, CategoryValue c) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
 withObject InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject OutputType DataObject {objectFields} = pure objectFields
 withObject x _ = failureOnlyObject x
 
 asObjectType ::
-  GQLType a =>
+  (GQLType a) =>
   (f2 a -> SchemaT (FieldsDefinition OUT CONST)) ->
   f2 a ->
   SchemaT (TypeDefinition OBJECT CONST)
-asObjectType f proxy = (`mkObjectType` gqlTypeName (__type proxy)) <$> f proxy
+asObjectType f proxy = (`mkObjectType` gqlTypeName (__typeData (outputType proxy))) <$> f proxy
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
-failureOnlyObject :: forall c a b. (GQLType a) => KindedType c a -> SchemaT b
+failureOnlyObject :: forall (c :: TypeCategory) a b. (GQLType a, CategoryValue c) => KindedType c a -> SchemaT b
 failureOnlyObject proxy =
   failure
     $ globalErrorMessage
-    $ msg (gqlTypeName $ __type proxy) <> " should have only one nonempty constructor"
+    $ msg (gqlTypeName $ __typeData proxy) <> " should have only one nonempty constructor"
 
 type TyContentM kind = (SchemaT (Maybe (FieldContent TRUE kind CONST)))
 
@@ -181,7 +158,7 @@ unpackMs :: [ConsRep (TyContentM k)] -> SchemaT [ConsRep (TyContent k)]
 unpackMs = traverse unpackCons
 
 builder ::
-  GQLType a =>
+  (GQLType a, CategoryValue kind) =>
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT (TypeContent TRUE kind CONST)
@@ -190,7 +167,7 @@ builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements scope)
     buildObj interfaces = wrapFields interfaces scope (mkFieldsDefinition consFields)
 builder scope cons = genericUnion cons
   where
-    typeData = __type scope
+    typeData = __typeData scope
     genericUnion =
       mkUnionType scope typeData
         . analyseRep (gqlTypeName typeData)
@@ -248,13 +225,13 @@ instance GetFieldContent OUT where
       _ -> args
 
 updateByContent ::
-  GQLType a =>
-  (f kind a -> SchemaT (TypeContent TRUE cat CONST)) ->
+  (GQLType a, CategoryValue kind) =>
+  (f kind a -> SchemaT (TypeContent TRUE kind CONST)) ->
   f kind a ->
   SchemaT ()
 updateByContent f proxy =
   updateSchema
-    (gqlFingerprint $ __type proxy)
+    (gqlFingerprint $ __typeData proxy)
     deriveD
     proxy
   where
@@ -262,7 +239,7 @@ updateByContent f proxy =
       fmap
         ( TypeDefinition
             (description proxy)
-            (gqlTypeName (__type proxy))
+            (gqlTypeName (__typeData proxy))
             []
         )
         . f

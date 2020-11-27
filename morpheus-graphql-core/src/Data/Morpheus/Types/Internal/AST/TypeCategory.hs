@@ -7,7 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
-  ( TypeCategory,
+  ( TypeCategory (IN, OUT, LEAF),
     type (<=!),
     type (<=?),
     OUT,
@@ -40,6 +40,7 @@ data TypeCategory
   | OBJECT
   | INPUT_OBJECT
   | IMPLEMENTABLE
+  deriving (Show, Eq, Ord)
 
 type IN = 'IN
 

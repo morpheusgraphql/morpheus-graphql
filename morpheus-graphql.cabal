@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4f4683e0c6a040813b49314a575621595a6cc515377d78372f2e6ac0c718be74
+-- hash: 9df38627ba9017778a7a67418735ac8668a06590ae34389668c53de04593ecea
 
 name:           morpheus-graphql
 version:        0.16.0
@@ -168,6 +168,8 @@ data-files:
     test/Feature/InputType/variables/valueNotProvided/nonNullVariableWithDefaultValue/query.gql
     test/Feature/InputType/variables/valueNotProvided/nullableVariable/query.gql
     test/Feature/Schema/nameCollision/query.gql
+    test/Feature/TypeCategoryCollision/Fail/failOnColision/query.gql
+    test/Feature/TypeCategoryCollision/Success/prefixed/query.gql
     test/Feature/TypeInference/introspection/complexInput/query.gql
     test/Feature/TypeInference/introspection/complexUnion/query.gql
     test/Feature/TypeInference/introspection/complexUnionEnum/query.gql
@@ -360,6 +362,10 @@ data-files:
     test/Feature/InputType/variables/valueNotProvided/nullableVariable/response.json
     test/Feature/Schema/cases.json
     test/Feature/Schema/nameCollision/response.json
+    test/Feature/TypeCategoryCollision/Fail/cases.json
+    test/Feature/TypeCategoryCollision/Fail/failOnColision/response.json
+    test/Feature/TypeCategoryCollision/Success/cases.json
+    test/Feature/TypeCategoryCollision/Success/prefixed/response.json
     test/Feature/TypeInference/cases.json
     test/Feature/TypeInference/introspection/complexInput/response.json
     test/Feature/TypeInference/introspection/complexUnion/response.json
@@ -417,6 +423,7 @@ library
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.Types
+      Data.Morpheus.Utils.Kinded
       Paths_morpheus_graphql
   hs-source-dirs:
       src
@@ -448,6 +455,8 @@ test-suite morpheus-test
       Feature.InputType.API
       Feature.Schema.A2
       Feature.Schema.API
+      Feature.TypeCategoryCollision.Fail.API
+      Feature.TypeCategoryCollision.Success.API
       Feature.TypeInference.API
       Feature.UnionType.API
       Feature.WrappedTypeName.API

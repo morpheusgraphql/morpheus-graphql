@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -18,17 +19,9 @@ module Data.Morpheus.Server.Types.SchemaT
   )
 where
 
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad (..), foldM)
-import Data.Function ((&))
-import Data.Functor ((<$>), Functor (..))
-import Data.Map
-  ( Map,
-    elems,
-    empty,
-    insert,
-    member,
-  )
+import Control.Monad (foldM)
+import qualified Data.Map as Map
+import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -38,32 +31,22 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     OBJECT,
     Schema (..),
+    TypeCategory (..),
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
+    TypeName (..),
     defineSchemaWith,
+    msg,
     toAny,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )
-import Data.Semigroup (Semigroup (..))
 import GHC.Fingerprint.Type (Fingerprint)
-import GHC.Generics (Generic)
-import Prelude
-  ( ($),
-    (.),
-    Eq (..),
-    Maybe (..),
-    Ord,
-    Show,
-    const,
-    null,
-    otherwise,
-  )
+import Relude hiding (empty)
 
 data TypeFingerprint
-  = TypeableFingerprint [Fingerprint]
+  = TypeableFingerprint TypeCategory [Fingerprint]
   | InternalFingerprint TypeName
   | CustomFingerprint TypeName
   deriving
@@ -115,8 +98,39 @@ toSchema ::
   Eventless (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
-  types <- elems <$> execUpdates empty typeDefs
+  types <-
+    execUpdates Map.empty typeDefs
+      >>= checkTypeColisions . Map.toList
   defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+
+checkTypeColisions :: [(TypeFingerprint, TypeDefinition k a)] -> Eventless [TypeDefinition k a]
+checkTypeColisions = fmap Map.elems . foldM collectTypes Map.empty
+  where
+    collectTypes :: Map (TypeName, TypeFingerprint) (TypeDefinition k a) -> (TypeFingerprint, TypeDefinition k a) -> Eventless (Map (TypeName, TypeFingerprint) (TypeDefinition k a))
+    collectTypes accum (fp, typ) = maybe addType (hanldeCollision typ) (key `Map.lookup` accum)
+      where
+        addType = pure $ Map.insert key typ accum
+        key = (typeName typ, withSameCategory fp)
+        hanldeCollision t1@TypeDefinition {typeContent = DataEnum {}} t2 | t1 == t2 = pure accum
+        hanldeCollision TypeDefinition {typeContent = DataScalar {}} TypeDefinition {typeContent = DataScalar {}} = pure accum
+        hanldeCollision TypeDefinition {typeName = name1} _ = failureRequirePrefix name1
+
+failureRequirePrefix :: TypeName -> Eventless b
+failureRequirePrefix typename =
+  failure
+    $ globalErrorMessage
+    $ "It appears that the Haskell type "
+      <> msg typename
+      <> " was used as both input and output type, which is not allowed by GraphQL specifications."
+      <> "\n\n "
+      <> "If you enable \"{ prefixInputType = True }\" in \"GQLType.typeOptions\", "
+      <> "the compiler can generate a new input type "
+      <> msg ("Input" <> typename)
+      <> " to solve this problem."
+
+withSameCategory :: TypeFingerprint -> TypeFingerprint
+withSameCategory (TypeableFingerprint _ xs) = TypeableFingerprint OUT xs
+withSameCategory x = x
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
@@ -140,7 +154,7 @@ updateSchema fingerprint f x =
   where
     upLib :: MyMap -> Eventless MyMap
     upLib lib
-      | member fingerprint lib = pure lib
+      | Map.member fingerprint lib = pure lib
       | otherwise = do
         (type', updates) <- runSchemaT (f x)
-        execUpdates lib ((pure . insert fingerprint (toAny type')) : updates)
+        execUpdates lib ((pure . Map.insert fingerprint (toAny type')) : updates)

@@ -24,10 +24,9 @@ module Data.Morpheus.Server.Deriving.Utils
     TypeConstraint (..),
     FieldRep (..),
     isEmptyConstraint,
-    genericTo,
     DataType (..),
-    deriveFieldRep,
     ConRep (..),
+    toRep,
     toValue,
     isUnionRef,
     fieldTypeName,
@@ -40,13 +39,20 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     TypeData (..),
+    __isObjectKind,
+    __typeData,
     defaultTypeOptions,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
+    TypeCategory,
     TypeName (..),
     TypeRef (..),
     convertToJSONName,
+  )
+import Data.Morpheus.Utils.Kinded
+  ( CategoryValue (..),
+    kinded,
   )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
@@ -105,26 +111,27 @@ newtype TypeConstraint (c :: * -> Constraint) (v :: *) (f :: * -> *) = TypeConst
   { typeConstraint :: forall a. c a => f a -> v
   }
 
-genericTo ::
-  forall f constraint value (a :: *).
-  (GQLType a, TypeRep constraint value (Rep a)) =>
+toRep ::
+  forall kinded constraint value (a :: *) (kind :: TypeCategory).
+  (GQLType a, CategoryValue kind, TypeRep constraint value (Rep a)) =>
   TypeConstraint constraint value Proxy ->
-  f a ->
+  kinded kind a ->
   [ConsRep value]
-genericTo f proxy = typeRep (typeOptions proxy defaultTypeOptions, f) (Proxy @(Rep a))
+toRep f proxy = typeRep (typeOptions proxy defaultTypeOptions, Proxy @kind, f) (Proxy @(Rep a))
 
 toValue ::
-  forall constraint value (a :: *).
-  (GQLType a, Generic a, TypeRep constraint value (Rep a)) =>
+  forall proxy (kind :: TypeCategory) constraint value (a :: *).
+  (GQLType a, CategoryValue kind, Generic a, TypeRep constraint value (Rep a)) =>
   TypeConstraint constraint value Identity ->
+  proxy kind ->
   a ->
   DataType value
-toValue f = toTypeRep (typeOptions (Proxy @a) defaultTypeOptions, f) . from
+toValue f proxy = toTypeRep (typeOptions (Proxy @a) defaultTypeOptions, proxy, f) . from
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where
-  typeRep :: (GQLTypeOptions, TypeConstraint c v Proxy) -> proxy f -> [ConsRep v]
-  toTypeRep :: (GQLTypeOptions, TypeConstraint c v Identity) -> f a -> DataType v
+  typeRep :: CategoryValue kind => (GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Proxy) -> proxy f -> [ConsRep v]
+  toTypeRep :: CategoryValue kind => (GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Identity) -> f a -> DataType v
 
 instance (Datatype d, TypeRep c v f) => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
@@ -137,8 +144,8 @@ instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
   toTypeRep f (R1 x) = (toTypeRep f x) {tyIsUnion = True}
 
 instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
-  typeRep f@(opt, _) _ = [deriveConsRep opt (Proxy @c) (conRep f (Proxy @f))]
-  toTypeRep f@(opt, _) (M1 src) =
+  typeRep f@(opt, _, _) _ = [deriveConsRep opt (Proxy @c) (conRep f (Proxy @f))]
+  toTypeRep f@(opt, _, _) (M1 src) =
     DataType
       { tyName = "",
         tyIsUnion = False,
@@ -162,8 +169,8 @@ deriveConsRep opt proxy fields =
       | otherwise = enumerate fields
 
 class ConRep (c :: * -> Constraint) (v :: *) f where
-  conRep :: (GQLTypeOptions, TypeConstraint c v Proxy) -> proxy f -> [FieldRep v]
-  toFieldRep :: (GQLTypeOptions, TypeConstraint c v Identity) -> f a -> [FieldRep v]
+  conRep :: CategoryValue kind => (GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Proxy) -> proxy f -> [FieldRep v]
+  toFieldRep :: CategoryValue kind => (GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Identity) -> f a -> [FieldRep v]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
@@ -171,18 +178,27 @@ instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
   toFieldRep fun (a :*: b) = toFieldRep fun a <> toFieldRep fun b
 
 instance (Selector s, GQLType a, c a) => ConRep c v (M1 S s (Rec0 a)) where
-  conRep (opt, TypeConstraint f) _ = [deriveFieldRep opt (Proxy @s) (Proxy @a) (f $ Proxy @a)]
-  toFieldRep (opt, TypeConstraint f) (M1 (K1 src)) = [deriveFieldRep opt (Proxy @s) (Proxy @a) (f (Identity src))]
+  conRep (opt, kind, TypeConstraint f) _ = [deriveFieldRep opt (Proxy @s) (kinded kind (Proxy @a)) (f $ Proxy @a)]
+  toFieldRep (opt, kind, TypeConstraint f) (M1 (K1 src)) = [deriveFieldRep opt (Proxy @s) (kinded kind (Proxy @a)) (f (Identity src))]
 
 deriveFieldRep ::
-  forall f (s :: Meta) g a v.
-  (Selector s, GQLType a) =>
+  forall
+    proxy
+    (selector :: Meta)
+    (kindedProxy :: TypeCategory -> * -> *)
+    a
+    v
+    (kind :: TypeCategory).
+  ( Selector selector,
+    GQLType a,
+    CategoryValue kind
+  ) =>
   GQLTypeOptions ->
-  f s ->
-  g a ->
+  proxy selector ->
+  kindedProxy kind a ->
   v ->
   FieldRep v
-deriveFieldRep opt pSel proxy v =
+deriveFieldRep opt pSel kindedProxy v =
   FieldRep
     { fieldSelector = selNameProxy opt pSel,
       fieldTypeRef =
@@ -191,11 +207,11 @@ deriveFieldRep opt pSel proxy v =
             typeWrappers = gqlWrappers,
             typeArgs = Nothing
           },
-      fieldIsObject = isObjectKind proxy,
+      fieldIsObject = __isObjectKind kindedProxy,
       fieldValue = v
     }
   where
-    TypeData {gqlTypeName, gqlWrappers} = __type proxy
+    TypeData {gqlTypeName, gqlWrappers} = __typeData kindedProxy
 
 instance ConRep c v U1 where
   conRep _ _ = []

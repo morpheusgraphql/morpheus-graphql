@@ -40,16 +40,12 @@ import Data.Morpheus.Kind
     TYPE,
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
-  ( KindedProxy (..),
-    KindedType (..),
+  ( KindedType (..),
     TyContentM,
     UpdateDef (..),
     asObjectType,
     builder,
     fromSchema,
-    inputType,
-    outputType,
-    setProxyType,
     unpackMs,
     updateByContent,
     withObject,
@@ -57,11 +53,12 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
 import Data.Morpheus.Server.Deriving.Utils
   ( TypeConstraint (..),
     TypeRep (..),
-    genericTo,
+    toRep,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
+    __typeData,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -99,6 +96,15 @@ import Data.Morpheus.Types.Internal.Resolving
     SubscriptionField (..),
     resultOr,
   )
+import Data.Morpheus.Utils.Kinded
+  ( CategoryValue (..),
+    KindedProxy (..),
+    inputType,
+    kinded,
+    outputType,
+    setKind,
+    setType,
+  )
 import Data.Proxy (Proxy (..))
 import Data.Set (Set)
 import GHC.Generics (Generic, Rep)
@@ -110,9 +116,16 @@ import Prelude
   )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
-  ( DeriveTypeConstraint OUT (query (Resolver QUERY event m)),
-    DeriveTypeConstraint OUT (mutation (Resolver MUTATION event m)),
-    DeriveTypeConstraint OUT (subscription (Resolver SUBSCRIPTION event m))
+  ( DeriveTypeConstraintOpt OUT (query (Resolver QUERY event m)),
+    DeriveTypeConstraintOpt OUT (mutation (Resolver MUTATION event m)),
+    DeriveTypeConstraintOpt OUT (subscription (Resolver SUBSCRIPTION event m))
+  )
+
+type DeriveTypeConstraintOpt kind a =
+  ( Generic a,
+    GQLType a,
+    TypeRep (DeriveType kind) (TyContentM kind) (Rep a),
+    TypeRep (DeriveType kind) (SchemaT ()) (Rep a)
   )
 
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
@@ -166,7 +179,7 @@ class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveContent _ = pure Nothing
 
 deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> SchemaT ()
-deriveTypeWith x = deriveType . setProxyType x
+deriveTypeWith x = deriveType . setType x
 
 -- Maybe
 instance DeriveType cat a => DeriveType cat (Maybe a) where
@@ -211,18 +224,16 @@ class DeriveKindedType (cat :: TypeCategory) (kind :: GQL_KIND) a where
   deriveKindedType :: f cat -> proxy kind a -> SchemaT ()
 
 type DeriveTypeConstraint kind a =
-  ( Generic a,
-    GQLType a,
-    TypeRep (DeriveType kind) (TyContentM kind) (Rep a),
-    TypeRep (DeriveType kind) (SchemaT ()) (Rep a)
+  ( DeriveTypeConstraintOpt kind a,
+    CategoryValue kind
   )
 
 -- SCALAR
 instance (GQLType a, GQLScalar a) => DeriveKindedType cat SCALAR a where
-  deriveKindedType _ = updateByContent deriveScalarContent
+  deriveKindedType _ = updateByContent deriveScalarContent . setKind (Proxy @LEAF)
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType cat INTERFACE a where
-  deriveKindedType _ = updateByContent deriveInterfaceContent
+  deriveKindedType _ = updateByContent deriveInterfaceContent . setKind (Proxy @OUT)
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
   deriveKindedType _ = deriveOutputType
@@ -230,7 +241,7 @@ instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
 instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
   deriveKindedType _ = deriveInputType
 
-deriveScalarContent :: (GQLScalar a) => f a -> SchemaT (TypeContent TRUE LEAF CONST)
+deriveScalarContent :: (GQLScalar a) => f k a -> SchemaT (TypeContent TRUE LEAF CONST)
 deriveScalarContent = pure . DataScalar . scalarValidator
 
 deriveInterfaceContent :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeContent TRUE OUT CONST)
@@ -252,21 +263,22 @@ deriveObjectType :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeDefinition
 deriveObjectType = asObjectType (deriveFields . outputType)
 
 deriveImplementsInterface :: (GQLType a, DeriveType OUT a) => f a -> SchemaT TypeName
-deriveImplementsInterface x = deriveType (outputType x) $> gqlTypeName (__type x)
+deriveImplementsInterface x = deriveType (outputType x) $> gqlTypeName (__typeData (kinded (Proxy @OUT) x))
 
 fieldContentConstraint :: f kind a -> TypeConstraint (DeriveType kind) (TyContentM kind) Proxy
 fieldContentConstraint _ = TypeConstraint deriveFieldContent
 
 deriveFieldContent :: forall f kind a. (DeriveType kind a) => f a -> TyContentM kind
-deriveFieldContent _ = deriveType kinded *> deriveContent kinded
+deriveFieldContent _ = deriveType kindedProxy *> deriveContent kindedProxy
   where
-    kinded :: KindedProxy kind a
-    kinded = KindedProxy
+    kindedProxy :: KindedProxy kind a
+    kindedProxy = KindedProxy
 
 deriveTypeContent ::
+  forall kind a.
   DeriveTypeConstraint kind a =>
   KindedType kind a ->
   SchemaT (TypeContent TRUE kind CONST)
-deriveTypeContent kinded =
-  unpackMs (genericTo (fieldContentConstraint kinded) kinded)
-    >>= fmap (updateDef kinded) . builder kinded
+deriveTypeContent kindedProxy =
+  unpackMs (toRep (fieldContentConstraint kindedProxy) kindedProxy)
+    >>= fmap (updateDef kindedProxy) . builder kindedProxy

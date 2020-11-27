@@ -2,6 +2,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -11,18 +12,30 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
+  ( GQLType
+      ( KIND,
+        implements,
+        description,
+        getDescriptions,
+        typeOptions,
+        getDirectives,
+        getFieldContents
+      ),
     GQLTypeOptions
       ( fieldLabelModifier,
         constructorTagModifier,
-        prefixTypeCategory
+        prefixInputType
       ),
     defaultTypeOptions,
     TypeData (..),
+    __isObjectKind,
+    __isEmptyType,
+    __typeData,
   )
 where
 
 -- MORPHEUS
+
 import Data.Morpheus.Kind
   ( GQL_KIND,
     SCALAR,
@@ -49,6 +62,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldName,
     QUERY,
+    TypeCategory (..),
     TypeName (..),
     TypeWrapper (..),
     Value,
@@ -58,6 +72,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
     SubscriptionField,
   )
+import Data.Morpheus.Utils.Kinded (CategoryValue (..))
 import Data.Text
   ( intercalate,
     pack,
@@ -83,8 +98,7 @@ data GQLTypeOptions = GQLTypeOptions
   { fieldLabelModifier :: String -> String,
     constructorTagModifier :: String -> String,
     -- Type used as Input will be prefixed with: Input<TypeName>
-    -- type used as output will be prefixed with: Output<TypeName>
-    prefixTypeCategory :: Bool
+    prefixInputType :: Bool
   }
 
 defaultTypeOptions :: GQLTypeOptions
@@ -92,8 +106,15 @@ defaultTypeOptions =
   GQLTypeOptions
     { fieldLabelModifier = id,
       constructorTagModifier = id,
-      prefixTypeCategory = False
+      prefixInputType = False
     }
+
+__typeData ::
+  forall kinded (kind :: TypeCategory) (a :: *).
+  (GQLType a, CategoryValue kind) =>
+  kinded kind a ->
+  TypeData
+__typeData proxy = __type proxy (categoryValue (Proxy @kind))
 
 getTypename :: Typeable a => f a -> TypeName
 getTypename = TypeName . intercalate "" . getTypeConstructorNames
@@ -101,22 +122,25 @@ getTypename = TypeName . intercalate "" . getTypeConstructorNames
 getTypeConstructorNames :: Typeable a => f a -> [Text]
 getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeConstructors
 
-getFingerprint :: Typeable a => f a -> TypeFingerprint
-getFingerprint = TypeableFingerprint . fmap tyConFingerprint . getTypeConstructors
-
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
-deriveTypeData :: Typeable a => f a -> TypeData
-deriveTypeData proxy =
+deriveTypeData :: Typeable a => f a -> Bool -> TypeCategory -> TypeData
+deriveTypeData proxy shouldPefix cat =
   TypeData
-    { gqlTypeName = getTypename proxy,
+    { gqlTypeName = prefix shouldPefix cat <> getTypename proxy,
       gqlWrappers = [],
-      gqlFingerprint = getFingerprint proxy
+      gqlFingerprint = getFingerprint cat proxy
     }
+  where
+    prefix True IN = "Input"
+    prefix _ _ = ""
 
-mkTypeData :: TypeName -> TypeData
-mkTypeData name =
+getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
+getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
+
+mkTypeData :: TypeName -> a -> TypeData
+mkTypeData name _ =
   TypeData
     { gqlTypeName = name,
       gqlFingerprint = InternalFingerprint name,
@@ -146,6 +170,9 @@ ignoreResolver (con, _) | con == resolverCon = []
 ignoreResolver (con, args) =
   con : concatMap (ignoreResolver . splitTyConApp) args
 
+__isObjectKind :: forall f a. GQLType a => f a -> Bool
+__isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
+
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
 --  @
@@ -166,9 +193,6 @@ class ToValue (KIND a) => GQLType a where
 
   implements :: f a -> [SchemaT TypeName]
   implements _ = []
-
-  isObjectKind :: f a -> Bool
-  isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 
   description :: f a -> Maybe Text
   description _ = Nothing
@@ -191,12 +215,14 @@ class ToValue (KIND a) => GQLType a where
       )
   getFieldContents _ = mempty
 
-  isEmptyType :: f a -> Bool
-  isEmptyType _ = False
+  __isEmptyType :: f a -> Bool
+  __isEmptyType _ = False
 
-  __type :: f a -> TypeData
-  default __type :: Typeable a => f a -> TypeData
-  __type _ = deriveTypeData (Proxy @a)
+  __type :: f a -> TypeCategory -> TypeData
+  default __type :: Typeable a => f a -> TypeCategory -> TypeData
+  __type proxy = deriveTypeData proxy prefixInputType
+    where
+      GQLTypeOptions {prefixInputType} = typeOptions proxy defaultTypeOptions
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -227,15 +253,15 @@ instance GQLType ()
 
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
-  isEmptyType _ = True
+  __isEmptyType _ = True
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __type _ = wrapper toNullable $ __type $ Proxy @a
+  __type _ = wrapper toNullable . __type (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __type _ = wrapper list $ __type $ Proxy @a
+  __type _ = wrapper list . __type (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = WRAPPER
