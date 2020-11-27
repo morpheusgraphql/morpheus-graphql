@@ -124,8 +124,8 @@ deriveTypeData proxy shouldPefix cat =
 getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
 getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
 
-mkTypeData :: TypeName -> TypeData
-mkTypeData name =
+mkTypeData :: TypeName -> a -> TypeData
+mkTypeData name _ =
   TypeData
     { gqlTypeName = name,
       gqlFingerprint = InternalFingerprint name,
@@ -218,9 +218,9 @@ class ToValue (KIND a) => GQLType a where
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
-  __type :: f cat a -> TypeData
-  default __type :: Typeable a => f cat a -> TypeData
-  __type proxy = deriveTypeData proxy prefixInputType (toCategoryValue proxy)
+  __type :: f a -> TypeCategory -> TypeData
+  default __type :: Typeable a => f a -> TypeCategory -> TypeData
+  __type proxy = deriveTypeData proxy prefixInputType
     where
       GQLTypeOptions {prefixInputType} = typeOptions proxy defaultTypeOptions
 
@@ -257,11 +257,11 @@ instance Typeable m => GQLType (Undefined m) where
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __type _ = wrapper toNullable $ __type (Proxy @a)
+  __type _ = wrapper toNullable . __type (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __type _ = wrapper list $ __type (Proxy @a)
+  __type _ = wrapper list . __type (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = WRAPPER

@@ -20,12 +20,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Schema.Internal
-  ( KindedProxy (..),
-    KindedType (..),
+  ( KindedType (..),
     builder,
     inputType,
     outputType,
-    setProxyType,
     unpackMs,
     UpdateDef (..),
     withObject,
@@ -118,12 +116,6 @@ import Prelude
     sequence,
   )
 
--- | context , like Proxy with multiple parameters
--- * 'kind': object, scalar, enum ...
--- * 'a': actual gql type
-data KindedProxy k a
-  = KindedProxy
-
 data KindedType (cat :: TypeCategory) a where
   InputType :: KindedType IN a
   OutputType :: KindedType OUT a
@@ -139,9 +131,6 @@ outputType :: f a -> KindedType OUT a
 outputType _ = OutputType
 
 deriving instance Show (KindedType cat a)
-
-setProxyType :: f b -> kinded k a -> KindedProxy k b
-setProxyType _ _ = KindedProxy
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
