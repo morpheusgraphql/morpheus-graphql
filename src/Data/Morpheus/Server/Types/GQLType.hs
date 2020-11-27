@@ -16,7 +16,7 @@ module Data.Morpheus.Server.Types.GQLType
     GQLTypeOptions
       ( fieldLabelModifier,
         constructorTagModifier,
-        prefixTypeCategory
+        prefixInputType
       ),
     defaultTypeOptions,
     TypeData (..),
@@ -85,8 +85,7 @@ data GQLTypeOptions = GQLTypeOptions
   { fieldLabelModifier :: String -> String,
     constructorTagModifier :: String -> String,
     -- Type used as Input will be prefixed with: Input<TypeName>
-    -- type used as output will be prefixed with: Output<TypeName>
-    prefixTypeCategory :: Bool
+    prefixInputType :: Bool
   }
 
 defaultTypeOptions :: GQLTypeOptions
@@ -94,7 +93,7 @@ defaultTypeOptions =
   GQLTypeOptions
     { fieldLabelModifier = id,
       constructorTagModifier = id,
-      prefixTypeCategory = False
+      prefixInputType = False
     }
 
 getTypename :: Typeable a => f a -> TypeName
@@ -202,9 +201,9 @@ class ToValue (KIND a) => GQLType a where
 
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
-  __type proxy = deriveTypeData proxy prefixTypeCategory
+  __type proxy = deriveTypeData proxy prefixInputType
     where
-      GQLTypeOptions {prefixTypeCategory} = typeOptions proxy defaultTypeOptions
+      GQLTypeOptions {prefixInputType} = typeOptions proxy defaultTypeOptions
 
 instance GQLType Int where
   type KIND Int = SCALAR

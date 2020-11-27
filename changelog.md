@@ -4,7 +4,7 @@
 
 ## new features
 
-- TODO: prefixTypeCategory :: Bool
+- TODO: prefixInputType :: Bool
 
 ### Breaking Changes
 

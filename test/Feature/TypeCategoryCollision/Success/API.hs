@@ -30,7 +30,7 @@ data Deity = Deity
   deriving (Show, Generic)
 
 instance GQLType Deity where
-  typeOptions _ opt = opt {prefixTypeCategory = True}
+  typeOptions _ opt = opt {prefixInputType = True}
 
 newtype DeityArgs = DeityArgs
   { input :: Deity
