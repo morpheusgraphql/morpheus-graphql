@@ -139,7 +139,7 @@ instance ToValue IN where
   toValue _ = IN
 
 instance ToValue SCALAR where
-  toValue _ = OUT
+  toValue _ = LEAF
 
 instance ToValue INTERFACE where
   toValue _ = OUT

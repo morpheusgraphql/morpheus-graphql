@@ -7,7 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
-  ( TypeCategory (IN, OUT),
+  ( TypeCategory (IN, OUT, LEAF),
     type (<=!),
     type (<=?),
     OUT,
