@@ -101,6 +101,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
+import Data.Morpheus.Utils.Kinded (KindedType (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Language.Haskell.TH (Exp, Q)
@@ -114,22 +115,6 @@ import Prelude
     otherwise,
     sequence,
   )
-
-data KindedType (cat :: TypeCategory) a where
-  InputType :: KindedType IN a
-  OutputType :: KindedType OUT a
-
--- converts:
---   f a -> KindedType IN a
--- or
---  f k a -> KindedType IN a
-inputType :: f a -> KindedType IN a
-inputType _ = InputType
-
-outputType :: f a -> KindedType OUT a
-outputType _ = OutputType
-
-deriving instance Show (KindedType cat a)
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
