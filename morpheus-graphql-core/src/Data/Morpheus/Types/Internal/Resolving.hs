@@ -115,7 +115,7 @@ type FieldResModel o e m = (FieldName, Resolver o e m (ResModel o e m))
 
 mkObject ::
   TypeName ->
-  [(FieldName, Resolver o e m (ResModel o e m))] ->
+  [FieldResModel o e m] ->
   ResModel o e m
 mkObject __typename fields =
   ResObject

@@ -74,6 +74,7 @@ import Data.Morpheus.Types.Internal.AST
     OperationType,
     QUERY,
     SUBSCRIPTION,
+    TypeName,
     TypeRef (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -182,6 +183,21 @@ instance EncodeConstraint o e m a => EncodeKind TYPE a o e m where
 instance EncodeConstraint o e m a => EncodeKind INTERFACE a o e m where
   encodeKind = pure . exploreResolvers . unContextValue
 
+encodeEnumNull :: (LiftOperation o, Monad m) => [FieldResModel o e m]
+encodeEnumNull = [("null", pure $ ResEnum "Null" "Null")]
+
+mkUnionRes ::
+  (LiftOperation o, Monad m) =>
+  TypeName ->
+  [FieldResModel o e m] ->
+  ResModel o e m
+mkUnionRes name =
+  ResUnion
+    name
+    . pure
+    . mkObject
+      name
+
 convertNode ::
   (Monad m, LiftOperation o) =>
   DataType (Resolver o e m (ResModel o e m)) ->
@@ -195,19 +211,14 @@ convertNode
     | tyIsUnion = encodeUnion consFields
     | otherwise = mkObject tyName (fmap toFieldRes consFields)
     where
-      -- ENUM
-      encodeUnion [] = ResEnum tyName consName
+      -- ENUM TODO: check if it is enum
+      -- encodeUnion [] = ResEnum tyName consName
+      encodeUnion [] = mkUnionRes consName encodeEnumNull
       -- Type References --------------------------------------------------------------
       encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
         | isUnionRef tyName cons = ResUnion typeConName fieldValue
       -- Inline Union Types ----------------------------------------------------------------------------
-      encodeUnion fields =
-        ResUnion
-          consName
-          $ pure
-          $ mkObject
-            consName
-            (fmap toFieldRes fields)
+      encodeUnion fields = mkUnionRes consName (fmap toFieldRes fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::
