@@ -4,7 +4,31 @@
 
 ## new features
 
-- TODO: prefixInputType :: Bool
+- `GQLTypeOptions` supports new option `prefixInputType`.
+  before the schema failed if you wanted to use the same type for input and output, but now with this option you can automatically prefix the input with a "Input" to make this possible.
+
+  e.g this schema will not fail. morpheus will generate types: `Deity` and `InputDeity`
+
+  ```hs
+  data Deity = Deity
+  { name :: Text,
+    age :: Int
+  }
+  deriving (Show, Generic)
+
+  instance GQLType Deity where
+    typeOptions _ opt = opt {prefixInputType = True}
+
+  newtype DeityArgs = DeityArgs
+    { input :: Deity
+    }
+    deriving (Show, Generic, GQLType)
+
+  newtype Query (m :: * -> *) = Query
+    { deity :: DeityArgs -> m Deity
+    }
+    deriving (Generic, GQLType)
+  ```
 
 ### Breaking Changes
 
