@@ -89,7 +89,7 @@
                 "kind": "NON_NULL",
                 "name": null,
                 "ofType": {
-                  "kind": "OBJECT",
+                  "kind": "INPUT_OBJECT",
                   "name": "InputDeity",
                   "ofType": null
                 }
