@@ -109,8 +109,8 @@ import Language.Haskell.TH (Exp, Q)
 import Prelude
   ( ($),
     (.),
-    Bool (..),
     Show (..),
+    all,
     map,
     null,
     otherwise,
@@ -168,9 +168,7 @@ builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements scope)
 builder scope cons = genericUnion cons
   where
     typeData = __typeData scope
-    genericUnion =
-      mkUnionType scope typeData
-        . analyseRep (gqlTypeName typeData)
+    genericUnion = mkUnionType scope . analyseRep (gqlTypeName typeData)
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -245,35 +243,30 @@ updateByContent f proxy =
         . f
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))
-analyseRep baseName cons =
-  ResRep
-    { enumCons = fmap consName enumRep,
-      unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
-      unionRecordRep
-    }
+analyseRep baseName cons
+  | all isEmptyConstraint cons = EnumRep {enumCons = consName <$> cons}
+  | otherwise =
+    ResRep
+      { unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
+        unionCons
+      }
   where
-    (enumRep, left1) = partition isEmptyConstraint cons
-    (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
+    (unionRefRep, unionCons) = partition (isUnionRef baseName) cons
 
 mkUnionType ::
   KindedType kind a ->
-  TypeData ->
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
-mkUnionType InputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType OutputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType InputType _ ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
+mkUnionType InputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
+mkUnionType OutputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
+mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMembers
   where
     typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = withMembers <$> buildUnions unionRecordRep
+    typeMembers = withMembers <$> buildUnions unionCons
       where
-        withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
-mkUnionType OutputType typeData ResRep {unionRef, unionRecordRep, enumCons} = DataUnion . map mkUnionMember <$> typeMembers
-  where
-    typeMembers = do
-      enums <- buildUnionEnum typeData enumCons
-      unions <- buildUnions unionRecordRep
-      pure (unionRef <> enums <> unions)
+        withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers)
+mkUnionType OutputType ResRep {unionRef, unionCons} =
+  DataUnion . map mkUnionMember . (unionRef <>) <$> buildUnions unionCons
 
 wrapFields :: [TypeName] -> KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 wrapFields _ InputType = DataInputObject

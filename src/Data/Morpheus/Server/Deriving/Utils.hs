@@ -236,11 +236,12 @@ data FieldRep (a :: *) = FieldRep
   }
   deriving (Functor)
 
-data ResRep (a :: *) = ResRep
-  { enumCons :: [TypeName],
-    unionRef :: [TypeName],
-    unionRecordRep :: [ConsRep a]
-  }
+data ResRep (a :: *)
+  = ResRep
+      { unionRef :: [TypeName],
+        unionCons :: [ConsRep a]
+      }
+  | EnumRep {enumCons :: [TypeName]}
 
 isEmptyConstraint :: ConsRep a -> Bool
 isEmptyConstraint ConsRep {consFields = []} = True
