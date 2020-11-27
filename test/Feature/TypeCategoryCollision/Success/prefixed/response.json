@@ -75,6 +75,45 @@
       "interfaces": null,
       "enumValues": null,
       "possibleTypes": null
+    },
+    "query": {
+      "kind": "OBJECT",
+      "name": "Query",
+      "fields": [
+        {
+          "name": "deity",
+          "args": [
+            {
+              "name": "input",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "InputDeity",
+                  "ofType": null
+                }
+              },
+              "defaultValue": null
+            }
+          ],
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "OBJECT",
+              "name": "Deity",
+              "ofType": null
+            }
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "enumValues": null,
+      "possibleTypes": null
     }
   }
 }

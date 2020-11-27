@@ -5,6 +5,9 @@ query Get__Type {
   input: __type(name: "InputDeity") {
     ...FullType
   }
+  query: __type(name: "Query") {
+    ...FullType
+  }
 }
 
 fragment FullType on __Type {
