@@ -103,7 +103,9 @@ instance Stitching (TypeDefinition cat s) where
 instance Stitching (TypeContent TRUE cat s) where
   stitch (DataObject i1 fields1) (DataObject i2 fields2) =
     DataObject (i1 <> i2) <$> stitch fields1 fields2
-  stitch _ _ = failure (["Schema Stitching works only for objects"] :: ValidationErrors)
+  stitch x y
+    | x == y = pure y
+    | otherwise = failure (["Schema Stitching works only for objects"] :: ValidationErrors)
 
 instance Stitching (FieldsDefinition cat s) where
   stitch x y = runResolutionT (mergeT x y) OM.unsafeFromList (resolveWith stitch)

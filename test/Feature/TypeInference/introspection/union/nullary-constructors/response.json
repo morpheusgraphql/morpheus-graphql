@@ -8,9 +8,13 @@
           "name": "null",
           "args": [],
           "type": {
-            "kind": "SCALAR",
-            "name": "Null",
-            "ofType": null
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "ENUM",
+              "name": "Null",
+              "ofType": null
+            }
           },
           "isDeprecated": false,
           "deprecationReason": null
@@ -29,9 +33,13 @@
           "name": "null",
           "args": [],
           "type": {
-            "kind": "SCALAR",
-            "name": "Null",
-            "ofType": null
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "ENUM",
+              "name": "Null",
+              "ofType": null
+            }
           },
           "isDeprecated": false,
           "deprecationReason": null
@@ -40,6 +48,21 @@
       "inputFields": null,
       "interfaces": [],
       "enumValues": null,
+      "possibleTypes": null
+    },
+    "null": {
+      "kind": "ENUM",
+      "name": "Null",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": [
+        {
+          "name": "Null",
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
       "possibleTypes": null
     }
   }

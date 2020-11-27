@@ -5,6 +5,9 @@ query Get__Type {
   cronus: __type(name: "Cronus") {
     ...FullType
   }
+  null: __type(name: "Null") {
+    ...FullType
+  }
 }
 
 fragment FullType on __Type {

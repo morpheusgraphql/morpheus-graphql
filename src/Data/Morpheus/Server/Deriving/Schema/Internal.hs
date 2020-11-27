@@ -28,6 +28,7 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     asObjectType,
     fromSchema,
     updateByContent,
+    defineEnumNull,
   )
 where
 
@@ -88,8 +89,8 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     mkEnumContent,
     mkField,
-    mkInputValue,
     mkType,
+    mkTypeRef,
     mkUnionMember,
     msg,
     unsafeFromFields,
@@ -116,6 +117,16 @@ import Prelude
     otherwise,
     sequence,
   )
+
+__Null :: TypeName
+__Null = "Null"
+
+defineEnumNull :: SchemaT ()
+defineEnumNull =
+  insertType
+    ( mkType __Null (mkEnumContent [__Null]) ::
+        TypeDefinition LEAF CONST
+    )
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
@@ -292,8 +303,14 @@ buildUnionRecord ::
   PackObject kind =>
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
   TypeDefinition kind CONST
-buildUnionRecord ConsRep {consName, consFields} =
-  mkType consName (packObject $ mkFieldsDefinition consFields)
+buildUnionRecord ConsRep {consName, consFields} = mkType consName (packObject fields)
+  where
+    fields
+      | null consFields = singleton mkNullField
+      | otherwise = mkFieldsDefinition consFields
+
+mkNullField :: FieldDefinition cat s
+mkNullField = mkField Nothing "null" (mkTypeRef __Null)
 
 class PackObject kind where
   packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
@@ -303,41 +320,3 @@ instance PackObject OUT where
 
 instance PackObject IN where
   packObject = DataInputObject
-
-buildUnionEnum ::
-  TypeData ->
-  [TypeName] ->
-  SchemaT [TypeName]
-buildUnionEnum TypeData {gqlTypeName} enums = updates $> members
-  where
-    members
-      | null enums = []
-      | otherwise = [enumTypeWrapperName]
-    enumTypeName = gqlTypeName <> "Enum"
-    enumTypeWrapperName = enumTypeName <> "Object"
-    -------------------------
-    updates :: SchemaT ()
-    updates
-      | null enums = pure ()
-      | otherwise =
-        buildEnumObject enumTypeWrapperName enumTypeName
-          *> buildEnum enumTypeName enums
-
-buildEnum :: TypeName -> [TypeName] -> SchemaT ()
-buildEnum typeName tags =
-  insertType
-    ( mkType typeName (mkEnumContent tags) ::
-        TypeDefinition LEAF CONST
-    )
-
-buildEnumObject :: TypeName -> TypeName -> SchemaT ()
-buildEnumObject typeName enumTypeName =
-  insertType
-    ( mkType
-        typeName
-        ( DataObject []
-            $ singleton
-            $ mkInputValue "enum" [] enumTypeName
-        ) ::
-        TypeDefinition OBJECT CONST
-    )
