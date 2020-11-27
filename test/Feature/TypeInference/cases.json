@@ -8,23 +8,23 @@
     "description": "derive as gql enum, if type has only empty constructors"
   },
   {
-    "path": "introspection/complexUnion",
+    "path": "introspection/union/union",
     "description": "derive complex union"
   },
   {
-    "path": "introspection/complexUnionEnum",
-    "description": "complex union enum contains, actual enums with empty constructors and enum object wrapper"
+    "path": "introspection/union/nullary-constructors",
+    "description": "empty constructors receive single field with empty type"
   },
   {
-    "path": "introspection/complexUnionRecord",
+    "path": "introspection/union/named-products",
     "description": "creates object type for every union records"
   },
   {
-    "path": "introspection/complexUnionScalar",
+    "path": "introspection/union/scalars",
     "description": "all scalar unions must be boxed"
   },
   {
-    "path": "introspection/complexUnionIndexedTypes",
+    "path": "introspection/union/positional-products",
     "description": "all types without record syntax(indexed types), will be converted to gql object with fields _0,_1...."
   },
   {
