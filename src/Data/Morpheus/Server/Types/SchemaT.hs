@@ -119,11 +119,11 @@ toSchema ::
   Eventless (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
-  types <- noDups . elems <$> execUpdates empty typeDefs
+  types <- noDupEnums . elems <$> execUpdates empty typeDefs
   defineSchemaWith types (optionalType q, optionalType m, optionalType s)
 
-noDups :: [TypeDefinition k a] -> [TypeDefinition k a]
-noDups = collectTypes []
+noDupEnums :: [TypeDefinition k a] -> [TypeDefinition k a]
+noDupEnums = collectTypes []
   where
     collectTypes :: [TypeDefinition k a] -> [TypeDefinition k a] -> [TypeDefinition k a]
     collectTypes accum (typ@TypeDefinition {typeContent = DataEnum {}} : xs) | typ `elem` accum = collectTypes accum xs
