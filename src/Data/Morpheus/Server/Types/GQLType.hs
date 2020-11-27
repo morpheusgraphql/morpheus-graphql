@@ -29,7 +29,6 @@ module Data.Morpheus.Server.Types.GQLType
       ),
     defaultTypeOptions,
     TypeData (..),
-    ToCategoryValue (..),
     __isObjectKind,
     __isEmptyType,
     __typeData,
@@ -37,6 +36,7 @@ module Data.Morpheus.Server.Types.GQLType
 where
 
 -- MORPHEUS
+
 import Data.Morpheus.Kind
   ( GQL_KIND,
     SCALAR,
@@ -62,9 +62,6 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directives,
     FieldName,
-    IN,
-    LEAF,
-    OUT,
     QUERY,
     TypeCategory (..),
     TypeName (..),
@@ -76,6 +73,7 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
     SubscriptionField,
   )
+import Data.Morpheus.Utils.Kinded (CategoryValue (..))
 import Data.Text
   ( intercalate,
     pack,
@@ -114,10 +112,10 @@ defaultTypeOptions =
 
 __typeData ::
   forall kinded (kind :: TypeCategory) (a :: *).
-  (GQLType a, ToCategoryValue kind) =>
+  (GQLType a, CategoryValue kind) =>
   kinded kind a ->
   TypeData
-__typeData proxy = __type proxy (toCategoryValue (Proxy @kind))
+__typeData proxy = __type proxy (categoryValue (Proxy @kind))
 
 getTypename :: Typeable a => f a -> TypeName
 getTypename = TypeName . intercalate "" . getTypeConstructorNames
@@ -149,18 +147,6 @@ mkTypeData name _ =
       gqlFingerprint = InternalFingerprint name,
       gqlWrappers = []
     }
-
-class ToCategoryValue (c :: TypeCategory) where
-  toCategoryValue :: f c -> TypeCategory
-
-instance ToCategoryValue OUT where
-  toCategoryValue _ = OUT
-
-instance ToCategoryValue IN where
-  toCategoryValue _ = IN
-
-instance ToCategoryValue LEAF where
-  toCategoryValue _ = LEAF
 
 list :: [TypeWrapper] -> [TypeWrapper]
 list = (TypeList :)

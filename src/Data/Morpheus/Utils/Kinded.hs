@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -12,15 +13,29 @@ module Data.Morpheus.Utils.Kinded
     KindedType (..),
     inputType,
     outputType,
+    CategoryValue (..),
   )
 where
 
 import Data.Morpheus.Types.Internal.AST
   ( IN,
+    LEAF,
     OUT,
-    TypeCategory,
+    TypeCategory (..),
   )
 import Prelude (Show)
+
+class CategoryValue (c :: TypeCategory) where
+  categoryValue :: f c -> TypeCategory
+
+instance CategoryValue OUT where
+  categoryValue _ = OUT
+
+instance CategoryValue IN where
+  categoryValue _ = IN
+
+instance CategoryValue LEAF where
+  categoryValue _ = LEAF
 
 -- | context , like Proxy with multiple parameters
 -- * 'kind': object, scalar, enum ...

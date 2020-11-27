@@ -57,7 +57,6 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    ToCategoryValue (..),
     TypeData (..),
     __typeData,
   )
@@ -98,7 +97,8 @@ import Data.Morpheus.Types.Internal.Resolving
     resultOr,
   )
 import Data.Morpheus.Utils.Kinded
-  ( KindedProxy (..),
+  ( CategoryValue (..),
+    KindedProxy (..),
     inputType,
     kinded,
     outputType,
@@ -221,7 +221,7 @@ type DeriveTypeConstraint kind a =
     GQLType a,
     TypeRep (DeriveType kind) (TyContentM kind) (Rep a),
     TypeRep (DeriveType kind) (SchemaT ()) (Rep a),
-    ToCategoryValue kind
+    CategoryValue kind
   )
 
 -- SCALAR

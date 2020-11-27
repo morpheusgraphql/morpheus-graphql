@@ -55,7 +55,6 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    ToCategoryValue (..),
     TypeData (..),
     __typeData,
   )
@@ -100,7 +99,8 @@ import Data.Morpheus.Types.Internal.Resolving
     Result (..),
   )
 import Data.Morpheus.Utils.Kinded
-  ( KindedType (..),
+  ( CategoryValue (..),
+    KindedType (..),
     outputType,
   )
 import Data.Semigroup ((<>))
@@ -121,7 +121,7 @@ fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-withObject :: (GQLType a, ToCategoryValue c) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
+withObject :: (GQLType a, CategoryValue c) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
 withObject InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject OutputType DataObject {objectFields} = pure objectFields
 withObject x _ = failureOnlyObject x
@@ -136,7 +136,7 @@ asObjectType f proxy = (`mkObjectType` gqlTypeName (__typeData (outputType proxy
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
-failureOnlyObject :: forall (c :: TypeCategory) a b. (GQLType a, ToCategoryValue c) => KindedType c a -> SchemaT b
+failureOnlyObject :: forall (c :: TypeCategory) a b. (GQLType a, CategoryValue c) => KindedType c a -> SchemaT b
 failureOnlyObject proxy =
   failure
     $ globalErrorMessage
@@ -158,7 +158,7 @@ unpackMs :: [ConsRep (TyContentM k)] -> SchemaT [ConsRep (TyContent k)]
 unpackMs = traverse unpackCons
 
 builder ::
-  (GQLType a, ToCategoryValue kind) =>
+  (GQLType a, CategoryValue kind) =>
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT (TypeContent TRUE kind CONST)
@@ -225,7 +225,7 @@ instance GetFieldContent OUT where
       _ -> args
 
 updateByContent ::
-  (GQLType a, ToCategoryValue kind) =>
+  (GQLType a, CategoryValue kind) =>
   (f kind a -> SchemaT (TypeContent TRUE kind CONST)) ->
   f kind a ->
   SchemaT ()
