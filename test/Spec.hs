@@ -26,6 +26,8 @@ import qualified Feature.InputType.API as InputType
 import qualified Feature.Schema.API as Schema
   ( api,
   )
+import qualified Feature.TypeCategoryCollision.Fail.API as TypeCategoryCollisionFail
+import qualified Feature.TypeCategoryCollision.Success.API as TypeCategoryCollisionSuccess
 import qualified Feature.TypeInference.API as Inference
   ( api,
   )
@@ -56,6 +58,8 @@ main = do
   defaultValue <- testFeature DefaultValue.api "Feature/Input/DefaultValue"
   inference <- testFeature Inference.api "Feature/TypeInference"
   subscription <- testSubsriptions
+  typecatColisionFail <- testFeature TypeCategoryCollisionFail.api "Feature/TypeCategoryCollision"
+  typecatColisionSuccess <- testFeature TypeCategoryCollisionSuccess.api "Feature/TypeCategoryCollision"
   defaultMain
     ( testGroup
         "Morpheus Graphql Tests"
@@ -70,6 +74,8 @@ main = do
           testSchemaRendering,
           inference,
           subscription,
-          defaultValue
+          defaultValue,
+          typecatColisionFail,
+          typecatColisionSuccess
         ]
     )
