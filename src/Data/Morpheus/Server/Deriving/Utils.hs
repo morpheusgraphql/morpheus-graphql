@@ -24,9 +24,9 @@ module Data.Morpheus.Server.Deriving.Utils
     TypeConstraint (..),
     FieldRep (..),
     isEmptyConstraint,
-    genericTo,
     DataType (..),
     ConRep (..),
+    toRep,
     toValue,
     isUnionRef,
     fieldTypeName,
@@ -111,13 +111,13 @@ newtype TypeConstraint (c :: * -> Constraint) (v :: *) (f :: * -> *) = TypeConst
   { typeConstraint :: forall a. c a => f a -> v
   }
 
-genericTo ::
+toRep ::
   forall kinded constraint value (a :: *) (kind :: TypeCategory).
   (GQLType a, CategoryValue kind, TypeRep constraint value (Rep a)) =>
   TypeConstraint constraint value Proxy ->
   kinded kind a ->
   [ConsRep value]
-genericTo f proxy = typeRep (typeOptions proxy defaultTypeOptions, Proxy @kind, f) (Proxy @(Rep a))
+toRep f proxy = typeRep (typeOptions proxy defaultTypeOptions, Proxy @kind, f) (Proxy @(Rep a))
 
 toValue ::
   forall proxy (kind :: TypeCategory) constraint value (a :: *).

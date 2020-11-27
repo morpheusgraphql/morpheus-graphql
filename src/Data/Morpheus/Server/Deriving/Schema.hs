@@ -53,7 +53,7 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
 import Data.Morpheus.Server.Deriving.Utils
   ( TypeConstraint (..),
     TypeRep (..),
-    genericTo,
+    toRep,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -276,5 +276,5 @@ deriveTypeContent ::
   KindedType kind a ->
   SchemaT (TypeContent TRUE kind CONST)
 deriveTypeContent kindedProxy =
-  unpackMs (genericTo (fieldContentConstraint kindedProxy) kindedProxy)
+  unpackMs (toRep (fieldContentConstraint kindedProxy) kindedProxy)
     >>= fmap (updateDef kindedProxy) . builder kindedProxy
