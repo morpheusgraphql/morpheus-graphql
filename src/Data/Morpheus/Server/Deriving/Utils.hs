@@ -51,7 +51,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     convertToJSONName,
   )
-import Data.Morpheus.Utils.KindedProxy
+import Data.Morpheus.Utils.Kinded
   ( kinded,
   )
 import Data.Proxy (Proxy (..))

@@ -21,8 +21,6 @@
 module Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedType (..),
     builder,
-    inputType,
-    outputType,
     unpackMs,
     UpdateDef (..),
     withObject,
@@ -101,7 +99,10 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Morpheus.Utils.Kinded (KindedType (..))
+import Data.Morpheus.Utils.Kinded
+  ( KindedType (..),
+    outputType,
+  )
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Language.Haskell.TH (Exp, Q)

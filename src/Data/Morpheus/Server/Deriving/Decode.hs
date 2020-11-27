@@ -73,7 +73,9 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
     ResolverState,
   )
-import Data.Morpheus.Utils.KindedProxy (KindedProxy (..))
+import Data.Morpheus.Utils.Kinded
+  ( KindedProxy (..),
+  )
 import Data.Proxy (Proxy (..))
 import Data.Semigroup (Semigroup (..))
 import Data.Sequence (Seq)

@@ -46,8 +46,6 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
     asObjectType,
     builder,
     fromSchema,
-    inputType,
-    outputType,
     unpackMs,
     updateByContent,
     withObject,
@@ -99,9 +97,11 @@ import Data.Morpheus.Types.Internal.Resolving
     SubscriptionField (..),
     resultOr,
   )
-import Data.Morpheus.Utils.KindedProxy
+import Data.Morpheus.Utils.Kinded
   ( KindedProxy (..),
+    inputType,
     kinded,
+    outputType,
     setKind,
     setType,
   )
