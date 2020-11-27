@@ -20,7 +20,6 @@ import Data.Morpheus.Types
   )
 import Data.Text
   ( Text,
-    pack,
   )
 import GHC.Generics (Generic)
 
@@ -31,7 +30,7 @@ data Deity = Deity
   deriving (Show, Generic)
 
 instance GQLType Deity where
-  typeOptions _ = id
+  typeOptions _ opt = opt {prefixTypeCategory = True}
 
 newtype DeityArgs = DeityArgs
   { input :: Deity
