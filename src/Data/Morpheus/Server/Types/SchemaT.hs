@@ -128,13 +128,9 @@ failureRequirePrefix typename =
       <> msg ("Input" <> typename)
       <> " to solve this problem."
 
---handle x = x
 withSameCategory :: TypeFingerprint -> TypeFingerprint
 withSameCategory (TypeableFingerprint _ xs) = TypeableFingerprint OUT xs
 withSameCategory x = x
-
--- (typ@TypeDefinition {typeContent = DataEnum {}}) | typ `elem` accum = accum
--- collectTypes accum typ = accum <> [(fing, typ)]
 
 optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
 optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
