@@ -121,7 +121,7 @@ failureRequirePrefix typename =
     $ globalErrorMessage
     $ "It appears that the Haskell type "
       <> msg typename
-      <> "was used both as input and output type, which is not allowed by GraphQL specifications."
+      <> " was used as both input and output type, which is not allowed by GraphQL specifications."
       <> "\n\n "
       <> "If you enable \"{ prefixInputType = True }\" in \"GQLType.typeOptions\", "
       <> "the compiler can generate a new input type "
