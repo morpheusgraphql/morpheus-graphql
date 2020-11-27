@@ -61,6 +61,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     ToCategoryValue (..),
     TypeData (..),
+    __typeData,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -87,7 +88,7 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Schema (..),
     TRUE,
-    TypeCategory (OUT),
+    TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -100,6 +101,7 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Data.Morpheus.Utils.KindedProxy
   ( KindedProxy (..),
+    kinded,
     setKind,
     setType,
   )
@@ -257,22 +259,22 @@ deriveObjectType :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeDefinition
 deriveObjectType = asObjectType (deriveFields . outputType)
 
 deriveImplementsInterface :: (GQLType a, DeriveType OUT a) => f a -> SchemaT TypeName
-deriveImplementsInterface x = deriveType (outputType x) $> gqlTypeName (__type x OUT)
+deriveImplementsInterface x = deriveType (outputType x) $> gqlTypeName (__typeData (kinded (Proxy @OUT) x))
 
 fieldContentConstraint :: f kind a -> TypeConstraint (DeriveType kind) (TyContentM kind) Proxy
 fieldContentConstraint _ = TypeConstraint deriveFieldContent
 
 deriveFieldContent :: forall f kind a. (DeriveType kind a) => f a -> TyContentM kind
-deriveFieldContent _ = deriveType kinded *> deriveContent kinded
+deriveFieldContent _ = deriveType kindedProxy *> deriveContent kindedProxy
   where
-    kinded :: KindedProxy kind a
-    kinded = KindedProxy
+    kindedProxy :: KindedProxy kind a
+    kindedProxy = KindedProxy
 
 deriveTypeContent ::
   forall kind a.
   DeriveTypeConstraint kind a =>
   KindedType kind a ->
   SchemaT (TypeContent TRUE kind CONST)
-deriveTypeContent kinded =
-  unpackMs (genericTo (fieldContentConstraint kinded) (toCategoryValue (Proxy @kind)) kinded)
-    >>= fmap (updateDef kinded) . builder kinded
+deriveTypeContent kindedProxy =
+  unpackMs (genericTo (fieldContentConstraint kindedProxy) kindedProxy)
+    >>= fmap (updateDef kindedProxy) . builder kindedProxy

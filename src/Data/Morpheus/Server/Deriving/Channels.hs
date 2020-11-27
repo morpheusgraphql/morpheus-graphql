@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -36,10 +37,10 @@ import Data.Morpheus.Server.Types.GQLType (GQLType)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     InternalError,
+    OUT,
     SUBSCRIPTION,
     Selection (..),
     SelectionContent (..),
-    TypeCategory (OUT),
     VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -128,7 +129,7 @@ exploreChannels =
     . toValue
       ( TypeConstraint (getChannel . runIdentity) :: TypeConstraint (GetChannel e) (ChannelRes e) Identity
       )
-      OUT
+      (Proxy @OUT)
 
 convertNode :: DataType (ChannelRes e) -> [(FieldName, ChannelRes e)]
 convertNode DataType {tyCons = ConsRep {consFields}} = map toChannels consFields

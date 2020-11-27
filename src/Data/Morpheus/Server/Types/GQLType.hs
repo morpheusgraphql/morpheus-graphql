@@ -14,7 +14,8 @@
 
 module Data.Morpheus.Server.Types.GQLType
   ( GQLType
-      ( implements,
+      ( KIND,
+        implements,
         description,
         getDescriptions,
         typeOptions,
@@ -30,6 +31,8 @@ module Data.Morpheus.Server.Types.GQLType
     TypeData (..),
     ToCategoryValue (..),
     __isObjectKind,
+    __isEmptyType,
+    __typeData,
   )
 where
 
@@ -109,6 +112,13 @@ defaultTypeOptions =
       prefixInputType = False
     }
 
+__typeData ::
+  forall kinded (kind :: TypeCategory) (a :: *).
+  (GQLType a, ToCategoryValue kind) =>
+  kinded kind a ->
+  TypeData
+__typeData proxy = __type proxy (toCategoryValue (Proxy @kind))
+
 getTypename :: Typeable a => f a -> TypeName
 getTypename = TypeName . intercalate "" . getTypeConstructorNames
 
@@ -129,7 +139,6 @@ deriveTypeData proxy shouldPefix cat =
     prefix True IN = "Input"
     prefix _ _ = ""
 
--- TODO: contiunue here
 getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
 getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
 
@@ -221,8 +230,8 @@ class ToValue (KIND a) => GQLType a where
       )
   getFieldContents _ = mempty
 
-  isEmptyType :: f a -> Bool
-  isEmptyType _ = False
+  __isEmptyType :: f a -> Bool
+  __isEmptyType _ = False
 
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
@@ -259,7 +268,7 @@ instance GQLType ()
 
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
-  isEmptyType _ = True
+  __isEmptyType _ = True
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER

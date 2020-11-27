@@ -59,6 +59,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     ToCategoryValue (..),
     TypeData (..),
+    __typeData,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -100,7 +101,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Proxy (Proxy (..))
 import Data.Semigroup ((<>))
 import Data.Traversable (traverse)
 import Language.Haskell.TH (Exp, Q)
@@ -145,7 +145,7 @@ asObjectType ::
   (f2 a -> SchemaT (FieldsDefinition OUT CONST)) ->
   f2 a ->
   SchemaT (TypeDefinition OBJECT CONST)
-asObjectType f proxy = (`mkObjectType` gqlTypeName (__typeBy (outputType proxy))) <$> f proxy
+asObjectType f proxy = (`mkObjectType` gqlTypeName (__typeData (outputType proxy))) <$> f proxy
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
@@ -154,7 +154,7 @@ failureOnlyObject :: forall (c :: TypeCategory) a b. (GQLType a, ToCategoryValue
 failureOnlyObject proxy =
   failure
     $ globalErrorMessage
-    $ msg (gqlTypeName $ __typeBy proxy) <> " should have only one nonempty constructor"
+    $ msg (gqlTypeName $ __typeData proxy) <> " should have only one nonempty constructor"
 
 type TyContentM kind = (SchemaT (Maybe (FieldContent TRUE kind CONST)))
 
@@ -181,7 +181,7 @@ builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements scope)
     buildObj interfaces = wrapFields interfaces scope (mkFieldsDefinition consFields)
 builder scope cons = genericUnion cons
   where
-    typeData = __typeBy scope
+    typeData = __typeData scope
     genericUnion =
       mkUnionType scope typeData
         . analyseRep (gqlTypeName typeData)
@@ -238,9 +238,6 @@ instance GetFieldContent OUT where
       Just (_, Just x) -> Just (FieldArgs x)
       _ -> args
 
-__typeBy :: forall f cat (a :: *). (GQLType a, ToCategoryValue cat) => f cat a -> TypeData
-__typeBy proxy = __type proxy (toCategoryValue (Proxy @cat))
-
 updateByContent ::
   (GQLType a, ToCategoryValue kind) =>
   (f kind a -> SchemaT (TypeContent TRUE kind CONST)) ->
@@ -248,7 +245,7 @@ updateByContent ::
   SchemaT ()
 updateByContent f proxy =
   updateSchema
-    (gqlFingerprint $ __typeBy proxy)
+    (gqlFingerprint $ __typeData proxy)
     deriveD
     proxy
   where
@@ -256,7 +253,7 @@ updateByContent f proxy =
       fmap
         ( TypeDefinition
             (description proxy)
-            (gqlTypeName (__typeBy proxy))
+            (gqlTypeName (__typeData proxy))
             []
         )
         . f
