@@ -4,7 +4,7 @@
 
 ## new features
 
-- `GQLTypeOptions` supports new option `prefixInputType`.
+- (issue #543): `GQLTypeOptions` supports new option `prefixInputType`.
   before the schema failed if you wanted to use the same type for input and output, but now with this option you can automatically prefix the input with a "Input" to make this possible.
 
   e.g this schema will not fail. morpheus will generate types: `Deity` and `InputDeity`
