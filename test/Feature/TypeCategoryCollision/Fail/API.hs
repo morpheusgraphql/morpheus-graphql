@@ -19,7 +19,6 @@ import Data.Morpheus.Types
   )
 import Data.Text
   ( Text,
-    pack,
   )
 import GHC.Generics (Generic)
 
