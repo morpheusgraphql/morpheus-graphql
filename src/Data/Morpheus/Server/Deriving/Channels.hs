@@ -39,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Selection (..),
     SelectionContent (..),
+    TypeCategory (OUT),
     VALID,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -127,6 +128,7 @@ exploreChannels =
     . toValue
       ( TypeConstraint (getChannel . runIdentity) :: TypeConstraint (GetChannel e) (ChannelRes e) Identity
       )
+      OUT
 
 convertNode :: DataType (ChannelRes e) -> [(FieldName, ChannelRes e)]
 convertNode DataType {tyCons = ConsRep {consFields}} = map toChannels consFields

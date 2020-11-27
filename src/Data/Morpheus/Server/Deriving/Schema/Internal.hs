@@ -7,7 +7,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -48,7 +47,6 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     singleton,
   )
-import Data.Morpheus.Kind (INTERFACE, SCALAR)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     FieldRep (..),
@@ -59,6 +57,7 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    ToCategoryValue (..),
     TypeData (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
@@ -136,7 +135,7 @@ fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-withObject :: (GQLType a) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
+withObject :: (GQLType a, ToCategoryValue c) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
 withObject InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject OutputType DataObject {objectFields} = pure objectFields
 withObject x _ = failureOnlyObject x
@@ -151,7 +150,7 @@ asObjectType f proxy = (`mkObjectType` gqlTypeName (__typeBy (outputType proxy))
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
-failureOnlyObject :: forall c a b. (GQLType a) => KindedType c a -> SchemaT b
+failureOnlyObject :: forall (c :: TypeCategory) a b. (GQLType a, ToCategoryValue c) => KindedType c a -> SchemaT b
 failureOnlyObject proxy =
   failure
     $ globalErrorMessage
@@ -173,7 +172,7 @@ unpackMs :: [ConsRep (TyContentM k)] -> SchemaT [ConsRep (TyContent k)]
 unpackMs = traverse unpackCons
 
 builder ::
-  (GQLType a) =>
+  (GQLType a, ToCategoryValue kind) =>
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT (TypeContent TRUE kind CONST)
@@ -239,12 +238,12 @@ instance GetFieldContent OUT where
       Just (_, Just x) -> Just (FieldArgs x)
       _ -> args
 
-__typeBy :: forall f cat (a :: *). (GQLType a) => f cat a -> TypeData
-__typeBy proxy = __type proxy (toValue (Proxy @cat))
+__typeBy :: forall f cat (a :: *). (GQLType a, ToCategoryValue cat) => f cat a -> TypeData
+__typeBy proxy = __type proxy (toCategoryValue (Proxy @cat))
 
 updateByContent ::
-  (GQLType a) =>
-  (f kind a -> SchemaT (TypeContent TRUE cat CONST)) ->
+  (GQLType a, ToCategoryValue kind) =>
+  (f kind a -> SchemaT (TypeContent TRUE kind CONST)) ->
   f kind a ->
   SchemaT ()
 updateByContent f proxy =

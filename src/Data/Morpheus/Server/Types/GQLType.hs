@@ -21,13 +21,13 @@ module Data.Morpheus.Server.Types.GQLType
       ),
     defaultTypeOptions,
     TypeData (..),
+    ToCategoryValue (..),
   )
 where
 
 -- MORPHEUS
 import Data.Morpheus.Kind
   ( GQL_KIND,
-    INTERFACE,
     SCALAR,
     TYPE,
     ToValue,
@@ -52,6 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldName,
     IN,
+    LEAF,
     OUT,
     QUERY,
     TypeCategory (..),
@@ -132,8 +133,8 @@ mkTypeData name _ =
       gqlWrappers = []
     }
 
-class ToCategoryValue (cat :: k) where
-  toCategoryValue :: f cat a -> TypeCategory
+class ToCategoryValue (c :: TypeCategory) where
+  toCategoryValue :: f c -> TypeCategory
 
 instance ToCategoryValue OUT where
   toCategoryValue _ = OUT
@@ -141,11 +142,8 @@ instance ToCategoryValue OUT where
 instance ToCategoryValue IN where
   toCategoryValue _ = IN
 
-instance ToCategoryValue SCALAR where
+instance ToCategoryValue LEAF where
   toCategoryValue _ = LEAF
-
-instance ToCategoryValue INTERFACE where
-  toCategoryValue _ = OUT
 
 list :: [TypeWrapper] -> [TypeWrapper]
 list = (TypeList :)

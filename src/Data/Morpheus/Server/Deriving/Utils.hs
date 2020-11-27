@@ -26,7 +26,6 @@ module Data.Morpheus.Server.Deriving.Utils
     isEmptyConstraint,
     genericTo,
     DataType (..),
-    deriveFieldRep,
     ConRep (..),
     toValue,
     isUnionRef,
@@ -44,7 +43,7 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
-    TypeCategory (OUT),
+    TypeCategory,
     TypeName (..),
     TypeRef (..),
     convertToJSONName,
@@ -110,22 +109,24 @@ genericTo ::
   forall f constraint value (a :: *).
   (GQLType a, TypeRep constraint value (Rep a)) =>
   TypeConstraint constraint value Proxy ->
+  TypeCategory ->
   f a ->
   [ConsRep value]
-genericTo f proxy = typeRep (typeOptions proxy defaultTypeOptions, f) (Proxy @(Rep a))
+genericTo f cat proxy = typeRep (typeOptions proxy defaultTypeOptions, cat, f) (Proxy @(Rep a))
 
 toValue ::
   forall constraint value (a :: *).
   (GQLType a, Generic a, TypeRep constraint value (Rep a)) =>
   TypeConstraint constraint value Identity ->
+  TypeCategory ->
   a ->
   DataType value
-toValue f = toTypeRep (typeOptions (Proxy @a) defaultTypeOptions, f) . from
+toValue f cat = toTypeRep (typeOptions (Proxy @a) defaultTypeOptions, cat, f) . from
 
 --  GENERIC UNION
 class TypeRep (c :: * -> Constraint) (v :: *) f where
-  typeRep :: (GQLTypeOptions, TypeConstraint c v Proxy) -> proxy f -> [ConsRep v]
-  toTypeRep :: (GQLTypeOptions, TypeConstraint c v Identity) -> f a -> DataType v
+  typeRep :: (GQLTypeOptions, TypeCategory, TypeConstraint c v Proxy) -> proxy f -> [ConsRep v]
+  toTypeRep :: (GQLTypeOptions, TypeCategory, TypeConstraint c v Identity) -> f a -> DataType v
 
 instance (Datatype d, TypeRep c v f) => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
@@ -138,8 +139,8 @@ instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
   toTypeRep f (R1 x) = (toTypeRep f x) {tyIsUnion = True}
 
 instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
-  typeRep f@(opt, _) _ = [deriveConsRep opt (Proxy @c) (conRep f (Proxy @f))]
-  toTypeRep f@(opt, _) (M1 src) =
+  typeRep f@(opt, _, _) _ = [deriveConsRep opt (Proxy @c) (conRep f (Proxy @f))]
+  toTypeRep f@(opt, _, _) (M1 src) =
     DataType
       { tyName = "",
         tyIsUnion = False,
@@ -163,8 +164,8 @@ deriveConsRep opt proxy fields =
       | otherwise = enumerate fields
 
 class ConRep (c :: * -> Constraint) (v :: *) f where
-  conRep :: (GQLTypeOptions, TypeConstraint c v Proxy) -> proxy f -> [FieldRep v]
-  toFieldRep :: (GQLTypeOptions, TypeConstraint c v Identity) -> f a -> [FieldRep v]
+  conRep :: (GQLTypeOptions, TypeCategory, TypeConstraint c v Proxy) -> proxy f -> [FieldRep v]
+  toFieldRep :: (GQLTypeOptions, TypeCategory, TypeConstraint c v Identity) -> f a -> [FieldRep v]
 
 -- | recursion for Object types, both of them : 'UNION' and 'INPUT_UNION'
 instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
@@ -172,18 +173,19 @@ instance (ConRep c v a, ConRep c v b) => ConRep c v (a :*: b) where
   toFieldRep fun (a :*: b) = toFieldRep fun a <> toFieldRep fun b
 
 instance (Selector s, GQLType a, c a) => ConRep c v (M1 S s (Rec0 a)) where
-  conRep (opt, TypeConstraint f) _ = [deriveFieldRep opt (Proxy @s) (Proxy @a) (f $ Proxy @a)]
-  toFieldRep (opt, TypeConstraint f) (M1 (K1 src)) = [deriveFieldRep opt (Proxy @s) (Proxy @a) (f (Identity src))]
+  conRep (opt, cat, TypeConstraint f) _ = [deriveFieldRep opt cat (Proxy @s) (Proxy @a) (f $ Proxy @a)]
+  toFieldRep (opt, cat, TypeConstraint f) (M1 (K1 src)) = [deriveFieldRep opt cat (Proxy @s) (Proxy @a) (f (Identity src))]
 
 deriveFieldRep ::
   forall f (s :: Meta) g a v.
   (Selector s, GQLType a) =>
   GQLTypeOptions ->
+  TypeCategory ->
   f s ->
   g a ->
   v ->
   FieldRep v
-deriveFieldRep opt pSel proxy v =
+deriveFieldRep opt cat pSel proxy v =
   FieldRep
     { fieldSelector = selNameProxy opt pSel,
       fieldTypeRef =
@@ -196,7 +198,7 @@ deriveFieldRep opt pSel proxy v =
       fieldValue = v
     }
   where
-    TypeData {gqlTypeName, gqlWrappers} = __type proxy OUT
+    TypeData {gqlTypeName, gqlWrappers} = __type proxy cat
 
 instance ConRep c v U1 where
   conRep _ _ = []

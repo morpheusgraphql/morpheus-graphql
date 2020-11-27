@@ -72,6 +72,7 @@ import Data.Morpheus.Types.Internal.AST
     OperationType,
     QUERY,
     SUBSCRIPTION,
+    TypeCategory (IN),
     TypeRef (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -221,6 +222,7 @@ exploreResolvers =
       ( TypeConstraint (encode . runIdentity) ::
           TypeConstraint (Encode o e m) (Resolver o e m (ResModel o e m)) Identity
       )
+      IN
 
 ----- HELPERS ----------------------------
 objectResolvers ::

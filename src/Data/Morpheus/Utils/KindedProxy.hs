@@ -2,7 +2,8 @@
 
 module Data.Morpheus.Utils.KindedProxy
   ( KindedProxy (..),
-    setProxyType,
+    setType,
+    setKind,
   )
 where
 
@@ -12,5 +13,8 @@ where
 data KindedProxy k a
   = KindedProxy
 
-setProxyType :: f b -> kinded (k :: t) a -> KindedProxy k b
-setProxyType _ _ = KindedProxy
+setType :: f a -> kinded (k :: t) a' -> KindedProxy k a
+setType _ _ = KindedProxy
+
+setKind :: f k -> kinded (k' :: t) a -> KindedProxy k a
+setKind _ _ = KindedProxy
