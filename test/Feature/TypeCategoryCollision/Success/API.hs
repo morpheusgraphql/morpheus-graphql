@@ -14,6 +14,7 @@ import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
+    GQLTypeOptions (..),
     RootResolver (..),
     Undefined (..),
   )
@@ -27,7 +28,10 @@ data Deity = Deity
   { name :: Text,
     age :: Int
   }
-  deriving (Show, Generic, GQLType)
+  deriving (Show, Generic)
+
+instance GQLType Deity where
+  typeOptions _ = id
 
 newtype DeityArgs = DeityArgs
   { input :: Deity

@@ -58,8 +58,8 @@ main = do
   defaultValue <- testFeature DefaultValue.api "Feature/Input/DefaultValue"
   inference <- testFeature Inference.api "Feature/TypeInference"
   subscription <- testSubsriptions
-  typecatColisionFail <- testFeature TypeCategoryCollisionFail.api "Feature/TypeCategoryCollision"
-  typecatColisionSuccess <- testFeature TypeCategoryCollisionSuccess.api "Feature/TypeCategoryCollision"
+  typecatColisionFail <- testFeature TypeCategoryCollisionFail.api "Feature/TypeCategoryCollision/Fail"
+  typecatColisionSuccess <- testFeature TypeCategoryCollisionSuccess.api "Feature/TypeCategoryCollision/Success"
   defaultMain
     ( testGroup
         "Morpheus Graphql Tests"

@@ -1,5 +1,8 @@
 query Get__Type {
-  __type(name: "Deity") {
+  type: __type(name: "Deity") {
+    ...FullType
+  }
+  input: __type(name: "InputDeity") {
     ...FullType
   }
 }
