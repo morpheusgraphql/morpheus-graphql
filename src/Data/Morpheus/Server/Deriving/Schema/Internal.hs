@@ -28,19 +28,12 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     asObjectType,
     fromSchema,
     updateByContent,
-    defineEnumNull,
   )
 where
 
 -- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad.Fail (fail)
-import Data.Foldable (concatMap, traverse_)
-import Data.Functor (($>), (<$>), Functor (..))
 import Data.List (partition)
 import qualified Data.Map as M
-import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -104,29 +97,8 @@ import Data.Morpheus.Utils.Kinded
     KindedType (..),
     outputType,
   )
-import Data.Semigroup ((<>))
-import Data.Traversable (traverse)
 import Language.Haskell.TH (Exp, Q)
-import Prelude
-  ( ($),
-    (.),
-    Show (..),
-    all,
-    map,
-    null,
-    otherwise,
-    sequence,
-  )
-
-__Null :: TypeName
-__Null = "Null"
-
-defineEnumNull :: SchemaT ()
-defineEnumNull =
-  insertType
-    ( mkType __Null (mkEnumContent [__Null]) ::
-        TypeDefinition LEAF CONST
-    )
+import Relude
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
@@ -297,17 +269,27 @@ buildUnions ::
 buildUnions cons =
   traverse_ buildURecType cons $> fmap consName cons
   where
-    buildURecType = insertType . buildUnionRecord
+    buildURecType = buildUnionRecord >=> insertType
 
 buildUnionRecord ::
   PackObject kind =>
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
-  TypeDefinition kind CONST
-buildUnionRecord ConsRep {consName, consFields} = mkType consName (packObject fields)
+  SchemaT (TypeDefinition kind CONST)
+buildUnionRecord ConsRep {consName, consFields} = mkType consName . packObject <$> fields
   where
     fields
-      | null consFields = singleton mkNullField
-      | otherwise = mkFieldsDefinition consFields
+      | null consFields = defineEnumNull $> singleton mkNullField
+      | otherwise = pure $ mkFieldsDefinition consFields
+
+__Null :: TypeName
+__Null = "Null"
+
+defineEnumNull :: SchemaT ()
+defineEnumNull =
+  insertType
+    ( mkType __Null (mkEnumContent [__Null]) ::
+        TypeDefinition LEAF CONST
+    )
 
 mkNullField :: FieldDefinition cat s
 mkNullField = mkField Nothing "null" (mkTypeRef __Null)

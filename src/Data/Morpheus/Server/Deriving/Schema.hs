@@ -45,7 +45,6 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
     UpdateDef (..),
     asObjectType,
     builder,
-    defineEnumNull,
     fromSchema,
     unpackMs,
     updateByContent,
@@ -156,7 +155,7 @@ deriveSchema ::
   f (Schema CONST)
 deriveSchema _ = resultOr failure pure schema
   where
-    schema = toSchema (defineEnumNull *> schemaT)
+    schema = toSchema schemaT
     schemaT ::
       SchemaT
         ( TypeDefinition OBJECT CONST,
