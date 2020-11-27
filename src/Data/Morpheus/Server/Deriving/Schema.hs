@@ -116,9 +116,16 @@ import Prelude
   )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
-  ( DeriveTypeConstraint OUT (query (Resolver QUERY event m)),
-    DeriveTypeConstraint OUT (mutation (Resolver MUTATION event m)),
-    DeriveTypeConstraint OUT (subscription (Resolver SUBSCRIPTION event m))
+  ( DeriveTypeConstraintOpt OUT (query (Resolver QUERY event m)),
+    DeriveTypeConstraintOpt OUT (mutation (Resolver MUTATION event m)),
+    DeriveTypeConstraintOpt OUT (subscription (Resolver SUBSCRIPTION event m))
+  )
+
+type DeriveTypeConstraintOpt kind a =
+  ( Generic a,
+    GQLType a,
+    TypeRep (DeriveType kind) (TyContentM kind) (Rep a),
+    TypeRep (DeriveType kind) (SchemaT ()) (Rep a)
   )
 
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
@@ -217,10 +224,7 @@ class DeriveKindedType (cat :: TypeCategory) (kind :: GQL_KIND) a where
   deriveKindedType :: f cat -> proxy kind a -> SchemaT ()
 
 type DeriveTypeConstraint kind a =
-  ( Generic a,
-    GQLType a,
-    TypeRep (DeriveType kind) (TyContentM kind) (Rep a),
-    TypeRep (DeriveType kind) (SchemaT ()) (Rep a),
+  ( DeriveTypeConstraintOpt kind a,
     CategoryValue kind
   )
 
