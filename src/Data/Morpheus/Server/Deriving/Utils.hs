@@ -39,6 +39,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     TypeData (..),
+    __isObjectKind,
     defaultTypeOptions,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -194,7 +195,7 @@ deriveFieldRep opt cat pSel proxy v =
             typeWrappers = gqlWrappers,
             typeArgs = Nothing
           },
-      fieldIsObject = isObjectKind proxy,
+      fieldIsObject = __isObjectKind proxy,
       fieldValue = v
     }
   where

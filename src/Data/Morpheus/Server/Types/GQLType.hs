@@ -13,7 +13,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
+  ( GQLType
+      ( implements,
+        description,
+        getDescriptions,
+        typeOptions,
+        getDirectives,
+        getFieldContents
+      ),
     GQLTypeOptions
       ( fieldLabelModifier,
         constructorTagModifier,
@@ -22,6 +29,7 @@ module Data.Morpheus.Server.Types.GQLType
     defaultTypeOptions,
     TypeData (..),
     ToCategoryValue (..),
+    __isObjectKind,
   )
 where
 
@@ -168,6 +176,9 @@ ignoreResolver (con, _) | con == resolverCon = []
 ignoreResolver (con, args) =
   con : concatMap (ignoreResolver . splitTyConApp) args
 
+__isObjectKind :: forall f a. GQLType a => f a -> Bool
+__isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
+
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
 --  @
@@ -188,9 +199,6 @@ class ToValue (KIND a) => GQLType a where
 
   implements :: f a -> [SchemaT TypeName]
   implements _ = []
-
-  isObjectKind :: f a -> Bool
-  isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 
   description :: f a -> Maybe Text
   description _ = Nothing
