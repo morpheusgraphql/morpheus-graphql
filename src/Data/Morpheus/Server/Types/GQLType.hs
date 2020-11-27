@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -26,6 +27,7 @@ where
 -- MORPHEUS
 import Data.Morpheus.Kind
   ( GQL_KIND,
+    INTERFACE,
     SCALAR,
     TYPE,
     ToValue,
@@ -49,6 +51,8 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directives,
     FieldName,
+    IN,
+    OUT,
     QUERY,
     TypeCategory (..),
     TypeName (..),
@@ -120,13 +124,28 @@ deriveTypeData proxy shouldPefix cat =
 getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
 getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
 
-mkTypeData :: TypeName -> TypeCategory -> TypeData
-mkTypeData name _ =
+mkTypeData :: TypeName -> TypeData
+mkTypeData name =
   TypeData
     { gqlTypeName = name,
       gqlFingerprint = InternalFingerprint name,
       gqlWrappers = []
     }
+
+class ToCategoryValue (cat :: k) where
+  toCategoryValue :: f cat a -> TypeCategory
+
+instance ToCategoryValue OUT where
+  toCategoryValue _ = OUT
+
+instance ToCategoryValue IN where
+  toCategoryValue _ = IN
+
+instance ToCategoryValue SCALAR where
+  toCategoryValue _ = LEAF
+
+instance ToCategoryValue INTERFACE where
+  toCategoryValue _ = OUT
 
 list :: [TypeWrapper] -> [TypeWrapper]
 list = (TypeList :)
@@ -199,9 +218,9 @@ class ToValue (KIND a) => GQLType a where
   isEmptyType :: f a -> Bool
   isEmptyType _ = False
 
-  __type :: f a -> TypeCategory -> TypeData
-  default __type :: Typeable a => f a -> TypeCategory -> TypeData
-  __type proxy = deriveTypeData proxy prefixInputType
+  __type :: f cat a -> TypeData
+  default __type :: Typeable a => f cat a -> TypeData
+  __type proxy = deriveTypeData proxy prefixInputType (toCategoryValue proxy)
     where
       GQLTypeOptions {prefixInputType} = typeOptions proxy defaultTypeOptions
 
@@ -238,11 +257,11 @@ instance Typeable m => GQLType (Undefined m) where
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __type _ = wrapper toNullable . __type (Proxy @a)
+  __type _ = wrapper toNullable $ __type (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __type _ = wrapper list . __type (Proxy @a)
+  __type _ = wrapper list $ __type (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = WRAPPER
