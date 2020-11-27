@@ -2,6 +2,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -49,7 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldName,
     QUERY,
-    TypeCategory,
+    TypeCategory (..),
     TypeName (..),
     TypeWrapper (..),
     Value,
@@ -105,13 +106,16 @@ getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeCons
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
-deriveTypeData :: Typeable a => f a -> TypeCategory -> TypeData
-deriveTypeData proxy cat =
+deriveTypeData :: Typeable a => f a -> Bool -> TypeCategory -> TypeData
+deriveTypeData proxy shouldPefix cat =
   TypeData
-    { gqlTypeName = getTypename proxy,
+    { gqlTypeName = prefix shouldPefix cat <> getTypename proxy,
       gqlWrappers = [],
       gqlFingerprint = getFingerprint cat proxy
     }
+  where
+    prefix True IN = "Input"
+    prefix _ _ = ""
 
 -- TODO: contiunue here
 getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
@@ -198,7 +202,9 @@ class ToValue (KIND a) => GQLType a where
 
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
-  __type _ = deriveTypeData (Proxy @a)
+  __type proxy = deriveTypeData proxy prefixTypeCategory
+    where
+      GQLTypeOptions {prefixTypeCategory} = typeOptions proxy defaultTypeOptions
 
 instance GQLType Int where
   type KIND Int = SCALAR
