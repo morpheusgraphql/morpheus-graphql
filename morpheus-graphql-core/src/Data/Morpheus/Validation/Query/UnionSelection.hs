@@ -23,10 +23,12 @@ import Data.Morpheus.Internal.Utils
   ( elems,
     empty,
     fromElems,
+    member,
     singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataUnion,
+    FieldName,
     Fragment (..),
     IMPLEMENTABLE,
     Position (..),
@@ -101,10 +103,13 @@ exploreFragments validateFragment types selectionSet =
 --   ( Type for Tag Product , [ Fragment for Product] )
 -- ]
 tagUnionFragments ::
+  Bool ->
   [TypeDefinition IMPLEMENTABLE VALID] ->
   [UnionTag] ->
   [(TypeName, [SelectionSet VALID])]
-tagUnionFragments types fragments = filter notEmpty (categorizeType <$> types)
+tagUnionFragments hasTypeName types fragments
+  | hasTypeName = categorizeType <$> types
+  | otherwise = filter notEmpty (categorizeType <$> types)
   where
     notEmpty = not . null . snd
     categorizeType ::
@@ -173,7 +178,7 @@ validateInterfaceSelection
     possibleTypes <- askInterfaceTypes typeDef
     (spreads, selectionSet) <- exploreFragments validateFragment possibleTypes inputSelectionSet
     validSelectionSet <- validate typeDef selectionSet
-    let categories = tagUnionFragments possibleTypes spreads
+    let categories = tagUnionFragments (isTypenameSelected selectionSet) possibleTypes spreads
     if null categories
       then pure (SelectionSet validSelectionSet)
       else do
@@ -187,6 +192,9 @@ insertDefault interfaceName categories
 
 mkUnionRootType :: FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 mkUnionRootType = (`mkType` DataObject [] empty) <$> asksScope currentTypeName
+
+isTypenameSelected :: SelectionSet s -> Bool
+isTypenameSelected = member ("__typename" :: FieldName)
 
 validateUnionSelection ::
   ResolveFragment s =>
@@ -203,4 +211,4 @@ validateUnionSelection validateFragment validate members selectionSet = do
   (spreads, selSet) <- exploreFragments validateFragment unionTypes selectionSet
   typeDef <- mkUnionRootType
   validSelection <- validate typeDef selSet
-  joinClusters validSelection (tagUnionFragments unionTypes spreads)
+  joinClusters validSelection (tagUnionFragments (isTypenameSelected selectionSet) unionTypes spreads)
