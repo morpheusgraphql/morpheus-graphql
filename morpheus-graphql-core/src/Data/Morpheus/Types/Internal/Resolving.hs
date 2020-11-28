@@ -43,7 +43,6 @@ module Data.Morpheus.Types.Internal.Resolving
     FieldResModel,
     sortErrors,
     EventHandler (..),
-    mkUnionRes,
   )
 where
 
@@ -80,14 +79,8 @@ mkInt = ResScalar . Int
 mkBoolean :: Bool -> ResModel o e m
 mkBoolean = ResScalar . Boolean
 
-mkEnum :: TypeName -> TypeName -> ResModel o e m
-mkEnum = ResEnum
-
 mkList :: [ResModel o e m] -> ResModel o e m
 mkList = ResList
-
-mkUnion :: TypeName -> Resolver o e m (ResModel o e m) -> ResModel o e m
-mkUnion = ResUnion
 
 mkNull :: ResModel o e m
 mkNull = ResNull

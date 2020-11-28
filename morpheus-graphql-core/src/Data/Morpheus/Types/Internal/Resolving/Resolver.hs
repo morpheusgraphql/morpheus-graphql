@@ -35,8 +35,9 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     SubscriptionField (..),
     liftResolverState,
     mkObject,
-    mkUnionRes,
+    mkUnion,
     FieldResModel,
+    mkEnum,
   )
 where
 
@@ -284,20 +285,23 @@ mkObject __typename fields =
         }
     )
 
-mkUnionRes ::
+mkUnion ::
   (LiftOperation o, Monad m) =>
   TypeName ->
   [FieldResModel o e m] ->
   ResModel o e m
-mkUnionRes name =
+mkUnion name =
   ResUnion
     name
     . pure
     . mkObject
       name
 
+mkEnum :: TypeName -> ResModel o e m
+mkEnum = ResEnum
+
 mkEnumNull :: (LiftOperation o, Monad m) => [FieldResModel o e m]
-mkEnumNull = [("null", pure $ ResEnum "Null")]
+mkEnumNull = [("null", pure $ mkEnum "Null")]
 
 resolveObject ::
   forall o e m.
@@ -326,7 +330,7 @@ runDataResolver res = asks currentSelection >>= __encode res
         -- ENUM
         encodeNode (ResEnum enum) SelectionField = pure $ gqlString $ readTypeName enum
         encodeNode (ResEnum name) unionSel@UnionSelection {} =
-          encodeNode (mkUnionRes name mkEnumNull) unionSel
+          encodeNode (mkUnion name mkEnumNull) unionSel
         encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)
         -- UNION
         encodeNode (ResUnion typename unionRef) (UnionSelection selections) =
