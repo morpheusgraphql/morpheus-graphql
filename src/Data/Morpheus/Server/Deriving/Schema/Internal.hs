@@ -294,7 +294,7 @@ defineEnumNull =
     )
 
 mkNullField :: FieldDefinition cat s
-mkNullField = mkField Nothing "empty" (mkTypeRef __Empty)
+mkNullField = mkField Nothing "_0" (mkTypeRef __Empty)
 
 class PackObject kind where
   packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST

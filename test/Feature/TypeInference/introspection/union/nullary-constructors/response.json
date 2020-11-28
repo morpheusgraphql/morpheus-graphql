@@ -5,7 +5,7 @@
       "name": "Zeus",
       "fields": [
         {
-          "name": "empty",
+          "name": "_0",
           "args": [],
           "type": {
             "kind": "NON_NULL",
@@ -30,7 +30,7 @@
       "name": "Cronus",
       "fields": [
         {
-          "name": "empty",
+          "name": "_0",
           "args": [],
           "type": {
             "kind": "NON_NULL",
