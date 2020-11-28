@@ -70,8 +70,6 @@ union Person = Client | Accountant | Developer
     typeOptions _ options = options { fieldLabelModifier = <my function> }
   ```
 
-````
-
 whre argument options is default gql options.
 
 - deexposed constructor of `GQLTypeOptions`.
@@ -1416,4 +1414,7 @@ thanks for contributing to: @krisajenkins, @hovind, @vmchale, @msvbg
   - `gqlResolver` : packs `m Either String a` to `Resolver m a`
   - `gqlEffectResolver`: resolver constructor for effectedResolver
   - `liftEffectResolver`: lifts normal resolver to Effect Resolver.
-````
+
+```
+
+```
