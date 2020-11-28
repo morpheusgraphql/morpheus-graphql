@@ -38,7 +38,7 @@
     }
 
     ... on Zeus {
-      null
+      empty
     }
   }
 }
