@@ -34,6 +34,9 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     getArguments,
     SubscriptionField (..),
     liftResolverState,
+    mkObject,
+    mkUnionRes,
+    FieldResModel,
   )
 where
 
@@ -267,6 +270,35 @@ lookupRes Selection {selectionName}
       . HM.lookup selectionName
       . objectFields
 
+type FieldResModel o e m = (FieldName, Resolver o e m (ResModel o e m))
+
+mkObject ::
+  TypeName ->
+  [FieldResModel o e m] ->
+  ResModel o e m
+mkObject __typename fields =
+  ResObject
+    ( ObjectResModel
+        { __typename,
+          objectFields = HM.fromList fields
+        }
+    )
+
+mkUnionRes ::
+  (LiftOperation o, Monad m) =>
+  TypeName ->
+  [FieldResModel o e m] ->
+  ResModel o e m
+mkUnionRes name =
+  ResUnion
+    name
+    . pure
+    . mkObject
+      name
+
+mkEnumNull :: (LiftOperation o, Monad m) => [FieldResModel o e m]
+mkEnumNull = [("null", pure $ ResEnum "Null")]
+
 resolveObject ::
   forall o e m.
   (LiftOperation o, Monad m) =>
@@ -292,16 +324,9 @@ runDataResolver res = asks currentSelection >>= __encode res
         -- Object -----------------
         encodeNode objDrv@(ResObject ObjectResModel {__typename}) _ = withObject __typename (`resolveObject` objDrv) sel
         -- ENUM
-        encodeNode (ResEnum _ enum) SelectionField = pure $ gqlString $ readTypeName enum
-        encodeNode (ResEnum typename enum) unionSel@UnionSelection {} =
-          encodeNode (unionDrv (typename <> "EnumObject")) unionSel
-          where
-            unionDrv name =
-              ResUnion name
-                $ pure
-                $ ResObject
-                $ ObjectResModel name
-                $ HM.singleton "enum" (pure $ ResScalar $ String $ readTypeName enum)
+        encodeNode (ResEnum enum) SelectionField = pure $ gqlString $ readTypeName enum
+        encodeNode (ResEnum name) unionSel@UnionSelection {} =
+          encodeNode (mkUnionRes name mkEnumNull) unionSel
         encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)
         -- UNION
         encodeNode (ResUnion typename unionRef) (UnionSelection selections) =
@@ -382,7 +407,7 @@ mergeResolver path a b = do
 data ResModel (o :: OperationType) e (m :: * -> *)
   = ResNull
   | ResScalar ScalarValue
-  | ResEnum TypeName TypeName
+  | ResEnum TypeName
   | ResObject (ObjectResModel o e m)
   | ResList [ResModel o e m]
   | ResUnion TypeName (Resolver o e m (ResModel o e m))
