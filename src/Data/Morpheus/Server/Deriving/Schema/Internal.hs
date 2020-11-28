@@ -283,18 +283,18 @@ buildUnionRecord ConsRep {consName, consFields} = mkType consName . packObject <
       | null consFields = defineEnumNull $> singleton mkNullField
       | otherwise = pure $ mkFieldsDefinition consFields
 
-__Null :: TypeName
-__Null = "Null"
+__Empty :: TypeName
+__Empty = "Empty"
 
 defineEnumNull :: SchemaT ()
 defineEnumNull =
   insertType
-    ( mkType __Null (mkEnumContent [__Null]) ::
+    ( mkType __Empty (mkEnumContent [__Empty]) ::
         TypeDefinition LEAF CONST
     )
 
 mkNullField :: FieldDefinition cat s
-mkNullField = mkField Nothing "null" (mkTypeRef __Null)
+mkNullField = mkField Nothing "empty" (mkTypeRef __Empty)
 
 class PackObject kind where
   packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST

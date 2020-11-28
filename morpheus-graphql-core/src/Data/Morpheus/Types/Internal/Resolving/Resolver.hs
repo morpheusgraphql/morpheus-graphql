@@ -301,7 +301,7 @@ mkEnum :: TypeName -> ResModel o e m
 mkEnum = ResEnum
 
 mkEnumNull :: (LiftOperation o, Monad m) => [FieldResModel o e m]
-mkEnumNull = [("null", pure $ mkEnum "Null")]
+mkEnumNull = [("empty", pure $ mkEnum "Empty")]
 
 resolveObject ::
   forall o e m.

@@ -5,14 +5,14 @@
       "name": "Zeus",
       "fields": [
         {
-          "name": "null",
+          "name": "empty",
           "args": [],
           "type": {
             "kind": "NON_NULL",
             "name": null,
             "ofType": {
               "kind": "ENUM",
-              "name": "Null",
+              "name": "Empty",
               "ofType": null
             }
           },
@@ -30,14 +30,14 @@
       "name": "Cronus",
       "fields": [
         {
-          "name": "null",
+          "name": "empty",
           "args": [],
           "type": {
             "kind": "NON_NULL",
             "name": null,
             "ofType": {
               "kind": "ENUM",
-              "name": "Null",
+              "name": "Empty",
               "ofType": null
             }
           },
@@ -50,15 +50,15 @@
       "enumValues": null,
       "possibleTypes": null
     },
-    "null": {
+    "empty": {
       "kind": "ENUM",
-      "name": "Null",
+      "name": "Empty",
       "fields": null,
       "inputFields": null,
       "interfaces": null,
       "enumValues": [
         {
-          "name": "Null",
+          "name": "Empty",
           "isDeprecated": false,
           "deprecationReason": null
         }
