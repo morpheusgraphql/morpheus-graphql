@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9df38627ba9017778a7a67418735ac8668a06590ae34389668c53de04593ecea
+-- hash: 5131fff7c624b6ad78b689573b344c6ae4c89e17f983d5c9b13571b5bd531682
 
 name:           morpheus-graphql
 version:        0.16.0
@@ -171,14 +171,14 @@ data-files:
     test/Feature/TypeCategoryCollision/Fail/failOnColision/query.gql
     test/Feature/TypeCategoryCollision/Success/prefixed/query.gql
     test/Feature/TypeInference/introspection/complexInput/query.gql
-    test/Feature/TypeInference/introspection/complexUnion/query.gql
-    test/Feature/TypeInference/introspection/complexUnionEnum/query.gql
-    test/Feature/TypeInference/introspection/complexUnionIndexedTypes/query.gql
-    test/Feature/TypeInference/introspection/complexUnionRecord/query.gql
-    test/Feature/TypeInference/introspection/complexUnionScalar/query.gql
     test/Feature/TypeInference/introspection/enum/query.gql
     test/Feature/TypeInference/introspection/inputObject/query.gql
     test/Feature/TypeInference/introspection/object/query.gql
+    test/Feature/TypeInference/introspection/union/named-products/query.gql
+    test/Feature/TypeInference/introspection/union/nullary-constructors/query.gql
+    test/Feature/TypeInference/introspection/union/positional-products/query.gql
+    test/Feature/TypeInference/introspection/union/scalars/query.gql
+    test/Feature/TypeInference/introspection/union/union/query.gql
     test/Feature/TypeInference/resolving/complexUnion/query.gql
     test/Feature/TypeInference/resolving/input/query.gql
     test/Feature/TypeInference/resolving/object/query.gql
@@ -368,14 +368,14 @@ data-files:
     test/Feature/TypeCategoryCollision/Success/prefixed/response.json
     test/Feature/TypeInference/cases.json
     test/Feature/TypeInference/introspection/complexInput/response.json
-    test/Feature/TypeInference/introspection/complexUnion/response.json
-    test/Feature/TypeInference/introspection/complexUnionEnum/response.json
-    test/Feature/TypeInference/introspection/complexUnionIndexedTypes/response.json
-    test/Feature/TypeInference/introspection/complexUnionRecord/response.json
-    test/Feature/TypeInference/introspection/complexUnionScalar/response.json
     test/Feature/TypeInference/introspection/enum/response.json
     test/Feature/TypeInference/introspection/inputObject/response.json
     test/Feature/TypeInference/introspection/object/response.json
+    test/Feature/TypeInference/introspection/union/named-products/response.json
+    test/Feature/TypeInference/introspection/union/nullary-constructors/response.json
+    test/Feature/TypeInference/introspection/union/positional-products/response.json
+    test/Feature/TypeInference/introspection/union/scalars/response.json
+    test/Feature/TypeInference/introspection/union/union/response.json
     test/Feature/TypeInference/resolving/complexUnion/response.json
     test/Feature/TypeInference/resolving/input/response.json
     test/Feature/TypeInference/resolving/object/response.json

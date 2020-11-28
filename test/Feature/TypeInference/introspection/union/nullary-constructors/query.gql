@@ -1,8 +1,11 @@
 query Get__Type {
-  enumObject: __type(name: "CharacterEnumObject") {
+  zeus: __type(name: "Zeus") {
     ...FullType
   }
-  enum: __type(name: "CharacterEnum") {
+  cronus: __type(name: "Cronus") {
+    ...FullType
+  }
+  empty: __type(name: "Empty") {
     ...FullType
   }
 }

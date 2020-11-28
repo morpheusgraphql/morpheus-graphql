@@ -88,6 +88,7 @@ import Data.Morpheus.Types.Internal.Resolving
     getArguments,
     liftResolverState,
     mkObject,
+    mkUnion,
   )
 import Data.Proxy (Proxy (..))
 import Data.Set (Set)
@@ -196,18 +197,12 @@ convertNode
     | otherwise = mkObject tyName (fmap toFieldRes consFields)
     where
       -- ENUM
-      encodeUnion [] = ResEnum tyName consName
+      encodeUnion [] = ResEnum consName
       -- Type References --------------------------------------------------------------
       encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
         | isUnionRef tyName cons = ResUnion typeConName fieldValue
       -- Inline Union Types ----------------------------------------------------------------------------
-      encodeUnion fields =
-        ResUnion
-          consName
-          $ pure
-          $ mkObject
-            consName
-            (fmap toFieldRes fields)
+      encodeUnion fields = mkUnion consName (fmap toFieldRes fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::

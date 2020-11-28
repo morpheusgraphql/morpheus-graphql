@@ -6,11 +6,6 @@
       name
     }
 
-    ## union Enums
-    ... on CharacterEnumObject {
-      enum
-    }
-
     ... on Creature {
       creatureName
       creatureAge
@@ -40,6 +35,10 @@
     ... on SomeMutli {
       _0
       _1
+    }
+
+    ... on Zeus {
+      _0
     }
   }
 }

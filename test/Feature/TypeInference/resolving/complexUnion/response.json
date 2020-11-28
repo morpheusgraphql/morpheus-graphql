@@ -12,9 +12,7 @@
       },
       {
         "__typename": "BoxedDeity",
-        "boxedDeity": {
-          "power": "Shapeshift"
-        }
+        "boxedDeity": { "power": "Shapeshift" }
       },
       {
         "__typename": "ScalarRecord",
@@ -22,10 +20,7 @@
       },
       {
         "__typename": "SomeDeity",
-        "_0": {
-          "name": "Morpheus",
-          "power": "Shapeshift"
-        }
+        "_0": { "name": "Morpheus", "power": "Shapeshift" }
       },
       {
         "__typename": "CharacterInt",
@@ -37,12 +32,11 @@
         "_1": "some text"
       },
       {
-        "__typename": "CharacterEnumObject",
-        "enum": "Zeus"
+        "__typename": "Zeus",
+        "_0": "Empty"
       },
       {
-        "__typename": "CharacterEnumObject",
-        "enum": "Cronus"
+        "__typename": "Cronus"
       }
     ]
   }

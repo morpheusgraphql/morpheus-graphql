@@ -32,14 +32,8 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
 where
 
 -- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad.Fail (fail)
-import Data.Foldable (concatMap, traverse_)
-import Data.Functor (($>), (<$>), Functor (..))
 import Data.List (partition)
 import qualified Data.Map as M
-import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -88,8 +82,8 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     mkEnumContent,
     mkField,
-    mkInputValue,
     mkType,
+    mkTypeRef,
     mkUnionMember,
     msg,
     unsafeFromFields,
@@ -103,19 +97,8 @@ import Data.Morpheus.Utils.Kinded
     KindedType (..),
     outputType,
   )
-import Data.Semigroup ((<>))
-import Data.Traversable (traverse)
 import Language.Haskell.TH (Exp, Q)
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Show (..),
-    map,
-    null,
-    otherwise,
-    sequence,
-  )
+import Relude
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
@@ -168,9 +151,7 @@ builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements scope)
 builder scope cons = genericUnion cons
   where
     typeData = __typeData scope
-    genericUnion =
-      mkUnionType scope typeData
-        . analyseRep (gqlTypeName typeData)
+    genericUnion = mkUnionType scope . analyseRep (gqlTypeName typeData)
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -245,35 +226,32 @@ updateByContent f proxy =
         . f
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))
-analyseRep baseName cons =
-  ResRep
-    { enumCons = fmap consName enumRep,
-      unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
-      unionRecordRep
-    }
+analyseRep baseName cons
+  | all isEmptyConstraint cons = EnumRep {enumCons = consName <$> cons}
+  | otherwise =
+    ResRep
+      { unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
+        unionCons
+      }
   where
-    (enumRep, left1) = partition isEmptyConstraint cons
-    (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
+    (unionRefRep, unionCons) = partition (isUnionRef baseName) cons
 
 mkUnionType ::
   KindedType kind a ->
-  TypeData ->
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
-mkUnionType InputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType OutputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType InputType _ ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
+mkUnionType InputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
+mkUnionType OutputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
+mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMembers
   where
+    (eunms, cons) = partition isEmptyConstraint unionCons
     typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = withMembers <$> buildUnions unionRecordRep
+    typeMembers = withNullaryCons . withRefs <$> buildUnions cons
       where
-        withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
-mkUnionType OutputType typeData ResRep {unionRef, unionRecordRep, enumCons} = DataUnion . map mkUnionMember <$> typeMembers
-  where
-    typeMembers = do
-      enums <- buildUnionEnum typeData enumCons
-      unions <- buildUnions unionRecordRep
-      pure (unionRef <> enums <> unions)
+        withRefs = fmap mkUnionMember . (unionRef <>)
+        withNullaryCons = (<> fmap ((`UnionMember` False) . consName) eunms)
+mkUnionType OutputType ResRep {unionRef, unionCons} =
+  DataUnion . map mkUnionMember . (unionRef <>) <$> buildUnions unionCons
 
 wrapFields :: [TypeName] -> KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 wrapFields _ InputType = DataInputObject
@@ -293,14 +271,30 @@ buildUnions ::
 buildUnions cons =
   traverse_ buildURecType cons $> fmap consName cons
   where
-    buildURecType = insertType . buildUnionRecord
+    buildURecType = buildUnionRecord >=> insertType
 
 buildUnionRecord ::
   PackObject kind =>
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
-  TypeDefinition kind CONST
-buildUnionRecord ConsRep {consName, consFields} =
-  mkType consName (packObject $ mkFieldsDefinition consFields)
+  SchemaT (TypeDefinition kind CONST)
+buildUnionRecord ConsRep {consName, consFields} = mkType consName . packObject <$> fields
+  where
+    fields
+      | null consFields = defineEnumNull $> singleton mkNullField
+      | otherwise = pure $ mkFieldsDefinition consFields
+
+__Empty :: TypeName
+__Empty = "Empty"
+
+defineEnumNull :: SchemaT ()
+defineEnumNull =
+  insertType
+    ( mkType __Empty (mkEnumContent [__Empty]) ::
+        TypeDefinition LEAF CONST
+    )
+
+mkNullField :: FieldDefinition cat s
+mkNullField = mkField Nothing "_0" (mkTypeRef __Empty)
 
 class PackObject kind where
   packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
@@ -310,41 +304,3 @@ instance PackObject OUT where
 
 instance PackObject IN where
   packObject = DataInputObject
-
-buildUnionEnum ::
-  TypeData ->
-  [TypeName] ->
-  SchemaT [TypeName]
-buildUnionEnum TypeData {gqlTypeName} enums = updates $> members
-  where
-    members
-      | null enums = []
-      | otherwise = [enumTypeWrapperName]
-    enumTypeName = gqlTypeName <> "Enum"
-    enumTypeWrapperName = enumTypeName <> "Object"
-    -------------------------
-    updates :: SchemaT ()
-    updates
-      | null enums = pure ()
-      | otherwise =
-        buildEnumObject enumTypeWrapperName enumTypeName
-          *> buildEnum enumTypeName enums
-
-buildEnum :: TypeName -> [TypeName] -> SchemaT ()
-buildEnum typeName tags =
-  insertType
-    ( mkType typeName (mkEnumContent tags) ::
-        TypeDefinition LEAF CONST
-    )
-
-buildEnumObject :: TypeName -> TypeName -> SchemaT ()
-buildEnumObject typeName enumTypeName =
-  insertType
-    ( mkType
-        typeName
-        ( DataObject []
-            $ singleton
-            $ mkInputValue "enum" [] enumTypeName
-        ) ::
-        TypeDefinition OBJECT CONST
-    )
