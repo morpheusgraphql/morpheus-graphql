@@ -32,6 +32,36 @@
 
 ### Breaking Changes
 
+For each nullary constructor will be defined its GQL object type with a single field `_0: Empty` (since GraphQL does not allow empty objects).
+
+for example:
+
+```haskell
+data Person = Client { name :: Text } | Accountant | Developer
+```
+
+this type will generate the following SDL:
+
+```graphql
+enum Empty {
+  Empty
+}
+
+type Student {
+  name: String!
+}
+
+type Accountant {
+  _0: Empty!
+}
+
+type Developer {
+  _0: Empty!
+}
+
+union Person = Client | Accountant | Developer
+```
+
 - changed signature of `GQLType.typeOptions` from `f a -> GQLTypeOptions` to `f a -> GQLTypeOptions -> GQLTypeOptions`.
 
   now you can write:
@@ -40,7 +70,9 @@
     typeOptions _ options = options { fieldLabelModifier = <my function> }
   ```
 
-  whre argument options is default gql options.
+````
+
+whre argument options is default gql options.
 
 - deexposed constructor of `GQLTypeOptions`.
 - Type name for parametrized types like `One (Two Three)` will be generated directly, concatenating them `OneTwoThree` instead of `One_Two_Three.`
@@ -1384,3 +1416,4 @@ thanks for contributing to: @krisajenkins, @hovind, @vmchale, @msvbg
   - `gqlResolver` : packs `m Either String a` to `Resolver m a`
   - `gqlEffectResolver`: resolver constructor for effectedResolver
   - `liftEffectResolver`: lifts normal resolver to Effect Resolver.
+````
