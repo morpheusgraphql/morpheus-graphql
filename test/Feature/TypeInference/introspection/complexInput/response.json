@@ -26,8 +26,8 @@
         {
           "name": "UnidentifiedMonster",
           "type": {
-            "kind": "INPUT_OBJECT",
-            "name": "UnidentifiedMonster",
+            "kind": "ENUM",
+            "name": "Empty",
             "ofType": null
           },
           "defaultValue": null
