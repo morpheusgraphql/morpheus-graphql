@@ -50,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableContent (..),
     isNullable,
     isWeaker,
+    mkTypeRef,
     msg,
     msgValidation,
     toCategory,
@@ -211,10 +212,14 @@ validatInputUnionMember ::
   UnionMember IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx (Value VALID)
-validatInputUnionMember member@UnionMember {memberName} value = do
-  inputDef <- askTypeMember member
-  validValue <- validateInputByType [TypeMaybe] (toCategory inputDef) value
+validatInputUnionMember member@UnionMember {memberName, nullary} value = do
+  inputDef <- askDef
+  validValue <- validateInputByType [TypeMaybe] inputDef value
   mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
+  where
+    askDef
+      | nullary = askType (Typed $ mkTypeRef "Empty")
+      | otherwise = toCategory <$> askTypeMember member
 
 mkInputObject :: (Monad m, Failure ValidationErrors m) => TypeName -> [ObjectEntry s] -> m (Value s)
 mkInputObject name xs = Object <$> fromElems (ObjectEntry "__typename" (Enum name) : xs)
