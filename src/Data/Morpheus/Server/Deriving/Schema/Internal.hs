@@ -249,8 +249,8 @@ mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMemb
     nullaryMembers :: [UnionMember IN CONST]
     nullaryMembers = mkNullaryMember . consName <$> nullaries
     defineEnumEmpty
-      | null nullaries = defineEnumNull
-      | otherwise = pure ()
+      | null nullaries = pure ()
+      | otherwise = defineEnumNull
     typeMembers :: SchemaT [UnionMember IN CONST]
     typeMembers =
       (<> nullaryMembers) . withRefs
