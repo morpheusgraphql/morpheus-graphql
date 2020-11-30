@@ -248,7 +248,7 @@ mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMemb
     nullaryMembers :: [UnionMember IN CONST]
     nullaryMembers = (`UnionMember` True) . consName <$> nullaries
     typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = (nullaryMembers <>) . withRefs <$> buildUnions cons
+    typeMembers = (<> nullaryMembers) . withRefs <$> buildUnions cons
       where
         withRefs = fmap mkUnionMember . (unionRef <>)
 mkUnionType OutputType ResRep {unionRef, unionCons} =
