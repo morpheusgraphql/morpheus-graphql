@@ -92,8 +92,6 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    FieldName,
-    FieldName (..),
     Msg (..),
     OperationType (..),
     TRUE,
@@ -105,7 +103,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     ValidationError,
     ValidationErrors,
     isNotSystemTypeName,
-    mkTypeRef,
     msg,
     msgValidation,
     toFieldName,
