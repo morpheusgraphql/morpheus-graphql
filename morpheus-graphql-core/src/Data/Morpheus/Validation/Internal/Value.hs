@@ -204,8 +204,7 @@ validatInputUnion ::
 validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> violation (Just message) (Object rawFields)
-    Right (UnionMember {memberName}, Nothing) -> mkInputObject memberName []
-    Right (name, Just value) -> validatInputUnionMember name value
+    Right (name, value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
   ValidateWithDefault ctx schemaS valueS =>

@@ -244,12 +244,10 @@ mkUnionType InputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
 mkUnionType OutputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
 mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMembers
   where
-    (eunms, cons) = partition isEmptyConstraint unionCons
     typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = withNullaryCons . withRefs <$> buildUnions cons
+    typeMembers = withRefs <$> buildUnions unionCons
       where
         withRefs = fmap mkUnionMember . (unionRef <>)
-        withNullaryCons = (<> fmap ((`UnionMember` False) . consName) eunms)
 mkUnionType OutputType ResRep {unionRef, unionCons} =
   DataUnion . map mkUnionMember . (unionRef <>) <$> buildUnions unionCons
 

@@ -175,11 +175,7 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
           __type
             KindInputObject
             [ ( "inputFields",
-                render
-                  ( mkInputUnionFields typeName $
-                      filter visibility members ::
-                      FieldsDefinition IN VALID
-                  )
+                render (mkInputUnionFields members)
               )
             ]
         renderContent (DataInterface fields) =

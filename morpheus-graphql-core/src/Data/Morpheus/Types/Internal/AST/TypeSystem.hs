@@ -40,7 +40,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     kindOf,
     isEntNode,
     lookupWith,
-    __inputname,
     UnionMember (..),
     mkUnionMember,
     RawTypeDefinition (..),
@@ -175,7 +174,7 @@ mkUnionMember name = UnionMember name True
 
 data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
   { memberName :: TypeName,
-    visibility :: Bool
+    nullary :: Bool
   }
   deriving (Show, Lift, Eq)
 
@@ -644,23 +643,12 @@ safeDefineType ::
   ( Monad m,
     Failure ValidationErrors m
   ) =>
-  TypeDefinition cat s ->
+  TypeDefinition k s ->
   Schema s ->
   m (Schema s)
-safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys} lib = do
-  types <- insert unionTags (types lib) >>= insert (toAny dt)
-  pure lib {types}
-  where
-    unionTags =
-      TypeDefinition
-        { typeName = typeName <> "Tags",
-          typeDescription = Nothing,
-          typeDirectives = [],
-          typeContent = mkEnumContent (fmap memberName enumKeys)
-        }
-safeDefineType datatype lib = do
-  types <- insert (toAny datatype) (types lib)
-  pure lib {types}
+safeDefineType datatype lib =
+  (\types -> lib {types})
+    <$> insert (toAny datatype) (types lib)
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
@@ -681,20 +669,8 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
       ]
   _ -> pure Nothing
 
-__inputname :: FieldName
-__inputname = "inputname"
-
-mkInputUnionFields :: TypeName -> [UnionMember IN s] -> FieldsDefinition IN s
-mkInputUnionFields name members = unsafeFromFields $ fieldTag : fmap mkUnionField members
-  where
-    fieldTag =
-      FieldDefinition
-        { fieldName = __inputname,
-          fieldDescription = Nothing,
-          fieldContent = Nothing,
-          fieldType = mkTypeRef (name <> "Tags"),
-          fieldDirectives = []
-        }
+mkInputUnionFields :: [UnionMember IN s] -> FieldsDefinition IN s
+mkInputUnionFields = unsafeFromFields . fmap mkUnionField
 
 mkUnionField :: UnionMember IN s -> FieldDefinition IN s
 mkUnionField UnionMember {memberName} =
@@ -741,5 +717,5 @@ instance RenderGQL (TypeDefinition a s) where
       __render (DataInputObject fields) = "input " <> render typeName <> render fields
       __render (DataInputUnion members) = "input " <> render typeName <> render fields
         where
-          fields = mkInputUnionFields typeName members
+          fields = mkInputUnionFields members
       __render DataObject {objectFields} = "type " <> render typeName <> render objectFields

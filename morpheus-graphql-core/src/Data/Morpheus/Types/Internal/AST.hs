@@ -100,7 +100,6 @@ module Data.Morpheus.Types.Internal.AST
     GQLErrors,
     ObjectEntry (..),
     UnionTag (..),
-    __inputname,
     ANY,
     IN,
     OUT,

@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -61,16 +62,16 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
     Selectable,
+    elems,
     member,
     selectBy,
     selectOr,
-    size,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldContent (..),
     FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     IN,
     Message,
     Object,
@@ -81,17 +82,14 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
+    TypeName (..),
     UnionMember (..),
     ValidationError,
     Value (..),
-    __inputname,
-    entryValue,
     fromAny,
     isNullable,
     msg,
     msgValidation,
-    toFieldName,
   )
 import Data.Morpheus.Types.Internal.Validation.Error
   ( KindViolation (..),
@@ -260,37 +258,17 @@ constraintInputUnion ::
   forall stage schemaStage.
   [UnionMember IN schemaStage] ->
   Object stage ->
-  Either Message (UnionMember IN schemaStage, Maybe (Value stage))
-constraintInputUnion tags hm = do
-  (enum :: Value stage) <-
-    entryValue
-      <$> selectBy
-        ( "valid input union should contain \""
-            <> msg __inputname
-            <> "\" and actual value"
-        )
-        __inputname
-        hm
-  unionMember <- isPossibleInputUnion tags enum
-  case size hm of
-    1 -> pure (unionMember, Nothing)
-    2 -> do
-      value <-
-        entryValue
-          <$> selectBy
-            ( "value for Union \""
-                <> msg unionMember
-                <> "\" was not Provided."
-            )
-            (toFieldName $ memberName unionMember)
-            hm
-      pure (unionMember, Just value)
+  Either Message (UnionMember IN schemaStage, Value stage)
+constraintInputUnion tags hm =
+  case elems hm of
+    [] -> failure ("empy for input Union was not Provided." :: Message)
+    [ObjectEntry (FieldName name) value] ->
+      (,value) <$> isPossibleInputUnion tags (TypeName name)
     _ -> failure ("input union can have only one variant." :: Message)
 
-isPossibleInputUnion :: [UnionMember IN s] -> Value stage -> Either Message (UnionMember IN s)
-isPossibleInputUnion tags (Enum name) =
+isPossibleInputUnion :: [UnionMember IN s] -> TypeName -> Either Message (UnionMember IN s)
+isPossibleInputUnion tags name =
   selectBy
     (msg name <> " is not possible union type")
     name
     tags
-isPossibleInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"
