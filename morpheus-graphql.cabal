@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5131fff7c624b6ad78b689573b344c6ae4c89e17f983d5c9b13571b5bd531682
+-- hash: d7a241e913ee2c6b65eb8748a0ea4a593792e043e8803969baa1fda618fbe166
 
 name:           morpheus-graphql
 version:        0.16.0
@@ -170,8 +170,9 @@ data-files:
     test/Feature/Schema/nameCollision/query.gql
     test/Feature/TypeCategoryCollision/Fail/failOnColision/query.gql
     test/Feature/TypeCategoryCollision/Success/prefixed/query.gql
-    test/Feature/TypeInference/introspection/complexInput/query.gql
     test/Feature/TypeInference/introspection/enum/query.gql
+    test/Feature/TypeInference/introspection/input-union/empty/query.gql
+    test/Feature/TypeInference/introspection/input-union/input-union/query.gql
     test/Feature/TypeInference/introspection/inputObject/query.gql
     test/Feature/TypeInference/introspection/object/query.gql
     test/Feature/TypeInference/introspection/union/named-products/query.gql
@@ -367,8 +368,9 @@ data-files:
     test/Feature/TypeCategoryCollision/Success/cases.json
     test/Feature/TypeCategoryCollision/Success/prefixed/response.json
     test/Feature/TypeInference/cases.json
-    test/Feature/TypeInference/introspection/complexInput/response.json
     test/Feature/TypeInference/introspection/enum/response.json
+    test/Feature/TypeInference/introspection/input-union/empty/response.json
+    test/Feature/TypeInference/introspection/input-union/input-union/response.json
     test/Feature/TypeInference/introspection/inputObject/response.json
     test/Feature/TypeInference/introspection/object/response.json
     test/Feature/TypeInference/introspection/union/named-products/response.json

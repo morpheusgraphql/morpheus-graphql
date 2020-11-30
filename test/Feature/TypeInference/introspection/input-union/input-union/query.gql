@@ -2,7 +2,6 @@ query Get__Type {
   __type(name: "Monster") {
     ...FullType
   }
-  enum: (name: "Empty")
 }
 
 fragment FullType on __Type {
