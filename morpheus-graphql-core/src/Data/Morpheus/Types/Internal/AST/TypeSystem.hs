@@ -670,22 +670,26 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
   _ -> pure Nothing
 
 mkInputUnionFields :: [UnionMember IN s] -> FieldsDefinition IN s
-mkInputUnionFields = unsafeFromFields . fmap mkUnionField
+mkInputUnionFields = unsafeFromFields . fmap mkInputUnionField
 
-mkUnionField :: UnionMember IN s -> FieldDefinition IN s
-mkUnionField UnionMember {memberName} =
+mkInputUnionField :: UnionMember IN s -> FieldDefinition IN s
+mkInputUnionField UnionMember {memberName, nullary} =
   FieldDefinition
     { fieldName = toFieldName memberName,
       fieldDescription = Nothing,
       fieldContent = Nothing,
       fieldType =
         TypeRef
-          { typeConName = memberName,
+          { typeConName,
             typeWrappers = [TypeMaybe],
             typeArgs = Nothing
           },
       fieldDirectives = []
     }
+  where
+    typeConName
+      | nullary = "Empty"
+      | otherwise = memberName
 
 --
 -- OTHER
