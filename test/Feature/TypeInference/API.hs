@@ -24,7 +24,10 @@ import Data.Text
   )
 import GHC.Generics (Generic)
 
-data Power = Thunderbolts | Shapeshift | Hurricanes
+data Power
+  = Thunderbolts
+  | Shapeshift
+  | Hurricanes
   deriving (Generic, GQLType)
 
 data Deity (m :: * -> *) = Deity
@@ -50,17 +53,13 @@ data Monster
 
 data Character (m :: * -> *)
   = CharacterDeity (Deity m) -- Only <tycon name><type ref name> should generate direct link
-        -- RECORDS
   | Creature {creatureName :: Text, creatureAge :: Int}
   | BoxedDeity {boxedDeity :: Deity m}
   | ScalarRecord {scalarText :: Text}
-  | --- Types
-    CharacterInt Int -- all scalars mus be boxed
-      -- Types
+  | CharacterInt Int
   | SomeDeity (Deity m)
   | SomeMutli Int Text
-  | --- ENUMS
-    Zeus
+  | Zeus
   | Cronus
   deriving (Generic, GQLType)
 
