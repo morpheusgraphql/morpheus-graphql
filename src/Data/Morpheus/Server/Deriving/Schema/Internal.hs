@@ -246,7 +246,7 @@ mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMemb
   where
     (nullaries, cons) = partition isEmptyConstraint unionCons
     nullaryMembers :: [UnionMember IN CONST]
-    nullaryMembers = (`UnionMember` False) . consName <$> nullaries
+    nullaryMembers = (`UnionMember` True) . consName <$> nullaries
     typeMembers :: SchemaT [UnionMember IN CONST]
     typeMembers = (nullaryMembers <>) . withRefs <$> buildUnions cons
       where
