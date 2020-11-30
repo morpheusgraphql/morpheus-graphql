@@ -1,9 +1,5 @@
 {
-  object: showMonster(
-    monster: { inputname: Hydra, Hydra: { name: "someName", age: 12 } }
-  )
-  record: showMonster(
-    monster: { inputname: Cerberus, Cerberus: { name: "someName" } }
-  )
-  enum: showMonster(monster: { inputname: UnidentifiedMonster })
+  object: showMonster(monster: { Hydra: { name: "someName", age: 12 } })
+  record: showMonster(monster: { Cerberus: { name: "someName" } })
+  enum: showMonster(monster: { UnidentifiedMonster: { _: Empty } })
 }
