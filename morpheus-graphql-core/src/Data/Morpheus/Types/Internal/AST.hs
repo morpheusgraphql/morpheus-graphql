@@ -132,6 +132,7 @@ module Data.Morpheus.Types.Internal.AST
     mkObjectField,
     UnionMember (..),
     mkUnionMember,
+    mkNullaryMember,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     UnionSelection,

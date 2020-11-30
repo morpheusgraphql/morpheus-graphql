@@ -82,6 +82,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     mkEnumContent,
     mkField,
+    mkNullaryMember,
     mkType,
     mkTypeRef,
     mkUnionMember,
@@ -246,7 +247,7 @@ mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMemb
   where
     (nullaries, cons) = partition isEmptyConstraint unionCons
     nullaryMembers :: [UnionMember IN CONST]
-    nullaryMembers = (`UnionMember` True) . consName <$> nullaries
+    nullaryMembers = mkNullaryMember . consName <$> nullaries
     typeMembers :: SchemaT [UnionMember IN CONST]
     typeMembers = (<> nullaryMembers) . withRefs <$> buildUnions cons
       where

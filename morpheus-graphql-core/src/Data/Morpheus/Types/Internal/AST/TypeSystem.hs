@@ -42,6 +42,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     lookupWith,
     UnionMember (..),
     mkUnionMember,
+    mkNullaryMember,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     SchemaDefinition (..),
@@ -170,7 +171,10 @@ newtype Typed (cat :: TypeCategory) (s :: Stage) a = Typed
   }
 
 mkUnionMember :: TypeName -> UnionMember cat s
-mkUnionMember name = UnionMember name True
+mkUnionMember name = UnionMember name False
+
+mkNullaryMember :: TypeName -> UnionMember cat s
+mkNullaryMember name = UnionMember name True
 
 data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
   { memberName :: TypeName,
