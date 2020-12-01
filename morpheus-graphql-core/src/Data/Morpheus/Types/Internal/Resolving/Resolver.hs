@@ -81,6 +81,8 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     msg,
     toGQLError,
+    unitFieldName,
+    unitTypeName,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
@@ -301,7 +303,7 @@ mkEnum :: TypeName -> ResModel o e m
 mkEnum = ResEnum
 
 mkEnumNull :: (LiftOperation o, Monad m) => [FieldResModel o e m]
-mkEnumNull = [("_0", pure $ mkEnum "Empty")]
+mkEnumNull = [(unitFieldName, pure $ mkEnum unitTypeName)]
 
 resolveObject ::
   forall o e m.

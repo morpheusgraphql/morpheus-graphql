@@ -37,6 +37,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     TypeRef (..),
     TypeWrapper (..),
     toFieldName,
+    unitTypeName,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( FieldDefinition (..),
@@ -129,5 +130,5 @@ mkInputUnionField UnionMember {memberName, nullary} =
     }
   where
     typeConName
-      | nullary = "Empty"
+      | nullary = unitTypeName
       | otherwise = memberName

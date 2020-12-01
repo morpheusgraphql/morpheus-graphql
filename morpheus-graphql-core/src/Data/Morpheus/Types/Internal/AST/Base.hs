@@ -61,6 +61,8 @@ module Data.Morpheus.Types.Internal.AST.Base
     ValidationErrors,
     withPosition,
     toGQLError,
+    unitTypeName,
+    unitFieldName,
   )
 where
 
@@ -510,3 +512,9 @@ convertToHaskellName :: FieldName -> FieldName
 convertToHaskellName name
   | isReserved name = name <> "'"
   | otherwise = name
+
+unitTypeName :: TypeName
+unitTypeName = "Empty"
+
+unitFieldName :: FieldName
+unitFieldName = "_0"

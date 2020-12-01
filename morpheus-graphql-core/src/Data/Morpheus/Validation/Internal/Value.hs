@@ -55,6 +55,8 @@ import Data.Morpheus.Types.Internal.AST
     toCategory,
     toFieldName,
     typed,
+    unitFieldName,
+    unitTypeName,
     untyped,
     withPosition,
   )
@@ -216,7 +218,7 @@ validatInputUnionMember member value = do
   mkInputUnionValue member <$> validateInputByType [TypeMaybe] inputDef value
   where
     askDef
-      | nullary member = askType (Typed $ mkTypeRef "Empty")
+      | nullary member = askType (Typed $ mkTypeRef unitTypeName)
       | otherwise = toCategory <$> askTypeMember member
 
 mkInputUnionValue :: UnionMember IN s' -> Value s -> Value s
@@ -227,7 +229,7 @@ mkInputUnionValue
     } = Object . singleton . ObjectEntry (toFieldName memberName) . packNullary
     where
       packNullary
-        | nullary = Object . singleton . ObjectEntry "empty"
+        | nullary = Object . singleton . ObjectEntry unitFieldName
         | otherwise = id
 
 -- INUT Object
