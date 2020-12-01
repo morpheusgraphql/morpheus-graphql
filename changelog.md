@@ -57,7 +57,7 @@
   }
   ```
 
-- For each nullary constructor will be defined its GQL object type with a single field `_: Unit` (since GraphQL does not allow empty objects).
+- Exclusive input objects: For each nullary constructor will be defined its GQL object type with a single field `_: Unit` (since GraphQL does not allow empty objects).
 
   for example:
 
