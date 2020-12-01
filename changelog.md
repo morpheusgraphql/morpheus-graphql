@@ -32,7 +32,7 @@
 
 ### Breaking Changes
 
-For each nullary constructor will be defined its GQL object type with a single field `_0: Empty` (since GraphQL does not allow empty objects).
+For each nullary constructor will be defined its GQL object type with a single field `_: Unit` (since GraphQL does not allow empty objects).
 
 for example:
 
@@ -43,8 +43,8 @@ data Person = Client { name :: Text } | Accountant | Developer
 this type will generate the following SDL:
 
 ```graphql
-enum Empty {
-  Empty
+enum Unit {
+  Unit
 }
 
 type Student {
@@ -52,11 +52,11 @@ type Student {
 }
 
 type Accountant {
-  _0: Empty!
+  _: Unit!
 }
 
 type Developer {
-  _0: Empty!
+  _: Unit!
 }
 
 union Person = Client | Accountant | Developer

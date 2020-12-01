@@ -12,7 +12,7 @@
             "name": null,
             "ofType": {
               "kind": "ENUM",
-              "name": "Empty",
+              "name": "Unit",
               "ofType": null
             }
           },
@@ -37,7 +37,7 @@
             "name": null,
             "ofType": {
               "kind": "ENUM",
-              "name": "Empty",
+              "name": "Unit",
               "ofType": null
             }
           },
@@ -52,13 +52,13 @@
     },
     "empty": {
       "kind": "ENUM",
-      "name": "Empty",
+      "name": "Unit",
       "fields": null,
       "inputFields": null,
       "interfaces": null,
       "enumValues": [
         {
-          "name": "Empty",
+          "name": "Unit",
           "isDeprecated": false,
           "deprecationReason": null
         }

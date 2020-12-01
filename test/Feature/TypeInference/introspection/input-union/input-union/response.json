@@ -27,7 +27,7 @@
           "name": "UnidentifiedMonster",
           "type": {
             "kind": "ENUM",
-            "name": "Empty",
+            "name": "Unit",
             "ofType": null
           },
           "defaultValue": null

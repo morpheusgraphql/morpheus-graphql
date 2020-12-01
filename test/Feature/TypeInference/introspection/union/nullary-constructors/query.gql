@@ -5,7 +5,7 @@ query Get__Type {
   cronus: __type(name: "Cronus") {
     ...FullType
   }
-  empty: __type(name: "Empty") {
+  empty: __type(name: "Unit") {
     ...FullType
   }
 }

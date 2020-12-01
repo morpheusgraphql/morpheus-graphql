@@ -514,7 +514,7 @@ convertToHaskellName name
   | otherwise = name
 
 unitTypeName :: TypeName
-unitTypeName = "Empty"
+unitTypeName = "Unit"
 
 unitFieldName :: FieldName
 unitFieldName = "_"
