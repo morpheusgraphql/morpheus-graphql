@@ -517,4 +517,4 @@ unitTypeName :: TypeName
 unitTypeName = "Empty"
 
 unitFieldName :: FieldName
-unitFieldName = "_0"
+unitFieldName = "_"
