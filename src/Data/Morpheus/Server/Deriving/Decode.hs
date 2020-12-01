@@ -31,7 +31,15 @@ import Data.Morpheus.Server.Deriving.Utils
     datatypeNameProxy,
     selNameProxy,
   )
-import Data.Morpheus.Server.Internal.TH.Decode (decodeFieldWith, withInputObject, withInputUnion, withList, withMaybe, withRefinedList, withScalar)
+import Data.Morpheus.Server.Internal.TH.Decode
+  ( decodeFieldWith,
+    withInputObject,
+    withInputUnion,
+    withList,
+    withMaybe,
+    withRefinedList,
+    withScalar,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,

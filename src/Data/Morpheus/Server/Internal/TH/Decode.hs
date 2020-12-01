@@ -16,17 +16,8 @@ module Data.Morpheus.Server.Internal.TH.Decode
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad ((>>=)))
-import Data.Either (Either (..))
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
-  ( empty,
-    selectBy,
-    selectOr,
+  ( selectOr,
   )
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
@@ -43,16 +34,14 @@ import Data.Morpheus.Types.Internal.AST
     ValidObject,
     ValidValue,
     Value (..),
+    getInputUnionValue,
     msg,
     msgInternal,
-    toFieldName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
   )
-import Data.Semigroup ((<>))
-import Data.Traversable (traverse)
-import Prelude ((.))
+import Relude hiding (empty)
 
 withInputObject ::
   Failure InternalError m =>
@@ -60,7 +49,7 @@ withInputObject ::
   ValidValue ->
   m a
 withInputObject f (Object object) = f object
-withInputObject _ isType = failure (typeMismatch "Object" isType)
+withInputObject _ isType = failure (typeMismatch "InputObject" isType)
 
 withMaybe :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Maybe a)
 withMaybe _ Null = pure Nothing
@@ -98,14 +87,10 @@ withInputUnion ::
   ValidObject ->
   m a
 withInputUnion decoder unions =
-  unions
-    >>= providesValueFor . entryValue
+  either onFail onSucc (getInputUnionValue unions)
   where
-    providesValueFor (Enum key) = selectOr notFound onFound (toFieldName key) unions
-      where
-        notFound = withInputObject (decoder key unions) (Object empty)
-        onFound = withInputObject (decoder key unions) . entryValue
-    providesValueFor _ = failure ("__typename must be Enum" :: InternalError)
+    onSucc (name, value) = withInputObject (decoder name unions) value
+    onFail = failure . msgInternal
 
 withScalar ::
   (Applicative m, Failure InternalError m) =>

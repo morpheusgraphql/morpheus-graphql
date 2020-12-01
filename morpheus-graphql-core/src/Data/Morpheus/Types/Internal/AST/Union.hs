@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Internal.AST.Union
     DataInputUnion,
     UnionMember (..),
     mkInputUnionFields,
+    getInputUnionValue,
   )
 where
 
@@ -83,17 +84,24 @@ instance Msg (UnionMember cat s) where
 instance KeyOf TypeName (UnionMember cat s) where
   keyOf = memberName
 
+getInputUnionValue ::
+  forall stage.
+  Object stage ->
+  Either Message (TypeName, Value stage)
+getInputUnionValue hm =
+  case elems hm of
+    [] -> failure ("empy for input Union was not Provided." :: Message)
+    [ObjectEntry (FieldName name) value] -> pure (TypeName name, value)
+    _ -> failure ("input union can have only one variant." :: Message)
+
 constraintInputUnion ::
   forall stage schemaStage.
   [UnionMember IN schemaStage] ->
   Object stage ->
   Either Message (UnionMember IN schemaStage, Value stage)
-constraintInputUnion tags hm =
-  case elems hm of
-    [] -> failure ("empy for input Union was not Provided." :: Message)
-    [ObjectEntry (FieldName name) value] ->
-      (,value) <$> isPossibleInputUnion tags (TypeName name)
-    _ -> failure ("input union can have only one variant." :: Message)
+constraintInputUnion tags hm = do
+  (name, value) <- getInputUnionValue hm
+  (,value) <$> isPossibleInputUnion tags name
 
 isPossibleInputUnion :: [UnionMember IN s] -> TypeName -> Either Message (UnionMember IN s)
 isPossibleInputUnion tags name =

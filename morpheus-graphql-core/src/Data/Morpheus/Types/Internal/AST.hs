@@ -161,6 +161,7 @@ module Data.Morpheus.Types.Internal.AST
     type (<=!),
     ToOBJECT,
     constraintInputUnion,
+    getInputUnionValue,
   )
 where
 
