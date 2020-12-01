@@ -34,12 +34,16 @@
 
 - Exclusive input objects: Sum types used as input types are represented as input objects, where only one field must have a value. Namespaced constructors (i.e., where referenced type name concatenated with union type name is equal to constructor name) are unpacked. Furthermore, empty constructors are represented as fields with the unit type.
 
+  for example:
+
   ```hs
       data Device
         | DevicePC PC
         | Laptops { macAdress :: ID }
         | Smartphone
   ```
+
+  this type will generate the following SDL:
 
   ```graphql
   enum Unit {
