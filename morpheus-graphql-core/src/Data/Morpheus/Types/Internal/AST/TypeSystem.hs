@@ -35,14 +35,10 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     mkUnionContent,
     mkType,
     createScalarType,
-    mkInputUnionFields,
     initTypeLib,
     kindOf,
     isEntNode,
     lookupWith,
-    UnionMember (..),
-    mkUnionMember,
-    mkNullaryMember,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     SchemaDefinition (..),
@@ -92,29 +88,22 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    Msg (..),
     OperationType (..),
     TRUE,
     Token,
     TypeKind (..),
     TypeName,
-    TypeRef (..),
-    TypeWrapper (..),
     ValidationError,
     ValidationErrors,
     isNotSystemTypeName,
-    msg,
     msgValidation,
-    toFieldName,
     toOperationType,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( Directive,
     DirectiveDefinition (..),
     Directives,
-    FieldDefinition (..),
     FieldsDefinition,
-    unsafeFromFields,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
@@ -136,6 +125,12 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     toAny,
     type (<=!),
     type (<=?),
+  )
+import Data.Morpheus.Types.Internal.AST.Union
+  ( DataInputUnion,
+    DataUnion,
+    mkInputUnionFields,
+    mkUnionMember,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
@@ -166,31 +161,6 @@ untyped f = f . _untyped
 newtype Typed (cat :: TypeCategory) (s :: Stage) a = Typed
   { _untyped :: a
   }
-
-mkUnionMember :: TypeName -> UnionMember cat s
-mkUnionMember name = UnionMember name False
-
-mkNullaryMember :: TypeName -> UnionMember cat s
-mkNullaryMember name = UnionMember name True
-
-data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
-  { memberName :: TypeName,
-    nullary :: Bool
-  }
-  deriving (Show, Lift, Eq)
-
-type DataUnion s = [UnionMember OUT s]
-
-type DataInputUnion s = [UnionMember IN s]
-
-instance RenderGQL (UnionMember cat s) where
-  render = render . memberName
-
-instance Msg (UnionMember cat s) where
-  msg = msg . memberName
-
-instance KeyOf TypeName (UnionMember cat s) where
-  keyOf = memberName
 
 -- scalar
 ------------------------------------------------------------------
@@ -669,28 +639,6 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
           <> msgValidation name
       ]
   _ -> pure Nothing
-
-mkInputUnionFields :: [UnionMember IN s] -> FieldsDefinition IN s
-mkInputUnionFields = unsafeFromFields . fmap mkInputUnionField
-
-mkInputUnionField :: UnionMember IN s -> FieldDefinition IN s
-mkInputUnionField UnionMember {memberName, nullary} =
-  FieldDefinition
-    { fieldName = toFieldName memberName,
-      fieldDescription = Nothing,
-      fieldContent = Nothing,
-      fieldType =
-        TypeRef
-          { typeConName,
-            typeWrappers = [TypeMaybe],
-            typeArgs = Nothing
-          },
-      fieldDirectives = []
-    }
-  where
-    typeConName
-      | nullary = "Empty"
-      | otherwise = memberName
 
 --
 -- OTHER

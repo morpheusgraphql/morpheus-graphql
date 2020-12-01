@@ -6,7 +6,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -86,6 +85,7 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     ValidationError,
     Value (..),
+    constraintInputUnion,
     fromAny,
     isNullable,
     msg,
@@ -253,22 +253,3 @@ selectKnown selector lib =
       (unknown scope validatorCTX lib selector)
       (keyOf selector)
       lib
-
-constraintInputUnion ::
-  forall stage schemaStage.
-  [UnionMember IN schemaStage] ->
-  Object stage ->
-  Either Message (UnionMember IN schemaStage, Value stage)
-constraintInputUnion tags hm =
-  case elems hm of
-    [] -> failure ("empy for input Union was not Provided." :: Message)
-    [ObjectEntry (FieldName name) value] ->
-      (,value) <$> isPossibleInputUnion tags (TypeName name)
-    _ -> failure ("input union can have only one variant." :: Message)
-
-isPossibleInputUnion :: [UnionMember IN s] -> TypeName -> Either Message (UnionMember IN s)
-isPossibleInputUnion tags name =
-  selectBy
-    (msg name <> " is not possible union type")
-    name
-    tags
