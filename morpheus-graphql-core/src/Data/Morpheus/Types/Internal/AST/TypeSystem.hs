@@ -48,7 +48,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     typed,
     possibleTypes,
     possibleInterfaceTypes,
-    safeDefineType,
     defineSchemaWith,
   )
 where
@@ -331,7 +330,7 @@ defineSchemaWith ::
 defineSchemaWith oTypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] oTypes
   let schema = (initTypeLib query) {mutation, subscription}
-  foldM (flip safeDefineType) schema types
+  foldM (flip defineType) schema types
 defineSchemaWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
@@ -610,16 +609,16 @@ fromOperation :: Maybe (TypeDefinition OBJECT s) -> [TypeDefinition ANY s]
 fromOperation (Just datatype) = [toAny datatype]
 fromOperation Nothing = []
 
-safeDefineType ::
+defineType ::
   ( Monad m,
     Failure ValidationErrors m
   ) =>
   TypeDefinition k s ->
   Schema s ->
   m (Schema s)
-safeDefineType datatype lib =
-  (\types -> lib {types})
-    <$> insert (toAny datatype) (types lib)
+defineType datatype lib = updateTypes <$> insert (toAny datatype) (types lib)
+  where
+    updateTypes types = lib {types}
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)

@@ -156,7 +156,6 @@ module Data.Morpheus.Types.Internal.AST
     possibleTypes,
     possibleInterfaceTypes,
     mkField,
-    safeDefineType,
     defineSchemaWith,
     type (<=!),
     ToOBJECT,
