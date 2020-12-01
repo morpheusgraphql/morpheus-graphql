@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Union
   ( constraintInputUnion,
@@ -55,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST.Value
     Value (..),
   )
 import Language.Haskell.TH.Syntax (Lift (..))
+import Relude
 
 mkUnionMember :: TypeName -> UnionMember cat s
 mkUnionMember name = UnionMember name False

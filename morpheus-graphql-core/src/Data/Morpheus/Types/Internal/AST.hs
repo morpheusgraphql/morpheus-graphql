@@ -160,6 +160,7 @@ module Data.Morpheus.Types.Internal.AST
     defineSchemaWith,
     type (<=!),
     ToOBJECT,
+    constraintInputUnion,
   )
 where
 
