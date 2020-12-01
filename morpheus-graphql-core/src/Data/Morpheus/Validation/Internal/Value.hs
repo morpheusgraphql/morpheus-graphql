@@ -211,16 +211,24 @@ validatInputUnionMember ::
   UnionMember IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx (Value VALID)
-validatInputUnionMember member@UnionMember {memberName, nullary} value = do
+validatInputUnionMember member value = do
   inputDef <- askDef
-  mkInputUnionValue memberName <$> validateInputByType [TypeMaybe] inputDef value
+  mkInputUnionValue member <$> validateInputByType [TypeMaybe] inputDef value
   where
     askDef
-      | nullary = askType (Typed $ mkTypeRef "Empty")
+      | nullary member = askType (Typed $ mkTypeRef "Empty")
       | otherwise = toCategory <$> askTypeMember member
 
-mkInputUnionValue :: TypeName -> Value s -> Value s
-mkInputUnionValue name = Object . singleton . ObjectEntry (toFieldName name)
+mkInputUnionValue :: UnionMember IN s' -> Value s -> Value s
+mkInputUnionValue
+  UnionMember
+    { memberName,
+      nullary
+    } = Object . singleton . ObjectEntry (toFieldName memberName) . packNullary
+    where
+      packNullary
+        | nullary = Object . singleton . ObjectEntry "empty"
+        | otherwise = id
 
 -- INUT Object
 validateInputObject ::
