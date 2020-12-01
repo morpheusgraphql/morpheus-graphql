@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d7a241e913ee2c6b65eb8748a0ea4a593792e043e8803969baa1fda618fbe166
+-- hash: d61549f882e6703d863c661af53d6be600b2717946df6067d0c189534db52a06
 
 name:           morpheus-graphql
 version:        0.16.0
@@ -181,7 +181,8 @@ data-files:
     test/Feature/TypeInference/introspection/union/scalars/query.gql
     test/Feature/TypeInference/introspection/union/union/query.gql
     test/Feature/TypeInference/resolving/complexUnion/query.gql
-    test/Feature/TypeInference/resolving/input/query.gql
+    test/Feature/TypeInference/resolving/input/fail/query.gql
+    test/Feature/TypeInference/resolving/input/success/query.gql
     test/Feature/TypeInference/resolving/object/query.gql
     test/Feature/UnionType/cannotBeSpreadOnType/query.gql
     test/Feature/UnionType/fragmentOnAAndB/query.gql
@@ -379,7 +380,8 @@ data-files:
     test/Feature/TypeInference/introspection/union/scalars/response.json
     test/Feature/TypeInference/introspection/union/union/response.json
     test/Feature/TypeInference/resolving/complexUnion/response.json
-    test/Feature/TypeInference/resolving/input/response.json
+    test/Feature/TypeInference/resolving/input/fail/response.json
+    test/Feature/TypeInference/resolving/input/success/response.json
     test/Feature/TypeInference/resolving/object/response.json
     test/Feature/UnionType/cannotBeSpreadOnType/response.json
     test/Feature/UnionType/cases.json

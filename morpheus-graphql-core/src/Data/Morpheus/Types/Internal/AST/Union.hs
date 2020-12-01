@@ -91,9 +91,9 @@ getInputUnionValue ::
   Either Message (TypeName, Value stage)
 getInputUnionValue hm =
   case elems hm of
-    [] -> failure ("empy for input Union was not Provided." :: Message)
+    [] -> failure ("Exclusive input objects must provide a value for at least one field." :: Message)
     [ObjectEntry (FieldName name) value] -> pure (TypeName name, value)
-    _ -> failure ("input union can have only one variant." :: Message)
+    _ -> failure ("Exclusive input objects are not allowed to provide values for multiple fields." :: Message)
 
 constraintInputUnion ::
   forall stage schemaStage.
