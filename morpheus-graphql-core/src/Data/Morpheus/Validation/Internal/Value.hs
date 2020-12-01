@@ -18,7 +18,7 @@ import Data.Morpheus.Error.Input (typeViolation)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    fromElems,
+    singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -43,7 +43,6 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     ValidValue,
-    ValidationErrors,
     Value (..),
     Variable (..),
     Variable (..),
@@ -214,15 +213,14 @@ validatInputUnionMember ::
   InputValidator schemaS ctx (Value VALID)
 validatInputUnionMember member@UnionMember {memberName, nullary} value = do
   inputDef <- askDef
-  validValue <- validateInputByType [TypeMaybe] inputDef value
-  mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
+  mkInputUnionValue memberName <$> validateInputByType [TypeMaybe] inputDef value
   where
     askDef
       | nullary = askType (Typed $ mkTypeRef "Empty")
       | otherwise = toCategory <$> askTypeMember member
 
-mkInputObject :: (Monad m, Failure ValidationErrors m) => TypeName -> [ObjectEntry s] -> m (Value s)
-mkInputObject name xs = Object <$> fromElems (ObjectEntry "__typename" (Enum name) : xs)
+mkInputUnionValue :: TypeName -> Value s -> Value s
+mkInputUnionValue name = Object . singleton . ObjectEntry (toFieldName name)
 
 -- INUT Object
 validateInputObject ::
