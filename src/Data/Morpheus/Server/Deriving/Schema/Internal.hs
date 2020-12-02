@@ -82,10 +82,13 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     mkEnumContent,
     mkField,
+    mkNullaryMember,
     mkType,
     mkTypeRef,
     mkUnionMember,
     msg,
+    unitFieldName,
+    unitTypeName,
     unsafeFromFields,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -244,12 +247,19 @@ mkUnionType InputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
 mkUnionType OutputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
 mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMembers
   where
-    (eunms, cons) = partition isEmptyConstraint unionCons
+    (nullaries, cons) = partition isEmptyConstraint unionCons
+    nullaryMembers :: [UnionMember IN CONST]
+    nullaryMembers = mkNullaryMember . consName <$> nullaries
+    defineEnumEmpty
+      | null nullaries = pure ()
+      | otherwise = defineEnumNull
     typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = withNullaryCons . withRefs <$> buildUnions cons
+    typeMembers =
+      (<> nullaryMembers) . withRefs
+        <$> ( defineEnumEmpty *> buildUnions cons
+            )
       where
         withRefs = fmap mkUnionMember . (unionRef <>)
-        withNullaryCons = (<> fmap ((`UnionMember` False) . consName) eunms)
 mkUnionType OutputType ResRep {unionRef, unionCons} =
   DataUnion . map mkUnionMember . (unionRef <>) <$> buildUnions unionCons
 
@@ -283,18 +293,15 @@ buildUnionRecord ConsRep {consName, consFields} = mkType consName . packObject <
       | null consFields = defineEnumNull $> singleton mkNullField
       | otherwise = pure $ mkFieldsDefinition consFields
 
-__Empty :: TypeName
-__Empty = "Empty"
-
 defineEnumNull :: SchemaT ()
 defineEnumNull =
   insertType
-    ( mkType __Empty (mkEnumContent [__Empty]) ::
+    ( mkType unitTypeName (mkEnumContent [unitTypeName]) ::
         TypeDefinition LEAF CONST
     )
 
 mkNullField :: FieldDefinition cat s
-mkNullField = mkField Nothing "_0" (mkTypeRef __Empty)
+mkNullField = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
 
 class PackObject kind where
   packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST

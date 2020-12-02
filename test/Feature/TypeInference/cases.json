@@ -32,8 +32,12 @@
     "description": "introspect input object"
   },
   {
-    "path": "introspection/complexInput",
+    "path": "introspection/input-union/input-union",
     "description": "introspect complex input"
+  },
+  {
+    "path": "introspection/input-union/empty",
+    "description": "schema provides type empty on imput union"
   },
   {
     "path": "resolving/object",
@@ -44,7 +48,11 @@
     "description": "resolve regular object"
   },
   {
-    "path": "resolving/input",
-    "description": "resolve input"
+    "path": "resolving/input/success",
+    "description": "resolve input values"
+  },
+  {
+    "path": "resolving/input/fail",
+    "description": "reject invalid input values"
   }
 ]

@@ -32,35 +32,64 @@
 
 ### Breaking Changes
 
-For each nullary constructor will be defined its GQL object type with a single field `_0: Empty` (since GraphQL does not allow empty objects).
+- Exclusive input objects: Sum types used as input types are represented as input objects, where only one field must have a value. Namespaced constructors (i.e., where referenced type name concatenated with union type name is equal to constructor name) are unpacked. Furthermore, empty constructors are represented as fields with the unit type.
 
-for example:
+  for example:
 
-```haskell
-data Person = Client { name :: Text } | Accountant | Developer
-```
+  ```hs
+      data Device
+        | DevicePC PC
+        | Laptops { macAdress :: ID }
+        | Smartphone
+  ```
 
-this type will generate the following SDL:
+  this type will generate the following SDL:
 
-```graphql
-enum Empty {
-  Empty
-}
+  ```graphql
+  enum Unit {
+    Unit
+  }
 
-type Student {
-  name: String!
-}
+  input Laptop {
+    macAdress: ID
+  }
 
-type Accountant {
-  _0: Empty!
-}
+  input Device {
+    PC: PC
+    Laptops: Laptops
+    Smartphone: Unit
+  }
+  ```
 
-type Developer {
-  _0: Empty!
-}
+- For each nullary constructor will be defined its GQL object type with a single field `_: Unit` (since GraphQL does not allow empty objects).
 
-union Person = Client | Accountant | Developer
-```
+  for example:
+
+  ```haskell
+  data Person = Client { name :: Text } | Accountant | Developer
+  ```
+
+  this type will generate the following SDL:
+
+  ```graphql
+  enum Unit {
+    Unit
+  }
+
+  type Student {
+    name: String!
+  }
+
+  type Accountant {
+    _: Unit!
+  }
+
+  type Developer {
+    _: Unit!
+  }
+
+  union Person = Client | Accountant | Developer
+  ```
 
 - changed signature of `GQLType.typeOptions` from `f a -> GQLTypeOptions` to `f a -> GQLTypeOptions -> GQLTypeOptions`.
 

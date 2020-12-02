@@ -172,14 +172,17 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
             KindUnion
             [("possibleTypes", render union)]
         renderContent (DataInputUnion members) =
-          __type
+          mkType
             KindInputObject
+            typeName
+            ( Just
+                ( "Note! This input is an exclusive object,\n"
+                    <> "i.e., the customer can provide a value for only one field."
+                )
+                <> typeDescription
+            )
             [ ( "inputFields",
-                render
-                  ( mkInputUnionFields typeName $
-                      filter visibility members ::
-                      FieldsDefinition IN VALID
-                  )
+                render (mkInputUnionFields members)
               )
             ]
         renderContent (DataInterface fields) =

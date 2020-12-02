@@ -33,7 +33,7 @@
       },
       {
         "__typename": "Zeus",
-        "_0": "Empty"
+        "_": "Unit"
       },
       {
         "__typename": "Cronus"

@@ -1,0 +1,19 @@
+{
+  "data": {
+    "__type": {
+      "kind": "ENUM",
+      "name": "Unit",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": [
+        {
+          "name": "Unit",
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "possibleTypes": null
+    }
+  }
+}
