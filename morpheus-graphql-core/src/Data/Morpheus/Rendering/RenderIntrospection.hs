@@ -176,7 +176,7 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
             KindInputObject
             typeName
             ( Just
-                ( "Note! This input is an exclusive object, "
+                ( "Note! This input is an exclusive object,\n"
                     <> "i.e., the customer can provide a value for only one field."
                 )
                 <> typeDescription
