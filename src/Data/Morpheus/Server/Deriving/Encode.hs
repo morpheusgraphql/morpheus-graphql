@@ -66,7 +66,9 @@ import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Types
   ( RootResolver (..),
   )
-import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
+import Data.Morpheus.Types.GQLScalar
+  ( ScalarSerializer (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( IN,
     InternalError,
@@ -174,7 +176,7 @@ class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
   encodeKind :: LiftOperation o => ContextValue kind a -> Resolver o e m (ResModel o e m)
 
 -- SCALAR
-instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
+instance (ScalarSerializer a, Monad m) => EncodeKind SCALAR a o e m where
   encodeKind = pure . ResScalar . serialize . unContextValue
 
 instance EncodeConstraint o e m a => EncodeKind TYPE a o e m where

@@ -27,10 +27,11 @@ import Data.Morpheus.Subscriptions (Event)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
-    GQLScalar (..),
     GQLType (..),
     ID (..),
     RootResolver (..),
+    ScalarDeserializer (..),
+    ScalarSerializer (..),
     ScalarValue (..),
     Undefined (..),
     liftEither,
@@ -65,8 +66,10 @@ data TestScalar
 instance GQLType TestScalar where
   type KIND TestScalar = SCALAR
 
-instance GQLScalar TestScalar where
+instance ScalarDeserializer TestScalar where
   parseValue _ = pure (TestScalar 1 0)
+
+instance ScalarSerializer TestScalar where
   serialize (TestScalar x y) = Int (x * 100 + y)
 
 data Channel

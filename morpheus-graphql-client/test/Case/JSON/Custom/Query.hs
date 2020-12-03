@@ -18,7 +18,7 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.Morpheus.Client
   ( Fetch (..),
-    GQLScalar (..),
+    ScalarSerializer (..),
     ScalarValue (..),
     gql,
   )
@@ -36,7 +36,6 @@ import Test.Tasty.HUnit
   )
 import Prelude
   ( ($),
-    Applicative (..),
     Either (..),
     Eq (..),
     IO,
@@ -50,9 +49,7 @@ newtype GitTimestamp = GitTimestamp
   }
   deriving (Eq, Show)
 
-instance GQLScalar GitTimestamp where
-  parseValue (String x) = pure (GitTimestamp x)
-  parseValue _ = Left ""
+instance ScalarSerializer GitTimestamp where
   serialize (GitTimestamp x) = String x
 
 defineClientWithJSON
