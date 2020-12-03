@@ -68,7 +68,10 @@ import Data.Morpheus.Server.Types.Types
   ( MapKind,
     Pair,
   )
-import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
+import Data.Morpheus.Types.GQLScalar
+  ( ScalarDeserializer (..),
+    scalarValidator,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
@@ -229,7 +232,7 @@ type DeriveTypeConstraint kind a =
   )
 
 -- SCALAR
-instance (GQLType a, GQLScalar a) => DeriveKindedType cat SCALAR a where
+instance (GQLType a, ScalarDeserializer a) => DeriveKindedType cat SCALAR a where
   deriveKindedType _ = updateByContent deriveScalarContent . setKind (Proxy @LEAF)
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType cat INTERFACE a where
@@ -241,7 +244,7 @@ instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
 instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
   deriveKindedType _ = deriveInputType
 
-deriveScalarContent :: (GQLScalar a) => f k a -> SchemaT (TypeContent TRUE LEAF CONST)
+deriveScalarContent :: (ScalarDeserializer a) => f k a -> SchemaT (TypeContent TRUE LEAF CONST)
 deriveScalarContent = pure . DataScalar . scalarValidator
 
 deriveInterfaceContent :: DeriveTypeConstraint OUT a => f a -> SchemaT (TypeContent TRUE OUT CONST)

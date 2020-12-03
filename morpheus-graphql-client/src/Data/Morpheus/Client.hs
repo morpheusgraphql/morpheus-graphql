@@ -10,7 +10,8 @@ module Data.Morpheus.Client
     defineByIntrospection,
     defineByIntrospectionFile,
     ScalarValue (..),
-    GQLScalar (..),
+    ScalarDeserializer (..),
+    ScalarSerializer (..),
     ID (..),
   )
 where
@@ -32,7 +33,10 @@ import Data.Morpheus.Core
   ( parseFullGQLDocument,
   )
 import Data.Morpheus.QuasiQuoter (gql)
-import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
+import Data.Morpheus.Types.GQLScalar
+  ( ScalarDeserializer (..),
+    ScalarSerializer (..),
+  )
 import Data.Morpheus.Types.ID (ID (..))
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery,

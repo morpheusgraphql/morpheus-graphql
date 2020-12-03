@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -39,11 +40,11 @@ scalarValidator _ = ScalarDefinition {validateValue = validator}
       pure value
 
 -- | GraphQL Scalar Serializer
-class ScalarSerializer a where
+class ScalarSerializer (a :: *) where
   serialize :: a -> ScalarValue
 
 -- | GraphQL Scalar Serializer
-class ScalarDeserializer a where
+class ScalarDeserializer (a :: *) where
   -- value parsing and validating
   --
   -- for exhaustive pattern matching  should be handled all scalar types : 'Int', 'Float', 'String', 'Boolean'
