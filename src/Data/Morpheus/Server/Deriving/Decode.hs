@@ -101,20 +101,10 @@ class Decode a where
 instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
 
-withWrapper ::
-  ( Monad m,
-    DecodeWrapper f,
-    Failure InternalError m
-  ) =>
-  (ValidValue -> m a) ->
-  ValidValue ->
-  m (f a)
-withWrapper f = decodeWrapper f >=> handleEither
-
 -- | Should this instance dedupe silently or fail on dupes ?
 instance (Ord a, Decode a) => Decode (Set a) where
-  decode val = do
-    listVal <- withWrapper (decode @a) val
+  decode value = do
+    listVal <- decodeWrapper (decode @a) value >>= handleEither
     haveSameSize (Set.fromList listVal) listVal
 
 -- | Decode GraphQL type with Specific Kind
@@ -130,7 +120,7 @@ instance DecodeConstraint a => DecodeKind TYPE a where
   decodeKind _ = decodeType
 
 instance (Decode a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
-  decodeKind _ = withWrapper decode
+  decodeKind _ = decodeWrapper decode >=> handleEither
 
 decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
 decodeType = fmap to . (`runReaderT` context) . decodeRep
