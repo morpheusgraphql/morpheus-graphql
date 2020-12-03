@@ -6,6 +6,7 @@
 
 module Data.Morpheus.Types.GQLScalar
   ( ScalarSerializer (..),
+    ScalarDeserializer (..),
     toScalar,
     scalarToJSON,
     scalarFromJSON,
