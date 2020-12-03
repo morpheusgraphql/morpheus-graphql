@@ -34,7 +34,6 @@ import Data.Morpheus.Server.Deriving.Utils
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
     handleEither,
-    haveSameSize,
     withInputObject,
     withInputUnion,
     withScalar,
@@ -54,6 +53,7 @@ import Data.Morpheus.Types.GQLScalar
   )
 import Data.Morpheus.Types.GQLWrapper
   ( DecodeWrapper (..),
+    DecodeWrapperConstraint,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -78,7 +78,6 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Utils.Kinded
   ( KindedProxy (..),
   )
-import qualified Data.Set as Set
 import GHC.Generics
 import Relude
 
@@ -98,14 +97,8 @@ decodeArguments = decodeType . Object . fmap toEntry
 class Decode a where
   decode :: ValidValue -> ResolverState a
 
-instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
+instance DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
-
--- | Should this instance dedupe silently or fail on dupes ?
-instance (Ord a, Decode a) => Decode (Set a) where
-  decode value = do
-    listVal <- decodeWrapper (decode @a) value >>= handleEither
-    haveSameSize (Set.fromList listVal) listVal
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
@@ -119,8 +112,10 @@ instance (ScalarDecoder a, GQLType a) => DecodeKind SCALAR a where
 instance DecodeConstraint a => DecodeKind TYPE a where
   decodeKind _ = decodeType
 
-instance (Decode a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
-  decodeKind _ = decodeWrapper decode >=> handleEither
+instance (Decode a, DecodeWrapperConstraint f a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
+  decodeKind _ value =
+    runExceptT (decodeWrapper decode value)
+      >>= handleEither
 
 decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
 decodeType = fmap to . (`runReaderT` context) . decodeRep

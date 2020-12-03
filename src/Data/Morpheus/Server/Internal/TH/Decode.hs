@@ -11,7 +11,6 @@ module Data.Morpheus.Server.Internal.TH.Decode
     decodeFieldWith,
     withScalar,
     handleEither,
-    haveSameSize,
   )
 where
 
@@ -92,14 +91,3 @@ typeMismatch :: Message -> Value s -> InternalError
 typeMismatch text jsType =
   "Type mismatch! expected:" <> msgInternal text <> ", got: "
     <> msgInternal jsType
-
-haveSameSize ::
-  ( Failure InternalError f,
-    Foldable l
-  ) =>
-  Set a ->
-  l b ->
-  f (Set a)
-haveSameSize setVal listVal
-  | length setVal == length listVal = pure setVal
-  | otherwise = failure (fromString ("Expected a List without duplicates, found " <> show (length listVal - length listVal) <> " duplicates") :: InternalError)
