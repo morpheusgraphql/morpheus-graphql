@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -119,21 +120,37 @@ class Encode o e (m :: * -> *) resolver where
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => Encode o e m a where
   encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
 
+type Wrapper f =
+  forall o e m a.
+  (LiftOperation o, Monad m) =>
+  (a -> Resolver o e m (ResModel o e m)) ->
+  f a ->
+  Resolver o e m (ResModel o e m)
+
+withMaybe :: Wrapper Maybe
+withMaybe = maybe (pure ResNull)
+
+withList :: Wrapper []
+withList encoder = fmap ResList . traverse encoder
+
+withNonEmpty :: Wrapper NonEmpty
+withNonEmpty en = withList en . NonEmpty.toList
+
 -- MAYBE
 instance (Monad m, LiftOperation o, Encode o e m a) => Encode o e m (Maybe a) where
-  encode = maybe (pure ResNull) encode
+  encode = withMaybe encode
 
 -- LIST []
 instance (Monad m, Encode o e m a, LiftOperation o) => Encode o e m [a] where
-  encode = fmap ResList . traverse encode
+  encode = withList encode
 
 --  Tuple  (a,b)
 instance Encode o e m (Pair k v) => Encode o e m (k, v) where
   encode (key, value) = encode (Pair key value)
 
 --  NonEmpty
-instance Encode o e m [a] => Encode o e m (NonEmpty a) where
-  encode = encode . NonEmpty.toList
+instance (Encode o e m a, LiftOperation o, Monad m) => Encode o e m (NonEmpty a) where
+  encode = withNonEmpty encode
 
 --  Vector
 instance Encode o e m [a] => Encode o e m (Vector a) where
