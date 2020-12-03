@@ -34,6 +34,7 @@ dependencies:
   - hashable              >= 1.0.0
   - mtl                   >= 2.0       && <= 3.0
   - relude                >= 0.3.0
+  - containers            >= 0.4.2.1   && <  0.7
 
 library:
   source-dirs: src
