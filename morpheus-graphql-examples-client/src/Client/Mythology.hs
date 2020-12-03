@@ -18,7 +18,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
     ID (..),
-    ScalarDeserializer (..),
+    ScalarDecoder (..),
     ScalarSerializer (..),
     ScalarValue (..),
     defineByDocumentFile,
@@ -33,7 +33,7 @@ newtype Lifetime
 instance ScalarSerializer Lifetime where
   serialize (Lifetime x) = Int x
 
-instance ScalarDeserializer Lifetime where
+instance ScalarDecoder Lifetime where
   parseValue _ = pure (Lifetime 0)
 
 newtype Power
@@ -43,7 +43,7 @@ newtype Power
 instance ScalarSerializer Power where
   serialize (Power x) = Int x
 
-instance ScalarDeserializer Power where
+instance ScalarDecoder Power where
   parseValue _ = pure (Power 1)
 
 defineByDocumentFile

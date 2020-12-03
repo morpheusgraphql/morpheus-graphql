@@ -45,7 +45,7 @@ import Data.Morpheus.Types
     ResolverQ,
     ResolverS,
     RootResolver (..),
-    ScalarDeserializer (..),
+    ScalarDecoder (..),
     ScalarSerializer (..),
     ScalarValue (..),
     SubscriptionField,
@@ -94,7 +94,7 @@ data Euro
       Int
   deriving (Show, Generic)
 
-instance ScalarDeserializer Euro where
+instance ScalarDecoder Euro where
   parseValue (Int x) =
     pure
       ( Euro

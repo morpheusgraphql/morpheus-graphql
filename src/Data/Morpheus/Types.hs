@@ -11,7 +11,7 @@
 -- | GQL Types
 module Data.Morpheus.Types
   ( GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives),
-    ScalarDeserializer (..),
+    ScalarDecoder (..),
     ScalarSerializer (..),
     GQLRequest (..),
     GQLResponse (..),
@@ -82,7 +82,7 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Server.Types.Types (Undefined (..))
 import Data.Morpheus.Types.GQLScalar
-  ( ScalarDeserializer (..),
+  ( ScalarDecoder (..),
     ScalarSerializer (..),
   )
 import Data.Morpheus.Types.ID (ID (..))

@@ -21,7 +21,7 @@ import Data.Morpheus.Client
     gql,
   )
 import Data.Morpheus.Types
-  ( ScalarDeserializer (..),
+  ( ScalarDecoder (..),
     ScalarSerializer (..),
     ScalarValue (..),
   )
@@ -34,7 +34,7 @@ data Euro
       Int
   deriving (Show, Eq)
 
-instance ScalarDeserializer Euro where
+instance ScalarDecoder Euro where
   parseValue _ = pure (Euro 1 0)
 
 instance ScalarSerializer Euro where

@@ -19,7 +19,7 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.Morpheus.Client
   ( Fetch (..),
-    ScalarDeserializer (..),
+    ScalarDecoder (..),
     ScalarSerializer (..),
     ScalarValue (..),
     gql,
@@ -54,7 +54,7 @@ newtype Uuid = Uuid
 instance ScalarSerializer Uuid where
   serialize = String . uuid
 
-instance ScalarDeserializer Uuid where
+instance ScalarDecoder Uuid where
   parseValue (String x) = pure (Uuid x)
   parseValue _ = Left "not valid uid"
 

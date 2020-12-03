@@ -30,7 +30,7 @@ import Data.Morpheus.Types
     GQLType (..),
     ID (..),
     RootResolver (..),
-    ScalarDeserializer (..),
+    ScalarDecoder (..),
     ScalarSerializer (..),
     ScalarValue (..),
     Undefined (..),
@@ -66,7 +66,7 @@ data TestScalar
 instance GQLType TestScalar where
   type KIND TestScalar = SCALAR
 
-instance ScalarDeserializer TestScalar where
+instance ScalarDecoder TestScalar where
   parseValue _ = pure (TestScalar 1 0)
 
 instance ScalarSerializer TestScalar where

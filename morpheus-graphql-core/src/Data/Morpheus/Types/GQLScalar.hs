@@ -7,7 +7,7 @@
 
 module Data.Morpheus.Types.GQLScalar
   ( ScalarSerializer (..),
-    ScalarDeserializer (..),
+    ScalarDecoder (..),
     toScalar,
     scalarToJSON,
     scalarFromJSON,
@@ -31,7 +31,7 @@ toScalar :: ValidValue -> Either Text ScalarValue
 toScalar (Scalar x) = pure x
 toScalar _ = Left ""
 
-scalarValidator :: forall f a. ScalarDeserializer a => f a -> ScalarDefinition
+scalarValidator :: forall f a. ScalarDecoder a => f a -> ScalarDefinition
 scalarValidator _ = ScalarDefinition {validateValue = validator}
   where
     validator value = do
@@ -44,7 +44,7 @@ class ScalarSerializer (a :: *) where
   serialize :: a -> ScalarValue
 
 -- | GraphQL Scalar Serializer
-class ScalarDeserializer (a :: *) where
+class ScalarDecoder (a :: *) where
   -- value parsing and validating
   --
   -- for exhaustive pattern matching  should be handled all scalar types : 'Int', 'Float', 'String', 'Boolean'
@@ -58,28 +58,28 @@ class ScalarDeserializer (a :: *) where
   -- @
   parseValue :: ScalarValue -> Either Text a
 
-instance ScalarDeserializer Text where
+instance ScalarDecoder Text where
   parseValue (String x) = pure x
   parseValue _ = Left ""
 
 instance ScalarSerializer Text where
   serialize = String
 
-instance ScalarDeserializer Bool where
+instance ScalarDecoder Bool where
   parseValue (Boolean x) = pure x
   parseValue _ = Left ""
 
 instance ScalarSerializer Bool where
   serialize = Boolean
 
-instance ScalarDeserializer Int where
+instance ScalarDecoder Int where
   parseValue (Int x) = pure x
   parseValue _ = Left ""
 
 instance ScalarSerializer Int where
   serialize = Int
 
-instance ScalarDeserializer Float where
+instance ScalarDecoder Float where
   parseValue (Float x) = pure (double2Float x)
   parseValue (Int x) = pure $ fromInteger $ toInteger x
   parseValue _ = Left ""
@@ -87,7 +87,7 @@ instance ScalarDeserializer Float where
 instance ScalarSerializer Float where
   serialize = Float . float2Double
 
-instance ScalarDeserializer Double where
+instance ScalarDecoder Double where
   parseValue (Float x) = pure x
   parseValue (Int x) = pure $ fromInteger $ toInteger x
   parseValue _ = Left ""
@@ -98,7 +98,7 @@ instance ScalarSerializer Double where
 scalarToJSON :: ScalarSerializer a => a -> A.Value
 scalarToJSON = A.toJSON . serialize
 
-scalarFromJSON :: (Monad m, MonadFail m) => ScalarDeserializer a => A.Value -> m a
+scalarFromJSON :: (Monad m, MonadFail m) => ScalarDecoder a => A.Value -> m a
 scalarFromJSON x = case replaceValue x of
   Scalar value -> either (fail . unpack) pure (parseValue value)
   _ -> fail "input must be scalar value"

@@ -10,7 +10,7 @@ module Data.Morpheus.Client
     defineByIntrospection,
     defineByIntrospectionFile,
     ScalarValue (..),
-    ScalarDeserializer (..),
+    ScalarDecoder (..),
     ScalarSerializer (..),
     ID (..),
   )
@@ -34,7 +34,7 @@ import Data.Morpheus.Core
   )
 import Data.Morpheus.QuasiQuoter (gql)
 import Data.Morpheus.Types.GQLScalar
-  ( ScalarDeserializer (..),
+  ( ScalarDecoder (..),
     ScalarSerializer (..),
   )
 import Data.Morpheus.Types.ID (ID (..))
