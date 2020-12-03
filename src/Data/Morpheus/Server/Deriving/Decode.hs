@@ -20,7 +20,6 @@ module Data.Morpheus.Server.Deriving.Decode
   )
 where
 
-import qualified Data.List.NonEmpty as NonEmpty
 import Data.Morpheus.Kind
   ( GQL_KIND,
     SCALAR,
@@ -37,7 +36,6 @@ import Data.Morpheus.Server.Internal.TH.Decode
     handleEither,
     withInputObject,
     withInputUnion,
-    withRefinedList,
     withScalar,
   )
 import Data.Morpheus.Server.Types.GQLType
@@ -117,9 +115,6 @@ withWrapper ::
   m (f a)
 withWrapper f = decodeWrapper f >=> handleEither
 
-instance Decode a => Decode (NonEmpty a) where
-  decode = withRefinedList (maybe (Left "Expected a NonEmpty list") Right . NonEmpty.nonEmpty) decode
-
 -- | Should this instance dedupe silently or fail on dupes ?
 instance (Ord a, Decode a) => Decode (Set a) where
   decode val = do
@@ -130,12 +125,6 @@ instance (Ord a, Decode a) => Decode (Set a) where
     if listLength == setLength
       then pure setVal
       else failure (fromString ("Expected a List without duplicates, found " <> show (setLength - listLength) <> " duplicates") :: InternalError)
-
-instance (Decode a) => Decode (Seq a) where
-  decode = fmap Seq.fromList . withWrapper decode
-
-instance (Decode a) => Decode (Vector a) where
-  decode = fmap Vector.fromList . withWrapper decode
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where

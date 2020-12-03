@@ -6,7 +6,6 @@
 
 module Data.Morpheus.Server.Internal.TH.Decode
   ( withInputObject,
-    withRefinedList,
     withEnum,
     withInputUnion,
     decodeFieldWith,
@@ -51,19 +50,6 @@ withInputObject f (Object object) = f object
 withInputObject _ isType = failure (typeMismatch "InputObject" isType)
 
 -- | Useful for more restrictive instances of lists (non empty, size indexed etc)
-withRefinedList ::
-  (Failure InternalError m, Monad m) =>
-  ([a] -> Either Message (rList a)) ->
-  (ValidValue -> m a) ->
-  ValidValue ->
-  m (rList a)
-withRefinedList refiner decode (List li) = do
-  listRes <- traverse decode li
-  case refiner listRes of
-    Left err -> failure (typeMismatch err (List li))
-    Right value -> pure value
-withRefinedList _ _ isType = failure (typeMismatch "List" isType)
-
 withEnum :: Failure InternalError m => (TypeName -> m a) -> Value VALID -> m a
 withEnum decode (Enum value) = decode value
 withEnum _ isType = failure (typeMismatch "Enum" isType)

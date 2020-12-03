@@ -21,7 +21,7 @@ import Data.Morpheus.Types.Internal.Resolving
     Resolver,
     SubscriptionField (..),
   )
-import qualified Data.Set as S
+import qualified Data.Sequence as Seq
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import Relude
@@ -36,7 +36,7 @@ class EncodeWrapper (f :: * -> *) where
 
 -- | GraphQL Wrapper Deserializer
 class DecodeWrapper (f :: * -> *) where
-  decodeWrapper :: Applicative m => (ValidValue -> m a) -> ValidValue -> m (Either Message (f a))
+  decodeWrapper :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Either Message (f a))
 
 withList ::
   ( EncodeWrapper f,
@@ -56,13 +56,16 @@ instance EncodeWrapper [] where
   encodeWrapper encodeValue = fmap ResList . traverse encodeValue
 
 instance EncodeWrapper NonEmpty where
-  encodeWrapper = withList NonEmpty.toList
+  encodeWrapper = withList toList
+
+instance EncodeWrapper Seq where
+  encodeWrapper = withList toList
 
 instance EncodeWrapper Vector where
-  encodeWrapper = withList Vector.toList
+  encodeWrapper = withList toList
 
 instance EncodeWrapper Set where
-  encodeWrapper = withList S.toList
+  encodeWrapper = withList toList
 
 instance EncodeWrapper SubscriptionField where
   encodeWrapper encode (SubscriptionField _ res) = encode res
@@ -75,6 +78,28 @@ instance DecodeWrapper Maybe where
 instance DecodeWrapper [] where
   decodeWrapper decode (List li) = pure <$> traverse decode li
   decodeWrapper _ isType = pure $ Left (typeMismatch "List" isType)
+
+instance DecodeWrapper NonEmpty where
+  decodeWrapper = withRefinedList (maybe (Left "Expected a NonEmpty list") Right . NonEmpty.nonEmpty)
+
+instance DecodeWrapper Seq where
+  decodeWrapper decode = fmap (Seq.fromList <$>) . decodeWrapper decode
+
+instance DecodeWrapper Vector where
+  decodeWrapper decode = fmap (Vector.fromList <$>) . decodeWrapper decode
+
+withRefinedList ::
+  Monad m =>
+  ([a] -> Either Message (rList a)) ->
+  (ValidValue -> m a) ->
+  ValidValue ->
+  m (Either Message (rList a))
+withRefinedList refiner decode (List li) = do
+  listRes <- traverse decode li
+  case refiner listRes of
+    Left err -> pure $ Left (typeMismatch err (List li))
+    Right value -> pure $ Right value
+withRefinedList _ _ isType = pure $ Left (typeMismatch "List" isType)
 
 -- if value is already validated but value has different type
 typeMismatch :: Message -> Value s -> Message
