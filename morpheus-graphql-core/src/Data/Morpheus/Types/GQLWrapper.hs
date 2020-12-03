@@ -1,4 +1,5 @@
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.GQLWrapper
@@ -9,8 +10,10 @@ where
 
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Morpheus.Types.Internal.AST
-  ( ValidValue,
+  ( Message,
+    ValidValue,
     Value (..),
+    msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( LiftOperation,
@@ -33,7 +36,7 @@ class EncodeWrapper (f :: * -> *) where
 
 -- | GraphQL Wrapper Deserializer
 class DecodeWrapper (f :: * -> *) where
-  decodeWrapper :: Applicative m => (ValidValue -> m a) -> ValidValue -> m (f a)
+  decodeWrapper :: Applicative m => (ValidValue -> m a) -> ValidValue -> m (Either Message (f a))
 
 withList ::
   ( EncodeWrapper f,
@@ -66,5 +69,15 @@ instance EncodeWrapper SubscriptionField where
 
 -- ScalarValue -> Either Text (f a)
 instance DecodeWrapper Maybe where
-  decodeWrapper _ Null = pure Nothing
-  decodeWrapper decode x = Just <$> decode x
+  decodeWrapper _ Null = pure $ pure Nothing
+  decodeWrapper decode x = pure . Just <$> decode x
+
+instance DecodeWrapper [] where
+  decodeWrapper decode (List li) = pure <$> traverse decode li
+  decodeWrapper _ isType = pure $ Left (typeMismatch "List" isType)
+
+-- if value is already validated but value has different type
+typeMismatch :: Message -> Value s -> Message
+typeMismatch text jsType =
+  "Type mismatch! expected:" <> msg text <> ", got: "
+    <> msg jsType

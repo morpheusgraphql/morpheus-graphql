@@ -6,13 +6,12 @@
 
 module Data.Morpheus.Server.Internal.TH.Decode
   ( withInputObject,
-    withMaybe,
-    withList,
     withRefinedList,
     withEnum,
     withInputUnion,
     decodeFieldWith,
     withScalar,
+    handleEither,
   )
 where
 
@@ -50,18 +49,6 @@ withInputObject ::
   m a
 withInputObject f (Object object) = f object
 withInputObject _ isType = failure (typeMismatch "InputObject" isType)
-
-withMaybe :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Maybe a)
-withMaybe _ Null = pure Nothing
-withMaybe decode x = Just <$> decode x
-
-withList ::
-  (Failure InternalError m, Monad m) =>
-  (ValidValue -> m a) ->
-  ValidValue ->
-  m [a]
-withList decode (List li) = traverse decode li
-withList _ isType = failure (typeMismatch "List" isType)
 
 -- | Useful for more restrictive instances of lists (non empty, size indexed etc)
 withRefinedList ::
@@ -109,6 +96,9 @@ withScalar typename parseValue value = case toScalar value >>= parseValue of
 
 decodeFieldWith :: (Value VALID -> m a) -> FieldName -> ValidObject -> m a
 decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)
+
+handleEither :: Failure InternalError m => Either Message a -> m a
+handleEither = either (failure . msgInternal) pure
 
 -- if value is already validated but value has different type
 typeMismatch :: Message -> Value s -> InternalError

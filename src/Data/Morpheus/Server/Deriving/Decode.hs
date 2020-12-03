@@ -25,6 +25,7 @@ import Data.Morpheus.Kind
   ( GQL_KIND,
     SCALAR,
     TYPE,
+    WRAPPER,
   )
 import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
@@ -33,10 +34,9 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
+    handleEither,
     withInputObject,
     withInputUnion,
-    withList,
-    withMaybe,
     withRefinedList,
     withScalar,
   )
@@ -52,6 +52,9 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.GQLScalar
   ( ScalarDecoder (..),
+  )
+import Data.Morpheus.Types.GQLWrapper
+  ( DecodeWrapper (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -104,11 +107,15 @@ class Decode a where
 instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
 
-instance Decode a => Decode (Maybe a) where
-  decode = withMaybe decode
-
-instance Decode a => Decode [a] where
-  decode = withList decode
+withWrapper ::
+  ( Monad m,
+    DecodeWrapper f,
+    Failure InternalError m
+  ) =>
+  (ValidValue -> m a) ->
+  ValidValue ->
+  m (f a)
+withWrapper f = decodeWrapper f >=> handleEither
 
 instance Decode a => Decode (NonEmpty a) where
   decode = withRefinedList (maybe (Left "Expected a NonEmpty list") Right . NonEmpty.nonEmpty) decode
@@ -116,7 +123,7 @@ instance Decode a => Decode (NonEmpty a) where
 -- | Should this instance dedupe silently or fail on dupes ?
 instance (Ord a, Decode a) => Decode (Set a) where
   decode val = do
-    listVal <- withList (decode @a) val
+    listVal <- withWrapper (decode @a) val
     let setVal = Set.fromList listVal
     let setLength = length setVal
     let listLength = length setVal
@@ -125,10 +132,10 @@ instance (Ord a, Decode a) => Decode (Set a) where
       else failure (fromString ("Expected a List without duplicates, found " <> show (setLength - listLength) <> " duplicates") :: InternalError)
 
 instance (Decode a) => Decode (Seq a) where
-  decode = fmap Seq.fromList . withList decode
+  decode = fmap Seq.fromList . withWrapper decode
 
 instance (Decode a) => Decode (Vector a) where
-  decode = fmap Vector.fromList . withList decode
+  decode = fmap Vector.fromList . withWrapper decode
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
@@ -141,6 +148,9 @@ instance (ScalarDecoder a, GQLType a) => DecodeKind SCALAR a where
 -- INPUT_OBJECT and  INPUT_UNION
 instance DecodeConstraint a => DecodeKind TYPE a where
   decodeKind _ = decodeType
+
+instance (Decode a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
+  decodeKind _ = withWrapper decode
 
 decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
 decodeType = fmap to . (`runReaderT` context) . decodeRep
