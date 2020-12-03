@@ -34,6 +34,7 @@ import Data.Morpheus.Server.Deriving.Utils
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
     handleEither,
+    haveSameSize,
     withInputObject,
     withInputUnion,
     withScalar,
@@ -77,14 +78,9 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Utils.Kinded
   ( KindedProxy (..),
   )
-import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
-import Data.Vector (Vector)
-import qualified Data.Vector as Vector
 import GHC.Generics
 import Relude
-
--- import Prelude (($), (-), (.), Either (Left, Right), Eq (..), Foldable (length), Ord, maybe, otherwise, show)
 
 type DecodeConstraint a =
   ( Generic a,
@@ -119,12 +115,7 @@ withWrapper f = decodeWrapper f >=> handleEither
 instance (Ord a, Decode a) => Decode (Set a) where
   decode val = do
     listVal <- withWrapper (decode @a) val
-    let setVal = Set.fromList listVal
-    let setLength = length setVal
-    let listLength = length setVal
-    if listLength == setLength
-      then pure setVal
-      else failure (fromString ("Expected a List without duplicates, found " <> show (setLength - listLength) <> " duplicates") :: InternalError)
+    haveSameSize (Set.fromList listVal) listVal
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
