@@ -18,7 +18,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
     ScalarDecoder (..),
-    ScalarSerializer (..),
+    ScalarEncoder (..),
     ScalarValue (..),
     defineByIntrospectionFile,
     gql,
@@ -46,7 +46,7 @@ data Euro
       Int
   deriving (Show, Eq)
 
-instance ScalarSerializer Euro where
+instance ScalarEncoder Euro where
   serialize (Euro x y) = Int (x * 101 + y)
 
 instance ScalarDecoder Euro where

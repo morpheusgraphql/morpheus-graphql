@@ -19,7 +19,7 @@ import Data.Morpheus.Client
   ( Fetch (..),
     ID (..),
     ScalarDecoder (..),
-    ScalarSerializer (..),
+    ScalarEncoder (..),
     ScalarValue (..),
     defineByDocumentFile,
     gql,
@@ -30,7 +30,7 @@ newtype Lifetime
   = Lifetime Int
   deriving (Show, Eq)
 
-instance ScalarSerializer Lifetime where
+instance ScalarEncoder Lifetime where
   serialize (Lifetime x) = Int x
 
 instance ScalarDecoder Lifetime where
@@ -40,7 +40,7 @@ newtype Power
   = Power Int
   deriving (Show, Eq)
 
-instance ScalarSerializer Power where
+instance ScalarEncoder Power where
   serialize (Power x) = Int x
 
 instance ScalarDecoder Power where

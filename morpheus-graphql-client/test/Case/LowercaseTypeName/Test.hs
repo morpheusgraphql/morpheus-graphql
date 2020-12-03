@@ -20,7 +20,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Client
   ( Fetch (..),
     ScalarDecoder (..),
-    ScalarSerializer (..),
+    ScalarEncoder (..),
     ScalarValue (..),
     gql,
   )
@@ -51,7 +51,7 @@ newtype Uuid = Uuid
   }
   deriving (Show, Eq)
 
-instance ScalarSerializer Uuid where
+instance ScalarEncoder Uuid where
   serialize = String . uuid
 
 instance ScalarDecoder Uuid where

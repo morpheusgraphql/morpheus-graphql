@@ -31,7 +31,7 @@ import Data.Morpheus.Types
     ID (..),
     RootResolver (..),
     ScalarDecoder (..),
-    ScalarSerializer (..),
+    ScalarEncoder (..),
     ScalarValue (..),
     Undefined (..),
     liftEither,
@@ -69,7 +69,7 @@ instance GQLType TestScalar where
 instance ScalarDecoder TestScalar where
   parseValue _ = pure (TestScalar 1 0)
 
-instance ScalarSerializer TestScalar where
+instance ScalarEncoder TestScalar where
   serialize (TestScalar x y) = Int (x * 100 + y)
 
 data Channel

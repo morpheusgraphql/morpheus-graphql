@@ -22,7 +22,7 @@ import Data.Morpheus.Client
   )
 import Data.Morpheus.Types
   ( ScalarDecoder (..),
-    ScalarSerializer (..),
+    ScalarEncoder (..),
     ScalarValue (..),
   )
 import Data.Text (Text)
@@ -37,7 +37,7 @@ data Euro
 instance ScalarDecoder Euro where
   parseValue _ = pure (Euro 1 0)
 
-instance ScalarSerializer Euro where
+instance ScalarEncoder Euro where
   serialize (Euro x y) = Int (x * 101 + y)
 
 defineByDocumentFile

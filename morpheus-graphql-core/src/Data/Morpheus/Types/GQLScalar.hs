@@ -6,7 +6,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.GQLScalar
-  ( ScalarSerializer (..),
+  ( ScalarEncoder (..),
     ScalarDecoder (..),
     toScalar,
     scalarToJSON,
@@ -40,7 +40,7 @@ scalarValidator _ = ScalarDefinition {validateValue = validator}
       pure value
 
 -- | GraphQL Scalar Serializer
-class ScalarSerializer (a :: *) where
+class ScalarEncoder (a :: *) where
   serialize :: a -> ScalarValue
 
 -- | GraphQL Scalar Serializer
@@ -62,21 +62,21 @@ instance ScalarDecoder Text where
   parseValue (String x) = pure x
   parseValue _ = Left ""
 
-instance ScalarSerializer Text where
+instance ScalarEncoder Text where
   serialize = String
 
 instance ScalarDecoder Bool where
   parseValue (Boolean x) = pure x
   parseValue _ = Left ""
 
-instance ScalarSerializer Bool where
+instance ScalarEncoder Bool where
   serialize = Boolean
 
 instance ScalarDecoder Int where
   parseValue (Int x) = pure x
   parseValue _ = Left ""
 
-instance ScalarSerializer Int where
+instance ScalarEncoder Int where
   serialize = Int
 
 instance ScalarDecoder Float where
@@ -84,7 +84,7 @@ instance ScalarDecoder Float where
   parseValue (Int x) = pure $ fromInteger $ toInteger x
   parseValue _ = Left ""
 
-instance ScalarSerializer Float where
+instance ScalarEncoder Float where
   serialize = Float . float2Double
 
 instance ScalarDecoder Double where
@@ -92,10 +92,10 @@ instance ScalarDecoder Double where
   parseValue (Int x) = pure $ fromInteger $ toInteger x
   parseValue _ = Left ""
 
-instance ScalarSerializer Double where
+instance ScalarEncoder Double where
   serialize = Float
 
-scalarToJSON :: ScalarSerializer a => a -> A.Value
+scalarToJSON :: ScalarEncoder a => a -> A.Value
 scalarToJSON = A.toJSON . serialize
 
 scalarFromJSON :: (Monad m, MonadFail m) => ScalarDecoder a => A.Value -> m a

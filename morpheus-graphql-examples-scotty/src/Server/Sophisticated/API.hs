@@ -46,7 +46,7 @@ import Data.Morpheus.Types
     ResolverS,
     RootResolver (..),
     ScalarDecoder (..),
-    ScalarSerializer (..),
+    ScalarEncoder (..),
     ScalarValue (..),
     SubscriptionField,
     WithOperation,
@@ -103,7 +103,7 @@ instance ScalarDecoder Euro where
       )
   parseValue _ = Left "invalid currency!"
 
-instance ScalarSerializer Euro where
+instance ScalarEncoder Euro where
   serialize (Euro x y) = Int (x * 100 + y)
 
 data Channel = USER | ADDRESS

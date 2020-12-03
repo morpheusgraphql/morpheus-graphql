@@ -11,7 +11,7 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import Data.Morpheus.Types.GQLScalar
   ( ScalarDecoder (..),
-    ScalarSerializer (..),
+    ScalarEncoder (..),
     scalarFromJSON,
     scalarToJSON,
   )
@@ -34,7 +34,7 @@ instance ScalarDecoder ID where
   parseValue (String x) = pure (ID x)
   parseValue _ = Left "ID can only be String or number"
 
-instance ScalarSerializer ID where
+instance ScalarEncoder ID where
   serialize (ID x) = String x
 
 instance ToJSON ID where
