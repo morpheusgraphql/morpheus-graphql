@@ -18,10 +18,9 @@ where
 
 import Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import Data.Morpheus.Types
-  ( GQLScalar (..),
-    ID (..),
+  ( ID (..),
     RootResolver (..),
-    ScalarValue (..),
+    ScalarDeserializer (..),
     Undefined (..),
   )
 import Data.Proxy (Proxy (..))
@@ -32,9 +31,8 @@ data TestScalar
   = TestScalar
   deriving (Show, Generic)
 
-instance GQLScalar TestScalar where
+instance ScalarDeserializer TestScalar where
   parseValue _ = pure TestScalar
-  serialize TestScalar = Int 0
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 

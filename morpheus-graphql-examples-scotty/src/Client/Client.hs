@@ -20,7 +20,11 @@ import Data.Morpheus.Client
     defineByDocumentFile,
     gql,
   )
-import Data.Morpheus.Types (GQLScalar (..), ScalarValue (..))
+import Data.Morpheus.Types
+  ( ScalarDeserializer (..),
+    ScalarSerializer (..),
+    ScalarValue (..),
+  )
 import Data.Text (Text)
 import Prelude
 
@@ -30,8 +34,10 @@ data Euro
       Int
   deriving (Show, Eq)
 
-instance GQLScalar Euro where
+instance ScalarDeserializer Euro where
   parseValue _ = pure (Euro 1 0)
+
+instance ScalarSerializer Euro where
   serialize (Euro x y) = Int (x * 101 + y)
 
 defineByDocumentFile
