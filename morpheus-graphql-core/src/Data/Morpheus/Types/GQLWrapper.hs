@@ -26,7 +26,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector
 import Relude
 
--- | GraphQL Scalar Serializer
+-- | GraphQL Wrapper Serializer
 class EncodeWrapper (f :: * -> *) where
   encodeWrapper ::
     (LiftOperation o, Monad m) =>
