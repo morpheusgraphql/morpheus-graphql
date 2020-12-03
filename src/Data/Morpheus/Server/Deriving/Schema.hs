@@ -38,6 +38,7 @@ import Data.Morpheus.Kind
     INTERFACE,
     SCALAR,
     TYPE,
+    WRAPPER,
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedType (..),
@@ -184,21 +185,28 @@ class DeriveType (kind :: TypeCategory) (a :: *) where
 deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> SchemaT ()
 deriveTypeWith x = deriveType . setType x
 
+deriveWrapperType ::
+  forall kinded cat f a.
+  DeriveType cat a =>
+  kinded cat (f a) ->
+  SchemaT ()
+deriveWrapperType _ = deriveType (KindedProxy :: KindedProxy cat a)
+
 -- Maybe
 instance DeriveType cat a => DeriveType cat (Maybe a) where
-  deriveType = deriveTypeWith (Proxy @a)
+  deriveType = deriveWrapperType
 
 -- List
 instance DeriveType cat a => DeriveType cat [a] where
-  deriveType = deriveTypeWith (Proxy @a)
+  deriveType = deriveWrapperType
 
 -- Tuple
 instance DeriveType cat (Pair k v) => DeriveType cat (k, v) where
   deriveType = deriveTypeWith (Proxy @(Pair k v))
 
 -- Set
-instance DeriveType cat [a] => DeriveType cat (Set a) where
-  deriveType = deriveTypeWith (Proxy @[a])
+instance DeriveType cat a => DeriveType cat (Set a) where
+  deriveType = deriveWrapperType
 
 -- Map
 instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
@@ -216,7 +224,7 @@ instance
   deriveType _ = deriveType (outputType $ Proxy @b)
 
 instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
-  deriveType _ = deriveType (KindedProxy :: KindedProxy OUT a)
+  deriveType = deriveWrapperType
 
 --  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
