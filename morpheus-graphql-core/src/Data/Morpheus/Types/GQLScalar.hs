@@ -43,7 +43,7 @@ scalarValidator _ = ScalarDefinition {validateValue = validator}
 class EncodeScalar (a :: *) where
   encodeScalar :: a -> ScalarValue
 
--- | GraphQL Scalar Serializer
+-- | GraphQL Scalar parser
 class DecodeScalar (a :: *) where
   -- value parsing and validating
   --
