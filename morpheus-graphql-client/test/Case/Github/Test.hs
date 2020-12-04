@@ -17,9 +17,9 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.Morpheus.Client
-  ( Fetch (..),
-    ScalarDecoder (..),
-    ScalarEncoder (..),
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+    Fetch (..),
     ScalarValue (..),
     gql,
   )
@@ -52,12 +52,12 @@ newtype GitTimestamp = GitTimestamp
   }
   deriving (Eq, Show)
 
-instance ScalarDecoder GitTimestamp where
-  parseValue (String x) = pure (GitTimestamp x)
-  parseValue _ = Left ""
+instance DecodeScalar GitTimestamp where
+  decodeScalar (String x) = pure (GitTimestamp x)
+  decodeScalar _ = Left ""
 
-instance ScalarEncoder GitTimestamp where
-  serialize (GitTimestamp x) = String x
+instance EncodeScalar GitTimestamp where
+  encodeScalar (GitTimestamp x) = String x
 
 defineClientWith
   "Github"

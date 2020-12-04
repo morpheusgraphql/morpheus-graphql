@@ -71,7 +71,7 @@ withScalar ::
   (ScalarValue -> Either Token a) ->
   Value VALID ->
   m a
-withScalar typename parseValue value = case toScalar value >>= parseValue of
+withScalar typename decodeScalar value = case toScalar value >>= decodeScalar of
   Right scalar -> pure scalar
   Left message ->
     failure

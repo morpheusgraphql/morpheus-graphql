@@ -49,7 +49,7 @@ import Data.Morpheus.Server.Types.GQLType
     defaultTypeOptions,
   )
 import Data.Morpheus.Types.GQLScalar
-  ( ScalarDecoder (..),
+  ( DecodeScalar (..),
   )
 import Data.Morpheus.Types.GQLWrapper
   ( DecodeWrapper (..),
@@ -105,8 +105,8 @@ class DecodeKind (kind :: GQL_KIND) a where
   decodeKind :: Proxy kind -> ValidValue -> ResolverState a
 
 -- SCALAR
-instance (ScalarDecoder a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ = withScalar (gqlTypeName $ __typeData (KindedProxy :: KindedProxy LEAF a)) parseValue
+instance (DecodeScalar a, GQLType a) => DecodeKind SCALAR a where
+  decodeKind _ = withScalar (gqlTypeName $ __typeData (KindedProxy :: KindedProxy LEAF a)) decodeScalar
 
 -- INPUT_OBJECT and  INPUT_UNION
 instance DecodeConstraint a => DecodeKind TYPE a where

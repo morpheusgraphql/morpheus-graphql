@@ -25,13 +25,13 @@ import Data.Morpheus.Document
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Subscriptions (Event)
 import Data.Morpheus.Types
-  ( GQLRequest,
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+    GQLRequest,
     GQLResponse,
     GQLType (..),
     ID (..),
     RootResolver (..),
-    ScalarDecoder (..),
-    ScalarEncoder (..),
     ScalarValue (..),
     Undefined (..),
     liftEither,
@@ -66,11 +66,11 @@ data TestScalar
 instance GQLType TestScalar where
   type KIND TestScalar = SCALAR
 
-instance ScalarDecoder TestScalar where
-  parseValue _ = pure (TestScalar 1 0)
+instance DecodeScalar TestScalar where
+  decodeScalar _ = pure (TestScalar 1 0)
 
-instance ScalarEncoder TestScalar where
-  serialize (TestScalar x y) = Int (x * 100 + y)
+instance EncodeScalar TestScalar where
+  encodeScalar (TestScalar x y) = Int (x * 100 + y)
 
 data Channel
   = Channel

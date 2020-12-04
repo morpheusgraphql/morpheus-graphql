@@ -16,9 +16,9 @@ where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
-  ( Fetch (..),
-    ScalarDecoder (..),
-    ScalarEncoder (..),
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+    Fetch (..),
     ScalarValue (..),
     defineByIntrospectionFile,
     gql,
@@ -46,11 +46,11 @@ data Euro
       Int
   deriving (Show, Eq)
 
-instance ScalarEncoder Euro where
-  serialize (Euro x y) = Int (x * 101 + y)
+instance EncodeScalar Euro where
+  encodeScalar (Euro x y) = Int (x * 101 + y)
 
-instance ScalarDecoder Euro where
-  parseValue _ = pure (Euro 1 0)
+instance DecodeScalar Euro where
+  decodeScalar _ = pure (Euro 1 0)
 
 defineByIntrospectionFile
   "assets/introspection.json"

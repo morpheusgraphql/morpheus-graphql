@@ -37,7 +37,9 @@ import Data.Morpheus.Subscriptions
     Hashable,
   )
 import Data.Morpheus.Types
-  ( GQLType (..),
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+    GQLType (..),
     ID,
     MUTATION,
     Resolver,
@@ -45,8 +47,6 @@ import Data.Morpheus.Types
     ResolverQ,
     ResolverS,
     RootResolver (..),
-    ScalarDecoder (..),
-    ScalarEncoder (..),
     ScalarValue (..),
     SubscriptionField,
     WithOperation,
@@ -94,17 +94,17 @@ data Euro
       Int
   deriving (Show, Generic)
 
-instance ScalarDecoder Euro where
-  parseValue (Int x) =
+instance DecodeScalar Euro where
+  decodeScalar (Int x) =
     pure
       ( Euro
           (round (fromIntegral x / 100 :: Double))
           (mod x 100)
       )
-  parseValue _ = Left "invalid currency!"
+  decodeScalar _ = Left "invalid currency!"
 
-instance ScalarEncoder Euro where
-  serialize (Euro x y) = Int (x * 100 + y)
+instance EncodeScalar Euro where
+  encodeScalar (Euro x y) = Int (x * 100 + y)
 
 data Channel = USER | ADDRESS
   deriving

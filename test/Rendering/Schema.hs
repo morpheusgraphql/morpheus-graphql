@@ -18,9 +18,9 @@ where
 
 import Data.Morpheus.Document (importGQLDocumentWithNamespace)
 import Data.Morpheus.Types
-  ( ID (..),
+  ( DecodeScalar (..),
+    ID (..),
     RootResolver (..),
-    ScalarDecoder (..),
     Undefined (..),
   )
 import Data.Proxy (Proxy (..))
@@ -31,8 +31,8 @@ data TestScalar
   = TestScalar
   deriving (Show, Generic)
 
-instance ScalarDecoder TestScalar where
-  parseValue _ = pure TestScalar
+instance DecodeScalar TestScalar where
+  decodeScalar _ = pure TestScalar
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 

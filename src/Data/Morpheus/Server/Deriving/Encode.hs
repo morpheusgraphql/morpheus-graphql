@@ -66,7 +66,7 @@ import Data.Morpheus.Types
   ( RootResolver (..),
   )
 import Data.Morpheus.Types.GQLScalar
-  ( ScalarEncoder (..),
+  ( EncodeScalar (..),
   )
 import Data.Morpheus.Types.GQLWrapper (EncodeWrapper (..))
 import Data.Morpheus.Types.Internal.AST
@@ -146,8 +146,8 @@ class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
 instance (EncodeWrapper f, Encode o e m a, Monad m) => EncodeKind WRAPPER (f a) o e m where
   encodeKind = encodeWrapper encode . unContextValue
 
-instance (ScalarEncoder a, Monad m) => EncodeKind SCALAR a o e m where
-  encodeKind = pure . ResScalar . serialize . unContextValue
+instance (EncodeScalar a, Monad m) => EncodeKind SCALAR a o e m where
+  encodeKind = pure . ResScalar . encodeScalar . unContextValue
 
 instance EncodeConstraint o e m a => EncodeKind TYPE a o e m where
   encodeKind = pure . exploreResolvers . unContextValue

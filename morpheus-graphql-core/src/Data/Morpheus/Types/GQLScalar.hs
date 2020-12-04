@@ -6,8 +6,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.GQLScalar
-  ( ScalarEncoder (..),
-    ScalarDecoder (..),
+  ( EncodeScalar (..),
+    DecodeScalar (..),
     toScalar,
     scalarToJSON,
     scalarFromJSON,
@@ -31,20 +31,20 @@ toScalar :: ValidValue -> Either Text ScalarValue
 toScalar (Scalar x) = pure x
 toScalar _ = Left ""
 
-scalarValidator :: forall f a. ScalarDecoder a => f a -> ScalarDefinition
+scalarValidator :: forall f a. DecodeScalar a => f a -> ScalarDefinition
 scalarValidator _ = ScalarDefinition {validateValue = validator}
   where
     validator value = do
       scalarValue' <- toScalar value
-      (_ :: a) <- parseValue scalarValue'
+      (_ :: a) <- decodeScalar scalarValue'
       pure value
 
 -- | GraphQL Scalar Serializer
-class ScalarEncoder (a :: *) where
-  serialize :: a -> ScalarValue
+class EncodeScalar (a :: *) where
+  encodeScalar :: a -> ScalarValue
 
 -- | GraphQL Scalar Serializer
-class ScalarDecoder (a :: *) where
+class DecodeScalar (a :: *) where
   -- value parsing and validating
   --
   -- for exhaustive pattern matching  should be handled all scalar types : 'Int', 'Float', 'String', 'Boolean'
@@ -52,53 +52,53 @@ class ScalarDecoder (a :: *) where
   -- invalid values can be reported with 'Left' constructor :
   --
   -- @
-  --   parseValue String _ = Left "" -- without error message
+  --   decodeScalar String _ = Left "" -- without error message
   --   -- or
-  --   parseValue String _ = Left "Error Message"
+  --   decodeScalar String _ = Left "Error Message"
   -- @
-  parseValue :: ScalarValue -> Either Text a
+  decodeScalar :: ScalarValue -> Either Text a
 
-instance ScalarDecoder Text where
-  parseValue (String x) = pure x
-  parseValue _ = Left ""
+instance DecodeScalar Text where
+  decodeScalar (String x) = pure x
+  decodeScalar _ = Left ""
 
-instance ScalarEncoder Text where
-  serialize = String
+instance EncodeScalar Text where
+  encodeScalar = String
 
-instance ScalarDecoder Bool where
-  parseValue (Boolean x) = pure x
-  parseValue _ = Left ""
+instance DecodeScalar Bool where
+  decodeScalar (Boolean x) = pure x
+  decodeScalar _ = Left ""
 
-instance ScalarEncoder Bool where
-  serialize = Boolean
+instance EncodeScalar Bool where
+  encodeScalar = Boolean
 
-instance ScalarDecoder Int where
-  parseValue (Int x) = pure x
-  parseValue _ = Left ""
+instance DecodeScalar Int where
+  decodeScalar (Int x) = pure x
+  decodeScalar _ = Left ""
 
-instance ScalarEncoder Int where
-  serialize = Int
+instance EncodeScalar Int where
+  encodeScalar = Int
 
-instance ScalarDecoder Float where
-  parseValue (Float x) = pure (double2Float x)
-  parseValue (Int x) = pure $ fromInteger $ toInteger x
-  parseValue _ = Left ""
+instance DecodeScalar Float where
+  decodeScalar (Float x) = pure (double2Float x)
+  decodeScalar (Int x) = pure $ fromInteger $ toInteger x
+  decodeScalar _ = Left ""
 
-instance ScalarEncoder Float where
-  serialize = Float . float2Double
+instance EncodeScalar Float where
+  encodeScalar = Float . float2Double
 
-instance ScalarDecoder Double where
-  parseValue (Float x) = pure x
-  parseValue (Int x) = pure $ fromInteger $ toInteger x
-  parseValue _ = Left ""
+instance DecodeScalar Double where
+  decodeScalar (Float x) = pure x
+  decodeScalar (Int x) = pure $ fromInteger $ toInteger x
+  decodeScalar _ = Left ""
 
-instance ScalarEncoder Double where
-  serialize = Float
+instance EncodeScalar Double where
+  encodeScalar = Float
 
-scalarToJSON :: ScalarEncoder a => a -> A.Value
-scalarToJSON = A.toJSON . serialize
+scalarToJSON :: EncodeScalar a => a -> A.Value
+scalarToJSON = A.toJSON . encodeScalar
 
-scalarFromJSON :: (Monad m, MonadFail m) => ScalarDecoder a => A.Value -> m a
+scalarFromJSON :: (Monad m, MonadFail m) => DecodeScalar a => A.Value -> m a
 scalarFromJSON x = case replaceValue x of
-  Scalar value -> either (fail . unpack) pure (parseValue value)
+  Scalar value -> either (fail . unpack) pure (decodeScalar value)
   _ -> fail "input must be scalar value"
