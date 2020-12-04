@@ -20,11 +20,11 @@ module Data.Morpheus.Server.Deriving.Decode
   )
 where
 
-import qualified Data.List.NonEmpty as NonEmpty
 import Data.Morpheus.Kind
   ( GQL_KIND,
     SCALAR,
     TYPE,
+    WRAPPER,
   )
 import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
@@ -33,11 +33,9 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
+    handleEither,
     withInputObject,
     withInputUnion,
-    withList,
-    withMaybe,
-    withRefinedList,
     withScalar,
   )
 import Data.Morpheus.Server.Types.GQLType
@@ -51,7 +49,11 @@ import Data.Morpheus.Server.Types.GQLType
     defaultTypeOptions,
   )
 import Data.Morpheus.Types.GQLScalar
-  ( GQLScalar (..),
+  ( DecodeScalar (..),
+  )
+import Data.Morpheus.Types.GQLWrapper
+  ( DecodeWrapper (..),
+    DecodeWrapperConstraint,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -76,14 +78,8 @@ import Data.Morpheus.Types.Internal.Resolving
 import Data.Morpheus.Utils.Kinded
   ( KindedProxy (..),
   )
-import qualified Data.Sequence as Seq
-import qualified Data.Set as Set
-import Data.Vector (Vector)
-import qualified Data.Vector as Vector
 import GHC.Generics
 import Relude
-
--- import Prelude (($), (-), (.), Either (Left, Right), Eq (..), Foldable (length), Ord, maybe, otherwise, show)
 
 type DecodeConstraint a =
   ( Generic a,
@@ -101,46 +97,25 @@ decodeArguments = decodeType . Object . fmap toEntry
 class Decode a where
   decode :: ValidValue -> ResolverState a
 
-instance {-# OVERLAPPABLE #-} DecodeKind (KIND a) a => Decode a where
+instance DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
-
-instance Decode a => Decode (Maybe a) where
-  decode = withMaybe decode
-
-instance Decode a => Decode [a] where
-  decode = withList decode
-
-instance Decode a => Decode (NonEmpty a) where
-  decode = withRefinedList (maybe (Left "Expected a NonEmpty list") Right . NonEmpty.nonEmpty) decode
-
--- | Should this instance dedupe silently or fail on dupes ?
-instance (Ord a, Decode a) => Decode (Set a) where
-  decode val = do
-    listVal <- withList (decode @a) val
-    let setVal = Set.fromList listVal
-    let setLength = length setVal
-    let listLength = length setVal
-    if listLength == setLength
-      then pure setVal
-      else failure (fromString ("Expected a List without duplicates, found " <> show (setLength - listLength) <> " duplicates") :: InternalError)
-
-instance (Decode a) => Decode (Seq a) where
-  decode = fmap Seq.fromList . withList decode
-
-instance (Decode a) => Decode (Vector a) where
-  decode = fmap Vector.fromList . withList decode
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: GQL_KIND) a where
   decodeKind :: Proxy kind -> ValidValue -> ResolverState a
 
 -- SCALAR
-instance (GQLScalar a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ = withScalar (gqlTypeName $ __typeData (KindedProxy :: KindedProxy LEAF a)) parseValue
+instance (DecodeScalar a, GQLType a) => DecodeKind SCALAR a where
+  decodeKind _ = withScalar (gqlTypeName $ __typeData (KindedProxy :: KindedProxy LEAF a)) decodeScalar
 
 -- INPUT_OBJECT and  INPUT_UNION
 instance DecodeConstraint a => DecodeKind TYPE a where
   decodeKind _ = decodeType
+
+instance (Decode a, DecodeWrapperConstraint f a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
+  decodeKind _ value =
+    runExceptT (decodeWrapper decode value)
+      >>= handleEither
 
 decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
 decodeType = fmap to . (`runReaderT` context) . decodeRep

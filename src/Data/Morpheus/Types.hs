@@ -11,7 +11,10 @@
 -- | GQL Types
 module Data.Morpheus.Types
   ( GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives),
-    GQLScalar (parseValue, serialize),
+    EncodeScalar (..),
+    EncodeWrapper (..),
+    DecodeScalar (..),
+    DecodeWrapper (..),
     GQLRequest (..),
     GQLResponse (..),
     ID (..),
@@ -81,10 +84,12 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Server.Types.Types (Undefined (..))
 import Data.Morpheus.Types.GQLScalar
-  ( GQLScalar
-      ( parseValue,
-        serialize
-      ),
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+  )
+import Data.Morpheus.Types.GQLWrapper
+  ( DecodeWrapper (..),
+    EncodeWrapper (..),
   )
 import Data.Morpheus.Types.ID (ID (..))
 import Data.Morpheus.Types.IO

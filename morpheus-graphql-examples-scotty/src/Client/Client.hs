@@ -20,7 +20,11 @@ import Data.Morpheus.Client
     defineByDocumentFile,
     gql,
   )
-import Data.Morpheus.Types (GQLScalar (..), ScalarValue (..))
+import Data.Morpheus.Types
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+    ScalarValue (..),
+  )
 import Data.Text (Text)
 import Prelude
 
@@ -30,9 +34,11 @@ data Euro
       Int
   deriving (Show, Eq)
 
-instance GQLScalar Euro where
-  parseValue _ = pure (Euro 1 0)
-  serialize (Euro x y) = Int (x * 101 + y)
+instance DecodeScalar Euro where
+  decodeScalar _ = pure (Euro 1 0)
+
+instance EncodeScalar Euro where
+  encodeScalar (Euro x y) = Int (x * 101 + y)
 
 defineByDocumentFile
   "src/Server/Sophisticated/api.gql"

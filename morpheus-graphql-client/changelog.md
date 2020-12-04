@@ -1,6 +1,10 @@
 # Changelog
 
-## (next version)
+## 0.17.0 - Unreleased
+
+### Breaking changes
+
+- `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
 
 ### Minor Changes
 

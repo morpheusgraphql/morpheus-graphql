@@ -30,8 +30,11 @@
     deriving (Generic, GQLType)
   ```
 
+- exposed `EncodeWrapper` and `DecodeWrapper` type-classes.
+
 ### Breaking Changes
 
+- `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
 - Exclusive input objects: Sum types used as input types are represented as input objects, where only one field must have a value. Namespaced constructors (i.e., where referenced type name concatenated with union type name is equal to constructor name) are unpacked. Furthermore, empty constructors are represented as fields with the unit type.
 
   for example:
@@ -61,7 +64,7 @@
   }
   ```
 
-- For each nullary constructor will be defined its GQL object type with a single field `_: Unit` (since GraphQL does not allow empty objects).
+- For each nullary constructor will be defined GQL object type with a single field `_: Unit` (since GraphQL does not allow empty objects).
 
   for example:
 

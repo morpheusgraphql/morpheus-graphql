@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -24,21 +25,19 @@ import Control.Applicative (Applicative (..))
 import Control.Monad (Monad ((>>=)))
 import Data.Functor (fmap)
 import Data.Functor.Identity (Identity (..))
-import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as NonEmpty
 import Data.Map (Map)
 import qualified Data.Map as M
   ( toList,
   )
 import Data.Maybe
   ( Maybe (..),
-    maybe,
   )
 import Data.Morpheus.Kind
   ( GQL_KIND,
     INTERFACE,
     SCALAR,
     TYPE,
+    WRAPPER,
   )
 import Data.Morpheus.Server.Deriving.Channels
   ( ChannelsConstraint,
@@ -66,7 +65,10 @@ import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Types
   ( RootResolver (..),
   )
-import Data.Morpheus.Types.GQLScalar (GQLScalar (..))
+import Data.Morpheus.Types.GQLScalar
+  ( EncodeScalar (..),
+  )
+import Data.Morpheus.Types.GQLWrapper (EncodeWrapper (..))
 import Data.Morpheus.Types.Internal.AST
   ( IN,
     InternalError,
@@ -83,7 +85,6 @@ import Data.Morpheus.Types.Internal.Resolving
     Resolver,
     ResolverState,
     RootResModel (..),
-    SubscriptionField (..),
     failure,
     getArguments,
     liftResolverState,
@@ -91,13 +92,6 @@ import Data.Morpheus.Types.Internal.Resolving
     mkUnion,
   )
 import Data.Proxy (Proxy (..))
-import Data.Set (Set)
-import qualified Data.Set as S
-  ( toList,
-  )
-import Data.Traversable (traverse)
-import Data.Vector (Vector)
-import qualified Data.Vector as Vector
 import GHC.Generics
   ( Generic (..),
   )
@@ -117,38 +111,14 @@ class Encode o e (m :: * -> *) resolver where
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) a o e m, LiftOperation o) => Encode o e m a where
   encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
 
--- MAYBE
-instance (Monad m, LiftOperation o, Encode o e m a) => Encode o e m (Maybe a) where
-  encode = maybe (pure ResNull) encode
-
--- LIST []
-instance (Monad m, Encode o e m a, LiftOperation o) => Encode o e m [a] where
-  encode = fmap ResList . traverse encode
-
 --  Tuple  (a,b)
 instance Encode o e m (Pair k v) => Encode o e m (k, v) where
   encode (key, value) = encode (Pair key value)
-
---  NonEmpty
-instance Encode o e m [a] => Encode o e m (NonEmpty a) where
-  encode = encode . NonEmpty.toList
-
---  Vector
-instance Encode o e m [a] => Encode o e m (Vector a) where
-  encode = encode . Vector.toList
-
---  Set
-instance Encode o e m [a] => Encode o e m (Set a) where
-  encode = encode . S.toList
 
 --  Map
 instance (Monad m, LiftOperation o, Encode o e m (MapKind k v (Resolver o e m))) => Encode o e m (Map k v) where
   encode value =
     encode ((mapKindFromList $ M.toList value) :: MapKind k v (Resolver o e m))
-
--- SUBSCRIPTION
-instance (Monad m, LiftOperation o, Encode o e m a) => Encode o e m (SubscriptionField a) where
-  encode (SubscriptionField _ res) = encode res
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
@@ -173,9 +143,11 @@ instance (Monad m, Encode o e m b, LiftOperation o) => Encode o e m (Resolver o 
 class EncodeKind (kind :: GQL_KIND) a o e (m :: * -> *) where
   encodeKind :: LiftOperation o => ContextValue kind a -> Resolver o e m (ResModel o e m)
 
--- SCALAR
-instance (GQLScalar a, Monad m) => EncodeKind SCALAR a o e m where
-  encodeKind = pure . ResScalar . serialize . unContextValue
+instance (EncodeWrapper f, Encode o e m a, Monad m) => EncodeKind WRAPPER (f a) o e m where
+  encodeKind = encodeWrapper encode . unContextValue
+
+instance (EncodeScalar a, Monad m) => EncodeKind SCALAR a o e m where
+  encodeKind = pure . ResScalar . encodeScalar . unContextValue
 
 instance EncodeConstraint o e m a => EncodeKind TYPE a o e m where
   encodeKind = pure . exploreResolvers . unContextValue
