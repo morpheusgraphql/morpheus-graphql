@@ -29,10 +29,10 @@ import Relude
 -- | GraphQL Wrapper Serializer
 class EncodeWrapper (f :: * -> *) where
   encodeWrapper ::
-    (Monad resolverM) =>
-    (a -> resolverM (ResModel o e m)) ->
+    (Monad m) =>
+    (a -> m (ResModel o e m1)) ->
     f a ->
-    resolverM (ResModel o e m)
+    m (ResModel o e m1)
 
 withList ::
   ( EncodeWrapper f,
