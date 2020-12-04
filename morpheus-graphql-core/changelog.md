@@ -2,7 +2,13 @@
 
 ## 0.17.0 - Unreleased
 
-### Breaking Changes
+### New features
+
+- exposed `Data.Morpheus.Types.GQLWrapper` with `EncodeWrapper` and `DecodeWrapper` type-classes.
+
+### Breaking changes
+
+- `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
 
 - `Value.Float` is now `Double` instead of `Float`.
 
