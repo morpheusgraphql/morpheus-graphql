@@ -17,9 +17,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( LiftOperation,
-    ResModel (..),
-    Resolver,
+  ( ResModel (..),
     SubscriptionField (..),
   )
 import qualified Data.Sequence as Seq
@@ -31,20 +29,19 @@ import Relude
 -- | GraphQL Wrapper Serializer
 class EncodeWrapper (f :: * -> *) where
   encodeWrapper ::
-    (LiftOperation o, Monad m) =>
-    (a -> Resolver o e m (ResModel o e m)) ->
+    (Monad resolverM) =>
+    (a -> resolverM (ResModel o e m)) ->
     f a ->
-    Resolver o e m (ResModel o e m)
+    resolverM (ResModel o e m)
 
 withList ::
   ( EncodeWrapper f,
-    LiftOperation o,
-    Monad m
+    Monad resolver
   ) =>
   (a -> f b) ->
-  (b -> Resolver o e m (ResModel o e m)) ->
+  (b -> resolver (ResModel o e m)) ->
   a ->
-  Resolver o e m (ResModel o e m)
+  resolver (ResModel o e m)
 withList f encodeValue = encodeWrapper encodeValue . f
 
 instance EncodeWrapper Maybe where
