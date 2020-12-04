@@ -2,10 +2,6 @@
 
 ## 0.17.0 - Unreleased
 
-### New features
-
-- exposed `EncodeWrapper` and `DecodeWrapper` type-classes.
-
 ### Breaking changes
 
 - `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
