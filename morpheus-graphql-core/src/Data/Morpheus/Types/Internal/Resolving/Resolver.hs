@@ -52,8 +52,6 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldName,
-    GQLErrors,
-    GQLValue (..),
     InternalError,
     MUTATION,
     Message,
@@ -259,7 +257,7 @@ runResolver toChannel (ResolverS resT) ctx = ResultT $ do
       Success
         { events = [result],
           warnings,
-          result = gqlNull
+          result = Null
         }
 
 toEventResolver :: Monad m => ResolverContext -> SubEventRes event m ValidValue -> (event -> m GQLResponse)

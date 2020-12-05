@@ -34,7 +34,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLErrors,
-    GQLValue (..),
     InternalError,
     Message,
     ObjectEntry (..),
@@ -49,6 +48,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     ValidValue,
     ValidationErrors,
+    Value (..),
     Value (..),
     msg,
     toGQLError,
@@ -132,7 +132,7 @@ lookupRes Selection {selectionName}
     pure . Scalar . String . readTypeName . __typename
   | otherwise =
     maybe
-      (pure gqlNull)
+      (pure Null)
       (>>= runDataResolver)
       . HM.lookup selectionName
       . objectFields
@@ -190,7 +190,7 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
     -- Object -----------------
     encodeNode objDrv@(ResObject ObjectResModel {__typename}) _ = withObject __typename (`resolveObject` objDrv) sel
     -- ENUM
-    encodeNode (ResEnum enum) SelectionField = pure $ gqlString $ readTypeName enum
+    encodeNode (ResEnum enum) SelectionField = pure $ Scalar $ String $ readTypeName enum
     encodeNode (ResEnum name) unionSel@UnionSelection {} =
       encodeNode (mkUnion name mkEnumNull) unionSel
     encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)

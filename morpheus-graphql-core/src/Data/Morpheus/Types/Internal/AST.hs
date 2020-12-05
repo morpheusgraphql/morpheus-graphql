@@ -19,7 +19,6 @@ module Data.Morpheus.Types.Internal.AST
     Value (..),
     ScalarValue (..),
     Object,
-    GQLValue (..),
     replaceValue,
     decodeScientific,
     convertToJSONName,
