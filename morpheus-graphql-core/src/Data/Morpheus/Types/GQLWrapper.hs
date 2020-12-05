@@ -30,18 +30,18 @@ import Relude
 class EncodeWrapper (f :: * -> *) where
   encodeWrapper ::
     (Monad m) =>
-    (a -> m (ResModel o e m1)) ->
+    (a -> m (ResModel m)) ->
     f a ->
-    m (ResModel o e m1)
+    m (ResModel m)
 
 withList ::
   ( EncodeWrapper f,
-    Monad resolver
+    Monad m
   ) =>
   (a -> f b) ->
-  (b -> resolver (ResModel o e m)) ->
+  (b -> m (ResModel m)) ->
   a ->
-  resolver (ResModel o e m)
+  m (ResModel m)
 withList f encodeValue = encodeWrapper encodeValue . f
 
 instance EncodeWrapper Maybe where

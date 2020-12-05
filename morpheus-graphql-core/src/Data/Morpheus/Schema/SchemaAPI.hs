@@ -17,7 +17,8 @@ import Data.Morpheus.Internal.Utils
     selectOr,
   )
 import Data.Morpheus.Rendering.RenderIntrospection
-  ( createObjectType,
+  ( WithSchema,
+    createObjectType,
     render,
   )
 import Data.Morpheus.Schema.Schema
@@ -47,28 +48,27 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Relude hiding (empty)
 
-resolveTypes ::
-  Monad m => Schema VALID -> Resolver QUERY e m (ResModel QUERY e m)
+resolveTypes :: (Monad m, WithSchema m) => Schema VALID -> m (ResModel m)
 resolveTypes schema = mkList <$> traverse render (elems schema)
 
 renderOperation ::
-  Monad m =>
+  (Monad m, WithSchema m) =>
   Maybe (TypeDefinition OBJECT VALID) ->
-  Resolver QUERY e m (ResModel QUERY e m)
+  m (ResModel m)
 renderOperation (Just TypeDefinition {typeName}) = pure $ createObjectType typeName Nothing [] empty
 renderOperation Nothing = pure mkNull
 
 findType ::
-  Monad m =>
+  (Monad m, WithSchema m) =>
   TypeName ->
   Schema VALID ->
-  Resolver QUERY e m (ResModel QUERY e m)
+  m (ResModel m)
 findType = selectOr (pure mkNull) render
 
 schemaResolver ::
-  Monad m =>
+  (Monad m, WithSchema m) =>
   Schema VALID ->
-  Resolver QUERY e m (ResModel QUERY e m)
+  m (ResModel m)
 schemaResolver schema@Schema {query, mutation, subscription, directiveDefinitions} =
   pure $
     mkObject
@@ -80,7 +80,7 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("directives", render directiveDefinitions)
       ]
 
-schemaAPI :: Monad m => Schema VALID -> ResModel QUERY e m
+schemaAPI :: Monad m => Schema VALID -> ResModel (Resolver QUERY e m)
 schemaAPI schema =
   mkObject
     "Root"

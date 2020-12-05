@@ -17,6 +17,7 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverValue
     mkEnumNull,
     resolveObject,
     FieldResModel,
+    mkObject,
   )
 where
 

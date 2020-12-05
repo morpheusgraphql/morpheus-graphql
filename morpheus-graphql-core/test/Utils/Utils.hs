@@ -41,7 +41,6 @@ import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     ResModel,
     RootResModel (..),
-    WithOperation,
     mkNull,
     mkValue,
     resultOr,
@@ -154,12 +153,11 @@ getResolver (FieldName p) = do
       }
 
 lookupRes ::
-  ( WithOperation o,
-    Monad m
+  ( Monad m
   ) =>
   Text ->
   Value ->
-  ResModel o e m
+  ResModel m
 lookupRes name (Object fields) = maybe mkNull mkValue (lookup name fields)
 lookupRes _ _ = mkNull
 
