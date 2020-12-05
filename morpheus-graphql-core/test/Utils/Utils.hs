@@ -39,7 +39,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    ResModel,
+    ResolvedValue,
     RootResModel (..),
     mkNull,
     mkValue,
@@ -157,7 +157,7 @@ lookupRes ::
   ) =>
   Text ->
   Value ->
-  ResModel m
+  ResolvedValue m
 lookupRes name (Object fields) = maybe mkNull mkValue (lookup name fields)
 lookupRes _ _ = mkNull
 

@@ -14,8 +14,8 @@ module Data.Morpheus.Types.Internal.Resolving
     Result (..),
     ResultT (..),
     unpackEvents,
-    ObjectResModel (..),
-    ResModel (..),
+    ResolvedObjectValue (..),
+    ResolvedValue (..),
     WithOperation,
     PushEvents (..),
     subscribe,
@@ -39,7 +39,7 @@ module Data.Morpheus.Types.Internal.Resolving
     ResolverState,
     liftResolverState,
     mkValue,
-    FieldResModel,
+    ResolvedObjectEntry,
     sortErrors,
     EventHandler (..),
   )
@@ -67,22 +67,22 @@ import qualified Data.Vector as V
   )
 import Relude
 
-mkString :: Token -> ResModel m
+mkString :: Token -> ResolvedValue m
 mkString = ResScalar . String
 
-mkFloat :: Double -> ResModel m
+mkFloat :: Double -> ResolvedValue m
 mkFloat = ResScalar . Float
 
-mkInt :: Int -> ResModel m
+mkInt :: Int -> ResolvedValue m
 mkInt = ResScalar . Int
 
-mkBoolean :: Bool -> ResModel m
+mkBoolean :: Bool -> ResolvedValue m
 mkBoolean = ResScalar . Boolean
 
-mkList :: [ResModel m] -> ResModel m
+mkList :: [ResolvedValue m] -> ResolvedValue m
 mkList = ResList
 
-mkNull :: ResModel m
+mkNull :: ResolvedValue m
 mkNull = ResNull
 
 unPackName :: A.Value -> TypeName
@@ -92,7 +92,7 @@ unPackName _ = "__JSON__"
 mkValue ::
   (Monad m) =>
   A.Value ->
-  ResModel m
+  ResolvedValue m
 mkValue (A.Object v) =
   mkObject
     (maybe "__JSON__" unPackName $ HM.lookup "__typename" v)

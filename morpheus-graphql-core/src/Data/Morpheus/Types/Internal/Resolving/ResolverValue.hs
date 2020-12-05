@@ -10,13 +10,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving.ResolverValue
-  ( ResModel (..),
-    ObjectResModel (..),
+  ( ResolvedValue (..),
+    ResolvedObjectValue (..),
     mkUnion,
     mkEnum,
     mkEnumNull,
     resolveObject,
-    FieldResModel,
+    ResolvedObjectEntry,
     mkObject,
   )
 where
@@ -61,15 +61,15 @@ import Data.Morpheus.Types.Internal.Resolving.ResolverState
 import Relude hiding (Show, empty)
 import Prelude (Show (..))
 
-data ResModel (m :: * -> *)
+data ResolvedValue (m :: * -> *)
   = ResNull
   | ResScalar ScalarValue
   | ResEnum TypeName
-  | ResObject (ObjectResModel m)
-  | ResList [ResModel m]
-  | ResUnion TypeName (m (ResModel m))
+  | ResObject (ResolvedObjectValue m)
+  | ResList [ResolvedValue m]
+  | ResUnion TypeName (m (ResolvedValue m))
 
-instance Show (ResModel m) where
+instance Show (ResolvedValue m) where
   show _ = "TODO:"
 
 instance
@@ -78,7 +78,7 @@ instance
     Failure InternalError f,
     Failure InternalError m
   ) =>
-  SemigroupM f (ResModel m)
+  SemigroupM f (ResolvedValue m)
   where
   mergeM _ ResNull ResNull = pure ResNull
   mergeM _ ResScalar {} x@ResScalar {} = pure x
@@ -86,14 +86,14 @@ instance
   mergeM p (ResObject x) (ResObject y) = ResObject <$> mergeM p x y
   mergeM _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
 
-type FieldResModel m = (FieldName, m (ResModel m))
+type ResolvedObjectEntry m = (FieldName, m (ResolvedValue m))
 
-data ObjectResModel m = ObjectResModel
+data ResolvedObjectValue m = ResolvedObjectValue
   { __typename :: TypeName,
-    objectFields :: HashMap FieldName (m (ResModel m))
+    objectFields :: HashMap FieldName (m (ResolvedValue m))
   }
 
-instance Show (ObjectResModel m) where
+instance Show (ResolvedObjectValue m) where
   show _ = "TODO:"
 
 instance
@@ -101,10 +101,10 @@ instance
     Applicative f,
     Failure InternalError m
   ) =>
-  SemigroupM f (ObjectResModel m)
+  SemigroupM f (ResolvedObjectValue m)
   where
-  mergeM path (ObjectResModel tyname x) (ObjectResModel _ y) =
-    pure $ ObjectResModel tyname (HM.unionWith (mergeResolver path) x y)
+  mergeM path (ResolvedObjectValue tyname x) (ResolvedObjectValue _ y) =
+    pure $ ResolvedObjectValue tyname (HM.unionWith (mergeResolver path) x y)
 
 mergeResolver ::
   (Monad m, SemigroupM m a) =>
@@ -125,7 +125,7 @@ lookupRes ::
     Failure InternalError m
   ) =>
   Selection VALID ->
-  ObjectResModel m ->
+  ResolvedObjectValue m ->
   m ValidValue
 lookupRes Selection {selectionName}
   | selectionName == "__typename" =
@@ -140,8 +140,8 @@ lookupRes Selection {selectionName}
 mkUnion ::
   (Monad m) =>
   TypeName ->
-  [FieldResModel m] ->
-  ResModel m
+  [ResolvedObjectEntry m] ->
+  ResolvedValue m
 mkUnion name =
   ResUnion
     name
@@ -149,19 +149,19 @@ mkUnion name =
     . mkObject
       name
 
-mkEnum :: TypeName -> ResModel m
+mkEnum :: TypeName -> ResolvedValue m
 mkEnum = ResEnum
 
-mkEnumNull :: (Monad m) => [FieldResModel m]
+mkEnumNull :: (Monad m) => [ResolvedObjectEntry m]
 mkEnumNull = [(unitFieldName, pure $ mkEnum unitTypeName)]
 
 mkObject ::
   TypeName ->
-  [FieldResModel m] ->
-  ResModel m
+  [ResolvedObjectEntry m] ->
+  ResolvedValue m
 mkObject __typename fields =
   ResObject
-    ( ObjectResModel
+    ( ResolvedObjectValue
         { __typename,
           objectFields = HM.fromList fields
         }
@@ -176,19 +176,19 @@ __encode ::
     Failure ValidationErrors m,
     Failure InternalError m
   ) =>
-  ResModel m ->
+  ResolvedValue m ->
   Selection VALID ->
   m (Value VALID)
 __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
   where
     -- LIST
     encodeNode ::
-      ResModel m ->
+      ResolvedValue m ->
       SelectionContent VALID ->
       m (Value VALID)
     encodeNode (ResList x) _ = List <$> traverse runDataResolver x
     -- Object -----------------
-    encodeNode objDrv@(ResObject ObjectResModel {__typename}) _ = withObject __typename (`resolveObject` objDrv) sel
+    encodeNode objDrv@(ResObject ResolvedObjectValue {__typename}) _ = withObject __typename (`resolveObject` objDrv) sel
     -- ENUM
     encodeNode (ResEnum enum) SelectionField = pure $ Scalar $ String $ readTypeName enum
     encodeNode (ResEnum name) unionSel@UnionSelection {} =
@@ -215,7 +215,7 @@ runDataResolver ::
     Failure ValidationErrors m,
     Failure InternalError m
   ) =>
-  ResModel m ->
+  ResolvedValue m ->
   m ValidValue
 runDataResolver res = asks currentSelection >>= __encode res
 
@@ -247,9 +247,9 @@ resolveObject ::
     Failure Message m
   ) =>
   SelectionSet VALID ->
-  ResModel m ->
+  ResolvedValue m ->
   m ValidValue
-resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
+resolveObject selectionSet (ResObject drv@ResolvedObjectValue {__typename}) =
   Object <$> traverseCollection resolver selectionSet
   where
     resolver :: Selection VALID -> m (ObjectEntry VALID)

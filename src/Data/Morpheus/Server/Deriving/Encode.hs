@@ -79,9 +79,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( FieldResModel,
-    LiftOperation,
-    ResModel (..),
+  ( LiftOperation,
+    ResolvedObjectEntry,
+    ResolvedValue (..),
     Resolver,
     ResolverState,
     RootResModel (..),
@@ -106,7 +106,7 @@ newtype ContextValue (kind :: GQL_KIND) a = ContextValue
   }
 
 class Encode (m :: * -> *) resolver where
-  encode :: resolver -> m (ResModel m)
+  encode :: resolver -> m (ResolvedValue m)
 
 instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) m a) => Encode m a where
   encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
@@ -140,7 +140,7 @@ instance (Monad m, Encode (Resolver o e m) b, LiftOperation o) => Encode (Resolv
 
 -- ENCODE GQL KIND
 class EncodeKind (kind :: GQL_KIND) (m :: * -> *) (a :: *) where
-  encodeKind :: ContextValue kind a -> m (ResModel m)
+  encodeKind :: ContextValue kind a -> m (ResolvedValue m)
 
 instance (EncodeWrapper f, Encode m a, Monad m) => EncodeKind WRAPPER m (f a) where
   encodeKind = encodeWrapper encode . unContextValue
@@ -156,8 +156,8 @@ instance EncodeConstraint m a => EncodeKind INTERFACE m a where
 
 convertNode ::
   Monad m =>
-  DataType (m (ResModel m)) ->
-  ResModel m
+  DataType (m (ResolvedValue m)) ->
+  ResolvedValue m
 convertNode
   DataType
     { tyName,
@@ -181,12 +181,12 @@ exploreResolvers ::
   ( EncodeConstraint m a
   ) =>
   a ->
-  ResModel m
+  ResolvedValue m
 exploreResolvers =
   convertNode
     . toValue
       ( TypeConstraint (encode . runIdentity) ::
-          TypeConstraint (Encode m) (m (ResModel m)) Identity
+          TypeConstraint (Encode m) (m (ResolvedValue m)) Identity
       )
       (Proxy @IN)
 
@@ -194,7 +194,7 @@ exploreResolvers =
 objectResolvers ::
   (EncodeConstraint m a) =>
   a ->
-  ResolverState (ResModel m)
+  ResolverState (ResolvedValue m)
 objectResolvers value = constraintObject (exploreResolvers value)
   where
     constraintObject obj@ResObject {} =
@@ -206,7 +206,7 @@ type EncodeConstraint (m :: * -> *) a =
   ( Monad m,
     GQLType a,
     Generic a,
-    TypeRep (Encode m) (m (ResModel m)) (Rep a)
+    TypeRep (Encode m) (m (ResolvedValue m)) (Rep a)
   )
 
 type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
@@ -219,7 +219,7 @@ type EncodeConstraints e m query mut sub =
     EncodeObjectConstraint SUBSCRIPTION e m sub
   )
 
-toFieldRes :: FieldRep (m (ResModel m)) -> FieldResModel m
+toFieldRes :: FieldRep (m (ResolvedValue m)) -> ResolvedObjectEntry m
 toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
 
 deriveModel ::
