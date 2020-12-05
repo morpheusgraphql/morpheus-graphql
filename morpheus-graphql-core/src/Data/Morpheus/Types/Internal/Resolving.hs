@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving
     subscribe,
     ResolverContext (..),
     unsafeInternalContext,
-    RootResModel (..),
+    ResolverRootValue (..),
     resultOr,
     withArguments,
     -- Dynamic Resolver

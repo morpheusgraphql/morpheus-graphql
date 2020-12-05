@@ -29,7 +29,7 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     ResolverContext (..),
     unsafeInternalContext,
     runRootResModel,
-    RootResModel (..),
+    ResolverRootValue (..),
     withArguments,
     getArguments,
     SubscriptionField (..),
@@ -255,7 +255,7 @@ subscriptionEvents ctx Nothing _ = failure [resolverFailureMessage ctx "channel 
 
 -- Resolver Models -------------------------------------------------------------------
 
-data RootResModel e m = RootResModel
+data ResolverRootValue e m = ResolverRootValue
   { query :: ResolverState (ResolverValue (Resolver QUERY e m)),
     mutation :: ResolverState (ResolverValue (Resolver MUTATION e m)),
     subscription :: ResolverState (ResolverValue (Resolver SUBSCRIPTION e m)),
@@ -276,9 +276,9 @@ runRootDataResolver
       root <- runResolverStateT (toResolverStateT res) ctx
       runResolver channels (resolveObject operationSelection root) ctx
 
-runRootResModel :: Monad m => RootResModel e m -> ResolverContext -> ResponseStream e m (Value VALID)
+runRootResModel :: Monad m => ResolverRootValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResModel
-  RootResModel
+  ResolverRootValue
     { query,
       mutation,
       subscription,
