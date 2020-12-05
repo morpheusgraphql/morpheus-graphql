@@ -19,19 +19,7 @@ module Data.Morpheus.Server.Deriving.Encode
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad ((>>=)))
-import Data.Functor (fmap)
-import Data.Functor.Identity (Identity (..))
-import Data.Map (Map)
 import qualified Data.Map as M
-  ( toList,
-  )
-import Data.Maybe
-  ( Maybe (..),
-  )
 import Data.Morpheus.Kind
   ( GQL_KIND,
     INTERFACE,
@@ -58,9 +46,7 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
-  ( MapKind,
-    Pair (..),
-    mapKindFromList,
+  ( Pair (..),
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
@@ -91,15 +77,10 @@ import Data.Morpheus.Types.Internal.Resolving
     mkObject,
     mkUnion,
   )
-import Data.Proxy (Proxy (..))
 import GHC.Generics
   ( Generic (..),
   )
-import Prelude
-  ( ($),
-    (.),
-    otherwise,
-  )
+import Relude
 
 newtype ContextValue (kind :: GQL_KIND) a = ContextValue
   { unContextValue :: a
@@ -116,8 +97,8 @@ instance Encode m (Pair k v) => Encode m (k, v) where
   encode (key, value) = encode (Pair key value)
 
 --  Map
-instance (Monad m, Encode m (MapKind k v m)) => Encode m (Map k v) where
-  encode value = encode ((mapKindFromList $ M.toList value) :: MapKind k v m)
+instance (Monad m, Encode m [Pair k v]) => Encode m (Map k v) where
+  encode value = encode ((uncurry Pair <$> M.toList value) :: [Pair k v])
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance

@@ -66,8 +66,7 @@ import Data.Morpheus.Server.Types.SchemaT
     toSchema,
   )
 import Data.Morpheus.Server.Types.Types
-  ( MapKind,
-    Pair,
+  ( Pair,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -188,8 +187,8 @@ instance DeriveType cat (Pair k v) => DeriveType cat (k, v) where
   deriveType = deriveTypeWith (Proxy @(Pair k v))
 
 -- Map
-instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
-  deriveType = deriveTypeWith (Proxy @(MapKind k v Maybe))
+instance DeriveType cat [Pair k v] => DeriveType cat (Map k v) where
+  deriveType = deriveTypeWith (Proxy @[Pair k v])
 
 -- Resolver : a -> Resolver b
 instance

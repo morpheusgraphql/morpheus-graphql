@@ -50,8 +50,7 @@ import Data.Morpheus.Server.Types.SchemaT
     TypeFingerprint (..),
   )
 import Data.Morpheus.Server.Types.Types
-  ( MapKind,
-    Pair,
+  ( Pair,
     Undefined (..),
   )
 import Data.Morpheus.Types.ID (ID)
@@ -287,6 +286,3 @@ instance GQLType b => GQLType (a -> b) where
   __type _ = __type $ Proxy @b
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
-
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (MapKind a b m) where
-  __type _ = __type $ Proxy @(Map a b)
