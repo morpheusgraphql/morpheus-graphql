@@ -16,6 +16,7 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverValue
     mkEnum,
     mkEnumNull,
     resolveObject,
+    FieldResModel,
   )
 where
 
@@ -30,20 +31,13 @@ import Data.Morpheus.Internal.Utils
     traverseCollection,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Arguments,
-    FieldName,
+  ( FieldName,
     GQLErrors,
     GQLValue (..),
     InternalError,
-    MUTATION,
     Message,
     ObjectEntry (..),
-    Operation (..),
-    OperationType,
-    OperationType (..),
-    QUERY,
     Ref,
-    SUBSCRIPTION,
     ScalarValue (..),
     Selection (..),
     SelectionContent (..),
