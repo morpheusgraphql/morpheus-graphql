@@ -94,11 +94,11 @@ instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) m a) => Encode m a where
 
 --  Tuple  (a,b)
 instance Encode m (Pair k v) => Encode m (k, v) where
-  encode (key, value) = encode (Pair key value)
+  encode = encode . uncurry Pair
 
 --  Map
 instance (Monad m, Encode m [Pair k v]) => Encode m (Map k v) where
-  encode value = encode (uncurry Pair <$> M.toList value)
+  encode = encode . fmap (uncurry Pair) . M.toList
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
