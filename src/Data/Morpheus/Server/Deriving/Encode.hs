@@ -148,10 +148,10 @@ instance (EncodeWrapper f, Encode m a, Monad m) => EncodeKind WRAPPER m (f a) wh
 instance (EncodeScalar a, Monad m) => EncodeKind SCALAR m a where
   encodeKind = pure . ResScalar . encodeScalar . unContextValue
 
-instance EncodeConstraint m a => EncodeKind TYPE m a where
+instance (EncodeConstraint m a, Monad m) => EncodeKind TYPE m a where
   encodeKind = pure . exploreResolvers . unContextValue
 
-instance EncodeConstraint m a => EncodeKind INTERFACE m a where
+instance (EncodeConstraint m a, Monad m) => EncodeKind INTERFACE m a where
   encodeKind = pure . exploreResolvers . unContextValue
 
 convertNode ::
@@ -178,7 +178,8 @@ convertNode
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::
   forall m a.
-  ( EncodeConstraint m a
+  ( EncodeConstraint m a,
+    Monad m
   ) =>
   a ->
   ResolverValue m
@@ -192,7 +193,9 @@ exploreResolvers =
 
 ----- HELPERS ----------------------------
 objectResolvers ::
-  (EncodeConstraint m a) =>
+  ( EncodeConstraint m a,
+    Monad m
+  ) =>
   a ->
   ResolverState (ResolverValue m)
 objectResolvers value = constraintObject (exploreResolvers value)
@@ -203,8 +206,7 @@ objectResolvers value = constraintObject (exploreResolvers value)
       failure ("resolver must be an object" :: InternalError)
 
 type EncodeConstraint (m :: * -> *) a =
-  ( Monad m,
-    GQLType a,
+  ( GQLType a,
     Generic a,
     TypeRep (Encode m) (m (ResolverValue m)) (Rep a)
   )
