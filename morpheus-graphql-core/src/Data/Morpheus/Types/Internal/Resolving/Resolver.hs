@@ -38,45 +38,22 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
 where
 
 import Control.Monad.Trans.Reader (mapReaderT)
-import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
-import Data.Morpheus.Internal.Utils
-  ( empty,
-    keyOf,
-    selectOr,
-    traverseCollection,
-  )
 import Data.Morpheus.Types.IO
   ( GQLResponse,
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
-    FieldName,
-    InternalError,
     MUTATION,
-    Message,
-    ObjectEntry (..),
     Operation (..),
-    OperationType,
     OperationType (..),
     QUERY,
-    Ref,
     SUBSCRIPTION,
-    ScalarValue (..),
     Selection (..),
-    SelectionContent (..),
-    SelectionSet,
-    TypeName (..),
-    UnionSelection,
-    UnionTag (..),
     VALID,
     ValidValue,
-    ValidationErrors,
     Value (..),
     msg,
-    toGQLError,
-    unitFieldName,
-    unitTypeName,
   )
 import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
