@@ -24,7 +24,7 @@ module Data.Morpheus.Types.Internal.AST.Value
     RawObject,
     ValidObject,
     Variable (..),
-    ResolvedValue,
+    ResolverValue,
     ResolvedObject,
     VariableContent (..),
     ObjectEntry (..),
@@ -120,7 +120,7 @@ instance A.FromJSON ScalarValue where
   parseJSON notScalar = fail $ "Expected Scalar got :" <> show notScalar
 
 data VariableContent (stage :: Stage) where
-  DefaultValue :: Maybe ResolvedValue -> VariableContent CONST
+  DefaultValue :: Maybe ResolverValue -> VariableContent CONST
   ValidVariableValue :: {validVarContent :: ValidValue} -> VariableContent VALID
 
 instance Lift (VariableContent a) where
@@ -196,7 +196,7 @@ type RawValue = Value RAW
 
 type ValidValue = Value VALID
 
-type ResolvedValue = Value CONST
+type ResolverValue = Value CONST
 
 deriving instance Lift (Value a)
 

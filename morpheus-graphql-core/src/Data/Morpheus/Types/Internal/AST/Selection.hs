@@ -89,7 +89,7 @@ import Data.Morpheus.Types.Internal.AST.TypeSystem
     TypeDefinition (..),
   )
 import Data.Morpheus.Types.Internal.AST.Value
-  ( ResolvedValue,
+  ( ResolverValue,
     Variable (..),
     VariableDefinitions,
   )
@@ -304,7 +304,7 @@ deriving instance Lift (Selection a)
 
 deriving instance Eq (Selection a)
 
-type DefaultValue = Maybe ResolvedValue
+type DefaultValue = Maybe ResolverValue
 
 data Operation (s :: Stage) = Operation
   { operationPosition :: Position,

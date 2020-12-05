@@ -37,8 +37,8 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ResolvedValue,
-    Resolver,
+  ( Resolver,
+    ResolverValue,
     ResultT,
     RootResModel (..),
     mkList,
@@ -48,13 +48,13 @@ import Data.Morpheus.Types.Internal.Resolving
   )
 import Relude hiding (empty)
 
-resolveTypes :: (Monad m, WithSchema m) => Schema VALID -> m (ResolvedValue m)
+resolveTypes :: (Monad m, WithSchema m) => Schema VALID -> m (ResolverValue m)
 resolveTypes schema = mkList <$> traverse render (elems schema)
 
 renderOperation ::
   (Monad m, WithSchema m) =>
   Maybe (TypeDefinition OBJECT VALID) ->
-  m (ResolvedValue m)
+  m (ResolverValue m)
 renderOperation (Just TypeDefinition {typeName}) = pure $ createObjectType typeName Nothing [] empty
 renderOperation Nothing = pure mkNull
 
@@ -62,13 +62,13 @@ findType ::
   (Monad m, WithSchema m) =>
   TypeName ->
   Schema VALID ->
-  m (ResolvedValue m)
+  m (ResolverValue m)
 findType = selectOr (pure mkNull) render
 
 schemaResolver ::
   (Monad m, WithSchema m) =>
   Schema VALID ->
-  m (ResolvedValue m)
+  m (ResolverValue m)
 schemaResolver schema@Schema {query, mutation, subscription, directiveDefinitions} =
   pure $
     mkObject
@@ -80,7 +80,7 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("directives", render directiveDefinitions)
       ]
 
-schemaAPI :: Monad m => Schema VALID -> ResolvedValue (Resolver QUERY e m)
+schemaAPI :: Monad m => Schema VALID -> ResolverValue (Resolver QUERY e m)
 schemaAPI schema =
   mkObject
     "Root"

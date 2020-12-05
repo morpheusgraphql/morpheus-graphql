@@ -61,9 +61,9 @@ import Data.Morpheus.Types.Internal.AST
     toGQLWrapper,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ResolvedValue,
-    Resolver,
+  ( Resolver,
     ResolverContext (..),
+    ResolverValue,
     mkBoolean,
     mkList,
     mkNull,
@@ -95,7 +95,7 @@ selectType name =
     >>= selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> msg name <> "\"") name
 
 class RenderIntrospection a where
-  render :: (Monad m, WithSchema m) => a -> m (ResolvedValue m)
+  render :: (Monad m, WithSchema m) => a -> m (ResolverValue m)
 
 instance RenderIntrospection TypeName where
   render = pure . mkString . readTypeName
@@ -152,15 +152,15 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
             WithSchema m
           ) =>
           TypeKind ->
-          [(FieldName, m (ResolvedValue m))] ->
-          ResolvedValue m
+          [(FieldName, m (ResolverValue m))] ->
+          ResolverValue m
         __type kind = mkType kind typeName typeDescription
         renderContent ::
           ( Monad m,
             WithSchema m
           ) =>
           TypeContent bool a VALID ->
-          ResolvedValue m
+          ResolverValue m
         renderContent DataScalar {} = __type KindScalar []
         renderContent (DataEnum enums) = __type KindEnum [("enumValues", render enums)]
         renderContent (DataInputObject inputFiels) =
@@ -260,8 +260,8 @@ instance RenderIntrospection TypeRef where
           WithSchema m
         ) =>
         DataTypeWrapper ->
-        ResolvedValue m ->
-        ResolvedValue m
+        ResolverValue m ->
+        ResolverValue m
       wrap wrapper contentType =
         mkObject
           "__Type"
@@ -274,7 +274,7 @@ instance RenderIntrospection TypeRef where
 renderPossibleTypes ::
   (Monad m, WithSchema m) =>
   TypeName ->
-  m (ResolvedValue m)
+  m (ResolverValue m)
 renderPossibleTypes name =
   mkList
     <$> ( getSchema
@@ -286,7 +286,7 @@ renderDeprecated ::
     WithSchema m
   ) =>
   Directives s ->
-  [(FieldName, m (ResolvedValue m))]
+  [(FieldName, m (ResolverValue m))]
 renderDeprecated dirs =
   [ ("isDeprecated", render (isJust $ lookupDeprecated dirs)),
     ("deprecationReason", render (lookupDeprecated dirs >>= lookupDeprecatedReason))
@@ -297,7 +297,7 @@ description ::
     WithSchema m
   ) =>
   Maybe Description ->
-  (FieldName, m (ResolvedValue m))
+  (FieldName, m (ResolverValue m))
 description = ("description",) . render
 
 mkType ::
@@ -308,8 +308,8 @@ mkType ::
   TypeKind ->
   name ->
   Maybe Description ->
-  [(FieldName, m (ResolvedValue m))] ->
-  ResolvedValue m
+  [(FieldName, m (ResolverValue m))] ->
+  ResolverValue m
 mkType kind name desc etc =
   mkObject
     "__Type"
@@ -326,14 +326,14 @@ createObjectType ::
   Maybe Description ->
   [TypeName] ->
   FieldsDefinition OUT VALID ->
-  ResolvedValue m
+  ResolverValue m
 createObjectType name desc interfaces fields =
   mkType (KindObject Nothing) name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
 
 implementedInterface ::
   (Monad m, WithSchema m) =>
   TypeName ->
-  m (ResolvedValue m)
+  m (ResolverValue m)
 implementedInterface name =
   selectType name
     >>= renderContent
@@ -347,25 +347,25 @@ renderName ::
     WithSchema m
   ) =>
   name ->
-  (FieldName, m (ResolvedValue m))
+  (FieldName, m (ResolverValue m))
 renderName = ("name",) . render
 
 renderKind ::
   (Monad m, WithSchema m) =>
   TypeKind ->
-  (FieldName, m (ResolvedValue m))
+  (FieldName, m (ResolverValue m))
 renderKind = ("kind",) . render
 
 type' ::
   (Monad m, WithSchema m) =>
   TypeRef ->
-  (FieldName, m (ResolvedValue m))
+  (FieldName, m (ResolverValue m))
 type' = ("type",) . render
 
 defaultValue ::
   (Monad m, WithSchema m) =>
   Maybe (FieldContent TRUE IN VALID) ->
   ( FieldName,
-    m (ResolvedValue m)
+    m (ResolverValue m)
   )
 defaultValue = ("defaultValue",) . render

@@ -23,8 +23,8 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     subscribe,
     ResponseEvent (..),
     ResponseStream,
-    ResolvedObjectValue (..),
-    ResolvedValue (..),
+    ResolverObject (..),
+    ResolverValue (..),
     WithOperation,
     ResolverContext (..),
     unsafeInternalContext,
@@ -103,8 +103,8 @@ import Data.Morpheus.Types.Internal.Resolving.ResolverState
     toResolverStateT,
   )
 import Data.Morpheus.Types.Internal.Resolving.ResolverValue
-  ( ResolvedObjectValue (..),
-    ResolvedValue (..),
+  ( ResolverObject (..),
+    ResolverValue (..),
     resolveObject,
   )
 import Relude hiding
@@ -279,16 +279,16 @@ subscriptionEvents ctx Nothing _ = failure [resolverFailureMessage ctx "channel 
 -- Resolver Models -------------------------------------------------------------------
 
 data RootResModel e m = RootResModel
-  { query :: ResolverState (ResolvedValue (Resolver QUERY e m)),
-    mutation :: ResolverState (ResolvedValue (Resolver MUTATION e m)),
-    subscription :: ResolverState (ResolvedValue (Resolver SUBSCRIPTION e m)),
+  { query :: ResolverState (ResolverValue (Resolver QUERY e m)),
+    mutation :: ResolverState (ResolverValue (Resolver MUTATION e m)),
+    subscription :: ResolverState (ResolverValue (Resolver SUBSCRIPTION e m)),
     channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
-  ResolverState (ResolvedValue (Resolver o e m)) ->
+  ResolverState (ResolverValue (Resolver o e m)) ->
   ResolverContext ->
   ResponseStream e m (Value VALID)
 runRootDataResolver

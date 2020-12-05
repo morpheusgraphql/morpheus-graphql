@@ -17,7 +17,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Resolving
-  ( ResolvedValue (..),
+  ( ResolverValue (..),
     SubscriptionField (..),
   )
 import qualified Data.Sequence as Seq
@@ -30,18 +30,18 @@ import Relude
 class EncodeWrapper (wrapper :: * -> *) where
   encodeWrapper ::
     (Monad m) =>
-    (a -> m (ResolvedValue m)) ->
+    (a -> m (ResolverValue m)) ->
     wrapper a ->
-    m (ResolvedValue m)
+    m (ResolverValue m)
 
 withList ::
   ( EncodeWrapper f,
     Monad m
   ) =>
   (a -> f b) ->
-  (b -> m (ResolvedValue m)) ->
+  (b -> m (ResolverValue m)) ->
   a ->
-  m (ResolvedValue m)
+  m (ResolverValue m)
 withList f encodeValue = encodeWrapper encodeValue . f
 
 instance EncodeWrapper Maybe where

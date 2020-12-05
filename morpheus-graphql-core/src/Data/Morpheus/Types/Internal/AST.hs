@@ -28,7 +28,7 @@ module Data.Morpheus.Types.Internal.AST
     RawObject,
     ValidObject,
     ResolvedObject,
-    ResolvedValue,
+    ResolverValue,
     splitDuplicates,
     removeDuplicates,
     Argument (..),
@@ -180,10 +180,10 @@ import Data.Morpheus.Types.Internal.AST.Value
 import Language.Haskell.TH.Syntax (Lift)
 import Prelude (Show)
 
-type Variables = HashMap FieldName ResolvedValue
+type Variables = HashMap FieldName ResolverValue
 
 data GQLQuery = GQLQuery
-  { inputVariables :: [(FieldName, ResolvedValue)],
+  { inputVariables :: [(FieldName, ResolverValue)],
     operation :: Operation RAW,
     fragments :: Fragments RAW
   }
