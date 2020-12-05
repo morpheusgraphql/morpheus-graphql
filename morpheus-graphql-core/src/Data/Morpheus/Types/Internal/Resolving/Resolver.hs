@@ -34,16 +34,10 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     getArguments,
     SubscriptionField (..),
     liftResolverState,
-    mkObject,
-    mkUnion,
-    FieldResModel,
-    mkEnum,
   )
 where
 
 import Control.Monad.Trans.Reader (mapReaderT)
-import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.Error.Selection (subfieldsNotSelected)
 import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -58,6 +52,7 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     FieldName,
+    GQLErrors,
     GQLValue (..),
     InternalError,
     MUTATION,
@@ -78,6 +73,7 @@ import Data.Morpheus.Types.Internal.AST
     UnionTag (..),
     VALID,
     ValidValue,
+    ValidationErrors,
     Value (..),
     msg,
     toGQLError,
@@ -107,6 +103,11 @@ import Data.Morpheus.Types.Internal.Resolving.ResolverState
     runResolverStateM,
     runResolverStateT,
     toResolverStateT,
+  )
+import Data.Morpheus.Types.Internal.Resolving.ResolverValue
+  ( ObjectResModel (..),
+    ResModel (..),
+    resolveObject,
   )
 import Relude hiding
   ( Show,
@@ -242,111 +243,6 @@ getArguments ::
   Resolver o e m (Arguments VALID)
 getArguments = selectionArguments . currentSelection <$> unsafeInternalContext
 
-pickSelection :: TypeName -> UnionSelection VALID -> SelectionSet VALID
-pickSelection = selectOr empty unionTagSelection
-
-withObject ::
-  (LiftOperation o, Monad m) =>
-  TypeName ->
-  (SelectionSet VALID -> Resolver o e m value) ->
-  Selection VALID ->
-  Resolver o e m value
-withObject __typename f Selection {selectionName, selectionContent, selectionPosition} = checkContent selectionContent
-  where
-    checkContent (SelectionSet selection) = f selection
-    checkContent (UnionSelection unionSel) =
-      f (selectOr empty unionTagSelection __typename unionSel)
-    checkContent _ = failure [toGQLError $ subfieldsNotSelected selectionName "" selectionPosition]
-
-lookupRes ::
-  (LiftOperation o, Monad m) =>
-  Selection VALID ->
-  ObjectResModel o e m ->
-  Resolver o e m ValidValue
-lookupRes Selection {selectionName}
-  | selectionName == "__typename" =
-    pure . Scalar . String . readTypeName . __typename
-  | otherwise =
-    maybe
-      (pure gqlNull)
-      (>>= runDataResolver)
-      . HM.lookup selectionName
-      . objectFields
-
-type FieldResModel o e m = (FieldName, Resolver o e m (ResModel o e m))
-
-mkObject ::
-  TypeName ->
-  [FieldResModel o e m] ->
-  ResModel o e m
-mkObject __typename fields =
-  ResObject
-    ( ObjectResModel
-        { __typename,
-          objectFields = HM.fromList fields
-        }
-    )
-
-mkUnion ::
-  (LiftOperation o, Monad m) =>
-  TypeName ->
-  [FieldResModel o e m] ->
-  ResModel o e m
-mkUnion name =
-  ResUnion
-    name
-    . pure
-    . mkObject
-      name
-
-mkEnum :: TypeName -> ResModel o e m
-mkEnum = ResEnum
-
-mkEnumNull :: (LiftOperation o, Monad m) => [FieldResModel o e m]
-mkEnumNull = [(unitFieldName, pure $ mkEnum unitTypeName)]
-
-resolveObject ::
-  forall o e m.
-  (LiftOperation o, Monad m) =>
-  SelectionSet VALID ->
-  ResModel o e m ->
-  Resolver o e m ValidValue
-resolveObject selectionSet (ResObject drv@ObjectResModel {__typename}) =
-  Object <$> traverseCollection resolver selectionSet
-  where
-    resolver :: Selection VALID -> Resolver o e m (ObjectEntry VALID)
-    resolver currentSelection =
-      local (\ctx -> ctx {currentSelection, currentTypeName = __typename}) $
-        ObjectEntry (keyOf currentSelection) <$> lookupRes currentSelection drv
-resolveObject _ _ = packResolver $ failure ("expected object as resolver" :: InternalError)
-
-runDataResolver :: (Monad m, LiftOperation o) => ResModel o e m -> Resolver o e m ValidValue
-runDataResolver res = asks currentSelection >>= __encode res
-  where
-    __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
-      where
-        -- LIST
-        encodeNode (ResList x) _ = List <$> traverse runDataResolver x
-        -- Object -----------------
-        encodeNode objDrv@(ResObject ObjectResModel {__typename}) _ = withObject __typename (`resolveObject` objDrv) sel
-        -- ENUM
-        encodeNode (ResEnum enum) SelectionField = pure $ gqlString $ readTypeName enum
-        encodeNode (ResEnum name) unionSel@UnionSelection {} =
-          encodeNode (mkUnion name mkEnumNull) unionSel
-        encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)
-        -- UNION
-        encodeNode (ResUnion typename unionRef) (UnionSelection selections) =
-          unionRef >>= resolveObject currentSelection
-          where
-            currentSelection = pickSelection typename selections
-        encodeNode (ResUnion name _) _ =
-          failure ("union Resolver " <> msg name <> " should only recieve UnionSelection")
-        -- SCALARS
-        encodeNode ResNull _ = pure Null
-        encodeNode (ResScalar x) SelectionField = pure $ Scalar x
-        encodeNode ResScalar {} _ =
-          failure ("scalar Resolver should only recieve SelectionField" :: Message)
-
 runResolver ::
   Monad m =>
   Maybe (Selection VALID -> ResolverState (Channel event)) ->
@@ -384,66 +280,17 @@ subscriptionEvents ctx Nothing _ = failure [resolverFailureMessage ctx "channel 
 
 -- Resolver Models -------------------------------------------------------------------
 
-data ObjectResModel o e m = ObjectResModel
-  { __typename :: TypeName,
-    objectFields :: HashMap FieldName (Resolver o e m (ResModel o e m))
-  }
-  deriving (Show)
-
-instance
-  ( Monad m,
-    Applicative f,
-    LiftOperation o
-  ) =>
-  SemigroupM f (ObjectResModel o e m)
-  where
-  mergeM path (ObjectResModel tyname x) (ObjectResModel _ y) =
-    pure $ ObjectResModel tyname (HM.unionWith (mergeResolver path) x y)
-
-mergeResolver ::
-  (Monad m, SemigroupM (ResolverStateT e m) a, LiftOperation o) =>
-  [Ref] ->
-  Resolver o e m a ->
-  Resolver o e m a ->
-  Resolver o e m a
-mergeResolver path a b = do
-  a' <- a
-  b >>= packResolver . mergeM path a'
-
-data ResModel (o :: OperationType) e (m :: * -> *)
-  = ResNull
-  | ResScalar ScalarValue
-  | ResEnum TypeName
-  | ResObject (ObjectResModel o e m)
-  | ResList [ResModel o e m]
-  | ResUnion TypeName (Resolver o e m (ResModel o e m))
-  deriving (Show)
-
-instance
-  ( Monad f,
-    Monad m,
-    LiftOperation o,
-    Failure InternalError f
-  ) =>
-  SemigroupM f (ResModel o e m)
-  where
-  mergeM _ ResNull ResNull = pure ResNull
-  mergeM _ ResScalar {} x@ResScalar {} = pure x
-  mergeM _ ResEnum {} x@ResEnum {} = pure x
-  mergeM p (ResObject x) (ResObject y) = ResObject <$> mergeM p x y
-  mergeM _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
-
 data RootResModel e m = RootResModel
-  { query :: ResolverState (ResModel QUERY e m),
-    mutation :: ResolverState (ResModel MUTATION e m),
-    subscription :: ResolverState (ResModel SUBSCRIPTION e m),
+  { query :: ResolverState (ResModel (Resolver QUERY e m)),
+    mutation :: ResolverState (ResModel (Resolver MUTATION e m)),
+    subscription :: ResolverState (ResModel (Resolver SUBSCRIPTION e m)),
     channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
   }
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
-  ResolverState (ResModel o e m) ->
+  ResolverState (ResModel (Resolver o e m)) ->
   ResolverContext ->
   ResponseStream e m (Value VALID)
 runRootDataResolver
