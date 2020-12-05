@@ -22,7 +22,7 @@ schema =
   }
 |]
 
-resolver :: Monad m => RootResModel e m
+resolver :: Monad m => RootResolverValue e m
 resolver =
   RootResModel
     { query =
@@ -34,7 +34,7 @@ resolver =
       subscription = pure mkNull
     }
 
-resolveDeity :: (WithOperation o, Monad m) => Resolver o e m (ResModel o e m)
+resolveDeity :: Monad m => m (ResolverValue  m)
 resolveDeity =
   pure $
     mkObject

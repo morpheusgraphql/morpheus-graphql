@@ -36,8 +36,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeLib,
     ValidationErrors,
   )
-import Data.Morpheus.Types.Internal.Resolving (RootResModel)
-import qualified Data.Morpheus.Types.Internal.Resolving as R (RootResModel (..))
+import Data.Morpheus.Types.Internal.Resolving (RootResolverValue)
+import qualified Data.Morpheus.Types.Internal.Resolving as R (RootResolverValue (..))
 import Relude hiding (optional)
 
 equal :: (Eq a, Applicative m, Failure ValidationErrors m) => ValidationErrors -> a -> a -> m a
@@ -126,11 +126,11 @@ stitchSubscriptions Just {} Just {} = failure (["can't merge  subscription appli
 stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
 
-instance Monad m => Stitching (RootResModel e m) where
+instance Monad m => Stitching (RootResolverValue e m) where
   stitch x y = do
     channelMap <- stitchSubscriptions (R.channelMap x) (R.channelMap y)
     pure $
-      R.RootResModel
+      R.RootResolverValue
         { R.query = rootProp R.query x y,
           R.mutation = rootProp R.mutation x y,
           R.subscription = rootProp R.subscription x y,

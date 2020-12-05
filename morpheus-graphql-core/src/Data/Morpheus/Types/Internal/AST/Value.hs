@@ -17,7 +17,6 @@ module Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
     ScalarValue (..),
     Object,
-    GQLValue (..),
     replaceValue,
     decodeScientific,
     RawValue,
@@ -255,36 +254,29 @@ decodeScientific v = case floatingOrInteger v of
   Right int -> Int int
 
 replaceValue :: A.Value -> Value a
-replaceValue (A.Bool v) = gqlBoolean v
+replaceValue (A.Bool v) = mkBoolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
-replaceValue (A.String v) = gqlString v
+replaceValue (A.String v) = mkString v
 replaceValue (A.Object v) =
-  gqlObject $
+  mkObject $
     fmap
       (mapTuple FieldName replaceValue)
       (M.toList v)
-replaceValue (A.Array li) = gqlList (fmap replaceValue (V.toList li))
-replaceValue A.Null = gqlNull
+replaceValue (A.Array li) = List (fmap replaceValue (V.toList li))
+replaceValue A.Null = Null
 
 instance A.FromJSON (Value a) where
   parseJSON = pure . replaceValue
 
 -- DEFAULT VALUES
-class GQLValue a where
-  gqlNull :: a
-  gqlScalar :: ScalarValue -> a
-  gqlBoolean :: Bool -> a
-  gqlString :: Text -> a
-  gqlList :: [a] -> a
-  gqlObject :: [(FieldName, a)] -> a
 
--- build GQL Values for Subscription Resolver
-instance GQLValue (Value a) where
-  gqlNull = Null
-  gqlScalar = Scalar
-  gqlBoolean = Scalar . Boolean
-  gqlString = Scalar . String
-  gqlList = List
-  gqlObject = Object . unsafeFromList . fmap toEntry
-    where
-      toEntry (key, value) = (key, ObjectEntry key value)
+mkBoolean :: Bool -> Value s
+mkBoolean = Scalar . Boolean
+
+mkString :: Text -> Value s
+mkString = Scalar . String
+
+mkObject :: [(FieldName, Value s)] -> Value s
+mkObject = Object . unsafeFromList . fmap toEntry
+  where
+    toEntry (key, value) = (key, ObjectEntry key value)

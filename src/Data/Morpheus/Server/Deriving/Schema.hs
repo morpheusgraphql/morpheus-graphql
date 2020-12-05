@@ -66,8 +66,7 @@ import Data.Morpheus.Server.Types.SchemaT
     toSchema,
   )
 import Data.Morpheus.Server.Types.Types
-  ( MapKind,
-    Pair,
+  ( Pair,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -97,7 +96,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
-    SubscriptionField (..),
     resultOr,
   )
 import Data.Morpheus.Utils.Kinded
@@ -110,7 +108,6 @@ import Data.Morpheus.Utils.Kinded
     setType,
   )
 import Data.Proxy (Proxy (..))
-import Data.Set (Set)
 import GHC.Generics (Generic, Rep)
 import Language.Haskell.TH (Exp, Q)
 import Prelude
@@ -185,32 +182,13 @@ class DeriveType (kind :: TypeCategory) (a :: *) where
 deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> SchemaT ()
 deriveTypeWith x = deriveType . setType x
 
-deriveWrapperType ::
-  forall kinded cat f a.
-  DeriveType cat a =>
-  kinded cat (f a) ->
-  SchemaT ()
-deriveWrapperType _ = deriveType (KindedProxy :: KindedProxy cat a)
-
--- Maybe
-instance DeriveType cat a => DeriveType cat (Maybe a) where
-  deriveType = deriveWrapperType
-
--- List
-instance DeriveType cat a => DeriveType cat [a] where
-  deriveType = deriveWrapperType
-
 -- Tuple
 instance DeriveType cat (Pair k v) => DeriveType cat (k, v) where
   deriveType = deriveTypeWith (Proxy @(Pair k v))
 
--- Set
-instance DeriveType cat a => DeriveType cat (Set a) where
-  deriveType = deriveWrapperType
-
 -- Map
-instance DeriveType cat (MapKind k v Maybe) => DeriveType cat (Map k v) where
-  deriveType = deriveTypeWith (Proxy @(MapKind k v Maybe))
+instance DeriveType cat [Pair k v] => DeriveType cat (Map k v) where
+  deriveType = deriveTypeWith (Proxy @[Pair k v])
 
 -- Resolver : a -> Resolver b
 instance
@@ -223,13 +201,6 @@ instance
   deriveContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
   deriveType _ = deriveType (outputType $ Proxy @b)
 
-instance (DeriveType OUT a) => DeriveType OUT (SubscriptionField a) where
-  deriveType = deriveWrapperType
-
---  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
-  deriveType = deriveTypeWith (Proxy @b)
-
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType (cat :: TypeCategory) (kind :: GQL_KIND) a where
   deriveKindedType :: f cat -> proxy kind a -> SchemaT ()
@@ -240,6 +211,9 @@ type DeriveTypeConstraint kind a =
   )
 
 -- SCALAR
+instance (GQLType a, DeriveType cat a) => DeriveKindedType cat WRAPPER (f a) where
+  deriveKindedType _ _ = deriveType (KindedProxy :: KindedProxy cat a)
+
 instance (GQLType a, DecodeScalar a) => DeriveKindedType cat SCALAR a where
   deriveKindedType _ = updateByContent deriveScalarContent . setKind (Proxy @LEAF)
 

@@ -34,6 +34,7 @@
 
 ### Breaking Changes
 
+- `Map k v` is now represented as just `[Pair k v]`
 - `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
 - Exclusive input objects: Sum types used as input types are represented as input objects, where only one field must have a value. Namespaced constructors (i.e., where referenced type name concatenated with union type name is equal to constructor name) are unpacked. Furthermore, empty constructors are represented as fields with the unit type.
 
