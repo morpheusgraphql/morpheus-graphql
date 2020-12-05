@@ -98,7 +98,7 @@ instance Encode m (Pair k v) => Encode m (k, v) where
 
 --  Map
 instance (Monad m, Encode m [Pair k v]) => Encode m (Map k v) where
-  encode value = encode ((uncurry Pair <$> M.toList value) :: [Pair k v])
+  encode value = encode (uncurry Pair <$> M.toList value)
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
