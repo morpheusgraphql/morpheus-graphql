@@ -53,18 +53,18 @@ import Data.Morpheus.Types.Internal.Config
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( ResolverContext (..),
-    ResolverRootValue,
     ResponseStream,
     ResultT (..),
+    RootResolverValue,
     cleanEvents,
     resultOr,
-    runRootResModel,
+    runRootResolverValue,
   )
 import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Relude hiding (empty)
 
-mkApp :: ValidateSchema s => Schema s -> ResolverRootValue e m -> App e m
+mkApp :: ValidateSchema s => Schema s -> RootResolverValue e m -> App e m
 mkApp appSchema appResolvers =
   resultOr
     FailApp
@@ -87,7 +87,7 @@ instance Monad m => Semigroup (App e m) where
 
 data AppData event (m :: * -> *) s = AppData
   { appConfig :: Config,
-    appResolvers :: ResolverRootValue event m,
+    appResolvers :: RootResolverValue event m,
     appSchema :: Schema s
   }
 
@@ -108,7 +108,7 @@ runAppData ::
 runAppData AppData {appConfig, appSchema, appResolvers} request = do
   validRequest <- validateReq appSchema appConfig request
   resovers <- withSystemFields (schema validRequest) appResolvers
-  runRootResModel resovers validRequest
+  runRootResolverValue resovers validRequest
 
 validateReq ::
   ( Monad m,

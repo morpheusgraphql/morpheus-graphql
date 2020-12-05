@@ -22,7 +22,7 @@ schema =
   }
 |]
 
-resolver :: Monad m => ResolverRootValue e m
+resolver :: Monad m => RootResolverValue e m
 resolver =
   RootResModel
     { query =

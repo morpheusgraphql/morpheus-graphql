@@ -23,17 +23,14 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
     subscribe,
     ResponseEvent (..),
     ResponseStream,
-    ResolverObject (..),
-    ResolverValue (..),
     WithOperation,
     ResolverContext (..),
     unsafeInternalContext,
-    runRootResModel,
-    ResolverRootValue (..),
     withArguments,
     getArguments,
     SubscriptionField (..),
     liftResolverState,
+    runResolver,
   )
 where
 
@@ -45,7 +42,6 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     MUTATION,
-    Operation (..),
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
@@ -78,11 +74,6 @@ import Data.Morpheus.Types.Internal.Resolving.ResolverState
     runResolverStateM,
     runResolverStateT,
     toResolverStateT,
-  )
-import Data.Morpheus.Types.Internal.Resolving.ResolverValue
-  ( ResolverObject (..),
-    ResolverValue (..),
-    resolveObject,
   )
 import Relude hiding
   ( Show,
@@ -252,44 +243,3 @@ subscriptionEvents ctx@ResolverContext {currentSelection} (Just channelGenerator
       channel <- channelGenerator currentSelection
       pure $ Subscribe channel res
 subscriptionEvents ctx Nothing _ = failure [resolverFailureMessage ctx "channel Resolver is not defined"]
-
--- Resolver Models -------------------------------------------------------------------
-
-data ResolverRootValue e m = ResolverRootValue
-  { query :: ResolverState (ResolverValue (Resolver QUERY e m)),
-    mutation :: ResolverState (ResolverValue (Resolver MUTATION e m)),
-    subscription :: ResolverState (ResolverValue (Resolver SUBSCRIPTION e m)),
-    channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
-  }
-
-runRootDataResolver ::
-  (Monad m, LiftOperation o) =>
-  Maybe (Selection VALID -> ResolverState (Channel e)) ->
-  ResolverState (ResolverValue (Resolver o e m)) ->
-  ResolverContext ->
-  ResponseStream e m (Value VALID)
-runRootDataResolver
-  channels
-  res
-  ctx@ResolverContext {operation = Operation {operationSelection}} =
-    do
-      root <- runResolverStateT (toResolverStateT res) ctx
-      runResolver channels (resolveObject operationSelection root) ctx
-
-runRootResModel :: Monad m => ResolverRootValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
-runRootResModel
-  ResolverRootValue
-    { query,
-      mutation,
-      subscription,
-      channelMap
-    }
-  ctx@ResolverContext {operation = Operation {operationType}} =
-    selectByOperation operationType
-    where
-      selectByOperation Query =
-        runRootDataResolver channelMap query ctx
-      selectByOperation Mutation =
-        runRootDataResolver channelMap mutation ctx
-      selectByOperation Subscription =
-        runRootDataResolver channelMap subscription ctx

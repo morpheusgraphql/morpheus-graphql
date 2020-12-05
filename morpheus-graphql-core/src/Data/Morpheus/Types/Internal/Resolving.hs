@@ -4,7 +4,7 @@
 module Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
     LiftOperation,
-    runRootResModel,
+    runRootResolverValue,
     lift,
     Eventless,
     Failure (..),
@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.Resolving
     subscribe,
     ResolverContext (..),
     unsafeInternalContext,
-    ResolverRootValue (..),
+    RootResolverValue (..),
     resultOr,
     withArguments,
     -- Dynamic Resolver

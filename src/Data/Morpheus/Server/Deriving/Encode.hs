@@ -82,9 +82,9 @@ import Data.Morpheus.Types.Internal.Resolving
   ( LiftOperation,
     Resolver,
     ResolverEntry,
-    ResolverRootValue (..),
     ResolverState,
     ResolverValue (..),
+    RootResolverValue (..),
     failure,
     getArguments,
     liftResolverState,
@@ -226,14 +226,14 @@ deriveModel ::
   forall e m query mut sub.
   (Monad m, EncodeConstraints e m query mut sub) =>
   RootResolver m e query mut sub ->
-  ResolverRootValue e m
+  RootResolverValue e m
 deriveModel
   RootResolver
     { queryResolver,
       mutationResolver,
       subscriptionResolver
     } =
-    ResolverRootValue
+    RootResolverValue
       { query = objectResolvers queryResolver,
         mutation = objectResolvers mutationResolver,
         subscription = objectResolvers subscriptionResolver,

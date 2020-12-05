@@ -38,9 +38,9 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
-    ResolverRootValue (..),
     ResolverValue,
     ResultT,
+    RootResolverValue (..),
     mkList,
     mkNull,
     mkObject,
@@ -99,11 +99,11 @@ schemaAPI schema =
 withSystemFields ::
   Monad m =>
   Schema VALID ->
-  ResolverRootValue e m ->
-  ResultT e' m (ResolverRootValue e m)
-withSystemFields schema ResolverRootValue {query, ..} =
+  RootResolverValue e m ->
+  ResultT e' m (RootResolverValue e m)
+withSystemFields schema RootResolverValue {query, ..} =
   pure $
-    ResolverRootValue
+    RootResolverValue
       { query = query >>= (<:> schemaAPI schema),
         ..
       }
