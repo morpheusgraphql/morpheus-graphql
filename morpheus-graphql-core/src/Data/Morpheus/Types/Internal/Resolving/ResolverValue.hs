@@ -12,11 +12,11 @@
 module Data.Morpheus.Types.Internal.Resolving.ResolverValue
   ( ResolverValue (..),
     ResolverObject (..),
+    ResolverEntry,
+    resolveObject,
     mkUnion,
     mkEnum,
     mkEnumNull,
-    resolveObject,
-    ResolverEntry,
     mkObject,
   )
 where

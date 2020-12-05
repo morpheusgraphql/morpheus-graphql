@@ -7,36 +7,18 @@ module Data.Morpheus.Types.Internal.Resolving.RootResolverValue
   )
 where
 
-import Control.Monad.Trans.Reader (mapReaderT)
-import Data.Morpheus.Types.IO
-  ( GQLResponse,
-    renderResponse,
-  )
 import Data.Morpheus.Types.Internal.AST
-  ( Arguments,
-    MUTATION,
+  ( MUTATION,
     Operation (..),
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
-    Selection (..),
+    Selection,
     VALID,
-    ValidValue,
-    Value (..),
-    msg,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-    Failure (..),
-    PushEvents (..),
-    Result (..),
-    ResultT (..),
-    cleanEvents,
-    mapEvent,
+    Value,
   )
 import Data.Morpheus.Types.Internal.Resolving.Event
   ( EventHandler (..),
-    ResponseEvent (..),
   )
 import Data.Morpheus.Types.Internal.Resolving.Resolver
   ( LiftOperation,
@@ -47,17 +29,11 @@ import Data.Morpheus.Types.Internal.Resolving.Resolver
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     ResolverState,
-    ResolverStateT (..),
-    clearStateResolverEvents,
-    resolverFailureMessage,
-    runResolverState,
-    runResolverStateM,
     runResolverStateT,
     toResolverStateT,
   )
 import Data.Morpheus.Types.Internal.Resolving.ResolverValue
-  ( ResolverObject (..),
-    ResolverValue (..),
+  ( ResolverValue (..),
     resolveObject,
   )
 import Relude hiding
@@ -65,7 +41,6 @@ import Relude hiding
     empty,
     show,
   )
-import Prelude (Show (..))
 
 data RootResolverValue e m = RootResolverValue
   { query :: ResolverState (ResolverValue (Resolver QUERY e m)),

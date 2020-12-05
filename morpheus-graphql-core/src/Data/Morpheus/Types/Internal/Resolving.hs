@@ -62,6 +62,7 @@ import Data.Morpheus.Types.Internal.Resolving.Event
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
 import Data.Morpheus.Types.Internal.Resolving.ResolverValue
+import Data.Morpheus.Types.Internal.Resolving.RootResolverValue
 import qualified Data.Vector as V
   ( toList,
   )
