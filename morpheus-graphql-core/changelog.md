@@ -8,6 +8,7 @@
 
 ### Breaking changes
 
+- `ResModel` was replaced with more general `ResolverValue`
 - `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
 
 - `Value.Float` is now `Double` instead of `Float`.

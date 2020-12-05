@@ -34,7 +34,7 @@ resolver =
       subscription = pure mkNull
     }
 
-resolveDeity :: (WithOperation o, Monad m) => Resolver o e m (ResModel o e m)
+resolveDeity :: (WithOperation o, Monad m) => Resolver o e m (ResolverValue o e m)
 resolveDeity =
   pure $
     mkObject
