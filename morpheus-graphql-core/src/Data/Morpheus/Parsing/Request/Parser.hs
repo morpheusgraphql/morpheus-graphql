@@ -31,7 +31,7 @@ import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     GQLQuery (..),
-    ResolverValue,
+    ResolvedValue,
     replaceValue,
   )
 import Data.Morpheus.Types.Internal.Resolving
@@ -63,7 +63,7 @@ parseGQL GQLRequest {query, variables} =
     <$> processParser request (toLBS query)
   where
     setVariables root = root {inputVariables = toVariableMap variables}
-    toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolverValue)]
+    toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolvedValue)]
     toVariableMap (Just (Aeson.Object x)) = map toMorpheusValue (toList x)
       where
         toMorpheusValue (key, value) = (FieldName key, replaceValue value)
