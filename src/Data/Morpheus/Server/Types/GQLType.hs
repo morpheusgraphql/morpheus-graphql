@@ -270,8 +270,9 @@ instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
   __type _ = __type $ Proxy @[a]
 
-instance (Typeable k, Typeable v) => GQLType (Map k v) where
+instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = WRAPPER
+  __type _ = __type $ Proxy @[Pair k v]
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = WRAPPER
