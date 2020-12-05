@@ -202,10 +202,6 @@ instance
   deriveContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
   deriveType _ = deriveType (outputType $ Proxy @b)
 
---  GQL Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (DeriveType cat b) => DeriveType cat (Resolver fo e m b) where
-  deriveType = deriveTypeWith (Proxy @b)
-
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType (cat :: TypeCategory) (kind :: GQL_KIND) a where
   deriveKindedType :: f cat -> proxy kind a -> SchemaT ()
