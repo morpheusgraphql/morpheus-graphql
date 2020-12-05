@@ -26,7 +26,7 @@ import Data.Morpheus.Types.Internal.AST
     RAW,
     RawValue,
     Ref (..),
-    ResolverValue,
+    ResolvedValue,
     Selection (..),
     SelectionContent (..),
     SelectionSet,
@@ -148,12 +148,12 @@ lookupAndValidateValueOnBody
             )
     where
       toVariable x = var {variableValue = ValidVariableValue x}
-      getVariable :: Maybe ResolverValue
+      getVariable :: Maybe ResolvedValue
       getVariable = M.lookup variableName bodyVariables
       ------------------------------------------------------------------
       -- checkType ::
       checkType ::
-        Maybe ResolverValue ->
+        Maybe ResolvedValue ->
         DefaultValue ->
         TypeDefinition IN VALID ->
         BaseValidator ValidValue
@@ -170,7 +170,7 @@ lookupAndValidateValueOnBody
           returnNull =
             maybe (pure Null) (validator varType False) (M.lookup variableName bodyVariables)
       -----------------------------------------------------------------------------------------------
-      validator :: TypeDefinition IN VALID -> Bool -> ResolverValue -> BaseValidator ValidValue
+      validator :: TypeDefinition IN VALID -> Bool -> ResolvedValue -> BaseValidator ValidValue
       validator varTypeDef isDefaultValue varValue =
         startInput
           (SourceVariable var isDefaultValue)
