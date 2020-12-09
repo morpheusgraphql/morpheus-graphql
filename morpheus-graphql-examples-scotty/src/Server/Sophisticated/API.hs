@@ -32,15 +32,13 @@ import Data.Morpheus
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
   )
-import Data.Morpheus.Kind
-  ( INPUT,
-  )
 import Data.Morpheus.Subscriptions
   ( Event (..),
     Hashable,
   )
 import Data.Morpheus.Types
-  ( GQLScalar (..),
+  ( DecodeScalar (..),
+    EncodeScalar (..),
     GQLType (..),
     ID,
     MUTATION,
@@ -88,10 +86,7 @@ data Animal
   | AnimalBird Bird
   | Giraffe {giraffeName :: Text}
   | UnidentifiedSpecie
-  deriving (Show, Generic)
-
-instance GQLType Animal where
-  type KIND Animal = INPUT
+  deriving (Show, Generic, GQLType)
 
 data Euro
   = Euro
@@ -99,15 +94,17 @@ data Euro
       Int
   deriving (Show, Generic)
 
-instance GQLScalar Euro where
-  parseValue (Int x) =
+instance DecodeScalar Euro where
+  decodeScalar (Int x) =
     pure
       ( Euro
           (round (fromIntegral x / 100 :: Double))
           (mod x 100)
       )
-  parseValue _ = Left "invalid currency blue!"
-  serialize (Euro x y) = Int (x * 100 + y)
+  decodeScalar _ = Left "invalid currency!"
+
+instance EncodeScalar Euro where
+  encodeScalar (Euro x y) = Int (x * 100 + y)
 
 data Channel = USER | ADDRESS
   deriving

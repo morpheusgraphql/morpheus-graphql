@@ -10,7 +10,8 @@ where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import Data.Morpheus.Types.GQLScalar
-  ( GQLScalar (..),
+  ( DecodeScalar (..),
+    EncodeScalar (..),
     scalarFromJSON,
     scalarToJSON,
   )
@@ -28,11 +29,13 @@ newtype ID = ID
   }
   deriving (Show, Generic, Eq)
 
-instance GQLScalar ID where
-  parseValue (Int x) = pure (ID $ pack $ show x)
-  parseValue (String x) = pure (ID x)
-  parseValue _ = Left "ID can only be String or number"
-  serialize (ID x) = String x
+instance DecodeScalar ID where
+  decodeScalar (Int x) = pure (ID $ pack $ show x)
+  decodeScalar (String x) = pure (ID x)
+  decodeScalar _ = Left "ID can only be String or number"
+
+instance EncodeScalar ID where
+  encodeScalar (ID x) = String x
 
 instance ToJSON ID where
   toJSON = scalarToJSON

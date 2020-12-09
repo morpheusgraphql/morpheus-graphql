@@ -1,8 +1,5 @@
 query Get__Type {
-  enumObject: __type(name: "CharacterEnumObject") {
-    ...FullType
-  }
-  enum: __type(name: "CharacterEnum") {
+  __type(name: "Deity") {
     ...FullType
   }
 }

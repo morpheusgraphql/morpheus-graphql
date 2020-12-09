@@ -6,27 +6,16 @@
 
 module Data.Morpheus.Server.Internal.TH.Decode
   ( withInputObject,
-    withMaybe,
-    withList,
-    withRefinedList,
     withEnum,
     withInputUnion,
     decodeFieldWith,
     withScalar,
+    handleEither,
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad (Monad ((>>=)))
-import Data.Either (Either (..))
-import Data.Functor ((<$>))
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Internal.Utils
-  ( empty,
-    selectBy,
-    selectOr,
+  ( selectOr,
   )
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
@@ -43,16 +32,14 @@ import Data.Morpheus.Types.Internal.AST
     ValidObject,
     ValidValue,
     Value (..),
+    getInputUnionValue,
     msg,
     msgInternal,
-    toFieldName,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Failure (..),
   )
-import Data.Semigroup ((<>))
-import Data.Traversable (traverse)
-import Prelude ((.))
+import Relude hiding (empty)
 
 withInputObject ::
   Failure InternalError m =>
@@ -60,34 +47,9 @@ withInputObject ::
   ValidValue ->
   m a
 withInputObject f (Object object) = f object
-withInputObject _ isType = failure (typeMismatch "Object" isType)
-
-withMaybe :: Monad m => (ValidValue -> m a) -> ValidValue -> m (Maybe a)
-withMaybe _ Null = pure Nothing
-withMaybe decode x = Just <$> decode x
-
-withList ::
-  (Failure InternalError m, Monad m) =>
-  (ValidValue -> m a) ->
-  ValidValue ->
-  m [a]
-withList decode (List li) = traverse decode li
-withList _ isType = failure (typeMismatch "List" isType)
+withInputObject _ isType = failure (typeMismatch "InputObject" isType)
 
 -- | Useful for more restrictive instances of lists (non empty, size indexed etc)
-withRefinedList ::
-  (Failure InternalError m, Monad m) =>
-  ([a] -> Either Message (rList a)) ->
-  (ValidValue -> m a) ->
-  ValidValue ->
-  m (rList a)
-withRefinedList refiner decode (List li) = do
-  listRes <- traverse decode li
-  case refiner listRes of
-    Left err -> failure (typeMismatch err (List li))
-    Right value -> pure value
-withRefinedList _ _ isType = failure (typeMismatch "List" isType)
-
 withEnum :: Failure InternalError m => (TypeName -> m a) -> Value VALID -> m a
 withEnum decode (Enum value) = decode value
 withEnum _ isType = failure (typeMismatch "Enum" isType)
@@ -98,17 +60,10 @@ withInputUnion ::
   ValidObject ->
   m a
 withInputUnion decoder unions =
-  selectBy
-    ("__typename not found on Input Union" :: InternalError)
-    ("__typename" :: FieldName)
-    unions
-    >>= providesValueFor . entryValue
+  either onFail onSucc (getInputUnionValue unions)
   where
-    providesValueFor (Enum key) = selectOr notFound onFound (toFieldName key) unions
-      where
-        notFound = withInputObject (decoder key unions) (Object empty)
-        onFound = withInputObject (decoder key unions) . entryValue
-    providesValueFor _ = failure ("__typename must be Enum" :: InternalError)
+    onSucc (name, value) = withInputObject (decoder name unions) value
+    onFail = failure . msgInternal
 
 withScalar ::
   (Applicative m, Failure InternalError m) =>
@@ -116,7 +71,7 @@ withScalar ::
   (ScalarValue -> Either Token a) ->
   Value VALID ->
   m a
-withScalar typename parseValue value = case toScalar value >>= parseValue of
+withScalar typename decodeScalar value = case toScalar value >>= decodeScalar of
   Right scalar -> pure scalar
   Left message ->
     failure
@@ -127,6 +82,9 @@ withScalar typename parseValue value = case toScalar value >>= parseValue of
 
 decodeFieldWith :: (Value VALID -> m a) -> FieldName -> ValidObject -> m a
 decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)
+
+handleEither :: Failure InternalError m => Either Message a -> m a
+handleEither = either (failure . msgInternal) pure
 
 -- if value is already validated but value has different type
 typeMismatch :: Message -> Value s -> InternalError

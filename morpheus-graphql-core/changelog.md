@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.17.0 - Unreleased
+
+### New features
+
+- exposed `Data.Morpheus.Types.GQLWrapper` with `EncodeWrapper` and `DecodeWrapper` type-classes.
+
+### Breaking changes
+
+- `RootResModel` was renamed to `RootResolverValue`
+- `ResModel` was replaced with more general `ResolverValue`
+- `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
+
+- `Value.Float` is now `Double` instead of `Float`.
+
 ## 0.16.0 - 05.11.2020
 
 ### Breaking Changes

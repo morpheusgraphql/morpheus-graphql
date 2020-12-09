@@ -11,7 +11,6 @@ module Feature.TypeInference.API
 where
 
 import Data.Morpheus (interpreter)
-import Data.Morpheus.Kind (INPUT)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
@@ -25,7 +24,10 @@ import Data.Text
   )
 import GHC.Generics (Generic)
 
-data Power = Thunderbolts | Shapeshift | Hurricanes
+data Power
+  = Thunderbolts
+  | Shapeshift
+  | Hurricanes
   deriving (Generic, GQLType)
 
 data Deity (m :: * -> *) = Deity
@@ -41,35 +43,38 @@ data Hydra = Hydra
   { name :: Text,
     age :: Int
   }
-  deriving (Show, Generic)
-
-instance GQLType Hydra where
-  type KIND Hydra = INPUT
+  deriving (Show, Generic, GQLType)
 
 data Monster
   = MonsterHydra Hydra
   | Cerberus {name :: Text}
   | UnidentifiedMonster
-  deriving (Show, Generic)
-
-instance GQLType Monster where
-  type KIND Monster = INPUT
+  deriving (Show, Generic, GQLType)
 
 data Character (m :: * -> *)
   = CharacterDeity (Deity m) -- Only <tycon name><type ref name> should generate direct link
-        -- RECORDS
   | Creature {creatureName :: Text, creatureAge :: Int}
   | BoxedDeity {boxedDeity :: Deity m}
   | ScalarRecord {scalarText :: Text}
-  | --- Types
-    CharacterInt Int -- all scalars mus be boxed
-      -- Types
+  | CharacterInt Int
   | SomeDeity (Deity m)
   | SomeMutli Int Text
-  | --- ENUMS
-    Zeus
+  | Zeus
   | Cronus
   deriving (Generic, GQLType)
+
+resolveCharacter :: [Character m]
+resolveCharacter =
+  [ CharacterDeity deityRes,
+    Creature {creatureName = "Lamia", creatureAge = 205},
+    BoxedDeity {boxedDeity = deityRes},
+    ScalarRecord {scalarText = "Some Text"},
+    SomeDeity deityRes,
+    CharacterInt 12,
+    SomeMutli 21 "some text",
+    Zeus,
+    Cronus
+  ]
 
 newtype MonsterArgs = MonsterArgs
   { monster :: Monster
@@ -86,25 +91,17 @@ data Query (m :: * -> *) = Query
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
-    { queryResolver = Query {deity = deityRes, character, showMonster},
+    { queryResolver =
+        Query
+          { deity = deityRes,
+            character = resolveCharacter,
+            showMonster
+          },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
   where
     showMonster MonsterArgs {monster} = pure (pack $ show monster)
-    character :: [Character m]
-    character =
-      [ CharacterDeity deityRes,
-        Creature {creatureName = "Lamia", creatureAge = 205},
-        BoxedDeity {boxedDeity = deityRes},
-        ScalarRecord {scalarText = "Some Text"},
-        ---
-        SomeDeity deityRes,
-        CharacterInt 12,
-        SomeMutli 21 "some text",
-        Zeus,
-        Cronus
-      ]
 
 api :: GQLRequest -> IO GQLResponse
 api = interpreter rootResolver

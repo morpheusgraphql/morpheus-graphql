@@ -1,9 +1,119 @@
 # Changelog
 
-## (next version)
+## 0.17.0 - 05.11.2020
+
+## new features
+
+- (issue #543): `GQLTypeOptions` supports new option `prefixInputType`.
+  before the schema failed if you wanted to use the same type for input and output, but now with this option you can automatically prefix the input with a "Input" to make this possible.
+
+  e.g this schema will not fail. morpheus will generate types: `Deity` and `InputDeity`
+
+  ```hs
+  data Deity = Deity
+  { name :: Text,
+    age :: Int
+  }
+  deriving (Show, Generic)
+
+  instance GQLType Deity where
+    typeOptions _ opt = opt {prefixInputType = True}
+
+  newtype DeityArgs = DeityArgs
+    { input :: Deity
+    }
+    deriving (Show, Generic, GQLType)
+
+  newtype Query (m :: * -> *) = Query
+    { deity :: DeityArgs -> m Deity
+    }
+    deriving (Generic, GQLType)
+  ```
+
+- exposed `EncodeWrapper` and `DecodeWrapper` type-classes.
+
+### Breaking Changes
+
+- `Map k v` is now represented as just `[Pair k v]`
+- `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
+- Exclusive input objects: Sum types used as input types are represented as input objects, where only one field must have a value. Namespaced constructors (i.e., where referenced type name concatenated with union type name is equal to constructor name) are unpacked. Furthermore, empty constructors are represented as fields with the unit type.
+
+  for example:
+
+  ```hs
+      data Device
+        | DevicePC PC
+        | Laptops { macAdress :: ID }
+        | Smartphone
+  ```
+
+  this type will generate the following SDL:
+
+  ```graphql
+  enum Unit {
+    Unit
+  }
+
+  input Laptop {
+    macAdress: ID
+  }
+
+  input Device {
+    PC: PC
+    Laptops: Laptops
+    Smartphone: Unit
+  }
+  ```
+
+- For each nullary constructor will be defined GQL object type with a single field `_: Unit` (since GraphQL does not allow empty objects).
+
+  for example:
+
+  ```haskell
+  data Person = Client { name :: Text } | Accountant | Developer
+  ```
+
+  this type will generate the following SDL:
+
+  ```graphql
+  enum Unit {
+    Unit
+  }
+
+  type Student {
+    name: String!
+  }
+
+  type Accountant {
+    _: Unit!
+  }
+
+  type Developer {
+    _: Unit!
+  }
+
+  union Person = Client | Accountant | Developer
+  ```
+
+- changed signature of `GQLType.typeOptions` from `f a -> GQLTypeOptions` to `f a -> GQLTypeOptions -> GQLTypeOptions`.
+
+  now you can write:
+
+  ```hs
+    typeOptions _ options = options { fieldLabelModifier = <my function> }
+  ```
+
+whre argument options is default gql options.
+
+- deexposed constructor of `GQLTypeOptions`.
+- Type name for parametrized types like `One (Two Three)` will be generated directly, concatenating them `OneTwoThree` instead of `One_Two_Three.`
+- Haskell `Float` was renamed to custom scalar type `Float32.`
+- Haskell `Double` now represents GraphQL `Float`.
 
 ### Minor Changes
 
+- deprecated kinds `INPUT`, `ENUM` and `OUTPUT` in favor of more generalized kind `TYPE`.
+  now you can derive INPUT, ENUM and OUTPUT automatically with `deriving (Generic, GQLType)`.
 - more likely to rebuild when a file loaded by `importGQLDocument` or
   `importGQLDocumentWithNamespace` is changed
 
@@ -1337,3 +1447,7 @@ thanks for contributing to: @krisajenkins, @hovind, @vmchale, @msvbg
   - `gqlResolver` : packs `m Either String a` to `Resolver m a`
   - `gqlEffectResolver`: resolver constructor for effectedResolver
   - `liftEffectResolver`: lifts normal resolver to Effect Resolver.
+
+```
+
+```

@@ -39,9 +39,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
-    ResModel,
-    RootResModel (..),
-    WithOperation,
+    ResolverValue,
+    RootResolverValue (..),
     mkNull,
     mkValue,
     resultOr,
@@ -139,14 +138,14 @@ getRequest p =
     <$> T.readFile (gqlLib $ readName p)
     <*> maybeVariables p
 
-getResolvers :: Monad m => FieldName -> IO (RootResModel e m)
+getResolvers :: Monad m => FieldName -> IO (RootResolverValue e m)
 getResolvers p = getResolver ("test/" <> p <> "/resolvers.json")
 
-getResolver :: Monad m => FieldName -> IO (RootResModel e m)
+getResolver :: Monad m => FieldName -> IO (RootResolverValue e m)
 getResolver (FieldName p) = do
   res <- fromMaybe Null . decode <$> L.readFile (unpack p)
   pure
-    RootResModel
+    RootResolverValue
       { query = pure (lookupRes "query" res),
         mutation = pure (lookupRes "mutation" res),
         subscription = pure (lookupRes "subscription" res),
@@ -154,12 +153,11 @@ getResolver (FieldName p) = do
       }
 
 lookupRes ::
-  ( WithOperation o,
-    Monad m
+  ( Monad m
   ) =>
   Text ->
   Value ->
-  ResModel o e m
+  ResolverValue m
 lookupRes name (Object fields) = maybe mkNull mkValue (lookup name fields)
 lookupRes _ _ = mkNull
 

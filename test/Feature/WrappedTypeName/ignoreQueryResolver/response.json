@@ -24,7 +24,7 @@
           "args": [],
           "type": {
             "kind": "OBJECT",
-            "name": "Wrapped_Int_Int",
+            "name": "WrappedIntInt",
             "ofType": null
           },
           "isDeprecated": false,
@@ -35,7 +35,7 @@
           "args": [],
           "type": {
             "kind": "OBJECT",
-            "name": "Wrapped_Wrapped_Text_Int_Text",
+            "name": "WrappedWrappedTextIntText",
             "ofType": null
           },
           "isDeprecated": false,

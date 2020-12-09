@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "message": "Argument \"monster\" got invalid value. Expected type \"Monster!\" found {}. Exclusive input objects must provide a value for at least one field.",
+      "locations": [{ "line": 2, "column": 22 }]
+    },
+    {
+      "message": "Argument \"monster\" got invalid value. Expected type \"Monster!\" found { Hydra: { name: \"someName\", age: 12 }, UnidentifiedMonster: Unit }. Exclusive input objects are not allowed to provide values for multiple fields.",
+      "locations": [{ "line": 4, "column": 5 }]
+    }
+  ]
+}

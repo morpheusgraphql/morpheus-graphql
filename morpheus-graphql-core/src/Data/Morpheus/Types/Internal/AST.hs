@@ -19,7 +19,6 @@ module Data.Morpheus.Types.Internal.AST
     Value (..),
     ScalarValue (..),
     Object,
-    GQLValue (..),
     replaceValue,
     decodeScientific,
     convertToJSONName,
@@ -66,7 +65,7 @@ module Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Directive (..),
     ConsD (..),
-    TypeCategory,
+    TypeCategory (..),
     DataInputUnion,
     VariableContent (..),
     TypeLib,
@@ -100,7 +99,6 @@ module Data.Morpheus.Types.Internal.AST
     GQLErrors,
     ObjectEntry (..),
     UnionTag (..),
-    __inputname,
     ANY,
     IN,
     OUT,
@@ -133,6 +131,7 @@ module Data.Morpheus.Types.Internal.AST
     mkObjectField,
     UnionMember (..),
     mkUnionMember,
+    mkNullaryMember,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     UnionSelection,
@@ -156,10 +155,13 @@ module Data.Morpheus.Types.Internal.AST
     possibleTypes,
     possibleInterfaceTypes,
     mkField,
-    safeDefineType,
     defineSchemaWith,
     type (<=!),
     ToOBJECT,
+    constraintInputUnion,
+    getInputUnionValue,
+    unitFieldName,
+    unitTypeName,
   )
 where
 
@@ -173,6 +175,7 @@ import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH
 import Data.Morpheus.Types.Internal.AST.TypeCategory
 import Data.Morpheus.Types.Internal.AST.TypeSystem
+import Data.Morpheus.Types.Internal.AST.Union
 import Data.Morpheus.Types.Internal.AST.Value
 import Language.Haskell.TH.Syntax (Lift)
 import Prelude (Show)

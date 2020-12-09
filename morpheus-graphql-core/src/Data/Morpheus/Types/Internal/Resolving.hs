@@ -1,11 +1,10 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.Resolving
   ( Resolver,
     LiftOperation,
-    runRootResModel,
+    runRootResolverValue,
     lift,
     Eventless,
     Failure (..),
@@ -15,14 +14,14 @@ module Data.Morpheus.Types.Internal.Resolving
     Result (..),
     ResultT (..),
     unpackEvents,
-    ObjectResModel (..),
-    ResModel (..),
+    ResolverObject (..),
+    ResolverValue (..),
     WithOperation,
     PushEvents (..),
     subscribe,
     ResolverContext (..),
     unsafeInternalContext,
-    RootResModel (..),
+    RootResolverValue (..),
     resultOr,
     withArguments,
     -- Dynamic Resolver
@@ -40,7 +39,7 @@ module Data.Morpheus.Types.Internal.Resolving
     ResolverState,
     liftResolverState,
     mkValue,
-    FieldResModel,
+    ResolverEntry,
     sortErrors,
     EventHandler (..),
   )
@@ -62,33 +61,29 @@ import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Event
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 import Data.Morpheus.Types.Internal.Resolving.ResolverState
+import Data.Morpheus.Types.Internal.Resolving.ResolverValue
+import Data.Morpheus.Types.Internal.Resolving.RootResolverValue
 import qualified Data.Vector as V
   ( toList,
   )
 import Relude
 
-mkString :: Token -> ResModel o e m
+mkString :: Token -> ResolverValue m
 mkString = ResScalar . String
 
-mkFloat :: Float -> ResModel o e m
+mkFloat :: Double -> ResolverValue m
 mkFloat = ResScalar . Float
 
-mkInt :: Int -> ResModel o e m
+mkInt :: Int -> ResolverValue m
 mkInt = ResScalar . Int
 
-mkBoolean :: Bool -> ResModel o e m
+mkBoolean :: Bool -> ResolverValue m
 mkBoolean = ResScalar . Boolean
 
-mkEnum :: TypeName -> TypeName -> ResModel o e m
-mkEnum = ResEnum
-
-mkList :: [ResModel o e m] -> ResModel o e m
+mkList :: [ResolverValue m] -> ResolverValue m
 mkList = ResList
 
-mkUnion :: TypeName -> Resolver o e m (ResModel o e m) -> ResModel o e m
-mkUnion = ResUnion
-
-mkNull :: ResModel o e m
+mkNull :: ResolverValue m
 mkNull = ResNull
 
 unPackName :: A.Value -> TypeName
@@ -96,9 +91,9 @@ unPackName (A.String x) = TypeName x
 unPackName _ = "__JSON__"
 
 mkValue ::
-  (LiftOperation o, Monad m) =>
+  (Monad m) =>
   A.Value ->
-  ResModel o e m
+  ResolverValue m
 mkValue (A.Object v) =
   mkObject
     (maybe "__JSON__" unPackName $ HM.lookup "__typename" v)
@@ -110,17 +105,3 @@ mkValue A.Null = mkNull
 mkValue (A.Number x) = ResScalar (decodeScientific x)
 mkValue (A.String x) = ResScalar (String x)
 mkValue (A.Bool x) = ResScalar (Boolean x)
-
-type FieldResModel o e m = (FieldName, Resolver o e m (ResModel o e m))
-
-mkObject ::
-  TypeName ->
-  [(FieldName, Resolver o e m (ResModel o e m))] ->
-  ResModel o e m
-mkObject __typename fields =
-  ResObject
-    ( ObjectResModel
-        { __typename,
-          objectFields = HM.fromList fields
-        }
-    )

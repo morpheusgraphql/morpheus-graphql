@@ -67,6 +67,9 @@ instance RenderGQL Int where
 instance RenderGQL Float where
   render = fromShow
 
+instance RenderGQL Double where
+  render = fromShow
+
 instance RenderGQL Text where
   render = fromShow
 

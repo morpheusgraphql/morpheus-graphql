@@ -7,9 +7,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -19,12 +19,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Schema.Internal
-  ( KindedProxy (..),
-    KindedType (..),
+  ( KindedType (..),
     builder,
-    inputType,
-    outputType,
-    setProxyType,
     unpackMs,
     UpdateDef (..),
     withObject,
@@ -36,14 +32,8 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
 where
 
 -- MORPHEUS
-
-import Control.Applicative (Applicative (..))
-import Control.Monad.Fail (fail)
-import Data.Foldable (concatMap, traverse_)
-import Data.Functor (($>), (<$>), Functor (..))
 import Data.List (partition)
 import qualified Data.Map as M
-import Data.Maybe (Maybe (..), fromMaybe)
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -60,6 +50,7 @@ import Data.Morpheus.Server.Deriving.Utils
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
+    __typeData,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -83,7 +74,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TRUE,
     Token,
-    TypeCategory,
+    TypeCategory (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName (..),
@@ -91,79 +82,51 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     mkEnumContent,
     mkField,
-    mkInputValue,
+    mkNullaryMember,
     mkType,
+    mkTypeRef,
     mkUnionMember,
     msg,
+    unitFieldName,
+    unitTypeName,
     unsafeFromFields,
   )
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
     Result (..),
   )
-import Data.Semigroup ((<>))
-import Data.Traversable (traverse)
-import Language.Haskell.TH (Exp, Q)
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-    Show (..),
-    map,
-    null,
-    otherwise,
-    sequence,
+import Data.Morpheus.Utils.Kinded
+  ( CategoryValue (..),
+    KindedType (..),
+    outputType,
   )
-
--- | context , like Proxy with multiple parameters
--- * 'kind': object, scalar, enum ...
--- * 'a': actual gql type
-data KindedProxy k a
-  = KindedProxy
-
-data KindedType (cat :: TypeCategory) a where
-  InputType :: KindedType IN a
-  OutputType :: KindedType OUT a
-
--- converts:
---   f a -> KindedType IN a
--- or
---  f k a -> KindedType IN a
-inputType :: f a -> KindedType IN a
-inputType _ = InputType
-
-outputType :: f a -> KindedType OUT a
-outputType _ = OutputType
-
-deriving instance Show (KindedType cat a)
-
-setProxyType :: f b -> kinded k a -> KindedProxy k b
-setProxyType _ _ = KindedProxy
+import Language.Haskell.TH (Exp, Q)
+import Relude
 
 fromSchema :: Eventless (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-withObject :: (GQLType a) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
+withObject :: (GQLType a, CategoryValue c) => KindedType c a -> TypeContent TRUE any s -> SchemaT (FieldsDefinition c s)
 withObject InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject OutputType DataObject {objectFields} = pure objectFields
 withObject x _ = failureOnlyObject x
 
 asObjectType ::
-  GQLType a =>
+  (GQLType a) =>
   (f2 a -> SchemaT (FieldsDefinition OUT CONST)) ->
   f2 a ->
   SchemaT (TypeDefinition OBJECT CONST)
-asObjectType f proxy = (`mkObjectType` gqlTypeName (__type proxy)) <$> f proxy
+asObjectType f proxy = (`mkObjectType` gqlTypeName (__typeData (outputType proxy))) <$> f proxy
 
 mkObjectType :: FieldsDefinition OUT CONST -> TypeName -> TypeDefinition OBJECT CONST
 mkObjectType fields typeName = mkType typeName (DataObject [] fields)
 
-failureOnlyObject :: forall c a b. (GQLType a) => KindedType c a -> SchemaT b
+failureOnlyObject :: forall (c :: TypeCategory) a b. (GQLType a, CategoryValue c) => KindedType c a -> SchemaT b
 failureOnlyObject proxy =
   failure
     $ globalErrorMessage
-    $ msg (gqlTypeName $ __type proxy) <> " should have only one nonempty constructor"
+    $ msg (gqlTypeName $ __typeData proxy) <> " should have only one nonempty constructor"
 
 type TyContentM kind = (SchemaT (Maybe (FieldContent TRUE kind CONST)))
 
@@ -181,7 +144,7 @@ unpackMs :: [ConsRep (TyContentM k)] -> SchemaT [ConsRep (TyContent k)]
 unpackMs = traverse unpackCons
 
 builder ::
-  GQLType a =>
+  (GQLType a, CategoryValue kind) =>
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT (TypeContent TRUE kind CONST)
@@ -190,10 +153,8 @@ builder scope [ConsRep {consFields}] = buildObj <$> sequence (implements scope)
     buildObj interfaces = wrapFields interfaces scope (mkFieldsDefinition consFields)
 builder scope cons = genericUnion cons
   where
-    typeData = __type scope
-    genericUnion =
-      mkUnionType scope typeData
-        . analyseRep (gqlTypeName typeData)
+    typeData = __typeData scope
+    genericUnion = mkUnionType scope . analyseRep (gqlTypeName typeData)
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value
@@ -248,13 +209,13 @@ instance GetFieldContent OUT where
       _ -> args
 
 updateByContent ::
-  GQLType a =>
-  (f kind a -> SchemaT (TypeContent TRUE cat CONST)) ->
+  (GQLType a, CategoryValue kind) =>
+  (f kind a -> SchemaT (TypeContent TRUE kind CONST)) ->
   f kind a ->
   SchemaT ()
 updateByContent f proxy =
   updateSchema
-    (gqlFingerprint $ __type proxy)
+    (gqlFingerprint $ __typeData proxy)
     deriveD
     proxy
   where
@@ -262,41 +223,45 @@ updateByContent f proxy =
       fmap
         ( TypeDefinition
             (description proxy)
-            (gqlTypeName (__type proxy))
+            (gqlTypeName (__typeData proxy))
             []
         )
         . f
 
 analyseRep :: TypeName -> [ConsRep (Maybe (FieldContent TRUE kind CONST))] -> ResRep (Maybe (FieldContent TRUE kind CONST))
-analyseRep baseName cons =
-  ResRep
-    { enumCons = fmap consName enumRep,
-      unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
-      unionRecordRep
-    }
+analyseRep baseName cons
+  | all isEmptyConstraint cons = EnumRep {enumCons = consName <$> cons}
+  | otherwise =
+    ResRep
+      { unionRef = fieldTypeName <$> concatMap consFields unionRefRep,
+        unionCons
+      }
   where
-    (enumRep, left1) = partition isEmptyConstraint cons
-    (unionRefRep, unionRecordRep) = partition (isUnionRef baseName) left1
+    (unionRefRep, unionCons) = partition (isUnionRef baseName) cons
 
 mkUnionType ::
   KindedType kind a ->
-  TypeData ->
   ResRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT (TypeContent TRUE kind CONST)
-mkUnionType InputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType OutputType _ ResRep {unionRef = [], unionRecordRep = [], enumCons} = pure $ mkEnumContent enumCons
-mkUnionType InputType _ ResRep {unionRef, unionRecordRep, enumCons} = DataInputUnion <$> typeMembers
+mkUnionType InputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
+mkUnionType OutputType EnumRep {enumCons} = pure $ mkEnumContent enumCons
+mkUnionType InputType ResRep {unionRef, unionCons} = DataInputUnion <$> typeMembers
   where
+    (nullaries, cons) = partition isEmptyConstraint unionCons
+    nullaryMembers :: [UnionMember IN CONST]
+    nullaryMembers = mkNullaryMember . consName <$> nullaries
+    defineEnumEmpty
+      | null nullaries = pure ()
+      | otherwise = defineEnumNull
     typeMembers :: SchemaT [UnionMember IN CONST]
-    typeMembers = withMembers <$> buildUnions unionRecordRep
+    typeMembers =
+      (<> nullaryMembers) . withRefs
+        <$> ( defineEnumEmpty *> buildUnions cons
+            )
       where
-        withMembers unionMembers = fmap mkUnionMember (unionRef <> unionMembers) <> fmap (`UnionMember` False) enumCons
-mkUnionType OutputType typeData ResRep {unionRef, unionRecordRep, enumCons} = DataUnion . map mkUnionMember <$> typeMembers
-  where
-    typeMembers = do
-      enums <- buildUnionEnum typeData enumCons
-      unions <- buildUnions unionRecordRep
-      pure (unionRef <> enums <> unions)
+        withRefs = fmap mkUnionMember . (unionRef <>)
+mkUnionType OutputType ResRep {unionRef, unionCons} =
+  DataUnion . map mkUnionMember . (unionRef <>) <$> buildUnions unionCons
 
 wrapFields :: [TypeName] -> KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 wrapFields _ InputType = DataInputObject
@@ -316,14 +281,27 @@ buildUnions ::
 buildUnions cons =
   traverse_ buildURecType cons $> fmap consName cons
   where
-    buildURecType = insertType . buildUnionRecord
+    buildURecType = buildUnionRecord >=> insertType
 
 buildUnionRecord ::
   PackObject kind =>
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
-  TypeDefinition kind CONST
-buildUnionRecord ConsRep {consName, consFields} =
-  mkType consName (packObject $ mkFieldsDefinition consFields)
+  SchemaT (TypeDefinition kind CONST)
+buildUnionRecord ConsRep {consName, consFields} = mkType consName . packObject <$> fields
+  where
+    fields
+      | null consFields = defineEnumNull $> singleton mkNullField
+      | otherwise = pure $ mkFieldsDefinition consFields
+
+defineEnumNull :: SchemaT ()
+defineEnumNull =
+  insertType
+    ( mkType unitTypeName (mkEnumContent [unitTypeName]) ::
+        TypeDefinition LEAF CONST
+    )
+
+mkNullField :: FieldDefinition cat s
+mkNullField = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
 
 class PackObject kind where
   packObject :: FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
@@ -333,41 +311,3 @@ instance PackObject OUT where
 
 instance PackObject IN where
   packObject = DataInputObject
-
-buildUnionEnum ::
-  TypeData ->
-  [TypeName] ->
-  SchemaT [TypeName]
-buildUnionEnum TypeData {gqlTypeName} enums = updates $> members
-  where
-    members
-      | null enums = []
-      | otherwise = [enumTypeWrapperName]
-    enumTypeName = gqlTypeName <> "Enum"
-    enumTypeWrapperName = enumTypeName <> "Object"
-    -------------------------
-    updates :: SchemaT ()
-    updates
-      | null enums = pure ()
-      | otherwise =
-        buildEnumObject enumTypeWrapperName enumTypeName
-          *> buildEnum enumTypeName enums
-
-buildEnum :: TypeName -> [TypeName] -> SchemaT ()
-buildEnum typeName tags =
-  insertType
-    ( mkType typeName (mkEnumContent tags) ::
-        TypeDefinition LEAF CONST
-    )
-
-buildEnumObject :: TypeName -> TypeName -> SchemaT ()
-buildEnumObject typeName enumTypeName =
-  insertType
-    ( mkType
-        typeName
-        ( DataObject []
-            $ singleton
-            $ mkInputValue "enum" [] enumTypeName
-        ) ::
-        TypeDefinition OBJECT CONST
-    )

@@ -18,7 +18,7 @@ import Data.Morpheus.Error.Input (typeViolation)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    fromElems,
+    singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -43,18 +43,20 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     ValidValue,
-    ValidationErrors,
     Value (..),
     Variable (..),
     Variable (..),
     VariableContent (..),
     isNullable,
     isWeaker,
+    mkTypeRef,
     msg,
     msgValidation,
     toCategory,
     toFieldName,
     typed,
+    unitFieldName,
+    unitTypeName,
     untyped,
     withPosition,
   )
@@ -204,21 +206,31 @@ validatInputUnion ::
 validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> violation (Just message) (Object rawFields)
-    Right (UnionMember {memberName}, Nothing) -> mkInputObject memberName []
-    Right (name, Just value) -> validatInputUnionMember name value
+    Right (name, value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
   ValidateWithDefault ctx schemaS valueS =>
   UnionMember IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx (Value VALID)
-validatInputUnionMember member@UnionMember {memberName} value = do
-  inputDef <- askTypeMember member
-  validValue <- validateInputByType [TypeMaybe] (toCategory inputDef) value
-  mkInputObject memberName [ObjectEntry (toFieldName memberName) validValue]
+validatInputUnionMember member value = do
+  inputDef <- askDef
+  mkInputUnionValue member <$> validateInputByType [TypeMaybe] inputDef value
+  where
+    askDef
+      | nullary member = askType (Typed $ mkTypeRef unitTypeName)
+      | otherwise = toCategory <$> askTypeMember member
 
-mkInputObject :: (Monad m, Failure ValidationErrors m) => TypeName -> [ObjectEntry s] -> m (Value s)
-mkInputObject name xs = Object <$> fromElems (ObjectEntry "__typename" (Enum name) : xs)
+mkInputUnionValue :: UnionMember IN s' -> Value s -> Value s
+mkInputUnionValue
+  UnionMember
+    { memberName,
+      nullary
+    } = Object . singleton . ObjectEntry (toFieldName memberName) . packNullary
+    where
+      packNullary
+        | nullary = Object . singleton . ObjectEntry unitFieldName
+        | otherwise = id
 
 -- INUT Object
 validateInputObject ::

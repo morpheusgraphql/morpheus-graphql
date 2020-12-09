@@ -64,34 +64,26 @@ import Data.Morpheus.Internal.Utils
     member,
     selectBy,
     selectOr,
-    size,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldContent (..),
     FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     IN,
-    Message,
-    Object,
-    ObjectEntry (..),
     Position (..),
     Ref (..),
     TRUE,
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
-    UnionMember (..),
+    TypeName (..),
     ValidationError,
     Value (..),
-    __inputname,
-    entryValue,
+    constraintInputUnion,
     fromAny,
     isNullable,
-    msg,
     msgValidation,
-    toFieldName,
   )
 import Data.Morpheus.Types.Internal.Validation.Error
   ( KindViolation (..),
@@ -255,42 +247,3 @@ selectKnown selector lib =
       (unknown scope validatorCTX lib selector)
       (keyOf selector)
       lib
-
-constraintInputUnion ::
-  forall stage schemaStage.
-  [UnionMember IN schemaStage] ->
-  Object stage ->
-  Either Message (UnionMember IN schemaStage, Maybe (Value stage))
-constraintInputUnion tags hm = do
-  (enum :: Value stage) <-
-    entryValue
-      <$> selectBy
-        ( "valid input union should contain \""
-            <> msg __inputname
-            <> "\" and actual value"
-        )
-        __inputname
-        hm
-  unionMember <- isPossibleInputUnion tags enum
-  case size hm of
-    1 -> pure (unionMember, Nothing)
-    2 -> do
-      value <-
-        entryValue
-          <$> selectBy
-            ( "value for Union \""
-                <> msg unionMember
-                <> "\" was not Provided."
-            )
-            (toFieldName $ memberName unionMember)
-            hm
-      pure (unionMember, Just value)
-    _ -> failure ("input union can have only one variant." :: Message)
-
-isPossibleInputUnion :: [UnionMember IN s] -> Value stage -> Either Message (UnionMember IN s)
-isPossibleInputUnion tags (Enum name) =
-  selectBy
-    (msg name <> " is not possible union type")
-    name
-    tags
-isPossibleInputUnion _ _ = failure $ "\"" <> msg __inputname <> "\" must be Enum"

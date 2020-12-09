@@ -46,7 +46,6 @@ import Data.Morpheus.Server.Internal.TH.Utils
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
-    defaultTypeOptions,
   )
 import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
@@ -74,10 +73,9 @@ import Data.Proxy (Proxy (..))
 import Language.Haskell.TH
 import Prelude
   ( ($),
-    (&&),
     (.),
-    Eq (..),
     concatMap,
+    id,
     null,
     otherwise,
   )
@@ -87,6 +85,10 @@ interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () 
 
 introspectInterface :: TypeName -> ExpQ
 introspectInterface = interfaceF . toName
+
+dropNamespaceOptions :: TypeKind -> TypeName -> GQLTypeOptions -> GQLTypeOptions
+dropNamespaceOptions KindEnum tName opt = opt {constructorTagModifier = stripConstructorNamespace tName}
+dropNamespaceOptions _ tName opt = opt {fieldLabelModifier = stripFieldNamespace tName}
 
 deriveGQLType :: ServerDecContext -> ServerTypeDefinition cat s -> Q [Dec]
 deriveGQLType
@@ -107,9 +109,8 @@ deriveGQLType
           tDescription = typeOriginal >>= typeDescription
           implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
           typeOptionsFunc
-            | namespace && tKind == KindEnum = [|GQLTypeOptions id (stripConstructorNamespace tName)|]
-            | namespace = [|GQLTypeOptions (stripFieldNamespace tName) id|]
-            | otherwise = [|defaultTypeOptions|]
+            | namespace = [|dropNamespaceOptions tKind tName|]
+            | otherwise = varE 'id
           fieldDescriptionsFunc = [|value|]
             where
               value = getDesc typeOriginal

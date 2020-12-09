@@ -35,14 +35,10 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     mkUnionContent,
     mkType,
     createScalarType,
-    mkInputUnionFields,
     initTypeLib,
     kindOf,
     isEntNode,
     lookupWith,
-    __inputname,
-    UnionMember (..),
-    mkUnionMember,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
     SchemaDefinition (..),
@@ -52,7 +48,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     typed,
     possibleTypes,
     possibleInterfaceTypes,
-    safeDefineType,
     defineSchemaWith,
   )
 where
@@ -92,32 +87,22 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    FieldName,
-    FieldName (..),
-    Msg (..),
     OperationType (..),
     TRUE,
     Token,
     TypeKind (..),
     TypeName,
-    TypeRef (..),
-    TypeWrapper (..),
     ValidationError,
     ValidationErrors,
     isNotSystemTypeName,
-    mkTypeRef,
-    msg,
     msgValidation,
-    toFieldName,
     toOperationType,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( Directive,
     DirectiveDefinition (..),
     Directives,
-    FieldDefinition (..),
     FieldsDefinition,
-    unsafeFromFields,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
@@ -139,6 +124,12 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     toAny,
     type (<=!),
     type (<=?),
+  )
+import Data.Morpheus.Types.Internal.AST.Union
+  ( DataInputUnion,
+    DataUnion,
+    mkInputUnionFields,
+    mkUnionMember,
   )
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
@@ -170,32 +161,13 @@ newtype Typed (cat :: TypeCategory) (s :: Stage) a = Typed
   { _untyped :: a
   }
 
-mkUnionMember :: TypeName -> UnionMember cat s
-mkUnionMember name = UnionMember name True
-
-data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
-  { memberName :: TypeName,
-    visibility :: Bool
-  }
-  deriving (Show, Lift, Eq)
-
-type DataUnion s = [UnionMember OUT s]
-
-type DataInputUnion s = [UnionMember IN s]
-
-instance RenderGQL (UnionMember cat s) where
-  render = render . memberName
-
-instance Msg (UnionMember cat s) where
-  msg = msg . memberName
-
-instance KeyOf TypeName (UnionMember cat s) where
-  keyOf = memberName
-
 -- scalar
 ------------------------------------------------------------------
 newtype ScalarDefinition = ScalarDefinition
   {validateValue :: Value VALID -> Either Token (Value VALID)}
+
+instance Eq ScalarDefinition where
+  _ == _ = False
 
 instance Show ScalarDefinition where
   show _ = "ScalarDefinition"
@@ -213,7 +185,7 @@ data DataEnumValue s = DataEnumValue
     enumName :: TypeName,
     enumDirectives :: [Directive s]
   }
-  deriving (Show, Lift)
+  deriving (Show, Lift, Eq)
 
 instance RenderGQL (DataEnumValue s) where
   render DataEnumValue {enumName} = render enumName
@@ -358,7 +330,7 @@ defineSchemaWith ::
 defineSchemaWith oTypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] oTypes
   let schema = (initTypeLib query) {mutation, subscription}
-  foldM (flip safeDefineType) schema types
+  foldM (flip defineType) schema types
 defineSchemaWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
@@ -457,7 +429,7 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
     typeDirectives :: Directives s,
     typeContent :: TypeContent TRUE a s
   }
-  deriving (Show, Lift)
+  deriving (Show, Lift, Eq)
 
 instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName
@@ -548,6 +520,8 @@ data
 
 deriving instance Show (TypeContent a b s)
 
+deriving instance Eq (TypeContent a b s)
+
 deriving instance Lift (TypeContent a b s)
 
 instance ToCategory (TypeContent TRUE) a ANY where
@@ -635,27 +609,16 @@ fromOperation :: Maybe (TypeDefinition OBJECT s) -> [TypeDefinition ANY s]
 fromOperation (Just datatype) = [toAny datatype]
 fromOperation Nothing = []
 
-safeDefineType ::
+defineType ::
   ( Monad m,
     Failure ValidationErrors m
   ) =>
-  TypeDefinition cat s ->
+  TypeDefinition k s ->
   Schema s ->
   m (Schema s)
-safeDefineType dt@TypeDefinition {typeName, typeContent = DataInputUnion enumKeys} lib = do
-  types <- insert unionTags (types lib) >>= insert (toAny dt)
-  pure lib {types}
+defineType datatype lib = updateTypes <$> insert (toAny datatype) (types lib)
   where
-    unionTags =
-      TypeDefinition
-        { typeName = typeName <> "Tags",
-          typeDescription = Nothing,
-          typeDirectives = [],
-          typeContent = mkEnumContent (fmap memberName enumKeys)
-        }
-safeDefineType datatype lib = do
-  types <- insert (toAny datatype) (types lib)
-  pure lib {types}
+    updateTypes types = lib {types}
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
@@ -675,36 +638,6 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
           <> msgValidation name
       ]
   _ -> pure Nothing
-
-__inputname :: FieldName
-__inputname = "inputname"
-
-mkInputUnionFields :: TypeName -> [UnionMember IN s] -> FieldsDefinition IN s
-mkInputUnionFields name members = unsafeFromFields $ fieldTag : fmap mkUnionField members
-  where
-    fieldTag =
-      FieldDefinition
-        { fieldName = __inputname,
-          fieldDescription = Nothing,
-          fieldContent = Nothing,
-          fieldType = mkTypeRef (name <> "Tags"),
-          fieldDirectives = []
-        }
-
-mkUnionField :: UnionMember IN s -> FieldDefinition IN s
-mkUnionField UnionMember {memberName} =
-  FieldDefinition
-    { fieldName = toFieldName memberName,
-      fieldDescription = Nothing,
-      fieldContent = Nothing,
-      fieldType =
-        TypeRef
-          { typeConName = memberName,
-            typeWrappers = [TypeMaybe],
-            typeArgs = Nothing
-          },
-      fieldDirectives = []
-    }
 
 --
 -- OTHER
@@ -736,5 +669,5 @@ instance RenderGQL (TypeDefinition a s) where
       __render (DataInputObject fields) = "input " <> render typeName <> render fields
       __render (DataInputUnion members) = "input " <> render typeName <> render fields
         where
-          fields = mkInputUnionFields typeName members
+          fields = mkInputUnionFields members
       __render DataObject {objectFields} = "type " <> render typeName <> render objectFields

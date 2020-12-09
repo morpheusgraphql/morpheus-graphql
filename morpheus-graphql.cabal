@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4f4683e0c6a040813b49314a575621595a6cc515377d78372f2e6ac0c718be74
+-- hash: d61549f882e6703d863c661af53d6be600b2717946df6067d0c189534db52a06
 
 name:           morpheus-graphql
 version:        0.16.0
@@ -168,17 +168,21 @@ data-files:
     test/Feature/InputType/variables/valueNotProvided/nonNullVariableWithDefaultValue/query.gql
     test/Feature/InputType/variables/valueNotProvided/nullableVariable/query.gql
     test/Feature/Schema/nameCollision/query.gql
-    test/Feature/TypeInference/introspection/complexInput/query.gql
-    test/Feature/TypeInference/introspection/complexUnion/query.gql
-    test/Feature/TypeInference/introspection/complexUnionEnum/query.gql
-    test/Feature/TypeInference/introspection/complexUnionIndexedTypes/query.gql
-    test/Feature/TypeInference/introspection/complexUnionRecord/query.gql
-    test/Feature/TypeInference/introspection/complexUnionScalar/query.gql
+    test/Feature/TypeCategoryCollision/Fail/failOnColision/query.gql
+    test/Feature/TypeCategoryCollision/Success/prefixed/query.gql
     test/Feature/TypeInference/introspection/enum/query.gql
+    test/Feature/TypeInference/introspection/input-union/empty/query.gql
+    test/Feature/TypeInference/introspection/input-union/input-union/query.gql
     test/Feature/TypeInference/introspection/inputObject/query.gql
     test/Feature/TypeInference/introspection/object/query.gql
+    test/Feature/TypeInference/introspection/union/named-products/query.gql
+    test/Feature/TypeInference/introspection/union/nullary-constructors/query.gql
+    test/Feature/TypeInference/introspection/union/positional-products/query.gql
+    test/Feature/TypeInference/introspection/union/scalars/query.gql
+    test/Feature/TypeInference/introspection/union/union/query.gql
     test/Feature/TypeInference/resolving/complexUnion/query.gql
-    test/Feature/TypeInference/resolving/input/query.gql
+    test/Feature/TypeInference/resolving/input/fail/query.gql
+    test/Feature/TypeInference/resolving/input/success/query.gql
     test/Feature/TypeInference/resolving/object/query.gql
     test/Feature/UnionType/cannotBeSpreadOnType/query.gql
     test/Feature/UnionType/fragmentOnAAndB/query.gql
@@ -360,18 +364,24 @@ data-files:
     test/Feature/InputType/variables/valueNotProvided/nullableVariable/response.json
     test/Feature/Schema/cases.json
     test/Feature/Schema/nameCollision/response.json
+    test/Feature/TypeCategoryCollision/Fail/cases.json
+    test/Feature/TypeCategoryCollision/Fail/failOnColision/response.json
+    test/Feature/TypeCategoryCollision/Success/cases.json
+    test/Feature/TypeCategoryCollision/Success/prefixed/response.json
     test/Feature/TypeInference/cases.json
-    test/Feature/TypeInference/introspection/complexInput/response.json
-    test/Feature/TypeInference/introspection/complexUnion/response.json
-    test/Feature/TypeInference/introspection/complexUnionEnum/response.json
-    test/Feature/TypeInference/introspection/complexUnionIndexedTypes/response.json
-    test/Feature/TypeInference/introspection/complexUnionRecord/response.json
-    test/Feature/TypeInference/introspection/complexUnionScalar/response.json
     test/Feature/TypeInference/introspection/enum/response.json
+    test/Feature/TypeInference/introspection/input-union/empty/response.json
+    test/Feature/TypeInference/introspection/input-union/input-union/response.json
     test/Feature/TypeInference/introspection/inputObject/response.json
     test/Feature/TypeInference/introspection/object/response.json
+    test/Feature/TypeInference/introspection/union/named-products/response.json
+    test/Feature/TypeInference/introspection/union/nullary-constructors/response.json
+    test/Feature/TypeInference/introspection/union/positional-products/response.json
+    test/Feature/TypeInference/introspection/union/scalars/response.json
+    test/Feature/TypeInference/introspection/union/union/response.json
     test/Feature/TypeInference/resolving/complexUnion/response.json
-    test/Feature/TypeInference/resolving/input/response.json
+    test/Feature/TypeInference/resolving/input/fail/response.json
+    test/Feature/TypeInference/resolving/input/success/response.json
     test/Feature/TypeInference/resolving/object/response.json
     test/Feature/UnionType/cannotBeSpreadOnType/response.json
     test/Feature/UnionType/cases.json
@@ -417,6 +427,7 @@ library
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.Types
+      Data.Morpheus.Utils.Kinded
       Paths_morpheus_graphql
   hs-source-dirs:
       src
@@ -448,6 +459,8 @@ test-suite morpheus-test
       Feature.InputType.API
       Feature.Schema.A2
       Feature.Schema.API
+      Feature.TypeCategoryCollision.Fail.API
+      Feature.TypeCategoryCollision.Success.API
       Feature.TypeInference.API
       Feature.UnionType.API
       Feature.WrappedTypeName.API

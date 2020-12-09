@@ -16,8 +16,9 @@ where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
-  ( Fetch (..),
-    GQLScalar (..),
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+    Fetch (..),
     ID (..),
     ScalarValue (..),
     defineByDocumentFile,
@@ -29,17 +30,21 @@ newtype Lifetime
   = Lifetime Int
   deriving (Show, Eq)
 
-instance GQLScalar Lifetime where
-  parseValue _ = pure (Lifetime 0)
-  serialize (Lifetime x) = Int x
+instance EncodeScalar Lifetime where
+  encodeScalar (Lifetime x) = Int x
+
+instance DecodeScalar Lifetime where
+  decodeScalar _ = pure (Lifetime 0)
 
 newtype Power
   = Power Int
   deriving (Show, Eq)
 
-instance GQLScalar Power where
-  parseValue _ = pure (Power 1)
-  serialize (Power x) = Int x
+instance EncodeScalar Power where
+  encodeScalar (Power x) = Int x
+
+instance DecodeScalar Power where
+  decodeScalar _ = pure (Power 1)
 
 defineByDocumentFile
   "assets/mythology.gql"

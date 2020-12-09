@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0e4275c173b38bbd418ec7b8e986f8b9542760b3cb6df2c53d5976715576a5f4
+-- hash: 3ed225b8bc9bb1a892c349297124abacbb9995102a863ba7c18be45140e44c04
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -194,6 +194,7 @@ library
       Data.Morpheus.Types.IO
       Data.Morpheus.Types.Internal.Resolving
       Data.Morpheus.Types.GQLScalar
+      Data.Morpheus.Types.GQLWrapper
       Data.Morpheus.Types.ID
       Data.Morpheus.Types.SelectionTree
   other-modules:
@@ -239,12 +240,15 @@ library
       Data.Morpheus.Types.Internal.AST.TH
       Data.Morpheus.Types.Internal.AST.TypeCategory
       Data.Morpheus.Types.Internal.AST.TypeSystem
+      Data.Morpheus.Types.Internal.AST.Union
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Config
       Data.Morpheus.Types.Internal.Resolving.Core
       Data.Morpheus.Types.Internal.Resolving.Event
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.Resolving.ResolverState
+      Data.Morpheus.Types.Internal.Resolving.ResolverValue
+      Data.Morpheus.Types.Internal.Resolving.RootResolverValue
       Data.Morpheus.Types.Internal.Stitching
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error
@@ -269,6 +273,7 @@ library
       aeson >=1.4.4.0 && <=1.6
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
     , hashable >=1.0.0
     , megaparsec >=7.0.0 && <10.0.0
     , mtl >=2.0 && <=3.0
@@ -299,6 +304,7 @@ test-suite morpheus-test
       aeson
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
     , directory >=1.0
     , hashable >=1.0.0
     , megaparsec >=7.0.0 && <10.0.0
