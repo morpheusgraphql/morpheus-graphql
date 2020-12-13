@@ -21,8 +21,9 @@ where
 
 import qualified Data.Map as M
 import Data.Morpheus.Kind
-  ( GQL_KIND,
+  ( DerivationKind,
     INTERFACE,
+    MANUAL,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -82,45 +83,18 @@ import GHC.Generics
   )
 import Relude
 
-newtype ContextValue (kind :: GQL_KIND) a = ContextValue
+newtype ContextValue (kind :: DerivationKind) a = ContextValue
   { unContextValue :: a
   }
 
 class Encode (m :: * -> *) resolver where
   encode :: resolver -> m (ResolverValue m)
 
-instance {-# OVERLAPPABLE #-} (EncodeKind (KIND a) m a) => Encode m a where
+instance (EncodeKind (KIND a) m a) => Encode m a where
   encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
 
---  Tuple  (a,b)
-instance Encode m (Pair k v) => Encode m (k, v) where
-  encode = encode . uncurry Pair
-
---  Map
-instance (Monad m, Encode m [Pair k v]) => Encode m (Map k v) where
-  encode = encode . fmap (uncurry Pair) . M.toList
-
---  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance
-  ( DecodeConstraint a,
-    Generic a,
-    Monad m,
-    Encode (Resolver o e m) b,
-    LiftOperation o
-  ) =>
-  Encode (Resolver o e m) (a -> b)
-  where
-  encode f =
-    getArguments
-      >>= liftResolverState . decodeArguments
-      >>= encode . f
-
---  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (Monad m, Encode (Resolver o e m) b, LiftOperation o) => Encode (Resolver o e m) (Resolver o e m b) where
-  encode x = x >>= encode
-
 -- ENCODE GQL KIND
-class EncodeKind (kind :: GQL_KIND) (m :: * -> *) (a :: *) where
+class EncodeKind (kind :: DerivationKind) (m :: * -> *) (a :: *) where
   encodeKind :: ContextValue kind a -> m (ResolverValue m)
 
 instance (EncodeWrapper f, Encode m a, Monad m) => EncodeKind WRAPPER m (f a) where
@@ -134,6 +108,39 @@ instance (EncodeConstraint m a, Monad m) => EncodeKind TYPE m a where
 
 instance (EncodeConstraint m a, Monad m) => EncodeKind INTERFACE m a where
   encodeKind = pure . exploreResolvers . unContextValue
+
+--  Tuple  (a,b)
+instance
+  Encode m (Pair k v) =>
+  EncodeKind MANUAL m (k, v)
+  where
+  encodeKind = encode . uncurry Pair . unContextValue
+
+--  Map
+instance (Monad m, Encode m [Pair k v]) => EncodeKind MANUAL m (Map k v) where
+  encodeKind = encode . fmap (uncurry Pair) . M.toList . unContextValue
+
+--  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
+instance
+  ( DecodeConstraint a,
+    Generic a,
+    Monad m,
+    Encode (Resolver o e m) b,
+    LiftOperation o
+  ) =>
+  EncodeKind MANUAL (Resolver o e m) (a -> b)
+  where
+  encodeKind (ContextValue f) =
+    getArguments
+      >>= liftResolverState . decodeArguments
+      >>= encode . f
+
+--  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
+instance
+  (Monad m, Encode (Resolver o e m) b, LiftOperation o) =>
+  EncodeKind MANUAL (Resolver o e m) (Resolver o e m b)
+  where
+  encodeKind (ContextValue value) = value >>= encode
 
 convertNode ::
   Monad m =>

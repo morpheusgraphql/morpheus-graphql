@@ -37,7 +37,8 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Kind
-  ( GQL_KIND,
+  ( DerivationKind,
+    MANUAL,
     SCALAR,
     TYPE,
     ToValue,
@@ -187,7 +188,7 @@ __isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 --       description = const "your description ..."
 --  @
 class ToValue (KIND a) => GQLType a where
-  type KIND a :: GQL_KIND
+  type KIND a :: DerivationKind
   type KIND a = TYPE
 
   implements :: f a -> [SchemaT TypeName]
@@ -270,20 +271,20 @@ instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
   __type _ = __type $ Proxy @[a]
 
-instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
-  type KIND (Map k v) = WRAPPER
-  __type _ = __type $ Proxy @[Pair k v]
-
-instance GQLType a => GQLType (Resolver o e m a) where
-  type KIND (Resolver o e m a) = WRAPPER
-  __type _ = __type $ Proxy @a
-
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
   __type _ = __type $ Proxy @a
 
 instance GQLType b => GQLType (a -> b) where
-  type KIND (a -> b) = WRAPPER
+  type KIND (a -> b) = MANUAL
   __type _ = __type $ Proxy @b
+
+instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
+  type KIND (Map k v) = MANUAL
+  __type _ = __type $ Proxy @[Pair k v]
+
+instance GQLType a => GQLType (Resolver o e m a) where
+  type KIND (Resolver o e m a) = MANUAL
+  __type _ = __type $ Proxy @a
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)

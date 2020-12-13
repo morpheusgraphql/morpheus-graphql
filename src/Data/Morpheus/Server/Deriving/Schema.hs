@@ -34,8 +34,9 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
 import Data.Morpheus.Kind
-  ( GQL_KIND,
+  ( DerivationKind,
     INTERFACE,
+    MANUAL,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -169,7 +170,7 @@ deriveSchema _ = resultOr failure pure schema
         <*> deriveObjectType (Proxy @(mut (Resolver MUTATION e m)))
         <*> deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m)))
 
-instance {-# OVERLAPPABLE #-} (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
+instance (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (Proxy @cat) (KindedProxy :: KindedProxy (KIND a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
@@ -179,30 +180,8 @@ class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveContent :: f kind a -> SchemaT (Maybe (FieldContent TRUE kind CONST))
   deriveContent _ = pure Nothing
 
-deriveTypeWith :: DeriveType cat a => f a -> kinded cat b -> SchemaT ()
-deriveTypeWith x = deriveType . setType x
-
--- Tuple
-instance DeriveType cat (Pair k v) => DeriveType cat (k, v) where
-  deriveType = deriveTypeWith (Proxy @(Pair k v))
-
--- Map
-instance DeriveType cat [Pair k v] => DeriveType cat (Map k v) where
-  deriveType = deriveTypeWith (Proxy @[Pair k v])
-
--- Resolver : a -> Resolver b
-instance
-  ( GQLType b,
-    DeriveType OUT b,
-    DeriveTypeConstraint IN a
-  ) =>
-  DeriveType OUT (a -> m b)
-  where
-  deriveContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
-  deriveType _ = deriveType (outputType $ Proxy @b)
-
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
-class DeriveKindedType (cat :: TypeCategory) (kind :: GQL_KIND) a where
+class DeriveKindedType (cat :: TypeCategory) (kind :: DerivationKind) a where
   deriveKindedType :: f cat -> proxy kind a -> SchemaT ()
 
 type DeriveTypeConstraint kind a =
@@ -225,6 +204,27 @@ instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
 
 instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
   deriveKindedType _ = deriveInputType
+
+-- Tuple
+instance DeriveType cat (Pair k v) => DeriveKindedType cat MANUAL (k, v) where
+  deriveKindedType = deriveTypeWith (Proxy @(Pair k v))
+
+-- Map
+instance DeriveType cat [Pair k v] => DeriveKindedType cat MANUAL (Map k v) where
+  deriveKindedType = deriveTypeWith (Proxy @[Pair k v])
+
+instance
+  ( GQLType b,
+    DeriveType OUT b,
+    DeriveTypeConstraint IN a
+  ) =>
+  DeriveType OUT (a -> m b)
+  where
+  deriveContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
+  deriveType _ = deriveType (outputType $ Proxy @b)
+
+deriveTypeWith :: DeriveType cat a => f a -> f' cat -> proxy MANUAL b -> SchemaT ()
+deriveTypeWith targetType kind _ = deriveType (kinded kind targetType)
 
 deriveScalarContent :: (DecodeScalar a) => f k a -> SchemaT (TypeContent TRUE LEAF CONST)
 deriveScalarContent = pure . DataScalar . scalarValidator

@@ -11,26 +11,28 @@ module Data.Morpheus.Kind
     WRAPPER,
     UNION,
     INPUT_OBJECT,
-    GQL_KIND,
+    DerivationKind,
     OUTPUT,
     INPUT,
     INTERFACE,
     ToValue (..),
     isObject,
     TYPE,
+    MANUAL,
   )
 where
 
 import Relude
 
-data GQL_KIND
+data DerivationKind
   = SCALAR
   | TYPE
   | WRAPPER
   | INTERFACE
+  | MANUAL
 
-class ToValue (a :: GQL_KIND) where
-  toValue :: f a -> GQL_KIND
+class ToValue (a :: DerivationKind) where
+  toValue :: f a -> DerivationKind
 
 instance ToValue 'SCALAR where
   toValue _ = SCALAR
@@ -44,7 +46,10 @@ instance ToValue 'TYPE where
 instance ToValue 'INTERFACE where
   toValue _ = INTERFACE
 
-isObject :: GQL_KIND -> Bool
+instance ToValue 'MANUAL where
+  toValue _ = MANUAL
+
+isObject :: DerivationKind -> Bool
 isObject TYPE = True
 isObject INTERFACE = True
 isObject _ = False
@@ -60,6 +65,8 @@ type INTERFACE = 'INTERFACE
 
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
+
+type MANUAL = 'MANUAL
 
 -- deprecated types
 
