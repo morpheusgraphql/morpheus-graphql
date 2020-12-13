@@ -263,10 +263,6 @@ instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
   __type _ = wrapper list . __type (Proxy @a)
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
-  type KIND (a, b) = WRAPPER
-  __type _ = __type $ Proxy @(Pair a b)
-
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
   __type _ = __type $ Proxy @[a]
@@ -275,6 +271,9 @@ instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
   __type _ = __type $ Proxy @a
 
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
+
+-- Manual
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = MANUAL
   __type _ = __type $ Proxy @b
@@ -287,4 +286,6 @@ instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = MANUAL
   __type _ = __type $ Proxy @a
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
+  type KIND (a, b) = MANUAL
+  __type _ = __type $ Proxy @(Pair a b)

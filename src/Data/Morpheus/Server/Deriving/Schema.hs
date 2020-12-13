@@ -106,7 +106,6 @@ import Data.Morpheus.Utils.Kinded
     kinded,
     outputType,
     setKind,
-    setType,
   )
 import Data.Proxy (Proxy (..))
 import GHC.Generics (Generic, Rep)
@@ -172,17 +171,18 @@ deriveSchema _ = resultOr failure pure schema
 
 instance (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (Proxy @cat) (KindedProxy :: KindedProxy (KIND a) a)
+  deriveContent _ = deriveKindedContent (Proxy @cat) (KindedProxy :: KindedProxy (KIND a) a)
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveType :: f kind a -> SchemaT ()
-
   deriveContent :: f kind a -> SchemaT (Maybe (FieldContent TRUE kind CONST))
-  deriveContent _ = pure Nothing
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType (cat :: TypeCategory) (kind :: DerivationKind) a where
-  deriveKindedType :: f cat -> proxy kind a -> SchemaT ()
+  deriveKindedType :: f cat -> kinded kind a -> SchemaT ()
+  deriveKindedContent :: f cat -> kinded kind a -> SchemaT (Maybe (FieldContent TRUE cat CONST))
+  deriveKindedContent _ _ = pure Nothing
 
 type DeriveTypeConstraint kind a =
   ( DeriveTypeConstraintOpt kind a,
@@ -206,6 +206,9 @@ instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
   deriveKindedType _ = deriveInputType
 
 -- Tuple
+instance DeriveType cat a => DeriveKindedType cat MANUAL (Resolver o e m a) where
+  deriveKindedType = deriveTypeWith (Proxy @a)
+
 instance DeriveType cat (Pair k v) => DeriveKindedType cat MANUAL (k, v) where
   deriveKindedType = deriveTypeWith (Proxy @(Pair k v))
 
@@ -218,10 +221,10 @@ instance
     DeriveType OUT b,
     DeriveTypeConstraint IN a
   ) =>
-  DeriveType OUT (a -> m b)
+  DeriveKindedType OUT MANUAL (a -> m b)
   where
-  deriveContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
-  deriveType _ = deriveType (outputType $ Proxy @b)
+  deriveKindedContent _ _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
+  deriveKindedType _ _ = deriveType (outputType $ Proxy @b)
 
 deriveTypeWith :: DeriveType cat a => f a -> f' cat -> proxy MANUAL b -> SchemaT ()
 deriveTypeWith targetType kind _ = deriveType (kinded kind targetType)
