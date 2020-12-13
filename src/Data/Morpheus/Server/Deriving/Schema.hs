@@ -35,10 +35,10 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Kind
   ( CUSTOM,
-    DerivationKind,
     INTERFACE,
     SCALAR,
     TYPE,
+    TargetDerivationKind,
     WRAPPER,
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
@@ -179,7 +179,7 @@ class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveContent :: f kind a -> SchemaT (Maybe (FieldContent TRUE kind CONST))
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
-class DeriveKindedType (cat :: TypeCategory) (kind :: DerivationKind) a where
+class DeriveKindedType (cat :: TypeCategory) (kind :: TargetDerivationKind) a where
   deriveKindedType :: f cat -> kinded kind a -> SchemaT ()
   deriveKindedContent :: f cat -> kinded kind a -> SchemaT (Maybe (FieldContent TRUE cat CONST))
   deriveKindedContent _ _ = pure Nothing

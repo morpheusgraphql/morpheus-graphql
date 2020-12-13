@@ -21,9 +21,9 @@ module Data.Morpheus.Server.Deriving.Decode
 where
 
 import Data.Morpheus.Kind
-  ( DerivationKind,
-    SCALAR,
+  ( SCALAR,
     TYPE,
+    TargetDerivationKind,
     WRAPPER,
   )
 import Data.Morpheus.Server.Deriving.Utils
@@ -101,7 +101,7 @@ instance DecodeKind (KIND a) a => Decode a where
   decode = decodeKind (Proxy @(KIND a))
 
 -- | Decode GraphQL type with Specific Kind
-class DecodeKind (kind :: DerivationKind) a where
+class DecodeKind (kind :: TargetDerivationKind) a where
   decodeKind :: Proxy kind -> ValidValue -> ResolverState a
 
 -- SCALAR

@@ -11,7 +11,7 @@ module Data.Morpheus.Kind
     WRAPPER,
     UNION,
     INPUT_OBJECT,
-    DerivationKind,
+    TargetDerivationKind,
     OUTPUT,
     INPUT,
     INTERFACE,
@@ -24,15 +24,15 @@ where
 
 import Relude
 
-data DerivationKind
+data TargetDerivationKind
   = SCALAR
   | TYPE
   | WRAPPER
   | INTERFACE
   | CUSTOM
 
-class ToValue (a :: DerivationKind) where
-  toValue :: f a -> DerivationKind
+class ToValue (a :: TargetDerivationKind) where
+  toValue :: f a -> TargetDerivationKind
 
 instance ToValue 'SCALAR where
   toValue _ = SCALAR
@@ -49,7 +49,7 @@ instance ToValue 'INTERFACE where
 instance ToValue 'CUSTOM where
   toValue _ = CUSTOM
 
-isObject :: DerivationKind -> Bool
+isObject :: TargetDerivationKind -> Bool
 isObject TYPE = True
 isObject INTERFACE = True
 isObject _ = False

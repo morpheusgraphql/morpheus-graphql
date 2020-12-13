@@ -22,10 +22,10 @@ where
 import qualified Data.Map as M
 import Data.Morpheus.Kind
   ( CUSTOM,
-    DerivationKind,
     INTERFACE,
     SCALAR,
     TYPE,
+    TargetDerivationKind,
     WRAPPER,
   )
 import Data.Morpheus.Server.Deriving.Channels
@@ -83,7 +83,7 @@ import GHC.Generics
   )
 import Relude
 
-newtype ContextValue (kind :: DerivationKind) a = ContextValue
+newtype ContextValue (kind :: TargetDerivationKind) a = ContextValue
   { unContextValue :: a
   }
 
@@ -94,19 +94,40 @@ instance (EncodeKind (KIND a) m a) => Encode m a where
   encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
 
 -- ENCODE GQL KIND
-class EncodeKind (kind :: DerivationKind) (m :: * -> *) (a :: *) where
+class EncodeKind (kind :: TargetDerivationKind) (m :: * -> *) (a :: *) where
   encodeKind :: ContextValue kind a -> m (ResolverValue m)
 
-instance (EncodeWrapper f, Encode m a, Monad m) => EncodeKind WRAPPER m (f a) where
+instance
+  ( EncodeWrapper f,
+    Encode m a,
+    Monad m
+  ) =>
+  EncodeKind WRAPPER m (f a)
+  where
   encodeKind = encodeWrapper encode . unContextValue
 
-instance (EncodeScalar a, Monad m) => EncodeKind SCALAR m a where
+instance
+  ( EncodeScalar a,
+    Monad m
+  ) =>
+  EncodeKind SCALAR m a
+  where
   encodeKind = pure . ResScalar . encodeScalar . unContextValue
 
-instance (EncodeConstraint m a, Monad m) => EncodeKind TYPE m a where
+instance
+  ( EncodeConstraint m a,
+    Monad m
+  ) =>
+  EncodeKind TYPE m a
+  where
   encodeKind = pure . exploreResolvers . unContextValue
 
-instance (EncodeConstraint m a, Monad m) => EncodeKind INTERFACE m a where
+instance
+  ( EncodeConstraint m a,
+    Monad m
+  ) =>
+  EncodeKind INTERFACE m a
+  where
   encodeKind = pure . exploreResolvers . unContextValue
 
 --  Tuple  (a,b)

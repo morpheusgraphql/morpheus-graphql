@@ -38,9 +38,9 @@ where
 
 import Data.Morpheus.Kind
   ( CUSTOM,
-    DerivationKind,
     SCALAR,
     TYPE,
+    TargetDerivationKind,
     ToValue,
     WRAPPER,
     isObject,
@@ -188,7 +188,7 @@ __isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 --       description = const "your description ..."
 --  @
 class ToValue (KIND a) => GQLType a where
-  type KIND a :: DerivationKind
+  type KIND a :: TargetDerivationKind
   type KIND a = TYPE
 
   implements :: f a -> [SchemaT TypeName]
