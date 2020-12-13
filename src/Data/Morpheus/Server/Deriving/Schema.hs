@@ -205,10 +205,10 @@ instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
 instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
   deriveKindedType _ = deriveInputType
 
--- Tuple
 instance DeriveType cat a => DeriveKindedType cat MANUAL (Resolver o e m a) where
   deriveKindedType = deriveTypeWith (Proxy @a)
 
+-- Tuple
 instance DeriveType cat (Pair k v) => DeriveKindedType cat MANUAL (k, v) where
   deriveKindedType = deriveTypeWith (Proxy @(Pair k v))
 
