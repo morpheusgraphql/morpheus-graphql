@@ -61,6 +61,7 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directives,
     FieldName,
+    OUT,
     QUERY,
     TypeCategory (..),
     TypeName (..),
@@ -191,7 +192,7 @@ class ToValue (KIND a) => GQLType a where
   type KIND a :: TargetDerivationKind
   type KIND a = TYPE
 
-  implements :: f a -> [SchemaT TypeName]
+  implements :: f a -> [SchemaT OUT TypeName]
   implements _ = []
 
   description :: f a -> Maybe Text

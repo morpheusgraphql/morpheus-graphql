@@ -47,16 +47,3 @@ deriveApp root =
     FailApp
     (`mkApp` deriveModel root)
     (deriveSchema (Identity root))
-
-class
-  Encode
-    (m :: * -> *)
-    type
-  where
-  encode :: resolver -> m (ResolverValue m)
-
-class Decode a where
-  decode :: ValidValue -> ResolverState a
-
-class DeriveType (context :: TypeCategory) (a :: *) where
-  deriveType :: f context a -> SchemaBuilder (TypeContent kind CONST)
