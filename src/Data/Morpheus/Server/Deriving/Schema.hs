@@ -34,9 +34,9 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
 import Data.Morpheus.Kind
-  ( DerivationKind,
+  ( CUSTOM,
+    DerivationKind,
     INTERFACE,
-    MANUAL,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -205,15 +205,15 @@ instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
 instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
   deriveKindedType _ = deriveInputType
 
-instance DeriveType cat a => DeriveKindedType cat MANUAL (Resolver o e m a) where
+instance DeriveType cat a => DeriveKindedType cat CUSTOM (Resolver o e m a) where
   deriveKindedType = deriveTypeWith (Proxy @a)
 
 -- Tuple
-instance DeriveType cat (Pair k v) => DeriveKindedType cat MANUAL (k, v) where
+instance DeriveType cat (Pair k v) => DeriveKindedType cat CUSTOM (k, v) where
   deriveKindedType = deriveTypeWith (Proxy @(Pair k v))
 
 -- Map
-instance DeriveType cat [Pair k v] => DeriveKindedType cat MANUAL (Map k v) where
+instance DeriveType cat [Pair k v] => DeriveKindedType cat CUSTOM (Map k v) where
   deriveKindedType = deriveTypeWith (Proxy @[Pair k v])
 
 instance
@@ -221,12 +221,12 @@ instance
     DeriveType OUT b,
     DeriveTypeConstraint IN a
   ) =>
-  DeriveKindedType OUT MANUAL (a -> m b)
+  DeriveKindedType OUT CUSTOM (a -> m b)
   where
   deriveKindedContent _ _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
   deriveKindedType _ _ = deriveType (outputType $ Proxy @b)
 
-deriveTypeWith :: DeriveType cat a => f a -> f' cat -> proxy MANUAL b -> SchemaT ()
+deriveTypeWith :: DeriveType cat a => f a -> f' cat -> proxy CUSTOM b -> SchemaT ()
 deriveTypeWith targetType kind _ = deriveType (kinded kind targetType)
 
 deriveScalarContent :: (DecodeScalar a) => f k a -> SchemaT (TypeContent TRUE LEAF CONST)

@@ -21,9 +21,9 @@ where
 
 import qualified Data.Map as M
 import Data.Morpheus.Kind
-  ( DerivationKind,
+  ( CUSTOM,
+    DerivationKind,
     INTERFACE,
-    MANUAL,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -112,12 +112,12 @@ instance (EncodeConstraint m a, Monad m) => EncodeKind INTERFACE m a where
 --  Tuple  (a,b)
 instance
   Encode m (Pair k v) =>
-  EncodeKind MANUAL m (k, v)
+  EncodeKind CUSTOM m (k, v)
   where
   encodeKind = encode . uncurry Pair . unContextValue
 
 --  Map
-instance (Monad m, Encode m [Pair k v]) => EncodeKind MANUAL m (Map k v) where
+instance (Monad m, Encode m [Pair k v]) => EncodeKind CUSTOM m (Map k v) where
   encodeKind = encode . fmap (uncurry Pair) . M.toList . unContextValue
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
@@ -128,7 +128,7 @@ instance
     Encode (Resolver o e m) b,
     LiftOperation o
   ) =>
-  EncodeKind MANUAL (Resolver o e m) (a -> b)
+  EncodeKind CUSTOM (Resolver o e m) (a -> b)
   where
   encodeKind (ContextValue f) =
     getArguments
@@ -138,7 +138,7 @@ instance
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance
   (Monad m, Encode (Resolver o e m) b, LiftOperation o) =>
-  EncodeKind MANUAL (Resolver o e m) (Resolver o e m b)
+  EncodeKind CUSTOM (Resolver o e m) (Resolver o e m b)
   where
   encodeKind (ContextValue value) = value >>= encode
 

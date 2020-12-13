@@ -18,7 +18,7 @@ module Data.Morpheus.Kind
     ToValue (..),
     isObject,
     TYPE,
-    MANUAL,
+    CUSTOM,
   )
 where
 
@@ -29,7 +29,7 @@ data DerivationKind
   | TYPE
   | WRAPPER
   | INTERFACE
-  | MANUAL
+  | CUSTOM
 
 class ToValue (a :: DerivationKind) where
   toValue :: f a -> DerivationKind
@@ -46,8 +46,8 @@ instance ToValue 'TYPE where
 instance ToValue 'INTERFACE where
   toValue _ = INTERFACE
 
-instance ToValue 'MANUAL where
-  toValue _ = MANUAL
+instance ToValue 'CUSTOM where
+  toValue _ = CUSTOM
 
 isObject :: DerivationKind -> Bool
 isObject TYPE = True
@@ -66,7 +66,7 @@ type INTERFACE = 'INTERFACE
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
-type MANUAL = 'MANUAL
+type CUSTOM = 'CUSTOM
 
 -- deprecated types
 

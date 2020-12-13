@@ -37,8 +37,8 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Kind
-  ( DerivationKind,
-    MANUAL,
+  ( CUSTOM,
+    DerivationKind,
     SCALAR,
     TYPE,
     ToValue,
@@ -275,17 +275,17 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
 
 -- Manual
 instance GQLType b => GQLType (a -> b) where
-  type KIND (a -> b) = MANUAL
+  type KIND (a -> b) = CUSTOM
   __type _ = __type $ Proxy @b
 
 instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
-  type KIND (Map k v) = MANUAL
+  type KIND (Map k v) = CUSTOM
   __type _ = __type $ Proxy @[Pair k v]
 
 instance GQLType a => GQLType (Resolver o e m a) where
-  type KIND (Resolver o e m a) = MANUAL
+  type KIND (Resolver o e m a) = CUSTOM
   __type _ = __type $ Proxy @a
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
-  type KIND (a, b) = MANUAL
+  type KIND (a, b) = CUSTOM
   __type _ = __type $ Proxy @(Pair a b)
