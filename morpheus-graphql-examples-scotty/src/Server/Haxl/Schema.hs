@@ -13,7 +13,7 @@
 module Server.Haxl.Schema
   ( Deity (..),
     Realm (..),
-    State (EmptyState),
+    State (DeityState),
     Haxl,
     getAllDeityIds,
     getDeityById,
@@ -53,7 +53,7 @@ deriving instance Show (UserReq a)
 instance ShowP UserReq where showp = show
 
 instance StateKey UserReq where
-  data State UserReq = EmptyState
+  data State UserReq = DeityState
 
 instance DataSourceName UserReq where
   dataSourceName _ = "UserDataSource"

@@ -5,27 +5,46 @@
 
 module Server.Haxl.API
   ( app,
+    httpEndpoint,
   )
 where
 
+import Control.Applicative ((<|>))
+import Control.Monad.IO.Class (liftIO)
 import Data.Morpheus
   ( App,
     deriveApp,
+    runApp,
+  )
+import Data.Morpheus.Server
+  ( httpPlayground,
   )
 import Data.Morpheus.Types
   ( GQLType,
     ResolverQ,
     RootResolver (..),
     Undefined (..),
+    render,
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Haxl.Core
 import Server.Haxl.Schema
   ( Deity,
     Haxl,
     Realm,
+    State (DeityState),
     getAllDeityIds,
     getDeityById,
+  )
+import Server.Utils (isSchema)
+import Web.Scotty
+  ( RoutePattern,
+    ScottyM,
+    body,
+    get,
+    post,
+    raw,
   )
 
 data Query m = Query
@@ -63,15 +82,16 @@ rootResolver =
 app :: App () Haxl
 app = deriveApp rootResolver
 
-httpEndpoint :: App () Haxl -> App () IO
-httpEndpoint = do
-  -- Initialize Haxl state.
-  let stateStore = stateSet UserState {} stateEmpty
+httpEndpoint ::
+  RoutePattern ->
+  App () Haxl ->
+  ScottyM ()
+httpEndpoint route app' = do
+  get route $ (isSchema *> raw (render app)) <|> raw httpPlayground
+  post route $ raw =<< (liftIO . runHaxlApp . runApp app' =<< body)
 
-  -- Initialize Haxl environment.
+runHaxlApp :: GenHaxl () w b -> IO b
+runHaxlApp c = do
+  let stateStore = stateSet DeityState stateEmpty
   env0 <- initEnv stateStore ()
-
-  -- Run action.
-  names <- runHaxl env0 getAllUsernames
-
-  print names
+  runHaxl env0 c
