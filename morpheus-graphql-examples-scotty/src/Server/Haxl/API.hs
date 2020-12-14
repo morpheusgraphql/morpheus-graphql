@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Server.Haxl.API
   ( app,
@@ -25,10 +24,7 @@ import GHC.Generics (Generic)
 import Server.Haxl.Schema
   ( City,
     Deity,
-    Human,
     dbDeity,
-    someDeity,
-    someHuman,
   )
 
 data Query m = Query

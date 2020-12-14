@@ -12,12 +12,10 @@
 
 module Server.Haxl.Schema
   ( Deity (..),
-    Human (..),
     Realm (..),
     City (..),
     dbDeity,
-    someHuman,
-    someDeity,
+    State (EmptyState),
   )
 where
 
@@ -49,7 +47,7 @@ deriving instance Show (UserReq a)
 instance ShowP UserReq where showp = show
 
 instance StateKey UserReq where
-  data State UserReq = UserState_
+  data State UserReq = EmptyState
 
 instance DataSourceName UserReq where
   dataSourceName _ = "UserDataSource"
@@ -57,10 +55,10 @@ instance DataSourceName UserReq where
 instance DataSource u UserReq where
   fetch _ _ _ = SyncFetch myfetch
 
-sqlSingle :: [a]
+sqlSingle :: a
 sqlSingle = undefined
 
-sqlMulty :: [Id] -> m [a]
+sqlMulty :: Applicative m => [Id] -> m [a]
 sqlMulty _ = pure []
 
 fetchAll :: Foldable t => t (ResultVar a) -> IO ()
@@ -93,28 +91,6 @@ data Deity = Deity
     bornAt :: Maybe City
   }
   deriving (Generic, GQLType)
-
-data Human m = Human
-  { name :: m Text,
-    bornAt :: m City
-  }
-  deriving (Generic, GQLType)
-
-someHuman :: Applicative m => Human m
-someHuman =
-  Human
-    { name = pure "Odysseus",
-      bornAt = pure Ithaca
-    }
-
-someDeity :: Deity
-someDeity =
-  Deity
-    { name = "Morpheus",
-      power = Just "Shapeshifting",
-      realm = Dream,
-      bornAt = Nothing
-    }
 
 dbDeity :: Text -> Maybe City -> IO (Either String Deity)
 dbDeity _ bornAt =
