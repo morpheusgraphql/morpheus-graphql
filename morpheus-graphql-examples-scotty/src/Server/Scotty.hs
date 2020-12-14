@@ -20,6 +20,7 @@ import Data.Morpheus.Server
   )
 import Data.Morpheus.Subscriptions (webSocketsApp)
 import qualified Server.Fraxl.API as Fraxl
+import qualified Server.Haxl.API as Haxl
 import qualified Server.Mythology.API as Mythology
 import Server.Sophisticated.API
   ( EVENT,
@@ -50,3 +51,4 @@ scottyServer = do
       httpEndpoint "/mythology" [] Mythology.app
       Fraxl.httpEndpoint "/fraxl"
       httpEndpoint "/th" [] TH.app
+      httpEndpoint "/haxl" [] Haxl.app

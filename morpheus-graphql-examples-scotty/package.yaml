@@ -30,6 +30,7 @@ dependencies:
   - http-types
   - stm
   - fraxl
+  - haxl
 
 data-files:
   - assets/**/*.json

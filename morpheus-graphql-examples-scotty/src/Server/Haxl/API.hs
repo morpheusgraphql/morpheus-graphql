@@ -4,7 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Server.Mythology.API
+module Server.Haxl.API
   ( app,
   )
 where
@@ -22,7 +22,7 @@ import Data.Morpheus.Types
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Server.Mythology.Character
+import Server.Haxl.Schema
   ( Deity,
     Human,
     dbDeity,
