@@ -57,7 +57,7 @@ instance StateKey DeityReq where
   data State DeityReq = DeityState
 
 instance DataSourceName DeityReq where
-  dataSourceName _ = "UserDataSource"
+  dataSourceName _ = "DeityDataSource"
 
 instance DataSource u DeityReq where
   fetch _ _ _ = BackgroundFetch myfetch
