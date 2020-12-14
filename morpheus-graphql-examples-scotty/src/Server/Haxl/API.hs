@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -20,22 +18,22 @@ import Data.Morpheus.Server
   ( httpPlayground,
   )
 import Data.Morpheus.Types
-  ( GQLType,
-    ResolverQ,
+  ( ResolverQ,
     RootResolver (..),
     Undefined (..),
     render,
   )
-import Data.Text (Text)
-import GHC.Generics (Generic)
 import Haxl.Core
-import Server.Haxl.Schema
-  ( Deity,
-    Haxl,
-    Realm,
+import Server.Haxl.DataSource
+  ( Haxl,
     State (DeityState),
     getAllDeityIds,
     getDeityById,
+  )
+import Server.Haxl.Schema
+  ( Deity (..),
+    DeityArgs (..),
+    Query (..),
   )
 import Server.Utils (isSchema)
 import Web.Scotty
@@ -46,18 +44,6 @@ import Web.Scotty
     post,
     raw,
   )
-
-data Query m = Query
-  { deity :: DeityArgs -> m Deity,
-    deities :: m [Deity]
-  }
-  deriving (Generic, GQLType)
-
-data DeityArgs = DeityArgs
-  { name :: Text,
-    bornPlace :: Maybe Realm
-  }
-  deriving (Generic, GQLType)
 
 resolveDeity :: DeityArgs -> ResolverQ e Haxl Deity
 resolveDeity DeityArgs {name} = getDeityById name
