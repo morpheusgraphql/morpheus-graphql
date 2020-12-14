@@ -13,28 +13,34 @@
 module Server.Haxl.Schema
   ( Deity (..),
     Realm (..),
-    City (..),
-    dbDeity,
     State (EmptyState),
+    Haxl,
+    getAllDeityIds,
+    getDeityById,
+    Id,
   )
 where
 
 import Control.Monad
 import Data.Hashable
-import Data.Morpheus.Types (GQLType (..))
+import Data.Morpheus.Types
+  ( GQLType (..),
+    ResolverQ,
+    lift,
+  )
 import Data.Text (Text)
 import Data.Typeable
 import GHC.Generics (Generic)
 import Haxl.Core
 
-type Id = Int
+type Haxl = GenHaxl () ()
+
+type Id = Text
 
 data UserReq a where
   GetAllIds :: UserReq [Id]
-  GetNameById :: Id -> UserReq Name
+  GetNameById :: Id -> UserReq Deity
   deriving (Typeable)
-
-type Name = String
 
 deriving instance Eq (UserReq a)
 
@@ -55,20 +61,32 @@ instance DataSourceName UserReq where
 instance DataSource u UserReq where
   fetch _ _ _ = SyncFetch myfetch
 
-sqlSingle :: a
-sqlSingle = undefined
+sqlSingle :: (Applicative m) => m [Id]
+sqlSingle = pure ["Morpheus"]
 
-sqlMulty :: Applicative m => [Id] -> m [a]
-sqlMulty _ = pure []
+fetchDeities :: Applicative m => [Id] -> m [Deity]
+fetchDeities = traverse single
+  where
+    single name =
+      pure
+        Deity
+          { name,
+            power = Just "Shapeshifting",
+            realm = Dream,
+            bornAt = Just Olympus
+          }
 
-fetchAll :: Foldable t => t (ResultVar a) -> IO ()
+fetchAll :: Foldable t => t (ResultVar [Id]) -> IO ()
 fetchAll allIdVars = do
   allIds <- sqlSingle
   mapM_ (`putSuccess` allIds) allIdVars
 
-fetchList :: [Id] -> [ResultVar a] -> IO ()
-fetchList ids vars = do
-  names <- sqlMulty ids
+fetchList :: [Id] -> [ResultVar Deity] -> IO ()
+fetchList = handleList fetchDeities
+
+handleList :: (t -> IO [a]) -> t -> [ResultVar a] -> IO ()
+handleList f ids vars = do
+  names <- f ids
   mapM_ (uncurry putSuccess) (zip vars names)
 
 myfetch ::
@@ -81,40 +99,27 @@ myfetch blockedFetches = do
     allIdVars :: [ResultVar [Id]]
     allIdVars = [r | BlockedFetch GetAllIds r <- blockedFetches]
     ids :: [Id]
-    vars :: [ResultVar Name]
+    vars :: [ResultVar Deity]
     (ids, vars) = unzip [(userId, r) | BlockedFetch (GetNameById userId) r <- blockedFetches]
+
+data Realm
+  = Olympus
+  | Sky
+  | Sea
+  | Underworld
+  | Dream
+  deriving (Generic, Show, GQLType)
 
 data Deity = Deity
   { name :: Text,
     power :: Maybe Text,
     realm :: Realm,
-    bornAt :: Maybe City
+    bornAt :: Maybe Realm
   }
-  deriving (Generic, GQLType)
+  deriving (Generic, Show, GQLType)
 
-dbDeity :: Text -> Maybe City -> IO (Either String Deity)
-dbDeity _ bornAt =
-  return $ Right $
-    Deity
-      { name = "Morpheus",
-        power = Just "Shapeshifting",
-        realm = Dream,
-        bornAt
-      }
+getAllDeityIds :: ResolverQ e Haxl [Id]
+getAllDeityIds = lift $ dataFetch GetAllIds
 
-data Realm
-  = MountOlympus
-  | Sky
-  | Sea
-  | Underworld
-  | Dream
-  deriving (Generic, GQLType)
-
-data City
-  = Athens
-  | Colchis
-  | Delphi
-  | Ithaca
-  | Sparta
-  | Troy
-  deriving (Generic, GQLType)
+getDeityById :: Id -> ResolverQ e Haxl Deity
+getDeityById userId = lift $ dataFetch (GetNameById userId)

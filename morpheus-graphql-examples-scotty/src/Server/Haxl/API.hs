@@ -17,14 +17,15 @@ import Data.Morpheus.Types
     ResolverQ,
     RootResolver (..),
     Undefined (..),
-    liftEither,
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Server.Haxl.Schema
-  ( City,
-    Deity,
-    dbDeity,
+  ( Deity,
+    Haxl,
+    Realm,
+    getAllDeityIds,
+    getDeityById,
   )
 
 data Query m = Query
@@ -35,25 +36,42 @@ data Query m = Query
 
 data DeityArgs = DeityArgs
   { name :: Text,
-    bornPlace :: Maybe City
+    bornPlace :: Maybe Realm
   }
   deriving (Generic, GQLType)
 
-resolveDeity :: DeityArgs -> ResolverQ e IO Deity
-resolveDeity DeityArgs {name, bornPlace} =
-  liftEither $ dbDeity name bornPlace
+resolveDeity :: DeityArgs -> ResolverQ e Haxl Deity
+resolveDeity DeityArgs {name} = getDeityById name
 
-rootResolver :: RootResolver IO () Query Undefined Undefined
+resolveDeities :: ResolverQ e Haxl [Deity]
+resolveDeities = do
+  userIds <- getAllDeityIds
+  traverse getDeityById userIds
+
+rootResolver :: RootResolver Haxl () Query Undefined Undefined
 rootResolver =
   RootResolver
     { queryResolver =
         Query
           { deity = resolveDeity,
-            deities = pure []
+            deities = resolveDeities
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
 
-app :: App () IO
+app :: App () Haxl
 app = deriveApp rootResolver
+
+httpEndpoint :: App () Haxl -> App () IO
+httpEndpoint = do
+  -- Initialize Haxl state.
+  let stateStore = stateSet UserState {} stateEmpty
+
+  -- Initialize Haxl environment.
+  env0 <- initEnv stateStore ()
+
+  -- Run action.
+  names <- runHaxl env0 getAllUsernames
+
+  print names

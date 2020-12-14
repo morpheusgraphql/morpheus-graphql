@@ -51,4 +51,4 @@ scottyServer = do
       httpEndpoint "/mythology" [] Mythology.app
       Fraxl.httpEndpoint "/fraxl"
       httpEndpoint "/th" [] TH.app
-      httpEndpoint "/haxl" [] Haxl.app
+      Haxl.httpEndpoint "/haxl" [] Haxl.app
