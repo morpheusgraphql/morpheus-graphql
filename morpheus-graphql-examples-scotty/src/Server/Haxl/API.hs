@@ -31,31 +31,15 @@ import Server.Haxl.Schema
     someHuman,
   )
 
-data Character m
-  = CharacterHuman (Human m) -- Only <tyconName><conName> should generate direct link
-  | CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
-      -- RECORDS
-  | Creature {name :: Text, age :: Int}
-  | BoxedDeity {boxedDeity :: Deity}
-  | SomeScalarRecord {scalar :: Text}
-  | --- Types
-    SomeDeity Deity
-  | SomeScalar Int
-  | SomeMutli Int Text
-  | --- ENUMS
-    Zeus
-  | Cronus
-  deriving (Generic, GQLType)
-
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
-    character :: [Character m]
+    deities :: m [Deity]
   }
   deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs
-  { name :: Text, -- Required Argument
-    bornPlace :: Maybe City -- Optional Argument
+  { name :: Text,
+    bornPlace :: Maybe City
   }
   deriving (Generic, GQLType)
 
@@ -63,25 +47,14 @@ resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
   liftEither $ dbDeity name bornPlace
 
-resolveCharacter :: Applicative m => [Character m]
-resolveCharacter =
-  [ CharacterHuman someHuman,
-    CharacterDeity someDeity,
-    Creature {name = "Lamia", age = 205},
-    BoxedDeity {boxedDeity = someDeity},
-    SomeScalarRecord {scalar = "Some Text"},
-    ---
-    SomeDeity someDeity,
-    SomeScalar 12,
-    SomeMutli 21 "some text",
-    Zeus,
-    Cronus
-  ]
-
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
-    { queryResolver = Query {deity = resolveDeity, character = resolveCharacter},
+    { queryResolver =
+        Query
+          { deity = resolveDeity,
+            deities = pure []
+          },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }

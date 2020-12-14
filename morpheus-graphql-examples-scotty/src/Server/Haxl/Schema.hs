@@ -57,30 +57,34 @@ instance DataSourceName UserReq where
 instance DataSource u UserReq where
   fetch _ _ _ = SyncFetch myfetch
 
-sqlSingle :: Int -> a
-sqlSingle _ = undefined
+sqlSingle :: [a]
+sqlSingle = undefined
 
 sqlMulty :: [Id] -> m [a]
-sqlMulty _ = undefined
+sqlMulty _ = pure []
+
+fetchAll :: Foldable t => t (ResultVar a) -> IO ()
+fetchAll allIdVars = do
+  allIds <- sqlSingle
+  mapM_ (`putSuccess` allIds) allIdVars
+
+fetchList :: [Id] -> [ResultVar a] -> IO ()
+fetchList ids vars = do
+  names <- sqlMulty ids
+  mapM_ (uncurry putSuccess) (zip vars names)
 
 myfetch ::
   [BlockedFetch UserReq] ->
   IO ()
 myfetch blockedFetches = do
-  unless (null allIdVars) $ do
-    allIds <- sqlSingle 1
-    mapM_ (`putSuccess` allIds) allIdVars
-  unless (null ids) $ do
-    names <- sqlMulty ids
-    mapM_ (uncurry putSuccess) (zip vars names)
+  unless (null allIdVars) (fetchAll allIdVars)
+  unless (null ids) $ fetchList ids vars
   where
     allIdVars :: [ResultVar [Id]]
     allIdVars = [r | BlockedFetch GetAllIds r <- blockedFetches]
     ids :: [Id]
     vars :: [ResultVar Name]
-    (ids, vars) =
-      unzip
-        [(userId, r) | BlockedFetch (GetNameById userId) r <- blockedFetches]
+    (ids, vars) = unzip [(userId, r) | BlockedFetch (GetNameById userId) r <- blockedFetches]
 
 data Deity = Deity
   { name :: Text,
