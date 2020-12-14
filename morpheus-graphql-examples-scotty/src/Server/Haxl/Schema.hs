@@ -62,7 +62,12 @@ instance DataSource u UserReq where
   fetch _ _ _ = SyncFetch myfetch
 
 sqlSingle :: (Applicative m) => m [Id]
-sqlSingle = pure ["Morpheus"]
+sqlSingle =
+  pure
+    [ "Morpheus",
+      "Zeus",
+      "Ares"
+    ]
 
 fetchDeities :: Applicative m => [Id] -> m [Deity]
 fetchDeities = traverse single
