@@ -23,13 +23,13 @@ import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Server.Haxl.Schema
-  ( Deity,
+  ( City,
+    Deity,
     Human,
     dbDeity,
     someDeity,
     someHuman,
   )
-import Server.Mythology.Place (City)
 
 data Character m
   = CharacterHuman (Human m) -- Only <tyconName><conName> should generate direct link
