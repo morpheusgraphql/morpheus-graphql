@@ -23,6 +23,7 @@ import Data.Morpheus.Types
     Undefined (..),
     render,
   )
+import Data.Morpheus.Types.IO (MapAPI)
 import Haxl.Core
 import Server.Haxl.DataSource
   ( Haxl,
@@ -74,10 +75,10 @@ httpEndpoint ::
   ScottyM ()
 httpEndpoint route app' = do
   get route $ (isSchema *> raw (render app)) <|> raw httpPlayground
-  post route $ raw =<< (liftIO . runHaxlApp . runApp app' =<< body)
+  post route $ raw =<< (liftIO . runHaxlApp app' =<< body)
 
-runHaxlApp :: GenHaxl () w b -> IO b
-runHaxlApp c = do
+runHaxlApp :: MapAPI a b => App e Haxl -> a -> IO b
+runHaxlApp haxlApp input = do
   let stateStore = stateSet DeityState stateEmpty
-  env0 <- initEnv stateStore ()
-  runHaxl env0 c
+  enviroment <- initEnv stateStore ()
+  runHaxl enviroment (runApp haxlApp input)

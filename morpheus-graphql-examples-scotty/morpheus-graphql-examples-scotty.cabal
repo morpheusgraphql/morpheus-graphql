@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ae6ab40109ed476a87f1f59b73d9cd873c2a2f8b356ae803651874efb0b57c81
+-- hash: ac1773992aebe4e92b529304ff0dd16e75ae0deafb3c193f350da306fb8a5f4a
 
 name:           morpheus-graphql-examples-scotty
 version:        0.1.0
@@ -35,6 +35,7 @@ executable scotty-server
       Server.Fraxl.API
       Server.Fraxl.FakeDB
       Server.Haxl.API
+      Server.Haxl.DataSource
       Server.Haxl.Schema
       Server.MonadIO.API
       Server.Mythology.API
