@@ -29,8 +29,12 @@ data Deity = Deity
   }
   deriving (Show, Generic)
 
+nonClashingTypeNameModifier :: Bool -> String -> String
+nonClashingTypeNameModifier True original = "Input" <> original
+nonClashingTypeNameModifier False original = original
+
 instance GQLType Deity where
-  typeOptions _ opt = opt {prefixInputType = True}
+  typeOptions _ opt = opt {typeNameModifier = nonClashingTypeNameModifier}
 
 newtype DeityArgs = DeityArgs
   { input :: Deity
