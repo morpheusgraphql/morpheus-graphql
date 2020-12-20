@@ -130,7 +130,6 @@ getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeCons
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
--- { gqlTypeName = (TypeName . pack . typeNameModifier) $ unpack . readTypeName $ prefix shouldPrefix cat <> getTypename proxy,
 deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
 deriveTypeData proxy typeNameModifier cat =
   TypeData

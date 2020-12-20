@@ -30,7 +30,7 @@ data Deity = Deity
   deriving (Show, Generic)
 
 nonClashingTypeNameModifier :: Bool -> String -> String
-nonClashingTypeNameModifier True original = "Input" <> original
+nonClashingTypeNameModifier True original = "Input" ++ original
 nonClashingTypeNameModifier False original = original
 
 instance GQLType Deity where
