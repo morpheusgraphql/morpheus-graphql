@@ -18,7 +18,7 @@
   }
   deriving (Show, Generic)
 
-  deityTypeNameModifier isInput original =
+  deityTypeNameModifier isInput original
     | isInput = "Input" ++ original
     | otherwise = original
 
