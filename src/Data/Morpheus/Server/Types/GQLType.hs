@@ -102,16 +102,13 @@ data GQLTypeOptions = GQLTypeOptions
     typeNameModifier :: Bool -> String -> String
   }
 
-defaultTypeNameModifier :: Bool -> String -> String
-defaultTypeNameModifier _ original = original
-
 defaultTypeOptions :: GQLTypeOptions
 defaultTypeOptions =
   GQLTypeOptions
     { fieldLabelModifier = id,
       constructorTagModifier = id,
       -- default is just a pass through for the original type name
-      typeNameModifier = defaultTypeNameModifier
+      typeNameModifier = const id
     }
 
 __typeData ::
@@ -133,13 +130,11 @@ getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
 deriveTypeData proxy typeNameModifier cat =
   TypeData
-    { gqlTypeName = TypeName . pack $ typeNameModifier (isInput cat) originalTypeName,
+    { gqlTypeName = TypeName . pack $ typeNameModifier (cat == IN) originalTypeName,
       gqlWrappers = [],
       gqlFingerprint = getFingerprint cat proxy
     }
   where
-    isInput IN = True
-    isInput _ = False
     originalTypeName = unpack . readTypeName $ getTypename proxy
 
 getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
