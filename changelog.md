@@ -7,7 +7,7 @@
 - (issue [#543](https://github.com/morpheusgraphql/morpheus-graphql/issues/543) & [#558](https://github.com/morpheusgraphql/morpheus-graphql/issues/558)): `GQLTypeOptions` supports new option `typeNameModifier`.
   Before the schema failed if you wanted to use the same type for input and output, and the user had no control over the eventual GraphQL type name of the generated schema. Now with this option you can
   provide a function of type `Bool -> String -> String` that generates a custom GraphQL type name. The first argument is a `Bool` that is `True` if the type is an input, and `False` otherwise. The second
-  argument is a `String` representing the initial, auto-generated GraphQL type name. The function returns the desired type name.
+  argument is a `String` representing the initial, auto-generated GraphQL type name. The function returns the desired type name. thanks @nalchevanidze & @bradsherman
 
   e.g this schema will not fail. morpheus will generate types: `Deity` and `InputDeity`
 
@@ -18,8 +18,9 @@
   }
   deriving (Show, Generic)
 
-  deityTypeNameModifier True original = "Input" ++ original
-  deityTypeNameModifier False original = "Output" ++ original
+  deityTypeNameModifier isInput original =
+    | isInput = "Input" ++ original
+    | otherwise = original
 
   instance GQLType Deity where
     typeOptions _ opt = opt {typeNameModifier = deityTypeNameModifier}
