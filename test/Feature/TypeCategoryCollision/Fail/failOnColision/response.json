@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "It appears that the Haskell type \"Deity\" was used as both input and output type, which is not allowed by GraphQL specifications.\n\n If you enable \"{ prefixInputType = True }\" in \"GQLType.typeOptions\", the compiler can generate a new input type \"InputDeity\" to solve this problem.",
+      "message": "It appears that the Haskell type \"Deity\" was used as both input and output type, which is not allowed by GraphQL specifications.\n\n If you supply \"typeNameModifier\" in \"GQLType.typeOptions\", you can override the default type names for \"Deity\" to solve this problem.",
       "locations": []
     }
   ]
