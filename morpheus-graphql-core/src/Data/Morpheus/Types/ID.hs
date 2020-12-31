@@ -33,7 +33,8 @@ newtype ID = ID
     ( Show,
       Generic,
       Eq,
-      Hashable
+      Hashable,
+      IsString
     )
 
 instance DecodeScalar ID where

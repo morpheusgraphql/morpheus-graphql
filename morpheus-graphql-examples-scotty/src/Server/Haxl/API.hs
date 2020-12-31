@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Server.Haxl.API
@@ -18,7 +19,9 @@ import Data.Morpheus.Server
   ( httpPlayground,
   )
 import Data.Morpheus.Types
-  ( ID,
+  ( ComposedResolver,
+    ID,
+    QUERY,
     ResolverQ,
     RootResolver (..),
     Undefined (..),
@@ -52,21 +55,26 @@ getDeityIds :: ResolverQ e Haxl [ID]
 getDeityIds = lift $ dataFetch GetAllIds
 
 getDeityNameById :: ID -> ResolverQ e Haxl Text
-getDeityNameById deiytId = lift $ dataFetch (GetNameById deiytId)
+getDeityNameById = lift . dataFetch . GetNameById
 
 getDeityPowerById :: ID -> ResolverQ e Haxl (Maybe Text)
-getDeityPowerById deiytId = lift $ dataFetch (GetPowerById deiytId)
+getDeityPowerById = lift . dataFetch . GetPowerById
 
 getDeityById :: ID -> ResolverQ e Haxl Deity
-getDeityById deityId = Deity <$> getDeityNameById deityId <*> getDeityPowerById deityId
+getDeityById deityId =
+  pure
+    Deity
+      { name = getDeityNameById deityId,
+        power = getDeityPowerById deityId
+      }
 
 resolveDeity :: DeityArgs -> ResolverQ e Haxl Deity
 resolveDeity DeityArgs {deityId} = getDeityById deityId
 
-resolveDeities :: ResolverQ e Haxl [Deity]
+resolveDeities :: ComposedResolver QUERY e Haxl [] Deity
 resolveDeities = do
-  userIds <- getDeityIds
-  traverse getDeityById userIds
+  ids <- getDeityIds
+  traverse getDeityById ids
 
 rootResolver :: RootResolver Haxl () Query Undefined Undefined
 rootResolver =

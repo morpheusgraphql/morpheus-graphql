@@ -16,13 +16,12 @@ import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-data Deity = Deity
-  { name :: Text,
-    power :: Maybe Text
+data Deity m = Deity
+  { name :: m Text,
+    power :: m (Maybe Text)
   }
   deriving
     ( Generic,
-      Show,
       GQLType
     )
 
@@ -33,8 +32,8 @@ newtype DeityArgs = DeityArgs {deityId :: ID}
     )
 
 data Query m = Query
-  { deity :: DeityArgs -> m Deity,
-    deities :: m [Deity]
+  { deity :: DeityArgs -> m (Deity m),
+    deities :: m [Deity m]
   }
   deriving
     ( Generic,

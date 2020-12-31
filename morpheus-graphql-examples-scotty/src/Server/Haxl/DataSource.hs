@@ -19,8 +19,6 @@ import Control.Monad
 import Data.Hashable
 import Data.Morpheus.Types
   ( ID (..),
-    ResolverQ,
-    lift,
   )
 import Data.Text (Text)
 import Data.Typeable
@@ -33,7 +31,6 @@ import Haxl.Core
     ResultVar (..),
     ShowP (..),
     StateKey (..),
-    dataFetch,
     putSuccess,
   )
 import Server.Haxl.Schema
@@ -69,7 +66,9 @@ instance DataSource u DeityReq where
   fetch _ _ _ = BackgroundFetch myfetch
 
 fetchDeityIds :: IO [ID]
-fetchDeityIds = pure $ map ID ["Morpheus", "Zeus", "Ares"]
+fetchDeityIds = do
+  print ("Fetch Ids" :: String)
+  pure ["Morpheus", "Zeus", "Ares"]
 
 fetchDeityNames :: [ID] -> IO [Text]
 fetchDeityNames ids = do
