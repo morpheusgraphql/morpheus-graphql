@@ -41,17 +41,17 @@ import Server.Haxl.Schema
 type Haxl = GenHaxl () ()
 
 data DeityReq a where
-  GetAllIds :: DeityReq [ID]
-  GetNameById :: ID -> DeityReq Text
-  GetPowerById :: ID -> DeityReq (Maybe Text)
+  GetDeityIds :: DeityReq [ID]
+  GetDeityNameById :: ID -> DeityReq Text
+  GetDeityPowerById :: ID -> DeityReq (Maybe Text)
   deriving (Typeable)
 
 deriving instance Eq (DeityReq a)
 
 instance Hashable (DeityReq a) where
-  hashWithSalt s GetAllIds = hashWithSalt s (0 :: Int)
-  hashWithSalt s (GetNameById a) = hashWithSalt s (1 :: Int, a)
-  hashWithSalt s (GetPowerById a) = hashWithSalt s (2 :: Int, a)
+  hashWithSalt s GetDeityIds = hashWithSalt s (0 :: Int)
+  hashWithSalt s (GetDeityNameById a) = hashWithSalt s (1 :: Int, a)
+  hashWithSalt s (GetDeityPowerById a) = hashWithSalt s (2 :: Int, a)
 
 deriving instance Show (DeityReq a)
 
@@ -65,21 +65,6 @@ instance DataSourceName DeityReq where
 
 instance DataSource u DeityReq where
   fetch _ _ _ = BackgroundFetch myfetch
-
-fetchDeityIds :: IO [ID]
-fetchDeityIds = do
-  print ("Fetch Ids" :: String)
-  pure ["Morpheus", "Zeus", "Ares"]
-
-fetchDeityNames :: [ID] -> IO [Text]
-fetchDeityNames ids = do
-  print ("Fetch Name for: " <> show ids)
-  pure (map unpackID ids)
-
-fetchDeityPower :: [ID] -> IO [Maybe Text]
-fetchDeityPower ids = do
-  print ("Fetch Power for: " <> show ids)
-  pure $ map (const $ Just "Shapeshifting") ids
 
 fetchAll :: Foldable t => t (ResultVar [ID]) -> IO ()
 fetchAll allIdVars = do
@@ -98,8 +83,25 @@ myfetch ::
   IO ()
 myfetch blockedFetches = do
   unless (null allIdVars) (fetchAll allIdVars)
-  handleBatched fetchDeityNames [(uid, r) | BlockedFetch (GetNameById uid) r <- blockedFetches]
-  handleBatched fetchDeityPower [(uid, r) | BlockedFetch (GetPowerById uid) r <- blockedFetches]
+  handleBatched fetchDeityNames [(uid, r) | BlockedFetch (GetDeityNameById uid) r <- blockedFetches]
+  handleBatched fetchDeityPowers [(uid, r) | BlockedFetch (GetDeityPowerById uid) r <- blockedFetches]
   where
     allIdVars :: [ResultVar [ID]]
-    allIdVars = [r | BlockedFetch GetAllIds r <- blockedFetches]
+    allIdVars = [r | BlockedFetch GetDeityIds r <- blockedFetches]
+
+-- Fetch
+
+fetchDeityIds :: IO [ID]
+fetchDeityIds = do
+  print ("Fetch Ids" :: String)
+  pure ["Morpheus", "Zeus", "Ares"]
+
+fetchDeityNames :: [ID] -> IO [Text]
+fetchDeityNames ids = do
+  print ("Fetch Name for: " <> show ids)
+  pure (map unpackID ids)
+
+fetchDeityPowers :: [ID] -> IO [Maybe Text]
+fetchDeityPowers ids = do
+  print ("Fetch Power for: " <> show ids)
+  pure $ map (const $ Just "Shapeshifting") ids

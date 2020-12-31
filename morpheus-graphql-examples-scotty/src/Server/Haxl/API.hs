@@ -52,15 +52,17 @@ import Web.Scotty
     raw,
   )
 
+-- FETCH
 getDeityIds :: Haxl [ID]
-getDeityIds = dataFetch GetAllIds
+getDeityIds = dataFetch GetDeityIds
 
 getDeityNameById :: ID -> Haxl Text
-getDeityNameById = dataFetch . GetNameById
+getDeityNameById = dataFetch . GetDeityNameById
 
 getDeityPowerById :: ID -> Haxl (Maybe Text)
-getDeityPowerById = dataFetch . GetPowerById
+getDeityPowerById = dataFetch . GetDeityPowerById
 
+-- RESOLVERS
 getDeityById :: ID -> ResolverQ e Haxl Deity
 getDeityById deityId =
   pure
