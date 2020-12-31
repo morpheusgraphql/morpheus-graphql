@@ -16,3 +16,4 @@ extra-deps:
   - dependent-sum-0.4
   - fastsum-0.1.1.1
   - type-aligned-0.9.6
+  - haxl-2.3.0.0
