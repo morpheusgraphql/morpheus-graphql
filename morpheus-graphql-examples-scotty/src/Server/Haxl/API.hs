@@ -18,7 +18,8 @@ import Data.Morpheus.Server
   ( httpPlayground,
   )
 import Data.Morpheus.Types
-  ( ResolverQ,
+  ( ID,
+    ResolverQ,
     RootResolver (..),
     Undefined (..),
     render,
@@ -28,8 +29,9 @@ import Haxl.Core
 import Server.Haxl.DataSource
   ( Haxl,
     State (DeityState),
-    getAllDeityIds,
-    getDeityById,
+    getDeityIds,
+    getNameById,
+    getPowerById,
   )
 import Server.Haxl.Schema
   ( Deity (..),
@@ -46,12 +48,15 @@ import Web.Scotty
     raw,
   )
 
+getDeityById :: ID -> ResolverQ e Haxl Deity
+getDeityById deityId = Deity <$> getNameById deityId <*> getPowerById deityId
+
 resolveDeity :: DeityArgs -> ResolverQ e Haxl Deity
-resolveDeity DeityArgs {name} = getDeityById name
+resolveDeity DeityArgs {deityId} = getDeityById deityId
 
 resolveDeities :: ResolverQ e Haxl [Deity]
 resolveDeities = do
-  userIds <- getAllDeityIds
+  userIds <- getDeityIds
   traverse getDeityById userIds
 
 rootResolver :: RootResolver Haxl () Query Undefined Undefined
