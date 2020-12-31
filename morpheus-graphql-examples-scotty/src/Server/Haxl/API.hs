@@ -22,6 +22,7 @@ import Data.Morpheus.Types
   ( ComposedResolver,
     ID,
     QUERY,
+    Resolver,
     ResolverQ,
     RootResolver (..),
     Undefined (..),
@@ -51,21 +52,21 @@ import Web.Scotty
     raw,
   )
 
-getDeityIds :: ResolverQ e Haxl [ID]
-getDeityIds = lift $ dataFetch GetAllIds
+getDeityIds :: Haxl [ID]
+getDeityIds = dataFetch GetAllIds
 
-getDeityNameById :: ID -> ResolverQ e Haxl Text
-getDeityNameById = lift . dataFetch . GetNameById
+getDeityNameById :: ID -> Haxl Text
+getDeityNameById = dataFetch . GetNameById
 
-getDeityPowerById :: ID -> ResolverQ e Haxl (Maybe Text)
-getDeityPowerById = lift . dataFetch . GetPowerById
+getDeityPowerById :: ID -> Haxl (Maybe Text)
+getDeityPowerById = dataFetch . GetPowerById
 
 getDeityById :: ID -> ResolverQ e Haxl Deity
 getDeityById deityId =
   pure
     Deity
-      { name = getDeityNameById deityId,
-        power = getDeityPowerById deityId
+      { name = lift (getDeityNameById deityId),
+        power = lift (getDeityPowerById deityId)
       }
 
 resolveDeity :: DeityArgs -> ResolverQ e Haxl Deity
@@ -73,17 +74,20 @@ resolveDeity DeityArgs {deityId} = getDeityById deityId
 
 resolveDeities :: ComposedResolver QUERY e Haxl [] Deity
 resolveDeities = do
-  ids <- getDeityIds
+  ids <- lift getDeityIds
   traverse getDeityById ids
+
+resolveQuery :: Query (Resolver QUERY e Haxl)
+resolveQuery =
+  Query
+    { deity = resolveDeity,
+      deities = resolveDeities
+    }
 
 rootResolver :: RootResolver Haxl () Query Undefined Undefined
 rootResolver =
   RootResolver
-    { queryResolver =
-        Query
-          { deity = resolveDeity,
-            deities = resolveDeities
-          },
+    { queryResolver = resolveQuery,
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }

@@ -20,6 +20,7 @@ import Data.Hashable
 import Data.Morpheus.Types
   ( ID (..),
   )
+import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Data.Typeable
 import Haxl.Core
