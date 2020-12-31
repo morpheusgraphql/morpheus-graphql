@@ -70,14 +70,18 @@ instance DataSourceName DeityReq where
 instance DataSource u DeityReq where
   fetch _ _ _ = BackgroundFetch myfetch
 
-fetchDeityIds :: (Applicative m) => m [ID]
+fetchDeityIds :: IO [ID]
 fetchDeityIds = pure $ map ID ["Morpheus", "Zeus", "Ares"]
 
-fetchDeityNames :: Applicative m => [ID] -> m [Text]
-fetchDeityNames = pure . map unpackID
+fetchDeityNames :: [ID] -> IO [Text]
+fetchDeityNames ids = do
+  print ("Fetch Name for: " <> show ids)
+  pure (map unpackID ids)
 
-fetchDeityPower :: Applicative m => [ID] -> m [Maybe Text]
-fetchDeityPower = pure . map (const $ Just "Shapeshifting")
+fetchDeityPower :: [ID] -> IO [Maybe Text]
+fetchDeityPower ids = do
+  print ("Fetch Power for: " <> show ids)
+  pure $ map (const $ Just "Shapeshifting") ids
 
 fetchAll :: Foldable t => t (ResultVar [ID]) -> IO ()
 fetchAll allIdVars = do
