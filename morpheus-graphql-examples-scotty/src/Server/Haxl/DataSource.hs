@@ -11,9 +11,7 @@ module Server.Haxl.DataSource
   ( Deity (..),
     State (DeityState),
     Haxl,
-    getDeityIds,
-    getNameById,
-    getPowerById,
+    DeityReq (..),
   )
 where
 
@@ -105,12 +103,3 @@ myfetch blockedFetches = do
   where
     allIdVars :: [ResultVar [ID]]
     allIdVars = [r | BlockedFetch GetAllIds r <- blockedFetches]
-
-getDeityIds :: ResolverQ e Haxl [ID]
-getDeityIds = lift $ dataFetch GetAllIds
-
-getNameById :: ID -> ResolverQ e Haxl Text
-getNameById userId = lift $ dataFetch (GetNameById userId)
-
-getPowerById :: ID -> ResolverQ e Haxl (Maybe Text)
-getPowerById userId = lift $ dataFetch (GetPowerById userId)

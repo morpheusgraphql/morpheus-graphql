@@ -22,16 +22,16 @@ import Data.Morpheus.Types
     ResolverQ,
     RootResolver (..),
     Undefined (..),
+    lift,
     render,
   )
 import Data.Morpheus.Types.IO (MapAPI)
-import Haxl.Core
+import Data.Text (Text)
+import Haxl.Core (dataFetch, initEnv, runHaxl, stateEmpty, stateSet)
 import Server.Haxl.DataSource
-  ( Haxl,
+  ( DeityReq (..),
+    Haxl,
     State (DeityState),
-    getDeityIds,
-    getNameById,
-    getPowerById,
   )
 import Server.Haxl.Schema
   ( Deity (..),
@@ -48,8 +48,17 @@ import Web.Scotty
     raw,
   )
 
+getDeityIds :: ResolverQ e Haxl [ID]
+getDeityIds = lift $ dataFetch GetAllIds
+
+getDeityNameById :: ID -> ResolverQ e Haxl Text
+getDeityNameById deiytId = lift $ dataFetch (GetNameById deiytId)
+
+getDeityPowerById :: ID -> ResolverQ e Haxl (Maybe Text)
+getDeityPowerById deiytId = lift $ dataFetch (GetPowerById deiytId)
+
 getDeityById :: ID -> ResolverQ e Haxl Deity
-getDeityById deityId = Deity <$> getNameById deityId <*> getPowerById deityId
+getDeityById deityId = Deity <$> getDeityNameById deityId <*> getDeityPowerById deityId
 
 resolveDeity :: DeityArgs -> ResolverQ e Haxl Deity
 resolveDeity DeityArgs {deityId} = getDeityById deityId
