@@ -24,7 +24,7 @@ module Data.Morpheus.Server.Types.GQLType
     GQLTypeOptions
       ( fieldLabelModifier,
         constructorTagModifier,
-        prefixInputType
+        typeNameModifier
       ),
     defaultTypeOptions,
     TypeData (..),
@@ -37,7 +37,8 @@ where
 -- MORPHEUS
 
 import Data.Morpheus.Kind
-  ( GQL_KIND,
+  ( CUSTOM,
+    DerivingKind,
     SCALAR,
     TYPE,
     ToValue,
@@ -60,6 +61,7 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directives,
     FieldName,
+    OUT,
     QUERY,
     TypeCategory (..),
     TypeName (..),
@@ -75,6 +77,7 @@ import Data.Morpheus.Utils.Kinded (CategoryValue (..))
 import Data.Text
   ( intercalate,
     pack,
+    unpack,
   )
 import Data.Typeable
   ( TyCon,
@@ -96,8 +99,9 @@ data TypeData = TypeData
 data GQLTypeOptions = GQLTypeOptions
   { fieldLabelModifier :: String -> String,
     constructorTagModifier :: String -> String,
-    -- Type used as Input will be prefixed with: Input<TypeName>
-    prefixInputType :: Bool
+    -- Construct a new type name depending on whether it is an input,
+    -- and being given the original type name
+    typeNameModifier :: Bool -> String -> String
   }
 
 defaultTypeOptions :: GQLTypeOptions
@@ -105,7 +109,8 @@ defaultTypeOptions =
   GQLTypeOptions
     { fieldLabelModifier = id,
       constructorTagModifier = id,
-      prefixInputType = False
+      -- default is just a pass through for the original type name
+      typeNameModifier = const id
     }
 
 __typeData ::
@@ -124,16 +129,15 @@ getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeCons
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
-deriveTypeData :: Typeable a => f a -> Bool -> TypeCategory -> TypeData
-deriveTypeData proxy shouldPefix cat =
+deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
+deriveTypeData proxy typeNameModifier cat =
   TypeData
-    { gqlTypeName = prefix shouldPefix cat <> getTypename proxy,
+    { gqlTypeName = TypeName . pack $ typeNameModifier (cat == IN) originalTypeName,
       gqlWrappers = [],
       gqlFingerprint = getFingerprint cat proxy
     }
   where
-    prefix True IN = "Input"
-    prefix _ _ = ""
+    originalTypeName = unpack . readTypeName $ getTypename proxy
 
 getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
 getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
@@ -187,10 +191,10 @@ __isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 --       description = const "your description ..."
 --  @
 class ToValue (KIND a) => GQLType a where
-  type KIND a :: GQL_KIND
+  type KIND a :: DerivingKind
   type KIND a = TYPE
 
-  implements :: f a -> [SchemaT TypeName]
+  implements :: f a -> [SchemaT OUT TypeName]
   implements _ = []
 
   description :: f a -> Maybe Text
@@ -219,9 +223,9 @@ class ToValue (KIND a) => GQLType a where
 
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
-  __type proxy = deriveTypeData proxy prefixInputType
+  __type proxy = deriveTypeData proxy typeNameModifier
     where
-      GQLTypeOptions {prefixInputType} = typeOptions proxy defaultTypeOptions
+      GQLTypeOptions {typeNameModifier} = typeOptions proxy defaultTypeOptions
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -262,28 +266,29 @@ instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
   __type _ = wrapper list . __type (Proxy @a)
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
-  type KIND (a, b) = WRAPPER
-  __type _ = __type $ Proxy @(Pair a b)
-
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
   __type _ = __type $ Proxy @[a]
-
-instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
-  type KIND (Map k v) = WRAPPER
-  __type _ = __type $ Proxy @[Pair k v]
-
-instance GQLType a => GQLType (Resolver o e m a) where
-  type KIND (Resolver o e m a) = WRAPPER
-  __type _ = __type $ Proxy @a
 
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
   __type _ = __type $ Proxy @a
 
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
+
+-- Manual
 instance GQLType b => GQLType (a -> b) where
-  type KIND (a -> b) = WRAPPER
+  type KIND (a -> b) = CUSTOM
   __type _ = __type $ Proxy @b
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
+instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
+  type KIND (Map k v) = CUSTOM
+  __type _ = __type $ Proxy @[Pair k v]
+
+instance GQLType a => GQLType (Resolver o e m a) where
+  type KIND (Resolver o e m a) = CUSTOM
+  __type _ = __type $ Proxy @a
+
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
+  type KIND (a, b) = CUSTOM
+  __type _ = __type $ Proxy @(Pair a b)

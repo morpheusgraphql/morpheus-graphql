@@ -1,8 +1,10 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -16,6 +18,8 @@ module Data.Morpheus.Server.Types.SchemaT
     insertType,
     TypeFingerprint (..),
     toSchema,
+    withInput,
+    withInterface,
   )
 where
 
@@ -28,8 +32,9 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
-    CONST,
+    IN,
     OBJECT,
+    OUT,
     Schema (..),
     TypeCategory (..),
     TypeContent (..),
@@ -59,7 +64,7 @@ data TypeFingerprint
 type MyMap = Map TypeFingerprint (TypeDefinition ANY CONST)
 
 -- Helper Functions
-newtype SchemaT a = SchemaT
+newtype SchemaT (cat :: TypeCategory) a = SchemaT
   { runSchemaT ::
       Eventless
         ( a,
@@ -70,18 +75,18 @@ newtype SchemaT a = SchemaT
 
 instance
   Failure err Eventless =>
-  Failure err SchemaT
+  Failure err (SchemaT c)
   where
   failure = SchemaT . failure
 
-instance Applicative SchemaT where
+instance Applicative (SchemaT c) where
   pure = SchemaT . pure . (,[])
   (SchemaT v1) <*> (SchemaT v2) = SchemaT $ do
     (f, u1) <- v1
     (a, u2) <- v2
     pure (f a, u1 <> u2)
 
-instance Monad SchemaT where
+instance Monad (SchemaT c) where
   return = pure
   (SchemaT v1) >>= f =
     SchemaT $ do
@@ -91,6 +96,7 @@ instance Monad SchemaT where
 
 toSchema ::
   SchemaT
+    c
     ( TypeDefinition OBJECT CONST,
       TypeDefinition OBJECT CONST,
       TypeDefinition OBJECT CONST
@@ -102,6 +108,12 @@ toSchema (SchemaT v) = do
     execUpdates Map.empty typeDefs
       >>= checkTypeColisions . Map.toList
   defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+
+withInput :: SchemaT IN a -> SchemaT OUT a
+withInput (SchemaT x) = SchemaT x
+
+withInterface :: SchemaT OUT a -> SchemaT ct a
+withInterface (SchemaT x) = SchemaT x
 
 checkTypeColisions :: [(TypeFingerprint, TypeDefinition k a)] -> Eventless [TypeDefinition k a]
 checkTypeColisions = fmap Map.elems . foldM collectTypes Map.empty
@@ -123,9 +135,9 @@ failureRequirePrefix typename =
       <> msg typename
       <> " was used as both input and output type, which is not allowed by GraphQL specifications."
       <> "\n\n "
-      <> "If you enable \"{ prefixInputType = True }\" in \"GQLType.typeOptions\", "
-      <> "the compiler can generate a new input type "
-      <> msg ("Input" <> typename)
+      <> "If you supply \"typeNameModifier\" in \"GQLType.typeOptions\", "
+      <> "you can override the default type names for "
+      <> msg typename
       <> " to solve this problem."
 
 withSameCategory :: TypeFingerprint -> TypeFingerprint
@@ -140,14 +152,14 @@ optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
 execUpdates :: Monad m => a -> [a -> m a] -> m a
 execUpdates = foldM (&)
 
-insertType :: TypeDefinition cat CONST -> SchemaT ()
+insertType :: TypeDefinition cat CONST -> SchemaT cat' ()
 insertType dt = updateSchema (CustomFingerprint (typeName dt)) (const $ pure dt) ()
 
 updateSchema ::
   TypeFingerprint ->
-  (a -> SchemaT (TypeDefinition cat CONST)) ->
+  (a -> SchemaT cat' (TypeDefinition cat CONST)) ->
   a ->
-  SchemaT ()
+  SchemaT cat' ()
 updateSchema InternalFingerprint {} _ _ = SchemaT $ pure ((), [])
 updateSchema fingerprint f x =
   SchemaT $ pure ((), [upLib])
