@@ -35,10 +35,10 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Kind
   ( CUSTOM,
+    DerivingKind,
     INTERFACE,
     SCALAR,
     TYPE,
-    TargetDerivationKind,
     WRAPPER,
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
@@ -181,7 +181,7 @@ instance (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
   deriveContent _ = deriveKindedContent (KindedProxy :: KindedProxy (KIND a) a)
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
-class DeriveKindedType (cat :: TypeCategory) (kind :: TargetDerivationKind) a where
+class DeriveKindedType (cat :: TypeCategory) (kind :: DerivingKind) a where
   deriveKindedType :: kinded kind a -> SchemaT cat ()
   deriveKindedContent :: kinded kind a -> SchemaT cat (Maybe (FieldContent TRUE cat CONST))
   deriveKindedContent _ = pure Nothing
