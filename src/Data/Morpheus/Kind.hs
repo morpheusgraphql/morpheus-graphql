@@ -12,6 +12,7 @@ module Data.Morpheus.Kind
     UNION,
     INPUT_OBJECT,
     DerivingKind,
+    GQL_KIND,
     OUTPUT,
     INPUT,
     INTERFACE,
@@ -23,6 +24,10 @@ module Data.Morpheus.Kind
 where
 
 import Relude
+
+{-# DEPRECATED GQL_KIND "use: DerivingKind" #-}
+
+type GQL_KIND = DerivingKind
 
 data DerivingKind
   = SCALAR
