@@ -225,5 +225,5 @@ data RootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) 
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
 
-interface :: (GQLType a, DeriveType OUT a) => Proxy a -> SchemaT TypeName
+interface :: (GQLType a, DeriveType OUT a) => Proxy a -> SchemaT OUT TypeName
 interface = deriveImplementsInterface
