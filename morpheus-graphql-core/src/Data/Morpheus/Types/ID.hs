@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -9,6 +10,7 @@ module Data.Morpheus.Types.ID
 where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
+import Data.Hashable
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),
@@ -27,7 +29,13 @@ import Relude
 newtype ID = ID
   { unpackID :: Text
   }
-  deriving (Show, Generic, Eq)
+  deriving
+    ( Show,
+      Generic,
+      Eq,
+      Hashable,
+      IsString
+    )
 
 instance DecodeScalar ID where
   decodeScalar (Int x) = pure (ID $ pack $ show x)

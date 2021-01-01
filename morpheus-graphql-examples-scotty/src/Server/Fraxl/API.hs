@@ -225,4 +225,4 @@ httpEndpoint route = do
   get route $
     (isSchema *> raw (render app))
       <|> raw httpPlayground
-  post route $ raw =<< ((pure . DB.runQuery . runFraxl fetchSource . runApp app) =<< body)
+  post route (raw . DB.runQuery . runFraxl fetchSource . runApp app =<< body)

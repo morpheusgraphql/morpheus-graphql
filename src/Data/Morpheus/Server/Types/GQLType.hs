@@ -24,7 +24,7 @@ module Data.Morpheus.Server.Types.GQLType
     GQLTypeOptions
       ( fieldLabelModifier,
         constructorTagModifier,
-        prefixInputType
+        typeNameModifier
       ),
     defaultTypeOptions,
     TypeData (..),
@@ -77,6 +77,7 @@ import Data.Morpheus.Utils.Kinded (CategoryValue (..))
 import Data.Text
   ( intercalate,
     pack,
+    unpack,
   )
 import Data.Typeable
   ( TyCon,
@@ -98,8 +99,9 @@ data TypeData = TypeData
 data GQLTypeOptions = GQLTypeOptions
   { fieldLabelModifier :: String -> String,
     constructorTagModifier :: String -> String,
-    -- Type used as Input will be prefixed with: Input<TypeName>
-    prefixInputType :: Bool
+    -- Construct a new type name depending on whether it is an input,
+    -- and being given the original type name
+    typeNameModifier :: Bool -> String -> String
   }
 
 defaultTypeOptions :: GQLTypeOptions
@@ -107,7 +109,8 @@ defaultTypeOptions =
   GQLTypeOptions
     { fieldLabelModifier = id,
       constructorTagModifier = id,
-      prefixInputType = False
+      -- default is just a pass through for the original type name
+      typeNameModifier = const id
     }
 
 __typeData ::
@@ -126,16 +129,15 @@ getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeCons
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
-deriveTypeData :: Typeable a => f a -> Bool -> TypeCategory -> TypeData
-deriveTypeData proxy shouldPefix cat =
+deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
+deriveTypeData proxy typeNameModifier cat =
   TypeData
-    { gqlTypeName = prefix shouldPefix cat <> getTypename proxy,
+    { gqlTypeName = TypeName . pack $ typeNameModifier (cat == IN) originalTypeName,
       gqlWrappers = [],
       gqlFingerprint = getFingerprint cat proxy
     }
   where
-    prefix True IN = "Input"
-    prefix _ _ = ""
+    originalTypeName = unpack . readTypeName $ getTypename proxy
 
 getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
 getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
@@ -221,9 +223,9 @@ class ToValue (KIND a) => GQLType a where
 
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
-  __type proxy = deriveTypeData proxy prefixInputType
+  __type proxy = deriveTypeData proxy typeNameModifier
     where
-      GQLTypeOptions {prefixInputType} = typeOptions proxy defaultTypeOptions
+      GQLTypeOptions {typeNameModifier} = typeOptions proxy defaultTypeOptions
 
 instance GQLType Int where
   type KIND Int = SCALAR

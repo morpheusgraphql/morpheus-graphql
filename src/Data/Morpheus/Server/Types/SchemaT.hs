@@ -32,7 +32,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
-    CONST,
     IN,
     OBJECT,
     OUT,
@@ -136,9 +135,9 @@ failureRequirePrefix typename =
       <> msg typename
       <> " was used as both input and output type, which is not allowed by GraphQL specifications."
       <> "\n\n "
-      <> "If you enable \"{ prefixInputType = True }\" in \"GQLType.typeOptions\", "
-      <> "the compiler can generate a new input type "
-      <> msg ("Input" <> typename)
+      <> "If you supply \"typeNameModifier\" in \"GQLType.typeOptions\", "
+      <> "you can override the default type names for "
+      <> msg typename
       <> " to solve this problem."
 
 withSameCategory :: TypeFingerprint -> TypeFingerprint
