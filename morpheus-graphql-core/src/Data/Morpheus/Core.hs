@@ -8,8 +8,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Core
-  ( parseFullSchemaDocument,
-    parseSchemaDocument,
+  ( parseFullSchema,
+    parseSchema,
     parseTypeDefinitions,
     validateRequest,
     parseRequestWith,
@@ -38,7 +38,7 @@ import Data.Morpheus.Ext.SemigroupM
 import Data.Morpheus.Parser
   ( parseRequest,
     parseRequestWith,
-    parseSchemaDocument,
+    parseSchema,
     parseTypeDefinitions,
   )
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), render)
@@ -60,5 +60,5 @@ import Data.Morpheus.Validation.Query.Validation
   )
 import Relude hiding (ByteString)
 
-parseFullSchemaDocument :: ByteString -> Eventless (Schema VALID)
-parseFullSchemaDocument = parseSchemaDocument >=> (internalSchema <:>)
+parseFullSchema :: ByteString -> Eventless (Schema VALID)
+parseFullSchema = parseSchema >=> (internalSchema <:>)

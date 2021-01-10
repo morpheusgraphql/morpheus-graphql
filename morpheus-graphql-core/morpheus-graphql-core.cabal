@@ -4,12 +4,12 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1b02f1bda8ce0e1e6484c239c3b6ef0d6bf4bc8003990c6440e0f7e96cbe9cd9
+-- hash: 336729a21cdd92825793b8a202024dc3293c6eac446f6b325837273a4898d2a2
 
 name:           morpheus-graphql-core
 version:        0.16.0
 synopsis:       Morpheus GraphQL Core
-description:    Build GraphQL APIs with your favourite functional language!
+description:    Build GraphQL APIs with your favorite functional language!
 category:       web, graphql
 homepage:       https://morpheusgraphql.com
 bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues

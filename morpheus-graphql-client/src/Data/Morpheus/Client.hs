@@ -30,7 +30,7 @@ import Data.Morpheus.Client.JSONSchema.Parse
   ( decodeIntrospection,
   )
 import Data.Morpheus.Core
-  ( parseFullSchemaDocument,
+  ( parseFullSchema,
   )
 import Data.Morpheus.Internal.Ext
   ( Eventless,
@@ -67,7 +67,7 @@ defineByDocument :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
 defineByDocument doc = defineQuery (schemaByDocument doc)
 
 schemaByDocument :: IO ByteString -> IO (Eventless (Schema VALID))
-schemaByDocument = fmap parseFullSchemaDocument
+schemaByDocument = fmap parseFullSchema
 
 defineByIntrospection :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
 defineByIntrospection json = defineQuery (decodeIntrospection <$> json)

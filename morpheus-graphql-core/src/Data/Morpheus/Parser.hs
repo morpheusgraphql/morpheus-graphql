@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parser
-  ( parseSchemaDocument,
+  ( parseSchema,
     parseTypeDefinitions,
     parseRequest,
     parseRequestWith,
@@ -44,9 +44,9 @@ import Data.Morpheus.Validation.Query.Validation
   )
 import Relude hiding (ByteString)
 
-parseSchemaDocument ::
+parseSchema ::
   ByteString -> Eventless (Schema VALID)
-parseSchemaDocument =
+parseSchema =
   sortErrors
     . ( P.parseSchema
           >=> validateSchema

@@ -333,8 +333,8 @@ withSchemaDefinition ([], t, dirs) = pure (Nothing, t, dirs)
 withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
 withSchemaDefinition (_ : xs, _, _) = failure (fmap nameCollision xs)
 
-parseSchemaDocument :: Parser [RawTypeDefinition]
-parseSchemaDocument =
+parseSchema :: Parser [RawTypeDefinition]
+parseSchema =
   label "TypeSystemDefinitions" $
     ignoredTokens
       *> manyTill parseTypeSystemUnit eof
@@ -347,7 +347,7 @@ typeSystemDefinition ::
       [DirectiveDefinition CONST]
     )
 typeSystemDefinition =
-  processParser parseSchemaDocument
+  processParser parseSchema
     >=> withSchemaDefinition . typePartition
 
 parseTypeDefinitions :: ByteString -> Eventless [TypeDefinition ANY CONST]

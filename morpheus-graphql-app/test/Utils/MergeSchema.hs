@@ -24,7 +24,7 @@ import Data.Morpheus.App.Internal.Resolving
     resultOr,
   )
 import Data.Morpheus.Core
-  ( parseSchemaDocument,
+  ( parseSchema,
     render,
   )
 import Data.Morpheus.Types.IO
@@ -52,7 +52,7 @@ import Utils.Utils
   )
 
 readSchema :: FieldName -> IO (Schema VALID)
-readSchema (FieldName p) = L.readFile (unpack p) >>= (resultOr (fail . show) pure . parseSchemaDocument)
+readSchema (FieldName p) = L.readFile (unpack p) >>= (resultOr (fail . show) pure . parseSchema)
 
 loadApi :: FieldName -> IO (App () Identity)
 loadApi url = do
