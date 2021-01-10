@@ -1,0 +1,7 @@
+{
+  character {
+    name
+    power
+    nickname
+  }
+}

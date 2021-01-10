@@ -1,0 +1,64 @@
+{
+  "errors": [
+    {
+      "message": "Directive \"DirectiveA\" may not to be used on ENUM_VALUE",
+      "locations": [{ "line": 6, "column": 9 }]
+    },
+    {
+      "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
+      "locations": [{ "line": 6, "column": 9 }]
+    },
+    {
+      "message": "Unknown Directive \"SomeDirective\".",
+      "locations": [{ "line": 9, "column": 13 }]
+    },
+    {
+      "message": "Unknown Argument \"someargs\" on Directive \"DirectiveC\".",
+      "locations": [{ "line": 10, "column": 40 }]
+    },
+    {
+      "message": "Argument \"arg\" got invalid value. Expected type \"Int!\" found True.",
+      "locations": [{ "line": 10, "column": 29 }]
+    },
+    {
+      "message": "Directive \"DirectiveC\" may not to be used on FIELD_DEFINITION",
+      "locations": [{ "line": 10, "column": 62 }]
+    },
+    {
+      "message": "Directive \"@DirectiveC\" argument \"arg\" is required but not provided.",
+      "locations": [{ "line": 10, "column": 62 }]
+    },
+    {
+      "message": "Directive \"include\" may not to be used on INPUT_OBJECT",
+      "locations": [{ "line": 13, "column": 13 }]
+    },
+    {
+      "message": "Directive \"@include\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 13, "column": 13 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on INPUT_FIELD_DEFINITION",
+      "locations": [{ "line": 14, "column": 13 }]
+    },
+    {
+      "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 14, "column": 13 }]
+    },
+    {
+      "message": "Directive \"DirectiveC\" may not to be used on OBJECT",
+      "locations": [{ "line": 17, "column": 12 }]
+    },
+    {
+      "message": "Argument \"arg\" got invalid value. Expected type \"Int!\" found \"bla\".",
+      "locations": [{ "line": 17, "column": 24 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on FIELD_DEFINITION",
+      "locations": [{ "line": 18, "column": 23 }]
+    },
+    {
+      "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
+      "locations": [{ "line": 18, "column": 23 }]
+    }
+  ]
+}

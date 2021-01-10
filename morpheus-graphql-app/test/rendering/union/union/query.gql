@@ -1,0 +1,14 @@
+query {
+  mortal {
+    ...OnHuman
+    ...onAnimal
+  }
+}
+
+fragment OnHuman on Human {
+  name
+}
+
+fragment onAnimal on Animal {
+  weight
+}

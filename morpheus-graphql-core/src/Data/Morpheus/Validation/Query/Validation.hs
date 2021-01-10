@@ -20,7 +20,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
   )
 import Data.Morpheus.Types.Internal.Validation

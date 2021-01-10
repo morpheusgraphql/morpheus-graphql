@@ -1,0 +1,11 @@
+type MyType {
+  name: String
+}
+
+type Query {
+  name: String
+}
+
+schema {
+  mutation: MyType
+}

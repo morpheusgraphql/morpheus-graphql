@@ -1,0 +1,26 @@
+scalar MyScalar
+
+enum MyEnum {
+  A
+  B
+}
+
+input Input {
+  id: String = "def value"
+  int: MyScalar!
+}
+
+type Deity {
+  name(i: Input, enum: MyEnum, list: [Input]): String!
+  power: [String!]!
+}
+
+type Query {
+  simple(name: String): Deity!
+}
+
+schema {
+  query: Query
+  mutation: Query
+  subscription: Query
+}

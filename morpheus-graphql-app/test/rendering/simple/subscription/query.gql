@@ -1,0 +1,9 @@
+subscription MySubscription {
+  deity {
+    name
+    power
+    friends {
+      name
+    }
+  }
+}

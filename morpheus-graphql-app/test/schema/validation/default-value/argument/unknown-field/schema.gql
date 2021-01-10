@@ -1,0 +1,20 @@
+input Input1 {
+  field: Int = 123
+}
+
+input Input2 {
+  field: Input1 = {}
+}
+
+input Input3 {
+  field: Input2 = {}
+}
+
+type Query {
+  field(
+    i1: Input3 = {
+      field: { field2: null, field: { field3: null } }
+      field2: null
+    }
+  ): Int
+}

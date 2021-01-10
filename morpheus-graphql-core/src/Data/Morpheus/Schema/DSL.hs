@@ -20,7 +20,7 @@ import Data.Morpheus.Error
 import Data.Morpheus.Parsing.Document.TypeSystem
   ( parseSchema,
   )
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.Types.Internal.Resolving.Core
   ( Result (..),
   )
 import Language.Haskell.TH

@@ -1,0 +1,6 @@
+query {
+  simple {
+    name(list: [{ id: "def value", int: 1 }, { id: "some-id", int: 2 }])
+    power
+  }
+}

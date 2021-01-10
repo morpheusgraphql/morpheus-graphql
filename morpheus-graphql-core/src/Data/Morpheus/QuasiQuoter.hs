@@ -30,8 +30,8 @@ import Data.Morpheus.Parser
   ( parseRequest,
     parseTypeSystemDefinition,
   )
-import Data.Morpheus.Types.IO (GQLRequest (..))
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.Types.Internal.IO (GQLRequest (..))
+import Data.Morpheus.Types.Internal.Resolving.Core
   ( Result (..),
   )
 import Language.Haskell.TH

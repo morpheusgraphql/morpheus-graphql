@@ -1,0 +1,15 @@
+scalar MyScalar
+
+enum TestEnum {
+  EnumA @deprecated
+  EnumB
+}
+
+input Input1 {
+  field1: ID
+  field2: String
+}
+
+type Query {
+  field(a1: Int): Int @deprecated
+}

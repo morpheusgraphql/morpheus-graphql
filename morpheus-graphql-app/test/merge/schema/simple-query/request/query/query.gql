@@ -1,0 +1,8 @@
+query {
+  id
+  type {
+    id
+    name
+    age
+  }
+}

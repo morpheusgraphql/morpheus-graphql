@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3ed225b8bc9bb1a892c349297124abacbb9995102a863ba7c18be45140e44c04
+-- hash: ad10f249896b63da91fc50c73824ce3c7ad4ed26f21e8c1c027c36760a9eaf5f
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -191,10 +191,7 @@ library
       Data.Morpheus.Internal.TH
       Data.Morpheus.Internal.Utils
       Data.Morpheus.Types.Internal.AST
-      Data.Morpheus.Types.IO
-      Data.Morpheus.Types.Internal.Resolving
       Data.Morpheus.Types.GQLScalar
-      Data.Morpheus.Types.GQLWrapper
       Data.Morpheus.Types.ID
       Data.Morpheus.Types.SelectionTree
   other-modules:
@@ -227,11 +224,8 @@ library
       Data.Morpheus.Parsing.Request.Parser
       Data.Morpheus.Parsing.Request.Selection
       Data.Morpheus.Rendering.RenderGQL
-      Data.Morpheus.Rendering.RenderIntrospection
       Data.Morpheus.Schema.DSL
       Data.Morpheus.Schema.Schema
-      Data.Morpheus.Schema.SchemaAPI
-      Data.Morpheus.Types.App
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.DirectiveLocation
       Data.Morpheus.Types.Internal.AST.Fields
@@ -243,13 +237,8 @@ library
       Data.Morpheus.Types.Internal.AST.Union
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Config
+      Data.Morpheus.Types.Internal.IO
       Data.Morpheus.Types.Internal.Resolving.Core
-      Data.Morpheus.Types.Internal.Resolving.Event
-      Data.Morpheus.Types.Internal.Resolving.Resolver
-      Data.Morpheus.Types.Internal.Resolving.ResolverState
-      Data.Morpheus.Types.Internal.Resolving.ResolverValue
-      Data.Morpheus.Types.Internal.Resolving.RootResolverValue
-      Data.Morpheus.Types.Internal.Stitching
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error
       Data.Morpheus.Types.Internal.Validation.Internal
@@ -279,41 +268,6 @@ library
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , scientific >=0.3.6.2 && <0.4
-    , template-haskell >=2.0 && <=3.0
-    , text >=1.2.3.0 && <1.3
-    , th-lift-instances >=0.1.1 && <=0.3
-    , transformers >=0.3.0.0 && <0.6
-    , unordered-containers >=0.2.8.0 && <0.3
-    , vector >=0.12.0.1 && <0.13
-  default-language: Haskell2010
-
-test-suite morpheus-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Utils.Api
-      Utils.MergeSchema
-      Utils.Rendering
-      Utils.Schema
-      Utils.Utils
-      Paths_morpheus_graphql_core
-  hs-source-dirs:
-      test
-  ghc-options: -Wall
-  build-depends:
-      aeson
-    , base >=4.7 && <5
-    , bytestring >=0.10.4 && <0.11
-    , containers >=0.4.2.1 && <0.7
-    , directory >=1.0
-    , hashable >=1.0.0
-    , megaparsec >=7.0.0 && <10.0.0
-    , morpheus-graphql-core
-    , mtl >=2.0 && <=3.0
-    , relude >=0.3.0
-    , scientific >=0.3.6.2 && <0.4
-    , tasty
-    , tasty-hunit
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.3

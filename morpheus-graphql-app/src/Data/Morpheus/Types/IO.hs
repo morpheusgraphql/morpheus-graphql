@@ -42,7 +42,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
     toStrict,
   )
 import qualified Data.HashMap.Lazy as LH
-import Data.Morpheus.Error.Utils (badRequestError)
+import Data.Morpheus.App.Error (badRequestError)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError (..),

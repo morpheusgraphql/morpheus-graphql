@@ -1,0 +1,12 @@
+query {
+  character {
+    ...OnCharacter
+    ... on Hero {
+      hobby
+    }
+  }
+}
+
+fragment OnCharacter on Character {
+  name
+}

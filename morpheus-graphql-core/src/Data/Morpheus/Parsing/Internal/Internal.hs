@@ -17,7 +17,7 @@ import Data.Morpheus.Types.Internal.AST
     Position (..),
     msg,
   )
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
     Result (..),
     failure,

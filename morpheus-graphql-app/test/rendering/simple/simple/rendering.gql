@@ -1,0 +1,9 @@
+query {
+  deity {
+    name
+    power
+    friends {
+      name
+    }
+  }
+}

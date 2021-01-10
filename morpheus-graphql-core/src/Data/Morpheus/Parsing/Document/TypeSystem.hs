@@ -68,7 +68,7 @@ import Data.Morpheus.Types.Internal.AST
     mkUnionMember,
     type (<=!),
   )
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
     failure,
   )

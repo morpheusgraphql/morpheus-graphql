@@ -65,7 +65,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
-import Data.Morpheus.Types.Internal.Resolving (Eventless)
+import Data.Morpheus.Types.Internal.Resolving.Core (Eventless)
 import Data.Text
   ( strip,
   )

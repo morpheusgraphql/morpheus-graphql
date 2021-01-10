@@ -94,7 +94,7 @@ import Data.Morpheus.Types.Internal.AST
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
   )
 import Relude hiding

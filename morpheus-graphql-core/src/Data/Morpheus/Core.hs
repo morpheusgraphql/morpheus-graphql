@@ -22,12 +22,6 @@ module Data.Morpheus.Core
     VALIDATION_MODE (..),
     defaultConfig,
     debugConfig,
-    App (..),
-    AppData (..),
-    runApp,
-    withDebugger,
-    mkApp,
-    runAppStream,
     render,
     RenderGQL,
   )
@@ -48,14 +42,6 @@ import Data.Morpheus.Parser
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL)
 import qualified Data.Morpheus.Rendering.RenderGQL as R
 import Data.Morpheus.Schema.Schema (internalSchema)
-import Data.Morpheus.Types.App
-  ( App (..),
-    AppData (..),
-    mkApp,
-    runApp,
-    runAppStream,
-    withDebugger,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
     VALID,
@@ -66,7 +52,7 @@ import Data.Morpheus.Types.Internal.Config
     debugConfig,
     defaultConfig,
   )
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
     resultOr,
     sortErrors,

@@ -16,9 +16,6 @@ import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
   )
 import Data.Morpheus.Parsing.Request.Parser (parseGQL)
 import Data.Morpheus.Schema.Schema (internalSchema)
-import Data.Morpheus.Types.IO
-  ( GQLRequest (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
@@ -32,7 +29,10 @@ import Data.Morpheus.Types.Internal.Config
   ( Config (..),
     VALIDATION_MODE (..),
   )
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.Types.Internal.IO
+  ( GQLRequest (..),
+  )
+import Data.Morpheus.Types.Internal.Resolving.Core
   ( Eventless,
   )
 import Data.Morpheus.Validation.Document.Validation
@@ -64,5 +64,5 @@ parseRequest = parseGQL
 parseRequestWith :: Config -> Schema VALID -> GQLRequest -> Eventless (Operation VALID)
 parseRequestWith config schema req = do
   qu <- parseRequest req
-  fuillSchema <- internalSchema <:> schema
-  validateRequest config fuillSchema qu
+  fillSchema <- internalSchema <:> schema
+  validateRequest config fillSchema qu

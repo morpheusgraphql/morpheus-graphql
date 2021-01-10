@@ -1,0 +1,21 @@
+type Query {
+  name: String
+}
+
+type Mutation {
+  name: String
+}
+
+type Subscription {
+  name: String
+}
+
+schema {
+  query: Query
+  query: Query
+  mutation: Mutation
+  mutation: Mutation
+  subscription: Subscription
+  subscription: Subscription
+  subscription: Subscription
+}

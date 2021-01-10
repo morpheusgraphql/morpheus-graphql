@@ -45,24 +45,20 @@ library:
     - Data.Morpheus.Internal.TH
     - Data.Morpheus.Internal.Utils
     - Data.Morpheus.Types.Internal.AST
-    - Data.Morpheus.Types.IO
-    - Data.Morpheus.Types.Internal.Resolving
     - Data.Morpheus.Types.GQLScalar
-    - Data.Morpheus.Types.GQLWrapper
     - Data.Morpheus.Types.ID
     - Data.Morpheus.Types.SelectionTree
 
   ghc-options: -Wall
-
-tests:
-  morpheus-test:
-    main: Spec.hs
-    source-dirs: test
-    ghc-options: -Wall
-    dependencies:
-      - morpheus-graphql-core
-      - tasty
-      - tasty-hunit
-      - aeson
-      - directory >= 1.0
-      - relude    >= 0.3.0
+# tests:
+#   morpheus-test:
+#     main: Spec.hs
+#     source-dirs: test
+#     ghc-options: -Wall
+#     dependencies:
+#       - morpheus-graphql-core
+#       - tasty
+#       - tasty-hunit
+#       - aeson
+#       - directory >= 1.0
+#       - relude    >= 0.3.0
