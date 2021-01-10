@@ -11,7 +11,7 @@
 ### Breaking changes
 
 - `parseTypeSystemDefinition` and `parseGQLDocument` is replaced with `parseSchemaDocument`
-
+- `parseFullGQLDocument` replaced with `parseFullSchemaDocument`
 - removed `parseDSL` from `Data.Morpheus.Core`
 
 - following Types and modules are migrated to the new package `morpheus-graphql-app`:
