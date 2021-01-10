@@ -29,9 +29,9 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverState
 where
 
 import Control.Monad.Trans.Reader (mapReaderT)
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
-    renderGQL,
+import Data.Morpheus.Core
+  ( RenderGQL,
+    render,
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
@@ -183,7 +183,7 @@ renderSection :: RenderGQL a => Message -> a -> Message
 renderSection label content =
   "\n\n" <> label <> ":\n" <> line
     <> "\n\n"
-    <> msg (renderGQL content)
+    <> msg (render content)
     <> "\n\n"
   where
     line = stimes (50 :: Int) "-"

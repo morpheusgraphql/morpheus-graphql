@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bb6af78caea5d9c74d4cfd6fa203f4c7792ea963cbfffdbb76aa4a70739796b0
+-- hash: d3972cc177689c18d914e2bf7f9cdaa866188cbf35973133a946e7ba3915cacc
 
 name:           morpheus-graphql-app
 version:        0.16.0
@@ -185,16 +185,11 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.Core
+      Data.Morpheus.App
       Data.Morpheus.Types.IO
   other-modules:
       Data.Morpheus.App.Error
-      Data.Morpheus.Parser
-      Data.Morpheus.QuasiQuoter
-      Data.Morpheus.Rendering.RenderGQL
       Data.Morpheus.Rendering.RenderIntrospection
-      Data.Morpheus.Schema.DSL
-      Data.Morpheus.Schema.Schema
       Data.Morpheus.Schema.SchemaAPI
       Data.Morpheus.Types.App
       Data.Morpheus.Types.GQLScalar
@@ -209,7 +204,6 @@ library
       Data.Morpheus.Types.Internal.Resolving.ResolverValue
       Data.Morpheus.Types.Internal.Resolving.RootResolverValue
       Data.Morpheus.Types.Internal.Stitching
-      Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.SelectionTree
       Paths_morpheus_graphql_app
   hs-source-dirs:

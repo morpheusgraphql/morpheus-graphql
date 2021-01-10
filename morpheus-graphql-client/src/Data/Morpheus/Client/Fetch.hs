@@ -26,13 +26,13 @@ import Data.Morpheus.Internal.TH
     toCon,
     typeInstanceDec,
   )
-import Data.Morpheus.Types.IO
-  ( GQLRequest (..),
-    JSONResponse (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
+  )
+import Data.Morpheus.Types.Internal.IO
+  ( GQLRequest (..),
+    JSONResponse (..),
   )
 import Data.Text
   ( pack,

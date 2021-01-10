@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ad10f249896b63da91fc50c73824ce3c7ad4ed26f21e8c1c027c36760a9eaf5f
+-- hash: 974895b2f07a52f7315c0478e0fe1dc0460a9f41bc5443bf422d080952269b99
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -190,10 +190,13 @@ library
       Data.Morpheus.Error
       Data.Morpheus.Internal.TH
       Data.Morpheus.Internal.Utils
+      Data.Morpheus.Schema.Schema
+      Data.Morpheus.Types.Internal.IO
       Data.Morpheus.Types.Internal.AST
       Data.Morpheus.Types.GQLScalar
       Data.Morpheus.Types.ID
       Data.Morpheus.Types.SelectionTree
+      Data.Morpheus.Ext.SemigroupM
   other-modules:
       Data.Morpheus.Error.Document.Interface
       Data.Morpheus.Error.Fragment
@@ -211,7 +214,6 @@ library
       Data.Morpheus.Ext.MergeSet
       Data.Morpheus.Ext.OrdMap
       Data.Morpheus.Ext.SafeHashMap
-      Data.Morpheus.Ext.SemigroupM
       Data.Morpheus.Internal.Graph
       Data.Morpheus.Parser
       Data.Morpheus.Parsing.Document.TypeSystem
@@ -225,7 +227,6 @@ library
       Data.Morpheus.Parsing.Request.Selection
       Data.Morpheus.Rendering.RenderGQL
       Data.Morpheus.Schema.DSL
-      Data.Morpheus.Schema.Schema
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.DirectiveLocation
       Data.Morpheus.Types.Internal.AST.Fields
@@ -237,7 +238,6 @@ library
       Data.Morpheus.Types.Internal.AST.Union
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Config
-      Data.Morpheus.Types.Internal.IO
       Data.Morpheus.Types.Internal.Resolving.Core
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error

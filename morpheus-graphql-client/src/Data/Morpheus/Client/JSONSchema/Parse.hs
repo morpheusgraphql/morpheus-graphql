@@ -32,7 +32,6 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     fromElems,
   )
-import Data.Morpheus.Types.IO (JSONResponse (..))
 import qualified Data.Morpheus.Types.Internal.AST as AST
   ( Schema,
   )
@@ -65,6 +64,7 @@ import Data.Morpheus.Types.Internal.AST
     toAny,
     toHSWrappers,
   )
+import Data.Morpheus.Types.Internal.IO (JSONResponse (..))
 import Data.Morpheus.Types.Internal.Resolving
   ( Eventless,
   )

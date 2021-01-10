@@ -40,7 +40,7 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Data.Morpheus.Core
+    - Data.Morpheus.App
     - Data.Morpheus.Types.IO
     # - Data.Morpheus.QuasiQuoter
     # - Data.Morpheus.Internal.TH

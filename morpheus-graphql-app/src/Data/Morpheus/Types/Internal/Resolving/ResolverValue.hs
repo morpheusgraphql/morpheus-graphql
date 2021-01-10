@@ -22,7 +22,7 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverValue
 where
 
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.Error.Selection (subfieldsNotSelected)
+import Data.Morpheus.Error (subfieldsNotSelected)
 import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),

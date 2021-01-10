@@ -7,7 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Core
+module Data.Morpheus.App
   ( parseDSL,
     parseFullGQLDocument,
     parseGQLDocument,
