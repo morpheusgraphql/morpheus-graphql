@@ -47,13 +47,15 @@ import Relude hiding (ByteString)
 parseSchemaDocument ::
   ByteString -> Eventless (Schema VALID)
 parseSchemaDocument =
-  sortErrors . P.parseSchema
-    >=> validateSchema
-      True
-      Config
-        { debug = False,
-          validationMode = FULL_VALIDATION
-        }
+  sortErrors
+    . ( P.parseSchema
+          >=> validateSchema
+            True
+            Config
+              { debug = False,
+                validationMode = FULL_VALIDATION
+              }
+      )
 
 parseTypeDefinitions ::
   ByteString -> Eventless [TypeDefinition ANY CONST]

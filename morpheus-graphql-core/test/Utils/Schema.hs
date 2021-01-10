@@ -12,7 +12,7 @@ where
 import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Morpheus.Core (parseFullGQLDocument)
+import Data.Morpheus.Core (parseFullSchemaDocument)
 import Data.Morpheus.Internal.Ext
   ( Eventless,
     Result (..),
@@ -38,7 +38,7 @@ readSource :: FilePath -> IO ByteString
 readSource = L.readFile
 
 readSchema :: FilePath -> IO (Eventless (Schema VALID))
-readSchema = fmap parseFullGQLDocument . readSource . (<> "/schema.gql")
+readSchema = fmap parseFullSchemaDocument . readSource . (<> "/schema.gql")
 
 readResponse :: FilePath -> IO Response
 readResponse = fmap (either AesonError id . eitherDecode) . readSource . (<> "/response.json")

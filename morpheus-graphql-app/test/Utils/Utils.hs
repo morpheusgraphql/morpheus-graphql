@@ -36,7 +36,7 @@ import Data.Morpheus.App.Internal.Resolving
     mkValue,
     resultOr,
   )
-import Data.Morpheus.Core (parseGQLDocument)
+import Data.Morpheus.Core (parseSchemaDocument)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
@@ -121,7 +121,7 @@ getCases :: FromJSON a => FilePath -> IO [a]
 getCases dir = fromMaybe [] . decode <$> L.readFile ("test/" <> dir <> "/cases.json")
 
 getSchema :: FieldName -> IO (Eventless (Schema VALID))
-getSchema (FieldName x) = parseGQLDocument <$> L.readFile (path x <> "/schema.gql")
+getSchema (FieldName x) = parseSchemaDocument <$> L.readFile (path x <> "/schema.gql")
 
 assertValidSchema :: FieldName -> IO (Schema VALID)
 assertValidSchema = getSchema >=> resultOr failedSchema pure
