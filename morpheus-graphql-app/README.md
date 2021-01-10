@@ -1,12 +1,8 @@
 # Morpheus GraphQL App
 
-provides executable application for server
+provides utilities for creating executable GraphQL applications for servers. You can use it to create a schema-first GraphQL server with dynamic typings.
 
-- parser
-- validar
-- api
-
-## Build GraphQL api with App
+## Build schema-first GraphQL App with dynamic typings
 
 ```hs
 schema :: Schema VALID
