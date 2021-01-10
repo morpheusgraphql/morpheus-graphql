@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parser
-  ( parseTypeDefinitions,
-    parseTypeSystemDefinition,
+  ( parseSchemaDocument,
+    parseTypeDefinitions,
     parseRequest,
     parseRequestWith,
   )
@@ -11,6 +11,7 @@ where
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Ext.Result
   ( Eventless,
+    sortErrors,
   )
 import Data.Morpheus.Ext.SemigroupM ((<:>))
 import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
@@ -43,10 +44,10 @@ import Data.Morpheus.Validation.Query.Validation
   )
 import Relude hiding (ByteString)
 
-parseTypeSystemDefinition ::
+parseSchemaDocument ::
   ByteString -> Eventless (Schema VALID)
-parseTypeSystemDefinition =
-  P.parseSchema
+parseSchemaDocument =
+  sortErrors . P.parseSchema
     >=> validateSchema
       True
       Config
