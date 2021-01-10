@@ -1,32 +1,16 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
-    JSONResponse (..),
-    renderResponse,
     MapAPI (..),
   )
 where
 
 import Data.Aeson
-  ( (.:?),
-    (.=),
-    FromJSON (..),
-    ToJSON (..),
-    encode,
-    object,
-    pairs,
-    withObject,
-  )
-import qualified Data.Aeson as Aeson
-  ( Value (..),
+  ( encode,
   )
 import Data.Aeson.Internal
   ( formatError,
@@ -41,16 +25,13 @@ import qualified Data.ByteString.Lazy.Char8 as LB
     fromStrict,
     toStrict,
   )
-import qualified Data.HashMap.Lazy as LH
 import Data.Morpheus.App.Error (badRequestError)
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    Result (..),
   )
-import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    GQLError (..),
-    ValidValue,
+import Data.Morpheus.Types.Internal.IO
+  ( GQLRequest (..),
+    GQLResponse (..),
   )
 import qualified Data.Text.Lazy as LT
   ( Text,
@@ -90,47 +71,3 @@ instance MapAPI ByteString ByteString where
 
 instance MapAPI Text Text where
   mapAPI api = fmap LT.toStrict . mapAPI api . LT.fromStrict
-
-renderResponse :: Result e ValidValue -> GQLResponse
-renderResponse (Failure errors) = Errors (sortOn locations errors)
-renderResponse Success {result} = Data result
-
-instance FromJSON a => FromJSON (JSONResponse a) where
-  parseJSON = withObject "JSONResponse" objectParser
-    where
-      objectParser o = JSONResponse <$> o .:? "data" <*> o .:? "errors"
-
-data JSONResponse a = JSONResponse
-  { responseData :: Maybe a,
-    responseErrors :: Maybe [GQLError]
-  }
-  deriving (Generic, Show, ToJSON)
-
--- | GraphQL HTTP Request Body
-data GQLRequest = GQLRequest
-  { operationName :: Maybe FieldName,
-    query :: Text,
-    variables :: Maybe Aeson.Value
-  }
-  deriving (Show, Generic, FromJSON, ToJSON)
-
--- | GraphQL Response
-data GQLResponse
-  = Data ValidValue
-  | Errors [GQLError]
-  deriving (Show, Generic)
-
-instance FromJSON GQLResponse where
-  parseJSON (Aeson.Object hm) = case LH.toList hm of
-    [("data", value)] -> Data <$> parseJSON value
-    [("errors", value)] -> Errors <$> parseJSON value
-    _ -> fail "Invalid GraphQL Response"
-  parseJSON _ = fail "Invalid GraphQL Response"
-
-instance ToJSON GQLResponse where
-  toJSON (Data gqlData) = object ["data" .= toJSON gqlData]
-  toJSON (Errors errors) = object ["errors" .= toJSON errors]
-
-  ----------------------------------------------------------
-  toEncoding (Data _data) = pairs $ "data" .= _data
-  toEncoding (Errors _errors) = pairs $ "errors" .= _errors

@@ -15,7 +15,6 @@ module Data.Morpheus.Core
     parseTypeDefinitions,
     validateRequest,
     parseRequestWith,
-    validateSchema,
     parseRequest,
     SelectionTree (..),
     Config (..),
@@ -24,6 +23,7 @@ module Data.Morpheus.Core
     debugConfig,
     RenderGQL (..),
     render,
+    ValidateSchema (..),
   )
 where
 

@@ -19,6 +19,7 @@ where
 import qualified Data.Aeson as A
 import Data.Morpheus.Core
   ( RenderGQL (..),
+    ValidateSchema (..),
     parseRequestWith,
   )
 import Data.Morpheus.Ext.SemigroupM ((<:>))
@@ -33,7 +34,6 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
     MapAPI (..),
-    renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
@@ -49,6 +49,7 @@ import Data.Morpheus.Types.Internal.Config
   ( Config (..),
     defaultConfig,
   )
+import Data.Morpheus.Types.Internal.IO (renderResponse)
 import Data.Morpheus.Types.Internal.Resolving
   ( ResolverContext (..),
     ResponseStream,
@@ -59,7 +60,6 @@ import Data.Morpheus.Types.Internal.Resolving
     runRootResolverValue,
   )
 import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
-import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
 import Relude hiding (empty)
 
 mkApp :: ValidateSchema s => Schema s -> RootResolverValue e m -> App e m
@@ -74,8 +74,8 @@ data App event (m :: * -> *)
   | FailApp {appErrors :: GQLErrors}
 
 instance RenderGQL (App e m) where
-  render App {app} = render app
-  render FailApp {appErrors} = render (A.encode appErrors)
+  renderGQL App {app} = renderGQL app
+  renderGQL FailApp {appErrors} = renderGQL (A.encode appErrors)
 
 instance Monad m => Semigroup (App e m) where
   (FailApp err1) <> (FailApp err2) = FailApp (err1 <> err2)
@@ -90,7 +90,7 @@ data AppData event (m :: * -> *) s = AppData
   }
 
 instance RenderGQL (AppData e m s) where
-  render = render . appSchema
+  renderGQL = renderGQL . appSchema
 
 instance Monad m => Stitching (AppData e m s) where
   stitch x y =

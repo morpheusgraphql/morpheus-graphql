@@ -44,10 +44,6 @@ import Data.Morpheus.Ext.Result
     cleanEvents,
     mapEvent,
   )
-import Data.Morpheus.Types.IO
-  ( GQLResponse,
-    renderResponse,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
     MUTATION,
@@ -59,6 +55,10 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
+  )
+import Data.Morpheus.Types.Internal.IO
+  ( GQLResponse,
+    renderResponse,
   )
 import Data.Morpheus.Types.Internal.Resolving.Event
   ( EventHandler (..),
