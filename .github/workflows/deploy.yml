@@ -27,6 +27,7 @@ jobs:
           stack upload morpheus-graphql-core
           stack upload morpheus-graphql-client
           stack upload morpheus-graphql-subscriptions
+          stack upload morpheus-graphql-app
           stack upload .
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
