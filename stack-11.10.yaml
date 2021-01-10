@@ -9,6 +9,7 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql-core
   - morpheus-graphql-subscriptions
+  - morpheus-graphql-app
   - .
 
 allow-newer: true
