@@ -50,6 +50,11 @@ import Data.Morpheus.Internal.Utils
     prop,
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+    GQLResponse,
+    renderResponse,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     Operation (..),
@@ -59,11 +64,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     VALID,
     Value,
-  )
-import Data.Morpheus.Types.Internal.IO
-  ( GQLRequest (..),
-    GQLResponse,
-    renderResponse,
   )
 import Relude hiding (empty)
 

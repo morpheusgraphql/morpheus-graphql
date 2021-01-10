@@ -19,6 +19,9 @@ import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
   )
 import Data.Morpheus.Parsing.Request.Parser (parseGQL)
 import Data.Morpheus.Schema.Schema (internalSchema)
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
@@ -31,9 +34,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Config
   ( Config (..),
     VALIDATION_MODE (..),
-  )
-import Data.Morpheus.Types.Internal.IO
-  ( GQLRequest (..),
   )
 import Data.Morpheus.Validation.Document.Validation
   ( validateSchema,

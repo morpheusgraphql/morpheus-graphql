@@ -27,7 +27,7 @@ import Data.Morpheus.App.Error (badRequestError)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
-import Data.Morpheus.Types.Internal.IO
+import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
   )

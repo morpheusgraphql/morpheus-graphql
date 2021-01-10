@@ -45,7 +45,7 @@ library:
     - Data.Morpheus.Internal.TH
     - Data.Morpheus.Internal.Utils
     - Data.Morpheus.Schema.Schema
-    - Data.Morpheus.Types.Internal.IO
+    - Data.Morpheus.Types.IO
     - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.GQLScalar
     - Data.Morpheus.Types.ID

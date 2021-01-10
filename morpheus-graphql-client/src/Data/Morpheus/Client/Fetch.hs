@@ -29,12 +29,12 @@ import Data.Morpheus.Internal.TH
     toCon,
     typeInstanceDec,
   )
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
-  )
-import Data.Morpheus.Types.Internal.IO
-  ( GQLRequest (..),
   )
 import Data.Text
   ( pack,

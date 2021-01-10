@@ -33,7 +33,7 @@ import Data.Morpheus.Parser
   ( parseRequest,
     parseTypeSystemDefinition,
   )
-import Data.Morpheus.Types.Internal.IO (GQLRequest (..))
+import Data.Morpheus.Types.IO (GQLRequest (..))
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Relude hiding (ByteString)

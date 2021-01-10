@@ -30,13 +30,13 @@ import Data.Morpheus.Ext.Result
   ( Eventless,
     resultOr,
   )
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     Schema (..),
     VALID,
-  )
-import Data.Morpheus.Types.Internal.IO
-  ( GQLRequest (..),
   )
 import Data.Text (unpack)
 import qualified Data.Text.IO as T

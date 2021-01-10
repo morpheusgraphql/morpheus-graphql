@@ -6,7 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.IO
+module Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
     renderResponse,

@@ -40,13 +40,13 @@ import Data.Maybe
   ( Maybe (..),
     maybe,
   )
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+    GQLResponse,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     Token,
-  )
-import Data.Morpheus.Types.Internal.IO
-  ( GQLRequest (..),
-    GQLResponse,
   )
 import Data.Semigroup ((<>))
 import Data.Text

@@ -42,7 +42,7 @@ import Data.Morpheus.Subscriptions.Apollo
   ( toApolloResponse,
   )
 import Data.Morpheus.Subscriptions.Event (Event (..))
-import Data.Morpheus.Types.Internal.IO (GQLResponse)
+import Data.Morpheus.Types.IO (GQLResponse)
 import Data.UUID (UUID)
 import Relude hiding
   ( ByteString,

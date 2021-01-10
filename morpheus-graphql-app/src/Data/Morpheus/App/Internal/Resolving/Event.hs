@@ -9,7 +9,7 @@ module Data.Morpheus.App.Internal.Resolving.Event
   )
 where
 
-import Data.Morpheus.Types.Internal.IO
+import Data.Morpheus.Types.IO
   ( GQLResponse,
   )
 

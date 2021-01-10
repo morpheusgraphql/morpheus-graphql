@@ -52,14 +52,14 @@ import Data.Morpheus.Subscriptions.ClientConnectionStore
     startSession,
   )
 import Data.Morpheus.Subscriptions.Event (Event (..))
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
+    GQLResponse (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     VALID,
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.IO
-  ( GQLRequest (..),
-    GQLResponse (..),
   )
 import Data.UUID (UUID)
 import Relude hiding (ByteString)
