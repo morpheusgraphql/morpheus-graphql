@@ -1,6 +1,0 @@
-query($input: Input!) {
-  simple {
-    name(i: $input)
-    power
-  }
-}

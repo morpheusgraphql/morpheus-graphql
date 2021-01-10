@@ -1,6 +1,0 @@
-query {
-  simple(name: "value 1") {
-    name
-    power
-  }
-}

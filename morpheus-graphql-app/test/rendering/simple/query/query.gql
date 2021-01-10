@@ -1,9 +1,0 @@
-query MyQuery {
-  deity {
-    name
-    power
-    friends {
-      name
-    }
-  }
-}

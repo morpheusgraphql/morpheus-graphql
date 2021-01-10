@@ -1,9 +1,0 @@
-mutation MyMutation {
-  deity {
-    name
-    power
-    friends {
-      name
-    }
-  }
-}

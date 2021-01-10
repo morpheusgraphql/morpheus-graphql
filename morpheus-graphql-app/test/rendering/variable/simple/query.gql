@@ -1,6 +1,0 @@
-query($name: String!) {
-  simple(name: $name) {
-    name
-    power
-  }
-}

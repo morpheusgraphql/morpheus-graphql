@@ -1,9 +1,0 @@
-{
-  deity {
-    name
-    power
-    friends {
-      name
-    }
-  }
-}

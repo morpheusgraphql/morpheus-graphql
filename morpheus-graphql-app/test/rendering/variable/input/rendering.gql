@@ -1,6 +1,0 @@
-query {
-  simple {
-    name(i: { id: "def value", int: 5 })
-    power
-  }
-}

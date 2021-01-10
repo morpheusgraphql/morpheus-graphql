@@ -1,7 +1,0 @@
-type MyType {
-  name: String
-}
-
-schema {
-  Query: MyType
-}

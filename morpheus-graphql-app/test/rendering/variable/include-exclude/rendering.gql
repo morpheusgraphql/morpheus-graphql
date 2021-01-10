@@ -1,8 +1,0 @@
-query {
-  a {
-    value
-  }
-  b {
-    value
-  }
-}

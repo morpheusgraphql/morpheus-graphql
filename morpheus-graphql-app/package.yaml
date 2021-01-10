@@ -44,16 +44,17 @@ library:
     - Data.Morpheus.App.Internal.Resolving
     - Data.Morpheus.Types.GQLWrapper
   ghc-options: -Wall
-#
-# tests:
-#   morpheus-test:
-#     main: Spec.hs
-#     source-dirs: test
-#     ghc-options: -Wall
-#     dependencies:
-#       - morpheus-graphql-core
-#       - tasty
-#       - tasty-hunit
-#       - aeson
-#       - directory >= 1.0
-#       - relude    >= 0.3.0
+
+tests:
+  morpheus-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options: -Wall
+    dependencies:
+      - morpheus-graphql-core >= 0.16.0    && <= 0.17.0
+      - morpheus-graphql-app
+      - tasty
+      - tasty-hunit
+      - aeson
+      - directory >= 1.0
+      - relude    >= 0.3.0

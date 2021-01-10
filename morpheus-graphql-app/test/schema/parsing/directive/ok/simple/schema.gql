@@ -1,5 +1,0 @@
-directive @MyDirective on FIELD_DEFINITION | OBJECT
-
-type Query {
-  name: String
-}

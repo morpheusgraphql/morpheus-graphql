@@ -1,5 +1,0 @@
-type MyType {
-  name: String
-}
-
-schema {}

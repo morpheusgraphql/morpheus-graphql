@@ -11,19 +11,21 @@ where
 import Data.Aeson (decode, encode)
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as L (readFile)
+import Data.Morpheus.App
+  ( App (..),
+    AppData (..),
+    mkApp,
+    mkApp,
+    runAppStream,
+  )
 import Data.Morpheus.App.Internal.Resolving
   ( ResponseStream,
     ResultT (..),
     resultOr,
   )
 import Data.Morpheus.Core
-  ( App (..),
-    AppData (..),
-    mkApp,
-    mkApp,
-    parseGQLDocument,
+  ( parseGQLDocument,
     render,
-    runAppStream,
   )
 import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
