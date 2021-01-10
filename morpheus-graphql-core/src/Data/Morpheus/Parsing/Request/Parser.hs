@@ -2,7 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Parsing.Request.Parser (parseGQL) where
+module Data.Morpheus.Parsing.Request.Parser
+  ( parseRequest,
+  )
+where
 
 --
 -- MORPHEUS
@@ -32,8 +35,8 @@ import Data.Morpheus.Parsing.Request.Selection
   )
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
-    GQLQuery (..),
+  ( ExecutableDocument (..),
+    FieldName (..),
     ResolvedValue,
     replaceValue,
   )
@@ -47,20 +50,20 @@ import Text.Megaparsec
     many,
   )
 
-request :: Parser GQLQuery
-request =
-  label "GQLQuery" $
-    ( GQLQuery []
+parseExecutableDocument :: Parser ExecutableDocument
+parseExecutableDocument =
+  label "ExecutableDocument" $
+    ( ExecutableDocument []
         <$> (ignoredTokens *> parseOperation)
         <*> (many parseFragmentDefinition >>= lift . fromElems)
     )
       <* ignoredTokens
       <* eof
 
-parseGQL :: GQLRequest -> Eventless GQLQuery
-parseGQL GQLRequest {query, variables} =
+parseRequest :: GQLRequest -> Eventless ExecutableDocument
+parseRequest GQLRequest {query, variables} =
   setVariables
-    <$> processParser request (toLBS query)
+    <$> processParser parseExecutableDocument (toLBS query)
   where
     setVariables root = root {inputVariables = toVariableMap variables}
     toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolvedValue)]

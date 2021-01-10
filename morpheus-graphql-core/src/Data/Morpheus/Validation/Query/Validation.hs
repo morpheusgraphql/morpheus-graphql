@@ -16,7 +16,7 @@ import Data.Morpheus.Ext.Result
   )
 import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Types.Internal.AST
-  ( GQLQuery (..),
+  ( ExecutableDocument (..),
     Operation (..),
     Schema (..),
     TypeKind (..),
@@ -51,12 +51,12 @@ import Relude hiding
 validateRequest ::
   Config ->
   Schema VALID ->
-  GQLQuery ->
+  ExecutableDocument ->
   Eventless (Operation VALID)
 validateRequest
   config
   schema
-  GQLQuery
+  ExecutableDocument
     { fragments,
       inputVariables,
       operation =

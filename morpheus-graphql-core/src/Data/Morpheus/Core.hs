@@ -8,23 +8,21 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Core
-  ( parseDSL,
-    parseFullGQLDocument,
-    parseGQLDocument,
-    parseTypeSystemDefinition,
-    parseTypeDefinitions,
-    validateRequest,
-    parseRequestWith,
-    parseRequest,
-    SelectionTree (..),
-    Config (..),
-    VALIDATION_MODE (..),
-    defaultConfig,
-    debugConfig,
+  ( Config (..),
     RenderGQL (..),
-    render,
+    SelectionTree (..),
+    VALIDATION_MODE (..),
     ValidateSchema (..),
+    debugConfig,
+    defaultConfig,
     internalSchema,
+    parseFullSchema,
+    parseRequest,
+    parseRequestWith,
+    parseSchema,
+    parseTypeDefinitions,
+    render,
+    validateRequest,
   )
 where
 
@@ -33,8 +31,6 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.Morpheus.Ext.Result
   ( Eventless,
-    resultOr,
-    sortErrors,
   )
 import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
@@ -42,8 +38,8 @@ import Data.Morpheus.Ext.SemigroupM
 import Data.Morpheus.Parser
   ( parseRequest,
     parseRequestWith,
+    parseSchema,
     parseTypeDefinitions,
-    parseTypeSystemDefinition,
   )
 import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), render)
 import Data.Morpheus.Schema.Schema (internalSchema)
@@ -64,11 +60,5 @@ import Data.Morpheus.Validation.Query.Validation
   )
 import Relude hiding (ByteString)
 
-parseDSL :: ByteString -> Either String (Schema VALID)
-parseDSL = resultOr (Left . show) pure . parseGQLDocument
-
-parseGQLDocument :: ByteString -> Eventless (Schema VALID)
-parseGQLDocument = sortErrors . parseTypeSystemDefinition
-
-parseFullGQLDocument :: ByteString -> Eventless (Schema VALID)
-parseFullGQLDocument = parseGQLDocument >=> (internalSchema <:>)
+parseFullSchema :: ByteString -> Eventless (Schema VALID)
+parseFullSchema = parseSchema >=> (internalSchema <:>)

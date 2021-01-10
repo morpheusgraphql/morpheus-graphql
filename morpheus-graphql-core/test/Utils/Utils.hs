@@ -25,7 +25,7 @@ import qualified Data.ByteString.Lazy as L (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (foldl)
-import Data.Morpheus.Core (parseGQLDocument)
+import Data.Morpheus.Core (parseSchema)
 import Data.Morpheus.Internal.Ext
   ( Eventless,
     resultOr,
@@ -114,7 +114,7 @@ getCases :: FromJSON a => FilePath -> IO [a]
 getCases dir = fromMaybe [] . decode <$> L.readFile ("test/" <> dir <> "/cases.json")
 
 getSchema :: FieldName -> IO (Eventless (Schema VALID))
-getSchema (FieldName x) = parseGQLDocument <$> L.readFile (path x <> "/schema.gql")
+getSchema (FieldName x) = parseSchema <$> L.readFile (path x <> "/schema.gql")
 
 assertValidSchema :: FieldName -> IO (Schema VALID)
 assertValidSchema = getSchema >=> resultOr failedSchema pure
