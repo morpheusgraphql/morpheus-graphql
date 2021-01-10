@@ -17,8 +17,8 @@ import Data.Morpheus.Client
     defineByIntrospectionFile,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
-    GQLQuery,
+  ( ExecutableDocument,
+    FieldName (..),
   )
 import Data.Semigroup ((<>))
 import qualified Data.Text as T
@@ -52,7 +52,7 @@ fixFilePath x = prefix <$> runIO (doesFileExist x)
 
 defineClientWith ::
   FieldName ->
-  (GQLQuery, String) ->
+  (ExecutableDocument, String) ->
   Q [Dec]
 defineClientWith url exp = do
   p <- fixFilePath (path url <> "/schema.gql")
@@ -60,7 +60,7 @@ defineClientWith url exp = do
 
 defineClientWithJSON ::
   FieldName ->
-  (GQLQuery, String) ->
+  (ExecutableDocument, String) ->
   Q [Dec]
 defineClientWithJSON url exp = do
   p <- fixFilePath (path url <> "/schema.json")

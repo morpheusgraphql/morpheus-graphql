@@ -42,7 +42,7 @@ import Data.Morpheus.Types.GQLScalar
   )
 import Data.Morpheus.Types.ID (ID (..))
 import Data.Morpheus.Types.Internal.AST
-  ( GQLQuery,
+  ( ExecutableDocument,
     ScalarValue (..),
     Schema,
     VALID,
@@ -53,21 +53,21 @@ import Language.Haskell.TH.Syntax
   )
 import Relude hiding (ByteString)
 
-defineByDocumentFile :: FilePath -> (GQLQuery, String) -> Q [Dec]
+defineByDocumentFile :: FilePath -> (ExecutableDocument, String) -> Q [Dec]
 defineByDocumentFile filePath args = do
   qAddDependentFile filePath
   defineByDocument (L.readFile filePath) args
 
-defineByIntrospectionFile :: FilePath -> (GQLQuery, String) -> Q [Dec]
+defineByIntrospectionFile :: FilePath -> (ExecutableDocument, String) -> Q [Dec]
 defineByIntrospectionFile filePath args = do
   qAddDependentFile filePath
   defineByIntrospection (L.readFile filePath) args
 
-defineByDocument :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
+defineByDocument :: IO ByteString -> (ExecutableDocument, String) -> Q [Dec]
 defineByDocument doc = defineQuery (schemaByDocument doc)
 
 schemaByDocument :: IO ByteString -> IO (Eventless (Schema VALID))
 schemaByDocument = fmap parseFullSchema
 
-defineByIntrospection :: IO ByteString -> (GQLQuery, String) -> Q [Dec]
+defineByIntrospection :: IO ByteString -> (ExecutableDocument, String) -> Q [Dec]
 defineByIntrospection json = defineQuery (decodeIntrospection <$> json)
