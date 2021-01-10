@@ -21,6 +21,9 @@ import Data.Aeson
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A
 import Data.ByteString.Lazy (ByteString)
+import Data.Morpheus.Client.JSONSchema.Types
+  ( JSONResponse (..),
+  )
 import Data.Morpheus.Internal.TH
   ( applyCons,
     toCon,
@@ -32,7 +35,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.IO
   ( GQLRequest (..),
-    JSONResponse (..),
   )
 import Data.Text
   ( pack,

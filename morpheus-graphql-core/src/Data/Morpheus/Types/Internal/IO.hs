@@ -9,19 +9,16 @@
 module Data.Morpheus.Types.Internal.IO
   ( GQLRequest (..),
     GQLResponse (..),
-    JSONResponse (..),
     renderResponse,
   )
 where
 
 import Data.Aeson
-  ( (.:?),
-    (.=),
+  ( (.=),
     FromJSON (..),
     ToJSON (..),
     object,
     pairs,
-    withObject,
   )
 import qualified Data.Aeson as Aeson
   ( Value (..),
@@ -43,17 +40,6 @@ import Relude hiding
 renderResponse :: Result e ValidValue -> GQLResponse
 renderResponse (Failure errors) = Errors (sortOn locations errors)
 renderResponse Success {result} = Data result
-
-instance FromJSON a => FromJSON (JSONResponse a) where
-  parseJSON = withObject "JSONResponse" objectParser
-    where
-      objectParser o = JSONResponse <$> o .:? "data" <*> o .:? "errors"
-
-data JSONResponse a = JSONResponse
-  { responseData :: Maybe a,
-    responseErrors :: Maybe [GQLError]
-  }
-  deriving (Generic, Show, ToJSON)
 
 -- | GraphQL HTTP Request Body
 data GQLRequest = GQLRequest
