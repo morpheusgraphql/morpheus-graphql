@@ -4,13 +4,6 @@
 
 ### Breaking changes
 
-- following Types and modules are migrated to the new package `morpheus-graphql-app`:
-
-  - following types and functions in `Data.Morpheus.Core` are moved in to `Data.Morpheus.App`:
-    `App`, `AppData`, `runApp`, `withDebugger`, `mkApp`, `runAppStream`
-  - typeClass `MapAPI` migrated from `Data.Morpheus.Types.IO` is moved into `Data.Morpheus.App`
-  - Data.Morpheus.Types.Internal.Resolving`moved as`Data.Morpheus.App.Internal.Resolving`
-
 - `GQLScalar` was replaced with `EncodeScalar` and `DecodeScalar` type-classes.
 
 ### Minor Changes
