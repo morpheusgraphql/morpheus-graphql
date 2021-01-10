@@ -28,6 +28,10 @@ import Data.Morpheus.Error
   ( deprecatedField,
     globalErrorMessage,
   )
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+    Result (..),
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     nameSpaceType,
@@ -55,10 +59,6 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecatedReason,
     msg,
     toGQLError,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
   )
 import Relude
 

@@ -58,6 +58,9 @@ where
 import Data.Morpheus.Error.Utils
   ( validationErrorMessage,
   )
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -94,9 +97,6 @@ import Data.Morpheus.Types.Internal.AST
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-  )
 import Relude hiding
   ( Constraint,
     asks,

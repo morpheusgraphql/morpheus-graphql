@@ -27,13 +27,13 @@ import qualified Data.Aeson as Aeson
   ( Value (..),
   )
 import qualified Data.HashMap.Lazy as LH
+import Data.Morpheus.Ext.Result
+  ( Result (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError (..),
     ValidValue,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Result (..),
   )
 import Relude hiding
   ( decodeUtf8,

@@ -51,6 +51,7 @@ library:
     - Data.Morpheus.Types.ID
     - Data.Morpheus.Types.SelectionTree
     - Data.Morpheus.Ext.SemigroupM
+    - Data.Morpheus.Ext.Result
   ghc-options: -Wall
 #
 # tests:

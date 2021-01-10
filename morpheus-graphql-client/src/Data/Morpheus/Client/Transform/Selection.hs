@@ -19,6 +19,9 @@ import Data.Morpheus.Client.Internal.Types
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
 import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
@@ -52,9 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toAny,
     toFieldName,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
   )
 import Relude hiding (empty, show)
 import Prelude (show)

@@ -17,11 +17,11 @@ import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
+import Data.Morpheus.Ext.Result
+  ( Result (..),
+  )
 import Data.Morpheus.Parsing.Document.TypeSystem
   ( parseSchema,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Result (..),
   )
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote

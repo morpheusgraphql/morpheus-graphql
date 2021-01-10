@@ -6,7 +6,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving.Core
+module Data.Morpheus.Ext.Result
   ( Eventless,
     Result (..),
     Failure (..),
@@ -23,7 +23,7 @@ where
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
-import Data.Morpheus.Types.Internal.AST
+import Data.Morpheus.Types.Internal.AST.Base
   ( GQLError (..),
     GQLErrors,
     ValidationError (..),

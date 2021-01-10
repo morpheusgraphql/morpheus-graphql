@@ -28,15 +28,15 @@ import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+    Result (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
     Operation (..),
     Schema,
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
   )
 import Language.Haskell.TH
 import Relude

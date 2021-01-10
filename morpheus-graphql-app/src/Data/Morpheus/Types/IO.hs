@@ -43,14 +43,14 @@ import qualified Data.ByteString.Lazy.Char8 as LB
   )
 import qualified Data.HashMap.Lazy as LH
 import Data.Morpheus.App.Error (badRequestError)
+import Data.Morpheus.Ext.Result
+  ( Failure (..),
+    Result (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError (..),
     ValidValue,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Failure (..),
-    Result (..),
   )
 import qualified Data.Text.Lazy as LT
   ( Text,

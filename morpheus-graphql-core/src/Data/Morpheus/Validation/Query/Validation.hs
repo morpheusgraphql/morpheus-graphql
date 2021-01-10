@@ -11,6 +11,9 @@ module Data.Morpheus.Validation.Query.Validation
 where
 
 import Data.HashMap.Lazy (fromList)
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+  )
 import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Types.Internal.AST
   ( GQLQuery (..),
@@ -20,9 +23,6 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-  )
 import Data.Morpheus.Types.Internal.Validation
   ( CurrentSelection (..),
     OperationContext (..),

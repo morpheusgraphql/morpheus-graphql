@@ -11,16 +11,16 @@ where
 
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+    Result (..),
+    failure,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
     Position (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-    Result (..),
-    failure,
   )
 import Relude
   ( ($),

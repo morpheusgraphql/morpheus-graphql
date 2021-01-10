@@ -47,6 +47,7 @@ where
 
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Lazy as HM
+import Data.Morpheus.Ext.Result
 import Data.Morpheus.Internal.Utils
   ( mapTuple,
   )
@@ -57,7 +58,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     decodeScientific,
   )
-import Data.Morpheus.Types.Internal.Resolving.Core
 import Data.Morpheus.Types.Internal.Resolving.Event
 import Data.Morpheus.Types.Internal.Resolving.Resolver
 import Data.Morpheus.Types.Internal.Resolving.ResolverState

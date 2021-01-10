@@ -197,7 +197,7 @@ library
       Data.Morpheus.Types.ID
       Data.Morpheus.Types.Internal.Config
       Data.Morpheus.Types.Internal.Resolving
-      Data.Morpheus.Types.Internal.Resolving.Core
+      Data.Morpheus.Ext.Result
       Data.Morpheus.Types.Internal.Resolving.Event
       Data.Morpheus.Types.Internal.Resolving.Resolver
       Data.Morpheus.Types.Internal.Resolving.ResolverState

@@ -33,6 +33,14 @@ import Data.Morpheus.Core
   ( RenderGQL,
     render,
   )
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+    Failure (..),
+    PushEvents (..),
+    Result,
+    ResultT (..),
+    cleanEvents,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
@@ -47,14 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-    Failure (..),
-    PushEvents (..),
-    Result,
-    ResultT (..),
-    cleanEvents,
-  )
 import Relude
 
 data ResolverContext = ResolverContext

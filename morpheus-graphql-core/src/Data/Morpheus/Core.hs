@@ -30,6 +30,11 @@ where
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+    resultOr,
+    sortErrors,
+  )
 import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
   )
@@ -51,11 +56,6 @@ import Data.Morpheus.Types.Internal.Config
     VALIDATION_MODE (..),
     debugConfig,
     defaultConfig,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-    resultOr,
-    sortErrors,
   )
 import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
 import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))

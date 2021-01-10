@@ -35,6 +35,15 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
 where
 
 import Control.Monad.Trans.Reader (mapReaderT)
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+    Failure (..),
+    PushEvents (..),
+    Result (..),
+    ResultT (..),
+    cleanEvents,
+    mapEvent,
+  )
 import Data.Morpheus.Types.IO
   ( GQLResponse,
     renderResponse,
@@ -50,15 +59,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-    Failure (..),
-    PushEvents (..),
-    Result (..),
-    ResultT (..),
-    cleanEvents,
-    mapEvent,
   )
 import Data.Morpheus.Types.Internal.Resolving.Event
   ( EventHandler (..),

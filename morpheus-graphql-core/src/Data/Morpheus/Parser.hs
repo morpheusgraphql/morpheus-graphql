@@ -9,6 +9,9 @@ module Data.Morpheus.Parser
 where
 
 import Data.ByteString.Lazy (ByteString)
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+  )
 import Data.Morpheus.Ext.SemigroupM ((<:>))
 import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
   ( parseSchema,
@@ -31,9 +34,6 @@ import Data.Morpheus.Types.Internal.Config
   )
 import Data.Morpheus.Types.Internal.IO
   ( GQLRequest (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
   )
 import Data.Morpheus.Validation.Document.Validation
   ( validateSchema,

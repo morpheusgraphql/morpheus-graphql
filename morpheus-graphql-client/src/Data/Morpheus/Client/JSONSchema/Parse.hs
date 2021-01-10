@@ -28,6 +28,9 @@ import Data.Morpheus.Core
     validateSchema,
   )
 import Data.Morpheus.Error (globalErrorMessage)
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     fromElems,
@@ -65,9 +68,6 @@ import Data.Morpheus.Types.Internal.AST
     toHSWrappers,
   )
 import Data.Morpheus.Types.Internal.IO (JSONResponse (..))
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-  )
 import Relude hiding
   ( ByteString,
     Type,
