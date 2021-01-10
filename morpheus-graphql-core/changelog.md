@@ -33,6 +33,8 @@
 
 ### new features
 
+- `Data.Morpheus.Core` provides default GrapHQL type definitions with `internalSchema`
+
 ### Minor Changes
 
 - parser performance optimization

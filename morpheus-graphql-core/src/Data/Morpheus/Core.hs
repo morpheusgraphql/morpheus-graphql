@@ -24,6 +24,7 @@ module Data.Morpheus.Core
     RenderGQL (..),
     render,
     ValidateSchema (..),
+    internalSchema,
   )
 where
 

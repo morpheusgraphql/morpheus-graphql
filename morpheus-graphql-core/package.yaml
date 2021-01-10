@@ -44,17 +44,12 @@ library:
     - Data.Morpheus.Error
     - Data.Morpheus.Internal.TH
     - Data.Morpheus.Internal.Utils
-    - Data.Morpheus.Schema.Schema
     - Data.Morpheus.Types.IO
     - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.GQLScalar
     - Data.Morpheus.Types.ID
     - Data.Morpheus.Types.SelectionTree
-    - Data.Morpheus.Ext.SemigroupM
-    - Data.Morpheus.Ext.Result
-    - Data.Morpheus.Ext.Map
-    - Data.Morpheus.Ext.OrdMap
-    - Data.Morpheus.Ext.SafeHashMap
+    - Data.Morpheus.Internal.Ext
   ghc-options: -Wall
 
 tests:
