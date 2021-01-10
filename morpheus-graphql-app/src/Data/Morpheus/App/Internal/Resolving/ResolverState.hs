@@ -34,7 +34,7 @@ import Data.Morpheus.Core
     RenderGQL,
     render,
   )
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
     Failure (..),
     PushEvents (..),

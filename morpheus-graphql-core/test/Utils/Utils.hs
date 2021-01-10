@@ -26,7 +26,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (foldl)
 import Data.Morpheus.Core (parseGQLDocument)
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
     resultOr,
   )

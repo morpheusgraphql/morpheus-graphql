@@ -13,7 +13,7 @@ import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDec
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Core (parseFullGQLDocument)
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
     Result (..),
   )

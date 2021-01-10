@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 121b1e8e980228fab54c6ca30775fd5c769baf52f786c8cb53a75e748efd167c
+-- hash: 23e4c48f56be75b4fe8a4258cb76a1d6fec96e82b6b81765260fb4b36a36ad14
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -150,17 +150,12 @@ library
       Data.Morpheus.Error
       Data.Morpheus.Internal.TH
       Data.Morpheus.Internal.Utils
-      Data.Morpheus.Schema.Schema
       Data.Morpheus.Types.IO
       Data.Morpheus.Types.Internal.AST
       Data.Morpheus.Types.GQLScalar
       Data.Morpheus.Types.ID
       Data.Morpheus.Types.SelectionTree
-      Data.Morpheus.Ext.SemigroupM
-      Data.Morpheus.Ext.Result
-      Data.Morpheus.Ext.Map
-      Data.Morpheus.Ext.OrdMap
-      Data.Morpheus.Ext.SafeHashMap
+      Data.Morpheus.Internal.Ext
   other-modules:
       Data.Morpheus.Error.Document.Interface
       Data.Morpheus.Error.Fragment
@@ -174,7 +169,12 @@ library
       Data.Morpheus.Ext.Elems
       Data.Morpheus.Ext.Failure
       Data.Morpheus.Ext.KeyOf
+      Data.Morpheus.Ext.Map
       Data.Morpheus.Ext.MergeSet
+      Data.Morpheus.Ext.OrdMap
+      Data.Morpheus.Ext.Result
+      Data.Morpheus.Ext.SafeHashMap
+      Data.Morpheus.Ext.SemigroupM
       Data.Morpheus.Internal.Graph
       Data.Morpheus.Parser
       Data.Morpheus.Parsing.Document.TypeSystem
@@ -188,6 +188,7 @@ library
       Data.Morpheus.Parsing.Request.Selection
       Data.Morpheus.Rendering.RenderGQL
       Data.Morpheus.Schema.DSL
+      Data.Morpheus.Schema.Schema
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.DirectiveLocation
       Data.Morpheus.Types.Internal.AST.Fields

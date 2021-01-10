@@ -18,7 +18,7 @@ import Data.Morpheus.Core
     parseRequestWith,
     render,
   )
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
     Result (..),
   )
