@@ -6,7 +6,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving.Core
+module Data.Morpheus.Ext.Result
   ( Eventless,
     Result (..),
     Failure (..),

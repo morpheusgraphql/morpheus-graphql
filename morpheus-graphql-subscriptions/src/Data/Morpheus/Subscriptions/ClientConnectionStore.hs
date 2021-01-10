@@ -31,6 +31,9 @@ where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.HashMap.Lazy as HM
+import Data.Morpheus.App.Internal.Resolving
+  ( EventHandler (..),
+  )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
     KeyOf (..),
@@ -40,9 +43,6 @@ import Data.Morpheus.Subscriptions.Apollo
   )
 import Data.Morpheus.Subscriptions.Event (Event (..))
 import Data.Morpheus.Types.IO (GQLResponse)
-import Data.Morpheus.Types.Internal.Resolving
-  ( EventHandler (..),
-  )
 import Data.UUID (UUID)
 import Relude hiding
   ( ByteString,

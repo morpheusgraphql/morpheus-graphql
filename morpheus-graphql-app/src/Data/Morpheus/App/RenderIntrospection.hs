@@ -8,13 +8,25 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Rendering.RenderIntrospection
+module Data.Morpheus.App.RenderIntrospection
   ( render,
     createObjectType,
     WithSchema,
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving
+  ( Resolver,
+    ResolverContext (..),
+    ResolverValue,
+    mkBoolean,
+    mkList,
+    mkNull,
+    mkObject,
+    mkString,
+    unsafeInternalContext,
+  )
+import qualified Data.Morpheus.Core as GQL
 import Data.Morpheus.Internal.Utils
   ( Failure,
     elems,
@@ -22,7 +34,6 @@ import Data.Morpheus.Internal.Utils
     fromLBS,
     selectBy,
   )
-import qualified Data.Morpheus.Rendering.RenderGQL as GQL
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -59,17 +70,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     possibleInterfaceTypes,
     toGQLWrapper,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-    ResolverContext (..),
-    ResolverValue,
-    mkBoolean,
-    mkList,
-    mkNull,
-    mkObject,
-    mkString,
-    unsafeInternalContext,
   )
 import Data.Text (pack)
 import Relude
@@ -117,7 +117,7 @@ instance RenderIntrospection Bool where
   render = pure . mkBoolean
 
 instance RenderIntrospection TypeKind where
-  render = pure . mkString . fromLBS . GQL.renderGQL
+  render = pure . mkString . fromLBS . GQL.render
 
 instance RenderIntrospection (DirectiveDefinition VALID) where
   render
@@ -208,7 +208,7 @@ instance RenderIntrospection (FieldContent TRUE IN VALID) where
 
 instance RenderIntrospection (Value VALID) where
   render Null = pure mkNull
-  render x = pure $ mkString $ fromLBS $ GQL.renderGQL x
+  render x = pure $ mkString $ fromLBS $ GQL.render x
 
 instance
   RenderIntrospection

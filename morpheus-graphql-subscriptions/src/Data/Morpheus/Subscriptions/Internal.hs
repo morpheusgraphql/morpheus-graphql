@@ -45,7 +45,7 @@ import Control.Monad.IO.Unlift
   )
 -- MORPHEUS
 
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App,
     runAppStream,
   )

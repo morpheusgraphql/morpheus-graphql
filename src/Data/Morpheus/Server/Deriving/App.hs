@@ -13,9 +13,12 @@ where
 
 import Control.Monad (Monad)
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App (..),
     mkApp,
+  )
+import Data.Morpheus.App.Internal.Resolving
+  ( resultOr,
   )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeConstraints,
@@ -27,9 +30,6 @@ import Data.Morpheus.Server.Deriving.Schema
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( resultOr,
   )
 
 type RootResolverConstraint m e query mutation subscription =

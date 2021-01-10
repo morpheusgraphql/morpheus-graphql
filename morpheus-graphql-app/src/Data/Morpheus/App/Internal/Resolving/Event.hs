@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving.Event
+module Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
     ResponseEvent (..),
   )

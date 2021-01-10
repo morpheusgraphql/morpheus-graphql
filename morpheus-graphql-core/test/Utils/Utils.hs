@@ -16,8 +16,6 @@ module Utils.Utils
     getRequest,
     assertValidSchema,
     getSchema,
-    getResolvers,
-    getResolver,
     caseFailure,
   )
 where
@@ -27,8 +25,11 @@ import qualified Data.ByteString.Lazy as L (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (foldl)
-import Data.HashMap.Lazy (lookup)
 import Data.Morpheus.Core (parseGQLDocument)
+import Data.Morpheus.Internal.Ext
+  ( Eventless,
+    resultOr,
+  )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
   )
@@ -36,14 +37,6 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     Schema (..),
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    ResolverValue,
-    RootResolverValue (..),
-    mkNull,
-    mkValue,
-    resultOr,
   )
 import Data.Text (unpack)
 import qualified Data.Text.IO as T
@@ -137,29 +130,6 @@ getRequest p =
     Nothing
     <$> T.readFile (gqlLib $ readName p)
     <*> maybeVariables p
-
-getResolvers :: Monad m => FieldName -> IO (RootResolverValue e m)
-getResolvers p = getResolver ("test/" <> p <> "/resolvers.json")
-
-getResolver :: Monad m => FieldName -> IO (RootResolverValue e m)
-getResolver (FieldName p) = do
-  res <- fromMaybe Null . decode <$> L.readFile (unpack p)
-  pure
-    RootResolverValue
-      { query = pure (lookupRes "query" res),
-        mutation = pure (lookupRes "mutation" res),
-        subscription = pure (lookupRes "subscription" res),
-        channelMap = Nothing
-      }
-
-lookupRes ::
-  ( Monad m
-  ) =>
-  Text ->
-  Value ->
-  ResolverValue m
-lookupRes name (Object fields) = maybe mkNull mkValue (lookup name fields)
-lookupRes _ _ = mkNull
 
 caseFailure :: ByteString -> ByteString -> IO a
 caseFailure expected actualValue =

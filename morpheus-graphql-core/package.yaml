@@ -42,16 +42,14 @@ library:
     - Data.Morpheus.Core
     - Data.Morpheus.QuasiQuoter
     - Data.Morpheus.Error
-    - Data.Morpheus.Internal.TH
-    - Data.Morpheus.Internal.Utils
-    - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.IO
-    - Data.Morpheus.Types.Internal.Resolving
+    - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.GQLScalar
-    - Data.Morpheus.Types.GQLWrapper
     - Data.Morpheus.Types.ID
     - Data.Morpheus.Types.SelectionTree
-
+    - Data.Morpheus.Internal.TH
+    - Data.Morpheus.Internal.Utils
+    - Data.Morpheus.Internal.Ext
   ghc-options: -Wall
 
 tests:

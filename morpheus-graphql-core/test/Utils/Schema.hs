@@ -13,14 +13,14 @@ import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDec
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Core (parseFullGQLDocument)
+import Data.Morpheus.Internal.Ext
+  ( Eventless,
+    Result (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     Schema,
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
   )
 import Data.Text (pack)
 import Relude hiding (ByteString, toString)

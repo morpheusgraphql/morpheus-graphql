@@ -6,19 +6,20 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Stitching
+module Data.Morpheus.App.Internal.Stitching
   ( Stitching (..),
   )
 where
 
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Ext.Map
-  ( resolveWith,
+import Data.Morpheus.App.Internal.Resolving (RootResolverValue)
+import qualified Data.Morpheus.App.Internal.Resolving as R (RootResolverValue (..))
+import Data.Morpheus.Error (NameCollision (..))
+import Data.Morpheus.Internal.Ext
+  ( SemigroupM (..),
+    resolveWith,
     runResolutionT,
+    unsafeFromList,
   )
-import qualified Data.Morpheus.Ext.OrdMap as OM
-import qualified Data.Morpheus.Ext.SafeHashMap as SHM
-import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     mergeT,
@@ -36,8 +37,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeLib,
     ValidationErrors,
   )
-import Data.Morpheus.Types.Internal.Resolving (RootResolverValue)
-import qualified Data.Morpheus.Types.Internal.Resolving as R (RootResolverValue (..))
 import Relude hiding (optional)
 
 equal :: (Eq a, Applicative m, Failure ValidationErrors m) => ValidationErrors -> a -> a -> m a
@@ -67,7 +66,7 @@ instance Stitching (Schema s) where
       <*> prop stitch directiveDefinitions s1 s2
 
 instance Stitching (TypeLib s) where
-  stitch x y = runResolutionT (mergeT x y) SHM.unsafeFromList (resolveWith stitch)
+  stitch x y = runResolutionT (mergeT x y) unsafeFromList (resolveWith stitch)
 
 instance Stitching [DirectiveDefinition s] where
   stitch = concatM
@@ -108,7 +107,7 @@ instance Stitching (TypeContent TRUE cat s) where
     | otherwise = failure (["Schema Stitching works only for objects"] :: ValidationErrors)
 
 instance Stitching (FieldsDefinition cat s) where
-  stitch x y = runResolutionT (mergeT x y) OM.unsafeFromList (resolveWith stitch)
+  stitch x y = runResolutionT (mergeT x y) unsafeFromList (resolveWith stitch)
 
 instance Stitching (FieldDefinition cat s) where
   stitch old new

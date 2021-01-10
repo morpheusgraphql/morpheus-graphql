@@ -1,0 +1,142 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: ba0efa2fd025ed88ba20808738e201ed2b2c9d4500532e31187d71984d2753fe
+
+name:           morpheus-graphql-app
+version:        0.16.0
+synopsis:       Morpheus GraphQL Core
+description:    Build GraphQL APIs with your favourite functional language!
+category:       web, graphql
+homepage:       https://morpheusgraphql.com
+bug-reports:    https://github.com/nalchevanidze/morpheus-graphql-app/issues
+author:         Daviti Nalchevanidze
+maintainer:     d.nalchevanidze@gmail.com
+copyright:      (c) 2019 Daviti Nalchevanidze
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    changelog.md
+    README.md
+data-files:
+    test/api/deity/interface/query.gql
+    test/api/deity/schema.gql
+    test/api/deity/simple/query.gql
+    test/api/validation/fragment/fail-unknown-field-on-interface/query.gql
+    test/api/validation/fragment/on-interface-fail-without-casting/query.gql
+    test/api/validation/fragment/on-interface-inline/query.gql
+    test/api/validation/fragment/on-interface-type-casting-inline/query.gql
+    test/api/validation/fragment/on-interface-type-casting/query.gql
+    test/api/validation/fragment/on-interface/query.gql
+    test/api/validation/fragment/on-type/query.gql
+    test/api/validation/fragment/on-union-type/query.gql
+    test/api/validation/fragment/schema.gql
+    test/merge/schema/query-subscription-mutation/api/app.gql
+    test/merge/schema/query-subscription-mutation/api/ext.gql
+    test/merge/schema/query-subscription-mutation/expected/ok.gql
+    test/merge/schema/query-subscription-mutation/request/mutation/query.gql
+    test/merge/schema/query-subscription-mutation/request/query/query.gql
+    test/merge/schema/simple-query/api/app.gql
+    test/merge/schema/simple-query/api/ext.gql
+    test/merge/schema/simple-query/expected/ok.gql
+    test/merge/schema/simple-query/request/query/query.gql
+    test/api/deity/interface/response.json
+    test/api/deity/resolvers.json
+    test/api/deity/simple/response.json
+    test/api/validation/fragment/fail-unknown-field-on-interface/response.json
+    test/api/validation/fragment/on-interface-fail-without-casting/response.json
+    test/api/validation/fragment/on-interface-inline/response.json
+    test/api/validation/fragment/on-interface-type-casting-inline/response.json
+    test/api/validation/fragment/on-interface-type-casting/response.json
+    test/api/validation/fragment/on-interface/response.json
+    test/api/validation/fragment/on-type/response.json
+    test/api/validation/fragment/on-union-type/response.json
+    test/api/validation/fragment/resolvers.json
+    test/merge/schema/query-subscription-mutation/api/app.json
+    test/merge/schema/query-subscription-mutation/api/ext.json
+    test/merge/schema/query-subscription-mutation/request/mutation/response.json
+    test/merge/schema/query-subscription-mutation/request/query/response.json
+    test/merge/schema/simple-query/api/app.json
+    test/merge/schema/simple-query/api/ext.json
+    test/merge/schema/simple-query/request/query/response.json
+
+source-repository head
+  type: git
+  location: https://github.com/nalchevanidze/morpheus-graphql-app
+
+library
+  exposed-modules:
+      Data.Morpheus.App
+      Data.Morpheus.App.Internal.Resolving
+      Data.Morpheus.Types.GQLWrapper
+  other-modules:
+      Data.Morpheus.App.Error
+      Data.Morpheus.App.Internal.Resolving.Event
+      Data.Morpheus.App.Internal.Resolving.Resolver
+      Data.Morpheus.App.Internal.Resolving.ResolverState
+      Data.Morpheus.App.Internal.Resolving.ResolverValue
+      Data.Morpheus.App.Internal.Resolving.RootResolverValue
+      Data.Morpheus.App.Internal.Stitching
+      Data.Morpheus.App.MapAPI
+      Data.Morpheus.App.RenderIntrospection
+      Data.Morpheus.App.SchemaAPI
+      Paths_morpheus_graphql_app
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      aeson >=1.4.4.0 && <=1.6
+    , base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
+    , hashable >=1.0.0
+    , megaparsec >=7.0.0 && <10.0.0
+    , morpheus-graphql-core >=0.16.0 && <=0.17.0
+    , mtl >=2.0 && <=3.0
+    , relude >=0.3.0
+    , scientific >=0.3.6.2 && <0.4
+    , template-haskell >=2.0 && <=3.0
+    , text >=1.2.3.0 && <1.3
+    , th-lift-instances >=0.1.1 && <=0.3
+    , transformers >=0.3.0.0 && <0.6
+    , unordered-containers >=0.2.8.0 && <0.3
+    , vector >=0.12.0.1 && <0.13
+  default-language: Haskell2010
+
+test-suite morpheus-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Utils.Api
+      Utils.MergeSchema
+      Utils.Utils
+      Paths_morpheus_graphql_app
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
+    , directory >=1.0
+    , hashable >=1.0.0
+    , megaparsec >=7.0.0 && <10.0.0
+    , morpheus-graphql-app
+    , morpheus-graphql-core >=0.16.0 && <=0.17.0
+    , mtl >=2.0 && <=3.0
+    , relude >=0.3.0
+    , scientific >=0.3.6.2 && <0.4
+    , tasty
+    , tasty-hunit
+    , template-haskell >=2.0 && <=3.0
+    , text >=1.2.3.0 && <1.3
+    , th-lift-instances >=0.1.1 && <=0.3
+    , transformers >=0.3.0.0 && <0.6
+    , unordered-containers >=0.2.8.0 && <0.3
+    , vector >=0.12.0.1 && <0.13
+  default-language: Haskell2010

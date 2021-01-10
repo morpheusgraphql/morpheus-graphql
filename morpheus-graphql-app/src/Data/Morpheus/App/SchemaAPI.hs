@@ -5,24 +5,31 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Schema.SchemaAPI
+module Data.Morpheus.App.SchemaAPI
   ( withSystemFields,
   )
 where
 
-import Data.Morpheus.Ext.SemigroupM ((<:>))
-import Data.Morpheus.Internal.Utils
-  ( elems,
-    empty,
-    selectOr,
+import Data.Morpheus.App.Internal.Resolving
+  ( Resolver,
+    ResolverValue,
+    ResultT,
+    RootResolverValue (..),
+    mkList,
+    mkNull,
+    mkObject,
+    withArguments,
   )
-import Data.Morpheus.Rendering.RenderIntrospection
+import Data.Morpheus.App.RenderIntrospection
   ( WithSchema,
     createObjectType,
     render,
   )
-import Data.Morpheus.Schema.Schema
-  (
+import Data.Morpheus.Internal.Ext ((<:>))
+import Data.Morpheus.Internal.Utils
+  ( elems,
+    empty,
+    selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -35,16 +42,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     VALID,
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-    ResolverValue,
-    ResultT,
-    RootResolverValue (..),
-    mkList,
-    mkNull,
-    mkObject,
-    withArguments,
   )
 import Relude hiding (empty)
 

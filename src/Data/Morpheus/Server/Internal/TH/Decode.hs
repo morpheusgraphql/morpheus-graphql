@@ -14,6 +14,9 @@ module Data.Morpheus.Server.Internal.TH.Decode
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving
+  ( Failure (..),
+  )
 import Data.Morpheus.Internal.Utils
   ( selectOr,
   )
@@ -35,9 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     getInputUnionValue,
     msg,
     msgInternal,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Failure (..),
   )
 import Relude hiding (empty)
 

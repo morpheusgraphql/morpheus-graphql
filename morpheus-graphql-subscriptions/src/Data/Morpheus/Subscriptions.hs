@@ -24,8 +24,9 @@ where
 import Control.Monad.IO.Unlift
   ( MonadUnliftIO,
   )
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App,
+    MapAPI (..),
     runApp,
   )
 import Data.Morpheus.Subscriptions.Event
@@ -44,7 +45,6 @@ import Data.Morpheus.Subscriptions.Internal
 import Data.Morpheus.Subscriptions.WebSockets
   ( webSocketsWrapper,
   )
-import Data.Morpheus.Types.IO (MapAPI (..))
 import Network.WebSockets
   ( ServerApp,
   )

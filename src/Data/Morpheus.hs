@@ -13,8 +13,9 @@ module Data.Morpheus
 where
 
 -- MORPHEUS
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App,
+    MapAPI,
     runApp,
     withDebugger,
   )
@@ -25,7 +26,6 @@ import Data.Morpheus.Server.Deriving.App
 import Data.Morpheus.Types
   ( RootResolver (..),
   )
-import Data.Morpheus.Types.IO (MapAPI)
 import Relude
 
 -- | main query processor and resolver

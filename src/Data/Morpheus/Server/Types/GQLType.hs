@@ -36,6 +36,10 @@ where
 
 -- MORPHEUS
 
+import Data.Morpheus.App.Internal.Resolving
+  ( Resolver,
+    SubscriptionField,
+  )
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
@@ -68,10 +72,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     Value,
     toNullable,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-    SubscriptionField,
   )
 import Data.Morpheus.Utils.Kinded (CategoryValue (..))
 import Data.Text

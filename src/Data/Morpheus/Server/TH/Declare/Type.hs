@@ -9,6 +9,9 @@ module Data.Morpheus.Server.TH.Declare.Type
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving
+  ( SubscriptionField,
+  )
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     m',
@@ -34,9 +37,6 @@ import Data.Morpheus.Types.Internal.AST
     isOutput,
     isOutputObject,
     isSubscription,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( SubscriptionField,
   )
 import Language.Haskell.TH
 import Relude hiding (Type)

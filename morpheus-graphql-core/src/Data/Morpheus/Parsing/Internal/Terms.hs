@@ -41,6 +41,7 @@ where
 import Data.ByteString.Lazy
   ( pack,
   )
+import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
   ( Collection,
     FromElems (..),
@@ -65,7 +66,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
-import Data.Morpheus.Types.Internal.Resolving (Eventless)
 import Data.Text
   ( strip,
   )

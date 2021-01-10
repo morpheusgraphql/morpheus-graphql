@@ -34,6 +34,10 @@ where
 -- MORPHEUS
 import Data.List (partition)
 import qualified Data.Map as M
+import Data.Morpheus.App.Internal.Resolving
+  ( Eventless,
+    Result (..),
+  )
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -91,10 +95,6 @@ import Data.Morpheus.Types.Internal.AST
     unitFieldName,
     unitTypeName,
     unsafeFromFields,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
   )
 import Data.Morpheus.Utils.Kinded
   ( CategoryValue (..),

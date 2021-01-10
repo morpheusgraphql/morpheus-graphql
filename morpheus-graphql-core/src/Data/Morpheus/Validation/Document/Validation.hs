@@ -22,6 +22,9 @@ import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     PartialImplements (..),
   )
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+  )
 import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
   )
@@ -64,9 +67,6 @@ import Data.Morpheus.Types.Internal.AST
     isWeaker,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-  )
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
     InputValidator,

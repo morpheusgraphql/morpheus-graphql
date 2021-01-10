@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving
+module Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     LiftOperation,
     runRootResolverValue,
@@ -47,6 +47,12 @@ where
 
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Lazy as HM
+import Data.Morpheus.App.Internal.Resolving.Event
+import Data.Morpheus.App.Internal.Resolving.Resolver
+import Data.Morpheus.App.Internal.Resolving.ResolverState
+import Data.Morpheus.App.Internal.Resolving.ResolverValue
+import Data.Morpheus.App.Internal.Resolving.RootResolverValue
+import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Internal.Utils
   ( mapTuple,
   )
@@ -57,12 +63,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     decodeScientific,
   )
-import Data.Morpheus.Types.Internal.Resolving.Core
-import Data.Morpheus.Types.Internal.Resolving.Event
-import Data.Morpheus.Types.Internal.Resolving.Resolver
-import Data.Morpheus.Types.Internal.Resolving.ResolverState
-import Data.Morpheus.Types.Internal.Resolving.ResolverValue
-import Data.Morpheus.Types.Internal.Resolving.RootResolverValue
 import qualified Data.Vector as V
   ( toList,
   )

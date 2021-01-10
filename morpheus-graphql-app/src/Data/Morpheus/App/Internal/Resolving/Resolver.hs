@@ -16,7 +16,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving.Resolver
+module Data.Morpheus.App.Internal.Resolving.Resolver
   ( Resolver,
     LiftOperation,
     lift,
@@ -35,6 +35,30 @@ module Data.Morpheus.Types.Internal.Resolving.Resolver
 where
 
 import Control.Monad.Trans.Reader (mapReaderT)
+import Data.Morpheus.App.Internal.Resolving.Event
+  ( EventHandler (..),
+    ResponseEvent (..),
+  )
+import Data.Morpheus.App.Internal.Resolving.ResolverState
+  ( ResolverContext (..),
+    ResolverState,
+    ResolverStateT (..),
+    clearStateResolverEvents,
+    resolverFailureMessage,
+    runResolverState,
+    runResolverStateM,
+    runResolverStateT,
+    toResolverStateT,
+  )
+import Data.Morpheus.Internal.Ext
+  ( Eventless,
+    Failure (..),
+    PushEvents (..),
+    Result (..),
+    ResultT (..),
+    cleanEvents,
+    mapEvent,
+  )
 import Data.Morpheus.Types.IO
   ( GQLResponse,
     renderResponse,
@@ -50,30 +74,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-    Failure (..),
-    PushEvents (..),
-    Result (..),
-    ResultT (..),
-    cleanEvents,
-    mapEvent,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Event
-  ( EventHandler (..),
-    ResponseEvent (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving.ResolverState
-  ( ResolverContext (..),
-    ResolverState,
-    ResolverStateT (..),
-    clearStateResolverEvents,
-    resolverFailureMessage,
-    runResolverState,
-    runResolverStateM,
-    runResolverStateT,
-    toResolverStateT,
   )
 import Relude hiding
   ( Show,

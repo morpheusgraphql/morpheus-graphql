@@ -58,7 +58,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     fromText,
-    renderGQL,
+    render,
     renderInputSeq,
     space,
   )
@@ -100,11 +100,11 @@ data ScalarValue
   deriving (Show, Eq, Generic, Lift)
 
 instance RenderGQL ScalarValue where
-  render (Int x) = render x
-  render (Float x) = render x
-  render (String x) = render x
-  render (Boolean x) = render x
-  render (Value x) = render x
+  renderGQL (Int x) = renderGQL x
+  renderGQL (Float x) = renderGQL x
+  renderGQL (String x) = renderGQL x
+  renderGQL (Boolean x) = renderGQL x
+  renderGQL (Value x) = renderGQL x
 
 instance A.ToJSON ScalarValue where
   toJSON (Float x) = A.toJSON x
@@ -175,7 +175,7 @@ data ObjectEntry (s :: Stage) = ObjectEntry
   deriving (Eq, Show)
 
 instance RenderGQL (ObjectEntry a) where
-  render (ObjectEntry (FieldName name) value) = fromText name <> ": " <> render value
+  renderGQL (ObjectEntry (FieldName name) value) = fromText name <> ": " <> renderGQL value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision ObjectEntry {entryName} =
@@ -203,22 +203,20 @@ deriving instance Lift (Value a)
 deriving instance Lift (ObjectEntry a)
 
 instance RenderGQL (Value a) where
-  render (ResolvedVariable Ref {refName} _) = "$" <> render refName
-  render (VariableValue Ref {refName}) = "$" <> render refName <> " "
-  render Null = "null"
-  render (Enum x) = render x
-  render (Scalar x) = render x
-  render (Object xs) = "{" <> entries <> "}"
+  renderGQL (ResolvedVariable Ref {refName} _) = "$" <> renderGQL refName
+  renderGQL (VariableValue Ref {refName}) = "$" <> renderGQL refName <> " "
+  renderGQL Null = "null"
+  renderGQL (Enum x) = renderGQL x
+  renderGQL (Scalar x) = renderGQL x
+  renderGQL (Object xs) = "{" <> entries <> "}"
     where
       entries
         | null (elems xs) = ""
         | otherwise = space <> renderInputSeq (elems xs) <> space
-  render (List list) = "[" <> renderInputSeq list <> "]"
-
--- render = pack . BS.unpack . A.encode
+  renderGQL (List list) = "[" <> renderInputSeq list <> "]"
 
 instance Msg (Value a) where
-  msg = msg . renderGQL
+  msg = msg . render
 
 instance A.ToJSON (Value a) where
   toJSON (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =

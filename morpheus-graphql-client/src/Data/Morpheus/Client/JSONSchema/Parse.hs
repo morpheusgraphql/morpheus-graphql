@@ -20,6 +20,7 @@ import Data.Morpheus.Client.JSONSchema.Types
     Field (..),
     InputValue (..),
     Introspection (..),
+    JSONResponse (..),
     Schema (..),
     Type (..),
   )
@@ -28,11 +29,13 @@ import Data.Morpheus.Core
     validateSchema,
   )
 import Data.Morpheus.Error (globalErrorMessage)
+import Data.Morpheus.Internal.Ext
+  ( Eventless,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     fromElems,
   )
-import Data.Morpheus.Types.IO (JSONResponse (..))
 import qualified Data.Morpheus.Types.Internal.AST as AST
   ( Schema,
   )
@@ -64,9 +67,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toAny,
     toHSWrappers,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
   )
 import Relude hiding
   ( ByteString,

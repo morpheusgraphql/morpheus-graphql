@@ -12,6 +12,7 @@ module Data.Morpheus.Client.JSONSchema.Types
     Field (..),
     InputValue (..),
     EnumValue (..),
+    JSONResponse (..),
   )
 where
 
@@ -22,6 +23,7 @@ import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind)
 import Data.Morpheus.Client.JSONSchema.TypeRef (TypeRef)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
+    GQLError,
     TypeName,
   )
 import Relude hiding (Type)
@@ -90,3 +92,14 @@ instance FromJSON EnumValue where
   parseJSON = withObject "EnumValue" objectParser
     where
       objectParser o = EnumValue <$> o .: "name"
+
+instance FromJSON a => FromJSON (JSONResponse a) where
+  parseJSON = withObject "JSONResponse" objectParser
+    where
+      objectParser o = JSONResponse <$> o .:? "data" <*> o .:? "errors"
+
+data JSONResponse a = JSONResponse
+  { responseData :: Maybe a,
+    responseErrors :: Maybe [GQLError]
+  }
+  deriving (Generic, Show, ToJSON)

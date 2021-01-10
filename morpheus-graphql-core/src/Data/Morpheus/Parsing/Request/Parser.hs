@@ -10,6 +10,9 @@ import qualified Data.Aeson as Aeson
   ( Value (..),
   )
 import Data.HashMap.Lazy (toList)
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+  )
 import Data.Morpheus.Internal.Utils
   ( fromElems,
     toLBS,
@@ -33,9 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     GQLQuery (..),
     ResolvedValue,
     replaceValue,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
   )
 import Relude hiding
   ( many,

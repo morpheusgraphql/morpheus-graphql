@@ -68,9 +68,23 @@ import Data.Either
   ( Either (..),
     either,
   )
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App,
-    RenderGQL,
+  )
+import Data.Morpheus.App.Internal.Resolving
+  ( Failure,
+    PushEvents (..),
+    Resolver,
+    ResolverContext (..),
+    SubscriptionField,
+    WithOperation,
+    failure,
+    pushEvents,
+    subscribe,
+    unsafeInternalContext,
+  )
+import Data.Morpheus.Core
+  ( RenderGQL,
     render,
   )
 import Data.Morpheus.Server.Deriving.Schema
@@ -105,18 +119,6 @@ import Data.Morpheus.Types.Internal.AST
     ScalarValue (..),
     TypeName,
     msg,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Failure,
-    PushEvents (..),
-    Resolver,
-    ResolverContext (..),
-    SubscriptionField,
-    WithOperation,
-    failure,
-    pushEvents,
-    subscribe,
-    unsafeInternalContext,
   )
 import Data.Proxy
   ( Proxy (..),

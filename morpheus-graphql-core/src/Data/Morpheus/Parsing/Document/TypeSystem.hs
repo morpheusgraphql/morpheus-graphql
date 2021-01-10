@@ -14,6 +14,10 @@ where
 
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+    failure,
+  )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
@@ -67,10 +71,6 @@ import Data.Morpheus.Types.Internal.AST
     buildSchema,
     mkUnionMember,
     type (<=!),
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    failure,
   )
 import Relude hiding (ByteString)
 import Text.Megaparsec

@@ -126,9 +126,9 @@ renderSelectionSet :: SelectionSet VALID -> Rendering
 renderSelectionSet = renderObject . elems
 
 instance RenderGQL (SelectionContent VALID) where
-  render SelectionField = ""
-  render (SelectionSet selSet) = renderSelectionSet selSet
-  render (UnionSelection unionSets) = renderObject (elems unionSets)
+  renderGQL SelectionField = ""
+  renderGQL (SelectionSet selSet) = renderSelectionSet selSet
+  renderGQL (UnionSelection unionSets) = renderObject (elems unionSets)
 
 instance
   ( Monad m,
@@ -165,9 +165,9 @@ instance KeyOf TypeName UnionTag where
   keyOf = unionTagName
 
 instance RenderGQL UnionTag where
-  render UnionTag {unionTagName, unionTagSelection} =
+  renderGQL UnionTag {unionTagName, unionTagSelection} =
     "... on "
-      <> render unionTagName
+      <> renderGQL unionTagName
       <> renderSelectionSet unionTagSelection
 
 mergeConflict :: [Ref] -> ValidationError -> ValidationErrors
@@ -210,14 +210,14 @@ data Selection (s :: Stage) where
   Spread :: Directives RAW -> Ref -> Selection RAW
 
 instance RenderGQL (Selection VALID) where
-  render
+  renderGQL
     Selection
       { ..
       } =
-      render (fromMaybe selectionName selectionAlias)
+      renderGQL (fromMaybe selectionName selectionAlias)
         <> renderArgumentValues selectionArguments
         <> renderDirectives selectionDirectives
-        <> render selectionContent
+        <> renderGQL selectionContent
 
 instance KeyOf FieldName (Selection s) where
   keyOf
@@ -317,15 +317,15 @@ data Operation (s :: Stage) = Operation
   deriving (Show, Lift)
 
 instance RenderGQL (Operation VALID) where
-  render
+  renderGQL
     Operation
       { operationName,
         operationType,
         operationDirectives,
         operationSelection
       } =
-      render operationType
-        <> maybe "" ((space <>) . render) operationName
+      renderGQL operationType
+        <> maybe "" ((space <>) . renderGQL) operationName
         <> renderDirectives operationDirectives
         <> renderSelectionSet operationSelection
         <> newline

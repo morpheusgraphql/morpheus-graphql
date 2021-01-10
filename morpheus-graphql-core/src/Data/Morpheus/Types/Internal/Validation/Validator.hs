@@ -58,10 +58,16 @@ where
 import Data.Morpheus.Error.Utils
   ( validationErrorMessage,
   )
+import Data.Morpheus.Ext.Result
+  ( Eventless,
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
-import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), renderGQL)
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL,
+    render,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Directive (..),
     FieldDefinition (..),
@@ -94,9 +100,6 @@ import Data.Morpheus.Types.Internal.AST
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-  )
 import Relude hiding
   ( Constraint,
     asks,
@@ -497,18 +500,18 @@ renderScope
     renderSection
       "Scope"
       ( "referenced by type "
-          <> renderGQL currentTypeName
+          <> render currentTypeName
           <> " of kind "
-          <> renderGQL currentTypeKind
+          <> render currentTypeKind
           <> " in field "
-          <> renderGQL fieldname
+          <> render fieldname
       )
 
 renderSection :: RenderGQL a => Message -> a -> Message
 renderSection label content =
   "\n\n" <> label <> ":\n" <> line
     <> "\n\n"
-    <> msg (renderGQL content)
+    <> msg (render content)
     <> "\n\n"
   where
     line = stimes (50 :: Int) "-"

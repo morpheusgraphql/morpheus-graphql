@@ -18,14 +18,14 @@ import Data.Morpheus.Core
     parseRequestWith,
     render,
   )
+import Data.Morpheus.Internal.Ext
+  ( Eventless,
+    Result (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     Operation,
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
   )
 import qualified Data.Text as T
 import Relude hiding (ByteString)

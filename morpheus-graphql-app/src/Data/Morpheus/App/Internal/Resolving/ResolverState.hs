@@ -15,7 +15,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving.ResolverState
+module Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     ResolverStateT (..),
     resolverFailureMessage,
@@ -29,9 +29,18 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverState
 where
 
 import Control.Monad.Trans.Reader (mapReaderT)
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
-    renderGQL,
+import Data.Morpheus.Core
+  ( Config (..),
+    RenderGQL,
+    render,
+  )
+import Data.Morpheus.Internal.Ext
+  ( Eventless,
+    Failure (..),
+    PushEvents (..),
+    Result,
+    ResultT (..),
+    cleanEvents,
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
@@ -45,15 +54,6 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     ValidationError (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Config (Config (..))
-import Data.Morpheus.Types.Internal.Resolving.Core
-  ( Eventless,
-    Failure (..),
-    PushEvents (..),
-    Result,
-    ResultT (..),
-    cleanEvents,
   )
 import Relude
 
@@ -183,7 +183,7 @@ renderSection :: RenderGQL a => Message -> a -> Message
 renderSection label content =
   "\n\n" <> label <> ":\n" <> line
     <> "\n\n"
-    <> msg (renderGQL content)
+    <> msg (render content)
     <> "\n\n"
   where
     line = stimes (50 :: Int) "-"

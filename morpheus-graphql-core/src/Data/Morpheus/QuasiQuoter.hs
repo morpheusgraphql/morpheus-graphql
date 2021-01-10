@@ -23,6 +23,9 @@ import Data.Morpheus.Error
   ( gqlWarnings,
     renderGQLErrors,
   )
+import Data.Morpheus.Ext.Result
+  ( Result (..),
+  )
 import Data.Morpheus.Internal.Utils
   ( fromLBS,
   )
@@ -31,9 +34,6 @@ import Data.Morpheus.Parser
     parseTypeSystemDefinition,
   )
 import Data.Morpheus.Types.IO (GQLRequest (..))
-import Data.Morpheus.Types.Internal.Resolving
-  ( Result (..),
-  )
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Relude hiding (ByteString)

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3ed225b8bc9bb1a892c349297124abacbb9995102a863ba7c18be45140e44c04
+-- hash: 1b02f1bda8ce0e1e6484c239c3b6ef0d6bf4bc8003990c6440e0f7e96cbe9cd9
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -23,27 +23,6 @@ extra-source-files:
     changelog.md
     README.md
 data-files:
-    test/api/deity/interface/query.gql
-    test/api/deity/schema.gql
-    test/api/deity/simple/query.gql
-    test/api/validation/fragment/fail-unknown-field-on-interface/query.gql
-    test/api/validation/fragment/on-interface-fail-without-casting/query.gql
-    test/api/validation/fragment/on-interface-inline/query.gql
-    test/api/validation/fragment/on-interface-type-casting-inline/query.gql
-    test/api/validation/fragment/on-interface-type-casting/query.gql
-    test/api/validation/fragment/on-interface/query.gql
-    test/api/validation/fragment/on-type/query.gql
-    test/api/validation/fragment/on-union-type/query.gql
-    test/api/validation/fragment/schema.gql
-    test/merge/schema/query-subscription-mutation/api/app.gql
-    test/merge/schema/query-subscription-mutation/api/ext.gql
-    test/merge/schema/query-subscription-mutation/expected/ok.gql
-    test/merge/schema/query-subscription-mutation/request/mutation/query.gql
-    test/merge/schema/query-subscription-mutation/request/query/query.gql
-    test/merge/schema/simple-query/api/app.gql
-    test/merge/schema/simple-query/api/ext.gql
-    test/merge/schema/simple-query/expected/ok.gql
-    test/merge/schema/simple-query/request/query/query.gql
     test/rendering/simple/directive/query.gql
     test/rendering/simple/directive/rendering.gql
     test/rendering/simple/fragment/query.gql
@@ -113,25 +92,6 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
-    test/api/deity/interface/response.json
-    test/api/deity/resolvers.json
-    test/api/deity/simple/response.json
-    test/api/validation/fragment/fail-unknown-field-on-interface/response.json
-    test/api/validation/fragment/on-interface-fail-without-casting/response.json
-    test/api/validation/fragment/on-interface-inline/response.json
-    test/api/validation/fragment/on-interface-type-casting-inline/response.json
-    test/api/validation/fragment/on-interface-type-casting/response.json
-    test/api/validation/fragment/on-interface/response.json
-    test/api/validation/fragment/on-type/response.json
-    test/api/validation/fragment/on-union-type/response.json
-    test/api/validation/fragment/resolvers.json
-    test/merge/schema/query-subscription-mutation/api/app.json
-    test/merge/schema/query-subscription-mutation/api/ext.json
-    test/merge/schema/query-subscription-mutation/request/mutation/response.json
-    test/merge/schema/query-subscription-mutation/request/query/response.json
-    test/merge/schema/simple-query/api/app.json
-    test/merge/schema/simple-query/api/ext.json
-    test/merge/schema/simple-query/request/query/response.json
     test/rendering/simple/fragment/variables.json
     test/rendering/union/interface/variables.json
     test/rendering/union/union/variables.json
@@ -188,15 +148,14 @@ library
       Data.Morpheus.Core
       Data.Morpheus.QuasiQuoter
       Data.Morpheus.Error
-      Data.Morpheus.Internal.TH
-      Data.Morpheus.Internal.Utils
-      Data.Morpheus.Types.Internal.AST
       Data.Morpheus.Types.IO
-      Data.Morpheus.Types.Internal.Resolving
+      Data.Morpheus.Types.Internal.AST
       Data.Morpheus.Types.GQLScalar
-      Data.Morpheus.Types.GQLWrapper
       Data.Morpheus.Types.ID
       Data.Morpheus.Types.SelectionTree
+      Data.Morpheus.Internal.TH
+      Data.Morpheus.Internal.Utils
+      Data.Morpheus.Internal.Ext
   other-modules:
       Data.Morpheus.Error.Document.Interface
       Data.Morpheus.Error.Fragment
@@ -213,6 +172,7 @@ library
       Data.Morpheus.Ext.Map
       Data.Morpheus.Ext.MergeSet
       Data.Morpheus.Ext.OrdMap
+      Data.Morpheus.Ext.Result
       Data.Morpheus.Ext.SafeHashMap
       Data.Morpheus.Ext.SemigroupM
       Data.Morpheus.Internal.Graph
@@ -227,11 +187,8 @@ library
       Data.Morpheus.Parsing.Request.Parser
       Data.Morpheus.Parsing.Request.Selection
       Data.Morpheus.Rendering.RenderGQL
-      Data.Morpheus.Rendering.RenderIntrospection
       Data.Morpheus.Schema.DSL
       Data.Morpheus.Schema.Schema
-      Data.Morpheus.Schema.SchemaAPI
-      Data.Morpheus.Types.App
       Data.Morpheus.Types.Internal.AST.Base
       Data.Morpheus.Types.Internal.AST.DirectiveLocation
       Data.Morpheus.Types.Internal.AST.Fields
@@ -243,13 +200,6 @@ library
       Data.Morpheus.Types.Internal.AST.Union
       Data.Morpheus.Types.Internal.AST.Value
       Data.Morpheus.Types.Internal.Config
-      Data.Morpheus.Types.Internal.Resolving.Core
-      Data.Morpheus.Types.Internal.Resolving.Event
-      Data.Morpheus.Types.Internal.Resolving.Resolver
-      Data.Morpheus.Types.Internal.Resolving.ResolverState
-      Data.Morpheus.Types.Internal.Resolving.ResolverValue
-      Data.Morpheus.Types.Internal.Resolving.RootResolverValue
-      Data.Morpheus.Types.Internal.Stitching
       Data.Morpheus.Types.Internal.Validation
       Data.Morpheus.Types.Internal.Validation.Error
       Data.Morpheus.Types.Internal.Validation.Internal
@@ -291,8 +241,6 @@ test-suite morpheus-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Utils.Api
-      Utils.MergeSchema
       Utils.Rendering
       Utils.Schema
       Utils.Utils

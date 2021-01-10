@@ -32,6 +32,9 @@ import Data.Morpheus.Client.JSONSchema.Parse
 import Data.Morpheus.Core
   ( parseFullGQLDocument,
   )
+import Data.Morpheus.Internal.Ext
+  ( Eventless,
+  )
 import Data.Morpheus.QuasiQuoter (gql)
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -43,9 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     ScalarValue (..),
     Schema,
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
   )
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
