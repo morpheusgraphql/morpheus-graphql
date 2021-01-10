@@ -8,21 +8,21 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Core
-  ( parseFullSchema,
+  ( Config (..),
+    RenderGQL (..),
+    SelectionTree (..),
+    VALIDATION_MODE (..),
+    ValidateSchema (..),
+    debugConfig,
+    defaultConfig,
+    internalSchema,
+    parseFullSchema,
+    parseRequest,
+    parseRequestWith,
     parseSchema,
     parseTypeDefinitions,
-    validateRequest,
-    parseRequestWith,
-    parseRequest,
-    SelectionTree (..),
-    Config (..),
-    VALIDATION_MODE (..),
-    defaultConfig,
-    debugConfig,
-    RenderGQL (..),
     render,
-    ValidateSchema (..),
-    internalSchema,
+    validateRequest,
   )
 where
 
