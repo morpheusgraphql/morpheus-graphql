@@ -1,9 +1,0 @@
-type Type2 {
-  name: String
-  id: ID
-}
-
-type Query {
-  id: ID
-  type: Type2
-}

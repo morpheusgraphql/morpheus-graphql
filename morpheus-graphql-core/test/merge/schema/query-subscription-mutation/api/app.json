@@ -1,8 +1,0 @@
-{
-  "query": {
-    "name": "query name from app"
-  },
-  "mutation": {
-    "name": "mutation name from app"
-  }
-}

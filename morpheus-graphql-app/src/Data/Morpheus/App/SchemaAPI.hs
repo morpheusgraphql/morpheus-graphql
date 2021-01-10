@@ -5,21 +5,21 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Schema.SchemaAPI
+module Data.Morpheus.App.SchemaAPI
   ( withSystemFields,
   )
 where
 
+import Data.Morpheus.App.RenderIntrospection
+  ( WithSchema,
+    createObjectType,
+    render,
+  )
 import Data.Morpheus.Ext.SemigroupM ((<:>))
 import Data.Morpheus.Internal.Utils
   ( elems,
     empty,
     selectOr,
-  )
-import Data.Morpheus.Rendering.RenderIntrospection
-  ( WithSchema,
-    createObjectType,
-    render,
   )
 import Data.Morpheus.Schema.Schema
   (

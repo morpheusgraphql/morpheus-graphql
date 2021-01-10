@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 77fed41d5aa9cda2d36c66769bab26929bce1b2e5ffdc8eabb09bc2d8bcfb7cd
+-- hash: 121b1e8e980228fab54c6ca30775fd5c769baf52f786c8cb53a75e748efd167c
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -23,27 +23,6 @@ extra-source-files:
     changelog.md
     README.md
 data-files:
-    test/api/deity/interface/query.gql
-    test/api/deity/schema.gql
-    test/api/deity/simple/query.gql
-    test/api/validation/fragment/fail-unknown-field-on-interface/query.gql
-    test/api/validation/fragment/on-interface-fail-without-casting/query.gql
-    test/api/validation/fragment/on-interface-inline/query.gql
-    test/api/validation/fragment/on-interface-type-casting-inline/query.gql
-    test/api/validation/fragment/on-interface-type-casting/query.gql
-    test/api/validation/fragment/on-interface/query.gql
-    test/api/validation/fragment/on-type/query.gql
-    test/api/validation/fragment/on-union-type/query.gql
-    test/api/validation/fragment/schema.gql
-    test/merge/schema/query-subscription-mutation/api/app.gql
-    test/merge/schema/query-subscription-mutation/api/ext.gql
-    test/merge/schema/query-subscription-mutation/expected/ok.gql
-    test/merge/schema/query-subscription-mutation/request/mutation/query.gql
-    test/merge/schema/query-subscription-mutation/request/query/query.gql
-    test/merge/schema/simple-query/api/app.gql
-    test/merge/schema/simple-query/api/ext.gql
-    test/merge/schema/simple-query/expected/ok.gql
-    test/merge/schema/simple-query/request/query/query.gql
     test/rendering/simple/directive/query.gql
     test/rendering/simple/directive/rendering.gql
     test/rendering/simple/fragment/query.gql
@@ -113,25 +92,6 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
-    test/api/deity/interface/response.json
-    test/api/deity/resolvers.json
-    test/api/deity/simple/response.json
-    test/api/validation/fragment/fail-unknown-field-on-interface/response.json
-    test/api/validation/fragment/on-interface-fail-without-casting/response.json
-    test/api/validation/fragment/on-interface-inline/response.json
-    test/api/validation/fragment/on-interface-type-casting-inline/response.json
-    test/api/validation/fragment/on-interface-type-casting/response.json
-    test/api/validation/fragment/on-interface/response.json
-    test/api/validation/fragment/on-type/response.json
-    test/api/validation/fragment/on-union-type/response.json
-    test/api/validation/fragment/resolvers.json
-    test/merge/schema/query-subscription-mutation/api/app.json
-    test/merge/schema/query-subscription-mutation/api/ext.json
-    test/merge/schema/query-subscription-mutation/request/mutation/response.json
-    test/merge/schema/query-subscription-mutation/request/query/response.json
-    test/merge/schema/simple-query/api/app.json
-    test/merge/schema/simple-query/api/ext.json
-    test/merge/schema/simple-query/request/query/response.json
     test/rendering/simple/fragment/variables.json
     test/rendering/union/interface/variables.json
     test/rendering/union/union/variables.json

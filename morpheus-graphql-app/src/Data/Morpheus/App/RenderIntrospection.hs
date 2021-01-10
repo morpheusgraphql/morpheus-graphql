@@ -8,7 +8,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Rendering.RenderIntrospection
+module Data.Morpheus.App.RenderIntrospection
   ( render,
     createObjectType,
     WithSchema,
