@@ -29,6 +29,10 @@ import Control.Monad ((>=>), (>>=))
 import Data.Functor (($>), (<$>), Functor (..))
 import Data.Map (Map)
 import Data.Maybe (Maybe (..))
+import Data.Morpheus.App.Internal.Resolving
+  ( Resolver,
+    resultOr,
+  )
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -95,10 +99,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     fieldsToArguments,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-    resultOr,
   )
 import Data.Morpheus.Utils.Kinded
   ( CategoryValue (..),

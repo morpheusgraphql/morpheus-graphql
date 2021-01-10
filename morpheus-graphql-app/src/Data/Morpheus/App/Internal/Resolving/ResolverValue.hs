@@ -9,7 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving.ResolverValue
+module Data.Morpheus.App.Internal.Resolving.ResolverValue
   ( ResolverValue (..),
     ResolverObject (..),
     ResolverEntry,
@@ -22,6 +22,9 @@ module Data.Morpheus.Types.Internal.Resolving.ResolverValue
 where
 
 import qualified Data.HashMap.Lazy as HM
+import Data.Morpheus.App.Internal.Resolving.ResolverState
+  ( ResolverContext (..),
+  )
 import Data.Morpheus.Error (subfieldsNotSelected)
 import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
@@ -54,9 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     toGQLError,
     unitFieldName,
     unitTypeName,
-  )
-import Data.Morpheus.Types.Internal.Resolving.ResolverState
-  ( ResolverContext (..),
   )
 import Relude hiding (Show, empty)
 import Prelude (Show (..))

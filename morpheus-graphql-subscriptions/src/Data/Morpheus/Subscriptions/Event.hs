@@ -9,7 +9,7 @@ module Data.Morpheus.Subscriptions.Event
   )
 where
 
-import Data.Morpheus.Types.Internal.Resolving
+import Data.Morpheus.App.Internal.Resolving
   ( EventHandler (..),
   )
 import Relude

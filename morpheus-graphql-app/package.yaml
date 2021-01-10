@@ -41,15 +41,8 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.App
-    - Data.Morpheus.Types.IO
-    - Data.Morpheus.Types.Internal.Resolving
+    - Data.Morpheus.App.Internal.Resolving
     - Data.Morpheus.Types.GQLWrapper
-    # - Data.Morpheus.QuasiQuoter
-    # - Data.Morpheus.Internal.TH
-    # - Data.Morpheus.Internal.Utils
-    # - Data.Morpheus.Types.GQLScalar
-    # - Data.Morpheus.Types.ID
-    # - Data.Morpheus.Types.SelectionTree
   ghc-options: -Wall
 #
 # tests:

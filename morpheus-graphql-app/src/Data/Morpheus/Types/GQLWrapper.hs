@@ -10,15 +10,15 @@ module Data.Morpheus.Types.GQLWrapper
 where
 
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Morpheus.App.Internal.Resolving
+  ( ResolverValue (..),
+    SubscriptionField (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Message,
     ValidValue,
     Value (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( ResolverValue (..),
-    SubscriptionField (..),
   )
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set

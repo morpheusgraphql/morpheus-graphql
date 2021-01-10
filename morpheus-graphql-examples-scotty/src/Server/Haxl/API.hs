@@ -15,6 +15,7 @@ import Data.Morpheus
     deriveApp,
     runApp,
   )
+import Data.Morpheus.App (MapAPI)
 import Data.Morpheus.Server
   ( httpPlayground,
   )
@@ -29,7 +30,6 @@ import Data.Morpheus.Types
     lift,
     render,
   )
-import Data.Morpheus.Types.IO (MapAPI)
 import Data.Text (Text)
 import Haxl.Core (dataFetch, initEnv, runHaxl, stateEmpty, stateSet)
 import Server.Haxl.DataSource
@@ -108,5 +108,5 @@ httpEndpoint route app' = do
 runHaxlApp :: MapAPI a b => App e Haxl -> a -> IO b
 runHaxlApp haxlApp input = do
   let stateStore = stateSet DeityState stateEmpty
-  enviroment <- initEnv stateStore ()
-  runHaxl enviroment (runApp haxlApp input)
+  environment <- initEnv stateStore ()
+  runHaxl environment (runApp haxlApp input)

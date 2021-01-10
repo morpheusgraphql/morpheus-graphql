@@ -16,6 +16,12 @@ module Data.Morpheus.Server.Deriving.Channels
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving
+  ( Channel,
+    Resolver,
+    ResolverState,
+    SubscriptionField (..),
+  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
@@ -42,12 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     Selection (..),
     SelectionContent (..),
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Channel,
-    Resolver,
-    ResolverState,
-    SubscriptionField (..),
   )
 import GHC.Generics
 import Relude

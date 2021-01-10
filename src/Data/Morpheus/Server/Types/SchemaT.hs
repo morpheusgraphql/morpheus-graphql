@@ -25,6 +25,9 @@ where
 
 import Control.Monad (foldM)
 import qualified Data.Map as Map
+import Data.Morpheus.App.Internal.Resolving
+  ( Eventless,
+  )
 import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -43,9 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     defineSchemaWith,
     msg,
     toAny,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
   )
 import GHC.Fingerprint.Type (Fingerprint)
 import Relude hiding (empty)

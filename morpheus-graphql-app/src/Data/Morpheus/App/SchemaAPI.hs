@@ -10,6 +10,16 @@ module Data.Morpheus.App.SchemaAPI
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving
+  ( Resolver,
+    ResolverValue,
+    ResultT,
+    RootResolverValue (..),
+    mkList,
+    mkNull,
+    mkObject,
+    withArguments,
+  )
 import Data.Morpheus.App.RenderIntrospection
   ( WithSchema,
     createObjectType,
@@ -35,16 +45,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     VALID,
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-    ResolverValue,
-    ResultT,
-    RootResolverValue (..),
-    mkList,
-    mkNull,
-    mkObject,
-    withArguments,
   )
 import Relude hiding (empty)
 

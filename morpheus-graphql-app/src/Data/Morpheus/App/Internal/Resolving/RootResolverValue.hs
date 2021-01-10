@@ -1,12 +1,31 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving.RootResolverValue
+module Data.Morpheus.App.Internal.Resolving.RootResolverValue
   ( runRootResolverValue,
     RootResolverValue (..),
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving.Event
+  ( EventHandler (..),
+  )
+import Data.Morpheus.App.Internal.Resolving.Resolver
+  ( LiftOperation,
+    Resolver,
+    ResponseStream,
+    runResolver,
+  )
+import Data.Morpheus.App.Internal.Resolving.ResolverState
+  ( ResolverContext (..),
+    ResolverState,
+    runResolverStateT,
+    toResolverStateT,
+  )
+import Data.Morpheus.App.Internal.Resolving.ResolverValue
+  ( ResolverValue (..),
+    resolveObject,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Operation (..),
@@ -16,25 +35,6 @@ import Data.Morpheus.Types.Internal.AST
     Selection,
     VALID,
     Value,
-  )
-import Data.Morpheus.Types.Internal.Resolving.Event
-  ( EventHandler (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving.Resolver
-  ( LiftOperation,
-    Resolver,
-    ResponseStream,
-    runResolver,
-  )
-import Data.Morpheus.Types.Internal.Resolving.ResolverState
-  ( ResolverContext (..),
-    ResolverState,
-    runResolverStateT,
-    toResolverStateT,
-  )
-import Data.Morpheus.Types.Internal.Resolving.ResolverValue
-  ( ResolverValue (..),
-    resolveObject,
   )
 import Relude hiding
   ( Show,

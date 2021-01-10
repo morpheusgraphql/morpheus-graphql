@@ -14,6 +14,9 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
     pack,
   )
+import Data.Morpheus.App.Internal.Resolving
+  ( resultOr,
+  )
 import Data.Morpheus.Core
   ( render,
   )
@@ -29,9 +32,6 @@ import Data.Morpheus.Server.TH.Compile
     gqlDocument,
   )
 import Data.Morpheus.Types (RootResolver)
-import Data.Morpheus.Types.Internal.Resolving
-  ( resultOr,
-  )
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
   ( qAddDependentFile,

@@ -6,11 +6,13 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Stitching
+module Data.Morpheus.App.Internal.Stitching
   ( Stitching (..),
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving (RootResolverValue)
+import qualified Data.Morpheus.App.Internal.Resolving as R (RootResolverValue (..))
 import Data.Morpheus.Error (NameCollision (..))
 import Data.Morpheus.Ext.Map
   ( resolveWith,
@@ -36,8 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeLib,
     ValidationErrors,
   )
-import Data.Morpheus.Types.Internal.Resolving (RootResolverValue)
-import qualified Data.Morpheus.Types.Internal.Resolving as R (RootResolverValue (..))
 import Relude hiding (optional)
 
 equal :: (Eq a, Applicative m, Failure ValidationErrors m) => ValidationErrors -> a -> a -> m a

@@ -20,6 +20,10 @@ module Data.Morpheus.Server.Deriving.Decode
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving
+  ( Failure (..),
+    ResolverState,
+  )
 import Data.Morpheus.Kind
   ( DerivingKind,
     SCALAR,
@@ -70,10 +74,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     msg,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Failure (..),
-    ResolverState,
   )
 import Data.Morpheus.Utils.Kinded
   ( KindedProxy (..),

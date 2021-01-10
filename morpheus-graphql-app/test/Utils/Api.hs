@@ -10,16 +10,16 @@ where
 
 import qualified Data.Aeson as A
 import Data.Aeson (decode, encode)
+import Data.Morpheus.App.Internal.Resolving
+  ( ResponseStream,
+    ResultT (..),
+  )
 import Data.Morpheus.Core (mkApp, runAppStream)
 import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     VALID,
     Value (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( ResponseStream,
-    ResultT (..),
   )
 import Data.Text (unpack)
 import Relude

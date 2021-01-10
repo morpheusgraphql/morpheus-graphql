@@ -15,7 +15,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.Internal.Resolving.ResolverState
+module Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     ResolverStateT (..),
     resolverFailureMessage,

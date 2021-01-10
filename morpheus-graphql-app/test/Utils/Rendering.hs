@@ -13,6 +13,10 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Morpheus.App.Internal.Resolving
+  ( Eventless,
+    Result (..),
+  )
 import Data.Morpheus.Core
   ( defaultConfig,
     parseRequestWith,
@@ -22,10 +26,6 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     Operation,
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
   )
 import qualified Data.Text as T
 import Relude hiding (ByteString)

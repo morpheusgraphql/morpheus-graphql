@@ -2,10 +2,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Types.IO
-  ( GQLRequest (..),
-    GQLResponse (..),
-    MapAPI (..),
+module Data.Morpheus.App.MapAPI
+  ( MapAPI (..),
   )
 where
 

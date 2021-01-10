@@ -28,6 +28,14 @@ import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (foldl)
 import Data.HashMap.Lazy (lookup)
+import Data.Morpheus.App.Internal.Resolving
+  ( Eventless,
+    ResolverValue,
+    RootResolverValue (..),
+    mkNull,
+    mkValue,
+    resultOr,
+  )
 import Data.Morpheus.Core (parseGQLDocument)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -36,14 +44,6 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
     Schema (..),
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    ResolverValue,
-    RootResolverValue (..),
-    mkNull,
-    mkValue,
-    resultOr,
   )
 import Data.Text (unpack)
 import qualified Data.Text.IO as T

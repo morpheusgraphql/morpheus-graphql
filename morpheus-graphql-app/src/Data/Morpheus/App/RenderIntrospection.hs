@@ -15,6 +15,17 @@ module Data.Morpheus.App.RenderIntrospection
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving
+  ( Resolver,
+    ResolverContext (..),
+    ResolverValue,
+    mkBoolean,
+    mkList,
+    mkNull,
+    mkObject,
+    mkString,
+    unsafeInternalContext,
+  )
 import qualified Data.Morpheus.Core as GQL
 import Data.Morpheus.Internal.Utils
   ( Failure,
@@ -59,17 +70,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     possibleInterfaceTypes,
     toGQLWrapper,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Resolver,
-    ResolverContext (..),
-    ResolverValue,
-    mkBoolean,
-    mkList,
-    mkNull,
-    mkObject,
-    mkString,
-    unsafeInternalContext,
   )
 import Data.Text (pack)
 import Relude

@@ -20,6 +20,19 @@ module Data.Morpheus.Server.Deriving.Encode
 where
 
 import qualified Data.Map as M
+import Data.Morpheus.App.Internal.Resolving
+  ( LiftOperation,
+    Resolver,
+    ResolverEntry,
+    ResolverState,
+    ResolverValue (..),
+    RootResolverValue (..),
+    failure,
+    getArguments,
+    liftResolverState,
+    mkObject,
+    mkUnion,
+  )
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
@@ -64,19 +77,6 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
     TypeRef (..),
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( LiftOperation,
-    Resolver,
-    ResolverEntry,
-    ResolverState,
-    ResolverValue (..),
-    RootResolverValue (..),
-    failure,
-    getArguments,
-    liftResolverState,
-    mkObject,
-    mkUnion,
   )
 import GHC.Generics
   ( Generic (..),

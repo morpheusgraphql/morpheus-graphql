@@ -15,6 +15,9 @@ where
 import qualified Data.ByteString.Lazy.Char8 as LB
   ( pack,
   )
+import Data.Morpheus.App.Internal.Resolving
+  ( Result (..),
+  )
 import Data.Morpheus.Core
   ( parseTypeDefinitions,
   )
@@ -30,9 +33,6 @@ import Data.Morpheus.Server.TH.Declare
   )
 import Data.Morpheus.Server.TH.Transform
   ( toTHDefinitions,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Result (..),
   )
 import Language.Haskell.TH (Dec, Q)
 import Language.Haskell.TH.Quote (QuasiQuoter (..))

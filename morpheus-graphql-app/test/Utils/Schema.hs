@@ -12,15 +12,15 @@ where
 import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus.App.Internal.Resolving
+  ( Eventless,
+    Result (..),
+  )
 import Data.Morpheus.Core (parseFullGQLDocument)
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     Schema,
     VALID,
-  )
-import Data.Morpheus.Types.Internal.Resolving
-  ( Eventless,
-    Result (..),
   )
 import Data.Text (pack)
 import Relude hiding (ByteString, toString)

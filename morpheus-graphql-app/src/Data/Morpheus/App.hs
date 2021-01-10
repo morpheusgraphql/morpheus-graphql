@@ -17,10 +17,22 @@ module Data.Morpheus.App
     withDebugger,
     mkApp,
     runAppStream,
+    MapAPI (..),
   )
 where
 
 import qualified Data.Aeson as A
+import Data.Morpheus.App.Internal.Resolving
+  ( ResolverContext (..),
+    ResponseStream,
+    ResultT (..),
+    RootResolverValue,
+    cleanEvents,
+    resultOr,
+    runRootResolverValue,
+  )
+import Data.Morpheus.App.Internal.Stitching (Stitching (..))
+import Data.Morpheus.App.MapAPI (MapAPI (..))
 import Data.Morpheus.App.SchemaAPI (withSystemFields)
 import Data.Morpheus.Core
   ( Config (..),
@@ -38,11 +50,6 @@ import Data.Morpheus.Internal.Utils
     prop,
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
-import Data.Morpheus.Types.IO
-  ( GQLRequest (..),
-    GQLResponse,
-    MapAPI (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLErrors,
     Operation (..),
@@ -53,17 +60,11 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value,
   )
-import Data.Morpheus.Types.Internal.IO (renderResponse)
-import Data.Morpheus.Types.Internal.Resolving
-  ( ResolverContext (..),
-    ResponseStream,
-    ResultT (..),
-    RootResolverValue,
-    cleanEvents,
-    resultOr,
-    runRootResolverValue,
+import Data.Morpheus.Types.Internal.IO
+  ( GQLRequest (..),
+    GQLResponse,
+    renderResponse,
   )
-import Data.Morpheus.Types.Internal.Stitching (Stitching (..))
 import Relude hiding (empty)
 
 mkApp :: ValidateSchema s => Schema s -> RootResolverValue e m -> App e m
@@ -109,8 +110,8 @@ runAppData ::
   ResponseStream event m (Value VALID)
 runAppData AppData {appConfig, appSchema, appResolvers} request = do
   validRequest <- validateReq appSchema appConfig request
-  resovers <- withSystemFields (schema validRequest) appResolvers
-  runRootResolverValue resovers validRequest
+  resolvers <- withSystemFields (schema validRequest) appResolvers
+  runRootResolverValue resolvers validRequest
 
 validateReq ::
   ( Monad m,
