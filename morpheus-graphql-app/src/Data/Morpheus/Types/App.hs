@@ -18,8 +18,10 @@ where
 
 import qualified Data.Aeson as A
 import Data.Morpheus.Core
-  ( RenderGQL (..),
+  ( Config (..),
+    RenderGQL (..),
     ValidateSchema (..),
+    defaultConfig,
     parseRequestWith,
   )
 import Data.Morpheus.Ext.SemigroupM ((<:>))
@@ -44,10 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     VALID,
     Value,
-  )
-import Data.Morpheus.Types.Internal.Config
-  ( Config (..),
-    defaultConfig,
   )
 import Data.Morpheus.Types.Internal.IO (renderResponse)
 import Data.Morpheus.Types.Internal.Resolving

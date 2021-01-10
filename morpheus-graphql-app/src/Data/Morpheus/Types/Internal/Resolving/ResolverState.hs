@@ -30,7 +30,8 @@ where
 
 import Control.Monad.Trans.Reader (mapReaderT)
 import Data.Morpheus.Core
-  ( RenderGQL,
+  ( Config (..),
+    RenderGQL,
     render,
   )
 import Data.Morpheus.Ext.Result
@@ -54,7 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidationError (..),
     msg,
   )
-import Data.Morpheus.Types.Internal.Config (Config (..))
 import Relude
 
 data ResolverContext = ResolverContext

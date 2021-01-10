@@ -24,7 +24,7 @@ where
 import Control.Monad.IO.Unlift
   ( MonadUnliftIO,
   )
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App,
     runApp,
   )

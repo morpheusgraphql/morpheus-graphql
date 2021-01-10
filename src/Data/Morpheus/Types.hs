@@ -68,9 +68,11 @@ import Data.Either
   ( Either (..),
     either,
   )
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App,
-    RenderGQL,
+  )
+import Data.Morpheus.Core
+  ( RenderGQL,
     render,
   )
 import Data.Morpheus.Server.Deriving.Schema

@@ -13,7 +13,7 @@ where
 
 import Control.Monad (Monad)
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App (..),
     mkApp,
   )

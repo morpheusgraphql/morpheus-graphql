@@ -13,7 +13,7 @@ module Data.Morpheus
 where
 
 -- MORPHEUS
-import Data.Morpheus.Core
+import Data.Morpheus.App
   ( App,
     runApp,
     withDebugger,
