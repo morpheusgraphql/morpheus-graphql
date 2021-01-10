@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 902de07b040230965a7eedf1541a2759d10fae4aae9f945594ea8287b7046be5
+-- hash: 77fed41d5aa9cda2d36c66769bab26929bce1b2e5ffdc8eabb09bc2d8bcfb7cd
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -268,6 +268,39 @@ library
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , scientific >=0.3.6.2 && <0.4
+    , template-haskell >=2.0 && <=3.0
+    , text >=1.2.3.0 && <1.3
+    , th-lift-instances >=0.1.1 && <=0.3
+    , transformers >=0.3.0.0 && <0.6
+    , unordered-containers >=0.2.8.0 && <0.3
+    , vector >=0.12.0.1 && <0.13
+  default-language: Haskell2010
+
+test-suite morpheus-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Utils.Rendering
+      Utils.Schema
+      Utils.Utils
+      Paths_morpheus_graphql_core
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
+    , directory >=1.0
+    , hashable >=1.0.0
+    , megaparsec >=7.0.0 && <10.0.0
+    , morpheus-graphql-core
+    , mtl >=2.0 && <=3.0
+    , relude >=0.3.0
+    , scientific >=0.3.6.2 && <0.4
+    , tasty
+    , tasty-hunit
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
     , th-lift-instances >=0.1.1 && <=0.3

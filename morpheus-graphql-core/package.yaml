@@ -56,16 +56,16 @@ library:
     - Data.Morpheus.Ext.OrdMap
     - Data.Morpheus.Ext.SafeHashMap
   ghc-options: -Wall
-#
-# tests:
-#   morpheus-test:
-#     main: Spec.hs
-#     source-dirs: test
-#     ghc-options: -Wall
-#     dependencies:
-#       - morpheus-graphql-core
-#       - tasty
-#       - tasty-hunit
-#       - aeson
-#       - directory >= 1.0
-#       - relude    >= 0.3.0
+
+tests:
+  morpheus-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options: -Wall
+    dependencies:
+      - morpheus-graphql-core
+      - tasty
+      - tasty-hunit
+      - aeson
+      - directory >= 1.0
+      - relude    >= 0.3.0
