@@ -20,6 +20,7 @@ import Data.Morpheus.Client.JSONSchema.Types
     Field (..),
     InputValue (..),
     Introspection (..),
+    JSONResponse (..),
     Schema (..),
     Type (..),
   )
@@ -67,7 +68,6 @@ import Data.Morpheus.Types.Internal.AST
     toAny,
     toHSWrappers,
   )
-import Data.Morpheus.Types.Internal.IO (JSONResponse (..))
 import Relude hiding
   ( ByteString,
     Type,
