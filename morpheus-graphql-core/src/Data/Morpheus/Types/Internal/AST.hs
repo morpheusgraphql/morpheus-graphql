@@ -91,7 +91,7 @@ module Data.Morpheus.Types.Internal.AST
     lookupDeprecatedReason,
     lookupWith,
     hsTypeName,
-    GQLQuery (..),
+    ExecutableDocument (..),
     Variables,
     unsafeFromFields,
     OrdMap (..),
@@ -182,7 +182,7 @@ import Prelude (Show)
 
 type Variables = HashMap FieldName ResolvedValue
 
-data GQLQuery = GQLQuery
+data ExecutableDocument = ExecutableDocument
   { inputVariables :: [(FieldName, ResolvedValue)],
     operation :: Operation RAW,
     fragments :: Fragments RAW
