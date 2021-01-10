@@ -1,12 +1,12 @@
-# Morpheus GraphQL Core
+# Morpheus GraphQL App
 
-core Functionalities of Morpheus GraphQL, can be used to build GraphQL server, client ..
+provides executable application for server
 
 - parser
 - validar
 - api
 
-## Build GraphQL api with Core
+## Build GraphQL api with App
 
 ```hs
 schema :: Schema VALID
