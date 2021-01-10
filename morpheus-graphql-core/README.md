@@ -1,7 +1,10 @@
 # Morpheus GraphQL Core
 
-core Functionalities of Morpheus GraphQL, can be used to build GraphQL server, client ..
+provides the following core functionalities
+for building GraphQL Server, Client:
 
-- parser
-- validar
-- prettyprinter
+- AST
+- parsing
+- validation
+- pretty-printing
+- utils
