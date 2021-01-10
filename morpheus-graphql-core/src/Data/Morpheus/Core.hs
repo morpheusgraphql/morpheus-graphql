@@ -22,8 +22,8 @@ module Data.Morpheus.Core
     VALIDATION_MODE (..),
     defaultConfig,
     debugConfig,
+    RenderGQL (..),
     render,
-    RenderGQL,
   )
 where
 
@@ -44,8 +44,7 @@ import Data.Morpheus.Parser
     parseTypeDefinitions,
     parseTypeSystemDefinition,
   )
-import Data.Morpheus.Rendering.RenderGQL (RenderGQL)
-import qualified Data.Morpheus.Rendering.RenderGQL as R
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), render)
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
@@ -63,9 +62,6 @@ import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )
 import Relude hiding (ByteString)
-
-render :: RenderGQL a => a -> ByteString
-render = R.renderGQL
 
 parseDSL :: ByteString -> Either String (Schema VALID)
 parseDSL = resultOr (Left . show) pure . parseGQLDocument

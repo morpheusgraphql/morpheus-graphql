@@ -74,7 +74,13 @@ import Data.Aeson
   )
 import Data.ByteString.Lazy (ByteString)
 import Data.Char (toLower)
-import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), Rendering, fromText, renderGQL)
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+    Rendering,
+    fromText,
+    render,
+    renderGQL,
+  )
 import Data.Text (intercalate, pack)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -203,7 +209,7 @@ instance Msg FieldName where
   msg FieldName {readName} = Message $ "\"" <> readName <> "\""
 
 instance RenderGQL FieldName where
-  render = fromText . readName
+  renderGQL = fromText . readName
 
 intercalateName :: FieldName -> [FieldName] -> FieldName
 intercalateName (FieldName x) = FieldName . intercalate x . fmap readName
@@ -243,7 +249,7 @@ instance Msg TypeName where
   msg TypeName {readTypeName} = Message $ "\"" <> readTypeName <> "\""
 
 instance RenderGQL TypeName where
-  render = fromText . readTypeName
+  renderGQL = fromText . readTypeName
 
 -- Description
 type Description = Text
@@ -277,7 +283,7 @@ data OperationType
   deriving (Show, Eq, Lift, Generic, Hashable)
 
 instance RenderGQL OperationType where
-  render = fromString . fmap toLower . show
+  renderGQL = fromString . fmap toLower . show
 
 instance Msg OperationType where
   msg Query = msg ("query" :: TypeName)
@@ -330,10 +336,10 @@ instance Nullable TypeRef where
   toNullable TypeRef {..} = TypeRef {typeWrappers = toNullable typeWrappers, ..}
 
 instance RenderGQL TypeRef where
-  render TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
+  renderGQL TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
 
 instance Msg TypeRef where
-  msg = msg . FieldName . LT.toStrict . decodeUtf8 . renderGQL
+  msg = msg . FieldName . LT.toStrict . decodeUtf8 . render
 
 -- Kind
 -----------------------------------------------------------------------------------
@@ -350,15 +356,15 @@ data TypeKind
   deriving (Eq, Show, Lift)
 
 instance RenderGQL TypeKind where
-  render KindScalar = "SCALAR"
-  render KindObject {} = "OBJECT"
-  render KindUnion = "UNION"
-  render KindInputUnion = "INPUT_OBJECT"
-  render KindEnum = "ENUM"
-  render KindInputObject = "INPUT_OBJECT"
-  render KindList = "LIST"
-  render KindNonNull = "NON_NULL"
-  render KindInterface = "INTERFACE"
+  renderGQL KindScalar = "SCALAR"
+  renderGQL KindObject {} = "OBJECT"
+  renderGQL KindUnion = "UNION"
+  renderGQL KindInputUnion = "INPUT_OBJECT"
+  renderGQL KindEnum = "ENUM"
+  renderGQL KindInputObject = "INPUT_OBJECT"
+  renderGQL KindList = "LIST"
+  renderGQL KindNonNull = "NON_NULL"
+  renderGQL KindInterface = "INTERFACE"
 
 isSubscription :: TypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
@@ -423,7 +429,7 @@ toHSWrappers [NonNullType] = []
 renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Rendering
 renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
   where
-    showGQLWrapper [] = render x
+    showGQLWrapper [] = renderGQL x
     showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
     showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 

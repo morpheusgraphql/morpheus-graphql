@@ -4,6 +4,7 @@
 
 module Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    render,
     renderObject,
     renderMembers,
     newline,
@@ -12,7 +13,6 @@ module Data.Morpheus.Rendering.RenderGQL
     space,
     Rendering,
     fromText,
-    renderGQL,
     intercalate,
     renderInputSeq,
   )
@@ -30,8 +30,8 @@ import Relude hiding
     intercalate,
   )
 
-renderGQL :: RenderGQL a => a -> ByteString
-renderGQL x = runRendering (render x) 0
+render :: RenderGQL a => a -> ByteString
+render x = runRendering (renderGQL x) 0
 
 newtype Rendering = Rendering
   { runRendering :: Int -> ByteString
@@ -50,35 +50,35 @@ fromText :: Text -> Rendering
 fromText = fromString . T.unpack
 
 class RenderGQL a where
-  render :: a -> Rendering
+  renderGQL :: a -> Rendering
 
 instance
   RenderGQL a =>
   RenderGQL (Maybe a)
   where
-  render = maybe "" render
+  renderGQL = maybe "" renderGQL
 
 instance RenderGQL ByteString where
-  render = Rendering . const
+  renderGQL = Rendering . const
 
 instance RenderGQL Int where
-  render = fromShow
+  renderGQL = fromShow
 
 instance RenderGQL Float where
-  render = fromShow
+  renderGQL = fromShow
 
 instance RenderGQL Double where
-  render = fromShow
+  renderGQL = fromShow
 
 instance RenderGQL Text where
-  render = fromShow
+  renderGQL = fromShow
 
 instance RenderGQL Bool where
-  render True = "true"
-  render False = "false"
+  renderGQL True = "true"
+  renderGQL False = "false"
 
 instance RenderGQL A.Value where
-  render = render . A.encode
+  renderGQL = renderGQL . A.encode
 
 space :: Rendering
 space = " "
@@ -100,25 +100,25 @@ indentNewline :: Rendering -> Rendering
 indentNewline rendering = indent (newline <> rendering)
 
 renderAtNewLine :: (RenderGQL a) => [a] -> Rendering
-renderAtNewLine elems = indentNewline $ intercalate newline (fmap render elems)
+renderAtNewLine elems = indentNewline $ intercalate newline (fmap renderGQL elems)
 
 renderObject :: (RenderGQL a) => [a] -> Rendering
 renderObject fields = space <> "{" <> renderAtNewLine fields <> newline <> "}"
 
 renderMembers :: (RenderGQL a) => [a] -> Rendering
-renderMembers members = intercalate (space <> "|" <> space) (fmap render members)
+renderMembers members = intercalate (space <> "|" <> space) (fmap renderGQL members)
 
 renderArguments :: (RenderGQL a) => [a] -> Rendering
 renderArguments arguments
   | null arguments = ""
-  | otherwise = "(" <> intercalate ", " (render <$> arguments) <> ")"
+  | otherwise = "(" <> intercalate ", " (renderGQL <$> arguments) <> ")"
 
 renderEntry ::
   (RenderGQL name, RenderGQL value) =>
   name ->
   value ->
   Rendering
-renderEntry name value = render name <> ": " <> render value
+renderEntry name value = renderGQL name <> ": " <> renderGQL value
 
 renderInputSeq ::
   (Foldable t, RenderGQL a) =>
@@ -127,5 +127,5 @@ renderInputSeq ::
 renderInputSeq = fromMaybe "" . foldl renderValue Nothing
   where
     renderValue :: RenderGQL a => Maybe Rendering -> a -> Maybe Rendering
-    renderValue Nothing value = Just (render value)
-    renderValue (Just txt) value = Just (txt <> ", " <> render value)
+    renderValue Nothing value = Just (renderGQL value)
+    renderValue (Just txt) value = Just (txt <> ", " <> renderGQL value)

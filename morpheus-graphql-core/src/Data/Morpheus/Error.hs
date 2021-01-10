@@ -7,9 +7,11 @@ module Data.Morpheus.Error
     renderGQLErrors,
     deprecatedField,
     subfieldsNotSelected,
+    NameCollision (..),
   )
 where
 
+import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Error.Selection
   ( subfieldsNotSelected,
   )

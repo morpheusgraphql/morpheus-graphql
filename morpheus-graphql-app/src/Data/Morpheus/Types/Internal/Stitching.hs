@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.Stitching
   )
 where
 
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Morpheus.Error (NameCollision (..))
 import Data.Morpheus.Ext.Map
   ( resolveWith,
     runResolutionT,

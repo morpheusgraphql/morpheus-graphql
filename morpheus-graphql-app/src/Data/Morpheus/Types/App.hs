@@ -17,17 +17,15 @@ module Data.Morpheus.Types.App
 where
 
 import qualified Data.Aeson as A
+import Data.Morpheus.Core
+  ( RenderGQL (..),
+    parseRequestWith,
+  )
 import Data.Morpheus.Ext.SemigroupM ((<:>))
 import Data.Morpheus.Internal.Utils
   ( empty,
     failure,
     prop,
-  )
-import Data.Morpheus.Parser
-  ( parseRequestWith,
-  )
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
   )
 import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Schema.SchemaAPI (withSystemFields)

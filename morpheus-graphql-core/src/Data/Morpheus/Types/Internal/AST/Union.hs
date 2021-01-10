@@ -77,7 +77,7 @@ type DataUnion s = [UnionMember OUT s]
 type DataInputUnion s = [UnionMember IN s]
 
 instance RenderGQL (UnionMember cat s) where
-  render = render . memberName
+  renderGQL = renderGQL . memberName
 
 instance Msg (UnionMember cat s) where
   msg = msg . memberName

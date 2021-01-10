@@ -188,7 +188,7 @@ data DataEnumValue s = DataEnumValue
   deriving (Show, Lift, Eq)
 
 instance RenderGQL (DataEnumValue s) where
-  render DataEnumValue {enumName} = render enumName
+  renderGQL DataEnumValue {enumName} = renderGQL enumName
 
 -- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
 ---------------------------------------------------------------------------
@@ -251,7 +251,7 @@ data SchemaDefinition = SchemaDefinition
   deriving (Show)
 
 instance RenderGQL SchemaDefinition where
-  render = renderSchemaDefinition . elems . unSchemaDefinition
+  renderGQL = renderSchemaDefinition . elems . unSchemaDefinition
 
 renderSchemaDefinition :: RenderGQL a => [a] -> Rendering
 renderSchemaDefinition entries = "schema" <> renderObject entries <> newline
@@ -286,7 +286,7 @@ instance KeyOf OperationType RootOperationTypeDefinition where
   keyOf = rootOperationType
 
 instance RenderGQL RootOperationTypeDefinition where
-  render
+  renderGQL
     RootOperationTypeDefinition
       { rootOperationType,
         rootOperationTypeDefinitionName
@@ -644,8 +644,8 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
 --------------------------------------------------------------------------------------------------
 
 instance RenderGQL (Schema s) where
-  render schema =
-    intercalate newline (fmap render visibleTypes <> [renderSchemaDefinition entries])
+  renderGQL schema =
+    intercalate newline (fmap renderGQL visibleTypes <> [renderSchemaDefinition entries])
     where
       entries =
         RootOperationTypeDefinition Query (typeName $ query schema)
@@ -656,18 +656,18 @@ instance RenderGQL (Schema s) where
       visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
 
 instance RenderGQL (TypeDefinition a s) where
-  render TypeDefinition {typeName, typeContent} = __render typeContent <> newline
+  renderGQL TypeDefinition {typeName, typeContent} = __render typeContent <> newline
     where
-      __render DataInterface {interfaceFields} = "interface " <> render typeName <> render interfaceFields
-      __render DataScalar {} = "scalar " <> render typeName
-      __render (DataEnum tags) = "enum " <> render typeName <> renderObject tags
+      __render DataInterface {interfaceFields} = "interface " <> renderGQL typeName <> renderGQL interfaceFields
+      __render DataScalar {} = "scalar " <> renderGQL typeName
+      __render (DataEnum tags) = "enum " <> renderGQL typeName <> renderObject tags
       __render (DataUnion members) =
         "union "
-          <> render typeName
+          <> renderGQL typeName
           <> " = "
           <> renderMembers members
-      __render (DataInputObject fields) = "input " <> render typeName <> render fields
-      __render (DataInputUnion members) = "input " <> render typeName <> render fields
+      __render (DataInputObject fields) = "input " <> renderGQL typeName <> renderGQL fields
+      __render (DataInputUnion members) = "input " <> renderGQL typeName <> renderGQL fields
         where
           fields = mkInputUnionFields members
-      __render DataObject {objectFields} = "type " <> render typeName <> render objectFields
+      __render DataObject {objectFields} = "type " <> renderGQL typeName <> renderGQL objectFields

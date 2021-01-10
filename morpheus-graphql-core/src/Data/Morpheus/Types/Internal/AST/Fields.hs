@@ -116,7 +116,7 @@ instance KeyOf FieldName (Argument stage) where
   keyOf = argumentName
 
 instance RenderGQL (Argument s) where
-  render Argument {argumentName, argumentValue} =
+  renderGQL Argument {argumentName, argumentValue} =
     renderEntry argumentName argumentValue
 
 instance NameCollision (Argument s) where
@@ -147,8 +147,8 @@ instance KeyOf FieldName (Directive s) where
   keyOf = directiveName
 
 instance RenderGQL (Directive s) where
-  render Directive {..} =
-    "@" <> render directiveName
+  renderGQL Directive {..} =
+    "@" <> renderGQL directiveName
       <> renderArgumentValues directiveArgs
 
 type Directives s = [Directive s]
@@ -156,7 +156,7 @@ type Directives s = [Directive s]
 renderDirectives :: Directives s -> Rendering
 renderDirectives xs
   | null dirs = ""
-  | otherwise = space <> intercalate space (fmap render dirs)
+  | otherwise = space <> intercalate space (fmap renderGQL dirs)
   where
     dirs = filter notSystem xs
     notSystem Directive {directiveName = "include"} = False
@@ -273,13 +273,13 @@ instance NameCollision (FieldDefinition cat s) where
     "There can Be only One field Named " <> msgValidation fieldName
 
 instance RenderGQL (FieldDefinition cat s) where
-  render FieldDefinition {fieldName, fieldType, fieldContent = Just (FieldArgs args)} =
-    render fieldName <> render args <> ": " <> render fieldType
-  render FieldDefinition {fieldName, fieldType} =
+  renderGQL FieldDefinition {fieldName, fieldType, fieldContent = Just (FieldArgs args)} =
+    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType
+  renderGQL FieldDefinition {fieldName, fieldType} =
     renderEntry fieldName fieldType
 
 instance RenderGQL (FieldsDefinition cat s) where
-  render = renderObject . filter fieldVisibility . elems
+  renderGQL = renderObject . filter fieldVisibility . elems
 
 instance Nullable (FieldDefinition cat s) where
   isNullable = isNullable . fieldType
@@ -342,7 +342,7 @@ data ArgumentsDefinition s = ArgumentsDefinition
   deriving (Show, Lift, Eq)
 
 instance RenderGQL (ArgumentsDefinition s) where
-  render ArgumentsDefinition {arguments} = renderArguments (elems arguments)
+  renderGQL ArgumentsDefinition {arguments} = renderArguments (elems arguments)
 
 type ArgumentDefinition = FieldDefinition IN
 

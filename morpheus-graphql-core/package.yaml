@@ -52,6 +52,9 @@ library:
     - Data.Morpheus.Types.SelectionTree
     - Data.Morpheus.Ext.SemigroupM
     - Data.Morpheus.Ext.Result
+    - Data.Morpheus.Ext.Map
+    - Data.Morpheus.Ext.OrdMap
+    - Data.Morpheus.Ext.SafeHashMap
   ghc-options: -Wall
 #
 # tests:
