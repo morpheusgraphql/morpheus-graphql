@@ -19,7 +19,7 @@ import Data.Morpheus.Client.Internal.Types
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
 import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
   )
 import Data.Morpheus.Internal.Utils

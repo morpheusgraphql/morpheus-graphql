@@ -28,7 +28,7 @@ import Data.Morpheus.Error
   ( deprecatedField,
     globalErrorMessage,
   )
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
     Result (..),
   )

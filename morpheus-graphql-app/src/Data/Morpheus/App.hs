@@ -41,15 +41,15 @@ import Data.Morpheus.Core
     ValidateSchema (..),
     debugConfig,
     defaultConfig,
+    internalSchema,
     parseRequestWith,
   )
-import Data.Morpheus.Ext.SemigroupM ((<:>))
+import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils
   ( empty,
     failure,
     prop,
   )
-import Data.Morpheus.Schema.Schema (internalSchema)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,

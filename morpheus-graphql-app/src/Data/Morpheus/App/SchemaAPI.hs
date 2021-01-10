@@ -25,14 +25,11 @@ import Data.Morpheus.App.RenderIntrospection
     createObjectType,
     render,
   )
-import Data.Morpheus.Ext.SemigroupM ((<:>))
+import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils
   ( elems,
     empty,
     selectOr,
-  )
-import Data.Morpheus.Schema.Schema
-  (
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),

@@ -52,7 +52,7 @@ import Data.Morpheus.App.Internal.Resolving.Resolver
 import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.ResolverValue
 import Data.Morpheus.App.Internal.Resolving.RootResolverValue
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Internal.Utils
   ( mapTuple,
   )

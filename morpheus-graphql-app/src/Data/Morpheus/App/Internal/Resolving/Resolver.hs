@@ -50,7 +50,7 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
     runResolverStateT,
     toResolverStateT,
   )
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
     Failure (..),
     PushEvents (..),

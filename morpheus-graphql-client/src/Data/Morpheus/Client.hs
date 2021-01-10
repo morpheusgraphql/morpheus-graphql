@@ -32,7 +32,7 @@ import Data.Morpheus.Client.JSONSchema.Parse
 import Data.Morpheus.Core
   ( parseFullGQLDocument,
   )
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
   )
 import Data.Morpheus.QuasiQuoter (gql)

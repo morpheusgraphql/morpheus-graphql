@@ -29,7 +29,7 @@ import Data.Morpheus.Core
     validateSchema,
   )
 import Data.Morpheus.Error (globalErrorMessage)
-import Data.Morpheus.Ext.Result
+import Data.Morpheus.Internal.Ext
   ( Eventless,
   )
 import Data.Morpheus.Internal.Utils
