@@ -16,8 +16,10 @@ import Data.HashMap.Lazy (toList)
 import Data.Morpheus.Ext.Result
   ( Eventless,
   )
+import Data.Morpheus.Ext.SafeHashMap (unsafeFromList)
 import Data.Morpheus.Internal.Utils
-  ( fromElems,
+  ( empty,
+    fromElems,
     toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
@@ -37,11 +39,13 @@ import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST
   ( ExecutableDocument (..),
     FieldName (..),
-    ResolvedValue,
+    Variables,
     replaceValue,
   )
 import Relude hiding
-  ( many,
+  ( empty,
+    fromList,
+    many,
     toList,
   )
 import Text.Megaparsec
@@ -50,7 +54,7 @@ import Text.Megaparsec
     many,
   )
 
-parseExecutableDocument :: [(FieldName, ResolvedValue)] -> Parser ExecutableDocument
+parseExecutableDocument :: Variables -> Parser ExecutableDocument
 parseExecutableDocument variables =
   label "ExecutableDocument" $
     ( ExecutableDocument variables
@@ -63,11 +67,11 @@ parseExecutableDocument variables =
 parseRequest :: GQLRequest -> Eventless ExecutableDocument
 parseRequest GQLRequest {query, variables} =
   processParser
-    (parseExecutableDocument $ toVariableMap variables)
+    (parseExecutableDocument $ toVariables variables)
     (toLBS query)
   where
-    toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolvedValue)]
-    toVariableMap (Just (Aeson.Object x)) = map toMorpheusValue (toList x)
+    toVariables :: Maybe Aeson.Value -> Variables
+    toVariables (Just (Aeson.Object x)) = unsafeFromList $ toMorpheusValue <$> toList x
       where
-        toMorpheusValue (key, value) = (FieldName key, replaceValue value)
-    toVariableMap _ = []
+        toMorpheusValue (key, value) = (FieldName key, (FieldName key, replaceValue value))
+    toVariables _ = empty

@@ -9,11 +9,11 @@ module Data.Morpheus.Validation.Query.Variable
   )
 where
 
-import qualified Data.HashMap.Lazy as M
 import Data.Morpheus.Error.Variable (uninitializedVariable)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     elems,
+    selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -149,7 +149,7 @@ lookupAndValidateValueOnBody
     where
       toVariable x = var {variableValue = ValidVariableValue x}
       getVariable :: Maybe ResolvedValue
-      getVariable = M.lookup variableName bodyVariables
+      getVariable = selectOr Nothing (Just . snd) variableName bodyVariables
       ------------------------------------------------------------------
       -- checkType ::
       checkType ::
@@ -167,8 +167,8 @@ lookupAndValidateValueOnBody
         | otherwise =
           returnNull
         where
-          returnNull =
-            maybe (pure Null) (validator varType False) (M.lookup variableName bodyVariables)
+          returnNull :: BaseValidator ValidValue
+          returnNull = selectOr (pure Null) (validator varType False . snd) variableName bodyVariables
       -----------------------------------------------------------------------------------------------
       validator :: TypeDefinition IN VALID -> Bool -> ResolvedValue -> BaseValidator ValidValue
       validator varTypeDef isDefaultValue varValue =

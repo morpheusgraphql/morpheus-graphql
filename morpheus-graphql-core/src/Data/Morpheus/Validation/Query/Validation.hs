@@ -10,7 +10,6 @@ module Data.Morpheus.Validation.Query.Validation
   )
 where
 
-import Data.HashMap.Lazy (fromList)
 import Data.Morpheus.Ext.Result
   ( Eventless,
   )
@@ -117,5 +116,5 @@ validateRequest
         checkFragmentPreconditions operationSelection
           *> resolveOperationVariables
             config
-            (fromList inputVariables)
+            inputVariables
             operation
