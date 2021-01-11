@@ -2,6 +2,7 @@
   "editor.formatOnSave": true,
   "ghcSimple.feature.rangeType": false,
   "cSpell.words": [
+    "Nullary",
     "haxl"
   ]
 }
