@@ -50,10 +50,10 @@ import Text.Megaparsec
     many,
   )
 
-parseExecutableDocument :: Parser ExecutableDocument
-parseExecutableDocument =
+parseExecutableDocument :: [(FieldName, ResolvedValue)] -> Parser ExecutableDocument
+parseExecutableDocument variables =
   label "ExecutableDocument" $
-    ( ExecutableDocument []
+    ( ExecutableDocument variables
         <$> (ignoredTokens *> parseOperation)
         <*> (many parseFragmentDefinition >>= lift . fromElems)
     )
@@ -62,10 +62,10 @@ parseExecutableDocument =
 
 parseRequest :: GQLRequest -> Eventless ExecutableDocument
 parseRequest GQLRequest {query, variables} =
-  setVariables
-    <$> processParser parseExecutableDocument (toLBS query)
+  processParser
+    (parseExecutableDocument $ toVariableMap variables)
+    (toLBS query)
   where
-    setVariables root = root {inputVariables = toVariableMap variables}
     toVariableMap :: Maybe Aeson.Value -> [(FieldName, ResolvedValue)]
     toVariableMap (Just (Aeson.Object x)) = map toMorpheusValue (toList x)
       where
