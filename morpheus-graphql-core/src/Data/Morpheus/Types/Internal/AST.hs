@@ -165,8 +165,8 @@ module Data.Morpheus.Types.Internal.AST
   )
 where
 
-import Data.HashMap.Lazy (HashMap)
-import Data.Morpheus.Ext.OrdMap
+import Data.Morpheus.Ext.OrdMap (OrdMap (..))
+import Data.Morpheus.Ext.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Fields
@@ -180,10 +180,10 @@ import Data.Morpheus.Types.Internal.AST.Value
 import Language.Haskell.TH.Syntax (Lift)
 import Prelude (Show)
 
-type Variables = HashMap FieldName ResolvedValue
+type Variables = SafeHashMap FieldName ResolvedValue
 
 data ExecutableDocument = ExecutableDocument
-  { inputVariables :: [(FieldName, ResolvedValue)],
+  { inputVariables :: Variables,
     operation :: Operation RAW,
     fragments :: Fragments RAW
   }
