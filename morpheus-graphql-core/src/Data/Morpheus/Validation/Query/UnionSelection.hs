@@ -144,7 +144,7 @@ joinClusters selSet =
   traverse joinCluster
     >=> fmap UnionSelection . fromElems
   where
-    joinCluster (typeName, fragmets) = UnionTag typeName <$> join (selSet : fragmets)
+    joinCluster (typeName, fragments) = UnionTag typeName <$> join (selSet : fragments)
 
 withTypename ::
   SelectionSet VALID ->
