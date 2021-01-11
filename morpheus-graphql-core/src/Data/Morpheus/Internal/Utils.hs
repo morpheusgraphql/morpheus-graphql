@@ -129,7 +129,7 @@ class Selectable k a c | c -> a where
 instance KeyOf k a => Selectable k a [a] where
   selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
 
-instance KeyOf k a => Selectable k a (HashMap k a) where
+instance (Eq k, Hashable k) => Selectable k a (HashMap k a) where
   selectOr fb f key lib = maybe fb f (HM.lookup key lib)
 
 selectBy :: (Failure e m, Selectable k a c, Monad m) => e -> k -> c -> m a
