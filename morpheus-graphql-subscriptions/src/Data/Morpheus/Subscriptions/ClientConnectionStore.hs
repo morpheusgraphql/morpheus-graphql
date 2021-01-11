@@ -36,6 +36,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
+    Empty (..),
     KeyOf (..),
   )
 import Data.Morpheus.Subscriptions.Apollo
@@ -220,8 +221,10 @@ storedChannels = HM.toList . activeChannels
 instance KeyOf UUID (ClientConnection m) where
   keyOf = connectionId
 
-instance Collection (ClientConnection m) (ClientConnectionStore (Event ch con) m) where
+instance Empty (ClientConnectionStore (Event ch con) m) where
   empty = ClientConnectionStore empty HM.empty HM.empty
+
+instance Collection (ClientConnection m) (ClientConnectionStore (Event ch con) m) where
   singleton x = ClientConnectionStore (singleton x) HM.empty HM.empty
 
 mapConnections ::
