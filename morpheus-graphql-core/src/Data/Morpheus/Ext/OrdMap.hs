@@ -20,6 +20,7 @@ where
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Elems (Elems (..))
+import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Ext.Map
   ( Indexed (..),
     indexed,
@@ -47,7 +48,8 @@ newtype OrdMap k a = OrdMap
     ( Show,
       Eq,
       Functor,
-      Traversable
+      Traversable,
+      Empty
     )
 
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (OrdMap k a) where
@@ -68,7 +70,6 @@ getElements :: (Eq k, Hashable k) => OrdMap k b -> [b]
 getElements = fmap indexedValue . sortOn index . toList . mapEntries
 
 instance (KeyOf k a, Hashable k) => Collection a (OrdMap k a) where
-  empty = OrdMap HM.empty
   singleton x = OrdMap $ HM.singleton (keyOf x) (Indexed 0 (keyOf x) x)
 
 instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where

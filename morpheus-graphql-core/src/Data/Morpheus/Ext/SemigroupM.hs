@@ -15,14 +15,14 @@ where
 import qualified Data.HashMap.Lazy as HM
 import Data.HashMap.Lazy (HashMap)
 import Data.Morpheus.Error.NameCollision (NameCollision)
+import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..))
 import Data.Morpheus.Ext.Map
   ( fromListT,
     runResolutionT,
   )
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
-    Elems (..),
+  ( Elems (..),
     Failure,
     failOnDuplicates,
   )
@@ -54,9 +54,9 @@ instance
 concatTraverse ::
   ( Monad m,
     Failure ValidationErrors m,
-    Collection b cb,
     Elems a ca,
-    SemigroupM m cb
+    SemigroupM m cb,
+    Empty cb
   ) =>
   (a -> m cb) ->
   ca ->
@@ -66,7 +66,7 @@ concatTraverse f smap =
     >>= join
 
 join ::
-  ( Collection e a,
+  ( Empty a,
     Monad m,
     Failure ValidationErrors m,
     SemigroupM m a

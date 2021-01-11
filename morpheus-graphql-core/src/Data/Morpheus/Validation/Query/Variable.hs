@@ -149,7 +149,7 @@ lookupAndValidateValueOnBody
     where
       toVariable x = var {variableValue = ValidVariableValue x}
       getVariable :: Maybe ResolvedValue
-      getVariable = selectOr Nothing (Just . snd) variableName bodyVariables
+      getVariable = selectOr Nothing Just variableName bodyVariables
       ------------------------------------------------------------------
       -- checkType ::
       checkType ::
@@ -168,7 +168,7 @@ lookupAndValidateValueOnBody
           returnNull
         where
           returnNull :: BaseValidator ValidValue
-          returnNull = selectOr (pure Null) (validator varType False . snd) variableName bodyVariables
+          returnNull = selectOr (pure Null) (validator varType False) variableName bodyVariables
       -----------------------------------------------------------------------------------------------
       validator :: TypeDefinition IN VALID -> Bool -> ResolvedValue -> BaseValidator ValidValue
       validator varTypeDef isDefaultValue varValue =

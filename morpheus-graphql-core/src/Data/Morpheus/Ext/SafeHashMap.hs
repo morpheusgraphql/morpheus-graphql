@@ -22,6 +22,7 @@ where
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Elems (Elems)
+import Data.Morpheus.Ext.Empty (Empty)
 import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
     SemigroupM (..),
@@ -50,7 +51,8 @@ newtype SafeHashMap k a = SafeHashMap
   deriving newtype
     ( Collection a,
       Selectable k a,
-      Elems a
+      Elems a,
+      Empty
     )
 
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
@@ -66,7 +68,7 @@ instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => Se
 instance (NameCollision a, Failure ValidationErrors m, Monad m, KeyOf k a, Hashable k) => FromElems m a (SafeHashMap k a) where
   fromElems = fmap SafeHashMap . fromElems
 
-unsafeFromList :: (Eq k, KeyOf k a) => [(k, a)] -> SafeHashMap k a
+unsafeFromList :: (Eq k, Hashable k) => [(k, a)] -> SafeHashMap k a
 unsafeFromList = SafeHashMap . HM.fromList
 
 insert ::

@@ -180,7 +180,7 @@ import Data.Morpheus.Types.Internal.AST.Value
 import Language.Haskell.TH.Syntax (Lift)
 import Prelude (Show)
 
-type Variables = SafeHashMap FieldName (FieldName, ResolvedValue)
+type Variables = SafeHashMap FieldName ResolvedValue
 
 data ExecutableDocument = ExecutableDocument
   { inputVariables :: Variables,

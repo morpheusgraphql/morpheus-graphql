@@ -69,8 +69,8 @@ import Data.Morpheus.Ext.SemigroupM
     SemigroupM (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
-    Elems (..),
+  ( Elems (..),
+    Empty (..),
     Failure (..),
     FromElems (..),
     KeyOf (..),

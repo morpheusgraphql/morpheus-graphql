@@ -51,6 +51,7 @@ import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
     Elems (..),
+    Empty (..),
     Failure,
     FromElems (..),
     KeyOf (..),
@@ -349,8 +350,10 @@ type ArgumentDefinition = FieldDefinition IN
 instance Selectable FieldName (ArgumentDefinition s) (ArgumentsDefinition s) where
   selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
 
-instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where
+instance Empty (ArgumentsDefinition s) where
   empty = ArgumentsDefinition Nothing empty
+
+instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where
   singleton = ArgumentsDefinition Nothing . singleton
 
 instance (Monad m, Failure ValidationErrors m) => FromElems m (ArgumentDefinition s) (ArgumentsDefinition s) where

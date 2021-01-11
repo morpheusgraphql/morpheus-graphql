@@ -31,6 +31,7 @@ module Data.Morpheus.Internal.Utils
     Elems (..),
     size,
     failOnDuplicates,
+    Empty (..),
   )
 where
 
@@ -42,6 +43,7 @@ import Data.Char
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Elems (Elems (..), size)
+import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
 import Data.Morpheus.Ext.Map
@@ -49,6 +51,7 @@ import Data.Morpheus.Ext.Map
     fromListT,
     runResolutionT,
   )
+import Data.Morpheus.Ext.Selectable
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     FieldName (..),
@@ -109,31 +112,13 @@ capitalTypeName = TypeName . capitalize . readName
 
 --(KEY v ~ k) =>
 class Collection a coll | coll -> a where
-  empty :: coll
   singleton :: a -> coll
 
 instance Collection a [a] where
-  empty = []
   singleton x = [x]
 
 instance KeyOf k v => Collection v (HashMap k v) where
-  empty = HM.empty
   singleton x = HM.singleton (keyOf x) x
-
-class Selectable k a c | c -> a where
-  selectOr :: d -> (a -> d) -> k -> c -> d
-
-  member :: k -> c -> Bool
-  member = selectOr False (const True)
-
-instance KeyOf k a => Selectable k a [a] where
-  selectOr fb f key lib = maybe fb f (find ((key ==) . keyOf) lib)
-
-instance (Eq k, Hashable k) => Selectable k a (HashMap k a) where
-  selectOr fb f key lib = maybe fb f (HM.lookup key lib)
-
-selectBy :: (Failure e m, Selectable k a c, Monad m) => e -> k -> c -> m a
-selectBy err = selectOr (failure err) pure
 
 traverseCollection ::
   ( Monad f,

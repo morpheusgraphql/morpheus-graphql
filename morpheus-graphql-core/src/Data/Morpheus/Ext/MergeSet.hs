@@ -14,6 +14,7 @@ module Data.Morpheus.Ext.MergeSet
 where
 
 import Data.Morpheus.Ext.Elems (Elems (..))
+import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Ext.Map
   ( fromListT,
     resolveWith,
@@ -54,7 +55,8 @@ newtype MergeSet (dups :: Stage) k a = MergeSet
       Lift,
       Traversable,
       Collection a,
-      Elems a
+      Elems a,
+      Empty
     )
 
 instance (KeyOf k a) => Selectable k a (MergeSet opt k a) where

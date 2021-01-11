@@ -73,5 +73,5 @@ parseRequest GQLRequest {query, variables} =
     toVariables :: Maybe Aeson.Value -> Variables
     toVariables (Just (Aeson.Object x)) = unsafeFromList $ toMorpheusValue <$> toList x
       where
-        toMorpheusValue (key, value) = (FieldName key, (FieldName key, replaceValue value))
+        toMorpheusValue (key, value) = (FieldName key, replaceValue value)
     toVariables _ = empty

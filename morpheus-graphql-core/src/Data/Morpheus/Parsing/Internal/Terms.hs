@@ -43,10 +43,9 @@ import Data.ByteString.Lazy
   )
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
-  ( Collection,
+  ( Empty (..),
     FromElems (..),
     KeyOf,
-    empty,
     fromElems,
     fromLBS,
     toLBS,
@@ -293,7 +292,7 @@ collection entry = braces (entry `sepEndBy` ignoredTokens)
 setOf :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
 setOf = collection >=> lift . fromElems
 
-optionalCollection :: Collection a c => Parser c -> Parser c
+optionalCollection :: Empty c => Parser c -> Parser c
 optionalCollection x = x <|> pure empty
 
 parseNonNull :: Parser [DataTypeWrapper]
@@ -308,7 +307,7 @@ uniqTuple parser =
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
       >>= lift . fromElems
 
-uniqTupleOpt :: (FromElems Eventless a coll, Collection a coll, KeyOf k a) => Parser a -> Parser coll
+uniqTupleOpt :: (FromElems Eventless a coll, Empty coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 
 fieldNameColon :: Parser FieldName
