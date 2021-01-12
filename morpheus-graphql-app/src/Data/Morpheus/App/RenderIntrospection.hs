@@ -164,10 +164,10 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
           ResolverValue m
         renderContent DataScalar {} = __type KindScalar []
         renderContent (DataEnum enums) = __type KindEnum [("enumValues", render enums)]
-        renderContent (DataInputObject inputFiels) =
+        renderContent (DataInputObject inputFields) =
           __type
             KindInputObject
-            [("inputFields", render inputFiels)]
+            [("inputFields", render inputFields)]
         renderContent DataObject {objectImplements, objectFields} =
           createObjectType typeName typeDescription objectImplements objectFields
         renderContent (DataUnion union) =

@@ -13,6 +13,7 @@ module Data.Morpheus.Parsing.Document.TypeSystem
 where
 
 import Data.ByteString.Lazy (ByteString)
+import Data.Foldable (foldr')
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Result
   ( Eventless,
@@ -304,21 +305,21 @@ typePartition ::
     [TypeDefinition ANY CONST],
     [DirectiveDefinition CONST]
   )
-typePartition = foldl' split ([], [], [])
+typePartition = foldr' split ([], [], [])
 
 split ::
-  ( [SchemaDefinition],
-    [TypeDefinition ANY CONST],
-    [DirectiveDefinition CONST]
-  ) ->
   RawTypeDefinition ->
   ( [SchemaDefinition],
     [TypeDefinition ANY CONST],
     [DirectiveDefinition CONST]
+  ) ->
+  ( [SchemaDefinition],
+    [TypeDefinition ANY CONST],
+    [DirectiveDefinition CONST]
   )
-split (schemas, types, dirs) (RawSchemaDefinition schema) = (schema : schemas, types, dirs)
-split (schemas, types, dirs) (RawTypeDefinition ty) = (schemas, ty : types, dirs)
-split (schemas, types, dirs) (RawDirectiveDefinition dir) = (schemas, types, dir : dirs)
+split (RawSchemaDefinition schema) (schemas, types, dirs) = (schema : schemas, types, dirs)
+split (RawTypeDefinition ty) (schemas, types, dirs) = (schemas, ty : types, dirs)
+split (RawDirectiveDefinition dir) (schemas, types, dirs) = (schemas, types, dir : dirs)
 
 --  split (RawDirectiveDefinition d)
 
