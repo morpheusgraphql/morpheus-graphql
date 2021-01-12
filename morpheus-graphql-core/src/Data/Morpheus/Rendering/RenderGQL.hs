@@ -23,7 +23,6 @@ where
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Foldable (foldl)
 import qualified Data.Text as T
 import Relude hiding
   ( ByteString,
@@ -124,7 +123,7 @@ renderInputSeq ::
   (Foldable t, RenderGQL a) =>
   t a ->
   Rendering
-renderInputSeq = fromMaybe "" . foldl renderValue Nothing
+renderInputSeq = fromMaybe "" . foldl' renderValue Nothing
   where
     renderValue :: RenderGQL a => Maybe Rendering -> a -> Maybe Rendering
     renderValue Nothing value = Just (renderGQL value)

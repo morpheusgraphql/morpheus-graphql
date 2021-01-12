@@ -24,7 +24,6 @@ import Data.Aeson (FromJSON, Value (..), decode)
 import qualified Data.ByteString.Lazy as L (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LB (unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Foldable (foldl)
 import Data.Morpheus.Core (parseSchema)
 import Data.Morpheus.Internal.Ext
   ( Eventless,
@@ -78,7 +77,7 @@ prefix FileUrl {..} x =
     }
 
 toString :: FileUrl -> FilePath
-toString FileUrl {..} = foldl (\y x -> x <> "/" <> y) fileName filePath
+toString FileUrl {..} = foldl' (\y x -> x <> "/" <> y) fileName filePath
 
 scanSchemaTests :: FilePath -> IO CaseTree
 scanSchemaTests = deepScan

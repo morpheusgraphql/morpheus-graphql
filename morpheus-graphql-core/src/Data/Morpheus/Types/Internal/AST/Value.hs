@@ -41,7 +41,6 @@ import qualified Data.Aeson as A
     object,
     pairs,
   )
-import Data.Foldable (foldl1)
 import qualified Data.HashMap.Lazy as M
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -240,11 +239,13 @@ instance A.ToJSON (Value a) where
   toEncoding (Enum x) = A.toEncoding x
   toEncoding (Scalar x) = A.toEncoding x
   toEncoding (List x) = A.toEncoding x
-  toEncoding (Object ordmap)
-    | null ordmap = A.toEncoding $ A.object []
-    | otherwise = A.pairs $ foldl1 (<>) $ fmap encodeField (elems ordmap)
+  toEncoding (Object ordMap) = A.pairs $ renderSeries encodeField (elems ordMap)
     where
       encodeField (ObjectEntry (FieldName key) value) = key A..= value
+
+renderSeries :: Monoid p => (t -> p) -> [t] -> p
+renderSeries _ [] = mempty
+renderSeries f (x : xs) = foldl' (\a b -> a <> f b) (f x) xs
 
 decodeScientific :: Scientific -> ScalarValue
 decodeScientific v = case floatingOrInteger v of

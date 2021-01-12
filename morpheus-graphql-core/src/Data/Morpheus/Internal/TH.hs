@@ -44,7 +44,6 @@ module Data.Morpheus.Internal.TH
   )
 where
 
-import Data.Foldable (foldl)
 import Data.Morpheus.Internal.Utils
   ( capitalize,
     nameSpaceField,
@@ -178,16 +177,16 @@ class Apply a where
   apply :: ToCon i a => i -> [a] -> a
 
 instance Apply TypeQ where
-  apply = foldl appT . toCon
+  apply = foldl' appT . toCon
 
 instance Apply Type where
-  apply = foldl AppT . toCon
+  apply = foldl' AppT . toCon
 
 instance Apply Exp where
-  apply = foldl AppE . toCon
+  apply = foldl' AppE . toCon
 
 instance Apply ExpQ where
-  apply = foldl appE . toCon
+  apply = foldl' appE . toCon
 
 applyVars ::
   ( ToName con,

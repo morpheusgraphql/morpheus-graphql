@@ -15,7 +15,6 @@ module Data.Morpheus.Ext.Map
   )
 where
 
-import Data.Foldable (foldl)
 import qualified Data.HashMap.Lazy as HM
 import Language.Haskell.TH.Syntax (Lift)
 import Relude
@@ -76,7 +75,7 @@ insertWithList (Indexed i1 key value) = HM.alter (Just . updater) key
 
 clusterDuplicates :: (Eq k, Hashable k) => [Indexed k a] -> HashMap k (Indexed k (NonEmpty a)) -> HashMap k (Indexed k (NonEmpty a))
 clusterDuplicates [] = id
-clusterDuplicates xs = flip (foldl (\coll x -> insertWithList (fmap (:| []) x) coll)) xs
+clusterDuplicates xs = flip (foldl' (\coll x -> insertWithList (fmap (:| []) x) coll)) xs
 
 data Resolution k a coll m = Resolution
   { resolveDuplicates :: NonEmpty a -> m a,
