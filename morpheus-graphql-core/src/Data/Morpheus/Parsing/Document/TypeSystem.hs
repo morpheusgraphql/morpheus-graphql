@@ -304,21 +304,21 @@ typePartition ::
     [TypeDefinition ANY CONST],
     [DirectiveDefinition CONST]
   )
-typePartition = foldr split ([], [], [])
+typePartition = foldl' split ([], [], [])
 
 split ::
-  RawTypeDefinition ->
   ( [SchemaDefinition],
     [TypeDefinition ANY CONST],
     [DirectiveDefinition CONST]
   ) ->
+  RawTypeDefinition ->
   ( [SchemaDefinition],
     [TypeDefinition ANY CONST],
     [DirectiveDefinition CONST]
   )
-split (RawSchemaDefinition schema) (schemas, types, dirs) = (schema : schemas, types, dirs)
-split (RawTypeDefinition ty) (schemas, types, dirs) = (schemas, ty : types, dirs)
-split (RawDirectiveDefinition dir) (schemas, types, dirs) = (schemas, types, dir : dirs)
+split (schemas, types, dirs) (RawSchemaDefinition schema) = (schema : schemas, types, dirs)
+split (schemas, types, dirs) (RawTypeDefinition ty) = (schemas, ty : types, dirs)
+split (schemas, types, dirs) (RawDirectiveDefinition dir) = (schemas, types, dir : dirs)
 
 --  split (RawDirectiveDefinition d)
 

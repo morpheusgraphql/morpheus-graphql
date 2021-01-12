@@ -15,6 +15,7 @@ module Data.Morpheus.App.RenderIntrospection
   )
 where
 
+import Data.Foldable (foldr')
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     ResolverContext (..),
@@ -253,7 +254,7 @@ instance RenderIntrospection TypeRef where
   render TypeRef {typeConName, typeWrappers} = do
     kind <- kindOf <$> selectType typeConName
     let currentType = mkType kind typeConName Nothing []
-    pure $ foldr wrap currentType (toGQLWrapper typeWrappers)
+    pure $ foldr' wrap currentType (toGQLWrapper typeWrappers)
     where
       wrap ::
         ( Monad m,
