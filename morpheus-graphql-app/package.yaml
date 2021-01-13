@@ -33,7 +33,7 @@ dependencies:
   - th-lift-instances     >= 0.1.1     && <= 0.3
   - hashable              >= 1.0.0
   - mtl                   >= 2.0       && <= 3.0
-  - relude                >= 0.4.0
+  - relude                >= 0.3.0
   - containers            >= 0.4.2.1   && <  0.7
   - morpheus-graphql-core >= 0.16.0    && <= 0.17.0
 
