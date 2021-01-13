@@ -246,7 +246,7 @@ instance A.ToJSON (Value a) where
 
 renderSeries :: Monoid p => (e -> p) -> [e] -> p
 renderSeries _ [] = mempty
-renderSeries f (x : xs) = foldr' (\e es -> f e <> es) (f x) xs
+renderSeries f (x : xs) = foldr' (\e es -> es <> f e) (f x) xs
 
 decodeScientific :: Scientific -> ScalarValue
 decodeScientific v = case floatingOrInteger v of
