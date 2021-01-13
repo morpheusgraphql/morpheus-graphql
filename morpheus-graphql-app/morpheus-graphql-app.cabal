@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 07e2f4b369f58bb7ffff98dce424f6177edfb6805ae46a7dd2df2dc18b198ae0
+-- hash: ba0efa2fd025ed88ba20808738e201ed2b2c9d4500532e31187d71984d2753fe
 
 name:           morpheus-graphql-app
 version:        0.16.0
@@ -97,7 +97,7 @@ library
     , megaparsec >=7.0.0 && <10.0.0
     , morpheus-graphql-core >=0.16.0 && <=0.17.0
     , mtl >=2.0 && <=3.0
-    , relude >=0.4.0
+    , relude >=0.3.0
     , scientific >=0.3.6.2 && <0.4
     , template-haskell >=2.0 && <=3.0
     , text >=1.2.3.0 && <1.3
