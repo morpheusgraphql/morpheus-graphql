@@ -35,6 +35,7 @@ import Data.Morpheus.Internal.TH
   ( _',
     applyCons,
     funDSimple,
+    toCon,
     toName,
     toString,
     v',

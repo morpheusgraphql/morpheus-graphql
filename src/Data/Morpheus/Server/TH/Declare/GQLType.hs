@@ -26,7 +26,6 @@ import Data.Morpheus.Internal.TH
   ( apply,
     applyVars,
     toName,
-    tyConArgs,
     typeInstanceDec,
   )
 import Data.Morpheus.Internal.Utils
@@ -42,6 +41,7 @@ import Data.Morpheus.Server.Internal.TH.Utils
   ( funDProxy,
     kindName,
     mkTypeableConstraints,
+    tyConArgs,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),

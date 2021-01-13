@@ -16,7 +16,9 @@ module Data.Morpheus.Server.Internal.TH.Utils
 where
 
 import Data.Morpheus.Internal.TH
-  ( apply,
+  ( _',
+    apply,
+    funDSimple,
     vars,
   )
 import Data.Morpheus.Kind
@@ -33,7 +35,9 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Text (unpack)
 import Language.Haskell.TH
   ( CxtQ,
+    DecQ,
     Exp (..),
+    ExpQ,
     Lit (..),
     Name,
     Type (..),
