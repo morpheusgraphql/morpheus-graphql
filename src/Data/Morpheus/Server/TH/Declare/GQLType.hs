@@ -25,7 +25,6 @@ import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.TH
   ( apply,
     applyVars,
-    funDProxy,
     toName,
     tyConArgs,
     typeInstanceDec,
@@ -40,7 +39,8 @@ import Data.Morpheus.Server.Internal.TH.Types
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.Internal.TH.Utils
-  ( kindName,
+  ( funDProxy,
+    kindName,
     mkTypeableConstraints,
   )
 import Data.Morpheus.Server.Types.GQLType

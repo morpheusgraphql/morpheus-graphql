@@ -9,6 +9,9 @@ module Data.Morpheus.Server.Internal.TH.Utils
     typeNameStringE,
     withPure,
     mkTypeableConstraints,
+    m',
+    tyConArgs,
+    funDProxy,
   )
 where
 
@@ -25,9 +28,9 @@ import Data.Morpheus.Kind
 import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
     TypeName (..),
+    isOutputObject,
   )
 import Data.Text (unpack)
-import Data.Typeable (Typeable)
 import Language.Haskell.TH
   ( CxtQ,
     Exp (..),
@@ -35,14 +38,22 @@ import Language.Haskell.TH
     Name,
     Type (..),
     cxt,
+    mkName,
   )
-import Prelude
-  ( ($),
-    (.),
-    String,
-    map,
-    pure,
-  )
+import Relude hiding (Type)
+
+funDProxy :: [(Name, ExpQ)] -> [DecQ]
+funDProxy = map fun
+  where
+    fun (name, body) = funDSimple name [_'] body
+
+tyConArgs :: TypeKind -> [String]
+tyConArgs kindD
+  | isOutputObject kindD || kindD == KindUnion = ["m"]
+  | otherwise = []
+
+m' :: Type
+m' = VarT (mkName "m")
 
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)

@@ -19,8 +19,7 @@ import Control.Monad ((>>=))
 import Control.Monad.Fail (fail)
 import Data.Functor ((<$>), fmap)
 import Data.Morpheus.Internal.TH
-  ( infoTyVars,
-    toName,
+  ( toName,
   )
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
@@ -81,9 +80,8 @@ getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
   Nothing -> getTyArgs <$> reify (toName key)
 
 getTyArgs :: Info -> Maybe String
-getTyArgs x
-  | null (infoTyVars x) = Nothing
-  | otherwise = Just m_
+getTyArgs (TyConI x) = Just m_
+getTyArgs _ = Nothing
 
 kindToTyArgs :: TypeContent TRUE ANY s -> Maybe String
 kindToTyArgs DataObject {} = Just m_

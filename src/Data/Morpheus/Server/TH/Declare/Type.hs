@@ -14,16 +14,18 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
-    m',
     nameSpaceField,
     nameSpaceType,
     toName,
-    tyConArgs,
   )
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerDec,
     ServerDecContext (..),
     ServerTypeDefinition (..),
+  )
+import Data.Morpheus.Server.Internal.TH.Utils
+  ( m',
+    tyConArgs,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition (..),
