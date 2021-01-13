@@ -41,7 +41,7 @@ import qualified Data.Aeson as A
     object,
     pairs,
   )
-import Data.Foldable (foldr')
+import Data.Foldable (foldMap')
 import qualified Data.HashMap.Lazy as M
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
