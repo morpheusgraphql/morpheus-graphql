@@ -35,7 +35,6 @@ import Data.Morpheus.Internal.TH
   ( _',
     applyCons,
     funDSimple,
-    toConE,
     toName,
     toString,
     v',
@@ -191,7 +190,7 @@ aesonFromJSONEnumBody TypeNameTH {typename} = matchWith (Just (v', failExp)) f
     f :: ConsD cat VALID -> (PatQ, ExpQ)
     f ConsD {cName} =
       ( toString cName,
-        appE (varE 'pure) $ toConE $ nameSpaceType [toFieldName typename] cName
+        appE (varE 'pure) $ toCon $ nameSpaceType [toFieldName typename] cName
       )
 
 aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ

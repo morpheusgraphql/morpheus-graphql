@@ -22,13 +22,9 @@ module Data.Morpheus.Internal.TH
     nameSpaceField,
     nameSpaceType,
     toCon,
-    toConE,
-    toConT,
     toVar,
     ToName (..),
     toString,
-    toVarE,
-    toVarT,
     typeInstanceDec,
     v',
     vars,
@@ -174,18 +170,6 @@ applyCons name li = apply name (cons li)
 
 funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
 funDSimple name args body = funD name [clause args (normalB body) []]
-
-toConT :: ToName a => a -> Q Type
-toConT = conT . toName
-
-toVarT :: ToVar a TypeQ => a -> TypeQ
-toVarT = toVar
-
-toVarE :: ToVar a Exp => a -> ExpQ
-toVarE = toVar
-
-toConE :: ToCon a Exp => a -> ExpQ
-toConE = toCon
 
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes
