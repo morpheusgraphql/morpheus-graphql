@@ -39,7 +39,6 @@ module Data.Morpheus.Internal.TH
     cat',
     _2',
     o',
-    e',
     vars,
   )
 where
@@ -69,9 +68,6 @@ m' = VarT (mkName "m")
 
 o' :: Type
 o' = VarT (mkName "o")
-
-e' :: Type
-e' = VarT (mkName "event")
 
 _' :: PatQ
 _' = toVar (mkName "_")

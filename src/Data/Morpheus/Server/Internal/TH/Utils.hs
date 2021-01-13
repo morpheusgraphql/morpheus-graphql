@@ -8,15 +8,12 @@ module Data.Morpheus.Server.Internal.TH.Utils
     constraintTypeable,
     typeNameStringE,
     withPure,
-    o',
-    e',
     mkTypeableConstraints,
   )
 where
 
 import Data.Morpheus.Internal.TH
   ( apply,
-    toName,
     vars,
   )
 import Data.Morpheus.Kind
@@ -46,12 +43,6 @@ import Prelude
     map,
     pure,
   )
-
-o' :: Type
-o' = VarT $ toName ("operation" :: TypeName)
-
-e' :: Type
-e' = VarT $ toName ("encodeEvent" :: TypeName)
 
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)
