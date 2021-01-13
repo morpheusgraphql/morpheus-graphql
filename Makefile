@@ -6,5 +6,8 @@ compile:
 	stack install --fast --test
 
 sync-docs:
-	cat docs/template/index-header.md README.md > docs/index.md
+	{ cat docs/template/index-header.md ; \
+	  echo "\n<!-- This file is generated automatically, see Makefile sync-docs -->\n"; \
+	  cat README.md; \
+	} > docs/index.md
 

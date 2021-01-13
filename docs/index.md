@@ -2,7 +2,8 @@
 layout: home
 ---
 
-<!-- Home Page Header -->
+<!-- This file is generated automatically, see Makefile sync-docs -->
+
 # Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 
 Build GraphQL APIs with your favorite functional language!
