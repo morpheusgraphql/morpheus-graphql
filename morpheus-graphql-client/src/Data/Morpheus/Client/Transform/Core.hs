@@ -20,7 +20,6 @@ module Data.Morpheus.Client.Transform.Core
   )
 where
 
-import Control.Monad (foldM)
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
   )
@@ -85,7 +84,7 @@ instance Failure ValidationError Converter where
 newtype UpdateT m a = UpdateT {updateTState :: a -> m a}
 
 resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
-resolveUpdates a = foldM (&) a . fmap updateTState
+resolveUpdates a = foldlM (&) a . fmap updateTState
 
 compileError :: Message -> GQLErrors
 compileError x =

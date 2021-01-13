@@ -54,7 +54,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
 where
 
 -- MORPHEUS
-import Control.Monad (foldM)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -331,7 +330,7 @@ defineSchemaWith ::
 defineSchemaWith oTypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] oTypes
   let schema = (initTypeLib query) {mutation, subscription}
-  foldM (flip defineType) schema types
+  foldlM (flip defineType) schema types
 defineSchemaWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
