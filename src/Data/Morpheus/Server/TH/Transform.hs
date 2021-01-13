@@ -12,15 +12,6 @@ module Data.Morpheus.Server.TH.Transform
   )
 where
 
--- MORPHEUS
-
-import Control.Applicative (pure)
-import Control.Monad ((>>=))
-import Control.Monad.Fail (fail)
-import Data.Functor ((<$>), fmap)
-import Data.Morpheus.Internal.TH
-  ( toName,
-  )
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
     elems,
@@ -28,6 +19,7 @@ import Data.Morpheus.Internal.Utils
     singleton,
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
+import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType, m_)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -47,47 +39,12 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     hsTypeName,
     kindOf,
-    lookupWith,
     mkCons,
     mkConsEnum,
     toFieldName,
   )
-import Data.Semigroup ((<>))
 import Language.Haskell.TH
-import Prelude
-  ( ($),
-    Bool (..),
-    Maybe (..),
-    String,
-    concat,
-    not,
-    null,
-    otherwise,
-    traverse,
-  )
-
-m_ :: String
-m_ = "m"
-
-getTypeArgs :: TypeName -> [TypeDefinition ANY s] -> Q (Maybe String)
-getTypeArgs "__TypeKind" _ = pure Nothing
-getTypeArgs "Boolean" _ = pure Nothing
-getTypeArgs "String" _ = pure Nothing
-getTypeArgs "Int" _ = pure Nothing
-getTypeArgs "Float" _ = pure Nothing
-getTypeArgs key lib = case typeContent <$> lookupWith typeName key lib of
-  Just x -> pure (kindToTyArgs x)
-  Nothing -> getTyArgs <$> reify (toName key)
-
-getTyArgs :: Info -> Maybe String
-getTyArgs (TyConI x) = Just m_
-getTyArgs _ = Nothing
-
-kindToTyArgs :: TypeContent TRUE ANY s -> Maybe String
-kindToTyArgs DataObject {} = Just m_
-kindToTyArgs DataUnion {} = Just m_
-kindToTyArgs DataInterface {} = Just m_
-kindToTyArgs _ = Nothing
+import Relude hiding (empty)
 
 data TypeDec s = InputType (ServerTypeDefinition IN s) | OutputType (ServerTypeDefinition OUT s)
 
@@ -145,11 +102,15 @@ mkObjectField ::
   Q (FieldDefinition OUT s)
 mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = cont, fieldType = typeRef@TypeRef {typeConName}, ..} =
   do
-    typeArgs <- getTypeArgs typeConName schema
+    hasTypeVariable <- isParametrizedResolverType typeConName schema
     pure
       FieldDefinition
         { fieldName,
-          fieldType = typeRef {typeConName = hsTypeName typeConName, typeArgs},
+          fieldType =
+            typeRef
+              { typeConName = hsTypeName typeConName,
+                typeArgs = if hasTypeVariable then Just m_ else Nothing
+              },
           fieldContent = cont >>= fieldCont,
           ..
         }

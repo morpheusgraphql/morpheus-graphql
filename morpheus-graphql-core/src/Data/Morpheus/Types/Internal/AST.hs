@@ -162,6 +162,7 @@ module Data.Morpheus.Types.Internal.AST
     getInputUnionValue,
     unitFieldName,
     unitTypeName,
+    isResolverType,
   )
 where
 

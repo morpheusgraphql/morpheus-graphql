@@ -49,6 +49,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     possibleTypes,
     possibleInterfaceTypes,
     defineSchemaWith,
+    isResolverType,
   )
 where
 
@@ -593,6 +594,12 @@ isEntNode :: TypeContent TRUE a s -> Bool
 isEntNode DataScalar {} = True
 isEntNode DataEnum {} = True
 isEntNode _ = False
+
+isResolverType :: TypeContent TRUE ANY s -> Bool
+isResolverType DataObject {} = True
+isResolverType DataUnion {} = True
+isResolverType DataInterface {} = True
+isResolverType _ = False
 
 kindOf :: TypeDefinition a s -> TypeKind
 kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
