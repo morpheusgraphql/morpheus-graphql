@@ -41,7 +41,7 @@ import qualified Data.Morpheus.Types.Internal.AST as AST
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ArgumentsDefinition (..),
+    ArgumentDefinition (..),
     CONST,
     DataTypeWrapper (..),
     FieldDefinition,
@@ -148,10 +148,10 @@ instance ParseJSONSchema Field (FieldDefinition OUT CONST) where
   parse Field {fieldName, fieldArgs, fieldType} = do
     (wrappers, typename) <- fieldTypeFromJSON fieldType
     args <- traverse genArg fieldArgs >>= fromElems
-    pure $ mkObjectField (ArgumentsDefinition Nothing args) fieldName wrappers typename
+    pure $ mkObjectField args fieldName wrappers typename
     where
       genArg InputValue {inputName = argName, inputType = argType} =
-        uncurry (mkInputValue argName) <$> fieldTypeFromJSON argType
+        ArgumentDefinition . uncurry (mkInputValue argName) <$> fieldTypeFromJSON argType
 
 instance ParseJSONSchema InputValue (FieldDefinition IN CONST) where
   parse InputValue {inputName, inputType} = uncurry (mkInputValue inputName) <$> fieldTypeFromJSON inputType
@@ -167,4 +167,4 @@ fieldTypeFromJSON = fmap toHs . fieldTypeRec []
     fieldTypeRec acc Type {kind = NON_NULL, ofType = Just ofType} =
       fieldTypeRec (NonNullType : acc) ofType
     fieldTypeRec acc Type {name = Just name} = pure (acc, name)
-    fieldTypeRec _ x = decoderError $ "Unsuported Field" <> msg (show x)
+    fieldTypeRec _ x = decoderError $ "Unsupported Field" <> msg (show x)

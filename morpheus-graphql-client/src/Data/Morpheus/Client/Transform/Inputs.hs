@@ -13,8 +13,12 @@ module Data.Morpheus.Client.Transform.Inputs
 where
 
 import Data.Morpheus.Client.Internal.Types
-  ( ClientTypeDefinition (..),
+  ( ClientConsD,
+    ClientTypeDefinition (..),
     TypeNameTH (..),
+  )
+import Data.Morpheus.Client.Internal.Utils
+  ( removeDuplicates,
   )
 import Data.Morpheus.Client.Transform.Core
   ( Converter (..),
@@ -46,7 +50,6 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationName,
     mkConsEnum,
-    removeDuplicates,
     toAny,
   )
 import Relude hiding (empty)
@@ -152,7 +155,7 @@ buildInputType name = getType name >>= generateTypes
             ]
         subTypes _ = pure []
 
-mkInputType :: TypeName -> TypeKind -> [ConsD ANY VALID] -> ClientTypeDefinition
+mkInputType :: TypeName -> TypeKind -> [ClientConsD ANY] -> ClientTypeDefinition
 mkInputType typename clientKind clientCons =
   ClientTypeDefinition
     { clientTypeName = TypeNameTH [] typename,

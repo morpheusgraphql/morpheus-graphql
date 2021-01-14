@@ -174,7 +174,7 @@ selectRequired ::
   ( Selectable FieldName value c,
     MissingRequired c ctx
   ) =>
-  Ref ->
+  Ref FieldName ->
   c ->
   Validator s ctx value
 selectRequired selector container =

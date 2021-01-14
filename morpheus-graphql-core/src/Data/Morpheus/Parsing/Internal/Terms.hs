@@ -188,7 +188,7 @@ varName = dollar *> parseName <* ignoredTokens
 --
 -- Variable :  $Name
 --
-variable :: Parser Ref
+variable :: Parser (Ref FieldName)
 variable =
   label "variable" $
     flip Ref
@@ -339,7 +339,6 @@ parseTypeW :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> TypeRef
 parseTypeW (wrappers, typeConName) nonNull =
   TypeRef
     { typeConName,
-      typeArgs = Nothing,
       typeWrappers = toHSWrappers (nonNull <> wrappers)
     }
 

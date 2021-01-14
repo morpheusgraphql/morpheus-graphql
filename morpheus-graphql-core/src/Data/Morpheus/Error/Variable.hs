@@ -10,7 +10,8 @@ where
 
 import Data.Morpheus.Error.Utils (validationErrorMessage)
 import Data.Morpheus.Types.Internal.AST
-  ( Ref (..),
+  ( FieldName,
+    Ref (..),
     TypeRef,
     ValidationError,
     Variable (..),
@@ -19,7 +20,7 @@ import Data.Morpheus.Types.Internal.AST
 import Relude
 
 -- query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
-incompatibleVariableType :: Ref -> Variable s -> TypeRef -> ValidationError
+incompatibleVariableType :: Ref FieldName -> Variable s -> TypeRef -> ValidationError
 incompatibleVariableType
   (Ref variableName argPosition)
   Variable {variableType}

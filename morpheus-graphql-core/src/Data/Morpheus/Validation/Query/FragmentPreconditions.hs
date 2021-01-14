@@ -27,7 +27,8 @@ import Data.Morpheus.Internal.Utils
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Fragment (..),
+  ( FieldName,
+    Fragment (..),
     Fragments,
     RAW,
     Ref (..),
@@ -49,14 +50,14 @@ checkUnusedFragments selectionSet = do
     (usedFragments fragments (elems selectionSet))
     (elems fragments)
 
-usedFragments :: Fragments RAW -> [Selection RAW] -> [Node]
+usedFragments :: Fragments RAW -> [Selection RAW] -> [Node FieldName]
 usedFragments fragments = concatMap findAllUses
   where
-    findUsesSelectionContent :: SelectionContent RAW -> [Node]
+    findUsesSelectionContent :: SelectionContent RAW -> [Node FieldName]
     findUsesSelectionContent (SelectionSet selectionSet) =
       concatMap findAllUses selectionSet
     findUsesSelectionContent SelectionField = []
-    findAllUses :: Selection RAW -> [Node]
+    findAllUses :: Selection RAW -> [Node FieldName]
     findAllUses Selection {selectionContent} =
       findUsesSelectionContent selectionContent
     findAllUses (InlineFragment Fragment {fragmentSelection}) =
@@ -76,15 +77,15 @@ checkFragmentPreconditions selection =
   (exploreSpreads >>= cycleChecking (failure . cannotSpreadWithinItself))
     *> checkUnusedFragments selection
 
-exploreSpreads :: BaseValidator Graph
+exploreSpreads :: BaseValidator (Graph FieldName)
 exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
 
-exploreFragmentSpreads :: Fragment RAW -> Edges
+exploreFragmentSpreads :: Fragment RAW -> Edges FieldName
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =
   (Ref fragmentName fragmentPosition, concatMap scanSpread fragmentSelection)
 
 class ScanSpread a where
-  scanSpread :: a -> [Node]
+  scanSpread :: a -> [Node FieldName]
 
 instance ScanSpread (Selection RAW) where
   scanSpread Selection {selectionContent} =

@@ -13,14 +13,18 @@ import Data.Morpheus.App.Internal.Resolving
   ( SubscriptionField,
   )
 import Data.Morpheus.Internal.TH
-  ( declareTypeRef,
+  ( apply,
+    declareTypeRef,
     nameSpaceField,
     nameSpaceType,
+    toCon,
     toName,
   )
 import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerDec,
+  ( ServerConsD,
+    ServerDec,
     ServerDecContext (..),
+    ServerFieldDefinition (..),
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.Internal.TH.Utils
@@ -29,12 +33,9 @@ import Data.Morpheus.Server.Internal.TH.Utils
     tyConArgs,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
-    ConsD (..),
-    FieldContent (..),
+  ( ConsD (..),
     FieldDefinition (..),
     FieldName (..),
-    TRUE,
     TypeKind (..),
     TypeName (..),
     isResolverType,
@@ -76,7 +77,7 @@ deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 declareCons ::
   TypeKind ->
   TypeName ->
-  [ConsD cat s] ->
+  [ServerConsD cat s] ->
   ServerDec [Con]
 declareCons tKind tName = traverse consR
   where
@@ -96,22 +97,33 @@ consName _ _ conName = pure (toName conName)
 declareField ::
   TypeKind ->
   TypeName ->
-  FieldDefinition cat s ->
+  ServerFieldDefinition cat s ->
   ServerDec (Name, Bang, Type)
-declareField tKind tName field@FieldDefinition {fieldName} = do
+declareField tKind tName field = do
   namespace' <- asks namespace
   pure
-    ( fieldTypeName namespace' tName fieldName,
+    ( fieldTypeName namespace' tName (fieldName $ originalField field),
       Bang NoSourceUnpackedness NoSourceStrictness,
       renderFieldType tKind field
     )
 
 renderFieldType ::
   TypeKind ->
-  FieldDefinition cat s ->
+  ServerFieldDefinition cat s ->
   Type
-renderFieldType tKind FieldDefinition {fieldContent, fieldType} =
-  withFieldWrappers tKind fieldContent (declareTypeRef fieldType)
+renderFieldType
+  tKind
+  ServerFieldDefinition
+    { isParametrized,
+      originalField = FieldDefinition {fieldType},
+      argumentsTypeName
+    } =
+    withFieldWrappers tKind argumentsTypeName (declareTypeRef renderTypeName fieldType)
+    where
+      renderTypeName :: TypeName -> Type
+      renderTypeName
+        | isParametrized = (`apply` [m'])
+        | otherwise = toCon
 
 fieldTypeName :: Bool -> TypeName -> FieldName -> Name
 fieldTypeName namespace tName fieldName
@@ -140,10 +152,10 @@ type Arrow = (->)
 ------------------------------------------------
 withFieldWrappers ::
   TypeKind ->
-  Maybe (FieldContent TRUE cat s) ->
+  Maybe TypeName ->
   Type ->
   Type
-withFieldWrappers kind (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =
+withFieldWrappers kind (Just argsTypename) =
   withArgs argsTypename
     . withSubscriptionField kind
     . withMonad

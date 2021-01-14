@@ -12,10 +12,7 @@ import Data.Morpheus.Ext.Map
   ( Indexed (..),
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName (..),
-    Ref (..),
-    TypeName (..),
-    TypeNameRef (..),
+  ( Ref (..),
   )
 import Relude
 
@@ -25,11 +22,8 @@ class (Eq k, Hashable k) => KeyOf k a | a -> k where
 instance (Eq k, Hashable k) => KeyOf k (k, a) where
   keyOf = fst
 
-instance KeyOf FieldName Ref where
+instance (Eq name, Hashable name) => KeyOf name (Ref name) where
   keyOf = refName
-
-instance KeyOf TypeName TypeNameRef where
-  keyOf = typeNameRef
 
 instance (Eq k, Hashable k) => KeyOf k (Indexed k a) where
   keyOf = indexedKey

@@ -115,7 +115,7 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
     __typeFrom DataUnion {} = nameSpaceType path typeName
     __typeFrom _ = typeName
 
-deprecationWarning :: Directives VALID -> (FieldName, Ref) -> Converter ()
+deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> Converter ()
 deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
   Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
     where

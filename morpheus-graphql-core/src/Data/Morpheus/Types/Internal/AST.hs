@@ -29,8 +29,6 @@ module Data.Morpheus.Types.Internal.AST
     ValidObject,
     ResolvedObject,
     ResolvedValue,
-    splitDuplicates,
-    removeDuplicates,
     Argument (..),
     Arguments,
     SelectionSet,
@@ -46,9 +44,9 @@ module Data.Morpheus.Types.Internal.AST
     ScalarDefinition (..),
     DataEnum,
     FieldsDefinition,
-    ArgumentDefinition,
+    ArgumentDefinition (..),
     DataUnion,
-    ArgumentsDefinition (..),
+    ArgumentsDefinition,
     FieldDefinition (..),
     InputFieldsDefinition,
     TypeContent (..),
@@ -78,7 +76,6 @@ module Data.Morpheus.Types.Internal.AST
     isWeaker,
     isNotSystemTypeName,
     isLeaf,
-    isEnum,
     isResolverType,
     mkEnumContent,
     createScalarType,
@@ -112,9 +109,7 @@ module Data.Morpheus.Types.Internal.AST
     Msg (..),
     intercalateName,
     toFieldName,
-    TypeNameRef (..),
     fieldsToArguments,
-    mkCons,
     mkConsEnum,
     Directives,
     DirectiveDefinitions,
@@ -124,7 +119,6 @@ module Data.Morpheus.Types.Internal.AST
     fieldContentArgs,
     mkInputValue,
     mkType,
-    TypeNameTH (..),
     mkObjectField,
     UnionMember (..),
     mkUnionMember,
@@ -170,6 +164,7 @@ import Data.Morpheus.Types.Internal.AST.Fields
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH
+import Data.Morpheus.Types.Internal.AST.Type
 import Data.Morpheus.Types.Internal.AST.TypeCategory
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.AST.Union

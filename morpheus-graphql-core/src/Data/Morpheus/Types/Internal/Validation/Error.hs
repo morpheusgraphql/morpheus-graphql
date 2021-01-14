@@ -24,6 +24,7 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveDefinition (..),
     DirectiveDefinitions,
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition,
     Fragment (..),
     Fragments,
@@ -35,7 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     Schema,
     TypeCategory,
-    TypeNameRef (..),
+    TypeName,
     TypeRef (..),
     ValidationError (..),
     Variable (..),
@@ -84,7 +85,7 @@ instance Unused (OperationContext s1 s2) (Fragment s) where
         }
 
 class MissingRequired c ctx where
-  missingRequired :: Scope -> ctx -> Ref -> c -> ValidationError
+  missingRequired :: Scope -> ctx -> Ref FieldName -> c -> ValidationError
 
 instance MissingRequired (Arguments s) ctx where
   missingRequired
@@ -142,18 +143,18 @@ class Unknown c ref ctx where
   unknown :: Scope -> ctx -> c -> ref -> ValidationError
 
 -- {...H} -> "Unknown fragment \"H\"."
-instance Unknown (Fragments s) Ref ctx where
-  unknown _ _ _ (Ref name pos) =
+instance Unknown (Fragments s) (Ref FieldName) ctx where
+  unknown _ _ _ Ref {refName, refPosition} =
     ValidationError
-      { validationMessage = "Unknown Fragment " <> msg name <> ".",
-        validationLocations = [pos]
+      { validationMessage = "Unknown Fragment " <> msg refName <> ".",
+        validationLocations = [refPosition]
       }
 
-instance Unknown (Schema s) TypeNameRef ctx where
-  unknown _ _ _ TypeNameRef {typeNameRef, typeNamePosition} =
+instance Unknown (Schema s) (Ref TypeName) ctx where
+  unknown _ _ _ Ref {refName, refPosition} =
     ValidationError
-      { validationMessage = "Unknown type " <> msg typeNameRef <> ".",
-        validationLocations = [typeNamePosition]
+      { validationMessage = "Unknown type " <> msg refName <> ".",
+        validationLocations = [refPosition]
       }
 
 instance Unknown (FieldDefinition OUT s) (Argument CONST) ctx where
@@ -186,7 +187,7 @@ instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
         validationLocations = [directivePosition]
       }
 
-instance Unknown (FieldsDefinition OUT s) Ref (OperationContext s1 s2) where
+instance Unknown (FieldsDefinition OUT s) (Ref FieldName) (OperationContext s1 s2) where
   unknown Scope {currentTypeName} _ _ = unknownSelectionField currentTypeName
 
 class KindViolation (t :: TypeCategory) ctx where

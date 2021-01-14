@@ -17,8 +17,8 @@
 module Data.Morpheus.Types.Internal.AST.Fields
   ( Arguments,
     Argument (..),
-    ArgumentDefinition,
-    ArgumentsDefinition (..),
+    ArgumentDefinition (..),
+    ArgumentsDefinition,
     FieldDefinition (..),
     FieldsDefinition,
     FieldContent (..),
@@ -49,11 +49,8 @@ import Data.Morpheus.Ext.OrdMap
     unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
-    Elems (..),
+  ( Elems (..),
     Empty (..),
-    Failure,
-    FromElems (..),
     KeyOf (..),
     Selectable (..),
     toPair,
@@ -72,20 +69,21 @@ import Data.Morpheus.Types.Internal.AST.Base
     FieldName,
     FieldName (..),
     Msg (..),
-    Nullable (..),
     Position,
     TRUE,
     TypeName,
-    TypeRef (..),
-    TypeWrapper (..),
     ValidationError (..),
-    ValidationErrors,
     msgValidation,
     sysFields,
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
 import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,
+  )
+import Data.Morpheus.Types.Internal.AST.Type
+  ( Nullable (..),
+    TypeRef (..),
+    TypeWrapper (..),
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,
@@ -211,7 +209,7 @@ unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
 unsafeFromFields = unsafeFromList . fmap toPair
 
 fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
-fieldsToArguments = ArgumentsDefinition Nothing
+fieldsToArguments = fmap ArgumentDefinition
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
@@ -308,7 +306,7 @@ mkInputValue fieldName typeWrappers typeConName =
   mkField
     Nothing
     fieldName
-    TypeRef {typeWrappers, typeConName, typeArgs = Nothing}
+    TypeRef {typeWrappers, typeConName}
 
 mkObjectField ::
   ArgumentsDefinition s ->
@@ -320,7 +318,7 @@ mkObjectField args fieldName typeWrappers typeConName =
   mkField
     (Just $ FieldArgs args)
     fieldName
-    TypeRef {typeWrappers, typeConName, typeArgs = Nothing}
+    TypeRef {typeWrappers, typeConName}
 
 -- 3.10 Input Objects: https://spec.graphql.org/June2018/#sec-Input-Objects
 ---------------------------------------------------------------------------
@@ -336,28 +334,22 @@ type InputValueDefinition = FieldDefinition IN
 -- ArgumentsDefinition:
 --   (InputValueDefinition(list))
 
-data ArgumentsDefinition s = ArgumentsDefinition
-  { argumentsTypename :: Maybe TypeName,
-    arguments :: OrdMap FieldName (ArgumentDefinition s)
+type ArgumentsDefinition s = OrdMap FieldName (ArgumentDefinition s)
+
+instance RenderGQL (ArgumentsDefinition s) where
+  renderGQL = renderArguments . elems
+
+instance RenderGQL (ArgumentDefinition s) where
+  renderGQL = renderGQL . argument
+
+newtype ArgumentDefinition s = ArgumentDefinition
+  { argument :: FieldDefinition IN s
   }
   deriving (Show, Lift, Eq)
 
-instance RenderGQL (ArgumentsDefinition s) where
-  renderGQL ArgumentsDefinition {arguments} = renderArguments (elems arguments)
+instance KeyOf FieldName (ArgumentDefinition s) where
+  keyOf = keyOf . argument
 
-type ArgumentDefinition = FieldDefinition IN
-
-instance Selectable FieldName (ArgumentDefinition s) (ArgumentsDefinition s) where
-  selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
-
-instance Empty (ArgumentsDefinition s) where
-  empty = ArgumentsDefinition Nothing empty
-
-instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where
-  singleton = ArgumentsDefinition Nothing . singleton
-
-instance (Monad m, Failure ValidationErrors m) => FromElems m (ArgumentDefinition s) (ArgumentsDefinition s) where
-  fromElems args = ArgumentsDefinition Nothing <$> fromElems args
-
-instance Elems (ArgumentDefinition s) (ArgumentsDefinition s) where
-  elems (ArgumentsDefinition _ args) = elems args
+instance NameCollision (ArgumentDefinition s) where
+  nameCollision ArgumentDefinition {argument} =
+    "There can Be only One argument Named " <> msgValidation (fieldName argument)

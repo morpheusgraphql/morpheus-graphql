@@ -32,7 +32,8 @@ import Data.Morpheus.Internal.Utils
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( Ref,
+  ( FieldName,
+    Ref,
     ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
@@ -80,7 +81,7 @@ resolveMergable ::
     SemigroupM m a,
     Failure ValidationErrors m
   ) =>
-  [Ref] ->
+  [Ref FieldName] ->
   [a] ->
   m (MergeSet dups k a)
 resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) (MergeSet . fmap snd) (resolveWith (resolveConflict path))
@@ -102,7 +103,17 @@ instance Applicative m => SemigroupM m (MergeSet RAW k a) where
 instance Applicative m => FromElems m a (MergeSet RAW k a) where
   fromElems = pure . MergeSet
 
-resolveConflict :: (Monad m, Eq a, KeyOf k a, SemigroupM m a, Failure ValidationErrors m) => [Ref] -> a -> a -> m a
+resolveConflict ::
+  ( Monad m,
+    Eq a,
+    KeyOf k a,
+    SemigroupM m a,
+    Failure ValidationErrors m
+  ) =>
+  [Ref FieldName] ->
+  a ->
+  a ->
+  m a
 resolveConflict path oldValue newValue
   | oldValue == newValue = pure oldValue
   | otherwise = mergeM path oldValue newValue

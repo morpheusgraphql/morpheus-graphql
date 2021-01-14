@@ -87,10 +87,8 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
     OperationType (..),
-    Strictness (..),
     TRUE,
     Token,
-    TypeKind (..),
     TypeName,
     ValidationError,
     ValidationErrors,
@@ -108,6 +106,10 @@ import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
     Stage,
     VALID,
+  )
+import Data.Morpheus.Types.Internal.AST.Type
+  ( Strictness (..),
+    TypeKind (..),
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,

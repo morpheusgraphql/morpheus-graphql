@@ -25,6 +25,7 @@ import Data.Morpheus.Types.Internal.AST
     DataEnumValue (..),
     DataInputUnion,
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition,
     IN,
     Message,
@@ -95,13 +96,13 @@ violation message value = do
     $ withPosition position
     $ prefix
       <> typeViolation
-        (TypeRef currentTypeName Nothing currentTypeWrappers)
+        (TypeRef currentTypeName currentTypeWrappers)
         value
       <> maybe "" ((" " <>) . msgValidation) message
 
 checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->
-  Ref ->
+  Ref FieldName ->
   Variable VALID ->
   InputValidator schemaS ctx ValidValue
 checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = ValidVariableValue value, variableType}
@@ -116,8 +117,7 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
         var
         TypeRef
           { typeConName = tyConName,
-            typeWrappers = tyWrappers,
-            typeArgs = Nothing
+            typeWrappers = tyWrappers
           }
 
 validateInputByTypeRef ::

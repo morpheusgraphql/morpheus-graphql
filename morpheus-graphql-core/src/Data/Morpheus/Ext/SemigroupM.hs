@@ -27,7 +27,8 @@ import Data.Morpheus.Internal.Utils
     failOnDuplicates,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( Ref,
+  ( FieldName,
+    Ref,
     ValidationErrors,
   )
 import Relude
@@ -39,7 +40,7 @@ import Relude
   )
 
 class SemigroupM (m :: * -> *) a where
-  mergeM :: [Ref] -> a -> a -> m a
+  mergeM :: [Ref FieldName] -> a -> a -> m a
 
 instance
   ( NameCollision a,

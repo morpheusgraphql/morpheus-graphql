@@ -11,13 +11,17 @@ module Data.Morpheus.Client.Declare.Type
 where
 
 import Data.Morpheus.Client.Internal.Types
-  ( ClientTypeDefinition (..),
+  ( ClientConsD,
+    ClientTypeDefinition (..),
     TypeNameTH (..),
+  )
+import Data.Morpheus.Client.Internal.Utils
+  ( isEnum,
   )
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
-    isEnum,
     nameSpaceType,
+    toCon,
     toName,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -52,7 +56,7 @@ declareType
     where
       derive className = DerivClause Nothing [ConT className]
 
-declareCons :: TypeNameTH -> [ConsD ANY VALID] -> [Con]
+declareCons :: TypeNameTH -> [ClientConsD ANY] -> [Con]
 declareCons TypeNameTH {namespace, typename} clientCons
   | isEnum clientCons = map consE clientCons
   | otherwise = map consR clientCons
@@ -67,7 +71,7 @@ declareField :: FieldDefinition ANY VALID -> (Name, Bang, Type)
 declareField FieldDefinition {fieldName, fieldType} =
   ( toName fieldName,
     Bang NoSourceUnpackedness NoSourceStrictness,
-    declareTypeRef fieldType
+    declareTypeRef toCon fieldType
   )
 
 mkConName :: [FieldName] -> TypeName -> Name

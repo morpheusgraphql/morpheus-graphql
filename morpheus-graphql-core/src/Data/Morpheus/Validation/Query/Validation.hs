@@ -36,7 +36,7 @@ import Data.Morpheus.Validation.Query.FragmentPreconditions
   ( checkFragmentPreconditions,
   )
 import Data.Morpheus.Validation.Query.Selection
-  ( vaidateFragmentSelection,
+  ( validateFragmentSelection,
     validateOperation,
   )
 import Data.Morpheus.Validation.Query.Variable
@@ -80,7 +80,7 @@ validateRequest
           )
       validFragments <-
         runValidator
-          (validateFragments vaidateFragmentSelection)
+          (validateFragments validateFragmentSelection)
           config
           schema
           scope

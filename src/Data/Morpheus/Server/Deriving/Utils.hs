@@ -80,13 +80,12 @@ import GHC.Generics
     datatypeName,
     selName,
   )
-import Prelude
+import Relude
   ( ($),
     (.),
     Bool (..),
     Eq (..),
     Int,
-    Maybe (..),
     otherwise,
     show,
     undefined,
@@ -204,8 +203,7 @@ deriveFieldRep opt pSel kindedProxy v =
       fieldTypeRef =
         TypeRef
           { typeConName = gqlTypeName,
-            typeWrappers = gqlWrappers,
-            typeArgs = Nothing
+            typeWrappers = gqlWrappers
           },
       fieldIsObject = __isObjectKind kindedProxy,
       fieldValue = v

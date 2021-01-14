@@ -26,7 +26,7 @@ import Relude
 renderGQLErrors :: GQLErrors -> String
 renderGQLErrors = unpack . encode
 
-deprecatedEnum :: FieldName -> Ref -> Maybe Description -> GQLErrors
+deprecatedEnum :: FieldName -> Ref FieldName -> Maybe Description -> GQLErrors
 deprecatedEnum typeName Ref {refPosition, refName} reason =
   errorMessage refPosition $
     "the enum value "
@@ -36,7 +36,7 @@ deprecatedEnum typeName Ref {refPosition, refName} reason =
       <> " is deprecated."
       <> msg (maybe "" (" " <>) reason)
 
-deprecatedField :: FieldName -> Ref -> Maybe Description -> GQLErrors
+deprecatedField :: FieldName -> Ref FieldName -> Maybe Description -> GQLErrors
 deprecatedField typeName Ref {refPosition, refName} reason =
   errorMessage refPosition $
     "the field "

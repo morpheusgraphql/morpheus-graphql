@@ -9,7 +9,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
@@ -18,26 +17,15 @@ module Data.Morpheus.Types.Internal.AST.Base
     Message (..),
     FieldName (..),
     Description,
-    TypeWrapper (..),
-    TypeRef (..),
     OperationType (..),
     QUERY,
     MUTATION,
     SUBSCRIPTION,
-    TypeKind (..),
-    DataTypeWrapper (..),
     Token,
-    anonymousRef,
-    toHSWrappers,
-    toGQLWrapper,
-    Nullable (..),
-    isWeaker,
     isNotSystemTypeName,
     sysFields,
     hsTypeName,
     toOperationType,
-    splitDuplicates,
-    removeDuplicates,
     GQLError (..),
     GQLErrors,
     TRUE,
@@ -46,10 +34,8 @@ module Data.Morpheus.Types.Internal.AST.Base
     Msg (..),
     intercalateName,
     toFieldName,
-    TypeNameRef (..),
     convertToJSONName,
     convertToHaskellName,
-    mkTypeRef,
     InternalError (..),
     msgInternal,
     ValidationError (..),
@@ -59,7 +45,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     toGQLError,
     unitTypeName,
     unitFieldName,
-    Strictness (..),
+    anonymousRef,
   )
 where
 
@@ -73,9 +59,7 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Char (toLower)
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
-    Rendering,
     fromText,
-    render,
     renderGQL,
   )
 import Data.Text (intercalate, pack)
@@ -184,10 +168,6 @@ instance Msg Text where
 instance Msg Value where
   msg = msg . encode
 
-class Nullable a where
-  isNullable :: a -> Bool
-  toNullable :: a -> a
-
 -- FieldName : lower case names
 newtype FieldName = FieldName {readName :: Text}
   deriving
@@ -293,127 +273,21 @@ type MUTATION = 'Mutation
 
 type SUBSCRIPTION = 'Subscription
 
-data TypeNameRef = TypeNameRef
-  { typeNameRef :: TypeName,
-    typeNamePosition :: Position
-  }
-  deriving (Show, Lift, Eq)
-
--- Refference with Position information
---
+-- Document Reference with its Position
+-- Position  only for error messages
 -- includes position for debugging, where Ref "a" 1 === Ref "a" 3
 --
-data Ref = Ref
-  { refName :: FieldName,
+data Ref name = Ref
+  { refName :: name,
     refPosition :: Position
   }
   deriving (Show, Lift, Eq)
 
-instance Ord Ref where
+instance Ord name => Ord (Ref name) where
   compare (Ref x _) (Ref y _) = compare x y
 
-anonymousRef :: FieldName -> Ref
+anonymousRef :: name -> Ref name
 anonymousRef refName = Ref {refName, refPosition = Position 0 0}
-
--- TypeRef
--------------------------------------------------------------------
-data TypeRef = TypeRef
-  { typeConName :: TypeName,
-    typeArgs :: Maybe String,
-    typeWrappers :: [TypeWrapper]
-  }
-  deriving (Show, Eq, Lift)
-
-mkTypeRef :: TypeName -> TypeRef
-mkTypeRef typeConName =
-  TypeRef {typeConName, typeWrappers = [], typeArgs = Nothing}
-
-instance Nullable TypeRef where
-  isNullable = isNullable . typeWrappers
-  toNullable TypeRef {..} = TypeRef {typeWrappers = toNullable typeWrappers, ..}
-
-instance RenderGQL TypeRef where
-  renderGQL TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
-
-instance Msg TypeRef where
-  msg = msg . FieldName . LT.toStrict . decodeUtf8 . render
-
--- Kind
------------------------------------------------------------------------------------
-data TypeKind
-  = KindScalar
-  | KindObject (Maybe OperationType)
-  | KindUnion
-  | KindEnum
-  | KindInputObject
-  | KindList
-  | KindNonNull
-  | KindInputUnion
-  | KindInterface
-  deriving (Eq, Show, Lift)
-
-instance Strictness TypeKind where
-  isResolverType (KindObject _) = True
-  isResolverType KindUnion = True
-  isResolverType KindInterface = True
-  isResolverType _ = False
-
-instance RenderGQL TypeKind where
-  renderGQL KindScalar = "SCALAR"
-  renderGQL KindObject {} = "OBJECT"
-  renderGQL KindUnion = "UNION"
-  renderGQL KindInputUnion = "INPUT_OBJECT"
-  renderGQL KindEnum = "ENUM"
-  renderGQL KindInputObject = "INPUT_OBJECT"
-  renderGQL KindList = "LIST"
-  renderGQL KindNonNull = "NON_NULL"
-  renderGQL KindInterface = "INTERFACE"
-
--- TypeWrappers
------------------------------------------------------------------------------------
-data TypeWrapper
-  = TypeList
-  | TypeMaybe
-  deriving (Show, Eq, Lift)
-
-data DataTypeWrapper
-  = ListType
-  | NonNullType
-  deriving (Show, Lift)
-
-instance Nullable [TypeWrapper] where
-  isNullable (TypeMaybe : _) = True
-  isNullable _ = False
-  toNullable (TypeMaybe : xs) = TypeMaybe : xs
-  toNullable xs = TypeMaybe : xs
-
-isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
-isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
-isWeaker (TypeMaybe : _) _ = True
-isWeaker (_ : xs1) (_ : xs2) = isWeaker xs1 xs2
-isWeaker _ _ = False
-
-toGQLWrapper :: [TypeWrapper] -> [DataTypeWrapper]
-toGQLWrapper (TypeMaybe : (TypeMaybe : tw)) = toGQLWrapper (TypeMaybe : tw)
-toGQLWrapper (TypeMaybe : (TypeList : tw)) = ListType : toGQLWrapper tw
-toGQLWrapper (TypeList : tw) = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [TypeMaybe] = []
-toGQLWrapper [] = [NonNullType]
-
-toHSWrappers :: [DataTypeWrapper] -> [TypeWrapper]
-toHSWrappers (NonNullType : (NonNullType : xs)) =
-  toHSWrappers (NonNullType : xs)
-toHSWrappers (NonNullType : (ListType : xs)) = TypeList : toHSWrappers xs
-toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
-toHSWrappers [] = [TypeMaybe]
-toHSWrappers [NonNullType] = []
-
-renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Rendering
-renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
-  where
-    showGQLWrapper [] = renderGQL x
-    showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
-    showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
 isNotSystemTypeName :: TypeName -> Bool
 isNotSystemTypeName =
@@ -447,19 +321,6 @@ toOperationType "Subscription" = Just Subscription
 toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query
 toOperationType _ = Nothing
-
-removeDuplicates :: Eq a => [a] -> [a]
-removeDuplicates = fst . splitDuplicates
-
--- elems -> (unique elements, duplicate elems)
-splitDuplicates :: Eq a => [a] -> ([a], [a])
-splitDuplicates = collectElems ([], [])
-  where
-    collectElems :: Eq a => ([a], [a]) -> [a] -> ([a], [a])
-    collectElems collected [] = collected
-    collectElems (collected, errors) (x : xs)
-      | x `elem` collected = collectElems (collected, errors <> [x]) xs
-      | otherwise = collectElems (collected <> [x], errors) xs
 
 -- handle reserved Names
 isReserved :: FieldName -> Bool
@@ -506,12 +367,3 @@ unitTypeName = "Unit"
 
 unitFieldName :: FieldName
 unitFieldName = "_"
-
---  Definitions:
---     Strictness:
---        Strict: Value (Strict) Types.
---             members: {scalar, enum , input}
---        Lazy: Resolver (lazy) Types
---             members: strict + {object, interface, union}
-class Strictness t where
-  isResolverType :: t -> Bool

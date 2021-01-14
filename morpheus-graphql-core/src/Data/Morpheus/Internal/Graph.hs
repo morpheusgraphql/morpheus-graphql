@@ -17,25 +17,25 @@ import Relude
 
 type Node = Ref
 
-type Edges = (Ref, [Ref])
+type Edges name = (Ref name, [Ref name])
 
-type Graph = [Edges]
+type Graph name = [Edges name]
 
 cycleChecking ::
-  Applicative m =>
-  (NonEmpty Ref -> m ()) ->
-  Graph ->
+  (Applicative m, Eq name) =>
+  (NonEmpty (Ref name) -> m ()) ->
+  Graph name ->
   m ()
 cycleChecking fail' graph = traverse_ checkNode graph
   where
     checkNode (node, _) = cycleCheckingWith graph node [node] fail'
 
 cycleCheckingWith ::
-  Applicative m =>
-  Graph ->
-  Ref ->
-  [Ref] ->
-  (NonEmpty Ref -> m ()) ->
+  (Applicative m, Eq name) =>
+  Graph name ->
+  Ref name ->
+  [Ref name] ->
+  (NonEmpty (Ref name) -> m ()) ->
   m ()
 cycleCheckingWith graph parentNode history fail' =
   case lookup parentNode graph of
