@@ -148,7 +148,7 @@ instance ParseJSONSchema Field (FieldDefinition OUT CONST) where
   parse Field {fieldName, fieldArgs, fieldType} = do
     (wrappers, typename) <- fieldTypeFromJSON fieldType
     args <- traverse genArg fieldArgs >>= fromElems
-    pure $ mkObjectField (ArgumentsDefinition Nothing args) fieldName wrappers typename
+    pure $ mkObjectField (ArgumentsDefinition args) fieldName wrappers typename
     where
       genArg InputValue {inputName = argName, inputType = argType} =
         uncurry (mkInputValue argName) <$> fieldTypeFromJSON argType

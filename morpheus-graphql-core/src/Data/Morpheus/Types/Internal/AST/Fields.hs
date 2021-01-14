@@ -346,7 +346,10 @@ newtype ArgumentsDefinition s = ArgumentsDefinition
     ( Show,
       Lift,
       Eq,
-      Selectable FieldName (ArgumentDefinition s)
+      Selectable FieldName (ArgumentDefinition s),
+      Empty,
+      Collection (ArgumentDefinition s),
+      Elems (ArgumentDefinition s)
     )
 
 instance RenderGQL (ArgumentsDefinition s) where
@@ -354,14 +357,5 @@ instance RenderGQL (ArgumentsDefinition s) where
 
 type ArgumentDefinition = FieldDefinition IN
 
-instance Empty (ArgumentsDefinition s) where
-  empty = ArgumentsDefinition empty
-
-instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where
-  singleton = ArgumentsDefinition . singleton
-
 instance (Monad m, Failure ValidationErrors m) => FromElems m (ArgumentDefinition s) (ArgumentsDefinition s) where
   fromElems args = ArgumentsDefinition <$> fromElems args
-
-instance Elems (ArgumentDefinition s) (ArgumentsDefinition s) where
-  elems (ArgumentsDefinition args) = elems args
