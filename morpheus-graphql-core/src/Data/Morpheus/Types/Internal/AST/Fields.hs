@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -213,7 +214,7 @@ unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
 unsafeFromFields = unsafeFromList . fmap toPair
 
 fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
-fieldsToArguments = ArgumentsDefinition Nothing
+fieldsToArguments = ArgumentsDefinition
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
@@ -338,28 +339,29 @@ type InputValueDefinition = FieldDefinition IN
 -- ArgumentsDefinition:
 --   (InputValueDefinition(list))
 
-data ArgumentsDefinition s = ArgumentsDefinition
-  { argumentsTypename :: Maybe TypeName,
-    arguments :: OrdMap FieldName (ArgumentDefinition s)
+newtype ArgumentsDefinition s = ArgumentsDefinition
+  { arguments :: OrdMap FieldName (ArgumentDefinition s)
   }
-  deriving (Show, Lift, Eq)
+  deriving
+    ( Show,
+      Lift,
+      Eq,
+      Selectable FieldName (ArgumentDefinition s)
+    )
 
 instance RenderGQL (ArgumentsDefinition s) where
   renderGQL ArgumentsDefinition {arguments} = renderArguments (elems arguments)
 
 type ArgumentDefinition = FieldDefinition IN
 
-instance Selectable FieldName (ArgumentDefinition s) (ArgumentsDefinition s) where
-  selectOr fb f key (ArgumentsDefinition _ args) = selectOr fb f key args
-
 instance Empty (ArgumentsDefinition s) where
-  empty = ArgumentsDefinition Nothing empty
+  empty = ArgumentsDefinition empty
 
 instance Collection (ArgumentDefinition s) (ArgumentsDefinition s) where
-  singleton = ArgumentsDefinition Nothing . singleton
+  singleton = ArgumentsDefinition . singleton
 
 instance (Monad m, Failure ValidationErrors m) => FromElems m (ArgumentDefinition s) (ArgumentsDefinition s) where
-  fromElems args = ArgumentsDefinition Nothing <$> fromElems args
+  fromElems args = ArgumentsDefinition <$> fromElems args
 
 instance Elems (ArgumentDefinition s) (ArgumentsDefinition s) where
-  elems (ArgumentsDefinition _ args) = elems args
+  elems (ArgumentsDefinition args) = elems args

@@ -241,8 +241,8 @@ checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
 validateArgumentsDefinition ::
   ArgumentsDefinition CONST ->
   SchemaValidator (TypeName, FieldName) (ArgumentsDefinition VALID)
-validateArgumentsDefinition (ArgumentsDefinition meta args) =
-  ArgumentsDefinition meta
+validateArgumentsDefinition (ArgumentsDefinition args) =
+  ArgumentsDefinition
     <$> traverse
       validateArgumentDefinition
       args
