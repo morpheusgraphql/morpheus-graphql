@@ -2,7 +2,7 @@
 layout: home
 ---
 
-<!-- This file is generated automatically, with command make genDocs  -->
+<!-- This file is generated automatically, with command "make genDocs"  -->
 
 # Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 

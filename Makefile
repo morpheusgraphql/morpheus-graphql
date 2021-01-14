@@ -7,7 +7,7 @@ build:
 
 genDocs:
 	{ cat docs/template/index-header.md ; \
-	  echo "\n<!-- This file is generated automatically, with command "make genDocs"  -->\n"; \
+	  echo "\n<!-- This file is generated automatically, with command \"make genDocs\"  -->\n"; \
 	  cat README.md; \
 	} > docs/index.md
 
