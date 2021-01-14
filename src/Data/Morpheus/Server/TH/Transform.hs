@@ -91,10 +91,10 @@ toTHDefinitions namespace schema = traverse generateType schema
                 }
 
 toHSFieldDefinition :: FieldDefinition cat s -> FieldDefinition cat s
-toHSFieldDefinition field@FieldDefinition {fieldType = tyRef@TypeRef {typeConName}} =
-  field
-    { fieldType = tyRef {typeConName = hsTypeName typeConName}
-    }
+toHSFieldDefinition field = field {fieldType = toHSTypeRef (fieldType field)}
+
+toHSTypeRef :: TypeRef -> TypeRef
+toHSTypeRef tyRef@TypeRef {typeConName} = tyRef {typeConName = hsTypeName typeConName}
 
 mkCons :: TypeName -> [ServerFieldDefinition cat s] -> ServerConsD cat s
 mkCons typename fields =
@@ -118,31 +118,32 @@ mkObjectField ::
   (FieldName -> TypeName) ->
   FieldDefinition OUT s ->
   Q (ServerFieldDefinition OUT s)
-mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = cont, fieldType = typeRef@TypeRef {typeConName}, ..} =
-  do
-    isParametrized <- isParametrizedResolverType typeConName schema
-    pure
-      ( isParametrized,
-        FieldDefinition
-          { fieldName,
-            fieldType =
-              typeRef
-                { typeConName = hsTypeName typeConName
-                },
-            fieldContent = cont >>= fieldCont,
-            ..
-          }
-      )
-  where
-    fieldCont :: FieldContent TRUE OUT s -> Maybe (FieldContent TRUE OUT s)
-    fieldCont (FieldArgs ArgumentsDefinition {arguments})
-      | not (null arguments) =
-        Just $ FieldArgs $
-          ArgumentsDefinition
-            { argumentsTypename = Just $ genArgsTypeName fieldName,
-              arguments = arguments
-            }
-    fieldCont _ = Nothing
+mkObjectField
+  schema
+  genArgsTypeName
+  FieldDefinition
+    { fieldName,
+      fieldContent = cont,
+      fieldType = typeRef@TypeRef {typeConName},
+      ..
+    } =
+    (,FieldDefinition
+      { fieldName,
+        fieldType = toHSTypeRef typeRef,
+        fieldContent = cont >>= fieldCont,
+        ..
+      })
+      <$> isParametrizedResolverType typeConName schema
+    where
+      fieldCont :: FieldContent TRUE OUT s -> Maybe (FieldContent TRUE OUT s)
+      fieldCont (FieldArgs ArgumentsDefinition {arguments})
+        | not (null arguments) =
+          Just $ FieldArgs $
+            ArgumentsDefinition
+              { argumentsTypename = Just $ genArgsTypeName fieldName,
+                arguments = arguments
+              }
+      fieldCont _ = Nothing
 
 data BuildPlan s
   = ConsIN [ServerConsD IN s]
