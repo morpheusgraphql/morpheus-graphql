@@ -244,7 +244,8 @@ instance A.ToJSON (Value a) where
     where
       encodeField (ObjectEntry (FieldName key) value) = key A..= value
 
-renderSeries :: Monoid p => (e -> p) -> [e] -> p
+-- fixes GHC 8.2.2, which can't deduce (Semigroup p) from context (Monoid p)
+renderSeries :: (Semigroup p, Monoid p) => (e -> p) -> [e] -> p
 renderSeries _ [] = mempty
 renderSeries f (x : xs) = foldr' (\e es -> es <> f e) (f x) xs
 
