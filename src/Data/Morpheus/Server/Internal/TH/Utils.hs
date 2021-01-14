@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -14,6 +15,7 @@ module Data.Morpheus.Server.Internal.TH.Utils
     tyConArgs,
     funDProxy,
     isParametrizedResolverType,
+    isSubscription,
   )
 where
 
@@ -32,10 +34,10 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    OperationType (..),
     TypeDefinition (..),
     TypeKind (..),
     TypeName (..),
-    isOutputObject,
     isResolverType,
     lookupWith,
   )
@@ -70,7 +72,7 @@ isParametrizedResolverType "Boolean" _ = pure False
 isParametrizedResolverType "String" _ = pure False
 isParametrizedResolverType "Int" _ = pure False
 isParametrizedResolverType "Float" _ = pure False
-isParametrizedResolverType key lib = case typeContent <$> lookupWith typeName key lib of
+isParametrizedResolverType key lib = case lookupWith typeName key lib of
   Just x -> pure (isResolverType x)
   Nothing -> isParametrizedType <$> reify (toName key)
 
@@ -90,8 +92,8 @@ funDProxy = map fun
     fun (name, body) = funDSimple name [_'] body
 
 tyConArgs :: TypeKind -> [String]
-tyConArgs kindD
-  | isOutputObject kindD || kindD == KindUnion = ["m"]
+tyConArgs kind
+  | isResolverType kind = [m_]
   | otherwise = []
 
 withPure :: Exp -> Exp
@@ -112,3 +114,7 @@ kindName KindList = ''WRAPPER
 kindName KindNonNull = ''WRAPPER
 kindName KindInterface = ''INTERFACE
 kindName _ = ''TYPE
+
+isSubscription :: TypeKind -> Bool
+isSubscription (KindObject (Just Subscription)) = True
+isSubscription _ = False

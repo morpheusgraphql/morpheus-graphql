@@ -24,7 +24,8 @@ import Data.Morpheus.Server.Internal.TH.Types
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.Internal.TH.Utils
-  ( m',
+  ( isSubscription,
+    m',
     tyConArgs,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -36,9 +37,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeKind (..),
     TypeName (..),
-    isOutput,
-    isOutputObject,
-    isSubscription,
+    isResolverType,
   )
 import Language.Haskell.TH
 import Relude hiding (Type)
@@ -68,7 +67,7 @@ derive :: TypeKind -> [DerivClause]
 derive tKind = [deriveClasses (''Generic : derivingList)]
   where
     derivingList
-      | isOutput tKind = []
+      | isResolverType tKind = []
       | otherwise = [''Show]
 
 deriveClasses :: [Name] -> DerivClause
@@ -149,7 +148,7 @@ withFieldWrappers kind (Just (FieldArgs ArgumentsDefinition {argumentsTypename =
     . withSubscriptionField kind
     . withMonad
 withFieldWrappers kind _
-  | isOutputObject kind =
+  | isResolverType kind && (KindUnion /= kind) =
     withSubscriptionField kind
       . withMonad
   | otherwise = id
