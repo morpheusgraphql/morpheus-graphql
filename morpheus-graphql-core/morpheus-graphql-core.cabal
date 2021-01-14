@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 419d2aec033039eda9aafbae891f2de79d245a81202ebe66e5b2c7d5669872ad
+-- hash: b4b4073e842f5d85bd0dcb8c82bd54cf0c678a9c51b2f2366f7575c4f819e452
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -197,6 +197,7 @@ library
       Data.Morpheus.Types.Internal.AST.Selection
       Data.Morpheus.Types.Internal.AST.Stage
       Data.Morpheus.Types.Internal.AST.TH
+      Data.Morpheus.Types.Internal.AST.Type
       Data.Morpheus.Types.Internal.AST.TypeCategory
       Data.Morpheus.Types.Internal.AST.TypeSystem
       Data.Morpheus.Types.Internal.AST.Union

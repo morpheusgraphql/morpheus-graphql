@@ -72,12 +72,9 @@ import Data.Morpheus.Types.Internal.AST.Base
     FieldName,
     FieldName (..),
     Msg (..),
-    Nullable (..),
     Position,
     TRUE,
     TypeName,
-    TypeRef (..),
-    TypeWrapper (..),
     ValidationError (..),
     ValidationErrors,
     msgValidation,
@@ -86,6 +83,11 @@ import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
 import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,
+  )
+import Data.Morpheus.Types.Internal.AST.Type
+  ( Nullable (..),
+    TypeRef (..),
+    TypeWrapper (..),
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,

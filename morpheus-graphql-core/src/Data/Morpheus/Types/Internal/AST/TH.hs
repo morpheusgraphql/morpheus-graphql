@@ -5,7 +5,6 @@
 module Data.Morpheus.Types.Internal.AST.TH
   ( ConsD (..),
     mkCons,
-    isEnum,
     mkConsEnum,
     TypeNameTH (..),
   )
@@ -15,13 +14,13 @@ import Data.Morpheus.Internal.Utils (elems)
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     TypeName,
-    TypeRef (..),
     hsTypeName,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( FieldDefinition (..),
     FieldsDefinition,
   )
+import Data.Morpheus.Types.Internal.AST.Type (TypeRef (..))
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( DataEnumValue (..),
   )
@@ -53,9 +52,6 @@ mkCons typename fields =
     { cName = hsTypeName typename,
       cFields = fmap toHSFieldDefinition (elems fields)
     }
-
-isEnum :: [ConsD cat s] -> Bool
-isEnum = all (null . cFields)
 
 mkConsEnum :: DataEnumValue s -> ConsD cat s
 mkConsEnum DataEnumValue {enumName} = ConsD {cName = hsTypeName enumName, cFields = []}

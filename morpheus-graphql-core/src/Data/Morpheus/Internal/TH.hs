@@ -18,7 +18,6 @@ module Data.Morpheus.Internal.TH
     applyVars,
     declareTypeRef,
     funDSimple,
-    isEnum,
     nameSpaceField,
     nameSpaceType,
     toCon,
@@ -42,7 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper (..),
     convertToHaskellName,
-    isEnum,
     readName,
   )
 import Data.Text (unpack)

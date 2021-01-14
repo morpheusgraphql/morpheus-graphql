@@ -76,7 +76,6 @@ module Data.Morpheus.Types.Internal.AST
     isWeaker,
     isNotSystemTypeName,
     isLeaf,
-    isEnum,
     isResolverType,
     mkEnumContent,
     createScalarType,
@@ -167,6 +166,7 @@ import Data.Morpheus.Types.Internal.AST.Fields
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH
+import Data.Morpheus.Types.Internal.AST.Type
 import Data.Morpheus.Types.Internal.AST.TypeCategory
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.AST.Union

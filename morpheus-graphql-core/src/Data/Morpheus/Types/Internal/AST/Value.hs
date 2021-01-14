@@ -69,7 +69,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     Position,
     Ref (..),
     TypeName (..),
-    TypeRef,
     ValidationError (..),
     msgValidation,
   )
@@ -80,6 +79,7 @@ import Data.Morpheus.Types.Internal.AST.Stage
     Stage,
     VALID,
   )
+import Data.Morpheus.Types.Internal.AST.Type (TypeRef (..))
 import Data.Scientific
   ( Scientific,
     floatingOrInteger,

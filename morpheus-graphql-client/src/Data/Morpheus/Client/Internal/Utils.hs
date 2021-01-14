@@ -2,9 +2,13 @@
 
 module Data.Morpheus.Client.Internal.Utils
   ( removeDuplicates,
+    isEnum,
   )
 where
 
+import Data.Morpheus.Types.Internal.AST
+  ( ConsD (..),
+  )
 import Relude
 
 removeDuplicates :: Eq a => [a] -> [a]
@@ -19,3 +23,6 @@ splitDuplicates = collectElems ([], [])
     collectElems (collected, errors) (x : xs)
       | x `elem` collected = collectElems (collected, errors <> [x]) xs
       | otherwise = collectElems (collected <> [x], errors) xs
+
+isEnum :: [ConsD cat s] -> Bool
+isEnum = all (null . cFields)

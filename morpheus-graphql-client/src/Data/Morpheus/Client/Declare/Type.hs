@@ -14,9 +14,11 @@ import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
   )
+import Data.Morpheus.Client.Internal.Utils
+  ( isEnum,
+  )
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
-    isEnum,
     nameSpaceType,
     toName,
   )
