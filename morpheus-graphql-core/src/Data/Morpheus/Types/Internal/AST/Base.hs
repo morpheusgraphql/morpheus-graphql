@@ -36,8 +36,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     sysFields,
     hsTypeName,
     toOperationType,
-    splitDuplicates,
-    removeDuplicates,
     GQLError (..),
     GQLErrors,
     TRUE,
@@ -440,19 +438,6 @@ toOperationType "Subscription" = Just Subscription
 toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query
 toOperationType _ = Nothing
-
-removeDuplicates :: Eq a => [a] -> [a]
-removeDuplicates = fst . splitDuplicates
-
--- elems -> (unique elements, duplicate elems)
-splitDuplicates :: Eq a => [a] -> ([a], [a])
-splitDuplicates = collectElems ([], [])
-  where
-    collectElems :: Eq a => ([a], [a]) -> [a] -> ([a], [a])
-    collectElems collected [] = collected
-    collectElems (collected, errors) (x : xs)
-      | x `elem` collected = collectElems (collected, errors <> [x]) xs
-      | otherwise = collectElems (collected <> [x], errors) xs
 
 -- handle reserved Names
 isReserved :: FieldName -> Bool

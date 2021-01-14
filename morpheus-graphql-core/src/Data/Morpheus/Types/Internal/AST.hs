@@ -29,8 +29,6 @@ module Data.Morpheus.Types.Internal.AST
     ValidObject,
     ResolvedObject,
     ResolvedValue,
-    splitDuplicates,
-    removeDuplicates,
     Argument (..),
     Arguments,
     SelectionSet,
