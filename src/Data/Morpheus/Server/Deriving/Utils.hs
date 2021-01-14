@@ -80,13 +80,12 @@ import GHC.Generics
     datatypeName,
     selName,
   )
-import Prelude
+import Relude
   ( ($),
     (.),
     Bool (..),
     Eq (..),
     Int,
-    Maybe (..),
     otherwise,
     show,
     undefined,

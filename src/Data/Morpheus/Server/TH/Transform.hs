@@ -123,22 +123,17 @@ mkObjectField ::
 mkObjectField
   schema
   genArgsTypeName
-  FieldDefinition
+  originalField@FieldDefinition
     { fieldName,
-      fieldContent = cont,
-      fieldType = typeRef@TypeRef {typeConName},
-      ..
+      fieldContent,
+      fieldType = TypeRef {typeConName}
     } = do
     isParametrized <- isParametrizedResolverType typeConName schema
-    let originalField =
-          FieldDefinition
-            { fieldName,
-              fieldType = toHSTypeRef typeRef,
-              fieldContent = cont,
-              ..
-            }
-    let argumentsTypeName = cont >>= fieldCont
-    pure ServerFieldDefinition {..}
+    pure
+      ServerFieldDefinition
+        { argumentsTypeName = fieldContent >>= fieldCont,
+          ..
+        }
     where
       fieldCont :: FieldContent TRUE OUT s -> Maybe TypeName
       fieldCont (FieldArgs ArgumentsDefinition {arguments})
