@@ -126,7 +126,7 @@ mkInputUnionField UnionMember {memberName, nullary} =
         TypeRef
           { typeConName,
             typeWrappers = [TypeMaybe],
-            typeArgs = Nothing
+            isParametrized = False
           },
       fieldDirectives = []
     }

@@ -19,7 +19,7 @@ import Data.Morpheus.Internal.Utils
     singleton,
   )
 import Data.Morpheus.Server.Internal.TH.Types (ServerTypeDefinition (..))
-import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType, m_)
+import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentsDefinition (..),
@@ -102,14 +102,14 @@ mkObjectField ::
   Q (FieldDefinition OUT s)
 mkObjectField schema genArgsTypeName FieldDefinition {fieldName, fieldContent = cont, fieldType = typeRef@TypeRef {typeConName}, ..} =
   do
-    hasTypeVariable <- isParametrizedResolverType typeConName schema
+    isParametrized <- isParametrizedResolverType typeConName schema
     pure
       FieldDefinition
         { fieldName,
           fieldType =
             typeRef
               { typeConName = hsTypeName typeConName,
-                typeArgs = if hasTypeVariable then Just m_ else Nothing
+                isParametrized
               },
           fieldContent = cont >>= fieldCont,
           ..
@@ -162,7 +162,7 @@ genTypeContent _ _ typeName (DataUnion members) =
                 fieldType =
                   TypeRef
                     { typeConName = utName,
-                      typeArgs = Just m_,
+                      isParametrized = True,
                       typeWrappers = []
                     },
                 fieldDescription = Nothing,

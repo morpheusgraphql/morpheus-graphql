@@ -220,7 +220,7 @@ getFieldType
           checkDeprecated *> (trans <$> getType typeConName)
           where
             trans x =
-              (x, alias {typeConName = typeFrom path x, typeArgs = Nothing})
+              (x, alias {typeConName = typeFrom path x, isParametrized = False})
             ------------------------------------------------------------------
             checkDeprecated :: Converter ()
             checkDeprecated =

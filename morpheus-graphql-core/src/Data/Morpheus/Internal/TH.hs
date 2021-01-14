@@ -45,7 +45,10 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Text (unpack)
 import Language.Haskell.TH
-import Relude hiding (ToString (..), Type)
+import Relude hiding
+  ( ToString (..),
+    Type,
+  )
 
 _' :: PatQ
 _' = toVar (mkName "_")
@@ -54,18 +57,16 @@ v' :: ToVar Name a => a
 v' = toVar (mkName "v")
 
 declareTypeRef :: TypeRef -> Type
-declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
+declareTypeRef TypeRef {typeConName, typeWrappers, isParametrized} =
   wrappedT
     typeWrappers
   where
     wrappedT :: [TypeWrapper] -> Type
     wrappedT (TypeList : xs) = AppT (ConT ''[]) $ wrappedT xs
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
-    wrappedT [] = decType typeArgs
-    --------------------------------------------
-    decType :: Maybe String -> Type
-    decType (Just par) = apply typeConName [toVar par]
-    decType _ = toCon typeConName
+    wrappedT []
+      | isParametrized = apply typeConName [toVar (mkName "m")]
+      | otherwise = toCon typeConName
 
 cons :: ToCon a b => [a] -> [b]
 cons = map toCon
