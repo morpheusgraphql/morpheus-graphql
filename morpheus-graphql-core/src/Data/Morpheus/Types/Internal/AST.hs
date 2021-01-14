@@ -119,7 +119,6 @@ module Data.Morpheus.Types.Internal.AST
     fieldContentArgs,
     mkInputValue,
     mkType,
-    TypeNameTH (..),
     mkObjectField,
     UnionMember (..),
     mkUnionMember,

@@ -12,11 +12,18 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
     FieldDefinition,
+    FieldName,
     TypeKind,
-    TypeNameTH (..),
+    TypeName,
     VALID,
   )
 import Relude
+
+data TypeNameTH = TypeNameTH
+  { namespace :: [FieldName],
+    typename :: TypeName
+  }
+  deriving (Show)
 
 type ClientConsD c = ConsD (FieldDefinition c VALID)
 

@@ -1,3 +1,4 @@
+-- Template Haskell Types
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -5,13 +6,11 @@
 module Data.Morpheus.Types.Internal.AST.TH
   ( ConsD (..),
     mkConsEnum,
-    TypeNameTH (..),
   )
 where
 
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    TypeName,
+  ( TypeName,
     hsTypeName,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
@@ -19,13 +18,6 @@ import Data.Morpheus.Types.Internal.AST.TypeSystem
   )
 import Relude
 
-data TypeNameTH = TypeNameTH
-  { namespace :: [FieldName],
-    typename :: TypeName
-  }
-  deriving (Show)
-
--- Template Haskell Types
 data ConsD f = ConsD
   { cName :: TypeName,
     cFields :: [f]
