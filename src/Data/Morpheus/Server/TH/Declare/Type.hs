@@ -13,7 +13,8 @@ import Data.Morpheus.App.Internal.Resolving
   ( SubscriptionField,
   )
 import Data.Morpheus.Internal.TH
-  ( declareTypeRef,
+  ( apply,
+    declareTypeRef,
     nameSpaceField,
     nameSpaceType,
     toName,
@@ -111,7 +112,7 @@ renderFieldType ::
   FieldDefinition cat s ->
   Type
 renderFieldType tKind FieldDefinition {fieldContent, fieldType} =
-  withFieldWrappers tKind fieldContent (declareTypeRef fieldType)
+  withFieldWrappers tKind fieldContent (declareTypeRef (`apply` [m']) fieldType)
 
 fieldTypeName :: Bool -> TypeName -> FieldName -> Name
 fieldTypeName namespace tName fieldName

@@ -20,6 +20,7 @@ import Data.Morpheus.Client.Internal.Utils
 import Data.Morpheus.Internal.TH
   ( declareTypeRef,
     nameSpaceType,
+    toCon,
     toName,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -69,7 +70,7 @@ declareField :: FieldDefinition ANY VALID -> (Name, Bang, Type)
 declareField FieldDefinition {fieldName, fieldType} =
   ( toName fieldName,
     Bang NoSourceUnpackedness NoSourceStrictness,
-    declareTypeRef fieldType
+    declareTypeRef toCon fieldType
   )
 
 mkConName :: [FieldName] -> TypeName -> Name
