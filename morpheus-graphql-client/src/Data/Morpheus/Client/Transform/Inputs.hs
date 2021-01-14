@@ -16,6 +16,9 @@ import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
   )
+import Data.Morpheus.Client.Internal.Utils
+  ( removeDuplicates,
+  )
 import Data.Morpheus.Client.Transform.Core
   ( Converter (..),
     UpdateT (..),

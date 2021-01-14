@@ -31,6 +31,9 @@ import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
   )
+import Data.Morpheus.Client.Internal.Utils
+  ( isEnum,
+  )
 import Data.Morpheus.Internal.TH
   ( _',
     applyCons,
@@ -54,7 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName (..),
     VALID,
-    isEnum,
     isResolverType,
     msg,
     toFieldName,

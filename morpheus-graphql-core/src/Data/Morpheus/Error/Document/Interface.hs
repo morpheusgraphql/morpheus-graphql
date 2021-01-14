@@ -15,10 +15,10 @@ import Data.Maybe (Maybe (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName (..),
     TypeName (..),
-    TypeRef,
     ValidationError,
     msgValidation,
   )
+import Data.Morpheus.Types.Internal.AST.Type (TypeRef)
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Field (..),
     Interface (..),
