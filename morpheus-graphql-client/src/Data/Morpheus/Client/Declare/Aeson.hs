@@ -55,7 +55,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     VALID,
     isEnum,
-    isOutputObject,
+    isResolverType,
     msg,
     toFieldName,
   )
@@ -80,7 +80,7 @@ aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> DecQ]
 aesonDeclarations KindEnum = [deriveFromJSON, deriveToJSON]
 aesonDeclarations KindScalar = deriveScalarJSON
 aesonDeclarations kind
-  | isOutputObject kind || kind == KindUnion = [deriveFromJSON]
+  | isResolverType kind = [deriveFromJSON]
   | otherwise = [deriveToJSON]
 
 failure :: Message -> Q a
