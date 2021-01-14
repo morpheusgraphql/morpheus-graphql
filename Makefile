@@ -1,13 +1,13 @@
-.PHONY = sync-docs compile
+.PHONY = buildDocs build
 
-.DEFAULT_GOAL = compile
+.DEFAULT_GOAL = build
 
-compile:
+build:
 	stack install --fast --test
 
-sync-docs:
+genDocs:
 	{ cat docs/template/index-header.md ; \
-	  echo "\n<!-- This file is generated automatically, see Makefile sync-docs -->\n"; \
+	  echo "\n<!-- This file is generated automatically, with command "make genDocs"  -->\n"; \
 	  cat README.md; \
 	} > docs/index.md
 
