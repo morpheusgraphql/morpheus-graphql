@@ -27,6 +27,7 @@ import Data.Morpheus.Server.Internal.TH.Types
 import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    ArgumentDefinition (..),
     ArgumentsDefinition (..),
     ConsD (..),
     FieldContent (..),
@@ -202,7 +203,7 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (F
     pure
       [ ServerTypeDefinition
           { tName,
-            tCons = [mkCons tName $ map toServerField $ elems arguments],
+            tCons = [mkCons tName $ map (toServerField . argument) $ elems arguments],
             tKind = KindInputObject,
             typeArgD = [],
             typeOriginal = Nothing
