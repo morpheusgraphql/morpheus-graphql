@@ -15,6 +15,7 @@ module Data.Morpheus.App.RenderIntrospection
   )
 where
 
+import Data.Foldable (foldr')
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     ResolverContext (..),
@@ -163,10 +164,10 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
           ResolverValue m
         renderContent DataScalar {} = __type KindScalar []
         renderContent (DataEnum enums) = __type KindEnum [("enumValues", render enums)]
-        renderContent (DataInputObject inputFiels) =
+        renderContent (DataInputObject inputFields) =
           __type
             KindInputObject
-            [("inputFields", render inputFiels)]
+            [("inputFields", render inputFields)]
         renderContent DataObject {objectImplements, objectFields} =
           createObjectType typeName typeDescription objectImplements objectFields
         renderContent (DataUnion union) =
@@ -253,7 +254,7 @@ instance RenderIntrospection TypeRef where
   render TypeRef {typeConName, typeWrappers} = do
     kind <- kindOf <$> selectType typeConName
     let currentType = mkType kind typeConName Nothing []
-    pure $ foldr wrap currentType (toGQLWrapper typeWrappers)
+    pure $ foldr' wrap currentType (toGQLWrapper typeWrappers)
     where
       wrap ::
         ( Monad m,

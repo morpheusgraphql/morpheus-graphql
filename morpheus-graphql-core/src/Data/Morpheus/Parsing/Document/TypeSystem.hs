@@ -13,6 +13,7 @@ module Data.Morpheus.Parsing.Document.TypeSystem
 where
 
 import Data.ByteString.Lazy (ByteString)
+import Data.Foldable (foldr')
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Result
   ( Eventless,
@@ -304,7 +305,7 @@ typePartition ::
     [TypeDefinition ANY CONST],
     [DirectiveDefinition CONST]
   )
-typePartition = foldr split ([], [], [])
+typePartition = foldr' split ([], [], [])
 
 split ::
   RawTypeDefinition ->

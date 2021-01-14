@@ -37,7 +37,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     createScalarType,
     initTypeLib,
     kindOf,
-    isEntNode,
+    isLeaf,
     lookupWith,
     RawTypeDefinition (..),
     RootOperationTypeDefinition (..),
@@ -53,7 +53,6 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
 where
 
 -- MORPHEUS
-import Control.Monad (foldM)
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -88,6 +87,7 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
     OperationType (..),
+    Strictness (..),
     TRUE,
     Token,
     TypeKind (..),
@@ -330,7 +330,7 @@ defineSchemaWith ::
 defineSchemaWith oTypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] oTypes
   let schema = (initTypeLib query) {mutation, subscription}
-  foldM (flip defineType) schema types
+  foldlM (flip defineType) schema types
 defineSchemaWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
@@ -434,6 +434,9 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
 instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName
 
+instance Strictness (TypeDefinition k s) where
+  isResolverType = isResolverType . typeContent
+
 instance NameCollision (TypeDefinition cat s) where
   nameCollision x = "There can Be only One TypeDefinition Named " <> msgValidation (typeName x) <> "."
 
@@ -524,6 +527,12 @@ deriving instance Eq (TypeContent a b s)
 
 deriving instance Lift (TypeContent a b s)
 
+instance Strictness (TypeContent TRUE k s) where
+  isResolverType DataObject {} = True
+  isResolverType DataUnion {} = True
+  isResolverType DataInterface {} = True
+  isResolverType _ = False
+
 instance ToCategory (TypeContent TRUE) a ANY where
   toCategory DataScalar {..} = DataScalar {..}
   toCategory DataEnum {..} = DataEnum {..}
@@ -589,10 +598,10 @@ mkEnumValue enumName =
       enumDirectives = []
     }
 
-isEntNode :: TypeContent TRUE a s -> Bool
-isEntNode DataScalar {} = True
-isEntNode DataEnum {} = True
-isEntNode _ = False
+isLeaf :: TypeContent TRUE a s -> Bool
+isLeaf DataScalar {} = True
+isLeaf DataEnum {} = True
+isLeaf _ = False
 
 kindOf :: TypeDefinition a s -> TypeKind
 kindOf TypeDefinition {typeName, typeContent} = __kind typeContent

@@ -26,7 +26,6 @@ import Data.Morpheus.Internal.TH
     toName,
     toString,
     toVar,
-    toVarE,
     v',
     vars,
   )
@@ -55,7 +54,7 @@ matchWith fbexp f xs = lamCaseE (map buildMatch xs <> fallback fbexp)
 failExp :: ExpQ
 failExp =
   appE
-    (toVarE 'fail)
+    (toVar 'fail)
     ( uInfixE
         (appE (varE 'show) v')
         (varE '(<>))

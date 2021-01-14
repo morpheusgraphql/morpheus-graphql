@@ -29,6 +29,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   )
 where
 
+import Data.Foldable (foldr')
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -183,7 +184,7 @@ mergeConflict refs@(rootField : xs) err =
     renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
     renderStart = "Fields " <> fieldConflicts rootField
     renderSubfields =
-      foldr
+      foldr'
         renderSubfield
         renderStart
         xs

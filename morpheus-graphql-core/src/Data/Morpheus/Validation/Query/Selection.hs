@@ -51,7 +51,7 @@ import Data.Morpheus.Types.Internal.AST
     UnionTag (..),
     VALID,
     ValidationError (..),
-    isEntNode,
+    isLeaf,
     msgValidation,
     possibleTypes,
     toCategory,
@@ -254,7 +254,7 @@ validateContentLeaf ::
 validateContentLeaf
   (Ref selectionName selectionPosition)
   TypeDefinition {typeName, typeContent}
-    | isEntNode typeContent = pure SelectionField
+    | isLeaf typeContent = pure SelectionField
     | otherwise =
       failure $ subfieldsNotSelected selectionName typeName selectionPosition
 

@@ -32,10 +32,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     toGQLWrapper,
     Nullable (..),
     isWeaker,
-    isSubscription,
-    isOutputObject,
     isNotSystemTypeName,
-    isObject,
     sysFields,
     hsTypeName,
     toOperationType,
@@ -52,7 +49,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     TypeNameRef (..),
     convertToJSONName,
     convertToHaskellName,
-    isOutput,
     mkTypeRef,
     InternalError (..),
     msgInternal,
@@ -63,6 +59,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     toGQLError,
     unitTypeName,
     unitFieldName,
+    Strictness (..),
   )
 where
 
@@ -263,7 +260,7 @@ data Position = Position
 instance Ord Position where
   compare x y = compare (line x) (line y)
 
--- Positions 2 Value withs same structire
+-- Positions 2 Value with same structure
 -- but different Positions should be Equal
 instance Eq Position where
   _ == _ = True
@@ -355,6 +352,12 @@ data TypeKind
   | KindInterface
   deriving (Eq, Show, Lift)
 
+instance Strictness TypeKind where
+  isResolverType (KindObject _) = True
+  isResolverType KindUnion = True
+  isResolverType KindInterface = True
+  isResolverType _ = False
+
 instance RenderGQL TypeKind where
   renderGQL KindScalar = "SCALAR"
   renderGQL KindObject {} = "OBJECT"
@@ -365,27 +368,6 @@ instance RenderGQL TypeKind where
   renderGQL KindList = "LIST"
   renderGQL KindNonNull = "NON_NULL"
   renderGQL KindInterface = "INTERFACE"
-
-isSubscription :: TypeKind -> Bool
-isSubscription (KindObject (Just Subscription)) = True
-isSubscription _ = False
-
-isOutputObject :: TypeKind -> Bool
-isOutputObject (KindObject _) = True
-isOutputObject KindInterface = True
-isOutputObject _ = False
-
-isOutput :: TypeKind -> Bool
-isOutput (KindObject _) = True
-isOutput KindUnion = True
-isOutput KindInterface = True
-isOutput _ = False
-
-isObject :: TypeKind -> Bool
-isObject (KindObject _) = True
-isObject KindInputObject = True
-isObject KindInterface = True
-isObject _ = False
 
 -- TypeWrappers
 -----------------------------------------------------------------------------------
@@ -524,3 +506,12 @@ unitTypeName = "Unit"
 
 unitFieldName :: FieldName
 unitFieldName = "_"
+
+--  Definitions:
+--     Strictness:
+--        Strict: Value (Strict) Types.
+--             members: {scalar, enum , input}
+--        Lazy: Resolver (lazy) Types
+--             members: strict + {object, interface, union}
+class Strictness t where
+  isResolverType :: t -> Bool

@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -8,14 +9,20 @@ module Data.Morpheus.Server.Internal.TH.Utils
     constraintTypeable,
     typeNameStringE,
     withPure,
-    o',
-    e',
     mkTypeableConstraints,
+    m',
+    m_,
+    tyConArgs,
+    funDProxy,
+    isParametrizedResolverType,
+    isSubscription,
   )
 where
 
 import Data.Morpheus.Internal.TH
-  ( apply,
+  ( _',
+    apply,
+    funDSimple,
     toName,
     vars,
   )
@@ -26,32 +33,68 @@ import Data.Morpheus.Kind
     WRAPPER,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( TypeKind (..),
+  ( ANY,
+    OperationType (..),
+    TypeDefinition (..),
+    TypeKind (..),
     TypeName (..),
+    isResolverType,
+    lookupWith,
   )
 import Data.Text (unpack)
-import Data.Typeable (Typeable)
 import Language.Haskell.TH
   ( CxtQ,
+    Dec (..),
+    DecQ,
     Exp (..),
+    ExpQ,
+    Info (..),
     Lit (..),
     Name,
+    Q,
+    TyVarBndr,
     Type (..),
     cxt,
+    mkName,
+    reify,
   )
-import Prelude
-  ( ($),
-    (.),
-    String,
-    map,
-    pure,
-  )
+import Relude hiding (Type)
 
-o' :: Type
-o' = VarT $ toName ("operation" :: TypeName)
+m_ :: String
+m_ = "m"
 
-e' :: Type
-e' = VarT $ toName ("encodeEvent" :: TypeName)
+m' :: Type
+m' = VarT (mkName m_)
+
+isParametrizedResolverType :: TypeName -> [TypeDefinition ANY s] -> Q Bool
+isParametrizedResolverType "__TypeKind" _ = pure False
+isParametrizedResolverType "Boolean" _ = pure False
+isParametrizedResolverType "String" _ = pure False
+isParametrizedResolverType "Int" _ = pure False
+isParametrizedResolverType "Float" _ = pure False
+isParametrizedResolverType key lib = case lookupWith typeName key lib of
+  Just x -> pure (isResolverType x)
+  Nothing -> isParametrizedType <$> reify (toName key)
+
+isParametrizedType :: Info -> Bool
+isParametrizedType (TyConI x) = not $ null $ getTypeVariables x
+isParametrizedType _ = False
+
+getTypeVariables :: Dec -> [TyVarBndr]
+getTypeVariables (DataD _ _ args _ _ _) = args
+getTypeVariables (NewtypeD _ _ args _ _ _) = args
+getTypeVariables (TySynD _ args _) = args
+getTypeVariables _ = []
+
+funDProxy :: [(Name, ExpQ)] -> [DecQ]
+funDProxy = map fun
+  where
+    fun (name, body) = funDSimple name [_'] body
+
+tyConArgs :: TypeKind -> [String]
+tyConArgs kind
+  | isResolverType kind = [m_]
+  | otherwise = []
 
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)
@@ -71,3 +114,7 @@ kindName KindList = ''WRAPPER
 kindName KindNonNull = ''WRAPPER
 kindName KindInterface = ''INTERFACE
 kindName _ = ''TYPE
+
+isSubscription :: TypeKind -> Bool
+isSubscription (KindObject (Just Subscription)) = True
+isSubscription _ = False

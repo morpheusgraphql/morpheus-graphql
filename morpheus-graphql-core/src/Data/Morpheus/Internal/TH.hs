@@ -16,35 +16,21 @@ module Data.Morpheus.Internal.TH
     apply,
     applyCons,
     applyVars,
-    decArgs,
     declareTypeRef,
-    funDProxy,
     funDSimple,
-    infoTyVars,
     isEnum,
-    m',
     nameSpaceField,
     nameSpaceType,
     toCon,
-    toConE,
-    toConT,
     toVar,
     ToName (..),
     toString,
-    toVarE,
-    toVarT,
-    tyConArgs,
     typeInstanceDec,
     v',
-    cat',
-    _2',
-    o',
-    e',
     vars,
   )
 where
 
-import Data.Foldable (foldl)
 import Data.Morpheus.Internal.Utils
   ( capitalize,
     nameSpaceField,
@@ -52,39 +38,22 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName (..),
-    TypeKind (..),
     TypeName (..),
     TypeRef (..),
     TypeWrapper (..),
     convertToHaskellName,
     isEnum,
-    isOutputObject,
     readName,
   )
 import Data.Text (unpack)
 import Language.Haskell.TH
 import Relude hiding (ToString (..), Type)
 
-m' :: Type
-m' = VarT (mkName "m")
-
-o' :: Type
-o' = VarT (mkName "o")
-
-e' :: Type
-e' = VarT (mkName "event")
-
 _' :: PatQ
 _' = toVar (mkName "_")
 
-_2' :: PatQ
-_2' = toVar (mkName "_2")
-
 v' :: ToVar Name a => a
 v' = toVar (mkName "v")
-
-cat' :: Type
-cat' = VarT (mkName "cat")
 
 declareTypeRef :: TypeRef -> Type
 declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
@@ -99,11 +68,6 @@ declareTypeRef TypeRef {typeConName, typeWrappers, typeArgs} =
     decType :: Maybe String -> Type
     decType (Just par) = apply typeConName [toVar par]
     decType _ = toCon typeConName
-
-tyConArgs :: TypeKind -> [String]
-tyConArgs kindD
-  | isOutputObject kindD || kindD == KindUnion = ["m"]
-  | otherwise = []
 
 cons :: ToCon a b => [a] -> [b]
 cons = map toCon
@@ -178,16 +142,16 @@ class Apply a where
   apply :: ToCon i a => i -> [a] -> a
 
 instance Apply TypeQ where
-  apply = foldl appT . toCon
+  apply = foldl' appT . toCon
 
 instance Apply Type where
-  apply = foldl AppT . toCon
+  apply = foldl' AppT . toCon
 
 instance Apply Exp where
-  apply = foldl AppE . toCon
+  apply = foldl' AppE . toCon
 
 instance Apply ExpQ where
-  apply = foldl appE . toCon
+  apply = foldl' appE . toCon
 
 applyVars ::
   ( ToName con,
@@ -204,35 +168,8 @@ applyVars name li = apply name (vars li)
 applyCons :: (ToName con, ToName cons) => con -> [cons] -> Q Type
 applyCons name li = apply name (cons li)
 
-funDProxy :: [(Name, ExpQ)] -> [DecQ]
-funDProxy = map fun
-  where
-    fun (name, body) = funDSimple name [_'] body
-
 funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
 funDSimple name args body = funD name [clause args (normalB body) []]
-
-infoTyVars :: Info -> [TyVarBndr]
-infoTyVars (TyConI x) = decArgs x
-infoTyVars _ = []
-
-decArgs :: Dec -> [TyVarBndr]
-decArgs (DataD _ _ args _ _ _) = args
-decArgs (NewtypeD _ _ args _ _ _) = args
-decArgs (TySynD _ args _) = args
-decArgs _ = []
-
-toConT :: ToName a => a -> Q Type
-toConT = conT . toName
-
-toVarT :: ToVar a TypeQ => a -> TypeQ
-toVarT = toVar
-
-toVarE :: ToVar a Exp => a -> ExpQ
-toVarE = toVar
-
-toConE :: ToCon a Exp => a -> ExpQ
-toConE = toCon
 
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes

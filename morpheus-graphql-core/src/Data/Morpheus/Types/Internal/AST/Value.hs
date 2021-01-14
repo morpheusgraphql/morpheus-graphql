@@ -41,7 +41,7 @@ import qualified Data.Aeson as A
     object,
     pairs,
   )
-import Data.Foldable (foldl1)
+import Data.Foldable (foldr')
 import qualified Data.HashMap.Lazy as M
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
@@ -240,11 +240,14 @@ instance A.ToJSON (Value a) where
   toEncoding (Enum x) = A.toEncoding x
   toEncoding (Scalar x) = A.toEncoding x
   toEncoding (List x) = A.toEncoding x
-  toEncoding (Object ordmap)
-    | null ordmap = A.toEncoding $ A.object []
-    | otherwise = A.pairs $ foldl1 (<>) $ fmap encodeField (elems ordmap)
+  toEncoding (Object ordMap) = A.pairs $ renderSeries encodeField (elems ordMap)
     where
       encodeField (ObjectEntry (FieldName key) value) = key A..= value
+
+-- fixes GHC 8.2.2, which can't deduce (Semigroup p) from context (Monoid p)
+renderSeries :: (Semigroup p, Monoid p) => (e -> p) -> [e] -> p
+renderSeries _ [] = mempty
+renderSeries f (x : xs) = foldr' (\e es -> es <> f e) (f x) xs
 
 decodeScientific :: Scientific -> ScalarValue
 decodeScientific v = case floatingOrInteger v of

@@ -23,7 +23,6 @@ module Data.Morpheus.Server.Types.SchemaT
   )
 where
 
-import Control.Monad (foldM)
 import qualified Data.Map as Map
 import Data.Morpheus.App.Internal.Resolving
   ( Eventless,
@@ -106,7 +105,7 @@ toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
   types <-
     execUpdates Map.empty typeDefs
-      >>= checkTypeColisions . Map.toList
+      >>= checkTypeCollisions . Map.toList
   defineSchemaWith types (optionalType q, optionalType m, optionalType s)
 
 withInput :: SchemaT IN a -> SchemaT OUT a
@@ -115,17 +114,17 @@ withInput (SchemaT x) = SchemaT x
 withInterface :: SchemaT OUT a -> SchemaT ct a
 withInterface (SchemaT x) = SchemaT x
 
-checkTypeColisions :: [(TypeFingerprint, TypeDefinition k a)] -> Eventless [TypeDefinition k a]
-checkTypeColisions = fmap Map.elems . foldM collectTypes Map.empty
+checkTypeCollisions :: [(TypeFingerprint, TypeDefinition k a)] -> Eventless [TypeDefinition k a]
+checkTypeCollisions = fmap Map.elems . foldlM collectTypes Map.empty
   where
     collectTypes :: Map (TypeName, TypeFingerprint) (TypeDefinition k a) -> (TypeFingerprint, TypeDefinition k a) -> Eventless (Map (TypeName, TypeFingerprint) (TypeDefinition k a))
-    collectTypes accum (fp, typ) = maybe addType (hanldeCollision typ) (key `Map.lookup` accum)
+    collectTypes accum (fp, typ) = maybe addType (handleCollision typ) (key `Map.lookup` accum)
       where
         addType = pure $ Map.insert key typ accum
         key = (typeName typ, withSameCategory fp)
-        hanldeCollision t1@TypeDefinition {typeContent = DataEnum {}} t2 | t1 == t2 = pure accum
-        hanldeCollision TypeDefinition {typeContent = DataScalar {}} TypeDefinition {typeContent = DataScalar {}} = pure accum
-        hanldeCollision TypeDefinition {typeName = name1} _ = failureRequirePrefix name1
+        handleCollision t1@TypeDefinition {typeContent = DataEnum {}} t2 | t1 == t2 = pure accum
+        handleCollision TypeDefinition {typeContent = DataScalar {}} TypeDefinition {typeContent = DataScalar {}} = pure accum
+        handleCollision TypeDefinition {typeName = name1} _ = failureRequirePrefix name1
 
 failureRequirePrefix :: TypeName -> Eventless b
 failureRequirePrefix typename =
@@ -150,7 +149,7 @@ optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
   | otherwise = Just td
 
 execUpdates :: Monad m => a -> [a -> m a] -> m a
-execUpdates = foldM (&)
+execUpdates = foldlM (&)
 
 insertType :: TypeDefinition cat CONST -> SchemaT cat' ()
 insertType dt = updateSchema (CustomFingerprint (typeName dt)) (const $ pure dt) ()
