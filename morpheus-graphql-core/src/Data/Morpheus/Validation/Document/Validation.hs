@@ -40,7 +40,7 @@ import Data.Morpheus.Schema.Schema
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentDefinition (..),
-    ArgumentsDefinition (..),
+    ArgumentsDefinition,
     CONST,
     DataEnumValue (..),
     DirectiveDefinition (..),
@@ -241,11 +241,7 @@ checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
 validateArgumentsDefinition ::
   ArgumentsDefinition CONST ->
   SchemaValidator (TypeName, FieldName) (ArgumentsDefinition VALID)
-validateArgumentsDefinition (ArgumentsDefinition args) =
-  ArgumentsDefinition
-    <$> traverse
-      validateArgumentDefinition
-      args
+validateArgumentsDefinition = traverse validateArgumentDefinition
 
 validateArgumentDefinition ::
   ArgumentDefinition CONST ->

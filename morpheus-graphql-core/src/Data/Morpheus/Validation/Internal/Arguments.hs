@@ -25,7 +25,7 @@ import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     ArgumentDefinition (..),
     Arguments,
-    ArgumentsDefinition (..),
+    ArgumentsDefinition,
     CONST,
     DirectiveDefinition,
     DirectiveDefinition (..),
@@ -144,7 +144,7 @@ validateArguments ::
 validateArguments checkUnknown argsDef rawArgs = do
   args <- traverse resolve rawArgs
   traverse_ checkUnknown args
-    *> traverse (validateArgument args) (arguments argsDef)
+    *> traverse (validateArgument args) argsDef
 
 class Resolve f s ctx where
   resolve :: f s -> Validator schemaS ctx (f CONST)

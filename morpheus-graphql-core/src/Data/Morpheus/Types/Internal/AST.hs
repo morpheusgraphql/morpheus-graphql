@@ -46,7 +46,7 @@ module Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     ArgumentDefinition (..),
     DataUnion,
-    ArgumentsDefinition (..),
+    ArgumentsDefinition,
     FieldDefinition (..),
     InputFieldsDefinition,
     TypeContent (..),

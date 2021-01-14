@@ -41,7 +41,7 @@ import Data.Morpheus.Parsing.Internal.Value
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentDefinition (..),
-    ArgumentsDefinition (..),
+    ArgumentsDefinition,
     DataEnumValue (..),
     Description,
     Directive (..),

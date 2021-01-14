@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -19,7 +18,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
   ( Arguments,
     Argument (..),
     ArgumentDefinition (..),
-    ArgumentsDefinition (..),
+    ArgumentsDefinition,
     FieldDefinition (..),
     FieldsDefinition,
     FieldContent (..),
@@ -50,11 +49,8 @@ import Data.Morpheus.Ext.OrdMap
     unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
-    Elems (..),
+  ( Elems (..),
     Empty (..),
-    Failure,
-    FromElems (..),
     KeyOf (..),
     Selectable (..),
     toPair,
@@ -77,7 +73,6 @@ import Data.Morpheus.Types.Internal.AST.Base
     TRUE,
     TypeName,
     ValidationError (..),
-    ValidationErrors,
     msgValidation,
     sysFields,
   )
@@ -214,7 +209,7 @@ unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
 unsafeFromFields = unsafeFromList . fmap toPair
 
 fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
-fieldsToArguments = ArgumentsDefinition . fmap ArgumentDefinition
+fieldsToArguments = fmap ArgumentDefinition
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
@@ -339,21 +334,10 @@ type InputValueDefinition = FieldDefinition IN
 -- ArgumentsDefinition:
 --   (InputValueDefinition(list))
 
-newtype ArgumentsDefinition s = ArgumentsDefinition
-  { arguments :: OrdMap FieldName (ArgumentDefinition s)
-  }
-  deriving
-    ( Show,
-      Lift,
-      Eq,
-      Selectable FieldName (ArgumentDefinition s),
-      Empty,
-      Collection (ArgumentDefinition s),
-      Elems (ArgumentDefinition s)
-    )
+type ArgumentsDefinition s = OrdMap FieldName (ArgumentDefinition s)
 
 instance RenderGQL (ArgumentsDefinition s) where
-  renderGQL ArgumentsDefinition {arguments} = renderArguments (elems arguments)
+  renderGQL = renderArguments . elems
 
 instance RenderGQL (ArgumentDefinition s) where
   renderGQL = renderGQL . argument
@@ -368,7 +352,4 @@ instance KeyOf FieldName (ArgumentDefinition s) where
 
 instance NameCollision (ArgumentDefinition s) where
   nameCollision ArgumentDefinition {argument} =
-    "There can Be only One field Named " <> msgValidation (fieldName argument)
-
-instance (Monad m, Failure ValidationErrors m) => FromElems m (ArgumentDefinition s) (ArgumentsDefinition s) where
-  fromElems args = ArgumentsDefinition <$> fromElems args
+    "There can Be only One argument Named " <> msgValidation (fieldName argument)

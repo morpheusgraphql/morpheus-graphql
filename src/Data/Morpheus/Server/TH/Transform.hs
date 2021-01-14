@@ -28,7 +28,6 @@ import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition (..),
-    ArgumentsDefinition (..),
     ConsD (..),
     FieldContent (..),
     FieldDefinition (..),
@@ -137,7 +136,7 @@ mkObjectField
         }
     where
       fieldCont :: FieldContent TRUE OUT s -> Maybe TypeName
-      fieldCont (FieldArgs ArgumentsDefinition {arguments})
+      fieldCont (FieldArgs arguments)
         | not (null arguments) = Just $ genArgsTypeName fieldName
       fieldCont _ = Nothing
 
@@ -198,7 +197,7 @@ genArgumentTypes genArgsTypeName fields =
   concat <$> traverse (genArgumentType genArgsTypeName) (elems fields)
 
 genArgumentType :: (FieldName -> TypeName) -> FieldDefinition OUT s -> Q [ServerTypeDefinition IN s]
-genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (FieldArgs ArgumentsDefinition {arguments})}
+genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (FieldArgs arguments)}
   | not (null arguments) =
     pure
       [ ServerTypeDefinition
