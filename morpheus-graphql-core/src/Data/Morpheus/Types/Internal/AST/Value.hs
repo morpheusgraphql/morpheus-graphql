@@ -156,8 +156,8 @@ instance NameCollision (Variable s) where
 type VariableDefinitions s = OrdMap FieldName (Variable s)
 
 data Value (stage :: Stage) where
-  ResolvedVariable :: Ref -> Variable VALID -> Value CONST
-  VariableValue :: Ref -> Value RAW
+  ResolvedVariable :: Ref FieldName -> Variable VALID -> Value CONST
+  VariableValue :: Ref FieldName -> Value RAW
   Object :: Object stage -> Value stage
   List :: [Value stage] -> Value stage
   Enum :: TypeName -> Value stage

@@ -22,7 +22,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Semigroup ((<>))
 
 -- GQL: "Field \"default\" must not have a selection since type \"String!\" has no subfields."
-hasNoSubfields :: Ref -> TypeDefinition s VALID -> ValidationError
+hasNoSubfields :: Ref FieldName -> TypeDefinition s VALID -> ValidationError
 hasNoSubfields (Ref selectionName position) TypeDefinition {typeName} = ValidationError text [position]
   where
     text =
@@ -32,7 +32,7 @@ hasNoSubfields (Ref selectionName position) TypeDefinition {typeName} = Validati
         <> msg typeName
         <> " has no subfields."
 
-unknownSelectionField :: TypeName -> Ref -> ValidationError
+unknownSelectionField :: TypeName -> Ref FieldName -> ValidationError
 unknownSelectionField typeName Ref {refName, refPosition} = ValidationError text [refPosition]
   where
     text =

@@ -39,7 +39,6 @@ import Data.Morpheus.Types.Internal.AST
     Stage,
     TypeDefinition,
     TypeName,
-    TypeNameRef (..),
     UnionTag (..),
     VALID,
   )
@@ -57,7 +56,7 @@ class ResolveFragment (s :: Stage) where
   resolveValidFragment ::
     (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
     [TypeName] ->
-    Ref ->
+    Ref FieldName ->
     FragmentValidator s UnionTag
 
 instance ResolveFragment VALID where
@@ -108,7 +107,7 @@ castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [TypeName] -> Ref -> FragmentValidator s (Fragment s)
+resolveSpread :: [TypeName] -> Ref FieldName -> FragmentValidator s (Fragment s)
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref
@@ -117,5 +116,5 @@ resolveSpread allowedTargets ref@Ref {refName, refPosition} =
 selectFragmentType :: Fragment RAW -> FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 selectFragmentType fr@Fragment {fragmentType, fragmentPosition} = do
   (schema :: Schema VALID) <- askSchema
-  typeDef <- selectKnown (TypeNameRef fragmentType fragmentPosition) schema
+  typeDef <- selectKnown (Ref fragmentType fragmentPosition) schema
   constraint IMPLEMENTABLE fr typeDef

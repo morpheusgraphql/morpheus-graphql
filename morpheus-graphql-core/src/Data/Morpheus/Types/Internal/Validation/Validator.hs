@@ -294,7 +294,7 @@ withScope ::
   ( MonadContext m s c
   ) =>
   TypeDefinition cat s ->
-  Ref ->
+  Ref FieldName ->
   m c a ->
   m c a
 withScope t@TypeDefinition {typeName} (Ref selName pos) =

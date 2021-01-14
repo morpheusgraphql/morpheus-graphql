@@ -19,6 +19,7 @@ import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     DefaultValue,
     Directive (..),
+    FieldName,
     Fragment (..),
     IN,
     ObjectEntry (..),
@@ -31,7 +32,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     TypeDefinition,
-    TypeNameRef (..),
     TypeRef (..),
     VALID,
     ValidValue,
@@ -64,7 +64,7 @@ import Data.Morpheus.Validation.Internal.Value
 import Relude
 
 class ExploreRefs a where
-  exploreRefs :: a -> [Ref]
+  exploreRefs :: a -> [Ref FieldName]
 
 instance ExploreRefs RawValue where
   exploreRefs (VariableValue ref) = [ref]
@@ -81,14 +81,14 @@ instance ExploreRefs (Argument RAW) where
 mapSelection :: (Selection RAW -> BaseValidator [b]) -> SelectionSet RAW -> BaseValidator [b]
 mapSelection f = fmap concat . traverse f
 
-allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref]
+allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref FieldName]
 allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
   where
-    exploreSelectionContent :: SelectionContent RAW -> BaseValidator [Ref]
+    exploreSelectionContent :: SelectionContent RAW -> BaseValidator [Ref FieldName]
     exploreSelectionContent SelectionField = pure []
     exploreSelectionContent (SelectionSet selSet) = mapSelection searchRefs selSet
     ---------------------------------------
-    searchRefs :: Selection RAW -> BaseValidator [Ref]
+    searchRefs :: Selection RAW -> BaseValidator [Ref FieldName]
     searchRefs Selection {selectionArguments, selectionDirectives, selectionContent} =
       ((directiveRefs <> argumentRefs) <>) <$> exploreSelectionContent selectionContent
       where
@@ -142,7 +142,7 @@ lookupAndValidateValueOnBody
     withPosition variablePosition $
       toVariable
         <$> ( askSchema
-                >>= selectKnown (TypeNameRef typeConName variablePosition)
+                >>= selectKnown (Ref typeConName variablePosition)
                 >>= constraint INPUT var
                 >>= checkType getVariable defaultValue
             )

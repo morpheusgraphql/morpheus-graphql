@@ -25,6 +25,7 @@ import Data.Morpheus.Types.Internal.AST
     DataEnumValue (..),
     DataInputUnion,
     FieldDefinition (..),
+    FieldName,
     FieldsDefinition,
     IN,
     Message,
@@ -101,7 +102,7 @@ violation message value = do
 
 checkTypeEquality ::
   (TypeName, [TypeWrapper]) ->
-  Ref ->
+  Ref FieldName ->
   Variable VALID ->
   InputValidator schemaS ctx ValidValue
 checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = ValidVariableValue value, variableType}

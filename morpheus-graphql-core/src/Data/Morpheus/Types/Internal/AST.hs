@@ -112,7 +112,6 @@ module Data.Morpheus.Types.Internal.AST
     Msg (..),
     intercalateName,
     toFieldName,
-    TypeNameRef (..),
     fieldsToArguments,
     mkCons,
     mkConsEnum,

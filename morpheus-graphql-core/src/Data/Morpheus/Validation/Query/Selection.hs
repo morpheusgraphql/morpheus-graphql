@@ -10,7 +10,7 @@
 
 module Data.Morpheus.Validation.Query.Selection
   ( validateOperation,
-    vaidateFragmentSelection,
+    validateFragmentSelection,
   )
 where
 
@@ -86,12 +86,12 @@ import Data.Morpheus.Validation.Query.UnionSelection
   )
 import Relude hiding (empty)
 
-selectionsWitoutTypename :: SelectionSet VALID -> [Selection VALID]
-selectionsWitoutTypename = filter (("__typename" /=) . keyOf) . elems
+selectionsWithoutTypename :: SelectionSet VALID -> [Selection VALID]
+selectionsWithoutTypename = filter (("__typename" /=) . keyOf) . elems
 
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
 singleTopLevelSelection Operation {operationType = Subscription, operationName} selSet =
-  case selectionsWitoutTypename selSet of
+  case selectionsWithoutTypename selSet of
     (_ : xs) | not (null xs) -> failure $ fmap (singleTopLevelSelectionError operationName) xs
     _ -> pure ()
 singleTopLevelSelection _ _ = pure ()
@@ -153,8 +153,8 @@ processSelectionDirectives location rawDirectives sel = do
       then selection
       else empty
 
-vaidateFragmentSelection :: (ResolveFragment s) => Fragment RAW -> FragmentValidator s (SelectionSet VALID)
-vaidateFragmentSelection f@Fragment {fragmentSelection} = do
+validateFragmentSelection :: (ResolveFragment s) => Fragment RAW -> FragmentValidator s (SelectionSet VALID)
+validateFragmentSelection f@Fragment {fragmentSelection} = do
   typeDef <- selectFragmentType f
   validateSelectionSet typeDef fragmentSelection
 
@@ -235,7 +235,7 @@ validateSelectionSet typeDef =
       processSelectionDirectives
         FRAGMENT_SPREAD
         dirs
-        (const $ unionTagSelection <$> resolveValidFragment vaidateFragmentSelection types ref)
+        (const $ unionTagSelection <$> resolveValidFragment validateFragmentSelection types ref)
     validateSelection
       ( InlineFragment
           fragment@Fragment
@@ -245,10 +245,10 @@ validateSelectionSet typeDef =
         types <- possibleTypes typeDef <$> askSchema
         processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
           const (validate types fragment)
-    validate types = fmap fragmentSelection . validateFragment vaidateFragmentSelection types
+    validate types = fmap fragmentSelection . validateFragment validateFragmentSelection types
 
 validateContentLeaf ::
-  Ref ->
+  Ref FieldName ->
   TypeDefinition OUT VALID ->
   FragmentValidator s' (SelectionContent s)
 validateContentLeaf
@@ -262,7 +262,7 @@ validateByTypeContent ::
   forall s.
   (ResolveFragment s) =>
   TypeDefinition OUT VALID ->
-  Ref ->
+  Ref FieldName ->
   SelectionSet RAW ->
   FragmentValidator s (SelectionContent VALID)
 validateByTypeContent
@@ -278,7 +278,7 @@ validateByTypeContent
       -- Validate UnionSelection
       __validate DataUnion {unionMembers} =
         validateUnionSelection
-          vaidateFragmentSelection
+          validateFragmentSelection
           validateSelectionSet
           unionMembers
       -- Validate Regular selection set
@@ -287,7 +287,7 @@ validateByTypeContent
       -- TODO: Union Like Validation
       __validate DataInterface {..} =
         validateInterfaceSelection
-          vaidateFragmentSelection
+          validateFragmentSelection
           validateSelectionSet
           (TypeDefinition {typeContent = DataInterface {..}, ..})
       __validate _ =

@@ -171,7 +171,7 @@ instance RenderGQL UnionTag where
       <> renderGQL unionTagName
       <> renderSelectionSet unionTagSelection
 
-mergeConflict :: [Ref] -> ValidationError -> ValidationErrors
+mergeConflict :: [Ref FieldName] -> ValidationError -> ValidationErrors
 mergeConflict [] err = [err]
 mergeConflict refs@(rootField : xs) err =
   [ ValidationError
@@ -208,7 +208,7 @@ data Selection (s :: Stage) where
     } ->
     Selection s
   InlineFragment :: Fragment RAW -> Selection RAW
-  Spread :: Directives RAW -> Ref -> Selection RAW
+  Spread :: Directives RAW -> Ref FieldName -> Selection RAW
 
 instance RenderGQL (Selection VALID) where
   renderGQL

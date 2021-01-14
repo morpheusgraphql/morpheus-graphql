@@ -32,7 +32,7 @@ import Relude
     {...H} -> "Unknown fragment \"H\"."
 -}
 
-cannotSpreadWithinItself :: NonEmpty Ref -> ValidationError
+cannotSpreadWithinItself :: NonEmpty (Ref FieldName) -> ValidationError
 cannotSpreadWithinItself (fr :| frs) = ValidationError text (fmap refPosition (fr : frs))
   where
     text =

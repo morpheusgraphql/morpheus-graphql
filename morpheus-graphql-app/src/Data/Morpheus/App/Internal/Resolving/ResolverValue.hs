@@ -110,7 +110,7 @@ instance
 
 mergeResolver ::
   (Monad m, SemigroupM m a) =>
-  [Ref] ->
+  [Ref FieldName] ->
   m a ->
   m a ->
   m a

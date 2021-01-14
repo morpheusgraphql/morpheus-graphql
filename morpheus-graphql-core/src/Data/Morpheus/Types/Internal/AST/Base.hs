@@ -46,7 +46,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     Msg (..),
     intercalateName,
     toFieldName,
-    TypeNameRef (..),
     convertToJSONName,
     convertToHaskellName,
     mkTypeRef,
@@ -293,26 +292,20 @@ type MUTATION = 'Mutation
 
 type SUBSCRIPTION = 'Subscription
 
-data TypeNameRef = TypeNameRef
-  { typeNameRef :: TypeName,
-    typeNamePosition :: Position
-  }
-  deriving (Show, Lift, Eq)
-
--- Refference with Position information
---
+-- Document Reference with its Position
+-- Position  only for error messages
 -- includes position for debugging, where Ref "a" 1 === Ref "a" 3
 --
-data Ref = Ref
-  { refName :: FieldName,
+data Ref name = Ref
+  { refName :: name,
     refPosition :: Position
   }
   deriving (Show, Lift, Eq)
 
-instance Ord Ref where
+instance Ord name => Ord (Ref name) where
   compare (Ref x _) (Ref y _) = compare x y
 
-anonymousRef :: FieldName -> Ref
+anonymousRef :: name -> Ref name
 anonymousRef refName = Ref {refName, refPosition = Position 0 0}
 
 -- TypeRef
