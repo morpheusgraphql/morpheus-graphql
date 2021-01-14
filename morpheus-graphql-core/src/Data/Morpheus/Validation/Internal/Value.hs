@@ -96,7 +96,7 @@ violation message value = do
     $ withPosition position
     $ prefix
       <> typeViolation
-        (TypeRef currentTypeName currentTypeWrappers False)
+        (TypeRef currentTypeName currentTypeWrappers)
         value
       <> maybe "" ((" " <>) . msgValidation) message
 
@@ -117,8 +117,7 @@ checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = Vali
         var
         TypeRef
           { typeConName = tyConName,
-            typeWrappers = tyWrappers,
-            isParametrized = False
+            typeWrappers = tyWrappers
           }
 
 validateInputByTypeRef ::

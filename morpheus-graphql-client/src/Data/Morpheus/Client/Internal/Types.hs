@@ -4,21 +4,25 @@ module Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
     ClientDefinition (..),
+    ClientConsD,
   )
 where
 
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
+    FieldDefinition,
     TypeKind,
     TypeNameTH (..),
     VALID,
   )
 import Relude
 
+type ClientConsD c = ConsD (FieldDefinition c VALID)
+
 data ClientTypeDefinition = ClientTypeDefinition
   { clientTypeName :: TypeNameTH,
-    clientCons :: [ConsD ANY VALID],
+    clientCons :: [ClientConsD ANY],
     clientKind :: TypeKind
   }
   deriving (Show)

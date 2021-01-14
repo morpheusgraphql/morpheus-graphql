@@ -310,7 +310,7 @@ mkInputValue fieldName typeWrappers typeConName =
   mkField
     Nothing
     fieldName
-    TypeRef {typeWrappers, typeConName, isParametrized = False}
+    TypeRef {typeWrappers, typeConName}
 
 mkObjectField ::
   ArgumentsDefinition s ->
@@ -322,7 +322,7 @@ mkObjectField args fieldName typeWrappers typeConName =
   mkField
     (Just $ FieldArgs args)
     fieldName
-    TypeRef {typeWrappers, typeConName, isParametrized = False}
+    TypeRef {typeWrappers, typeConName}
 
 -- 3.10 Input Objects: https://spec.graphql.org/June2018/#sec-Input-Objects
 ---------------------------------------------------------------------------

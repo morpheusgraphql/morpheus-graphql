@@ -28,7 +28,8 @@ import Data.Morpheus.Client.Internal.TH
     mkFieldsE,
   )
 import Data.Morpheus.Client.Internal.Types
-  ( ClientTypeDefinition (..),
+  ( ClientConsD,
+    ClientTypeDefinition (..),
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Internal.Utils
@@ -56,7 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     Message,
     TypeKind (..),
     TypeName (..),
-    VALID,
     isResolverType,
     msg,
     toFieldName,
@@ -126,7 +126,7 @@ deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
     defineFromJSON clientTypeName $
       aesonUnionObject typeD
 
-aesonObject :: [FieldName] -> ConsD cat VALID -> ExpQ
+aesonObject :: [FieldName] -> ClientConsD cat -> ExpQ
 aesonObject tNamespace con@ConsD {cName} =
   withBody
     <$> aesonObjectBody tNamespace con
@@ -138,7 +138,7 @@ aesonObject tNamespace con@ConsD {cName} =
     name :: Exp
     name = toString (nameSpaceType tNamespace cName)
 
-aesonObjectBody :: [FieldName] -> ConsD cat VALID -> ExpQ
+aesonObjectBody :: [FieldName] -> ClientConsD cat -> ExpQ
 aesonObjectBody namespace ConsD {cName, cFields} =
   decodeObjectE
     entry
@@ -157,9 +157,9 @@ aesonUnionObject
       clientTypeName = TypeNameTH {namespace, typename}
     } =
     appE (varE 'takeValueType) $
-      matchWith elseCond f clientCons
+      matchWith elseCondition f clientCons
     where
-      elseCond =
+      elseCondition =
         (tupP [_', v'],)
           . aesonObjectBody
             namespace
@@ -187,19 +187,19 @@ defineFromJSON name expr = instanceD (cxt []) typeDef body
     typeDef = applyCons ''FromJSON [namespaced name]
     body = [funDSimple 'parseJSON [] expr]
 
-aesonFromJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
+aesonFromJSONEnumBody :: TypeNameTH -> [ClientConsD cat] -> ExpQ
 aesonFromJSONEnumBody TypeNameTH {typename} = matchWith (Just (v', failExp)) f
   where
-    f :: ConsD cat VALID -> (PatQ, ExpQ)
+    f :: ClientConsD cat -> (PatQ, ExpQ)
     f ConsD {cName} =
       ( toString cName,
         appE (varE 'pure) $ toCon $ nameSpaceType [toFieldName typename] cName
       )
 
-aesonToJSONEnumBody :: TypeNameTH -> [ConsD cat VALID] -> ExpQ
+aesonToJSONEnumBody :: TypeNameTH -> [ClientConsD cat] -> ExpQ
 aesonToJSONEnumBody TypeNameTH {typename} = matchWith Nothing f
   where
-    f :: ConsD cat VALID -> (PatQ, ExpQ)
+    f :: ClientConsD cat -> (PatQ, ExpQ)
     f ConsD {cName} =
       ( conP (toName $ nameSpaceType [toFieldName typename] cName) [],
         toString cName

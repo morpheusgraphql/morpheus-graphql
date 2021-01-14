@@ -204,8 +204,7 @@ deriveFieldRep opt pSel kindedProxy v =
       fieldTypeRef =
         TypeRef
           { typeConName = gqlTypeName,
-            typeWrappers = gqlWrappers,
-            isParametrized = False
+            typeWrappers = gqlWrappers
           },
       fieldIsObject = __isObjectKind kindedProxy,
       fieldValue = v

@@ -125,14 +125,12 @@ renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
 -------------------------------------------------------------------
 data TypeRef = TypeRef
   { typeConName :: TypeName,
-    typeWrappers :: [TypeWrapper],
-    isParametrized :: Bool
+    typeWrappers :: [TypeWrapper]
   }
   deriving (Show, Eq, Lift)
 
 mkTypeRef :: TypeName -> TypeRef
-mkTypeRef typeConName =
-  TypeRef {typeConName, typeWrappers = [], isParametrized = False}
+mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = []}
 
 instance RenderGQL TypeRef where
   renderGQL TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers

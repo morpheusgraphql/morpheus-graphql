@@ -339,8 +339,7 @@ parseTypeW :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> TypeRef
 parseTypeW (wrappers, typeConName) nonNull =
   TypeRef
     { typeConName,
-      typeWrappers = toHSWrappers (nonNull <> wrappers),
-      isParametrized = False
+      typeWrappers = toHSWrappers (nonNull <> wrappers)
     }
 
 parseWrappedType :: Parser ([DataTypeWrapper], TypeName)

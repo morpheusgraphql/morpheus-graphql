@@ -17,11 +17,14 @@ import Data.Morpheus.Internal.TH
     declareTypeRef,
     nameSpaceField,
     nameSpaceType,
+    toCon,
     toName,
   )
 import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerDec,
+  ( ServerConsD,
+    ServerDec,
     ServerDecContext (..),
+    ServerFieldDefinition,
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.Internal.TH.Utils
@@ -77,7 +80,7 @@ deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 declareCons ::
   TypeKind ->
   TypeName ->
-  [ConsD cat s] ->
+  [ServerConsD cat s] ->
   ServerDec [Con]
 declareCons tKind tName = traverse consR
   where
@@ -97,22 +100,28 @@ consName _ _ conName = pure (toName conName)
 declareField ::
   TypeKind ->
   TypeName ->
-  FieldDefinition cat s ->
+  ServerFieldDefinition cat s ->
   ServerDec (Name, Bang, Type)
-declareField tKind tName field@FieldDefinition {fieldName} = do
+declareField tKind tName (isParam, field@FieldDefinition {fieldName}) = do
   namespace' <- asks namespace
   pure
     ( fieldTypeName namespace' tName fieldName,
       Bang NoSourceUnpackedness NoSourceStrictness,
-      renderFieldType tKind field
+      renderFieldType tKind renderTypeName field
     )
+  where
+    renderTypeName :: TypeName -> Type
+    renderTypeName
+      | isParam = (`apply` [m'])
+      | otherwise = toCon
 
 renderFieldType ::
   TypeKind ->
+  (TypeName -> Type) ->
   FieldDefinition cat s ->
   Type
-renderFieldType tKind FieldDefinition {fieldContent, fieldType} =
-  withFieldWrappers tKind fieldContent (declareTypeRef (`apply` [m']) fieldType)
+renderFieldType tKind f FieldDefinition {fieldContent, fieldType} =
+  withFieldWrappers tKind fieldContent (declareTypeRef f fieldType)
 
 fieldTypeName :: Bool -> TypeName -> FieldName -> Name
 fieldTypeName namespace tName fieldName

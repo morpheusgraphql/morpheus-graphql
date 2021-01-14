@@ -13,7 +13,8 @@ module Data.Morpheus.Client.Transform.Selection
 where
 
 import Data.Morpheus.Client.Internal.Types
-  ( ClientDefinition (..),
+  ( ClientConsD,
+    ClientDefinition (..),
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
@@ -116,7 +117,7 @@ genConsD ::
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter
-    ( ConsD ANY VALID,
+    ( ClientConsD ANY,
       [ClientTypeDefinition],
       [TypeName]
     )
@@ -220,7 +221,7 @@ getFieldType
           checkDeprecated *> (trans <$> getType typeConName)
           where
             trans x =
-              (x, alias {typeConName = typeFrom path x, isParametrized = False})
+              (x, alias {typeConName = typeFrom path x})
             ------------------------------------------------------------------
             checkDeprecated :: Converter ()
             checkDeprecated =

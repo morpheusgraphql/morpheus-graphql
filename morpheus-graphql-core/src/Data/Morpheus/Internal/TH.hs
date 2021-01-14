@@ -57,16 +57,14 @@ v' :: ToVar Name a => a
 v' = toVar (mkName "v")
 
 declareTypeRef :: (TypeName -> Type) -> TypeRef -> Type
-declareTypeRef f TypeRef {typeConName, typeWrappers, isParametrized} =
+declareTypeRef f TypeRef {typeConName, typeWrappers} =
   wrappedT
     typeWrappers
   where
     wrappedT :: [TypeWrapper] -> Type
     wrappedT (TypeList : xs) = AppT (ConT ''[]) $ wrappedT xs
     wrappedT (TypeMaybe : xs) = AppT (ConT ''Maybe) $ wrappedT xs
-    wrappedT []
-      | isParametrized = f typeConName
-      | otherwise = toCon typeConName
+    wrappedT [] = f typeConName
 
 cons :: ToCon a b => [a] -> [b]
 cons = map toCon

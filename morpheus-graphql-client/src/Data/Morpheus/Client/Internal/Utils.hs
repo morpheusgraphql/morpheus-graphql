@@ -24,5 +24,5 @@ splitDuplicates = collectElems ([], [])
       | x `elem` collected = collectElems (collected, errors <> [x]) xs
       | otherwise = collectElems (collected <> [x], errors) xs
 
-isEnum :: [ConsD cat s] -> Bool
+isEnum :: [ConsD f] -> Bool
 isEnum = all (null . cFields)
