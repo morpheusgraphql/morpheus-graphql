@@ -37,6 +37,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    ArgumentDefinition (..),
     ArgumentsDefinition (..),
     DataEnumValue (..),
     DataTypeWrapper (..),
@@ -229,7 +230,7 @@ instance RenderIntrospection (FieldContent TRUE OUT VALID) where
   render (FieldArgs args) = render args
 
 instance RenderIntrospection (ArgumentsDefinition VALID) where
-  render ArgumentsDefinition {arguments} = mkList <$> traverse render (elems arguments)
+  render ArgumentsDefinition {arguments} = mkList <$> traverse (render . argument) (elems arguments)
 
 instance RenderIntrospection (FieldDefinition IN VALID) where
   render FieldDefinition {..} =

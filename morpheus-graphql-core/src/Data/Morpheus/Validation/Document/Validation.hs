@@ -39,7 +39,7 @@ import Data.Morpheus.Schema.Schema
   ( internalSchema,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentDefinition,
+  ( ArgumentDefinition (..),
     ArgumentsDefinition (..),
     CONST,
     DataEnumValue (..),
@@ -250,13 +250,15 @@ validateArgumentsDefinition (ArgumentsDefinition args) =
 validateArgumentDefinition ::
   ArgumentDefinition CONST ->
   SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
-validateArgumentDefinition FieldDefinition {..} =
-  FieldDefinition
-    fieldDescription
-    fieldName
-    fieldType
-    <$> validateOptional (validateArgumentDefaultValue fieldName fieldType) fieldContent
-    <*> validateDirectives ARGUMENT_DEFINITION fieldDirectives
+validateArgumentDefinition (ArgumentDefinition FieldDefinition {..}) =
+  ArgumentDefinition
+    <$> ( FieldDefinition
+            fieldDescription
+            fieldName
+            fieldType
+            <$> validateOptional (validateArgumentDefaultValue fieldName fieldType) fieldContent
+            <*> validateDirectives ARGUMENT_DEFINITION fieldDirectives
+        )
 
 validateArgumentDefaultValue ::
   FieldName ->
@@ -357,7 +359,7 @@ instance TypeEq (ArgumentsDefinition s) (Interface, FieldName) where
       validateArg arg = inArgument (keyOf arg) $ elemIn arg args2
 
 instance TypeEq (ArgumentDefinition s) (Interface, Field) where
-  arg1 `isSuptype` arg2 = fieldType arg1 `isSuptype` fieldType arg2
+  arg1 `isSuptype` arg2 = fieldType (argument arg1) `isSuptype` fieldType (argument arg2)
 
 -------------------------------
 selectInterface ::

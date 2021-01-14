@@ -23,7 +23,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
-    ArgumentDefinition,
+    ArgumentDefinition (..),
     Arguments,
     ArgumentsDefinition (..),
     CONST,
@@ -78,15 +78,15 @@ validateArgument ::
     ValidateWithDefault ctx schemaS schemaS
   ) =>
   Arguments valueS ->
-  FieldDefinition IN schemaS ->
+  ArgumentDefinition schemaS ->
   Validator schemaS ctx (Argument VALID)
 validateArgument
   requestArgs
-  argumentDef =
+  ArgumentDefinition {argument} =
     selectWithDefaultValue
-      (toArgument argumentDef >=> validateArgumentValue argumentDef)
-      (validateArgumentValue argumentDef)
-      argumentDef
+      (toArgument argument >=> validateArgumentValue argument)
+      (validateArgumentValue argument)
+      argument
       requestArgs
 
 toArgument :: FieldDefinition IN s -> Value schemaS -> Validator schemaStage ctx (Argument schemaS)

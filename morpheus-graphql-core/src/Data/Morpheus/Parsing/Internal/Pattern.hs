@@ -40,7 +40,8 @@ import Data.Morpheus.Parsing.Internal.Value
     parseDefaultValue,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
+  ( ArgumentDefinition (..),
+    ArgumentsDefinition (..),
     DataEnumValue (..),
     Description,
     Directive (..),
@@ -108,7 +109,7 @@ argumentsDefinition ::
   Parser (ArgumentsDefinition s)
 argumentsDefinition =
   label "ArgumentsDefinition" $
-    uniqTuple inputValueDefinition
+    uniqTuple (fmap ArgumentDefinition inputValueDefinition)
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --

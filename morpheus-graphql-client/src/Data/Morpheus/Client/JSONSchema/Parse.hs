@@ -41,6 +41,7 @@ import qualified Data.Morpheus.Types.Internal.AST as AST
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    ArgumentDefinition (..),
     ArgumentsDefinition (..),
     CONST,
     DataTypeWrapper (..),
@@ -151,7 +152,7 @@ instance ParseJSONSchema Field (FieldDefinition OUT CONST) where
     pure $ mkObjectField (ArgumentsDefinition args) fieldName wrappers typename
     where
       genArg InputValue {inputName = argName, inputType = argType} =
-        uncurry (mkInputValue argName) <$> fieldTypeFromJSON argType
+        ArgumentDefinition . uncurry (mkInputValue argName) <$> fieldTypeFromJSON argType
 
 instance ParseJSONSchema InputValue (FieldDefinition IN CONST) where
   parse InputValue {inputName, inputType} = uncurry (mkInputValue inputName) <$> fieldTypeFromJSON inputType

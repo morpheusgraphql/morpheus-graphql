@@ -18,7 +18,7 @@
 module Data.Morpheus.Types.Internal.AST.Fields
   ( Arguments,
     Argument (..),
-    ArgumentDefinition,
+    ArgumentDefinition (..),
     ArgumentsDefinition (..),
     FieldDefinition (..),
     FieldsDefinition,
@@ -214,7 +214,7 @@ unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
 unsafeFromFields = unsafeFromList . fmap toPair
 
 fieldsToArguments :: FieldsDefinition IN s -> ArgumentsDefinition s
-fieldsToArguments = ArgumentsDefinition
+fieldsToArguments = ArgumentsDefinition . fmap ArgumentDefinition
 
 -- 3.6 Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
 ------------------------------------------------------------------------------
@@ -355,7 +355,20 @@ newtype ArgumentsDefinition s = ArgumentsDefinition
 instance RenderGQL (ArgumentsDefinition s) where
   renderGQL ArgumentsDefinition {arguments} = renderArguments (elems arguments)
 
-type ArgumentDefinition = FieldDefinition IN
+instance RenderGQL (ArgumentDefinition s) where
+  renderGQL = renderGQL . argument
+
+newtype ArgumentDefinition s = ArgumentDefinition
+  { argument :: FieldDefinition IN s
+  }
+  deriving (Show, Lift, Eq)
+
+instance KeyOf FieldName (ArgumentDefinition s) where
+  keyOf = keyOf . argument
+
+instance NameCollision (ArgumentDefinition s) where
+  nameCollision ArgumentDefinition {argument} =
+    "There can Be only One field Named " <> msgValidation (fieldName argument)
 
 instance (Monad m, Failure ValidationErrors m) => FromElems m (ArgumentDefinition s) (ArgumentsDefinition s) where
   fromElems args = ArgumentsDefinition <$> fromElems args

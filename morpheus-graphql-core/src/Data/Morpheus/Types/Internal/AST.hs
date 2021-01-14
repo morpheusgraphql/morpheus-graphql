@@ -44,7 +44,7 @@ module Data.Morpheus.Types.Internal.AST
     ScalarDefinition (..),
     DataEnum,
     FieldsDefinition,
-    ArgumentDefinition,
+    ArgumentDefinition (..),
     DataUnion,
     ArgumentsDefinition (..),
     FieldDefinition (..),
