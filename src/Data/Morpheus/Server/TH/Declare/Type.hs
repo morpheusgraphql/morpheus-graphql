@@ -24,7 +24,7 @@ import Data.Morpheus.Server.Internal.TH.Types
   ( ServerConsD,
     ServerDec,
     ServerDecContext (..),
-    ServerFieldDefinition,
+    ServerFieldDefinition (..),
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.Internal.TH.Utils
@@ -33,12 +33,9 @@ import Data.Morpheus.Server.Internal.TH.Utils
     tyConArgs,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition (..),
-    ConsD (..),
-    FieldContent (..),
+  ( ConsD (..),
     FieldDefinition (..),
     FieldName (..),
-    TRUE,
     TypeKind (..),
     TypeName (..),
     isResolverType,
@@ -102,26 +99,31 @@ declareField ::
   TypeName ->
   ServerFieldDefinition cat s ->
   ServerDec (Name, Bang, Type)
-declareField tKind tName (isParam, field@FieldDefinition {fieldName}) = do
+declareField tKind tName field = do
   namespace' <- asks namespace
   pure
-    ( fieldTypeName namespace' tName fieldName,
+    ( fieldTypeName namespace' tName (fieldName $ originalField field),
       Bang NoSourceUnpackedness NoSourceStrictness,
-      renderFieldType tKind renderTypeName field
+      renderFieldType tKind field
     )
-  where
-    renderTypeName :: TypeName -> Type
-    renderTypeName
-      | isParam = (`apply` [m'])
-      | otherwise = toCon
 
 renderFieldType ::
   TypeKind ->
-  (TypeName -> Type) ->
-  FieldDefinition cat s ->
+  ServerFieldDefinition cat s ->
   Type
-renderFieldType tKind f FieldDefinition {fieldContent, fieldType} =
-  withFieldWrappers tKind fieldContent (declareTypeRef f fieldType)
+renderFieldType
+  tKind
+  ServerFieldDefinition
+    { isParametrized,
+      originalField = FieldDefinition {fieldType},
+      argumentsTypeName
+    } =
+    withFieldWrappers tKind argumentsTypeName (declareTypeRef renderTypeName fieldType)
+    where
+      renderTypeName :: TypeName -> Type
+      renderTypeName
+        | isParametrized = (`apply` [m'])
+        | otherwise = toCon
 
 fieldTypeName :: Bool -> TypeName -> FieldName -> Name
 fieldTypeName namespace tName fieldName
@@ -150,10 +152,10 @@ type Arrow = (->)
 ------------------------------------------------
 withFieldWrappers ::
   TypeKind ->
-  Maybe (FieldContent TRUE cat s) ->
+  Maybe TypeName ->
   Type ->
   Type
-withFieldWrappers kind (Just (FieldArgs ArgumentsDefinition {argumentsTypename = Just argsTypename})) =
+withFieldWrappers kind (Just argsTypename) =
   withArgs argsTypename
     . withSubscriptionField kind
     . withMonad

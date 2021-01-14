@@ -5,11 +5,11 @@ module Data.Morpheus.Server.Internal.TH.Types
     ServerDec,
     ServerDecContext (..),
     ServerConsD,
-    ServerFieldDefinition,
+    ServerFieldDefinition (..),
+    toServerField,
   )
 where
 
-import Control.Monad.Reader (Reader)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
@@ -19,13 +19,17 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind,
     TypeName,
   )
-import Prelude
-  ( Bool,
-    Maybe,
-    Show,
-  )
+import Relude
 
-type ServerFieldDefinition cat s = (Bool, FieldDefinition cat s)
+data ServerFieldDefinition cat s = ServerFieldDefinition
+  { isParametrized :: Bool,
+    argumentsTypeName :: Maybe TypeName,
+    originalField :: FieldDefinition cat s
+  }
+  deriving (Show)
+
+toServerField :: FieldDefinition c s -> ServerFieldDefinition c s
+toServerField = ServerFieldDefinition False Nothing
 
 type ServerConsD cat s = ConsD (ServerFieldDefinition cat s)
 

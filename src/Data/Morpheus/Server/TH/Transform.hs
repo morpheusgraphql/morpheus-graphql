@@ -4,7 +4,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Transform
@@ -17,13 +16,13 @@ import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
     elems,
     empty,
-    mapSnd,
     singleton,
   )
 import Data.Morpheus.Server.Internal.TH.Types
   ( ServerConsD,
-    ServerFieldDefinition,
+    ServerFieldDefinition (..),
     ServerTypeDefinition (..),
+    toServerField,
   )
 import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType)
 import Data.Morpheus.Types.Internal.AST
@@ -90,17 +89,20 @@ toTHDefinitions namespace schema = traverse generateType schema
                   ..
                 }
 
+toHSTypeRef :: TypeRef -> TypeRef
+toHSTypeRef tyRef@TypeRef {typeConName} = tyRef {typeConName = hsTypeName typeConName}
+
 toHSFieldDefinition :: FieldDefinition cat s -> FieldDefinition cat s
 toHSFieldDefinition field = field {fieldType = toHSTypeRef (fieldType field)}
 
-toHSTypeRef :: TypeRef -> TypeRef
-toHSTypeRef tyRef@TypeRef {typeConName} = tyRef {typeConName = hsTypeName typeConName}
+toHSServerFieldDefinition :: ServerFieldDefinition cat s -> ServerFieldDefinition cat s
+toHSServerFieldDefinition field = field {originalField = toHSFieldDefinition (originalField field)}
 
 mkCons :: TypeName -> [ServerFieldDefinition cat s] -> ServerConsD cat s
 mkCons typename fields =
   ConsD
     { cName = hsTypeName typename,
-      cFields = fmap (mapSnd toHSFieldDefinition) fields
+      cFields = fmap toHSServerFieldDefinition fields
     }
 
 mkObjectCons :: TypeName -> [ServerFieldDefinition cat s] -> [ServerConsD cat s]
@@ -126,23 +128,21 @@ mkObjectField
       fieldContent = cont,
       fieldType = typeRef@TypeRef {typeConName},
       ..
-    } =
-    (,FieldDefinition
-      { fieldName,
-        fieldType = toHSTypeRef typeRef,
-        fieldContent = cont >>= fieldCont,
-        ..
-      })
-      <$> isParametrizedResolverType typeConName schema
+    } = do
+    isParametrized <- isParametrizedResolverType typeConName schema
+    let originalField =
+          FieldDefinition
+            { fieldName,
+              fieldType = toHSTypeRef typeRef,
+              fieldContent = cont,
+              ..
+            }
+    let argumentsTypeName = cont >>= fieldCont
+    pure ServerFieldDefinition {..}
     where
-      fieldCont :: FieldContent TRUE OUT s -> Maybe (FieldContent TRUE OUT s)
+      fieldCont :: FieldContent TRUE OUT s -> Maybe TypeName
       fieldCont (FieldArgs ArgumentsDefinition {arguments})
-        | not (null arguments) =
-          Just $ FieldArgs $
-            ArgumentsDefinition
-              { argumentsTypename = Just $ genArgsTypeName fieldName,
-                arguments = arguments
-              }
+        | not (null arguments) = Just $ genArgsTypeName fieldName
       fieldCont _ = Nothing
 
 data BuildPlan s
@@ -158,7 +158,7 @@ genTypeContent ::
 genTypeContent _ _ _ DataScalar {} = pure (ConsIN [])
 genTypeContent _ _ _ (DataEnum tags) = pure $ ConsIN (fmap mkConsEnum tags)
 genTypeContent _ _ typeName (DataInputObject fields) =
-  pure $ ConsIN (mkObjectCons typeName $ map (False,) $ elems fields)
+  pure $ ConsIN (mkObjectCons typeName $ map toServerField $ elems fields)
 genTypeContent _ _ _ DataInputUnion {} = fail "Input Unions not Supported"
 genTypeContent schema toArgsTyName typeName DataInterface {interfaceFields} = do
   typeArgD <- genArgumentTypes toArgsTyName interfaceFields
@@ -176,21 +176,23 @@ genTypeContent _ _ typeName (DataUnion members) =
     unionCon UnionMember {memberName} =
       mkCons
         cName
-        ( singleton
-            ( True,
-              FieldDefinition
-                { fieldName = "un" <> toFieldName cName,
-                  fieldType =
-                    TypeRef
-                      { typeConName = utName,
-                        typeWrappers = []
-                      },
-                  fieldDescription = Nothing,
-                  fieldDirectives = empty,
-                  fieldContent = Nothing
-                }
-            )
-        )
+        $ singleton
+          ServerFieldDefinition
+            { isParametrized = True,
+              argumentsTypeName = Nothing,
+              originalField =
+                FieldDefinition
+                  { fieldName = "un" <> toFieldName cName,
+                    fieldType =
+                      TypeRef
+                        { typeConName = utName,
+                          typeWrappers = []
+                        },
+                    fieldDescription = Nothing,
+                    fieldDirectives = empty,
+                    fieldContent = Nothing
+                  }
+            }
       where
         cName = hsTypeName typeName <> utName
         utName = hsTypeName memberName
@@ -205,7 +207,7 @@ genArgumentType namespaceWith FieldDefinition {fieldName, fieldContent = Just (F
     pure
       [ ServerTypeDefinition
           { tName,
-            tCons = [mkCons tName $ map (False,) $ elems arguments],
+            tCons = [mkCons tName $ map toServerField $ elems arguments],
             tKind = KindInputObject,
             typeArgD = [],
             typeOriginal = Nothing
