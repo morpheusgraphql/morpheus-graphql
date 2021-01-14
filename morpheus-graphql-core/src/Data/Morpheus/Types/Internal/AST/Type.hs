@@ -10,6 +10,8 @@ module Data.Morpheus.Types.Internal.AST.Type
     TypeRef (..),
     TypeWrapper (..),
     Nullable (..),
+    Strictness (..),
+    TypeKind (..),
     isWeaker,
     mkTypeRef,
     toGQLWrapper,
@@ -26,6 +28,7 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName (..),
     Msg (..),
+    OperationType,
     TypeName (..),
   )
 import qualified Data.Text.Lazy as LT
@@ -36,6 +39,59 @@ import Relude hiding
     decodeUtf8,
     intercalate,
   )
+
+-- Kind
+-----------------------------------------------------------------------------------
+data TypeKind
+  = KindScalar
+  | KindObject (Maybe OperationType)
+  | KindUnion
+  | KindEnum
+  | KindInputObject
+  | KindList
+  | KindNonNull
+  | KindInputUnion
+  | KindInterface
+  deriving (Eq, Show, Lift)
+
+instance RenderGQL TypeKind where
+  renderGQL KindScalar = "SCALAR"
+  renderGQL KindObject {} = "OBJECT"
+  renderGQL KindUnion = "UNION"
+  renderGQL KindInputUnion = "INPUT_OBJECT"
+  renderGQL KindEnum = "ENUM"
+  renderGQL KindInputObject = "INPUT_OBJECT"
+  renderGQL KindList = "LIST"
+  renderGQL KindNonNull = "NON_NULL"
+  renderGQL KindInterface = "INTERFACE"
+
+--  Definitions:
+--     Strictness:
+--        Strict: Value (Strict) Types.
+--             members: {scalar, enum , input}
+--        Lazy: Resolver (lazy) Types
+--             members: strict + {object, interface, union}
+class Strictness t where
+  isResolverType :: t -> Bool
+
+instance Strictness TypeKind where
+  isResolverType (KindObject _) = True
+  isResolverType KindUnion = True
+  isResolverType KindInterface = True
+  isResolverType _ = False
+
+-- TypeWrappers
+-----------------------------------------------------------------------------------
+
+data TypeWrapper
+  = TypeList
+  | TypeMaybe
+  deriving (Show, Eq, Lift)
+
+data DataTypeWrapper
+  = ListType
+  | NonNullType
+  deriving (Show, Lift)
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
 isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
@@ -65,16 +121,8 @@ renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
     showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
     showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
 
-data TypeWrapper
-  = TypeList
-  | TypeMaybe
-  deriving (Show, Eq, Lift)
-
-data DataTypeWrapper
-  = ListType
-  | NonNullType
-  deriving (Show, Lift)
-
+-- TypeRef
+-------------------------------------------------------------------
 data TypeRef = TypeRef
   { typeConName :: TypeName,
     typeArgs :: Maybe String,

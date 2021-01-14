@@ -21,7 +21,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     QUERY,
     MUTATION,
     SUBSCRIPTION,
-    TypeKind (..),
     Token,
     isNotSystemTypeName,
     sysFields,
@@ -46,7 +45,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     toGQLError,
     unitTypeName,
     unitFieldName,
-    Strictness (..),
     anonymousRef,
   )
 where
@@ -291,43 +289,6 @@ instance Ord name => Ord (Ref name) where
 anonymousRef :: name -> Ref name
 anonymousRef refName = Ref {refName, refPosition = Position 0 0}
 
--- TypeRef
--------------------------------------------------------------------
-
--- Kind
------------------------------------------------------------------------------------
-data TypeKind
-  = KindScalar
-  | KindObject (Maybe OperationType)
-  | KindUnion
-  | KindEnum
-  | KindInputObject
-  | KindList
-  | KindNonNull
-  | KindInputUnion
-  | KindInterface
-  deriving (Eq, Show, Lift)
-
-instance Strictness TypeKind where
-  isResolverType (KindObject _) = True
-  isResolverType KindUnion = True
-  isResolverType KindInterface = True
-  isResolverType _ = False
-
-instance RenderGQL TypeKind where
-  renderGQL KindScalar = "SCALAR"
-  renderGQL KindObject {} = "OBJECT"
-  renderGQL KindUnion = "UNION"
-  renderGQL KindInputUnion = "INPUT_OBJECT"
-  renderGQL KindEnum = "ENUM"
-  renderGQL KindInputObject = "INPUT_OBJECT"
-  renderGQL KindList = "LIST"
-  renderGQL KindNonNull = "NON_NULL"
-  renderGQL KindInterface = "INTERFACE"
-
--- TypeWrappers
------------------------------------------------------------------------------------
-
 isNotSystemTypeName :: TypeName -> Bool
 isNotSystemTypeName =
   ( `notElem`
@@ -406,12 +367,3 @@ unitTypeName = "Unit"
 
 unitFieldName :: FieldName
 unitFieldName = "_"
-
---  Definitions:
---     Strictness:
---        Strict: Value (Strict) Types.
---             members: {scalar, enum , input}
---        Lazy: Resolver (lazy) Types
---             members: strict + {object, interface, union}
-class Strictness t where
-  isResolverType :: t -> Bool
