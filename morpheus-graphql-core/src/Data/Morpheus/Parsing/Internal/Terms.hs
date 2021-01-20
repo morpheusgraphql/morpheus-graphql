@@ -23,7 +23,6 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseName,
     parseType,
     keyword,
-    symbol,
     optDescription,
     optionalCollection,
     parseNegativeSign,
@@ -56,12 +55,13 @@ import Data.Morpheus.Parsing.Internal.Internal
     Position,
     getLocation,
   )
+import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
     Description,
     FieldName (..),
     Ref (..),
-    Token,
+    -- Token,
     TypeName (..),
     TypeRef (..),
     toHSWrappers,
@@ -71,7 +71,7 @@ import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
     Stream,
-    Tokens,
+    Token,
     between,
     label,
     many,
@@ -93,115 +93,181 @@ import Text.Megaparsec.Byte
     string,
   )
 
-parseNegativeSign :: Stream s => Parser s Bool
-parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
-{-# INLINEABLE parseNegativeSign #-}
+class Term s where
+  -- parens : '()'
+  parens :: Parser s a -> Parser s a
 
-parseName :: Stream s => Parser s FieldName
-parseName = FieldName <$> name
-{-# INLINEABLE parseName #-}
+  -- braces: {}
+  braces :: Parser s a -> Parser s a
 
-parseTypeName :: Stream s => Parser s TypeName
-parseTypeName = label "TypeName" $ TypeName <$> name
-{-# INLINEABLE parseTypeName #-}
+  -- comma: ,
+  comma :: Parser s ()
 
-keyword :: (Stream s) => ByteString -> Parser s ()
-keyword word = string word *> space1 *> ignoredTokens
-{-# INLINEABLE keyword #-}
+  -- brackets: []
+  brackets :: Parser s a -> Parser s a
 
-symbol :: Stream s => Word8 -> Parser s ()
-symbol x = char x *> ignoredTokens
-{-# INLINEABLE symbol #-}
+  -- underscore : '_'
+  underscore :: Parser s Word8
 
--- braces: {}
-braces :: Stream s => Parser s a -> Parser s a
-braces = between (symbol 123) (symbol 125)
-{-# INLINEABLE braces #-}
+  -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
+  --  Ignored:
+  --    UnicodeBOM
+  --    WhiteSpace
+  --    LineTerminator
+  --    Comment
+  --    Comma
+  ignoredTokens :: Parser s ()
 
--- brackets: []
-brackets :: Stream s => Parser s a -> Parser s a
-brackets = between (symbol 91) (symbol 93)
-{-# INLINEABLE brackets #-}
+  ignoredTokens1 :: Parser s ()
 
--- parens : '()'
-parens :: Stream s => Parser s a -> Parser s a
-parens = between (symbol 40) (symbol 41)
-{-# INLINEABLE parens #-}
+  -- PRIMITIVE
+  ------------------------------------
 
--- underscore : '_'
-underscore :: Stream s => Parser s Word8
-underscore = char 95
-{-# INLINEABLE underscore #-}
+  -- 2.1.9 Names
+  -- https://spec.graphql.org/draft/#Name
+  -- Name ::
+  --  NameStart NameContinue[list,opt]
+  --
+  name :: Parser s AST.Token
 
-comma :: Stream s => Parser s ()
-comma = label "," $ char 44 *> space
-{-# INLINEABLE comma #-}
+  anyChar :: Parser s Char
+  anyChar' :: Parser s (Token s)
 
--- dollar :: $
-dollar :: Stream s => Parser s ()
-dollar = label "$" $ symbol 36
-{-# INLINEABLE dollar #-}
+  escapedChar :: Parser s Char
 
--- equal :: '='
-equal :: Stream s => Parser s ()
-equal = label "=" $ symbol 61
-{-# INLINEABLE equal #-}
+  str :: s -> Parser s ()
 
--- colon :: ':'
-colon :: Stream s => Parser s ()
-colon = label ":" $ symbol 58
-{-# INLINEABLE colon #-}
+  nline :: Parser s Char
 
--- minus: '-'
-minus :: Stream s => Parser s ()
-minus = label "-" $ symbol 45
-{-# INLINEABLE minus #-}
+  -- exclamationMark: '!'
+  exclamationMark :: Parser s ()
 
--- verticalPipe: '|'
-verticalPipe :: Stream s => Parser s ()
-verticalPipe = label "|" $ symbol 124
-{-# INLINEABLE verticalPipe #-}
+  -- dollar :: $
+  dollar :: Parser s ()
 
-ampersand :: Stream s => Parser s ()
-ampersand = label "&" $ symbol 38
-{-# INLINEABLE ampersand #-}
+  -- at: '@'
+  at :: Parser s ()
 
--- at: '@'
-at :: Stream s => Parser s ()
-at = label "@" $ symbol 64
-{-# INLINEABLE at #-}
+  -- equal :: '='
+  equal :: Parser s ()
 
--- PRIMITIVE
-------------------------------------
+  -- colon :: ':'
+  colon :: Parser s ()
 
--- 2.1.9 Names
--- https://spec.graphql.org/draft/#Name
--- Name ::
---  NameStart NameContinue[list,opt]
---
-name :: Stream s => Parser s Token
-name =
-  label "Name" $
-    fromLBS . pack
-      <$> ((:) <$> nameStart <*> nameContinue)
-      <* ignoredTokens
-{-# INLINEABLE name #-}
+  -- minus: '-'
+  minus :: Parser s ()
+
+  -- verticalPipe: '|'
+  verticalPipe :: Parser s ()
+
+  ampersand :: Parser s ()
 
 -- NameStart::
 --   Letter
 --   _
-nameStart :: Stream s => Parser s Word8
-nameStart = letterChar <|> underscore
-{-# INLINEABLE nameStart #-}
+nameStartBS :: Parser ByteString Word8
+nameStartBS = letterChar <|> underscore
+{-# INLINEABLE nameStartBS #-}
 
 --  NameContinue::
 --   Letter
 --   Digit
-nameContinue :: Stream s => Parser s [Word8]
-nameContinue = many (letterChar <|> underscore <|> digitChar)
-{-# INLINEABLE nameContinue #-}
+nameContinueBS :: Parser ByteString [Word8]
+nameContinueBS = many (letterChar <|> underscore <|> digitChar)
+{-# INLINEABLE nameContinueBS #-}
 
-varName :: Stream s => Parser s FieldName
+instance Term ByteString where
+  parens = between (symbol 40) (symbol 41)
+  {-# INLINEABLE parens #-}
+
+  braces = between (symbol 123) (symbol 125)
+  {-# INLINEABLE braces #-}
+
+  comma = label "," $ char 44 *> space
+  {-# INLINEABLE comma #-}
+
+  brackets = between (symbol 91) (symbol 93)
+  {-# INLINEABLE brackets #-}
+
+  underscore = char 95
+  {-# INLINEABLE underscore #-}
+
+  ignoredTokens =
+    label "IgnoredTokens" $
+      space
+        *> many (comment <|> comma)
+        *> space
+    where
+      comment =
+        label "Comment" $
+          char 35 *> skipManyTill printChar newline *> space
+      {-# INLINEABLE comment #-}
+  {-# INLINEABLE ignoredTokens #-}
+
+  ignoredTokens1 = space1 *> ignoredTokens
+  {-# INLINEABLE ignoredTokens1 #-}
+
+  name =
+    label "Name" $
+      fromLBS . pack
+        <$> ((:) <$> nameStartBS <*> nameContinueBS)
+        <* ignoredTokens
+  {-# INLINEABLE name #-}
+
+  escapedChar = label "EscapedChar" $ printChar >>= handleEscape
+  {-# INLINEABLE escapedChar #-}
+
+  str x = string x $> ()
+  {-# INLINEABLE str #-}
+
+  nline = w2c <$> newline
+  {-# INLINEABLE nline #-}
+
+  exclamationMark = label "!" $ symbol 33
+  {-# INLINEABLE exclamationMark #-}
+
+  dollar = label "$" $ symbol 36
+  {-# INLINEABLE dollar #-}
+
+  at = label "@" $ symbol 64
+  {-# INLINEABLE at #-}
+
+  equal = label "=" $ symbol 61
+  {-# INLINEABLE equal #-}
+
+  colon = label ":" $ symbol 58
+  {-# INLINEABLE colon #-}
+
+  minus = label "-" $ symbol 45
+  {-# INLINEABLE minus #-}
+
+  verticalPipe = label "|" $ symbol 124
+  {-# INLINEABLE verticalPipe #-}
+
+  ampersand = label "&" $ symbol 38
+  {-# INLINEABLE ampersand #-}
+
+parseNegativeSign :: (Stream s, Term s) => Parser s Bool
+parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
+{-# INLINEABLE parseNegativeSign #-}
+
+parseName :: Term s => Parser s FieldName
+parseName = FieldName <$> name
+{-# INLINEABLE parseName #-}
+
+parseTypeName :: (Stream s, Term s) => Parser s TypeName
+parseTypeName = label "TypeName" $ TypeName <$> name
+{-# INLINEABLE parseTypeName #-}
+
+keyword :: (Stream s, Term s) => s -> Parser s ()
+keyword word = str word *> ignoredTokens1
+{-# INLINEABLE keyword #-}
+
+symbol :: Word8 -> Parser ByteString ()
+symbol x = char x *> ignoredTokens
+{-# INLINEABLE symbol #-}
+
+varName :: (Stream s, Term s) => Parser s FieldName
 varName = dollar *> parseName <* ignoredTokens
 {-# INLINEABLE varName #-}
 
@@ -209,7 +275,7 @@ varName = dollar *> parseName <* ignoredTokens
 --
 -- Variable :  $Name
 --
-variable :: Stream s => Parser s (Ref FieldName)
+variable :: (Stream s, Term s) => Parser s (Ref FieldName)
 variable =
   label "variable" $
     flip Ref
@@ -221,23 +287,23 @@ variable =
 --
 -- Description:
 --   StringValue
-optDescription :: Stream s => Parser s (Maybe Description)
+optDescription :: (Stream s, IsString s, Term s) => Parser s (Maybe Description)
 optDescription = optional parseString
 {-# INLINEABLE optDescription #-}
 
-parseString :: Stream s => Parser s Token
-parseString = blockString <|> singleLineString
+parseString :: (Stream s, IsString s, Term s) => Parser s AST.Token
+parseString = blockString <|> inlineString
 {-# INLINEABLE parseString #-}
 
-blockString :: Stream s => Parser s Token
-blockString = stringWith (string "\"\"\"") (w2c <$> (printChar <|> newline))
+blockString :: (Stream s, IsString s, Term s) => Parser s AST.Token
+blockString = stringWith (str "\"\"\"") (anyChar <|> nline)
 {-# INLINEABLE blockString #-}
 
-singleLineString :: Stream s => Parser s Token
-singleLineString = stringWith (string "\"") escapedChar
-{-# INLINEABLE singleLineString #-}
+inlineString :: (Term s, IsString s, Stream s) => Parser s AST.Token
+inlineString = stringWith (str "\"") escapedChar
+{-# INLINEABLE inlineString #-}
 
-stringWith :: Stream s => Parser s quote -> Parser s Char -> Parser s Token
+stringWith :: (Stream s, Term s) => Parser s quote -> Parser s Char -> Parser s AST.Token
 stringWith quote parser =
   T.pack
     <$> ( quote
@@ -246,12 +312,8 @@ stringWith quote parser =
         )
 {-# INLINEABLE stringWith #-}
 
-escapedChar :: Stream s => Parser s Char
-escapedChar = label "EscapedChar" $ printChar >>= handleEscape
-{-# INLINEABLE escapedChar #-}
-
-handleEscape :: Stream s => Word8 -> Parser s Char
-handleEscape 92 = w2c . escape <$> printChar
+handleEscape :: Word8 -> Parser ByteString Char
+handleEscape 92 = w2c . escape <$> anyChar'
 handleEscape x = pure (w2c x)
 {-# INLINEABLE handleEscape #-}
 
@@ -264,47 +326,21 @@ escape 116 = 9
 escape x = x
 {-# INLINEABLE escape #-}
 
--- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
---  Ignored:
---    UnicodeBOM
---    WhiteSpace
---    LineTerminator
---    Comment
---    Comma
-ignoredTokens :: Stream s => Parser s ()
-ignoredTokens =
-  label "IgnoredTokens" $
-    space
-      *> many (comment <|> comma)
-      *> space
-{-# INLINEABLE ignoredTokens #-}
-
-comment :: Stream s => Parser s ()
-comment =
-  label "Comment" $
-    char 35 *> skipManyTill printChar newline *> space
-{-# INLINEABLE comment #-}
-
--- exclamationMark: '!'
-exclamationMark :: Stream s => Parser s ()
-exclamationMark = label "!" $symbol 33
-{-# INLINEABLE exclamationMark #-}
-
 ------------------------------------------------------------------------
-sepByAnd :: Stream s => Parser s a -> Parser s [a]
+sepByAnd :: (Stream s, Term s) => Parser s a -> Parser s [a]
 sepByAnd entry = entry `sepBy` (optional ampersand *> ignoredTokens)
 {-# INLINEABLE sepByAnd #-}
 
-pipe :: Stream s => Parser s a -> Parser s [a]
+pipe :: (Stream s, Term s) => Parser s a -> Parser s [a]
 pipe x = optional verticalPipe *> (x `sepBy1` verticalPipe)
 {-# INLINEABLE pipe #-}
 
 -----------------------------
-collection :: Stream s => Parser s a -> Parser s [a]
+collection :: (Stream s, Term s) => Parser s a -> Parser s [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
 {-# INLINEABLE collection #-}
 
-setOf :: (FromElems Eventless a coll, KeyOf k a, Stream s) => Parser s a -> Parser s coll
+setOf :: (FromElems Eventless a coll, Term s, KeyOf k a, Stream s) => Parser s a -> Parser s coll
 setOf = collection >=> lift . fromElems
 {-# INLINEABLE setOf #-}
 
@@ -312,13 +348,13 @@ optionalCollection :: (Empty c, Stream s) => Parser s c -> Parser s c
 optionalCollection x = x <|> pure empty
 {-# INLINEABLE optionalCollection #-}
 
-parseNonNull :: Stream s => Parser s [DataTypeWrapper]
+parseNonNull :: (Stream s, Term s) => Parser s [DataTypeWrapper]
 parseNonNull =
   (exclamationMark $> [NonNullType])
     <|> pure []
 {-# INLINEABLE parseNonNull #-}
 
-uniqTuple :: (FromElems Eventless a coll, Stream s, KeyOf k a) => Parser s a -> Parser s coll
+uniqTuple :: (FromElems Eventless a coll, Term s, Stream s, KeyOf k a) => Parser s a -> Parser s coll
 uniqTuple parser =
   label "Tuple" $
     parens
@@ -326,11 +362,11 @@ uniqTuple parser =
       >>= lift . fromElems
 {-# INLINEABLE uniqTuple #-}
 
-uniqTupleOpt :: (FromElems Eventless a coll, Stream s, Empty coll, KeyOf k a) => Parser s a -> Parser s coll
+uniqTupleOpt :: (FromElems Eventless a coll, Term s, Stream s, Empty coll, KeyOf k a) => Parser s a -> Parser s coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 {-# INLINEABLE uniqTupleOpt #-}
 
-fieldNameColon :: Stream s => Parser s FieldName
+fieldNameColon :: (Stream s, Term s) => Parser s FieldName
 fieldNameColon = parseName <* colon
 {-# INLINEABLE fieldNameColon #-}
 
@@ -339,24 +375,24 @@ fieldNameColon = parseName <* colon
 --  TypeCondition:
 --    on NamedType
 --
-parseTypeCondition :: Stream s => Parser s TypeName
+parseTypeCondition :: (Stream s, Term s, IsString s) => Parser s TypeName
 parseTypeCondition = keyword "on" *> parseTypeName
 {-# INLINEABLE parseTypeCondition #-}
 
-spreadLiteral :: Stream s => Parser s Position
-spreadLiteral = getLocation <* string "..." <* space
+spreadLiteral :: (Stream s, Term s, IsString s) => Parser s Position
+spreadLiteral = getLocation <* str "..." <* ignoredTokens
 {-# INLINEABLE spreadLiteral #-}
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
 --  Name:
-parseAlias :: Stream s => Parser s (Maybe FieldName)
+parseAlias :: (Stream s, Term s) => Parser s (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
     alias = label "alias" fieldNameColon
 {-# INLINEABLE parseAlias #-}
 
-parseType :: Stream s => Parser s TypeRef
+parseType :: (Stream s, Term s) => Parser s TypeRef
 parseType = parseTypeW <$> parseWrappedType <*> parseNonNull
 {-# INLINEABLE parseType #-}
 
@@ -368,13 +404,13 @@ parseTypeW (wrappers, typeConName) nonNull =
     }
 {-# INLINEABLE parseTypeW #-}
 
-parseWrappedType :: Stream s => Parser s ([DataTypeWrapper], TypeName)
+parseWrappedType :: (Stream s, Term s) => Parser s ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
   where
-    unwrapped :: Stream s => Parser s ([DataTypeWrapper], TypeName)
+    unwrapped :: (Stream s, Term s) => Parser s ([DataTypeWrapper], TypeName)
     unwrapped = ([],) <$> parseTypeName <* ignoredTokens
     ----------------------------------------------
-    wrapped :: Stream s => Parser s ([DataTypeWrapper], TypeName)
+    wrapped :: (Stream s, Term s) => Parser s ([DataTypeWrapper], TypeName)
     wrapped = brackets (wrapAsList <$> (unwrapped <|> wrapped) <*> parseNonNull)
 {-# INLINEABLE parseWrappedType #-}
 
