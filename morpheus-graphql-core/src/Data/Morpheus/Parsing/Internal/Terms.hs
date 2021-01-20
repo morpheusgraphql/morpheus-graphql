@@ -77,6 +77,7 @@ import Text.Megaparsec
     sepBy,
     sepBy1,
     sepEndBy,
+    skipManyTill,
     try,
   )
 import Text.Megaparsec.Byte
@@ -89,7 +90,6 @@ import Text.Megaparsec.Byte
     space1,
     string,
   )
-import Text.Megaparsec.Byte.Lexer (skipLineComment)
 
 parseNegativeSign :: Parser Bool
 parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
@@ -278,7 +278,9 @@ ignoredTokens =
 {-# INLINEABLE ignoredTokens #-}
 
 comment :: Parser ()
-comment = label "Comment" $ skipLineComment "#"
+comment =
+  label "Comment" $
+    char 35 *> skipManyTill printChar newline *> space
 {-# INLINEABLE comment #-}
 
 -- exclamationMark: '!'
