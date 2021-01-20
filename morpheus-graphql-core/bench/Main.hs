@@ -16,15 +16,15 @@ import qualified Language.GraphQL.AST as GQL
 import Text.Megaparsec (runParser)
 
 fetchCase :: FilePath -> IO (ByteString, Text)
-fetchCase x = (,) <$> L.readFile x <*> TIO.readFile x
+fetchCase x = (,) <$> L.readFile path <*> TIO.readFile path
   where
     path = "bench/" <> x <> ".gql"
 
 main :: IO ()
 main = do
-  github <- fetchCase "bench/github.gql"
-  mythology <- fetchCase "bench/mythology.gql"
-  starwars <- fetchCase "bench/starwars.gql"
+  github <- fetchCase "github"
+  mythology <- fetchCase "mythology"
+  starwars <- fetchCase "starwars"
   defaultMain
     [ schemaBenchmark "github: 38,948 lines" github,
       schemaBenchmark "mythology: 94 lines" mythology,
