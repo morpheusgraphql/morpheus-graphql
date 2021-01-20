@@ -38,7 +38,7 @@ main = do
       schemaBenchmark "mythology: \nlines: 94 " mythology,
       schemaBenchmark "starWars: \nlines: 5,922 " starWars,
       schemaBenchmark "wrappers: \nlines: 6 " wrappers,
-      schemaBenchmark "descriptions: \nlines: 6 " descriptions
+      schemaBenchmark "descriptions: \nlines: 2500 " descriptions
     ]
 
 typeCount :: ByteString -> Int
