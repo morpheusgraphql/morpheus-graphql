@@ -9,7 +9,6 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (toList)
 import qualified Data.Morpheus.Core as Morpheus
 import Data.Morpheus.Internal.Ext (resultOr)
-import Data.Morpheus.Internal.Utils (fromLBS)
 import qualified Data.Text as T
 import Data.Text (Text)
 import qualified Data.Text.IO as TIO
