@@ -24,11 +24,11 @@ main :: IO ()
 main = do
   github <- fetchCase "github"
   mythology <- fetchCase "mythology"
-  starwars <- fetchCase "starwars"
+  starWars <- fetchCase "starwars"
   defaultMain
     [ schemaBenchmark "github: 38,948 lines" github,
       schemaBenchmark "mythology: 94 lines" mythology,
-      schemaBenchmark "starwars: 5,922 lines" starwars
+      schemaBenchmark "starWars: 5,922 lines" starWars
     ]
 
 parseMorpheus :: ByteString -> ByteString
