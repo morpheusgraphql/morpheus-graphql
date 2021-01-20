@@ -8,7 +8,7 @@ import Data.Morpheus.Core (parseSchema)
 import Data.Morpheus.Internal.Ext (resultOr)
 
 main :: IO ()
-main = defaultMain [schemaBenchmark ""]
+main = defaultMain [schemaBenchmark "type Query {}"]
 
 parse :: ByteString -> ByteString
 parse x = resultOr (error . show) (const "OK") (parseSchema x)
