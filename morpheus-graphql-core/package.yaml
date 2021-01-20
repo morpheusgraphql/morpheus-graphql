@@ -80,3 +80,4 @@ benchmarks:
       - morpheus-graphql-core
       - criterion
       - bytestring            >= 0.10.4    && <  0.11
+      - graphql               >= 0.11
