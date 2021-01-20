@@ -98,6 +98,8 @@ import Text.Megaparsec.Byte
     string,
   )
 import Text.Megaparsec.Byte.Lexer (scientific)
+import qualified Text.Megaparsec.Char as T
+import qualified Text.Megaparsec.Char.Lexer as T (scientific)
 
 class Term s where
   -- parens : '()'
@@ -113,7 +115,7 @@ class Term s where
   brackets :: Parser s a -> Parser s a
 
   -- underscore : '_'
-  underscore :: Parser s Word8
+  underscore :: Parser s (Token s)
 
   -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
   --  Ignored:
@@ -171,6 +173,8 @@ class Term s where
 
   number :: Parser s Scientific
 
+  symbol :: Token s -> Parser s ()
+
 -- NameStart::
 --   Letter
 --   _
@@ -184,6 +188,17 @@ nameStartBS = letterChar <|> underscore
 nameContinueBS :: Parser ByteString [Word8]
 nameContinueBS = many (letterChar <|> underscore <|> digitChar)
 {-# INLINEABLE nameContinueBS #-}
+
+nameStartT :: Parser Text Char
+nameStartT = T.letterChar <|> underscore
+{-# INLINEABLE nameStartT #-}
+
+--  NameContinue::
+--   Letter
+--   Digit
+nameContinueT :: Parser Text String
+nameContinueT = many (T.letterChar <|> underscore <|> T.digitChar)
+{-# INLINEABLE nameContinueT #-}
 
 instance Term ByteString where
   parens = between (symbol 40) (symbol 41)
@@ -263,6 +278,90 @@ instance Term ByteString where
   number = scientific
   {-# INLINEABLE number #-}
 
+  symbol x = char x *> ignoredTokens
+  {-# INLINEABLE symbol #-}
+
+instance Term Text where
+  parens = between "(" ")"
+  {-# INLINEABLE parens #-}
+
+  braces = between "{" "}"
+  {-# INLINEABLE braces #-}
+
+  comma = T.char ',' *> T.space
+  {-# INLINEABLE comma #-}
+
+  brackets = between "[" "]"
+  {-# INLINEABLE brackets #-}
+
+  underscore = T.char '_'
+  {-# INLINEABLE underscore #-}
+
+  ignoredTokens =
+    label "IgnoredTokens" $
+      T.space
+        *> many (comment <|> comma)
+        *> T.space
+    where
+      comment =
+        label "Comment" $
+          T.char '#' *> skipManyTill T.printChar T.newline *> T.space
+      {-# INLINEABLE comment #-}
+  {-# INLINEABLE ignoredTokens #-}
+
+  ignoredTokens1 = T.space1 *> ignoredTokens
+  {-# INLINEABLE ignoredTokens1 #-}
+
+  name =
+    label "Name" $
+      T.pack
+        <$> ((:) <$> nameStartT <*> nameContinueT)
+        <* ignoredTokens
+  {-# INLINEABLE name #-}
+
+  escapedChar = label "EscapedChar" $ anyChar >>= handleEscapeChar
+  {-# INLINEABLE escapedChar #-}
+
+  anyChar = T.printChar
+
+  anyChar' = T.printChar
+
+  str x = string x $> ()
+  {-# INLINEABLE str #-}
+
+  nline = T.newline
+  {-# INLINEABLE nline #-}
+
+  exclamationMark = symbol '!'
+  {-# INLINEABLE exclamationMark #-}
+
+  dollar = symbol '$'
+  {-# INLINEABLE dollar #-}
+
+  at = symbol '@'
+  {-# INLINEABLE at #-}
+
+  equal = symbol '='
+  {-# INLINEABLE equal #-}
+
+  colon = symbol ':'
+  {-# INLINEABLE colon #-}
+
+  minus = symbol '-'
+  {-# INLINEABLE minus #-}
+
+  verticalPipe = symbol '|'
+  {-# INLINEABLE verticalPipe #-}
+
+  ampersand = symbol '&'
+  {-# INLINEABLE ampersand #-}
+
+  number = T.scientific
+  {-# INLINEABLE number #-}
+
+  symbol x = T.char x *> ignoredTokens
+  {-# INLINEABLE symbol #-}
+
 parseNegativeSign :: (Stream s, Term s) => Parser s Bool
 parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
 {-# INLINEABLE parseNegativeSign #-}
@@ -278,10 +377,6 @@ parseTypeName = label "TypeName" $ TypeName <$> name
 keyword :: (Stream s, Term s) => s -> Parser s ()
 keyword word = str word *> ignoredTokens1
 {-# INLINEABLE keyword #-}
-
-symbol :: Word8 -> Parser ByteString ()
-symbol x = char x *> ignoredTokens
-{-# INLINEABLE symbol #-}
 
 varName :: (Stream s, Term s) => Parser s FieldName
 varName = dollar *> parseName <* ignoredTokens
@@ -327,6 +422,20 @@ stringWith quote parser =
             <* ignoredTokens
         )
 {-# INLINEABLE stringWith #-}
+
+handleEscapeChar :: (Stream s, Term s) => Char -> Parser s Char
+handleEscapeChar '\\' = escapeChar <$> anyChar
+handleEscapeChar x = pure x
+{-# INLINEABLE handleEscapeChar #-}
+
+escapeChar :: Char -> Char
+escapeChar 'b' = '\b'
+escapeChar 'n' = '\n'
+escapeChar 'f' = '\f'
+escapeChar 'r' = '\r'
+escapeChar 't' = '\t'
+escapeChar x = x
+{-# INLINEABLE escapeChar #-}
 
 handleEscape :: Word8 -> Parser ByteString Char
 handleEscape 92 = w2c . escape <$> anyChar'
