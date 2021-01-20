@@ -15,11 +15,21 @@ import qualified Data.Text.IO as TIO
 import qualified Language.GraphQL.AST as GQL
 import Text.Megaparsec (runParser)
 
+fetchCase :: FilePath -> IO (ByteString, Text)
+fetchCase x = (,) <$> L.readFile x <*> TIO.readFile x
+  where
+    path = "bench/" <> x <> ".gql"
+
 main :: IO ()
 main = do
-  fileBS <- L.readFile "bench/schema.gql"
-  fileTS <- TIO.readFile "bench/schema.gql"
-  defaultMain [schemaBenchmark fileBS fileTS]
+  github <- fetchCase "bench/github.gql"
+  mythology <- fetchCase "bench/mythology.gql"
+  starwars <- fetchCase "bench/starwars.gql"
+  defaultMain
+    [ schemaBenchmark "github: 38,948 lines" github,
+      schemaBenchmark "mythology: 94 lines" mythology,
+      schemaBenchmark "starwars: 5,922 lines" starwars
+    ]
 
 parseMorpheus :: ByteString -> ByteString
 parseMorpheus x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
@@ -44,10 +54,10 @@ parseTypeSysDefinition s =
     Left e ->
       Left (T.pack $ show e)
 
-schemaBenchmark :: ByteString -> Text -> Benchmark
-schemaBenchmark bs txt =
+schemaBenchmark :: String -> (ByteString, Text) -> Benchmark
+schemaBenchmark label (bs, txt) =
   bgroup
-    "basic"
+    label
     [ bench "morpheus" $ nf parseMorpheus bs,
       bench "graphql" $ nf parseGraphQL txt
     ]
