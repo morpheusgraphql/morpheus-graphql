@@ -60,11 +60,11 @@ parseDoc s =
     Right d -> Right (toList d)
     Left e -> Left (T.pack $ show e)
 
-parseTypeSysDefinition :: Text -> Either Text [GQL.TypeDefinition]
+parseTypeSysDefinition :: Text -> Either Text [GQL.TypeSystemDefinition]
 parseTypeSysDefinition s =
   case runParser GQL.document "<doc>" s of
     Right (toList -> d) ->
-      let tds = [td | GQL.TypeSystemDefinition (GQL.TypeDefinition td) _ <- d]
+      let tds = [td | GQL.TypeSystemDefinition td _ <- d]
        in if length d == length tds
             then Right tds
             else Left "unexpected query or type system extension"
