@@ -352,10 +352,9 @@ typeSystemDefinition =
     >=> withSchemaDefinition . typePartition
 
 parseTypeDefinitions :: ByteString -> Eventless [TypeDefinition ANY CONST]
-parseTypeDefinitions = fmap snd3 . typeSystemDefinition
-
-snd3 :: (a, b, c) -> b
-snd3 (_, x, _) = x
+parseTypeDefinitions =
+  fmap (\d -> [td | RawTypeDefinition td <- d])
+    . processParser parseRawTypeDefinitions
 
 parseSchema :: ByteString -> Eventless (Schema CONST)
 parseSchema = typeSystemDefinition >=> buildSchema
