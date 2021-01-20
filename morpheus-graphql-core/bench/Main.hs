@@ -7,12 +7,11 @@ import Criterion.Main
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (toList)
-import qualified Data.Morpheus.Core as Morpheus (parseTypeDefinitions)
+import qualified Data.Morpheus.Core as Morpheus
 import Data.Morpheus.Internal.Ext (resultOr)
 import Data.Morpheus.Internal.Utils (fromLBS)
 import qualified Data.Text as T
 import qualified Language.GraphQL.AST as GQL
---import qualified Language.GraphQL.AST.Parser as GQL (document)
 import Text.Megaparsec (runParser)
 
 main :: IO ()
