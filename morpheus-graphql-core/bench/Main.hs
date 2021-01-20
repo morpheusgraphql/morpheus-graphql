@@ -32,11 +32,13 @@ main = do
   mythology <- fetch "mythology"
   starWars <- fetch "starwars"
   wrappers <- fetch "wrappers"
+  descriptions <- fetch "descriptions"
   defaultMain
     [ schemaBenchmark "github: \nlines: 38,948 " github,
       schemaBenchmark "mythology: \nlines: 94 " mythology,
       schemaBenchmark "starWars: \nlines: 5,922 " starWars,
-      schemaBenchmark "wrappers: \nlines: 6 " wrappers
+      schemaBenchmark "wrappers: \nlines: 6 " wrappers,
+      schemaBenchmark "descriptions: \nlines: 6 " descriptions
     ]
 
 typeCount :: ByteString -> Int
