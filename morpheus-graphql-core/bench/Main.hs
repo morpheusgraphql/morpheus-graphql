@@ -8,15 +8,16 @@ import Data.Morpheus.Core (parseSchema)
 import Data.Morpheus.Internal.Ext (resultOr)
 
 main :: IO ()
-main = defaultMain [decodeBenchmarks]
+main = defaultMain [schemaBenchmark ""]
 
 parse :: ByteString -> ByteString
-parse x = resultOr (pack . show) (const "OK") (parseSchema x)
+parse x = resultOr (error . show) (const "OK") (parseSchema x)
 
-decodeBenchmarks :: Benchmark
-decodeBenchmarks =
+schemaBenchmark :: ByteString -> Benchmark
+schemaBenchmark text =
   bgroup
-    "direct"
-    [ bench "morpheus" $ nf parse "{}",
-      bench "graphql" $ nf parse "{}"
+    "basic"
+    [ bench "morpheus" $ nf parse text,
+      bench "graphql" $ nf parse text,
+      bench "hasura" $ nf parse text
     ]
