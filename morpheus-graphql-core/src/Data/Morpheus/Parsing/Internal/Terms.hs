@@ -282,16 +282,16 @@ instance Term ByteString where
   {-# INLINEABLE symbol #-}
 
 instance Term Text where
-  parens = between "(" ")"
+  parens = between (symbol '(') (symbol ')')
   {-# INLINEABLE parens #-}
 
-  braces = between "{" "}"
+  braces = between (symbol '{') (symbol '}')
   {-# INLINEABLE braces #-}
 
   comma = T.char ',' *> T.space
   {-# INLINEABLE comma #-}
 
-  brackets = between "[" "]"
+  brackets = between (symbol '[') (symbol ']')
   {-# INLINEABLE brackets #-}
 
   underscore = T.char '_'
