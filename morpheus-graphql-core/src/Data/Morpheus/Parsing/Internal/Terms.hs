@@ -243,11 +243,8 @@ ignoredTokens :: Parser ()
 ignoredTokens =
   label "IgnoredTokens" $
     space
-      *> many ignored
+      *> many (comment <|> comma)
       *> space
-
-ignored :: Parser ()
-ignored = label "Ignored" (comment <|> comma)
 
 comment :: Parser ()
 comment =
