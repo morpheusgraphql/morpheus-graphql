@@ -82,6 +82,7 @@ enumValueDefinition =
       <$> optDescription
       <*> parseTypeName
       <*> optionalDirectives
+{-# INLINEABLE enumValueDefinition #-}
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
 --
@@ -99,6 +100,7 @@ inputValueDefinition =
       <*> (colon *> parseType)
       <*> optional (DefaultInputValue <$> parseDefaultValue)
       <*> optionalDirectives
+{-# INLINEABLE inputValueDefinition #-}
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
 --
@@ -111,6 +113,7 @@ argumentsDefinition ::
 argumentsDefinition =
   label "ArgumentsDefinition" $
     uniqTuple (fmap ArgumentDefinition inputValueDefinition)
+{-# INLINEABLE argumentsDefinition #-}
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
 --
@@ -121,6 +124,7 @@ fieldsDefinition ::
   Parse (Value s) =>
   Parser (FieldsDefinition OUT s)
 fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
+{-# INLINEABLE fieldsDefinition #-}
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
@@ -134,6 +138,7 @@ fieldDefinition =
       <*> optional (FieldArgs <$> argumentsDefinition)
       <*> (colon *> parseType)
       <*> optionalDirectives
+{-# INLINEABLE fieldDefinition #-}
 
 mkField ::
   Maybe Description ->
@@ -144,6 +149,7 @@ mkField ::
   FieldDefinition cat s
 mkField fieldDescription fieldName fieldContent fieldType fieldDirectives =
   FieldDefinition {..}
+{-# INLINEABLE mkField #-}
 
 -- InputFieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --   InputFieldsDefinition:
@@ -153,6 +159,7 @@ inputFieldsDefinition ::
   Parse (Value s) =>
   Parser (InputFieldsDefinition s)
 inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
+{-# INLINEABLE inputFieldsDefinition #-}
 
 -- Directives : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Directives
 --
@@ -163,6 +170,7 @@ inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefiniti
 --
 optionalDirectives :: Parse (Value s) => Parser [Directive s]
 optionalDirectives = label "Directives" $ many directive
+{-# INLINEABLE optionalDirectives #-}
 
 -- Directive[Const]
 --
@@ -174,6 +182,7 @@ directive =
       <$> getLocation
       <*> (at *> parseName)
       <*> maybeArguments
+{-# INLINEABLE directive #-}
 
 -- typDeclaration : Not in spec ,start part of type definitions
 --
@@ -182,6 +191,7 @@ directive =
 --
 typeDeclaration :: ByteString -> Parser TypeName
 typeDeclaration kind = keyword kind *> parseTypeName
+{-# INLINEABLE typeDeclaration #-}
 
 parseOperationType :: Parser OperationType
 parseOperationType =
@@ -191,6 +201,7 @@ parseOperationType =
         <|> (string "subscription" $> Subscription)
     )
       <* ignoredTokens
+{-# INLINEABLE parseOperationType #-}
 
 parseDirectiveLocation :: Parser DirectiveLocation
 parseDirectiveLocation =
@@ -219,6 +230,7 @@ parseDirectiveLocation =
               ]
     )
     <* ignoredTokens
+{-# INLINEABLE parseDirectiveLocation #-}
 
 toKeyword :: Show a => a -> Parser a
 toKeyword x = string (fromString $ show x) $> x

@@ -37,8 +37,10 @@ valueArgument =
       <$> getLocation
       <*> fieldNameColon
       <*> parse
+{-# INLINEABLE valueArgument #-}
 
 maybeArguments :: Parse (Value s) => Parser (Arguments s)
 maybeArguments =
   label "Arguments" $
     uniqTupleOpt valueArgument
+{-# INLINEABLE maybeArguments #-}
