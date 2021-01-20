@@ -233,9 +233,6 @@ escape 110 = 10
 escape 102 = 12
 escape 114 = 13
 escape 116 = 9
--- escape 92 = 92
--- escape 34 = 34
--- escape 47 = 47
 escape x = x
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
