@@ -21,10 +21,10 @@ fetchCase x = (,) <$> L.readFile path <*> TIO.readFile path
   where
     path = "bench/assets/" <> x <> ".gql"
 
-fetch :: FilePath -> IO (Int, (ByteString, Text))
+fetch :: FilePath -> IO (String, (ByteString, Text))
 fetch path = do
   x <- fetchCase path
-  pure (typeCount (fst x), x)
+  pure (typeCount x, x)
 
 main :: IO ()
 main = do
@@ -33,6 +33,7 @@ main = do
   starWars <- fetch "starwars"
   wrappers <- fetch "wrappers"
   descriptions <- fetch "descriptions"
+  print (parseGraphQL (snd $ snd github))
   defaultMain
     [ schemaBenchmark "github: \nlines: 38,948 " github,
       schemaBenchmark "mythology: \nlines: 94 " mythology,
@@ -41,14 +42,17 @@ main = do
       schemaBenchmark "descriptions: \nlines: 2500 " descriptions
     ]
 
-typeCount :: ByteString -> Int
-typeCount x = resultOr (const 0) length (Morpheus.parseTypeDefinitions x)
+typeCount :: (ByteString, Text) -> String
+typeCount (bs, txt) = "morpheus(" <> show morpheus <> ") - gql(" <> show gql <> ")"
+  where
+    morpheus = resultOr (const 0) length (Morpheus.parseTypeDefinitions bs)
+    gql = either (const 0) length (parseTypeSysDefinition txt)
 
 parseMorpheus :: ByteString -> ByteString
 parseMorpheus x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
 
 parseGraphQL :: Text -> Text
-parseGraphQL x = either (error . show) (const "OK") (parseTypeSysDefinition x)
+parseGraphQL x = either (error . show) (T.pack . show) (parseTypeSysDefinition x)
 
 parseDoc :: T.Text -> Either T.Text [GQL.Definition]
 parseDoc s =
@@ -56,21 +60,21 @@ parseDoc s =
     Right d -> Right (toList d)
     Left e -> Left (T.pack $ show e)
 
-parseTypeSysDefinition :: Text -> Either Text [GQL.TypeSystemDefinition]
+parseTypeSysDefinition :: Text -> Either Text [GQL.TypeDefinition]
 parseTypeSysDefinition s =
   case runParser GQL.document "<doc>" s of
     Right (toList -> d) ->
-      let tds = [td | GQL.TypeSystemDefinition td _ <- d]
+      let tds = [td | GQL.TypeSystemDefinition (GQL.TypeDefinition td) _ <- d]
        in if length d == length tds
             then Right tds
             else Left "unexpected query or type system extension"
     Left e ->
       Left (T.pack $ show e)
 
-schemaBenchmark :: String -> (Int, (ByteString, Text)) -> Benchmark
+schemaBenchmark :: String -> (String, (ByteString, Text)) -> Benchmark
 schemaBenchmark label (count, (bs, txt)) =
   bgroup
-    (label <> "\n type number: " <> show count <> "\n library: ")
+    (label <> "\n type number: " <> count <> "\n library: ")
     [ bench "graphql" $ nf parseGraphQL txt,
       bench "morpheus" $ nf parseMorpheus bs
     ]
