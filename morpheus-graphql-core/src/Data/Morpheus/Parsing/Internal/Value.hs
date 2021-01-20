@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -14,10 +16,12 @@ import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( brackets,
+  ( Term,
+    brackets,
     equal,
     fieldNameColon,
     ignoredTokens,
+    number,
     parseNegativeSign,
     parseString,
     parseTypeName,
@@ -36,69 +40,69 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude
 import Text.Megaparsec
-  ( label,
+  ( Stream,
+    Tokens,
+    label,
     sepBy,
   )
 import Text.Megaparsec.Byte
   ( string,
   )
-import Text.Megaparsec.Byte.Lexer (scientific)
 
-valueNull :: Parser (Value a)
+valueNull :: (Stream s, IsString (Tokens s)) => Parser s (Value a)
 valueNull = string "null" $> Null
 
-booleanValue :: Parser (Value a)
+booleanValue :: (Stream s, IsString (Tokens s)) => Parser s (Value a)
 booleanValue = boolTrue <|> boolFalse
   where
     boolTrue = string "true" $> Scalar (Boolean True)
     boolFalse = string "false" $> Scalar (Boolean False)
 
-valueNumber :: Parser (Value a)
+valueNumber :: (Stream s, Term s) => Parser s (Value a)
 valueNumber =
   Scalar . decodeScientific
-    <$> (signedNumber <$> parseNegativeSign <*> scientific)
+    <$> (signedNumber <$> parseNegativeSign <*> number)
   where
-    signedNumber isNegative number
-      | isNegative = - number
-      | otherwise = number
+    signedNumber isNegative n
+      | isNegative = - n
+      | otherwise = n
 
-enumValue :: Parser (Value a)
+enumValue :: (Stream s, Term s) => Parser s (Value a)
 enumValue = Enum <$> parseTypeName <* ignoredTokens
 
-stringValue :: Parser (Value a)
+stringValue :: (Stream s, Term s, IsString s) => Parser s (Value a)
 stringValue = label "stringValue" $ Scalar . String <$> parseString
 
-listValue :: Parser a -> Parser [a]
+listValue :: (Stream s, Term s) => Parser s a -> Parser s [a]
 listValue parser = label "list" $ brackets (parser `sepBy` ignoredTokens)
 
-objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
+objectEntry :: (Stream s, Term s) => Parser s (Value a) -> Parser s (ObjectEntry a)
 objectEntry parser =
   label "ObjectEntry" $
     ObjectEntry <$> fieldNameColon <*> parser
 
-objectValue :: Parser (Value a) -> Parser (OrdMap FieldName (ObjectEntry a))
+objectValue :: (Stream s, Term s) => Parser s (Value a) -> Parser s (OrdMap FieldName (ObjectEntry a))
 objectValue = label "ObjectValue" . setOf . objectEntry
 
-parsePrimitives :: Parser (Value a)
+parsePrimitives :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Value a)
 parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
 
-parseDefaultValue :: Parser (Value s)
+parseDefaultValue :: (Stream s, Term s) => Parser s (Value st)
 parseDefaultValue = equal *> parseV
   where
-    parseV :: Parser (Value s)
     parseV = structValue parseV
 
-class Parse a where
-  parse :: Parser a
+class Parse s a where
+  parse :: Parser s a
 
-instance Parse (Value RAW) where
+instance (Stream s, Term s) => Parse s (Value RAW) where
   parse = (VariableValue <$> variable) <|> structValue parse
 
-instance Parse (Value CONST) where
+instance (Stream s, Term s) => Parse s (Value CONST) where
   parse = structValue parse
 
-structValue :: Parser (Value a) -> Parser (Value a)
+structValue :: (Stream s, Term s) => Parser s (Value a) -> Parser s (Value a)
 structValue parser =
   label "Value" $
     ( parsePrimitives

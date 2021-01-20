@@ -34,6 +34,8 @@ module Data.Morpheus.Parsing.Internal.Terms
     comma,
     colon,
     at,
+    Term,
+    number,
   )
 where
 
@@ -66,6 +68,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
+import Data.Scientific
+  ( Scientific,
+  )
 import qualified Data.Text as T
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
@@ -92,6 +97,7 @@ import Text.Megaparsec.Byte
     space1,
     string,
   )
+import Text.Megaparsec.Byte.Lexer (scientific)
 
 class Term s where
   -- parens : '()'
@@ -162,6 +168,8 @@ class Term s where
   verticalPipe :: Parser s ()
 
   ampersand :: Parser s ()
+
+  number :: Parser s Scientific
 
 -- NameStart::
 --   Letter
@@ -251,6 +259,9 @@ instance Term ByteString where
 
   ampersand = label "&" $ symbol 38
   {-# INLINEABLE ampersand #-}
+
+  number = scientific
+  {-# INLINEABLE number #-}
 
 parseNegativeSign :: (Stream s, Term s) => Parser s Bool
 parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
