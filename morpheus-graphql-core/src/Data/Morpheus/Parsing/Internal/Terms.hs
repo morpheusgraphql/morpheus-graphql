@@ -38,6 +38,7 @@ module Data.Morpheus.Parsing.Internal.Terms
   )
 where
 
+import Data.ByteString.Internal (w2c)
 import Data.ByteString.Lazy
   ( pack,
   )
@@ -65,14 +66,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
-import Data.Text
-  ( strip,
-  )
+import qualified Data.Text as T
 import Relude hiding (empty, many)
 import Text.Megaparsec
   ( (<?>),
     between,
-    choice,
     label,
     many,
     manyTill,
@@ -200,7 +198,7 @@ variable =
 -- Description:
 --   StringValue
 parseDescription :: Parser Description
-parseDescription = strip <$> parseString
+parseDescription = parseString
 
 optDescription :: Parser (Maybe Description)
 optDescription = optional parseDescription
@@ -209,25 +207,25 @@ parseString :: Parser Token
 parseString = blockString <|> singleLineString
 
 blockString :: Parser Token
-blockString = stringWith (string "\"\"\"") (printChar <|> newline)
+blockString = stringWith (string "\"\"\"") (w2c <$> (printChar <|> newline))
 
 singleLineString :: Parser Token
 singleLineString = stringWith (string "\"") escapedChar
 
-stringWith :: Parser quote -> Parser Word8 -> Parser Token
+stringWith :: Parser quote -> Parser Char -> Parser Token
 stringWith quote parser =
-  fromLBS . pack
+  T.pack
     <$> ( quote
             *> manyTill parser quote
             <* ignoredTokens
         )
 
-escapedChar :: Parser Word8
+escapedChar :: Parser Char
 escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 
-handleEscape :: Word8 -> Parser Word8
-handleEscape 92 = escape <$> printChar
-handleEscape x = pure x
+handleEscape :: Word8 -> Parser Char
+handleEscape 92 = w2c . escape <$> printChar
+handleEscape x = pure (w2c x)
 
 escape :: Word8 -> Word8
 escape 98 = 8
