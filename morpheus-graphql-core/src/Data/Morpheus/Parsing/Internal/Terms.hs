@@ -42,6 +42,7 @@ import Data.ByteString.Internal (w2c)
 import Data.ByteString.Lazy
   ( pack,
   )
+import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
@@ -49,7 +50,6 @@ import Data.Morpheus.Internal.Utils
     KeyOf,
     fromElems,
     fromLBS,
-    toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -67,7 +67,7 @@ import Data.Morpheus.Types.Internal.AST
     toHSWrappers,
   )
 import qualified Data.Text as T
-import Relude hiding (empty, many)
+import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
     between,
@@ -100,8 +100,8 @@ parseName = FieldName <$> name
 parseTypeName :: Parser TypeName
 parseTypeName = label "TypeName" $ TypeName <$> name
 
-keyword :: FieldName -> Parser ()
-keyword (FieldName word) = string (toLBS word) *> space1 *> ignoredTokens
+keyword :: ByteString -> Parser ()
+keyword word = string word *> space1 *> ignoredTokens
 
 symbol :: Word8 -> Parser ()
 symbol x = char x *> ignoredTokens
