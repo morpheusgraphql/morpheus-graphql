@@ -47,8 +47,11 @@ typeCount (bs, txt) = "morpheus(" <> show morpheus <> ") - gql(" <> show gql <> 
     morpheus = resultOr (const 0) length (Morpheus.parseTypeDefinitions bs)
     gql = either (const 0) length (parseTypeSysDefinition txt)
 
-parseMorpheus :: ByteString -> ByteString
-parseMorpheus x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
+parseMorpheusB :: ByteString -> ByteString
+parseMorpheusB x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
+
+parseMorpheusT :: Text -> Text
+parseMorpheusT x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
 
 parseGraphQL :: Text -> Text
 parseGraphQL x = either (error . show) (T.pack . show) (parseTypeSysDefinition x)
@@ -75,5 +78,6 @@ schemaBenchmark label (count, (bs, txt)) =
   bgroup
     (label <> "\n type number: " <> count <> "\n library: ")
     [ bench "graphql" $ nf parseGraphQL txt,
-      bench "morpheus" $ nf parseMorpheus bs
+      bench "morpheus" $ nf parseMorpheus bs,
+      bench "morpheus" $ nf parseMorpheus txt
     ]
