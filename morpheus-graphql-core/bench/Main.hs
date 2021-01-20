@@ -78,6 +78,6 @@ schemaBenchmark label (count, (bs, txt)) =
   bgroup
     (label <> "\n type number: " <> count <> "\n library: ")
     [ bench "graphql" $ nf parseGraphQL txt,
-      bench "morpheus" $ nf parseMorpheus bs,
-      bench "morpheus" $ nf parseMorpheus txt
+      bench "morpheusB" $ nf parseMorpheusB bs,
+      bench "morpheusT" $ nf parseMorpheusT txt
     ]
