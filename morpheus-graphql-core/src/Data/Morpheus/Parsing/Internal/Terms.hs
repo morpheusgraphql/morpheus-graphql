@@ -70,6 +70,8 @@ import qualified Data.Text as T
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
+    Stream,
+    Tokens,
     between,
     label,
     many,
@@ -91,81 +93,81 @@ import Text.Megaparsec.Byte
     string,
   )
 
-parseNegativeSign :: Parser Bool
+parseNegativeSign :: Stream s => Parser s Bool
 parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
 {-# INLINEABLE parseNegativeSign #-}
 
-parseName :: Parser FieldName
+parseName :: Stream s => Parser s FieldName
 parseName = FieldName <$> name
 {-# INLINEABLE parseName #-}
 
-parseTypeName :: Parser TypeName
+parseTypeName :: Stream s => Parser s TypeName
 parseTypeName = label "TypeName" $ TypeName <$> name
 {-# INLINEABLE parseTypeName #-}
 
-keyword :: ByteString -> Parser ()
+keyword :: (Stream s) => ByteString -> Parser s ()
 keyword word = string word *> space1 *> ignoredTokens
 {-# INLINEABLE keyword #-}
 
-symbol :: Word8 -> Parser ()
+symbol :: Stream s => Word8 -> Parser s ()
 symbol x = char x *> ignoredTokens
 {-# INLINEABLE symbol #-}
 
 -- braces: {}
-braces :: Parser a -> Parser a
+braces :: Stream s => Parser s a -> Parser s a
 braces = between (symbol 123) (symbol 125)
 {-# INLINEABLE braces #-}
 
 -- brackets: []
-brackets :: Parser a -> Parser a
+brackets :: Stream s => Parser s a -> Parser s a
 brackets = between (symbol 91) (symbol 93)
 {-# INLINEABLE brackets #-}
 
 -- parens : '()'
-parens :: Parser a -> Parser a
+parens :: Stream s => Parser s a -> Parser s a
 parens = between (symbol 40) (symbol 41)
 {-# INLINEABLE parens #-}
 
 -- underscore : '_'
-underscore :: Parser Word8
+underscore :: Stream s => Parser s Word8
 underscore = char 95
 {-# INLINEABLE underscore #-}
 
-comma :: Parser ()
+comma :: Stream s => Parser s ()
 comma = label "," $ char 44 *> space
 {-# INLINEABLE comma #-}
 
 -- dollar :: $
-dollar :: Parser ()
+dollar :: Stream s => Parser s ()
 dollar = label "$" $ symbol 36
 {-# INLINEABLE dollar #-}
 
 -- equal :: '='
-equal :: Parser ()
+equal :: Stream s => Parser s ()
 equal = label "=" $ symbol 61
 {-# INLINEABLE equal #-}
 
 -- colon :: ':'
-colon :: Parser ()
+colon :: Stream s => Parser s ()
 colon = label ":" $ symbol 58
 {-# INLINEABLE colon #-}
 
 -- minus: '-'
-minus :: Parser ()
+minus :: Stream s => Parser s ()
 minus = label "-" $ symbol 45
 {-# INLINEABLE minus #-}
 
 -- verticalPipe: '|'
-verticalPipe :: Parser ()
+verticalPipe :: Stream s => Parser s ()
 verticalPipe = label "|" $ symbol 124
 {-# INLINEABLE verticalPipe #-}
 
-ampersand :: Parser ()
+ampersand :: Stream s => Parser s ()
 ampersand = label "&" $ symbol 38
 {-# INLINEABLE ampersand #-}
 
 -- at: '@'
-at :: Parser ()
+at :: Stream s => Parser s ()
 at = label "@" $ symbol 64
 {-# INLINEABLE at #-}
 
@@ -177,7 +179,7 @@ at = label "@" $ symbol 64
 -- Name ::
 --  NameStart NameContinue[list,opt]
 --
-name :: Parser Token
+name :: Stream s => Parser s Token
 name =
   label "Name" $
     fromLBS . pack
@@ -188,18 +190,18 @@ name =
 -- NameStart::
 --   Letter
 --   _
-nameStart :: Parser Word8
+nameStart :: Stream s => Parser s Word8
 nameStart = letterChar <|> underscore
 {-# INLINEABLE nameStart #-}
 
 --  NameContinue::
 --   Letter
 --   Digit
-nameContinue :: Parser [Word8]
+nameContinue :: Stream s => Parser s [Word8]
 nameContinue = many (letterChar <|> underscore <|> digitChar)
 {-# INLINEABLE nameContinue #-}
 
-varName :: Parser FieldName
+varName :: Stream s => Parser s FieldName
 varName = dollar *> parseName <* ignoredTokens
 {-# INLINEABLE varName #-}
 
@@ -207,7 +209,7 @@ varName = dollar *> parseName <* ignoredTokens
 --
 -- Variable :  $Name
 --
-variable :: Parser (Ref FieldName)
+variable :: Stream s => Parser s (Ref FieldName)
 variable =
   label "variable" $
     flip Ref
@@ -219,23 +221,23 @@ variable =
 --
 -- Description:
 --   StringValue
-optDescription :: Parser (Maybe Description)
+optDescription :: Stream s => Parser s (Maybe Description)
 optDescription = optional parseString
 {-# INLINEABLE optDescription #-}
 
-parseString :: Parser Token
+parseString :: Stream s => Parser s Token
 parseString = blockString <|> singleLineString
 {-# INLINEABLE parseString #-}
 
-blockString :: Parser Token
+blockString :: Stream s => Parser s Token
 blockString = stringWith (string "\"\"\"") (w2c <$> (printChar <|> newline))
 {-# INLINEABLE blockString #-}
 
-singleLineString :: Parser Token
+singleLineString :: Stream s => Parser s Token
 singleLineString = stringWith (string "\"") escapedChar
 {-# INLINEABLE singleLineString #-}
 
-stringWith :: Parser quote -> Parser Char -> Parser Token
+stringWith :: Stream s => Parser s quote -> Parser s Char -> Parser s Token
 stringWith quote parser =
   T.pack
     <$> ( quote
@@ -244,11 +246,11 @@ stringWith quote parser =
         )
 {-# INLINEABLE stringWith #-}
 
-escapedChar :: Parser Char
+escapedChar :: Stream s => Parser s Char
 escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 {-# INLINEABLE escapedChar #-}
 
-handleEscape :: Word8 -> Parser Char
+handleEscape :: Stream s => Word8 -> Parser s Char
 handleEscape 92 = w2c . escape <$> printChar
 handleEscape x = pure (w2c x)
 {-# INLINEABLE handleEscape #-}
@@ -269,7 +271,7 @@ escape x = x
 --    LineTerminator
 --    Comment
 --    Comma
-ignoredTokens :: Parser ()
+ignoredTokens :: Stream s => Parser s ()
 ignoredTokens =
   label "IgnoredTokens" $
     space
@@ -277,46 +279,46 @@ ignoredTokens =
       *> space
 {-# INLINEABLE ignoredTokens #-}
 
-comment :: Parser ()
+comment :: Stream s => Parser s ()
 comment =
   label "Comment" $
     char 35 *> skipManyTill printChar newline *> space
 {-# INLINEABLE comment #-}
 
 -- exclamationMark: '!'
-exclamationMark :: Parser ()
+exclamationMark :: Stream s => Parser s ()
 exclamationMark = label "!" $symbol 33
 {-# INLINEABLE exclamationMark #-}
 
 ------------------------------------------------------------------------
-sepByAnd :: Parser a -> Parser [a]
+sepByAnd :: Stream s => Parser s a -> Parser s [a]
 sepByAnd entry = entry `sepBy` (optional ampersand *> ignoredTokens)
 {-# INLINEABLE sepByAnd #-}
 
-pipe :: Parser a -> Parser [a]
+pipe :: Stream s => Parser s a -> Parser s [a]
 pipe x = optional verticalPipe *> (x `sepBy1` verticalPipe)
 {-# INLINEABLE pipe #-}
 
 -----------------------------
-collection :: Parser a -> Parser [a]
+collection :: Stream s => Parser s a -> Parser s [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
 {-# INLINEABLE collection #-}
 
-setOf :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
+setOf :: (FromElems Eventless a coll, KeyOf k a, Stream s) => Parser s a -> Parser s coll
 setOf = collection >=> lift . fromElems
 {-# INLINEABLE setOf #-}
 
-optionalCollection :: Empty c => Parser c -> Parser c
+optionalCollection :: (Empty c, Stream s) => Parser s c -> Parser s c
 optionalCollection x = x <|> pure empty
 {-# INLINEABLE optionalCollection #-}
 
-parseNonNull :: Parser [DataTypeWrapper]
+parseNonNull :: Stream s => Parser s [DataTypeWrapper]
 parseNonNull =
   (exclamationMark $> [NonNullType])
     <|> pure []
 {-# INLINEABLE parseNonNull #-}
 
-uniqTuple :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
+uniqTuple :: (FromElems Eventless a coll, Stream s, KeyOf k a) => Parser s a -> Parser s coll
 uniqTuple parser =
   label "Tuple" $
     parens
@@ -324,11 +326,11 @@ uniqTuple parser =
       >>= lift . fromElems
 {-# INLINEABLE uniqTuple #-}
 
-uniqTupleOpt :: (FromElems Eventless a coll, Empty coll, KeyOf k a) => Parser a -> Parser coll
+uniqTupleOpt :: (FromElems Eventless a coll, Stream s, Empty coll, KeyOf k a) => Parser s a -> Parser s coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 {-# INLINEABLE uniqTupleOpt #-}
 
-fieldNameColon :: Parser FieldName
+fieldNameColon :: Stream s => Parser s FieldName
 fieldNameColon = parseName <* colon
 {-# INLINEABLE fieldNameColon #-}
 
@@ -337,24 +339,24 @@ fieldNameColon = parseName <* colon
 --  TypeCondition:
 --    on NamedType
 --
-parseTypeCondition :: Parser TypeName
+parseTypeCondition :: Stream s => Parser s TypeName
 parseTypeCondition = keyword "on" *> parseTypeName
 {-# INLINEABLE parseTypeCondition #-}
 
-spreadLiteral :: Parser Position
+spreadLiteral :: Stream s => Parser s Position
 spreadLiteral = getLocation <* string "..." <* space
 {-# INLINEABLE spreadLiteral #-}
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
 --  Name:
-parseAlias :: Parser (Maybe FieldName)
+parseAlias :: Stream s => Parser s (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
     alias = label "alias" fieldNameColon
 {-# INLINEABLE parseAlias #-}
 
-parseType :: Parser TypeRef
+parseType :: Stream s => Parser s TypeRef
 parseType = parseTypeW <$> parseWrappedType <*> parseNonNull
 {-# INLINEABLE parseType #-}
 
@@ -366,13 +368,13 @@ parseTypeW (wrappers, typeConName) nonNull =
     }
 {-# INLINEABLE parseTypeW #-}
 
-parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
+parseWrappedType :: Stream s => Parser s ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
   where
-    unwrapped :: Parser ([DataTypeWrapper], TypeName)
+    unwrapped :: Stream s => Parser s ([DataTypeWrapper], TypeName)
     unwrapped = ([],) <$> parseTypeName <* ignoredTokens
     ----------------------------------------------
-    wrapped :: Parser ([DataTypeWrapper], TypeName)
+    wrapped :: Stream s => Parser s ([DataTypeWrapper], TypeName)
     wrapped = brackets (wrapAsList <$> (unwrapped <|> wrapped) <*> parseNonNull)
 {-# INLINEABLE parseWrappedType #-}
 
