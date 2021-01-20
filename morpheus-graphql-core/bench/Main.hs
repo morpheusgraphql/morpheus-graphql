@@ -17,6 +17,6 @@ decodeBenchmarks :: Benchmark
 decodeBenchmarks =
   bgroup
     "direct"
-    [ bench "twitter100" $ nf parse "{}",
-      bench "jp100" $ nf parse "{}"
+    [ bench "morpheus" $ nf parse "{}",
+      bench "graphql" $ nf parse "{}"
     ]
