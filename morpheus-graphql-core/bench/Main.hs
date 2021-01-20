@@ -13,7 +13,6 @@ import Data.String
 import qualified Data.Text as T
 import Data.Text (Text)
 import qualified Data.Text.IO as TIO
-import Debug.Trace
 import qualified Language.GraphQL.AST as GQL
 import Text.Megaparsec (runParser)
 
@@ -22,27 +21,32 @@ fetchCase x = (,) <$> L.readFile path <*> TIO.readFile path
   where
     path = "bench/assets/" <> x <> ".gql"
 
+fetch :: FilePath -> IO (Int, (ByteString, Text))
+fetch path = do
+  x <- fetchCase path
+  pure (typeCount (fst x), x)
+
 main :: IO ()
 main = do
-  github <- fetchCase "github"
-  mythology <- fetchCase "mythology"
-  starWars <- fetchCase "starwars"
-  wrappers <- fetchCase "wrappers"
+  github <- fetch "github"
+  mythology <- fetch "mythology"
+  starWars <- fetch "starwars"
+  wrappers <- fetch "wrappers"
   defaultMain
-    [ schemaBenchmark "github: 38,948 lines" github,
-      schemaBenchmark "mythology: 94 lines" mythology,
-      schemaBenchmark "starWars: 5,922 lines" starWars,
-      schemaBenchmark "wrappers: 6 lines" wrappers
+    [ schemaBenchmark "github: \nlines: 38,948 " github,
+      schemaBenchmark "mythology: \nlines: 94 " mythology,
+      schemaBenchmark "starWars: \nlines: 5,922 " starWars,
+      schemaBenchmark "wrappers: \nlines: 6 " wrappers
     ]
 
-typeCount :: (Foldable t, IsString b) => t a -> b
-typeCount x = traceShow (length x) "OK"
+typeCount :: ByteString -> Int
+typeCount x = resultOr (const 0) length (Morpheus.parseTypeDefinitions x)
 
 parseMorpheus :: ByteString -> ByteString
-parseMorpheus x = resultOr (error . show) typeCount (Morpheus.parseTypeDefinitions x)
+parseMorpheus x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
 
 parseGraphQL :: Text -> Text
-parseGraphQL x = either (error . show) typeCount (parseTypeSysDefinition x)
+parseGraphQL x = either (error . show) (const "OK") (parseTypeSysDefinition x)
 
 parseDoc :: T.Text -> Either T.Text [GQL.Definition]
 parseDoc s =
@@ -61,10 +65,10 @@ parseTypeSysDefinition s =
     Left e ->
       Left (T.pack $ show e)
 
-schemaBenchmark :: String -> (ByteString, Text) -> Benchmark
-schemaBenchmark label (bs, txt) =
+schemaBenchmark :: String -> (Int, (ByteString, Text)) -> Benchmark
+schemaBenchmark label (count, (bs, txt)) =
   bgroup
-    label
+    (label <> "\n type number: " <> show count)
     [ bench "morpheus" $ nf parseMorpheus bs,
       bench "graphql" $ nf parseGraphQL txt
     ]
