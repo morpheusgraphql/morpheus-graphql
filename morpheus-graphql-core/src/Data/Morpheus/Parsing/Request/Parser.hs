@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -27,7 +28,8 @@ import Data.Morpheus.Parsing.Internal.Internal
     processParser,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( ignoredTokens,
+  ( Term,
+    ignoredTokens,
   )
 import Data.Morpheus.Parsing.Request.Operation
   ( parseOperation,
@@ -49,12 +51,14 @@ import Relude hiding
     toList,
   )
 import Text.Megaparsec
-  ( eof,
+  ( Stream,
+    Tokens,
+    eof,
     label,
     many,
   )
 
-parseExecutableDocument :: Variables -> Parser ExecutableDocument
+parseExecutableDocument :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Variables -> Parser s ExecutableDocument
 parseExecutableDocument variables =
   label "ExecutableDocument" $
     ( ExecutableDocument variables

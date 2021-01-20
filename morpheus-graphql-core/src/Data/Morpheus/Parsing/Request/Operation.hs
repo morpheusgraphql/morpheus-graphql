@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -19,7 +20,8 @@ import Data.Morpheus.Parsing.Internal.Pattern
     parseOperationType,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( colon,
+  ( Term,
+    colon,
     parseName,
     parseType,
     uniqTupleOpt,
@@ -41,6 +43,8 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty)
 import Text.Megaparsec
   ( (<?>),
+    Stream,
+    Tokens,
     label,
   )
 
@@ -49,7 +53,7 @@ import Text.Megaparsec
 --  VariableDefinition
 --    Variable : Type DefaultValue(opt)
 --
-variableDefinition :: Parser (Variable RAW)
+variableDefinition :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Variable RAW)
 variableDefinition =
   label "VariableDefinition" $
     Variable
@@ -65,7 +69,7 @@ variableDefinition =
 --
 --   OperationType: one of
 --     query, mutation,    subscription
-parseOperationDefinition :: Parser (Operation RAW)
+parseOperationDefinition :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Operation RAW)
 parseOperationDefinition =
   label "OperationDefinition" $
     Operation
@@ -76,7 +80,7 @@ parseOperationDefinition =
       <*> optionalDirectives
       <*> parseSelectionSet
 
-parseAnonymousQuery :: Parser (Operation RAW)
+parseAnonymousQuery :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Operation RAW)
 parseAnonymousQuery = label "AnonymousQuery" $ do
   operationPosition <- getLocation
   operationSelection <- parseSelectionSet
@@ -91,5 +95,5 @@ parseAnonymousQuery = label "AnonymousQuery" $ do
     )
     <?> "can't parse AnonymousQuery"
 
-parseOperation :: Parser (Operation RAW)
+parseOperation :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Operation RAW)
 parseOperation = parseAnonymousQuery <|> parseOperationDefinition

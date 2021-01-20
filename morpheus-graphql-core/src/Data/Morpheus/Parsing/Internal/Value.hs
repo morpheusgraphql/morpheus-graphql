@@ -94,7 +94,7 @@ parseDefaultValue = equal *> parseV
   where
     parseV = structValue parseV
 
-class Parse s a where
+class (IsString s, Stream s, Term s, IsString (Tokens s)) => Parse s a where
   parse :: Parser s a
 
 instance (Stream s, Term s, IsString s, IsString (Tokens s)) => Parse s (Value RAW) where
