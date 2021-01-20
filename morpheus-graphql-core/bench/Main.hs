@@ -68,7 +68,7 @@ parseTypeSysDefinition s =
 schemaBenchmark :: String -> (Int, (ByteString, Text)) -> Benchmark
 schemaBenchmark label (count, (bs, txt)) =
   bgroup
-    (label <> "\n type number: " <> show count)
+    (label <> "\n type number: " <> show count <> "\n library: ")
     [ bench "morpheus" $ nf parseMorpheus bs,
       bench "graphql" $ nf parseGraphQL txt
     ]
