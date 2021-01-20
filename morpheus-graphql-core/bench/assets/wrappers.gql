@@ -1,0 +1,6 @@
+type Query {
+  wrappers(
+    name: [[[[[[[[[[String!]]!]]]]]]]]
+    mythology: Realm
+  ): [[[[[[[[[[String!]]!]]]]]]]]
+}
