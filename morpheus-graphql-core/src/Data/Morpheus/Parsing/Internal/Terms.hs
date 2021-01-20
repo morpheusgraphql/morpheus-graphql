@@ -229,22 +229,17 @@ handleEscape :: Word8 -> Parser Word8
 handleEscape 92 = choice escape
 handleEscape x = pure x
 
+{-# INLINE escape #-}
 escape :: [Parser Word8]
-escape = escapeCh <$> escapeOptions
-  where
-    escapeCh :: (Word8, Word8) -> Parser Word8
-    escapeCh (code, replacement) = char code $> replacement
-
-escapeOptions :: [(Word8, Word8)]
-escapeOptions =
-  [ (98, 8),
-    (110, 10),
-    (102, 12),
-    (114, 13),
-    (116, 9),
-    (92, 92),
-    (34, 34),
-    (47, 47)
+escape =
+  [ char 98 $> 8,
+    char 110 $> 10,
+    char 102 $> 12,
+    char 114 $> 13,
+    char 116 $> 9,
+    char 92 $> 92,
+    char 34 $> 34,
+    char 47 $> 47
   ]
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
