@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.Value
@@ -88,7 +89,7 @@ parsePrimitives :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser
 parsePrimitives =
   valueNull <|> booleanValue <|> valueNumber <|> enumValue <|> stringValue
 
-parseDefaultValue :: (Stream s, Term s) => Parser s (Value st)
+parseDefaultValue :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Value st)
 parseDefaultValue = equal *> parseV
   where
     parseV = structValue parseV
@@ -96,13 +97,13 @@ parseDefaultValue = equal *> parseV
 class Parse s a where
   parse :: Parser s a
 
-instance (Stream s, Term s) => Parse s (Value RAW) where
+instance (Stream s, Term s, IsString s, IsString (Tokens s)) => Parse s (Value RAW) where
   parse = (VariableValue <$> variable) <|> structValue parse
 
-instance (Stream s, Term s) => Parse s (Value CONST) where
+instance (Stream s, Term s, IsString s, IsString (Tokens s)) => Parse s (Value CONST) where
   parse = structValue parse
 
-structValue :: (Stream s, Term s) => Parser s (Value a) -> Parser s (Value a)
+structValue :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Value a) -> Parser s (Value a)
 structValue parser =
   label "Value" $
     ( parsePrimitives

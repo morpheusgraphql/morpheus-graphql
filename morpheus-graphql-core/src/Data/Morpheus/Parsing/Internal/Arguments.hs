@@ -9,7 +9,8 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( fieldNameColon,
+  ( Term,
+    fieldNameColon,
     uniqTupleOpt,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -21,7 +22,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
   )
 import Relude
-import Text.Megaparsec (label)
+import Text.Megaparsec (Stream, label)
 
 -- Arguments : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Arguments
 --
@@ -30,7 +31,7 @@ import Text.Megaparsec (label)
 --
 -- Argument[Const]
 --  Name : Value[Const]
-valueArgument :: Parse (Value s) => Parser (Argument s)
+valueArgument :: (Term str, Stream str, Parse str (Value s)) => Parser str (Argument s)
 valueArgument =
   label "Argument" $
     Argument
@@ -39,7 +40,7 @@ valueArgument =
       <*> parse
 {-# INLINEABLE valueArgument #-}
 
-maybeArguments :: Parse (Value s) => Parser (Arguments s)
+maybeArguments :: (Term str, Stream str) => Parse str (Value s) => Parser str (Arguments s)
 maybeArguments =
   label "Arguments" $
     uniqTupleOpt valueArgument
