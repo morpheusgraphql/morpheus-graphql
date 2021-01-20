@@ -131,6 +131,7 @@ class Term s where
   name :: Parser s AST.Token
 
   anyChar :: Parser s Char
+
   anyChar' :: Parser s (Token s)
 
   escapedChar :: Parser s Char
@@ -216,6 +217,10 @@ instance Term ByteString where
 
   escapedChar = label "EscapedChar" $ printChar >>= handleEscape
   {-# INLINEABLE escapedChar #-}
+
+  anyChar = w2c <$> printChar
+
+  anyChar' = printChar
 
   str x = string x $> ()
   {-# INLINEABLE str #-}
