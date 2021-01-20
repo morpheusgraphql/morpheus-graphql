@@ -18,7 +18,7 @@ import Text.Megaparsec (runParser)
 fetchCase :: FilePath -> IO (ByteString, Text)
 fetchCase x = (,) <$> L.readFile path <*> TIO.readFile path
   where
-    path = "bench/" <> x <> ".gql"
+    path = "bench/assets/" <> x <> ".gql"
 
 main :: IO ()
 main = do
