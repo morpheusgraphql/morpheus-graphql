@@ -9,9 +9,11 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (toList)
 import qualified Data.Morpheus.Core as Morpheus
 import Data.Morpheus.Internal.Ext (resultOr)
+import Data.String
 import qualified Data.Text as T
 import Data.Text (Text)
 import qualified Data.Text.IO as TIO
+import Debug.Trace
 import qualified Language.GraphQL.AST as GQL
 import Text.Megaparsec (runParser)
 
@@ -33,11 +35,14 @@ main = do
       schemaBenchmark "wrappers: 6 lines" wrappers
     ]
 
+typeCount :: (Foldable t, IsString b) => t a -> b
+typeCount x = traceShow (length x) "OK"
+
 parseMorpheus :: ByteString -> ByteString
-parseMorpheus x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
+parseMorpheus x = resultOr (error . show) typeCount (Morpheus.parseTypeDefinitions x)
 
 parseGraphQL :: Text -> Text
-parseGraphQL x = either (error . show) (const "OK") (parseTypeSysDefinition x)
+parseGraphQL x = either (error . show) typeCount (parseTypeSysDefinition x)
 
 parseDoc :: T.Text -> Either T.Text [GQL.Definition]
 parseDoc s =
