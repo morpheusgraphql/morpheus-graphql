@@ -197,11 +197,8 @@ variable =
 --
 -- Description:
 --   StringValue
-parseDescription :: Parser Description
-parseDescription = parseString
-
 optDescription :: Parser (Maybe Description)
-optDescription = optional parseDescription
+optDescription = optional parseString
 
 parseString :: Parser Token
 parseString = blockString <|> singleLineString
