@@ -6,7 +6,6 @@
 
 - `Data.Morpheus.Core` provides default GrapHQL type definitions with `internalSchema`
 - exposed `Data.Morpheus.Internal.Ext`
-- exposed `Data.Morpheus.Types.GQLWrapper` with `EncodeWrapper` and `DecodeWrapper` type-classes.
 
 ### Breaking changes
 
