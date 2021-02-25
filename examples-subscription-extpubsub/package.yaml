@@ -19,8 +19,8 @@ dependencies:
   - hasql
   - hasql-notifications
   # graphql :
-  - morpheus-graphql        >= 0.16.0
-  - morpheus-graphql-core   >= 0.16.0
+  - morpheus-graphql        >= 0.17.0
+  - morpheus-graphql-core   >= 0.17.0
   - text
 
 library:
