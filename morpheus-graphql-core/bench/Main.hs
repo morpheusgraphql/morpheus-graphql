@@ -61,13 +61,19 @@ benchByteString :: (ByteString -> ByteString) -> [(Info, ByteString, Text)] -> [
 benchByteString f = map (\(Info {name}, b, _) -> bench name $ whnf f b)
 
 gqlBenchmark :: [(Info, ByteString, Text)] -> Benchmark
-gqlBenchmark = bgroup "GraphQLText" . benchText GQL.parseText
+gqlBenchmark cases =
+  bgroup
+    "GraphQL"
+    [ bgroup "Text" $ benchText GQL.parseText cases
+    ]
 
-morpheusTextBenchmark :: [(Info, ByteString, Text)] -> Benchmark
-morpheusTextBenchmark = bgroup "MorpheusText" . benchText Morpheus.parseText
-
-morpheusByteStringBenchmark :: [(Info, ByteString, Text)] -> Benchmark
-morpheusByteStringBenchmark = bgroup "MorpheusByteString" . benchByteString Morpheus.parseByteString
+morpheusBenchmark :: [(Info, ByteString, Text)] -> Benchmark
+morpheusBenchmark cases =
+  bgroup
+    "Morpheus"
+    [ bgroup "Text" $ benchText Morpheus.parseText cases,
+      bgroup "ByteString" $ benchByteString Morpheus.parseByteString cases
+    ]
 
 main :: IO ()
 main = do
@@ -79,6 +85,5 @@ main = do
         }
     )
     [ gqlBenchmark files,
-      morpheusTextBenchmark files,
-      morpheusByteStringBenchmark files
+      morpheusBenchmark files
     ]
