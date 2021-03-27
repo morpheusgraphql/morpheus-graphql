@@ -80,8 +80,9 @@ main = do
   files <- getFiles
   defaultMainWith
     ( defaultConfig
-        { csvFile = Just "report.csv",
-          reportFile = Just "report.html"
+        { reportFile = Just "report.html",
+          resamples = 100000,
+          timeLimit = 60
         }
     )
     [ gqlBenchmark files,
