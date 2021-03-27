@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7dc5c2d55287ad709f2b0bb61e3de5de79ff3af7bbf3e60e442ec3ba81a19766
+-- hash: 3196227ec0638c8ec24271eaf2b8f818d06888918619808386e574c7e82cf5a9
 
 name:           morpheus-graphql-core
 version:        0.16.0
@@ -277,6 +277,8 @@ benchmark morpheus-bench
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Parser.GraphQL
+      Parser.Morpheus
       Paths_morpheus_graphql_core
   hs-source-dirs:
       bench
