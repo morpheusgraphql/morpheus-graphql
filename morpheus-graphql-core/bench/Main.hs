@@ -41,9 +41,9 @@ getFiles =
     getFile
     [ Info {lineCount = 94, name = "mythology", src = "mythology"},
       Info {lineCount = 2500, name = "descriptions", src = "descriptions"},
-      Info {lineCount = 38948, name = "github", src = "github"},
-      Info {lineCount = 5922, name = "starWars", src = "starWars"},
-      Info {lineCount = 6, name = "wrappers", src = "wrappers"}
+      --      Info {lineCount = 38948, name = "github", src = "github"},
+      Info {lineCount = 5922, name = "starWars", src = "starWars"}
+      --    Info {lineCount = 6, name = "wrappers", src = "wrappers"}
     ]
 
 typeCount :: (ByteString, Text) -> String
