@@ -1,8 +1,10 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
 import Criterion.Main
+import Criterion.Types
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (toList)
@@ -22,32 +24,61 @@ fetch path = do
   x <- fetchCase path
   pure (typeCount x, x)
 
-main :: IO ()
-main = do
-  github <- fetch "github"
-  mythology <- fetch "mythology"
-  starWars <- fetch "starwars"
-  wrappers <- fetch "wrappers"
-  descriptions <- fetch "descriptions"
-  defaultMain
-    [ schemaBenchmark "github: \nlines: 38,948 " github,
-      schemaBenchmark "mythology: \nlines: 94 " mythology,
-      schemaBenchmark "starWars: \nlines: 5,922 " starWars,
-      schemaBenchmark "wrappers: \nlines: 6 " wrappers,
-      schemaBenchmark "descriptions: \nlines: 2500 " descriptions
+data Info = Info
+  { lineCount :: Int,
+    name :: String,
+    src :: FilePath
+  }
+
+getFile :: Info -> IO (Info, ByteString, Text)
+getFile info = do
+  (b, t) <- fetchCase (src info)
+  pure (info, b, t)
+
+getFiles :: IO [(Info, ByteString, Text)]
+getFiles =
+  traverse
+    getFile
+    [ Info {lineCount = 94, name = "mythology", src = "mythology"},
+      Info {lineCount = 2500, name = "descriptions", src = "descriptions"},
+      Info {lineCount = 38948, name = "github", src = "github"},
+      Info {lineCount = 5922, name = "starWars", src = "starWars"},
+      Info {lineCount = 6, name = "wrappers", src = "wrappers"}
     ]
 
 typeCount :: (ByteString, Text) -> String
-typeCount (bs, txt) = "morpheus(" <> show morpheus <> ") - gql(" <> show gql <> ")"
-  where
-    morpheus = Morpheus.countParsedTypes bs
-    gql = GQL.countParsedTypes txt
+typeCount (bs, txt) =
+  "morpheus("
+    <> show (Morpheus.countParsedTypes bs)
+    <> ") - gql("
+    <> show (GQL.countParsedTypes txt)
+    <> ")"
 
-schemaBenchmark :: String -> (String, (ByteString, Text)) -> Benchmark
-schemaBenchmark label (count, (bs, txt)) =
-  bgroup
-    (label <> "\n type number: " <> count <> "\n library: ")
-    [ bench "graphql parsing Text" $ nf GQL.parseText txt,
-      bench "morpheus parsing ByteString" $ nf Morpheus.parseByteString bs,
-      bench "morpheus parsing Text" $ nf Morpheus.parseText txt
+benchText :: (Text -> Text) -> [(Info, ByteString, Text)] -> [Benchmark]
+benchText f = map (\(Info {name}, _, t) -> bench name $ whnf f t)
+
+benchByteString :: (ByteString -> ByteString) -> [(Info, ByteString, Text)] -> [Benchmark]
+benchByteString f = map (\(Info {name}, b, _) -> bench name $ whnf f b)
+
+gqlBenchmark :: [(Info, ByteString, Text)] -> Benchmark
+gqlBenchmark = bgroup "GraphQLText" . benchText GQL.parseText
+
+morpheusTextBenchmark :: [(Info, ByteString, Text)] -> Benchmark
+morpheusTextBenchmark = bgroup "MorpheusText" . benchText Morpheus.parseText
+
+morpheusByteStringBenchmark :: [(Info, ByteString, Text)] -> Benchmark
+morpheusByteStringBenchmark = bgroup "MorpheusByteString" . benchByteString Morpheus.parseByteString
+
+main :: IO ()
+main = do
+  files <- getFiles
+  defaultMainWith
+    ( defaultConfig
+        { csvFile = Just "report.csv",
+          reportFile = Just "report.html"
+        }
+    )
+    [ gqlBenchmark files,
+      morpheusTextBenchmark files,
+      morpheusByteStringBenchmark files
     ]
