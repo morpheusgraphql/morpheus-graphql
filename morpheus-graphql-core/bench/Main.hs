@@ -47,20 +47,11 @@ typeCount (bs, txt) = "morpheus(" <> show morpheus <> ") - gql(" <> show gql <> 
     morpheus = resultOr (const 0) length (Morpheus.parseTypeDefinitions bs)
     gql = either (const 0) length (parseTypeSysDefinition txt)
 
-parseMorpheusB :: ByteString -> ByteString
-parseMorpheusB x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
+parseMorpheusByteString :: ByteString -> ByteString
+parseMorpheusByteString x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
 
-parseMorpheusT :: Text -> Text
-parseMorpheusT x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
-
-parseGraphQL :: Text -> Text
-parseGraphQL x = either (error . show) (T.pack . show) (parseTypeSysDefinition x)
-
-parseDoc :: T.Text -> Either T.Text [GQL.Definition]
-parseDoc s =
-  case runParser GQL.document "<doc>" s of
-    Right d -> Right (toList d)
-    Left e -> Left (T.pack $ show e)
+parseMorpheusText :: Text -> Text
+parseMorpheusText x = resultOr (error . show) (const "OK") (Morpheus.parseTypeDefinitions x)
 
 parseTypeSysDefinition :: Text -> Either Text [GQL.TypeSystemDefinition]
 parseTypeSysDefinition s =
@@ -73,11 +64,14 @@ parseTypeSysDefinition s =
     Left e ->
       Left (T.pack $ show e)
 
+parseGraphQLText :: Text -> Text
+parseGraphQLText x = either (error . show) (T.pack . show) (parseTypeSysDefinition x)
+
 schemaBenchmark :: String -> (String, (ByteString, Text)) -> Benchmark
 schemaBenchmark label (count, (bs, txt)) =
   bgroup
     (label <> "\n type number: " <> count <> "\n library: ")
-    [ bench "graphql" $ nf parseGraphQL txt,
-      bench "morpheusB" $ nf parseMorpheusB bs,
-      bench "morpheusT" $ nf parseMorpheusT txt
+    [ bench "graphql parsing Text" $ nf parseGraphQLText txt,
+      bench "morpheus parsing ByteString" $ nf parseMorpheusByteString bs,
+      bench "morpheus parsing Text" $ nf parseMorpheusText txt
     ]
