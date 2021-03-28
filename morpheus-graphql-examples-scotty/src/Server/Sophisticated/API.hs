@@ -76,9 +76,9 @@ type SetInt = Set Int
 
 type MapTextInt = Map Text Int
 
-$(importGQLDocumentWithNamespace "src/Server/Sophisticated/shared.gql")
+importGQLDocumentWithNamespace "src/Server/Sophisticated/shared.gql"
 
-$(importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql")
+importGQLDocumentWithNamespace "src/Server/Sophisticated/api.gql"
 
 data Animal
   = AnimalCat Cat
