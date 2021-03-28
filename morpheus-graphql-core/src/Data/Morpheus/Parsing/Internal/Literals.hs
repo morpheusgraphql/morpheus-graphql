@@ -5,13 +5,10 @@ module Data.Morpheus.Parsing.Internal.Literals
   ( at,
     colon,
     equal,
-    bang,
     ignoredTokens,
     ignoredTokens1,
-    minus,
     symbol,
     pipe,
-    underscore,
   )
 where
 
@@ -39,14 +36,8 @@ import Text.Megaparsec.Byte
 #define EQUAL 61
 -- ':'
 #define COLON 58
--- '-'
-#define MINUS 45
--- '!'
-#define BANG 33
 -- '|'
 #define PIPE 124
--- '_'
-#define UNDERSCORE 95
 -- '#'
 #define HASH_TAG 35
 
@@ -61,15 +52,6 @@ equal = symbol EQUAL
 colon :: Parser ()
 colon = symbol COLON
 {-# INLINEABLE colon #-}
-
-minus :: Parser ()
-minus = symbol MINUS
-{-# INLINEABLE minus #-}
-
--- exclamationMark: '!'
-bang :: Parser ()
-bang = symbol BANG
-{-# INLINEABLE bang #-}
 
 symbol :: Word8 -> Parser ()
 symbol x = char x *> ignoredTokens
@@ -98,10 +80,6 @@ ignoredTokens =
 ignoredTokens1 :: Parser ()
 ignoredTokens1 = space1 *> ignoredTokens
 {-# INLINEABLE ignoredTokens1 #-}
-
-underscore :: Parser Word8
-underscore = char UNDERSCORE
-{-# INLINEABLE underscore #-}
 
 pipe :: Parser a -> Parser [a]
 pipe x = optional (symbol PIPE) *> (x `sepBy1` symbol PIPE)

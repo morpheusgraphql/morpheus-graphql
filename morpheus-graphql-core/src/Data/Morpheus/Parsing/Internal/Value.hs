@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -15,13 +16,14 @@ import Data.Morpheus.Parsing.Internal.Internal
   )
 import Data.Morpheus.Parsing.Internal.Terms
   ( brackets,
+    colon,
     equal,
-    fieldNameColon,
     ignoredTokens,
-    parseNegativeSign,
+    parseName,
     parseString,
     parseTypeName,
     setOf,
+    symbol,
     variable,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -44,6 +46,9 @@ import Text.Megaparsec.Byte
   )
 import Text.Megaparsec.Byte.Lexer (scientific)
 
+-- '-'
+#define MINUS 45
+
 valueNull :: Parser (Value a)
 valueNull = string "null" $> Null
 
@@ -54,13 +59,11 @@ booleanValue = boolTrue <|> boolFalse
     boolFalse = string "false" $> Scalar (Boolean False)
 
 valueNumber :: Parser (Value a)
-valueNumber =
-  Scalar . decodeScientific
-    <$> (signedNumber <$> parseNegativeSign <*> scientific)
+valueNumber = Scalar . decodeScientific <$> ((*) <$> negation <*> scientific)
   where
-    signedNumber isNegative number
-      | isNegative = - number
-      | otherwise = number
+    negation = (symbol MINUS $> (-1) <* ignoredTokens) <|> pure 1
+    {-# INLINEABLE negation #-}
+{-# INLINEABLE valueNumber #-}
 
 enumValue :: Parser (Value a)
 enumValue = Enum <$> parseTypeName <* ignoredTokens
@@ -74,7 +77,7 @@ listValue parser = label "list" $ brackets (parser `sepBy` ignoredTokens)
 objectEntry :: Parser (Value a) -> Parser (ObjectEntry a)
 objectEntry parser =
   label "ObjectEntry" $
-    ObjectEntry <$> fieldNameColon <*> parser
+    ObjectEntry <$> (parseName <* colon) <*> parser
 
 objectValue :: Parser (Value a) -> Parser (OrdMap FieldName (ObjectEntry a))
 objectValue = label "ObjectValue" . setOf . objectEntry

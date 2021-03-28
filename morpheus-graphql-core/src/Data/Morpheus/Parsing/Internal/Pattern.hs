@@ -234,3 +234,4 @@ parseDirectiveLocation =
 
 toKeyword :: Show a => a -> Parser a
 toKeyword x = string (fromString $ show x) $> x
+{-# INLINEABLE toKeyword #-}

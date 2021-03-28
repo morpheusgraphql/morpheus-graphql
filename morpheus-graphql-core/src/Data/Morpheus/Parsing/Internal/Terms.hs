@@ -26,14 +26,13 @@ module Data.Morpheus.Parsing.Internal.Terms
     keyword,
     optDescription,
     optionalCollection,
-    parseNegativeSign,
     parseTypeName,
     pipe,
-    fieldNameColon,
     brackets,
     equal,
     colon,
     at,
+    symbol,
   )
 where
 
@@ -57,15 +56,12 @@ import Data.Morpheus.Parsing.Internal.Internal
   )
 import Data.Morpheus.Parsing.Internal.Literals
   ( at,
-    bang,
     colon,
     equal,
     ignoredTokens,
     ignoredTokens1,
-    minus,
     pipe,
     symbol,
-    underscore,
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
@@ -90,7 +86,8 @@ import Text.Megaparsec
     try,
   )
 import Text.Megaparsec.Byte
-  ( digitChar,
+  ( char,
+    digitChar,
     letterChar,
     newline,
     printChar,
@@ -101,6 +98,10 @@ import Text.Megaparsec.Byte
 #define DOLLAR 36
 -- '&'
 #define AMPERSAND 38
+-- '_'
+#define UNDERSCORE 95
+-- '!'
+#define BANG 33
 
 -- parens : '()'
 parens :: Parser a -> Parser a
@@ -134,14 +135,14 @@ name =
 --   Letter
 --   _
 nameStartBS :: Parser Word8
-nameStartBS = letterChar <|> underscore
+nameStartBS = letterChar <|> char UNDERSCORE
 {-# INLINEABLE nameStartBS #-}
 
 --  NameContinue::
 --   Letter
 --   Digit
 nameContinueBS :: Parser [Word8]
-nameContinueBS = many (letterChar <|> underscore <|> digitChar)
+nameContinueBS = many (letterChar <|> char UNDERSCORE <|> digitChar)
 {-# INLINEABLE nameContinueBS #-}
 
 escapedChar :: Parser Char
@@ -151,10 +152,6 @@ escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 str :: ByteString -> Parser ()
 str x = string x $> ()
 {-# INLINEABLE str #-}
-
-parseNegativeSign :: Parser Bool
-parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
-{-# INLINEABLE parseNegativeSign #-}
 
 parseName :: Parser FieldName
 parseName = FieldName <$> name
@@ -246,7 +243,7 @@ optionalCollection x = x <|> pure empty
 {-# INLINEABLE optionalCollection #-}
 
 parseNonNull :: Parser [DataTypeWrapper]
-parseNonNull = (bang $> [NonNullType]) <|> pure []
+parseNonNull = (symbol BANG $> [NonNullType]) <|> pure []
 {-# INLINEABLE parseNonNull #-}
 
 uniqTuple :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
@@ -260,10 +257,6 @@ uniqTuple parser =
 uniqTupleOpt :: (FromElems Eventless a coll, Empty coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
 {-# INLINEABLE uniqTupleOpt #-}
-
-fieldNameColon :: Parser FieldName
-fieldNameColon = parseName <* colon
-{-# INLINEABLE fieldNameColon #-}
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --
@@ -284,7 +277,7 @@ spreadLiteral = getLocation <* str "..." <* ignoredTokens
 parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
-    alias = label "alias" fieldNameColon
+    alias = label "alias" (parseName <* colon)
 {-# INLINEABLE parseAlias #-}
 
 parseType :: Parser TypeRef

@@ -9,7 +9,8 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( fieldNameColon,
+  ( colon,
+    parseName,
     uniqTupleOpt,
   )
 import Data.Morpheus.Parsing.Internal.Value
@@ -35,7 +36,7 @@ valueArgument =
   label "Argument" $
     Argument
       <$> getLocation
-      <*> fieldNameColon
+      <*> (parseName <* colon)
       <*> parse
 {-# INLINEABLE valueArgument #-}
 
