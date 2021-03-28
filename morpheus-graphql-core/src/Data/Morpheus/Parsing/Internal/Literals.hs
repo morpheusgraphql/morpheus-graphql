@@ -71,9 +71,7 @@ ignoredTokens =
       *> many (comment <|> (char COMMA *> space))
       *> space
   where
-    comment =
-      label "Comment" $
-        char HASH_TAG *> skipManyTill printChar newline *> space
+    comment = char HASH_TAG *> skipManyTill printChar newline *> space
     {-# INLINEABLE comment #-}
 {-# INLINEABLE ignoredTokens #-}
 
