@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Minor Changes
+
+- Add defineBy*File' variants that take a `Q FilePath` [#584](https://github.com/morpheusgraphql/morpheus-graphql/pull/584)
+
 ## 0.17.0 - 25.02.2021
 
 ### Breaking changes
