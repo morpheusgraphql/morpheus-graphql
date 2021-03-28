@@ -40,6 +40,7 @@ import Data.ByteString.Internal (w2c)
 import Data.ByteString.Lazy
   ( pack,
   )
+import qualified Data.ByteString.Lazy as Lazy
 import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
@@ -79,10 +80,13 @@ import Text.Megaparsec
   ( (<?>),
     between,
     label,
+    lookAhead,
     many,
     manyTill,
     sepBy,
     sepEndBy,
+    takeP,
+    takeWhileP,
     try,
   )
 import Text.Megaparsec.Byte
@@ -102,6 +106,8 @@ import Text.Megaparsec.Byte
 #define UNDERSCORE 95
 -- '!'
 #define BANG 33
+-- '"'
+#define DOUBLE_QUOTE 34
 
 -- parens : '()'
 parens :: Parser a -> Parser a
@@ -194,8 +200,17 @@ parseString = blockString <|> inlineString
 {-# INLINEABLE parseString #-}
 
 blockString :: Parser AST.Token
-blockString = stringWith (str "\"\"\"") (w2c <$> (printChar <|> newline))
-{-# INLINEABLE blockString #-}
+blockString = str "\"\"\"" *> content $> "" <* ignoredTokens
+  where
+    content :: Parser ByteString
+    content = do
+      text <- takeWhileP Nothing (/= DOUBLE_QUOTE)
+      doubleQuotes <- takeWhileP Nothing (== DOUBLE_QUOTE)
+      case doubleQuotes of
+        "\"\"\"" -> pure text
+        _ -> ((text <> doubleQuotes) <>) <$> content
+    {-# INLINE content #-}
+{-# INLINE blockString #-}
 
 inlineString :: Parser AST.Token
 inlineString = stringWith (str "\"") escapedChar

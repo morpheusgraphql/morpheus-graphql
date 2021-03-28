@@ -89,6 +89,7 @@ ignored = (takeWhile1P Nothing isIgnored <|> comment) $> ()
         || x == SPACE
         || x == COMMA
         || x == UNICODE_BOM
+    {-# INLINE isIgnored #-}
     comment = char HASH_TAG *> takeWhileP Nothing (/= NEW_LINE)
     {-# INLINE comment #-}
 {-# INLINE ignored #-}
