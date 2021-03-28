@@ -24,8 +24,7 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( Term,
-    at,
+  ( at,
     colon,
     ignoredTokens,
     keyword,
@@ -60,11 +59,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef,
     Value,
   )
-import Relude hiding (ByteString, many)
+import Relude hiding (many)
 import Text.Megaparsec
-  ( Stream,
-    Tokens,
-    choice,
+  ( choice,
     label,
     many,
   )
@@ -76,8 +73,8 @@ import Text.Megaparsec.Byte (string)
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
 enumValueDefinition ::
-  Parse str (Value s) =>
-  Parser str (DataEnumValue s)
+  Parse (Value s) =>
+  Parser (DataEnumValue s)
 enumValueDefinition =
   label "EnumValueDefinition" $
     DataEnumValue
@@ -92,8 +89,8 @@ enumValueDefinition =
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
 inputValueDefinition ::
-  Parse str (Value s) =>
-  Parser str (FieldDefinition IN s)
+  Parse (Value s) =>
+  Parser (FieldDefinition IN s)
 inputValueDefinition =
   label "InputValueDefinition" $
     FieldDefinition
@@ -110,8 +107,8 @@ inputValueDefinition =
 --   ( InputValueDefinition(list) )
 --
 argumentsDefinition ::
-  Parse str (Value s) =>
-  Parser str (ArgumentsDefinition s)
+  Parse (Value s) =>
+  Parser (ArgumentsDefinition s)
 argumentsDefinition =
   label "ArgumentsDefinition" $
     uniqTuple (fmap ArgumentDefinition inputValueDefinition)
@@ -123,15 +120,15 @@ argumentsDefinition =
 --    { FieldDefinition(list) }
 --
 fieldsDefinition ::
-  Parse str (Value s) =>
-  Parser str (FieldsDefinition OUT s)
+  Parse (Value s) =>
+  Parser (FieldsDefinition OUT s)
 fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 {-# INLINEABLE fieldsDefinition #-}
 
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parse str (Value s) => Parser str (FieldDefinition OUT s)
+fieldDefinition :: Parse (Value s) => Parser (FieldDefinition OUT s)
 fieldDefinition =
   label "FieldDefinition" $
     mkField
@@ -158,8 +155,8 @@ mkField fieldDescription fieldName fieldContent fieldType fieldDirectives =
 --     { InputValueDefinition(list) }
 --
 inputFieldsDefinition ::
-  Parse str (Value s) =>
-  Parser str (InputFieldsDefinition s)
+  Parse (Value s) =>
+  Parser (InputFieldsDefinition s)
 inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 {-# INLINEABLE inputFieldsDefinition #-}
 
@@ -170,14 +167,14 @@ inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefiniti
 -- Directives[Const]
 -- Directive[Const](list)
 --
-optionalDirectives :: Parse str (Value s) => Parser str [Directive s]
+optionalDirectives :: Parse (Value s) => Parser [Directive s]
 optionalDirectives = label "Directives" $ many directive
 {-# INLINEABLE optionalDirectives #-}
 
 -- Directive[Const]
 --
 -- @ Name Arguments[Const](opt)
-directive :: Parse str (Value s) => Parser str (Directive s)
+directive :: Parse (Value s) => Parser (Directive s)
 directive =
   label "Directive" $
     Directive
@@ -191,11 +188,11 @@ directive =
 --  typDeclaration
 --   Description(opt) scalar Name
 --
-typeDeclaration :: (Term str, Stream str) => str -> Parser str TypeName
+typeDeclaration :: FieldName -> Parser TypeName
 typeDeclaration kind = keyword kind *> parseTypeName
 {-# INLINEABLE typeDeclaration #-}
 
-parseOperationType :: (Stream str, Term str, IsString (Tokens str)) => Parser str OperationType
+parseOperationType :: Parser OperationType
 parseOperationType =
   label "OperationType" $
     ( (string "query" $> Query)
@@ -205,7 +202,7 @@ parseOperationType =
       <* ignoredTokens
 {-# INLINEABLE parseOperationType #-}
 
-parseDirectiveLocation :: (Stream str, Term str, IsString (Tokens str)) => Parser str DirectiveLocation
+parseDirectiveLocation :: Parser DirectiveLocation
 parseDirectiveLocation =
   label
     "DirectiveLocation"
@@ -234,5 +231,5 @@ parseDirectiveLocation =
     <* ignoredTokens
 {-# INLINEABLE parseDirectiveLocation #-}
 
-toKeyword :: (Show a, Stream str, IsString (Tokens str)) => a -> Parser str a
+toKeyword :: Show a => a -> Parser a
 toKeyword x = string (fromString $ show x) $> x

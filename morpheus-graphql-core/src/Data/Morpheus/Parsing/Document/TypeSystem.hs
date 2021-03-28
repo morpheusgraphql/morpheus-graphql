@@ -12,6 +12,7 @@ module Data.Morpheus.Parsing.Document.TypeSystem
   )
 where
 
+import Data.ByteString.Lazy (ByteString)
 import Data.Foldable (foldr')
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
 import Data.Morpheus.Ext.Result
@@ -33,8 +34,7 @@ import Data.Morpheus.Parsing.Internal.Pattern
     typeDeclaration,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( Term,
-    at,
+  ( at,
     collection,
     colon,
     equal,
@@ -75,9 +75,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (ByteString)
 import Text.Megaparsec
-  ( Stream,
-    Tokens,
-    eof,
+  ( eof,
     label,
     manyTill,
   )
@@ -102,9 +100,9 @@ mkObject typeDescription typeName objectImplements typeDirectives objectFields =
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
 scalarTypeDefinition ::
-  Parse str (Value s) =>
+  Parse (Value s) =>
   Maybe Description ->
-  Parser str (TypeDefinition ANY s)
+  Parser (TypeDefinition ANY s)
 scalarTypeDefinition typeDescription =
   label "ScalarTypeDefinition" $
     TypeDefinition typeDescription
@@ -128,9 +126,9 @@ scalarTypeDefinition typeDescription =
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 objectTypeDefinition ::
-  Parse str (Value s) =>
+  Parse (Value s) =>
   Maybe Description ->
-  Parser str (TypeDefinition ANY s)
+  Parser (TypeDefinition ANY s)
 objectTypeDefinition typeDescription =
   label "ObjectTypeDefinition" $
     mkObject typeDescription
@@ -141,7 +139,7 @@ objectTypeDefinition typeDescription =
 
 -- build object
 
-optionalImplementsInterfaces :: (Stream str, Term str, IsString str) => Parser str [TypeName]
+optionalImplementsInterfaces :: Parser [TypeName]
 optionalImplementsInterfaces = implements <|> pure []
   where
     implements =
@@ -153,9 +151,9 @@ optionalImplementsInterfaces = implements <|> pure []
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
 interfaceTypeDefinition ::
-  Parse str (Value s) =>
+  Parse (Value s) =>
   Maybe Description ->
-  Parser str (TypeDefinition ANY s)
+  Parser (TypeDefinition ANY s)
 interfaceTypeDefinition typeDescription =
   label "InterfaceTypeDefinition" $
     TypeDefinition typeDescription
@@ -173,9 +171,9 @@ interfaceTypeDefinition typeDescription =
 --      UnionMemberTypes | NamedType
 --
 unionTypeDefinition ::
-  Parse str (Value s) =>
+  Parse (Value s) =>
   Maybe Description ->
-  Parser str (TypeDefinition ANY s)
+  Parser (TypeDefinition ANY s)
 unionTypeDefinition typeDescription =
   label "UnionTypeDefinition" $
     TypeDefinition typeDescription
@@ -199,9 +197,9 @@ unionTypeDefinition typeDescription =
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
 enumTypeDefinition ::
-  Parse str (Value s) =>
+  Parse (Value s) =>
   Maybe Description ->
-  Parser str (TypeDefinition ANY s)
+  Parser (TypeDefinition ANY s)
 enumTypeDefinition typeDescription =
   label "EnumTypeDefinition" $
     TypeDefinition typeDescription
@@ -218,9 +216,9 @@ enumTypeDefinition typeDescription =
 --     { InputValueDefinition(list) }
 --
 inputObjectTypeDefinition ::
-  Parse str (Value s) =>
+  Parse (Value s) =>
   Maybe Description ->
-  Parser str (TypeDefinition ANY s)
+  Parser (TypeDefinition ANY s)
 inputObjectTypeDefinition typeDescription =
   label "InputObjectTypeDefinition" $
     TypeDefinition
@@ -238,9 +236,9 @@ inputObjectTypeDefinition typeDescription =
 --    DirectiveLocations | DirectiveLocation
 --    |[opt] DirectiveLocation
 parseDirectiveDefinition ::
-  Parse str (Value s) =>
+  Parse (Value s) =>
   Maybe Description ->
-  Parser str (DirectiveDefinition s)
+  Parser (DirectiveDefinition s)
 parseDirectiveDefinition directiveDefinitionDescription =
   label "DirectiveDefinition" $
     DirectiveDefinition
@@ -265,14 +263,7 @@ parseDirectiveDefinition directiveDefinitionDescription =
 --     mutation :: Maybe TypeName,
 --     subscription :: Maybe TypeName
 --   }
-parseSchemaDefinition ::
-  ( Stream str,
-    Term str,
-    IsString str,
-    IsString (Tokens str)
-  ) =>
-  Maybe Description ->
-  Parser str SchemaDefinition
+parseSchemaDefinition :: Maybe Description -> Parser SchemaDefinition
 parseSchemaDefinition _schemaDescription =
   label "SchemaDefinition" $
     keyword "schema"
@@ -281,25 +272,14 @@ parseSchemaDefinition _schemaDescription =
              <*> setOf parseRootOperationTypeDefinition
          )
 
-parseRootOperationTypeDefinition ::
-  ( Stream str,
-    Term str,
-    IsString str,
-    IsString (Tokens str)
-  ) =>
-  Parser str RootOperationTypeDefinition
+parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
 parseRootOperationTypeDefinition =
   RootOperationTypeDefinition
     <$> (parseOperationType <* colon)
     <*> parseTypeName
 
 parseTypeSystemUnit ::
-  ( Stream str,
-    Term str,
-    IsString str,
-    IsString (Tokens str)
-  ) =>
-  Parser str RawTypeDefinition
+  Parser RawTypeDefinition
 parseTypeSystemUnit =
   label "TypeDefinition" $
     do
@@ -354,21 +334,14 @@ withSchemaDefinition ([], t, dirs) = pure (Nothing, t, dirs)
 withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
 withSchemaDefinition (_ : xs, _, _) = failure (fmap nameCollision xs)
 
-parseRawTypeDefinitions ::
-  ( Stream str,
-    Term str,
-    IsString str,
-    IsString (Tokens str)
-  ) =>
-  Parser str [RawTypeDefinition]
+parseRawTypeDefinitions :: Parser [RawTypeDefinition]
 parseRawTypeDefinitions =
   label "TypeSystemDefinitions" $
     ignoredTokens
       *> manyTill parseTypeSystemUnit eof
 
 typeSystemDefinition ::
-  (Stream str, IsString str, IsString (Tokens str), Term str) =>
-  str ->
+  ByteString ->
   Eventless
     ( Maybe SchemaDefinition,
       [TypeDefinition ANY CONST],
@@ -378,10 +351,10 @@ typeSystemDefinition =
   processParser parseRawTypeDefinitions
     >=> withSchemaDefinition . typePartition
 
-parseTypeDefinitions :: (Stream str, IsString str, IsString (Tokens str), Term str) => str -> Eventless [TypeDefinition ANY CONST]
+parseTypeDefinitions :: ByteString -> Eventless [TypeDefinition ANY CONST]
 parseTypeDefinitions =
   fmap (\d -> [td | RawTypeDefinition td <- d])
     . processParser parseRawTypeDefinitions
 
-parseSchema :: (Stream str, IsString str, IsString (Tokens str), Term str) => str -> Eventless (Schema CONST)
+parseSchema :: ByteString -> Eventless (Schema CONST)
 parseSchema = typeSystemDefinition >=> buildSchema

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -24,8 +23,7 @@ import Data.Morpheus.Parsing.Internal.Pattern
   ( optionalDirectives,
   )
 import Data.Morpheus.Parsing.Internal.Terms
-  ( Term,
-    keyword,
+  ( keyword,
     parseAlias,
     parseName,
     parseTypeCondition,
@@ -44,9 +42,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude
 import Text.Megaparsec
-  ( Stream,
-    Tokens,
-    label,
+  ( label,
     try,
   )
 
@@ -60,7 +56,7 @@ import Text.Megaparsec
 --   FragmentSpread
 --   InlineFragment
 --
-parseSelectionSet :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (SelectionSet RAW)
+parseSelectionSet :: Parser (SelectionSet RAW)
 parseSelectionSet = label "SelectionSet" $ setOf parseSelection
   where
     parseSelection =
@@ -74,7 +70,7 @@ parseSelectionSet = label "SelectionSet" $ setOf parseSelection
 -- Field
 -- Alias(opt) Name Arguments(opt) Directives(opt) SelectionSet(opt)
 --
-parseSelectionField :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Selection RAW)
+parseSelectionField :: Parser (Selection RAW)
 parseSelectionField =
   label "SelectionField" $
     Selection
@@ -85,7 +81,7 @@ parseSelectionField =
       <*> optionalDirectives
       <*> parseSelectionContent
 
-parseSelectionContent :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (SelectionContent RAW)
+parseSelectionContent :: Parser (SelectionContent RAW)
 parseSelectionContent =
   label "SelectionContent" $
     SelectionSet <$> parseSelectionSet
@@ -100,7 +96,7 @@ parseSelectionContent =
 --  FragmentSpread
 --    ...FragmentName Directives(opt)
 --
-spread :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Selection RAW)
+spread :: Parser (Selection RAW)
 spread = label "FragmentSpread" $ do
   refPosition <- spreadLiteral
   refName <- parseName
@@ -112,7 +108,7 @@ spread = label "FragmentSpread" $ do
 --  FragmentDefinition:
 --   fragment FragmentName TypeCondition Directives(opt) SelectionSet
 --
-parseFragmentDefinition :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Fragment RAW)
+parseFragmentDefinition :: Parser (Fragment RAW)
 parseFragmentDefinition = label "Fragment" $ do
   keyword "fragment"
   fragmentPosition <- getLocation
@@ -124,12 +120,12 @@ parseFragmentDefinition = label "Fragment" $ do
 --  InlineFragment:
 --  ... TypeCondition(opt) Directives(opt) SelectionSet
 --
-inlineFragment :: (Stream s, Term s, IsString s, IsString (Tokens s)) => Parser s (Selection RAW)
+inlineFragment :: Parser (Selection RAW)
 inlineFragment = label "InlineFragment" $ do
   fragmentPosition <- spreadLiteral
   InlineFragment <$> fragmentBody "INLINE_FRAGMENT" fragmentPosition
 
-fragmentBody :: (Stream s, Term s, IsString s, IsString (Tokens s)) => FieldName -> Position -> Parser s (Fragment RAW)
+fragmentBody :: FieldName -> Position -> Parser (Fragment RAW)
 fragmentBody fragmentName fragmentPosition = label "FragmentBody" $ do
   fragmentType <- parseTypeCondition
   fragmentDirectives <- optionalDirectives

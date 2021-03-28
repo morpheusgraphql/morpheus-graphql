@@ -39,7 +39,6 @@ import Text.Megaparsec
     ParsecT,
     SourcePos,
     SourcePos (..),
-    Stream,
     attachSourcePos,
     bundleErrors,
     bundlePosState,
@@ -50,7 +49,7 @@ import Text.Megaparsec
     unPos,
   )
 
-getLocation :: Stream s => Parser s Position
+getLocation :: Parser Position
 getLocation = fmap toLocation getSourcePos
 {-# INLINEABLE getLocation #-}
 
@@ -61,21 +60,21 @@ toLocation SourcePos {sourceLine, sourceColumn} =
 
 type MyError = Void
 
-type Parser s = ParsecT MyError s Eventless
+type Parser = ParsecT MyError ByteString Eventless
 
-type ErrorBundle s = ParseErrorBundle s MyError
+type ErrorBundle = ParseErrorBundle ByteString MyError
 
-processParser :: Stream s => Parser s a -> s -> Eventless a
+processParser :: Parser a -> ByteString -> Eventless a
 processParser parser txt = case runParserT parser [] txt of
   Success {result} -> case result of
     Right root -> pure root
     Left parseError -> failure (processErrorBundle parseError)
   Failure {errors} -> failure errors
 
-processErrorBundle :: Stream s => ErrorBundle s -> GQLErrors
+processErrorBundle :: ErrorBundle -> GQLErrors
 processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
 
-parseErrorToGQLError :: Stream s => (ParseError s MyError, SourcePos) -> GQLError
+parseErrorToGQLError :: (ParseError ByteString MyError, SourcePos) -> GQLError
 parseErrorToGQLError (err, position) =
   GQLError
     { message = msg (parseErrorPretty err),
@@ -83,7 +82,7 @@ parseErrorToGQLError (err, position) =
     }
 
 bundleToErrors ::
-  Stream s => ErrorBundle s -> [(ParseError s MyError, SourcePos)]
+  ErrorBundle -> [(ParseError ByteString MyError, SourcePos)]
 bundleToErrors ParseErrorBundle {bundleErrors, bundlePosState} =
   NonEmpty.toList $ fst $
     attachSourcePos
