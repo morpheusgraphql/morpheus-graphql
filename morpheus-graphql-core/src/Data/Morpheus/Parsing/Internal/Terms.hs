@@ -52,15 +52,6 @@ import Data.Morpheus.Internal.Utils
     KeyOf,
     fromElems,
     fromLBS,
-  )
--- Token,
-
-import Data.Morpheus.Internal.Utils
-  ( Empty (..),
-    FromElems (..),
-    KeyOf,
-    fromElems,
-    fromLBS,
     toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
@@ -78,9 +69,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     TypeRef (..),
     toHSWrappers,
-  )
-import Data.Scientific
-  ( Scientific,
   )
 import qualified Data.Text as T
 import Relude hiding (ByteString, empty, many)
@@ -106,7 +94,6 @@ import Text.Megaparsec.Byte
     space1,
     string,
   )
-import Text.Megaparsec.Byte.Lexer (scientific)
 
 -- parens : '()'
 parens :: Parser a -> Parser a
@@ -170,12 +157,6 @@ name =
       <* ignoredTokens
 {-# INLINEABLE name #-}
 
-anyChar :: Parser Char
-anyChar = w2c <$> printChar
-
-anyChar' :: Parser Word8
-anyChar' = printChar
-
 escapedChar :: Parser Char
 escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 {-# INLINEABLE escapedChar #-}
@@ -183,10 +164,6 @@ escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 str :: ByteString -> Parser ()
 str x = string x $> ()
 {-# INLINEABLE str #-}
-
-nline :: Parser Char
-nline = w2c <$> newline
-{-# INLINEABLE nline #-}
 
 -- exclamationMark: '!'
 exclamationMark :: Parser ()
@@ -290,7 +267,7 @@ parseString = blockString <|> inlineString
 {-# INLINEABLE parseString #-}
 
 blockString :: Parser AST.Token
-blockString = stringWith (str "\"\"\"") (anyChar <|> nline)
+blockString = stringWith (str "\"\"\"") (w2c <$> (printChar <|> newline))
 {-# INLINEABLE blockString #-}
 
 inlineString :: Parser AST.Token
@@ -307,7 +284,7 @@ stringWith quote parser =
 {-# INLINEABLE stringWith #-}
 
 handleEscape :: Word8 -> Parser Char
-handleEscape 92 = w2c . escape <$> anyChar'
+handleEscape 92 = w2c . escape <$> printChar
 handleEscape x = pure (w2c x)
 {-# INLINEABLE handleEscape #-}
 
