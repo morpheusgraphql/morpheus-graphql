@@ -11,3 +11,5 @@ genDocs:
 	  cat README.md; \
 	} > docs/index.md
 
+clean:
+	find . -name "*.cabal" -exec rm -rf {} \;
