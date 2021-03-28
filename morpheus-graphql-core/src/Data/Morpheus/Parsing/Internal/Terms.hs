@@ -58,7 +58,22 @@ import Data.Morpheus.Parsing.Internal.Internal
     Position,
     getLocation,
   )
-import Data.Morpheus.Parsing.Internal.Literals (Lit (..))
+import Data.Morpheus.Parsing.Internal.Literals
+  ( Lit (..),
+    ampersand,
+    at,
+    colon,
+    comma,
+    dollar,
+    equal,
+    exclamationMark,
+    ignoredTokens,
+    ignoredTokens1,
+    minus,
+    symbol,
+    underscore,
+    verticalPipe,
+  )
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
@@ -80,7 +95,6 @@ import Text.Megaparsec
     sepBy,
     sepBy1,
     sepEndBy,
-    skipManyTill,
     try,
   )
 import Text.Megaparsec.Byte
@@ -89,8 +103,6 @@ import Text.Megaparsec.Byte
     letterChar,
     newline,
     printChar,
-    space,
-    space1,
     string,
   )
 
@@ -104,44 +116,10 @@ braces :: Parser a -> Parser a
 braces = between (symbol 123) (symbol 125)
 {-# INLINEABLE braces #-}
 
--- comma: ,
-comma :: Parser ()
-comma = char (lit (Proxy @",")) *> space
-{-# INLINEABLE comma #-}
-
 -- brackets: []
 brackets :: Parser a -> Parser a
 brackets = between (symbol 91) (symbol 93)
 {-# INLINEABLE brackets #-}
-
--- underscore : '_'
-underscore :: Parser Word8
-underscore = char (lit (Proxy @"_"))
-{-# INLINEABLE underscore #-}
-
--- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
---  Ignored:
---    UnicodeBOM
---    WhiteSpace
---    LineTerminator
---    Comment
---    Comma
-ignoredTokens :: Parser ()
-ignoredTokens =
-  label "IgnoredTokens" $
-    space
-      *> many (comment <|> comma)
-      *> space
-  where
-    comment =
-      label "Comment" $
-        char 35 *> skipManyTill printChar newline *> space
-    {-# INLINEABLE comment #-}
-{-# INLINEABLE ignoredTokens #-}
-
-ignoredTokens1 :: Parser ()
-ignoredTokens1 = space1 *> ignoredTokens
-{-# INLINEABLE ignoredTokens1 #-}
 
 -- 2.1.9 Names
 -- https://spec.graphql.org/draft/#Name
@@ -177,49 +155,6 @@ escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 str :: ByteString -> Parser ()
 str x = string x $> ()
 {-# INLINEABLE str #-}
-
--- exclamationMark: '!'
-exclamationMark :: Parser ()
-exclamationMark = symbol $ lit $ Proxy @"!"
-{-# INLINEABLE exclamationMark #-}
-
--- dollar :: $
-dollar :: Parser ()
-dollar = symbol $ lit $ Proxy @"$"
-{-# INLINEABLE dollar #-}
-
--- at: '@'
-at :: Parser ()
-at = symbol $ lit $ Proxy @"@"
-{-# INLINEABLE at #-}
-
--- equal :: '='
-equal :: Parser ()
-equal = label "=" $ symbol 61
-{-# INLINEABLE equal #-}
-
--- colon :: ':'
-colon :: Parser ()
-colon = label ":" $ symbol 58
-{-# INLINEABLE colon #-}
-
--- minus: '-'
-minus :: Parser ()
-minus = label "-" $ symbol 45
-{-# INLINEABLE minus #-}
-
--- verticalPipe: '|'
-verticalPipe :: Parser ()
-verticalPipe = label "|" $ symbol 124
-{-# INLINEABLE verticalPipe #-}
-
-ampersand :: Parser ()
-ampersand = label "&" $ symbol 38
-{-# INLINEABLE ampersand #-}
-
-symbol :: Word8 -> Parser ()
-symbol x = char x *> ignoredTokens
-{-# INLINEABLE symbol #-}
 
 parseNegativeSign :: Parser Bool
 parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
