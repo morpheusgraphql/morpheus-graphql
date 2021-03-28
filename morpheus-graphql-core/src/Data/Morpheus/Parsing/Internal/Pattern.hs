@@ -16,6 +16,7 @@ module Data.Morpheus.Parsing.Internal.Pattern
   )
 where
 
+import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
   )
@@ -59,7 +60,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef,
     Value,
   )
-import Relude hiding (many)
+import Relude hiding (ByteString, many)
 import Text.Megaparsec
   ( choice,
     label,
@@ -188,7 +189,7 @@ directive =
 --  typDeclaration
 --   Description(opt) scalar Name
 --
-typeDeclaration :: FieldName -> Parser TypeName
+typeDeclaration :: ByteString -> Parser TypeName
 typeDeclaration kind = keyword kind *> parseTypeName
 {-# INLINEABLE typeDeclaration #-}
 

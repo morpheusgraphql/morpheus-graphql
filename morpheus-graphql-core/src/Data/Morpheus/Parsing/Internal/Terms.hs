@@ -234,8 +234,8 @@ parseTypeName :: Parser TypeName
 parseTypeName = label "TypeName" $ TypeName <$> name
 {-# INLINEABLE parseTypeName #-}
 
-keyword :: FieldName -> Parser ()
-keyword (FieldName x) = string (toLBS x) *> ignoredTokens1
+keyword :: ByteString -> Parser ()
+keyword x = string x *> ignoredTokens1
 {-# INLINEABLE keyword #-}
 
 varName :: Parser FieldName
