@@ -76,6 +76,7 @@ import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
     between,
+    choice,
     label,
     many,
     manyTill,
@@ -83,6 +84,7 @@ import Text.Megaparsec
     sepEndBy,
     takeWhileP,
     try,
+    unexpected,
   )
 import Text.Megaparsec.Byte
   ( char,
@@ -217,21 +219,33 @@ stringWith quote parser =
             *> manyTill parser quote
             <* ignoredTokens
         )
-{-# INLINEABLE stringWith #-}
+{-# INLINE stringWith #-}
 
 handleEscape :: Word8 -> Parser Char
-handleEscape 92 = w2c . escape <$> printChar
+handleEscape 92 = w2c <$> choice escape
 handleEscape x = pure (w2c x)
-{-# INLINEABLE handleEscape #-}
+{-# INLINE handleEscape #-}
 
-escape :: Word8 -> Word8
-escape 98 = 8
-escape 110 = 10
-escape 102 = 12
-escape 114 = 13
-escape 116 = 9
-escape x = x
-{-# INLINEABLE escape #-}
+escape :: [Parser Word8]
+escape = escapeCh <$> escapeOptions
+  where
+    escapeCh :: (Word8, Word8) -> Parser Word8
+    escapeCh (code, replacement) = char code $> replacement
+    {-# INLINE escapeCh #-}
+{-# INLINE escape #-}
+
+escapeOptions :: [(Word8, Word8)]
+escapeOptions =
+  [ (98, 8),
+    (110, 10),
+    (102, 12),
+    (114, 13),
+    (116, 9),
+    (92, 92),
+    (34, 34),
+    (47, 47)
+  ]
+{-# INLINE escapeOptions #-}
 
 ------------------------------------------------------------------------
 sepByAnd :: Parser a -> Parser [a]
