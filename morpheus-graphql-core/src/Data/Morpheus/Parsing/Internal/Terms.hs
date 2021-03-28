@@ -52,7 +52,6 @@ import Data.Morpheus.Internal.Utils
     KeyOf,
     fromElems,
     fromLBS,
-    toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
@@ -157,6 +156,20 @@ name =
       <* ignoredTokens
 {-# INLINEABLE name #-}
 
+-- NameStart::
+--   Letter
+--   _
+nameStartBS :: Parser Word8
+nameStartBS = letterChar <|> underscore
+{-# INLINEABLE nameStartBS #-}
+
+--  NameContinue::
+--   Letter
+--   Digit
+nameContinueBS :: Parser [Word8]
+nameContinueBS = many (letterChar <|> underscore <|> digitChar)
+{-# INLINEABLE nameContinueBS #-}
+
 escapedChar :: Parser Char
 escapedChar = label "EscapedChar" $ printChar >>= handleEscape
 {-# INLINEABLE escapedChar #-}
@@ -207,20 +220,6 @@ ampersand = label "&" $ symbol 38
 symbol :: Word8 -> Parser ()
 symbol x = char x *> ignoredTokens
 {-# INLINEABLE symbol #-}
-
--- NameStart::
---   Letter
---   _
-nameStartBS :: Parser Word8
-nameStartBS = letterChar <|> underscore
-{-# INLINEABLE nameStartBS #-}
-
---  NameContinue::
---   Letter
---   Digit
-nameContinueBS :: Parser [Word8]
-nameContinueBS = many (letterChar <|> underscore <|> digitChar)
-{-# INLINEABLE nameContinueBS #-}
 
 parseNegativeSign :: Parser Bool
 parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
