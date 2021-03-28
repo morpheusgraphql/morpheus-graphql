@@ -213,8 +213,8 @@ blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
 {-# INLINE blockString #-}
 
 inlineString :: Parser AST.Token
-inlineString = stringWith (str "\"") escapedChar
-{-# INLINEABLE inlineString #-}
+inlineString = stringWith (char DOUBLE_QUOTE) escapedChar
+{-# INLINE inlineString #-}
 
 stringWith :: Parser quote -> Parser Char -> Parser AST.Token
 stringWith quote parser =
