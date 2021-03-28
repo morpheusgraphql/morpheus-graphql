@@ -200,7 +200,7 @@ parseString = blockString <|> inlineString
 {-# INLINEABLE parseString #-}
 
 blockString :: Parser AST.Token
-blockString = str "\"\"\"" *> content $> "" <* ignoredTokens
+blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
   where
     content :: Parser ByteString
     content = do
