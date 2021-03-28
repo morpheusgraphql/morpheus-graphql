@@ -29,7 +29,7 @@ _stack.yml_
 resolver: lts-16.2
 
 extra-deps:
-  - morpheus-graphql-0.16.0
+  - morpheus-graphql-0.17.0
 ```
 
 As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
@@ -232,59 +232,39 @@ To use union type, all you have to do is derive the `GQLType` class. Using Graph
 
 ```haskell
 data Character
-  = CharacterDeity Deity -- Only <tyConName><conName> should generate direct link
-  -- RECORDS
+  = CharacterDeity Deity -- will be unwrapped, since Character + Deity = CharacterDeity
+  | SomeDeity Deity -- will be wrapped since Character + Deity != SomeDeity
   | Creature { creatureName :: Text, creatureAge :: Int }
-  --- Types
-  | SomeDeity Deity
-  | CharacterInt Int
-  | SomeMulti Int Text
-  --- ENUMS
+  | Demigod Text Text
   | Zeus
-  | Cronus
   deriving (Generic, GQLType)
 ```
 
 where `Deity` is an object.
 
-As you see there are different kinds of unions. `morpheus` handles them all.
+As we see, there are different kinds of unions. `Morpheus` handles them all.
 
 This type will be represented as
 
 ```gql
-union Character =
-    Deity # unwrapped union: because "Character" <> "Deity" == "CharacterDeity"
-  | Creature
-  | SomeDeity # wrapped union: because "Character" <> "Deity" /= SomeDeity
-  | CharacterInt
-  | SomeMulti
-  | CharacterEnumObject # no-argument constructors all wrapped into an enum
-type Creature {
-  creatureName: String!
-  creatureAge: Int!
-}
+union Character = Deity | SomeDeity | Creature | SomeMulti | Zeus
 
 type SomeDeity {
   _0: Deity!
 }
 
-type CharacterInt {
-  _0: Int!
+type Creature {
+  creatureName: String!
+  creatureAge: Int!
 }
 
-type SomeMulti {
+type Demigod {
   _0: Int!
   _1: String!
 }
 
-# enum
-type CharacterEnumObject {
-  enum: CharacterEnum!
-}
-
-enum CharacterEnum {
-  Zeus
-  Cronus
+type Zeus {
+  _: Unit!
 }
 ```
 
@@ -348,10 +328,12 @@ To use custom scalar types, you need to provide implementations for `parseValue`
 ```haskell
 data Odd = Odd Int  deriving (Generic)
 
-instance GQLScalar Odd where
-  parseValue (Int x) = pure $ Odd (...  )
-  parseValue (String x) = pure $ Odd (...  )
-  serialize  (Odd value) = Int value
+instance DecodeScalar Euro where
+  decodeScalar (Int x) = pure $ Odd (... )
+  decodeScalar _ = Left "invalid Value!"
+
+instance EncodeScalar Euro where
+  encodeScalar (Odd value) = Int value
 
 instance GQLType Odd where
   type KIND Odd = SCALAR
