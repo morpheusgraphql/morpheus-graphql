@@ -1,10 +1,8 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.Terms
@@ -34,7 +32,6 @@ module Data.Morpheus.Parsing.Internal.Terms
     fieldNameColon,
     brackets,
     equal,
-    comma,
     colon,
     at,
   )
@@ -59,20 +56,16 @@ import Data.Morpheus.Parsing.Internal.Internal
     getLocation,
   )
 import Data.Morpheus.Parsing.Internal.Literals
-  ( Lit (..),
-    ampersand,
-    at,
+  ( at,
+    bang,
     colon,
-    comma,
-    dollar,
     equal,
-    exclamationMark,
     ignoredTokens,
     ignoredTokens1,
     minus,
+    pipe,
     symbol,
     underscore,
-    verticalPipe,
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
@@ -93,18 +86,21 @@ import Text.Megaparsec
     many,
     manyTill,
     sepBy,
-    sepBy1,
     sepEndBy,
     try,
   )
 import Text.Megaparsec.Byte
-  ( char,
-    digitChar,
+  ( digitChar,
     letterChar,
     newline,
     printChar,
     string,
   )
+
+-- '$'
+#define DOLLAR 36
+-- '&'
+#define AMPERSAND 38
 
 -- parens : '()'
 parens :: Parser a -> Parser a
@@ -173,7 +169,7 @@ keyword x = string x *> ignoredTokens1
 {-# INLINEABLE keyword #-}
 
 varName :: Parser FieldName
-varName = dollar *> parseName <* ignoredTokens
+varName = symbol DOLLAR *> parseName <* ignoredTokens
 {-# INLINEABLE varName #-}
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
@@ -233,12 +229,8 @@ escape x = x
 
 ------------------------------------------------------------------------
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (optional ampersand *> ignoredTokens)
+sepByAnd entry = entry `sepBy` (optional (symbol AMPERSAND) *> ignoredTokens)
 {-# INLINEABLE sepByAnd #-}
-
-pipe :: Parser a -> Parser [a]
-pipe x = optional verticalPipe *> (x `sepBy1` verticalPipe)
-{-# INLINEABLE pipe #-}
 
 -----------------------------
 collection :: Parser a -> Parser [a]
@@ -254,9 +246,7 @@ optionalCollection x = x <|> pure empty
 {-# INLINEABLE optionalCollection #-}
 
 parseNonNull :: Parser [DataTypeWrapper]
-parseNonNull =
-  (exclamationMark $> [NonNullType])
-    <|> pure []
+parseNonNull = (bang $> [NonNullType]) <|> pure []
 {-# INLINEABLE parseNonNull #-}
 
 uniqTuple :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll

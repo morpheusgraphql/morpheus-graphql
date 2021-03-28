@@ -1,33 +1,26 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.Literals
-  ( Lit (..),
-    ampersand,
-    at,
+  ( at,
     colon,
-    comma,
-    dollar,
     equal,
-    exclamationMark,
+    bang,
     ignoredTokens,
     ignoredTokens1,
     minus,
     symbol,
-    verticalPipe,
+    pipe,
     underscore,
   )
 where
 
 import Data.Morpheus.Parsing.Internal.Internal (Parser)
-import GHC.TypeLits (Symbol)
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( label,
     many,
+    sepBy1,
     skipManyTill,
   )
 import Text.Megaparsec.Byte
@@ -38,81 +31,49 @@ import Text.Megaparsec.Byte
     space1,
   )
 
-class Lit (l :: Symbol) where
-  lit :: f l -> Word8
+-- ','
+#define COMMA 44
+-- '@'
+#define AT 64
+-- '='
+#define EQUAL 61
+-- ':'
+#define COLON 58
+-- '-'
+#define MINUS 45
+-- '!'
+#define BANG 33
+-- '|'
+#define PIPE 124
+-- '_'
+#define UNDERSCORE 95
+-- '#'
+#define HASH_TAG 35
 
-instance Lit "," where
-  lit _ = 44
-  {-# INLINEABLE lit #-}
-
-instance Lit "_" where
-  lit _ = 95
-  {-# INLINEABLE lit #-}
-
-instance Lit "!" where
-  lit _ = 33
-  {-# INLINEABLE lit #-}
-
-instance Lit "$" where
-  lit _ = 36
-  {-# INLINEABLE lit #-}
-
-instance Lit "@" where
-  lit _ = 64
-  {-# INLINEABLE lit #-}
-
--- dollar :: $
-dollar :: Parser ()
-dollar = symbol $ lit $ Proxy @"$"
-{-# INLINEABLE dollar #-}
-
--- at: '@'
 at :: Parser ()
-at = symbol $ lit $ Proxy @"@"
+at = symbol AT
 {-# INLINEABLE at #-}
 
--- equal :: '='
--- label "="
 equal :: Parser ()
-equal = symbol 61
+equal = symbol EQUAL
 {-# INLINEABLE equal #-}
 
--- colon :: ':'
--- label ":"
 colon :: Parser ()
-colon = symbol 58
+colon = symbol COLON
 {-# INLINEABLE colon #-}
 
--- minus: '-'
--- label "-"
 minus :: Parser ()
-minus = symbol 45
+minus = symbol MINUS
 {-# INLINEABLE minus #-}
 
 -- exclamationMark: '!'
-exclamationMark :: Parser ()
-exclamationMark = symbol $ lit $ Proxy @"!"
-{-# INLINEABLE exclamationMark #-}
-
--- verticalPipe: '|'
--- label "|"
-verticalPipe :: Parser ()
-verticalPipe = symbol 124
-{-# INLINEABLE verticalPipe #-}
-
--- label "&"
-ampersand :: Parser ()
-ampersand = symbol 38
-{-# INLINEABLE ampersand #-}
+bang :: Parser ()
+bang = symbol BANG
+{-# INLINEABLE bang #-}
 
 symbol :: Word8 -> Parser ()
 symbol x = char x *> ignoredTokens
 {-# INLINEABLE symbol #-}
-
--- comma: ,
-comma :: Parser ()
-comma = char (lit (Proxy @",")) *> space
-{-# INLINEABLE comma #-}
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
 --  Ignored:
@@ -125,12 +86,12 @@ ignoredTokens :: Parser ()
 ignoredTokens =
   label "IgnoredTokens" $
     space
-      *> many (comment <|> comma)
+      *> many (comment <|> (char COMMA *> space))
       *> space
   where
     comment =
       label "Comment" $
-        char 35 *> skipManyTill printChar newline *> space
+        char HASH_TAG *> skipManyTill printChar newline *> space
     {-# INLINEABLE comment #-}
 {-# INLINEABLE ignoredTokens #-}
 
@@ -138,7 +99,10 @@ ignoredTokens1 :: Parser ()
 ignoredTokens1 = space1 *> ignoredTokens
 {-# INLINEABLE ignoredTokens1 #-}
 
--- underscore : '_'
 underscore :: Parser Word8
-underscore = char (lit (Proxy @"_"))
+underscore = char UNDERSCORE
 {-# INLINEABLE underscore #-}
+
+pipe :: Parser a -> Parser [a]
+pipe x = optional (symbol PIPE) *> (x `sepBy1` symbol PIPE)
+{-# INLINEABLE pipe #-}
