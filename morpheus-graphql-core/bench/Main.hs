@@ -60,21 +60,6 @@ benchText f = map (\(Info {name}, _, t) -> bench name $ whnf f t)
 benchByteString :: (ByteString -> ByteString) -> [(Info, ByteString, Text)] -> [Benchmark]
 benchByteString f = map (\(Info {name}, b, _) -> bench name $ whnf f b)
 
-gqlBenchmark :: [(Info, ByteString, Text)] -> Benchmark
-gqlBenchmark cases =
-  bgroup
-    "GraphQL"
-    [ bgroup "Text" $ benchText GQL.parseText cases
-    ]
-
-morpheusBenchmark :: [(Info, ByteString, Text)] -> Benchmark
-morpheusBenchmark cases =
-  bgroup
-    "Morpheus"
-    [ bgroup "Text" $ benchText Morpheus.parseText cases,
-      bgroup "ByteString" $ benchByteString Morpheus.parseByteString cases
-    ]
-
 main :: IO ()
 main = do
   files <- getFiles
@@ -85,6 +70,6 @@ main = do
           timeLimit = 60
         }
     )
-    [ gqlBenchmark files,
-      morpheusBenchmark files
+    [ bgroup "GraphQL" $ benchText GQL.parse files,
+      bgroup "Morpheus" $ benchByteString Morpheus.parse files
     ]

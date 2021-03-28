@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Parser.Morpheus
-  ( parseText,
-    parseByteString,
+  ( parse,
     countParsedTypes,
   )
 where
@@ -15,8 +14,5 @@ import Data.Text (Text)
 countParsedTypes :: ByteString -> Int
 countParsedTypes bs = resultOr (const 0) length (parseTypeDefinitions bs)
 
-parseByteString :: ByteString -> ByteString
-parseByteString x = resultOr (error . show) (const "OK") (parseTypeDefinitions x)
-
-parseText :: Text -> Text
-parseText x = resultOr (error . show) (const "OK") (parseTypeDefinitions x)
+parse :: ByteString -> ByteString
+parse x = resultOr (error . show) (const "OK") (parseTypeDefinitions x)

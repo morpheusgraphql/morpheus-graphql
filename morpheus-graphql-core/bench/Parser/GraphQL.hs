@@ -2,7 +2,7 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module Parser.GraphQL
-  ( parseText,
+  ( parse,
     countParsedTypes,
   )
 where
@@ -29,5 +29,5 @@ parseTypeDefinitions s =
     Left e ->
       Left (T.pack $ show e)
 
-parseText :: Text -> Text
-parseText x = either (error . show) (T.pack . show) (parseTypeDefinitions x)
+parse :: Text -> Text
+parse x = either (error . show) (T.pack . show) (parseTypeDefinitions x)
