@@ -17,17 +17,12 @@ import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( label,
     many,
-    satisfy,
     sepBy1,
-    skipManyTill,
     takeWhile1P,
     takeWhileP,
   )
 import Text.Megaparsec.Byte
   ( char,
-    newline,
-    printChar,
-    space,
     space1,
   )
 

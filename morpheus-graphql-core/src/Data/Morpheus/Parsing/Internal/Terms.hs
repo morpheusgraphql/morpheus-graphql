@@ -84,7 +84,6 @@ import Text.Megaparsec
     sepEndBy,
     takeWhileP,
     try,
-    unexpected,
   )
 import Text.Megaparsec.Byte
   ( char,
