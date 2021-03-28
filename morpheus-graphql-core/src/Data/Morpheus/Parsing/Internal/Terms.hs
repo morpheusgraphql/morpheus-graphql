@@ -37,10 +37,7 @@ module Data.Morpheus.Parsing.Internal.Terms
 where
 
 import Data.ByteString.Internal (w2c)
-import Data.ByteString.Lazy
-  ( pack,
-  )
-import qualified Data.ByteString.Lazy as Lazy
+import Data.ByteString.Lazy (pack)
 import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
@@ -80,12 +77,10 @@ import Text.Megaparsec
   ( (<?>),
     between,
     label,
-    lookAhead,
     many,
     manyTill,
     sepBy,
     sepEndBy,
-    takeP,
     takeWhileP,
     try,
   )
@@ -93,7 +88,6 @@ import Text.Megaparsec.Byte
   ( char,
     digitChar,
     letterChar,
-    newline,
     printChar,
     string,
   )
@@ -200,7 +194,7 @@ parseString = blockString <|> inlineString
 {-# INLINEABLE parseString #-}
 
 blockString :: Parser AST.Token
-blockString = str "\"\"\"" *> (strip . fromLBS <$> content) <* ignoredTokens
+blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
   where
     content :: Parser ByteString
     content = do
