@@ -1,0 +1,305 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 19679fb6171cc6ecce0995781c51177ba2f37316e89043c58f5aced7528718d2
+
+name:           morpheus-graphql-core
+version:        0.17.0
+synopsis:       Morpheus GraphQL Core
+description:    Build GraphQL APIs with your favorite functional language!
+category:       web, graphql
+homepage:       https://morpheusgraphql.com
+bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
+author:         Daviti Nalchevanidze
+maintainer:     d.nalchevanidze@gmail.com
+copyright:      (c) 2019 Daviti Nalchevanidze
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    changelog.md
+    README.md
+data-files:
+    test/rendering/simple/directive/query.gql
+    test/rendering/simple/directive/rendering.gql
+    test/rendering/simple/fragment/query.gql
+    test/rendering/simple/fragment/rendering.gql
+    test/rendering/simple/mutation/query.gql
+    test/rendering/simple/mutation/rendering.gql
+    test/rendering/simple/nested/query.gql
+    test/rendering/simple/nested/rendering.gql
+    test/rendering/simple/query/query.gql
+    test/rendering/simple/query/rendering.gql
+    test/rendering/simple/schema.gql
+    test/rendering/simple/simple/query.gql
+    test/rendering/simple/simple/rendering.gql
+    test/rendering/simple/subscription/query.gql
+    test/rendering/simple/subscription/rendering.gql
+    test/rendering/union/interface/query.gql
+    test/rendering/union/interface/rendering.gql
+    test/rendering/union/schema.gql
+    test/rendering/union/union/query.gql
+    test/rendering/union/union/rendering.gql
+    test/rendering/variable/enum/query.gql
+    test/rendering/variable/enum/rendering.gql
+    test/rendering/variable/include-exclude/query.gql
+    test/rendering/variable/include-exclude/rendering.gql
+    test/rendering/variable/input/query.gql
+    test/rendering/variable/input/rendering.gql
+    test/rendering/variable/list/query.gql
+    test/rendering/variable/list/rendering.gql
+    test/rendering/variable/schema.gql
+    test/rendering/variable/simple/query.gql
+    test/rendering/variable/simple/rendering.gql
+    test/schema/parsing/directive/ok/simple/schema.gql
+    test/schema/parsing/directive/ok/sophisticated/schema.gql
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query/schema.gql
+    test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/schema.gql
+    test/schema/parsing/schema-definition/fail/unknown-fields/bla/schema.gql
+    test/schema/parsing/schema-definition/fail/unknown-fields/uppercase/schema.gql
+    test/schema/parsing/schema-definition/ok/query-mutation-subscription/schema.gql
+    test/schema/parsing/schema-definition/ok/query-mutation/schema.gql
+    test/schema/parsing/schema-definition/ok/query/schema.gql
+    test/schema/validation/default-value/argument/compound-ok/schema.gql
+    test/schema/validation/default-value/argument/missing-field/schema.gql
+    test/schema/validation/default-value/argument/unexpected-value/schema.gql
+    test/schema/validation/default-value/argument/unknown-field/schema.gql
+    test/schema/validation/default-value/field/compound-ok/schema.gql
+    test/schema/validation/default-value/field/missing-field/schema.gql
+    test/schema/validation/default-value/field/unexpected-value/schema.gql
+    test/schema/validation/default-value/field/unknown-field/schema.gql
+    test/schema/validation/directive/fail/at-invalid-place/schema.gql
+    test/schema/validation/directive/fail/missing-argument/schema.gql
+    test/schema/validation/directive/fail/sopthisticated/schema.gql
+    test/schema/validation/directive/fail/unexpected-value/schema.gql
+    test/schema/validation/directive/fail/unknown-directive/schema.gql
+    test/schema/validation/directive/ok/deprecated/custom-directive/schema.gql
+    test/schema/validation/directive/ok/deprecated/schema.gql
+    test/schema/validation/interface/field-args/fail/schema.gql
+    test/schema/validation/interface/field-args/ok/schema.gql
+    test/schema/validation/interface/field-type/fail/schema.gql
+    test/schema/validation/interface/field-type/ok/schema.gql
+    test/schema/validation/performance-check/schema.gql
+    test/schema/validation/schema-definition/fail/non-object-kind/from-schema/schema.gql
+    test/schema/validation/schema-definition/fail/non-object-kind/without-schema/schema.gql
+    "test/schema/validation/schema-definition/fail/required query/empty/schema.gql"
+    "test/schema/validation/schema-definition/fail/required query/no-query/schema.gql"
+    "test/schema/validation/schema-definition/fail/required query/no-schema-no-query/schema.gql"
+    "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
+    test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
+    test/schema/validation/schema-definition/ok/full/schema.gql
+    test/rendering/simple/fragment/variables.json
+    test/rendering/union/interface/variables.json
+    test/rendering/union/union/variables.json
+    test/rendering/variable/enum/variables.json
+    test/rendering/variable/include-exclude/variables.json
+    test/rendering/variable/input/variables.json
+    test/rendering/variable/list/variables.json
+    test/rendering/variable/simple/variables.json
+    test/schema/parsing/directive/ok/simple/response.json
+    test/schema/parsing/directive/ok/sophisticated/response.json
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
+    test/schema/parsing/schema-definition/fail/dupplicate-field/query/response.json
+    test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/response.json
+    test/schema/parsing/schema-definition/fail/unknown-fields/bla/response.json
+    test/schema/parsing/schema-definition/fail/unknown-fields/uppercase/response.json
+    test/schema/parsing/schema-definition/ok/query-mutation-subscription/response.json
+    test/schema/parsing/schema-definition/ok/query-mutation/response.json
+    test/schema/parsing/schema-definition/ok/query/response.json
+    test/schema/validation/default-value/argument/compound-ok/response.json
+    test/schema/validation/default-value/argument/missing-field/response.json
+    test/schema/validation/default-value/argument/unexpected-value/response.json
+    test/schema/validation/default-value/argument/unknown-field/response.json
+    test/schema/validation/default-value/field/compound-ok/response.json
+    test/schema/validation/default-value/field/missing-field/response.json
+    test/schema/validation/default-value/field/unexpected-value/response.json
+    test/schema/validation/default-value/field/unknown-field/response.json
+    test/schema/validation/directive/fail/at-invalid-place/response.json
+    test/schema/validation/directive/fail/missing-argument/response.json
+    test/schema/validation/directive/fail/sopthisticated/response.json
+    test/schema/validation/directive/fail/unexpected-value/response.json
+    test/schema/validation/directive/fail/unknown-directive/response.json
+    test/schema/validation/directive/ok/deprecated/custom-directive/response.json
+    test/schema/validation/directive/ok/deprecated/response.json
+    test/schema/validation/interface/field-args/fail/response.json
+    test/schema/validation/interface/field-args/ok/response.json
+    test/schema/validation/interface/field-type/fail/response.json
+    test/schema/validation/interface/field-type/ok/response.json
+    test/schema/validation/performance-check/response.json
+    test/schema/validation/schema-definition/fail/non-object-kind/from-schema/response.json
+    test/schema/validation/schema-definition/fail/non-object-kind/without-schema/response.json
+    "test/schema/validation/schema-definition/fail/required query/empty/response.json"
+    "test/schema/validation/schema-definition/fail/required query/no-query/response.json"
+    "test/schema/validation/schema-definition/fail/required query/no-schema-no-query/response.json"
+    "test/schema/validation/schema-definition/fail/required query/schema-with-query/response.json"
+    test/schema/validation/schema-definition/fail/unknown-type/unknown/response.json
+    test/schema/validation/schema-definition/ok/full/response.json
+
+source-repository head
+  type: git
+  location: https://github.com/nalchevanidze/morpheus-graphql
+
+library
+  exposed-modules:
+      Data.Morpheus.Core
+      Data.Morpheus.QuasiQuoter
+      Data.Morpheus.Error
+      Data.Morpheus.Types.IO
+      Data.Morpheus.Types.Internal.AST
+      Data.Morpheus.Types.GQLScalar
+      Data.Morpheus.Types.ID
+      Data.Morpheus.Types.SelectionTree
+      Data.Morpheus.Internal.TH
+      Data.Morpheus.Internal.Utils
+      Data.Morpheus.Internal.Ext
+  other-modules:
+      Data.Morpheus.Error.Document.Interface
+      Data.Morpheus.Error.Fragment
+      Data.Morpheus.Error.Input
+      Data.Morpheus.Error.NameCollision
+      Data.Morpheus.Error.Operation
+      Data.Morpheus.Error.Selection
+      Data.Morpheus.Error.Utils
+      Data.Morpheus.Error.Variable
+      Data.Morpheus.Error.Warning
+      Data.Morpheus.Ext.Elems
+      Data.Morpheus.Ext.Empty
+      Data.Morpheus.Ext.Failure
+      Data.Morpheus.Ext.KeyOf
+      Data.Morpheus.Ext.Map
+      Data.Morpheus.Ext.MergeSet
+      Data.Morpheus.Ext.OrdMap
+      Data.Morpheus.Ext.Result
+      Data.Morpheus.Ext.SafeHashMap
+      Data.Morpheus.Ext.Selectable
+      Data.Morpheus.Ext.SemigroupM
+      Data.Morpheus.Internal.Graph
+      Data.Morpheus.Parser
+      Data.Morpheus.Parsing.Document.TypeSystem
+      Data.Morpheus.Parsing.Internal.Arguments
+      Data.Morpheus.Parsing.Internal.Internal
+      Data.Morpheus.Parsing.Internal.Pattern
+      Data.Morpheus.Parsing.Internal.Terms
+      Data.Morpheus.Parsing.Internal.Value
+      Data.Morpheus.Parsing.Request.Operation
+      Data.Morpheus.Parsing.Request.Parser
+      Data.Morpheus.Parsing.Request.Selection
+      Data.Morpheus.Rendering.RenderGQL
+      Data.Morpheus.Schema.DSL
+      Data.Morpheus.Schema.Schema
+      Data.Morpheus.Types.Internal.AST.Base
+      Data.Morpheus.Types.Internal.AST.DirectiveLocation
+      Data.Morpheus.Types.Internal.AST.Fields
+      Data.Morpheus.Types.Internal.AST.Selection
+      Data.Morpheus.Types.Internal.AST.Stage
+      Data.Morpheus.Types.Internal.AST.TH
+      Data.Morpheus.Types.Internal.AST.Type
+      Data.Morpheus.Types.Internal.AST.TypeCategory
+      Data.Morpheus.Types.Internal.AST.TypeSystem
+      Data.Morpheus.Types.Internal.AST.Union
+      Data.Morpheus.Types.Internal.AST.Value
+      Data.Morpheus.Types.Internal.Config
+      Data.Morpheus.Types.Internal.Validation
+      Data.Morpheus.Types.Internal.Validation.Error
+      Data.Morpheus.Types.Internal.Validation.Internal
+      Data.Morpheus.Types.Internal.Validation.SchemaValidator
+      Data.Morpheus.Types.Internal.Validation.Validator
+      Data.Morpheus.Validation.Document.Validation
+      Data.Morpheus.Validation.Internal.Arguments
+      Data.Morpheus.Validation.Internal.Directive
+      Data.Morpheus.Validation.Internal.Value
+      Data.Morpheus.Validation.Query.Fragment
+      Data.Morpheus.Validation.Query.FragmentPreconditions
+      Data.Morpheus.Validation.Query.Selection
+      Data.Morpheus.Validation.Query.UnionSelection
+      Data.Morpheus.Validation.Query.Validation
+      Data.Morpheus.Validation.Query.Variable
+      Paths_morpheus_graphql_core
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      aeson >=1.4.4.0 && <=1.6
+    , base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
+    , hashable >=1.0.0
+    , megaparsec >=7.0.0 && <10.0.0
+    , mtl >=2.0 && <=3.0
+    , relude >=0.3.0
+    , scientific >=0.3.6.2 && <0.4
+    , template-haskell >=2.0 && <=3.0
+    , text >=1.2.3.0 && <1.3
+    , th-lift-instances >=0.1.1 && <=0.3
+    , transformers >=0.3.0.0 && <0.6
+    , unordered-containers >=0.2.8.0 && <0.3
+    , vector >=0.12.0.1 && <0.13
+  default-language: Haskell2010
+
+test-suite morpheus-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Utils.Rendering
+      Utils.Schema
+      Utils.Utils
+      Paths_morpheus_graphql_core
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
+    , directory >=1.0
+    , hashable >=1.0.0
+    , megaparsec >=7.0.0 && <10.0.0
+    , morpheus-graphql-core
+    , mtl >=2.0 && <=3.0
+    , relude >=0.3.0
+    , scientific >=0.3.6.2 && <0.4
+    , tasty
+    , tasty-hunit
+    , template-haskell >=2.0 && <=3.0
+    , text >=1.2.3.0 && <1.3
+    , th-lift-instances >=0.1.1 && <=0.3
+    , transformers >=0.3.0.0 && <0.6
+    , unordered-containers >=0.2.8.0 && <0.3
+    , vector >=0.12.0.1 && <0.13
+  default-language: Haskell2010
+
+benchmark morpheus-bench
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Parser.GraphQL
+      Parser.Morpheus
+      Paths_morpheus_graphql_core
+  hs-source-dirs:
+      bench
+  ghc-options: -eventlog -threaded -rtsopts -with-rtsopts=-N6 -O2
+  build-depends:
+      aeson >=1.4.4.0 && <=1.6
+    , base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , containers >=0.4.2.1 && <0.7
+    , criterion
+    , graphql >=0.11
+    , hashable >=1.0.0
+    , megaparsec >=7.0.0 && <10.0.0
+    , morpheus-graphql-core
+    , mtl >=2.0 && <=3.0
+    , relude >=0.3.0
+    , scientific >=0.3.6.2 && <0.4
+    , template-haskell >=2.0 && <=3.0
+    , text >=1.2.3.0 && <1.3
+    , th-lift-instances >=0.1.1 && <=0.3
+    , transformers >=0.3.0.0 && <0.6
+    , unordered-containers >=0.2.8.0 && <0.3
+    , vector >=0.12.0.1 && <0.13
+  default-language: Haskell2010

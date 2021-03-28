@@ -1,0 +1,48 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 24583922bc77b9b49c4ae7891665cb97e925f704ba125f6e08d5f59724f57561
+
+name:           morpheus-graphql-examples-servant
+version:        0.1.0
+synopsis:       examples
+description:    examples of GraphQL APIs
+category:       web, graphql
+homepage:       https://github.com/nalchevanidze/morpheus-graphql#readme
+bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
+author:         Daviti Nalchevanidze
+maintainer:     Daviti Nalchevanidze
+copyright:      (c) 2019 Daviti Nalchevanidze
+license:        MIT
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/nalchevanidze/morpheus-graphql
+
+executable servant-server
+  main-is: Main.hs
+  other-modules:
+      Server.API.Simple
+      Server.Servant
+      Server.Utils
+      Paths_morpheus_graphql_examples_servant
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base >=4.7 && <5
+    , bytestring >=0.10.4 && <0.11
+    , http-media
+    , morpheus-graphql >=0.17.0
+    , morpheus-graphql-subscriptions >=0.17.0
+    , mtl >=2.0 && <=2.3
+    , servant-server
+    , text >=1.2.3.0 && <1.3
+    , wai-websockets >=1.0 && <=3.5
+    , warp
+    , websockets >=0.11.0 && <=0.13
+  default-language: Haskell2010
