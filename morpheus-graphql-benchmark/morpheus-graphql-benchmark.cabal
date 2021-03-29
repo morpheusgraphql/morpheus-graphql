@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 563c7b03bf1544882211a6cadaf6381bb04aabcb3bc97b2ce450162cbe170700
+-- hash: fa0b8b72c4beb90f1dac4b1c0c004557b184924fe06ed74f93f7a7612123d800
 
 name:           morpheus-graphql-benchmark
 version:        0.17.0
-synopsis:       Morpheus GraphQL Core
+synopsis:       Morpheus GraphQL Benchmark
 description:    Build GraphQL APIs with your favorite functional language!
 category:       web, graphql
 homepage:       https://morpheusgraphql.com
@@ -22,6 +22,12 @@ build-type:     Simple
 extra-source-files:
     changelog.md
     README.md
+data-files:
+    samples/descriptions.gql
+    samples/github.gql
+    samples/mythology.gql
+    samples/starwars.gql
+    samples/wrappers.gql
 
 source-repository head
   type: git

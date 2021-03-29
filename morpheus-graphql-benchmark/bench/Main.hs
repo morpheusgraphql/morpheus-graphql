@@ -17,7 +17,7 @@ import Parser.Morpheus as Morpheus
 fetchCase :: FilePath -> IO (ByteString, Text)
 fetchCase x = (,) <$> L.readFile path <*> TIO.readFile path
   where
-    path = "bench/assets/" <> x <> ".gql"
+    path = "samples/" <> x <> ".gql"
 
 fetch :: FilePath -> IO (String, (ByteString, Text))
 fetch path = do
@@ -39,11 +39,11 @@ getFiles :: IO [(Info, ByteString, Text)]
 getFiles =
   traverse
     getFile
-    [ Info {lineCount = 94, name = "mythology", src = "mythology"},
-      Info {lineCount = 2500, name = "descriptions", src = "descriptions"},
+    [ Info {lineCount = 94, name = "Mythology", src = "mythology"},
+      Info {lineCount = 2500, name = "Many Descriptions", src = "descriptions"},
       --  Info {lineCount = 38948, name = "github", src = "github"},
-      Info {lineCount = 5922, name = "starWars", src = "starWars"},
-      Info {lineCount = 6, name = "wrappers", src = "wrappers"}
+      Info {lineCount = 5922, name = "Star Wars", src = "starWars"},
+      Info {lineCount = 6, name = "Many Wrappers", src = "wrappers"}
     ]
 
 typeCount :: (ByteString, Text) -> String
