@@ -207,9 +207,9 @@ inlineString =
         )
 {-# INLINE inlineString #-}
 
-handleEscape :: Word8 -> Parser Char
-handleEscape 92 = w2c <$> choice escape
-handleEscape x = pure (w2c x)
+handleEscape :: Word8 -> Parser Word8
+handleEscape 92 = choice escape
+handleEscape x = pure x
 {-# INLINE handleEscape #-}
 
 escape :: [Parser Word8]
