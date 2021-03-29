@@ -82,6 +82,7 @@ import Text.Megaparsec
     manyTill,
     sepBy,
     sepEndBy,
+    takeWhile1P,
     takeWhileP,
     try,
   )
@@ -125,26 +126,20 @@ brackets = between (symbol 91) (symbol 93)
 --  NameStart NameContinue[list,opt]
 --
 name :: Parser AST.Token
-name =
-  label "Name" $
-    fromLBS . pack
-      <$> ((:) <$> nameStartBS <*> nameContinueBS)
-      <* ignoredTokens
-{-# INLINEABLE name #-}
-
--- NameStart::
---   Letter
---   _
-nameStartBS :: Parser Word8
-nameStartBS = letterChar <|> char UNDERSCORE
-{-# INLINEABLE nameStartBS #-}
-
---  NameContinue::
---   Letter
---   Digit
-nameContinueBS :: Parser [Word8]
-nameContinueBS = many (letterChar <|> char UNDERSCORE <|> digitChar)
-{-# INLINEABLE nameContinueBS #-}
+name = label "Name" $
+  fromLBS <$> do
+    nameHead <- takeWhile1P Nothing isDigitOrLetter
+    nameTail <- takeWhileP Nothing isDigitOrLetter
+    ignoredTokens
+    pure (nameHead <> nameTail)
+  where
+    isDigitOrLetter x =
+      x == UNDERSCORE
+        || (x >= 65 && x <= 90) -- UpperCase
+        || (x >= 97 && x <= 122) --LowerCase
+        || (x >= 48 && x <= 57) -- digit
+    {-# INLINE isDigitOrLetter #-}
+{-# INLINE name #-}
 
 escapedChar :: Parser Char
 escapedChar = label "EscapedChar" $ printChar >>= handleEscape
@@ -159,7 +154,7 @@ parseName = FieldName <$> name
 {-# INLINEABLE parseName #-}
 
 parseTypeName :: Parser TypeName
-parseTypeName = label "TypeName" $ TypeName <$> name
+parseTypeName = TypeName <$> name
 {-# INLINEABLE parseTypeName #-}
 
 keyword :: ByteString -> Parser ()
