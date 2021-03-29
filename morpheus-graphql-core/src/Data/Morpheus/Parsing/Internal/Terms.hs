@@ -200,36 +200,25 @@ blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
 
 inlineString :: Parser AST.Token
 inlineString =
-  T.pack
-    <$> ( char DOUBLE_QUOTE
-            *> manyTill escapedChar (char DOUBLE_QUOTE)
-            <* ignoredTokens
-        )
+  T.pack <$> (char DOUBLE_QUOTE *> manyTill escapedChar (char DOUBLE_QUOTE))
+    <* ignoredTokens
 {-# INLINE inlineString #-}
 
-handleEscape :: Word8 -> Parser Word8
-handleEscape 92 = choice escape
-handleEscape x = pure x
+handleEscape :: Word8 -> Parser Char
+handleEscape 92 = w2c <$> choice escapeOptions
+handleEscape x = pure (w2c x)
 {-# INLINE handleEscape #-}
 
-escape :: [Parser Word8]
-escape = escapeCh <$> escapeOptions
-  where
-    escapeCh :: (Word8, Word8) -> Parser Word8
-    escapeCh (code, replacement) = char code $> replacement
-    {-# INLINE escapeCh #-}
-{-# INLINE escape #-}
-
-escapeOptions :: [(Word8, Word8)]
+escapeOptions :: [Parser Word8]
 escapeOptions =
-  [ (98, 8),
-    (110, 10),
-    (102, 12),
-    (114, 13),
-    (116, 9),
-    (92, 92),
-    (34, 34),
-    (47, 47)
+  [ char 98 $> 8,
+    char 110 $> 10,
+    char 102 $> 12,
+    char 114 $> 13,
+    char 116 $> 9,
+    char 92 $> 92,
+    char 34 $> 34,
+    char 47 $> 47
   ]
 {-# INLINE escapeOptions #-}
 
