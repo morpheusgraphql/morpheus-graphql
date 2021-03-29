@@ -205,7 +205,12 @@ blockString = string "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
 inlineString :: Parser AST.Token
 inlineString =
   label "String" $
-    T.pack <$> (char DOUBLE_QUOTE *> manyTill (printChar >>= handleEscape) (char DOUBLE_QUOTE))
+    T.pack
+      <$> ( char DOUBLE_QUOTE
+              *> manyTill
+                (printChar >>= handleEscape)
+                (char DOUBLE_QUOTE)
+          )
       <* ignoredTokens
 {-# INLINE inlineString #-}
 
