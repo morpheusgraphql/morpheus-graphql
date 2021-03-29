@@ -1,0 +1,28 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 563c7b03bf1544882211a6cadaf6381bb04aabcb3bc97b2ce450162cbe170700
+
+name:           morpheus-graphql-benchmark
+version:        0.17.0
+synopsis:       Morpheus GraphQL Core
+description:    Build GraphQL APIs with your favorite functional language!
+category:       web, graphql
+homepage:       https://morpheusgraphql.com
+bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
+author:         Daviti Nalchevanidze
+maintainer:     d.nalchevanidze@gmail.com
+copyright:      (c) 2019 Daviti Nalchevanidze
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    changelog.md
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/nalchevanidze/morpheus-graphql
