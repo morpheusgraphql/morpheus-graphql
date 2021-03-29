@@ -4,7 +4,7 @@ github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
 category: web, graphql
-synopsis: Morpheus GraphQL Core
+synopsis: Morpheus GraphQL Benchmark
 maintainer: "d.nalchevanidze@gmail.com"
 homepage: https://morpheusgraphql.com
 copyright: "(c) 2019 Daviti Nalchevanidze"
