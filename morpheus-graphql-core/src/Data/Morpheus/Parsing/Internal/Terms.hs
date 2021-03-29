@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -23,24 +24,21 @@ module Data.Morpheus.Parsing.Internal.Terms
     parseName,
     parseType,
     keyword,
-    symbol,
     optDescription,
     optionalCollection,
-    parseNegativeSign,
     parseTypeName,
     pipe,
-    fieldNameColon,
     brackets,
     equal,
-    comma,
     colon,
     at,
+    symbol,
   )
 where
 
-import Data.ByteString.Lazy
-  ( pack,
-  )
+import Data.ByteString.Internal (w2c)
+import Data.ByteString.Lazy (pack)
+import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
@@ -48,27 +46,33 @@ import Data.Morpheus.Internal.Utils
     KeyOf,
     fromElems,
     fromLBS,
-    toLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     Position,
     getLocation,
   )
+import Data.Morpheus.Parsing.Internal.Literals
+  ( at,
+    colon,
+    equal,
+    ignoredTokens,
+    ignoredTokens1,
+    pipe,
+    symbol,
+  )
+import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
     Description,
     FieldName (..),
     Ref (..),
-    Token,
     TypeName (..),
     TypeRef (..),
     toHSWrappers,
   )
-import Data.Text
-  ( strip,
-  )
-import Relude hiding (empty, many)
+import qualified Data.Text as T
+import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
     between,
@@ -77,112 +81,94 @@ import Text.Megaparsec
     many,
     manyTill,
     sepBy,
-    sepBy1,
     sepEndBy,
-    skipManyTill,
+    takeWhileP,
     try,
   )
 import Text.Megaparsec.Byte
   ( char,
     digitChar,
     letterChar,
-    newline,
     printChar,
-    space,
-    space1,
     string,
   )
 
-parseNegativeSign :: Parser Bool
-parseNegativeSign = (minus $> True <* ignoredTokens) <|> pure False
-
-parseName :: Parser FieldName
-parseName = FieldName <$> name
-
-parseTypeName :: Parser TypeName
-parseTypeName = label "TypeName" $ TypeName <$> name
-
-keyword :: FieldName -> Parser ()
-keyword (FieldName word) = string (toLBS word) *> space1 *> ignoredTokens
-
-symbol :: Word8 -> Parser ()
-symbol x = char x *> ignoredTokens
-
--- braces: {}
-braces :: Parser a -> Parser a
-braces = between (symbol 123) (symbol 125)
-
--- brackets: []
-brackets :: Parser a -> Parser a
-brackets = between (symbol 91) (symbol 93)
+-- '$'
+#define DOLLAR 36
+-- '&'
+#define AMPERSAND 38
+-- '_'
+#define UNDERSCORE 95
+-- '!'
+#define BANG 33
+-- '"'
+#define DOUBLE_QUOTE 34
 
 -- parens : '()'
 parens :: Parser a -> Parser a
 parens = between (symbol 40) (symbol 41)
+{-# INLINEABLE parens #-}
 
--- underscore : '_'
-underscore :: Parser Word8
-underscore = char 95
+-- braces: {}
+braces :: Parser a -> Parser a
+braces = between (symbol 123) (symbol 125)
+{-# INLINEABLE braces #-}
 
-comma :: Parser ()
-comma = label "," $ char 44 *> space
-
--- dollar :: $
-dollar :: Parser ()
-dollar = label "$" $ symbol 36
-
--- equal :: '='
-equal :: Parser ()
-equal = label "=" $ symbol 61
-
--- colon :: ':'
-colon :: Parser ()
-colon = label ":" $ symbol 58
-
--- minus: '-'
-minus :: Parser ()
-minus = label "-" $ symbol 45
-
--- verticalPipe: '|'
-verticalPipe :: Parser ()
-verticalPipe = label "|" $ symbol 124
-
-ampersand :: Parser ()
-ampersand = label "&" $ symbol 38
-
--- at: '@'
-at :: Parser ()
-at = label "@" $ symbol 64
-
--- PRIMITIVE
-------------------------------------
+-- brackets: []
+brackets :: Parser a -> Parser a
+brackets = between (symbol 91) (symbol 93)
+{-# INLINEABLE brackets #-}
 
 -- 2.1.9 Names
 -- https://spec.graphql.org/draft/#Name
 -- Name ::
 --  NameStart NameContinue[list,opt]
 --
-name :: Parser Token
+name :: Parser AST.Token
 name =
   label "Name" $
     fromLBS . pack
-      <$> ((:) <$> nameStart <*> nameContinue)
+      <$> ((:) <$> nameStartBS <*> nameContinueBS)
       <* ignoredTokens
+{-# INLINEABLE name #-}
 
 -- NameStart::
 --   Letter
 --   _
-nameStart :: Parser Word8
-nameStart = letterChar <|> underscore
+nameStartBS :: Parser Word8
+nameStartBS = letterChar <|> char UNDERSCORE
+{-# INLINEABLE nameStartBS #-}
 
 --  NameContinue::
 --   Letter
 --   Digit
-nameContinue :: Parser [Word8]
-nameContinue = many (letterChar <|> underscore <|> digitChar)
+nameContinueBS :: Parser [Word8]
+nameContinueBS = many (letterChar <|> char UNDERSCORE <|> digitChar)
+{-# INLINEABLE nameContinueBS #-}
+
+escapedChar :: Parser Char
+escapedChar = label "EscapedChar" $ printChar >>= handleEscape
+{-# INLINEABLE escapedChar #-}
+
+str :: ByteString -> Parser ()
+str x = string x $> ()
+{-# INLINEABLE str #-}
+
+parseName :: Parser FieldName
+parseName = FieldName <$> name
+{-# INLINEABLE parseName #-}
+
+parseTypeName :: Parser TypeName
+parseTypeName = label "TypeName" $ TypeName <$> name
+{-# INLINEABLE parseTypeName #-}
+
+keyword :: ByteString -> Parser ()
+keyword x = string x *> ignoredTokens1
+{-# INLINEABLE keyword #-}
 
 varName :: Parser FieldName
-varName = dollar *> parseName <* ignoredTokens
+varName = symbol DOLLAR *> parseName <* ignoredTokens
+{-# INLINEABLE varName #-}
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
 --
@@ -194,46 +180,58 @@ variable =
     flip Ref
       <$> getLocation
       <*> varName
+{-# INLINEABLE variable #-}
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
 --
 -- Description:
 --   StringValue
-parseDescription :: Parser Description
-parseDescription = strip <$> parseString
-
 optDescription :: Parser (Maybe Description)
-optDescription = optional parseDescription
+optDescription = optional parseString
+{-# INLINEABLE optDescription #-}
 
-parseString :: Parser Token
-parseString = blockString <|> singleLineString
+parseString :: Parser AST.Token
+parseString = blockString <|> inlineString
+{-# INLINEABLE parseString #-}
 
-blockString :: Parser Token
-blockString = stringWith (string "\"\"\"") (printChar <|> newline)
+blockString :: Parser AST.Token
+blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
+  where
+    content :: Parser ByteString
+    content = do
+      text <- takeWhileP Nothing (/= DOUBLE_QUOTE)
+      doubleQuotes <- takeWhileP Nothing (== DOUBLE_QUOTE)
+      case doubleQuotes of
+        "\"\"\"" -> pure text
+        _ -> ((text <> doubleQuotes) <>) <$> content
+    {-# INLINE content #-}
+{-# INLINE blockString #-}
 
-singleLineString :: Parser Token
-singleLineString = stringWith (string "\"") escapedChar
+inlineString :: Parser AST.Token
+inlineString = stringWith (char DOUBLE_QUOTE) escapedChar
+{-# INLINE inlineString #-}
 
-stringWith :: Parser quote -> Parser Word8 -> Parser Token
+stringWith :: Parser quote -> Parser Char -> Parser AST.Token
 stringWith quote parser =
-  fromLBS . pack
+  T.pack
     <$> ( quote
             *> manyTill parser quote
             <* ignoredTokens
         )
+{-# INLINE stringWith #-}
 
-escapedChar :: Parser Word8
-escapedChar = label "EscapedChar" $ printChar >>= handleEscape
-
-handleEscape :: Word8 -> Parser Word8
-handleEscape 92 = choice escape
-handleEscape x = pure x
+handleEscape :: Word8 -> Parser Char
+handleEscape 92 = w2c <$> choice escape
+handleEscape x = pure (w2c x)
+{-# INLINE handleEscape #-}
 
 escape :: [Parser Word8]
 escape = escapeCh <$> escapeOptions
   where
     escapeCh :: (Word8, Word8) -> Parser Word8
     escapeCh (code, replacement) = char code $> replacement
+    {-# INLINE escapeCh #-}
+{-# INLINE escape #-}
 
 escapeOptions :: [(Word8, Word8)]
 escapeOptions =
@@ -246,59 +244,29 @@ escapeOptions =
     (34, 34),
     (47, 47)
   ]
-
--- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
---  Ignored:
---    UnicodeBOM
---    WhiteSpace
---    LineTerminator
---    Comment
---    Comma
-ignoredTokens :: Parser ()
-ignoredTokens =
-  label "IgnoredTokens" $
-    space
-      *> many ignored
-      *> space
-
-ignored :: Parser ()
-ignored = label "Ignored" (comment <|> comma)
-
-comment :: Parser ()
-comment =
-  label "Comment" $
-    octothorpe *> skipManyTill printChar newline *> space
-
--- exclamationMark: '!'
-exclamationMark :: Parser ()
-exclamationMark = label "!" $symbol 33
-
--- octothorpe: '#'
-octothorpe :: Parser ()
-octothorpe = label "#" $ char 35 $> ()
+{-# INLINE escapeOptions #-}
 
 ------------------------------------------------------------------------
-
 sepByAnd :: Parser a -> Parser [a]
-sepByAnd entry = entry `sepBy` (optional ampersand *> ignoredTokens)
-
-pipe :: Parser a -> Parser [a]
-pipe x = optional verticalPipe *> (x `sepBy1` verticalPipe)
+sepByAnd entry = entry `sepBy` (optional (symbol AMPERSAND) *> ignoredTokens)
+{-# INLINEABLE sepByAnd #-}
 
 -----------------------------
 collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
+{-# INLINEABLE collection #-}
 
 setOf :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
 setOf = collection >=> lift . fromElems
+{-# INLINEABLE setOf #-}
 
-optionalCollection :: Empty c => Parser c -> Parser c
+optionalCollection :: (Empty c) => Parser c -> Parser c
 optionalCollection x = x <|> pure empty
+{-# INLINEABLE optionalCollection #-}
 
 parseNonNull :: Parser [DataTypeWrapper]
-parseNonNull =
-  (exclamationMark $> [NonNullType])
-    <|> pure []
+parseNonNull = (symbol BANG $> [NonNullType]) <|> pure []
+{-# INLINEABLE parseNonNull #-}
 
 uniqTuple :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTuple parser =
@@ -306,12 +274,11 @@ uniqTuple parser =
     parens
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
       >>= lift . fromElems
+{-# INLINEABLE uniqTuple #-}
 
 uniqTupleOpt :: (FromElems Eventless a coll, Empty coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
-
-fieldNameColon :: Parser FieldName
-fieldNameColon = parseName <* colon
+{-# INLINEABLE uniqTupleOpt #-}
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --
@@ -320,9 +287,11 @@ fieldNameColon = parseName <* colon
 --
 parseTypeCondition :: Parser TypeName
 parseTypeCondition = keyword "on" *> parseTypeName
+{-# INLINEABLE parseTypeCondition #-}
 
 spreadLiteral :: Parser Position
-spreadLiteral = getLocation <* string "..." <* space
+spreadLiteral = getLocation <* str "..." <* ignoredTokens
+{-# INLINEABLE spreadLiteral #-}
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
@@ -330,10 +299,12 @@ spreadLiteral = getLocation <* string "..." <* space
 parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
-    alias = label "alias" fieldNameColon
+    alias = label "alias" (parseName <* colon)
+{-# INLINEABLE parseAlias #-}
 
 parseType :: Parser TypeRef
 parseType = parseTypeW <$> parseWrappedType <*> parseNonNull
+{-# INLINEABLE parseType #-}
 
 parseTypeW :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> TypeRef
 parseTypeW (wrappers, typeConName) nonNull =
@@ -341,6 +312,7 @@ parseTypeW (wrappers, typeConName) nonNull =
     { typeConName,
       typeWrappers = toHSWrappers (nonNull <> wrappers)
     }
+{-# INLINEABLE parseTypeW #-}
 
 parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
 parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
@@ -350,6 +322,8 @@ parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
     ----------------------------------------------
     wrapped :: Parser ([DataTypeWrapper], TypeName)
     wrapped = brackets (wrapAsList <$> (unwrapped <|> wrapped) <*> parseNonNull)
+{-# INLINEABLE parseWrappedType #-}
 
 wrapAsList :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> ([DataTypeWrapper], TypeName)
 wrapAsList (wrappers, tName) nonNull = (ListType : nonNull <> wrappers, tName)
+{-# INLINEABLE wrapAsList #-}

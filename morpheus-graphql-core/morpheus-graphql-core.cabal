@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 90068e1d18639f399f1e45aabe9e946400be315246c366b4277f1cae1888f54e
+-- hash: ca44babeae0866ed54bba5083aa75334a162b49d70f2db6d976103f38cc4a453
 
 name:           morpheus-graphql-core
 version:        0.17.0
@@ -54,6 +54,7 @@ data-files:
     test/rendering/variable/schema.gql
     test/rendering/variable/simple/query.gql
     test/rendering/variable/simple/rendering.gql
+    test/schema/parsing/descriptions/ok/schema.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/schema.gql
@@ -100,6 +101,7 @@ data-files:
     test/rendering/variable/input/variables.json
     test/rendering/variable/list/variables.json
     test/rendering/variable/simple/variables.json
+    test/schema/parsing/descriptions/ok/response.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
     test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
@@ -182,6 +184,7 @@ library
       Data.Morpheus.Parsing.Document.TypeSystem
       Data.Morpheus.Parsing.Internal.Arguments
       Data.Morpheus.Parsing.Internal.Internal
+      Data.Morpheus.Parsing.Internal.Literals
       Data.Morpheus.Parsing.Internal.Pattern
       Data.Morpheus.Parsing.Internal.Terms
       Data.Morpheus.Parsing.Internal.Value
