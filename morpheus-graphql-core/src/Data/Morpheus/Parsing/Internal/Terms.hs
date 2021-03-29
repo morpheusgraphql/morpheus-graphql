@@ -37,7 +37,6 @@ module Data.Morpheus.Parsing.Internal.Terms
 where
 
 import Data.ByteString.Internal (w2c)
-import Data.ByteString.Lazy (pack)
 import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
@@ -78,17 +77,15 @@ import Text.Megaparsec
     between,
     choice,
     label,
-    many,
     manyTill,
     sepBy,
     sepEndBy,
+    takeWhile1P,
     takeWhileP,
     try,
   )
 import Text.Megaparsec.Byte
   ( char,
-    digitChar,
-    letterChar,
     printChar,
     string,
   )
@@ -121,30 +118,24 @@ brackets = between (symbol 91) (symbol 93)
 
 -- 2.1.9 Names
 -- https://spec.graphql.org/draft/#Name
--- Name ::
---  NameStart NameContinue[list,opt]
---
+-- Name
 name :: Parser AST.Token
 name =
   label "Name" $
-    fromLBS . pack
-      <$> ((:) <$> nameStartBS <*> nameContinueBS)
+    fromLBS <$> do
+      (<>) <$> takeWhile1P Nothing isStartChar <*> takeWhileP Nothing isContinueChar
       <* ignoredTokens
-{-# INLINEABLE name #-}
-
--- NameStart::
---   Letter
---   _
-nameStartBS :: Parser Word8
-nameStartBS = letterChar <|> char UNDERSCORE
-{-# INLINEABLE nameStartBS #-}
-
---  NameContinue::
---   Letter
---   Digit
-nameContinueBS :: Parser [Word8]
-nameContinueBS = many (letterChar <|> char UNDERSCORE <|> digitChar)
-{-# INLINEABLE nameContinueBS #-}
+  where
+    isStartChar x =
+      (x >= 65 && x <= 90) -- UpperCase
+        || (x >= 97 && x <= 122) --LowerCase
+        || x == UNDERSCORE
+    {-# INLINE isStartChar #-}
+    isContinueChar x =
+      isStartChar x
+        || (x >= 48 && x <= 57) -- digit
+    {-# INLINE isContinueChar #-}
+{-# INLINE name #-}
 
 escapedChar :: Parser Char
 escapedChar = label "EscapedChar" $ printChar >>= handleEscape
@@ -159,7 +150,7 @@ parseName = FieldName <$> name
 {-# INLINEABLE parseName #-}
 
 parseTypeName :: Parser TypeName
-parseTypeName = label "TypeName" $ TypeName <$> name
+parseTypeName = TypeName <$> name
 {-# INLINEABLE parseTypeName #-}
 
 keyword :: ByteString -> Parser ()
