@@ -199,17 +199,13 @@ blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
 {-# INLINE blockString #-}
 
 inlineString :: Parser AST.Token
-inlineString = stringWith (char DOUBLE_QUOTE) escapedChar
-{-# INLINE inlineString #-}
-
-stringWith :: Parser quote -> Parser Char -> Parser AST.Token
-stringWith quote parser =
+inlineString =
   T.pack
-    <$> ( quote
-            *> manyTill parser quote
+    <$> ( char DOUBLE_QUOTE
+            *> manyTill escapedChar (char DOUBLE_QUOTE)
             <* ignoredTokens
         )
-{-# INLINE stringWith #-}
+{-# INLINE inlineString #-}
 
 handleEscape :: Word8 -> Parser Char
 handleEscape 92 = w2c <$> choice escape
