@@ -137,10 +137,6 @@ name =
     {-# INLINE isContinueChar #-}
 {-# INLINE name #-}
 
-escapedChar :: Parser Char
-escapedChar = label "EscapedChar" $ printChar >>= handleEscape
-{-# INLINEABLE escapedChar #-}
-
 str :: ByteString -> Parser ()
 str x = string x $> ()
 {-# INLINEABLE str #-}
@@ -200,8 +196,9 @@ blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
 
 inlineString :: Parser AST.Token
 inlineString =
-  T.pack <$> (char DOUBLE_QUOTE *> manyTill escapedChar (char DOUBLE_QUOTE))
-    <* ignoredTokens
+  label "String" $
+    T.pack <$> (char DOUBLE_QUOTE *> manyTill (printChar >>= handleEscape) (char DOUBLE_QUOTE))
+      <* ignoredTokens
 {-# INLINE inlineString #-}
 
 handleEscape :: Word8 -> Parser Char
