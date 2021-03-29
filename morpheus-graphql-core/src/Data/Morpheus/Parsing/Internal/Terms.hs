@@ -101,6 +101,18 @@ import Text.Megaparsec.Byte
 -- '"'
 #define DOUBLE_QUOTE 34
 
+#define CHAR_A 65
+
+#define CHAR_Z 90
+
+#define CHAR_a 97
+
+#define CHAR_z 122
+
+#define DIGIT_0 48
+
+#define DIGIT_9 57
+
 -- parens : '()'
 parens :: Parser a -> Parser a
 parens = between (symbol 40) (symbol 41)
@@ -127,19 +139,15 @@ name =
       <* ignoredTokens
   where
     isStartChar x =
-      (x >= 65 && x <= 90) -- UpperCase
-        || (x >= 97 && x <= 122) --LowerCase
+      (x >= CHAR_a && x <= CHAR_z)
+        || (x >= CHAR_A && x <= CHAR_Z)
         || x == UNDERSCORE
     {-# INLINE isStartChar #-}
     isContinueChar x =
       isStartChar x
-        || (x >= 48 && x <= 57) -- digit
+        || (x >= DIGIT_0 && x <= DIGIT_9) -- digit
     {-# INLINE isContinueChar #-}
 {-# INLINE name #-}
-
-str :: ByteString -> Parser ()
-str x = string x $> ()
-{-# INLINEABLE str #-}
 
 parseName :: Parser FieldName
 parseName = FieldName <$> name
@@ -182,7 +190,7 @@ parseString = blockString <|> inlineString
 {-# INLINEABLE parseString #-}
 
 blockString :: Parser AST.Token
-blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
+blockString = string "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
   where
     content :: Parser ByteString
     content = do
@@ -261,7 +269,7 @@ parseTypeCondition = keyword "on" *> parseTypeName
 {-# INLINEABLE parseTypeCondition #-}
 
 spreadLiteral :: Parser Position
-spreadLiteral = getLocation <* str "..." <* ignoredTokens
+spreadLiteral = getLocation <* string "..." <* ignoredTokens
 {-# INLINEABLE spreadLiteral #-}
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
