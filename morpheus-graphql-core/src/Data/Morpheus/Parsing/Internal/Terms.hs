@@ -202,22 +202,20 @@ inlineString =
 {-# INLINE inlineString #-}
 
 handleEscape :: Word8 -> Parser Char
-handleEscape 92 = w2c <$> choice escapeOptions
+handleEscape 92 =
+  w2c
+    <$> choice
+      [ char 98 $> 8,
+        char 110 $> 10,
+        char 102 $> 12,
+        char 114 $> 13,
+        char 116 $> 9,
+        char 92 $> 92,
+        char 34 $> 34,
+        char 47 $> 47
+      ]
 handleEscape x = pure (w2c x)
 {-# INLINE handleEscape #-}
-
-escapeOptions :: [Parser Word8]
-escapeOptions =
-  [ char 98 $> 8,
-    char 110 $> 10,
-    char 102 $> 12,
-    char 114 $> 13,
-    char 116 $> 9,
-    char 92 $> 92,
-    char 34 $> 34,
-    char 47 $> 47
-  ]
-{-# INLINE escapeOptions #-}
 
 ------------------------------------------------------------------------
 sepByAnd :: Parser a -> Parser [a]
