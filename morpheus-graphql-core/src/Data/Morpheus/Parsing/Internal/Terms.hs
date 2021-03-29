@@ -37,7 +37,6 @@ module Data.Morpheus.Parsing.Internal.Terms
 where
 
 import Data.ByteString.Internal (w2c)
-import Data.ByteString.Lazy (pack)
 import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
@@ -78,7 +77,6 @@ import Text.Megaparsec
     between,
     choice,
     label,
-    many,
     manyTill,
     sepBy,
     sepEndBy,
@@ -88,8 +86,6 @@ import Text.Megaparsec
   )
 import Text.Megaparsec.Byte
   ( char,
-    digitChar,
-    letterChar,
     printChar,
     string,
   )
@@ -122,23 +118,23 @@ brackets = between (symbol 91) (symbol 93)
 
 -- 2.1.9 Names
 -- https://spec.graphql.org/draft/#Name
--- Name ::
---  NameStart NameContinue[list,opt]
---
+-- Name
 name :: Parser AST.Token
-name = label "Name" $
-  fromLBS <$> do
-    nameHead <- takeWhile1P Nothing isDigitOrLetter
-    nameTail <- takeWhileP Nothing isDigitOrLetter
-    ignoredTokens
-    pure (nameHead <> nameTail)
+name =
+  label "Name" $
+    fromLBS <$> do
+      (<>) <$> takeWhile1P Nothing isStartChar <*> takeWhileP Nothing isContinueChar
+      <* ignoredTokens
   where
-    isDigitOrLetter x =
-      x == UNDERSCORE
-        || (x >= 65 && x <= 90) -- UpperCase
+    isStartChar x =
+      (x >= 65 && x <= 90) -- UpperCase
         || (x >= 97 && x <= 122) --LowerCase
+        || x == UNDERSCORE
+    {-# INLINE isStartChar #-}
+    isContinueChar x =
+      isStartChar x
         || (x >= 48 && x <= 57) -- digit
-    {-# INLINE isDigitOrLetter #-}
+    {-# INLINE isContinueChar #-}
 {-# INLINE name #-}
 
 escapedChar :: Parser Char
