@@ -39,7 +39,8 @@ getFiles :: IO [(Info, ByteString, Text)]
 getFiles =
   traverse
     getFile
-    [ Info {lineCount = 94, name = "Mythology", src = "mythology"},
+    [ Info {lineCount = 5, name = "Huge String", src = "huge-string"},
+      Info {lineCount = 94, name = "Mythology", src = "mythology"},
       Info {lineCount = 2500, name = "Many Descriptions", src = "descriptions"},
       --  Info {lineCount = 38948, name = "github", src = "github"},
       Info {lineCount = 5922, name = "Star Wars", src = "starWars"},
