@@ -74,7 +74,6 @@ import Language.Haskell.TH
     cxt,
     instanceD,
     tupP,
-    varE,
   )
 import Relude hiding (toString)
 
