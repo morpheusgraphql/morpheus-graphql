@@ -1,3 +1,4 @@
+benchmarking GraphQL/Huge String
 time                 9.461 ms   (8.194 ms .. 11.60 ms)
                      0.876 R²   (0.786 R² .. 0.989 R²)
 mean                 8.495 ms   (8.193 ms .. 9.839 ms)
