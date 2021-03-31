@@ -4,8 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.String
-  ( inlineString,
-    blockString,
+  ( parseStringBS,
   )
 where
 
@@ -94,3 +93,7 @@ blockString = string "\"\"\"" *> content <* ignoredTokens
         _ -> ((text <> doubleQuotes) <>) <$> content
     {-# INLINE content #-}
 {-# INLINE blockString #-}
+
+parseStringBS :: Parser ByteString
+parseStringBS = blockString <|> inlineString
+{-# INLINE parseStringBS #-}

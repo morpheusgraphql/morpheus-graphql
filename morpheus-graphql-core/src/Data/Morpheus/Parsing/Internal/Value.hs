@@ -69,7 +69,7 @@ enumValue :: Parser (Value a)
 enumValue = Enum <$> parseTypeName <* ignoredTokens
 
 stringValue :: Parser (Value a)
-stringValue = label "stringValue" $ Scalar . String <$> parseString
+stringValue = Scalar . String <$> parseString
 
 listValue :: Parser a -> Parser [a]
 listValue parser = label "list" $ brackets (parser `sepBy` ignoredTokens)

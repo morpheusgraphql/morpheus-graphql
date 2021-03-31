@@ -36,7 +36,6 @@ module Data.Morpheus.Parsing.Internal.Terms
   )
 where
 
-import Data.ByteString.Internal (w2c)
 import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
@@ -60,7 +59,7 @@ import Data.Morpheus.Parsing.Internal.Literals
     pipe,
     symbol,
   )
-import qualified Data.Morpheus.Parsing.Internal.String as S
+import Data.Morpheus.Parsing.Internal.String (parseStringBS)
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
@@ -71,14 +70,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
-import qualified Data.Text as T
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
     between,
-    choice,
     label,
-    manyTill,
     sepBy,
     sepEndBy,
     takeWhile1P,
@@ -86,9 +82,7 @@ import Text.Megaparsec
     try,
   )
 import Text.Megaparsec.Byte
-  ( char,
-    printChar,
-    string,
+  ( string,
   )
 
 -- '$'
@@ -185,7 +179,7 @@ optDescription = optional parseString
 {-# INLINEABLE optDescription #-}
 
 parseString :: Parser AST.Token
-parseString = fromLBS <$> (S.blockString <|> S.inlineString)
+parseString = label "String" $ fromLBS <$> parseStringBS
 {-# INLINEABLE parseString #-}
 
 ------------------------------------------------------------------------
