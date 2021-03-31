@@ -60,6 +60,7 @@ import Data.Morpheus.Parsing.Internal.Literals
     pipe,
     symbol,
   )
+import qualified Data.Morpheus.Parsing.Internal.String as S
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
