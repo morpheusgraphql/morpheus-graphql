@@ -5,6 +5,7 @@
 
 module Data.Morpheus.Parsing.Internal.String
   ( inlineString,
+    blockString,
   )
 where
 
@@ -19,22 +20,15 @@ import Data.Morpheus.Parsing.Internal.Literals
   )
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
-  ( (<?>),
-    between,
-    choice,
+  ( choice,
     label,
-    manyTill,
     satisfy,
-    sepBy,
-    sepEndBy,
-    takeP,
-    takeWhile1P,
     takeWhileP,
-    try,
     unexpected,
   )
 import Text.Megaparsec.Byte
   ( char,
+    string,
   )
 import Text.Megaparsec.Error
   ( ErrorItem (..),
@@ -87,3 +81,16 @@ parseContent = do
         ]
     {-# INLINE escapeChar #-}
 {-# INLINE parseContent #-}
+
+blockString :: Parser ByteString
+blockString = string "\"\"\"" *> content <* ignoredTokens
+  where
+    content :: Parser ByteString
+    content = do
+      text <- takeWhileP Nothing (/= DOUBLE_QUOTE)
+      doubleQuotes <- takeWhileP Nothing (== DOUBLE_QUOTE)
+      case doubleQuotes of
+        "\"\"\"" -> pure text
+        _ -> ((text <> doubleQuotes) <>) <$> content
+    {-# INLINE content #-}
+{-# INLINE blockString #-}

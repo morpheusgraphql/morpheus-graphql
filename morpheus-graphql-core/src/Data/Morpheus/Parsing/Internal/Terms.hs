@@ -99,8 +99,6 @@ import Text.Megaparsec.Byte
 #define UNDERSCORE 95
 -- '!'
 #define BANG 33
--- '"'
-#define DOUBLE_QUOTE 34
 
 #define CHAR_A 65
 
@@ -187,49 +185,8 @@ optDescription = optional parseString
 {-# INLINEABLE optDescription #-}
 
 parseString :: Parser AST.Token
-parseString = blockString <|> (fromLBS <$> S.inlineString)
+parseString = fromLBS <$> (S.blockString <|> S.inlineString)
 {-# INLINEABLE parseString #-}
-
-blockString :: Parser AST.Token
-blockString = string "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
-  where
-    content :: Parser ByteString
-    content = do
-      text <- takeWhileP Nothing (/= DOUBLE_QUOTE)
-      doubleQuotes <- takeWhileP Nothing (== DOUBLE_QUOTE)
-      case doubleQuotes of
-        "\"\"\"" -> pure text
-        _ -> ((text <> doubleQuotes) <>) <$> content
-    {-# INLINE content #-}
-{-# INLINE blockString #-}
-
-inlineString :: Parser AST.Token
-inlineString =
-  label "String" $
-    T.pack
-      <$> ( char DOUBLE_QUOTE
-              *> manyTill
-                (printChar >>= handleEscape)
-                (char DOUBLE_QUOTE)
-          )
-      <* ignoredTokens
-{-# INLINE inlineString #-}
-
-handleEscape :: Word8 -> Parser Char
-handleEscape 92 =
-  w2c
-    <$> choice
-      [ char 98 $> 8,
-        char 110 $> 10,
-        char 102 $> 12,
-        char 114 $> 13,
-        char 116 $> 9,
-        char 92 $> 92,
-        char 34 $> 34,
-        char 47 $> 47
-      ]
-handleEscape x = pure (w2c x)
-{-# INLINE handleEscape #-}
 
 ------------------------------------------------------------------------
 sepByAnd :: Parser a -> Parser [a]
