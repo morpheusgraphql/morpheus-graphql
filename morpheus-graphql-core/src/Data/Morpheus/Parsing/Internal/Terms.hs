@@ -187,7 +187,7 @@ optDescription = optional parseString
 {-# INLINEABLE optDescription #-}
 
 parseString :: Parser AST.Token
-parseString = blockString <|> inlineString
+parseString = blockString <|> (fromLBS <$> S.inlineString)
 {-# INLINEABLE parseString #-}
 
 blockString :: Parser AST.Token
