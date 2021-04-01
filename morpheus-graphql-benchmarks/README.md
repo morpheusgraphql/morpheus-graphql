@@ -4,9 +4,10 @@ this Package Provides Benchmark for Morpheus GrapHQL
 
 ## Parsing Type System
 
-|                      | GraphQL (mean) | GraphQL (std dev) | Morpheus (mean) | Morpheus (std dev) |
-| -------------------- | -------------- | ----------------- | --------------- | ------------------ |
-| Mythology Schema     | 1.087 ms       | 81.11 μs          | 406.3 μs        | 15.54 μs           |
-| Long Descriptions    | 10.59 ms       | 200.1 μs          | 489.1 μs        | 15.40 μs           |
-| Star Wars Schema     | 85.95 ms       | 2.369 ms          | 42.65 ms        | 1.425 ms           |
-| Nested Wrapper Types | 1.487 s        | 4.659 ms          | 58.37 μs        | 2.127 μs           |
+| means                | GraphQL  | Morpheus |
+| -------------------- | -------- | -------- |
+| Huge String          | 8.036 ms | 192.2 μs |
+| Mythology Schema     | 1.010 ms | 258.9 μs |
+| Long Descriptions    | 10.30 ms | 449.1 μs |
+| Star Wars Schema     | 81.59 ms | 25.72 ms |
+| Nested Wrapper Types | 1.410 s  | 41.55 μs |

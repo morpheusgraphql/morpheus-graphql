@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4ced1f1fee0a3be95fb08bef6db6eed45b5a18f574cc24626eb61798826b7f20
+-- hash: e3cf28c96239664348f24634d4cf287edb5eec36d65b13e5bcd46a30c700450f
 
 name:           morpheus-graphql-benchmarks
 version:        0.17.0
@@ -25,6 +25,7 @@ extra-source-files:
 data-files:
     samples/descriptions.gql
     samples/github.gql
+    samples/huge-string.gql
     samples/mythology.gql
     samples/starwars.gql
     samples/wrappers.gql

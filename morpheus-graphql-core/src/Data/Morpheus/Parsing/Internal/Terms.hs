@@ -36,8 +36,6 @@ module Data.Morpheus.Parsing.Internal.Terms
   )
 where
 
-import Data.ByteString.Internal (w2c)
-import Data.ByteString.Lazy (pack)
 import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
@@ -61,6 +59,7 @@ import Data.Morpheus.Parsing.Internal.Literals
     pipe,
     symbol,
   )
+import Data.Morpheus.Parsing.Internal.String (parseStringBS)
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
@@ -71,26 +70,19 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     toHSWrappers,
   )
-import qualified Data.Text as T
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
     between,
-    choice,
     label,
-    many,
-    manyTill,
     sepBy,
     sepEndBy,
+    takeWhile1P,
     takeWhileP,
     try,
   )
 import Text.Megaparsec.Byte
-  ( char,
-    digitChar,
-    letterChar,
-    printChar,
-    string,
+  ( string,
   )
 
 -- '$'
@@ -101,8 +93,18 @@ import Text.Megaparsec.Byte
 #define UNDERSCORE 95
 -- '!'
 #define BANG 33
--- '"'
-#define DOUBLE_QUOTE 34
+
+#define CHAR_A 65
+
+#define CHAR_Z 90
+
+#define CHAR_a 97
+
+#define CHAR_z 122
+
+#define DIGIT_0 48
+
+#define DIGIT_9 57
 
 -- parens : '()'
 parens :: Parser a -> Parser a
@@ -121,45 +123,31 @@ brackets = between (symbol 91) (symbol 93)
 
 -- 2.1.9 Names
 -- https://spec.graphql.org/draft/#Name
--- Name ::
---  NameStart NameContinue[list,opt]
---
+-- Name
 name :: Parser AST.Token
 name =
   label "Name" $
-    fromLBS . pack
-      <$> ((:) <$> nameStartBS <*> nameContinueBS)
+    fromLBS <$> do
+      (<>) <$> takeWhile1P Nothing isStartChar <*> takeWhileP Nothing isContinueChar
       <* ignoredTokens
-{-# INLINEABLE name #-}
-
--- NameStart::
---   Letter
---   _
-nameStartBS :: Parser Word8
-nameStartBS = letterChar <|> char UNDERSCORE
-{-# INLINEABLE nameStartBS #-}
-
---  NameContinue::
---   Letter
---   Digit
-nameContinueBS :: Parser [Word8]
-nameContinueBS = many (letterChar <|> char UNDERSCORE <|> digitChar)
-{-# INLINEABLE nameContinueBS #-}
-
-escapedChar :: Parser Char
-escapedChar = label "EscapedChar" $ printChar >>= handleEscape
-{-# INLINEABLE escapedChar #-}
-
-str :: ByteString -> Parser ()
-str x = string x $> ()
-{-# INLINEABLE str #-}
+  where
+    isStartChar x =
+      (x >= CHAR_a && x <= CHAR_z)
+        || (x >= CHAR_A && x <= CHAR_Z)
+        || x == UNDERSCORE
+    {-# INLINE isStartChar #-}
+    isContinueChar x =
+      isStartChar x
+        || (x >= DIGIT_0 && x <= DIGIT_9) -- digit
+    {-# INLINE isContinueChar #-}
+{-# INLINE name #-}
 
 parseName :: Parser FieldName
 parseName = FieldName <$> name
 {-# INLINEABLE parseName #-}
 
 parseTypeName :: Parser TypeName
-parseTypeName = label "TypeName" $ TypeName <$> name
+parseTypeName = TypeName <$> name
 {-# INLINEABLE parseTypeName #-}
 
 keyword :: ByteString -> Parser ()
@@ -191,60 +179,8 @@ optDescription = optional parseString
 {-# INLINEABLE optDescription #-}
 
 parseString :: Parser AST.Token
-parseString = blockString <|> inlineString
+parseString = label "String" $ fromLBS <$> parseStringBS
 {-# INLINEABLE parseString #-}
-
-blockString :: Parser AST.Token
-blockString = str "\"\"\"" *> (fromLBS <$> content) <* ignoredTokens
-  where
-    content :: Parser ByteString
-    content = do
-      text <- takeWhileP Nothing (/= DOUBLE_QUOTE)
-      doubleQuotes <- takeWhileP Nothing (== DOUBLE_QUOTE)
-      case doubleQuotes of
-        "\"\"\"" -> pure text
-        _ -> ((text <> doubleQuotes) <>) <$> content
-    {-# INLINE content #-}
-{-# INLINE blockString #-}
-
-inlineString :: Parser AST.Token
-inlineString = stringWith (char DOUBLE_QUOTE) escapedChar
-{-# INLINE inlineString #-}
-
-stringWith :: Parser quote -> Parser Char -> Parser AST.Token
-stringWith quote parser =
-  T.pack
-    <$> ( quote
-            *> manyTill parser quote
-            <* ignoredTokens
-        )
-{-# INLINE stringWith #-}
-
-handleEscape :: Word8 -> Parser Char
-handleEscape 92 = w2c <$> choice escape
-handleEscape x = pure (w2c x)
-{-# INLINE handleEscape #-}
-
-escape :: [Parser Word8]
-escape = escapeCh <$> escapeOptions
-  where
-    escapeCh :: (Word8, Word8) -> Parser Word8
-    escapeCh (code, replacement) = char code $> replacement
-    {-# INLINE escapeCh #-}
-{-# INLINE escape #-}
-
-escapeOptions :: [(Word8, Word8)]
-escapeOptions =
-  [ (98, 8),
-    (110, 10),
-    (102, 12),
-    (114, 13),
-    (116, 9),
-    (92, 92),
-    (34, 34),
-    (47, 47)
-  ]
-{-# INLINE escapeOptions #-}
 
 ------------------------------------------------------------------------
 sepByAnd :: Parser a -> Parser [a]
@@ -290,7 +226,7 @@ parseTypeCondition = keyword "on" *> parseTypeName
 {-# INLINEABLE parseTypeCondition #-}
 
 spreadLiteral :: Parser Position
-spreadLiteral = getLocation <* str "..." <* ignoredTokens
+spreadLiteral = getLocation <* string "..." <* ignoredTokens
 {-# INLINEABLE spreadLiteral #-}
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias

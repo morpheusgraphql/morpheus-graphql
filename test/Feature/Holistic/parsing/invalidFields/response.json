@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "message": "offset=26:\nunexpected '<'\nexpecting '_', '}', Arguments, Directives, IgnoredTokens, Selection, SelectionContent, digit, or letter\n",
+      "message": "offset=26:\nunexpected '<'\nexpecting '}', Arguments, Directives, IgnoredTokens, Selection, or SelectionContent\n",
       "locations": [{ "line": 1, "column": 27 }]
     }
   ]

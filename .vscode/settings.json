@@ -1,10 +1,6 @@
 {
   "editor.formatOnSave": true,
   "ghcSimple.feature.rangeType": false,
-  "cSpell.words": [
-    "INLINEABLE",
-    "Nullary",
-    "haxl",
-    "parens"
-  ]
+  "cSpell.words": ["INLINEABLE", "Nullary", "haxl", "parens"],
+  "editor.renderWhitespace": "all"
 }
