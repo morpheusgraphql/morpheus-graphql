@@ -15,9 +15,10 @@ module Client.Client
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
   ( Fetch (..),
-    defineByDocumentFile,
+    defineByDocumentFile',
     gql,
   )
 import Data.Morpheus.Types
@@ -40,8 +41,8 @@ instance DecodeScalar Euro where
 instance EncodeScalar Euro where
   encodeScalar (Euro x y) = Int (x * 101 + y)
 
-defineByDocumentFile
-  "src/Server/Sophisticated/api.gql"
+defineByDocumentFile'
+  (makeRelativeToProject "src/Server/Sophisticated/api.gql")
   [gql|
     # Subscription Test Query
     subscription MySubscription
@@ -51,8 +52,8 @@ defineByDocumentFile
     }
   |]
 
-defineByDocumentFile
-  "src/Server/Sophisticated/api.gql"
+defineByDocumentFile'
+  (makeRelativeToProject "src/Server/Sophisticated/api.gql")
   [gql|
     # Query Hero with Compile time Validation
     query GetUser ($coordinates: Coordinates!)

@@ -12,9 +12,10 @@ module Client.StarWarsClient
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
   ( Fetch (..),
-    defineByDocumentFile,
+    defineByDocumentFile',
     gql,
   )
 import Data.Text (Text)
@@ -30,8 +31,8 @@ import Network.HTTP.Req
     runReq,
   )
 
-defineByDocumentFile
-  "assets/starwars.graphql"
+defineByDocumentFile'
+  (makeRelativeToProject "assets/starwars.graphql")
   [gql|
     query StarWarsFilms {
       allFilms {

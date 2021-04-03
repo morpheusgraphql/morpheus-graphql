@@ -15,13 +15,14 @@ module Client.Mythology
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
     Fetch (..),
     ID (..),
     ScalarValue (..),
-    defineByDocumentFile,
+    defineByDocumentFile',
     gql,
   )
 import Data.Text (Text)
@@ -46,8 +47,8 @@ instance EncodeScalar Power where
 instance DecodeScalar Power where
   decodeScalar _ = pure (Power 1)
 
-defineByDocumentFile
-  "assets/mythology.gql"
+defineByDocumentFile'
+  (makeRelativeToProject "assets/mythology.gql")
   [gql|
     # Query Hero with Compile time Validatio!
     query GetHero ($god: Realm, $someID: ID!)
