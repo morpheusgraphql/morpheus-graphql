@@ -69,7 +69,7 @@ testFloat :: Double
 testFloat = 21233.1234145
 
 testText :: Text
-testText = "lkjaebwfiqhwebouzv"
+testText = "Athens"
 
 client :: IO (Either String MyQuery)
 client =
