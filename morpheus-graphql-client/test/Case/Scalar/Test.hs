@@ -57,7 +57,7 @@ defineClientWith
   |]
 
 resolver :: ByteString -> IO ByteString
-resolver = mockApi "Enum"
+resolver = mockApi "Scalar"
 
 testBoolean :: Bool
 testBoolean = True
@@ -83,10 +83,10 @@ client =
       }
 
 test :: TestTree
-test = testCase "test Enum" $ do
+test = testCase "test Scalar" $ do
   value <- client
   assertEqual
-    "test Enum"
+    "test Scalar"
     ( Right
         ( MyQuery
             { booleanResolver = testBoolean,

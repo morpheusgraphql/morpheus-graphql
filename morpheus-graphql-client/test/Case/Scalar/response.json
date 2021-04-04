@@ -1,6 +1,8 @@
 {
   "data": {
-    "city": "Athens",
-    "cities": ["Athens", "Sparta", "Corinth", "Delphi", "Argos"]
+    "booleanResolver": true,
+    "intResolver": 0,
+    "floatResolver": 0,
+    "stringResolver": "Athens"
   }
 }
