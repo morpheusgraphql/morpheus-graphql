@@ -40,10 +40,6 @@ import Prelude
     String,
   )
 
-type Float = Double
-
-type Boolean = Bool
-
 defineClientWith
   "Scalar"
   [gql|
@@ -72,7 +68,7 @@ testInt = 1242345
 testFloat :: Double
 testFloat = 21233.1234145
 
-testText :: String
+testText :: Text
 testText = "lkjaebwfiqhwebouzv"
 
 client :: IO (Either String MyQuery)

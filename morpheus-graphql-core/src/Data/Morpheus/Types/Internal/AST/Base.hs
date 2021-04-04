@@ -314,6 +314,7 @@ sysFields = ["__typename", "__schema", "__type"]
 hsTypeName :: TypeName -> TypeName
 hsTypeName "String" = "Text"
 hsTypeName "Boolean" = "Bool"
+hsTypeName "Float" = "Double"
 hsTypeName name = name
 
 toOperationType :: TypeName -> Maybe OperationType
