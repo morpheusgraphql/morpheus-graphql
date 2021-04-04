@@ -59,15 +59,19 @@ defineClientWith
 resolver :: ByteString -> IO ByteString
 resolver = mockApi "Scalar"
 
+-- GraphQL Boolean types must be represented with Haskell Bool types
 testBoolean :: Bool
 testBoolean = True
 
+-- GraphQL Int types must be represented with Haskell Int types
 testInt :: Int
 testInt = 1242345
 
+-- GraphQL Float types must be represented with Haskell Double types
 testFloat :: Double
 testFloat = 21233.1234145
 
+-- GraphQL String types must be represented with Haskell Text types
 testText :: Text
 testText = "Athens"
 
