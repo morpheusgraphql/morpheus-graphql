@@ -36,12 +36,6 @@ import Text.Megaparsec.Error
   ( ErrorItem (..),
   )
 
--- ','
-#define COMMA 44
-
--- '#'
-#define HASH_TAG 35
-
 -- White Space
 #define TABULATION 0x0009
 #define NEW_LINE 0x000A
@@ -50,11 +44,13 @@ import Text.Megaparsec.Error
 #define UNICODE_BOM 0xFEFF
 #define NON_CHARACTER 0xFFFF
 
--- String characters
+-- Non-alphabetic characters
 #define DOUBLE_QUOTE 34
 #define BACKSLASH 92
+#define COMMA 44
+#define HASH_TAG 35
 
--- Escape Characters
+-- Alphabetic characters
 #define CHAR_b 98
 #define CHAR_f 102
 #define CHAR_n 110
