@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-overflowed-literals #-}
 
 module Data.Morpheus.Parsing.Internal.String
   ( parseStringBS,
@@ -49,6 +50,15 @@ import Text.Megaparsec.Error
 
 #define NEW_LINE 10
 
+-- https://spec.graphql.org/June2018/#sec-Source-Text
+-- SourceCharacter : [\u0009\u000A\u000D\u0020-\uFFFF]/
+isSourceCharacter :: Word8 -> Bool
+isSourceCharacter 0x0009 = True
+isSourceCharacter 0x000A = True
+isSourceCharacter 0x000D = True
+isSourceCharacter x = 0x0020 <= x && x <= 0xFFFF
+{-# INLINE isSourceCharacter #-}
+
 inlineString :: Parser ByteString
 inlineString =
   label "String" $
@@ -59,7 +69,7 @@ inlineString =
 
 parseContent :: Parser ByteString
 parseContent = do
-  xs <- takeWhileP Nothing (\x -> DOUBLE_QUOTE /= x && x /= BACKSLASH && NEW_LINE /= x)
+  xs <- takeWhileP Nothing (\x -> isSourceCharacter x && DOUBLE_QUOTE /= x && x /= BACKSLASH && NEW_LINE /= x)
   z <- satisfy (const True)
   case z of
     DOUBLE_QUOTE -> pure xs
@@ -86,7 +96,7 @@ blockString = string "\"\"\"" *> content <* ignoredTokens
   where
     content :: Parser ByteString
     content = do
-      text <- takeWhileP Nothing (/= DOUBLE_QUOTE)
+      text <- takeWhileP Nothing (\x -> isSourceCharacter x && x /= DOUBLE_QUOTE)
       doubleQuotes <- takeWhileP Nothing (== DOUBLE_QUOTE)
       case doubleQuotes of
         "\"\"\"" -> pure text
