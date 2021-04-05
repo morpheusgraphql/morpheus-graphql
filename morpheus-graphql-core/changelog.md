@@ -3,6 +3,7 @@
 ## Unreleased
 
 - The parser is compliant with the GQL specification and supports all valid characters #581
+- Parser performance improvement. on average 3-4 times faster, in some cases more than 100 times faster.
 
 ## 0.17.0 - 25.02.2021
 
