@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The parser is compliant with the GQL specification and supports all valid characters #581
+
 ## 0.17.0 - 25.02.2021
 
 ### New features
