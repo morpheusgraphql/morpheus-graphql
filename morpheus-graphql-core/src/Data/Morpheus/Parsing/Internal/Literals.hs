@@ -2,13 +2,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Internal.Literals
-  ( at,
-    colon,
-    equal,
-    ignoredTokens,
+  ( ignoredTokens,
     ignoredTokens1,
-    symbol,
-    pipe,
   )
 where
 
@@ -17,7 +12,6 @@ import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( label,
     many,
-    sepBy1,
     takeWhile1P,
     takeWhileP,
   )
@@ -28,14 +22,7 @@ import Text.Megaparsec.Byte
 
 -- ','
 #define COMMA 44
--- '@'
-#define AT 64
--- '='
-#define EQUAL 61
--- ':'
-#define COLON 58
--- '|'
-#define PIPE 124
+
 -- '#'
 #define HASH_TAG 35
 
@@ -53,22 +40,6 @@ import Text.Megaparsec.Byte
 #define CARRIAGE_RETURN 13
 -- U+FFFF : https://codepoints.net/U+FFFF
 #define NON_CHARACTER 65535
-
-at :: Parser ()
-at = symbol AT
-{-# INLINE at #-}
-
-equal :: Parser ()
-equal = symbol EQUAL
-{-# INLINE equal #-}
-
-colon :: Parser ()
-colon = symbol COLON
-{-# INLINE colon #-}
-
-symbol :: Word8 -> Parser ()
-symbol x = char x *> ignoredTokens
-{-# INLINE symbol #-}
 
 -- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
 ignoredTokens :: Parser ()
@@ -92,7 +63,3 @@ ignored = (takeWhile1P Nothing isIgnored <|> comment) $> ()
 ignoredTokens1 :: Parser ()
 ignoredTokens1 = space1 *> ignoredTokens
 {-# INLINE ignoredTokens1 #-}
-
-pipe :: Parser a -> Parser [a]
-pipe x = optional (symbol PIPE) *> (x `sepBy1` symbol PIPE)
-{-# INLINE pipe #-}
