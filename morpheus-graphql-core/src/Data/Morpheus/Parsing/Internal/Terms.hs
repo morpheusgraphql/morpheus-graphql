@@ -50,16 +50,11 @@ import Data.Morpheus.Parsing.Internal.Internal
     Position,
     getLocation,
   )
-import Data.Morpheus.Parsing.Internal.Literals
-  ( at,
-    colon,
-    equal,
-    ignoredTokens,
+import Data.Morpheus.Parsing.Internal.SourceText
+  ( ignoredTokens,
     ignoredTokens1,
-    pipe,
-    symbol,
+    parseStringBS,
   )
-import Data.Morpheus.Parsing.Internal.String (parseStringBS)
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
@@ -76,15 +71,25 @@ import Text.Megaparsec
     between,
     label,
     sepBy,
+    sepBy1,
     sepEndBy,
     takeWhile1P,
     takeWhileP,
     try,
   )
 import Text.Megaparsec.Byte
-  ( string,
+  ( char,
+    string,
   )
 
+-- ':'
+#define COLON 58
+-- '@'
+#define AT 64
+-- '='
+#define EQUAL 61
+-- '|'
+#define PIPE 124
 -- '$'
 #define DOLLAR 36
 -- '&'
@@ -105,6 +110,26 @@ import Text.Megaparsec.Byte
 #define DIGIT_0 48
 
 #define DIGIT_9 57
+
+symbol :: Word8 -> Parser ()
+symbol x = char x *> ignoredTokens
+{-# INLINE symbol #-}
+
+colon :: Parser ()
+colon = symbol COLON
+{-# INLINE colon #-}
+
+at :: Parser ()
+at = symbol AT
+{-# INLINE at #-}
+
+equal :: Parser ()
+equal = symbol EQUAL
+{-# INLINE equal #-}
+
+pipe :: Parser a -> Parser [a]
+pipe x = optional (symbol PIPE) *> (x `sepBy1` symbol PIPE)
+{-# INLINE pipe #-}
 
 -- parens : '()'
 parens :: Parser a -> Parser a
